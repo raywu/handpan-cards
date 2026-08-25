@@ -20,23 +20,23 @@ HIJAZ_SPEC = {
 }
 
 HIJAZ_CHORDS = [
-    ("C#", "", "C# DUR / C# MAJOR", [3, 5, 7], {3}),
+    ("C#", "", "C# MAJOR", [3, 5, 7], {3}),
     ("C#5", "", "POWER CHORD", [3, 7], {3}),
     ("C#sus", "4", "SUSPENDED CHORD", [3, 6, 7], {3}),
     ("C#", "7", "C# DOMINANT 7", [3, 5, 7, 8], {3}),
     ("C#7sus", "4", "SUSPENDED DOMINANT 7", [3, 6, 7, 8], {3}),
     ("C#7", "b9", "HIJAZ SIGNATURE CHORD", [3, 5, 7, 8, 4], {3}),
-    ("Bm", "", "H MOLL / B MINOR", [2, 4, 6], {2}),
+    ("Bm", "", "B MINOR", [2, 4, 6], {2}),
     ("Bm", "", "B MINOR - HIGH VOICING", [8, 4, 6], {8}),
     ("B5", "", "POWER CHORD", [2, 6], {2}),
-    ("Bm", "add9", "H MOLL ADD 9 / B MINOR ADD 9", [2, 4, 6, 3], {2}),
-    ("Bm", "6/9", "H MOLL 6/9 / B MINOR 6/9", [2, 4, 6, 7, 3], {2}),
-    ("G#\u00b0", "", "VERMINDERT / DIMINISHED", [1, 2, 4], {1}),
-    ("G#m7", "b5", "HALBVERMINDERT  ( = Bm6 )", [1, 2, 4, 6], {1}),
+    ("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3], {2}),
+    ("Bm", "6/9", "B MINOR 6/9", [2, 4, 6, 7, 3], {2}),
+    ("G#\u00b0", "", "DIMINISHED", [1, 2, 4], {1}),
+    ("G#m7", "b5", "HALF-DIMINISHED ( = Bm6 )", [1, 2, 4, 6], {1}),
     ("F#sus", "4", "SUSPENDED CHORD", [6, 8, 3], {6}),
     ("F#maj7sus", "4", "SUSPENDED MAJOR 7", [6, 8, 3, 5], {6}),
-    ("D\u00b0", "7", "VERMINDERT 7 / DIMINISHED 7", [4, 5, 7, 8], {4}),
-    ("Dmaj", "7", "D DUR 7 / D MAJOR 7 (NO 5)", [4, 6, 3], {4}),
+    ("D\u00b0", "7", "DIMINISHED 7", [4, 5, 7, 8], {4}),
+    ("Dmaj", "7", "D MAJOR 7 (NO 5)", [4, 6, 3], {4}),
     ("Dmaj7", "#11", "D MAJOR 7 SHARP 11 (NO 5)", [4, 6, 3, 7], {4}),
 ]
 
@@ -81,31 +81,31 @@ PYGMY_SPEC = {
 }
 
 PYGMY_CHORDS = [
-    ("Fm", "", "F MOLL / F MINOR", [5, 7, 8], {5}),
+    ("Fm", "", "F MINOR", [5, 7, 8], {5}),
     ("F5", "", "POWER CHORD", [5, 8], {5}),
     ("Fsus", "4", "SUSPENDED CHORD", [5, 104, 8], {5}),
-    ("Fm", "7", "F MOLL 7 / F MINOR 7", [5, 7, 8, 9], {5}),
-    ("Fm", "9", "F MOLL 9 / F MINOR 9", [5, 7, 8, 9, 11], {5}),
+    ("Fm", "7", "F MINOR 7", [5, 7, 8, 9], {5}),
+    ("Fm", "9", "F MINOR 9", [5, 7, 8, 9, 11], {5}),
     ("Fm", "11", "F MINOR 11 - FULL SCALE", [5, 7, 8, 9, 11, 104], {5}),
-    ("Ab", "", "AS DUR / Ab MAJOR", [2, 3, 4], {2}),
+    ("Ab", "", "Ab MAJOR", [2, 3, 4], {2}),
     ("Ab", "", "Ab MAJOR - HIGH VOICING", [7, 8, 9], {7}),
-    ("Abmaj", "7", "AS DUR 7 / Ab MAJOR 7", [2, 3, 4, 6], {2}),
-    ("Abmaj", "9", "AS DUR 9 / Ab MAJOR 9", [2, 3, 4, 6, 104], {2}),
-    ("Bbm", "", "B MOLL / Bb MINOR", [104, 105, 5], {104}),
-    ("Bbm", "7", "B MOLL 7  ( = Db6 )", [104, 105, 5, 7], {104}),
+    ("Abmaj", "7", "Ab MAJOR 7", [2, 3, 4, 6], {2}),
+    ("Abmaj", "9", "Ab MAJOR 9", [2, 3, 4, 6, 104], {2}),
+    ("Bbm", "", "Bb MINOR", [104, 105, 5], {104}),
+    ("Bbm", "7", "Bb MINOR 7 ( = Db6 )", [104, 105, 5, 7], {104}),
     ("Cm", "", "C MINOR - LOW VOICING", [101, 103, 1], {101}),
-    ("Cm", "", "C MOLL / C MINOR", [3, 4, 6], {3}),
+    ("Cm", "", "C MINOR", [3, 4, 6], {3}),
     ("Cm", "", "C MINOR - HIGH VOICING", [8, 9, 11], {8}),
     ("C5", "", "POWER CHORD", [3, 6], {3}),
     ("Csus", "4", "SUSPENDED CHORD", [3, 5, 6], {3}),
-    ("Cm", "7", "C MOLL 7 / C MINOR 7", [3, 4, 6, 104], {3}),
-    ("Db", "", "DES DUR / Db MAJOR", [105, 5, 7], {105}),
-    ("Dbmaj", "7", "DES DUR 7 / Db MAJOR 7", [105, 5, 7, 8], {105}),
+    ("Cm", "7", "C MINOR 7", [3, 4, 6, 104], {3}),
+    ("Db", "", "Db MAJOR", [105, 5, 7], {105}),
+    ("Dbmaj", "7", "Db MAJOR 7", [105, 5, 7, 8], {105}),
     ("Eb", "", "Eb MAJOR - LOW VOICING", [103, 1, 104], {103}),
-    ("Eb", "", "ES DUR / Eb MAJOR", [4, 6, 104], {4}),
-    ("Eb", "7", "ES DUR 7 / Eb DOMINANT 7", [103, 1, 104, 105], {103}),
-    ("G\u00b0", "", "VERMINDERT / DIMINISHED", [1, 104, 105], {1}),
-    ("Gm7", "b5", "HALBVERMINDERT / HALF-DIM", [1, 104, 105, 5], {1}),
+    ("Eb", "", "Eb MAJOR", [4, 6, 104], {4}),
+    ("Eb", "7", "Eb DOMINANT 7", [103, 1, 104, 105], {103}),
+    ("G\u00b0", "", "DIMINISHED", [1, 104, 105], {1}),
+    ("Gm7", "b5", "HALF-DIMINISHED", [1, 104, 105, 5], {1}),
 ]
 
 PYGMY = dict(
@@ -143,22 +143,22 @@ AMARA_SPEC = {
 }
 
 AMARA_CHORDS = [
-    ("Dm", "", "D MOLL / D MINOR", [3, 5, 7], {3}),
-    ("Dm", "7", "D MOLL 7 / D MINOR 7", [3, 5, 7, 8], {3}),
+    ("Dm", "", "D MINOR", [3, 5, 7], {3}),
+    ("Dm", "7", "D MINOR 7", [3, 5, 7, 8], {3}),
     ("D5", "", "POWER CHORD", [3, 7], {3}),
     ("Dsus", "4", "SUSPENDED CHORD", [3, 6, 7], {3}),
-    ("Am", "", "A MOLL / A MINOR", [1, 2, 4], {1}),
-    ("Am", "7", "A MOLL 7 / A MINOR 7", [1, 2, 4, 6], {1}),
+    ("Am", "", "A MINOR", [1, 2, 4], {1}),
+    ("Am", "7", "A MINOR 7", [1, 2, 4, 6], {1}),
     ("A5", "", "POWER CHORD", [1, 4], {1}),
     ("Asus", "4", "SUSPENDED CHORD", [1, 3, 4], {1}),
     ("G5", "", "POWER CHORD", [6, 3], {6}),
     ("Gsus", "4", "SUSPENDED CHORD", [6, 2, 3], {6}),
-    ("C", "", "C DUR / C MAJOR", [2, 4, 6], {2}),
+    ("C", "", "C MAJOR", [2, 4, 6], {2}),
     ("C5", "", "POWER CHORD", [2, 6], {2}),
     ("Csus", "4", "SUSPENDED CHORD", [2, 5, 6], {2}),
-    ("F", "", "F DUR / F MAJOR", [5, 7, 8], {5}),
+    ("F", "", "F MAJOR", [5, 7, 8], {5}),
     ("F5", "", "POWER CHORD", [5, 8], {5}),
-    ("Fmaj", "7", "F DUR 7 / F MAJOR 7", [5, 1, 2, 4], {5}),
+    ("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {5}),
 ]
 
 AMARA = dict(
@@ -166,7 +166,8 @@ AMARA = dict(
     name="D AMARA 9", sub="8 + 1", credit="D AMARA / D MINOR",
     spec=AMARA_SPEC, chords=AMARA_CHORDS, R=73.0, cy=126.0,
     y_note=30.0, y_num=14.0, has_bottom=False,
-    legend_demo=(5, 3),
+    legend_demo=(5, 3), grad=(Color(0.043, 0.482, 0.459), Color(0.867, 0.561, 0.000)),
+    col_root=Color(0.043, 0.482, 0.459), col_tone=Color(0.867, 0.561, 0.000),
     degrees={2: "i", 9: "v", 7: "IV", 0: "bVII", 5: "bIII"},
     blurb=["D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
            "16 CHORDS - ONE CARD PER CHORD"],
@@ -175,12 +176,15 @@ AMARA = dict(
 )
 
 if __name__ == "__main__":
-    n1 = hifi.build("/home/claude/out/CSharp_Hijaz_Orion_9_Cards_Letter.pdf", HIJAZ)
-    n2 = hifi.build("/home/claude/out/F3_Low_Pygmy_18_Cards_Letter.pdf", PYGMY)
-    p1 = hifi.build("/home/claude/out/CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf",
+    import os
+    OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_Cards_Letter.pdf"), HIJAZ)
+    n2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_Cards_Letter.pdf"), PYGMY)
+    n3 = hifi.build(os.path.join(OUT, "D_Amara_9_Cards_Letter.pdf"), AMARA)
+    p1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf"),
                     HIJAZ, chords_only=True)
-    p2 = hifi.build("/home/claude/out/F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf",
+    p2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf"),
                     PYGMY, chords_only=True)
-    p3 = hifi.build("/home/claude/out/D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf",
+    p3 = hifi.build(os.path.join(OUT, "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf"),
                     AMARA, chords_only=True)
-    print("full:", n1, n2, "| printer:", p1, p2, p3)
+    print("full:", n1, n2, n3, "| printer:", p1, p2, p3)
