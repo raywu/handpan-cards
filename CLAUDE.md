@@ -145,9 +145,10 @@ pitch classes (midi % 12), never stored.
 
 `python3 decks.py` builds all six PDFs into the repo root (three decks x
 full "Cards" + PRINTER_ONLY variants). Requirements: `pip install reportlab
-pypdf`, and a `tools/fonts/` dir (untracked) containing Marcellus-Regular,
-Bitter-Regular/-Bold, NunitoSans-Regular/-SemiBold TTFs (all on
-Google Fonts / github.com/google/fonts, OFL).
+pypdf`. The required TTFs (Marcellus-Regular, Bitter-Regular/-Bold,
+NunitoSans-Regular/-SemiBold) are checked into `tools/fonts/` together
+with each family's OFL license text, so a fresh clone builds with no
+extra downloads.
 Print spec, measured from the commercial original at 300dpi: card
 **62.65 x 87.21 mm (177.6 x 247.2 pt, poker size)**, US Letter 3x3, gutters
 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar on
