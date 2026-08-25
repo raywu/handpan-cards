@@ -6,41 +6,41 @@
 <title>Handpan Chord Flashcards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=BioRhyme+Expanded:wght@400;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#242424; --sep:#8a8a8a; --paper:#ffffff;
-  --table:#17151b; --table2:#221e28;
-  --root:#0097B2; --tone:#00BF63; --ga:#0198B1; --gb:#7DD958;
+  --table:#1a1815; --table2:#26221c;
+  --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;
   --card-w:min(88vw, 46vh, 420px);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
-  margin:0; font-family:Montserrat, system-ui, sans-serif; color:#e8e4ee;
+  margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
   background: radial-gradient(120% 90% at 50% 8%, var(--table2) 0%, var(--table) 62%);
   display:flex; flex-direction:column; align-items:center;
   min-height:100dvh; padding:max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   user-select:none;
 }
 header{width:100%; max-width:520px; text-align:center; margin-bottom:6px}
-h1{font-family:Oranienbaum, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
-   letter-spacing:.04em; margin:2px 0 8px; color:#f2eff6}
+h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
+   letter-spacing:.04em; margin:2px 0 8px; color:#f4f0e8}
 .decks{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
 .chip{
   border:1.5px solid transparent; border-radius:999px; padding:7px 13px 6px;
-  font:600 11px/1 Montserrat; letter-spacing:.09em; color:#cfc9da; background:#241f2c;
+  font:600 11px/1 "Nunito Sans"; letter-spacing:.09em; color:#d5cec2; background:#272219;
   cursor:pointer; position:relative;
 }
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
-  margin-right:6px; vertical-align:-1px; background:linear-gradient(90deg,var(--dga),var(--dgb))}
-.chip.on{color:#fff; border-image:linear-gradient(90deg,var(--dga),var(--dgb)) 1;
+  margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+.chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
 .modebar{display:flex; gap:8px; justify-content:center; margin-top:9px}
-.mode{border:1px solid #3a3444; border-radius:8px; background:#1d1923; color:#b9b2c6;
-  font:600 10.5px/1 Montserrat; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer}
-.mode.on{background:#efeaf6; color:#241f2c; border-color:#efeaf6}
+.mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
+  font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer}
+.mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
 .scene{width:var(--card-w); aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
@@ -53,45 +53,45 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
   display:flex; flex-direction:column;
 }
 .face::before{content:""; position:absolute; inset:0; border-radius:12px; padding:2.5px;
-  background:linear-gradient(90deg,var(--ga),var(--gb));
+  background:linear-gradient(180deg,var(--ga) 0 50%,var(--gb) 50% 100%);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none}
 .back{transform:rotateY(180deg)}
 .hdr{display:flex; justify-content:space-between; align-items:flex-start;
   padding:11px 13px 0; color:var(--ink)}
-.hdr .l{font:600 9px/1.5 Montserrat; letter-spacing:.12em; color:var(--ink)}
+.hdr .l{font:600 9px/1.5 "Nunito Sans"; letter-spacing:.12em; color:var(--ink)}
 .hdr .l .num{color:var(--sep); font-weight:400}
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
-.hdr .r{font:600 8px/1.3 Montserrat; letter-spacing:.11em; color:var(--ink);
+.hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
   text-align:right; max-width:55%; text-transform:uppercase}
 .prompt{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:0 16px 26px}
-.bigname{font-family:Oranienbaum, serif; color:#545454; line-height:.95; text-align:center}
+.bigname{font-family:Marcellus, serif; color:#545454; line-height:.95; text-align:center}
 .bigname sup{font-size:.5em; vertical-align:.55em}
-.hint{margin-top:14px; font:600 9.5px/1.6 Montserrat; letter-spacing:.14em; color:#b5b0bd;
+.hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#b6ae9f;
   text-transform:uppercase}
 .diagwrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0;
   padding:2px 6px 0}
 .diagwrap svg{width:100%; height:100%; max-height:100%}
 .lines{padding:0 8px 13px; text-align:center}
-.badge{font:600 9px/1 Montserrat; letter-spacing:.14em; color:#E27005; margin-bottom:6px}
-.notesline{font-family:"BioRhyme Expanded", serif; font-weight:400;
+.badge{font:600 9px/1 "Nunito Sans"; letter-spacing:.14em; color:#E27005; margin-bottom:6px}
+.notesline{font-family:Bitter, serif; font-weight:400;
   font-size:clamp(12px,4.4vw,19px); line-height:1.25; white-space:nowrap}
-.numline{font-family:"BioRhyme Expanded", serif; font-weight:400;
+.numline{font-family:Bitter, serif; font-weight:400;
   font-size:clamp(12px,4.2vw,18px); line-height:1.2; white-space:nowrap}
 .notesline sub{font-size:.62em}
 .sepc{color:#9a949f}
 footer{width:100%; max-width:520px; display:flex; align-items:center;
   justify-content:space-between; gap:10px; margin-top:10px}
-button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #3a3444;
-  background:#1d1923; color:#e8e4ee; font-size:18px; cursor:pointer}
-button.nav:active{background:#2a2434}
+button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
+  background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
+button.nav:active{background:#2e281e}
 .mid{flex:1; text-align:center}
-.count{font:600 11px/1 Montserrat; letter-spacing:.12em; color:#b9b2c6}
-.shuffle{margin-top:7px; background:none; border:none; color:#9d95ad; cursor:pointer;
-  font:600 9.5px/1 Montserrat; letter-spacing:.13em; text-transform:uppercase}
-.shuffle.on{color:#efeaf6}
-:focus-visible{outline:2px solid #bfa8ff; outline-offset:2px}
+.count{font:600 11px/1 "Nunito Sans"; letter-spacing:.12em; color:#c4bcab}
+.shuffle{margin-top:7px; background:none; border:none; color:#a79d8b; cursor:pointer;
+  font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+.shuffle.on{color:#f1ece1}
+:focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
 </style>
 </head>
 <body>
@@ -123,7 +123,7 @@ button.nav:active{background:#2a2434}
 </footer>
 
 <script>
-const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "colors": {"root": "#E0559A", "tone": "#E2761B", "ga": "#E0559A", "gb": "#E2761B"}, "degrees": {"1": "I", "2": "bII", "6": "iv", "8": "v\u00b0", "11": "bvii"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["C#", 3, 49, "ding", null, "Ding"], "1": ["G#", 3, 56, "rim", 270, "1"], "2": ["B", 3, 59, "rim", 225, "2"], "3": ["C#", 4, 61, "rim", 315, "3"], "4": ["D", 4, 62, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["F#", 4, 66, "rim", 135, "6"], "7": ["G#", 4, 68, "rim", 45, "7"], "8": ["B", 4, 71, "rim", 90, "8"]}, "chords": [{"main": "C#", "sup": "", "subtitle": "C# DUR / C# MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C#5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "C#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C#", "sup": "7", "subtitle": "C# DOMINANT 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "C#7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "C#7", "sup": "b9", "subtitle": "HIJAZ SIGNATURE CHORD", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Bm", "sup": "", "subtitle": "H MOLL / B MINOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR - HIGH VOICING", "fields": [8, 4, 6], "roots": [8]}, {"main": "B5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bm", "sup": "add9", "subtitle": "H MOLL ADD 9 / B MINOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bm", "sup": "6/9", "subtitle": "H MOLL 6/9 / B MINOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "G#\u00b0", "sup": "", "subtitle": "VERMINDERT / DIMINISHED", "fields": [1, 2, 4], "roots": [1]}, {"main": "G#m7", "sup": "b5", "subtitle": "HALBVERMINDERT  ( = Bm6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "F#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 8, 3], "roots": [6]}, {"main": "F#maj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 8, 3, 5], "roots": [6]}, {"main": "D\u00b0", "sup": "7", "subtitle": "VERMINDERT 7 / DIMINISHED 7", "fields": [4, 5, 7, 8], "roots": [4]}, {"main": "Dmaj", "sup": "7", "subtitle": "D DUR 7 / D MAJOR 7 (NO 5)", "fields": [4, 6, 3], "roots": [4]}, {"main": "Dmaj7", "sup": "#11", "subtitle": "D MAJOR 7 SHARP 11 (NO 5)", "fields": [4, 6, 3, 7], "roots": [4]}]}, {"id": "pygmy", "name": "F3 LOW PYGMY 18", "sub": "11 + 1 TOP  /  6 BOTTOM", "colors": {"root": "#6D40A3", "tone": "#C9971E", "ga": "#6D40A3", "gb": "#C9971E"}, "degrees": {"5": "i", "8": "III", "10": "iv", "0": "v", "1": "VI", "3": "VII", "7": "ii\u00b0"}, "geom": {"rim": 0.722, "inner": 0.38, "bottom": 1.15, "r_ding": 0.19, "ding_dy": 0.1425, "r_note": 0.1425, "r_bnote": 0.1188, "inner_ring": null, "f_ding": 0.114, "f_note": 0.109, "f_bnote": 0.0931, "f_num": 0.0912, "n_in": 0.052, "n_out": 0.068, "rim_num_out": true}, "fields": {"0": ["F", 3, 53, "ding", null, "Ding"], "1": ["G", 3, 55, "rim", 290, "1"], "2": ["Ab", 3, 56, "rim", 250, "2"], "3": ["C", 4, 60, "rim", 330, "3"], "4": ["Eb", 4, 63, "rim", 210, "4"], "5": ["F", 4, 65, "rim", 10, "5"], "6": ["G", 4, 67, "rim", 170, "6"], "7": ["Ab", 4, 68, "rim", 50, "7"], "8": ["C", 5, 72, "rim", 130, "8"], "9": ["Eb", 5, 75, "rim", 90, "9"], "10": ["F", 5, 77, "inner", 128, "10"], "11": ["G", 5, 79, "inner", 52, "11"], "101": ["C", 3, 48, "bottom", 300, "U1"], "102": ["Db", 3, 49, "bottom", 240, "U2"], "103": ["Eb", 3, 51, "bottom", 0, "U3"], "104": ["Bb", 3, 58, "bottom", 180, "U4"], "105": ["Db", 4, 61, "bottom", 60, "U5"], "106": ["Ab", 5, 80, "bottom", 120, "U6"]}, "chords": [{"main": "Fm", "sup": "", "subtitle": "F MOLL / F MINOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [5, 104, 8], "roots": [5]}, {"main": "Fm", "sup": "7", "subtitle": "F MOLL 7 / F MINOR 7", "fields": [5, 7, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "9", "subtitle": "F MOLL 9 / F MINOR 9", "fields": [5, 7, 8, 9, 11], "roots": [5]}, {"main": "Fm", "sup": "11", "subtitle": "F MINOR 11 - FULL SCALE", "fields": [5, 7, 8, 9, 11, 104], "roots": [5]}, {"main": "Ab", "sup": "", "subtitle": "AS DUR / Ab MAJOR", "fields": [2, 3, 4], "roots": [2]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [7, 8, 9], "roots": [7]}, {"main": "Abmaj", "sup": "7", "subtitle": "AS DUR 7 / Ab MAJOR 7", "fields": [2, 3, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "9", "subtitle": "AS DUR 9 / Ab MAJOR 9", "fields": [2, 3, 4, 6, 104], "roots": [2]}, {"main": "Bbm", "sup": "", "subtitle": "B MOLL / Bb MINOR", "fields": [104, 105, 5], "roots": [104]}, {"main": "Bbm", "sup": "7", "subtitle": "B MOLL 7  ( = Db6 )", "fields": [104, 105, 5, 7], "roots": [104]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - LOW VOICING", "fields": [101, 103, 1], "roots": [101]}, {"main": "Cm", "sup": "", "subtitle": "C MOLL / C MINOR", "fields": [3, 4, 6], "roots": [3]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - HIGH VOICING", "fields": [8, 9, 11], "roots": [8]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 6], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 5, 6], "roots": [3]}, {"main": "Cm", "sup": "7", "subtitle": "C MOLL 7 / C MINOR 7", "fields": [3, 4, 6, 104], "roots": [3]}, {"main": "Db", "sup": "", "subtitle": "DES DUR / Db MAJOR", "fields": [105, 5, 7], "roots": [105]}, {"main": "Dbmaj", "sup": "7", "subtitle": "DES DUR 7 / Db MAJOR 7", "fields": [105, 5, 7, 8], "roots": [105]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR - LOW VOICING", "fields": [103, 1, 104], "roots": [103]}, {"main": "Eb", "sup": "", "subtitle": "ES DUR / Eb MAJOR", "fields": [4, 6, 104], "roots": [4]}, {"main": "Eb", "sup": "7", "subtitle": "ES DUR 7 / Eb DOMINANT 7", "fields": [103, 1, 104, 105], "roots": [103]}, {"main": "G\u00b0", "sup": "", "subtitle": "VERMINDERT / DIMINISHED", "fields": [1, 104, 105], "roots": [1]}, {"main": "Gm7", "sup": "b5", "subtitle": "HALBVERMINDERT / HALF-DIM", "fields": [1, 104, 105, 5], "roots": [1]}]}, {"id": "amara", "name": "D AMARA 9", "sub": "8 + 1", "colors": {"root": "#0097B2", "tone": "#00BF63", "ga": "#0198B1", "gb": "#7DD958"}, "degrees": {"2": "i", "9": "v", "7": "IV", "0": "bVII", "5": "bIII"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 225, "2"], "3": ["D", 4, 62, "rim", 315, "3"], "4": ["E", 4, 64, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["G", 4, 67, "rim", 135, "6"], "7": ["A", 4, 69, "rim", 45, "7"], "8": ["C", 5, 72, "rim", 90, "8"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MOLL / D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MOLL 7 / D MINOR 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "Am", "sup": "", "subtitle": "A MOLL / A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MOLL 7 / A MINOR 7", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "C", "sup": "", "subtitle": "C DUR / C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "F", "sup": "", "subtitle": "F DUR / F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F DUR 7 / F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}]}];
+const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "colors": {"root": "#E0559A", "tone": "#E2761B", "ga": "#E0559A", "gb": "#E2761B"}, "degrees": {"1": "I", "2": "bII", "6": "iv", "8": "v\u00b0", "11": "bvii"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["C#", 3, 49, "ding", null, "Ding"], "1": ["G#", 3, 56, "rim", 270, "1"], "2": ["B", 3, 59, "rim", 225, "2"], "3": ["C#", 4, 61, "rim", 315, "3"], "4": ["D", 4, 62, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["F#", 4, 66, "rim", 135, "6"], "7": ["G#", 4, 68, "rim", 45, "7"], "8": ["B", 4, 71, "rim", 90, "8"]}, "chords": [{"main": "C#", "sup": "", "subtitle": "C# MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C#5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "C#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C#", "sup": "7", "subtitle": "C# DOMINANT 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "C#7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "C#7", "sup": "b9", "subtitle": "HIJAZ SIGNATURE CHORD", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR - HIGH VOICING", "fields": [8, 4, 6], "roots": [8]}, {"main": "B5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bm", "sup": "add9", "subtitle": "B MINOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bm", "sup": "6/9", "subtitle": "B MINOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "G#\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 2, 4], "roots": [1]}, {"main": "G#m7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Bm6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "F#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 8, 3], "roots": [6]}, {"main": "F#maj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 8, 3, 5], "roots": [6]}, {"main": "D\u00b0", "sup": "7", "subtitle": "DIMINISHED 7", "fields": [4, 5, 7, 8], "roots": [4]}, {"main": "Dmaj", "sup": "7", "subtitle": "D MAJOR 7 (NO 5)", "fields": [4, 6, 3], "roots": [4]}, {"main": "Dmaj7", "sup": "#11", "subtitle": "D MAJOR 7 SHARP 11 (NO 5)", "fields": [4, 6, 3, 7], "roots": [4]}]}, {"id": "pygmy", "name": "F3 LOW PYGMY 18", "sub": "11 + 1 TOP  /  6 BOTTOM", "colors": {"root": "#6D40A3", "tone": "#C9971E", "ga": "#6D40A3", "gb": "#C9971E"}, "degrees": {"5": "i", "8": "III", "10": "iv", "0": "v", "1": "VI", "3": "VII", "7": "ii\u00b0"}, "geom": {"rim": 0.722, "inner": 0.38, "bottom": 1.15, "r_ding": 0.19, "ding_dy": 0.1425, "r_note": 0.1425, "r_bnote": 0.1188, "inner_ring": null, "f_ding": 0.114, "f_note": 0.109, "f_bnote": 0.0931, "f_num": 0.0912, "n_in": 0.052, "n_out": 0.068, "rim_num_out": true}, "fields": {"0": ["F", 3, 53, "ding", null, "Ding"], "1": ["G", 3, 55, "rim", 290, "1"], "2": ["Ab", 3, 56, "rim", 250, "2"], "3": ["C", 4, 60, "rim", 330, "3"], "4": ["Eb", 4, 63, "rim", 210, "4"], "5": ["F", 4, 65, "rim", 10, "5"], "6": ["G", 4, 67, "rim", 170, "6"], "7": ["Ab", 4, 68, "rim", 50, "7"], "8": ["C", 5, 72, "rim", 130, "8"], "9": ["Eb", 5, 75, "rim", 90, "9"], "10": ["F", 5, 77, "inner", 128, "10"], "11": ["G", 5, 79, "inner", 52, "11"], "101": ["C", 3, 48, "bottom", 300, "U1"], "102": ["Db", 3, 49, "bottom", 240, "U2"], "103": ["Eb", 3, 51, "bottom", 0, "U3"], "104": ["Bb", 3, 58, "bottom", 180, "U4"], "105": ["Db", 4, 61, "bottom", 60, "U5"], "106": ["Ab", 5, 80, "bottom", 120, "U6"]}, "chords": [{"main": "Fm", "sup": "", "subtitle": "F MINOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [5, 104, 8], "roots": [5]}, {"main": "Fm", "sup": "7", "subtitle": "F MINOR 7", "fields": [5, 7, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "9", "subtitle": "F MINOR 9", "fields": [5, 7, 8, 9, 11], "roots": [5]}, {"main": "Fm", "sup": "11", "subtitle": "F MINOR 11 - FULL SCALE", "fields": [5, 7, 8, 9, 11, 104], "roots": [5]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR", "fields": [2, 3, 4], "roots": [2]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [7, 8, 9], "roots": [7]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7", "fields": [2, 3, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "9", "subtitle": "Ab MAJOR 9", "fields": [2, 3, 4, 6, 104], "roots": [2]}, {"main": "Bbm", "sup": "", "subtitle": "Bb MINOR", "fields": [104, 105, 5], "roots": [104]}, {"main": "Bbm", "sup": "7", "subtitle": "Bb MINOR 7 ( = Db6 )", "fields": [104, 105, 5, 7], "roots": [104]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - LOW VOICING", "fields": [101, 103, 1], "roots": [101]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR", "fields": [3, 4, 6], "roots": [3]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - HIGH VOICING", "fields": [8, 9, 11], "roots": [8]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 6], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 5, 6], "roots": [3]}, {"main": "Cm", "sup": "7", "subtitle": "C MINOR 7", "fields": [3, 4, 6, 104], "roots": [3]}, {"main": "Db", "sup": "", "subtitle": "Db MAJOR", "fields": [105, 5, 7], "roots": [105]}, {"main": "Dbmaj", "sup": "7", "subtitle": "Db MAJOR 7", "fields": [105, 5, 7, 8], "roots": [105]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR - LOW VOICING", "fields": [103, 1, 104], "roots": [103]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR", "fields": [4, 6, 104], "roots": [4]}, {"main": "Eb", "sup": "7", "subtitle": "Eb DOMINANT 7", "fields": [103, 1, 104, 105], "roots": [103]}, {"main": "G\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 104, 105], "roots": [1]}, {"main": "Gm7", "sup": "b5", "subtitle": "HALF-DIMINISHED", "fields": [1, 104, 105, 5], "roots": [1]}]}, {"id": "amara", "name": "D AMARA 9", "sub": "8 + 1", "colors": {"root": "#0B7B75", "tone": "#DD8F00", "ga": "#0B7B75", "gb": "#DD8F00"}, "degrees": {"2": "i", "9": "v", "7": "IV", "0": "bVII", "5": "bIII"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 225, "2"], "3": ["D", 4, 62, "rim", 315, "3"], "4": ["E", 4, 64, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["G", 4, 67, "rim", 135, "6"], "7": ["A", 4, 69, "rim", 45, "7"], "8": ["C", 5, 72, "rim", 90, "8"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}]}];
 
 /* ---------------- state ---------------- */
 let store = {};
@@ -183,7 +183,7 @@ function pan(d, ch) {
   }
   function label(x, y, name, oct, fs, col) {
     return `<text x="${x}" y="${y + fs*0.34}" text-anchor="middle" fill="${col}"
-      font-family="Montserrat, sans-serif" font-size="${fs}">${esc(name)}<tspan
+      font-family="Nunito Sans, sans-serif" font-size="${fs}">${esc(name)}<tspan
       font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
   }
 
@@ -211,7 +211,7 @@ function pan(d, ch) {
     else { nr = orb - rr - R * g.n_in; col = "#333"; }
     const [nx, ny] = P(nr, ang);
     s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
-      font-family="Montserrat, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
+      font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
   }
   return s + "</svg>";
 }

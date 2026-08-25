@@ -4,8 +4,10 @@ One self-contained file: `index.html`. No build step, no dependencies beyond
 Google Fonts (loaded from CDN; falls back to system fonts offline).
 
 Decks included: C# Hijaz 9 (pink/orange), F3 Low Pygmy 18 (purple/gold),
-D Amara 9 (blue/green). 59 cards total, with the same diagrams, voicings,
-pitch-class highlighting, and typography as the printed sets.
+D Amara 9 (teal/amber). 59 cards total, with the same diagrams, voicings,
+pitch-class highlighting, and typography as the printed sets. The visual
+design (Marcellus / Bitter / Nunito Sans, two-tone split borders, per-deck
+palettes) is original to this project.
 
 ## Use it
 
@@ -58,8 +60,8 @@ the repo and use:
 > This repo contains index.html, a self-contained handpan chord flashcard
 > app (vanilla JS, embedded JSON deck data for three handpans, SVG pan
 > diagrams). Keep the single-file, no-build architecture and the existing
-> visual system (Oranienbaum / BioRhyme Expanded / Montserrat, per-deck
-> palettes, poker-card aspect). Add: (1) spaced repetition - grade each
+> visual system (Marcellus / Bitter / Nunito Sans, per-deck palettes,
+> two-tone split borders, poker-card aspect). Add: (1) spaced repetition - grade each
 > card "again / good / easy" after flipping, schedule with a simple SM-2,
 > persist per-deck progress in localStorage with an export/import JSON
 > button; (2) a practice-stats view per deck; (3) PWA support (manifest +
