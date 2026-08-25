@@ -1,0 +1,21 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install reportlab (Color class used by decks.py)
+        run: pip install reportlab
+      - name: Data integrity + card invariants
+        run: python tools/validate.py
+      - name: App boot simulation
+        run: node tools/boot_sim.js
