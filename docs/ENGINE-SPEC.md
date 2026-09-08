@@ -33,7 +33,7 @@ Companion fixtures owned by this lane, and the SPEC for the values they carry:
 
 | Fixture | Contents |
 |---|---|
-| `tests/fixtures/qualities.json` | quality suffix -> intervals, display words, name split, tier |
+| `tests/fixtures/qualities.json` | quality suffix -> intervals, display words, name split, tier, rank |
 | `tests/fixtures/parents.json` | the 11 D10 parent-scale candidates, in fixed list order |
 | `tests/fixtures/synthetic_scales.json` | scale strings with their expected `parseSeed` outcome |
 
@@ -53,8 +53,18 @@ ok      = {ok: true,  value: <payload>, warnings?: [{code, reason}]}
 err     = {ok: false, code: <CODE>, reason: <English sentence>}
 ```
 
-- DECIDED(swarm-2026-09-08) Exactly two entry points return the result type:
-  `core.parseSeed` and `select.build`. They never throw on user input.
+- DECIDED(swarm-2026-09-08) Exactly three entry points return the result
+  type: `core.parseSeed`, `select.build` and `share.decode` (which delegates to
+  `core.parseSeed`). They never throw on user input.
+- DECIDED(swarm-2026-09-08) `core.parseSeed(string, options?)` returns, on
+  success, `value` = the SEED: `{fields, options}` where `fields` is the map
+  `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
+  `null` from `parseSeed`; `layout.solve` fills it) (ids are the decimal
+  strings of section 12) and `options` is `{palette, parent, name, mirror}`
+  (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
+  mirror boolean), validated per section 14 and defaulting to
+  `{palette: 0, parent: null, name: '', mirror: false}` when the second
+  argument is omitted. `formatSeed(seed)` reads `seed.fields` only.
 - DECIDED(swarm-2026-09-08) `core.formatSeed(seed)` returns a plain string and
   `core.deckId(fields)` returns a plain string; neither validates, because both
   take an already-parsed seed, so neither is wrapped in the result type.
@@ -96,7 +106,7 @@ are final: a change here is a change to shipped copy.
 | `TOO_MANY_RIM` | error | `Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom.` |
 | `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
-| `NO_THIRDS` | warning | `Only power chords: no 3rds on this pan.` |
+| `NO_THIRDS` | warning | `No 3rds on this pan: only power chords and sus chords.` |
 
 The whole-tone fixture entry `(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4` therefore
 produces, literally: `No perfect fifth above the ding C3. Add a G, or check the
@@ -109,9 +119,14 @@ ding.`
 - DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
   the ding as `formatSeed` prints it (name plus octave, e.g. `C3`), and
   `<fifth of X>` is the pitch-class name 7 semitones above the ding, without an
-  octave (e.g. `G` for a C ding, `Ab` for a Db ding).
+  octave, spelled as the letter four steps above the ding's letter carrying
+  whatever accidental makes it a perfect fifth (`G` for C, `Ab` for Db, `F#`
+  for B, `Cb` for Fb, `E#` for A#).
 - DEFAULT[owner-review] The `BAD_NOTE` reason's `<X>` is the offending token
-  verbatim, truncated to 12 characters.
+  verbatim, truncated to 12 characters. For every `BAD_NOTE` cause (a token
+  that does not lex, a MIDI out of range, a duplicate field, an order
+  violation, zero notes after `|`) `<X>` is the note token at which the rule
+  tripped, as typed (for zero notes after `|`, `<X>` is `|`).
 - DECIDED(plan [eng-review 2, 2A]) Error and warning reason strings live in
   this table and nowhere else; the UI never composes a sentence, and P0d copies
   them into `core.js` character for character.
@@ -142,6 +157,9 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   per-note form.
 - DECIDED(D13) The ding is MANDATORY, written `(C#3)` / `(C#)` (parentheses) or
   `D3/` / `D/` (trailing slash). Zero dings, or more than one, is `NO_DING`.
+  Ding tokens are counted over the whole string before any other rule runs, so
+  `(D3) (A3) C4` is `NO_DING`, not `BAD_NOTE`; a single ding token that is not
+  the first token (`A3 (D3) C4`) is also `NO_DING`.
 - DECIDED(D13) After the ding come the top notes in ascending zig-zag order,
   then optionally a `|` followed by the bottom notes.
 - DECIDED(D13) Separators are whitespace; `(`, `)`, `/` and `|` are the only
@@ -153,11 +171,19 @@ note        := [A-G] ("#" | "b")? ([0-9])?
 - DEFAULT[owner-review] Letters are UPPERCASE only: `c4` is `BAD_NOTE`, not a
   silent uppercasing, because repairing input contradicts "rejects, never
   repairs".
-- DEFAULT[owner-review] The octave is a SINGLE digit 0-9; `C10` lexes as `C1`
-  followed by the stray token `0` and is `BAD_NOTE`.
+- DEFAULT[owner-review] The octave is a SINGLE digit 0-9; `C10` is one
+  whitespace-delimited token that fails the note pattern and is `BAD_NOTE`
+  with `<X>` = `C10`. Tokenisation is whitespace-splitting only: `( D3 )`,
+  `(D3)A3` and `C5|C3` are each `BAD_NOTE` (the ding token must be exactly
+  `(NAME)` or `NAME/`, and `|` must stand alone).
 - DEFAULT[owner-review] Enharmonic names are accepted as typed and never
   normalised: `E#` and `F` are different labels for the same pitch class, and
   both are legal note names.
+- DECIDED(swarm-2026-09-08) MIDI is letter-anchored scientific pitch notation:
+  `midi = 12 * (octave + 1) + letter + accidental` with C=0, D=2, E=4, F=5,
+  G=7, A=9, B=11 and `#`=+1, `b`=-1, so `Cb4` = 59 and `B#3` = 60. Octave
+  inference picks the next instance by MIDI and then prints the octave that
+  formula implies for the typed letter (`Cb4`, never `Cb3`).
 - DEFAULT[owner-review] Zero notes after a trailing `|` is `BAD_NOTE`; a seed
   with no bottom shell omits the `|` entirely.
 - DEFAULT[owner-review] Error precedence when a string trips more than one
@@ -177,12 +203,16 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   below the ding, e.g. Pygmy `C3 Db3 Eb3` under an F3 ding.
 - DECIDED(swarm-2026-09-08) When the first bottom note is a tritone from the
   ding, so the instance above and the instance below are equidistant, choose the
-  instance BELOW the ding.
+  instance BELOW the ding. When the first bottom note has the ding's own pitch
+  class, "nearest" excludes the ding's MIDI itself and the tie goes below:
+  `(F3) ... | F` is `F2`.
 - DECIDED(D13) An explicit octave anywhere overrides inference for that note
   and reseeds the inference for the notes after it.
 - DECIDED(swarm-2026-09-08) After inference, the top notes must be strictly
   ascending in MIDI and the bottom notes must be strictly ascending in MIDI. An
-  explicit octave that breaks either order is `BAD_NOTE`. This is what makes
+  explicit octave that breaks either order is `BAD_NOTE`; the ding counts as
+  the element before the first top note, so an explicit top note at or below
+  the ding (`(D3) A2 ...`, `(F3) F3 ...`) is `BAD_NOTE`. This is what makes
   `parseSeed(formatSeed(x))` equal `x` for every accepted seed: `formatSeed`
   prints explicit octaves, and only a strictly ascending printing can be
   re-parsed to the same fields.
@@ -194,7 +224,10 @@ note        := [A-G] ("#" | "b")? ([0-9])?
 - DECIDED(plan P0d "no duplicate fields") Two fields may not be identical (same
   name, octave and zone); a duplicate is `BAD_NOTE`. Duplicate PITCH CLASSES
   across octaves are legal and expected, and one pitch class may appear on both
-  shells.
+  shells, even at the same MIDI (a top field and a bottom field with the same
+  note and octave are distinct fields because their zones differ). When a
+  voicing rule (D2, D11) selects "the highest lower instance" or "the nearest
+  instance above" and two fields share that MIDI, the TOP-shell field wins.
 
 ### The three built-in maker strings
 
@@ -356,7 +389,9 @@ removes it changes the deck.
   the two sus 7ths (`7sus4`, `maj7sus4`, both of which Hijaz ships) and by `6` /
   `m6`, which always collapse away under the rule in section 5.
 - DECIDED(swarm-2026-09-08) A quality is a candidate for a root only when every
-  one of its interval pitch classes is present on the pan. An `extended`-tier
+  one of its interval pitch classes (the root's included) is present on a
+  NON-DING field, because the ding never appears in a voicing (section 5); a
+  pitch class that exists only on the ding cannot be a root or a chord tone. An `extended`-tier
   quality is additionally a candidate only when every one of its tones lies on
   the TOP shell - that is D1's "extended chords only where the scale makes them
   obvious", operationalised.
@@ -364,7 +399,9 @@ removes it changes the deck.
 - DEFAULT[owner-review] Ranking, applied to trim to the cap: triads > power >
   sus4 > 7ths > extended; within a tier, more top-shell tones ranks higher;
   remaining ties break by root scale degree ascending from the tonic, then by
-  the quality's order in `qualities.json`.
+  the quality's `rank` field in `qualities.json` (an explicit integer, 1 =
+  first; never `Object.keys` order, which JS reorders for integer-like keys such
+  as `7` and `13`).
 - DECIDED(plan "The engine must also decide these") Root disambiguation for a
   pitch set with several valid roots: prefer sus4 over sus2, m7 over 6, m7b5
   over m6 (already in the data).
@@ -373,7 +410,8 @@ removes it changes the deck.
   lowest scale degree.
 - DEFAULT[owner-review] Canonical card order for GENERATED decks: roots by
   scale degree ascending from the tonic; within a root, triad, power, sus4,
-  7th, extended. Built-in order is editorial and untouched.
+  7th, extended; within a tier, by the quality's `rank` field ascending.
+  Built-in order is editorial and untouched.
 - DECIDED(plan Premise 4, D4) Per-deck override lists default to empty. The
   built-ins' out-of-vocabulary cards are recorded as overrides in
   `tests/fixtures/divergence_v1.json` under an `overrides` key (Phase 2 owns
@@ -456,14 +494,19 @@ Verified against all three built-ins under the fixed list order of
   that list (0-10) and travels in the seed options; it changes degree labels
   only, never the fields list, so the deck id is unchanged.
 - DECIDED(swarm-2026-09-08) A parent is always inferred - every candidate has a
-  finite distance, so there is no "no usable parent" branch. Uppercase numerals
-  are used for `NO_THIRDS` scales, where no root has a third and stacked thirds
-  cannot assign case at all.
-- DECIDED(swarm-2026-09-08) A pan pitch class outside the inferred parent takes
-  the numeral of the nearest scale degree below it under the D8
-  accidental-numeral rule (so a pitch class one semitone above degree III reads
-  as the altered form of the next degree, e.g. `bV` in a major-relative
-  context), and its case follows the stacked-thirds rule applied over the pan.
+  finite distance, so there is no "no usable parent" branch. When the
+  select-level `NO_THIRDS` warning fires (no root on the pan has a third), every
+  degree numeral is UPPERCASE and the D10 stacked-thirds case rule is NOT
+  applied, even though a parent was inferred; `NO_THIRDS` overrides D10.
+- DECIDED(swarm-2026-09-08) A pan pitch class outside the inferred parent is
+  named from the parent degree it is one semitone away from: one semitone BELOW
+  parent degree N is `bN`, one semitone ABOVE parent degree N is `#N`; when
+  both apply (the pitch class sits between two parent degrees a whole tone
+  apart) the scale's accidental convention decides: `b` for a major-relative
+  scale (D8 flats), `#` otherwise. Example: in a major-relative context the
+  pitch class one semitone above degree IV and one below degree V reads `bV`.
+  Its case follows the stacked-thirds rule applied over the PAN pitch classes
+  (uppercase when no third is available), unless `NO_THIRDS` applies.
 - DECIDED(D10, D13, plan [design-review 7A]) Parent inference runs on create;
   the override lives only in the Phase 4 Edit sheet, never on the create path.
 
@@ -485,10 +528,15 @@ Verified against all three built-ins under the fixed list order of
 }
 ```
 
-- DECIDED(plan P0a scope, index.html DECKS) The deck object has exactly the keys
-  `id, name, options, colors, degrees, geom, fields, chords, warnings`, and
-  `chords[]` entries have exactly `main, sup, subtitle, fields, roots` - the
-  built-in shape, because `render()` reads `subtitle` and `roots[0]`.
+- DECIDED(plan P0a scope, index.html DECKS) A GENERATED deck object has exactly
+  the keys `id, name, options, colors, degrees, geom, fields, chords, warnings`:
+  the built-in shape plus `options` and `warnings`, minus `sub` (which nothing
+  in the app reads). `chords[]` entries have exactly `main, sup, subtitle,
+  fields, roots`, as the built-ins, because `render()` reads `subtitle` and
+  `roots[0]`. `chords[].fields` and `chords[].roots` hold field ids as NUMBERS
+  (`[3, 5, 7]`), exactly as the built-ins; only the `fields` map keys are
+  strings, because JSON object keys are strings. Equality gates compare
+  accordingly.
 - DECIDED(CLAUDE.md "App data model") `fields` maps field id to `[name, octave,
   midi, zone, angle, label]`, exactly as the built-ins; the ding's `angle` is
   `null`, as all three built-ins have it.

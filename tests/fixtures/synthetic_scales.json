@@ -112,7 +112,7 @@
   },
   {
     "name": "midi out of range",
-    "string": "(C9) D9 E9 G9",
+    "string": "(C9) D9 E9 A9",
     "expect": {"code": "BAD_NOTE"},
     "tags": ["grammar", "range"]
   },
