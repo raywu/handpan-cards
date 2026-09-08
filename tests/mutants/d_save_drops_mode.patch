@@ -1,0 +1,14 @@
+# kills: deck and mode round-trip through localStorage (subset semantics)
+diff --git a/index.html b/index.html
+index 2b54068..78ec9f4 100644
+--- a/index.html
++++ b/index.html
+@@ -134,7 +134,7 @@ let shuffled = false;
+ let order = [], idx = 0, flipped = false;
+ 
+ const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
+-const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId, mode})); } catch (e) {} };
++const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId})); } catch (e) {} };
+ 
+ /* ---------------- helpers ---------------- */
+ const pc = (d, f) => d.fields[f][2] % 12;

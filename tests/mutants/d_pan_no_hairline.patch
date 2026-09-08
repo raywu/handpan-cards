@@ -1,0 +1,13 @@
+# kills: pan() draws one circle per field, two more per lit field, plus the chrome
+diff --git a/index.html b/index.html
+index 2b54068..4295b5a 100644
+--- a/index.html
++++ b/index.html
+@@ -177,7 +177,6 @@ function pan(d, ch) {
+       out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#000" stroke-width="1.1"/>`;
+     if (st === "root" || st === "tone") {
+       out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.24}"/>`;
+-      out += `<circle cx="${x}" cy="${y}" r="${r*0.74}" fill="none" stroke="#000" stroke-width="0.9"/>`;
+     }
+     return out;
+   }

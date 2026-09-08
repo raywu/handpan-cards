@@ -1,0 +1,13 @@
+# kills: chordSets: Amara Gsus4 lights the ding as a chord tone
+diff --git a/index.html b/index.html
+index 2b54068..4af78d3 100644
+--- a/index.html
++++ b/index.html
+@@ -143,6 +143,7 @@ function chordSets(d, ch) {
+   const rpc = pc(d, ch.roots[0]);
+   const blue = new Set(), green = new Set();
+   for (const f in d.fields) {
++    if (d.fields[f][3] === "ding") continue;
+     const p = pc(d, +f);
+     if (p === rpc) blue.add(+f);
+     else if (pcs.has(p)) green.add(+f);

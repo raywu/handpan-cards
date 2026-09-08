@@ -1,0 +1,14 @@
+# kills: every rendered face is well-formed markup (59 cards x 2 modes)
+diff --git a/index.html b/index.html
+index 2b54068..ddd7ff5 100644
+--- a/index.html
++++ b/index.html
+@@ -227,7 +227,7 @@ function headerHTML(d, ch, n) {
+ function nameHTML(ch, big) {
+   const len = (ch.main + ch.sup).length;
+   const size = big ? `clamp(34px, ${Math.min(19, 120/len)}vw, ${len > 7 ? 64 : 92}px)` : "inherit";
+-  return `<div class="bigname" style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}</sup>` : ""}</div>`;
++  return `<div class="bigname" style="font-size:${size}">${esc(ch.main)}${ch.sup ? `<sup>${esc(ch.sup)}` : ""}</div>`;
+ }
+ function linesHTML(d, ch) {
+   const C = d.colors, rpc = pc(d, ch.roots[0]);
