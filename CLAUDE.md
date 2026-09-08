@@ -90,7 +90,7 @@ this by attaching per-instrument images.
    set (no sus2 - every sus2 duplicates a sus4; no 6-chords duplicating m7
    sets). "Root position" here means the SPELLING ORDER of the field list
    starts at the root - it says nothing about register. Register is fixed by
-   the cluster rule: when no chord tone is forced below the root, every
+   the cluster rule: when no non-root tone is forced below the root, every
    non-root tone sits above it and its register is otherwise free (a spread
    9th above the 7th, like Fm9's G5, is fine); when ANY non-root
    tone is only available below the root, every CHORD TONE (3rd, 5th, 7th;
