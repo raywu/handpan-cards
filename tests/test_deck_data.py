@@ -14,6 +14,7 @@ Highlighting derivation, root/tone non-overlap and "every voicing field is
 lit" belong to validate.py and are deliberately not repeated here.
 """
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -118,7 +119,7 @@ PYGMY_BADGE = [
     0,  # Cm high voicing
     0,  # C5
     0,  # Csus4
-    1,  # Cm7
+    2,  # Cm7 (clustered: Eb3 + Bb3 are both bottom-shell)
     1,  # Db
     1,  # Dbmaj7
     2,  # Eb low voicing
@@ -181,7 +182,7 @@ class LayoutTest(unittest.TestCase):
 
 
 class VoicingTest(unittest.TestCase):
-    """CLAUDE.md > "Voicing rules (audited from the originals)"."""
+    """CLAUDE.md > "Voicing rules"."""
 
     def test_ding_never_in_voicing(self):
         for deck in decks():
@@ -242,6 +243,89 @@ class VoicingTest(unittest.TestCase):
                     self.assertIn(r, ch["fields"],
                                   (deck["id"], ch["main"], "root", r))
 
+
+    def test_forced_tones_cluster_below_root(self):
+        """CLAUDE.md rule 3, the cluster clause made precise (2026-09).
+
+        When ANY non-root tone is only available below the root, every CHORD
+        TONE sits at its highest instance below the root (one with no lower
+        instance stays put), while EXTENSIONS implied by the chord symbol (add9,
+        9, b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11)
+        keep their nearest instance above the root unless they are themselves
+        forced. When nothing is forced, every non-root tone simply sits above
+        the root. Transcribed from the spec, not from decks.py.
+        """
+        for deck in decks():
+            playable = [int(f) for f in deck["fields"] if field_of(deck, int(f))[3] != "ding"]
+            midi = lambda f: field_of(deck, f)[2]
+            for ch in deck["chords"]:
+                root = ch["roots"][0]
+                rm = midi(root)
+                # The ding is excluded here: its absence is test_ding_never_in_voicing's
+                # job, and this rule is about the register of playable tones.
+                others = [f for f in ch["fields"]
+                          if f != root and field_of(deck, f)[3] != "ding"]
+                card = (deck["id"], ch["main"] + ch["sup"], ch["fields"])
+
+                def instances(f, below):
+                    return [g for g in playable
+                            if midi(g) % 12 == midi(f) % 12
+                            and (midi(g) < rm if below else midi(g) > rm)]
+
+                # subTest so a failure names EVERY non-compliant card, not just
+                # the first one the loop reaches.
+                with self.subTest(deck=deck["id"], card=ch["main"] + ch["sup"]):
+                    self._check_cluster(ch, rm, others, card, midi, instances)
+
+    @staticmethod
+    def extension_intervals(symbol):
+        """Semitone intervals the chord SYMBOL implies as extensions.
+
+        Parsed from the whole symbol (main + sup), since this deck writes its
+        7ths into `main` ("G#m7", "Dmaj7") and a future "Cm9" would too. An
+        `addN` names exactly that extension; otherwise a stacked symbol implies
+        the ones below it (11 -> 9th + 11th; 13 -> 9th + 11th + 13th). A "9"
+        immediately after b/# is an altered 9th, never a natural one.
+        """
+        table = {"b9": {1}, "#11": {6}, "9": {2}, "11": {5}, "13": {9}}
+        adds = re.findall(r"add(b9|#11|9|11|13)", symbol)
+        if adds:
+            return set().union(*(table[a] for a in adds))
+        ext = set()
+        if "b9" in symbol:
+            ext.add(1)
+        if re.search(r"(?<![b#])9", symbol):
+            ext.add(2)
+        if "#11" in symbol:
+            ext.add(6)
+        elif "11" in symbol:
+            ext |= {2, 5}
+        if "13" in symbol:
+            ext |= {2, 5, 9}
+        return ext
+
+    def _check_cluster(self, ch, rm, others, card, midi, instances):
+        ext = self.extension_intervals(ch["main"] + ch["sup"])
+
+        forced = any(not instances(f, below=False) for f in others)
+        for f in others:
+            lower, upper = instances(f, True), instances(f, False)
+            if not forced:
+                self.assertGreater(midi(f), rm,
+                                   ("unforced card: tone below the root", card, f))
+            elif (midi(f) - rm) % 12 in ext:
+                if upper:
+                    self.assertEqual(midi(f), min(midi(g) for g in upper),
+                                     ("extension not at its nearest instance "
+                                      "above the root", card, f))
+                else:
+                    self.assertEqual(midi(f), max(midi(g) for g in lower),
+                                     ("forced extension not at its highest "
+                                      "lower instance", card, f))
+            elif lower:
+                self.assertEqual(midi(f), max(midi(g) for g in lower),
+                                 ("forced card: chord tone not at its highest "
+                                  "instance below the root", card, f))
 
 class DegreeTest(unittest.TestCase):
 
