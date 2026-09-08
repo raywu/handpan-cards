@@ -150,9 +150,9 @@ Written when their wave opens, from the plan rows and the acceptance table.
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| P0a | scale-engine/w1-spec | spawning | - | 2026-09-08 |
-| P0b | scale-engine/w2-corpus | spawning | - | 2026-09-08 |
-| P0c | scale-engine/w3-harness | spawning | - | 2026-09-08 |
+| P0a | scale-engine/w1-spec | running | - | 2026-09-08 |
+| P0b | scale-engine/w2-corpus | running | - | 2026-09-08 |
+| P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
 
 ## Handoff queue (append-only)
 
@@ -170,6 +170,6 @@ Written when their wave opens, from the plan rows and the acceptance table.
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| P0a | - | - | scale-engine/w1-spec | - | - | - | - | 0 | no | - | - |
-| P0b | - | - | scale-engine/w2-corpus | - | - | - | - | 0 | no | - | - |
-| P0c | - | - | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
+| P0a | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w1-spec | - | - | - | - | 0 | no | - | - |
+| P0b | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w2-corpus | - | - | - | - | 0 | no | - | - |
+| P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
