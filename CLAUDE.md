@@ -89,6 +89,14 @@ this by attaching per-instrument images.
    power chords are two notes (root+5th); one card per pitch set (no sus2 -
    every sus2 duplicates a sus4; no 6-chords duplicating m7 sets); no
    doubled pitch classes in a voicing.
+   **Cluster rule, made precise (2026-09 retrofit):** when ANY non-root tone
+   is only available below the root, EVERY non-root tone moves to its highest
+   instance below the root; a tone with no lower instance stays put; the root
+   and the spelling order never change. D Amara (the commercial reference)
+   already followed this; Hijaz and Pygmy were retrofitted to match - 7 cards
+   revoiced (Hijaz F#sus4, F#maj7sus4, Dmaj7#11; Pygmy Fsus4, Fm11, Cm7, Eb)
+   and Fm11 lost its "FULL SCALE" subtitle because it no longer spans the pan.
+   All three decks now obey one voicing rule.
 4. **Highlighted-field rendering:** thin black circle (always), coloured
    band inside at radius 0.87r with stroke 0.24r, inner black hairline at
    0.74r, label auto-fit inside. Unhighlighted bottom fields: dashed grey

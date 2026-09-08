@@ -118,7 +118,7 @@ PYGMY_BADGE = [
     0,  # Cm high voicing
     0,  # C5
     0,  # Csus4
-    1,  # Cm7
+    2,  # Cm7 (clustered: Eb3 + Bb3 are both bottom-shell)
     1,  # Db
     1,  # Dbmaj7
     2,  # Eb low voicing
