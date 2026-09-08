@@ -1,0 +1,1194 @@
+{
+ "decks": [
+  {
+   "chords": [
+    {
+     "fields": [
+      3,
+      5,
+      7
+     ],
+     "main": "C#",
+     "roots": [
+      3
+     ],
+     "subtitle": "C# MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      7
+     ],
+     "main": "C#5",
+     "roots": [
+      3
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      6,
+      7
+     ],
+     "main": "C#sus",
+     "roots": [
+      3
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      3,
+      5,
+      7,
+      8
+     ],
+     "main": "C#",
+     "roots": [
+      3
+     ],
+     "subtitle": "C# DOMINANT 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      3,
+      6,
+      7,
+      8
+     ],
+     "main": "C#7sus",
+     "roots": [
+      3
+     ],
+     "subtitle": "SUSPENDED DOMINANT 7",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      3,
+      5,
+      7,
+      8,
+      4
+     ],
+     "main": "C#7",
+     "roots": [
+      3
+     ],
+     "subtitle": "HIJAZ SIGNATURE CHORD",
+     "sup": "b9"
+    },
+    {
+     "fields": [
+      2,
+      4,
+      6
+     ],
+     "main": "Bm",
+     "roots": [
+      2
+     ],
+     "subtitle": "B MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      8,
+      4,
+      6
+     ],
+     "main": "Bm",
+     "roots": [
+      8
+     ],
+     "subtitle": "B MINOR - HIGH VOICING",
+     "sup": ""
+    },
+    {
+     "fields": [
+      2,
+      6
+     ],
+     "main": "B5",
+     "roots": [
+      2
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      2,
+      4,
+      6,
+      3
+     ],
+     "main": "Bm",
+     "roots": [
+      2
+     ],
+     "subtitle": "B MINOR ADD 9",
+     "sup": "add9"
+    },
+    {
+     "fields": [
+      2,
+      4,
+      6,
+      7,
+      3
+     ],
+     "main": "Bm",
+     "roots": [
+      2
+     ],
+     "subtitle": "B MINOR 6/9",
+     "sup": "6/9"
+    },
+    {
+     "fields": [
+      1,
+      2,
+      4
+     ],
+     "main": "G#°",
+     "roots": [
+      1
+     ],
+     "subtitle": "DIMINISHED",
+     "sup": ""
+    },
+    {
+     "fields": [
+      1,
+      2,
+      4,
+      6
+     ],
+     "main": "G#m7",
+     "roots": [
+      1
+     ],
+     "subtitle": "HALF-DIMINISHED ( = Bm6 )",
+     "sup": "b5"
+    },
+    {
+     "fields": [
+      6,
+      2,
+      3
+     ],
+     "main": "F#sus",
+     "roots": [
+      6
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      6,
+      2,
+      3,
+      5
+     ],
+     "main": "F#maj7sus",
+     "roots": [
+      6
+     ],
+     "subtitle": "SUSPENDED MAJOR 7",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      4,
+      5,
+      7,
+      8
+     ],
+     "main": "D°",
+     "roots": [
+      4
+     ],
+     "subtitle": "DIMINISHED 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      4,
+      6,
+      3
+     ],
+     "main": "Dmaj",
+     "roots": [
+      4
+     ],
+     "subtitle": "D MAJOR 7 (NO 5)",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      4,
+      6,
+      3,
+      7
+     ],
+     "main": "Dmaj7",
+     "roots": [
+      4
+     ],
+     "subtitle": "D MAJOR 7 SHARP 11 (NO 5)",
+     "sup": "#11"
+    }
+   ],
+   "colors": {
+    "ga": "#E0559A",
+    "gb": "#E2761B",
+    "root": "#E0559A",
+    "tone": "#E2761B"
+   },
+   "degrees": {
+    "1": "I",
+    "11": "bvii",
+    "2": "bII",
+    "6": "iv",
+    "8": "v°"
+   },
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     270,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     225,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     315,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     180,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     0,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     135,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     45,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     90,
+     "8"
+    ]
+   },
+   "geom": {
+    "f_bnote": 0.0,
+    "f_ding": 0.135,
+    "f_note": 0.128,
+    "f_num": 0.105,
+    "inner_ring": 0.355,
+    "n_in": 0.085,
+    "n_out": 0.0,
+    "r_bnote": 0.0,
+    "r_ding": 0.2,
+    "r_note": 0.19,
+    "rim": 0.745
+   },
+   "id": "hijaz",
+   "maker_string": "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+   "name": "C# HIJAZ 9",
+   "sub": "ORION  -  8 + 1"
+  },
+  {
+   "chords": [
+    {
+     "fields": [
+      5,
+      7,
+      8
+     ],
+     "main": "Fm",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      5,
+      8
+     ],
+     "main": "F5",
+     "roots": [
+      5
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      5,
+      104,
+      3
+     ],
+     "main": "Fsus",
+     "roots": [
+      5
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      5,
+      7,
+      8,
+      9
+     ],
+     "main": "Fm",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MINOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      5,
+      7,
+      8,
+      9,
+      11
+     ],
+     "main": "Fm",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MINOR 9",
+     "sup": "9"
+    },
+    {
+     "fields": [
+      5,
+      2,
+      3,
+      4,
+      6,
+      104
+     ],
+     "main": "Fm",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MINOR 11",
+     "sup": "11"
+    },
+    {
+     "fields": [
+      2,
+      3,
+      4
+     ],
+     "main": "Ab",
+     "roots": [
+      2
+     ],
+     "subtitle": "Ab MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      7,
+      8,
+      9
+     ],
+     "main": "Ab",
+     "roots": [
+      7
+     ],
+     "subtitle": "Ab MAJOR - HIGH VOICING",
+     "sup": ""
+    },
+    {
+     "fields": [
+      2,
+      3,
+      4,
+      6
+     ],
+     "main": "Abmaj",
+     "roots": [
+      2
+     ],
+     "subtitle": "Ab MAJOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      2,
+      3,
+      4,
+      6,
+      104
+     ],
+     "main": "Abmaj",
+     "roots": [
+      2
+     ],
+     "subtitle": "Ab MAJOR 9",
+     "sup": "9"
+    },
+    {
+     "fields": [
+      104,
+      105,
+      5
+     ],
+     "main": "Bbm",
+     "roots": [
+      104
+     ],
+     "subtitle": "Bb MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      104,
+      105,
+      5,
+      7
+     ],
+     "main": "Bbm",
+     "roots": [
+      104
+     ],
+     "subtitle": "Bb MINOR 7 ( = Db6 )",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      101,
+      103,
+      1
+     ],
+     "main": "Cm",
+     "roots": [
+      101
+     ],
+     "subtitle": "C MINOR - LOW VOICING",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      4,
+      6
+     ],
+     "main": "Cm",
+     "roots": [
+      3
+     ],
+     "subtitle": "C MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      8,
+      9,
+      11
+     ],
+     "main": "Cm",
+     "roots": [
+      8
+     ],
+     "subtitle": "C MINOR - HIGH VOICING",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      6
+     ],
+     "main": "C5",
+     "roots": [
+      3
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      5,
+      6
+     ],
+     "main": "Csus",
+     "roots": [
+      3
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      3,
+      103,
+      1,
+      104
+     ],
+     "main": "Cm",
+     "roots": [
+      3
+     ],
+     "subtitle": "C MINOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      105,
+      5,
+      7
+     ],
+     "main": "Db",
+     "roots": [
+      105
+     ],
+     "subtitle": "Db MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      105,
+      5,
+      7,
+      8
+     ],
+     "main": "Dbmaj",
+     "roots": [
+      105
+     ],
+     "subtitle": "Db MAJOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      103,
+      1,
+      104
+     ],
+     "main": "Eb",
+     "roots": [
+      103
+     ],
+     "subtitle": "Eb MAJOR - LOW VOICING",
+     "sup": ""
+    },
+    {
+     "fields": [
+      4,
+      1,
+      104
+     ],
+     "main": "Eb",
+     "roots": [
+      4
+     ],
+     "subtitle": "Eb MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      103,
+      1,
+      104,
+      105
+     ],
+     "main": "Eb",
+     "roots": [
+      103
+     ],
+     "subtitle": "Eb DOMINANT 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      1,
+      104,
+      105
+     ],
+     "main": "G°",
+     "roots": [
+      1
+     ],
+     "subtitle": "DIMINISHED",
+     "sup": ""
+    },
+    {
+     "fields": [
+      1,
+      104,
+      105,
+      5
+     ],
+     "main": "Gm7",
+     "roots": [
+      1
+     ],
+     "subtitle": "HALF-DIMINISHED",
+     "sup": "b5"
+    }
+   ],
+   "colors": {
+    "ga": "#6D40A3",
+    "gb": "#C9971E",
+    "root": "#6D40A3",
+    "tone": "#C9971E"
+   },
+   "degrees": {
+    "0": "v",
+    "1": "VI",
+    "10": "iv",
+    "3": "VII",
+    "5": "i",
+    "7": "ii°",
+    "8": "III"
+   },
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     290,
+     "1"
+    ],
+    "10": [
+     "F",
+     5,
+     77,
+     "inner",
+     128,
+     "10"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     300,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     240,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     0,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     180,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     60,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     120,
+     "U6"
+    ],
+    "11": [
+     "G",
+     5,
+     79,
+     "inner",
+     52,
+     "11"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     250,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     330,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     210,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     10,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     170,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     50,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     130,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     90,
+     "9"
+    ]
+   },
+   "geom": {
+    "bottom": 1.15,
+    "ding_dy": 0.1425,
+    "f_bnote": 0.0931,
+    "f_ding": 0.114,
+    "f_note": 0.109,
+    "f_num": 0.0912,
+    "inner": 0.38,
+    "inner_ring": null,
+    "n_in": 0.052,
+    "n_out": 0.068,
+    "r_bnote": 0.1188,
+    "r_ding": 0.19,
+    "r_note": 0.1425,
+    "rim": 0.722,
+    "rim_num_out": true
+   },
+   "id": "pygmy",
+   "maker_string": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+   "name": "F3 LOW PYGMY 18",
+   "sub": "11 + 1 TOP  /  6 BOTTOM"
+  },
+  {
+   "chords": [
+    {
+     "fields": [
+      3,
+      5,
+      7
+     ],
+     "main": "Dm",
+     "roots": [
+      3
+     ],
+     "subtitle": "D MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      5,
+      7,
+      8
+     ],
+     "main": "Dm",
+     "roots": [
+      3
+     ],
+     "subtitle": "D MINOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      3,
+      7
+     ],
+     "main": "D5",
+     "roots": [
+      3
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      3,
+      6,
+      7
+     ],
+     "main": "Dsus",
+     "roots": [
+      3
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      1,
+      2,
+      4
+     ],
+     "main": "Am",
+     "roots": [
+      1
+     ],
+     "subtitle": "A MINOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      1,
+      2,
+      4,
+      6
+     ],
+     "main": "Am",
+     "roots": [
+      1
+     ],
+     "subtitle": "A MINOR 7",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      1,
+      4
+     ],
+     "main": "A5",
+     "roots": [
+      1
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      1,
+      3,
+      4
+     ],
+     "main": "Asus",
+     "roots": [
+      1
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      6,
+      3
+     ],
+     "main": "G5",
+     "roots": [
+      6
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      6,
+      2,
+      3
+     ],
+     "main": "Gsus",
+     "roots": [
+      6
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      2,
+      4,
+      6
+     ],
+     "main": "C",
+     "roots": [
+      2
+     ],
+     "subtitle": "C MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      2,
+      6
+     ],
+     "main": "C5",
+     "roots": [
+      2
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      2,
+      5,
+      6
+     ],
+     "main": "Csus",
+     "roots": [
+      2
+     ],
+     "subtitle": "SUSPENDED CHORD",
+     "sup": "4"
+    },
+    {
+     "fields": [
+      5,
+      7,
+      8
+     ],
+     "main": "F",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MAJOR",
+     "sup": ""
+    },
+    {
+     "fields": [
+      5,
+      8
+     ],
+     "main": "F5",
+     "roots": [
+      5
+     ],
+     "subtitle": "POWER CHORD",
+     "sup": ""
+    },
+    {
+     "fields": [
+      5,
+      1,
+      2,
+      4
+     ],
+     "main": "Fmaj",
+     "roots": [
+      5
+     ],
+     "subtitle": "F MAJOR 7",
+     "sup": "7"
+    }
+   ],
+   "colors": {
+    "ga": "#0B7B75",
+    "gb": "#DD8F00",
+    "root": "#0B7B75",
+    "tone": "#DD8F00"
+   },
+   "degrees": {
+    "0": "bVII",
+    "2": "i",
+    "5": "bIII",
+    "7": "IV",
+    "9": "v"
+   },
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     270,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     225,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     315,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     180,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     0,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     135,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     45,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     90,
+     "8"
+    ]
+   },
+   "geom": {
+    "f_bnote": 0.0,
+    "f_ding": 0.135,
+    "f_note": 0.128,
+    "f_num": 0.105,
+    "inner_ring": 0.355,
+    "n_in": 0.085,
+    "n_out": 0.0,
+    "r_bnote": 0.0,
+    "r_ding": 0.2,
+    "r_note": 0.19,
+    "rim": 0.745
+   },
+   "id": "amara",
+   "maker_string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+   "name": "D AMARA 9",
+   "sub": "8 + 1"
+  }
+ ],
+ "sha256": "0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a",
+ "version": 1
+}
