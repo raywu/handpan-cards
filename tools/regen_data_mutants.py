@@ -5,6 +5,9 @@ Run from the repo root on a clean tree after ANY change to deck data:
 
     python3 tools/regen_data_mutants.py
 
+    python3 tools/regen_data_mutants.py --check   # regenerate NOTHING; exit 1
+                                                  # if any b_*.patch is stale
+
 Why this exists: the b_* mutants edit tools/decks.py and the DECKS JSON in
 index.html in lockstep (so validate.py stays green and only the named test
 catches them), and they anchor on the single-line DECKS literal. Any data
@@ -18,6 +21,7 @@ orthogonal: it must fail ONLY the test it names, or the gate's guarantee that
 that test is live is void (tests/mutation_check.sh runs the named test).
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -140,6 +144,32 @@ def apply_json(mutator):
     html = html.replace(m.group(0), "const DECKS = " + json.dumps(decks) + ";", 1)
     open(INDEX, "w").write(html)
 
+
+def check_only():
+    """Exit 0 when every b_*.patch still applies, 1 listing the stale ones."""
+    stale = []
+    for name in sorted(MUTANTS):
+        patch = f"{OUT}/{name}.patch"
+        if not os.path.exists(patch):
+            stale.append(f"{patch} (missing)")
+            continue
+        if subprocess.run(["git", "apply", "--check", patch],
+                          capture_output=True).returncode != 0:
+            stale.append(patch)
+    if stale:
+        print("STALE data mutants - rerun tools/regen_data_mutants.py on a clean tree:")
+        for s in stale:
+            print("  " + s)
+        return 1
+    print(f"all {len(MUTANTS)} data mutants apply cleanly")
+    return 0
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1:] != ["--check"]:
+        print(f"usage: {sys.argv[0]} [--check]", file=sys.stderr)
+        sys.exit(2)
+    sys.exit(check_only())
 
 if subprocess.run(["git", "diff", "--quiet", "--"] + TRACKED).returncode != 0:
     sys.exit("REFUSING: tracked files already modified")
