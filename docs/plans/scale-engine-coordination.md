@@ -151,7 +151,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | P0a | scale-engine/w1-spec | PR #10 under review | pending | 2026-09-08 |
-| P0b | scale-engine/w2-corpus | PR #9 under review | pending | 2026-09-08 |
+| P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -163,12 +163,16 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 4 | P0a | qualities.json keyed on the full quality suffix (m7b5), with main_suffix/sup split; the plan's "sup strings" wording was wrong | recorded, lane C brief must say so |
 | 5 | P0a | 19-field maximum = 11 rim + 2 inner + 6 bottom EXCLUDING the ding (20 with it); P0d caps must count that way | recorded, P0d brief |
 | 6 | P0a | reason-string table lives in ENGINE-SPEC section 2; no runtime reasons fixture is owned by any lane. Decision: P0d embeds the table in core.js as `HPE.core.REASONS` and tests/core.test.js deep-equals it to the spec table (rule-2 carve-out) | decided, P0d brief |
+| 7 | reviewer #9 | Pygmy has 11 top notes (9 rim + 2 inner) but the D13 grammar has no inner marker and P0d's zone rule makes all 11 rim, so P0d's built-in exit on `zone` is unsatisfiable for Pygmy. DECISION (integrator, afk authority): D13 grammar stays as decided; grammar zones apply to GENERATED decks only (D12: built-in geom literals bypass the solver). P0d's built-in exit compares `name, octave, midi, label` for all three pans and `zone` only for Hijaz and Amara; tests/core.test.js asserts explicitly that the Pygmy string yields 11 rim from the grammar and documents why. | decided, P0d brief |
+| 8 | reviewer #9 | `mutation_check.sh` TRACKED revert list covers only index.html/tools/decks.py/tools/hifi.py; an f_ mutant editing the fixture would not be reverted unless P0c's `git apply -R` rewrite lands first | P0c in flight, verify before P0b2 spawns |
+| 9 | reviewer #9 | nits: partition maker-string token test on `\|`; add name/sub to deep-equality tuple; pin EXPECTED_SHA256 constant; dedupe CHORD_COUNTS via tests/paths | backlog, fold into P0b2 brief |
 | 3 | P0b | fixture sha256 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a; data changes bump to v2 | recorded |
 
 ## Review log
 
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #9 | P0b | PASS_WITH_NITS | 2 major (both cross-lane: Pygmy inner-zone gap in the D13 grammar; f_ mutant deferred), 4 nits (token test tolerant of misplaced `\|`; sha self-consistent only; deep-equality skips name/sub; duplicated CHORD_COUNTS) | merged 66453e8; queue rows 7-9 |
 
 ## Cycle state
 
@@ -176,5 +180,5 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | returned done | agent-managed | scale-engine/w1-spec | #10 | 9084bc2 | 2026-09-08 gh pr view + run 34284320139 success | reviewer spawned | 0 | no | - | - |
-| P0b | returned done | agent-managed | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | reviewer spawned | 0 | no | - | - |
+| P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
