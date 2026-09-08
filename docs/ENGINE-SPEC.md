@@ -555,7 +555,7 @@ Verified against all three built-ins under the fixed list order of
 
 ## 12. Deck identity and the canonical seed string
 
-- DECIDED(D13, plan [design-review 8A]) `core.formatSeed(fields)` prints a seed
+- DECIDED(D13, plan [design-review 8A]) `core.formatSeed(seed)` prints a seed
   back into the D13 grammar with EXPLICIT octaves everywhere, ding in
   parentheses, top notes ascending in id order (rim then inner), bottom notes
   after ` | ` in id order, single spaces:
@@ -565,10 +565,10 @@ Verified against all three built-ins under the fixed list order of
   canonical string is a pure function of the field map and never of iteration
   order.
 - DEFAULT[owner-review] `core.deckId(fields)` = `"custom:"` + the lowercase
-  8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.formatSeed(fields)`
+  8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.formatSeed(seed)`
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
   2^32), giving the same result in Node and in the browser.
-- DECIDED(D14 as amended) The id is a pure function of `formatSeed(fields)` -
+- DECIDED(D14 as amended) The id is a pure function of `formatSeed(seed)` -
   notes, octaves, zones and order - and nothing else; `select.build` is never
   consulted for it.
 - DECIDED(D14 as amended) Palette, mirror, parent override and name are seed
