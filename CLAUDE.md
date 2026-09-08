@@ -180,6 +180,8 @@ Print spec, measured from the commercial original at 300dpi: card
 page 1 (instruct printers: 100% / Actual Size; verify the bar with a ruler).
 If deck data changes: edit `decks.py`, rebuild PDFs, re-export the JSON and
 re-inject into `index.html` so app and print never diverge.
+Then run `python3 tools/regen_data_mutants.py` on a clean tree: the data
+mutants anchor on the DECKS line and go stale on every data change.
 
 ## Hosting facts (checked against GitHub docs)
 
@@ -193,6 +195,10 @@ re-inject into `index.html` so app and print never diverge.
   automatic via Let's Encrypt.
 
 ## Owner-approved roadmap (not yet built)
+
+The user-configurable-scale feature (chord engine, layout generator, share
+URLs) has a reviewed plan with binding owner decisions in
+`docs/SCALE_ENGINE_PLAN.md`. Read it before starting that work.
 
 1. Spaced repetition: grade cards (again/good/easy) post-flip, simple SM-2,
    per-deck progress in localStorage, JSON export/import.
