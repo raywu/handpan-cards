@@ -37,7 +37,7 @@ HIJAZ_CHORDS = [
     ("F#maj7sus", "4", "SUSPENDED MAJOR 7", [6, 2, 3, 5], {6}),
     ("D\u00b0", "7", "DIMINISHED 7", [4, 5, 7, 8], {4}),
     ("Dmaj", "7", "D MAJOR 7 (NO 5)", [4, 6, 3], {4}),
-    ("Dmaj7", "#11", "D MAJOR 7 SHARP 11 (NO 5)", [4, 6, 3, 1], {4}),
+    ("Dmaj7", "#11", "D MAJOR 7 SHARP 11 (NO 5)", [4, 6, 3, 7], {4}),
 ]
 
 HIJAZ = dict(
@@ -86,7 +86,7 @@ PYGMY_CHORDS = [
     ("Fsus", "4", "SUSPENDED CHORD", [5, 104, 3], {5}),
     ("Fm", "7", "F MINOR 7", [5, 7, 8, 9], {5}),
     ("Fm", "9", "F MINOR 9", [5, 7, 8, 9, 11], {5}),
-    ("Fm", "11", "F MINOR 11", [5, 2, 3, 4, 1, 104], {5}),
+    ("Fm", "11", "F MINOR 11", [5, 2, 3, 4, 6, 104], {5}),
     ("Ab", "", "Ab MAJOR", [2, 3, 4], {2}),
     ("Ab", "", "Ab MAJOR - HIGH VOICING", [7, 8, 9], {7}),
     ("Abmaj", "7", "Ab MAJOR 7", [2, 3, 4, 6], {2}),

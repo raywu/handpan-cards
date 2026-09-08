@@ -243,6 +243,71 @@ class VoicingTest(unittest.TestCase):
                                   (deck["id"], ch["main"], "root", r))
 
 
+    def test_forced_tones_cluster_below_root(self):
+        """CLAUDE.md rule 3, the cluster clause made precise (2026-09).
+
+        When ANY non-root tone is only available below the root, every CHORD
+        TONE sits at its highest instance below the root (one with no lower
+        instance stays put), while EXTENSIONS implied by the chord symbol (add9,
+        9, b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11)
+        keep their nearest instance above the root unless they are themselves
+        forced. When nothing is forced, every non-root tone simply sits above
+        the root. Transcribed from the spec, not from decks.py.
+        """
+        for deck in decks():
+            playable = [int(f) for f in deck["fields"] if field_of(deck, int(f))[3] != "ding"]
+            midi = lambda f: field_of(deck, f)[2]
+            for ch in deck["chords"]:
+                root = ch["roots"][0]
+                rm = midi(root)
+                others = [f for f in ch["fields"] if f != root]
+                card = (deck["id"], ch["main"] + ch["sup"], ch["fields"])
+
+                def instances(f, below):
+                    return [g for g in playable
+                            if midi(g) % 12 == midi(f) % 12
+                            and (midi(g) < rm if below else midi(g) > rm)]
+
+                sup = ch["sup"]
+                # subTest so a failure names EVERY non-compliant card, not just
+                # the first one the loop reaches.
+                with self.subTest(deck=deck["id"], card=ch["main"] + ch["sup"]):
+                    self._check_cluster(deck, ch, root, rm, others, card, midi, instances)
+
+    def _check_cluster(self, deck, ch, root, rm, others, card, midi, instances):
+        sup = ch["sup"]
+        ext = set()
+        if "b9" in sup:
+            ext.add(1)
+        if "9" in sup:
+            ext.add(2)
+        if "#11" in sup:
+            ext.add(6)
+        elif "11" in sup:          # an 11 chord implies its 9th
+            ext |= {2, 5}
+        if "13" in sup:            # a 13 chord implies 9th and 11th
+            ext |= {2, 5, 9}
+
+        forced = any(not instances(f, below=False) for f in others)
+        for f in others:
+            lower, upper = instances(f, True), instances(f, False)
+            if not forced:
+                self.assertGreater(midi(f), rm,
+                                   ("unforced card: tone below the root", card, f))
+            elif (midi(f) - rm) % 12 in ext:
+                if upper:
+                    self.assertEqual(midi(f), min(midi(g) for g in upper),
+                                     ("extension not at its nearest instance "
+                                      "above the root", card, f))
+                else:
+                    self.assertEqual(midi(f), max(midi(g) for g in lower),
+                                     ("forced extension not at its highest "
+                                      "lower instance", card, f))
+            elif lower:
+                self.assertEqual(midi(f), max(midi(g) for g in lower),
+                                 ("forced card: chord tone not at its highest "
+                                  "instance below the root", card, f))
+
 class DegreeTest(unittest.TestCase):
 
     def test_degrees_cover_chord_roots(self):

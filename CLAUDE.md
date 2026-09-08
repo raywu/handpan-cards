@@ -58,8 +58,10 @@ Inner pair beside the ding: 10 F5 @128 (left), 11 G5 @52 (right) - note
 the inner pair ascends OPPOSITE to the rim direction; that is the real
 instrument. Bottom notes drawn as an outer dashed ring in **x-ray view
 (seen from above)**: U1 C3 @300, U2 Db3 @240, U3 Eb3 @0, U4 Bb3 @180,
-U5 Db4 @60, U6 Ab5 @120. **Bb and Db exist only on the bottom shell** -
-chords using them carry an orange "N BOTTOM NOTES" badge. Pitch-class set
+U5 Db4 @60, U6 Ab5 @120. **Bb and Db exist only on the bottom shell.**
+Any chord whose voicing uses a bottom-shell field carries an orange
+"N BOTTOM NOTES" badge, where N counts bottom-shell FIELDS in the voicing -
+not Bb/Db occurrences (Cm7 clusters Eb to U3, so it reads "2 BOTTOM NOTES"). Pitch-class set
 is complete F natural minor.
 
 **D Amara 9** - Ding D3. Standard zig-zag: 1 A3 @270, 2 C4 @225, 3 D4 @315,
@@ -83,20 +85,31 @@ this by attaching per-instrument images.
    order (original: G5 = "6-3", Fmaj7 = "5-1-2-4"). Both the note line and
    the number line are coloured per note: root -> root colour, others ->
    tone colour, grey separators.
-3. **Voicing rules** (audited from the originals): the ding never appears
-   in a voicing; prefer the lowest compact root-position voicing; when a
-   tone is only available below the root, cluster the voicing downward;
-   power chords are two notes (root+5th); one card per pitch set (no sus2 -
-   every sus2 duplicates a sus4; no 6-chords duplicating m7 sets); no
-   doubled pitch classes in a voicing.
-   **Cluster rule, made precise (2026-09 retrofit):** when ANY non-root tone
-   is only available below the root, EVERY non-root tone moves to its highest
-   instance below the root; a tone with no lower instance stays put; the root
-   and the spelling order never change. D Amara (the commercial reference)
-   already followed this; Hijaz and Pygmy were retrofitted to match - 7 cards
-   revoiced (Hijaz F#sus4, F#maj7sus4, Dmaj7#11; Pygmy Fsus4, Fm11, Cm7, Eb)
-   and Fm11 lost its "FULL SCALE" subtitle because it no longer spans the pan.
-   All three decks now obey one voicing rule.
+3. **Voicing rules.** The ding never appears in a voicing; no doubled
+   pitch classes; power chords are two notes (root+5th); one card per pitch
+   set (no sus2 - every sus2 duplicates a sus4; no 6-chords duplicating m7
+   sets). "Root position" here means the SPELLING ORDER of the field list
+   starts at the root - it says nothing about register. Register is fixed by
+   the cluster rule: when no chord tone is forced below the root, every
+   non-root tone sits above it (lowest compact voicing); when ANY non-root
+   tone is only available below the root, every CHORD TONE (3rd, 5th, 7th;
+   the 4th of a sus chord; the 6th of a 6-chord) moves to its highest
+   instance below the root, and one with no lower instance stays put.
+   On such a forced card, EXTENSIONS implied by the chord symbol (add9, 9,
+   b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11)
+   keep their nearest instance ABOVE the root unless they are themselves
+   forced. Unforced cards are governed only by "everything above the root" -
+   a spread 9th above the 7th (Fm9: G5) is left alone. Bottom-
+   shell fields count as ordinary instances - a chord tone clusters to the
+   bottom shell if that is its highest lower instance (Cm7 -> Eb3/U3). The
+   root and the spelling order never change.
+   Provenance: D Amara's three forced cards (G5, Gsus4, Fmaj7) were observed
+   to cluster every tone below the root in the commercial reference. The
+   "highest lower instance" reading, the bottom-shell choice, and the
+   chord-tone/extension split are OWNER DECISIONS (2026-09), not observed -
+   the reference has no extension chords or bottom shell - and Hijaz and
+   Pygmy were retrofitted to the rule at that time (see git history). It is
+   enforced by `tests/test_deck_data.py::test_forced_tones_cluster_below_root`.
 4. **Highlighted-field rendering:** thin black circle (always), coloured
    band inside at radius 0.87r with stroke 0.24r, inner black hairline at
    0.74r, label auto-fit inside. Unhighlighted bottom fields: dashed grey
