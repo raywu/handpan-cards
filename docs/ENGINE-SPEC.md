@@ -10,17 +10,24 @@ data, diagram geometry, or the OWNER DECISIONS D1-D14 of the plan.
 ## How to read this file
 
 Every normative rule is a top-level markdown bullet beginning with `- ` and
-carries exactly one tag:
+carries exactly one tag, on the bullet's own first line, immediately after the
+`- `:
 
-1. `DECIDED(D<n>)` or `DECIDED(CLAUDE.md rule <n>)` - ratified by the owner.
-   A lane may not deviate. Changing one is a plan amendment.
-2. `DEFAULT[owner-review]` - an integrator default the owner has not ratified.
+1. `DECIDED(D<n>)`, `DECIDED(CLAUDE.md rule <n>)` or `DECIDED(plan ...)` -
+   ratified by the owner. A lane may not deviate. Changing one is a plan
+   amendment.
+2. `DECIDED(swarm-2026-09-08)` - decided by the integrator under the standing
+   afk authority during the P0a review, binding on lanes exactly like an owner
+   decision, and listed for the owner as a review-round decision rather than a
+   pending default.
+3. `DEFAULT[owner-review]` - an integrator default the owner has not ratified.
    Lanes proceed on it. Changing it later is a spec change handled by
    `tests/CONTRACT.md` rule 4, not a reason to stall. Owner review of the
    DEFAULTs is a gate after Phase 1, not before.
 
-Non-rule text (context, tables, examples) is prose, numbered lists, or tables,
-never a `- ` bullet. Sub-bullets are indented and inherit their parent's tag.
+The tag must sit on the same physical line as the `- `, because the acceptance
+grep (`grep -nE '^- '`) sees only a bullet's first line. Non-rule text (context,
+tables, examples) is prose, numbered lists, or tables, never a `- ` bullet.
 
 Companion fixtures owned by this lane, and the SPEC for the values they carry:
 
@@ -38,19 +45,26 @@ allowed.
 
 ## 1. The result contract
 
-Every public entry point returns a value of the result type and NEVER throws on
-user input. Internal programming errors may still throw.
+Two entry points take untrusted input and return the result type; the rest are
+plain functions over already-validated data.
 
 ```
 ok      = {ok: true,  value: <payload>, warnings?: [{code, reason}]}
 err     = {ok: false, code: <CODE>, reason: <English sentence>}
 ```
 
-- DECIDED(D5 / plan "One result contract" [eng-review 7A]) Every public entry
-  point returns the result type and never throws on user input:
-  `core.parseSeed`, `core.formatSeed`, `core.deckId`, `voicing.pick`,
-  `layout.solve`, `naming.name`, `select.build`, `share.encode`,
-  `share.decode`.
+- DECIDED(swarm-2026-09-08) Exactly two entry points return the result type:
+  `core.parseSeed` and `select.build`. They never throw on user input.
+- DECIDED(swarm-2026-09-08) `core.formatSeed(seed)` returns a plain string and
+  `core.deckId(fields)` returns a plain string; neither validates, because both
+  take an already-parsed seed, so neither is wrapped in the result type.
+- DECIDED(swarm-2026-09-08) `voicing.pick`, `layout.solve` and `naming.name`
+  are plain functions over validated data and return their value directly. They
+  may throw on a programming error, never on user input, because user input
+  reached them only through `core.parseSeed`.
+- DECIDED(swarm-2026-09-08) `share.encode(seed)` returns a plain URL-fragment
+  string; `share.decode(fragment)` takes untrusted input and therefore returns
+  the result type, delegating to `core.parseSeed`.
 - DECIDED(plan [design-review 2A]) An `ok` result MAY carry `warnings: [{code,
   reason}]`; a warning never blocks and the UI shows it in the warning tier. An
   `err` result never carries `warnings` and never carries `value`.
@@ -70,26 +84,37 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
 
 ## 2. Code enum and reason strings
 
-`<X>` is substituted with the offending value as the user typed it.
+`<X>` is the offending value as the user typed it; `<fifth of X>` is the note
+name a perfect fifth above the ding pitch class, spelled in the ding's own
+accidental convention. P0d embeds these strings in `core.js` VERBATIM, so they
+are final: a change here is a change to shipped copy.
 
 | code | kind | reason |
 |---|---|---|
 | `NO_DING` | error | `No ding. Start with the ding note, e.g. (D) or D/.` |
-| `NO_FIFTH` | error | `No perfect fifth above the ding <X>. Add an A, or check the ding.` |
+| `NO_FIFTH` | error | `No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding.` |
 | `TOO_MANY_RIM` | error | `Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom.` |
 | `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
 | `NO_THIRDS` | warning | `Only power chords: no 3rds on this pan.` |
 
+The whole-tone fixture entry `(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4` therefore
+produces, literally: `No perfect fifth above the ding C3. Add a G, or check the
+ding.`
+
 - DECIDED(plan [eng-review 7A]) The enum is exactly `NO_DING`, `NO_FIFTH`,
   `TOO_MANY_RIM`, `BAD_NOTE`, `NEEDS_NEWER_APP` (errors) and `NO_THIRDS`
   (warning); a lane that needs a new code amends this table rather than
   inventing one at the call site.
-- DEFAULT[owner-review] The `NO_FIFTH` reason's `<X>` is the ding as
-  `formatSeed` prints it (name plus octave, e.g. `D3`); the `BAD_NOTE` reason's
-  `<X>` is the offending token verbatim, truncated to 12 characters.
-- DECIDED(plan [eng-review 2, 2A]) Error and warning reason strings live in the
-  same enum fixture as this table, so the UI never composes a sentence.
+- DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
+  the ding as `formatSeed` prints it (name plus octave, e.g. `C3`), and
+  `<fifth of X>` is the pitch-class name 7 semitones above the ding, without an
+  octave (e.g. `G` for a C ding, `Ab` for a Db ding).
+- DEFAULT[owner-review] The `BAD_NOTE` reason's `<X>` is the offending token
+  verbatim, truncated to 12 characters.
+- DECIDED(plan [eng-review 2, 2A]) Error and warning reason strings live in
+  this table and nowhere else; the UI never composes a sentence, and P0d copies
+  them into `core.js` character for character.
 - DECIDED(plan "Degenerate cases", eng-review owners) `NO_FIFTH` is decided in
   `core.parseSeed`, before any voicing work: there is no top-shell note whose
   pitch class is a perfect fifth (7 semitones) above the ding pitch class.
@@ -97,6 +122,10 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
 - DECIDED(plan [eng-review 2, 2A]) `NO_THIRDS` is raised by `select.build` when
   no root has a third (3 or 4 semitones) above it on the top shell, so the deck
   contains only power chords.
+- DECIDED(swarm-2026-09-08) `NEEDS_NEWER_APP` is a share-layer code raised only
+  by `share.decode` on the version byte, never by `core.parseSeed`; it
+  therefore has no row in `synthetic_scales.json` and is tested by
+  `tests/share.test.js` in Phase 4.
 - DECIDED(D13) A pasted URL, a vendor link, or any other unparseable token is a
   `BAD_NOTE` rejection like any other token; nothing is fetched, stored or
   shown.
@@ -118,29 +147,56 @@ note        := [A-G] ("#" | "b")? ([0-9])?
 - DECIDED(D13) Separators are whitespace; `(`, `)`, `/` and `|` are the only
   punctuation. Any other token, or a note name outside `[A-G](#|b)?(\d)?`, is
   `BAD_NOTE`.
-- DECIDED(D13) Note tokens match `[A-G](#|b)?(\d)?`: an uppercase letter, an
-  optional single accidental, an optional single-digit octave in scientific
-  pitch notation (middle C = C4, so the built-in Amara ding is `D3`).
-- DECIDED(D13) Octave inference on the top shell: the ding is the lowest note
-  of the top shell, and each next top note is the next instance strictly above
-  the previous one.
+- DECIDED(D13) Note tokens match `[A-G](#|b)?(\d)?`: a letter, an optional
+  single accidental, an optional single-digit octave in scientific pitch
+  notation (middle C = C4, so the built-in Amara ding is `D3`).
+- DEFAULT[owner-review] Letters are UPPERCASE only: `c4` is `BAD_NOTE`, not a
+  silent uppercasing, because repairing input contradicts "rejects, never
+  repairs".
+- DEFAULT[owner-review] The octave is a SINGLE digit 0-9; `C10` lexes as `C1`
+  followed by the stray token `0` and is `BAD_NOTE`.
+- DEFAULT[owner-review] Enharmonic names are accepted as typed and never
+  normalised: `E#` and `F` are different labels for the same pitch class, and
+  both are legal note names.
+- DEFAULT[owner-review] Zero notes after a trailing `|` is `BAD_NOTE`; a seed
+  with no bottom shell omits the `|` entirely.
+- DEFAULT[owner-review] Error precedence when a string trips more than one
+  rule, most local first: `BAD_NOTE` (a token that does not lex, a MIDI out of
+  range, a duplicate field, an order violation), then `NO_DING` (structure),
+  then `TOO_MANY_RIM` (caps), then `NO_FIFTH` (musical).
+- DECIDED(swarm-2026-09-08) A ding written without an octave defaults to octave
+  3: `(D)` is `D3`, matching all three built-ins. Every top note is then
+  inferred strictly above it, so the ding remains the lowest note of the top
+  shell.
+- DECIDED(D13) Octave inference on the top shell: each next top note is the
+  next instance of its pitch class strictly above the previous top note (the
+  ding for the first one).
 - DECIDED(D13) Inference restarts after `|`: the first bottom note is the
-  instance nearest the ding (bottom notes may sit below it, e.g. Pygmy `C3 Db3
-  Eb3`), and each subsequent bottom note is the next instance strictly above
-  the previous one.
+  instance of its pitch class nearest the ding, and each subsequent bottom note
+  is the next instance strictly above the previous one. Bottom notes may sit
+  below the ding, e.g. Pygmy `C3 Db3 Eb3` under an F3 ding.
+- DECIDED(swarm-2026-09-08) When the first bottom note is a tritone from the
+  ding, so the instance above and the instance below are equidistant, choose the
+  instance BELOW the ding.
 - DECIDED(D13) An explicit octave anywhere overrides inference for that note
   and reseeds the inference for the notes after it.
+- DECIDED(swarm-2026-09-08) After inference, the top notes must be strictly
+  ascending in MIDI and the bottom notes must be strictly ascending in MIDI. An
+  explicit octave that breaks either order is `BAD_NOTE`. This is what makes
+  `parseSeed(formatSeed(x))` equal `x` for every accepted seed: `formatSeed`
+  prints explicit octaves, and only a strictly ascending printing can be
+  re-parsed to the same fields.
 - DEFAULT[owner-review] Accidental spelling is the user's typed spelling,
   verbatim, on the field label and on the card; the engine never re-spells
   enharmonics.
 - DECIDED(plan "Sharing is untrusted input") Every resulting MIDI number must
   be 0-127; outside that range is `BAD_NOTE`.
 - DECIDED(plan P0d "no duplicate fields") Two fields may not be identical (same
-  name and octave and zone); a duplicate is `BAD_NOTE`. Duplicate PITCH CLASSES
-  across octaves are legal and expected.
+  name, octave and zone); a duplicate is `BAD_NOTE`. Duplicate PITCH CLASSES
+  across octaves are legal and expected, and one pitch class may appear on both
+  shells.
 
-The three built-in maker strings, which `core.parseSeed` must reproduce onto the
-P0b fixture fields for `name, octave, midi, zone, label`:
+### The three built-in maker strings
 
 ```
 (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4
@@ -148,10 +204,42 @@ P0b fixture fields for `name, octave, midi, zone, label`:
 (D3) A3 C4 D4 E4 F4 G4 A4 C5
 ```
 
-## 4. Zone assignment and caps
+- DECIDED(swarm-2026-09-08) `core.parseSeed` reproduces all three built-in pans
+  from these strings on `name`, `octave`, `midi` and `label` for every field.
+  `angle` is lane B's output and is excluded.
+- DECIDED(swarm-2026-09-08) `zone` is reproduced for Hijaz and Amara only. The
+  Pygmy string yields ELEVEN rim fields from the grammar (11 top notes, all
+  within the D7 rim cap), whereas the built-in literal ships 9 rim + 2 inner
+  (F5 and G5 on the inner ring). This is not a defect: the D13 grammar carries
+  no inner-shell marker, and per D12 the built-in `geom` and `zone` literals
+  bypass the solver entirely, so the divergence never reaches a rendered
+  built-in card. `synthetic_scales.json` records the parse-side expectation
+  (`zones.rim` = 11) on the `builtin pygmy` row, tagged
+  `zones-diverge-from-builtin`.
+- DECIDED(swarm-2026-09-08) The grammar's zone assignment therefore governs
+  GENERATED decks only. A future inner-shell marker is a D13 amendment, not a
+  lane decision.
+
+## 4. Zone assignment, field ids and caps
+
+The field id and label scheme, read off all three built-ins in `index.html`:
+
+| zone | ids | labels |
+|---|---|---|
+| ding | `"0"` | `Ding` |
+| rim, then inner | `"1"` .. `"N"`, one sequence ascending | `"1"` .. `"N"` |
+| bottom | `"101"` .. `"106"` | `U1` .. `U6` |
 
 - DECIDED(CLAUDE.md "App data model") Zones are `ding | rim | inner | bottom`,
   exactly the built-in enum.
+- DECIDED(swarm-2026-09-08) Field ids are decimal strings: the ding is `"0"`;
+  the top notes are `"1"` through `"N"` in ascending order, rim first then
+  inner, in ONE sequence that does not restart at the inner ring; the bottom
+  notes are `"101"` through `"106"`. Verified against all three built-ins,
+  including Pygmy's inner pair at ids `"10"` and `"11"`.
+- DECIDED(swarm-2026-09-08) Labels are the strings the diagram prints: `Ding`
+  for the ding, the id itself (`"1"` .. `"N"`) for every top note, and `U1` ..
+  `U6` for the bottom notes.
 - DECIDED(D13) The ding is its own zone and is assigned from the `( )` / `/`
   token only.
 - DECIDED(D7, D12) Top notes are assigned in ascending order: the first up to
@@ -174,16 +262,30 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 - DECIDED(CLAUDE.md rule 3) No voicing contains two fields of the same pitch
   class.
 - DECIDED(CLAUDE.md rule 3) A power chord is exactly two notes, root and fifth.
-- DECIDED(CLAUDE.md rule 3, tests/CONTRACT.md "Verified data facts") One card
-  per pitch set within a deck: no two chords share an identical `fields` list.
-- DECIDED(CLAUDE.md rule 3, plan Premise 4) No sus2 cards: every sus2
-  duplicates a sus4, and sus4 wins.
-- DECIDED(CLAUDE.md rule 3, plan Premise 4) No 6-chord that duplicates an m7
-  set: `X6` collapses into `Xm7` and `Xm6` into `Xm7b5`; m7 / m7b5 win.
+- DECIDED(swarm-2026-09-08) The per-deck uniqueness rule is exactly this: no two
+  chords in a deck share an identical `fields` list. It is NOT "one card per
+  pitch set" - the built-ins legitimately ship HIGH / LOW VOICING pairs that
+  are two registers of one pitch set (Hijaz `Bm` x2; Pygmy `Ab` x2, `Cm` x3,
+  `Eb` x2), 4 groups and 9 cards, and `tests/CONTRACT.md` records that 18/25/16
+  `fields` lists are all distinct.
+- DECIDED(swarm-2026-09-08) Pitch-set collapsing (sus2 into sus4, `X6` into an
+  m7, `Xm6` into an m7b5) is a CANDIDATE-QUALITY rule applied in `select.build`
+  before any voicing is chosen, not a per-deck uniqueness rule. Two candidate
+  qualities whose pitch sets coincide yield one candidate; that candidate may
+  still produce more than one card if multi-voicing data asks for it.
+- DECIDED(CLAUDE.md rule 3, plan Premise 4) No sus2 candidates survive: every
+  sus2 has the same pitch set as a sus4, and sus4 wins.
+- DECIDED(swarm-2026-09-08) `X6` has the same pitch set as the m7 built on its
+  sixth, a major sixth (9 semitones) above the root - `C6` = {C,E,G,A} =
+  `Am7` - and `Xm6` has the same pitch set as the m7b5 built on its sixth -
+  `Cm6` = {C,Eb,G,A} = `Am7b5`. The m7 / m7b5 spelling wins, so no 6-chord
+  candidate survives.
 - DECIDED(plan "Rendering budgets", D3) A voicing never exceeds 6 notes - the
-  print floor, measured at Pygmy `Fm11`. When a chord symbol implies more, drop
-  the LOWEST optional extension first (13, then 11, then 9), never a chord tone
-  (root, 3rd, 5th, 7th, sus 4th).
+  print floor, measured at Pygmy `Fm11`.
+- DECIDED(swarm-2026-09-08) When a chord symbol implies more than 6 notes, drop
+  the LOWEST optional extension first: the 9 before the 11, the 11 before the
+  13 (plan line 376, "drops its lowest optional extension first"). A chord tone
+  (root, 3rd, 5th, 7th, sus 4th, 6-chord 6th) is never dropped.
 - DEFAULT[owner-review] Chord-spelling order for the `fields` list is root, 3,
   5, 7, 9, 11, 13, as observed on `Fm9` and `Fm11`.
 - DECIDED(CLAUDE.md "App data model") `fields` is the canonical voicing in
@@ -234,24 +336,35 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   `Eb` low) are unreachable by any function of (root pitch class, interval
   set). They are opt-in multi-voicing DATA recorded against the built-in
   fixture, never a policy the engine reproduces; generated decks emit one card
-  per chord.
+  per candidate.
 
 ## 8. Chord selection (D1), ranking, cap, dedup, order
 
+The candidate count on the `twelve note pan` fixture entry
+(`(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4`, pitch classes {C,D,E,G,A,B}) is the
+worked example that fixes the cap's behaviour: 29 raw candidates, 27 after the
+pitch-set collapse of `C6` into `Am7` and `G6` into `Em7`, trimmed to 25 by the
+cap. The cap therefore bites on that entry, and a Phase 2 mutant that widens or
+removes it changes the deck.
+
 - DECIDED(D1) Default quality vocabulary: major, minor, diminished, augmented,
-  power, sus4, maj7, m7, dominant 7, m7b5, dim7 - the 11 D1 qualities. Extended
-  chords only where the scale makes them obvious.
-- DEFAULT[owner-review] "Obvious" is operationalised as: an extended quality is
-  a candidate only when EVERY one of its tones lies on the top shell.
-- DEFAULT[owner-review] Card cap per generated deck: 25. It only bites beyond
-  Pygmy's size.
+  power, sus4, maj7, m7, dominant 7, m7b5, dim7 - the 11 D1 qualities.
+- DECIDED(swarm-2026-09-08) Generation candidates are every key of
+  `qualities.json` whose `tier` is one of the CANDIDATE TIERS `triad`, `power`,
+  `sus`, `seventh` and `extended`. That is the whole table, so the tier field
+  alone selects candidates and no second list exists. It widens D1 by exactly
+  the two sus 7ths (`7sus4`, `maj7sus4`, both of which Hijaz ships) and by `6` /
+  `m6`, which always collapse away under the rule in section 5.
+- DECIDED(swarm-2026-09-08) A quality is a candidate for a root only when every
+  one of its interval pitch classes is present on the pan. An `extended`-tier
+  quality is additionally a candidate only when every one of its tones lies on
+  the TOP shell - that is D1's "extended chords only where the scale makes them
+  obvious", operationalised.
+- DEFAULT[owner-review] Card cap per generated deck: 25.
 - DEFAULT[owner-review] Ranking, applied to trim to the cap: triads > power >
   sus4 > 7ths > extended; within a tier, more top-shell tones ranks higher;
   remaining ties break by root scale degree ascending from the tonic, then by
   the quality's order in `qualities.json`.
-- DECIDED(CLAUDE.md rule 3, plan Premise 4) Dedup: sus2 collapses into sus4,
-  `X6` into `Xm7`, `Xm6` into `Xm7b5`, and any two candidates with an identical
-  `fields` list collapse to the higher-ranked one.
 - DECIDED(plan "The engine must also decide these") Root disambiguation for a
   pitch set with several valid roots: prefer sus4 over sus2, m7 over 6, m7b5
   over m6 (already in the data).
@@ -265,12 +378,13 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   built-ins' out-of-vocabulary cards are recorded as overrides in
   `tests/fixtures/divergence_v1.json` under an `overrides` key (Phase 2 owns
   that file).
-- DECIDED(D4) Equivalence annotations are a per-card override field. The
-  built-ins keep exactly the two they ship (Hijaz `HALF-DIMINISHED ( = Bm6 )`,
-  Pygmy `Bb MINOR 7 ( = Db6 )`); custom scales derive them mechanically under
-  the m7 -> `X6` / m7b5 -> `Xm6` definition. The five unannotated eligible
-  cards (Pygmy `Gm7b5`, `Fm7`, `Cm7`; Amara `Dm7`, `Am7`) are provenance, not
-  bugs, and must NOT be annotated.
+- DECIDED(D4) Equivalence annotations are a per-card override field. An `Xm7`
+  is annotatable as `( = (X+3)6 )` and an `Xm7b5` as `( = (X+3)m6 )`, the
+  6-chord a minor third above the root - Hijaz `G#m7b5` ships `( = Bm6 )`,
+  Pygmy `Bbm7` ships `( = Db6 )`. The built-ins keep exactly those two; custom
+  scales derive them mechanically. The five unannotated eligible cards (Pygmy
+  `Gm7b5`, `Fm7`, `Cm7`; Amara `Dm7`, `Am7`) are provenance, not bugs, and must
+  NOT be annotated.
 
 ## 9. Naming and the quality table
 
@@ -280,52 +394,76 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   carries its own literal and a test asserts deep equality.
 - DECIDED(index.html DECKS, verified over all 59 cards) A card's `main` is the
   root spelling plus the entry's `main_suffix`, and its `sup` is the entry's
-  `sup` - the superscript the card renders (e.g. suffix `m7b5` -> `main:
-  "G#m7"`, `sup: "b5"`).
+  `sup` - the superscript the card renders (e.g. suffix `m7b5` ->
+  `main: "G#m7"`, `sup: "b5"`).
 - DEFAULT[owner-review] Chord name (`main` + `sup`) is at most 16 characters.
-- DECIDED(plan "Rendering budgets", D3) Subtitle is at most 25 characters, the
-  measured maximum (`HALF-DIMINISHED ( = Bm6 )`, `D MAJOR 7 SHARP 11 (NO 5)`);
-  the print pipeline shrinks to a 3.6pt floor and then clips silently, so this
-  is a hard engine constraint with a test.
-- DECIDED(CLAUDE.md "Card copy is English-only", index.html DECKS) Generated
+- DECIDED(swarm-2026-09-08) Subtitle is at most 26 characters. 26, not 25:
+  every `m7b5` equivalence must fit, and the longest one a two-character root
+  can produce is `HALF-DIMINISHED ( = Bbm6 )` at 26. It is a hard engine
+  constraint with a test; the print pipeline (plan line 254) shrinks the
+  subtitle to a 3.6pt floor and then clips silently, and 26 characters sit
+  inside that floor, so the print side needs no change.
+- DECIDED(index.html DECKS, CLAUDE.md "Card copy is English-only") Generated
   subtitles are `<ROOT> <DISPLAY>` for rooted qualities (`F MINOR 7`) and the
-  bare `<DISPLAY>` for the rootless ones the built-ins use (`POWER CHORD`,
-  `SUSPENDED CHORD`, `SUSPENDED DOMINANT 7`, `SUSPENDED MAJOR 7`, `DIMINISHED`,
-  `DIMINISHED 7`, `HALF-DIMINISHED`), plus a ` ( = X6 )` equivalence suffix
-  when D4 applies. Card copy is English-only.
-- DECIDED(plan Phase 1 lane C exit) The editorial built-in subtitles `HIJAZ
-  SIGNATURE CHORD`, `- HIGH VOICING` / `- LOW VOICING` and `(NO 5)` are
-  recorded exceptions of the fixture, not strings the engine generates.
+  bare `<DISPLAY>` for the rootless ones (`POWER CHORD`, `SUSPENDED CHORD`,
+  `SUSPENDED DOMINANT 7`, `SUSPENDED MAJOR 7`, `DIMINISHED`, `DIMINISHED 7`,
+  `AUGMENTED`, `HALF-DIMINISHED`), plus a ` ( = X6 )` equivalence suffix when
+  D4 applies. Card copy is English-only. The `rooted` flag in `qualities.json`
+  carries this per quality.
+- DECIDED(plan Phase 1 lane C exit) The editorial built-in subtitles
+  `HIJAZ SIGNATURE CHORD` and `- HIGH VOICING` / `- LOW VOICING` are recorded
+  exceptions of the fixture, not strings the engine generates.
+- DECIDED(swarm-2026-09-08) Hijaz `Dmaj7` (`D MAJOR 7 (NO 5)`) and `Dmaj7#11`
+  (`D MAJOR 7 SHARP 11 (NO 5)`) are incomplete voicings the owner authored by
+  hand; the engine's table produces neither the `(NO 5)` qualifier nor the
+  fifth-less pitch set. They are recorded in
+  `tests/fixtures/divergence_v1.json` as Phase 2 overrides, NOT as matches of
+  the `qualities.json` table, and lane C's naming exit excludes them.
 
 ## 10. Degrees: numerals (D8) and case (D10)
+
+Verified against all three built-ins under the fixed list order of
+`parents.json`. Distance is counted in pan pitch classes outside the parent:
+
+| deck | tonic | pan pitch classes from the tonic | inferred parent | distance |
+|---|---|---|---|---|
+| Hijaz | C# | 0,1,4,5,7,10 | Phrygian dominant | 0, unique |
+| Pygmy | F | 0,2,3,5,7,8,10 | Aeolian | 0, unique |
+| Amara | D | 0,2,3,5,7,10 | Aeolian | 0, tied with Dorian, won on list order |
 
 - DECIDED(D8, D10, D13) The tonic is the ding pitch class. The ding is
   mandatory, so there is no fallback.
 - DECIDED(D8) Degree NUMERALS are mode-aware: minor-relative (`III`, `VII`) for
   scales with a minor third, major-relative with flats (`bIII`, `bVII`)
-  otherwise. Fallback for no-third and symmetric sets: major-relative with
-  flats.
+  otherwise.
 - DECIDED(D10) Degree CASE comes from stacked thirds over a 7-note PARENT
   scale, not from the pan alone: a minor third above the degree root gives
   lowercase, a major third uppercase, a diminished fifth adds the `°` suffix.
 - DECIDED(D8, D10) Frozen degree exceptions, two-sided: D Amara ships `bIII` /
   `bVII` (D8) and `IV` where stacked thirds derive `iv` (D10). D Amara is
   declared Aeolian.
-- DEFAULT[owner-review] Parent inference candidates are the 11 entries of
-  `tests/fixtures/parents.json` in this FIXED list order: Ionian, Dorian,
-  Phrygian, Lydian, Mixolydian, Aeolian, Locrian, harmonic minor, melodic
-  minor, Phrygian dominant, harmonic major.
-- DEFAULT[owner-review] Distance from a pan to a candidate parent = the number
-  of PAN PITCH CLASSES (ding included, counted once each) that are not members
-  of the parent built on the tonic. Lowest distance wins.
-- DEFAULT[owner-review] Ties break by the fewest modal alterations (notes
-  differing from Ionian on the same tonic), then by position in the list order
-  above.
+- DECIDED(swarm-2026-09-08) Parent inference candidates are the 11 entries of
+  `tests/fixtures/parents.json` in this FIXED list order: Ionian, Aeolian,
+  Dorian, Phrygian, Lydian, Mixolydian, Locrian, harmonic minor, melodic minor,
+  Phrygian dominant, harmonic major. Aeolian precedes Dorian deliberately: they
+  tie at distance 0 on D Amara, and D10 declares Amara Aeolian.
+- DECIDED(swarm-2026-09-08) Distance from a pan to a candidate parent = the
+  number of PAN PITCH CLASSES (ding included, counted once each) that are not
+  members of the parent built on the tonic. Lowest distance wins; ties break by
+  position in the list order above, earlier wins. There is no second tie-break,
+  because list order is total.
 - DECIDED(D10, D14 as amended) The parent override is encoded as an INDEX into
   that list (0-10) and travels in the seed options; it changes degree labels
   only, never the fields list, so the deck id is unchanged.
-- DEFAULT[owner-review] A scale with no usable parent (every candidate at
-  maximal distance) uses uppercase numerals.
+- DECIDED(swarm-2026-09-08) A parent is always inferred - every candidate has a
+  finite distance, so there is no "no usable parent" branch. Uppercase numerals
+  are used for `NO_THIRDS` scales, where no root has a third and stacked thirds
+  cannot assign case at all.
+- DECIDED(swarm-2026-09-08) A pan pitch class outside the inferred parent takes
+  the numeral of the nearest scale degree below it under the D8
+  accidental-numeral rule (so a pitch class one semitone above degree III reads
+  as the altered form of the next degree, e.g. `bV` in a major-relative
+  context), and its case follows the stacked-thirds rule applied over the pan.
 - DECIDED(D10, D13, plan [design-review 7A]) Parent inference runs on create;
   the override lives only in the Phase 4 Edit sheet, never on the create path.
 
@@ -336,7 +474,7 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 ```
 {
   id:       "custom:<8 lowercase hex>",
-  name:     "<auto or user name, <= 16 chars>",
+  name:     "<auto or user name>",
   options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>},
   colors:   {root, tone, ga, gb},
   degrees:  {"<pitch class 0-11 as string>": "<label>"},
@@ -347,14 +485,15 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 }
 ```
 
-- DECIDED(plan P0a scope, index.html DECKS) The deck object has exactly the
-  keys `id, name, options, colors, degrees, geom, fields, chords, warnings`,
-  and `chords[]` entries have exactly `main, sup, subtitle, fields, roots` -
-  the built-in shape, because `render()` reads `subtitle` and `roots[0]`.
+- DECIDED(plan P0a scope, index.html DECKS) The deck object has exactly the keys
+  `id, name, options, colors, degrees, geom, fields, chords, warnings`, and
+  `chords[]` entries have exactly `main, sup, subtitle, fields, roots` - the
+  built-in shape, because `render()` reads `subtitle` and `roots[0]`.
 - DECIDED(CLAUDE.md "App data model") `fields` maps field id to `[name, octave,
-  midi, zone, angle, label]`, exactly as the built-ins.
-- DECIDED(index.html DECKS) `colors` carries `root, tone, ga, gb` with `ga ==
-  root` and `gb == tone`, as all three built-ins do.
+  midi, zone, angle, label]`, exactly as the built-ins; the ding's `angle` is
+  `null`, as all three built-ins have it.
+- DECIDED(index.html DECKS) `colors` carries `root, tone, ga, gb` with
+  `ga == root` and `gb == tone`, as all three built-ins do.
 - DECIDED(D12, plan "pan() does not generalise") The geometry solver always
   emits the FULL geom shape - `inner`, `bottom`, `n_in`, `n_out` and the rest
   present as zeroes rather than missing keys - because `pan()` yields `NaN` for
@@ -370,8 +509,13 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 
 - DECIDED(D13, plan [design-review 8A]) `core.formatSeed(fields)` prints a seed
   back into the D13 grammar with EXPLICIT octaves everywhere, ding in
-  parentheses, top notes ascending, bottom notes after ` | `, single spaces:
+  parentheses, top notes ascending in id order (rim then inner), bottom notes
+  after ` | ` in id order, single spaces:
   `(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Db3`.
+- DECIDED(swarm-2026-09-08) `formatSeed` walks the fields by the id scheme of
+  section 4 - `"0"` first, then `"1"` .. `"N"`, then `"101"` .. `"106"` - so the
+  canonical string is a pure function of the field map and never of iteration
+  order.
 - DEFAULT[owner-review] `core.deckId(fields)` = `"custom:"` + the lowercase
   8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.formatSeed(fields)`
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
@@ -386,7 +530,8 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   never on list index and never on `main + sup` (not unique on the built-ins:
   Pygmy `Cm` x3).
 - DECIDED(plan P0d exit) `parseSeed(formatSeed(seed))` deep-equals `seed` for
-  every entry of `synthetic_scales.json` whose expectation is ok.
+  every entry of `synthetic_scales.json` whose expectation is ok, which the
+  strict-ascending rule of section 3 guarantees.
 
 ## 13. Options: palette, mirror, name
 
@@ -411,13 +556,17 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   boolean: false = left-first (Hijaz / Amara), true = right-first (Pygmy). The
   generated-layout default is right-first (D12) and the built-ins never consult
   it.
-- DECIDED(plan [design-review 5A]) The auto deck name is `<DING>
-  <PARENT-DISPLAY> <N>` - ding pitch class, the parent's short display name
-  from `parents.json`, and the top-shell note count (e.g. `D AEOLIAN 9`, `C
-  HIJAZ 9`) - uppercase, at most 16 characters, ellipsised beyond that.
-- DECIDED(plan "Sharing is untrusted input", [eng-review 3A]) A user-supplied
-  name (Phase 4 Edit sheet) obeys the same 16-character cap and charset
-  whitelist, and is validated by `parseSeed` like every other seed value.
+- DECIDED(plan [design-review 5A]) The auto deck name is
+  `<DING> <PARENT-DISPLAY> <N>` - the ding pitch class, the parent's short
+  display name from `parents.json`, and `N`, the number of TOP-SHELL fields
+  INCLUDING the ding (D Amara = 1 ding + 8 rim = `D AEOLIAN 9`; the 12-note
+  synthetic pan = `C IONIAN 12`). Uppercase, at most 16 characters, ellipsised
+  beyond that.
+- DECIDED(swarm-2026-09-08) A user-supplied name (Phase 4 Edit sheet) is
+  validated as printable ASCII only (0x20-0x7E), trimmed of leading and
+  trailing whitespace, and 1 to 40 characters after trimming; anything else is
+  rejected, never repaired. The 16-character cap is a DISPLAY cap: the chip
+  ellipsises beyond 16, the stored name keeps up to 40.
 
 ## 14. Sharing
 
@@ -429,11 +578,14 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(plan Phase 4) A version byte greater than the running app's is
   rejected with `NEEDS_NEWER_APP` so a PWA-cached old `index.html` fails
   politely; the app stays usable.
-- DECIDED(plan [eng-review 3A], Phase 4) `share.decode` calls the SAME
-  `core.parseSeed` as the text box and rejects rather than repairs: MIDI 0-127,
-  zone in the enum, angle 0-359, palette index 0-5, parent index 0-10, name
-  within the length and charset caps. A flipped byte or an over-cap payload is
-  rejected.
+- DECIDED(swarm-2026-09-08) `share.decode` calls the SAME `core.parseSeed` as
+  the text box and rejects rather than repairs. `parseSeed` validates the note
+  names, the MIDI range 0-127, the field ordering and the caps of sections 3
+  and 4, plus the seed OPTIONS: palette index 0-5, parent index 0-10, and the
+  name whitelist of section 13. It does NOT validate `zone` or `angle`: zones
+  are derived by `parseSeed` itself and never carried in the seed, and angles
+  are `layout.solve`'s output, so neither is decoder input.
+- DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
   `CompressionStream`, `btoa` or `TextEncoder`, so the engine may not depend on
   them.
@@ -472,25 +624,41 @@ Phase 3 registers these in the sandbox `ELEMENT_IDS`; e2e targets them.
 
 ```
 {"name": "...", "string": "...", "tags": [...],
- "expect": {"ok": true, "warnings": ["NO_THIRDS"]} | {"code": "NO_FIFTH"}}
+ "expect": {"ok": true} | {"code": "NO_FIFTH"},
+ "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 0},
+ "select_warnings": ["NO_THIRDS"]}
 ```
 
 - DECIDED(index.html DECKS) `qualities.json` keys are full quality suffixes
   (root removed, `main_suffix` and `sup` concatenated); every quality the 59
-  built-in cards use is a key, and the union of the entries' `sup` values is
-  exactly the set of `sup` strings the built-ins render.
+  built-in cards use is a key.
+- DECIDED(swarm-2026-09-08) The set of `sup` strings the built-ins render is a
+  SUBSET of the union of the entries' `sup` values, not equal to it: the table
+  also carries qualities the built-ins never ship (`aug`, `6`, `m6`, `9`, `11`,
+  `13`, `7#11`, `add9`, `6/9`), whose `sup` values may or may not coincide with
+  a built-in one.
 - DECIDED(index.html DECKS) `display` is the subtitle word or phrase for the
   quality; `rooted` false means the subtitle omits the root (`POWER CHORD`,
-  `HALF-DIMINISHED`).
-- DEFAULT[owner-review] `tier` is the ranking tier of section 8 and drives both
-  the cap trim and the canonical within-root order.
+  `AUGMENTED`, `HALF-DIMINISHED`, both `DIMINISHED` entries and all three
+  suspended entries).
+- DECIDED(swarm-2026-09-08) `tier` is both the ranking tier of section 8 and
+  the candidate selector: a suffix is a generation candidate exactly when its
+  tier is a candidate tier.
 - DECIDED(plan [design-review 5A]) `parents.json` `display` is at most 8
   uppercase characters so the 16-character auto name holds; Phrygian dominant
   displays as `HIJAZ` and Aeolian as `AEOLIAN`.
-- DECIDED(plan [eng-review 9A]) Every `synthetic_scales.json` `expect` is
-  exactly one of the two shapes - `{ok: true}` optionally with `warnings`, or
-  `{code}` - and every lane asserts its own invariants over the entries whose
-  expectation is ok.
+- DECIDED(swarm-2026-09-08) `expect` is the `core.parseSeed` expectation and is
+  exactly one of two shapes: `{ok: true}` or `{code}`. It never carries
+  warnings, because `parseSeed` produces none.
+- DECIDED(swarm-2026-09-08) `select_warnings` is a separate optional key
+  listing the warning codes `select.build` must return for that seed; only
+  Phase 2 reads it, and only rows whose `expect` is ok may carry it.
+- DECIDED(swarm-2026-09-08) `zones` is an optional per-row map of the expected
+  field count per zone after `parseSeed`, for P0d and lane B. On the
+  `builtin pygmy` row it records the grammar's 11 rim, which deliberately
+  differs from the built-in literal's 9 rim + 2 inner (section 3).
+- DECIDED(plan [eng-review 9A]) Every lane asserts its own invariants over the
+  entries whose `expect` is ok.
 - DECIDED(plan [eng-review 9A]) Lane B generates its own N=5..19 sweep from the
   12-note and 19-field entries rather than expecting one in the fixture.
 
@@ -501,15 +669,15 @@ Phase 3 registers these in the sandbox `ELEMENT_IDS`; e2e targets them.
 | whole-tone subset (no perfect fifth above the ding) | `NO_FIFTH` | `core.parseSeed` (P0d) |
 | fewer than 3 pitch classes / no thirds | ok + `NO_THIRDS` warning | `select.build` (Phase 2) |
 | symmetric sets (octatonic, augmented hexatonic) | ok, deterministic tie-break | `naming` (lane C) |
-| no ding | `NO_DING` | `core.parseSeed` (P0d) |
+| no ding, or more than one | `NO_DING` | `core.parseSeed` (P0d) |
 | ding pitch class absent from the top shell | ok; tonic still the ding | `core.parseSeed` (P0d) |
 | beyond 11 rim / 2 inner / 6 bottom | `TOO_MANY_RIM` | `core.parseSeed` (P0d) |
 | a newer share link | `NEEDS_NEWER_APP` | `share.decode` (Phase 4) |
 
-- DECIDED(plan "Degenerate cases", eng-review owners) Each degenerate case has
-  a row in `tests/fixtures/synthetic_scales.json`, and the whole-tone case
-  exists there only as a `NO_FIFTH` rejection - it never reaches
-  `select.build`.
+- DECIDED(plan "Degenerate cases", eng-review owners) Each parse-layer
+  degenerate case has a row in `tests/fixtures/synthetic_scales.json`, and the
+  whole-tone case exists there only as a `NO_FIFTH` rejection - it never
+  reaches `select.build`.
 - DECIDED(plan "Degenerate cases") Symmetric-scale naming is asserted on the
   octatonic diminished and augmented hexatonic fixture seeds, which do contain
   fifths.
