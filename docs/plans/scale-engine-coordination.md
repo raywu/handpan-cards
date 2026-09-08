@@ -150,7 +150,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| P0a | scale-engine/w1-spec | PR #10 fixed, re-review running | FAIL+1, re-review | 2026-09-08 |
+| P0a | scale-engine/w1-spec | PR #10 integrator takeover at b81ad84, final review running | FAIL+2, takeover | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
 
@@ -167,12 +167,14 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 8 | reviewer #9 | `mutation_check.sh` TRACKED revert list covers only index.html/tools/decks.py/tools/hifi.py; an f_ mutant editing the fixture would not be reverted unless P0c's `git apply -R` rewrite lands first | P0c in flight, verify before P0b2 spawns |
 | 9 | reviewer #9 | nits: partition maker-string token test on `\|`; add name/sub to deep-equality tuple; pin EXPECTED_SHA256 constant; dedupe CHORD_COUNTS via tests/paths | backlog, fold into P0b2 brief |
 | 10 | reviewer #10 | Spec decisions taken by the integrator on bounce: grammar zones generated-only (row 7); trim drops 9 then 11 then 13; parent tie-break by parents.json order with Aeolian before Dorian; omitted ding octave = 3; ids "0","1".."N","101".."106", labels Ding/1..N/U1..U6; built-in sups subset of union; NO_FIFTH names the fifth; formatSeed/deckId plain strings; subtitle cap 26; per-deck rule = unique fields list only; N counts the ding; tritone bottom tie = below ding; strictly ascending after inference else BAD_NOTE; name charset printable ASCII 1-40 | applied by P0a, downstream briefs (P0d, 1A, 1C, 2) must cite the spec |
+| 11 | reviewer #10b | docs/SCALE_ENGINE_PLAN.md line 378 still says subtitle <= 25; spec decided 26. Amend on main after PR #10 merges | integrator |
 | 3 | P0b | fixture sha256 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a; data changes bump to v2 | recorded |
 
 ## Review log
 
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #10 | P0a | FAIL (2nd) | 1 blocker (range row in range), 4 majors (ding-only candidacy, parseSeed payload undefined, Object.keys order, degree rules contradict D10), 9 nits | cap reached; integrator fixed all in b81ad84; plan line 378 needs the 25->26 subtitle amendment (row 11) |
 | #10 | P0a | FAIL | 1 blocker (zone rule vs built-in reproduction), 9 majors (trim order, Amara infers Dorian, omitted ding octave, id/label scheme, sup union, NO_FIFTH literal, formatSeed/deckId wrapping, subtitle cap vs m7b5, pitch-set rule), 9 nits | bounced with 19 integrator decisions (row 10); fresh re-review after fix push |
 | #9 | P0b | PASS_WITH_NITS | 2 major (both cross-lane: Pygmy inner-zone gap in the D13 grammar; f_ mutant deferred), 4 nits (token test tolerant of misplaced `\|`; sha self-consistent only; deep-equality skips name/sub; duplicated CHORD_COUNTS) | merged 66453e8; queue rows 7-9 |
 
@@ -181,6 +183,6 @@ Written when their wave opens, from the plan rows and the acceptance table.
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| P0a | fix returned | agent-managed | scale-engine/w1-spec | #10 | c5db193 | 2026-09-08 gh pr view + run 34286871151 success | re-review spawned (fresh) | 1 | no | - | yes |
+| P0a | integrator takeover | agent-managed (lane worktree reused by integrator) | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | third review spawned (fresh) | 2 (cap) | no | - | yes |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
