@@ -152,7 +152,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 |---|---|---|---|---|
 | P0a | scale-engine/w1-spec | PR #10 integrator takeover at b81ad84, final review running | FAIL+2, takeover | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
-| P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
+| P0c | scale-engine/w3-harness | PR #11 under review | pending | 2026-09-08 |
 
 ## Handoff queue (append-only)
 
@@ -168,6 +168,8 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 9 | reviewer #9 | nits: partition maker-string token test on `\|`; add name/sub to deep-equality tuple; pin EXPECTED_SHA256 constant; dedupe CHORD_COUNTS via tests/paths | backlog, fold into P0b2 brief |
 | 10 | reviewer #10 | Spec decisions taken by the integrator on bounce: grammar zones generated-only (row 7); trim drops 9 then 11 then 13; parent tie-break by parents.json order with Aeolian before Dorian; omitted ding octave = 3; ids "0","1".."N","101".."106", labels Ding/1..N/U1..U6; built-in sups subset of union; NO_FIFTH names the fifth; formatSeed/deckId plain strings; subtitle cap 26; per-deck rule = unique fields list only; N counts the ding; tritone bottom tie = below ding; strictly ascending after inference else BAD_NOTE; name charset printable ASCII 1-40 | applied by P0a, downstream briefs (P0d, 1A, 1C, 2) must cite the spec |
 | 11 | reviewer #10b | docs/SCALE_ENGINE_PLAN.md line 378 still says subtitle <= 25; spec decided 26. Amend on main after PR #10 merges | integrator |
+| 12 | P0c | Engine module convention for P0d and Phase 1: plain scripts, no require/import/export, shared global `HPE` created with `var HPE = (typeof HPE !== 'undefined') ? HPE : {}`; tests load via tests/helpers/engine.js loadEngine([...]) | recorded, P0d/1A/1B/1C briefs |
+| 13 | P0c | mutation_check.sh now has MUTANT_TIMEOUT (180s default), one retry, TIMEOUT counted as survivor; e2e mutants can flake on headless Chrome launch | recorded |
 | 3 | P0b | fixture sha256 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a; data changes bump to v2 | recorded |
 
 ## Review log
@@ -185,4 +187,4 @@ Cycle: 1   Wave: 1   Merged this batch: -
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | integrator takeover | agent-managed (lane worktree reused by integrator) | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | third review spawned (fresh) | 2 (cap) | no | - | yes |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
-| P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
+| P0c | returned done | agent-managed | scale-engine/w3-harness | #11 | 81830c4 | 2026-09-08 gh pr view + run 34289135665 success | reviewer spawned | 0 | no | - | - |
