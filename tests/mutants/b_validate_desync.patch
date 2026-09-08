@@ -2,7 +2,7 @@
 # tools/decks.py alone drifts from the JSON embedded in index.html - the
 # print deck and the app would ship different card copy.
 diff --git a/tools/decks.py b/tools/decks.py
-index 02d8647..c200ef8 100644
+index d5d8968..75849c0 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
 @@ -144,7 +144,7 @@ AMARA_SPEC = {
