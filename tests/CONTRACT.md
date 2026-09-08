@@ -34,9 +34,13 @@ run over a missing browser.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
    Data changed -> the PR broke something; stop and report.
    Never silently amend either side.
-5. **This PR is additive.** It must not modify `index.html`, `tools/decks.py`,
-   or `tools/hifi.py` - CI enforces that with a diff check. Bugs found are
-   reported with a failing-test repro, not fixed here.
+5. **The test PR is additive.** It must not modify `index.html`,
+   `tools/decks.py`, or `tools/hifi.py`. Verify before pushing with
+   `git diff --quiet origin/main -- index.html tools/decks.py tools/hifi.py`.
+   This is a reviewer check, not a CI job: making it permanent would forbid all
+   future deck-data changes, which the PDF staleness gate already handles
+   correctly by requiring a rebuild in the same commit. Bugs found are reported
+   with a failing-test repro, not fixed here.
 6. **Assert structure, not styling.** Read colours and fonts from the deck data;
    never hardcode a hex or a font name. A future restyle must not turn tests red.
 

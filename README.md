@@ -24,7 +24,7 @@ palettes) is original to this project.
     ./tests/run.sh node                  # js suites only
     ./tests/run.sh mutants               # the red-proof gate
 
-Needs `pip install reportlab pypdf`. No JavaScript dependencies: the
+Needs `pip install reportlab pymupdf`. No JavaScript dependencies: the
 browser tests drive an already-installed Chrome over the DevTools Protocol, so
 there is still no `package.json`, no lockfile and no build step.
 

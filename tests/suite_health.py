@@ -16,7 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tests import paths  # noqa: E402
 
 MIN_PYTHON = 40
-MIN_NODE = 17
+MIN_NODE_UNIT = 12      # app units alone, when no browser is available
+MIN_NODE_FULL = 17      # app units + browser e2e
 
 
 def check_python():
@@ -51,20 +52,33 @@ def check_node():
 
     total, passed, failed = field("tests"), field("pass"), field("fail")
     skipped = field("skipped") or 0
-    print(f"node: ran {total}, passed {passed}, failed {failed}, skipped {skipped}")
     problems = []
     if total is None:
         return ["node: could not parse TAP summary"]
-    if total < MIN_NODE:
-        problems.append(f"node: only {total} tests ran, floor is {MIN_NODE}")
+
+    # The e2e suite skips itself when no browser is present, which is a
+    # supported configuration - the floor and the skip rule both move with it.
+    probe = subprocess.run(
+        ["node", "-e", "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))"],
+        capture_output=True, text=True, cwd=paths.ROOT)
+    have_browser = probe.stdout.strip() not in ("", "null")
+    floor = MIN_NODE_FULL if have_browser else MIN_NODE_UNIT
+    print(f"node: ran {total}, passed {passed}, failed {failed}, skipped {skipped} "
+          f"(browser: {'yes' if have_browser else 'no'}, floor {floor})")
+
+    if total < floor:
+        problems.append(f"node: only {total} tests ran, floor is {floor}")
     if failed:
         problems.append("node: suite is not green")
-    # e2e skips itself when no browser is available; anything else must not skip.
     if skipped:
-        e2e_skips = len(re.findall(r"^# SKIP.*browser", out, re.M | re.I))
-        print(f"note: {skipped} skipped ({'browser-related' if e2e_skips else 'UNEXPLAINED'})")
-        if not e2e_skips:
-            problems.append(f"node: {skipped} unexplained skipped test(s)")
+        # node emits "ok N - <test name> # SKIP" - the name comes BEFORE the
+        # marker, so the reason has to be matched ahead of "# SKIP".
+        browser_skips = len(re.findall(r"^ok .*(?:browser|chrom).*# SKIP", out, re.M | re.I))
+        if have_browser or browser_skips < skipped:
+            problems.append(f"node: {skipped} skipped test(s), "
+                            f"{browser_skips} explained by a missing browser")
+        else:
+            print(f"note: {skipped} skipped because no browser is installed")
     return problems
 
 

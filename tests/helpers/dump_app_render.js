@@ -44,12 +44,23 @@ for (const d of DECKS) {
     }
     fields.sort((a, b) => a.x - b.x || a.y - b.y);
 
+    // The note line, number line and badge as the app actually RENDERS them,
+    // parsed back out of linesHTML - not re-read from ch.fields, which would
+    // just compare two copies of the same input data.
+    const lines = app.get(`linesHTML(${deckRef}, ${deckRef}.chords[${i}])`);
+    const noteLine = [...lines.matchAll(/<span style="color:[^"]*">([^<]*)<sub>(\d)<\/sub><\/span>/g)]
+      .map((m) => m[1] + m[2]);
+    const numLine = [...lines.matchAll(/<span style="color:[^"]*">([^<]*)<\/span>/g)]
+      .map((m) => m[1]).filter((t) => !/<sub>/.test(t));
+    const badgeMatch = lines.match(/<div class="badge">([^<]*)<\/div>/);
+
     out.push({
       deck: d.id,
       index: i,
       name: ch.main + ch.sup,
-      noteOrder: ch.fields,
-      badge: ch.fields.filter((f) => d.fields[f][3] === "bottom").length,
+      noteLine,
+      numLine,
+      badgeText: badgeMatch ? badgeMatch[1].trim() : "",
       fields,
     });
   }

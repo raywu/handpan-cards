@@ -37,8 +37,10 @@ class RecordingCanvas:
 
     def __init__(self):
         self.circles = []
+        self.texts = []
         self._stroke = None
         self._dashed = False
+        self._font = None
 
     # --- state the renderer sets -----------------------------------------
     def setStrokeColor(self, c):
@@ -50,6 +52,15 @@ class RecordingCanvas:
     def circle(self, x, y, r, stroke=1, fill=0):
         self.circles.append({"x": x, "y": y, "r": r,
                              "stroke": self._stroke, "dashed": self._dashed})
+
+    def setFont(self, name, size, *a, **k):
+        self._font = name
+
+    def drawString(self, x, y, text, *a, **k):
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
+
+    def drawCentredString(self, x, y, text, *a, **k):
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
 
     # --- everything else is ignored --------------------------------------
     def __getattr__(self, _name):
@@ -104,10 +115,25 @@ def render_print(deck):
                                "r": round(max(g["r"] for g in group) / R * 100, 3),
                                "state": state})
             fields.sort(key=lambda f: (f["x"], f["y"]))
+
+            # The note line, number line and badge as the PDF actually draws
+            # them. tracked()/note_text() emit one drawString per glyph, so
+            # rebuild each line by x-order within its y band. Keying on the font
+            # keeps the diagram's tonefield labels out of these lines.
+            def line_at(y_target, font, tol=3.5):
+                glyphs = [t for t in rec.texts
+                          if t["font"] == font and abs(t["y"] - y_target) <= tol]
+                glyphs.sort(key=lambda t: t["x"])
+                return "".join(g["text"] for g in glyphs)
+
+            note_line = line_at(deck["y_note"], "Notes")
+            num_line = line_at(deck["y_num"], "Notes")
+            badge = line_at(deck["y_note"] + 13, "LabelSB")
+
             out.append({"name": chord[0] + chord[1], "fields": fields,
-                        "noteOrder": list(chord[3]),
-                        "badge": len([f for f in chord[3]
-                                      if deck["spec"][f][3] == "bottom"])})
+                        "noteLine": [t.strip() for t in note_line.split("-") if t.strip()],
+                        "numLine": [t.strip() for t in num_line.split("-") if t.strip()],
+                        "badgeText": badge.strip()})
         return out
     finally:
         hifi.BLUE, hifi.GREEN = saved
@@ -154,16 +180,26 @@ class RenderAgreement(unittest.TestCase):
                              [f["state"] for f in print_c["fields"]],
                              "%s %s: highlight states" % (app_c["deck"], app_c["name"]))
 
-    def test_note_line_order_agrees(self):
-        """Spelling order from the root, identical on card and screen."""
-        for app_c, print_c in self.each_card():
-            self.assertEqual(app_c["noteOrder"], print_c["noteOrder"],
-                             "%s %s: note order" % (app_c["deck"], app_c["name"]))
+    def test_drawn_note_line_agrees(self):
+        """The notes actually printed and actually rendered, in drawn order.
 
-    def test_bottom_note_badge_agrees(self):
+        Compares emitted text on both sides, so reordering either renderer's
+        line is caught - comparing ch.fields to itself would not be.
+        """
         for app_c, print_c in self.each_card():
-            self.assertEqual(app_c["badge"], print_c["badge"],
-                             "%s %s: badge count" % (app_c["deck"], app_c["name"]))
+            self.assertEqual(app_c["noteLine"], print_c["noteLine"],
+                             "%s %s: drawn note line" % (app_c["deck"], app_c["name"]))
+
+    def test_drawn_number_line_agrees(self):
+        for app_c, print_c in self.each_card():
+            self.assertEqual(app_c["numLine"], print_c["numLine"],
+                             "%s %s: drawn number line" % (app_c["deck"], app_c["name"]))
+
+    def test_drawn_bottom_note_badge_agrees(self):
+        """The printed badge text itself - nothing else asserts what it says."""
+        for app_c, print_c in self.each_card():
+            self.assertEqual(app_c["badgeText"], print_c["badgeText"],
+                             "%s %s: badge text" % (app_c["deck"], app_c["name"]))
 
 
 if __name__ == "__main__":

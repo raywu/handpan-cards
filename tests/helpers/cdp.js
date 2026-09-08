@@ -39,7 +39,11 @@ class Browser {
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
       const p = this.pending.get(msg.id);
-      if (p) { this.pending.delete(msg.id); msg.error ? p.reject(new Error(JSON.stringify(msg.error))) : p.resolve(msg.result); }
+      if (p) {
+        clearTimeout(p.timer);          // else the timer holds the event loop
+        this.pending.delete(msg.id);
+        msg.error ? p.reject(new Error(JSON.stringify(msg.error))) : p.resolve(msg.result);
+      }
     });
   }
   send(method, params = {}, useSession = true) {
@@ -48,8 +52,11 @@ class Browser {
     if (useSession && this.sessionId) payload.sessionId = this.sessionId;
     this.ws.send(JSON.stringify(payload));
     return new Promise((res, rej) => {
-      this.pending.set(id, { resolve: res, reject: rej });
-      setTimeout(() => { if (this.pending.delete(id)) rej(new Error("CDP timeout: " + method)); }, 20000);
+      const timer = setTimeout(() => {
+        if (this.pending.delete(id)) rej(new Error("CDP timeout: " + method));
+      }, 20000);
+      if (typeof timer.unref === "function") timer.unref();
+      this.pending.set(id, { resolve: res, reject: rej, timer });
     });
   }
   // Evaluate in page and return the JSON value.

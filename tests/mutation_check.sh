@@ -16,6 +16,10 @@ export PYTHONDONTWRITEBYTECODE=1
 find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
 TRACKED="index.html tools/decks.py tools/hifi.py"
+# An interrupted sweep must never leave a mutant applied in the working tree.
+trap 'git checkout -- $TRACKED 2>/dev/null || true' EXIT INT TERM
+
+HAVE_BROWSER=$(node -e "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))" 2>/dev/null)
 if ! git diff --quiet -- $TRACKED; then
   echo "REFUSING: working tree already modifies $TRACKED - commit or stash first."
   exit 2
@@ -44,6 +48,10 @@ for p in "${PATCHES[@]}"; do
   cmd=$(suite_for "$p")
   if [ -z "$cmd" ]; then
     echo "SKIP  $p (unknown suite prefix)"; SURVIVORS+=("$p (no suite)"); continue
+  fi
+  # A skipped suite exits 0, which would look identical to a surviving mutant.
+  if [ "${p##*/}" != "${p##*/e_}" ] && { [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; }; then
+    echo "SKIP  $p (no browser; e2e mutants cannot be validated here)"; continue
   fi
   if ! git apply --check "$p" 2>/dev/null; then
     echo "STALE $p (does not apply)"; SURVIVORS+=("$p (stale)"); continue
