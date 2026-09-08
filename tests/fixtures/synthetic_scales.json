@@ -1,0 +1,92 @@
+[
+  {
+    "name": "builtin hijaz",
+    "string": "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+    "expect": {"ok": true},
+    "tags": ["builtin"]
+  },
+  {
+    "name": "builtin pygmy",
+    "string": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+    "expect": {"ok": true},
+    "tags": ["builtin", "bottom", "inner"]
+  },
+  {
+    "name": "builtin amara",
+    "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "expect": {"ok": true},
+    "tags": ["builtin"]
+  },
+  {
+    "name": "twelve note pan",
+    "string": "(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4",
+    "expect": {"ok": true},
+    "tags": ["cap", "duplicate-pitch-classes"]
+  },
+  {
+    "name": "nineteen field maximum",
+    "string": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 Ab5 C6 | C3 Db3 Eb3 Bb3 Db4 Ab4",
+    "expect": {"ok": true},
+    "tags": ["cap", "maximum", "bottom", "inner", "duplicate-pitch-classes"]
+  },
+  {
+    "name": "whole tone subset",
+    "string": "(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4",
+    "expect": {"code": "NO_FIFTH"},
+    "tags": ["symmetric", "degenerate"]
+  },
+  {
+    "name": "octatonic diminished",
+    "string": "(C3) Db3 Eb3 E3 F#3 G3 A3 Bb3 C4",
+    "expect": {"ok": true},
+    "tags": ["symmetric"]
+  },
+  {
+    "name": "augmented hexatonic",
+    "string": "(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4",
+    "expect": {"ok": true},
+    "tags": ["symmetric", "duplicate-pitch-classes"]
+  },
+  {
+    "name": "three pitch classes",
+    "string": "(C3) G3 D4 G4 D5",
+    "expect": {"ok": true, "warnings": ["NO_THIRDS"]},
+    "tags": ["degenerate", "no-thirds"]
+  },
+  {
+    "name": "no ding",
+    "string": "G3 B3 D4 G4",
+    "expect": {"code": "NO_DING"},
+    "tags": ["degenerate"]
+  },
+  {
+    "name": "ding pitch class absent from top shell",
+    "string": "(Bb2) F3 G3 C4 D4 F4 G4 C5 D5",
+    "expect": {"ok": true},
+    "tags": ["degenerate", "tonic"]
+  },
+  {
+    "name": "bottom notes after bar",
+    "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3",
+    "expect": {"ok": true},
+    "tags": ["bottom"]
+  },
+  {
+    "name": "fourteen top notes",
+    "string": "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
+    "expect": {"code": "TOO_MANY_RIM"},
+    "tags": ["cap"]
+  },
+  {
+    "name": "seven bottom notes",
+    "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3 E3 F3 G3 Ab3 Bb3",
+    "expect": {"code": "TOO_MANY_RIM"},
+    "tags": ["cap", "bottom"]
+  },
+  {
+    "name": "bad note token",
+    "string": "(D3) A3 H4 C4",
+    "expect": {"code": "BAD_NOTE"},
+    "tags": ["grammar"]
+  }
+]
