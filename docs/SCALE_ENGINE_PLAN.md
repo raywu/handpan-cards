@@ -133,8 +133,8 @@ chord-name will assume otherwise.
 | D11 | **Register tie-break for unforced tones: nearest instance above the root.** | 20/21 under-determined cards; `Fm9` (G5) is the single recorded voicing exception. |
 | D12 | **Layout default = Pygmy pattern, mirrored right-first**, generalised: ding enlarged and offset toward the player (`r=0.19R`, `dy=0.1425R`); rim zig-zag ascending from bottom-right (~290 deg) toward top centre, right-first; inner ring holds at most 2 notes at ~128/~52 deg ascending opposite to the rim; bottom notes as a dashed outer x-ray ring, at most 6; beyond 11 rim + 2 inner + 6 bottom the scale is rejected with a reason. | A default, not a measurement. Never retro-applied to the built-ins (Hijaz and Amara are verified left-first). The geometry solver applies to GENERATED decks only; built-in `geom` literals bypass it, so "built-ins render identically" stays trivially true. [eng-review 17B, amended by design-review 3A] The first time a deck is generated, the message region shows a one-time hint, "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored."; nothing is printed on the cards themselves. The left-first/right-first **mirror toggle** (one boolean in the seed) moves from Phase 5 into Phase 3 as a two-button `.mode` pair in the sheet. |
 
-| D13 | **Input is a freeform scale string, not a per-note form.** DECIDED 2026-09-08. One text box takes maker notation: optional ding as `(C#)` or `D/`, then the top notes in ascending zig-zag order, optional `\|` followed by bottom notes; octaves are inferred (ding lowest, each next note the next instance above the previous) and an explicit octave anywhere (`C#4`) overrides inference. **AMENDED by design-review 2026-09-08: no provenance URL anywhere.** There is no URL field, nothing is stored or shown; a pasted vendor link is a `BAD_NOTE` rejection like any other token (fetching was never on the table: CORS on Pages, absent under `file://`, a proxy breaks D5). | The grammar and octave inference live in `src/engine/core.js` (P0d) with their own tests; the seed the URL encodes is the parsed result, not the raw string, and `core.formatSeed` prints a seed back into the grammar (design-review 8A). The create path shows only the box, the mirror pair (D12) and the palette swatches (D6); the parent-scale override (D10) lives in the Edit sheet, never on the create path. |
-| D14 | **Seed is the contract; per-card state keys on a stable card key.** Old links render NEW cards when the engine improves. Any future per-card state (the roadmap's spaced repetition) keys on `(deck id, main + sup)`, never on list index, so a regenerated deck keeps progress for every chord that still exists. | **AMENDED [eng-review 2, 1A]:** custom deck id = `custom:` + hash of `core.formatSeed(fields)` **only** (notes, octaves, zones, order). Palette, mirror, parent override and name are seed OPTIONS outside the id, so renaming, recolouring, flipping the mirror or overriding the parent keeps the id and every card's progress (the parent changes degree labels only, never `main + sup`). The id is computable in Phase 3 from P0d alone; the Phase 4 share encoding carries the options beside the fields and never feeds the hash. A Phase 4 test regenerates with a changed engine and asserts the id is unchanged; a second test changes every option and asserts the same. |
+| D13 | **Input is a freeform scale string, not a per-note form.** DECIDED 2026-09-08. One text box takes maker notation: a mandatory ding as `(C#)` or `D/` [review 2026-09-08: mandatory, `NO_DING` otherwise], then the top notes in ascending zig-zag order, optional `\|` followed by bottom notes; octaves are inferred (ding lowest of the top shell, each next top note the next instance above the previous; after `\|` inference restarts from the bottom note nearest the ding, since bottom notes may sit below it, e.g. Pygmy `C3 Db3 Eb3`) and an explicit octave anywhere (`C#4`) overrides inference. **AMENDED by design-review 2026-09-08: no provenance URL anywhere.** There is no URL field, nothing is stored or shown; a pasted vendor link is a `BAD_NOTE` rejection like any other token (fetching was never on the table: CORS on Pages, absent under `file://`, a proxy breaks D5). | The grammar and octave inference live in `src/engine/core.js` (P0d) with their own tests; the seed the URL encodes is the parsed result, not the raw string, and `core.formatSeed` prints a seed back into the grammar (design-review 8A). The create path shows only the box, the mirror pair (D12) and the palette swatches (D6); the parent-scale override (D10) lives in the Edit sheet, never on the create path. |
+| D14 | **Seed is the contract; per-card state keys on a stable card key.** Old links render NEW cards when the engine improves. Any future per-card state (the roadmap's spaced repetition) keys on `(deck id, fields list)` [review 2026-09-08 D4: `main + sup` is not unique on the built-ins, e.g. Pygmy `Cm` x3], never on list index, so a regenerated deck keeps progress for every chord that still exists. | **AMENDED [eng-review 2, 1A]:** custom deck id = `custom:` + hash of `core.formatSeed(fields)` **only** (notes, octaves, zones, order). Palette, mirror, parent override and name are seed OPTIONS outside the id, so renaming, recolouring, flipping the mirror or overriding the parent keeps the id and every card's progress (the parent changes degree labels only, never the fields list). The id is computable in Phase 3 from P0d alone; the Phase 4 share encoding carries the options beside the fields and never feeds the hash. A Phase 4 test asserts the id is a pure function of `formatSeed(fields)` with `select.build` never consulted (spy); a second test changes every option and asserts the id is unchanged. |
 
 ## Architecture: do not migrate the built-ins
 
@@ -171,7 +171,7 @@ between `<!-- engine:voicing -->` ... `<!-- /engine:voicing -->` markers.
 `tools/validate.py` gains a byte-exact region-equals-file check mirroring the
 existing DECKS desync check. This is a sync step, like the JSON re-injection,
 not a build step: `index.html` stays independently functional, zero-dependency,
-and the PWA precache list stays `[index.html]`. Phase 1 lanes never touch
+and the future PWA precache list (roadmap item 3; nothing exists yet) is `[index.html]`. Phase 1 lanes never touch
 `index.html`; the sandbox must therefore execute ALL `<script>` blocks in
 document order (P0c), because a second block makes today's greedy single-block
 regex throw.
@@ -207,7 +207,7 @@ shows. The UI has exactly one adapter from this shape to the message area.
    layout.solve(seed) --> geom + fields          (D12; built-ins bypass)
         |
         v
-   select.build(seed, fields) --- voicing.pick (D2, D9, D11)
+   select.build(seed, fields) --- voicing.pick (D2, D11); D9 root octave in select
         |                      \-- naming.name  (D1 table, D8, D10)
         v
    deck object {id: "custom:" + hash(formatSeed(fields)), name, options
@@ -327,26 +327,59 @@ serial; lanes inside a phase are parallel.
   `# suite: <command>` so `mutation_check.sh` selects the suite from the header
   rather than from a hardcoded prefix table.
 
-### Phase 0 - unblocks everything, ships nothing (SERIAL)
+### Acceptance commands per lane [swarm-ready, 2026-09-08]
+
+The integrator writes these into each lane's brief verbatim (coordination
+contract rule 9: the lane does not own its oracle). Every lane's local run is a
+smoke test; **CI at the verified head SHA of the lane's PR is the evidence.**
+`ALL` is the baseline every lane must pass and is what CI runs:
+
+```
+ALL = python3 tools/validate.py && node tools/boot_sim.js \
+   && python3 -m unittest discover -s tests -t . \
+   && node --test tests/*.test.js \
+   && python3 tests/suite_health.py \
+   && ./tests/mutation_check.sh
+```
+
+| Lane | Acceptance (all must hold) | Command |
+|---|---|---|
+| P0a | `docs/ENGINE-SPEC.md`, `tests/fixtures/qualities.json`, `tests/fixtures/synthetic_scales.json` exist; both fixtures parse; every spec rule carries a `DECIDED(...)` or `DEFAULT[owner-review]` tag; every result code and warning code named in this plan appears in the spec | `ALL && python3 -c "import json;json.load(open('tests/fixtures/qualities.json'));json.load(open('tests/fixtures/synthetic_scales.json'))" && ! grep -nE '^- ' docs/ENGINE-SPEC.md \| grep -vE 'DECIDED\(\|DEFAULT\[owner-review\]' && for c in NO_DING NO_FIFTH TOO_MANY_RIM BAD_NOTE NEEDS_NEWER_APP NO_THIRDS; do grep -q "$c" docs/ENGINE-SPEC.md \|\| exit 1; done` |
+| P0b | `tests/fixtures/golden_decks_v1.json` equals the 59 built-in cards byte-for-byte; `tests/test_fixture_integrity.py` runs and its mutant kills it | `ALL && python3 -m unittest tests.test_fixture_integrity && ./tests/mutation_check.sh 2>&1 \| grep -q 'f_.*killed'` |
+| P0c | Floor table exists with one row per test file; `# suite:` header selects the suite; mutation gate still passes with every existing mutant; the three legacy floors are unchanged in aggregate | `ALL && python3 -c "import tests.suite_health as h;assert isinstance(h.FLOORS,dict) and 'tests/app.test.js' in h.FLOORS" && grep -q 'suite:' tests/mutation_check.sh` |
+| P0d | `src/engine/core.js` loads under `node:vm`; `tests/core.test.js` green; the three built-in maker strings parse to the fixture fields; `parseSeed(formatSeed(x))` round-trips every synthetic entry; `deckId` stable across options; every `u_*` mutant kills its named test; floor row for `tests/core.test.js` > 0 | `ALL && node --test tests/core.test.js && ./tests/mutation_check.sh 2>&1 \| grep -E '^u_' \| grep -vq survived` |
+| 1A voicing | `tests/voicing.test.js` green; containment 59/59 and voicing 58/59 with `Fm9` the declared two-sided exception; `v_*` mutants all killed; floor row > 0 | `ALL && node --test tests/voicing.test.js && ./tests/mutation_check.sh 2>&1 \| grep -E '^v_' \| grep -vq survived` |
+| 1B layout | `tests/layout.test.js` green; no overlap and all fields inside `ext` for every synthetic N; rejection beyond the caps; `g_*` mutants all killed; floor row > 0 | `ALL && node --test tests/layout.test.js && ./tests/mutation_check.sh 2>&1 \| grep -E '^g_' \| grep -vq survived` |
+| 1C naming | `tests/naming.test.js` green; fixture `main`/`sup`/degree labels reproduced modulo the recorded exception list; `n_*` mutants all killed; floor row > 0 | `ALL && node --test tests/naming.test.js && ./tests/mutation_check.sh 2>&1 \| grep -E '^n_' \| grep -vq survived` |
+| 2 select | `tests/select.test.js` green; `tests/fixtures/divergence_v1.json` committed and the diff test passes; cap, ranking, dedup and `NO_THIRDS` each killed by an `s_*` mutant; floor row > 0 | `ALL && node --test tests/select.test.js && ./tests/mutation_check.sh 2>&1 \| grep -E '^s_' \| grep -vq survived` |
+| 3a, 3b app | Engine inlined and `index.html` still single-file with no `<script src>`; `tools/validate.py` handles a fourth deck; the 380 px e2e cases and the sandbox sheet tests pass; every regenerated `d_*`/`e_*`/`b_*` mutant killed; `git diff --stat main -- index.html` is the only app-file change | `ALL && ! grep -q '<script src' index.html && node --test tests/app.test.js tests/e2e.test.js && python3 tools/regen_data_mutants.py --check` |
+| 4 share | `tests/share.test.js` green; encode/decode round-trip; `NEEDS_NEWER_APP`, flipped-byte and over-cap rejections; `hpfc` sibling-survival test; Edit sheet tests; share-prefix mutants all killed | `ALL && node --test tests/share.test.js tests/app.test.js tests/e2e.test.js` |
+| 5, 6 | written when the phase is reached (Phase 4 exit is the gate) | n/a |
+
+`python3 tools/regen_data_mutants.py --check` is a P0c deliverable: exit non-zero
+when the `b_*` mutants no longer apply to the current `DECKS` line. Until it
+exists Phase 3 runs the regeneration and commits the result.
+
+### Phase 0 - unblocks everything, ships nothing (P0a, P0b, P0c in parallel: disjoint ownership; P0d SERIAL after all three)
 
 | Lane | Scope | Owns |
 |---|---|---|
-| **P0a** | Engine spec: legality invariants, D2 cluster rule with the operative ANY-non-root-tone forced test, D9 root-octave, D11 register tie-break, D1 vocabulary + cap + ranking, naming disambiguation, D8/D10 degrees, canonical order, the two recorded exceptions (`Fm9` register; Pygmy `Db`/`Dbmaj7`/`Eb7` root octave) and the 5 alternates. Every rule tagged DECIDED or DEFAULT. The quality -> interval table and display strings live in a fixture, not in the engine's exports, so tests never import from the module under test (CONTRACT rule 2). [eng-review 6A] The fixture is the SPEC; `naming.js` carries its own literal, and one lane-C test asserts deep equality (a mutant flips one interval). [eng-review 7A] Specifies the `{ok, value | code, reason}` result contract for every entry point; [design-review 2A] an ok result may carry `warnings: [{code, reason}]` (e.g. `NO_THIRDS`, "Only power chords: no 3rds on this pan") which the UI shows in the warning tier and never blocks on. [eng-review 2, 2A] Warnings have ONE producer, `select.build`; the registry copies them onto `deck.warnings` at generation time (submit in Phase 3, decode in Phase 4), and every reader (success message, Edit sheet) reads `deck.warnings`. Nothing regenerates to re-derive them. The warning reason strings sit in the same enum fixture as the error reasons. P0a also fixes the generated deck object shape (`id, name, options{palette, mirror, parent}, colors, degrees, geom, fields, chords[], warnings[]`) so Phase 2 produces it and Phase 3 consumes it without an unstated handoff. [eng-review 16A] Specifies D10 inference as DEFAULT[owner-review]: candidate parents = the 7 diatonic modes plus harmonic minor, melodic minor, Phrygian dominant and harmonic major (fixed list order); distance = pan pitch classes outside the parent; ties -> fewest modal alterations, then list order; the override is encoded as an index into that list; tonic = ding pitch class, else lowest top-shell note. [eng-review 9A] Owns `tests/fixtures/synthetic_scales.json`: a 12-note pan, the 19-field maximum with duplicate-heavy pitch classes, a whole-tone subset, a diminished set, a 3-pitch-class pan, no ding, ding pitch class absent from the top shell; every lane asserts its invariants over it. Owner review is a gate AFTER Phase 1, not before. | `docs/ENGINE-SPEC.md`, `tests/fixtures/qualities.json`, `tests/fixtures/synthetic_scales.json` |
-| **P0b** | Freeze the corpus: extract the 59 cards from `afd52a7` (post-retrofit) - and, per deck, `fields`, `degrees`, `colors` and `geom`, so no engine test reads the live `DECKS` literal [eng-review TODO 1] - into a fixture with a SHA-256 self-assertion over a canonical serialisation (`sort_keys`, fixed separators) so it can never be quietly regenerated from the engine or broken by a reformat. | `tests/fixtures/golden_decks_v1.json`, `tests/test_fixture_integrity.py` |
-| **P0c** | Harness prep. `sandbox.js`: execute ALL `<script>` blocks in document order; add `location`, `URL`, `btoa`/`atob`, `history`, `TextEncoder`/`TextDecoder`, `setTimeout`, `structuredClone`, `document.querySelector`, and `createElement` stubs with `value`/`setAttribute`/`dataset`; keep `getElementById` strict but extensible; keep `tools/boot_sim.js` and `tests/helpers/dump_app_render.js` green. `mutation_check.sh`: revert with `git apply -R` instead of the fixed `TRACKED` list (a `src/engine` mutant is otherwise never reverted and contaminates the sweep); [eng-review TODO 3] also discard anything a suite WROTE while the mutant was applied (`git checkout --` plus `git clean -fd` scoped to the paths the patch names, never the whole tree) and assert a clean tree after every mutant; dirty check over the files each patch names; header-driven `# suite:` selection for `v_*`/`g_*`/`n_*`/`s_*`/`u_*`. Converts the `suite_health.py` constants into the per-file floor table (1A) without raising any floor. Adds `tests/helpers/engine.js` (2A). `CONTRACT.md`: rule 2's "CI greps for this" either gets a grep in `validate.yml` or is deleted; rule 4's diff list gains `src/engine/**`; rule 5 is scoped to test-only PRs. Do NOT raise floors here. | `tests/helpers/sandbox.js`, `tests/helpers/engine.js`, `tests/mutation_check.sh`, `tests/suite_health.py`, `tests/CONTRACT.md`, `.github/workflows/validate.yml` |
-| **P0d** | [eng-review 14A] **Shared core, SERIAL after P0a-c.** `src/engine/core.js`: pitch class, MIDI from note name, interval math, the D13 scale-string grammar with octave inference and explicit-octave override, `parseSeed` (the one validator: MIDI 0-127, zone enum, angle 0-359, palette index 0-5, parent index, name length and charset, exactly one ding, no duplicate fields) returning the 7A result shape, and [design-review 8A] `formatSeed` printing a seed back into the D13 grammar with explicit octaves (`(D3) A3 C4 D4 E4 F4 G4 A4 C5`, bottom notes after `|`) so the Edit sheet can show the canonical string, and `deckId(fields)` = `custom:` + a stable hash of that string (D14 as amended; the hash is a fixed non-cryptographic function specified in ENGINE-SPEC, same result in Node and the browser). Exit: parses the three built-in pans from their maker strings to the fixture's fields byte-for-byte; `parseSeed(formatSeed(seed))` deep-equals `seed` for every synthetic fixture entry including one with bottom notes after `|` (one mutant drops the octave from the ding, one drops the `|`); `deckId` is unchanged across every option change and differs for any field change (one mutant hashes the palette too); every synthetic seed parses or rejects with the expected code; one mutant per group. | `src/engine/core.js`, `tests/core.test.js`, `tests/mutants/u_*` |
+| **P0a** | Engine spec: legality invariants, D2 cluster rule with the operative ANY-non-root-tone forced test, D9 root-octave, D11 register tie-break, D1 vocabulary + cap + ranking, naming disambiguation, D8/D10 degrees, canonical order, the two recorded exceptions (`Fm9` register; Pygmy `Db`/`Dbmaj7`/`Eb7` root octave) and the 5 alternates. Every rule tagged DECIDED or DEFAULT. The quality -> interval table and display strings live in a fixture, not in the engine's exports, so tests never import from the module under test (CONTRACT rule 2). [eng-review 6A] The fixture is the SPEC; `naming.js` carries its own literal, and one lane-C test asserts deep equality (a mutant flips one interval); P0c adds the CONTRACT rule 2 carve-out "comparing a module's exported table to the spec fixture is allowed". [eng-review 7A] Specifies the `{ok, value | code, reason}` result contract for every entry point; [design-review 2A] an ok result may carry `warnings: [{code, reason}]` (e.g. `NO_THIRDS`, "Only power chords: no 3rds on this pan") which the UI shows in the warning tier and never blocks on. [eng-review 2, 2A] Warnings have ONE producer, `select.build`; the registry copies them onto `deck.warnings` at generation time (submit in Phase 3, decode in Phase 4), and every reader (success message, Edit sheet) reads `deck.warnings`. Nothing regenerates to re-derive them. The warning reason strings sit in the same enum fixture as the error reasons. P0a also fixes the generated deck object shape (`id, name, options{palette, mirror, parent}, colors, degrees, geom, fields, chords[], warnings[]` with `chords[] = {main, sup, subtitle, fields[], roots[]}` exactly as the built-ins, since `render()` reads `subtitle` and `roots[0]`) so Phase 2 produces it and Phase 3 consumes it without an unstated handoff. [eng-review 16A] Specifies D10 inference as DEFAULT[owner-review]: candidate parents = the 7 diatonic modes plus harmonic minor, melodic minor, Phrygian dominant and harmonic major (fixed list order); distance = pan pitch classes outside the parent; ties -> fewest modal alterations, then list order; the override is encoded as an index into that list; tonic = ding pitch class (the ding is mandatory, so there is no fallback). [eng-review 9A] Owns `tests/fixtures/synthetic_scales.json`: a 12-note pan, the 19-field maximum with duplicate-heavy pitch classes, a whole-tone subset (expect `NO_FIFTH`), an octatonic diminished set, an augmented hexatonic set, a 3-pitch-class pan `{C, G, D}` (expect ok + `NO_THIRDS`), no ding (expect `NO_DING`), ding pitch class absent from the top shell; every lane asserts its invariants over the entries whose `expect` is ok. Fixture schema: `{name, string, expect: {ok: true, warnings?: [code]} | {code}, tags: []}`. Lane B generates its own N=5..19 sweep from the 12-note and 19-field entries rather than expecting one in the fixture. Owner review is a gate AFTER Phase 1, not before. | `docs/ENGINE-SPEC.md`, `tests/fixtures/qualities.json`, `tests/fixtures/parents.json`, `tests/fixtures/synthetic_scales.json` |
+| **P0b** | Freeze the corpus: extract the 59 cards from `afd52a7` (post-retrofit) - and, per deck, `fields`, `degrees`, `colors` and `geom`, so no engine test reads the live `DECKS` literal [eng-review TODO 1] - into a fixture with a SHA-256 self-assertion over a canonical serialisation (`sort_keys`, fixed separators) so it can never be quietly regenerated from the engine or broken by a reformat. Ships `tests/mutants/f_fixture_sha.patch` with a `# suite: python3 -m unittest tests.test_fixture_integrity` header (needs P0c's header selection, so P0b's mutant is verified in P0c's PR), and a one-way assertion that the fixture chords equal `paths.app_decks()` so an owner-approved data change fails loudly. | `tests/fixtures/golden_decks_v1.json`, `tests/test_fixture_integrity.py`, `tests/mutants/f_*` |
+| **P0c** | Harness prep. `sandbox.js`: execute ALL `<script>` blocks in document order; add `location`, `URL`, `btoa`/`atob`, `history`, `TextEncoder`/`TextDecoder`, `setTimeout`, `structuredClone`, `document.querySelector`, and `createElement` stubs with `value`/`setAttribute`/`dataset`; keep `getElementById` strict but extensible; keep `tools/boot_sim.js` and `tests/helpers/dump_app_render.js` green. `mutation_check.sh`: revert with `git apply -R` instead of the fixed `TRACKED` list (a `src/engine` mutant is otherwise never reverted and contaminates the sweep); [eng-review TODO 3] also discard anything a suite WROTE while the mutant was applied (`git checkout --` plus `git clean -fd` scoped to the paths the patch names, never the whole tree) and assert a clean tree after every mutant; dirty check over the files each patch names; header-driven `# suite:` selection for any prefix (a `# suite:` header always wins over the prefix table, so new prefixes such as `h_*` need no script change). Converts the `suite_health.py` constants into the per-file floor table (1A) without raising any floor, and pre-seeds rows at 0 for `tests/core.test.js`, `tests/voicing.test.js`, `tests/layout.test.js`, `tests/naming.test.js`, `tests/select.test.js`, `tests/share.test.js` so later lanes change only their own number and never insert lines [review 2026-09-08 F6]. Adds `tests/helpers/engine.js` (2A). `CONTRACT.md`: rule 2's "CI greps for this" is deleted (no mechanical grep exists for a `node:vm` global) and the rule-2 carve-out above is added; rule 4's diff list gains `src/engine/**`; rule 5 is scoped to test-only PRs. Do NOT raise floors here. | `tests/helpers/sandbox.js`, `tests/helpers/engine.js`, `tests/mutation_check.sh`, `tests/suite_health.py`, `tests/CONTRACT.md`, `.github/workflows/validate.yml` |
+| **P0d** | [eng-review 14A] **Shared core, SERIAL after P0a-c.** `src/engine/core.js`: pitch class, MIDI from note name, interval math, the D13 scale-string grammar with octave inference and explicit-octave override, `parseSeed` (the one validator: MIDI 0-127, zone enum, angle 0-359, palette index 0-5, parent index, name length and charset, exactly one ding, no duplicate fields) and **zone assignment** [review 2026-09-08 D3]: top notes ascend; the first up to 11 (D7 rim cap) are `rim`, the next up to 2 are `inner`, a 14th top note is `TOO_MANY_RIM`; notes after `\|` are `bottom`, at most 6. `layout.solve` never changes zones, so the deck id (D14) never depends on layout code); `parseSeed` returns the 7A result shape, and [design-review 8A] `formatSeed` printing a seed back into the D13 grammar with explicit octaves (`(D3) A3 C4 D4 E4 F4 G4 A4 C5`, bottom notes after `|`) so the Edit sheet can show the canonical string, and `deckId(fields)` = `custom:` + a stable hash of that string (D14 as amended; the hash is a fixed non-cryptographic function specified in ENGINE-SPEC, same result in Node and the browser). Exit: parses the three built-in pans from their maker strings (recorded in the P0b fixture, bottom notes with explicit octaves where inference would not reproduce them, e.g. Pygmy `Ab5`) to the fixture's fields on `name, octave, midi, zone, label` (`angle` is lane B's output and excluded); `parseSeed(formatSeed(seed))` deep-equals `seed` for every synthetic fixture entry including one with bottom notes after `|` (one mutant drops the octave from the ding, one drops the `|`); `deckId` is unchanged across every option change and differs for any field change (one mutant hashes the palette too); every synthetic seed parses or rejects with the expected code; one mutant per group. | `src/engine/core.js`, `tests/core.test.js`, `tests/mutants/u_*` |
 
 ### Phase 1 - engine core (PARALLEL; never touches `index.html`)
 
 | Lane | Scope | Owns |
 |---|---|---|
-| **A** | **Legality + voicing.** Enumerate legal voicings for (root field, interval set): no ding, no doubled pitch classes, power chords = 2 notes; apply D2 + D11 to pick one. Exit: containment - every one of the 59 fixture tuples is in its candidate set [verified satisfiable] - and the chosen voicing equals the fixture for 58/59 with `Fm9` as the declared exception (two-sided: the exception must still diverge). | `src/engine/voicing.js`, `tests/voicing.test.js`, `tests/mutants/v_*` |
-| **B** | **Geometry solver** per D12: `r_note`/`f_note`/`f_num`/`n_in`/`n_out` as functions of N, rim ceiling, inner-ring and bottom-ring caps, rejection beyond them, full geom shape always emitted, `ext` from the furthest element. Exit (pure geometry, app-side only; print is Phase 6): for synthetic scales at N=5..19, no two field circles closer than r1+r2, every element inside `ext`, the inner pair ascends opposite the rim, and the three built-in `geom` literals pass through untouched. | `src/engine/layout.js`, `tests/layout.test.js`, `tests/mutants/g_*` |
-| **C** | **Namer + degrees.** Quality naming from the fixture table, symmetric-set root tie-break (default: prefer tonic, else lowest scale degree), sus4-over-sus2 and m7-over-6 rules, per-scale accidental convention, D8 numerals, D10 case. Exit: reproduces fixture `main`/`sup` and every degree label modulo a two-sided recorded exception list (Amara `bIII`/`bVII`; Amara `IV`). | `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*` |
+| **A** | **Legality + voicing.** Enumerate legal voicings for (root field, interval set): no ding, no doubled pitch classes, power chords = 2 notes; apply D2 + D11 to pick one; a voicing never exceeds 6 notes (the print floor, line "Max notes per" below), so an 11th/13th drops its lowest optional extension first. Exit: containment - every one of the 59 fixture tuples is in its candidate set [verified satisfiable] - and the chosen voicing equals the fixture for 58/59 with `Fm9` as the declared exception (two-sided: the exception must still diverge). | `src/engine/voicing.js`, `tests/voicing.test.js`, `tests/mutants/v_*` |
+| **B** | **Geometry solver** per D12: `r_note`/`f_note`/`f_num`/`n_in`/`n_out` as functions of N, rim ceiling, inner-ring and bottom-ring caps, rejection beyond them, full geom shape always emitted, `ext` from the furthest element. Exit (pure geometry, app-side only; print is Phase 6): for synthetic scales at N=5..19, no two field circles closer than r1+r2, every element inside `ext`, the inner pair ascends opposite the rim, (the built-ins never call the solver, so there is no passthrough to test). | `src/engine/layout.js`, `tests/layout.test.js`, `tests/mutants/g_*` |
+| **C** | **Namer + degrees.** Quality naming from the fixture table (`tests/fixtures/qualities.json`) and parents from `tests/fixtures/parents.json` (P0a: candidate list order, intervals, short display name), symmetric-set root tie-break (default: prefer tonic, else lowest scale degree), sus4-over-sus2 and m7-over-6 rules, per-scale accidental convention, D8 numerals, D10 case. Exit: reproduces fixture `main`/`sup`/`subtitle` and every degree label (subtitles modulo the editorial strings HIJAZ SIGNATURE CHORD, HIGH/LOW VOICING and the two `( = X6 )` equivalences, which are recorded exceptions; subtitle <= 25 chars) modulo a two-sided recorded exception list (Amara `bIII`/`bVII`; Amara `IV`). | `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*` |
 
-Each lane adds its own row to the `suite_health.py` per-file floor table (1A),
-so an engine test file cannot vanish without tripping the aggregate and no two
-lanes touch the same line. Every lane also asserts its invariants over
+Each lane raises its own pre-seeded row in the `suite_health.py` per-file floor
+table (1A, seeded at 0 by P0c) from 0 to its test count, so an engine test file
+cannot vanish without tripping the aggregate and no two lanes insert lines. Every lane also asserts its invariants over
 `synthetic_scales.json` (9A): A the legality invariants (no ding, no doubled
 pitch class, power = 2) on every generated voicing; B the geometry exit on the
 19-field maximum; C deterministic naming on the symmetric sets, D10 inference on
@@ -358,18 +391,21 @@ of `ENGINE-SPEC.md` DEFAULTs happens at the end of this phase.
 D9 root octave, D1 vocabulary, cap, ranking (default: triads > power > sus4 >
 7ths > extended, then by number of top-shell tones; extended only when every
 tone is on the top shell), dedup rules, per-deck override lists (default empty;
-the built-ins' out-of-vocabulary cards are recorded as overrides). Exit: a
+the built-ins' out-of-vocabulary cards are recorded as overrides in
+`tests/fixtures/divergence_v1.json` under an `overrides` key, so the list lives
+in one Phase 2 owned file). Exit: a
 committed **divergence table** against the fixture, diffed by a test with no
 numeric expectation, and a two-sided exception test so the list can only shrink.
 Owns `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`,
-`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap bites on the
-synthetic 12-note pan (~25 cards), the ranking order and the sus2/6 dedup are
+`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap (25 cards, DEFAULT[owner-review], stated in ENGINE-SPEC) bites on the
+synthetic 12-note pan, the ranking order and the sus2/6 dedup are
 asserted on a synthetic pan, each with a mutant. [eng-review 2, 2A]
 `select.build` returns `warnings[]` on ok results: `NO_THIRDS` when no root
-has a third above it on the top shell (the whole-tone synthetic fixture must
-yield it; a diatonic pan must yield none), each with a mutant.
+has a third above it on the top shell (the 3-pitch-class `{C, G, D}` synthetic
+fixture must yield it; a diatonic pan must yield none; whole-tone is rejected
+upstream with `NO_FIFTH` and never reaches `select.build`), each with a mutant.
 
-### Phase 3 - first user-visible ship (SERIAL; owns `index.html`)
+### Phase 3 - first user-visible ship (SERIAL; owns `index.html`; runs as two lanes 3a then 3b, see the worktree table)
 
 Scale string (D13) -> `core.parseSeed` -> generated deck -> existing card
 renderer, in memory, no persistence. Adds `tools/inline_engine.py`, the engine
@@ -398,7 +434,7 @@ mutant; Phase 4 lifts the guard when custom decks become restorable.
 
 [eng-review 10A] Tests: a sandbox unit test submits the whole-tone synthetic
 seed and asserts the message element carries the `NO_FIFTH` reason, the text
-box keeps its contents and `deckId` is unchanged; an e2e case sets the viewport
+box keeps its contents and the app's selected deck (`deckId` global) is unchanged; an e2e case sets the viewport
 to 380 px, asserts the text box and submit control are visible and inside the
 viewport, submits a valid 9-note string and asserts the first generated card
 renders. One mutant each. Owns `index.html`,
@@ -441,7 +477,7 @@ No parent-scale picker and no URL field on the create path (owner decisions
 | loading | read-only | none | label "GENERATING", disabled, no spinner (budget is under 200 ms) | unchanged |
 | success | sheet closes | practice-screen `aria-live` says "14 cards generated" | n/a | new chip `.on` and scrolled into view; card 1 face-up at full width |
 | partial (ok with `warnings[]`) | as success | warning tier in `#e3b25c` on the practice screen, e.g. "Only power chords: no 3rds on this pan" | n/a | as success |
-| first generation ever for this deck | as success | one-time hint (17B as amended) appended to the success message | n/a | as success |
+| first generation of this deck id in this page session (no persistence in Phase 3) | as success | one-time hint (17B as amended) appended to the success message | n/a | as success |
 | same id already present (same notes, any options) [eng-review 2, 4A] | sheet closes | "Updated D AEOLIAN 9" | n/a | the existing deck is REPLACED in place with the new mirror, palette and parent; id and per-card state kept; its chip selected. Two colour or mirror variants of one pan are a non-goal. |
 | delete (Phase 4) | n/a | "Removed C HIJAZ 9" | n/a | first built-in selected |
 | newer link (Phase 4) | n/a | "This link needs a newer version of the app. Reload." | n/a | unchanged |
@@ -453,7 +489,7 @@ LEFT-FIRST / RIGHT-FIRST later via the Edit sheet (Phase 4) if the pan is
 mirrored. The user never leaves the practice screen.
 
 **Custom chip [5A].** Same anatomy as built-in chips: palette `.dot` plus an
-auto label `<DING> <MODE> <N>` (e.g. "D AEOLIAN 9", "C HIJAZ 9" when the
+auto label `<DING> <MODE> <N>` (e.g. "D AEOLIAN 9", "C HIJAZ 9"; the P0a parent fixture carries a short display name per candidate, e.g. Phrygian dominant -> HIJAZ, so the 16-char cap holds; when the
 inferred parent has a common name), uppercase, capped at 16 characters with an
 ellipsis, no icon, no URL. Renaming is Phase 4 (Edit sheet).
 
@@ -481,8 +517,7 @@ deck and not on the second, and that the success path reads
 Versioned seed encoding, `share.decode` calling `core.parseSeed` (3A), `hpfc`
 read-modify-write fix with its sibling-survival test and mutant, saved scales
 under their own key, custom deck id = `core.deckId(fields)` (D14 as amended;
-tests: regenerate with a changed engine, id unchanged; change every option,
-id unchanged), the seed options (palette, mirror, parent, name) encoded beside
+tests: id equals `hash(formatSeed(fields))` and `select.build` is never consulted for it (spy); change every option, id unchanged; the id itself is computed in Phase 3 from P0d, Phase 4 only encodes it), the seed options (palette, mirror, parent, name) encoded beside
 the fields and never hashed,
 layout-delta space reserved. [design-review 7A] **One Edit sheet:** tapping
 the already-selected custom chip reopens the Phase 3 sheet in Edit state:
@@ -503,8 +538,7 @@ generation call; rename and delete per the 4A table. The version byte's "this li
 needs a newer app" path (`NEEDS_NEWER_APP`) so a PWA-cached old `index.html`
 fails politely.
 
-[eng-review 11A] `tests/share.test.js` with `s_*`-style mutants under a new
-`u_*` prefix if needed: encode -> decode equals the seed for every synthetic
+[eng-review 11A] `tests/share.test.js` with mutants under the `h_*` prefix (`u_*` is P0d's); Phase 4 owns `src/engine/share.js`, `tests/share.test.js`, `tests/mutants/h_*` and raises the `share.test.js` floor row: encode -> decode equals the seed for every synthetic
 fixture entry; version byte + 1 is rejected with `NEEDS_NEWER_APP`; one flipped
 byte is rejected; a payload over the stated cap is rejected.
 
@@ -542,7 +576,7 @@ the `DECKS` literal.
 | Canonical card order | Phase 2/3 | as stated above; flagged |
 | Per-deck override lists | Phase 2 | empty; **owner-only** in substance |
 | Palette set | Phase 3 | D6; DECIDED built-in pairs + swaps |
-| UI element ids for scale input | Phase 3 | fixed in `ENGINE-SPEC.md`; flagged |
+| UI element ids for scale input | P0a | fixed in `ENGINE-SPEC.md` now: `scale-sheet`, `scale-box`, `scale-parse`, `scale-msg`, `scale-mirror-l`, `scale-mirror-r`, `scale-swatches`, `scale-generate`, `deck-add`; Phase 3 registers them in the sandbox `ELEMENT_IDS` |
 | D10 parent candidate list, distance, tie-break, encoding | P0a | as stated in P0a (16A); flagged DEFAULT[owner-review] |
 | Result codes and their English reasons | P0a | enum in `ENGINE-SPEC.md` (7A); flagged |
 | Scale-string grammar details (separators, octave marks) | P0d | D13; separators `( )`, `/`, `\|`, whitespace; flagged for edge cases only |
@@ -560,7 +594,7 @@ the `DECKS` literal.
 
 ## Degenerate cases that will actually reach users
 
-A scale with **no perfect fifth on any degree** (whole-tone subsets) yields zero
+A scale with **no perfect fifth above the ding** (whole-tone subsets) yields zero
 triads and zero power chords - the UI must say why; fewer than 3 pitch classes
 yields only power chords; **symmetric scales** (diminished, whole-tone,
 augmented) make root selection arbitrary for every chord, so the same set gets
@@ -568,12 +602,14 @@ named 3-4 ways depending on tie-break; a pan with no ding, or whose ding pitch
 class is absent from the top shell, leaves tonic inference with nothing to work
 from.
 
-[eng-review] Owners: no-fifth / power-only -> lane A rejects with `NO_FIFTH`
-(core.js validates, A asserts on the whole-tone synthetic seed); symmetric-scale
-naming -> lane C (deterministic tie-break, asserted on the diminished and
-whole-tone seeds); no ding / ding absent from the top shell -> P0d
-(`parseSeed`: exactly one ding required; tonic falls back to the lowest
-top-shell note per 16A). Each has a row in `synthetic_scales.json`.
+[eng-review] Owners: no-fifth -> P0d rejects with `NO_FIFTH` in `parseSeed`
+(definition: no top-shell note a perfect fifth above the ding pitch class; lane
+A only asserts on the fixture that every accepted seed has one); symmetric-scale
+naming -> lane C (deterministic tie-break, asserted on the octatonic
+diminished and augmented-hexatonic fixture seeds, which do contain fifths;
+whole-tone exists in the fixture only as a `NO_FIFTH` rejection); no ding -> P0d (`parseSeed`: exactly one ding
+required, `NO_DING`); ding pitch class absent from the top shell -> P0d accepts
+it and D10 still takes the tonic from the ding. Each has a row in `synthetic_scales.json`.
 
 ## Non-negotiables
 
@@ -624,7 +660,7 @@ DESIGN.md yet, tracked in `TODOS.md`). Lane ownership is unchanged by any of it.
 
 | # | Section | Decision |
 |---|---|---|
-| D3 | Scope | Proceed with all six phases as written |
+| E1-D3 (eng-review id, not owner D3) | Scope | Proceed with all six phases as written |
 | 1A | Architecture | `suite_health.py` per-file floor table; each lane adds one row (P0c) |
 | 2A | Architecture | `tests/helpers/engine.js` shared `node:vm` loader; no direct `require` of engine files |
 | 3A | Architecture | One validator (`core.parseSeed`) behind both the text box and the URL decoder |
@@ -642,7 +678,7 @@ DESIGN.md yet, tracked in `TODOS.md`). Lane ownership is unchanged by any of it.
 | 15A | Codex | 19-field worst case under 500 ms alongside the 12-note 200 ms budget |
 | 16A | Codex | P0a specifies the D10 candidate mode set, distance, tie-break, encoding, tonic rule |
 | 17B | Codex | Keep D12; caveat + mirror toggle in Phase 3 (caveat form amended by design 3A) |
-| 18B | Codex | Keep seed-as-contract; per-card state keys on (deck id, main + sup) (D14) |
+| 18B | Codex | Keep seed-as-contract; per-card state keys on (deck id, fields list) (D14 as amended by review D4) |
 | 19A | Owner UX | Freeform scale string replaces the per-note form (D13; URL field removed by design review) |
 | TODO 1 | P0b | Fixture freezes per-deck fields, degrees, colours, geom |
 | TODO 2 | Phase 4 | Custom id = hash of `formatSeed(fields)` only; options never hashed (amended by 1A) |
@@ -657,7 +693,7 @@ DESIGN.md yet, tracked in `TODOS.md`). Lane ownership is unchanged by any of it.
 | 3A | Tests | 11 delta gaps added with mutants: `\|` round-trip, id stability, `NO_THIRDS`, Escape/backdrop/focus e2e, disabled Generate, upsert, one-time hint, warnings without regeneration, Edit prefill, Degrees override, delete |
 | 4A | Codex tension | Same-id generate replaces the deck in place ("Updated ..."), id and progress kept; Codex's "mirror joins the id" rejected because a mirror flip would drop progress |
 
-Codex findings 1, 4, 5, 6 (D14 wording, warnings split, option serialisation, Phase 2 to 3 handoff) were wording consequences of 1A/2A and are written above. Finding 2 (parent under the same id) is not a collision: the parent changes degree labels only, never `main + sup`.
+Codex findings 1, 4, 5, 6 (D14 wording, warnings split, option serialisation, Phase 2 to 3 handoff) were wording consequences of 1A/2A and are written above. Finding 2 (parent under the same id) is not a collision: the parent changes degree labels only, never the fields list (D14 key as amended by review D4).
 
 ### Design decisions folded into this plan
 
@@ -718,12 +754,14 @@ chip-row overflow with many custom decks (6A e2e).
 
 | Lane | Depends on | Owns | Conflict flags |
 |---|---|---|---|
-| P0a, P0b, P0c, P0d | serial, in order | spec, fixtures, harness, core.js (+ formatSeed) | none (serial) |
+| P0a, P0b, P0c | main | spec, fixtures, harness | none (disjoint files) |
+| P0d | P0a + P0b + P0c | core.js (+ formatSeed, deckId, zones) | none |
 | 1A voicing | P0d | `src/engine/voicing.js`, `tests/voicing.test.js`, `v_*`, one floor row | none |
 | 1B layout | P0d | `src/engine/layout.js`, `tests/layout.test.js`, `g_*`, one floor row | none |
 | 1C naming | P0d | `src/engine/naming.js`, `tests/naming.test.js`, `n_*`, one floor row | none |
 | 2 select | 1A + 1C | `select.js`, divergence table | owner review gate |
-| 3 app | 2 + 1B | `index.html` (sheet, chip row), `tools/inline_engine.py`, `validate.py`, CLAUDE.md/README | sole owner of `index.html` |
+| 3a app plumbing | 2 + 1B | `tools/inline_engine.py`, `validate.py`, `paths.py`, sandbox round 2, registry + `NEEDS_NEWER_APP` guard in `index.html`, mutant regeneration | sole owner of `index.html` |
+| 3b scale sheet | 3a | sheet UI, chip row, a11y, 380 px e2e in `index.html`, CLAUDE.md/README | sole owner of `index.html` (serial after 3a) |
 | 4, 5, 6 | 3 | share + Edit sheet, editor, print | serial |
 
 Each Phase 1 lane builds in its own `git worktree`, delivers via PR, and gets
@@ -738,5 +776,16 @@ Design: 8 tasks in `~/.gstack/projects/raywu-handpan-cards/tasks-design-review-2
 ### Test plan artifact
 
 `~/.gstack/projects/raywu-handpan-cards/ray-main-eng-review-test-plan-20260908-125622.md`
+
+### /review findings folded [2026-09-08, PR #8]
+
+20 findings from the adversarial /review subagent are applied above under four
+owner decisions: D2 ding mandatory (D13, P0a, degenerate cases), D3 zone
+assignment in `parseSeed` (P0d), D4 per-card key = fields list (D14), and
+D1 apply the remaining 16 (NO_FIFTH single owner, NO_THIRDS fixture,
+pre-seeded floor rows, `h_*` share mutants, D9 in select, lane B exit,
+subtitle in lane C, rule-2 carve-out, cap 25, display names, element ids,
+id in Phase 3, fixture schema, `E1-` eng-review ids, PWA wording, P0b mutant).
+Swarm readiness: Phase 0 runs P0a/P0b/P0c in parallel, Phase 3 splits 3a/3b.
 
 NO UNRESOLVED DECISIONS
