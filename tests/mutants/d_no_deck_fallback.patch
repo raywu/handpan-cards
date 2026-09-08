@@ -1,0 +1,14 @@
+# kills: an unknown stored deck id falls back to the first deck
+diff --git a/index.html b/index.html
+index 2b54068..abcff99 100644
+--- a/index.html
++++ b/index.html
+@@ -133,7 +133,7 @@ let mode   = store.mode || "A";       // A: name->notes, B: notes->name
+ let shuffled = false;
+ let order = [], idx = 0, flipped = false;
+ 
+-const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
++const deck = () => DECKS.find(d => d.id === deckId);
+ const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId, mode})); } catch (e) {} };
+ 
+ /* ---------------- helpers ---------------- */

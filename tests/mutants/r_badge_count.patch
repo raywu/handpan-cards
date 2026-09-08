@@ -1,0 +1,15 @@
+# kills: test_drawn_bottom_note_badge_agrees
+# Prints the wrong bottom-note count on every affected card.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..2af5cec 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -360,7 +360,7 @@ def chord_card(c, x, y, deck, num, chord):
+     nb = len([f for f in fields if spec[f][3] == "bottom"])
+     if nb:
+         tracked(c, x + CW / 2, y + deck["y_note"] + 13, 
+-                "%d BOTTOM NOTE%s" % (nb, "S" if nb > 1 else ""),
++                "%d BOTTOM NOTE%s" % (nb + 7, "S" if nb > 1 else ""),
+                 "LabelSB", 4.6, 0.7, "c", ORANGE)
+     bottom_lines(c, x, y, CW, fields, roots, spec,
+                  y + deck["y_note"], y + deck["y_num"])

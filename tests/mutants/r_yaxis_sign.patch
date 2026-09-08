@@ -1,0 +1,16 @@
+# kills: test_tonefield_positions_agree
+# Flips the y-axis sign in the app's polar helper, so the SVG mirrors
+# vertically while the PDF does not.
+diff --git a/index.html b/index.html
+index 2b54068..fcf8c3e 100644
+--- a/index.html
++++ b/index.html
+@@ -160,7 +160,7 @@ function pan(d, ch) {
+   const ext = hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
+   let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}" xmlns="http://www.w3.org/2000/svg">`;
+ 
+-  const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
++  const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), orb * Math.sin(ang * Math.PI / 180)];
+ 
+   if (hasBottom)
+     s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;

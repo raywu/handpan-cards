@@ -1,0 +1,14 @@
+# kills: bottom-note badge appears with the right count, and only for bottom voicings
+diff --git a/index.html b/index.html
+index 2b54068..9fb5e03 100644
+--- a/index.html
++++ b/index.html
+@@ -243,7 +243,7 @@ function linesHTML(d, ch) {
+   });
+   const nb = ch.fields.filter(f => d.fields[f][3] === "bottom").length;
+   return `<div class="lines">
+-    ${nb ? `<div class="badge">${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
++    ${nb ? `<div class="badge">${nb} BOTTOM NOTES</div>` : ""}
+     <div class="notesline">${notes}</div>
+     <div class="numline">${nums}</div></div>`;
+ }

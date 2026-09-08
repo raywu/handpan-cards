@@ -1,0 +1,13 @@
+# kills: card lines and diagram stay inside the card at 380px
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -76,7 +76,7 @@
+ .lines{padding:0 8px 13px; text-align:center}
+ .badge{font:600 9px/1 "Nunito Sans"; letter-spacing:.14em; color:#E27005; margin-bottom:6px}
+ .notesline{font-family:Bitter, serif; font-weight:400;
+-  font-size:clamp(12px,4.4vw,19px); line-height:1.25; white-space:nowrap}
++  font-size:clamp(12px,9vw,38px); line-height:1.25; white-space:nowrap}
+ .numline{font-family:Bitter, serif; font-weight:400;
+   font-size:clamp(12px,4.2vw,18px); line-height:1.2; white-space:nowrap}
+ .notesline sub{font-size:.62em}

@@ -1,0 +1,14 @@
+# kills: shuffle yields a valid permutation and shuffle-off restores card order
+diff --git a/index.html b/index.html
+index 2b54068..096bc59 100644
+--- a/index.html
++++ b/index.html
+@@ -277,7 +277,7 @@ function setOrder() {
+   const n = deck().chords.length;
+   order = [...Array(n).keys()];
+   if (shuffled) for (let i = n - 1; i > 0; i--) {
+-    const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]];
++    const j = Math.floor(Math.random() * (i + 1)); order[i] = order[j];
+   }
+   idx = 0; flipped = false;
+ }

@@ -1,0 +1,13 @@
+# kills: linesHTML keeps chord-spelling order, not pitch order (Amara Fmaj7)
+diff --git a/index.html b/index.html
+index 2b54068..08423b7 100644
+--- a/index.html
++++ b/index.html
+@@ -232,6 +232,7 @@ function nameHTML(ch, big) {
+ function linesHTML(d, ch) {
+   const C = d.colors, rpc = pc(d, ch.roots[0]);
+   const seg = (arr, render) => arr.map(render).join(`<span class="sepc"> - </span>`);
++  ch = { ...ch, fields: [...ch.fields].sort((a, b) => d.fields[a][2] - d.fields[b][2]) };
+   const notes = seg(ch.fields, f => {
+     const [nm, oc] = d.fields[f];
+     const col = pc(d, f) === rpc ? C.root : C.tone;

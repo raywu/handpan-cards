@@ -1,0 +1,15 @@
+# kills: test_all_drawn_card_text_stays_inside_the_card
+# No drawn glyph may run off the edge of the card.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..0243fdf 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -124,7 +124,7 @@ def card_header(c, x, y, w, h, deck, num, subtitle, main, sup):
+         tracked(c, x + 9, y + h - 21.5, num, "Label", 4.6, 0.4, "l", SEP)
+     if subtitle:
+         s = fit(subtitle, "LabelSB", 4.2, w * 0.60, track=0.55)
+-        tracked(c, x + w - 9, y + h - 12.5, subtitle, "LabelSB", s, s * 0.055 * 2.4,
++        tracked(c, x + w + 4, y + h - 12.5, subtitle, "LabelSB", s, s * 0.055 * 2.4,
+                 "r", INK)
+     size = 27.0
+     while size > 8 and (tw(main, "Display", size, size * 0.02)

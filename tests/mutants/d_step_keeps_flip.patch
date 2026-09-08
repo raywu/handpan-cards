@@ -1,0 +1,14 @@
+# kills: step() wraps forward and backward and clears the flip
+diff --git a/index.html b/index.html
+index 2b54068..360f654 100644
+--- a/index.html
++++ b/index.html
+@@ -300,7 +300,7 @@ const card = document.getElementById("card");
+ function flip() { flipped = !flipped; render(); }
+ function step(dir) {
+   idx = (idx + dir + order.length) % order.length;
+-  flipped = false; render();
++  render();
+ }
+ card.addEventListener("click", flip);
+ card.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });

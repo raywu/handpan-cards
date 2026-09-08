@@ -6,16 +6,83 @@ on:
   pull_request:
 
 jobs:
-  validate:
+  data:
+    name: data integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install reportlab (Color class used by decks.py)
-        run: pip install reportlab
-      - name: Data integrity + card invariants
+      - run: pip install reportlab
+      - name: App JSON vs decks.py, card invariants, English-only copy
         run: python tools/validate.py
       - name: App boot simulation
         run: node tools/boot_sim.js
+
+  python-tests:
+    name: python suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install reportlab pymupdf
+      - name: Deck data, print layout, PDF build, render agreement
+        run: python -m unittest discover -s tests -t . -v
+
+  js-tests:
+    name: js suites (unit + e2e)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No npm install: the e2e harness drives the Chrome already present on the
+      # runner over CDP, so this repo stays dependency-free.
+      - name: Show browser in use
+        run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
+      - name: App units and browser e2e
+        run: node --test "tests/*.test.js"
+
+  suite-health:
+    name: suite health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install reportlab pymupdf
+      # Both runners exit 0 when they collect nothing, and a decorated skip is
+      # easy to miss in a log. This asserts a floor and forbids silent skips.
+      - run: python tests/suite_health.py
+
+  mutation-gate:
+    name: mutation gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install reportlab pymupdf
+      # Every test group must have a mutant that kills it; a test nothing can
+      # kill is not a test.
+      - run: ./tests/mutation_check.sh

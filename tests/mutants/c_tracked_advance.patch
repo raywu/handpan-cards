@@ -1,0 +1,15 @@
+# kills: test_tracked_advances_sum_to_the_width_tw_reports
+# tw() must predict the ink tracked() lays down.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..8bb66c7 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -50,7 +50,7 @@ def tracked(c, x, y, text, font, size, track=0.0, align="l", color=None):
+         x -= w
+     for ch in text:
+         c.drawString(x, y, ch)
+-        x += pdfmetrics.stringWidth(ch, font, size) + track
++        x += pdfmetrics.stringWidth(ch, font, size)
+     return w
+ 
+ 

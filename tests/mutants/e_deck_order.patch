@@ -1,0 +1,13 @@
+# kills: deck chips switch the deck
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -290,7 +290,7 @@
+     b.style.setProperty("--dga", d.colors.ga);
+     b.style.setProperty("--dgb", d.colors.gb);
+     b.innerHTML = `<span class="dot"></span>${esc(d.name)}`;
+-    b.onclick = () => { deckId = d.id; save(); setOrder(); buildChips(); render(); };
++    b.onclick = () => { deckId = d.id; save(); buildChips(); render(); };
+     nav.appendChild(b);
+   }
+ }

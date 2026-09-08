@@ -1,0 +1,15 @@
+# kills: test_state_selects_root_or_tone_colour_but_never_both
+# Root fields must light in the root colour, chord tones in the tone colour.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..937d76d 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -200,7 +200,7 @@ def draw_ring(c, x, y, r, state):
+     c.circle(x, y, r, stroke=1, fill=1)
+     if state in ("off",):
+         return
+-    col = BLUE if state in ("root", "ding-root") else GREEN
++    col = GREEN if state in ("root", "ding-root") else BLUE
+     c.setStrokeColor(col)
+     c.setLineWidth(r * 0.24)
+     c.circle(x, y, r * 0.87, stroke=1, fill=0)

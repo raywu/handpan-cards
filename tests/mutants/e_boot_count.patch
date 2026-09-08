@@ -1,0 +1,13 @@
+# kills: boots with the first deck loaded
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -268,7 +268,7 @@
+ 
+   document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
+   document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+-  document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
++  document.getElementById("count").textContent = `${idx} / ${order.length}`;
+   document.getElementById("card").classList.toggle("flip", flipped);
+ }
+ 

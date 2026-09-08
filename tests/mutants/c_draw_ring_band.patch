@@ -1,0 +1,15 @@
+# kills: test_highlight_band_sits_between_the_outline_and_the_hairline
+# The coloured band must stay between the outline and the inner hairline.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..ed5f2b6 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -203,7 +203,7 @@ def draw_ring(c, x, y, r, state):
+     col = BLUE if state in ("root", "ding-root") else GREEN
+     c.setStrokeColor(col)
+     c.setLineWidth(r * 0.24)
+-    c.circle(x, y, r * 0.87, stroke=1, fill=0)
++    c.circle(x, y, r * 0.80, stroke=1, fill=0)
+     c.setStrokeColor(black)
+     c.setLineWidth(0.55)
+     c.circle(x, y, r * 0.74, stroke=1, fill=0)

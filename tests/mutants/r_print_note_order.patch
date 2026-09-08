@@ -1,0 +1,15 @@
+# kills: test_drawn_note_line_agrees
+# Prints the note line in pitch order instead of chord-spelling order.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..4ae3f58 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -152,7 +152,7 @@ def bottom_lines(c, x, y, w, fields, roots, meta, y_names, y_nums):
+             break
+         size -= 0.25
+     px = x + (w - total) / 2
+-    for i, f in enumerate(fields):
++    for i, f in enumerate(sorted(fields)):
+         nm, ov = meta[f][0], meta[f][1]
+         col = BLUE if f in roots else GREEN
+         px += note_text(c, px, y_names, nm, ov, "Notes", size, col, centre=False)

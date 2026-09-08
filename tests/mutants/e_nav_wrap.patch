@@ -1,0 +1,13 @@
+# kills: buttons and arrow keys step through the deck and wrap
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -299,7 +299,7 @@
+ const card = document.getElementById("card");
+ function flip() { flipped = !flipped; render(); }
+ function step(dir) {
+-  idx = (idx + dir + order.length) % order.length;
++  idx = Math.max(0, Math.min(order.length - 1, idx + dir));
+   flipped = false; render();
+ }
+ card.addEventListener("click", flip);
