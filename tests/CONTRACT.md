@@ -8,7 +8,10 @@ that in, they do not re-derive it.
 
     ./tests/run.sh                                   # everything
     python3 -m unittest discover -s tests -t . -v    # python only
-    node --test tests/                               # js only (unit + e2e)
+    node --test "tests/*.test.js"                    # js only (unit + e2e)
+
+Pass a glob, not the directory: this Node build rejects a directory argument to
+`--test` ("Cannot find module .../tests"). `tests/run.sh` globs for you.
 
 `tests/` is a package (`__init__.py`); shared paths live in `tests/paths.py`.
 E2E skips with a printed reason if no Chromium is found - it never fails the
@@ -58,6 +61,12 @@ run over a missing browser.
 - `.notesline`/`.numline` are `white-space:nowrap` inside `.face{overflow:hidden}`:
   overlong text is CLIPPED, not scrolled, so `body.scrollWidth` stays clean.
   Assert per-element `el.scrollWidth <= el.clientWidth + 1`.
+- **Stale `.pyc` during mutation sweeps.** Bytecode invalidation keys on source
+  mtime-in-seconds + size, so a byte-length-neutral patch applied and reverted
+  within one second leaves `__pycache__` holding the mutated module - the next
+  run then tests data that is no longer on disk. Any test or script that mutates
+  and re-imports must set `PYTHONDONTWRITEBYTECODE=1` (or a fresh
+  `PYTHONPYCACHEPREFIX`) and clear `__pycache__` between cycles.
 - `localStorage` key `hpfc` will be shared with spaced-repetition progress.
   Assert subset semantics (`stored.deck === ...`), never deep equality.
 

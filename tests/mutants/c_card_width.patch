@@ -1,0 +1,15 @@
+# kills: test_card_geometry_and_calibration_bar_measured_from_the_sheet
+# Cards cut on the crop marks must come out poker size.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..3e6a567 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -30,7 +30,7 @@ ORANGE = Color(0.850, 0.400, 0.020)
+ FAINT = Color(0.78, 0.78, 0.78)
+ 
+ PAGE = (612.0, 792.0)               # US Letter
+-CW, CH = 177.6, 247.2               # poker card
++CW, CH = 178.0, 247.2               # poker card
+ GX, GY = 12.2, 9.4                  # gutters (4.3 / 3.3 mm)
+ 
+ 

@@ -1,0 +1,15 @@
+# kills: test_slots_are_in_reading_order
+# Card #1 must print top-left; the sheet reads down the page.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..6058881 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -272,7 +272,7 @@ def slots():
+     x0 = (PAGE[0] - tw_) / 2
+     y0 = (PAGE[1] - th_) / 2
+     return [(x0 + col * (CW + GX), y0 + th_ - (row + 1) * CH - row * GY)
+-            for row in range(3) for col in range(3)]
++            for row in (2, 1, 0) for col in range(3)]
+ 
+ 
+ def crop_marks(c):

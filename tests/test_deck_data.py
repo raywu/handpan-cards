@@ -16,6 +16,7 @@ lit" belong to validate.py and are deliberately not repeated here.
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 
 try:  # discovered as tests.test_deck_data from the repo root
@@ -297,13 +298,23 @@ class ValidateScriptTest(unittest.TestCase):
     def test_validate_py_passes(self):
         """tools/validate.py cross-checks app JSON vs decks.py and the
         highlighting invariants. Shelled out to: importing it stubs `hifi`
-        into sys.modules for the whole process (CONTRACT traps)."""
+        into sys.modules for the whole process (CONTRACT traps).
+
+        Bytecode caching is redirected to a throwaway directory. A .pyc is
+        invalidated on source mtime-in-seconds + size, so a mutation run that
+        applies a same-length patch, compiles, and reverts inside one second
+        leaves tools/__pycache__ holding the MUTATED decks.py - and the next
+        validate.py run fails against data that is no longer on disk.
+        """
         try:
             import reportlab  # noqa: F401
         except ImportError:
             self.skipTest("reportlab not installed; validate.py needs it")
-        subprocess.run([sys.executable, os.path.join("tools", "validate.py")],
-                       cwd=paths.ROOT, check=True)
+        with tempfile.TemporaryDirectory() as pycache:
+            env = dict(os.environ, PYTHONPYCACHEPREFIX=pycache)
+            subprocess.run([sys.executable, "-B",
+                            os.path.join("tools", "validate.py")],
+                           cwd=paths.ROOT, env=env, check=True)
 
 
 if __name__ == "__main__":

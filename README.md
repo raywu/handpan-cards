@@ -17,6 +17,37 @@ palettes) is original to this project.
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
 
+## Tests
+
+    ./tests/run.sh                       # everything
+    ./tests/run.sh python                # python suites only
+    ./tests/run.sh node                  # js suites only
+    ./tests/run.sh mutants               # the red-proof gate
+
+Needs `pip install reportlab pypdf`. No JavaScript dependencies: the
+browser tests drive an already-installed Chrome over the DevTools Protocol, so
+there is still no `package.json`, no lockfile and no build step.
+
+What is covered:
+
+- **Deck data** - the three instrument layouts are pinned against the tables in
+  `CLAUDE.md`, plus the voicing rules (ding never voiced, no doubled pitch
+  classes, power chords are a root and a fifth).
+- **Print layout** - text fitting against what the renderer actually draws, the
+  3x3 page grid, and the tonefield drawing recipe.
+- **App logic** - highlighting derivation, chord-spelling order, navigation and
+  wrap, shuffle, and the localStorage guards, booted headless from `index.html`.
+- **App vs print agreement** - the two renderers are independent
+  implementations of the same conventions (and use opposite y-axis signs), so
+  all 59 cards are compared on position, highlight state, note order and badge.
+- **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
+  and touch navigation, reload persistence, and clipping at a 380px viewport.
+- **Mutation gate** - every test group ships a patch that must make it fail. A
+  test nothing can kill does not count as coverage.
+
+`tests/CONTRACT.md` is the binding guide for adding tests, including the traps
+that have already cost a debugging cycle.
+
 ## Host on GitHub Pages
 
 1. Create a repo and add `index.html` at the root.

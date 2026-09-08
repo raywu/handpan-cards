@@ -8,6 +8,13 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+# .pyc invalidation keys on source mtime-in-SECONDS plus size, so a
+# byte-length-neutral mutant applied and reverted inside one second leaves a
+# stale .pyc holding the mutated module. Without this, a sweep can validate
+# against data that is no longer on disk and report phantom results.
+export PYTHONDONTWRITEBYTECODE=1
+find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
 TRACKED="index.html tools/decks.py tools/hifi.py"
 if ! git diff --quiet -- $TRACKED; then
   echo "REFUSING: working tree already modifies $TRACKED - commit or stash first."
@@ -50,6 +57,7 @@ for p in "${PATCHES[@]}"; do
     KILLED=$((KILLED + 1))
   fi
   git checkout -- $TRACKED
+  find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 done
 
 echo

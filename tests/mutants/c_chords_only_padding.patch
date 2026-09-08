@@ -1,0 +1,15 @@
+# kills: test_all_six_pdfs_build_with_the_expected_page_counts
+# build() must report the number of sheets it actually wrote.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index f81d582..49b0547 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -298,8 +298,6 @@ def build(path, deck, chords_only=False):
+     S = slots()
+     if chords_only:
+         cards = [("chord", (i + 1, ch)) for i, ch in enumerate(deck["chords"])]
+-        while len(cards) % 9 != 0:
+-            cards.append(("skip", None))
+     else:
+         cards = ([("title", None), ("legend", None)]
+                  + [("chord", (i + 1, ch)) for i, ch in enumerate(deck["chords"])])
