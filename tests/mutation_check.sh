@@ -25,13 +25,19 @@ if ! git diff --quiet -- $TRACKED; then
   exit 2
 fi
 
-suite_for() {
+# For the python suites the NAMED test is run (unittest -k), so a mutant that
+# happens to be caught by some other test does not count: it must kill the one
+# it claims to cover, or the guarantee that that test is live is silently void.
+# The node suites still run whole - their test names contain spaces.
+suite_for() {   # $1 = patch path, $2 = "# kills:" target (may be empty)
+  local k=""
+  [ -n "$2" ] && k="-k $2"
   case "$(basename "$1")" in
-    b_*) echo "python3 -m unittest tests.test_deck_data" ;;
-    c_*) echo "python3 -m unittest tests.test_print tests.test_pdf_build" ;;
+    b_*) echo "python3 -m unittest $k tests.test_deck_data" ;;
+    c_*) echo "python3 -m unittest $k tests.test_print tests.test_pdf_build" ;;
     d_*) echo "node --test tests/app.test.js" ;;
     e_*) echo "node --test tests/e2e.test.js" ;;
-    r_*) echo "python3 -m unittest tests.test_render_agreement" ;;
+    r_*) echo "python3 -m unittest $k tests.test_render_agreement" ;;
     *)   echo "" ;;
   esac
 }
@@ -45,7 +51,7 @@ fi
 SURVIVORS=(); KILLED=0
 for p in "${PATCHES[@]}"; do
   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
-  cmd=$(suite_for "$p")
+  cmd=$(suite_for "$p" "$target")
   if [ -z "$cmd" ]; then
     echo "SKIP  $p (unknown suite prefix)"; SURVIVORS+=("$p (no suite)"); continue
   fi

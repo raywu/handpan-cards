@@ -14,6 +14,7 @@ Highlighting derivation, root/tone non-overlap and "every voicing field is
 lit" belong to validate.py and are deliberately not repeated here.
 """
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -181,7 +182,7 @@ class LayoutTest(unittest.TestCase):
 
 
 class VoicingTest(unittest.TestCase):
-    """CLAUDE.md > "Voicing rules (audited from the originals)"."""
+    """CLAUDE.md > "Voicing rules"."""
 
     def test_ding_never_in_voicing(self):
         for deck in decks():
@@ -260,7 +261,10 @@ class VoicingTest(unittest.TestCase):
             for ch in deck["chords"]:
                 root = ch["roots"][0]
                 rm = midi(root)
-                others = [f for f in ch["fields"] if f != root]
+                # The ding is excluded here: its absence is test_ding_never_in_voicing's
+                # job, and this rule is about the register of playable tones.
+                others = [f for f in ch["fields"]
+                          if f != root and field_of(deck, f)[3] != "ding"]
                 card = (deck["id"], ch["main"] + ch["sup"], ch["fields"])
 
                 def instances(f, below):
@@ -268,25 +272,40 @@ class VoicingTest(unittest.TestCase):
                             if midi(g) % 12 == midi(f) % 12
                             and (midi(g) < rm if below else midi(g) > rm)]
 
-                sup = ch["sup"]
                 # subTest so a failure names EVERY non-compliant card, not just
                 # the first one the loop reaches.
                 with self.subTest(deck=deck["id"], card=ch["main"] + ch["sup"]):
-                    self._check_cluster(deck, ch, root, rm, others, card, midi, instances)
+                    self._check_cluster(ch, rm, others, card, midi, instances)
 
-    def _check_cluster(self, deck, ch, root, rm, others, card, midi, instances):
-        sup = ch["sup"]
+    @staticmethod
+    def extension_intervals(symbol):
+        """Semitone intervals the chord SYMBOL implies as extensions.
+
+        Parsed from the whole symbol (main + sup), since this deck writes its
+        7ths into `main` ("G#m7", "Dmaj7") and a future "Cm9" would too. An
+        `addN` names exactly that extension; otherwise a stacked symbol implies
+        the ones below it (11 -> 9th + 11th; 13 -> 9th + 11th + 13th). A "9"
+        immediately after b/# is an altered 9th, never a natural one.
+        """
+        table = {"b9": {1}, "#11": {6}, "9": {2}, "11": {5}, "13": {9}}
+        adds = re.findall(r"add(b9|#11|9|11|13)", symbol)
+        if adds:
+            return set().union(*(table[a] for a in adds))
         ext = set()
-        if "b9" in sup:
+        if "b9" in symbol:
             ext.add(1)
-        if "9" in sup:
+        if re.search(r"(?<![b#])9", symbol):
             ext.add(2)
-        if "#11" in sup:
+        if "#11" in symbol:
             ext.add(6)
-        elif "11" in sup:          # an 11 chord implies its 9th
+        elif "11" in symbol:
             ext |= {2, 5}
-        if "13" in sup:            # a 13 chord implies 9th and 11th
+        if "13" in symbol:
             ext |= {2, 5, 9}
+        return ext
+
+    def _check_cluster(self, ch, rm, others, card, midi, instances):
+        ext = self.extension_intervals(ch["main"] + ch["sup"])
 
         forced = any(not instances(f, below=False) for f in others)
         for f in others:

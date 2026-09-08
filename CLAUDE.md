@@ -91,15 +91,15 @@ this by attaching per-instrument images.
    sets). "Root position" here means the SPELLING ORDER of the field list
    starts at the root - it says nothing about register. Register is fixed by
    the cluster rule: when no chord tone is forced below the root, every
-   non-root tone sits above it (lowest compact voicing); when ANY non-root
+   non-root tone sits above it and its register is otherwise free (a spread
+   9th above the 7th, like Fm9's G5, is fine); when ANY non-root
    tone is only available below the root, every CHORD TONE (3rd, 5th, 7th;
    the 4th of a sus chord; the 6th of a 6-chord) moves to its highest
    instance below the root, and one with no lower instance stays put.
    On such a forced card, EXTENSIONS implied by the chord symbol (add9, 9,
    b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11)
    keep their nearest instance ABOVE the root unless they are themselves
-   forced. Unforced cards are governed only by "everything above the root" -
-   a spread 9th above the 7th (Fm9: G5) is left alone. Bottom-
+   forced. Bottom-
    shell fields count as ordinary instances - a chord tone clusters to the
    bottom shell if that is its highest lower instance (Cm7 -> Eb3/U3). The
    root and the spelling order never change.
