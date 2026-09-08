@@ -25,7 +25,9 @@ run over a missing browser.
 over `mutation_check.sh`'s filename-prefix table, so a new mutant prefix needs
 no change to the script. A patch with neither a known prefix nor a header is
 reported as a survivor. Reverting is driven by the patch itself, so a mutant may
-touch any path.
+touch any path. Each suite runs under a wall clock (`MUTANT_TIMEOUT`, default
+180s) and a hang is retried once, then reported as `TIMEOUT` - never as a kill:
+an unfinished CI step's log cannot be read, so a hang has to end by itself.
 
 **Floors are a per-file table.** `suite_health.py`'s `FLOORS` has one row per
 test file, and rows are pre-seeded at 0 for files that do not exist yet. Adding

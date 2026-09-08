@@ -41,6 +41,19 @@ restore() {   # $@ = paths
   git clean -fdq -- "$@" 2>/dev/null || true
 }
 
+# A mutated suite can hang: a headless browser that never reports ready (seen
+# once on a CI runner - the job burned 33 minutes and produced NO log, because
+# an unfinished step's log is unreadable), or a loop the mutant made infinite.
+# So every suite runs under a wall clock. A hang says nothing about the test, so
+# a timed-out suite is retried ONCE; a second timeout is a hard error and never
+# a "kill", which would let a hang masquerade as a live test.
+SUITE_TIMEOUT=${MUTANT_TIMEOUT:-180}
+TMO=()
+command -v timeout >/dev/null 2>&1 && TMO=(timeout -k 5 "$SUITE_TIMEOUT")
+run_suite() {   # $* = command string
+  ${TMO[@]+"${TMO[@]}"} $* >/dev/null 2>&1
+}
+
 # Union of every path any mutant names: the dirty check and the interrupt
 # cleanup both work off this, instead of a hardcoded file list.
 ALLPATHS=()
@@ -97,9 +110,17 @@ for p in "${PATCHES[@]}"; do
 
   PATHS=(); while IFS= read -r line; do PATHS+=("$line"); done < <(patch_paths "$p")
   git apply "$p"
-  if $cmd >/dev/null 2>&1; then
+  run_suite "$cmd"; rc=$?
+  if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
+    echo "retry     $p  (suite hung for ${SUITE_TIMEOUT}s, retrying once)"
+    run_suite "$cmd"; rc=$?
+  fi
+  if [ $rc -eq 0 ]; then
     echo "SURVIVED  $p  -> ${target:-?} did NOT fail"
     SURVIVORS+=("$p")
+  elif [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
+    echo "TIMEOUT   $p  -> suite hung twice for ${SUITE_TIMEOUT}s: $cmd"
+    SURVIVORS+=("$p (timed out)")
   else
     echo "killed    $p  -> ${target:-?}"
     KILLED=$((KILLED + 1))
