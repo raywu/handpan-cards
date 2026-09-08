@@ -152,7 +152,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 |---|---|---|---|---|
 | P0a | scale-engine/w1-spec | merged 386a856 | PASS_WITH_NITS (3rd) | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
-| P0c | scale-engine/w3-harness | PR #11 under review | pending | 2026-09-08 |
+| P0c | scale-engine/w3-harness | PR #11 bounced, lane fixing | FAIL+1 | 2026-09-08 |
 
 ## Handoff queue (append-only)
 
@@ -181,6 +181,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #10 | P0a | FAIL (2nd) | 1 blocker (range row in range), 4 majors (ding-only candidacy, parseSeed payload undefined, Object.keys order, degree rules contradict D10), 9 nits | cap reached; integrator fixed all in b81ad84; plan line 378 needs the 25->26 subtitle amendment (row 11, done) |
 | #10 | P0a | FAIL | 1 blocker (zone rule vs built-in reproduction), 9 majors (trim order, Amara infers Dorian, omitted ding octave, id/label scheme, sup union, NO_FIFTH literal, formatSeed/deckId wrapping, subtitle cap vs m7b5, pitch-set rule), 9 nits | bounced with 19 integrator decisions (row 10); fresh re-review after fix push |
 | #9 | P0b | PASS_WITH_NITS | 2 major (both cross-lane: Pygmy inner-zone gap in the D13 grammar; f_ mutant deferred), 4 nits (token test tolerant of misplaced `\|`; sha self-consistent only; deep-equality skips name/sub; duplicated CHORD_COUNTS) | merged 66453e8; queue rows 7-9 |
+| #11 | P0c | FAIL (CI success at 81830c4) | 1 blocker: suite_health `==` floor asserts crash when a pre-seeded row is raised; 1 high: mutation_check EXIT trap installed before REFUSING check deletes untracked lane files; 3 medium (restore() all-or-nothing, check_node skips unlisted files, header suites count any non-zero as kill); 8 nits incl. output format vs plan greps | Bounced to lane, attempt 1 |
 
 ## Cycle state
 
@@ -189,4 +190,4 @@ Cycle: 1   Wave: 1   Merged this batch: -
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
-| P0c | returned done | agent-managed | scale-engine/w3-harness | #11 | 81830c4 | 2026-09-08 gh pr view + run 34289135665 success | reviewer spawned | 0 | no | - | - |
+| P0c | live (bounced) | agent-managed | scale-engine/w3-harness | #11 | 81830c4 | 2026-09-08 gh pr view + run 34289135665 success | FAIL | 1 | no | - | yes |
