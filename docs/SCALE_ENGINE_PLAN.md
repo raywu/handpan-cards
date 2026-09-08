@@ -4,8 +4,8 @@
      been built. Findings marked [verified] were reproduced against the data
      on main at afd52a7 with tools/research/engine_measure/ - re-run those
      scripts rather than trusting a number. The OWNER DECISIONS table is
-     binding; entries marked [OWNER: PENDING] carry a swarm default that lanes
-     proceed on until the owner replaces it. -->
+     binding. D6, D9 and D10 were DECIDED by the owner on 2026-09-08; no
+     entry is pending. -->
 
 # Plan: user-configurable scales -> generated chord flashcards
 
@@ -124,11 +124,11 @@ chord-name will assume otherwise.
 | D3 | **No custom-scale PDFs in v1.** App only; `tools/gen_deck.js` and the Python adapter are Phase 6. | The print card's limits (6-note voicings, 25-char subtitles) still bound the engine - see Rendering budgets. |
 | D4 | **Equivalence annotations are a per-card override field.** Built-ins keep exactly the two they ship, frozen as data; custom scales derive them mechanically under the m7/m7b5 -> X6/Xm6 definition. | No deck-data change, no PDF rebuild. The five unannotated eligible cards (Pygmy Gm7b5/Fm7/Cm7, Amara Dm7/Am7) are provenance, not bugs. |
 | D5 | **Stay vanilla.** No framework, no CDN script, no build step. | See "Engine integration": engine source lives in `src/engine/`, is copied verbatim into `index.html` by a sync step, and a desync check keeps the two identical - the same pattern the DECKS literal already uses. |
-| D6 | **Custom deck colours come from a fixed owner-approved palette set** (6-8 root/tone pairs; user picks, or assigned by hash of the scale name). | The share URL carries a palette INDEX, never a colour string. **[OWNER: PENDING]** the pairs themselves. Swarm default until then: the three built-in pairs plus their root/tone swaps, flagged in the UI as provisional. Needed by Phase 3, not before. |
+| D6 | **Custom deck colours come from a fixed owner-approved palette set** (user picks, or assigned by hash of the scale name). | The share URL carries a palette INDEX, never a colour string. **DECIDED 2026-09-08:** the set is the three built-in pairs plus their root/tone swaps (6 entries, index 0-5 in that order: Hijaz, Pygmy, Amara, then the swaps). Not provisional; extending the set later appends indices and never renumbers. Needed by Phase 3, not before. |
 | D7 | **Spill to an inner ring past the rim ceiling.** | [verified] tangent ceiling `pi/asin(r_note/rim)` = 12.18 at Hijaz/Amara proportions, 15.81 at Pygmy's; stroke-aware (0.65pt rings at print size) it is ~11.9, so **11 rim fields** is the practical cap. Do NOT shrink fields to fit. See D12 for the inner-ring cap. |
 | D8 | **Degree NUMERALS are mode-aware**: minor-relative (`III`, `VII`) for scales with a minor third, major-relative with flats (`bIII`, `bVII`) otherwise. | [verified] Hijaz 5/5, Pygmy 7/7 fall out; **D Amara is the frozen exception** (ships `bIII`/`bVII` from the commercial deck). Fallback for no-third and symmetric sets: major-relative with flats. |
-| D9 | **Root-octave default: lowest top-shell instance, else lowest.** [OWNER: PENDING] confirmation; swarm proceeds on it. | 51/54 primaries. Pygmy `Db`, `Dbmaj7`, `Eb7` become recorded divergences of the built-in fixture, not engine bugs. |
-| D10 | **Degree CASE comes from stacked thirds over a parent scale**, not from the pan alone. [OWNER: PENDING] whether Amara is declared Dorian. | [verified] No pan-only rule separates Hijaz `iv` from Amara `IV`. Stacked thirds over a 7-note parent reproduce all 17 labels (Hijaz Phrygian dominant, Pygmy Aeolian) if Amara is Dorian; under Aeolian, the deck's own credit, Amara `IV` is a second frozen exception. Custom scales: the user picks a parent scale or the engine infers the nearest 7-note mode; scales with no usable parent use uppercase. |
+| D9 | **Root-octave default: lowest top-shell instance, else lowest.** DECIDED 2026-09-08. | 51/54 primaries. Pygmy `Db`, `Dbmaj7`, `Eb7` are recorded divergences of the built-in fixture, not engine bugs. |
+| D10 | **Degree CASE comes from stacked thirds over a parent scale**, not from the pan alone. DECIDED 2026-09-08: **D Amara is declared Aeolian** (hexatonic sub-scale of D natural minor with the b6 omitted, per the owner's music-theory rationale), so **Amara `IV` is a second frozen exception** alongside the D8 numerals. | [verified] No pan-only rule separates Hijaz `iv` from Amara `IV`. Stacked thirds over a 7-note parent reproduce 16/17 labels (Hijaz Phrygian dominant, Pygmy Aeolian, Amara Aeolian); Amara `G` derives as `iv` and ships as `IV` from the frozen list. Custom scales: the engine infers the nearest 7-note mode and the scale form exposes a parent-scale picker to override it; the share URL carries the chosen parent; scales with no usable parent use uppercase. |
 | D11 | **Register tie-break for unforced tones: nearest instance above the root.** | 20/21 under-determined cards; `Fm9` (G5) is the single recorded voicing exception. |
 | D12 | **Layout default = Pygmy pattern, mirrored right-first**, generalised: ding enlarged and offset toward the player (`r=0.19R`, `dy=0.1425R`); rim zig-zag ascending from bottom-right (~290 deg) toward top centre, right-first; inner ring holds at most 2 notes at ~128/~52 deg ascending opposite to the rim; bottom notes as a dashed outer x-ray ring, at most 6; beyond 11 rim + 2 inner + 6 bottom the scale is rejected with a reason. | A default, not a measurement. Never retro-applied to the built-ins (Hijaz and Amara are verified left-first). The geometry solver applies to GENERATED decks only; built-in `geom` literals bypass it, so "built-ins render identically" stays trivially true. |
 
@@ -283,7 +283,7 @@ serial; lanes inside a phase are parallel.
 |---|---|---|
 | **A** | **Legality + voicing.** Enumerate legal voicings for (root field, interval set): no ding, no doubled pitch classes, power chords = 2 notes; apply D2 + D11 to pick one. Exit: containment - every one of the 59 fixture tuples is in its candidate set [verified satisfiable] - and the chosen voicing equals the fixture for 58/59 with `Fm9` as the declared exception (two-sided: the exception must still diverge). | `src/engine/voicing.js`, `tests/voicing.test.js`, `tests/mutants/v_*` |
 | **B** | **Geometry solver** per D12: `r_note`/`f_note`/`f_num`/`n_in`/`n_out` as functions of N, rim ceiling, inner-ring and bottom-ring caps, rejection beyond them, full geom shape always emitted, `ext` from the furthest element. Exit (pure geometry, app-side only; print is Phase 6): for synthetic scales at N=5..19, no two field circles closer than r1+r2, every element inside `ext`, the inner pair ascends opposite the rim, and the three built-in `geom` literals pass through untouched. | `src/engine/layout.js`, `tests/layout.test.js`, `tests/mutants/g_*` |
-| **C** | **Namer + degrees.** Quality naming from the fixture table, symmetric-set root tie-break (default: prefer tonic, else lowest scale degree), sus4-over-sus2 and m7-over-6 rules, per-scale accidental convention, D8 numerals, D10 case. Exit: reproduces fixture `main`/`sup` and every degree label modulo a two-sided recorded exception list (Amara `bIII`/`bVII`; Amara `IV` unless Dorian). | `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*` |
+| **C** | **Namer + degrees.** Quality naming from the fixture table, symmetric-set root tie-break (default: prefer tonic, else lowest scale degree), sus4-over-sus2 and m7-over-6 rules, per-scale accidental convention, D8 numerals, D10 case. Exit: reproduces fixture `main`/`sup` and every degree label modulo a two-sided recorded exception list (Amara `bIII`/`bVII`; Amara `IV`). | `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*` |
 
 Each lane raises its own `suite_health.py` floor and adds a per-file floor so
 an engine test file cannot vanish without tripping the aggregate. Owner review
@@ -307,7 +307,7 @@ persistence. Adds `tools/inline_engine.py`, the engine regions in `index.html`,
 the desync check in `tools/validate.py`, a second deck registry so `deck()`
 can resolve custom ids without the `DECKS` literal growing (`validate.py`
 KeyErrors on any fourth deck in the literal; `tests/paths.py` needs the literal
-to stay one line), the D6 palette (provisional if still pending), fixed element
+to stay one line), the D6 palette and the D10 parent-scale picker, fixed element
 ids for the input UI so e2e can target them, a generation-time budget test
 (12-note deck under 200 ms in Node), regenerated `d_*`/`e_*` mutants, and the
 CLAUDE.md/README wording "sync step, not build step". Owns `index.html`,
@@ -338,12 +338,13 @@ the `DECKS` literal.
 | Fallback degrees for no-third / atonal scales | C | major-relative with flats, uppercase; flagged |
 | Accidental spelling for custom scales | C | user's typed spellings verbatim; flagged |
 | Inner-ring cap and bottom-ring cap | B | 2 and 6 (D12); flagged |
-| Root-octave policy | Phase 2 | D9 default; **owner confirms** |
-| Degree case parent scale for Amara | C | D10; **owner decides** Dorian vs Aeolian exception |
+| Root-octave policy | Phase 2 | D9; DECIDED |
+| Degree case parent scale for Amara | C | D10; DECIDED Aeolian, `IV` frozen |
+| Parent-scale choice for custom scales | C / Phase 3 | D10; DECIDED infer nearest mode, user override in the form, carried in the URL |
 | Ranking and cap | Phase 2 | as stated in Phase 2; flagged |
 | Canonical card order | Phase 2/3 | as stated above; flagged |
 | Per-deck override lists | Phase 2 | empty; **owner-only** in substance |
-| Palette set | Phase 3 | **owner-only** (D6); provisional built-in pairs until then |
+| Palette set | Phase 3 | D6; DECIDED built-in pairs + swaps |
 | UI element ids for scale input | Phase 3 | fixed in `ENGINE-SPEC.md`; flagged |
 
 ## Still missing, name them in the plan
