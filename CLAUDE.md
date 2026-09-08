@@ -144,11 +144,15 @@ pitch classes (midi % 12), never stored.
 ## Print pipeline (tools/)
 
 `python3 decks.py` builds all six PDFs into the repo root (three decks x
-full "Cards" + PRINTER_ONLY variants). Requirements: `pip install reportlab
-pypdf`. The required TTFs (Marcellus-Regular, Bitter-Regular/-Bold,
-NunitoSans-Regular/-SemiBold) are checked into `tools/fonts/` together
-with each family's OFL license text, so a fresh clone builds with no
-extra downloads.
+full "Cards" + PRINTER_ONLY variants). Requirements: `pip install reportlab`
+(the test suite additionally needs `pymupdf`). The required TTFs
+(Marcellus-Regular, Bitter-Regular/-Bold, NunitoSans-Regular/-SemiBold) are
+checked into `tools/fonts/` together with each family's OFL license text, so a
+fresh clone builds with no extra downloads.
+Note: rebuilding always rewrites the six PDFs even when nothing changed -
+reportlab stamps a creation date - so `git diff` showing binary churn after a
+build does not mean the cards changed. The staleness test compares extracted
+text, not bytes.
 Print spec, measured from the commercial original at 300dpi: card
 **62.65 x 87.21 mm (177.6 x 247.2 pt, poker size)**, US Letter 3x3, gutters
 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar on
