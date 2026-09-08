@@ -151,7 +151,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | P0a | scale-engine/w1-spec | running | - | 2026-09-08 |
-| P0b | scale-engine/w2-corpus | running | - | 2026-09-08 |
+| P0b | scale-engine/w2-corpus | PR #9 under review | pending | 2026-09-08 |
 | P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -159,6 +159,8 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | # | From | Ask | Status |
 |---|---|---|---|
 | 1 | main | P0b's `f_fixture_sha.patch` moves to lane P0b2 after P0c merges (prefix unknown to the pre-P0c gate) | open |
+| 2 | P0b | suite_health.py cannot parse local node output (spec reporter); P0c asked to pin `--test-reporter=tap` | sent to P0c |
+| 3 | P0b | fixture sha256 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a; data changes bump to v2 | recorded |
 
 ## Review log
 
@@ -171,5 +173,5 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w1-spec | - | - | - | - | 0 | no | - | - |
-| P0b | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w2-corpus | - | - | - | - | 0 | no | - | - |
+| P0b | returned done | agent-managed | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | reviewer spawned | 0 | no | - | - |
 | P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
