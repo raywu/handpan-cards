@@ -150,7 +150,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| P0a | scale-engine/w1-spec | PR #10 bounced to lane | FAIL+1 | 2026-09-08 |
+| P0a | scale-engine/w1-spec | PR #10 fixed, re-review running | FAIL+1, re-review | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | running | - | 2026-09-08 |
 
@@ -181,6 +181,6 @@ Written when their wave opens, from the plan rows and the acceptance table.
 Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| P0a | bounced (live) | agent-managed | scale-engine/w1-spec | #10 | 9084bc2 | 2026-09-08 gh pr view + run 34284320139 success | FAIL | 1 | no | fix push | yes |
+| P0a | fix returned | agent-managed | scale-engine/w1-spec | #10 | c5db193 | 2026-09-08 gh pr view + run 34286871151 success | re-review spawned (fresh) | 1 | no | - | yes |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | spawned 2026-09-08 (id in session) | agent-managed | scale-engine/w3-harness | - | - | - | - | 0 | no | - | - |
