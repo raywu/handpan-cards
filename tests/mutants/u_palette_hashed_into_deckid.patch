@@ -1,0 +1,17 @@
+# suite: node --test tests/core.test.js
+# kills: deckId: D14 hashes the fields only - an option must never move the id
+diff --git a/src/engine/core.js b/src/engine/core.js
+index dc78a30..7ce4ae0 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -411,7 +411,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // D14: a pure function of formatSeed - notes, octaves, zones and order. The
+   // options are never hashed, so renaming or recolouring keeps the id.
+   function deckId(seedOrFields) {
+-    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
++    var extra = (seedOrFields && seedOrFields.options)
++      ? String(seedOrFields.options.palette) : "";
++    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)) + extra);
+   }
+ 
+   HPE.core = {
