@@ -1,16 +1,17 @@
 # suite: node --test tests/select.test.js
-# kills: the exact cap value. At 27 the 12-note pan goes through untrimmed,
-# so section 8's worked example no longer bites.
+# kills: the BASE of the ENGINE-SPEC section 8 cap. At 27 the 12-note pan of
+# section 8's worked example goes through untrimmed, so the cap no longer
+# bites where the spec says it does.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6ec8d54..0855bca 100644
+index 6e11744..17e48b2 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
-@@ -18,7 +18,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
- 
-   /* ---- section 8: the cap and the ranking tiers -------------------------- */
- 
--  var CAP = 25;                       /* DEFAULT[owner-review]: 25 cards      */
-+  var CAP = 27;                       /* DEFAULT[owner-review]: 25 cards      */
+@@ -22,7 +22,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+    * 25): the card cap SCALES WITH PAN SIZE - 25 for a pan of at most 12
+    * fields, +1 for every field beyond the twelfth. A 12-field pan therefore
+    * still caps at 25, which leaves section 8's worked example unchanged. */
+-  var CAP_BASE = 25;                  /* cards, at the 12-field hinge         */
++  var CAP_BASE = 27;                  /* cards, at the 12-field hinge         */
+   var CAP_HINGE = 12;                 /* fields; below this the cap is flat   */
    var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
    var ELLIPSIS = "…";
- 

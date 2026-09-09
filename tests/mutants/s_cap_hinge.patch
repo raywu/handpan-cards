@@ -1,0 +1,17 @@
+# suite: node --test tests/select.test.js
+# kills: the HINGE of the ENGINE-SPEC section 8 cap. The spec counts fields
+# "beyond the twelfth"; at 13 the 12-field worked example is unmoved but the
+# 18-field Pygmy pan caps at 30 instead of 31 and drops a card.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6e11744..4269993 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -23,7 +23,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+    * fields, +1 for every field beyond the twelfth. A 12-field pan therefore
+    * still caps at 25, which leaves section 8's worked example unchanged. */
+   var CAP_BASE = 25;                  /* cards, at the 12-field hinge         */
+-  var CAP_HINGE = 12;                 /* fields; below this the cap is flat   */
++  var CAP_HINGE = 13;                 /* fields; below this the cap is flat   */
+   var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
+   var ELLIPSIS = "…";
+
