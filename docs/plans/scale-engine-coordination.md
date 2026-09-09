@@ -456,9 +456,9 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
-| 1A | scale-engine/w6-voicing | PR #15 rebased to 75e1981 with rootId opt + 58/59 gate; reviewer spawned | pending | 2026-09-08 |
 | 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
-| 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 (numerals, row 28/30) briefed | PASS (rebase re-review) | 2026-09-08 |
+| 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 (numerals, row 28/30) running | PASS (rebase re-review) | 2026-09-08 |
+| 1A | scale-engine/w6-voicing | PR #15 under review at 75e1981; will need a second FLOORS rebase after 5c26ae0 | pending | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -527,5 +527,5 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | 1A | returned done (2nd), reviewer spawned | agent-managed | scale-engine/w6-voicing | #15 | 75e1981 | 2026-09-08 gh pr view + run 34312798919 success | reviewer spawned | 1 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
-| 1C-2 | briefed via SendMessage (numeral reading, row 28; nits row 30) | agent-managed | scale-engine/w8b-naming-numerals | - | - | - | - | 0 | no | - | - |
+| 1C-2 | running (spawned fresh 2026-09-08; 1C worktree was released on merge) | agent-managed | scale-engine/w8b-naming-numerals | - | - | - | - | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
