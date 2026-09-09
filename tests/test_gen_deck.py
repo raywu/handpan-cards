@@ -19,8 +19,10 @@ No layout constant is imported from ``hifi`` (CONTRACT rule 2); the PDF
 assertions are made against the built artifact, in a temp directory - never the
 repo root, whose six committed PDFs this file must not touch.
 """
+import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -68,6 +70,15 @@ def generate(seed, *args):
         raise AssertionError("gen_deck.js rejected %r: %s"
                              % (seed, proc.stderr.strip()))
     return json.loads(proc.stdout)
+
+
+def repo_pdf_hashes():
+    """{filename: sha256} for the six committed PDFs in the repo root."""
+    out = {}
+    for name in sorted(paths.PDFS.values()):
+        with open(os.path.join(paths.ROOT, name), "rb") as fh:
+            out[name] = hashlib.sha256(fh.read()).hexdigest()
+    return out
 
 
 def builtin_deck_keys():
@@ -141,12 +152,35 @@ class GenDeckCliTest(unittest.TestCase):
                 self.assertTrue(payload["deck"]["chords"])
 
     def test_the_tool_never_reaches_the_network(self):
+        """No network, by ALLOWLIST - a banned-substring list is evadable.
+
+        The old scan was a list of double-quoted literals, so every
+        single-quoted `require` walked straight through it: `require('https')`,
+        `require('net').connect()` and `await import('https')` all passed.
+        Both quote styles are matched now, and the positive allowlist below is
+        the real guard: the tool may require exactly the two modules it
+        requires today, and adding a third has to be a deliberate edit here.
+        """
         with open(GEN_DECK, encoding="utf-8") as fh:
             source = fh.read()
-        for banned in ("fetch(", "node:http", "require(\"http", "XMLHttpRequest",
-                       "node:net", "child_process"):
-            self.assertNotIn(banned, source,
-                             "presets are INLINED; the tool stays offline")
+
+        # Every require()/import() target, in either quote style.
+        loaded = set(re.findall(
+            r"""(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)""", source))
+        self.assertEqual(
+            loaded, {"node:fs", "./engine_loader.js"},
+            "gen_deck.js may load only node:fs and the sibling engine "
+            "loader; anything else needs a deliberate change here")
+
+        # Belt and braces for the forms that need no require at all.
+        for banned in (r"\bfetch\s*\(", r"\bXMLHttpRequest\b",
+                       r"\bnode:https?\b", r"\bnode:net\b",
+                       r"\bchild_process\b", r"\bworker_threads\b",
+                       r"globalThis\s*\[\s*['\"]fetch"):
+            self.assertIsNone(
+                re.search(banned, source),
+                "presets are INLINED; the tool stays offline (matched %r)"
+                % banned)
 
 
 def engine_reason(code, seed):
@@ -225,11 +259,16 @@ class GeneratedDeckKeyTest(unittest.TestCase):
                 continue
             self.assertIsInstance(key, int)
             self.assertEqual(len(value), 6)
+        # `ext` and `rim_num_out` are the two keys that are NOT radii feeding
+        # pan(): `ext` sets R in the adapter (a missing one used to default to
+        # 1.0 and blow the diagram off the card) and `rim_num_out` is a branch
+        # in draw_pan.  They belong in this list for exactly that reason.
         for key in ("rim", "inner", "bottom", "r_ding", "ding_dy", "r_note",
                     "r_bnote", "inner_ring", "f_ding", "f_note", "f_bnote",
-                    "f_num", "n_in", "n_out"):
+                    "f_num", "n_in", "n_out", "ext", "rim_num_out"):
             self.assertIn(key, d["spec"]["_geom"],
                           "pan() yields NaN for a missing geom key")
+            self.assertIn(key, self.bottom["spec"]["_geom"])
         self.assertIsInstance(d["degrees"], dict)
         for pc in d["degrees"]:
             self.assertIsInstance(pc, int)
@@ -244,6 +283,21 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             self.assertTrue(set(roots) <= set(fields))
             for f in fields:
                 self.assertIn(f, d["spec"])
+
+    def test_a_missing_ext_raises_instead_of_defaulting_the_radius(self):
+        """`geom.ext` is load-bearing OUTSIDE the engine: no silent default.
+
+        It used to be read as ``.get("ext") or 1.0``.  Drop or rename the key
+        and every generated deck quietly got R = 74.0; on a bottom-shell pan
+        (real ext ~1.4767) the drawn reach becomes 109.3pt on a 247.2pt card
+        half 88.8 wide - the diagram runs over the header, over the note lines
+        and off both sides, and nothing goes red.  A KeyError is the failure.
+        """
+        payload = generate(SEED_WITH_BOTTOM)
+        self.assertGreater(decks.from_generated(payload)["R"], 0)
+        del payload["deck"]["geom"]["ext"]
+        with self.assertRaises(KeyError):
+            decks.from_generated(payload)
 
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
@@ -262,6 +316,9 @@ class GeneratedDeckPdfTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="handpan-gen-")
+        # Snapshot BEFORE anything is built: the oracle for the staleness test
+        # below is the sha256 of the six committed PDFs as they were on entry.
+        cls.pdfs_before = repo_pdf_hashes()
         cls.deck = decks.from_generated(generate(SEED_TOP_ONLY))
         cls.bottom = decks.from_generated(generate(SEED_WITH_BOTTOM))
         cls.full = os.path.join(cls.tmp, "generated_full.pdf")
@@ -315,11 +372,21 @@ class GeneratedDeckPdfTest(unittest.TestCase):
         self.assertEqual(self.pages_bottom, pages)
 
     def test_the_repo_pdfs_were_not_rebuilt(self):
-        """reportlab stamps a creation date - a rebuild churns the binaries."""
-        for name in sorted(paths.PDFS.values()):
-            committed = os.path.join(paths.ROOT, name)
-            self.assertTrue(os.path.isfile(committed))
-            self.assertNotIn(self.tmp, committed)
+        """reportlab stamps a creation date - a rebuild churns the binaries.
+
+        The oracle is a sha256 snapshot taken in setUpClass BEFORE the three
+        builds above ran, re-read here afterwards.  The previous version of
+        this test read no mtime and no hash: it asserted the committed PDFs
+        exist and that a `/var/folders/...` temp prefix is not a substring of a
+        repo path, neither of which can be false, so pointing hifi.build at the
+        repo root would have left it green.
+        """
+        self.assertEqual(len(self.pdfs_before), 6,
+                         "six committed PDFs are the thing being guarded")
+        self.assertEqual(
+            repo_pdf_hashes(), self.pdfs_before,
+            "building a generated deck rewrote a committed PDF in the repo "
+            "root; generated PDFs belong in a temp directory")
 
 
 if __name__ == "__main__":

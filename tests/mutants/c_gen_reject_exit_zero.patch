@@ -2,10 +2,10 @@
 # A rejected seed must fail loudly: exiting 0 lets a pipeline read a refusal
 # as an empty success and print nothing.
 diff --git a/tools/gen_deck.js b/tools/gen_deck.js
-index 0566778..4597da5 100644
+index 2172a91..14649b7 100644
 --- a/tools/gen_deck.js
 +++ b/tools/gen_deck.js
-@@ -61,7 +61,7 @@ const PRESETS = [
+@@ -60,7 +60,7 @@ const PRESETS = [
  
  function die(message) {
    process.stderr.write(message + "\n");
@@ -13,4 +13,4 @@ index 0566778..4597da5 100644
 +  process.exit(0);
  }
  
- function parseArgs(argv) {
+ // A usage error, not an engine error: it carries NO enum code, because the

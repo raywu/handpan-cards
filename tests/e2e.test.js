@@ -1062,7 +1062,7 @@ function run() {
     assert.ok(st.body.sw <= st.body.cw + 1,
       `${what} scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
 
-  test("ROTATE corrects the layout from the keyboard alone at 380px", async () => {
+  test("ROTATE makes its correction from the keyboard alone at 380px", async () => {
     try {
       await editFreshDeck();
       const before = await slotState();

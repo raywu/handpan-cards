@@ -1,0 +1,21 @@
+# kills: test_the_repo_pdfs_were_not_rebuilt
+# The staleness oracle stops reading the six committed PDFs, which is exactly
+# what the old version of that test did: it hashed nothing, so pointing a build
+# at the repo root would have left it green.
+diff --git a/tests/test_gen_deck.py b/tests/test_gen_deck.py
+index f5a19a3..243e44c 100644
+--- a/tests/test_gen_deck.py
++++ b/tests/test_gen_deck.py
+@@ -74,11 +74,7 @@ def generate(seed, *args):
+ 
+ def repo_pdf_hashes():
+     """{filename: sha256} for the six committed PDFs in the repo root."""
+-    out = {}
+-    for name in sorted(paths.PDFS.values()):
+-        with open(os.path.join(paths.ROOT, name), "rb") as fh:
+-            out[name] = hashlib.sha256(fh.read()).hexdigest()
+-    return out
++    return {}
+ 
+ 
+ def builtin_deck_keys():
