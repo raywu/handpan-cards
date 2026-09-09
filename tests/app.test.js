@@ -2060,33 +2060,39 @@ test("replaceRegistered still replaces in place when there is no collision", () 
 // noticed at all. This is a source scan, so it is coarse by construction - it
 // counts names, not call graphs, and a rename of the function moves the count
 // to zero rather than reporting a subtler truth. Both failures are loud.
-test("replaceRegistered has exactly one call site, and a new one must read the return", () => {
-  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  // COMMENTS ARE PROSE, CODE IS CODE (queue row 160). A mention inside a
-  // comment cannot execute, so it can never reintroduce row 131 - and this
-  // repo does document functions in prose, including inside /* ... */ blocks.
-  // Both whole-line // comments and /* ... */ spans (which may run over
-  // several lines) are therefore blanked out. Blanked, not deleted: the
-  // newlines survive so the line numbers reported below stay real.
-  // Deliberately NOT stripped: a TRAILING // comment, because the code before
-  // it on that line is live. That asymmetry is why the count below is over
-  // OCCURRENCES and not over lines (queue row 159) - a second call appended to
-  // the line that already names the function must not hide behind the first.
-  // Stripping cannot be used as an evasion: wrapping a real call in /* */
-  // deletes the call, and a stray unbalanced /* that swallowed live code would
-  // take the definition with it, which the last assertion catches loudly.
+// COMMENTS ARE PROSE, CODE IS CODE (queue row 160). A mention inside a comment
+// cannot execute, so it can never reintroduce row 131 - and this repo does
+// document functions in prose, including inside /* ... */ blocks (see the block
+// comment at index.html:3072). Both whole-line // comments and /* ... */ spans
+// (which may run over several lines) are therefore blanked out. Blanked, not
+// deleted: the newlines survive so the reported line numbers stay real.
+// Deliberately NOT stripped: a TRAILING // comment, because the code before it
+// on that line is live. That asymmetry is why the scan counts OCCURRENCES and
+// not lines (queue row 159) - a second call appended to the line that already
+// names the function must not hide behind the first.
+// Stripping cannot be turned into an evasion: wrapping a real call in /* */
+// deletes the call, and a stray unbalanced /* that swallowed live code would
+// take the definition with it, which the caller's last assertion catches loudly.
+function scanNames(source, name) {
   const blank = (s) => s.replace(/[^\n]/g, " ");
-  const code = html
+  const code = source
     .replace(/\/\*[\s\S]*?\*\//g, blank)
     .split("\n").map((l) => (/^\s*\/\//.test(l) ? "" : l)).join("\n");
+  const re = new RegExp("\\b" + name + "\\b", "g");
   const hits = [];
   let total = 0;
   code.split("\n").forEach((line, i) => {
-    const named = line.match(/\breplaceRegistered\b/g);
+    const named = line.match(re);
     if (!named) return;
     total += named.length;
     hits.push([i + 1, line, named.length]);
   });
+  return { total, hits };
+}
+
+test("replaceRegistered has exactly one call site, and a new one must read the return", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const { total, hits } = scanNames(html, "replaceRegistered");
 
   assert.strictEqual(total, 2,
     "replaceRegistered is named " + total + " times in index.html " +
@@ -2100,4 +2106,52 @@ test("replaceRegistered has exactly one call site, and a new one must read the r
   assert.ok(/^function replaceRegistered\(/.test(hits[0][1].trim()),
     "the first mention of replaceRegistered is no longer its definition: " +
     JSON.stringify(hits[0]));
+});
+
+// Queue rows 159 and 160. The scan above runs against the real index.html, so
+// a mutant can only ever prove that ONE evasion is caught. This pins the whole
+// ruling on synthetic source instead: which shapes are CODE (counted, so a new
+// one is caught) and which are PROSE (not counted, so documenting the primitive
+// is free). The line is drawn at "could this execute": a mention inside any
+// comment cannot, and deleting a call by commenting it out is not an evasion
+// because the call is gone. Everything else - including a live call sharing a
+// line with a trailing comment, a string literal, an alias, or a second call
+// appended to an existing one - counts.
+test("the caller scan counts occurrences of code and ignores every comment", () => {
+  const DEF = "function replaceRegistered(oldId, next) {\n}\n" +
+    "if (replaced) replaceRegistered(wasId, d);\n";
+  const scan = (extra) => scanNames(DEF + extra, "replaceRegistered").total;
+
+  assert.strictEqual(scan(""), 2, "the unmodified shape is not the 2 the scan expects");
+
+  // CODE - each of these must move the count off 2.
+  assert.strictEqual(scan("replaceRegistered(d.id, d); // belt and braces\n"), 3,
+    "(a) a call with a trailing // comment slipped past the scan");
+  assert.strictEqual(scan('const _note = "replaceRegistered";\n'), 3,
+    "(c) the name in a string literal slipped past the scan");
+  assert.strictEqual(scan("const f = replaceRegistered; f(d.id, d);\n"), 3,
+    "(d) an aliased indirect call slipped past the scan");
+  assert.strictEqual(scan("replaceRegistered(d.id, d);\n"), 3,
+    "(e) a plain third call site slipped past the scan");
+  assert.strictEqual(
+    scanNames(DEF.replace(/replaceRegistered\(wasId/,
+      "replaceRegistered(wasId, d); else replaceRegistered(wasId"), "replaceRegistered").total, 3,
+    "(h) a second call appended to a line that already names the function " +
+    "slipped past the scan - it is counting lines again, not occurrences");
+  // (f) a rename moves the count to zero rather than to three: also loud.
+  assert.strictEqual(scanNames(DEF.replace(/replaceRegistered/g, "swapRegistered"),
+    "replaceRegistered").total, 0, "(f) a rename of the primitive went unnoticed");
+
+  // PROSE - none of these may move the count, or the tripwire fires on an
+  // innocent documentation edit.
+  assert.strictEqual(scan("// replaceRegistered(d.id, d);\n"), 2,
+    "(g) a whole-line // comment reddened the scan");
+  assert.strictEqual(scan("/* replaceRegistered returns false on a\n" +
+    "   same-id collision; see queue row 144. */\n"), 2,
+    "(row 160) documenting the primitive in a /* */ block reddened the scan");
+  assert.strictEqual(scan("/*\nreplaceRegistered(d.id, d);\n*/\n"), 2,
+    "(b) a call commented OUT in a /* */ block reddened the scan");
+  // ...but only the comment is prose: live code sharing the line still counts.
+  assert.strictEqual(scan("/* note */ replaceRegistered(d.id, d);\n"), 3,
+    "a real call was hidden by an inline /* */ comment on the same line");
 });
