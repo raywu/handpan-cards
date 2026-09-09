@@ -1,0 +1,17 @@
+# kills: a non-string stored deck id is ignored and never eats a share link
+# The stored deck id goes back to a truthiness check, so a non-string value
+# reaches the boot tail and throws on .indexOf - taking the share-link handler
+# at the end of the script with it.
+diff --git a/index.html b/index.html
+index 0ab44d6..5dd7aa3 100644
+--- a/index.html
++++ b/index.html
+@@ -2384,7 +2384,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
+ // so a sibling feature (or a hand-edited value) can leave any JSON type here,
+ // and a non-string id that reached the boot tail would throw on .indexOf and
+ // take the share-link handler at the end of the script down with it.
+-let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
++let deckId = store.deck || "hijaz";
+ let storedDeck = deckId;              // built-in or custom:; see save()
+ let mode   = typeof store.mode === "string" ? store.mode : "A";  // A: name->notes, B: notes->name
+ let shuffled = false;
