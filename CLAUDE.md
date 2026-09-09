@@ -45,7 +45,7 @@ Decks: **C# Hijaz / Orion 9** (18 chords), **F3 Low Pygmy 18** (25 chords),
   GitHub Pages serves the committed bytes, so there is nothing between the repo
   and the browser and no `<script src>` may appear in it.
 - **The engine regions in `index.html` are GENERATED.** Everything between
-  `<!-- engine:<name> -->` and its end marker is a verbatim copy of
+  `<!-- engine:<name> begin -->` and `<!-- engine:<name> end -->` is a verbatim copy of
   `src/engine/<name>.js`. Never hand-edit inside a region: change the module,
   then run `python3 tools/inline_engine.py` and commit what it writes
   (`--check` reports drift without writing). This is a **sync step, not a build

@@ -11,7 +11,7 @@ step**: `python3 tools/inline_engine.py` rewrites those regions from
 `src/engine/*.js`, and `--check` reports whether they already match. Nothing is
 compiled, minified or generated on the way to the browser, and the file still
 opens straight from disk. Never hand-edit inside an engine region - change the
-module and re-run the tool. `python3 tools/validate.py` fails the build if the
+module and re-run the tool. `python3 tools/validate.py` fails CI if the
 two ever drift.
 
 Decks included: C# Hijaz 9 (pink/orange), F3 Low Pygmy 18 (purple/gold),
