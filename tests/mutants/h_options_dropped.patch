@@ -1,15 +1,15 @@
 # suite: node --test tests/share.test.js
 # kills: encode: the seed options must travel beside the fields, not be dropped
 diff --git a/src/engine/share.js b/src/engine/share.js
-index a40e4d3..6eedab6 100644
+index 8318eba..b868653 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -238,7 +238,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -308,7 +308,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    function encode(seed) {
      if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
      var payload = HPE.core.formatSeed(seed.fields) + SEP +
 -                  optionsLine(seed.options) + SEP +
 +                  optionsLine(null) + SEP +
-                   "";  // line 2: reserved for Phase-5 layout deltas.
+                   deltaLine(seed.options);  // line 2: the layout delta (D5-3).
      var body = toAlphabet(utf8Bytes(payload));
      var head = ALPHABET.charAt(VERSION) + body;
