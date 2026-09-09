@@ -248,5 +248,5 @@ Cycle: 1   Wave: 2   Merged this batch: 66453e8, 386a856, d6935d1
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
-| P0d | spawning | agent-managed | scale-engine/w5-core | - | - | - | - | 0 | no | - | - |
-| P0b2 | spawning | agent-managed | scale-engine/w4-corpus-mutant | - | - | - | - | 0 | no | - | - |
+| P0d | live | agent-managed | scale-engine/w5-core | - | - | - | - | 0 | no | - | - |
+| P0b2 | live | agent-managed | scale-engine/w4-corpus-mutant | - | - | - | - | 0 | no | - | - |
