@@ -1,0 +1,16 @@
+# kills: six palette swatches carry the D6 indices and the selected one is ringed
+# Tapping a swatch re-renders the row but never records the choice, so every
+# generated deck comes out in palette 0.
+diff --git a/index.html b/index.html
+index 16984c6..29ee09e 100644
+--- a/index.html
++++ b/index.html
+@@ -2340,7 +2340,7 @@ function buildSwatches() {
+     b.setAttribute("aria-pressed", String(i === palette));
+     b.style.setProperty("--dga", p.root);
+     b.style.setProperty("--dgb", p.tone);
+-    b.onclick = () => { palette = i; buildSwatches(); };
++    b.onclick = () => { buildSwatches(); };
+     swatches.appendChild(b);
+   });
+ }

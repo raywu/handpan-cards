@@ -1,0 +1,16 @@
+# kills: while the sheet is open Generate is the only reachable primary button
+# The landmarks behind the sheet stay live, so the modal is only visually
+# modal: the practice screen's buttons remain clickable and focusable
+# underneath it.
+diff --git a/index.html b/index.html
+index 16984c6..fdfca56 100644
+--- a/index.html
++++ b/index.html
+@@ -2392,7 +2392,6 @@ function updateParse() {
+ function openScaleSheet() {
+   sheet.removeAttribute("hidden");
+   sheetOpen = true;
+-  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+   updateParse();
+   scaleBox.focus();
+ }

@@ -1,0 +1,16 @@
+# kills: BAD_NOTE shows the engine's own sentence and keeps Generate disabled
+# The reason is rendered in the neutral tier, so an error reads exactly like
+# a success and the three-tier colour scale carries no information.
+diff --git a/index.html b/index.html
+index 16984c6..25eee00 100644
+--- a/index.html
++++ b/index.html
+@@ -2385,7 +2385,7 @@ function updateParse() {
+     parseLine.textContent = "";
+     scaleBox.classList.add("bad");
+     genBtn.disabled = true;
+-    say(res.reason, "err");
++    say(res.reason, "");
+   }
+ }
+ 

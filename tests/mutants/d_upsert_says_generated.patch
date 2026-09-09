@@ -1,0 +1,16 @@
+# kills: a same-id generate replaces the deck in place, keeps the id and says Updated
+# A regenerate of a deck that already exists reports it as newly generated,
+# so the user cannot tell a replacement from an addition.
+diff --git a/index.html b/index.html
+index 16984c6..4a41335 100644
+--- a/index.html
++++ b/index.html
+@@ -2426,7 +2426,7 @@ function runGenerate() {
+   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
+   // produced; nothing is rebuilt to re-derive them.
+   const warned = (d.warnings || []).map(w => w.reason);
+-  let text = known.has(d.id) ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
++  let text = `${d.chords.length} cards generated`;
+   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
+   if (warned.length) text += " " + warned.join(" ");
+ 

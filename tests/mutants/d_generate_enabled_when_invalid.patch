@@ -1,0 +1,16 @@
+# kills: NO_DING shows the engine's own sentence and keeps Generate disabled
+# Generate stays live while the seed does not parse, so the primary action
+# invites a tap that can only fail.
+diff --git a/index.html b/index.html
+index 16984c6..759f370 100644
+--- a/index.html
++++ b/index.html
+@@ -2384,7 +2384,7 @@ function updateParse() {
+   } else {
+     parseLine.textContent = "";
+     scaleBox.classList.add("bad");
+-    genBtn.disabled = true;
++    genBtn.disabled = false;
+     say(res.reason, "err");
+   }
+ }
