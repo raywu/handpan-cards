@@ -1,5 +1,14 @@
 // Lane C - HPE.naming: chord names, subtitles, parent inference, degrees.
 //
+// READING (recorded, not spec text): `caseFromPan` - the fallback used for a
+// pitch class OUTSIDE the parent - suppresses the `\u00b0` suffix when a perfect
+// fifth above the degree is also on the pan, even though a diminished fifth is
+// present too. Over the pan alone a degree that carries BOTH a b5 and a
+// natural 5 is read as the plain triad, not as diminished; `\u00b0` is reserved
+// for a degree whose only available fifth is diminished. The behaviour is kept
+// here deliberately - see "outside the parent, a natural fifth on the pan
+// suppresses the degree sign".
+//
 // Spec-first per tests/CONTRACT.md rule 1: every assertion comes from
 // docs/ENGINE-SPEC.md sections 5, 8, 9, 10, 16 and 17, from CLAUDE.md, or from
 // the fixtures. The QUALITIES / PARENTS tables are compared to the spec
@@ -105,6 +114,13 @@ function seedPitchClasses(row) {
     pcs: Object.keys(fields).map((id) => fields[id][2] % 12),
     tonic: fields["0"][2] % 12
   };
+}
+
+// The parent-degree index of a pitch class under a named parent, or -1 when
+// the pitch class is outside that parent.
+function degreeIndexIn(parentName, tonic, degreePc) {
+  const parent = host(naming.PARENTS).find((p) => p.name === parentName);
+  return parent.intervals.indexOf(((degreePc - tonic) % 12 + 12) % 12);
 }
 
 /* ================ section 16: the tables are the fixtures ================ */
@@ -327,19 +343,26 @@ test("D10: case comes from stacked thirds over the parent", () => {
   assert.equal(produced["1"], "I");
 });
 
-test("the parent override changes case without changing the numerals", () => {
+test("the parent override moves case, and the numeral only with the degree index", () => {
   const names = host(naming.PARENTS).map((p) => p.name);
   const flipped = [];
   for (const row of seeds) {
     const {pcs, tonic} = seedPitchClasses(row);
-    const inferred = host(naming.degrees(pcs, tonic, naming.inferParent(pcs, tonic)));
+    const inferredIndex = naming.inferParent(pcs, tonic);
+    const inferred = host(naming.degrees(pcs, tonic, inferredIndex));
     for (let i = 0; i < names.length; i += 1) {
       const other = host(naming.degrees(pcs, tonic, i));
       for (const key of Object.keys(inferred)) {
         if (other[key] !== inferred[key]) {
-          assert.equal(other[key].toUpperCase().replace("°", ""),
-            inferred[key].toUpperCase().replace("°", ""),
-            `${row.name}: the override may change case, never the numeral`);
+          if (degreeIndexIn(names[i], tonic, Number(key)) ===
+              degreeIndexIn(names[inferredIndex], tonic, Number(key)) &&
+              degreeIndexIn(names[i], tonic, Number(key)) >= 0) {
+            // Same parent-degree index under both parents: the numeral is
+            // fixed by that index, so only the case may move.
+            assert.equal(other[key].toUpperCase().replace("°", ""),
+              inferred[key].toUpperCase().replace("°", ""),
+              `${row.name}: same degree index, so only the case may change`);
+          }
           flipped.push(row.name + " " + names[i] + " " + key);
         }
       }
@@ -403,6 +426,91 @@ test("NO_THIRDS makes every numeral uppercase and drops D10", () => {
   assert.notDeepStrictEqual(
     host(naming.degrees(amaraPcs, amaraTonic, parent, {noThirds: true})),
     host(naming.degrees(amaraPcs, amaraTonic, parent)));
+});
+
+/* ---- D8 as amended (coordination row 28): an IN-PARENT pitch class is
+ * numbered by its PARENT-DEGREE INDEX, with the accidental read against the
+ * D8 reference scale degree of that same index. A pitch class OUTSIDE the
+ * parent keeps the section 10 bN/#N mechanism. The two readings disagree
+ * wherever the parent's own degree sits a semitone off the reference degree
+ * of the same index AND the reference scale has a degree the other side of
+ * it - i.e. the chromatic degrees of Phrygian, Locrian, Lydian and friends.
+ */
+
+test("D8 in-parent: a chromatic parent degree is numbered by its degree index", () => {
+  // F Phrygian, ding F: F Gb Ab Bb C Db Eb. Gb is parent degree 2, so bII -
+  // the reference-scale reading called it #I (one semitone above I).
+  const phrygian = [5, 6, 8, 10, 0, 1, 3];
+  const produced = host(naming.degrees(phrygian, 5,
+    naming.inferParent(phrygian, 5)));
+  assert.equal(host(naming.PARENTS)[naming.inferParent(phrygian, 5)].name,
+    "Phrygian");
+  assert.equal(produced["6"], "bII");
+
+  // C Locrian: Db is degree 2 (bII) and Gb is degree 5 (bV). The
+  // reference-scale reading called Gb #IV. The CASE is untouched by this rule
+  // and stays D10's: over Locrian, Gb stacks Bb and Db - a major third and a
+  // perfect fifth - so the label is uppercase with no degree sign.
+  const locrian = [0, 1, 3, 5, 6, 8, 10];
+  const loc = host(naming.degrees(locrian, 0, naming.inferParent(locrian, 0)));
+  assert.equal(host(naming.PARENTS)[naming.inferParent(locrian, 0)].name,
+    "Locrian");
+  assert.equal(loc["1"], "bII");
+  assert.equal(loc["6"], "bV");
+
+  // C Lydian: F# is degree 4, so #IV - the reference-scale reading, with no
+  // minor third on the pan, flattened it to bV.
+  const lydian = [0, 2, 4, 6, 7, 9, 11];
+  const lyd = host(naming.degrees(lydian, 0, naming.inferParent(lydian, 0)));
+  assert.equal(host(naming.PARENTS)[naming.inferParent(lydian, 0)].name, "Lydian");
+  assert.equal(lyd["6"], "#iv°");
+});
+
+test("the parent override can change a numeral when the degree index moves", () => {
+  // C Lydian's F# is degree 4 under Lydian (#iv°). Override to Ionian and F#
+  // falls OUTSIDE the parent, so section 10's bN/#N mechanism names it from
+  // the reference scale instead: between IV and V, major-relative, so bv°.
+  const lydian = [0, 2, 4, 6, 7, 9, 11];
+  const names = host(naming.PARENTS).map((p) => p.name);
+  assert.equal(host(naming.degrees(lydian, 0, names.indexOf("Lydian")))["6"],
+    "#iv°");
+  assert.equal(host(naming.degrees(lydian, 0, names.indexOf("Ionian")))["6"],
+    "bv°");
+});
+
+test("outside the parent, a natural fifth on the pan suppresses the degree sign", () => {
+  // The recorded caseFromPan reading, pinned. C Ionian plus Gb: Gb is outside
+  // Ionian, and over the pan it has a minor third (A), a diminished fifth (C)
+  // and NO perfect fifth (Db is absent), so it takes the sign.
+  const names = host(naming.PARENTS).map((p) => p.name);
+  const withoutFifth = [0, 2, 4, 5, 6, 7, 9, 11];
+  assert.equal(
+    host(naming.degrees(withoutFifth, 0, names.indexOf("Ionian")))["6"],
+    "bv°");
+  // Add Db, a perfect fifth above Gb, and the sign is suppressed.
+  const withFifth = withoutFifth.concat([1]);
+  assert.equal(
+    host(naming.degrees(withFifth, 0, names.indexOf("Ionian")))["6"], "bv");
+});
+
+test("the built-in non-root degrees the deck data does not carry are pinned", () => {
+  // Coordination row 30: neither label appears in CLAUDE.md's per-deck degree
+  // map, so pin what the engine derives for them.
+  const hijaz = golden.decks.find((d) => d.id === "hijaz");
+  const hijazPcs = deckPitchClasses(hijaz);
+  const hijazTonic = tonicOf(hijaz);
+  // Hijaz F (spelled E#, the major third of C#) is parent degree 3 over
+  // Phrygian dominant, stacking a minor third and a diminished fifth.
+  assert.equal(host(naming.degrees(hijazPcs, hijazTonic,
+    naming.inferParent(hijazPcs, hijazTonic)))["5"], "iii°");
+
+  const amara = golden.decks.find((d) => d.id === "amara");
+  const amaraPcs = deckPitchClasses(amara);
+  const amaraTonic = tonicOf(amara);
+  // Amara E is parent degree 2 over Aeolian: minor third (G), diminished
+  // fifth (Bb is absent from the pan but present in the parent).
+  assert.equal(host(naming.degrees(amaraPcs, amaraTonic,
+    naming.inferParent(amaraPcs, amaraTonic)))["4"], "ii°");
 });
 
 /* ================== section 8: the symmetric root tie-break =============== */
