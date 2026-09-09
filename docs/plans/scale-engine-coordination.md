@@ -458,7 +458,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | PR #15, adding root-field-given 58/59 test | pending | 2026-09-08 |
 | 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
-| 1C | scale-engine/w8-naming | PR #16 verified at ff2c485, reviewer spawned | pending | 2026-09-08 |
+| 1C | scale-engine/w8-naming | PR #16 PASS_WITH_NITS; merge blocked by suite_health.py conflict; rebase requested | PASS_WITH_NITS | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -494,6 +494,9 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 25 | reviewer #17 | `layout.solve` returns `{ok, value:{geom, fields}}` while spec §1 says plain function; `mirror` false = right-first (generated default), true = left-first, inverting §13's label. Spec §1 and §13 need a one-line amendment each. | integrator | open (Phase 1 owner-review gate); lane 2 brief cites the result type |
 | 26 | reviewer #17 | 3a: `pan()` (index.html:160) ignores `g.ext` and derives its own extent; must read `ext` for generated decks per §11. Harmless for reachable configs today. | 3a brief | open |
 | 27 | reviewer #17 | Nits for a later sweep: `"mirror" in options` treats `{mirror: undefined}` as explicit false; `tests/layout.test.js:475` identical ternary branches; inner-pair sign(cos) float-fragile at 270°; decorative `inner_ring` 0.355 clears the offset ding by 0.0225R (taste call). | 1B follow-up | open |
+| 28 | reviewer #16 | D8 numeral reading: 1C reads numerals off a mode reference scale, so an in-parent chromatic degree (Phrygian b2, Locrian b2/b5, Lydian #4) labels `#I` / `#IV` / `bv°`. Alternative: numeral = parent-degree INDEX, accidental = offset vs the D8 reference scale; reproduces all 17 built-ins and yields `bII` / `#iv°`. Integrator recommendation: adopt the alternative (a Phrygian pan showing `#I` is a defect a player sees). Also `caseFromPan` drops `°` when a P5 is present (unrecorded reading). | integrator | decided: alternative reading; 1C follow-up PR after #16 merges; spec §10 amendment at owner gate |
+| 29 | reviewer #16 | Auto deck name `<DING> <PARENT-DISPLAY> <N>` is unowned (not in 1C's brief, not in HPE.naming). Assigned to Phase 2 `select.build` (already in the lane 2 brief). Longest reachable is 14 chars, so the ellipsis clause is unreachable for auto names. | integrator | assigned to lane 2 |
+| 30 | reviewer #16 | Nits: pin the two non-root built-in labels (Hijaz F `iii°`, Amara E `ii°`) in tests/naming.test.js; the "override never changes the numeral" test is a lane invariant that changes under row 28. | 1C follow-up | open |
 
 ## Review log
 
@@ -508,6 +511,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #12 | preview (non-swarm) | PASS_WITH_NITS (CI success at c64feab) | fork PR fetch, exit status on bind failure, trap window, README | nits fixed 672e003, merged |
 | #14 | P0d | PASS_WITH_NITS (CI success at 6a24d38) | 25 tests, 7 u_ mutants killed, golden strings + round-trip + FNV hash hand-verified; decisions (a)-(h) all consistent with spec; 3 nits (options BAD_NOTE wording, NO_DING-first precedence vs DEFAULT text, null palette/mirror) | Merged 40ff645; rows 18-21 |
 | #17 | 1B layout | PASS_WITH_NITS | boundary clean; CI success at 1e4d795; 7 g_ killed; 502-config overlap sweep clean (min clearance 0.0518R reachable); mirror false=right-first pinned; solve returns result type (spec §1 says plain function) | merged 6467a33; nits rows 25-27 |
+| #16 | 1C naming | PASS_WITH_NITS | boundary clean; CI success at ff2c485; 7 n_ killed; exceptions two-sided; tie-break confirmed; b2-in-minor labels `#I` (reference-scale reading) flagged for owner gate; auto deck name unowned | merge blocked by FLOORS conflict; rebase requested; nits rows 28-30 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
 
 ## Cycle state
@@ -521,5 +525,5 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | returned done, re-briefed | agent-managed | scale-engine/w6-voicing | #15 | d93ea39 | 2026-09-08 gh pr view + run 34311107260 success | pre-review clarification sent | 1 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
-| 1C | returned done | agent-managed | scale-engine/w8-naming | #16 | ff2c485 | 2026-09-08 gh pr view + run 34311111548 success | reviewer spawned | 0 | no | - | - |
+| 1C | rebase requested (conflict with 6467a33) | agent-managed | scale-engine/w8-naming | #16 | ff2c485 | 2026-09-08 gh pr view + run 34311111548 success | PASS_WITH_NITS (at ff2c485) | 1 | no | rebase + fresh re-review | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
