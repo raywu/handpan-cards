@@ -460,7 +460,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
-| 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 returned PR #18 (5eee2da, CI 34314377350 green), reviewer running | PASS (rebase re-review) | 2026-09-08 |
+| 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 merged ceaac1f | PASS_WITH_NITS (#18) | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | merged 4f5137c | PASS_WITH_NITS | 2026-09-09 |
 | 2 | scale-engine/w9-select | returned PR #19 (aa92320, CI 34315191530 green), reviewer running | - | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
@@ -504,6 +504,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 31 | reviewer #15 | Spec §1 names `voicing.pick` as plain-return; shipped `voicing.choose` returns the result type (lane 2 must use `.value`). `isLegal` checks length only, not pitch classes (lane 2 must not rely on it as a pc guard). `candidates(fields, pc, [])` returns `[[]]`. `BAD_NOTE` reason copy misleading if ever reachable. PR body says 12 tests, head has 14. | integrator / lane 2 brief | open; §1 amendment at the owner gate |
 | 32 | lane 1C-2 | Numeral fix (row 28) implemented as parent-degree-index reading; 7 disagreements vs the old reading, none under an inferred parent, all built-ins unchanged. Readings for the owner gate: (a) C Locrian Gb yields `bV` not `bv°` (case from D10: Bb and Db on the pan); (b) `caseFromPan` suppresses `°` when a natural fifth is on the pan (not stated in §10); (c) §10 outside-parent bullet says "one semitone from the parent degree" but code names from the D8 reference degree (pre-existing). §10 D8 bullet needs amending at the owner gate. | integrator (owner gate, with rows 20/24/25/28) | open |
 | 33 | lane 2 | Select readings: eligibility on raw quality intervals, collapse on reduced pitch set (29/27/25 reproduced); user name stored verbatim (16-char cap is display only, auto name max 14 so ellipsis unreachable, confirms row 29); sus2 collapse vacuous (no sus2 key in qualities.json); dedup unreachable after collapse; ding-only-root guard unobservable at select level (voicing rejects), `s_ding_only_root` deleted as equivalent; OWNER-FACING: under the 28-quality vocabulary the 25 cap evicts three Pygmy built-in cards the engine otherwise reproduces (Gm7b5, Bbm7, Cm7). Divergence: Amara 0 missing/9 extra, Hijaz 3/4, Pygmy 13/13, 16 overrides. | integrator (owner gate: cap 25 vs Pygmy evictions) | open |
+| 34 | reviewer #18 | Nits: `naming.numeral` third arg unvalidated when called directly; add a test pinning an outside-parent case where the reference-scale and parent-adjacent readings differ (follows the §10 amendment). | integrator / owner gate | open |
 
 ## Review log
 
@@ -522,10 +523,11 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #16 (rebase) | 1C naming | PASS | lane files byte-identical to ff2c485; only FLOORS line added; CI success at 2078bf3; 65/65 mutants killed | merged 5c26ae0 |
 | #15 | 1A voicing | PASS_WITH_NITS | boundary clean; CI success at 75e1981; 7 v_ killed; 162 Fm11 candidates, 50/59 pc-only and 58/59 rootId confirmed by reviewer script; zero throws over 4704 parseSeed-valid calls | merged 4f5137c (GitHub merged the FLOORS lines cleanly); nits row 31 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
+| #18 | 1C-2 | PASS_WITH_NITS | numeral parent-degree-index reading verified exhaustively (946 labels, exactly 7 change, none under an inferred parent); mutant kills 2/26 tests specifically; relaxed override test still fires 317 times. Nits: `numeral(offset, rel, idx)` accepts any idx>=0 when called directly (unreachable from `degrees`); §10 outside-parent wording vs MAJOR_REF/MINOR_REF code is pre-existing (row 32c); no test pins an outside-parent case where the two readings differ; `caseFromPan` P5-suppresses-° reading now recorded in the test header. | merged ceaac1f |
 
 ## Cycle state
 
-Cycle: 1   Wave: 4   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c
+Cycle: 1   Wave: 4   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
@@ -536,5 +538,5 @@ Cycle: 1   Wave: 4   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | 2 | returned done; reviewer spawned | agent-managed | scale-engine/w9-select | #19 | aa92320 | 2026-09-08 (gh pr view + origin tip + run 34315191530 success) | pending | 0 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
-| 1C-2 | returned done; reviewer spawned | agent-managed | scale-engine/w8b-naming-numerals | #18 | 5eee2da | 2026-09-08 (gh pr view + origin tip + run 34314377350 success) | pending | 0 | no | - | - |
+| 1C-2 | merged ceaac1f; released | agent-managed | scale-engine/w8b-naming-numerals | #18 | 5eee2da | 2026-09-08 (gh pr view + origin tip + run 34314377350 success) | PASS_WITH_NITS | 0 | yes | - | no |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
