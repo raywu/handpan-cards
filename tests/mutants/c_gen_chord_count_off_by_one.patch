@@ -1,0 +1,20 @@
+# kills: test_a_warning_survives_the_adapter_and_reaches_the_title_blurb
+# An off-by-one in the adapter: the last generated chord never becomes a card.
+# This is the defect the blurb pin could NOT see until 2026-09-09, because the
+# expected line was built from `len(quiet["chords"])` - the very count `_blurb`
+# uses - so the deck was compared against itself and both sides moved together.
+# It pins a DIFFERENT assertion from the two neighbouring blurb mutants:
+# c_blurb_spurious_line adds a line, c_gen_warning_off_the_sheet removes one;
+# this one leaves the blurb's SHAPE untouched and only changes the count, so
+# only the literal "25 CHORDS" / CHORDS_TOP_ONLY pin can catch it.
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -415,6 +415,7 @@ def from_generated(payload):
+     spec = _spec_from(generated)
+     chords = [(c["main"], c["sup"], c["subtitle"], list(c["fields"]),
+                set(c["roots"])) for c in generated["chords"]]
++    chords = chords[:-1]
+     has_bottom = any(v[3] == "bottom" for k, v in spec.items() if k != "_geom")
+
+     warnings = list(generated.get("warnings") or [])
