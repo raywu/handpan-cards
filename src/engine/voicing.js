@@ -223,7 +223,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  // choose(fields, rootPc, intervals) -> {ok, value: {fields, roots}}
+  // Look one playable field up by id, so a caller may pin the root octave.
+  function fieldById(list, id) {
+    for (var i = 0; i < list.length; i += 1) {
+      if (list[i].id === Number(id)) return list[i];
+    }
+    return null;
+  }
+
+  // choose(fields, rootPc, intervals, opts?) -> {ok, value: {fields, roots}}
+  //
+  // `opts.rootId` pins the ROOT FIELD and D9 is skipped: that is how plan
+  // Premise 2 measures the register rules ("giving the engine the root FIELD,
+  // the spelling order of pitch classes and the chord symbol"). Without it the
+  // root field comes from D9 (section 7) and the answer is a function of the
+  // root PITCH CLASS alone, which is what select.build has to work from.
   //
   // D2 forced test: ANY non-root tone - chord tone AND extension alike - has no
   // instance above the root field.
@@ -233,13 +247,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //              instance above the root unless they are themselves forced.
   //   unforced (D11) -> every non-root tone takes its NEAREST instance above
   //              the root.
-  function choose(fields, rootPc, intervals) {
+  function choose(fields, rootPc, intervals, opts) {
     var list = playable(fields);
     var ivs = reduceIntervals(intervals);
     var root = pitchClass(rootPc);
 
-    var rf = rootField(fields, root);
-    if (!rf) return fail("BAD_NOTE", pcName(root));
+    var rf;
+    if (opts && opts.rootId !== undefined && opts.rootId !== null) {
+      rf = fieldById(list, opts.rootId);
+      // A pinned root must be a playable field of the root pitch class; the
+      // root and the spelling order never change (CLAUDE.md rule 3).
+      if (!rf || pitchClass(rf.midi) !== root) return fail("BAD_NOTE", pcName(root));
+    } else {
+      rf = rootField(fields, root);
+      if (!rf) return fail("BAD_NOTE", pcName(root));
+    }
 
     var tones = [];
     for (var i = 0; i < ivs.length; i += 1) {

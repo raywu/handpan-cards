@@ -153,6 +153,75 @@ test("choose reproduces the corpus outside the recorded two-sided exceptions", (
   assert.strictEqual(matched.length, 50);
 });
 
+test("with the root field given, choose reproduces 58/59 - only Fm9 diverges", () => {
+  // Plan Premise 2 measures the register rules with the ROOT FIELD supplied
+  // ("giving the engine the root FIELD, the spelling order of pitch classes
+  // and the chord symbol"): the strict reading - unforced tones take the
+  // NEAREST instance above the root - reproduces 58/59. The one divergence is
+  // Pygmy Fm9, which CLAUDE.md rule 3 names as a permitted free choice.
+  //
+  // This gate is stricter than the (root pitch class, interval set) one above:
+  // the D9 root-octave exceptions and the HIGH / LOW VOICING alternates must
+  // all come back exactly once their root field is no longer in question.
+  const matched = [];
+  const diverged = [];
+  everyCard((deck, chord) => {
+    const rootId = chord.roots[0];
+    const rootPc = pc(midiOf(deck.fields, rootId));
+    const got = V.choose(deck.fields, rootPc, intervalsOfCard(deck, chord), { rootId });
+    assert.ok(got.ok, `${cardKey(deck, chord)}: choose failed with ${got.code}`);
+    const value = plain(got.value);
+    assert.deepStrictEqual(value.roots, [rootId], "a pinned root field is used verbatim");
+    if (JSON.stringify(value.fields) === JSON.stringify(chord.fields)) {
+      matched.push(cardKey(deck, chord));
+    } else {
+      assert.strictEqual(cardKey(deck, chord), "pygmy Fm9",
+        `${cardKey(deck, chord)}: with the root field given, choose gave ` +
+        `${value.fields.join(",")} and the fixture ships ${chord.fields.join(",")}. ` +
+        "Premise 2 allows exactly one divergence, Pygmy Fm9.");
+      diverged.push(cardKey(deck, chord));
+    }
+  });
+  assert.strictEqual(matched.length, 58, "plan Premise 2: 58/59 under the strict reading");
+  assert.deepStrictEqual(diverged, ["pygmy Fm9"]);
+
+  // Two-sided: Fm9 must STILL diverge, and by the documented note - the
+  // fixture's spread 9th is G5, the nearest-above tie-break gives G4.
+  const pygmy = GOLDEN.decks.find((d) => d.id === "pygmy");
+  const fm9 = pygmy.chords.find((c) => c.main === "Fm" && c.sup === "9");
+  const got = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, fm9.roots[0])),
+    [0, 3, 7, 10, 14], { rootId: fm9.roots[0] });
+  const ninth = plain(got.value.fields)[4];
+  assert.notStrictEqual(ninth, fm9.fields[4]);
+  assert.strictEqual(pc(midiOf(pygmy.fields, ninth)), pc(midiOf(pygmy.fields, fm9.fields[4])),
+    "both are the same tone, the 9th");
+  assert.strictEqual(
+    midiOf(pygmy.fields, fm9.fields[4]) - midiOf(pygmy.fields, ninth), 12,
+    "the fixture's 9th is one octave above the nearest-above one (G5 vs G4)");
+});
+
+test("choose rejects a pinned root that is not a playable field of the root", () => {
+  const amara = GOLDEN.decks.find((d) => d.id === "amara");
+  const dm = amara.chords.find((c) => c.main === "Dm" && c.sup === "");
+  const rootPc = pc(midiOf(amara.fields, dm.roots[0]));
+
+  // The ding is a D on Amara, but the ding never appears in a voicing.
+  assert.strictEqual(zoneOf(amara.fields, 0), "ding");
+  assert.strictEqual(pc(midiOf(amara.fields, 0)), rootPc);
+  const ding = V.choose(amara.fields, rootPc, [0, 3, 7], { rootId: 0 });
+  assert.strictEqual(ding.ok, false);
+
+  // A field of the wrong pitch class is not a root: the root never changes.
+  const wrong = V.choose(amara.fields, rootPc, [0, 3, 7], { rootId: 2 });
+  assert.strictEqual(wrong.ok, false);
+
+  // An absent opts, an empty opts and an explicit D9 root all agree.
+  const bare = plain(V.choose(amara.fields, rootPc, [0, 3, 7]));
+  assert.deepStrictEqual(plain(V.choose(amara.fields, rootPc, [0, 3, 7], {})), bare);
+  assert.deepStrictEqual(
+    plain(V.choose(amara.fields, rootPc, [0, 3, 7], { rootId: dm.roots[0] })), bare);
+});
+
 test("D9 root octave: lowest top-shell instance, else lowest overall", () => {
   // The recorded root-octave exceptions of section 7 plus the alternates whose
   // divergence is the root field; every other card's roots[0] IS the policy.
