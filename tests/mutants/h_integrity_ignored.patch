@@ -1,0 +1,15 @@
+# suite: node --test tests/share.test.js
+# kills: decode: the integrity check must reject a flipped character anywhere in the string
+diff --git a/src/engine/share.js b/src/engine/share.js
+index a40e4d3..ec387e2 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -265,7 +265,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+     // 3. Integrity, before the payload is looked at.
+     var head = text.slice(0, text.length - CHECK_LEN);
+-    if (text.slice(text.length - CHECK_LEN) !== checksum(head)) {
++    if (false) {
+       return badNote(text);
+     }
+ 

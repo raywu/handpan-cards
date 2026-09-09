@@ -1,0 +1,15 @@
+# suite: node --test tests/share.test.js
+# kills: decode: the version gate is `>`, not `>=` - the running version must decode its own links
+diff --git a/src/engine/share.js b/src/engine/share.js
+index a40e4d3..93581db 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -260,7 +260,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // 2. The version byte.
+     var version = INDEX[text.charAt(0)];
+     if (version === undefined) return badNote(text);
+-    if (version > VERSION) return err("NEEDS_NEWER_APP", {});
++    if (version >= VERSION) return err("NEEDS_NEWER_APP", {});
+     if (version !== VERSION) return badNote(text);
+ 
+     // 3. Integrity, before the payload is looked at.
