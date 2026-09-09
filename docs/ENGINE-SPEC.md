@@ -68,10 +68,18 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
 - DECIDED(swarm-2026-09-08) `core.formatSeed(seed)` returns a plain string and
   `core.deckId(fields)` returns a plain string; neither validates, because both
   take an already-parsed seed, so neither is wrapped in the result type.
-- DECIDED(swarm-2026-09-08) `voicing.pick`, `layout.solve` and `naming.name`
-  are plain functions over validated data and return their value directly. They
-  may throw on a programming error, never on user input, because user input
-  reached them only through `core.parseSeed`.
+- DECIDED(owner-review 2026-09-08, amending swarm-2026-09-08) `layout.solve`
+  and `voicing.choose` (shipped name; this document previously called the
+  latter `voicing.pick`) DO return the result type: `layout.solve(fields,
+  options)` returns `{ok, value: {geom, fields}}` and `voicing.choose(fields,
+  rootPc, intervals, opts?)` returns `{ok, value: {fields, roots}}`. A caller
+  propagates a not-ok layout result unchanged and treats a not-ok voicing
+  result as "drop this candidate". They never throw on user input. The result
+  type is therefore uniform across every engine entry point that can fail.
+- DECIDED(swarm-2026-09-08) `naming.name` and `naming.subtitle` are plain
+  functions over validated data and return their value directly. They throw
+  `RangeError` on a cap breach, which is unreachable from `parseSeed`-valid
+  input.
 - DECIDED(swarm-2026-09-08) `share.encode(seed)` returns a plain URL-fragment
   string; `share.decode(fragment)` takes untrusted input and therefore returns
   the result type, delegating to `core.parseSeed`.
@@ -186,10 +194,13 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   formula implies for the typed letter (`Cb4`, never `Cb3`).
 - DEFAULT[owner-review] Zero notes after a trailing `|` is `BAD_NOTE`; a seed
   with no bottom shell omits the `|` entirely.
-- DEFAULT[owner-review] Error precedence when a string trips more than one
-  rule, most local first: `BAD_NOTE` (a token that does not lex, a MIDI out of
-  range, a duplicate field, an order violation), then `NO_DING` (structure),
-  then `TOO_MANY_RIM` (caps), then `NO_FIFTH` (musical).
+- DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT) Error
+  precedence when a string trips more than one rule: the ding count is checked
+  FIRST, so `NO_DING` precedes `BAD_NOTE`; then `BAD_NOTE` (a token that does
+  not lex, a MIDI out of range, a duplicate field, an order violation), then
+  `TOO_MANY_RIM` (caps), then `NO_FIFTH` (musical). `( D3 )` returns `NO_DING`,
+  not `BAD_NOTE`. This aligns the precedence list with the D13 count-first
+  bullet in this section and with `core.parseSeed` as shipped.
 - DECIDED(swarm-2026-09-08) A ding written without an octave defaults to octave
   3: `(D)` is `D3`, matching all three built-ins. Every top note is then
   inferred strictly above it, so the ding remains the lowest note of the top
@@ -377,8 +388,10 @@ The candidate count on the `twelve note pan` fixture entry
 (`(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4`, pitch classes {C,D,E,G,A,B}) is the
 worked example that fixes the cap's behaviour: 29 raw candidates, 27 after the
 pitch-set collapse of `C6` into `Am7` and `G6` into `Em7`, trimmed to 25 by the
-cap. The cap therefore bites on that entry, and a Phase 2 mutant that widens or
-removes it changes the deck.
+cap. That entry has 12 fields, so the size-scaled cap decided below evaluates to
+exactly 25 there and this worked example is unaffected by it. The cap therefore
+bites on that entry, and a Phase 2 mutant that widens or removes it changes the
+deck.
 
 - DECIDED(D1) Default quality vocabulary: major, minor, diminished, augmented,
   power, sus4, maj7, m7, dominant 7, m7b5, dim7 - the 11 D1 qualities.
@@ -395,7 +408,19 @@ removes it changes the deck.
   quality is additionally a candidate only when every one of its tones lies on
   the TOP shell - that is D1's "extended chords only where the scale makes them
   obvious", operationalised.
-- DEFAULT[owner-review] Card cap per generated deck: 25.
+- DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT of a flat 25)
+  Card cap per generated deck SCALES WITH PAN SIZE: `cap = 25` for a pan of at
+  most 12 fields, then `+1` for every field beyond the twelfth, i.e.
+  `cap = 25 + max(0, fieldCount - 12)` where `fieldCount` counts EVERY field in
+  the deck - ding, rim, inner and bottom alike. A 12-field pan therefore still
+  caps at 25, which keeps the section 8 worked example above unchanged; the
+  18-field Pygmy pan caps at 31; the structural maximum (1 ding + 11 rim +
+  2 inner + 6 bottom = 20 fields, section 3) caps at 33. Rationale: the flat 25
+  was calibrated on a 12-note pan and evicted real, playable chords from larger
+  pans purely because they carried fewer top-shell tones - the built-in Pygmy
+  deck's `Gm7b5`, `Bbm7` and `Cm7` rank 27/28/29 under section 8's ranking and
+  are all on the instrument. The ranking rule below is unchanged; only the
+  trim point moves.
 - DEFAULT[owner-review] Ranking, applied to trim to the cap: triads > power >
   sus4 > 7ths > extended; within a tier, more top-shell tones ranks higher;
   remaining ties break by root scale degree ascending from the tonic, then by
@@ -498,15 +523,27 @@ Verified against all three built-ins under the fixed list order of
   select-level `NO_THIRDS` warning fires (no root on the pan has a third), every
   degree numeral is UPPERCASE and the D10 stacked-thirds case rule is NOT
   applied, even though a parent was inferred; `NO_THIRDS` overrides D10.
-- DECIDED(swarm-2026-09-08) A pan pitch class outside the inferred parent is
-  named from the parent degree it is one semitone away from: one semitone BELOW
-  parent degree N is `bN`, one semitone ABOVE parent degree N is `#N`; when
-  both apply (the pitch class sits between two parent degrees a whole tone
-  apart) the scale's accidental convention decides: `b` for a major-relative
-  scale (D8 flats), `#` otherwise. Example: in a major-relative context the
-  pitch class one semitone above degree IV and one below degree V reads `bV`.
+- DECIDED(owner-review 2026-09-08, amending swarm-2026-09-08) Numerals are
+  read against the D8 REFERENCE scale (major, or natural minor for a
+  minor-relative scale), not against the parent, in two cases that this
+  document previously stated differently:
+  (a) IN-PARENT degree: the numeral is the parent's degree INDEX and the
+  accidental is the offset against the reference degree of the SAME index.
+  So a Phrygian second reads `bII` (not `#I`), a Locrian second `bII` and its
+  fifth `bV`, a Lydian fourth `#IV`. Over the fixed `parents.json` table that
+  offset is always -1, 0 or +1, so a single accidental always suffices.
+  (b) OUTSIDE-PARENT pitch class: it is named from the REFERENCE-scale degree
+  it is one semitone away from, by the same rule (`bN` below, `#N` above; when
+  both apply, `b` for a major-relative scale, `#` otherwise). This differs from
+  a reading based on the nearest PARENT degree, and the difference is visible
+  only under a manual parent override.
+  Both readings reproduce all 17 built-in degree labels and Amara's three
+  frozen exceptions unchanged.
   Its case follows the stacked-thirds rule applied over the PAN pitch classes
-  (uppercase when no third is available), unless `NO_THIRDS` applies.
+  (uppercase when no third is available), unless `NO_THIRDS` applies. In that
+  pan-level case rule the `°` suffix is suppressed when a perfect fifth above
+  the degree is also on the pan: `°` marks a degree whose ONLY available fifth
+  is diminished. [recorded owner-review 2026-09-08; shipped behaviour]
 - DECIDED(D10, D13, plan [design-review 7A]) Parent inference runs on create;
   the override lives only in the Phase 4 Edit sheet, never on the create path.
 
@@ -600,10 +637,12 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(D6) The share URL and the seed carry a palette INDEX, never a colour
   string; colours never come from the URL. Extending the set later appends
   indices and never renumbers.
-- DECIDED(D12 as amended by [design-review 3A]) `options.mirror` is one
-  boolean: false = left-first (Hijaz / Amara), true = right-first (Pygmy). The
-  generated-layout default is right-first (D12) and the built-ins never consult
-  it.
+- DECIDED(owner-review 2026-09-08, correcting the polarity of D12 as amended
+  by [design-review 3A]) `options.mirror` is one boolean: **false = right-first
+  (the Pygmy pattern, and the generated-layout default of D12); true =
+  left-first (Hijaz / Amara)**. False is the default so that an omitted option
+  yields the D12 default layout. The built-ins never consult it, because their
+  `geom` and angles are literals that bypass the solver.
 - DECIDED(plan [design-review 5A]) The auto deck name is
   `<DING> <PARENT-DISPLAY> <N>` - the ding pitch class, the parent's short
   display name from `parents.json`, and `N`, the number of TOP-SHELL fields
