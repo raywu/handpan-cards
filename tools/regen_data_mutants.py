@@ -146,7 +146,13 @@ def apply_json(mutator):
 
 
 def check_only():
-    """Exit 0 when every b_*.patch still applies, 1 listing the stale ones."""
+    """Exit 0 when every b_*.patch still applies, 1 listing the stale ones.
+
+    Every path in this file is repo-root-relative, so --check resolves them from
+    the repo root and works from any working directory (CI runs it from the
+    checkout root; a human may not).
+    """
+    os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     stale = []
     for name in sorted(MUTANTS):
         patch = f"{OUT}/{name}.patch"

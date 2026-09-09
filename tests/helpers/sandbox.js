@@ -177,9 +177,7 @@ function boot(opts = {}) {
       _l: {},
     },
     location, history,
-    URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
-    btoa: (s) => Buffer.from(String(s), "binary").toString("base64"),
-    atob: (s) => Buffer.from(String(s), "base64").toString("binary"),
+    URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone, btoa, atob,
     setTimeout(fn, ms, ...args) {
       if (opts.syncTimers) { fn(...args); return 0; }
       const id = nextTimer++;
@@ -190,8 +188,10 @@ function boot(opts = {}) {
     setInterval() { return 0; },
     clearInterval() {},
     queueMicrotask: (fn) => fn(),
-    console, JSON, Array, Set, Map, Object, Date, Promise, Error, RegExp, String,
-    Number, Boolean, Math: mathStub, isNaN, isFinite, parseInt, parseFloat,
+    // Only host-realm globals a vm context lacks are injected. Never Array,
+    // Object, Error and friends: a context has its own, and importing the host
+    // ones would make `x instanceof Array` false for values the code built.
+    console, Math: mathStub,
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;

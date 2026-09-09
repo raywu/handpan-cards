@@ -13,6 +13,10 @@
 # Reverting is driven by the patch itself (git apply -R plus a scoped
 # checkout/clean of the paths it names), so a mutant against any file - engine
 # module, fixture, app - is cleaned up without this script knowing the path.
+#
+# Per-mutant result lines are machine-readable: the first two whitespace fields
+# are "<basename> killed|survived|timeout|stale|skipped|broken". Downstream
+# greps depend on that shape - keep it.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -35,10 +39,18 @@ patch_paths() {
   sed -n -e 's:^+++ b/::p' -e 's:^--- a/::p' "$1" | grep -v '^/dev/null$' | sort -u
 }
 
+# git checkout aborts the WHOLE invocation when any pathspec is unknown to HEAD,
+# so an add-file mutant would otherwise make the restore a no-op for every other
+# path. Restore one path at a time, and only checkout paths HEAD actually has.
 restore() {   # $@ = paths
   [ $# -eq 0 ] && return 0
-  git checkout -- "$@" 2>/dev/null || true
-  git clean -fdq -- "$@" 2>/dev/null || true
+  local path
+  for path in "$@"; do
+    if git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+      git checkout -- "$path" 2>/dev/null || true
+    fi
+    git clean -fdq -- "$path" 2>/dev/null || true
+  done
 }
 
 # A mutated suite can hang: a headless browser that never reports ready (seen
@@ -49,8 +61,12 @@ restore() {   # $@ = paths
 # a "kill", which would let a hang masquerade as a live test.
 SUITE_TIMEOUT=${MUTANT_TIMEOUT:-180}
 TMO=()
-command -v timeout >/dev/null 2>&1 && TMO=(timeout -k 5 "$SUITE_TIMEOUT")
-run_suite() {   # $* = command string
+if command -v timeout >/dev/null 2>&1; then
+  TMO=(timeout -k 5 "$SUITE_TIMEOUT")
+else
+  echo "note: no 'timeout' binary (stock macOS) - suites run UNBOUNDED here; CI has one."
+fi
+run_suite() {   # $* = command string, deliberately word-split
   ${TMO[@]+"${TMO[@]}"} $* >/dev/null 2>&1
 }
 
@@ -61,16 +77,22 @@ while IFS= read -r line; do [ -n "$line" ] && ALLPATHS+=("$line"); done < <(
   for p in "${PATCHES[@]}"; do patch_paths "$p"; done | sort -u
 )
 
-# An interrupted sweep must never leave a mutant applied in the working tree.
-trap 'restore "${ALLPATHS[@]}"' EXIT INT TERM
-
-HAVE_BROWSER=$(node -e "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))" 2>/dev/null)
-if [ -n "$(git status --porcelain -- "${ALLPATHS[@]}")" ]; then
+# The dirty check runs BEFORE any cleanup trap is installed: refusing must never
+# be able to git-checkout or git-clean away work the user has not committed.
+if [ -n "$(git status --porcelain -- ${ALLPATHS[@]+"${ALLPATHS[@]}"})" ]; then
   echo "REFUSING: working tree already modifies files a mutant touches:"
-  git status --porcelain -- "${ALLPATHS[@]}"
+  git status --porcelain -- ${ALLPATHS[@]+"${ALLPATHS[@]}"}
   echo "commit or stash first."
   exit 2
 fi
+
+# From here the tree is known clean at those paths, so restoring them can only
+# throw away what this script itself applied. An interrupted sweep must never
+# leave a mutant in the working tree.
+trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}' EXIT TERM
+trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}; exit 130' INT
+
+HAVE_BROWSER=$(node -e "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))" 2>/dev/null)
 
 # For the python suites the NAMED test is run (unittest -k), so a mutant that
 # happens to be caught by some other test does not count: it must kill the one
@@ -92,47 +114,80 @@ suite_for() {   # $1 = patch path, $2 = "# kills:" target (may be empty)
   esac
 }
 
+# A suite is only evidence if it is GREEN before the mutant is applied and RED
+# after. A command that is red (or missing, or a typo: 126/127) on the clean tree
+# "kills" every mutant pointed at it while testing nothing. The five built-in
+# prefix commands are the ones CI already runs green in its own steps, so only
+# a "# suite:" header - free-form text a lane wrote - is baselined here, once per
+# distinct command, cached.
+BASELINE_CMDS=(); BASELINE_RCS=()
+baseline_ok() {   # $1 = command string -> 0 green, 1 not
+  local i
+  for i in "${!BASELINE_CMDS[@]}"; do
+    if [ "${BASELINE_CMDS[$i]}" = "$1" ]; then return "${BASELINE_RCS[$i]}"; fi
+  done
+  local rc=0
+  run_suite "$1" || rc=1
+  BASELINE_CMDS+=("$1"); BASELINE_RCS+=("$rc")
+  return "$rc"
+}
+
 SURVIVORS=(); KILLED=0
 for p in "${PATCHES[@]}"; do
+  base="${p##*/}"
   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
   cmd=$(suite_for "$p" "$target")
+  from_header=0
+  grep -q '^# suite:' "$p" && from_header=1
   if [ -z "$cmd" ]; then
-    echo "SKIP  $p (unknown suite prefix and no '# suite:' header)"
+    echo "$base skipped  (unknown suite prefix and no '# suite:' header)"
     SURVIVORS+=("$p (no suite)"); continue
   fi
   # A skipped suite exits 0, which would look identical to a surviving mutant.
-  if [ "${p##*/}" != "${p##*/e_}" ] && { [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; }; then
-    echo "SKIP  $p (no browser; e2e mutants cannot be validated here)"; continue
-  fi
+  case "$base" in
+    e_*)
+      if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
+        echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
+        continue
+      fi ;;
+  esac
   if ! git apply --check "$p" 2>/dev/null; then
-    echo "STALE $p (does not apply)"; SURVIVORS+=("$p (stale)"); continue
+    echo "$base stale     (does not apply)"; SURVIVORS+=("$p (stale)"); continue
+  fi
+  if [ "$from_header" -eq 1 ] && ! baseline_ok "$cmd"; then
+    echo "$base broken    -> suite is NOT green on the clean tree: $cmd"
+    SURVIVORS+=("$p (broken suite)"); continue
   fi
 
   PATHS=(); while IFS= read -r line; do PATHS+=("$line"); done < <(patch_paths "$p")
   git apply "$p"
   run_suite "$cmd"; rc=$?
   if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
-    echo "retry     $p  (suite hung for ${SUITE_TIMEOUT}s, retrying once)"
+    echo "$base retry     (suite hung for ${SUITE_TIMEOUT}s, retrying once)"
     run_suite "$cmd"; rc=$?
   fi
   if [ $rc -eq 0 ]; then
-    echo "SURVIVED  $p  -> ${target:-?} did NOT fail"
+    echo "$base survived  -> ${target:-?} did NOT fail"
     SURVIVORS+=("$p")
   elif [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
-    echo "TIMEOUT   $p  -> suite hung twice for ${SUITE_TIMEOUT}s: $cmd"
+    echo "$base timeout   -> suite hung twice for ${SUITE_TIMEOUT}s: $cmd"
     SURVIVORS+=("$p (timed out)")
+  elif [ $rc -eq 126 ] || [ $rc -eq 127 ]; then
+    # Not a test failure: the command could not be run at all.
+    echo "$base broken    -> command not executable (rc $rc): $cmd"
+    SURVIVORS+=("$p (command not runnable)")
   else
-    echo "killed    $p  -> ${target:-?}"
+    echo "$base killed    -> ${target:-?}"
     KILLED=$((KILLED + 1))
   fi
 
   # Revert the mutant itself, then discard anything the suite WROTE while it was
   # applied - scoped to the paths this patch names, never the whole tree.
   git apply -R "$p" 2>/dev/null || true
-  restore "${PATHS[@]}"
-  if [ -n "$(git status --porcelain -- "${PATHS[@]}")" ]; then
+  restore ${PATHS[@]+"${PATHS[@]}"}
+  if [ -n "$(git status --porcelain -- ${PATHS[@]+"${PATHS[@]}"})" ]; then
     echo "DIRTY after $p - the sweep cannot continue on a contaminated tree:"
-    git status --porcelain -- "${PATHS[@]}"
+    git status --porcelain -- ${PATHS[@]+"${PATHS[@]}"}
     exit 3
   fi
   find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
@@ -144,5 +199,8 @@ if [ ${#SURVIVORS[@]} -ne 0 ]; then
   printf 'SURVIVING MUTANT: %s\n' "${SURVIVORS[@]}"
   echo "A surviving mutant means the named test cannot detect the defect it claims to cover."
   exit 1
+fi
+if [ "$KILLED" -eq 0 ]; then
+  echo "NO MUTANT WAS KILLED - the gate validated nothing."; exit 1
 fi
 echo "MUTATION GATE PASSED"

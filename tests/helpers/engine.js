@@ -36,11 +36,11 @@ function loadEngine(names, extraGlobals = {}) {
   if (!list.length) throw new Error("loadEngine: name at least one engine module");
 
   const sandbox = {
-    console, JSON, Math, Array, Object, Set, Map, String, Number, Boolean,
-    Error, RegExp, Date, isNaN, isFinite, parseInt, parseFloat,
-    TextEncoder, TextDecoder, structuredClone,
-    btoa: (s) => Buffer.from(String(s), "binary").toString("base64"),
-    atob: (s) => Buffer.from(String(s), "base64").toString("binary"),
+    // Only host-realm globals a vm context lacks (a context brings its own
+    // Array/Object/Error/JSON/Math; importing the host ones would break
+    // `instanceof` for values the engine built). Same list as sandbox.js.
+    console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
+    btoa, atob,
     ...extraGlobals,
   };
   vm.createContext(sandbox);

@@ -26,14 +26,24 @@ over `mutation_check.sh`'s filename-prefix table, so a new mutant prefix needs
 no change to the script. A patch with neither a known prefix nor a header is
 reported as a survivor. Reverting is driven by the patch itself, so a mutant may
 touch any path. Each suite runs under a wall clock (`MUTANT_TIMEOUT`, default
-180s) and a hang is retried once, then reported as `TIMEOUT` - never as a kill:
-an unfinished CI step's log cannot be read, so a hang has to end by itself.
+180s) and a hang is retried once, then reported as `timeout` - never as a kill:
+an unfinished CI step's log cannot be read, so a hang has to end by itself. A
+header command is also run once on the CLEAN tree and must be green there: a
+suite that is already red (or a typo, rc 126/127) would "kill" every mutant
+aimed at it while testing nothing, and is reported `broken` instead. Result
+lines are machine-readable - the first two fields are
+`<patch basename> killed|survived|timeout|stale|skipped|broken`.
 
 **Floors are a per-file table.** `suite_health.py`'s `FLOORS` has one row per
 test file, and rows are pre-seeded at 0 for files that do not exist yet. Adding
 tests means editing YOUR row's number - never inserting, reordering or lowering
-someone else's. A 0 row for a missing file is a placeholder, not a failure.
-Node counts come from `node --test --test-reporter=tap <file>`, per file.
+someone else's. **Nothing enforces "never lower a row" - it is a reviewer rule.**
+The only arithmetic check is that the rows still SUM to at least the legacy
+aggregates (python 40, node unit 12, node total 17), so raising a row is always
+safe and lowering one is caught by review, not by the script. A 0 row for a
+missing file is a placeholder, not a failure; a `tests/*.test.js` file with NO
+row is a failure - add a row (0 is a fine start). Node counts come from
+`node --test --test-reporter=tap <file>`, per file.
 
 ## Rules
 

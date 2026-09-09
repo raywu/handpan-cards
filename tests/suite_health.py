@@ -11,10 +11,14 @@ row; nobody inserts or reorders lines. Rows pre-seeded at 0 name files that do
 not exist yet - a 0 row for a missing file is not an error, it is a placeholder
 so the later lane edits a number instead of the table's shape.
 
-The per-file rows sum to the aggregate floors this file has always enforced
-(python 40, node unit 12, node unit+e2e 17); the sums are asserted below, so a
-row can never be lowered to buy headroom for another.
+The per-file rows must still cover the aggregate floors this file has always
+enforced (python 40, node unit 12, node unit+e2e 17). Those aggregates are
+MINIMUMS, checked below with >=, so a lane raising its own row is fine and only
+a table that no longer reaches an aggregate is an error. "Never lower someone
+else's row" is a reviewer rule (tests/CONTRACT.md), not something arithmetic can
+see.
 """
+import glob
 import os
 import re
 import subprocess
@@ -31,6 +35,8 @@ FLOORS = {
     "tests/test_pdf_build.py": 6,
     "tests/test_print.py": 15,
     "tests/test_render_agreement.py": 7,
+    # pre-seeded for the fixture-integrity lane.
+    "tests/test_fixture_integrity.py": 0,
     # node
     "tests/app.test.js": 12,
     "tests/e2e.test.js": 5,
@@ -55,9 +61,29 @@ LEGACY_NODE_FULL = 17
 PY_FILES = [p for p in FLOORS if p.endswith(".py")]
 JS_FILES = [p for p in FLOORS if p.endswith(".js")]
 
-assert sum(FLOORS[p] for p in PY_FILES) == LEGACY_PYTHON
-assert sum(FLOORS[p] for p in JS_FILES if p not in E2E_FILES) == LEGACY_NODE_UNIT
-assert sum(FLOORS[p] for p in JS_FILES) == LEGACY_NODE_FULL
+
+def validate_floors(floors):
+    """Raise if the per-file rows no longer reach the aggregate floors.
+
+    The aggregates are MINIMUMS: raising a row is always fine, and the table only
+    breaks when the rows stop covering an aggregate.
+    """
+    py = [p for p in floors if p.endswith(".py")]
+    js = [p for p in floors if p.endswith(".js")]
+    for name, got, want in (
+        ("python", sum(floors[p] for p in py), LEGACY_PYTHON),
+        ("node unit", sum(floors[p] for p in js if p not in E2E_FILES), LEGACY_NODE_UNIT),
+        ("node total", sum(floors[p] for p in js), LEGACY_NODE_FULL),
+    ):
+        if got < want:
+            raise AssertionError(
+                f"{name} per-file floors sum to {got}, "
+                f"below the aggregate floor {want}")
+
+
+validate_floors(FLOORS)
+# A lane raising a pre-seeded 0 row must not break this file at import time.
+validate_floors({**FLOORS, "tests/core.test.js": 8})
 
 
 def module_of(path):
@@ -143,8 +169,16 @@ def check_node():
 
     problems = []
     total_counted = 0
-    for path in sorted(JS_FILES):
-        floor = FLOORS[path]
+    # Glob, so a new tests/*.test.js file cannot slip in with no floor at all.
+    found = sorted(
+        os.path.relpath(f, paths.ROOT).replace(os.sep, "/")
+        for f in glob.glob(os.path.join(paths.ROOT, "tests", "*.test.js")))
+    for path in found:
+        if path not in FLOORS:
+            problems.append(f"{path}: no FLOORS row in tests/suite_health.py "
+                            f"- add one (0 is a fine starting value)")
+    for path in sorted(set(JS_FILES) | set(found)):
+        floor = FLOORS.get(path, 0)
         if not exists(path):
             if floor:
                 problems.append(f"{path}: floor is {floor} but the file does not exist")
