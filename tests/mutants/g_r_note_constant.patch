@@ -1,0 +1,15 @@
+# suite: node --test tests/layout.test.js
+# kills: r_note is a packing bound, not a constant: field circles stay legible instead of shrinking away to clear a clash
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index f5d1cd5..c24151f 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -213,7 +213,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var pairs = minPairDistance(topPoints);
+     if (isFinite(pairs)) rNote = Math.min(rNote, PACK * pairs / 2);
+     if (isFinite(dingClear)) rNote = Math.min(rNote, DING_PACK * dingClear);
+-    rNote = topPoints.length ? round(rNote, 4) : 0;
++    rNote = topPoints.length ? 0.02 : 0;
+ 
+     var bottomPoints = [];
+     for (i = 0; i < bottoms.length; i += 1) bottomPoints.push(point(bottomOrb, bottoms[i]));
