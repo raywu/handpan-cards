@@ -1,6 +1,8 @@
-# kills: an unknown stored deck id falls back to the first deck
+# kills: a generated deck resolves through deck() without joining the DECKS literal
+# deck() stops consulting the generated-deck registry, so a custom id silently
+# renders the first built-in deck instead.
 diff --git a/index.html b/index.html
-index d2aeb5a..b3f5f73 100644
+index d2aeb5a..1bad6a9 100644
 --- a/index.html
 +++ b/index.html
 @@ -1984,7 +1984,7 @@ let order = [], idx = 0, flipped = false;
@@ -8,7 +10,7 @@ index d2aeb5a..b3f5f73 100644
  const CUSTOM = Object.create(null);
  
 -const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
-+const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId);
++const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
  // Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
  // stored deck untouched, so a reload restores the last built-in deck instead of
  // silently falling back to the first one. Phase 4 lifts the guard.

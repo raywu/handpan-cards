@@ -19,13 +19,21 @@ const APP = path.join(__dirname, "..", "..", "index.html");
 // throws, so a typo in the app is a loud failure, not a silent null - but the
 // list is extensible: push through registerIds(), or pass opts.extraIds for one
 // boot only.
-const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB"];
+// The scale-sheet ids of ENGINE-SPEC section 15 are served from Phase 3 on, so
+// a boot never throws on the sheet markup and e2e and the units target the same
+// names. Serving an id costs nothing when no element in index.html uses it yet.
+const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
+  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-mirror-l",
+  "scale-mirror-r", "scale-swatches", "scale-generate", "deck-add"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
   for (const id of ids.flat()) if (!ELEMENT_IDS.includes(id)) ELEMENT_IDS.push(id);
   return ELEMENT_IDS;
 }
+
+/** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
+const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 
 function makeElement(id, tag = "div") {
   const attrs = {};
@@ -224,7 +232,25 @@ function boot(opts = {}) {
     },
     flip: () => els.card.listeners.click[0](),
     cssVar: (name) => docEl.style._props[name],
+
+    /* -------- generated decks (Phase 3) --------
+     * Calls the app's own submit path, so a unit test drives generation
+     * exactly as the scale sheet will, with no second implementation here.
+     * Arguments cross the realm boundary as JSON, and every returned engine
+     * value is normalised out of the vm realm so deepStrictEqual works. */
+    generate: (text, options) =>
+      plain(vm.runInContext(
+        `generateDeck(${JSON.stringify(String(text))}, ${JSON.stringify(options || {})})`,
+        sandbox)),
+    /** Select a deck by id through the app's own path (built-in or generated). */
+    select: (id) => vm.runInContext(`selectDeck(${JSON.stringify(String(id))})`, sandbox),
+    /** The id of the deck currently on screen. */
+    deckId: () => vm.runInContext("deckId", sandbox),
+    /** The generated deck registry, as plain host-realm data. */
+    registry: () => plain(vm.runInContext("CUSTOM", sandbox)),
+    /** The deck object render() would use, as plain host-realm data. */
+    currentDeck: () => plain(vm.runInContext("deck()", sandbox)),
   };
 }
 
-module.exports = { boot, makeElement, makeLocation, registerIds, ELEMENT_IDS, APP };
+module.exports = { boot, makeElement, makeLocation, registerIds, plain, ELEMENT_IDS, APP };

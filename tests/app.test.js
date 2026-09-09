@@ -403,3 +403,207 @@ test("pan() draws one circle per field, two more per lit field, plus the chrome"
     }
   }
 });
+
+/* ================================================================ Phase 3
+ * The engine inlined into index.html, and the plumbing that consumes it: a
+ * registry deck() can resolve, generation that runs once at submit, a save()
+ * that persists built-in ids only, and pan() honouring the solver's extent.
+ * Everything here is derived from docs/ENGINE-SPEC.md sections 1, 11, 12 and
+ * 14, never from restating the app's implementation.
+ */
+
+const fs = require("node:fs");
+const path = require("node:path");
+const { plain } = require("./helpers/sandbox.js");
+
+const ROOT = path.join(__dirname, "..");
+const SCALES = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "synthetic_scales.json"), "utf8"));
+
+/** A synthetic fixture's scale string, by fixture name. */
+function scale(name) {
+  const hit = SCALES.find((s) => s.name === name);
+  assert.ok(hit, `no synthetic_scales.json entry named "${name}"`);
+  return hit.string;
+}
+
+const AMARA_STRING = scale("builtin amara");
+
+/* ------------------------------------------------- 11. the engine is inlined */
+
+test("index.html carries the whole engine inline, with no external script", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  // CLAUDE.md hard constraint: single-file app, no external JS.
+  assert.ok(!/<script[^>]*\bsrc=/.test(html), "index.html loads an external script");
+
+  const app = boot();
+  const HPE = app.get("HPE");
+  for (const mod of ["core", "voicing", "layout", "naming", "select"]) {
+    assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
+  }
+  // core must be visible to the modules that read it, so it loads first.
+  const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
+  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select"]);
+});
+
+/* ------------------------------------------- 12. the generated deck registry */
+
+test("a generated deck resolves through deck() without joining the DECKS literal", () => {
+  const app = boot();
+  const before = decks(app).length;
+  const res = app.generate(AMARA_STRING);
+  assert.strictEqual(res.ok, true, res.reason);
+
+  // section 12: the id is "custom:" + 8 lowercase hex, from the seed alone.
+  assert.match(res.value.id, /^custom:[0-9a-f]{8}$/);
+  // the literal is untouched - validate.py and tests/paths.py both need that.
+  assert.strictEqual(decks(app).length, before);
+  assert.ok(!decks(app).some((d) => d.id === res.value.id));
+
+  app.select(res.value.id);
+  assert.strictEqual(app.deckId(), res.value.id);
+  const shown = app.currentDeck();
+  assert.strictEqual(shown.id, res.value.id);
+  // section 11: exactly these keys on a generated deck.
+  assert.deepStrictEqual(Object.keys(shown).sort(),
+    ["chords", "colors", "degrees", "fields", "geom", "id", "name", "options", "warnings"]);
+  assert.ok(shown.chords.length > 0);
+  for (const ch of shown.chords) {
+    assert.deepStrictEqual(Object.keys(ch).sort(), ["fields", "main", "roots", "subtitle", "sup"]);
+  }
+  // and it renders: the card face carries the diagram.
+  assert.match(app.faces(), /<svg /);
+  assert.strictEqual(app.els.count.textContent, `1 / ${shown.chords.length}`);
+});
+
+test("generation runs once at submit, never inside deck() or render()", () => {
+  const app = boot();
+  const id = app.generate(AMARA_STRING).value.id;
+  app.select(id);
+  // deck() hands back the SAME object every time; nothing rebuilds per render.
+  assert.strictEqual(app.get("deck() === deck()"), true);
+  assert.strictEqual(app.get("deck() === CUSTOM[deckId]"), true);
+  const identity = app.get(
+    "(() => { const d = deck(); render(); render(); step(1); return d === deck(); })()");
+  assert.strictEqual(identity, true, "render() or step() replaced the registry object");
+});
+
+test("an unknown deck id still falls back to a built-in deck", () => {
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
+  assert.strictEqual(app.deckId(), decks(app)[0].id);
+  assert.match(app.faces(), /<svg /);
+});
+
+test("a rejected scale leaves the selected deck and the registry alone", () => {
+  const app = boot();
+  const before = app.deckId();
+  // ENGINE-SPEC section 17: the whole-tone subset has no fifth above the ding.
+  const res = app.generate(scale("whole tone subset"));
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.code, "NO_FIFTH");
+  assert.strictEqual(typeof res.reason, "string");
+  assert.ok(res.reason.length > 0);
+  assert.strictEqual(res.value, undefined, "an err result must carry no value");
+  assert.strictEqual(app.deckId(), before);
+  assert.deepStrictEqual(app.registry(), {});
+});
+
+test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", () => {
+  const app = boot();
+  const current = app.get("SHARE_VERSION");
+  assert.strictEqual(app.get(`checkShareVersion(${current}).ok`), true);
+  const res = plain(app.get(`checkShareVersion(${current + 1})`));
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.code, "NEEDS_NEWER_APP");
+  assert.match(res.reason, /newer version/i);
+});
+
+/* --------------------------------------- 13. save() persists built-ins only */
+
+test("selecting a generated deck leaves the stored deck on the last built-in", () => {
+  const app = boot();
+  const builtIn = decks(app)[1];
+  app.select(builtIn.id);
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, builtIn.id);
+
+  const id = app.generate(AMARA_STRING).value.id;
+  app.select(id);
+  assert.strictEqual(app.deckId(), id, "the custom deck is on screen");
+  const stored = JSON.parse(app.store.hpfc);
+  // Phase 4 lifts this; in Phase 3 a reload must restore a built-in deck.
+  assert.strictEqual(stored.deck, builtIn.id, "a custom deck id was persisted");
+  assert.strictEqual(stored.mode, "A", "mode must still round-trip");
+
+  // and a mode change while a custom deck is showing keeps the built-in id.
+  app.run('setMode("B")');
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: builtIn.id, mode: "B" });
+});
+
+/* --------------------------------------------- 14. pan() honours geom.ext */
+
+test("pan() sizes a generated deck's viewBox from the solver's ext", () => {
+  const app = boot();
+  // The 19-field maximum is the case where the solver's extent and the
+  // built-in derivation disagree (ENGINE-SPEC section 11).
+  const d = app.generate(scale("nineteen field maximum")).value;
+  const g = d.geom;
+  assert.strictEqual(typeof g.ext, "number");
+  const derived = g.bottom ? 100 * (g.bottom + g.r_bnote + g.n_out) + 14 : 106;
+  assert.notStrictEqual(g.ext * 100, derived,
+    "fixture no longer distinguishes ext from the derived extent");
+
+  app.select(d.id);
+  const svg = app.get("pan(deck(), deck().chords[0])");
+  const box = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/);
+  assert.ok(box, "no viewBox on the generated pan");
+  const ext = 100 * g.ext;
+  assert.strictEqual(Number(box[1]), -ext);
+  assert.strictEqual(Number(box[3]), 2 * ext);
+
+  // every field the solver placed is inside the box it sized.
+  for (const key of Object.keys(d.fields)) {
+    const [, , , zone, ang] = d.fields[key];
+    if (zone === "ding") continue;
+    const orb = 100 * (zone === "bottom" ? g.bottom : zone === "inner" ? g.inner : g.rim);
+    const r = 100 * (zone === "bottom" ? g.r_bnote : g.r_note);
+    assert.ok(orb + r <= ext, `field ${key} (${zone}) sticks out of ext`);
+    assert.strictEqual(typeof ang, "number");
+  }
+});
+
+test("the built-in decks keep the derived extent they have always rendered", () => {
+  const app = boot();
+  for (let di = 0; di < decks(app).length; di++) {
+    const d = decks(app)[di];
+    assert.ok(!("ext" in d.geom), `${d.id} geom grew an ext key`);
+    const svg = app.get(`pan(DECKS[${di}], DECKS[${di}].chords[0])`);
+    const g = d.geom;
+    const ext = g.bottom ? 100 * (g.bottom + g.r_bnote + g.n_out) + 14 : 106;
+    assert.ok(svg.startsWith(`<svg viewBox="${-ext} ${-ext} ${2 * ext} ${2 * ext}"`),
+      `${d.id}: ${svg.slice(0, 60)}`);
+  }
+});
+
+/* ------------------------------------------- 15. generation-time budget */
+
+// [eng-review 15A] Generation happens while the user waits, so it has a budget.
+// Timed inside an already-booted app: parse + select.build + registry
+// insertion, never process startup or the engine module load.
+function budget(fixture, ms) {
+  test(`generating ${fixture} stays inside ${ms} ms`, () => {
+    const app = boot();
+    const s = scale(fixture);
+    app.generate(s);                 // warm the JIT; the budget is steady state
+    let best = Infinity;
+    for (let i = 0; i < 3; i++) {
+      const t0 = process.hrtime.bigint();
+      const res = app.generate(s);
+      const dt = Number(process.hrtime.bigint() - t0) / 1e6;
+      assert.strictEqual(res.ok, true, res.reason);
+      best = Math.min(best, dt);
+    }
+    assert.ok(best < ms, `generation took ${best.toFixed(1)} ms, budget ${ms} ms`);
+  });
+}
+budget("twelve note pan", 200);
+budget("nineteen field maximum", 500);

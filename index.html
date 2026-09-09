@@ -122,6 +122,1851 @@ button.nav:active{background:#2e281e}
   <button class="nav" id="next" aria-label="Next card">&rarr;</button>
 </footer>
 
+<!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
+     single-file by contract, so these are copies rather than external script
+     references: index.html ships with the engine already in it and needs no
+     build. Re-sync after an engine change with
+     `python3 tools/inline_engine.py`; `python3 tools/validate.py` fails when
+     a region has drifted from its module. -->
+<!-- engine begin -->
+<!-- engine:core begin - synced from src/engine/core.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.core - the D13 seed parser shared by every engine lane and by the app.
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 1-4, 12, 13, 16 and 17.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  /* ---- section 2: the code enum and its reason strings, verbatim -------- */
+
+  var REASONS = {
+    NO_DING: {
+      kind: "error",
+      reason: "No ding. Start with the ding note, e.g. (D) or D/."
+    },
+    NO_FIFTH: {
+      kind: "error",
+      reason: "No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding."
+    },
+    TOO_MANY_RIM: {
+      kind: "error",
+      reason: "Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom."
+    },
+    BAD_NOTE: {
+      kind: "error",
+      reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave."
+    },
+    NEEDS_NEWER_APP: {
+      kind: "error",
+      reason: "This link needs a newer version of the app. Reload."
+    },
+    NO_THIRDS: {
+      kind: "warning",
+      reason: "No 3rds on this pan: only power chords and sus chords."
+    }
+  };
+
+  var LETTERS = "CDEFGAB";
+  var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  var ACCIDENTAL = { "": 0, "#": 1, b: -1 };
+
+  var RIM_MAX = 11;
+  var INNER_MAX = 2;
+  var BOTTOM_MAX = 6;
+  var TOP_MAX = RIM_MAX + INNER_MAX;
+
+  var NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
+  var DEFAULT_OPTIONS = { palette: 0, parent: null, name: "", mirror: false };
+
+  /* ---- small helpers ---------------------------------------------------- */
+
+  function pitchClass(midi) {
+    return ((midi % 12) + 12) % 12;
+  }
+
+  // Section 3: midi = 12 * (octave + 1) + letter + accidental, letter-anchored,
+  // so Cb4 is 59 and B#3 is 60.
+  function midiFromName(letter, accidental, octave) {
+    return 12 * (octave + 1) + SEMITONES[letter] + ACCIDENTAL[accidental || ""];
+  }
+
+  // The octave the formula implies for this spelling at this midi, so an
+  // inferred Cb prints as Cb4 and never as Cb3.
+  function octaveOf(letter, accidental, midi) {
+    return (midi - SEMITONES[letter] - ACCIDENTAL[accidental || ""]) / 12 - 1;
+  }
+
+  function spell(letter, accidental) {
+    return letter + (accidental || "");
+  }
+
+  function accidentalString(offset) {
+    if (offset === 0) return "";
+    return new Array(Math.abs(offset) + 1).join(offset > 0 ? "#" : "b");
+  }
+
+  // Section 2: the fifth above X is the letter four steps up carrying whatever
+  // accidental makes the interval a perfect fifth (G for C, Ab for Db, F# for
+  // B, Cb for Fb, E# for A#).
+  function fifthName(letter, accidental) {
+    var up = LETTERS.charAt((LETTERS.indexOf(letter) + 4) % 7);
+    var natural = ((SEMITONES[up] - SEMITONES[letter]) % 12 + 12) % 12;
+    return up + accidentalString(ACCIDENTAL[accidental || ""] + (7 - natural));
+  }
+
+  function ok(value) {
+    return { ok: true, value: value };
+  }
+
+  function err(code, substitutions) {
+    var reason = REASONS[code].reason;
+    for (var key in substitutions) {
+      if (Object.prototype.hasOwnProperty.call(substitutions, key)) {
+        reason = reason.split(key).join(substitutions[key]);
+      }
+    }
+    return { ok: false, code: code, reason: reason };
+  }
+
+  function badNote(token) {
+    return err("BAD_NOTE", { "<X>": String(token).slice(0, 12) });
+  }
+
+  /* ---- tokenising ------------------------------------------------------- */
+
+  // A token is DING-SHAPED when it carries any of the ding punctuation. These
+  // are counted over the whole string before any other rule runs (D13), so
+  // `(D3) (A3) C4` is NO_DING rather than BAD_NOTE. A single, first,
+  // ding-shaped token that is not exactly `(NAME)` or `NAME/` is a malformed
+  // note token and therefore BAD_NOTE.
+  function isDingShaped(token) {
+    return token.charAt(0) === "(" ||
+           token.charAt(token.length - 1) === ")" ||
+           token.charAt(token.length - 1) === "/";
+  }
+
+  function dingBody(token) {
+    var paren = /^\((.*)\)$/.exec(token);
+    if (paren) return paren[1];
+    var slash = /^(.*)\/$/.exec(token);
+    if (slash) return slash[1];
+    return null;
+  }
+
+  function lex(token) {
+    var m = NOTE_RE.exec(token);
+    if (!m) return null;
+    return {
+      letter: m[1],
+      accidental: m[2] || "",
+      octave: m[3] === undefined ? null : Number(m[3]),
+      token: token
+    };
+  }
+
+  /* ---- octave inference ------------------------------------------------- */
+
+  function nextAbove(previousMidi, letter, accidental) {
+    var midi = midiFromName(letter, accidental, 0);
+    while (midi <= previousMidi) midi += 12;
+    return midi;
+  }
+
+  // Section 3: the first bottom note is the instance of its pitch class nearest
+  // the ding, excluding the ding's own midi, ties (tritone, same pitch class)
+  // going BELOW.
+  function nearestToDing(dingMidi, letter, accidental) {
+    var step = ((dingMidi - midiFromName(letter, accidental, 0)) % 12 + 12) % 12;
+    // The ding's own midi is not a candidate, so a same-pitch-class bottom note
+    // has its neighbours a full octave either side and the tie goes below.
+    var below = dingMidi - (step === 0 ? 12 : step);
+    var above = step === 0 ? dingMidi + 12 : below + 12;
+    return (dingMidi - below) <= (above - dingMidi) ? below : above;
+  }
+
+  function place(note, previousMidi, seedFn) {
+    if (note.octave !== null) {
+      return midiFromName(note.letter, note.accidental, note.octave);
+    }
+    return seedFn(previousMidi, note.letter, note.accidental);
+  }
+
+  /* ---- options ---------------------------------------------------------- */
+
+  var NAME_RE = /^[\x20-\x7E]*$/;
+
+  // Section 13/14. There is no options code in the section 2 enum, and the spec
+  // forbids inventing one, so a rejected option is BAD_NOTE naming the value.
+  function readOptions(options) {
+    var out = {
+      palette: DEFAULT_OPTIONS.palette,
+      parent: DEFAULT_OPTIONS.parent,
+      name: DEFAULT_OPTIONS.name,
+      mirror: DEFAULT_OPTIONS.mirror
+    };
+    if (options === undefined || options === null) return ok(out);
+    if (typeof options !== "object") return badNote(options);
+
+    if (options.palette !== undefined) {
+      var palette = options.palette;
+      if (typeof palette !== "number" || palette !== Math.floor(palette) ||
+          palette < 0 || palette > 5) return badNote(palette);
+      out.palette = palette;
+    }
+    if (options.parent !== undefined && options.parent !== null) {
+      var parent = options.parent;
+      if (typeof parent !== "number" || parent !== Math.floor(parent) ||
+          parent < 0 || parent > 10) return badNote(parent);
+      out.parent = parent;
+    }
+    if (options.name !== undefined && options.name !== "") {
+      var name = options.name;
+      if (typeof name !== "string") return badNote(name);
+      name = name.replace(/^\s+/, "").replace(/\s+$/, "");
+      if (!NAME_RE.test(name) || name.length < 1 || name.length > 40) {
+        return badNote(name);
+      }
+      out.name = name;
+    }
+    if (options.mirror !== undefined) {
+      if (typeof options.mirror !== "boolean") return badNote(options.mirror);
+      out.mirror = options.mirror;
+    }
+    return ok(out);
+  }
+
+  /* ---- parseSeed -------------------------------------------------------- */
+
+  function parseSeed(input, options) {
+    if (typeof input !== "string") return badNote(String(input));
+
+    var opts = readOptions(options);
+    if (!opts.ok) return opts;
+
+    var tokens = input.split(/\s+/).filter(function (t) { return t !== ""; });
+
+    // 1. Ding counting, before every other rule (D13).
+    var dingIndexes = [];
+    for (var i = 0; i < tokens.length; i += 1) {
+      if (isDingShaped(tokens[i])) dingIndexes.push(i);
+    }
+    if (dingIndexes.length !== 1 || dingIndexes[0] !== 0) {
+      return err("NO_DING", {});
+    }
+
+    var body = dingBody(tokens[0]);
+    if (body === null) return badNote(tokens[0]);
+    var dingNote = lex(body);
+    if (!dingNote) return badNote(tokens[0]);
+    // A ding written without an octave is octave 3 (all three built-ins).
+    if (dingNote.octave === null) dingNote.octave = 3;
+    var dingMidi = midiFromName(dingNote.letter, dingNote.accidental, dingNote.octave);
+    if (dingMidi < 0 || dingMidi > 127) return badNote(tokens[0]);
+
+    // 2. Split the rest on the bar, which must stand alone.
+    var rest = tokens.slice(1);
+    var bar = -1;
+    for (var b = 0; b < rest.length; b += 1) {
+      if (rest[b] === "|") {
+        if (bar >= 0) return badNote("|");
+        bar = b;
+      }
+    }
+    var topTokens = bar < 0 ? rest : rest.slice(0, bar);
+    var bottomTokens = bar < 0 ? [] : rest.slice(bar + 1);
+    if (bar >= 0 && bottomTokens.length === 0) return badNote("|");
+
+    // 3. Lex every remaining token.
+    var topNotes = [];
+    var bottomNotes = [];
+    var lists = [[topTokens, topNotes], [bottomTokens, bottomNotes]];
+    for (var l = 0; l < lists.length; l += 1) {
+      var raw = lists[l][0];
+      for (var t = 0; t < raw.length; t += 1) {
+        var note = lex(raw[t]);
+        if (!note) return badNote(raw[t]);
+        lists[l][1].push(note);
+      }
+    }
+
+    // 4. Octave inference, MIDI range and the strict-ascending rule. The ding
+    //    counts as the element before the first top note.
+    var seen = {};
+    var previous = dingMidi;
+    var n;
+    for (n = 0; n < topNotes.length; n += 1) {
+      var top = topNotes[n];
+      top.midi = place(top, previous, nextAbove);
+      if (top.midi < 0 || top.midi > 127) return badNote(top.token);
+      if (top.midi <= previous) return badNote(top.token);
+      top.octave = octaveOf(top.letter, top.accidental, top.midi);
+      var topKey = "top " + spell(top.letter, top.accidental) + top.octave;
+      if (seen[topKey]) return badNote(top.token);
+      seen[topKey] = true;
+      previous = top.midi;
+    }
+
+    for (n = 0; n < bottomNotes.length; n += 1) {
+      var low = bottomNotes[n];
+      low.midi = n === 0
+        ? place(low, dingMidi, nearestToDing)
+        : place(low, bottomNotes[n - 1].midi, nextAbove);
+      if (low.midi < 0 || low.midi > 127) return badNote(low.token);
+      if (n > 0 && low.midi <= bottomNotes[n - 1].midi) return badNote(low.token);
+      low.octave = octaveOf(low.letter, low.accidental, low.midi);
+      var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
+      if (seen[lowKey]) return badNote(low.token);
+      seen[lowKey] = true;
+    }
+
+    // 5. Caps (section 4).
+    if (topNotes.length > TOP_MAX || bottomNotes.length > BOTTOM_MAX) {
+      return err("TOO_MANY_RIM", {});
+    }
+
+    // 6. A perfect fifth above the ding must exist on the TOP shell.
+    var wanted = pitchClass(dingMidi + 7);
+    var hasFifth = false;
+    for (n = 0; n < topNotes.length; n += 1) {
+      if (pitchClass(topNotes[n].midi) === wanted) hasFifth = true;
+    }
+    if (!hasFifth) {
+      return err("NO_FIFTH", {
+        "<X>": spell(dingNote.letter, dingNote.accidental) + dingNote.octave,
+        "<fifth of X>": fifthName(dingNote.letter, dingNote.accidental)
+      });
+    }
+
+    // 7. Build the field map (section 4: ids, labels, zones).
+    var fields = {};
+    fields["0"] = [spell(dingNote.letter, dingNote.accidental), dingNote.octave,
+                   dingMidi, "ding", null, "Ding"];
+    for (n = 0; n < topNotes.length; n += 1) {
+      var id = String(n + 1);
+      fields[id] = [spell(topNotes[n].letter, topNotes[n].accidental),
+                    topNotes[n].octave, topNotes[n].midi,
+                    n < RIM_MAX ? "rim" : "inner", null, id];
+    }
+    for (n = 0; n < bottomNotes.length; n += 1) {
+      fields[String(101 + n)] = [
+        spell(bottomNotes[n].letter, bottomNotes[n].accidental),
+        bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
+    }
+
+    return ok({ fields: fields, options: opts.value });
+  }
+
+  /* ---- section 12: the canonical string and the deck id ----------------- */
+
+  function fieldsOf(seedOrFields) {
+    return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
+  }
+
+  function orderedIds(fields) {
+    var top = [];
+    var bottom = [];
+    for (var id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      if (id === "0") continue;
+      (Number(id) >= 101 ? bottom : top).push(id);
+    }
+    function byNumber(a, c) { return Number(a) - Number(c); }
+    return { top: top.sort(byNumber), bottom: bottom.sort(byNumber) };
+  }
+
+  function formatSeed(seed) {
+    var fields = fieldsOf(seed);
+    var ids = orderedIds(fields);
+    var ding = fields["0"];
+    var out = "(" + ding[0] + ding[1] + ")";
+    var n;
+    for (n = 0; n < ids.top.length; n += 1) {
+      out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
+    }
+    if (ids.bottom.length) {
+      out += " |";
+      for (n = 0; n < ids.bottom.length; n += 1) {
+        out += " " + fields[ids.bottom[n]][0] + fields[ids.bottom[n]][1];
+      }
+    }
+    return out;
+  }
+
+  // FNV-1a, 32-bit, over the UTF-8 bytes. Hand-rolled rather than TextEncoder:
+  // section 14 forbids depending on host encoders the vm context may not have.
+  function utf8Bytes(str) {
+    var bytes = [];
+    for (var i = 0; i < str.length; i += 1) {
+      var code = str.charCodeAt(i);
+      if (code >= 0xd800 && code <= 0xdbff && i + 1 < str.length) {
+        var low = str.charCodeAt(i + 1);
+        if (low >= 0xdc00 && low <= 0xdfff) {
+          code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+          i += 1;
+        }
+      }
+      if (code < 0x80) {
+        bytes.push(code);
+      } else if (code < 0x800) {
+        bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+      } else if (code < 0x10000) {
+        bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f),
+                   0x80 | (code & 0x3f));
+      } else {
+        bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f),
+                   0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+      }
+    }
+    return bytes;
+  }
+
+  function fnv1a32(str) {
+    var hash = 0x811c9dc5;
+    var bytes = utf8Bytes(str);
+    for (var i = 0; i < bytes.length; i += 1) {
+      hash = (hash ^ bytes[i]) >>> 0;
+      // 32-bit multiply by 0x01000193 without losing precision.
+      hash = (((hash & 0xffff) * 0x01000193) +
+              ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
+    }
+    var hex = hash.toString(16);
+    while (hex.length < 8) hex = "0" + hex;
+    return hex;
+  }
+
+  // D14: a pure function of formatSeed - notes, octaves, zones and order. The
+  // options are never hashed, so renaming or recolouring keeps the id.
+  function deckId(seedOrFields) {
+    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+  }
+
+  HPE.core = {
+    parseSeed: parseSeed,
+    formatSeed: formatSeed,
+    deckId: deckId,
+    REASONS: REASONS,
+    pitchClass: pitchClass,
+    midiFromName: midiFromName,
+    fifthName: fifthName,
+    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX }
+  };
+})(HPE);
+</script>
+<!-- engine:core end -->
+<!-- engine:voicing begin - synced from src/engine/voicing.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.voicing - legality, root octave and register for a chord voicing.
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ * Loads AFTER core.js and reads HPE.core.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 5 (legality), 6 (D2 cluster
+ * rule, D11 tie-break), 7 (D9 root octave), 11 (field map shape) and
+ * CLAUDE.md "Verified card conventions" rule 3.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  /* Section 5 / D3: a voicing never exceeds 6 notes - the print floor. */
+  var MAX_NOTES = 6;
+
+  /* An interval below an octave is a CHORD TONE (root, 3rd, 5th, 7th, the 4th
+   * of a sus chord, the 6th of a 6-chord); an interval of an octave or more is
+   * an EXTENSION (9, b9, 11, #11, 13). That is exactly how qualities.json
+   * spells them: chord tones 0-11, extensions 13, 14, 17, 18, 21. */
+  var OCTAVE = 12;
+
+  var PC_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+
+  function core() {
+    if (!HPE.core) {
+      throw new Error("HPE.voicing requires HPE.core: load core.js first");
+    }
+    return HPE.core;
+  }
+
+  function pitchClass(midi) {
+    return ((midi % 12) + 12) % 12;
+  }
+
+  function pcName(pc) {
+    return PC_NAMES[pitchClass(pc)];
+  }
+
+  /* Section 1: the two entry points that take untrusted input return the
+   * result type. `choose` is given already-validated data, but the brief for
+   * this module asks it to report an impossible request rather than throw, and
+   * section 2 forbids inventing a code, so an absent pitch class reuses
+   * BAD_NOTE - the generic "this note cannot be used" rejection. */
+  function fail(code, x) {
+    var reason = core().REASONS[code].reason;
+    if (x !== undefined && x !== null) reason = reason.split("<X>").join(String(x));
+    return { ok: false, code: code, reason: reason };
+  }
+
+  /* ---- the field map (section 11: {id: [name, octave, midi, zone, angle, label]}) */
+
+  function isDing(rec) {
+    return rec[3] === "ding";
+  }
+
+  function isTopShell(rec) {
+    return rec[3] !== "ding" && rec[3] !== "bottom";
+  }
+
+  // Every field that may appear in a voicing: section 5, the ding never does.
+  function playable(fields) {
+    var out = [];
+    for (var key in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, key)) continue;
+      var rec = fields[key];
+      if (isDing(rec)) continue;
+      out.push({ id: Number(key), midi: rec[2], zone: rec[3], top: isTopShell(rec) });
+    }
+    out.sort(function (a, b) { return a.id - b.id; });
+    return out;
+  }
+
+  // Section 3: when two fields share the MIDI a rule is selecting on, the
+  // TOP-shell field wins.
+  function byMidiAscending(a, b) {
+    if (a.midi !== b.midi) return a.midi - b.midi;
+    if (a.top !== b.top) return a.top ? -1 : 1;
+    return a.id - b.id;
+  }
+
+  function byMidiDescending(a, b) {
+    if (a.midi !== b.midi) return b.midi - a.midi;
+    if (a.top !== b.top) return a.top ? -1 : 1;
+    return a.id - b.id;
+  }
+
+  function instancesOf(list, pc) {
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      if (pitchClass(list[i].midi) === pc) out.push(list[i]);
+    }
+    out.sort(byMidiAscending);
+    return out;
+  }
+
+  /* ---- the interval set --------------------------------------------------- */
+
+  // Section 5: when a chord symbol implies more than 6 notes, drop the LOWEST
+  // optional extension first - the 9 before the 11, the 11 before the 13. A
+  // chord tone is never dropped.
+  function reduceIntervals(intervals) {
+    var ivs = [];
+    for (var i = 0; i < intervals.length; i += 1) {
+      if (ivs.indexOf(intervals[i]) === -1) ivs.push(intervals[i]);
+    }
+    ivs.sort(function (a, b) { return a - b; });
+
+    while (ivs.length > MAX_NOTES) {
+      var lowestExtension = -1;
+      for (var j = 0; j < ivs.length; j += 1) {
+        if (ivs[j] >= OCTAVE) { lowestExtension = j; break; }
+      }
+      if (lowestExtension === -1) break;
+      ivs.splice(lowestExtension, 1);
+    }
+
+    var seen = {};
+    for (var k = 0; k < ivs.length; k += 1) {
+      var pc = pitchClass(ivs[k]);
+      if (seen[pc]) {
+        throw new TypeError("HPE.voicing: interval set repeats a pitch class");
+      }
+      seen[pc] = true;
+    }
+    return ivs;
+  }
+
+  function isPowerChord(ivs) {
+    return ivs.length === 2 && ivs[0] === 0 && ivs[1] === 7;
+  }
+
+  /* ---- legality (section 5) ---------------------------------------------- */
+
+  // isLegal(fields, ids, intervals?) - the invariants that hold for EVERY
+  // voicing the engine emits. `intervals`, when given, additionally holds the
+  // voicing to its chord symbol (the power-chord rule needs it).
+  function isLegal(fields, ids, intervals) {
+    if (!ids || !ids.length) return false;
+    if (ids.length > MAX_NOTES) return false;
+
+    var seen = {};
+    for (var i = 0; i < ids.length; i += 1) {
+      var rec = fields[String(ids[i])];
+      if (!rec) return false;
+      if (isDing(rec)) return false;
+      var pc = pitchClass(rec[2]);
+      if (seen[pc]) return false;
+      seen[pc] = true;
+    }
+
+    if (intervals) {
+      var ivs = reduceIntervals(intervals);
+      if (ids.length !== ivs.length) return false;
+      if (isPowerChord(ivs) && ids.length !== 2) return false;
+    }
+    return true;
+  }
+
+  /* ---- root octave (D9, section 7) --------------------------------------- */
+
+  // The LOWEST TOP-SHELL instance of the root pitch class, else - when the
+  // pitch class exists only on the bottom shell - the lowest instance overall.
+  function rootField(fields, rootPc) {
+    var all = instancesOf(playable(fields), pitchClass(rootPc));
+    if (!all.length) return null;
+    for (var i = 0; i < all.length; i += 1) {
+      if (all[i].top) return all[i];
+    }
+    return all[0];
+  }
+
+  /* ---- the legal candidate set (section 6, plan Premise 2 consequence 1) -- */
+
+  // Every legal voicing for (root pitch class, interval set): one instance per
+  // pitch class of the chord, over the non-ding fields, in chord-spelling
+  // order root, 3, 5, 7, 9, 11, 13. Field ids are NUMBERS (section 11).
+  function candidates(fields, rootPc, intervals) {
+    var list = playable(fields);
+    var ivs = reduceIntervals(intervals);
+    var root = pitchClass(rootPc);
+
+    var choices = [];
+    for (var i = 0; i < ivs.length; i += 1) {
+      var inst = instancesOf(list, pitchClass(root + ivs[i]));
+      if (!inst.length) return [];
+      choices.push(inst);
+    }
+
+    var out = [[]];
+    for (var j = 0; j < choices.length; j += 1) {
+      var next = [];
+      for (var a = 0; a < out.length; a += 1) {
+        for (var b = 0; b < choices[j].length; b += 1) {
+          next.push(out[a].concat([choices[j][b].id]));
+        }
+      }
+      out = next;
+    }
+    return out;
+  }
+
+  /* ---- register: the cluster rule (D2) and the tie-break (D11) ------------ */
+
+  function above(inst, rootMidi) {
+    var out = [];
+    for (var i = 0; i < inst.length; i += 1) {
+      if (inst[i].midi > rootMidi) out.push(inst[i]);
+    }
+    out.sort(byMidiAscending);
+    return out;
+  }
+
+  function below(inst, rootMidi) {
+    var out = [];
+    for (var i = 0; i < inst.length; i += 1) {
+      if (inst[i].midi < rootMidi) out.push(inst[i]);
+    }
+    out.sort(byMidiDescending);
+    return out;
+  }
+
+  // Look one playable field up by id, so a caller may pin the root octave.
+  function fieldById(list, id) {
+    for (var i = 0; i < list.length; i += 1) {
+      if (list[i].id === Number(id)) return list[i];
+    }
+    return null;
+  }
+
+  // choose(fields, rootPc, intervals, opts?) -> {ok, value: {fields, roots}}
+  //
+  // `opts.rootId` pins the ROOT FIELD and D9 is skipped: that is how plan
+  // Premise 2 measures the register rules ("giving the engine the root FIELD,
+  // the spelling order of pitch classes and the chord symbol"). Without it the
+  // root field comes from D9 (section 7) and the answer is a function of the
+  // root PITCH CLASS alone, which is what select.build has to work from.
+  //
+  // D2 forced test: ANY non-root tone - chord tone AND extension alike - has no
+  // instance above the root field.
+  //   forced  -> every CHORD TONE moves to its HIGHEST instance below the root
+  //              (bottom-shell fields are ordinary instances); a chord tone with
+  //              no lower instance stays put. EXTENSIONS keep their NEAREST
+  //              instance above the root unless they are themselves forced.
+  //   unforced (D11) -> every non-root tone takes its NEAREST instance above
+  //              the root.
+  function choose(fields, rootPc, intervals, opts) {
+    var list = playable(fields);
+    var ivs = reduceIntervals(intervals);
+    var root = pitchClass(rootPc);
+
+    var rf;
+    if (opts && opts.rootId !== undefined && opts.rootId !== null) {
+      rf = fieldById(list, opts.rootId);
+      // A pinned root must be a playable field of the root pitch class; the
+      // root and the spelling order never change (CLAUDE.md rule 3).
+      if (!rf || pitchClass(rf.midi) !== root) return fail("BAD_NOTE", pcName(root));
+    } else {
+      rf = rootField(fields, root);
+      if (!rf) return fail("BAD_NOTE", pcName(root));
+    }
+
+    var tones = [];
+    for (var i = 0; i < ivs.length; i += 1) {
+      if (ivs[i] === 0) continue;
+      var pc = pitchClass(root + ivs[i]);
+      var inst = instancesOf(list, pc);
+      if (!inst.length) return fail("BAD_NOTE", pcName(pc));
+      tones.push({
+        interval: ivs[i],
+        up: above(inst, rf.midi),
+        down: below(inst, rf.midi)
+      });
+    }
+
+    var forced = false;
+    for (var t = 0; t < tones.length; t += 1) {
+      if (!tones[t].up.length) forced = true;
+    }
+
+    var picked = [rf.id];
+    for (var u = 0; u < tones.length; u += 1) {
+      var tone = tones[u];
+      var field;
+      if (!forced) {
+        field = tone.up[0];
+      } else if (tone.interval < OCTAVE) {
+        field = tone.down.length ? tone.down[0] : tone.up[0];
+      } else {
+        field = tone.up.length ? tone.up[0] : tone.down[0];
+      }
+      picked.push(field.id);
+    }
+
+    return { ok: true, value: { fields: picked, roots: [rf.id] } };
+  }
+
+  HPE.voicing = {
+    candidates: candidates,
+    choose: choose,
+    rootField: rootField,
+    isLegal: isLegal,
+    reduceIntervals: reduceIntervals,
+    MAX_NOTES: MAX_NOTES
+  };
+})(HPE);
+</script>
+<!-- engine:voicing end -->
+<!-- engine:layout begin - synced from src/engine/layout.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.layout - the D12 geometry solver for generated pans.
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 1, 4, 11, 13, 16, 17;
+ * docs/SCALE_ENGINE_PLAN.md D7, D12 and "pan() does not generalise";
+ * CLAUDE.md "Instrument layouts".
+ *
+ * `solve` never changes a zone (spec section 4, D14 as amended) and always
+ * emits the FULL geom shape - every key pan() reads, zeroes and false where a
+ * zone is empty, never a missing key and never null - because pan() yields NaN
+ * for a missing key. Built-in decks bypass this module entirely.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  /* ---- caps (spec section 4) -------------------------------------------- */
+
+  var RIM_MAX = 11;
+  var INNER_MAX = 2;
+  var BOTTOM_MAX = 6;
+
+  /* ---- D12 fixed geometry, anchored on the built-in literals ------------- */
+
+  var R_DING = 0.19;          /* pygmy literal: the enlarged, offset ding    */
+  var DING_DY = 0.1425;       /* offset toward the player                    */
+  var RIM_PLAIN = 0.745;      /* hijaz / amara literal, no inner ring        */
+  var RIM_WITH_INNER = 0.722; /* pygmy literal, inner fields present         */
+  var INNER_ORB = 0.38;       /* pygmy literal                               */
+  var BOTTOM_ORB = 1.15;      /* pygmy literal, x-ray ring outside the shell */
+  var INNER_RING_DECOR = 0.355; /* hijaz / amara decorative circle           */
+  var INNER_ANGLES = [128, 52]; /* left first: opposite the rim direction    */
+
+  var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
+  var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */
+  var N_IN_PLAIN = 0.085;     /* hijaz / amara literal (numbers inward)      */
+  var N_IN_OUT = 0.052;       /* pygmy literal (rim numbers outward)         */
+  var N_OUT = 0.068;          /* pygmy literal                               */
+
+  var F_DING_RATIO = 0.6;     /* 0.114 / 0.19   (pygmy)                      */
+  var F_NOTE_RATIO = 0.765;   /* 0.109 / 0.1425 (pygmy)                      */
+  var F_NUM_RATIO = 0.64;     /* 0.0912 / 0.1425 (pygmy)                     */
+  var F_BNOTE_RATIO = 0.784;  /* 0.0931 / 0.1188 (pygmy)                     */
+
+  var PACK = 0.85;            /* clearance factor on the tightest pair       */
+  var DING_PACK = 0.9;        /* clearance factor against the ding           */
+  var LABEL_REACH = 0.7;      /* how far a number glyph reaches from its box */
+  var EXT_PAD = 0.06;         /* 1.0 + 0.06 reproduces pan()'s plain 1.06    */
+
+  var DEG = Math.PI / 180;
+
+  /* ---- small helpers ---------------------------------------------------- */
+
+  function norm(angle) {
+    return ((angle % 360) + 360) % 360;
+  }
+
+  function round(value, places) {
+    var f = Math.pow(10, places);
+    return Math.round(value * f) / f;
+  }
+
+  function fieldsOf(seedOrFields) {
+    return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
+  }
+
+  function reasonFor(code) {
+    var table = (HPE.core && HPE.core.REASONS) || null;
+    return table && table[code] ? table[code].reason : code;
+  }
+
+  function err(code) {
+    return { ok: false, code: code, reason: reasonFor(code) };
+  }
+
+  function point(orb, angle) {
+    return [orb * Math.cos(angle * DEG), orb * Math.sin(angle * DEG)];
+  }
+
+  function distance(a, b) {
+    var dx = a[0] - b[0];
+    var dy = a[1] - b[1];
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function minPairDistance(points) {
+    var best = Infinity;
+    var i;
+    var j;
+    for (i = 0; i < points.length; i += 1) {
+      for (j = i + 1; j < points.length; j += 1) {
+        best = Math.min(best, distance(points[i], points[j]));
+      }
+    }
+    return best;
+  }
+
+  /* ---- the zig-zag (CLAUDE.md "Instrument layouts") ---------------------- */
+
+  /* Rim, right-first ascending: the last (highest) field sits at top centre
+   * and every earlier one steps alternately down the left then the right side.
+   * With N = 9 this reproduces the verified pygmy sequence exactly
+   * (290, 250, 330, 210, 10, 170, 50, 130, 90); mirroring it about the
+   * vertical axis reproduces hijaz and amara exactly. */
+  function rimAngles(count) {
+    var step = count > 0 ? 360 / count : 0;
+    var out = [];
+    var i;
+    for (i = 0; i < count; i += 1) {
+      var back = count - 1 - i;                    /* 0 for the highest note */
+      var magnitude = Math.ceil(back / 2);
+      var sign = (back % 2 === 1) ? 1 : -1;
+      out.push(norm(90 + sign * magnitude * step));
+    }
+    return out;
+  }
+
+  /* The bottom shell in x-ray view: an evenly spread ring that starts just
+   * right of bottom centre and alternates, reproducing the verified pygmy
+   * sequence (300, 240, 0, 180, 60, 120) at N = 6. */
+  function bottomAngles(count) {
+    var step = count > 0 ? 360 / count : 0;
+    var anchor = 270 + step / 2;
+    var out = [];
+    var i;
+    for (i = 0; i < count; i += 1) {
+      var magnitude = Math.ceil(i / 2);
+      var sign = (i % 2 === 1) ? -1 : 1;
+      out.push(norm(anchor + sign * magnitude * step));
+    }
+    return out;
+  }
+
+  function innerAngles(count) {
+    return INNER_ANGLES.slice(0, count);
+  }
+
+  /* ---- the solver -------------------------------------------------------- */
+
+  function byNumber(a, b) { return Number(a) - Number(b); }
+
+  function collect(fields) {
+    var zones = { ding: [], rim: [], inner: [], bottom: [] };
+    var id;
+    for (id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      var zone = fields[id][3];
+      if (!Object.prototype.hasOwnProperty.call(zones, zone)) continue;
+      zones[zone].push(id);
+    }
+    zones.ding.sort(byNumber);
+    zones.rim.sort(byNumber);
+    zones.inner.sort(byNumber);
+    zones.bottom.sort(byNumber);
+    return zones;
+  }
+
+  function solve(seedOrFields, options) {
+    var source = fieldsOf(seedOrFields);
+    var zones = collect(source);
+
+    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
+    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
+    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+
+    var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+
+    var hasRim = zones.rim.length > 0;
+    var hasInner = zones.inner.length > 0;
+    var hasBottom = zones.bottom.length > 0;
+
+    var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
+    var innerOrb = hasInner ? INNER_ORB : 0;
+    var bottomOrb = hasBottom ? BOTTOM_ORB : 0;
+
+    var rims = rimAngles(zones.rim.length);
+    var inners = innerAngles(zones.inner.length);
+    var bottoms = bottomAngles(zones.bottom.length);
+
+    function finish(list) {
+      var out = [];
+      var i;
+      for (i = 0; i < list.length; i += 1) {
+        out.push(round(mirror ? norm(180 - list[i]) : list[i], 1));
+      }
+      return out;
+    }
+    rims = finish(rims);
+    inners = finish(inners);
+    bottoms = finish(bottoms);
+
+    /* r_note: the largest circle that keeps every top field clear of every
+     * other top field and of the ding, never larger than the built-in max.
+     * This is the D7 ceiling made mechanical - 11 rim fields stay apart
+     * because the packing bound, not a constant, sets the radius. */
+    var topPoints = [];
+    var i;
+    for (i = 0; i < rims.length; i += 1) topPoints.push(point(rimOrb, rims[i]));
+    for (i = 0; i < inners.length; i += 1) topPoints.push(point(innerOrb, inners[i]));
+
+    var dingPoint = [0, -DING_DY];
+    var dingClear = Infinity;
+    for (i = 0; i < topPoints.length; i += 1) {
+      dingClear = Math.min(dingClear, distance(topPoints[i], dingPoint) - R_DING);
+    }
+
+    var rNote = R_NOTE_MAX;
+    var pairs = minPairDistance(topPoints);
+    if (isFinite(pairs)) rNote = Math.min(rNote, PACK * pairs / 2);
+    if (isFinite(dingClear)) rNote = Math.min(rNote, DING_PACK * dingClear);
+    rNote = topPoints.length ? round(rNote, 4) : 0;
+
+    var bottomPoints = [];
+    for (i = 0; i < bottoms.length; i += 1) bottomPoints.push(point(bottomOrb, bottoms[i]));
+    var rBnote = 0;
+    if (hasBottom) {
+      rBnote = R_BNOTE_MAX;
+      var bottomPairs = minPairDistance(bottomPoints);
+      if (isFinite(bottomPairs)) rBnote = Math.min(rBnote, PACK * bottomPairs / 2);
+      rBnote = round(rBnote, 4);
+    }
+
+    var fNote = round(F_NOTE_RATIO * rNote, 4);
+    var fNum = round(F_NUM_RATIO * rNote, 4);
+    var fBnote = round(F_BNOTE_RATIO * rBnote, 4);
+    var rimNumOut = hasInner;
+    var nIn = topPoints.length ? (rimNumOut ? N_IN_OUT : N_IN_PLAIN) : 0;
+    var nOut = hasBottom ? N_OUT : 0;
+
+    /* ext: the furthest drawn element, in R units - the outermost circle edge
+     * plus its number-label reach, padded. Generated decks only (section 11). */
+    var reach = 1;                                   /* the shell circle itself */
+    reach = Math.max(reach, DING_DY + R_DING);
+    if (hasRim) {
+      reach = Math.max(reach, rimOrb + rNote);
+      if (rimNumOut) reach = Math.max(reach, rimOrb + rNote + nIn + fNum * LABEL_REACH);
+    }
+    if (hasInner) reach = Math.max(reach, innerOrb + rNote);
+    if (hasBottom) {
+      reach = Math.max(reach, bottomOrb + rBnote);
+      reach = Math.max(reach, bottomOrb + rBnote + nOut + fNum * LABEL_REACH);
+    }
+    var ext = round(reach + EXT_PAD, 4);
+
+    var geom = {
+      rim: round(rimOrb, 4),
+      inner: round(innerOrb, 4),
+      bottom: round(bottomOrb, 4),
+      r_ding: R_DING,
+      ding_dy: DING_DY,
+      r_note: rNote,
+      r_bnote: rBnote,
+      inner_ring: hasInner ? 0 : INNER_RING_DECOR,
+      f_ding: round(F_DING_RATIO * R_DING, 4),
+      f_note: fNote,
+      f_bnote: fBnote,
+      f_num: fNum,
+      n_in: round(nIn, 4),
+      n_out: round(nOut, 4),
+      rim_num_out: rimNumOut,
+      ext: ext
+    };
+
+    var fields = {};
+    var id;
+    for (id in source) {
+      if (!Object.prototype.hasOwnProperty.call(source, id)) continue;
+      fields[id] = source[id].slice();
+    }
+    for (i = 0; i < zones.ding.length; i += 1) fields[zones.ding[i]][4] = null;
+    for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = rims[i];
+    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = inners[i];
+    for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = bottoms[i];
+
+    return { ok: true, value: { geom: geom, fields: fields } };
+  }
+
+  HPE.layout = {
+    solve: solve,
+    rimAngles: rimAngles,
+    bottomAngles: bottomAngles,
+    innerAngles: innerAngles,
+    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX },
+    GEOM_KEYS: [
+      "rim", "inner", "bottom", "r_ding", "ding_dy", "r_note", "r_bnote",
+      "inner_ring", "f_ding", "f_note", "f_bnote", "f_num", "n_in", "n_out",
+      "rim_num_out", "ext"
+    ]
+  };
+})(HPE);
+</script>
+<!-- engine:layout end -->
+<!-- engine:naming begin - synced from src/engine/naming.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.naming - chord names, subtitles, parent inference and degree labels.
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 1, 5, 8, 9, 10, 16 and 17.
+ * QUALITIES and PARENTS are the literal copies of tests/fixtures/qualities.json
+ * and tests/fixtures/parents.json that section 9 requires the module to carry;
+ * tests/naming.test.js holds them to the fixtures.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  /* ---- section 16: the quality table, keyed by the full suffix ---------- */
+
+  var QUALITIES = {
+    "": {intervals: [0, 4, 7], display: "MAJOR", main_suffix: "", sup: "", rooted: true, tier: "triad", rank: 1},
+    "m": {intervals: [0, 3, 7], display: "MINOR", main_suffix: "m", sup: "", rooted: true, tier: "triad", rank: 2},
+    "°": {intervals: [0, 3, 6], display: "DIMINISHED", main_suffix: "°", sup: "", rooted: false, tier: "triad", rank: 3},
+    "aug": {intervals: [0, 4, 8], display: "AUGMENTED", main_suffix: "aug", sup: "", rooted: false, tier: "triad", rank: 4},
+    "5": {intervals: [0, 7], display: "POWER CHORD", main_suffix: "5", sup: "", rooted: false, tier: "power", rank: 5},
+    "sus4": {intervals: [0, 5, 7], display: "SUSPENDED CHORD", main_suffix: "sus", sup: "4", rooted: false, tier: "sus", rank: 6},
+    "7sus4": {intervals: [0, 5, 7, 10], display: "SUSPENDED DOMINANT 7", main_suffix: "7sus", sup: "4", rooted: false, tier: "sus", rank: 7},
+    "maj7sus4": {intervals: [0, 5, 7, 11], display: "SUSPENDED MAJOR 7", main_suffix: "maj7sus", sup: "4", rooted: false, tier: "sus", rank: 8},
+    "maj7": {intervals: [0, 4, 7, 11], display: "MAJOR 7", main_suffix: "maj", sup: "7", rooted: true, tier: "seventh", rank: 9},
+    "m7": {intervals: [0, 3, 7, 10], display: "MINOR 7", main_suffix: "m", sup: "7", rooted: true, tier: "seventh", rank: 10},
+    "7": {intervals: [0, 4, 7, 10], display: "DOMINANT 7", main_suffix: "", sup: "7", rooted: true, tier: "seventh", rank: 11},
+    "m7b5": {intervals: [0, 3, 6, 10], display: "HALF-DIMINISHED", main_suffix: "m7", sup: "b5", rooted: false, tier: "seventh", rank: 12},
+    "°7": {intervals: [0, 3, 6, 9], display: "DIMINISHED 7", main_suffix: "°", sup: "7", rooted: false, tier: "seventh", rank: 13},
+    "6": {intervals: [0, 4, 7, 9], display: "MAJOR 6", main_suffix: "", sup: "6", rooted: true, tier: "seventh", rank: 14},
+    "m6": {intervals: [0, 3, 7, 9], display: "MINOR 6", main_suffix: "m", sup: "6", rooted: true, tier: "seventh", rank: 15},
+    "add9": {intervals: [0, 4, 7, 14], display: "MAJOR ADD 9", main_suffix: "", sup: "add9", rooted: true, tier: "extended", rank: 16},
+    "madd9": {intervals: [0, 3, 7, 14], display: "MINOR ADD 9", main_suffix: "m", sup: "add9", rooted: true, tier: "extended", rank: 17},
+    "6/9": {intervals: [0, 4, 7, 9, 14], display: "MAJOR 6/9", main_suffix: "", sup: "6/9", rooted: true, tier: "extended", rank: 18},
+    "m6/9": {intervals: [0, 3, 7, 9, 14], display: "MINOR 6/9", main_suffix: "m", sup: "6/9", rooted: true, tier: "extended", rank: 19},
+    "9": {intervals: [0, 4, 7, 10, 14], display: "DOMINANT 9", main_suffix: "", sup: "9", rooted: true, tier: "extended", rank: 20},
+    "m9": {intervals: [0, 3, 7, 10, 14], display: "MINOR 9", main_suffix: "m", sup: "9", rooted: true, tier: "extended", rank: 21},
+    "maj9": {intervals: [0, 4, 7, 11, 14], display: "MAJOR 9", main_suffix: "maj", sup: "9", rooted: true, tier: "extended", rank: 22},
+    "7b9": {intervals: [0, 4, 7, 10, 13], display: "DOMINANT 7 FLAT 9", main_suffix: "7", sup: "b9", rooted: true, tier: "extended", rank: 23},
+    "11": {intervals: [0, 4, 7, 10, 14, 17], display: "DOMINANT 11", main_suffix: "", sup: "11", rooted: true, tier: "extended", rank: 24},
+    "m11": {intervals: [0, 3, 7, 10, 14, 17], display: "MINOR 11", main_suffix: "m", sup: "11", rooted: true, tier: "extended", rank: 25},
+    "13": {intervals: [0, 4, 7, 10, 14, 17, 21], display: "DOMINANT 13", main_suffix: "", sup: "13", rooted: true, tier: "extended", rank: 26},
+    "7#11": {intervals: [0, 4, 7, 10, 18], display: "DOMINANT 7 SHARP 11", main_suffix: "7", sup: "#11", rooted: true, tier: "extended", rank: 27},
+    "maj7#11": {intervals: [0, 4, 7, 11, 18], display: "MAJOR 7 SHARP 11", main_suffix: "maj7", sup: "#11", rooted: true, tier: "extended", rank: 28}
+  };
+
+  /* ---- section 10: the 11 parent candidates, in the FIXED list order ----
+   * Aeolian precedes Dorian deliberately: they tie at distance 0 on D Amara
+   * and D10 declares Amara Aeolian. */
+
+  var PARENTS = [
+    {name: "Ionian", display: "IONIAN", intervals: [0, 2, 4, 5, 7, 9, 11]},
+    {name: "Aeolian", display: "AEOLIAN", intervals: [0, 2, 3, 5, 7, 8, 10]},
+    {name: "Dorian", display: "DORIAN", intervals: [0, 2, 3, 5, 7, 9, 10]},
+    {name: "Phrygian", display: "PHRYGIAN", intervals: [0, 1, 3, 5, 7, 8, 10]},
+    {name: "Lydian", display: "LYDIAN", intervals: [0, 2, 4, 6, 7, 9, 11]},
+    {name: "Mixolydian", display: "MIXOLYD", intervals: [0, 2, 4, 5, 7, 9, 10]},
+    {name: "Locrian", display: "LOCRIAN", intervals: [0, 1, 3, 5, 6, 8, 10]},
+    {name: "Harmonic minor", display: "HARM MIN", intervals: [0, 2, 3, 5, 7, 8, 11]},
+    {name: "Melodic minor", display: "MEL MIN", intervals: [0, 2, 3, 5, 7, 9, 11]},
+    {name: "Phrygian dominant", display: "HIJAZ", intervals: [0, 1, 4, 5, 7, 8, 10]},
+    {name: "Harmonic major", display: "HARM MAJ", intervals: [0, 2, 4, 5, 7, 8, 11]}
+  ];
+
+  /* ---- caps (section 9) ------------------------------------------------- */
+
+  var NAME_MAX = 16;      // main + sup
+  var SUBTITLE_MAX = 26;  // the longest m7b5 equivalence, HALF-DIMINISHED ( = Bbm6 )
+
+  /* ---- degree reference scales (D8) ------------------------------------- */
+
+  var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
+  var MAJOR_REF = [0, 2, 4, 5, 7, 9, 11];
+  var MINOR_REF = [0, 2, 3, 5, 7, 8, 10];
+
+  function pc(n) {
+    return ((n % 12) + 12) % 12;
+  }
+
+  function uniquePcs(list) {
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      var value = pc(list[i]);
+      if (!seen[value]) { seen[value] = true; out.push(value); }
+    }
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  function member(list, value) {
+    for (var i = 0; i < list.length; i += 1) if (list[i] === value) return true;
+    return false;
+  }
+
+  /* Section 10 as amended (D8, coordination row 28): a pitch class that is IN
+   * the parent is numbered by its PARENT-DEGREE INDEX - degree 2 of the parent
+   * is a II whatever its size - and the accidental is its offset against the
+   * D8 reference degree of the SAME index: -1 gives `b`, +1 gives `#`, 0 none.
+   * That is what a player expects: F Phrygian's Gb is `bII`, not the `#I` the
+   * reference scale alone would produce.
+   *
+   * A pitch class OUTSIDE the parent keeps the older mechanism: it is named
+   * from the reference degree it is one semitone away from - one semitone
+   * BELOW degree N is `bN`, one semitone ABOVE is `#N`; when both apply the
+   * accidental convention decides, `b` for a major-relative scale (D8 flats)
+   * and `#` otherwise. A pitch class that IS a reference degree carries no
+   * accidental.
+   *
+   * Returns the numeral split so the caller can case the roman part without
+   * touching the accidental. */
+  function numeral(offset, minorRelative, parentDegreeIndex) {
+    var ref = minorRelative ? MINOR_REF : MAJOR_REF;
+    var exact = -1, below = -1, above = -1, i;
+    if (parentDegreeIndex !== undefined && parentDegreeIndex !== null &&
+        parentDegreeIndex >= 0) {
+      var diff = pc(offset - ref[parentDegreeIndex]);
+      if (diff > 6) diff -= 12;
+      return {
+        accidental: diff === 0 ? "" : (diff < 0 ? "b" : "#"),
+        roman: ROMAN[parentDegreeIndex]
+      };
+    }
+    for (i = 0; i < ref.length; i += 1) {
+      if (ref[i] === offset) exact = i;
+      if (ref[i] === pc(offset - 1)) below = i;   // offset sits one ABOVE ref[i]
+      if (ref[i] === pc(offset + 1)) above = i;   // offset sits one BELOW ref[i]
+    }
+    if (exact >= 0) return {accidental: "", roman: ROMAN[exact]};
+    if (below >= 0 && above >= 0) {
+      return minorRelative
+        ? {accidental: "#", roman: ROMAN[below]}
+        : {accidental: "b", roman: ROMAN[above]};
+    }
+    if (above >= 0) return {accidental: "b", roman: ROMAN[above]};
+    return {accidental: "#", roman: ROMAN[below]};
+  }
+
+  /* ---- section 9: chord name and subtitle -------------------------------- */
+
+  function quality(suffix) {
+    if (!Object.prototype.hasOwnProperty.call(QUALITIES, suffix)) {
+      throw new Error("naming: unknown quality suffix " + JSON.stringify(suffix));
+    }
+    return QUALITIES[suffix];
+  }
+
+  // Section 1: a plain function over validated data. It returns its value
+  // directly and throws only on a programming error - a cap breach here is a
+  // bug in the caller's root spelling, never user input.
+  function name(rootName, suffix) {
+    var q = quality(suffix);
+    var out = {main: rootName + q.main_suffix, sup: q.sup};
+    if ((out.main + out.sup).length > NAME_MAX) {
+      throw new RangeError("naming: chord name over " + NAME_MAX +
+        " characters: " + out.main + out.sup);
+    }
+    return out;
+  }
+
+  // Section 5 / D4: the equivalence suffix, `( = X6 )` on an m7 and
+  // `( = Xm6 )` on an m7b5, where X is the sixth a minor third above the root.
+  function subtitle(rootName, suffix, equivRootName) {
+    var q = quality(suffix);
+    var out = q.rooted ? rootName + " " + q.display : q.display;
+    if (equivRootName !== undefined && equivRootName !== null && equivRootName !== "") {
+      if (suffix === "m7") {
+        out += " ( = " + equivRootName + "6 )";
+      } else if (suffix === "m7b5") {
+        out += " ( = " + equivRootName + "m6 )";
+      } else {
+        throw new Error("naming: no equivalence for quality " + JSON.stringify(suffix));
+      }
+    }
+    if (out.length > SUBTITLE_MAX) {
+      throw new RangeError("naming: subtitle over " + SUBTITLE_MAX +
+        " characters: " + out);
+    }
+    return out;
+  }
+
+  /* ---- section 10: parent inference -------------------------------------- */
+
+  function parentPcs(index, tonicPc) {
+    var intervals = PARENTS[index].intervals;
+    var out = [];
+    for (var i = 0; i < intervals.length; i += 1) out.push(pc(tonicPc + intervals[i]));
+    return out;
+  }
+
+  // Distance = the number of PAN pitch classes (ding included, counted once
+  // each) that are not members of the parent built on the tonic. Lowest wins;
+  // ties break by position in the fixed list order, earlier wins.
+  function parentDistance(pitchClasses, tonicPc, index) {
+    var pan = uniquePcs(pitchClasses);
+    var parent = parentPcs(index, tonicPc);
+    var distance = 0;
+    for (var i = 0; i < pan.length; i += 1) {
+      if (!member(parent, pan[i])) distance += 1;
+    }
+    return distance;
+  }
+
+  function inferParent(pitchClasses, tonicPc) {
+    var best = 0;
+    var bestDistance = parentDistance(pitchClasses, tonicPc, 0);
+    for (var i = 1; i < PARENTS.length; i += 1) {
+      var d = parentDistance(pitchClasses, tonicPc, i);
+      if (d < bestDistance) { bestDistance = d; best = i; }
+    }
+    return best;
+  }
+
+  /* ---- section 10: degree labels ----------------------------------------- */
+
+  // D10 over the parent: the third and the fifth are the parent's own stacked
+  // thirds, two and four scale steps up. A minor third gives lowercase, a
+  // major third uppercase; a diminished fifth adds the `°` suffix.
+  function caseFromParent(index, tonicPc, degreePc) {
+    var intervals = PARENTS[index].intervals;
+    var parent = parentPcs(index, tonicPc);
+    var at = -1;
+    for (var i = 0; i < parent.length; i += 1) if (parent[i] === degreePc) at = i;
+    if (at < 0) return null;
+    var n = intervals.length;
+    var third = pc(intervals[(at + 2) % n] - intervals[at]);
+    var fifth = pc(intervals[(at + 4) % n] - intervals[at]);
+    return {lower: third === 3, diminished: fifth === 6};
+  }
+
+  // The same rule over the PAN, for a pitch class outside the parent:
+  // uppercase when no third is available at all.
+  function caseFromPan(pan, degreePc) {
+    var minorThird = member(pan, pc(degreePc + 3));
+    var majorThird = member(pan, pc(degreePc + 4));
+    var hasThird = minorThird || majorThird;
+    return {
+      lower: minorThird,
+      diminished: hasThird && member(pan, pc(degreePc + 6)) &&
+                  !member(pan, pc(degreePc + 7))
+    };
+  }
+
+  function degrees(pitchClasses, tonicPc, parentIndex, opts) {
+    if (!PARENTS[parentIndex]) {
+      throw new Error("naming: no parent at index " + parentIndex);
+    }
+    var options = opts || {};
+    var noThirds = !!options.noThirds;
+    var pan = uniquePcs(pitchClasses);
+    var tonic = pc(tonicPc);
+    // D8: minor-relative numerals when the PAN carries a minor third above the
+    // tonic, major-relative with flats otherwise.
+    var minorRelative = member(pan, pc(tonic + 3));
+    var parent = parentPcs(parentIndex, tonic);
+    var out = {};
+    for (var i = 0; i < pan.length; i += 1) {
+      var degreePc = pan[i];
+      var num = numeral(pc(degreePc - tonic), minorRelative,
+        indexOfPc(parent, degreePc));
+      var casing;
+      if (noThirds) {
+        // NO_THIRDS overrides D10: every numeral uppercase, no stacked thirds.
+        casing = {lower: false, diminished: false};
+      } else {
+        casing = caseFromParent(parentIndex, tonic, degreePc) ||
+                 caseFromPan(pan, degreePc);
+      }
+      out[String(degreePc)] = num.accidental +
+        (casing.lower ? num.roman.toLowerCase() : num.roman) +
+        (casing.diminished ? "°" : "");
+    }
+    return out;
+  }
+
+  /* ---- section 8: the symmetric-set root tie-break ----------------------- */
+
+  // DEFAULT: prefer the tonic, else the lowest scale degree. `degreeOrder`, when
+  // given, is the pitch classes in scale-degree order; without it the order is
+  // semitones ascending from the tonic.
+  function symmetricRoot(candidateRootPcs, tonicPc, degreeOrder) {
+    var candidates = uniquePcs(candidateRootPcs);
+    if (!candidates.length) {
+      throw new Error("naming: symmetricRoot needs at least one candidate");
+    }
+    var tonic = pc(tonicPc);
+    if (member(candidates, tonic)) return tonic;
+    var order = degreeOrder ? uniquePcsInOrder(degreeOrder) : null;
+    var best = null;
+    var bestRank = Infinity;
+    for (var i = 0; i < candidates.length; i += 1) {
+      var rank;
+      if (order) {
+        rank = indexOfPc(order, candidates[i]);
+        if (rank < 0) rank = order.length + pc(candidates[i] - tonic);
+      } else {
+        rank = pc(candidates[i] - tonic);
+      }
+      if (rank < bestRank) { bestRank = rank; best = candidates[i]; }
+    }
+    return best;
+  }
+
+  function uniquePcsInOrder(list) {
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      var value = pc(list[i]);
+      if (!seen[value]) { seen[value] = true; out.push(value); }
+    }
+    return out;
+  }
+
+  function indexOfPc(list, value) {
+    for (var i = 0; i < list.length; i += 1) if (list[i] === value) return i;
+    return -1;
+  }
+
+  HPE.naming = {
+    QUALITIES: QUALITIES,
+    PARENTS: PARENTS,
+    CAPS: {name: NAME_MAX, subtitle: SUBTITLE_MAX},
+    name: name,
+    subtitle: subtitle,
+    numeral: numeral,
+    inferParent: inferParent,
+    parentDistance: parentDistance,
+    degrees: degrees,
+    symmetricRoot: symmetricRoot
+  };
+})(HPE);
+</script>
+<!-- engine:naming end -->
+<!-- engine:select begin - synced from src/engine/select.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.select - candidate selection, ranking and the generated deck object.
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ * Loads AFTER core.js, voicing.js, layout.js and naming.js and reads all four.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 1 (result contract), 5
+ * (collapse rules, the 6-note trim), 7 (D9 root octave), 8 (candidates,
+ * ranking, cap, dedup, canonical order), 9-10 (naming and degrees, never
+ * re-implemented here), 11 (the deck object), 12 (deck identity), 13 (palette,
+ * mirror, auto name), 16 and 17.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  /* ---- section 8: the cap and the ranking tiers -------------------------- */
+
+  var CAP = 25;                       /* DEFAULT[owner-review]: 25 cards      */
+  var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
+  var ELLIPSIS = "…";
+
+  /* Ranking and canonical order share one tier order (section 8):
+   * triads > power > sus4 > 7ths > extended. */
+  var TIERS = ["triad", "power", "sus", "seventh", "extended"];
+
+  /* Section 5: the losing spellings of a coinciding pitch set. sus4 beats
+   * sus2, m7 beats 6, m7b5 beats m6. `sus2` is listed for completeness - the
+   * section 16 quality table carries no sus2 entry, so that clause is vacuous
+   * under the shipped vocabulary. */
+  var COLLAPSE_LOSERS = ["sus2", "6", "m6"];
+
+  /* Section 13: the D6 palette set, index 0-5. */
+  var PALETTES = [
+    {root: "#E0559A", tone: "#E2761B"},
+    {root: "#6D40A3", tone: "#C9971E"},
+    {root: "#0B7B75", tone: "#DD8F00"},
+    {root: "#E2761B", tone: "#E0559A"},
+    {root: "#C9971E", tone: "#6D40A3"},
+    {root: "#DD8F00", tone: "#0B7B75"}
+  ];
+
+  function core() { return need("core"); }
+  function voicing() { return need("voicing"); }
+  function layout() { return need("layout"); }
+  function naming() { return need("naming"); }
+
+  function need(name) {
+    if (!HPE[name]) {
+      throw new Error("HPE.select requires HPE." + name + ": load " + name +
+        ".js first");
+    }
+    return HPE[name];
+  }
+
+  function pc(n) {
+    return ((n % 12) + 12) % 12;
+  }
+
+  function has(list, value) {
+    for (var i = 0; i < list.length; i += 1) if (list[i] === value) return true;
+    return false;
+  }
+
+  function ids(fields) {
+    var out = [];
+    for (var id in fields) {
+      if (Object.prototype.hasOwnProperty.call(fields, id)) out.push(id);
+    }
+    out.sort(function (a, b) { return Number(a) - Number(b); });
+    return out;
+  }
+
+  function isDing(record) { return record[3] === "ding"; }
+  function isTopShell(record) { return record[3] !== "ding" && record[3] !== "bottom"; }
+
+  /* Every pitch class present on a field the predicate accepts. */
+  function pcsWhere(fields, predicate) {
+    var list = ids(fields);
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      var record = fields[list[i]];
+      if (!predicate(record)) continue;
+      var value = pc(record[2]);
+      if (!has(out, value)) out.push(value);
+    }
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  function anyField(fields) { return true; }
+  function nonDing(record) { return !isDing(record); }
+
+  /* ---- section 8: raw candidates ---------------------------------------- */
+
+  // A quality is a candidate for a root only when every one of its interval
+  // pitch classes (the root's included) sits on a NON-DING field - the ding
+  // never appears in a voicing, so a ding-only pitch class is neither a root
+  // nor a chord tone. An `extended`-tier quality additionally needs every one
+  // of its tones on the TOP shell.
+  //
+  // The eligibility test reads the quality's TABULATED intervals, not the
+  // 6-note-trimmed set: section 8 speaks of "its interval pitch classes", and
+  // the trim of section 5 is a voicing step.
+  function candidates(fields) {
+    var qualities = naming().QUALITIES;
+    var roots = pcsWhere(fields, nonDing);
+    var playable = roots;
+    var top = pcsWhere(fields, isTopShell);
+
+    var suffixes = [];
+    for (var key in qualities) {
+      if (Object.prototype.hasOwnProperty.call(qualities, key)) suffixes.push(key);
+    }
+    suffixes.sort(function (a, b) { return qualities[a].rank - qualities[b].rank; });
+
+    var out = [];
+    for (var r = 0; r < roots.length; r += 1) {
+      for (var s = 0; s < suffixes.length; s += 1) {
+        var quality = qualities[suffixes[s]];
+        if (!has(TIERS, quality.tier)) continue;
+        var available = quality.tier === "extended" ? top : playable;
+        var fits = true;
+        for (var i = 0; i < quality.intervals.length; i += 1) {
+          if (!has(available, pc(roots[r] + quality.intervals[i]))) {
+            fits = false;
+            break;
+          }
+        }
+        if (!fits) continue;
+        out.push({
+          root: roots[r],
+          suffix: suffixes[s],
+          tier: quality.tier,
+          rank: quality.rank,
+          intervals: quality.intervals.slice()
+        });
+      }
+    }
+    return out;
+  }
+
+  /* ---- section 5: the pitch-set collapse --------------------------------- */
+
+  // The pitch set a candidate actually sounds: the 6-note-trimmed interval set
+  // over the root, as pitch classes.
+  function pitchSet(candidate) {
+    var reduced = voicing().reduceIntervals(candidate.intervals);
+    var out = [];
+    for (var i = 0; i < reduced.length; i += 1) out.push(pc(candidate.root + reduced[i]));
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  // Deterministic preference inside one coinciding pitch set: the losing
+  // spellings of section 5 go first, then the section 8 ranking tie-breaks.
+  function preferenceRank(a, b, tonicPc) {
+    var loserA = has(COLLAPSE_LOSERS, a.suffix) ? 1 : 0;
+    var loserB = has(COLLAPSE_LOSERS, b.suffix) ? 1 : 0;
+    if (loserA !== loserB) return loserA - loserB;
+    var tierA = TIERS.indexOf(a.tier);
+    var tierB = TIERS.indexOf(b.tier);
+    if (tierA !== tierB) return tierA - tierB;
+    var degreeA = pc(a.root - tonicPc);
+    var degreeB = pc(b.root - tonicPc);
+    if (degreeA !== degreeB) return degreeA - degreeB;
+    return a.rank - b.rank;
+  }
+
+  // Candidates whose pitch sets coincide yield ONE candidate. Where the group's
+  // survivors differ only by root - the symmetric sets, diminished 7th and
+  // augmented - section 8's tie-break picks the root: the tonic, else the
+  // lowest scale degree.
+  function collapse(fields, list, tonicPc) {
+    var groups = {};
+    var order = [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      var key = pitchSet(list[i]).join(",");
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(list[i]);
+    }
+
+    var degreeOrder = pcsWhere(fields, anyField).slice().sort(function (a, b) {
+      return pc(a - tonicPc) - pc(b - tonicPc);
+    });
+
+    var winners = [];
+    for (i = 0; i < order.length; i += 1) {
+      var group = groups[order[i]];
+      if (group.length === 1) { winners.push(group[0]); continue; }
+
+      var best = group[0];
+      var j;
+      for (j = 1; j < group.length; j += 1) {
+        if (preferenceRank(group[j], best, tonicPc) < 0) best = group[j];
+      }
+
+      // A symmetric set: every survivor spells the same quality on a different
+      // root, so the root is chosen by the section 8 tie-break rather than by
+      // the ranking order.
+      var sameQuality = true;
+      var symmetricRoots = [];
+      for (j = 0; j < group.length; j += 1) {
+        if (group[j].suffix !== best.suffix) sameQuality = false;
+        if (group[j].suffix === best.suffix) symmetricRoots.push(group[j].root);
+      }
+      if (sameQuality && symmetricRoots.length > 1) {
+        var chosen = naming().symmetricRoot(symmetricRoots, tonicPc, degreeOrder);
+        for (j = 0; j < group.length; j += 1) {
+          if (group[j].root === chosen) best = group[j];
+        }
+      }
+      winners.push(best);
+    }
+    return winners;
+  }
+
+  /* ---- voicing (section 5, 6, 7) ----------------------------------------- */
+
+  // `choose` takes the root PITCH CLASS, not the root field: D9 fixes the
+  // octave (queue row 23). A not-ok result drops the candidate - `isLegal`
+  // checks the note count only, so it is not a pitch-class guard (row 31).
+  function voice(fields, list) {
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < list.length; i += 1) {
+      var picked = voicing().choose(fields, list[i].root, list[i].intervals);
+      if (!picked.ok) continue;
+      var key = picked.value.fields.join(",");
+      if (seen[key]) continue;      // section 5: one fields list per deck
+      seen[key] = true;
+      out.push({
+        root: list[i].root,
+        suffix: list[i].suffix,
+        tier: list[i].tier,
+        rank: list[i].rank,
+        intervals: list[i].intervals,
+        fields: picked.value.fields.slice(),
+        roots: picked.value.roots.slice()
+      });
+    }
+    return out;
+  }
+
+  function topShellTones(fields, candidate) {
+    var count = 0;
+    for (var i = 0; i < candidate.fields.length; i += 1) {
+      var record = fields[String(candidate.fields[i])];
+      if (record && isTopShell(record)) count += 1;
+    }
+    return count;
+  }
+
+  /* ---- section 8: ranking (trim to the cap) and the canonical order ------ */
+
+  // triads > power > sus4 > 7ths > extended; within a tier, more top-shell
+  // tones ranks higher; ties by root scale degree ascending from the tonic,
+  // then by the quality's `rank`.
+  function rank(fields, list, tonicPc) {
+    var decorated = [];
+    for (var i = 0; i < list.length; i += 1) {
+      decorated.push({item: list[i], at: i, top: topShellTones(fields, list[i])});
+    }
+    decorated.sort(function (a, b) {
+      var tierA = TIERS.indexOf(a.item.tier);
+      var tierB = TIERS.indexOf(b.item.tier);
+      if (tierA !== tierB) return tierA - tierB;
+      if (a.top !== b.top) return b.top - a.top;
+      var degreeA = pc(a.item.root - tonicPc);
+      var degreeB = pc(b.item.root - tonicPc);
+      if (degreeA !== degreeB) return degreeA - degreeB;
+      if (a.item.rank !== b.item.rank) return a.item.rank - b.item.rank;
+      return a.at - b.at;
+    });
+    var out = [];
+    for (i = 0; i < decorated.length; i += 1) out.push(decorated[i].item);
+    return out;
+  }
+
+  // Roots by scale degree ascending from the tonic; within a root, the tier
+  // order; within a tier, by the quality's `rank`.
+  function order(list, tonicPc) {
+    var decorated = [];
+    for (var i = 0; i < list.length; i += 1) decorated.push({item: list[i], at: i});
+    decorated.sort(function (a, b) {
+      var degreeA = pc(a.item.root - tonicPc);
+      var degreeB = pc(b.item.root - tonicPc);
+      if (degreeA !== degreeB) return degreeA - degreeB;
+      var tierA = TIERS.indexOf(a.item.tier);
+      var tierB = TIERS.indexOf(b.item.tier);
+      if (tierA !== tierB) return tierA - tierB;
+      if (a.item.rank !== b.item.rank) return a.item.rank - b.item.rank;
+      return a.at - b.at;
+    });
+    var out = [];
+    for (i = 0; i < decorated.length; i += 1) out.push(decorated[i].item);
+    return out;
+  }
+
+  /* ---- section 9: naming a candidate ------------------------------------- */
+
+  // A root is spelled as the SEED spells the field the voicing roots on, so a
+  // pan written with F reads F and never E#.
+  function spellingOf(fields, id) {
+    var record = fields[String(id)];
+    return record ? record[0] : null;
+  }
+
+  function spellingOfPc(fields, value) {
+    var list = ids(fields);
+    for (var i = 0; i < list.length; i += 1) {
+      if (pc(fields[list[i]][2]) === pc(value)) return fields[list[i]][0];
+    }
+    return null;
+  }
+
+  // Section 8 / D4: an m7 is annotatable as `( = (X+3)6 )` and an m7b5 as
+  // `( = (X+3)m6 )`, the 6-chord a minor third above the root. Generated decks
+  // derive them mechanically.
+  function equivalenceRoot(fields, candidate) {
+    if (candidate.suffix !== "m7" && candidate.suffix !== "m7b5") return null;
+    return spellingOfPc(fields, candidate.root + 3);
+  }
+
+  function card(fields, candidate) {
+    var rootName = spellingOf(fields, candidate.roots[0]);
+    var named = naming().name(rootName, candidate.suffix);
+    var subtitle = naming().subtitle(rootName, candidate.suffix,
+      equivalenceRoot(fields, candidate));
+    return {
+      main: named.main,
+      sup: named.sup,
+      subtitle: subtitle,
+      fields: candidate.fields.slice(),
+      roots: candidate.roots.slice()
+    };
+  }
+
+  /* ---- section 17: the NO_THIRDS warning --------------------------------- */
+
+  // No root on the pan has a third above it on the top shell. A root is any
+  // pitch class on a non-ding field (section 8).
+  function noThirds(fields) {
+    var roots = pcsWhere(fields, nonDing);
+    var top = pcsWhere(fields, isTopShell);
+    for (var i = 0; i < roots.length; i += 1) {
+      if (has(top, pc(roots[i] + 3)) || has(top, pc(roots[i] + 4))) return false;
+    }
+    return true;
+  }
+
+  function warning(code) {
+    return {code: code, reason: core().REASONS[code].reason};
+  }
+
+  /* ---- section 13: the auto deck name ------------------------------------ */
+
+  // `<DING PITCH CLASS> <PARENT DISPLAY> <N>`, N counting the TOP-SHELL fields
+  // including the ding. Uppercase - except the ding's own spelling, which is
+  // kept verbatim because uppercasing `Bb` would read as B natural. The 16-
+  // character cap is unreachable for an auto name (2 + 1 + 8 + 1 + 2 = 14); the
+  // ellipsis is kept so the cap is a fact of the code, not of the arithmetic.
+  function autoName(fields, parentIndex) {
+    var list = ids(fields);
+    var top = 0;
+    for (var i = 0; i < list.length; i += 1) {
+      var record = fields[list[i]];
+      if (isTopShell(record) || isDing(record)) top += 1;
+    }
+    var name = fields["0"][0] + " " + naming().PARENTS[parentIndex].display +
+      " " + top;
+    if (name.length > NAME_MAX) {
+      name = name.slice(0, NAME_MAX - 1) + ELLIPSIS;
+    }
+    return name;
+  }
+
+  /* ---- section 11: build -------------------------------------------------- */
+
+  function build(seed) {
+    if (!seed || !seed.fields || !seed.fields["0"]) {
+      return {ok: false, code: "NO_DING", reason: core().REASONS.NO_DING.reason};
+    }
+    var fields = seed.fields;
+    var seedOptions = seed.options || {};
+    var tonicPc = pc(fields["0"][2]);
+    var panPcs = pcsWhere(fields, anyField);
+
+    var parentIndex = (seedOptions.parent === undefined ||
+                       seedOptions.parent === null)
+      ? naming().inferParent(panPcs, tonicPc)
+      : seedOptions.parent;
+    var mirror = !!seedOptions.mirror;
+    var paletteIndex = seedOptions.palette || 0;
+
+    var solved = layout().solve(fields, {mirror: mirror});
+    if (!solved.ok) return solved;      // propagated unchanged (section 1)
+
+    var warnings = [];
+    var thirdless = noThirds(fields);
+    if (thirdless) warnings.push(warning("NO_THIRDS"));
+
+    var list = candidates(fields);
+    list = collapse(fields, list, tonicPc);
+    list = voice(fields, list);
+    list = rank(fields, list, tonicPc);
+    if (list.length > CAP) list = list.slice(0, CAP);
+    list = order(list, tonicPc);
+
+    var chords = [];
+    for (var i = 0; i < list.length; i += 1) chords.push(card(fields, list[i]));
+
+    var palette = PALETTES[paletteIndex];
+    var deck = {
+      id: core().deckId(fields),
+      name: seedOptions.name ? seedOptions.name : autoName(fields, parentIndex),
+      options: {palette: paletteIndex, mirror: mirror, parent: parentIndex},
+      colors: {
+        root: palette.root,
+        tone: palette.tone,
+        ga: palette.root,
+        gb: palette.tone
+      },
+      degrees: naming().degrees(panPcs, tonicPc, parentIndex,
+        {noThirds: thirdless}),
+      geom: solved.value.geom,
+      fields: solved.value.fields,
+      chords: chords,
+      warnings: warnings
+    };
+
+    return {ok: true, value: deck, warnings: warnings};
+  }
+
+  HPE.select = {
+    build: build,
+    candidates: candidates,
+    collapse: collapse,
+    voice: voice,
+    rank: rank,
+    order: order,
+    noThirds: noThirds,
+    autoName: autoName,
+    PALETTES: PALETTES,
+    TIERS: TIERS,
+    CAP: CAP
+  };
+})(HPE);
+</script>
+<!-- engine:select end -->
+<!-- engine end -->
+
 <script>
 const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "colors": {"root": "#E0559A", "tone": "#E2761B", "ga": "#E0559A", "gb": "#E2761B"}, "degrees": {"1": "I", "2": "bII", "6": "iv", "8": "v\u00b0", "11": "bvii"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["C#", 3, 49, "ding", null, "Ding"], "1": ["G#", 3, 56, "rim", 270, "1"], "2": ["B", 3, 59, "rim", 225, "2"], "3": ["C#", 4, 61, "rim", 315, "3"], "4": ["D", 4, 62, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["F#", 4, 66, "rim", 135, "6"], "7": ["G#", 4, 68, "rim", 45, "7"], "8": ["B", 4, 71, "rim", 90, "8"]}, "chords": [{"main": "C#", "sup": "", "subtitle": "C# MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C#5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "C#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C#", "sup": "7", "subtitle": "C# DOMINANT 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "C#7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "C#7", "sup": "b9", "subtitle": "HIJAZ SIGNATURE CHORD", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR - HIGH VOICING", "fields": [8, 4, 6], "roots": [8]}, {"main": "B5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bm", "sup": "add9", "subtitle": "B MINOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bm", "sup": "6/9", "subtitle": "B MINOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "G#\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 2, 4], "roots": [1]}, {"main": "G#m7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Bm6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "F#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "F#maj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "D\u00b0", "sup": "7", "subtitle": "DIMINISHED 7", "fields": [4, 5, 7, 8], "roots": [4]}, {"main": "Dmaj", "sup": "7", "subtitle": "D MAJOR 7 (NO 5)", "fields": [4, 6, 3], "roots": [4]}, {"main": "Dmaj7", "sup": "#11", "subtitle": "D MAJOR 7 SHARP 11 (NO 5)", "fields": [4, 6, 3, 7], "roots": [4]}]}, {"id": "pygmy", "name": "F3 LOW PYGMY 18", "sub": "11 + 1 TOP  /  6 BOTTOM", "colors": {"root": "#6D40A3", "tone": "#C9971E", "ga": "#6D40A3", "gb": "#C9971E"}, "degrees": {"5": "i", "8": "III", "10": "iv", "0": "v", "1": "VI", "3": "VII", "7": "ii\u00b0"}, "geom": {"rim": 0.722, "inner": 0.38, "bottom": 1.15, "r_ding": 0.19, "ding_dy": 0.1425, "r_note": 0.1425, "r_bnote": 0.1188, "inner_ring": null, "f_ding": 0.114, "f_note": 0.109, "f_bnote": 0.0931, "f_num": 0.0912, "n_in": 0.052, "n_out": 0.068, "rim_num_out": true}, "fields": {"0": ["F", 3, 53, "ding", null, "Ding"], "1": ["G", 3, 55, "rim", 290, "1"], "2": ["Ab", 3, 56, "rim", 250, "2"], "3": ["C", 4, 60, "rim", 330, "3"], "4": ["Eb", 4, 63, "rim", 210, "4"], "5": ["F", 4, 65, "rim", 10, "5"], "6": ["G", 4, 67, "rim", 170, "6"], "7": ["Ab", 4, 68, "rim", 50, "7"], "8": ["C", 5, 72, "rim", 130, "8"], "9": ["Eb", 5, 75, "rim", 90, "9"], "10": ["F", 5, 77, "inner", 128, "10"], "11": ["G", 5, 79, "inner", 52, "11"], "101": ["C", 3, 48, "bottom", 300, "U1"], "102": ["Db", 3, 49, "bottom", 240, "U2"], "103": ["Eb", 3, 51, "bottom", 0, "U3"], "104": ["Bb", 3, 58, "bottom", 180, "U4"], "105": ["Db", 4, 61, "bottom", 60, "U5"], "106": ["Ab", 5, 80, "bottom", 120, "U6"]}, "chords": [{"main": "Fm", "sup": "", "subtitle": "F MINOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [5, 104, 3], "roots": [5]}, {"main": "Fm", "sup": "7", "subtitle": "F MINOR 7", "fields": [5, 7, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "9", "subtitle": "F MINOR 9", "fields": [5, 7, 8, 9, 11], "roots": [5]}, {"main": "Fm", "sup": "11", "subtitle": "F MINOR 11", "fields": [5, 2, 3, 4, 6, 104], "roots": [5]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR", "fields": [2, 3, 4], "roots": [2]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [7, 8, 9], "roots": [7]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7", "fields": [2, 3, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "9", "subtitle": "Ab MAJOR 9", "fields": [2, 3, 4, 6, 104], "roots": [2]}, {"main": "Bbm", "sup": "", "subtitle": "Bb MINOR", "fields": [104, 105, 5], "roots": [104]}, {"main": "Bbm", "sup": "7", "subtitle": "Bb MINOR 7 ( = Db6 )", "fields": [104, 105, 5, 7], "roots": [104]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - LOW VOICING", "fields": [101, 103, 1], "roots": [101]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR", "fields": [3, 4, 6], "roots": [3]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - HIGH VOICING", "fields": [8, 9, 11], "roots": [8]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 6], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 5, 6], "roots": [3]}, {"main": "Cm", "sup": "7", "subtitle": "C MINOR 7", "fields": [3, 103, 1, 104], "roots": [3]}, {"main": "Db", "sup": "", "subtitle": "Db MAJOR", "fields": [105, 5, 7], "roots": [105]}, {"main": "Dbmaj", "sup": "7", "subtitle": "Db MAJOR 7", "fields": [105, 5, 7, 8], "roots": [105]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR - LOW VOICING", "fields": [103, 1, 104], "roots": [103]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR", "fields": [4, 1, 104], "roots": [4]}, {"main": "Eb", "sup": "7", "subtitle": "Eb DOMINANT 7", "fields": [103, 1, 104, 105], "roots": [103]}, {"main": "G\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 104, 105], "roots": [1]}, {"main": "Gm7", "sup": "b5", "subtitle": "HALF-DIMINISHED", "fields": [1, 104, 105, 5], "roots": [1]}]}, {"id": "amara", "name": "D AMARA 9", "sub": "8 + 1", "colors": {"root": "#0B7B75", "tone": "#DD8F00", "ga": "#0B7B75", "gb": "#DD8F00"}, "degrees": {"2": "i", "9": "v", "7": "IV", "0": "bVII", "5": "bIII"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 225, "2"], "3": ["D", 4, 62, "rim", 315, "3"], "4": ["E", 4, 64, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["G", 4, 67, "rim", 135, "6"], "7": ["A", 4, 69, "rim", 45, "7"], "8": ["C", 5, 72, "rim", 90, "8"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}]}];
 
@@ -129,12 +1974,50 @@ const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "
 let store = {};
 try { store = JSON.parse(localStorage.getItem("hpfc") || "{}"); } catch (e) {}
 let deckId = store.deck || "hijaz";
+let storedDeck = deckId;              // only ever a BUILT-IN id; see save()
 let mode   = store.mode || "A";       // A: name->notes, B: notes->name
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
 
-const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
-const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId, mode})); } catch (e) {} };
+// Generated decks live here, keyed by deck id, so the DECKS literal above stays
+// the three built-ins on one line (tools/validate.py and tests/paths.py both
+// need that). deck() resolves a custom id out of the registry; it never builds.
+const CUSTOM = Object.create(null);
+
+const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
+// Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
+// stored deck untouched, so a reload restores the last built-in deck instead of
+// silently falling back to the first one. Phase 4 lifts the guard.
+const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck, mode})); } catch (e) {} };
+
+/* ---------------- generated decks ---------------- */
+// Generation runs ONCE, here, at submit - never inside deck() or render()
+// (ENGINE-SPEC section 11). generateDeck returns the engine's result shape
+// unchanged: {ok:true, value, warnings} or {ok:false, code, reason}.
+const isBuiltIn = id => DECKS.some(d => d.id === id);
+const registerDeck = d => (CUSTOM[d.id] = d);
+function generateDeck(text, options) {
+  const seed = HPE.core.parseSeed(text, options);
+  if (!seed.ok) return seed;
+  const built = HPE.select.build(seed.value);
+  if (!built.ok) return built;
+  registerDeck(built.value);
+  return built;
+}
+// Phase 4's decoder reads a share payload's leading version byte through this
+// guard, so a PWA-cached older index.html rejects a newer link politely
+// instead of misreading it (ENGINE-SPEC section 14).
+const SHARE_VERSION = 1;
+function checkShareVersion(v) {
+  return v > SHARE_VERSION
+    ? { ok: false, code: "NEEDS_NEWER_APP", reason: HPE.core.REASONS.NEEDS_NEWER_APP.reason }
+    : { ok: true, value: v };
+}
+function selectDeck(id) {
+  deckId = id;
+  if (isBuiltIn(id)) storedDeck = id;
+  save(); setOrder(); buildChips(); render();
+}
 
 /* ---------------- helpers ---------------- */
 const pc = (d, f) => d.fields[f][2] % 12;
@@ -157,7 +2040,10 @@ function pan(d, ch) {
   const { blue, green } = chordSets(d, ch);
   const C = d.colors;
   const hasBottom = !!g.bottom;
-  const ext = hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
+  // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
+  // the built-in geom literals have no ext key, so they keep the derivation.
+  const ext = g.ext ? R * g.ext
+            : hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
   let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}" xmlns="http://www.w3.org/2000/svg">`;
 
   const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
@@ -290,7 +2176,7 @@ function buildChips() {
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
     b.innerHTML = `<span class="dot"></span>${esc(d.name)}`;
-    b.onclick = () => { deckId = d.id; save(); setOrder(); buildChips(); render(); };
+    b.onclick = () => selectDeck(d.id);
     nav.appendChild(b);
   }
 }
@@ -332,7 +2218,7 @@ card.addEventListener("touchend", e => {
 }, { passive: true });
 
 /* ---------------- go ---------------- */
-deckId = deck().id; setOrder(); buildChips(); setMode(mode);
+deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
 </script>
 </body>
 </html>

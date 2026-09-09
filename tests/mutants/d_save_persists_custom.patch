@@ -1,0 +1,16 @@
+# kills: selecting a generated deck leaves the stored deck on the last built-in
+# Phase 3 persists BUILT-IN deck ids only [eng-review 8A]: a stored custom id
+# would make a reload fall back to Hijaz instead of the last built-in deck.
+diff --git a/index.html b/index.html
+index d2aeb5a..4d45ae7 100644
+--- a/index.html
++++ b/index.html
+@@ -2015,7 +2015,7 @@ function checkShareVersion(v) {
+ }
+ function selectDeck(id) {
+   deckId = id;
+-  if (isBuiltIn(id)) storedDeck = id;
++  storedDeck = id;
+   save(); setOrder(); buildChips(); render();
+ }
+ 

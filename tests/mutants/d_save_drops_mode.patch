@@ -1,14 +1,14 @@
 # kills: deck and mode round-trip through localStorage (subset semantics)
 diff --git a/index.html b/index.html
-index 2b54068..78ec9f4 100644
+index d2aeb5a..ca8d6b4 100644
 --- a/index.html
 +++ b/index.html
-@@ -134,7 +134,7 @@ let shuffled = false;
- let order = [], idx = 0, flipped = false;
+@@ -1988,7 +1988,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
+ // Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
+ // stored deck untouched, so a reload restores the last built-in deck instead of
+ // silently falling back to the first one. Phase 4 lifts the guard.
+-const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck, mode})); } catch (e) {} };
++const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck})); } catch (e) {} };
  
- const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
--const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId, mode})); } catch (e) {} };
-+const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId})); } catch (e) {} };
- 
- /* ---------------- helpers ---------------- */
- const pc = (d, f) => d.fields[f][2] % 12;
+ /* ---------------- generated decks ---------------- */
+ // Generation runs ONCE, here, at submit - never inside deck() or render()

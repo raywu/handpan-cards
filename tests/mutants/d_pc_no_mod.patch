@@ -1,10 +1,10 @@
 # kills: chordSets: Amara C major has two root-coloured fields (C4 + C5)
 diff --git a/index.html b/index.html
-index 2b54068..bb8d996 100644
+index d2aeb5a..fbd6c0e 100644
 --- a/index.html
 +++ b/index.html
-@@ -137,7 +137,7 @@ const deck = () => DECKS.find(d => d.id === deckId) || DECKS[0];
- const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: deckId, mode})); } catch (e) {} };
+@@ -2020,7 +2020,7 @@ function selectDeck(id) {
+ }
  
  /* ---------------- helpers ---------------- */
 -const pc = (d, f) => d.fields[f][2] % 12;
