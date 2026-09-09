@@ -1,0 +1,17 @@
+# suite: node --test tests/voicing.test.js
+# kills: the D11 tie-break, "the NEAREST instance above the root". Here an
+# unforced tone takes any instance above the root (the highest one), which
+# CLAUDE.md rule 3 as worded would still permit but D11 does not.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index b25fcbf..a0605f3 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -264,7 +264,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var tone = tones[u];
+       var field;
+       if (!forced) {
+-        field = tone.up[0];
++        field = tone.up[tone.up.length - 1];
+       } else if (tone.interval < OCTAVE) {
+         field = tone.down.length ? tone.down[0] : tone.up[0];
+       } else {

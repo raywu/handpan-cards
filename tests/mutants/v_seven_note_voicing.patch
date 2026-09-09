@@ -1,0 +1,17 @@
+# suite: node --test tests/voicing.test.js
+# kills: the 6-note budget of ENGINE-SPEC section 5 / D3 (the print floor,
+# measured at Pygmy Fm11). Here a 7-note voicing is legal and a 13 chord
+# keeps its 9th.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index b25fcbf..615f8e9 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -15,7 +15,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   "use strict";
+ 
+   /* Section 5 / D3: a voicing never exceeds 6 notes - the print floor. */
+-  var MAX_NOTES = 6;
++  var MAX_NOTES = 7;
+ 
+   /* An interval below an octave is a CHORD TONE (root, 3rd, 5th, 7th, the 4th
+    * of a sus chord, the 6th of a 6-chord); an interval of an octave or more is
