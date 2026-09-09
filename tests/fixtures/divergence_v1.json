@@ -65,18 +65,16 @@
     "Fm11 (5,2,3,4,6,104)",
     "Ab (7,8,9)",
     "Abmaj9 (2,3,4,6,104)",
-    "Bbm7 (104,105,5,7)",
     "Cm (101,103,1)",
     "Cm (8,9,11)",
-    "Cm7 (3,103,1,104)",
     "Db (105,5,7)",
     "Dbmaj7 (105,5,7,8)",
     "Eb (103,1,104)",
-    "Eb7 (103,1,104,105)",
-    "Gm7b5 (1,104,105,5)"
+    "Eb7 (103,1,104,105)"
    ],
    "extra": [
     "F7sus4 (5,104,3,4)",
+    "Fm9 (5,7,8,9,6)",
     "Ab5 (2,4)",
     "Absus4 (2,105,4)",
     "Abmaj7sus4 (2,105,4,6)",
@@ -86,9 +84,11 @@
     "C7sus4 (3,5,1,104)",
     "Db (102,5,2)",
     "Db5 (102,2)",
+    "Dbmaj7 (102,5,2,3)",
     "Eb5 (4,104)",
     "Ebsus4 (4,2,104)",
-    "Eb7sus4 (4,2,104,105)"
+    "Eb7sus4 (4,2,104,105)",
+    "Eb7 (4,1,104,105)"
    ],
    "overrides": [
     {
@@ -105,7 +105,7 @@
      "roots": [
       5
      ],
-     "note": "Declared register exception (spec section 6 / D11, plan Premise 2); the engine also trims its own Fm9 at the 25-card cap (spec section 8)."
+     "note": "Declared register exception (spec section 6 / D11, plan Premise 2); the engine's own Fm9 spelling now survives the size-scaled cap and is listed extra (spec section 8)."
     },
     {
      "main": "Fm",
@@ -155,21 +155,6 @@
      "note": "Extended tier: its 9th (Bb) is bottom-shell only (spec section 8, extended-only-on-the-top-shell)."
     },
     {
-     "main": "Bbm",
-     "sup": "7",
-     "subtitle": "Bb MINOR 7 ( = Db6 )",
-     "fields": [
-      104,
-      105,
-      5,
-      7
-     ],
-     "roots": [
-      104
-     ],
-     "note": "Generated identically but trimmed by the 25-card cap: only 2 of its 4 tones are top-shell, so it ranks last among the sevenths (spec section 8)."
-    },
-    {
      "main": "Cm",
      "sup": "",
      "subtitle": "C MINOR - LOW VOICING",
@@ -198,21 +183,6 @@
      "note": "HIGH VOICING alternate: opt-in multi-voicing data (spec section 7)."
     },
     {
-     "main": "Cm",
-     "sup": "7",
-     "subtitle": "C MINOR 7",
-     "fields": [
-      3,
-      103,
-      1,
-      104
-     ],
-     "roots": [
-      3
-     ],
-     "note": "Generated identically but trimmed by the 25-card cap (spec section 8)."
-    },
-    {
      "main": "Db",
      "sup": "",
      "subtitle": "Db MAJOR",
@@ -239,7 +209,7 @@
      "roots": [
       105
      ],
-     "note": "Recorded D9 root-octave exception (spec section 7); the engine's Db3-rooted spelling is then trimmed by the cap (spec section 8)."
+     "note": "Recorded D9 root-octave exception (spec section 7); the engine's Db3-rooted spelling now survives the size-scaled cap and is listed extra (spec section 8)."
     },
     {
      "main": "Eb",
@@ -268,22 +238,7 @@
      "roots": [
       103
      ],
-     "note": "Recorded D9 root-octave exception - the built-in ships Eb3 although rim Eb4 exists (spec section 7); the engine's Eb4-rooted spelling is then trimmed by the cap (spec section 8)."
-    },
-    {
-     "main": "Gm7",
-     "sup": "b5",
-     "subtitle": "HALF-DIMINISHED",
-     "fields": [
-      1,
-      104,
-      105,
-      5
-     ],
-     "roots": [
-      1
-     ],
-     "note": "Generated identically but trimmed by the 25-card cap: 2 of its 4 tones are bottom-shell (spec section 8)."
+     "note": "Recorded D9 root-octave exception - the built-in ships Eb3 although rim Eb4 exists (spec section 7); the engine's Eb4-rooted spelling now survives the size-scaled cap and is listed extra (spec section 8)."
     }
    ]
   },

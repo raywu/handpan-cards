@@ -261,6 +261,15 @@ test("the pitch-set collapse takes the 12-note pan from 29 to 27", () => {
 });
 
 test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
+  // Section 8, as amended 2026-09-08: the cap is `25 + max(0, fieldCount - 12)`.
+  // The worked example's pan has exactly 12 fields, so the size-scaled cap
+  // still evaluates to 25 there and the example is unchanged by the amendment.
+  // This pair of assertions is the regression guard for that claim.
+  const seed = seedOf(TWELVE);
+  assert.equal(Object.keys(seed.fields).length, 12,
+    "section 8's worked example is a 12-field pan");
+  assert.equal(select.cap(seed.fields), 25,
+    "a 12-field pan caps at 25, exactly as before the amendment");
   const deck = built(TWELVE);
   assert.equal(deck.chords.length, 25, "the deck is trimmed to the 25-card cap");
   // Ranking drops the LOWEST-ranked candidates: within the extended tier, the
@@ -270,6 +279,58 @@ test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
   assert.ok(!names.includes("Amadd9"), "Amadd9 is trimmed by the cap");
   assert.ok(!names.includes("Gadd9"), "Gadd9 is trimmed by the cap");
   assert.ok(names.includes("Cadd9"), "Cadd9 outranks both and survives");
+});
+
+// Section 8's other two worked cap values: the built-in Pygmy pan and the
+// structural maximum of section 3.
+const PYGMY = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+
+test("the cap scales with pan size: the 18-field Pygmy pan caps at 31", () => {
+  const seed = seedOf(PYGMY);
+  assert.equal(Object.keys(seed.fields).length, 18,
+    "the Pygmy pan is 1 ding + 11 top + 6 bottom = 18 fields");
+  assert.equal(select.cap(seed.fields), 31, "section 8: 25 + (18 - 12)");
+  // Section 8's rationale for the amendment names these three by name: they
+  // rank 27/28/29 under the unchanged ranking rule, are all on the instrument,
+  // and were evicted purely by the flat 25.
+  const names = built(PYGMY).chords.map(nameOf);
+  for (const name of ["Gm7b5", "Bbm7", "Cm7"]) {
+    assert.ok(names.includes(name),
+      `${name} ranks inside the size-scaled cap and must survive`);
+  }
+  assert.ok(names.length > 25,
+    "the size-scaled cap lets the Pygmy deck past the old flat 25");
+  assert.ok(names.length <= 31, "and never past its own cap");
+});
+
+test("the cap formula holds at the structural maximum", () => {
+  // Section 3's structural maximum is 1 ding + 11 rim + 2 inner + 6 bottom.
+  // synthetic_scales.json ships the largest legal pan; the cap there is
+  // whatever `25 + fieldCount - 12` says, with no separate ceiling.
+  const row = synthetic.find((r) => r.expect.ok && /maximum/.test(r.name));
+  assert.ok(row, "synthetic_scales.json ships a maximum-size entry");
+  const seed = seedOf(row.string);
+  const fieldCount = Object.keys(seed.fields).length;
+  assert.ok(fieldCount > 12,
+    `${row.name}: the maximum entry must be larger than the 12-field hinge`);
+  assert.equal(select.cap(seed.fields), 25 + fieldCount - 12,
+    `${row.name}: cap = 25 + fieldCount - 12`);
+});
+
+test("the cap counts EVERY field, bottom shell included", () => {
+  // Section 8: `fieldCount` counts ding, rim, inner and bottom alike. Two pans
+  // with the same top shell and different bottom shells get different caps.
+  const bare = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  const withBottom = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3");
+  assert.equal(Object.keys(bare.fields).length, 9);
+  assert.equal(Object.keys(withBottom.fields).length, 11);
+  assert.equal(select.cap(bare.fields), 25, "a 9-field pan is under the hinge");
+  assert.equal(select.cap(withBottom.fields), 25,
+    "11 fields is still under the hinge, so the cap does not move");
+  // And the hinge itself never returns less than 25.
+  const tiny = seedOf("(C3) G3 D4 G4 D5");
+  assert.ok(Object.keys(tiny.fields).length < 12);
+  assert.equal(select.cap(tiny.fields), 25, "max(0, ...) floors the cap at 25");
 });
 
 test("canonical order: root degree, then tier, then the quality rank", () => {
@@ -345,12 +406,20 @@ test("no two chords in a deck share an identical fields list", () => {
   }
 });
 
-test("no generated deck exceeds the 25-card cap", () => {
+test("no generated deck exceeds its own size-scaled cap", () => {
   for (const row of synthetic) {
     if (!row.expect.ok) continue;
+    const seed = seedOf(row.string);
+    // Section 8's formula, spelled out here rather than read from the engine:
+    // the cap is 25 for a pan of at most 12 fields, +1 per field beyond that.
+    const fieldCount = Object.keys(seed.fields).length;
+    const cap = 25 + Math.max(0, fieldCount - 12);
+    assert.equal(select.cap(seed.fields), cap,
+      `${row.name}: cap for ${fieldCount} fields`);
     const deck = built(row.string);
-    assert.ok(deck.chords.length <= 25,
-      `${row.name}: ${deck.chords.length} cards`);
+    assert.ok(deck.chords.length <= cap,
+      `${row.name}: ${deck.chords.length} cards over a cap of ${cap}`);
+    assert.ok(cap >= 25, `${row.name}: the cap never drops below 25`);
   }
 });
 
