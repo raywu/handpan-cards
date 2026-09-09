@@ -2,14 +2,14 @@
 # The card list silently doubles, so the sheet count no longer matches the
 # deck the printer was quoted.
 diff --git a/tools/decks.py b/tools/decks.py
-index 92e6630..e67c993 100644
+index b2b956c..371b68e 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
-@@ -284,6 +284,7 @@ def from_generated(payload):
+@@ -310,6 +310,7 @@ def from_generated(payload):
      spec = _spec_from(generated)
      chords = [(c["main"], c["sup"], c["subtitle"], list(c["fields"]),
                 set(c["roots"])) for c in generated["chords"]]
 +    chords = chords + chords
      has_bottom = any(v[3] == "bottom" for k, v in spec.items() if k != "_geom")
  
-     root = _hex_color(generated["colors"]["root"])
+     warnings = list(generated.get("warnings") or [])
