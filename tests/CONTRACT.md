@@ -65,9 +65,9 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    live is a TEST'S OWN ORACLE rather than production code - see
    `c_gen_pdf_oracle_blind.patch` (blinds a staleness oracle),
    `f_fixture_sha.patch` (patches a fixture) and
-   `d_caller_scan_strips_literals.patch` (blinds the replaceRegistered caller
-   scan's comment stripper). "No mutant patches tests/" is not a rule and never
-   was, and is not a reason to ship a test helper with nothing that can kill it.
+   `d_caller_scan_counts_lines.patch` (makes the replaceRegistered caller scan
+   count lines instead of occurrences). "No mutant patches tests/" is not a rule
+   and never was, and is not a reason to ship a test helper with nothing that can kill it.
 4. **A red against unmutated code is triaged, not "fixed".** Run
    `git diff origin/main -- index.html tools/decks.py tools/hifi.py src/engine/**`.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
