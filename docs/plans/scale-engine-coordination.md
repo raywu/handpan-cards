@@ -773,10 +773,12 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 
 ## Cycle state
 
-Cycle: 2   Wave: 9   Merged this batch: 9997109, bfc8a15, cfd46e1, fa9468d (hotfix), 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f, dad182c, c94b43c, dd9d501, e348de7, f244f52, ad3ac98, 9a2d7c0, 23f5947, f13c6c7, 0d4676a  -- ALL PHASES COMPLETE
+Cycle: 2   Wave: 9 (lanes 12 and 13 LIVE)   Merged this batch: 9997109, bfc8a15, cfd46e1, fa9468d (hotfix), 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f, dad182c, c94b43c, dd9d501, e348de7, f244f52, ad3ac98, 9a2d7c0, 23f5947, f13c6c7, 0d4676a  -- ALL PHASES COMPLETE
 ALL SEVEN PHASES (0, 1, 2, 3, 4, 5, 6) ARE COMPLETE. `docs/SCALE_ENGINE_PLAN.md` is fully executed as of merge 0d4676a (2026-09-09). The six engine modules (core, voicing, layout, naming, select, share) are on main and INLINED into index.html behind a desync gate; the custom-deck registry, generateDeck(), the scale sheet, the Edit sheet with rename and delete, share encode/decode at wire VERSION 2 with a backward-compatible v1 decoder, keyboard-only layout correction (rotate + move, 44px targets at 380px), and the print path (tools/gen_deck.js + the decks.py from_generated adapter + six inlined presets) are all shipped. Post-merge integrity on main after 0d4676a: `inline_engine.py --check` OK; `validate.py` all 4 checks; `boot_sim.js` OK (59 cards x 2 modes); `suite_health.py` OK at node 267 without a browser (292 with e2e) and python 64. What remains is NOT plan work: the open owner decisions (queue rows 39, 73, 76, 84, 87, 92, 93), the row 81 hardening, the unassigned follow-up of wiring lane 6's six PRESETS seed strings into the app UI, and the dead-worktree prune of row 68a which the tool classifier blocks for the main agent.
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| 12 | spawned 2026-09-09 (wave 9) | agent-managed | scale-engine/w20-edit-collision | - | - | - | - | 0 | no | - | yes |
+| 13 | spawned 2026-09-09 (wave 9) | agent-managed | scale-engine/w21-comment-floors | - | - | - | - | 0 | no | - | yes |
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
