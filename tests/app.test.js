@@ -2062,15 +2062,34 @@ test("replaceRegistered still replaces in place when there is no collision", () 
 // to zero rather than reporting a subtler truth. Both failures are loud.
 test("replaceRegistered has exactly one call site, and a new one must read the return", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  // Whole-line // comments are stripped so that DOCUMENTING the primitive by
-  // name is not a failure; anything else naming it is a caller.
-  const code = html.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
-  const hits = code.split("\n")
-    .map((line, i) => [i + 1, line])
-    .filter(([, line]) => /\breplaceRegistered\b/.test(line));
+  // COMMENTS ARE PROSE, CODE IS CODE (queue row 160). A mention inside a
+  // comment cannot execute, so it can never reintroduce row 131 - and this
+  // repo does document functions in prose, including inside /* ... */ blocks.
+  // Both whole-line // comments and /* ... */ spans (which may run over
+  // several lines) are therefore blanked out. Blanked, not deleted: the
+  // newlines survive so the line numbers reported below stay real.
+  // Deliberately NOT stripped: a TRAILING // comment, because the code before
+  // it on that line is live. That asymmetry is why the count below is over
+  // OCCURRENCES and not over lines (queue row 159) - a second call appended to
+  // the line that already names the function must not hide behind the first.
+  // Stripping cannot be used as an evasion: wrapping a real call in /* */
+  // deletes the call, and a stray unbalanced /* that swallowed live code would
+  // take the definition with it, which the last assertion catches loudly.
+  const blank = (s) => s.replace(/[^\n]/g, " ");
+  const code = html
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .split("\n").map((l) => (/^\s*\/\//.test(l) ? "" : l)).join("\n");
+  const hits = [];
+  let total = 0;
+  code.split("\n").forEach((line, i) => {
+    const named = line.match(/\breplaceRegistered\b/g);
+    if (!named) return;
+    total += named.length;
+    hits.push([i + 1, line, named.length]);
+  });
 
-  assert.strictEqual(hits.length, 2,
-    "replaceRegistered is named " + hits.length + " times in index.html " +
+  assert.strictEqual(total, 2,
+    "replaceRegistered is named " + total + " times in index.html " +
     "(expected 2: the definition and its one call). Lines: " +
     JSON.stringify(hits) + ". If you added a call: replaceRegistered REFUSES " +
     "rather than throwing when another deck already sits at next.id, so " +
