@@ -14,3 +14,4 @@ index 6e11744..4269993 100644
 +  var CAP_HINGE = 13;                 /* fields; below this the cap is flat   */
    var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
    var ELLIPSIS = "…";
+
