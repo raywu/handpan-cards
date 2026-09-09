@@ -202,8 +202,9 @@ GENERATED_OMITTED = {
 # The diagram band on the card, in points from the card's bottom edge: the
 # note line and its badge end near 50, the header block starts near 198.  R is
 # then whatever radius makes the furthest drawn element (`geom.ext`, which the
-# solver derives from the outermost ring plus its note radius) reach the edge
-# of that band, and the pan is centred in it.
+# solver derives from the outermost ring plus its note radius, its number
+# offset, the number glyph's own reach and a 6% pad) reach the edge of that
+# band, and the pan is centred in it.
 #
 # HOW CLOSE IS IT TO THE MEASURED LITERALS?  (re-derived 2026-09-09; the earlier
 # note here compared 74.0 - a REACH, `_BAND_HALF` - against 73.0, a RADIUS, and
@@ -214,10 +215,32 @@ GENERATED_OMITTED = {
 #   Pygmy-shaped seed  ext 1.4767 -> R 50.1 vs the literal 60.0   = -16.5%
 #
 # Like for like on REACH (R * ext, the furthest drawn element from the centre)
-# the two decks come out 73.99 vs 77.38 (-4.4%) and 73.98 vs 76.13 (-2.8%): the
-# reaches agree closely and the radii diverge because the solver puts a
-# generated bottom ring further out (ext 1.4767) than the built-in Pygmy's
-# hand-placed one (1.15 + 0.1188 = 1.2688), so the same reach buys a smaller R.
+# means running `src/engine/layout.js`'s OWN reach formula over the built-in's
+# geom too - the outermost ring, plus its note radius, plus the number offset,
+# plus `f_num * LABEL_REACH` of glyph, plus `EXT_PAD`.  Measured that way
+# (2026-09-09, re-derived a second time after the first correction still
+# compared unlike things):
+#
+#   Hijaz  generated 1.0600 x 69.8 = 73.99  vs  built-in 1.0600 x 73.0 = 77.38
+#                                                                       = -4.4%
+#   Pygmy  generated 1.4767 x 50.1 = 73.98  vs  built-in 1.4606 x 60.0 = 87.64
+#                                                                      = -15.6%
+#
+# The Pygmy pair was previously quoted as "73.98 vs 76.13 (-2.8%)", but 76.13
+# is `60.0 x 1.2688` - the outer edge of the bottom note CIRCLES only - while
+# the generated 1.4767 also counts the orange bottom NUMBERS that
+# `tools/hifi.py` draws at `orb + rr + R * n_out`, their glyph reach, and the
+# 6% pad.  Comparing a circle edge against a padded label reach understated the
+# gap by an order of magnitude.
+#
+# And the ring radius is NOT the cause: both bottom rings sit at exactly
+# 1.15 R.  The generated pan comes out ~16% smaller because this formula treats
+# reach as ISOTROPIC - it assumes the furthest element could point straight up
+# or down into the header block - while the built-in Pygmy's hand-picked
+# R = 60.0 exploits the fact that its bottom notes never sit at the top or
+# bottom of the card (max |sin theta| = 0.866 at 60/120/240/300 deg).  That is a
+# directional bonus a single scalar `ext` cannot express, and a solver that
+# places bottom angles freely must not assume it.
 #
 # The deviation is SAFE IN BOTH DIRECTIONS: every figure is negative, i.e. the
 # generated pan is SMALLER than the built-in one, so it clears the header block
