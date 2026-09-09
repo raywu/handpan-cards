@@ -2380,9 +2380,13 @@ const SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
 if (typeof store !== "object" || Array.isArray(store)) store = {};
-let deckId = store.deck || "hijaz";
+// Both reads are TYPE-guarded, not just truthiness-guarded: "hpfc" is shared,
+// so a sibling feature (or a hand-edited value) can leave any JSON type here,
+// and a non-string id that reached the boot tail would throw on .indexOf and
+// take the share-link handler at the end of the script down with it.
+let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
 let storedDeck = deckId;              // built-in or custom:; see save()
-let mode   = store.mode || "A";       // A: name->notes, B: notes->name
+let mode   = typeof store.mode === "string" ? store.mode : "A";  // A: name->notes, B: notes->name
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
 

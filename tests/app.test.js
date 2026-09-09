@@ -1106,3 +1106,38 @@ test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says
     `the message must name the deck now showing: "${said}"`);
   assert.match(gone.faces(), /<svg /);
 });
+
+// 21c. The sibling of the malformed-saved-scales case above. "hpfc" is one
+// object shared with whatever else stores settings there, so hpfc.deck can come
+// back as any JSON value, not just a string. A non-string id must be ignored
+// exactly like an unknown one - and, critically, must not abort the rest of
+// boot: the share link in the address bar is consumed at the very END of the
+// script, so a throw earlier in the tail drops it in silence while the deck on
+// screen still renders and the app looks perfectly fine.
+test("a non-string stored deck id is ignored and never eats a share link", () => {
+  const first = boot().get("DECKS")[0];
+
+  const seeded = boot();
+  const made = seeded.generate(AMARA_STRING).value;
+  const url = link(seeded, made.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  const hash = "#s=" + payload(url.value);
+
+  for (const bad of [5, {}, true, null, [1, 2]]) {
+    const raw = JSON.stringify({ deck: bad, mode: "A" });
+
+    const again = boot({ storage: { hpfc: raw } });
+    assert.strictEqual(again.deckId(), first.id, `boot broke on hpfc = ${raw}`);
+    assert.match(again.faces(), /<svg /);
+    assert.strictEqual(again.announcer().textContent, "",
+      `a non-string deck id must fall back without a word (${raw})`);
+
+    const shared = boot({
+      storage: { hpfc: raw },
+      href: "https://example.test/index.html" + hash,
+    });
+    assert.strictEqual(shared.deckId(), made.id,
+      `the share link was dropped when hpfc was ${raw}`);
+    assert.match(shared.faces(), /<svg /);
+  }
+});
