@@ -1,0 +1,20 @@
+# kills: the caller scan counts every occurrence, in code and in prose alike
+# Queue row 159. The scan goes back to counting LINES instead of occurrences,
+# so a second call appended to the line that already names the function hides
+# behind the first. Mutating a test file is precedent-backed (see
+# c_gen_pdf_oracle_blind and tests/CONTRACT.md rule 3): what has to be proved
+# live here is a test's own oracle, and index.html can only ever hold one shape
+# at a time, so only the synthetic assertions can prove this one is caught.
+diff --git a/tests/app.test.js b/tests/app.test.js
+index ce0745a..7dc5e98 100644
+--- a/tests/app.test.js
++++ b/tests/app.test.js
+@@ -2085,7 +2085,7 @@ function scanNames(source, name) {
+   source.split("\n").forEach((line, i) => {
+     const named = line.match(re);
+     if (!named) return;
+-    total += named.length;
++    total += 1;
+     hits.push([i + 1, line.trim(), named.length]);
+   });
+   return { total, hits };
