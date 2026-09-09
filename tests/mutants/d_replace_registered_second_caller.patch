@@ -1,0 +1,13 @@
+# kills: replaceRegistered has exactly one call site, and a new one must read the return
+diff --git a/index.html b/index.html
+index 7e9b7f6..3dedc7a 100644
+--- a/index.html
++++ b/index.html
+@@ -3575,6 +3575,7 @@ function runGenerate() {
+   // here - the id is unchanged and generateDeck already replaced it in place.
+   const replaced = !!wasId && d.id !== wasId;
+   if (replaced) replaceRegistered(wasId, d);
++  if (!replaced) replaceRegistered(d.id, d);
+   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
+   // produced; nothing is rebuilt to re-derive them.
+   const warned = (d.warnings || []).map(w => w.reason);

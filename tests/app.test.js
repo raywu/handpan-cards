@@ -2027,6 +2027,11 @@ test("replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
   assert.strictEqual(ok, false, "the primitive accepted a same-id collision");
   assert.deepStrictEqual(app.registry(), before,
     "a same-id collision changed the registry");
+  // deepStrictEqual is order-blind, and the registry's insertion order IS the
+  // chip order - a refusal that rebuilt the object would pass the check above
+  // while reshuffling the chips.
+  assert.deepStrictEqual(Object.keys(app.registry()), Object.keys(before),
+    "a same-id collision reordered the registry");
 });
 
 test("replaceRegistered still replaces in place when there is no collision", () => {
@@ -2043,4 +2048,37 @@ test("replaceRegistered still replaces in place when there is no collision", () 
   assert.strictEqual(keys[at], "custom:zzz", `the replacement moved: ${JSON.stringify(keys)}`);
   assert.ok(keys.includes(b.id), "the bystander deck was dropped");
   assert.strictEqual(keys.includes(a.id), false, "the old id survived the replacement");
+});
+
+// Queue row 150. The refusal above is real but nothing at the single call site
+// inspects the boolean, so the branch is unreachable from the app today: the
+// test above is the only thing that ever executes it. That is deliberate -
+// making the call site check would add a branch that provably cannot fire, and
+// a mutant for it could never redden. What has to be pinned instead is the
+// CALLER COUNT: the guard's stated purpose is that a future caller cannot
+// reintroduce row 131 silently, and that only holds if a future caller is
+// noticed at all. This is a source scan, so it is coarse by construction - it
+// counts names, not call graphs, and a rename of the function moves the count
+// to zero rather than reporting a subtler truth. Both failures are loud.
+test("replaceRegistered has exactly one call site, and a new one must read the return", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  // Whole-line // comments are stripped so that DOCUMENTING the primitive by
+  // name is not a failure; anything else naming it is a caller.
+  const code = html.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+  const hits = code.split("\n")
+    .map((line, i) => [i + 1, line])
+    .filter(([, line]) => /\breplaceRegistered\b/.test(line));
+
+  assert.strictEqual(hits.length, 2,
+    "replaceRegistered is named " + hits.length + " times in index.html " +
+    "(expected 2: the definition and its one call). Lines: " +
+    JSON.stringify(hits) + ". If you added a call: replaceRegistered REFUSES " +
+    "rather than throwing when another deck already sits at next.id, so " +
+    "inspect its boolean return and handle false - do not discard it the way " +
+    "the pre-existing edit-path call safely can (its collision is ruled out " +
+    "upstream by the row-131 veto). Then update this count deliberately.");
+
+  assert.ok(/^function replaceRegistered\(/.test(hits[0][1].trim()),
+    "the first mention of replaceRegistered is no longer its definition: " +
+    JSON.stringify(hits[0]));
 });
