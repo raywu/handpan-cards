@@ -61,6 +61,13 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    naming the test it must break. `tests/mutation_check.sh` applies each, runs
    the named test, asserts failure, and reverts. A test nothing can kill is not
    a test.
+   A mutant may patch a file under `tests/` when the thing that has to be proved
+   live is a TEST'S OWN ORACLE rather than production code - see
+   `c_gen_pdf_oracle_blind.patch` (blinds a staleness oracle),
+   `f_fixture_sha.patch` (patches a fixture) and
+   `d_caller_scan_strips_literals.patch` (blinds the replaceRegistered caller
+   scan's comment stripper). "No mutant patches tests/" is not a rule and never
+   was, and is not a reason to ship a test helper with nothing that can kill it.
 4. **A red against unmutated code is triaged, not "fixed".** Run
    `git diff origin/main -- index.html tools/decks.py tools/hifi.py src/engine/**`.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
