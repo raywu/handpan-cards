@@ -3,6 +3,17 @@
 One self-contained file: `index.html`. No build step, no dependencies beyond
 Google Fonts (loaded from CDN; falls back to system fonts offline).
 
+`index.html` is the shipped product: what is in the repo is what GitHub Pages
+serves, byte for byte. The scale engine lives twice - as the readable modules
+under `src/engine/` and as a copy pasted between the `<!-- engine:... -->`
+markers in `index.html`. Keeping the copy current is a **sync step, not a build
+step**: `python3 tools/inline_engine.py` rewrites those regions from
+`src/engine/*.js`, and `--check` reports whether they already match. Nothing is
+compiled, minified or generated on the way to the browser, and the file still
+opens straight from disk. Never hand-edit inside an engine region - change the
+module and re-run the tool. `python3 tools/validate.py` fails the build if the
+two ever drift.
+
 Decks included: C# Hijaz 9 (pink/orange), F3 Low Pygmy 18 (purple/gold),
 D Amara 9 (teal/amber). 59 cards total, with the same diagrams, voicings,
 pitch-class highlighting, and typography as the printed sets. The visual
@@ -16,6 +27,13 @@ palettes) is original to this project.
   and voicing. **Notes -> Name** reverses it (read the diagram, name the chord).
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
+- **+ ADD** (at the end of the deck row) opens the scale sheet: type your pan
+  as a ding in brackets followed by the top notes, e.g. `(D) A C D E F G A C`,
+  with any bottom notes after a `|`. The line under the box shows how the notes
+  were read as you type; pick a palette and, if your pan is mirrored,
+  LEFT-FIRST; then GENERATE CARDS. Regenerating the same scale replaces that
+  deck in place. Generated decks live for the session only - sharing them by
+  URL is a later phase.
 
 ## Tests
 
@@ -41,7 +59,8 @@ What is covered:
   implementations of the same conventions (and use opposite y-axis signs), so
   all 59 cards are compared on position, highlight state, note order and badge.
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
-  and touch navigation, reload persistence, and clipping at a 380px viewport.
+  and touch navigation, reload persistence, clipping at a 380px viewport, and
+  the scale sheet's modality, focus handling and 44px hit areas.
 - **Mutation gate** - every test group ships a patch that must make it fail. A
   test nothing can kill does not count as coverage.
 

@@ -31,12 +31,31 @@ Decks: **C# Hijaz / Orion 9** (18 chords), **F3 Low Pygmy 18** (25 chords),
 - `*.pdf` - print outputs ("Cards" = full deck with title/legend/blank
   templates; "PRINTER_ONLY" = chord cards only, for the print shop).
 - `tools/decks.py`, `tools/hifi.py` - print generator (see "Print pipeline").
+- `src/engine/*.js` - the scale engine (the `HPE` namespace), kept readable and
+  unit-tested on its own.
+- `tools/inline_engine.py` - copies those modules into the `<!-- engine:... -->`
+  regions of `index.html`. A SYNC STEP, NOT A BUILD STEP: see "Hard
+  constraints".
 
 ## Hard constraints
 
 - **Single-file app.** No bundlers, no frameworks, no external JS. Additions
   (PWA manifest/service worker are acceptable as sibling files) must keep
-  `index.html` independently functional.
+  `index.html` independently functional. `index.html` IS the shipped artifact:
+  GitHub Pages serves the committed bytes, so there is nothing between the repo
+  and the browser and no `<script src>` may appear in it.
+- **The engine regions in `index.html` are GENERATED.** Everything between
+  `<!-- engine:<name> -->` and its end marker is a verbatim copy of
+  `src/engine/<name>.js`. Never hand-edit inside a region: change the module,
+  then run `python3 tools/inline_engine.py` and commit what it writes
+  (`--check` reports drift without writing). This is a **sync step, not a build
+  step** - no compilation, no minification, no generated output that is not
+  checked in, and the file still opens from disk with the copy already in it.
+  `tools/validate.py` check 4 fails if the two sides diverge, which is how two
+  branches that never conflicted textually can still redden main. Resolve a
+  conflict inside an engine region by taking either side and re-running the
+  tool, never by merging the region by hand. Application markup, CSS and app
+  JS all live OUTSIDE the engine block.
 - **Do not alter deck data or diagram geometry** without explicit owner
   instruction. Layouts were verified against the physical instruments and
   some look "wrong" against generic handpan references - they are not.
