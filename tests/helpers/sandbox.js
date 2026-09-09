@@ -30,7 +30,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-delete-row", "scale-delete",
   // Phase 5 LAYOUT section, additive like the two before it.
   "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
-  "scale-move-l", "scale-move-r", "scale-layout-reset"];
+  "scale-move-l", "scale-move-r", "scale-layout-reset",
+  // Phase 6 preset row, additive like the three before it.
+  "scale-presets-row", "scale-presets"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -205,7 +207,10 @@ function boot(opts = {}) {
       _l: {},
     },
     location, history,
-    URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone, btoa, atob,
+    // Event, so app code can fire the real thing (`new Event("input")`) rather
+    // than reaching past its own listeners - the stub's dispatchEvent already
+    // dispatches by `type`.
+    URL, URLSearchParams, Event, TextEncoder, TextDecoder, structuredClone, btoa, atob,
     setTimeout(fn, ms, ...args) {
       if (opts.syncTimers) { fn(...args); return 0; }
       const id = nextTimer++;
