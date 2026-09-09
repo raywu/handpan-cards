@@ -15,16 +15,25 @@ PORT=${PORT:-8000}
 TARGET=${1:-.}
 SERVE_DIR=$ROOT
 WT=""
+SERVER=""
+cleanup() {
+  [ -n "$SERVER" ] && kill "$SERVER" 2>/dev/null || true
+  [ -n "$WT" ] && git -C "$ROOT" worktree remove -f "$WT" >/dev/null 2>&1 || true
+  [ -n "$WT" ] && rm -rf "$WT"
+}
+trap cleanup EXIT INT TERM
 
 if [ "$TARGET" != "." ]; then
   if [[ "$TARGET" == pr:* ]]; then
-    TARGET=$(gh pr view "${TARGET#pr:}" --repo "$(git -C "$ROOT" remote get-url origin)" --json headRefName -q .headRefName)
+    REF="pull/${TARGET#pr:}/head"
+  else
+    REF=$TARGET
   fi
-  git -C "$ROOT" fetch -q origin "$TARGET"
+  git -C "$ROOT" fetch -q origin "$REF"
   WT=$(mktemp -d "${TMPDIR:-/tmp}/handpan-preview.XXXXXX")
-  git -C "$ROOT" worktree add -q --detach "$WT" "origin/$TARGET"
+  git -C "$ROOT" worktree add -q --detach "$WT" FETCH_HEAD
   SERVE_DIR=$WT
-  echo "serving origin/$TARGET at $(git -C "$WT" rev-parse --short HEAD)"
+  echo "serving $TARGET at $(git -C "$WT" rev-parse --short HEAD)"
 else
   echo "serving working tree at $ROOT"
 fi
@@ -35,9 +44,4 @@ echo "  local:  http://localhost:$PORT/"
 echo "  (Pages serves main only; merge to publish at http://handpan.raywu.org/)"
 python3 -m http.server "$PORT" --bind 0.0.0.0 --directory "$SERVE_DIR" &
 SERVER=$!
-cleanup() {
-  kill "$SERVER" 2>/dev/null || true
-  [ -n "$WT" ] && git -C "$ROOT" worktree remove -f "$WT" >/dev/null 2>&1 || true
-}
-trap cleanup EXIT INT TERM
-wait "$SERVER" || true
+wait "$SERVER"
