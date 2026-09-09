@@ -228,7 +228,30 @@ GENERATED_OMITTED = {
 #
 # S_PYGMY and S_NOSEP differ only in that separator, and that alone moves `ext`:
 # with no inner shell there is no rim-vs-inner radial crowding, so `r_note`
-# solves to 0.1783 instead of 0.1456 and the rim ring pushes further out.  The
+# solves to 0.1783 (S_NOSEP) instead of 0.1456 (S_PYGMY) - and `f_num`, which is
+# 0.64 * r_note, rides along at 0.1141 instead of 0.0932.  `f_num` is the whole
+# channel.  For BOTH seeds the max in the reach formula
+# (`src/engine/layout.js:289-302`) is won by the same bottom-shell number term,
+# `bottomOrb + rBnote + nOut + f_num * LABEL_REACH`:
+#
+#   term                                            S_PYGMY   S_NOSEP
+#   shell circle                                     1.0000    1.0000
+#   ding      DING_DY + R_DING                       0.3325    0.3325
+#   rim       rimOrb + r_note                        0.8676    0.9233
+#   rim+num   rimOrb + r_note + n_in + f_num*0.7     0.9848         -   (*)
+#   inner     innerOrb + r_note                      0.5256         -
+#   bottom    bottomOrb + r_bnote                    1.2688    1.2688
+#   bottom+num  ... + n_out + f_num*0.7              1.4020    1.4167  <- max
+#   + EXT_PAD 0.06                                   1.4620    1.4767
+#
+#   (*) the rim number term only exists when there IS an inner shell
+#       (`rimNumOut = hasInner`), so S_NOSEP has no such term at all.
+#
+# The rim ring DOES move out - 0.722 R (S_PYGMY) to 0.745 R (S_NOSEP) - but it
+# never reaches: its best term, 0.9233, loses to the bottom-shell number term by
+# a third of R, so it contributes NOTHING to `ext` for either seed.  The entire
+# 1.4767 - 1.4620 = 0.0147 delta is the `f_num` glyph:
+# 0.7 * (0.1141 - 0.0932) = 0.01463.  The
 # 1.4767 / 50.1 pair is S_NOSEP's, NOT the real Pygmy string's.
 #
 # Like for like on REACH (R * ext, the furthest drawn element from the centre)
@@ -243,10 +266,17 @@ GENERATED_OMITTED = {
 #   S_PYGMY generated 1.4620 x 50.6 = 73.98  vs  PYGMY_SPEC 1.4606 x 60.0 = 87.64
 #                                                                        = -15.6%
 #
-# The REACH column is seed-insensitive by construction - R is defined below as
-# `_BAND_HALF / ext`, so R * ext is 74.0 for ANY seed, and S_NOSEP gives the
-# same 1.4767 x 50.1 = 73.98.  Only the RADIUS column moves with the seed, which
-# is why the two Pygmy strings disagree above but not here.
+# The REACH column is seed-insensitive by construction, but only to about a
+# tenth of a point - NOT exactly.  R is defined below as
+# `round(_BAND_HALF / ext, 1)`, and that 1-dp rounding is what keeps R * ext off
+# a clean 74.0: the product is `_BAND_HALF + e * ext` where |e| <= 0.05 is the
+# rounding residue on R, so it lands anywhere in 73.93 .. 74.07 across the ext
+# band generated decks actually produce (1.0 .. 1.5; swept at 1e-4 steps, min
+# 73.925 at ext 1.4995, max 74.073 at ext 1.4904).  Hence ~ 74.0 for any seed,
+# which is why the three figures quoted just above read 73.99 (S_HIJAZ) and
+# 73.98 (S_PYGMY) rather than 74.00, and why S_NOSEP's 1.4767 x 50.1 = 73.98
+# lands with them.  Only the RADIUS column moves with the seed in any material
+# way, which is why the two Pygmy strings disagree above but not here.
 #
 # The S_PYGMY reach pair was previously quoted as "73.98 vs 76.13 (-2.8%)", but
 # 76.13 is `60.0 x 1.2688` - the outer edge of PYGMY_SPEC's bottom note CIRCLES

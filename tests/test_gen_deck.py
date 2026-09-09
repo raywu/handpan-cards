@@ -370,6 +370,21 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         self.assertNotIn(warnings[0]["reason"].upper(), quiet["blurb"],
                          "a deck the engine did not flag must not print a "
                          "warning line it never earned")
+        # And the unwarned blurb is pinned WHOLE, against SEED_TOP_ONLY's own
+        # text rather than against the other deck's line count.  `assertNotIn`
+        # above catches a leak of THIS warning's string; it cannot see a line
+        # the unwarned path grows for some other reason, and neither could the
+        # cross-deck length delta this replaced (which was also fragile: two
+        # blurbs are only comparable by length while both seeds are top-only).
+        # SEED_TOP_ONLY is "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4" - ding, then the
+        # eight tonefields, then the deck size.  No bottom shell, so no
+        # "BOTTOM:" line; no warnings, so nothing after the count line.
+        self.assertEqual(
+            quiet["blurb"],
+            ["D3  |  A3  Bb3  C4  D4  E4  F4  G4  A4",
+             "%d CHORDS - ONE CARD PER CHORD" % len(quiet["chords"])],
+            "an unwarned title card prints its notes and its deck size and "
+            "nothing else - no extra line may appear on the quiet path")
 
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
