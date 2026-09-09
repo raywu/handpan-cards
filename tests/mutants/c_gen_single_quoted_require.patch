@@ -1,0 +1,15 @@
+# kills: test_the_tool_never_reaches_the_network
+# A SINGLE-QUOTED network require, the exact form the old banned-substring scan
+# let through: it listed require("http and friends in double quotes only.
+diff --git a/tools/gen_deck.js b/tools/gen_deck.js
+index 2172a91..878c74b 100644
+--- a/tools/gen_deck.js
++++ b/tools/gen_deck.js
+@@ -35,6 +35,7 @@
+  * tool never composes a sentence of its own and never mints a code.
+  */
+ const fs = require("node:fs");
++const https = require('https');
+ const { loadEngine } = require("./engine_loader.js");
+ 
+ // ---- presets: INLINED seed strings ----------------------------------------

@@ -1,0 +1,17 @@
+# kills: test_a_missing_ext_raises_instead_of_defaulting_the_radius
+# The silent default is back: a missing or renamed geom.ext quietly gives every
+# generated deck R = 74.0 instead of raising, which on a bottom-shell pan draws
+# the diagram over the header and off both edges of the card.
+diff --git a/tools/decks.py b/tools/decks.py
+index b2b956c..19f3ee2 100644
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -321,7 +321,7 @@ def from_generated(payload):
+     # silently gave every deck R = 74.0 - on a bottom-shell pan that draws the
+     # diagram over the header and off both edges of the card with nothing red.
+     # A KeyError at the point of use is the right failure.
+-    ext = generated["geom"]["ext"]
++    ext = generated["geom"].get("ext") or 1.0
+     name = generated["name"]
+     tops = [k for k in spec if k != "_geom" and spec[k][3] in ("rim", "inner")]
+     bottoms = [k for k in spec if k != "_geom" and spec[k][3] == "bottom"]
