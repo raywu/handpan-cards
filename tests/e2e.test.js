@@ -127,32 +127,58 @@ function run() {
             catch (e) { return null; }`);
 
   // Wipe persisted state and reload, so tests do not inherit each other's deck.
+  // Resolve on the next CDP event with this method name. Page.enable is already
+  // on, so the driver's socket is carrying them; it just does not surface them.
+  function onceEvent(method, timeout) {
+    return new Promise((resolve, reject) => {
+      const done = (fn, arg) => { b.ws.removeEventListener("message", h); clearTimeout(t); fn(arg); };
+      const h = (ev) => {
+        let m;
+        try { m = JSON.parse(ev.data); } catch { return; }
+        if (m.method === method) done(resolve, m.params);
+      };
+      const t = setTimeout(
+        () => done(reject, new Error(`no ${method} within ${timeout}ms`)), timeout);
+      b.ws.addEventListener("message", h);
+    });
+  }
+
   // Navigate to URL and wait for the NEW document.
   //
-  // Two traps. Page.navigate returns before the new document is committed, and
-  // every readiness signal we look for (readyState, #count, a deck chip) is
+  // Three traps. Page.navigate returns before the new document is committed,
+  // and every readiness signal we look for (readyState, #count, a deck chip) is
   // also true of the page we are leaving - so the outgoing document is stamped
-  // first and the wait is for that stamp to be gone. And a navigation can lose
-  // a CDP round trip outright (the driver's own 20s request timeout), which
-  // says nothing about the page under test: retry rather than redden whichever
-  // test happened to be holding the wheel.
+  // first and the wait is for that stamp to be gone.
   //
-  // The retries are also why this trips a breaker. If the browser itself goes
-  // away - it crashed, or the debug socket dropped - every CDP request costs
-  // its full 20s timeout, so each remaining test would burn ~a minute before
-  // reporting the same dead browser. The mutation gate kills a suite that hangs
-  // past MUTANT_TIMEOUT, so a slow cascade reads as "mutant survived" rather
-  // than "mutant killed". Once navigation is gone it is gone for the run: latch
-  // the first failure and hand it straight to every later test.
+  // Second, do NOT poll with Runtime.evaluate across the commit: an evaluate
+  // issued while the execution context is being swapped can sit unanswered for
+  // tens of seconds, and the driver gives every CDP request a hard 20s timeout.
+  // That was the single biggest source of red here - a navigation the page
+  // completed fine, reported as a dead round trip. Wait for the load event
+  // instead, and only then start evaluating.
+  //
+  // Third, a round trip can still be lost (headless Chrome stalls on its own
+  // background networking when the sandbox has no route out), so retry - and
+  // latch. If the browser is gone for good, every CDP request costs its full
+  // 20s, so each remaining test would burn a minute rediscovering the same
+  // corpse; the mutation gate then kills the suite for hanging and reads a
+  // killed mutant as a survivor. Once navigation is gone it is gone for the
+  // run: hand the first failure straight to every later test.
   let navDead = null;
   async function navigate() {
     if (navDead) throw navDead;
     let last = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await b.eval(`window.__stale = true; return true;`);
-        await b.goto(URL);
-        await b.waitFor(`!window.__stale`, { label: "the new document to commit" });
+        const loaded = onceEvent("Page.loadEventFired", 20000);
+        await b.send("Page.navigate", { url: URL });
+        await loaded;
+        await b.waitFor(
+          `document.readyState === "complete" && !window.__stale
+             && !!document.getElementById("count")?.textContent`,
+          { timeout: 10000, label: "the new document to commit" },
+        );
         return;
       } catch (e) {
         last = e;
