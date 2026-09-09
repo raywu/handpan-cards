@@ -1,12 +1,12 @@
 # kills: deck chips switch the deck
 diff --git a/index.html b/index.html
-index d2aeb5a..2d29751 100644
+index b018e51..ed55e6b 100644
 --- a/index.html
 +++ b/index.html
-@@ -2016,7 +2016,7 @@ function checkShareVersion(v) {
+@@ -2492,7 +2492,7 @@ function restoreScales() {
  function selectDeck(id) {
    deckId = id;
-   if (isBuiltIn(id)) storedDeck = id;
+   storedDeck = id;
 -  save(); setOrder(); buildChips(); render();
 +  save(); buildChips(); render();
  }

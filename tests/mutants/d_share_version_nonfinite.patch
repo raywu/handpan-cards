@@ -1,0 +1,18 @@
+# kills: checkShareVersion rejects a version that is not a finite number
+# The guard drops its type check, so undefined, null, NaN, "2" and {} all read
+# as an acceptable version: none of them is > SHARE_VERSION.
+diff --git a/index.html b/index.html
+index b018e51..ac9b9b8 100644
+--- a/index.html
++++ b/index.html
+@@ -2432,10 +2432,6 @@ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].rea
+ // A version that is not a finite number is untrusted junk, not a newer app: the
+ // section 2 enum is closed and BAD_NOTE is its rejection for malformed input.
+ function checkShareVersion(v) {
+-  if (typeof v !== "number" || !isFinite(v)) {
+-    return { ok: false, code: "BAD_NOTE",
+-             reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
+-  }
+   return v > SHARE_VERSION ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
+ }
+ 

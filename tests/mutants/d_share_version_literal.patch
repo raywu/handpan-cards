@@ -1,0 +1,16 @@
+# kills: the app's share version IS the engine's, not a second copy of the number
+# The app restates the share version as a literal instead of reading the
+# engine's. Equal today; the day either side is bumped every link breaks.
+diff --git a/index.html b/index.html
+index b018e51..ba4fcd0 100644
+--- a/index.html
++++ b/index.html
+@@ -2424,7 +2424,7 @@ function generateDeck(text, options) {
+ // ONE version number, the engine's. Restating it here as a literal would go
+ // silently wrong the day either side is bumped, and every existing link would
+ // break, so it is DERIVED and never re-declared.
+-const SHARE_VERSION = HPE.share.VERSION;
++const SHARE_VERSION = 1;
+ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
+ // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
+ // its own version check on the wire format (share.js step 2), so this is the

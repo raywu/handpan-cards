@@ -438,12 +438,18 @@ test("index.html carries the whole engine inline, with no external script", () =
 
   const app = boot();
   const HPE = app.get("HPE");
-  for (const mod of ["core", "voicing", "layout", "naming", "select"]) {
+  for (const mod of ["core", "voicing", "layout", "naming", "select", "share"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads first.
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
-  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select"]);
+  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select", "share"]);
+  // share is the app's share surface: encode, decode and the version it guards.
+  const share = app.get("HPE.share");
+  for (const key of ["encode", "decode"]) {
+    assert.strictEqual(typeof share[key], "function", `HPE.share.${key} missing`);
+  }
+  assert.strictEqual(typeof share.VERSION, "number");
 });
 
 /* ------------------------------------------- 12. the generated deck registry */
@@ -518,9 +524,9 @@ test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", () 
   assert.match(res.reason, /newer version/i);
 });
 
-/* --------------------------------------- 13. save() persists built-ins only */
+/* ------------------------------------- 13. save() persists the selected deck */
 
-test("selecting a generated deck leaves the stored deck on the last built-in", () => {
+test("selecting a deck persists its id, custom decks included", () => {
   const app = boot();
   const builtIn = decks(app)[1];
   app.select(builtIn.id);
@@ -530,13 +536,14 @@ test("selecting a generated deck leaves the stored deck on the last built-in", (
   app.select(id);
   assert.strictEqual(app.deckId(), id, "the custom deck is on screen");
   const stored = JSON.parse(app.store.hpfc);
-  // Phase 4 lifts this; in Phase 3 a reload must restore a built-in deck.
-  assert.strictEqual(stored.deck, builtIn.id, "a custom deck id was persisted");
+  // Phase 4 lifted the Phase 3 guard: the seed is saved under its own key and
+  // rebuilt at boot, so a stored custom id is no longer a dangling reference.
+  assert.strictEqual(stored.deck, id, "the selected custom deck was not persisted");
   assert.strictEqual(stored.mode, "A", "mode must still round-trip");
 
-  // and a mode change while a custom deck is showing keeps the built-in id.
+  // and a mode change while a custom deck is showing keeps that deck.
   app.run('setMode("B")');
-  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: builtIn.id, mode: "B" });
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B" });
 });
 
 /* --------------------------------------------- 14. pan() honours geom.ext */
@@ -865,4 +872,272 @@ test("arrow keys do not step the card while the sheet is open", () => {
   openSheet(app);
   app.keydown("ArrowRight");
   assert.strictEqual(app.get("idx"), 1, "an arrow inside the sheet moved the card");
+});
+
+/* ================================================================ Phase 4
+ * Persist and share: HPE.share wired into the app, the seed persisted under
+ * its own storage key, and the two fallback paths distinguished.
+ *
+ * Derived from docs/ENGINE-SPEC.md sections 1, 2, 11, 13 and 14 and from
+ * docs/SCALE_ENGINE_PLAN.md "Phase 4 - persist and share" (D14: the SEED is
+ * the payload, options are never hashed). Reason sentences are held to the
+ * spec's own section 2 table, read out of the markdown, so a copy edit in the
+ * engine cannot make these pass against stale text.
+ */
+
+const SPEC_MD = fs.readFileSync(path.join(ROOT, "docs", "ENGINE-SPEC.md"), "utf8");
+
+/** The section 2 reason sentence for a code, read from the spec's own table. */
+function specReason(code) {
+  const row = new RegExp(`^\\|\\s*\`${code}\`\\s*\\|[^|]*\\|\\s*\`(.+?)\`\\s*\\|`, "m").exec(SPEC_MD);
+  assert.ok(row, `no section 2 row for ${code}`);
+  return row[1];
+}
+
+/** The app's own inline script - the last block, after the engine regions. */
+function appScript(app) {
+  return app.blocks[app.blocks.length - 1];
+}
+
+/** Encode a generated deck's seed through the app's own share surface. */
+function link(app, id) {
+  return plain(app.get(`shareLink(CUSTOM[${JSON.stringify(id)}])`));
+}
+
+/** The share string out of a link the app made. */
+const payload = (url) => url.slice(url.indexOf("#s=") + 3);
+
+function openShare(app, text) {
+  return plain(app.get(`openShare(${JSON.stringify(String(text))})`));
+}
+
+/* ------------------------------------------------ 17. one version constant */
+
+test("the app's share version IS the engine's, not a second copy of the number", () => {
+  const app = boot();
+  assert.strictEqual(app.get("SHARE_VERSION"), app.get("HPE.share.VERSION"),
+    "SHARE_VERSION and HPE.share.VERSION have diverged");
+  // Equal values are not enough: a restated literal is equal today and wrong
+  // the day either side is bumped, so the app must DERIVE the constant.
+  const src = appScript(app);
+  const decl = /\bSHARE_VERSION\s*=\s*([^;\n]+)/.exec(src);
+  assert.ok(decl, "the app no longer declares SHARE_VERSION");
+  assert.match(decl[1], /HPE\.share\.VERSION/,
+    `SHARE_VERSION is restated as "${decl[1].trim()}" instead of read from the engine`);
+});
+
+/* ------------------------------------------- 18. the share version guard */
+
+test("checkShareVersion rejects a version that is not a finite number", () => {
+  const app = boot();
+  for (const expr of ["undefined", "null", "NaN", "Infinity", '"2"', "{}", "[]"]) {
+    const res = plain(app.get(`checkShareVersion(${expr})`));
+    assert.strictEqual(res.ok, false, `checkShareVersion(${expr}) was accepted`);
+    // Section 2's enum is CLOSED and has no "corrupt" code: a malformed
+    // version is the same BAD_NOTE rejection share.js gives a corrupt string.
+    assert.strictEqual(res.code, "BAD_NOTE", `checkShareVersion(${expr}) code`);
+    const tail = specReason("BAD_NOTE").split("<X>")[1];
+    assert.ok(res.reason.endsWith(tail),
+      `checkShareVersion(${expr}) invented a sentence: "${res.reason}"`);
+    assert.strictEqual("value" in res, false, "an err result carries no value");
+  }
+  const current = app.get("SHARE_VERSION");
+  assert.strictEqual(app.get(`checkShareVersion(${current}).ok`), true);
+});
+
+test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sentence", () => {
+  const app = boot();
+  const id = app.generate(AMARA_STRING).value.id;
+  const url = link(app, id);
+  assert.strictEqual(url.ok, true, url.reason);
+
+  // decode reads the version byte BEFORE the checksum, so bumping the leading
+  // character is exactly the PWA case: a cached old app opening a newer link.
+  const newer = "2" + payload(url.value).slice(1);
+  const res = openShare(app, newer);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.code, "NEEDS_NEWER_APP");
+  assert.strictEqual(res.reason, specReason("NEEDS_NEWER_APP"),
+    "the app must surface the spec's sentence verbatim");
+  assert.strictEqual(app.announcer().textContent, specReason("NEEDS_NEWER_APP"),
+    "the newer-link rejection never reached the user");
+  assert.strictEqual(app.announcer().classList.contains("err"), true);
+  // the app stays usable: the deck on screen is untouched and still renders.
+  assert.match(app.faces(), /<svg /);
+});
+
+test("a corrupt share string surfaces BAD_NOTE's reason and changes nothing", () => {
+  const app = boot();
+  const id = app.generate(AMARA_STRING).value.id;
+  app.select(id);
+  const str = payload(link(app, id).value);
+
+  // one flipped character anywhere in the string fails the integrity check
+  const corrupt = str.slice(0, 3) + (str[3] === "A" ? "B" : "A") + str.slice(4);
+  const res = openShare(app, corrupt);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.code, "BAD_NOTE");
+  assert.ok(res.reason.length > 0);
+  assert.strictEqual(app.announcer().textContent, res.reason,
+    "the app composed a sentence of its own instead of the engine's reason");
+  assert.strictEqual(app.deckId(), id, "a corrupt link changed the selected deck");
+});
+
+/* ------------------------------------------------- 19. the share round trip */
+
+test("a share link restores the exact deck, and options never move the id", () => {
+  const app = boot();
+  const made = app.generate(AMARA_STRING).value;
+  const url = link(app, made.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  assert.ok(url.value.includes("#s="), `share link was "${url.value}"`);
+
+  // a second app, with nothing stored, opens the link
+  const other = boot();
+  assert.deepStrictEqual(other.registry(), {});
+  const res = openShare(other, payload(url.value));
+  assert.strictEqual(res.ok, true, res.reason);
+  // D14: core.deckId hashes formatSeed(fields) only.
+  assert.strictEqual(res.value.id, made.id, "the restored deck is a different deck");
+  assert.strictEqual(other.deckId(), made.id, "the restored deck is not selected");
+  assert.strictEqual(res.value.chords.length, made.chords.length);
+  assert.strictEqual(other.els.count.textContent, `1 / ${made.chords.length}`);
+  assert.match(other.faces(), /<svg /);
+
+  // and the options ride beside the fields without ever entering the hash
+  const third = boot();
+  const recoloured = third.generate(AMARA_STRING, { palette: 4, mirror: true }).value;
+  assert.strictEqual(recoloured.id, made.id, "an option changed the deck id");
+  const back = openShare(boot(), payload(link(third, recoloured.id).value));
+  assert.strictEqual(back.ok, true, back.reason);
+  assert.strictEqual(back.value.options.palette, 4, "the palette did not survive the link");
+  assert.strictEqual(back.value.options.mirror, true, "the mirror did not survive the link");
+  assert.strictEqual(back.value.id, made.id);
+});
+
+test("consuming a share link runs select.build exactly once", () => {
+  const app = boot();
+  const url = link(app, app.generate(AMARA_STRING).value.id).value;
+
+  const other = boot();
+  other.run(`
+    globalThis.__buildCalls = 0;
+    const __realBuild = HPE.select.build;
+    HPE.select.build = function (seed) { globalThis.__buildCalls += 1; return __realBuild(seed); };
+  `);
+  openShare(other, payload(url));
+  assert.strictEqual(other.get("__buildCalls"), 1,
+    "generation must run ONCE per restore (ENGINE-SPEC section 11)");
+});
+
+/* ------------------------------------------------------- 20. persistence */
+
+test("writing the app's own keys leaves a sibling key in hpfc untouched", () => {
+  const app = boot({
+    storage: { hpfc: JSON.stringify({ deck: "amara", mode: "B", srs: { again: 3 } }) },
+  });
+  app.run(`setMode("A")`);
+  const stored = JSON.parse(app.store.hpfc);
+  assert.deepStrictEqual(stored.srs, { again: 3 },
+    "save() clobbered a sibling key instead of reading, modifying and writing");
+  assert.strictEqual(stored.mode, "A", "the app's own key did not land");
+  assert.strictEqual(stored.deck, "amara");
+});
+
+test("a generated deck survives a reload, rebuilt from its saved seed", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const id = app.deckId();
+  assert.match(id, /^custom:/);
+
+  // the SEED is what is stored, under its own key - never the built deck
+  const key = app.get("SCALES_KEY");
+  assert.notStrictEqual(key, "hpfc", "saved scales must not live inside hpfc");
+  const saved = JSON.parse(app.store[key]);
+  assert.strictEqual(saved.length, 1);
+  assert.strictEqual(JSON.stringify(saved).includes("chords"), false,
+    "the built deck was persisted; D14 stores the seed only");
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, id,
+    "a selected custom deck must now persist (Phase 4 lifts the Phase 3 guard)");
+
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.ok(Object.keys(again.registry()).includes(id), "the saved scale was not rebuilt");
+  assert.strictEqual(again.deckId(), id, "the custom deck did not survive the reload");
+  assert.strictEqual(again.els.count.textContent,
+    `1 / ${again.registry()[id].chords.length}`);
+  assert.match(again.faces(), /<svg /);
+  assert.strictEqual(again.announcer().textContent, "",
+    "a deck that WAS restored must not be reported missing");
+});
+
+test("a corrupt saved scale is dropped and the app still boots on the built-ins", () => {
+  const key = boot().get("SCALES_KEY");
+  for (const raw of ["{{{ not json", "null", '"a string"', "[null, 7]",
+                     '[{"s": "not a scale at all"}]',
+                     '[{"v": 99, "s": "(D) A C D E F G A C"}]',
+                     '[{"v": "x", "s": "(D) A C D E F G A C"}]']) {
+    const again = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }), [key]: raw } });
+    assert.strictEqual(again.deckId(), "amara", `boot broke on saved scales ${raw}`);
+    assert.deepStrictEqual(again.registry(), {}, `an unusable record was rebuilt from ${raw}`);
+    assert.match(again.faces(), /<svg /);
+  }
+});
+
+/* --------------------------------- 21. the two fallbacks are distinguished */
+
+test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says so", () => {
+  const first = boot().get("DECKS")[0];
+
+  // 21a. an unknown built-in id: SILENT. This is the Phase 3 behaviour the
+  // plan marks as must-not-weaken, asserted here beside the noisy path.
+  const stale = boot({ storage: { hpfc: JSON.stringify({ deck: "nope", mode: "A" }) } });
+  assert.strictEqual(stale.deckId(), first.id);
+  assert.strictEqual(stale.announcer().textContent, "",
+    "an unknown built-in id must fall back without a word");
+
+  // 21b. a missing custom: id: the saved scale is gone, and the user is told.
+  const gone = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
+  assert.strictEqual(gone.deckId(), first.id);
+  const said = gone.announcer().textContent;
+  assert.ok(said.length > 0, "a missing custom deck fell back in silence");
+  assert.ok(said.includes(first.name),
+    `the message must name the deck now showing: "${said}"`);
+  assert.match(gone.faces(), /<svg /);
+});
+
+// 21c. The sibling of the malformed-saved-scales case above. "hpfc" is one
+// object shared with whatever else stores settings there, so hpfc.deck can come
+// back as any JSON value, not just a string. A non-string id must be ignored
+// exactly like an unknown one - and, critically, must not abort the rest of
+// boot: the share link in the address bar is consumed at the very END of the
+// script, so a throw earlier in the tail drops it in silence while the deck on
+// screen still renders and the app looks perfectly fine.
+test("a non-string stored deck id is ignored and never eats a share link", () => {
+  const first = boot().get("DECKS")[0];
+
+  const seeded = boot();
+  const made = seeded.generate(AMARA_STRING).value;
+  const url = link(seeded, made.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  const hash = "#s=" + payload(url.value);
+
+  for (const bad of [5, {}, true, null, [1, 2]]) {
+    const raw = JSON.stringify({ deck: bad, mode: "A" });
+
+    const again = boot({ storage: { hpfc: raw } });
+    assert.strictEqual(again.deckId(), first.id, `boot broke on hpfc = ${raw}`);
+    assert.match(again.faces(), /<svg /);
+    assert.strictEqual(again.announcer().textContent, "",
+      `a non-string deck id must fall back without a word (${raw})`);
+
+    const shared = boot({
+      storage: { hpfc: raw },
+      href: "https://example.test/index.html" + hash,
+    });
+    assert.strictEqual(shared.deckId(), made.id,
+      `the share link was dropped when hpfc was ${raw}`);
+    assert.match(shared.faces(), /<svg /);
+  }
 });

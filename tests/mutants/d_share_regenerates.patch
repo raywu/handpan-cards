@@ -1,0 +1,15 @@
+# kills: consuming a share link runs select.build exactly once
+# Consuming a link builds the deck twice - the shape a rebuild-per-read would
+# have. ENGINE-SPEC section 11: generation runs ONCE per restore.
+diff --git a/index.html b/index.html
+index b018e51..5fb26ef 100644
+--- a/index.html
++++ b/index.html
+@@ -2457,6 +2457,7 @@ function openShare(text) {
+   const res = HPE.share.decode(String(text));
+   if (!res.ok) { say(res.reason, "err"); return res; }
+   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
++  generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   if (!built.ok) { say(built.reason, "err"); return built; }
+   rememberScale(res.value);

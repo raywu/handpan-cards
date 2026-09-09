@@ -2063,17 +2063,330 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 })(HPE);
 </script>
 <!-- engine:select end -->
+<!-- engine:share begin - synced from src/engine/share.js by tools/inline_engine.py; edit the module, not this copy -->
+<script>
+/* HPE.share - the versioned share encoding for a seed (ENGINE-SPEC 14).
+ *
+ * Plain script, no module wrapper: index.html is a single self-contained file
+ * by contract, so this text has to be inlinable verbatim. `var`, not `const`,
+ * so the namespace lands on the global object of a node:vm context too.
+ *
+ * WHAT IS ENCODED (D14): the SEED - the canonical scale string plus the seed
+ * options - never the generated deck. An old link therefore renders NEW cards
+ * when the engine improves. `zone` and `angle` are never encoded: zones are
+ * derived by core.parseSeed and angles are layout.solve's output.
+ *
+ * PURE JS (spec 14): no btoa, no host text encoder, no compression stream. The
+ * bytes are hand-rolled so the engine runs identically in a browser and in a
+ * node:vm realm.
+ *
+ * WIRE FORMAT
+ *
+ *     share = VERSION_CHAR + BODY + CHECK
+ *
+ *   VERSION_CHAR  one character, ALPHABET[VERSION]; for VERSION <= 9 that is
+ *                 the decimal digit, so a v1 link starts with "1". A version
+ *                 greater than this app's is NEEDS_NEWER_APP; a smaller one is
+ *                 a corrupt payload, because no earlier format ever shipped.
+ *   BODY          the payload text as UTF-8 bytes in the URL-safe alphabet
+ *                 below, unpadded.
+ *   CHECK         six alphabet characters: a 32-bit FNV-1a over
+ *                 VERSION_CHAR + BODY. Flipping any single character of the
+ *                 whole string - CHECK included - fails this.
+ *
+ * PAYLOAD TEXT: three "\n"-separated lines. "\n" cannot occur inside any of
+ * them (scale strings are note tokens; a name is printable ASCII 0x20-0x7E per
+ * spec 13), so the split is unambiguous.
+ *
+ *     line 0   the canonical scale string, core.formatSeed(seed)
+ *     line 1   the options, "palette \t parent \t mirror \t name"; parent is
+ *              empty for "infer", mirror is "0" (right-first) or "1", and the
+ *              name is last so it may hold any printable character
+ *     line 2   RESERVED FOR PHASE-5 LAYOUT DELTAS. Empty in v1, and a v1
+ *              string carrying anything here is a corrupt payload. The section
+ *              exists so a layout delta needs only a version bump, not a new
+ *              shape.
+ *
+ * CODES: section 2's enum is CLOSED and there is no code for "corrupt link".
+ * Its last row makes an unparseable token a BAD_NOTE rejection, so every
+ * malformed, over-cap or checksum-failing string is BAD_NOTE naming the input,
+ * exactly as core.parseSeed names an unparseable token.
+ *
+ * Normative source: docs/ENGINE-SPEC.md sections 1, 2, 13, 14, 17.
+ */
+var HPE = (typeof HPE !== "undefined") ? HPE : {};
+
+(function (HPE) {
+  "use strict";
+
+  var VERSION = 1;
+
+  // Max characters in a whole share string. A 19-field pan with a 40-character
+  // name encodes to well under 300; the cap is the first gate on decode, so an
+  // over-cap link is refused before anything is parsed.
+  var CAPS = { payload: 512 };
+
+  // URL-safe, digits FIRST so the version character of an early version is the
+  // plain decimal digit. Extending the format never renumbers this.
+  var ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                 "abcdefghijklmnopqrstuvwxyz-_";
+  var INDEX = {};
+  (function () {
+    for (var i = 0; i < ALPHABET.length; i += 1) INDEX[ALPHABET.charAt(i)] = i;
+  })();
+
+  var CHECK_LEN = 6;
+  var LINES = 3;
+  var SEP = "\n";
+  var FIELD_SEP = "\t";
+
+  /* ---- results ---------------------------------------------------------- */
+
+  function ok(value) {
+    return { ok: true, value: value };
+  }
+
+  function err(code, substitutions) {
+    var reason = HPE.core.REASONS[code].reason;
+    for (var key in substitutions) {
+      if (Object.prototype.hasOwnProperty.call(substitutions, key)) {
+        reason = reason.split(key).join(substitutions[key]);
+      }
+    }
+    return { ok: false, code: code, reason: reason };
+  }
+
+  function badNote(token) {
+    return err("BAD_NOTE", { "<X>": String(token).slice(0, 12) });
+  }
+
+  /* ---- bytes ------------------------------------------------------------ */
+
+  function utf8Bytes(str) {
+    var bytes = [];
+    for (var i = 0; i < str.length; i += 1) {
+      var code = str.charCodeAt(i);
+      if (code >= 0xd800 && code <= 0xdbff && i + 1 < str.length) {
+        var low = str.charCodeAt(i + 1);
+        if (low >= 0xdc00 && low <= 0xdfff) {
+          code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+          i += 1;
+        }
+      }
+      if (code < 0x80) {
+        bytes.push(code);
+      } else if (code < 0x800) {
+        bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+      } else if (code < 0x10000) {
+        bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f),
+                   0x80 | (code & 0x3f));
+      } else {
+        bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f),
+                   0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+      }
+    }
+    return bytes;
+  }
+
+  function utf8String(bytes) {
+    var out = "";
+    var i = 0;
+    while (i < bytes.length) {
+      var b = bytes[i];
+      var code;
+      var extra;
+      if (b < 0x80) { code = b; extra = 0; }
+      else if ((b & 0xe0) === 0xc0) { code = b & 0x1f; extra = 1; }
+      else if ((b & 0xf0) === 0xe0) { code = b & 0x0f; extra = 2; }
+      else if ((b & 0xf8) === 0xf0) { code = b & 0x07; extra = 3; }
+      else return null;
+      if (i + extra >= bytes.length) return null;
+      for (var k = 1; k <= extra; k += 1) {
+        var next = bytes[i + k];
+        if ((next & 0xc0) !== 0x80) return null;
+        code = (code << 6) | (next & 0x3f);
+      }
+      i += extra + 1;
+      if (code > 0x10ffff) return null;
+      if (code > 0xffff) {
+        code -= 0x10000;
+        out += String.fromCharCode(0xd800 + (code >> 10),
+                                   0xdc00 + (code & 0x3ff));
+      } else {
+        out += String.fromCharCode(code);
+      }
+    }
+    return out;
+  }
+
+  // Six-bit groups over the byte stream, unpadded.
+  function toAlphabet(bytes) {
+    var out = "";
+    var bits = 0;
+    var acc = 0;
+    for (var i = 0; i < bytes.length; i += 1) {
+      acc = (acc << 8) | bytes[i];
+      bits += 8;
+      while (bits >= 6) {
+        bits -= 6;
+        out += ALPHABET.charAt((acc >> bits) & 0x3f);
+      }
+    }
+    if (bits > 0) out += ALPHABET.charAt((acc << (6 - bits)) & 0x3f);
+    return out;
+  }
+
+  function fromAlphabet(str) {
+    var bytes = [];
+    var bits = 0;
+    var acc = 0;
+    for (var i = 0; i < str.length; i += 1) {
+      var value = INDEX[str.charAt(i)];
+      if (value === undefined) return null;
+      acc = (acc << 6) | value;
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        bytes.push((acc >> bits) & 0xff);
+      }
+    }
+    return bytes;
+  }
+
+  // FNV-1a, 32 bit, over the UTF-8 bytes of the guarded text. Same construction
+  // as core.deckId's hash; here it is an integrity check, not an identity.
+  function checksum(text) {
+    var hash = 0x811c9dc5;
+    var bytes = utf8Bytes(text);
+    for (var i = 0; i < bytes.length; i += 1) {
+      hash = (hash ^ bytes[i]) >>> 0;
+      hash = (((hash & 0xffff) * 0x01000193) +
+              ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
+    }
+    return toAlphabet([(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
+                       (hash >>> 8) & 0xff, hash & 0xff]);
+  }
+
+  /* ---- the payload ------------------------------------------------------ */
+
+  function optionsLine(options) {
+    var opts = options || {};
+    var palette = opts.palette === undefined || opts.palette === null
+      ? 0 : opts.palette;
+    var parent = opts.parent === undefined || opts.parent === null
+      ? "" : opts.parent;
+    var mirror = opts.mirror ? "1" : "0";
+    var name = opts.name === undefined || opts.name === null ? "" : opts.name;
+    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP +
+           mirror + FIELD_SEP + String(name);
+  }
+
+  var UINT_RE = /^[0-9]{1,3}$/;
+
+  function readOptionsLine(line) {
+    var parts = String(line).split(FIELD_SEP);
+    if (parts.length !== 4) return null;
+    if (!UINT_RE.test(parts[0])) return null;
+    if (parts[1] !== "" && !UINT_RE.test(parts[1])) return null;
+    if (parts[2] !== "0" && parts[2] !== "1") return null;
+    return {
+      palette: Number(parts[0]),
+      parent: parts[1] === "" ? null : Number(parts[1]),
+      mirror: parts[2] === "1",
+      name: parts[3]
+    };
+  }
+
+  /* ---- encode ----------------------------------------------------------- */
+
+  // Takes the value of a core.parseSeed success. It does not re-validate: the
+  // one validator is core.parseSeed (spec 1, "input validation lives only in
+  // core.parseSeed"), and decode runs it again on the far side.
+  function encode(seed) {
+    if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
+    var payload = HPE.core.formatSeed(seed.fields) + SEP +
+                  optionsLine(seed.options) + SEP +
+                  "";  // line 2: reserved for Phase-5 layout deltas.
+    var body = toAlphabet(utf8Bytes(payload));
+    var head = ALPHABET.charAt(VERSION) + body;
+    var out = head + checksum(head);
+    if (out.length > CAPS.payload) return badNote(out);
+    return ok(out);
+  }
+
+  /* ---- decode ----------------------------------------------------------- */
+
+  function decode(text) {
+    if (typeof text !== "string") return badNote(text);
+
+    // 1. The cap is the FIRST gate: an over-cap link is refused on length,
+    //    before the version byte and before any parsing at all.
+    if (text.length > CAPS.payload) return badNote(text);
+    if (text.length < 1 + 1 + CHECK_LEN) return badNote(text);
+
+    // 2. The version byte.
+    var version = INDEX[text.charAt(0)];
+    if (version === undefined) return badNote(text);
+    if (version > VERSION) return err("NEEDS_NEWER_APP", {});
+    if (version !== VERSION) return badNote(text);
+
+    // 3. Integrity, before the payload is looked at.
+    var head = text.slice(0, text.length - CHECK_LEN);
+    if (text.slice(text.length - CHECK_LEN) !== checksum(head)) {
+      return badNote(text);
+    }
+
+    // 4. The payload.
+    var bytes = fromAlphabet(head.slice(1));
+    if (bytes === null) return badNote(text);
+    var payload = utf8String(bytes);
+    if (payload === null) return badNote(text);
+
+    var lines = payload.split(SEP);
+    if (lines.length !== LINES) return badNote(text);
+    // Line 2 is the reserved layout-delta section: empty in v1.
+    if (lines[2] !== "") return badNote(text);
+
+    var options = readOptionsLine(lines[1]);
+    if (options === null) return badNote(text);
+
+    // 5. The same validator the text box uses. It rejects, never repairs, so
+    //    its code and reason are propagated unchanged.
+    return HPE.core.parseSeed(lines[0], options);
+  }
+
+  HPE.share = {
+    encode: encode,
+    decode: decode,
+    VERSION: VERSION,
+    CAPS: CAPS
+  };
+})(HPE);
+</script>
+<!-- engine:share end -->
 <!-- engine end -->
 
 <script>
 const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "colors": {"root": "#E0559A", "tone": "#E2761B", "ga": "#E0559A", "gb": "#E2761B"}, "degrees": {"1": "I", "2": "bII", "6": "iv", "8": "v\u00b0", "11": "bvii"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["C#", 3, 49, "ding", null, "Ding"], "1": ["G#", 3, 56, "rim", 270, "1"], "2": ["B", 3, 59, "rim", 225, "2"], "3": ["C#", 4, 61, "rim", 315, "3"], "4": ["D", 4, 62, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["F#", 4, 66, "rim", 135, "6"], "7": ["G#", 4, 68, "rim", 45, "7"], "8": ["B", 4, 71, "rim", 90, "8"]}, "chords": [{"main": "C#", "sup": "", "subtitle": "C# MAJOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "C#5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "C#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "C#", "sup": "7", "subtitle": "C# DOMINANT 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "C#7sus", "sup": "4", "subtitle": "SUSPENDED DOMINANT 7", "fields": [3, 6, 7, 8], "roots": [3]}, {"main": "C#7", "sup": "b9", "subtitle": "HIJAZ SIGNATURE CHORD", "fields": [3, 5, 7, 8, 4], "roots": [3]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "Bm", "sup": "", "subtitle": "B MINOR - HIGH VOICING", "fields": [8, 4, 6], "roots": [8]}, {"main": "B5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Bm", "sup": "add9", "subtitle": "B MINOR ADD 9", "fields": [2, 4, 6, 3], "roots": [2]}, {"main": "Bm", "sup": "6/9", "subtitle": "B MINOR 6/9", "fields": [2, 4, 6, 7, 3], "roots": [2]}, {"main": "G#\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 2, 4], "roots": [1]}, {"main": "G#m7", "sup": "b5", "subtitle": "HALF-DIMINISHED ( = Bm6 )", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "F#sus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "F#maj7sus", "sup": "4", "subtitle": "SUSPENDED MAJOR 7", "fields": [6, 2, 3, 5], "roots": [6]}, {"main": "D\u00b0", "sup": "7", "subtitle": "DIMINISHED 7", "fields": [4, 5, 7, 8], "roots": [4]}, {"main": "Dmaj", "sup": "7", "subtitle": "D MAJOR 7 (NO 5)", "fields": [4, 6, 3], "roots": [4]}, {"main": "Dmaj7", "sup": "#11", "subtitle": "D MAJOR 7 SHARP 11 (NO 5)", "fields": [4, 6, 3, 7], "roots": [4]}]}, {"id": "pygmy", "name": "F3 LOW PYGMY 18", "sub": "11 + 1 TOP  /  6 BOTTOM", "colors": {"root": "#6D40A3", "tone": "#C9971E", "ga": "#6D40A3", "gb": "#C9971E"}, "degrees": {"5": "i", "8": "III", "10": "iv", "0": "v", "1": "VI", "3": "VII", "7": "ii\u00b0"}, "geom": {"rim": 0.722, "inner": 0.38, "bottom": 1.15, "r_ding": 0.19, "ding_dy": 0.1425, "r_note": 0.1425, "r_bnote": 0.1188, "inner_ring": null, "f_ding": 0.114, "f_note": 0.109, "f_bnote": 0.0931, "f_num": 0.0912, "n_in": 0.052, "n_out": 0.068, "rim_num_out": true}, "fields": {"0": ["F", 3, 53, "ding", null, "Ding"], "1": ["G", 3, 55, "rim", 290, "1"], "2": ["Ab", 3, 56, "rim", 250, "2"], "3": ["C", 4, 60, "rim", 330, "3"], "4": ["Eb", 4, 63, "rim", 210, "4"], "5": ["F", 4, 65, "rim", 10, "5"], "6": ["G", 4, 67, "rim", 170, "6"], "7": ["Ab", 4, 68, "rim", 50, "7"], "8": ["C", 5, 72, "rim", 130, "8"], "9": ["Eb", 5, 75, "rim", 90, "9"], "10": ["F", 5, 77, "inner", 128, "10"], "11": ["G", 5, 79, "inner", 52, "11"], "101": ["C", 3, 48, "bottom", 300, "U1"], "102": ["Db", 3, 49, "bottom", 240, "U2"], "103": ["Eb", 3, 51, "bottom", 0, "U3"], "104": ["Bb", 3, 58, "bottom", 180, "U4"], "105": ["Db", 4, 61, "bottom", 60, "U5"], "106": ["Ab", 5, 80, "bottom", 120, "U6"]}, "chords": [{"main": "Fm", "sup": "", "subtitle": "F MINOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [5, 104, 3], "roots": [5]}, {"main": "Fm", "sup": "7", "subtitle": "F MINOR 7", "fields": [5, 7, 8, 9], "roots": [5]}, {"main": "Fm", "sup": "9", "subtitle": "F MINOR 9", "fields": [5, 7, 8, 9, 11], "roots": [5]}, {"main": "Fm", "sup": "11", "subtitle": "F MINOR 11", "fields": [5, 2, 3, 4, 6, 104], "roots": [5]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR", "fields": [2, 3, 4], "roots": [2]}, {"main": "Ab", "sup": "", "subtitle": "Ab MAJOR - HIGH VOICING", "fields": [7, 8, 9], "roots": [7]}, {"main": "Abmaj", "sup": "7", "subtitle": "Ab MAJOR 7", "fields": [2, 3, 4, 6], "roots": [2]}, {"main": "Abmaj", "sup": "9", "subtitle": "Ab MAJOR 9", "fields": [2, 3, 4, 6, 104], "roots": [2]}, {"main": "Bbm", "sup": "", "subtitle": "Bb MINOR", "fields": [104, 105, 5], "roots": [104]}, {"main": "Bbm", "sup": "7", "subtitle": "Bb MINOR 7 ( = Db6 )", "fields": [104, 105, 5, 7], "roots": [104]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - LOW VOICING", "fields": [101, 103, 1], "roots": [101]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR", "fields": [3, 4, 6], "roots": [3]}, {"main": "Cm", "sup": "", "subtitle": "C MINOR - HIGH VOICING", "fields": [8, 9, 11], "roots": [8]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 6], "roots": [3]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 5, 6], "roots": [3]}, {"main": "Cm", "sup": "7", "subtitle": "C MINOR 7", "fields": [3, 103, 1, 104], "roots": [3]}, {"main": "Db", "sup": "", "subtitle": "Db MAJOR", "fields": [105, 5, 7], "roots": [105]}, {"main": "Dbmaj", "sup": "7", "subtitle": "Db MAJOR 7", "fields": [105, 5, 7, 8], "roots": [105]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR - LOW VOICING", "fields": [103, 1, 104], "roots": [103]}, {"main": "Eb", "sup": "", "subtitle": "Eb MAJOR", "fields": [4, 1, 104], "roots": [4]}, {"main": "Eb", "sup": "7", "subtitle": "Eb DOMINANT 7", "fields": [103, 1, 104, 105], "roots": [103]}, {"main": "G\u00b0", "sup": "", "subtitle": "DIMINISHED", "fields": [1, 104, 105], "roots": [1]}, {"main": "Gm7", "sup": "b5", "subtitle": "HALF-DIMINISHED", "fields": [1, 104, 105, 5], "roots": [1]}]}, {"id": "amara", "name": "D AMARA 9", "sub": "8 + 1", "colors": {"root": "#0B7B75", "tone": "#DD8F00", "ga": "#0B7B75", "gb": "#DD8F00"}, "degrees": {"2": "i", "9": "v", "7": "IV", "0": "bVII", "5": "bIII"}, "geom": {"rim": 0.745, "r_ding": 0.2, "r_note": 0.19, "inner_ring": 0.355, "f_ding": 0.135, "f_note": 0.128, "f_num": 0.105, "n_in": 0.085, "n_out": 0.0, "r_bnote": 0.0, "f_bnote": 0.0}, "fields": {"0": ["D", 3, 50, "ding", null, "Ding"], "1": ["A", 3, 57, "rim", 270, "1"], "2": ["C", 4, 60, "rim", 225, "2"], "3": ["D", 4, 62, "rim", 315, "3"], "4": ["E", 4, 64, "rim", 180, "4"], "5": ["F", 4, 65, "rim", 0, "5"], "6": ["G", 4, 67, "rim", 135, "6"], "7": ["A", 4, 69, "rim", 45, "7"], "8": ["C", 5, 72, "rim", 90, "8"]}, "chords": [{"main": "Dm", "sup": "", "subtitle": "D MINOR", "fields": [3, 5, 7], "roots": [3]}, {"main": "Dm", "sup": "7", "subtitle": "D MINOR 7", "fields": [3, 5, 7, 8], "roots": [3]}, {"main": "D5", "sup": "", "subtitle": "POWER CHORD", "fields": [3, 7], "roots": [3]}, {"main": "Dsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [3, 6, 7], "roots": [3]}, {"main": "Am", "sup": "", "subtitle": "A MINOR", "fields": [1, 2, 4], "roots": [1]}, {"main": "Am", "sup": "7", "subtitle": "A MINOR 7", "fields": [1, 2, 4, 6], "roots": [1]}, {"main": "A5", "sup": "", "subtitle": "POWER CHORD", "fields": [1, 4], "roots": [1]}, {"main": "Asus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [1, 3, 4], "roots": [1]}, {"main": "G5", "sup": "", "subtitle": "POWER CHORD", "fields": [6, 3], "roots": [6]}, {"main": "Gsus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [6, 2, 3], "roots": [6]}, {"main": "C", "sup": "", "subtitle": "C MAJOR", "fields": [2, 4, 6], "roots": [2]}, {"main": "C5", "sup": "", "subtitle": "POWER CHORD", "fields": [2, 6], "roots": [2]}, {"main": "Csus", "sup": "4", "subtitle": "SUSPENDED CHORD", "fields": [2, 5, 6], "roots": [2]}, {"main": "F", "sup": "", "subtitle": "F MAJOR", "fields": [5, 7, 8], "roots": [5]}, {"main": "F5", "sup": "", "subtitle": "POWER CHORD", "fields": [5, 8], "roots": [5]}, {"main": "Fmaj", "sup": "7", "subtitle": "F MAJOR 7", "fields": [5, 1, 2, 4], "roots": [5]}]}];
 
 /* ---------------- state ---------------- */
-let store = {};
-try { store = JSON.parse(localStorage.getItem("hpfc") || "{}"); } catch (e) {}
-let deckId = store.deck || "hijaz";
-let storedDeck = deckId;              // only ever a BUILT-IN id; see save()
-let mode   = store.mode || "A";       // A: name->notes, B: notes->name
+// Two storage keys, deliberately separate. "hpfc" is the small settings object
+// (which deck, which mode) and is SHARED with whatever a later feature adds to
+// it, so save() reads-modifies-writes rather than replacing it. Saved scales
+// are a list, own their own key, and hold the SEED - the canonical scale string
+// plus its options - never the built deck, which is derived (D14).
+const STORE_KEY = "hpfc";
+const SCALES_KEY = "hpfc.scales";
+const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
+let store = readStore(STORE_KEY) || {};
+if (typeof store !== "object" || Array.isArray(store)) store = {};
+// Both reads are TYPE-guarded, not just truthiness-guarded: "hpfc" is shared,
+// so a sibling feature (or a hand-edited value) can leave any JSON type here,
+// and a non-string id that reached the boot tail would throw on .indexOf and
+// take the share-link handler at the end of the script down with it.
+let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
+let storedDeck = deckId;              // built-in or custom:; see save()
+let mode   = typeof store.mode === "string" ? store.mode : "A";  // A: name->notes, B: notes->name
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
 
@@ -2083,10 +2396,19 @@ let order = [], idx = 0, flipped = false;
 const CUSTOM = Object.create(null);
 
 const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
-// Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
-// stored deck untouched, so a reload restores the last built-in deck instead of
-// silently falling back to the first one. Phase 4 lifts the guard.
-const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck, mode})); } catch (e) {} };
+// Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
+// from its saved seed, so restoring one is no longer a dangling reference.
+// READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
+// settings there, so writing our two keys must not drop a sibling's.
+const save = () => {
+  try {
+    const base = readStore(STORE_KEY);
+    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
+    next.deck = storedDeck;
+    next.mode = mode;
+    localStorage.setItem(STORE_KEY, JSON.stringify(next));
+  } catch (e) {}
+};
 
 /* ---------------- generated decks ---------------- */
 // Generation runs ONCE, here, at submit - never inside deck() or render()
@@ -2102,18 +2424,78 @@ function generateDeck(text, options) {
   registerDeck(built.value);
   return built;
 }
-// Phase 4's decoder reads a share payload's leading version byte through this
-// guard, so a PWA-cached older index.html rejects a newer link politely
-// instead of misreading it (ENGINE-SPEC section 14).
-const SHARE_VERSION = 1;
+/* ---------------- share links ---------------- */
+// ONE version number, the engine's. Restating it here as a literal would go
+// silently wrong the day either side is bumped, and every existing link would
+// break, so it is DERIVED and never re-declared.
+const SHARE_VERSION = HPE.share.VERSION;
+const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
+// A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
+// its own version check on the wire format (share.js step 2), so this is the
+// guard for versions the app reads back out of storage, never a second parser.
+// A version that is not a finite number is untrusted junk, not a newer app: the
+// section 2 enum is closed and BAD_NOTE is its rejection for malformed input.
 function checkShareVersion(v) {
-  return v > SHARE_VERSION
-    ? { ok: false, code: "NEEDS_NEWER_APP", reason: HPE.core.REASONS.NEEDS_NEWER_APP.reason }
-    : { ok: true, value: v };
+  if (typeof v !== "number" || !isFinite(v)) {
+    return { ok: false, code: "BAD_NOTE",
+             reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
+  }
+  return v > SHARE_VERSION ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
 }
+
+// D14: what travels is the SEED, never the generated deck, so an old link
+// renders NEW cards once the engine improves.
+const seedOf = d => ({ fields: d.fields, options: d.options });
+const SHARE_PREFIX = "#s=";
+function shareLink(d) {
+  const res = HPE.share.encode(seedOf(d));
+  return res.ok
+    ? { ok: true, value: location.origin + location.pathname + SHARE_PREFIX + res.value }
+    : res;
+}
+// The app's ONE entry point for an untrusted share string. It rejects rather
+// than repairs (the single validator is core.parseSeed, reached through
+// share.decode) and surfaces the engine's own reason verbatim - nothing here
+// composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
+function openShare(text) {
+  const res = HPE.share.decode(String(text));
+  if (!res.ok) { say(res.reason, "err"); return res; }
+  // Generation runs ONCE per restore, here, exactly as submit does (section 11).
+  const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+  if (!built.ok) { say(built.reason, "err"); return built; }
+  rememberScale(res.value);
+  selectDeck(built.value.id);
+  return built;
+}
+
+/* ---------------- saved scales ---------------- */
+// A list of seed records under SCALES_KEY, each {v, s, o}: the format version,
+// the canonical scale string and the seed options. Rebuilt into CUSTOM at boot,
+// so a custom deck survives a reload.
+function savedScales() {
+  const raw = readStore(SCALES_KEY);
+  return Array.isArray(raw) ? raw : [];
+}
+function rememberScale(seed) {
+  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const list = savedScales().filter(r => !r || r.s !== rec.s);
+  list.push(rec);
+  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
+}
+// Boot must stay resilient: an unusable record is DROPPED, never fatal.
+function restoreScales() {
+  for (const rec of savedScales()) {
+    try {
+      if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
+      if (!checkShareVersion(rec.v).ok) continue;
+      generateDeck(rec.s, rec.o || undefined);
+    } catch (e) {}
+  }
+}
+
 function selectDeck(id) {
   deckId = id;
-  if (isBuiltIn(id)) storedDeck = id;
+  storedDeck = id;
   save(); setOrder(); buildChips(); render();
 }
 
@@ -2431,6 +2813,7 @@ function runGenerate() {
   if (warned.length) text += " " + warned.join(" ");
 
   closeScaleSheet();
+  rememberScale(seedOf(d));
   selectDeck(d.id);
   say(text, warned.length ? "warn" : "ok");
   genBtn.disabled = false;
@@ -2499,7 +2882,23 @@ card.addEventListener("touchend", e => {
 
 /* ---------------- go ---------------- */
 sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); updateParse();
+// Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
+// deck that was selected last session is in the registry by the time deck()
+// looks for it.
+restoreScales();
+const wantedDeck = deckId;
 deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+// Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
+// renamed deck and falls back SILENTLY, as it always has. A missing custom: id
+// means the user's own saved scale is gone - deleted, or dropped as corrupt -
+// and a silent switch would look like the app lost their deck, so say so.
+if (wantedDeck !== deckId && wantedDeck.indexOf("custom:") === 0)
+  say("That deck is gone. Showing " + deck().name + ".", "warn");
+// A share link in the address bar is consumed once, at boot, through the same
+// single entry point; it wins over the stored deck because the user just
+// followed it.
+if (location.hash.indexOf(SHARE_PREFIX) === 0)
+  openShare(location.hash.slice(SHARE_PREFIX.length));
 </script>
 </body>
 </html>

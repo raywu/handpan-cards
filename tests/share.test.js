@@ -6,6 +6,14 @@
 // Nothing is read back out of src/engine/share.js to compare against itself;
 // the module's PUBLIC surface (VERSION, CAPS) is the contract under test, and
 // the reason strings are held to the spec's own section 2 table.
+//
+// [#23 review correction, lane 4b] The "no browser API" source scan below is
+// not a backstop. tests/helpers/engine.js:42-43 INJECTS TextEncoder,
+// TextDecoder, btoa and atob into every vm sandbox, so for four of the six APIs
+// section 14 names this scan is the ONLY guard: a module that used them would
+// run green in the realm. Only CompressionStream and Buffer are genuinely
+// absent here. That is why the scan is anchored on the NAME rather than on a
+// direct call - `Buffer.from(x)` is a use, and `\bBuffer\s*\(` did not see it.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -397,11 +405,14 @@ test("the v1 payload reserves an empty section for Phase-5 layout deltas", () =>
 /* ---------------------------------------------------------------------- */
 
 test("the module references no host encoder or compression API", () => {
+  // Over the CODE, not the prose: the module's own docstring names btoa in
+  // order to say it does not use one, and the anchor is now the bare name.
+  const code = SHARE_SRC.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
   for (const api of ["btoa", "atob", "TextEncoder", "TextDecoder",
                      "CompressionStream", "DecompressionStream", "Buffer",
                      "document", "window", "localStorage"]) {
-    assert.equal(new RegExp("\\b" + api + "\\s*\\(").test(SHARE_SRC), false,
-      `share.js calls ${api}; section 14 forbids depending on it`);
+    assert.equal(new RegExp("\\b" + api + "\\b").test(code), false,
+      `share.js references ${api}; section 14 forbids depending on it`);
   }
   assert.equal(/\brequire\s*\(|^\s*import\s|^\s*export\s/m.test(SHARE_SRC), false,
     "share.js must stay a plain inlinable script");
