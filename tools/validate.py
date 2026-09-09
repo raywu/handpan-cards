@@ -17,6 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.modules.setdefault("hifi", types.ModuleType("hifi"))  # skip font registration
 import decks as D  # noqa: E402
+import inline_engine  # noqa: E402
 
 PY = {"hijaz": D.HIJAZ, "pygmy": D.PYGMY, "amara": D.AMARA}
 GERMAN = re.compile(r"\b(MOLL|VERMINDERT|HALBVERMINDERT|LEGENDE)\b|\bDUR\b")
@@ -79,6 +80,14 @@ def main():
         hits = GERMAN.findall(open(os.path.join(ROOT, name)).read())
         assert not hits, (name, hits)
     print("3. no German card copy: OK")
+
+    # 4. the inlined engine == src/engine/*.js. index.html carries a verbatim
+    # copy of each module (the app is single-file by contract), so a change to
+    # a module that is not re-synced would ship an app running old engine code.
+    problems = inline_engine.desync()
+    assert not problems, problems
+    print("4. inlined engine regions == src/engine/ (%s): OK"
+          % ", ".join(inline_engine.MODULES))
 
 
 if __name__ == "__main__":
