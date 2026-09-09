@@ -669,9 +669,16 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   the text box and rejects rather than repairs. `parseSeed` validates the note
   names, the MIDI range 0-127, the field ordering and the caps of sections 3
   and 4, plus the seed OPTIONS: palette index 0-5, parent index 0-10, and the
-  name whitelist of section 13. It does NOT validate `zone` or `angle`: zones
-  are derived by `parseSeed` itself and never carried in the seed, and angles
-  are `layout.solve`'s output, so neither is decoder input.
+  name whitelist of section 13. It does NOT validate `zone`, `angle` or
+  `order`: zones are derived by `parseSeed` itself and never carried in the
+  seed, and angles are `layout.solve`'s output, so neither is decoder input.
+  `order` IS carried in a share payload, but it is validated in TWO other
+  places instead - `layout.solve` checks it against the fields it was handed
+  and refuses rather than repairs, and `share.decode` re-attaches it only
+  after `checkOrder` has held it against the seed `parseSeed` has just
+  approved. Two validators rather than one is deliberate and safe here: no
+  path reaches a solve with an unvalidated `order` (verified 2026-09-09 over
+  every `layout.solve` caller and the localStorage restore path).
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
   `CompressionStream`, `btoa` or `TextEncoder`, so the engine may not depend on
