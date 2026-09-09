@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: the ranking and canonical tier order of ENGINE-SPEC section 8 -
+# triads > power > sus4 > 7ths > extended.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..85f3b9f 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -24,7 +24,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   /* Ranking and canonical order share one tier order (section 8):
+    * triads > power > sus4 > 7ths > extended. */
+-  var TIERS = ["triad", "power", "sus", "seventh", "extended"];
++  var TIERS = ["extended", "seventh", "sus", "power", "triad"];
+ 
+   /* Section 5: the losing spellings of a coinciding pitch set. sus4 beats
+    * sus2, m7 beats 6, m7b5 beats m6. `sus2` is listed for completeness - the

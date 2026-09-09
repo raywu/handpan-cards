@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: the exact cap value. At 27 the 12-note pan goes through untrimmed,
+# so section 8's worked example no longer bites.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..0855bca 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -18,7 +18,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   /* ---- section 8: the cap and the ranking tiers -------------------------- */
+ 
+-  var CAP = 25;                       /* DEFAULT[owner-review]: 25 cards      */
++  var CAP = 27;                       /* DEFAULT[owner-review]: 25 cards      */
+   var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
+   var ELLIPSIS = "…";
+ 

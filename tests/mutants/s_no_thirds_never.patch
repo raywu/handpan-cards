@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: the NO_THIRDS warning of ENGINE-SPEC sections 16 and 17, which
+# select.build is the only producer of.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..29bc4d4 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -349,7 +349,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (var i = 0; i < roots.length; i += 1) {
+       if (has(top, pc(roots[i] + 3)) || has(top, pc(roots[i] + 4))) return false;
+     }
+-    return true;
++    return false;
+   }
+ 
+   function warning(code) {
