@@ -710,7 +710,7 @@ PHASES 0, 1, 2 AND 3 ARE COMPLETE, and Phase 4 is half done (its engine half, sh
 | 2b | merged, released | agent-managed | scale-engine/w10-select-cap | #21 | c4d240f | 2026-09-09 (gh pr view OPEN + run 34318930997 success at that exact SHA) | PASS_WITH_NITS | 0 | yes dd9d501 | - | no |
 | 3a | merged, released | agent-managed | scale-engine/w11-app-plumbing | #22 | 86fe974 | 2026-09-09 (gh pr view OPEN + run 34319025044 success at that exact SHA) | PASS_WITH_NITS | 0 | yes e348de7 | - | no |
 | 3b | merged, released | agent-managed | scale-engine/w12-scale-sheet | #25 | f39a7a1 | 2026-09-09 (gh pr view OPEN + MERGEABLE + base main, origin tip and run 34340178528 success all at that exact SHA) | PASS_WITH_NITS | 0 | yes ad3ac98 | - | no |
-| 4b | spawned | agent-managed | scale-engine/w13-persist-share | - | - | - | - | 0 | no | - | - |
+| 4b | returned, in review | agent-managed | scale-engine/w13-persist-share | #26 | 359f19c | 2026-09-09 (gh pr view OPEN + MERGEABLE + base main, origin tip and run 34343964932 success all at that exact SHA, 5/5 jobs green) | pending | 0 | no | - | yes |
 | 4a | merged, released | agent-managed | scale-engine/w6-share | #23 | 73e89b3 (post-rebase) | 2026-09-09 (gh pr view OPEN + MERGEABLE, origin tip and run 34323613506 success all at that exact SHA) | PASS_WITH_NITS | 0 | yes f244f52 | - | no |
 | resync | merged, released | agent-managed | fix/engine-resync-select | #24 | c23caf3 | 2026-09-09 (gh pr view OPEN + run 34322097899 success at that exact SHA) | PASS_WITH_NITS | 0 | yes fa9468d | - | no |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
