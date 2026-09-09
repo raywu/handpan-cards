@@ -45,7 +45,7 @@ FLOORS = {
     "tests/layout.test.js": 35,
     "tests/naming.test.js": 26,
     "tests/select.test.js": 35,
-    "tests/share.test.js": 0,
+    "tests/share.test.js": 25,
 }
 
 # The e2e suite is the only one allowed to vanish: it skips itself when no

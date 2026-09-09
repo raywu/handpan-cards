@@ -1,0 +1,14 @@
+# suite: node --test tests/share.test.js
+# kills: decode: an over-cap payload must be refused on length, before the version byte
+diff --git a/src/engine/share.js b/src/engine/share.js
+index a40e4d3..dfc9deb 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -254,7 +254,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
+     //    before the version byte and before any parsing at all.
+-    if (text.length > CAPS.payload) return badNote(text);
+     if (text.length < 1 + 1 + CHECK_LEN) return badNote(text);
+ 
+     // 2. The version byte.
