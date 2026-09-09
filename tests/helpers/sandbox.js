@@ -41,7 +41,9 @@ function makeElement(id, tag = "div") {
     id, tagName: String(tag).toUpperCase(),
     _html: "", _text: "", value: "", checked: false,
     children: [], listeners: {}, dataset: {}, attributes: attrs,
-    set innerHTML(v) { this._html = v; }, get innerHTML() { return this._html; },
+    // Assigning innerHTML replaces the children in a browser; the stub does the
+    // same, so a rebuilt list (buildChips) has exactly the nodes it appended.
+    set innerHTML(v) { this._html = v; this.children.length = 0; }, get innerHTML() { return this._html; },
     set textContent(v) { this._text = v; }, get textContent() { return this._text; },
     setAttribute(k, v) {
       attrs[k] = String(v);
@@ -78,6 +80,8 @@ function makeElement(id, tag = "div") {
       return c;
     },
     remove() {},
+    // focus() is rebound per boot (see bindFocus) so document.activeElement
+    // tracks it; the standalone default keeps makeElement usable on its own.
     focus() {}, blur() {}, click() { if (this.onclick) this.onclick.call(this); },
     onclick: null, oninput: null, onchange: null,
   };
@@ -122,8 +126,17 @@ function boot(opts = {}) {
   if (!blocks.length) throw new Error("no inline <script> found in index.html");
 
   const els = {};
+  // Focus is real state in a browser and the sheet's a11y rules turn on it, so
+  // the stub tracks it too: focus() sets document.activeElement, blur() clears
+  // it. Every element this boot hands the app goes through bindFocus.
+  const focusState = { active: null };
+  const bindFocus = (el) => {
+    el.focus = () => { focusState.active = el; };
+    el.blur = () => { if (focusState.active === el) focusState.active = null; };
+    return el;
+  };
   const served = [...ELEMENT_IDS, ...(opts.extraIds || [])];
-  for (const id of served) els[id] = makeElement(id);
+  for (const id of served) els[id] = bindFocus(makeElement(id));
   const created = [];
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
@@ -175,7 +188,8 @@ function boot(opts = {}) {
     },
     document: {
       getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
-      createElement: (tag) => { const e = makeElement("dyn", tag || "div"); created.push(e); return e; },
+      createElement: (tag) => { const e = bindFocus(makeElement("dyn", tag || "div")); created.push(e); return e; },
+      get activeElement() { return focusState.active; },
       querySelector: (sel) => queryAll(sel)[0] || null,
       querySelectorAll: (sel) => queryAll(sel),
       documentElement: docEl,
@@ -250,6 +264,29 @@ function boot(opts = {}) {
     registry: () => plain(vm.runInContext("CUSTOM", sandbox)),
     /** The deck object render() would use, as plain host-realm data. */
     currentDeck: () => plain(vm.runInContext("deck()", sandbox)),
+
+    /* -------- the scale sheet (Phase 3) --------
+     * Drives the sheet the way a person does - typing into the box, clicking
+     * the controls, pressing a key - so a unit test never reaches past the UI
+     * into the app's internals. */
+    /** Type into #scale-box and fire the input event the app listens for. */
+    type: (text) => {
+      els["scale-box"].value = String(text);
+      els["scale-box"].dispatchEvent({ type: "input" });
+    },
+    /** Dispatch a document-level keydown, as a real key press would. */
+    keydown: (key) => {
+      let defaultPrevented = false;
+      const ev = { key, type: "keydown", preventDefault() { defaultPrevented = true; } };
+      for (const fn of sandbox.document._l.keydown || []) fn(ev);
+      return defaultPrevented;
+    },
+    /** The id of the focused element, or null. */
+    activeId: () => (focusState.active ? focusState.active.id : null),
+    /** True while the scale sheet is open. */
+    sheetOpen: () => !els["scale-sheet"].hasAttribute("hidden"),
+    /** The practice-screen live region the success message is announced in. */
+    announcer: () => sandbox.document.querySelector(".announce"),
   };
 }
 
