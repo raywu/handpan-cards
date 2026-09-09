@@ -14,7 +14,8 @@
 
 const { test, before, after } = require("node:test");
 const assert = require("node:assert");
-const { spawn } = require("node:child_process");
+const http = require("node:http");
+const fs = require("node:fs");
 const path = require("node:path");
 const { launch, findBrowser } = require("./helpers/cdp.js");
 
@@ -48,14 +49,28 @@ function run() {
    * ---------------------------------------------------------------- */
   before(async () => {
     // file:// has an opaque origin, so localStorage throws there; serve for real.
-    server = spawn(
-      "python3",
-      ["-m", "http.server", String(PORT), "--bind", "127.0.0.1", "--directory", REPO],
-      { stdio: ["ignore", "ignore", "ignore"] },
-    );
-    server.on("error", (e) => {
-      spawnError = e;
+    //
+    // Served in-process rather than by `python3 -m http.server`: that server is
+    // single-threaded, so one of Chrome's speculative sockets sitting idle
+    // blocks every later request behind it - which showed up as navigations
+    // that hung until a CDP request timed out, reddening whichever test held
+    // the wheel. node:http handles sockets concurrently.
+    server = http.createServer((req, res) => {
+      // NB: the URL const above shadows the global URL class here, so the path
+      // is split by hand rather than parsed.
+      const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "");
+      const file = path.resolve(REPO, rel || "index.html");
+      if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
+      fs.readFile(file, (err, buf) => {
+        if (err) { res.writeHead(404).end(); return; }
+        const type = file.endsWith(".html") ? "text/html; charset=utf-8"
+          : file.endsWith(".js") ? "text/javascript" : "application/octet-stream";
+        res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
+        res.end(buf);
+      });
     });
+    server.on("error", (e) => { spawnError = e; });
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     await waitForServer();
 
     b = await launch();
@@ -66,7 +81,7 @@ function run() {
 
   after(async () => {
     if (b) await b.close();
-    if (server) server.kill("SIGKILL");
+    if (server) await new Promise((r) => server.close(r));
   });
 
   async function waitForServer() {
@@ -84,7 +99,7 @@ function run() {
       if (spawnError) throw spawnError;
       if (Date.now() > deadline) {
         throw new Error(
-          `http.server never came up on ${URL} - is port ${PORT} taken? (set E2E_PORT)`,
+          `the test server never came up on ${URL} - is port ${PORT} taken? (set E2E_PORT)`,
         );
       }
       await new Promise((r) => setTimeout(r, 50));
@@ -112,13 +127,33 @@ function run() {
             catch (e) { return null; }`);
 
   // Wipe persisted state and reload, so tests do not inherit each other's deck.
+  // Navigate to URL and wait for the NEW document.
+  //
+  // Two traps. Page.navigate returns before the new document is committed, and
+  // every readiness signal we look for (readyState, #count, a deck chip) is
+  // also true of the page we are leaving - so the outgoing document is stamped
+  // first and the wait is for that stamp to be gone. And a navigation can lose
+  // a CDP round trip outright (the driver's own 20s request timeout), which
+  // says nothing about the page under test: retry rather than redden whichever
+  // test happened to be holding the wheel.
+  async function navigate() {
+    let last = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await b.eval(`window.__stale = true; return true;`);
+        await b.goto(URL);
+        await b.waitFor(`!window.__stale`, { label: "the new document to commit" });
+        return;
+      } catch (e) {
+        last = e;
+      }
+    }
+    throw last;
+  }
+
   async function freshLoad() {
-    // Stamp the outgoing document so the waits below cannot be satisfied by it:
-    // Page.navigate returns before the new document is committed, and every
-    // readiness signal we look for is also true of the page we are leaving.
-    await b.eval(`try { localStorage.clear(); } catch (e) {} window.__stale = true; return true;`);
-    await b.goto(URL);
-    await b.waitFor(`!window.__stale`, { label: "the new document to commit" });
+    await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+    await navigate();
     // "+ ADD" ships in the markup, so waiting on ".chip" alone can be satisfied
     // before the app has booted. Wait for a real deck chip.
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
@@ -320,9 +355,7 @@ function run() {
     assert.strictEqual(before.deck, meta[target].id, "saved deck id");
     assert.strictEqual(before.mode, "B", "saved mode");
 
-    await b.eval(`window.__stale = true; return true;`);
-    await b.goto(URL); // reload
-    await b.waitFor(`!window.__stale`, { label: "the reloaded document to commit" });
+    await navigate(); // reload
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
       label: "chips after reload",
     });
