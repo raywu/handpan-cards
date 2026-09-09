@@ -131,6 +131,13 @@ button.nav:active{background:#2e281e}
 #scale-box.bad{border-color:#E27005}
 #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.45;
   color:#c4bcab; overflow-wrap:anywhere}
+/* The pan mock sits on a light plate because the pan is drawn in card ink -
+   black rim, #242424 labels - and the sheet surface is dark. Capped so the
+   whole sheet still fits a 380px phone without the preview pushing GENERATE
+   CARDS below the fold. */
+#scale-preview{align-self:center; width:100%; max-width:216px; padding:8px;
+  border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
+#scale-preview svg{display:block; width:100%; height:auto}
 #scale-msg{font:400 11.5px/1.45 "Nunito Sans"; min-height:1.45em; color:#c4bcab;
   overflow-wrap:anywhere}
 #scale-msg.err, .announce.err{color:#E27005}
@@ -237,6 +244,12 @@ button.nav:active{background:#2e281e}
            autocomplete="off" spellcheck="false" enterkeyhint="go"
            placeholder="(D) A C D E F G A C">
     <div id="scale-parse"></div>
+    <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
+         pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
+         renderer the cards use, with no chord chosen, so what is previewed
+         cannot drift from what GENERATE CARDS produces. -->
+    <div id="scale-preview" role="img"
+         aria-label="Preview of where the notes sit on the pan" hidden></div>
     <!-- Above the control row, so the soft keyboard never covers it. -->
     <div id="scale-msg" aria-live="polite"></div>
     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
@@ -2905,7 +2918,10 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 /* ---------------- SVG pan ---------------- */
 function pan(d, ch) {
   const g = d.geom, R = 100;
-  const { blue, green } = chordSets(d, ch);
+  // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
+  // uses: no chord has been chosen there, so every field draws in its
+  // unlit state. The card path always passes a chord and is unaffected.
+  const { blue, green } = ch ? chordSets(d, ch) : { blue: new Set(), green: new Set() };
   const C = d.colors;
   const hasBottom = !!g.bottom;
   // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
@@ -3095,6 +3111,7 @@ const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan
 const sheet     = document.getElementById("scale-sheet");
 const scaleBox  = document.getElementById("scale-box");
 const parseLine = document.getElementById("scale-parse");
+const previewBox = document.getElementById("scale-preview");
 const msgLine   = document.getElementById("scale-msg");
 const mirrorL   = document.getElementById("scale-mirror-l");
 const mirrorR   = document.getElementById("scale-mirror-r");
@@ -3405,6 +3422,43 @@ function sheetOptions() {
   return o;
 }
 
+/* ---- the pan preview ----
+ * The owner's request: show a mock of the notes on the pan BEFORE committing to
+ * generating cards. It is drawn from layout.solve's output alone - no chord
+ * selection, no deck build - so the per-keystroke cost is one solve, and it goes
+ * through the same pan() the cards use, which is why the preview cannot drift
+ * from the real output. */
+
+/** Solve the typed seed under the sheet's mirror (and, in Edit, its correction). */
+function solvePreviewLayout(seed) {
+  if (layoutOrder) {
+    const corrected = HPE.layout.solve(seed, { mirror: mirror, order: layoutOrder });
+    // A correction from a DIFFERENT field count is stale while the box is being
+    // retyped; the generated layout is still previewable, so fall through to it.
+    if (corrected.ok) return corrected.value;
+  }
+  const res = HPE.layout.solve(seed, { mirror: mirror });
+  return res.ok ? res.value : null;
+}
+
+function clearPanPreview() {
+  previewBox.innerHTML = "";
+  previewBox.setAttribute("hidden", "");
+}
+
+/** Paint the pan mock for a parsed seed, unhighlighted. */
+function showPanPreview(seed) {
+  const solved = solvePreviewLayout(seed);
+  if (!solved) { clearPanPreview(); return; }
+  const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
+  // A chordless deck shape: pan() reads geom, fields and colours, and with no
+  // chord it lights nothing, so the colours are only ever a fallback.
+  previewBox.innerHTML = pan(
+    { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
+    null);
+  previewBox.removeAttribute("hidden");
+}
+
 /** Re-parse on every input: the parse line, the outline and Generate follow. */
 function updateParse() {
   const text = String(scaleBox.value || "");
@@ -3412,6 +3466,7 @@ function updateParse() {
     parseLine.textContent = PARSE_HINT;
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
+    clearPanPreview();
     say("", "");
     return;
   }
@@ -3420,11 +3475,13 @@ function updateParse() {
     parseLine.textContent = parseLineText(res.value.fields);
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
+    showPanPreview(res.value);
     say("", "");
   } else {
     parseLine.textContent = "";
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
+    clearPanPreview();
     say(res.reason, "err");
   }
 }
@@ -3598,8 +3655,10 @@ buildPresets();
 addChip.onclick = () => openScaleSheet(addChip);
 genBtn.onclick = runGenerate;
 delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
-mirrorL.onclick = () => setMirror(true);
-mirrorR.onclick = () => setMirror(false);
+// The mirror is the choice the pan preview exists to make visible, so each
+// button re-solves the preview through the same parse path a keystroke uses.
+mirrorL.onclick = () => { setMirror(true); updateParse(); };
+mirrorR.onclick = () => { setMirror(false); updateParse(); };
 rotL.onclick = () => rotateLayout(-1);
 rotR.onclick = () => rotateLayout(1);
 moveL.onclick = () => moveNote(-1);

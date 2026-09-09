@@ -32,7 +32,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
   "scale-move-l", "scale-move-r", "scale-layout-reset",
   // Phase 6 preset row, additive like the three before it.
-  "scale-presets-row", "scale-presets"];
+  "scale-presets-row", "scale-presets",
+  // The pan-layout preview, additive like every row above it.
+  "scale-preview"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
