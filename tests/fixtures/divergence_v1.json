@@ -1,0 +1,306 @@
+{
+ "version": 1,
+ "decks": {
+  "hijaz": {
+   "missing": [
+    "Bm (8,4,6)",
+    "Dmaj7 (4,6,3)",
+    "Dmaj7#11 (4,6,3,7)"
+   ],
+   "extra": [
+    "D° (4,5,7)",
+    "F° (5,7,8)",
+    "F#5 (6,3)",
+    "B° (2,4,5)"
+   ],
+   "overrides": [
+    {
+     "main": "Bm",
+     "sup": "",
+     "subtitle": "B MINOR - HIGH VOICING",
+     "fields": [
+      8,
+      4,
+      6
+     ],
+     "roots": [
+      8
+     ],
+     "note": "HIGH VOICING alternate: opt-in multi-voicing data, not a policy the engine reproduces (spec section 7)."
+    },
+    {
+     "main": "Dmaj",
+     "sup": "7",
+     "subtitle": "D MAJOR 7 (NO 5)",
+     "fields": [
+      4,
+      6,
+      3
+     ],
+     "roots": [
+      4
+     ],
+     "note": "Hand-authored (NO 5) card outside the quality table (spec section 9)."
+    },
+    {
+     "main": "Dmaj7",
+     "sup": "#11",
+     "subtitle": "D MAJOR 7 SHARP 11 (NO 5)",
+     "fields": [
+      4,
+      6,
+      3,
+      7
+     ],
+     "roots": [
+      4
+     ],
+     "note": "Hand-authored (NO 5) card outside the quality table (spec section 9)."
+    }
+   ]
+  },
+  "pygmy": {
+   "missing": [
+    "Fm9 (5,7,8,9,11)",
+    "Fm11 (5,2,3,4,6,104)",
+    "Ab (7,8,9)",
+    "Abmaj9 (2,3,4,6,104)",
+    "Bbm7 (104,105,5,7)",
+    "Cm (101,103,1)",
+    "Cm (8,9,11)",
+    "Cm7 (3,103,1,104)",
+    "Db (105,5,7)",
+    "Dbmaj7 (105,5,7,8)",
+    "Eb (103,1,104)",
+    "Eb7 (103,1,104,105)",
+    "Gm7b5 (1,104,105,5)"
+   ],
+   "extra": [
+    "F7sus4 (5,104,3,4)",
+    "Ab5 (2,4)",
+    "Absus4 (2,105,4)",
+    "Abmaj7sus4 (2,105,4,6)",
+    "Bb5 (104,5)",
+    "Bbsus4 (104,4,5)",
+    "Bb7sus4 (104,4,5,7)",
+    "C7sus4 (3,5,1,104)",
+    "Db (102,5,2)",
+    "Db5 (102,2)",
+    "Eb5 (4,104)",
+    "Ebsus4 (4,2,104)",
+    "Eb7sus4 (4,2,104,105)"
+   ],
+   "overrides": [
+    {
+     "main": "Fm",
+     "sup": "9",
+     "subtitle": "F MINOR 9",
+     "fields": [
+      5,
+      7,
+      8,
+      9,
+      11
+     ],
+     "roots": [
+      5
+     ],
+     "note": "Declared register exception (plan Premise 3, spec section 7); the engine also trims its own Fm9 at the 25-card cap (spec section 8)."
+    },
+    {
+     "main": "Fm",
+     "sup": "11",
+     "subtitle": "F MINOR 11",
+     "fields": [
+      5,
+      2,
+      3,
+      4,
+      6,
+      104
+     ],
+     "roots": [
+      5
+     ],
+     "note": "Extended tier: its 11th (Bb) is bottom-shell only, and an extended quality is a candidate only when every tone is on the TOP shell (spec section 8)."
+    },
+    {
+     "main": "Ab",
+     "sup": "",
+     "subtitle": "Ab MAJOR - HIGH VOICING",
+     "fields": [
+      7,
+      8,
+      9
+     ],
+     "roots": [
+      7
+     ],
+     "note": "HIGH VOICING alternate: opt-in multi-voicing data (spec section 7)."
+    },
+    {
+     "main": "Abmaj",
+     "sup": "9",
+     "subtitle": "Ab MAJOR 9",
+     "fields": [
+      2,
+      3,
+      4,
+      6,
+      104
+     ],
+     "roots": [
+      2
+     ],
+     "note": "Extended tier: its 9th (Bb) is bottom-shell only (spec section 8, extended-only-on-the-top-shell)."
+    },
+    {
+     "main": "Bbm",
+     "sup": "7",
+     "subtitle": "Bb MINOR 7 ( = Db6 )",
+     "fields": [
+      104,
+      105,
+      5,
+      7
+     ],
+     "roots": [
+      104
+     ],
+     "note": "Generated identically but trimmed by the 25-card cap: only 2 of its 4 tones are top-shell, so it ranks last among the sevenths (spec section 8)."
+    },
+    {
+     "main": "Cm",
+     "sup": "",
+     "subtitle": "C MINOR - LOW VOICING",
+     "fields": [
+      101,
+      103,
+      1
+     ],
+     "roots": [
+      101
+     ],
+     "note": "LOW VOICING alternate: opt-in multi-voicing data (spec section 7)."
+    },
+    {
+     "main": "Cm",
+     "sup": "",
+     "subtitle": "C MINOR - HIGH VOICING",
+     "fields": [
+      8,
+      9,
+      11
+     ],
+     "roots": [
+      8
+     ],
+     "note": "HIGH VOICING alternate: opt-in multi-voicing data (spec section 7)."
+    },
+    {
+     "main": "Cm",
+     "sup": "7",
+     "subtitle": "C MINOR 7",
+     "fields": [
+      3,
+      103,
+      1,
+      104
+     ],
+     "roots": [
+      3
+     ],
+     "note": "Generated identically but trimmed by the 25-card cap (spec section 8)."
+    },
+    {
+     "main": "Db",
+     "sup": "",
+     "subtitle": "Db MAJOR",
+     "fields": [
+      105,
+      5,
+      7
+     ],
+     "roots": [
+      105
+     ],
+     "note": "Recorded D9 root-octave exception: the built-in roots on Db4 (U5), D9 takes the lowest instance overall, Db3 (U2) (spec section 7)."
+    },
+    {
+     "main": "Dbmaj",
+     "sup": "7",
+     "subtitle": "Db MAJOR 7",
+     "fields": [
+      105,
+      5,
+      7,
+      8
+     ],
+     "roots": [
+      105
+     ],
+     "note": "Recorded D9 root-octave exception (spec section 7); the engine's Db3-rooted spelling is then trimmed by the cap (spec section 8)."
+    },
+    {
+     "main": "Eb",
+     "sup": "",
+     "subtitle": "Eb MAJOR - LOW VOICING",
+     "fields": [
+      103,
+      1,
+      104
+     ],
+     "roots": [
+      103
+     ],
+     "note": "LOW VOICING alternate: opt-in multi-voicing data (spec section 7)."
+    },
+    {
+     "main": "Eb",
+     "sup": "7",
+     "subtitle": "Eb DOMINANT 7",
+     "fields": [
+      103,
+      1,
+      104,
+      105
+     ],
+     "roots": [
+      103
+     ],
+     "note": "Recorded D9 root-octave exception - the built-in ships Eb3 although rim Eb4 exists (spec section 7); the engine's Eb4-rooted spelling is then trimmed by the cap (spec section 8)."
+    },
+    {
+     "main": "Gm7",
+     "sup": "b5",
+     "subtitle": "HALF-DIMINISHED",
+     "fields": [
+      1,
+      104,
+      105,
+      5
+     ],
+     "roots": [
+      1
+     ],
+     "note": "Generated identically but trimmed by the 25-card cap: 2 of its 4 tones are bottom-shell (spec section 8)."
+    }
+   ]
+  },
+  "amara": {
+   "missing": [],
+   "extra": [
+    "D7sus4 (3,6,7,8)",
+    "Dmadd9 (3,5,7,4)",
+    "Dm9 (3,5,7,8,4)",
+    "Dm11 (3,5,7,8,4,6)",
+    "F6/9 (5,1,2,3,6)",
+    "Fmaj9 (5,1,2,4,6)",
+    "G7sus4 (6,2,3,5)",
+    "A7sus4 (1,3,4,6)",
+    "C6/9 (2,4,6,7,3)"
+   ],
+   "overrides": []
+  }
+ }
+}
