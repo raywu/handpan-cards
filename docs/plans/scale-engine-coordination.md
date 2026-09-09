@@ -451,6 +451,130 @@ Owns: `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`, `test
 ### 3a, 3b, 4
 Written when their wave opens, from the plan rows and the acceptance table.
 
+### 2b select cap (follow-up to lane 2)
+Why: the owner amended section 8's card cap on 2026-09-09 from a flat 25 to a
+size-scaled formula. `src/engine/select.js` still implements the flat 25.
+Read: `docs/ENGINE-SPEC.md` section 8, specifically the bullet
+`DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT of a flat 25)`
+and the worked-example paragraph directly above it; `src/engine/select.js` as
+merged; `tests/select.test.js` case (d) (the 29/27/25 worked example) and the
+divergence test; `tests/fixtures/divergence_v1.json`. Queue rows 33 and 36.
+NEXT:
+1. In `src/engine/select.js`, replace the flat cap with
+   `cap = 25 + Math.max(0, fieldCount - 12)` where `fieldCount` is the number of
+   entries in the deck's `fields` map - EVERY field, ding, rim, inner and bottom
+   alike. Nothing else about ranking, collapse, dedup or canonical order changes;
+   only the trim point moves. Do not introduce a new export unless a test needs
+   it; if you do export the cap function, name it `cap` and keep `build` the
+   entry point.
+2. Update `tests/select.test.js`:
+   - Case (d) must still assert 29 raw / 27 collapsed / 25 after cap on the
+     `twelve note pan` synthetic entry, and must ALSO assert that entry has
+     exactly 12 fields and that the cap evaluates to 25 there. That is the
+     regression guard that the amendment did not move the worked example.
+   - Add a case asserting the cap on a larger pan: the built-in Pygmy seed has
+     18 fields, so its cap is 31, and the generated Pygmy deck must now contain
+     `Gm7b5`, `Bbm7` and `Cm7` (they ranked 27/28/29 under the flat cap).
+   - Add a case pinning the formula at the structural maximum: the 19-field /
+     20-field synthetic maximum entry in `tests/fixtures/synthetic_scales.json`
+     (use whichever entry is actually there; do not invent one) and assert
+     `cap === 25 + fieldCount - 12`.
+3. REGENERATE `tests/fixtures/divergence_v1.json` by RUNNING `build` on the
+   three built-in seeds and re-diffing, exactly the way lane 2 populated it.
+   Pygmy's `missing` list shrinks by at least those three cards. Keep the
+   existing `overrides` notes and their spec citations; do not hand-edit
+   entries the regeneration does not produce. The divergence test is two-sided,
+   so it will fail loudly if you leave a stale row. NO NUMERIC EXPECTATION
+   anywhere in the fixture; the test derives everything.
+4. Update or add `tests/mutants/s_*.patch` for the new behaviour: at minimum a
+   mutant that pins the cap back to a flat 25 must now be KILLED, and one that
+   makes the slope 2 per field instead of 1 must be killed. Delete any existing
+   `s_*` mutant the amendment makes equivalent (a mutant that "widens the cap"
+   may now be indistinguishable) and say in your report which you deleted and
+   why. Every patch keeps its `# suite:` header and is regenerated with
+   `git diff` against the committed file.
+5. Raise the `tests/select.test.js` FLOORS row to the exact count you land.
+Acceptance: `ALL && node --test tests/select.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^s_' | grep -vq survived`
+Owns: `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`,
+`tests/fixtures/divergence_v1.json`, that FLOORS row.
+Never: other `src/engine/*`, `index.html`, `tools/`, other fixtures,
+`docs/` (including the spec - the amendment is already landed, do not touch it),
+other tests, other FLOORS rows.
+
+### 3a app plumbing (Phase 3, first half; SERIAL owner of index.html)
+Why: this is the first phase that ships to a user. It puts the engine inside the
+single-file app and gives 3b a registry to render into. 3a builds NO UI: the
+scale sheet, the chip row and the 380px e2e cases are 3b's, and 3b runs serially
+after you merge. Keep the diff to plumbing so 3b's diff is legible.
+Read: plan `docs/SCALE_ENGINE_PLAN.md` Phase 3 (lines 408-433) and the worktree
+table row `3a app plumbing` (line 763); the acceptance row `3a, 3b app`
+(line 355); `docs/ENGINE-SPEC.md` sections 11 (deck object) and 12 (`deckId`);
+`CLAUDE.md` "Single-file app" and "Known pitfalls" (the data re-injection trap is
+the same shape as the inline step); `tools/validate.py`; `tests/paths.py`;
+`tests/helpers/sandbox.js`; `index.html` around `pan()` (line 160) and `deck()`.
+Queue rows 13, 15, 26.
+NEXT:
+1. `tools/inline_engine.py`: copies each `src/engine/<name>.js` verbatim into a
+   marked region inside `index.html`. Regions are delimited by HTML comments
+   carrying the module name so the tool is idempotent and the boundaries are
+   greppable. Module order must be `core, voicing, layout, naming, select` so
+   `HPE.core` exists before the modules that read it. The engine files are plain
+   scripts attaching to a shared `var HPE`, so they inline with no wrapper
+   changes. THIS IS A SYNC STEP, NOT A BUILD STEP: `index.html` stays
+   independently functional and committed with the engine already inlined; the
+   tool only re-syncs it. Say exactly that in the CLAUDE.md/README wording you
+   add (that wording is 3b's file though - see Never - so put the sentence in the
+   tool's own docstring and record it in your report for 3b to place).
+2. Desync check in `tools/validate.py`: fail when a region's content differs from
+   the file it was copied from. Ship its killing mutant
+   `tests/mutants/b_engine_desync.patch` (ONE character changed inside a region;
+   copy the shape of the existing `b_validate_desync.patch`), `# suite:` header
+   pointing at the suite that actually catches it.
+3. Second deck registry in `index.html` so `deck()` resolves a custom id without
+   the `DECKS` literal growing. `validate.py` KeyErrors on any fourth deck in the
+   literal and `tests/paths.py` needs the literal to stay ONE LINE, so the
+   registry is a separate structure. It maps deck id -> a FULLY GENERATED deck
+   object. Generation runs ONCE at submit; never inside `deck()` or `render()`.
+   Add the `NEEDS_NEWER_APP` guard now so Phase 4's decoder has it.
+4. `save()` persists only BUILT-IN deck ids in this phase: selecting a custom
+   deck leaves `store.deck` untouched, so a reload restores the last built-in
+   deck rather than silently falling back to Hijaz. Unit test plus a `d_*`
+   mutant. Phase 4 lifts the guard.
+5. `pan()` at `index.html:160` currently ignores `g.ext` and derives its own
+   extent. Make it read `ext` per spec section 11 (queue row 26). Harmless for
+   every reachable built-in config today, which is exactly why it needs a test:
+   pin it with a generated deck whose solver `ext` differs from the derived one.
+6. `tests/helpers/sandbox.js` round 2: whatever the sandbox needs so a unit test
+   can drive submit-and-generate without a browser. Keep it a helper, not a
+   second app.
+7. Generation-time budget tests in Node: the 12-note synthetic deck under 200 ms
+   and the 19-field synthetic maximum under 500 ms. Measure `select.build` plus
+   registry insertion, not process startup.
+8. Regenerate the `d_*` and `e_*` mutants that anchor on `index.html`
+   (`python3 tools/regen_data_mutants.py` on a CLEAN tree) and confirm
+   `python3 tools/regen_data_mutants.py --check` passes.
+9. Raise only the FLOORS rows for the test files you actually add tests to
+   (`tests/app.test.js`, and `tests/e2e.test.js` only if you add an e2e case -
+   the 380px cases are 3b's).
+Local note (queue row 15): `tests/helpers/cdp.js findBrowser()` ignores
+`CHROME_BIN`, so `e_*` mutants always skip on macOS locally. That is a known
+local-only gap; CI runs them. Do not "fix" cdp.js unless a test you add needs it,
+and if you do, say so explicitly in your report - it is shared infrastructure.
+Acceptance: `ALL && ! grep -q '<script src' index.html && node --test tests/app.test.js tests/e2e.test.js && python3 tools/regen_data_mutants.py --check`
+Owns: `index.html`, `tools/inline_engine.py`, `tools/validate.py`,
+`tests/paths.py`, `tests/helpers/sandbox.js`, `tests/app.test.js`,
+`tests/e2e.test.js`, `tests/mutants/d_*`, `tests/mutants/e_*`,
+`tests/mutants/b_engine_desync.patch`, and only the FLOORS rows for the test
+files you touch.
+Never: `src/engine/*` (the engine is CONSUMED, never edited - a bug there is a
+queue row, not a fix), `tools/decks.py`, `tools/hifi.py`, the deck data literal
+`DECKS` (project CLAUDE.md: do not alter deck data or diagram geometry),
+`docs/`, `CLAUDE.md`, `README.md` (3b owns the wording), other fixtures, other
+tests, other FLOORS rows.
+Hard constraints from the project CLAUDE.md, non-negotiable: single-file app, no
+bundlers, no frameworks, no external JS, no `<script src>`; preserve the visual
+system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
+
 ## Status
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
