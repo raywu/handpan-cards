@@ -1,15 +1,15 @@
 # suite: node --test tests/core.test.js
 # kills: zone assignment: the first ELEVEN top notes are rim, so the Pygmy string yields 11 rim and 0 inner
 diff --git a/src/engine/core.js b/src/engine/core.js
-index dc78a30..8088cc8 100644
+index d8d9491..c1c8e5b 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -319,7 +319,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -356,7 +356,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var id = String(n + 1);
        fields[id] = [spell(topNotes[n].letter, topNotes[n].accidental),
                      topNotes[n].octave, topNotes[n].midi,
--                    n < RIM_MAX ? "rim" : "inner", null, id];
-+                    n < RIM_MAX - 1 ? "rim" : "inner", null, id];
+-                    n < rim ? "rim" : "inner", null, id];
++                    n < rim - 1 ? "rim" : "inner", null, id];
      }
      for (n = 0; n < bottomNotes.length; n += 1) {
        fields[String(101 + n)] = [

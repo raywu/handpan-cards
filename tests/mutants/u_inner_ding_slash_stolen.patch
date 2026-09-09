@@ -1,0 +1,15 @@
+# suite: node --test tests/core.test.js
+# kills: the separator and the trailing-slash ding never collide (a trailing-slash ding is read as an inner separator)
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..2eebd81 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -119,7 +119,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // ding is a slash ATTACHED to a note (`F3/`), and the separator stands alone
+   // exactly as `|` does. That is the whole disambiguation rule.
+   function isDingShaped(token) {
+-    if (token === INNER_MARK) return false;
++    if (token.charAt(token.length - 1) === INNER_MARK) return false;
+     return token.charAt(0) === "(" ||
+            token.charAt(token.length - 1) === ")" ||
+            token.charAt(token.length - 1) === "/";

@@ -1,0 +1,19 @@
+# suite: node --test tests/core.test.js
+# kills: an explicit split is capped per ring, not only in total (12 rim or 3 inner slip through TOP_MAX)
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..16027b7 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -326,12 +326,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (topNotes.length > TOP_MAX || bottomNotes.length > BOTTOM_MAX) {
+       return err("TOO_MANY_RIM", {});
+     }
+-    // An explicit split is capped per ring, not only in total.
+-    if (rimCount !== null &&
+-        (rimCount > RIM_MAX || topNotes.length - rimCount > INNER_MAX)) {
+-      return err("TOO_MANY_RIM", {});
+-    }
+-
+     // 6. A perfect fifth above the ding must exist on the TOP shell.
+     var wanted = pitchClass(dingMidi + 7);
+     var hasFifth = false;
