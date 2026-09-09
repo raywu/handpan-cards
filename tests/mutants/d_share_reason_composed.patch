@@ -1,0 +1,16 @@
+# kills: a corrupt share string surfaces BAD_NOTE's reason and changes nothing
+# The UI composes a sentence of its own instead of surfacing the engine's
+# reason verbatim (ENGINE-SPEC sections 1 and 2).
+diff --git a/index.html b/index.html
+index b018e51..82aef7b 100644
+--- a/index.html
++++ b/index.html
+@@ -2455,7 +2455,7 @@ function shareLink(d) {
+ // composes a sentence of its own (ENGINE-SPEC sections 1 and 2).
+ function openShare(text) {
+   const res = HPE.share.decode(String(text));
+-  if (!res.ok) { say(res.reason, "err"); return res; }
++  if (!res.ok) { say("Sorry, that link did not work.", "err"); return res; }
+   // Generation runs ONCE per restore, here, exactly as submit does (section 11).
+   const built = generateDeck(HPE.core.formatSeed(res.value.fields), res.value.options);
+   if (!built.ok) { say(built.reason, "err"); return built; }

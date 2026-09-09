@@ -2,15 +2,15 @@
 # The Phase 4 guard accepts one version above the running app, so a PWA-cached
 # old index.html would misread a newer link instead of rejecting it.
 diff --git a/index.html b/index.html
-index d2aeb5a..1c22c6a 100644
+index b018e51..92f1ab0 100644
 --- a/index.html
 +++ b/index.html
-@@ -2009,7 +2009,7 @@ function generateDeck(text, options) {
- // instead of misreading it (ENGINE-SPEC section 14).
- const SHARE_VERSION = 1;
- function checkShareVersion(v) {
--  return v > SHARE_VERSION
-+  return v > SHARE_VERSION + 1
-     ? { ok: false, code: "NEEDS_NEWER_APP", reason: HPE.core.REASONS.NEEDS_NEWER_APP.reason }
-     : { ok: true, value: v };
+@@ -2436,7 +2436,7 @@ function checkShareVersion(v) {
+     return { ok: false, code: "BAD_NOTE",
+              reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
+   }
+-  return v > SHARE_VERSION ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
++  return v > SHARE_VERSION + 1 ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
  }
+ 
+ // D14: what travels is the SEED, never the generated deck, so an old link

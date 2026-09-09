@@ -2,15 +2,15 @@
 # deck() hands out a fresh copy per call, which is the shape a per-call rebuild
 # would have: identity is the only thing that distinguishes them.
 diff --git a/index.html b/index.html
-index d2aeb5a..8926664 100644
+index b018e51..6fb3608 100644
 --- a/index.html
 +++ b/index.html
-@@ -1984,7 +1984,7 @@ let order = [], idx = 0, flipped = false;
+@@ -2391,7 +2391,7 @@ let order = [], idx = 0, flipped = false;
  // need that). deck() resolves a custom id out of the registry; it never builds.
  const CUSTOM = Object.create(null);
  
 -const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
 +const deck = () => (CUSTOM[deckId] ? {...CUSTOM[deckId]} : DECKS.find(d => d.id === deckId) || DECKS[0]);
- // Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
- // stored deck untouched, so a reload restores the last built-in deck instead of
- // silently falling back to the first one. Phase 4 lifts the guard.
+ // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
+ // from its saved seed, so restoring one is no longer a dangling reference.
+ // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores

@@ -1,0 +1,16 @@
+# kills: a corrupt saved scale is dropped and the app still boots on the built-ins
+# restoreScales trusts whatever is in storage, so one unusable record throws
+# and takes the whole boot down with it.
+diff --git a/index.html b/index.html
+index b018e51..5b489bd 100644
+--- a/index.html
++++ b/index.html
+@@ -2482,8 +2482,6 @@ function rememberScale(seed) {
+ function restoreScales() {
+   for (const rec of savedScales()) {
+     try {
+-      if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
+-      if (!checkShareVersion(rec.v).ok) continue;
+       generateDeck(rec.s, rec.o || undefined);
+     } catch (e) {}
+   }

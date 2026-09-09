@@ -1,0 +1,16 @@
+# kills: an unknown BUILT-IN deck id falls back silently; a missing custom: id says so
+# The missing-custom-deck fallback goes silent, so a user whose saved scale is
+# gone just sees a different deck with no explanation.
+diff --git a/index.html b/index.html
+index b018e51..4b90602 100644
+--- a/index.html
++++ b/index.html
+@@ -2888,8 +2888,6 @@ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode)
+ // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
+ // means the user's own saved scale is gone - deleted, or dropped as corrupt -
+ // and a silent switch would look like the app lost their deck, so say so.
+-if (wantedDeck !== deckId && wantedDeck.indexOf("custom:") === 0)
+-  say("That deck is gone. Showing " + deck().name + ".", "warn");
+ // A share link in the address bar is consumed once, at boot, through the same
+ // single entry point; it wins over the stored deck because the user just
+ // followed it.

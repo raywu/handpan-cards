@@ -1,0 +1,15 @@
+# kills: a generated deck survives a reload, rebuilt from its saved seed
+# Boot stops rebuilding the saved scales, so a custom deck does not survive a
+# reload and its stored id silently falls back to a built-in.
+diff --git a/index.html b/index.html
+index b018e51..5e091c4 100644
+--- a/index.html
++++ b/index.html
+@@ -2881,7 +2881,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); updatePars
+ // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
+ // deck that was selected last session is in the registry by the time deck()
+ // looks for it.
+-restoreScales();
+ const wantedDeck = deckId;
+ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+ // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or

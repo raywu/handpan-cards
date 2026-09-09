@@ -1,14 +1,24 @@
 # kills: a throwing localStorage breaks neither boot nor navigation
 diff --git a/index.html b/index.html
-index d2aeb5a..6001357 100644
+index b018e51..ef82dbe 100644
 --- a/index.html
 +++ b/index.html
-@@ -1988,7 +1988,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
- // Phase 3 persists BUILT-IN deck ids only: selecting a custom deck leaves the
- // stored deck untouched, so a reload restores the last built-in deck instead of
- // silently falling back to the first one. Phase 4 lifts the guard.
--const save = () => { try { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck, mode})); } catch (e) {} };
-+const save = () => { localStorage.setItem("hpfc", JSON.stringify({deck: storedDeck, mode})); };
+@@ -2397,13 +2397,11 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
+ // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
+ // settings there, so writing our two keys must not drop a sibling's.
+ const save = () => {
+-  try {
+-    const base = readStore(STORE_KEY);
+-    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
+-    next.deck = storedDeck;
+-    next.mode = mode;
+-    localStorage.setItem(STORE_KEY, JSON.stringify(next));
+-  } catch (e) {}
++  const base = readStore(STORE_KEY);
++  const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
++  next.deck = storedDeck;
++  next.mode = mode;
++  localStorage.setItem(STORE_KEY, JSON.stringify(next));
+ };
  
  /* ---------------- generated decks ---------------- */
- // Generation runs ONCE, here, at submit - never inside deck() or render()
