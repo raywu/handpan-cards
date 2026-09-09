@@ -33,7 +33,7 @@ FLOORS = {
     # python
     "tests/test_deck_data.py": 12,
     "tests/test_pdf_build.py": 6,
-    "tests/test_gen_deck.py": 14,
+    "tests/test_gen_deck.py": 16,
     "tests/test_print.py": 15,
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
@@ -41,7 +41,7 @@ FLOORS = {
     "tests/app.test.js": 79,
     "tests/e2e.test.js": 27,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 33,
+    "tests/core.test.js": 34,
     "tests/voicing.test.js": 14,
     "tests/layout.test.js": 50,
     "tests/naming.test.js": 26,

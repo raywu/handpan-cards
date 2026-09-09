@@ -45,6 +45,8 @@ GEN_DECK = os.path.join(paths.TOOLS, "gen_deck.js")
 SEED_TOP_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
 SEED_WITH_BOTTOM = ("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5"
                     " | C3 Db3 Eb3 Bb3 Db4 Ab5")
+# A pan of fourths and fifths: it BUILDS, and carries the NO_THIRDS warning.
+SEED_NO_THIRDS = "(C3) G3 D4 G4 D5"
 
 # Pinned from a real build, NOT recomputed from the chord count: a count
 # derived from the deck under test would move with it and could not detect a
@@ -138,6 +140,35 @@ class GenDeckCliTest(unittest.TestCase):
                               "gen_deck.js must print HPE.core.REASONS "
                               "verbatim, not a sentence of its own")
 
+    def test_an_option_typo_is_a_usage_error_and_never_an_engine_code(self):
+        """`--palette abc` is a spelling mistake, not a scale the engine read.
+
+        Without the guard, `Number("abc")` reached the engine as NaN and came
+        back as `BAD_NOTE: NaN is not a note. Use names like C, F#, Bb...` -
+        a NOTE error for an OPTION typo, pointing at the wrong half of the
+        command line.  The carve-out is deliberate and narrow: a usage error
+        carries NO enum code, because the closed code enum of ENGINE-SPEC
+        section 2 describes SEEDS, not flag spellings.
+        """
+        cases = [("--palette", "abc"), ("--palette", "6"), ("--palette", "-1"),
+                 ("--palette", "1.5"), ("--parent", "abc"), ("--parent", "11")]
+        for flag, value in cases:
+            with self.subTest(flag=flag, value=value):
+                proc = run_gen(SEED_TOP_ONLY, flag, value)
+                self.assertNotEqual(proc.returncode, 0,
+                                    "an out-of-range option must not build a "
+                                    "deck from a silently coerced value")
+                self.assertEqual(proc.stdout.strip(), "",
+                                 "a rejection writes nothing to stdout")
+                self.assertIn("usage: " + flag, proc.stderr,
+                              "the message must name the flag the user "
+                              "mistyped, not the seed")
+                for code in CODES:
+                    self.assertNotIn(
+                        code, proc.stderr,
+                        "a usage error must carry no enum code: the enum is "
+                        "closed and describes seeds, not flag spellings")
+
     def test_presets_are_inlined_seed_strings_that_all_generate(self):
         proc = run_gen("--list-presets")
         self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -158,8 +189,20 @@ class GenDeckCliTest(unittest.TestCase):
         single-quoted `require` walked straight through it: `require('https')`,
         `require('net').connect()` and `await import('https')` all passed.
         Both quote styles are matched now, and the positive allowlist below is
-        the real guard: the tool may require exactly the two modules it
-        requires today, and adding a third has to be a deliberate edit here.
+        the real guard - for LITERALLY QUOTED targets, which is the whole of
+        the accidental-regression case this test exists for: an added
+        `require("node:https")` or `require('net')`, in either quote style,
+        with extra whitespace or split across a newline, fails here, as do
+        `import('node:https')`, bare `fetch(`, `globalThis['fetch']`,
+        `child_process`, `worker_threads`, and `const M = 'node:https';
+        require(M)`.
+
+        What it does NOT catch, measured rather than assumed: a template
+        literal ``require(`https`)``, string concatenation
+        `require('ht' + 'tps')`, `process.binding('tcp_wrap')`, and aliasing
+        `require` itself.  All four need deliberate obfuscation, and a source
+        scan is the wrong tool against an author who wants past it - so this
+        is a regression guard, not a sandbox.
         """
         with open(GEN_DECK, encoding="utf-8") as fh:
             source = fh.read()
@@ -298,6 +341,31 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         del payload["deck"]["geom"]["ext"]
         with self.assertRaises(KeyError):
             decks.from_generated(payload)
+
+    def test_a_warning_survives_the_adapter_and_reaches_the_title_blurb(self):
+        """A NO_THIRDS pan must SAY so on paper, not only in the app.
+
+        The adapter used to drop `deck.warnings`, so a scale the engine had
+        flagged printed with no indication anywhere on the sheets - the app
+        showed the warning and the deck built from the same seed did not.
+        Two halves, both load-bearing: the key is carried onto the deck dict,
+        and `_blurb` puts the engine's own reason string on the title card.
+        """
+        payload = generate(SEED_NO_THIRDS)
+        warnings = payload["deck"]["warnings"]
+        self.assertEqual([w["code"] for w in warnings], ["NO_THIRDS"],
+                         "this seed is only useful while it still warns")
+        deck = decks.from_generated(payload)
+        self.assertEqual(deck["warnings"], warnings,
+                         "the adapter is not where a warning goes to die")
+        self.assertIn(
+            warnings[0]["reason"].upper(), deck["blurb"],
+            "the engine's own reason string, verbatim and upper-cased, "
+            "belongs on the title card - a warning nobody prints is lost")
+        # Not vacuous the other way: an unwarned deck gains no blurb line.
+        quiet = decks.from_generated(generate(SEED_TOP_ONLY))
+        self.assertEqual(quiet["warnings"], [])
+        self.assertEqual(len(quiet["blurb"]), len(deck["blurb"]) - 1)
 
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""

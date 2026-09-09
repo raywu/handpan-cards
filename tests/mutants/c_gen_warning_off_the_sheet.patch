@@ -1,0 +1,18 @@
+# kills: test_a_warning_survives_the_adapter_and_reaches_the_title_blurb
+# The title blurb stops printing the engine's warnings, so a NO_THIRDS pan
+# prints with no sign anywhere on the sheets that the app had flagged it.
+diff --git a/tools/decks.py b/tools/decks.py
+index 69b03d1..2562620 100644
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -293,10 +293,6 @@ def _blurb(spec, chord_count, warnings=()):
+         out.append("BOTTOM:  " + bottom)
+     out.append("%d CHORD%s - ONE CARD PER CHORD"
+                % (chord_count, "S" if chord_count != 1 else ""))
+-    # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
+-    # that the app had flagged it; the engine's own reason string, verbatim.
+-    for w in warnings:
+-        out.append(w["reason"].upper())
+     return out
+ 
+ 

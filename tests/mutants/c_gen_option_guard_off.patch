@@ -1,0 +1,19 @@
+# kills: test_an_option_typo_is_a_usage_error_and_never_an_engine_code
+# The option guard stops validating: `--palette abc` becomes NaN and reaches
+# the engine, which answers BAD_NOTE - a NOTE error for a FLAG typo, and
+# `--palette 6` silently builds a deck from an out-of-range palette index.
+diff --git a/tools/gen_deck.js b/tools/gen_deck.js
+index 2172a91..e98931e 100644
+--- a/tools/gen_deck.js
++++ b/tools/gen_deck.js
+@@ -69,10 +69,6 @@ function die(message) {
+ // engine as NaN and came back as "BAD_NOTE: NaN is not a note".
+ function numeric(flag, raw, lo, hi) {
+   const n = Number(raw);
+-  if (!Number.isInteger(n) || n < lo || n > hi) {
+-    die("usage: " + flag + " needs an integer " + lo + "-" + hi +
+-        ", got " + JSON.stringify(raw));
+-  }
+   return n;
+ }
+ 
