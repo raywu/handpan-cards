@@ -20,12 +20,14 @@
  * reason the app inlines them (fetch fails under file://, is absent in the
  * sandbox, and breaks "offline-ish").
  *
- * ENGINE LOADING: through tests/helpers/engine.js's loadEngine, not require().
+ * ENGINE LOADING: through tools/engine_loader.js's loadEngine, not require().
  * The engine modules are plain scripts that attach to a global HPE so they can
  * be inlined into index.html verbatim - they have no module wrapper to
  * require.  loadEngine is the one place that convention is implemented
  * (eng-review 2A); duplicating the node:vm dance here would give the tool a
- * second, drifting copy of it.
+ * second, drifting copy of it.  It lives under tools/ and not under tests/
+ * because this is a shipping tool: tests/helpers/engine.js re-exports it, so
+ * a tests/ reorganisation can no longer break the print path.
  *
  * ERRORS: a rejected seed exits 1 and prints "<CODE>: <reason>" on stderr,
  * where both come from the engine result - the code enum of ENGINE-SPEC
@@ -33,14 +35,11 @@
  * tool never composes a sentence of its own and never mints a code.
  */
 const fs = require("node:fs");
-const path = require("node:path");
-
-const ROOT = path.join(__dirname, "..");
-const { loadEngine } = require(path.join(ROOT, "tests", "helpers", "engine.js"));
+const { loadEngine } = require("./engine_loader.js");
 
 // ---- presets: INLINED seed strings ----------------------------------------
 // Six scales that are common on real instruments, chosen to spread across the
-// engine's paths rather than to be a catalogue: two 25-chord decks and two
+// engine's paths rather than to be a catalogue: three 25-chord decks and two
 // small ones (so a preset exercises both a 3-sheet and a 2-sheet print run),
 // a harmonic-minor parent alongside the aeolian ones, and sharp, flat and
 // natural spellings.  None of them duplicates a built-in deck.
@@ -64,6 +63,19 @@ function die(message) {
   process.exit(1);
 }
 
+// A usage error, not an engine error: it carries NO enum code, because the
+// code enum of ENGINE-SPEC section 2 is closed and describes SEEDS, not the
+// spelling of a command-line flag.  Without this, `--palette abc` reached the
+// engine as NaN and came back as "BAD_NOTE: NaN is not a note".
+function numeric(flag, raw, lo, hi) {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < lo || n > hi) {
+    die("usage: " + flag + " needs an integer " + lo + "-" + hi +
+        ", got " + JSON.stringify(raw));
+  }
+  return n;
+}
+
 function parseArgs(argv) {
   const out = { seed: null, options: {}, listPresets: false, out: null };
   for (let i = 0; i < argv.length; i += 1) {
@@ -83,8 +95,8 @@ function parseArgs(argv) {
       }
       out.seed = hit.seed;
       if (out.options.name === undefined) out.options.name = hit.label;
-    } else if (a === "--palette") out.options.palette = Number(next());
-    else if (a === "--parent") out.options.parent = Number(next());
+    } else if (a === "--palette") out.options.palette = numeric(a, next(), 0, 5);
+    else if (a === "--parent") out.options.parent = numeric(a, next(), 0, 10);
     else if (a === "--mirror") out.options.mirror = true;
     else if (a === "--name") out.options.name = next();
     else if (a === "--out") out.out = next();

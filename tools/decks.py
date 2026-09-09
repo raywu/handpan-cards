@@ -203,9 +203,31 @@ GENERATED_OMITTED = {
 # note line and its badge end near 50, the header block starts near 198.  R is
 # then whatever radius makes the furthest drawn element (`geom.ext`, which the
 # solver derives from the outermost ring plus its note radius) reach the edge
-# of that band, and the pan is centred in it.  On the built-ins the same
-# arithmetic lands within 3% of the measured literals (74.0 vs C# Hijaz's 73.0,
-# 58.3 vs F3 Low Pygmy's 60.0), which is the check that it is not arbitrary.
+# of that band, and the pan is centred in it.
+#
+# HOW CLOSE IS IT TO THE MEASURED LITERALS?  (re-derived 2026-09-09; the earlier
+# note here compared 74.0 - a REACH, `_BAND_HALF` - against 73.0, a RADIUS, and
+# read the built-ins' own `ext` rather than the generated one, so it understated
+# the gap.)  Running the real pipeline - `gen_deck.js <seed>` then this formula:
+#
+#   Hijaz-shaped seed  ext 1.0600 -> R 69.8 vs the literal 73.0   = -4.4%
+#   Pygmy-shaped seed  ext 1.4767 -> R 50.1 vs the literal 60.0   = -16.5%
+#
+# Like for like on REACH (R * ext, the furthest drawn element from the centre)
+# the two decks come out 73.99 vs 77.38 (-4.4%) and 73.98 vs 76.13 (-2.8%): the
+# reaches agree closely and the radii diverge because the solver puts a
+# generated bottom ring further out (ext 1.4767) than the built-in Pygmy's
+# hand-placed one (1.15 + 0.1188 = 1.2688), so the same reach buys a smaller R.
+#
+# The deviation is SAFE IN BOTH DIRECTIONS: every figure is negative, i.e. the
+# generated pan is SMALLER than the built-in one, so it clears the header block
+# and the bottom-note badge with more margin than the built-ins do, never less.
+#
+# One consequence worth knowing before trusting the band constants: for EVERY
+# top-only deck `ext` is exactly 1.06, because the shell circle dominates the
+# outermost ring plus its note radius.  R therefore degenerates to the constant
+# 69.8 on every top-only deck, and the formula only starts adapting once a
+# bottom shell exists.
 _BAND_LOW, _BAND_HIGH = 50.0, 198.0
 _BAND_CY = (_BAND_LOW + _BAND_HIGH) / 2.0
 _BAND_HALF = (_BAND_HIGH - _BAND_LOW) / 2.0
@@ -233,8 +255,8 @@ def _spec_from(generated):
     return spec
 
 
-def _blurb(spec, chord_count):
-    """Title-card copy: the pan's own notes, then the deck size."""
+def _blurb(spec, chord_count, warnings=()):
+    """Title-card copy: the pan's own notes, the deck size, any warning."""
     def line(zone_test):
         return "  ".join(
             "%s%d" % (spec[k][0], spec[k][1])
@@ -248,6 +270,10 @@ def _blurb(spec, chord_count):
         out.append("BOTTOM:  " + bottom)
     out.append("%d CHORD%s - ONE CARD PER CHORD"
                % (chord_count, "S" if chord_count != 1 else ""))
+    # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
+    # that the app had flagged it; the engine's own reason string, verbatim.
+    for w in warnings:
+        out.append(w["reason"].upper())
     return out
 
 
@@ -286,10 +312,16 @@ def from_generated(payload):
                set(c["roots"])) for c in generated["chords"]]
     has_bottom = any(v[3] == "bottom" for k, v in spec.items() if k != "_geom")
 
+    warnings = list(generated.get("warnings") or [])
+
     root = _hex_color(generated["colors"]["root"])
     tone = _hex_color(generated["colors"]["tone"])
 
-    ext = generated["geom"].get("ext") or 1.0
+    # NOT .get(): a missing or renamed `ext` used to fall back to 1.0, which
+    # silently gave every deck R = 74.0 - on a bottom-shell pan that draws the
+    # diagram over the header and off both edges of the card with nothing red.
+    # A KeyError at the point of use is the right failure.
+    ext = generated["geom"]["ext"]
     name = generated["name"]
     tops = [k for k in spec if k != "_geom" and spec[k][3] in ("rim", "inner")]
     bottoms = [k for k in spec if k != "_geom" and spec[k][3] == "bottom"]
@@ -301,7 +333,7 @@ def from_generated(payload):
         sub=("%d + 1 TOP  /  %d BOTTOM" % (len(tops), len(bottoms))
              if has_bottom else "%d + 1" % len(tops)),
         credit=name.upper(),
-        blurb=_blurb(spec, len(chords)),
+        blurb=_blurb(spec, len(chords), warnings),
         legend_lines=_legend_lines(spec, has_bottom),
         legend_demo=_legend_demo(spec, chords),
         # --- data -------------------------------------------------------
@@ -309,6 +341,8 @@ def from_generated(payload):
         chords=chords,
         degrees={int(pc): label for pc, label in generated["degrees"].items()},
         has_bottom=has_bottom,
+        # Carried, not dropped: the adapter is not where a warning goes to die.
+        warnings=warnings,
         # --- geometry and baselines -------------------------------------
         R=round(_BAND_HALF / ext, 1),
         cy=_BAND_CY,
