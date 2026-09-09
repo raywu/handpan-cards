@@ -96,15 +96,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return false;
   }
 
-  /* Section 10: a degree is named from the reference degree it is one semitone
-   * away from - one semitone BELOW degree N is `bN`, one semitone ABOVE is
-   * `#N`; when both apply the accidental convention decides, `b` for a
-   * major-relative scale (D8 flats) and `#` otherwise. A pitch class that IS a
-   * reference degree carries no accidental. Returns the numeral split so the
-   * caller can case the roman part without touching the accidental. */
-  function numeral(offset, minorRelative) {
+  /* Section 10 as amended (D8, coordination row 28): a pitch class that is IN
+   * the parent is numbered by its PARENT-DEGREE INDEX - degree 2 of the parent
+   * is a II whatever its size - and the accidental is its offset against the
+   * D8 reference degree of the SAME index: -1 gives `b`, +1 gives `#`, 0 none.
+   * That is what a player expects: F Phrygian's Gb is `bII`, not the `#I` the
+   * reference scale alone would produce.
+   *
+   * A pitch class OUTSIDE the parent keeps the older mechanism: it is named
+   * from the reference degree it is one semitone away from - one semitone
+   * BELOW degree N is `bN`, one semitone ABOVE is `#N`; when both apply the
+   * accidental convention decides, `b` for a major-relative scale (D8 flats)
+   * and `#` otherwise. A pitch class that IS a reference degree carries no
+   * accidental.
+   *
+   * Returns the numeral split so the caller can case the roman part without
+   * touching the accidental. */
+  function numeral(offset, minorRelative, parentDegreeIndex) {
     var ref = minorRelative ? MINOR_REF : MAJOR_REF;
     var exact = -1, below = -1, above = -1, i;
+    if (parentDegreeIndex !== undefined && parentDegreeIndex !== null &&
+        parentDegreeIndex >= 0) {
+      var diff = pc(offset - ref[parentDegreeIndex]);
+      if (diff > 6) diff -= 12;
+      return {
+        accidental: diff === 0 ? "" : (diff < 0 ? "b" : "#"),
+        roman: ROMAN[parentDegreeIndex]
+      };
+    }
     for (i = 0; i < ref.length; i += 1) {
       if (ref[i] === offset) exact = i;
       if (ref[i] === pc(offset - 1)) below = i;   // offset sits one ABOVE ref[i]
@@ -236,10 +255,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // D8: minor-relative numerals when the PAN carries a minor third above the
     // tonic, major-relative with flats otherwise.
     var minorRelative = member(pan, pc(tonic + 3));
+    var parent = parentPcs(parentIndex, tonic);
     var out = {};
     for (var i = 0; i < pan.length; i += 1) {
       var degreePc = pan[i];
-      var num = numeral(pc(degreePc - tonic), minorRelative);
+      var num = numeral(pc(degreePc - tonic), minorRelative,
+        indexOfPc(parent, degreePc));
       var casing;
       if (noThirds) {
         // NO_THIRDS overrides D10: every numeral uppercase, no stacked thirds.
