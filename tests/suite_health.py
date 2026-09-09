@@ -43,7 +43,7 @@ FLOORS = {
     "tests/core.test.js": 25,
     "tests/voicing.test.js": 0,
     "tests/layout.test.js": 35,
-    "tests/naming.test.js": 0,
+    "tests/naming.test.js": 22,
     "tests/select.test.js": 0,
     "tests/share.test.js": 0,
 }
