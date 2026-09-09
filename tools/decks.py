@@ -248,8 +248,16 @@ GENERATED_OMITTED = {
 #       (`rimNumOut = hasInner`), so S_NOSEP has no such term at all.
 #
 # The rim ring DOES move out - 0.722 R (S_PYGMY) to 0.745 R (S_NOSEP) - but it
-# never reaches: its best term, 0.9233, loses to the bottom-shell number term by
-# a third of R, so it contributes NOTHING to `ext` for either seed.  The entire
+# never reaches: for EACH seed its best rim term loses to that seed's winning
+# bottom-shell number term, so it contributes NOTHING to `ext` for either.  The
+# margin is a fraction of the WINNING TERM, not of R:
+#
+#   S_PYGMY  rim+num 0.98484 vs 1.402040  ->  0.41720 R behind = 29.8% of it
+#   S_NOSEP  rim     0.92330 vs 1.416670  ->  0.49337 R behind = 34.8% of it
+#
+# (an earlier revision called this "a third of R" and quoted only S_NOSEP's
+# 0.9233 while concluding "for either seed" - both wrong: neither margin is a
+# third OF R, and the two seeds do not share a rim term.)  The entire
 # 1.4767 - 1.4620 = 0.0147 delta is the `f_num` glyph:
 # 0.7 * (0.1141 - 0.0932) = 0.01463.  The
 # 1.4767 / 50.1 pair is S_NOSEP's, NOT the real Pygmy string's.
@@ -271,8 +279,18 @@ GENERATED_OMITTED = {
 # `round(_BAND_HALF / ext, 1)`, and that 1-dp rounding is what keeps R * ext off
 # a clean 74.0: the product is `_BAND_HALF + e * ext` where |e| <= 0.05 is the
 # rounding residue on R, so it lands anywhere in 73.93 .. 74.07 across the ext
-# band generated decks actually produce (1.0 .. 1.5; swept at 1e-4 steps, min
-# 73.925 at ext 1.4995, max 74.073 at ext 1.4904).  Hence ~ 74.0 for any seed,
+# band a generated deck CAN produce.  That band is [1.0600, 1.48192], derived -
+# not swept - from the formula's own limits: `reach >= 1` (the shell circle is
+# unconditional) puts the floor at `1 + EXT_PAD`, and every term in the max is
+# capped, so the ceiling is the bottom-shell number term at its caps,
+# BOTTOM_ORB 1.15 + R_BNOTE_MAX 0.1188 + N_OUT 0.068 + 0.7 * 0.64 * R_NOTE_MAX
+# 0.19 + EXT_PAD 0.06 = 1.48192 (an upper bound; no seed need attain it).
+# Swept at 1e-4 steps over THAT band: min 73.9267 at ext 1.4668 (R 50.4), max
+# 74.0729 at ext 1.4697 (R 50.4).  An earlier revision quoted its witnesses from
+# a looser [1.0, 1.5] sweep and so named ext 1.4995 and 1.4904, both of which
+# are ABOVE 1.48192 and unproducible; the 73.93 .. 74.07 bounds are unchanged by
+# the correction, so nothing downstream of them moved.  Hence ~ 74.0 for any
+# seed,
 # which is why the three figures quoted just above read 73.99 (S_HIJAZ) and
 # 73.98 (S_PYGMY) rather than 74.00, and why S_NOSEP's 1.4767 x 50.1 = 73.98
 # lands with them.  Only the RADIUS column moves with the seed in any material
@@ -298,11 +316,23 @@ GENERATED_OMITTED = {
 # generated pan is SMALLER than the built-in one, so it clears the header block
 # and the bottom-note badge with more margin than the built-ins do, never less.
 #
-# One consequence worth knowing before trusting the band constants: for EVERY
-# top-only deck `ext` is exactly 1.06, because the shell circle dominates the
-# outermost ring plus its note radius.  R therefore degenerates to the constant
-# 69.8 on every top-only deck, and the formula only starts adapting once a
-# bottom shell exists.
+# One consequence worth knowing before trusting the band constants, stated with
+# its FULL precondition (an earlier revision of this note dropped half of it and
+# was simply false): for a top-only deck WITH NO INNER SHELL - the S_HIJAZ shape
+# this was measured on - `ext` is exactly 1.06, because the shell circle wins
+# outright and `EXT_PAD` is all that is added to it.  R is then the constant
+# 69.8.  The precondition is NOT just "top-only": `rimNumOut = hasInner`
+# (`src/engine/layout.js:284`), so an inner shell switches the rim NUMBER term
+# on, and that term can beat the shell circle with no bottom shell anywhere.
+# Worked counterexample, generated 2026-09-09 with `tools/gen_deck.js`:
+#
+#   (D3) A3 C4 D4 E4 F4 G4 / A4 C5   <- top-only, but HAS an inner shell
+#     rim + r_note + n_in + f_num*0.7
+#       = 0.722 + 0.1684 + 0.052 + 0.7 * 0.1078 = 1.0179  > 1.0 (shell)
+#     ext = 1.0179 + 0.06 = 1.0779   ->  R = round(74 / 1.0779, 1) = 68.7
+#
+# So the formula already adapts on top-only decks; a bottom shell is only the
+# LARGEST source of adaptation, not the first one.
 _BAND_LOW, _BAND_HIGH = 50.0, 198.0
 _BAND_CY = (_BAND_LOW + _BAND_HIGH) / 2.0
 _BAND_HALF = (_BAND_HIGH - _BAND_LOW) / 2.0
