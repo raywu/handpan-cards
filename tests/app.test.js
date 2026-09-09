@@ -1141,3 +1141,226 @@ test("a non-string stored deck id is ignored and never eats a share link", () =>
     assert.match(shared.faces(), /<svg /);
   }
 });
+
+/* ------------------------------------------------- 22. the Edit sheet (4c) */
+
+/** Generate a scale through the sheet and hand back the registered deck. */
+function makeCustom(app, text = AMARA_STRING) {
+  openSheet(app);
+  app.type(text);
+  app.els["scale-generate"].click();
+  return app.registry()[app.deckId()];
+}
+
+/** Count select.build calls from here on, inside the sandbox realm. */
+function spyBuild(app) {
+  app.run(`
+    globalThis.__buildCalls = 0;
+    const __realBuild = HPE.select.build;
+    HPE.select.build = function (seed) { globalThis.__buildCalls += 1; return __realBuild(seed); };
+  `);
+  return () => app.get("__buildCalls");
+}
+
+const editRowsShown = (app) => ["scale-name-row", "scale-degrees-row", "scale-delete-row"]
+  .map((id) => !app.els[id].hasAttribute("hidden"));
+
+test("tapping the already-selected custom chip opens the sheet in Edit state, prefilled", () => {
+  const app = boot();
+  const d = makeCustom(app);
+
+  // a NON-selected chip still just selects; it never opens the sheet
+  app.clickChip("D AMARA 9");
+  assert.strictEqual(app.sheetOpen(), false, "a non-selected chip opened the sheet");
+  assert.strictEqual(app.deckId(), "amara", "a non-selected chip did not select its deck");
+
+  app.select(d.id);
+  app.clickChip(d.name);
+  assert.strictEqual(app.sheetOpen(), true, "the selected custom chip did not open the sheet");
+  // 8A: the box shows the CANONICAL seed string, not whatever was typed.
+  assert.strictEqual(app.els["scale-box"].value, app.get(
+    `HPE.core.formatSeed(CUSTOM[${JSON.stringify(d.id)}].fields)`),
+    "the Edit box is not prefilled with formatSeed(fields)");
+  assert.strictEqual(app.els["scale-name"].value, d.name, "the Name field is not prefilled");
+  assert.deepStrictEqual(editRowsShown(app), [true, true, true],
+    "an Edit-only row is still hidden");
+  assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES");
+  assert.strictEqual(app.els["scale-generate"].disabled, false,
+    "SAVE CHANGES is the single enabled primary and must be live on a valid seed");
+  // The DELETE THIS DECK copy lives in the markup, so e2e reads it; here the
+  // link only has to be wired to the deck the sheet is editing.
+  assert.strictEqual(typeof app.els["scale-delete"].onclick, "function",
+    "the delete link is not wired");
+});
+
+test("+ ADD after an Edit opens a clean create sheet, never the edited deck's seed", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.keydown("Escape");
+
+  openSheet(app);
+  assert.strictEqual(app.els["scale-box"].value, "", "the create box kept the edited seed");
+  assert.deepStrictEqual(editRowsShown(app), [false, false, false],
+    "an Edit-only row is visible on the create path");
+  assert.strictEqual(app.els["scale-generate"].textContent, "GENERATE CARDS");
+  assert.strictEqual(app.els["scale-generate"].disabled, true);
+});
+
+test("the Degrees select lists the parent candidates with the inferred one preselected", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  const parents = arr(app.get("HPE.naming.PARENTS")).map((p) => p.name);
+  const opts = app.els["scale-degrees"].children;
+  assert.deepStrictEqual(opts.map((o) => o.value), parents.map((_, i) => String(i)),
+    "the Degrees select does not carry the fixed parent list order");
+  assert.deepStrictEqual(opts.map((o) => o.textContent), parents);
+  assert.strictEqual(app.els["scale-degrees"].value, String(d.options.parent),
+    "the inferred parent is not preselected");
+
+  // D10: the override is the parent INDEX, and it relabels the degrees.
+  const other = d.options.parent === 0 ? 1 : 0;
+  app.els["scale-degrees"].value = String(other);
+  app.els["scale-generate"].click();
+  const after = app.registry()[d.id];
+  assert.strictEqual(after.options.parent, other, "the Degrees choice did not reach the deck");
+  assert.notDeepStrictEqual(after.degrees, d.degrees,
+    "a different parent produced identical degree labels");
+});
+
+test("the Edit sheet shows deck.warnings from the registry with no generation call", () => {
+  const app = boot();
+  const d = makeCustom(app, scale("three pitch classes"));   // a pan with no thirds
+  assert.ok(d.warnings.length > 0, "this fixture is meant to warn");
+  app.select(d.id);
+
+  const calls = spyBuild(app);
+  app.clickChip(d.name);
+  assert.strictEqual(calls(), 0, "opening the Edit sheet regenerated the deck");
+  const said = app.els["scale-msg"];
+  assert.strictEqual(said.classList.contains("warn"), true, "warning tier not applied");
+  for (const w of d.warnings) assert.ok(said.textContent.includes(w.reason),
+    `"${said.textContent}" is missing "${w.reason}"`);
+});
+
+test("saving from the Edit sheet regenerates exactly once (13A)", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  const calls = spyBuild(app);
+  app.els["scale-generate"].click();
+  assert.strictEqual(calls(), 1, "a save must run select.build exactly once");
+  assert.strictEqual(app.sheetOpen(), false, "the sheet stays open after a save");
+});
+
+test("changing only an option keeps the deck id and moves the share URL", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  const before = link(app, d.id);
+  assert.strictEqual(before.ok, true, before.reason);
+
+  app.clickChip(d.name);
+  app.els["scale-swatches"].children[3].click();
+  app.els["scale-mirror-l"].click();
+  app.els["scale-degrees"].value = String(d.options.parent === 0 ? 1 : 0);
+  app.els["scale-name"].value = "MY PAN";
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-generate"].click();
+
+  // D14: options are never hashed, so the id is a pure function of the fields.
+  assert.deepStrictEqual(Object.keys(app.registry()), [d.id], "a second entry appeared");
+  assert.strictEqual(app.deckId(), d.id, "an option change moved the id");
+  const after = app.registry()[d.id];
+  assert.strictEqual(after.options.palette, 3);
+  assert.strictEqual(after.options.mirror, true);
+  assert.strictEqual(after.name, "MY PAN");
+  const now = link(app, d.id);
+  assert.strictEqual(now.ok, true, now.reason);
+  assert.notStrictEqual(now.value, before.value, "the options never reached the share URL");
+});
+
+test("changing the FIELDS on save mints a new deck id", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.type(scale("builtin hijaz"));
+  app.els["scale-generate"].click();
+
+  const made = app.registry()[app.deckId()];
+  assert.notStrictEqual(made.id, d.id, "a different pan kept the old id");
+  assert.strictEqual(made.id,
+    app.get(`HPE.core.deckId(CUSTOM[${JSON.stringify(made.id)}].fields)`));
+});
+
+test("renaming keeps the id, relabels the chip and survives a reload", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.els["scale-name"].value = "RAY'S PAN";
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.deckId(), d.id, "a rename moved the id");
+  const row = chipRow(app);
+  assert.ok(row.some((c) => c.label === "RAY'S PAN" && c.on),
+    `the chip row still reads ${JSON.stringify(row.map((c) => c.label))}`);
+
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.strictEqual(again.registry()[d.id].name, "RAY'S PAN",
+    "the new name was not stored with the seed");
+});
+
+test("deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone", () => {
+  const app = boot();
+  const first = decks(app)[0];
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.els["scale-delete"].click();
+
+  assert.strictEqual(app.sheetOpen(), false, "delete left the sheet open");
+  assert.deepStrictEqual(app.registry(), {}, "the deck is still in the registry");
+  assert.strictEqual(app.deckId(), first.id, "delete did not fall back to the first built-in");
+  const said = app.announcer();
+  assert.ok(said.textContent.includes(d.name),
+    `the delete message must name the deck removed: "${said.textContent}"`);
+  assert.ok(said.textContent.includes(first.name),
+    `the delete message must name the deck now showing: "${said.textContent}"`);
+  assert.match(app.faces(), /<svg /);
+
+  // it must not come back on the next boot
+  const key = app.get("SCALES_KEY");
+  assert.deepStrictEqual(JSON.parse(app.store[key] || "[]"), [],
+    "the seed record survived the delete");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] || "[]" } });
+  assert.deepStrictEqual(again.registry(), {}, "the deleted deck came back on the next boot");
+  assert.strictEqual(again.deckId(), first.id);
+  assert.strictEqual(again.announcer().textContent, "",
+    "the fallback was already persisted; the next boot must be silent");
+});
+
+test("deleting a NON-selected custom deck leaves the selection alone", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, scale("builtin hijaz"));
+  app.select(b.id);
+  const said = app.announcer().textContent;
+  app.run(`deleteDeck(${JSON.stringify(a.id)})`);
+
+  assert.strictEqual(app.deckId(), b.id, "deleting another deck moved the selection");
+  assert.deepStrictEqual(Object.keys(app.registry()), [b.id]);
+  assert.strictEqual(app.announcer().textContent, said,
+    "deleting a deck the user is not looking at must not announce a fallback");
+  const row = chipRow(app);
+  assert.strictEqual(row.some((c) => c.label === a.name), false, "the chip is still in the row");
+});

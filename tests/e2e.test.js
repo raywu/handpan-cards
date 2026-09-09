@@ -839,7 +839,9 @@ function run() {
           const r = dot.getBoundingClientRect();
           const cx = r.left + r.width / 2;
           const cy = r.top + r.height / 2;
-          const hitsDot = [cy - 18, cy + 18].every(y => document.elementFromPoint(cx, y) === dot);
+          // The overlay is 44px tall and centred, so +/-21 pins the documented
+          // 44px; +/-18 would pass on anything 36px or taller.
+          const hitsDot = [cy - 21, cy + 21].every(y => document.elementFromPoint(cx, y) === dot);
           out.swatches.push(hitsDot);
         }
         return out;
@@ -850,6 +852,196 @@ function run() {
         `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
     } finally {
       await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * the Edit sheet (Phase 4, lane 4c)
+   *
+   * The SAME sheet, reopened from the already-selected custom chip. Every
+   * case here runs at 380px, which is where a bottom sheet with three more
+   * rows is actually at risk.
+   * ---------------------------------------------------------------- */
+
+  const EDIT_SCALE = SIX_SCALES[1];        // "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+
+  const openEdit = async () => {
+    await b.eval(`document.querySelector("#decks .chip.on")
+                    .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+    await b.click("#decks .chip.on");
+    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "the Edit sheet to open" });
+  };
+
+  /** Generate a deck at 380px and reopen it in Edit state. */
+  async function editFreshDeck() {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    await generate(EDIT_SCALE);
+    await openEdit();
+  }
+
+  const activeChipText = () => b.eval(`
+    const el = document.activeElement;
+    return el && el.closest && el.closest("#decks") ? el.textContent.trim() : null;
+  `);
+
+  test("the selected custom chip reopens the sheet in Edit state, prefilled, at 380px", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const beforeCardW = await b.eval(
+        `return getComputedStyle(document.documentElement).getPropertyValue("--card-w");`);
+      await generate(EDIT_SCALE);
+      await openEdit();
+
+      const st = await b.eval(`
+        const rows = ["scale-name-row", "scale-degrees-row", "scale-delete-row"]
+          .map(id => !document.getElementById(id).hasAttribute("hidden"));
+        const surf = document.getElementById("scale-sheet").firstElementChild
+          .getBoundingClientRect();
+        return {
+          rows,
+          box: document.getElementById("scale-box").value,
+          name: document.getElementById("scale-name").value,
+          degrees: document.getElementById("scale-degrees").options.length,
+          primary: document.getElementById("scale-generate").textContent.trim(),
+          del: document.getElementById("scale-delete").textContent.trim(),
+          delColor: getComputedStyle(document.getElementById("scale-delete")).color,
+          delWide: document.getElementById("scale-delete")
+            .getBoundingClientRect().width > surf.width * 0.8,
+          cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
+          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+        };
+      `);
+      assert.deepStrictEqual(st.rows, [true, true, true], "an Edit-only row is hidden");
+      assert.match(st.box, /^\(D3\) /, `the Edit box reads "${st.box}"`);
+      assert.ok(st.name.length > 0, "the Name field is empty");
+      assert.strictEqual(st.degrees, 11, "the Degrees select is not the 11 candidates");
+      assert.strictEqual(st.primary, "SAVE CHANGES");
+      assert.strictEqual(st.del, "DELETE THIS DECK");
+      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
+      assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
+      assert.ok(st.body.sw <= st.body.cw + 1,
+        `the Edit sheet scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("Escape closes the Edit sheet and focus returns to the chip that opened it", async () => {
+    try {
+      await editFreshDeck();
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "Escape to close the Edit sheet" });
+      const back = await activeChipText();
+      assert.ok(back, "focus did not return to a deck chip");
+      assert.notStrictEqual(await activeId(), "deck-add",
+        "focus went to + ADD instead of the chip that opened the sheet");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("a backdrop tap closes the Edit sheet", async () => {
+    try {
+      await editFreshDeck();
+      await clickPoint(8, 8);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "a backdrop tap to close the Edit sheet" });
+      assert.strictEqual(await sheetShown(), false);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("Tab is trapped inside the Edit sheet and reaches every Edit control", async () => {
+    try {
+      await editFreshDeck();
+      const seen = [];
+      for (let i = 0; i < 14; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`
+          const el = document.activeElement;
+          const sheet = document.getElementById("scale-sheet");
+          return { id: (el && el.id) || (el && el.className) || "",
+                   inside: !!(el && sheet.contains(el)) };
+        `));
+      }
+      assert.ok(seen.every(s => s.inside),
+        `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
+      const ids = new Set(seen.map(s => s.id));
+      for (const id of ["scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete"]) {
+        assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("renaming from the Edit sheet relabels the chip", async () => {
+    try {
+      await editFreshDeck();
+      await b.eval(`
+        const el = document.getElementById("scale-name");
+        el.value = "RAY'S PAN";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return el.value;
+      `);
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after SAVE CHANGES" });
+      const row = await b.eval(`
+        return { on: [...document.querySelectorAll("#decks .chip.on")].map(c => c.textContent.trim()),
+                 body: { sw: document.body.scrollWidth, cw: document.body.clientWidth } };
+      `);
+      assert.deepStrictEqual(row.on, ["RAY'S PAN"], "the chip kept the old label");
+      assert.ok(row.body.sw <= row.body.cw + 1, "the renamed chip blew the row out");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("deleting the selected deck falls back to a built-in with a visible message", async () => {
+    try {
+      await editFreshDeck();
+      const gone = await b.eval(`return document.querySelector("#decks .chip.on").textContent.trim();`);
+      await b.click("#scale-delete");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after DELETE" });
+
+      const after = await b.eval(`
+        const a = document.querySelector(".announce");
+        const r = a.getBoundingClientRect();
+        const cs = getComputedStyle(a);
+        return {
+          chips: [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(c => c.textContent.trim()),
+          on: [...document.querySelectorAll("#decks .chip.on")].map(c => c.textContent.trim()),
+          said: a.textContent.trim(),
+          shown: r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none",
+          cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
+          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+        };
+      `);
+      assert.strictEqual(after.chips.length, 3, "the deleted deck is still in the chip row");
+      assert.strictEqual(after.on.length, 1, "not exactly one selected chip after a delete");
+      assert.strictEqual(after.on[0], after.chips[0], "the fallback is not the FIRST built-in");
+      assert.ok(after.said.includes(gone), `the delete message never named the deck: "${after.said}"`);
+      assert.strictEqual(after.shown, true, "the delete message is not visible");
+      assert.ok(after.body.sw <= after.body.cw + 1, "the page scrolls horizontally after a delete");
+
+      // and it stays gone across a reload
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+        { label: "deck chips after the reload" });
+      const back = await b.eval(
+        `return [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(c => c.textContent.trim());`);
+      assert.strictEqual(back.length, 3, `the deleted deck came back: ${JSON.stringify(back)}`);
+    } finally {
       await b.setViewport(900, 900, false);
     }
   });
