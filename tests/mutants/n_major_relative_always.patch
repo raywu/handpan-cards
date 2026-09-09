@@ -2,15 +2,15 @@
 # kills: D8: numerals are minor-relative only when the pan has a minor third
 # Numerals are always major-relative, so Pygmy's III and VII gain flats.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eda20de..26c3eda 100644
+index 6a111cc..f9799db 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
-@@ -235,7 +235,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -254,7 +254,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var tonic = pc(tonicPc);
      // D8: minor-relative numerals when the PAN carries a minor third above the
      // tonic, major-relative with flats otherwise.
 -    var minorRelative = member(pan, pc(tonic + 3));
 +    var minorRelative = false;
+     var parent = parentPcs(parentIndex, tonic);
      var out = {};
      for (var i = 0; i < pan.length; i += 1) {
-       var degreePc = pan[i];

@@ -1,0 +1,18 @@
+# suite: node --test tests/naming.test.js
+# kills: D8 in-parent: a chromatic parent degree is numbered by its degree index
+# An in-parent pitch class is numbered from the D8 reference scale again
+# instead of from its parent-degree index, so F Phrygian's Gb reads #I.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+index 6a111cc..00e8fcb 100644
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -259,8 +259,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var out = {};
+     for (var i = 0; i < pan.length; i += 1) {
+       var degreePc = pan[i];
+-      var num = numeral(pc(degreePc - tonic), minorRelative,
+-        indexOfPc(parent, degreePc));
++      var num = numeral(pc(degreePc - tonic), minorRelative);
+       var casing;
+       if (noThirds) {
+         // NO_THIRDS overrides D10: every numeral uppercase, no stacked thirds.
