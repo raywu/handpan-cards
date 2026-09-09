@@ -1,0 +1,14 @@
+# kills: an edit onto another deck's scale is refused at 380px and both chips stay
+diff --git a/index.html b/index.html
+index 3509543..16ee488 100644
+--- a/index.html
++++ b/index.html
+@@ -3487,7 +3487,7 @@ function runGenerate() {
+     // section 2 code enum is closed and has no code for "that scale is taken",
+     // so this composes no sentence that could pass for one and carries no code.
+     scaleBox.classList.add("bad");
+-    say("Another deck already uses this scale.", "err");
++    say("", "err");
+     return;
+   }
+   if (!res.ok) {

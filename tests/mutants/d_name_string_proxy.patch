@@ -1,0 +1,15 @@
+# kills: a user-typed name equal to the auto label survives a later field edit
+diff --git a/index.html b/index.html
+index 3509543..fb794ae 100644
+--- a/index.html
++++ b/index.html
+@@ -3329,7 +3329,8 @@ function sheetOptions() {
+     // that already carries an EXPLICIT name keeps it either way.
+     const d = editedDeck();
+     const kept = !!(d && d.options && d.options.name);
+-    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
++    const auto = d ? HPE.select.autoName(d.fields, d.options.parent) : null;
++    if (n && n !== auto) o.name = n;  // validated by core.parseSeed, never here
+     if (layoutOrder) o.order = layoutOrder.slice();
+   }
+   return o;

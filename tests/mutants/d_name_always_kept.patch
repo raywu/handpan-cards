@@ -1,0 +1,14 @@
+# kills: an untouched Edit box still leaves an auto-named deck free to re-derive its name
+diff --git a/index.html b/index.html
+index 3509543..d6f4e00 100644
+--- a/index.html
++++ b/index.html
+@@ -3329,7 +3329,7 @@ function sheetOptions() {
+     // that already carries an EXPLICIT name keeps it either way.
+     const d = editedDeck();
+     const kept = !!(d && d.options && d.options.name);
+-    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
++    if (n) o.name = n;  // validated by core.parseSeed, never here
+     if (layoutOrder) o.order = layoutOrder.slice();
+   }
+   return o;

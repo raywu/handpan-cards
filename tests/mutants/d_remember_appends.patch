@@ -1,0 +1,21 @@
+# kills: an options-only edit keeps its chip index across a reload with three decks
+diff --git a/index.html b/index.html
+index 3509543..526f8a7 100644
+--- a/index.html
++++ b/index.html
+@@ -2813,13 +2813,8 @@ function writeScales(list) {
+ // of the row on the next boot while it sat in place until then.
+ function rememberScale(seed) {
+   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+-  const out = [];
+-  let placed = false;
+-  for (const r of savedScales()) {
+-    if (r && r.s === rec.s) { if (!placed) { out.push(rec); placed = true; } }
+-    else out.push(r);                     // a duplicate of the key is collapsed
+-  }
+-  if (!placed) out.push(rec);
++  const out = savedScales().filter(r => !r || r.s !== rec.s);
++  out.push(rec);
+   writeScales(out);
+ }
+ // The canonical scale string IS the record's key (D14: the id is its hash), so

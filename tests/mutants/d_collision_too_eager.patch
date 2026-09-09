@@ -1,0 +1,14 @@
+# kills: the collision refusal never fires on an options-only edit, a new scale, a re-save or ADD
+diff --git a/index.html b/index.html
+index 3509543..cfc06ee 100644
+--- a/index.html
++++ b/index.html
+@@ -3475,7 +3475,7 @@ function runGenerate() {
+   const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+     if (!wasId) return null;
+     const id = HPE.core.deckId(seed.fields);
+-    if (id === wasId || !CUSTOM[id]) return null;
++    if (!CUSTOM[id]) return null;
+     taken = CUSTOM[id];
+     return { ok: false };
+   });
