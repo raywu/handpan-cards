@@ -105,7 +105,7 @@
      "roots": [
       5
      ],
-     "note": "Declared register exception (plan Premise 3, spec section 7); the engine also trims its own Fm9 at the 25-card cap (spec section 8)."
+     "note": "Declared register exception (spec section 6 / D11, plan Premise 2); the engine also trims its own Fm9 at the 25-card cap (spec section 8)."
     },
     {
      "main": "Fm",

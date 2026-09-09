@@ -11,6 +11,12 @@
 // `<main><sup> (<field ids>)` - main+sup plus the voicing, because section 12
 // records that `main + sup` alone is not unique on the built-ins (Pygmy `Cm`
 // x3). The diff test is two-sided, so the table can only ever shrink.
+//
+// The key is (main+sup, fields) and NOTHING ELSE, so the table is blind to a
+// divergence that lives only in `subtitle`: "Amara reproduces 16/16" means on
+// that key, not on the full card. Four built-in cards do differ in subtitle
+// alone - Hijaz `C#7b9`, Pygmy `Fm7`, Amara `Dm7` and `Am7`. Subtitle
+// reproduction is owned by tests/naming.test.js, not by this file.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
