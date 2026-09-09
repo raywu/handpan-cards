@@ -1848,7 +1848,11 @@ test("a refused save still runs select.build exactly once (13A)", () => {
   const calls = spyBuild(app);
   app.els["scale-generate"].click();
   assert.strictEqual(app.sheetOpen(), true, "the collision was not refused");
-  assert.ok(calls() <= 1, `a refused save ran select.build ${calls()} times`);
+  // 13A pins exactly ONE build per submit, so the refusal cannot afford one of
+  // its own: the prospective id is D14's hash of the fields (core.deckId), and
+  // the veto runs before the build the accepted path would spend.
+  assert.strictEqual(calls(), 0,
+    `a refused save ran select.build ${calls()} times - the id comes from D14, not a build`);
 });
 
 /* ------------------- 26. an options-only edit keeps its chip index (row 132) */
