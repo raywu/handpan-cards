@@ -35,8 +35,7 @@ FLOORS = {
     "tests/test_pdf_build.py": 6,
     "tests/test_print.py": 15,
     "tests/test_render_agreement.py": 7,
-    # pre-seeded for the fixture-integrity lane.
-    "tests/test_fixture_integrity.py": 0,
+    "tests/test_fixture_integrity.py": 6,
     # node
     "tests/app.test.js": 12,
     "tests/e2e.test.js": 5,

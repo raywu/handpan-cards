@@ -1,0 +1,20 @@
+# suite: python3 -m unittest tests.test_fixture_integrity
+# kills: test_sha256_matches_canonical_serialisation
+# Hijaz C#sus4 voicing silently retuned from [3, 6, 7] to [3, 5, 7] - the
+# suspended 4th (F#4) swapped for the major 3rd (F4). Nothing outside the
+# frozen corpus moves, so every other suite stays green; only the fixture's
+# own sha256 self-assertion and the deep-equality check against index.html
+# notice that the corpus is no longer the corpus it claims to be.
+diff --git a/tests/fixtures/golden_decks_v1.json b/tests/fixtures/golden_decks_v1.json
+index 09fa2aa..b6cff72 100644
+--- a/tests/fixtures/golden_decks_v1.json
++++ b/tests/fixtures/golden_decks_v1.json
+@@ -30,7 +30,7 @@
+     {
+      "fields": [
+       3,
+-      6,
++      5,
+       7
+      ],
+      "main": "C#sus",
