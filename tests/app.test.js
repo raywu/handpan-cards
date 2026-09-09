@@ -2076,8 +2076,22 @@ test("replaceRegistered still replaces in place when there is no collision", () 
 // counts them in comments too. A prose mention therefore reddens this test.
 // That is accepted deliberately (row 160, WONTFIX per row 184): the failure is
 // loud, the message lists every occurrence with its line number, and re-pinning
-// the count is a one-line reviewed act. Nothing is ever hidden from the count,
-// so a false negative is now structurally impossible.
+// the count is a one-line reviewed act. Nothing is hidden from the SCAN: no
+// span is blanked, so no live call can be swallowed by a mis-parse.
+//
+// The residual limit is narrower and is not closable here. A name written as
+// anything other than the name is out of a name scan's reach BY CONSTRUCTION:
+// a unicode-escaped identifier - spell the leading r as the six characters
+// backslash-u-0-0-7-2 and it is a UnicodeEscapeSequence inside an
+// IdentifierName, binding to the same function while the literal name is
+// nowhere in the file - a computed property access (globalThis["replace" +
+// "Registered"]),
+// or any alias assembled at runtime. Each of those calls executes while the
+// literal text never appears, so the count stays at 2 and this suite stays
+// green. That is the same blind spot as a rename, in the other direction - and
+// unlike a mis-parse it is a false negative that no amount of stripping or
+// tokenizing would fix, because there is nothing in the text to find. It is
+// pinned below as a known, reviewed hole rather than an accidental one.
 function scanNames(source, name) {
   const re = new RegExp("\\b" + name + "\\b", "g");
   const hits = [];
@@ -2182,4 +2196,39 @@ test("the caller scan counts every occurrence, in code and in prose alike", () =
     "an inline /* */ comment sharing a line with a real call disturbed the count");
   assert.strictEqual(scan("const x = 1; // replaceRegistered(d.id, d) once did this\n"), 3,
     "(r) a trailing // comment was stripped");
+
+  // THE RESIDUAL HOLE, PINNED ON PURPOSE (queue row 186). A name written as
+  // anything but the name is beyond a name scan by construction. These two
+  // shapes each call the real function - a reduced harness with a counting
+  // replaceRegistered printed "calls actually executed: 1" for the first - yet
+  // the literal text never occurs, so the count stays at 2. This is NOT a
+  // regression to close by reintroducing stripping (row 184 deleted that
+  // machinery because stripping is itself false-negative machinery); it is the
+  // documented coarseness above - the scan counts names, not call graphs.
+  // Asserted so the hole is reviewed rather than accidental: anyone who ever
+  // makes the scan name-aware enough to catch these will see these two
+  // assertions go red and must delete them deliberately.
+  //
+  // Sanity first, on the fixture's own characters: if the escape were resolved
+  // when this file was parsed, the fixture would contain the real identifier
+  // and the assertion below would pass for entirely the wrong reason.
+  const ESCAPED = "if (!replaced) \\u0072eplaceRegistered(d.id, d);\n";
+  assert.ok(ESCAPED.includes("\\u0072eplaceRegistered"),
+    "the fixture lost its backslash: it must carry the six-character escape, " +
+    "not the resolved identifier: " + JSON.stringify(ESCAPED));
+  assert.strictEqual(ESCAPED.includes("replaceRegistered"), false,
+    "the fixture already spells the name literally, so the scan below would " +
+    "count it and pin nothing: " + JSON.stringify(ESCAPED));
+  assert.strictEqual(scan(ESCAPED), 2,
+    "a unicode-escaped call site is now COUNTED. That is a real improvement, " +
+    "not a failure - but it means this known hole is closed, so delete this " +
+    "assertion and say so. Until then the scan is documented as blind to it.");
+
+  const COMPUTED = 'globalThis["replace" + "Registered"](d.id, d);\n';
+  assert.strictEqual(COMPUTED.includes("replaceRegistered"), false,
+    "the computed-access fixture spells the name literally: " + JSON.stringify(COMPUTED));
+  assert.strictEqual(scan(COMPUTED), 2,
+    "a runtime-assembled call site is now COUNTED. Same as above: an " +
+    "improvement, but delete this assertion deliberately rather than " +
+    "leaving a stale claim about what the scan cannot see.");
 });
