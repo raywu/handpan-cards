@@ -458,7 +458,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | PR #15 rebased to 75e1981 with rootId opt + 58/59 gate; reviewer spawned | pending | 2026-09-08 |
 | 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
-| 1C | scale-engine/w8-naming | PR #16 rebased to 2078bf3, re-review running | PASS_WITH_NITS | 2026-09-08 |
+| 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 (numerals, row 28/30) briefed | PASS (rebase re-review) | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -512,11 +512,12 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #14 | P0d | PASS_WITH_NITS (CI success at 6a24d38) | 25 tests, 7 u_ mutants killed, golden strings + round-trip + FNV hash hand-verified; decisions (a)-(h) all consistent with spec; 3 nits (options BAD_NOTE wording, NO_DING-first precedence vs DEFAULT text, null palette/mirror) | Merged 40ff645; rows 18-21 |
 | #17 | 1B layout | PASS_WITH_NITS | boundary clean; CI success at 1e4d795; 7 g_ killed; 502-config overlap sweep clean (min clearance 0.0518R reachable); mirror false=right-first pinned; solve returns result type (spec §1 says plain function) | merged 6467a33; nits rows 25-27 |
 | #16 | 1C naming | PASS_WITH_NITS | boundary clean; CI success at ff2c485; 7 n_ killed; exceptions two-sided; tie-break confirmed; b2-in-minor labels `#I` (reference-scale reading) flagged for owner gate; auto deck name unowned | merge blocked by FLOORS conflict; rebase requested; nits rows 28-30 |
+| #16 (rebase) | 1C naming | PASS | lane files byte-identical to ff2c485; only FLOORS line added; CI success at 2078bf3; 65/65 mutants killed | merged 5c26ae0 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
 
 ## Cycle state
 
-Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33
+Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
@@ -525,5 +526,6 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | returned done (2nd), reviewer spawned | agent-managed | scale-engine/w6-voicing | #15 | 75e1981 | 2026-09-08 gh pr view + run 34312798919 success | reviewer spawned | 1 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
-| 1C | rebased, re-reviewer spawned | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view MERGEABLE + run 34312599567 success | PASS_WITH_NITS (at ff2c485); re-review pending | 1 | no | - | - |
+| 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
+| 1C-2 | briefed via SendMessage (numeral reading, row 28; nits row 30) | agent-managed | scale-engine/w8b-naming-numerals | - | - | - | - | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
