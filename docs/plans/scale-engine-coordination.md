@@ -405,7 +405,10 @@ NEXT:
    sets (sus2 -> sus4, 6 -> m7, m6 -> m7b5; symmetric sets by section 8
    tie-break via `HPE.naming.symmetricRoot`); voice with
    `HPE.voicing.choose(fields, rootPc, intervals)` (pc only, NOT the root
-   field; row 23); drop any candidate whose `choose` is not ok; dedup on
+   field; row 23), which returns the RESULT type: use `.value.fields` /
+   `.value.roots` and treat a not-ok result as "drop this candidate" (row 31;
+   `isLegal` checks note count only, not pitch classes, so do not use it as a
+   pitch-class guard); drop any candidate whose `choose` is not ok; dedup on
    identical `fields` list; rank per section 8 and trim to 25; order per the
    canonical order; name each with `HPE.naming.name` / `HPE.naming.subtitle`
    (equivalence annotation for m7 / m7b5 derived mechanically per D4).
@@ -458,7 +461,8 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
 | 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 (numerals, row 28/30) running | PASS (rebase re-review) | 2026-09-08 |
-| 1A | scale-engine/w6-voicing | PR #15 under review at 75e1981; will need a second FLOORS rebase after 5c26ae0 | pending | 2026-09-08 |
+| 1A | scale-engine/w6-voicing | merged 4f5137c | PASS_WITH_NITS | 2026-09-09 |
+| 2 | scale-engine/w9-select | spawned (wave 4) | - | 2026-09-09 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -497,6 +501,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 28 | reviewer #16 | D8 numeral reading: 1C reads numerals off a mode reference scale, so an in-parent chromatic degree (Phrygian b2, Locrian b2/b5, Lydian #4) labels `#I` / `#IV` / `bv°`. Alternative: numeral = parent-degree INDEX, accidental = offset vs the D8 reference scale; reproduces all 17 built-ins and yields `bII` / `#iv°`. Integrator recommendation: adopt the alternative (a Phrygian pan showing `#I` is a defect a player sees). Also `caseFromPan` drops `°` when a P5 is present (unrecorded reading). | integrator | decided: alternative reading; 1C follow-up PR after #16 merges; spec §10 amendment at owner gate |
 | 29 | reviewer #16 | Auto deck name `<DING> <PARENT-DISPLAY> <N>` is unowned (not in 1C's brief, not in HPE.naming). Assigned to Phase 2 `select.build` (already in the lane 2 brief). Longest reachable is 14 chars, so the ellipsis clause is unreachable for auto names. | integrator | assigned to lane 2 |
 | 30 | reviewer #16 | Nits: pin the two non-root built-in labels (Hijaz F `iii°`, Amara E `ii°`) in tests/naming.test.js; the "override never changes the numeral" test is a lane invariant that changes under row 28. | 1C follow-up | open |
+| 31 | reviewer #15 | Spec §1 names `voicing.pick` as plain-return; shipped `voicing.choose` returns the result type (lane 2 must use `.value`). `isLegal` checks length only, not pitch classes (lane 2 must not rely on it as a pc guard). `candidates(fields, pc, [])` returns `[[]]`. `BAD_NOTE` reason copy misleading if ever reachable. PR body says 12 tests, head has 14. | integrator / lane 2 brief | open; §1 amendment at the owner gate |
 
 ## Review log
 
@@ -513,18 +518,20 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #17 | 1B layout | PASS_WITH_NITS | boundary clean; CI success at 1e4d795; 7 g_ killed; 502-config overlap sweep clean (min clearance 0.0518R reachable); mirror false=right-first pinned; solve returns result type (spec §1 says plain function) | merged 6467a33; nits rows 25-27 |
 | #16 | 1C naming | PASS_WITH_NITS | boundary clean; CI success at ff2c485; 7 n_ killed; exceptions two-sided; tie-break confirmed; b2-in-minor labels `#I` (reference-scale reading) flagged for owner gate; auto deck name unowned | merge blocked by FLOORS conflict; rebase requested; nits rows 28-30 |
 | #16 (rebase) | 1C naming | PASS | lane files byte-identical to ff2c485; only FLOORS line added; CI success at 2078bf3; 65/65 mutants killed | merged 5c26ae0 |
+| #15 | 1A voicing | PASS_WITH_NITS | boundary clean; CI success at 75e1981; 7 v_ killed; 162 Fm11 candidates, 50/59 pc-only and 58/59 rootId confirmed by reviewer script; zero throws over 4704 parseSeed-valid calls | merged 4f5137c (GitHub merged the FLOORS lines cleanly); nits row 31 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
 
 ## Cycle state
 
-Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0
+Cycle: 1   Wave: 4   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
-| 1A | returned done (2nd), reviewer spawned | agent-managed | scale-engine/w6-voicing | #15 | 75e1981 | 2026-09-08 gh pr view + run 34312798919 success | reviewer spawned | 1 | no | - | - |
+| 1A | merged, released | agent-managed | scale-engine/w6-voicing | #15 | 75e1981 | 2026-09-08 gh pr view + run 34312798919 success | PASS_WITH_NITS | 1 | yes 4f5137c | - | no |
+| 2 | running (spawned 2026-09-09) | agent-managed | scale-engine/w9-select | - | - | - | - | 0 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
 | 1C-2 | running (spawned fresh 2026-09-08; 1C worktree was released on merge) | agent-managed | scale-engine/w8b-naming-numerals | - | - | - | - | 0 | no | - | - |
