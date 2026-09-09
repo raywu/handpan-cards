@@ -1,0 +1,13 @@
+# kills: deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone
+diff --git a/index.html b/index.html
+index a127d86..1124db3 100644
+--- a/index.html
++++ b/index.html
+@@ -2917,7 +2917,6 @@ function deleteDeck(id) {
+   const gone = d.name;
+   const wasSelected = deckId === id;
+   delete CUSTOM[id];
+-  forgetScale(HPE.core.formatSeed(d.fields));
+   if (editingId === id) closeScaleSheet();
+   if (!wasSelected) { buildChips(); return; }
+   selectDeck(DECKS[0].id);

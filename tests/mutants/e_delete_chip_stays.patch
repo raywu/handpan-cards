@@ -1,0 +1,13 @@
+# kills: deleting the selected deck falls back to a built-in with a visible message
+diff --git a/index.html b/index.html
+index a127d86..b91b830 100644
+--- a/index.html
++++ b/index.html
+@@ -2916,7 +2916,6 @@ function deleteDeck(id) {
+   if (!d) return;
+   const gone = d.name;
+   const wasSelected = deckId === id;
+-  delete CUSTOM[id];
+   forgetScale(HPE.core.formatSeed(d.fields));
+   if (editingId === id) closeScaleSheet();
+   if (!wasSelected) { buildChips(); return; }

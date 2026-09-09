@@ -1,0 +1,13 @@
+# kills: renaming keeps the id, relabels the chip and survives a reload
+diff --git a/index.html b/index.html
+index a127d86..53be221 100644
+--- a/index.html
++++ b/index.html
+@@ -2454,7 +2454,6 @@ function generateDeck(text, options) {
+   // URL and into the saved record - so the app carries it back, which is why a
+   // rename survives a reload while the id, which hashes fields only, does not
+   // move (D14).
+-  if (seed.value.options.name) built.value.options.name = seed.value.options.name;
+   registerDeck(built.value);
+   return built;
+ }

@@ -1,0 +1,13 @@
+# kills: saving from the Edit sheet regenerates exactly once (13A)
+diff --git a/index.html b/index.html
+index a127d86..f7f74a8 100644
+--- a/index.html
++++ b/index.html
+@@ -2936,6 +2936,7 @@ function runGenerate() {
+   // (13A): a save re-parses and rebuilds exactly once, and D14 keeps the id
+   // when the canonical seed is unchanged, so the deck is replaced in place.
+   const known = new Set(Object.keys(CUSTOM));
++  generateDeck(String(scaleBox.value || ""), sheetOptions());
+   const res = generateDeck(String(scaleBox.value || ""), sheetOptions());
+ 
+   scaleBox.removeAttribute("readonly");

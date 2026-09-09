@@ -2,14 +2,14 @@
 # Closing the sheet drops focus on the body instead of returning it to the
 # chip that opened it, so a keyboard user restarts from the top of the page.
 diff --git a/index.html b/index.html
-index 16984c6..53b8d85 100644
+index a127d86..f0f838c 100644
 --- a/index.html
 +++ b/index.html
-@@ -2401,7 +2401,6 @@ function closeScaleSheet() {
-   sheet.setAttribute("hidden", "");
+@@ -2903,7 +2903,6 @@ function closeScaleSheet() {
    sheetOpen = false;
+   editingId = null;
    for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
--  addChip.focus();
+-  (sheetOpener || addChip).focus();
+   sheetOpener = null;
  }
  
- function runGenerate() {

@@ -2,15 +2,15 @@
 # LEFT-FIRST lights up but the choice never reaches the engine, so a mirrored
 # pan is always laid out the wrong way round.
 diff --git a/index.html b/index.html
-index 16984c6..33d2734 100644
+index a127d86..4a807de 100644
 --- a/index.html
 +++ b/index.html
-@@ -2413,7 +2413,7 @@ function runGenerate() {
-   say("", "");
+@@ -2819,7 +2819,7 @@ function buildDegrees(selected) {
  
-   const known = new Set(Object.keys(CUSTOM));
--  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror });
-+  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror: false });
- 
-   scaleBox.removeAttribute("readonly");
-   genBtn.textContent = label;
+ /** The seed options the sheet currently describes. */
+ function sheetOptions() {
+-  const o = { palette, mirror };
++  const o = { palette, mirror: false };
+   if (editingId) {
+     o.parent = Number(degSel.value);
+     const n = String(nameBox.value || "").trim();

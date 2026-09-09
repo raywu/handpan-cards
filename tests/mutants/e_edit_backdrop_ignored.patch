@@ -1,8 +1,6 @@
-# kills: a tap on the backdrop closes the sheet; a tap inside it does not
-# Any click that reaches the layer closes the sheet, so typing into the box
-# or picking a palette dismisses the work in progress.
+# kills: a backdrop tap closes the Edit sheet
 diff --git a/index.html b/index.html
-index a127d86..53bd873 100644
+index a127d86..fa3e2ad 100644
 --- a/index.html
 +++ b/index.html
 @@ -2972,7 +2972,7 @@ nameBox.addEventListener("input", updateParse);
@@ -10,7 +8,7 @@ index a127d86..53bd873 100644
  scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
  // A tap whose target IS the layer is a tap on the backdrop, never on the sheet.
 -sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
-+sheet.addEventListener("click", e => { closeScaleSheet(); });
++sheet.addEventListener("click", e => { if (e.target === sheet && !editingId) closeScaleSheet(); });
  // Tab is trapped inside: the sheet's own controls, in visual order.
  sheet.addEventListener("keydown", e => {
    if (e.key !== "Tab") return;

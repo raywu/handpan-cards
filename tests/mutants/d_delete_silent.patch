@@ -1,0 +1,13 @@
+# kills: deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone
+diff --git a/index.html b/index.html
+index a127d86..caa2739 100644
+--- a/index.html
++++ b/index.html
+@@ -2921,7 +2921,6 @@ function deleteDeck(id) {
+   if (editingId === id) closeScaleSheet();
+   if (!wasSelected) { buildChips(); return; }
+   selectDeck(DECKS[0].id);
+-  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
+ }
+ 
+ function runGenerate() {

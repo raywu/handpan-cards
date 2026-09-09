@@ -1,0 +1,15 @@
+# kills: the Edit sheet shows deck.warnings from the registry with no generation call
+diff --git a/index.html b/index.html
+index a127d86..99b84a4 100644
+--- a/index.html
++++ b/index.html
+@@ -2894,7 +2894,8 @@ function openEditSheet(d, opener) {
+   showSheet(opener);
+   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
+   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+-  const warned = (d.warnings || []).map(w => w.reason);
++  const again = HPE.select.build(HPE.core.parseSeed(scaleBox.value, d.options).value);
++  const warned = ((again.ok ? again.value.warnings : []) || []).map(w => w.reason);
+   if (warned.length) say(warned.join(" "), "warn");
+ }
+ function closeScaleSheet() {

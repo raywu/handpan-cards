@@ -1,0 +1,14 @@
+# kills: the selected custom chip reopens the sheet in Edit state, prefilled, at 380px
+diff --git a/index.html b/index.html
+index a127d86..7ee351c 100644
+--- a/index.html
++++ b/index.html
+@@ -155,7 +155,7 @@ button.nav:active{background:#2e281e}
+ /* Quiet, never a primary: auto width, so the sheet's only full-width button
+    stays #scale-generate. */
+ #scale-delete-row{align-items:center}
+-#scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
++#scale-delete{width:100%; min-height:44px; padding:12px 14px; background:none; border:none;
+   color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
+   text-transform:uppercase; cursor:pointer}
+ .announce{width:100%; max-width:520px; margin-top:8px; text-align:center;
