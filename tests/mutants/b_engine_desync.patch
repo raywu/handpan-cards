@@ -1,0 +1,18 @@
+# suite: python3 -m unittest -k test_validate_py_passes tests.test_deck_data
+# kills: test_validate_py_passes
+# One character of the engine copy inlined in index.html drifts from
+# src/engine/core.js: the shipped app would run engine code that no module
+# in the repo contains, and no engine test suite would ever see it.
+diff --git a/index.html b/index.html
+index d2aeb5a..6637376 100644
+--- a/index.html
++++ b/index.html
+@@ -175,7 +175,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   var LETTERS = "CDEFGAB";
+   var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+-  var ACCIDENTAL = { "": 0, "#": 1, b: -1 };
++  var ACCIDENTAL = { "": 0, "#": 2, b: -1 };
+ 
+   var RIM_MAX = 11;
+   var INNER_MAX = 2;

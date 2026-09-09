@@ -1,13 +1,14 @@
 # kills: deck chips switch the deck
 diff --git a/index.html b/index.html
+index d2aeb5a..2d29751 100644
 --- a/index.html
 +++ b/index.html
-@@ -290,7 +290,7 @@
-     b.style.setProperty("--dga", d.colors.ga);
-     b.style.setProperty("--dgb", d.colors.gb);
-     b.innerHTML = `<span class="dot"></span>${esc(d.name)}`;
--    b.onclick = () => { deckId = d.id; save(); setOrder(); buildChips(); render(); };
-+    b.onclick = () => { deckId = d.id; save(); buildChips(); render(); };
-     nav.appendChild(b);
-   }
+@@ -2016,7 +2016,7 @@ function checkShareVersion(v) {
+ function selectDeck(id) {
+   deckId = id;
+   if (isBuiltIn(id)) storedDeck = id;
+-  save(); setOrder(); buildChips(); render();
++  save(); buildChips(); render();
  }
+ 
+ /* ---------------- helpers ---------------- */

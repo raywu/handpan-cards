@@ -1,0 +1,17 @@
+# kills: pan() sizes a generated deck's viewBox from the solver's ext
+# pan() re-derives the extent instead of reading the one layout.solve computed,
+# so a generated pan is cropped or padded wrongly (ENGINE-SPEC section 11).
+diff --git a/index.html b/index.html
+index d2aeb5a..da0d4f9 100644
+--- a/index.html
++++ b/index.html
+@@ -2042,8 +2042,7 @@ function pan(d, ch) {
+   const hasBottom = !!g.bottom;
+   // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
+   // the built-in geom literals have no ext key, so they keep the derivation.
+-  const ext = g.ext ? R * g.ext
+-            : hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
++  const ext = hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
+   let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}" xmlns="http://www.w3.org/2000/svg">`;
+ 
+   const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
