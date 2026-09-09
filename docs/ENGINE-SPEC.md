@@ -53,14 +53,16 @@ ok      = {ok: true,  value: <payload>, warnings?: [{code, reason}]}
 err     = {ok: false, code: <CODE>, reason: <English sentence>}
 ```
 
-- DECIDED(swarm-2026-09-08) Exactly three entry points return the result
-  type: `core.parseSeed`, `select.build` and `share.decode` (which delegates to
-  `core.parseSeed`). They never throw on user input.
+- DECIDED(swarm-2026-09-08) Three entry points take untrusted input and return
+  the result type: `core.parseSeed`, `select.build` and `share.decode` (which
+  delegates to `core.parseSeed`). They never throw on user input. Three more
+  return it without taking untrusted input: `share.encode` below, and
+  `layout.solve` and `voicing.choose` under the amendment below that.
 - DECIDED(swarm-2026-09-08) `core.parseSeed(string, options?)` returns, on
   success, `value` = the SEED: `{fields, options}` where `fields` is the map
   `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
   `null` from `parseSeed`; `layout.solve` fills it) (ids are the decimal
-  strings of section 12) and `options` is `{palette, parent, name, mirror}`
+  strings of section 4) and `options` is `{palette, parent, name, mirror}`
   (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
   mirror boolean), validated per section 14 and defaulting to
   `{palette: 0, parent: null, name: '', mirror: false}` when the second
@@ -80,9 +82,12 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   functions over validated data and return their value directly. They throw
   `RangeError` on a cap breach, which is unreachable from `parseSeed`-valid
   input.
-- DECIDED(swarm-2026-09-08) `share.encode(seed)` returns a plain URL-fragment
-  string; `share.decode(fragment)` takes untrusted input and therefore returns
-  the result type, delegating to `core.parseSeed`.
+- DECIDED(swarm-2026-09-08) `share.encode(seed)` returns the result type too,
+  with the URL-fragment string as its `value`: it takes an already-parsed seed
+  and does not re-validate, but it returns `BAD_NOTE` when handed something
+  that is not one, and when the encoded payload exceeds the cap.
+  `share.decode(fragment)` takes untrusted input and therefore returns the
+  result type, delegating to `core.parseSeed`.
 - DECIDED(plan [design-review 2A]) An `ok` result MAY carry `warnings: [{code,
   reason}]`; a warning never blocks and the UI shows it in the warning tier. An
   `err` result never carries `warnings` and never carries `value`.
@@ -144,7 +149,8 @@ ding.`
   Bottom-shell notes do not satisfy it.
 - DECIDED(plan [eng-review 2, 2A]) `NO_THIRDS` is raised by `select.build` when
   no root has a third (3 or 4 semitones) above it on the top shell, so the deck
-  contains only power chords.
+  contains only power chords and sus chords - which is what the shipped reason
+  string says, sus qualities needing no third.
 - DECIDED(swarm-2026-09-08) `NEEDS_NEWER_APP` is a share-layer code raised only
   by `share.decode` on the version byte, never by `core.parseSeed`; it
   therefore has no row in `synthetic_scales.json` and is tested by
@@ -204,9 +210,12 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   repairs".
 - DEFAULT[owner-review] The octave is a SINGLE digit 0-9; `C10` is one
   whitespace-delimited token that fails the note pattern and is `BAD_NOTE`
-  with `<X>` = `C10`. Tokenisation is whitespace-splitting only: `( D3 )`,
-  `(D3)A3` and `C5|C3` are each `BAD_NOTE` (the ding token must be exactly
-  `(NAME)` or `NAME/`, and `|` must stand alone).
+  with `<X>` = `C10`. Tokenisation is whitespace-splitting only: `(D3)A3` and
+  `C5|C3` are each `BAD_NOTE` (the ding token must be exactly `(NAME)` or
+  `NAME/`, and `|` must stand alone), while `( D3 )` splits into three tokens
+  of which two - the bare `(` and the bare `)` - are ding-shaped, so the
+  count-first rule reaches it earlier and it is `NO_DING`, as the precedence
+  bullet below also records.
 - DEFAULT[owner-review] Enharmonic names are accepted as typed and never
   normalised: `E#` and `F` are different labels for the same pitch class, and
   both are legal note names.
@@ -372,8 +381,11 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   before any voicing is chosen, not a per-deck uniqueness rule. Two candidate
   qualities whose pitch sets coincide yield one candidate; that candidate may
   still produce more than one card if multi-voicing data asks for it.
-- DECIDED(CLAUDE.md rule 3, plan Premise 4) No sus2 candidates survive: every
-  sus2 has the same pitch set as a sus4, and sus4 wins.
+- DECIDED(CLAUDE.md rule 3, plan Premise 4) No sus2 candidates exist: every
+  sus2 has the same pitch set as a sus4, so the section 16 quality table
+  carries no sus2 entry at all and none is ever generated. `select.js` still
+  lists `sus2` among its collapse losers, defensively; under the shipped
+  vocabulary that clause never fires.
 - DECIDED(swarm-2026-09-08) `X6` has the same pitch set as the m7 built on its
   sixth, a major sixth (9 semitones) above the root - `C6` = {C,E,G,A} =
   `Am7` - and `Xm6` has the same pitch set as the m7b5 built on its sixth -
@@ -453,9 +465,13 @@ deck.
 - DECIDED(swarm-2026-09-08) Generation candidates are every key of
   `qualities.json` whose `tier` is one of the CANDIDATE TIERS `triad`, `power`,
   `sus`, `seventh` and `extended`. That is the whole table, so the tier field
-  alone selects candidates and no second list exists. It widens D1 by exactly
-  the two sus 7ths (`7sus4`, `maj7sus4`, both of which Hijaz ships) and by `6` /
-  `m6`, which always collapse away under the rule in section 5.
+  alone selects candidates and no second list exists. That table has 28 keys,
+  so it widens D1 by seventeen: the two sus 7ths (`7sus4`, `maj7sus4`, both of
+  which Hijaz ships), `6` / `m6`, which always collapse away under the rule in
+  section 5, and the thirteen `extended`-tier qualities (`add9`, `madd9`,
+  `6/9`, `m6/9`, `9`, `m9`, `maj9`, `7b9`, `11`, `m11`, `13`, `7#11`,
+  `maj7#11`), which are candidates only where the top-shell test below admits
+  them.
 - DECIDED(swarm-2026-09-08) A quality is a candidate for a root only when every
   one of its interval pitch classes (the root's included) is present on a
   NON-DING field, because the ding never appears in a voicing (section 5); a
@@ -530,7 +546,11 @@ deck.
   carries this per quality.
 - DECIDED(plan Phase 1 lane C exit) The editorial built-in subtitles
   `HIJAZ SIGNATURE CHORD` and `- HIGH VOICING` / `- LOW VOICING` are recorded
-  exceptions of the fixture, not strings the engine generates.
+  exceptions, not strings the engine generates. All of them are listed as
+  `SUBTITLE_EXCEPTIONS` in `tests/naming.test.js`; the voicing variants
+  additionally carry card overrides in `tests/fixtures/divergence_v1.json`,
+  while `HIJAZ SIGNATURE CHORD` has no entry in that fixture, its card being
+  one the engine otherwise reproduces.
 - DECIDED(swarm-2026-09-08) Hijaz `Dmaj7` (`D MAJOR 7 (NO 5)`) and `Dmaj7#11`
   (`D MAJOR 7 SHARP 11 (NO 5)`) are incomplete voicings the owner authored by
   hand; the engine's table produces neither the `(NO 5)` qualifier nor the
@@ -592,8 +612,9 @@ Verified against all three built-ins under the fixed list order of
   both apply, `b` for a major-relative scale, `#` otherwise). This differs from
   a reading based on the nearest PARENT degree, and the difference is visible
   only under a manual parent override.
-  Both readings reproduce all 17 built-in degree labels and Amara's three
-  frozen exceptions unchanged.
+  Both readings reproduce 14 of the 17 built-in degree labels and leave
+  D Amara's three frozen exceptions exactly as recorded (`bVII`, `bIII` and
+  `IV`, where the engine derives `VII`, `III` and `iv`).
   Its case follows the stacked-thirds rule applied over the PAN pitch classes
   (uppercase when no third is available), unless `NO_THIRDS` applies. In that
   pan-level case rule the `°` suffix is suppressed when a perfect fifth above
@@ -688,7 +709,9 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 
 - DECIDED(D6) Custom deck colours come only from this fixed set: the three
   built-in pairs then their root/tone swaps, in that order. The user picks an
-  index, or one is assigned by hash of the scale name.
+  index; an index the seed does not carry defaults to 0. (An earlier draft of
+  this rule assigned an index by hash of the scale name; nothing was ever
+  built that way, and `select.build` reads the seed option or falls back to 0.)
 - DECIDED(D6) The share URL and the seed carry a palette INDEX, never a colour
   string; colours never come from the URL. Extending the set later appends
   indices and never renumbers.
@@ -714,9 +737,10 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 
 - DECIDED(D14, plan "Sharing is untrusted input") The share URL encodes the
   SEED (fields plus options), never the generated deck output, behind a leading
-  VERSION BYTE, with space reserved for Phase-5 layout deltas. When the engine
-  improves, an old link renders NEW cards: the seed is the contract, not the
-  output.
+  VERSION BYTE, on a third payload line that v1 reserved for layout deltas and
+  that v2 (the shipped `share.VERSION`) spends on the `order` permutation.
+  When the engine improves, an old link renders NEW cards: the seed is the
+  contract, not the output.
 - DECIDED(plan Phase 4) A version byte greater than the running app's is
   rejected with `NEEDS_NEWER_APP` so a PWA-cached old `index.html` fails
   politely; the app stays usable.
@@ -741,10 +765,13 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 
 ## 15. UI element ids
 
-Phase 3 registers these in the sandbox `ELEMENT_IDS`; e2e targets them.
+The sandbox `ELEMENT_IDS` in `tests/helpers/sandbox.js` is the registry of
+record; e2e targets them. Phase 3 registered the nine below, and later phases
+have appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
+sheets); the rule is that phases APPEND, never renumber or rename.
 
-- DECIDED(plan "Open decisions", UI element ids row) The scale-input UI uses
-  exactly these element ids: `scale-sheet`, `scale-box`, `scale-parse`,
+- DECIDED(plan "Open decisions", UI element ids row) The Phase 3 scale-input UI
+  uses these element ids: `scale-sheet`, `scale-box`, `scale-parse`,
   `scale-msg`, `scale-mirror-l`, `scale-mirror-r`, `scale-swatches`,
   `scale-generate`, `deck-add`.
 
@@ -759,7 +786,8 @@ Phase 3 registers these in the sandbox `ELEMENT_IDS`; e2e targets them.
   "main_suffix": "<in-line part of the card name>",
   "sup":         "<superscript part of the card name>",
   "rooted":      true | false,
-  "tier":        "triad" | "power" | "sus" | "seventh" | "extended"
+  "tier":        "triad" | "power" | "sus" | "seventh" | "extended",
+  "rank":        <integer, the section 8 within-tier tie-break>
 }
 ```
 
