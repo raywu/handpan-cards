@@ -1,0 +1,16 @@
+# suite: node --test tests/voicing.test.js
+# kills: the D9 root-octave policy (ENGINE-SPEC section 7), the LOWEST
+# top-shell instance of the root pitch class. Here it takes the HIGHEST.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index b25fcbf..06f8667 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -167,7 +167,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function rootField(fields, rootPc) {
+     var all = instancesOf(playable(fields), pitchClass(rootPc));
+     if (!all.length) return null;
+-    for (var i = 0; i < all.length; i += 1) {
++    for (var i = all.length - 1; i >= 0; i -= 1) {
+       if (all[i].top) return all[i];
+     }
+     return all[0];

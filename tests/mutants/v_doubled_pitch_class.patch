@@ -1,0 +1,15 @@
+# suite: node --test tests/voicing.test.js
+# kills: the section 5 invariant that no voicing contains two fields of the
+# same pitch class. isLegal stops rejecting a doubled pitch class.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index b25fcbf..eb4c628 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -148,7 +148,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (!rec) return false;
+       if (isDing(rec)) return false;
+       var pc = pitchClass(rec[2]);
+-      if (seen[pc]) return false;
+       seen[pc] = true;
+     }
+ 

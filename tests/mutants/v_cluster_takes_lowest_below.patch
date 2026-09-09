@@ -1,0 +1,16 @@
+# suite: node --test tests/voicing.test.js
+# kills: D2 "every chord tone moves to its HIGHEST instance below the root".
+# Here a clustered chord tone takes the LOWEST instance below the root.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index b25fcbf..af6a5bf 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -266,7 +266,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (!forced) {
+         field = tone.up[0];
+       } else if (tone.interval < OCTAVE) {
+-        field = tone.down.length ? tone.down[0] : tone.up[0];
++        field = tone.down.length ? tone.down[tone.down.length - 1] : tone.up[0];
+       } else {
+         field = tone.up.length ? tone.up[0] : tone.down[0];
+       }
