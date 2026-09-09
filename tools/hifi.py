@@ -20,8 +20,10 @@ pdfmetrics.registerFont(TTFont("Label", os.path.join(FONTS, "NunitoSans-Regular.
 pdfmetrics.registerFont(TTFont("LabelSB", os.path.join(FONTS, "NunitoSans-SemiBold.ttf")))
 
 # ---- default palette (D Amara: teal root / amber tone) --------------------
-BLUE = Color(0.043, 0.482, 0.459)   # #0B7B75  root / numbers (default)
-GREEN = Color(0.867, 0.561, 0.000)  # #DD8F00  chord notes (default)
+BLUE = Color(0.043, 0.482, 0.459)   # #0B7B75  root colour (default): root fields
+                                    #          and their note/number entries
+GREEN = Color(0.867, 0.561, 0.000)  # #DD8F00  tone colour (default): non-root
+                                    #          chord notes and their entries
 _BLUE0, _GREEN0 = BLUE, GREEN
 NAME = Color(0.329, 0.329, 0.329)   # #545454  chord name
 INK = Color(0.141, 0.141, 0.141)    # #242424  small caps / labels
@@ -184,9 +186,10 @@ def bottom_lines(c, x, y, w, fields, roots, meta, y_names, y_nums):
 
 # ---- diagram --------------------------------------------------------------
 def draw_ring(c, x, y, r, state):
-    """Tonefield: always a thin black circle; a highlight is a thick
-    coloured band inside it, bounded by a second hairline. Root colour
-    for roots, tone colour for chord notes. Never both."""
+    """Tonefield: a thin black circle - except an unlit BOTTOM field, which
+    is a dashed grey circle instead and carries no band. A highlight is a
+    thick coloured band inside the circle, bounded by a second hairline.
+    Root colour for roots, tone colour for chord notes. Never both."""
     c.setDash()
     c.setFillColor(white)
     c.setStrokeColor(black)
