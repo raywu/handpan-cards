@@ -2,12 +2,12 @@
 # RESET drops out of the sheet's tab order, so a keyboard user can see the
 # control but never reach it.
 diff --git a/index.html b/index.html
-index 2a111a2..5b41d0f 100644
+index 7e9b7f6..d6c73e9 100644
 --- a/index.html
 +++ b/index.html
-@@ -3411,7 +3411,6 @@ sheet.addEventListener("keydown", e => {
-   if (e.key !== "Tab") return;
-   const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+@@ -3635,7 +3635,6 @@ sheet.addEventListener("keydown", e => {
+                  ...(editingId ? [] : [...presetBox.children]),
+                  scaleBox, editingId ? degSel : null,
                   editingId ? rotL : null, editingId ? rotR : null,
 -                 editingId ? resetBtn : null,
                   editingId ? slotsBox.children[layoutSel] : null,
