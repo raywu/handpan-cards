@@ -34,11 +34,15 @@
  *     line 0   the canonical scale string, core.formatSeed(seed)
  *     line 1   the options, "palette \t parent \t mirror \t name"; parent is
  *              empty for "infer", mirror is "0" (right-first) or "1", and the
- *              name is last so it may hold any printable character
- *     line 2   RESERVED FOR PHASE-5 LAYOUT DELTAS. Empty in v1, and a v1
- *              string carrying anything here is a corrupt payload. The section
- *              exists so a layout delta needs only a version bump, not a new
- *              shape.
+ *              name is last so it may hold any printable character. UNCHANGED
+ *              by v2: the layout delta does NOT widen this line, so the one
+ *              free-text field keeps the last slot to itself.
+ *     line 2   THE LAYOUT DELTA (D5-3), the section v1 reserved for it. Empty
+ *              in v1, and a v1 string carrying anything here is a corrupt
+ *              payload. In v2 it is the `order` permutation as comma-separated
+ *              decimal indices, and EMPTY still means absent - so a v2 payload
+ *              with no correction is byte-identical to the v1 one apart from
+ *              the version character.
  *
  * CODES: section 2's enum is CLOSED and there is no code for "corrupt link".
  * Its last row makes an unparseable token a BAD_NOTE rejection, so every
@@ -53,8 +57,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   "use strict";
 
   // The version this build WRITES. Every version <= this one is still
-  // readable: see decode step 2 (D5-4). v1 = four options fields, v2 adds the
-  // layout correction as the fourth of five.
+  // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a layout
+  // correction on it. The options line is the same in both.
   var VERSION = 2;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
@@ -229,41 +233,48 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       ? "" : opts.parent;
     var mirror = opts.mirror ? "1" : "0";
     var name = opts.name === undefined || opts.name === null ? "" : opts.name;
-    // `name` stays LAST so it may hold any printable character; `order` goes in
-    // ahead of it (D5-3). A build that writes v1 writes v1's four fields: the
-    // options line is a per-version format, and only v2 has a correction field.
-    var head = String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror;
-    if (VERSION >= 2) head += FIELD_SEP + orderField(opts.order);
-    return head + FIELD_SEP + String(name);
+    // `name` stays LAST and ALONE at the end of this line: the correction rides
+    // on line 2, not here, so the one user-controlled free-text field never
+    // gains a neighbour (D5-3).
+    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror +
+           FIELD_SEP + String(name);
+  }
+
+  // Line 2. A build that writes v1 has no section to write into.
+  function deltaLine(options) {
+    if (VERSION < 2) return "";
+    return orderField((options || {}).order);
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
   var ORDER_RE = /^[0-9]{1,2}(,[0-9]{1,2})*$/;
 
-  // One reader per wire version, so a v1 link is read by v1's rules and never
-  // measured against v2's field count (D5-4). v1 has four fields and can carry
-  // no correction at all; v2 has five, `order` fourth.
-  function readOptionsLine(line, version) {
-    var count = version >= 2 ? 5 : 4;
+  // The options line is version-independent: v2 added no field to it.
+  function readOptionsLine(line) {
     var parts = String(line).split(FIELD_SEP);
-    if (parts.length !== count) return null;
+    if (parts.length !== 4) return null;
     if (!UINT_RE.test(parts[0])) return null;
     if (parts[1] !== "" && !UINT_RE.test(parts[1])) return null;
     if (parts[2] !== "0" && parts[2] !== "1") return null;
-    var order = null;
-    if (count === 5 && parts[3] !== "") {
-      if (!ORDER_RE.test(parts[3])) return null;
-      order = [];
-      var digits = parts[3].split(",");
-      for (var i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
-    }
     return {
       palette: Number(parts[0]),
       parent: parts[1] === "" ? null : Number(parts[1]),
       mirror: parts[2] === "1",
-      order: order,
-      name: parts[count - 1]
+      name: parts[3]
     };
+  }
+
+  // One reader per wire version, so a v1 link is read by v1's rules and never
+  // measured against v2's (D5-4). v1 reserved line 2 and allowed nothing on
+  // it; v2 spends it on the correction. null is ABSENT, undefined is CORRUPT.
+  function readDeltaLine(line, version) {
+    if (version < 2) return line === "" ? null : undefined;
+    if (line === "") return null;
+    if (!ORDER_RE.test(line)) return undefined;
+    var order = [];
+    var digits = line.split(",");
+    for (var i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
+    return order;
   }
 
   // The correction is a permutation over the non-ding fields of the seed it
@@ -297,7 +308,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function encode(seed) {
     if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
     var payload = HPE.core.formatSeed(seed.fields) + SEP +
-                  optionsLine(seed.options) + SEP +
+                  optionsLine(seed.options) + SEP + deltaLine(seed.options) +
                   "";  // line 2: reserved for Phase-5 layout deltas.
     var body = toAlphabet(utf8Bytes(payload));
     var head = ALPHABET.charAt(VERSION) + body;
@@ -365,12 +376,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var lines = payload.split(SEP);
     if (lines.length !== LINES) return badNote(text);
-    // Line 2 is the reserved layout-delta section: empty in v1.
-    if (lines[2] !== "") return badNote(text);
 
-    var options = readOptionsLine(lines[1], version);
+    // Line 2 is the layout-delta section: empty in v1, the correction in v2.
+    // The LINE COUNT is the same in both - only what may stand here changes.
+    var delta = readDeltaLine(lines[2], version);
+    if (delta === undefined) return badNote(text);
+    if (carry) carry.order = delta;
+
+    var options = readOptionsLine(lines[1]);
     if (options === null) return badNote(text);
-    if (carry) carry.order = options.order;
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.

@@ -373,10 +373,10 @@ test("encode is deterministic, byte for byte", () => {
   }
 });
 
-test("the payload still reserves an empty third section", () => {
-  // D14 reserves space behind the version byte. Phase 5's layout correction
-  // went into the OPTIONS line (D5-3), so this section is still present and
-  // still empty, and a string carrying content there is a corrupt payload.
+test("the payload's third section is where the layout delta goes", () => {
+  // D14 reserved a third section behind the version byte and Phase 5 spends
+  // it (D5-3): empty means no correction, so an uncorrected v2 payload still
+  // looks exactly like the v1 one it replaces.
   const doc = SHARE_SRC.slice(0, SHARE_SRC.indexOf("(function"));
   assert.match(doc, /layout delta/i,
     "share.js does not document the reserved layout-delta section");
@@ -427,10 +427,11 @@ test("share answers only with codes from the closed section 2 enum", () => {
 /* (j) Phase 5 / D5: options.order travels in the share string             */
 /* ---------------------------------------------------------------------- */
 
-// D5-3: `order` is the FOURTH field of the options line, before `name` - the
-// name stays last so it may still hold any printable character. D5-4: the
-// wire version is 2 and decode is backward-compatible, so every v1 link ever
-// emitted still opens.
+// D5-3: `order` rides on payload LINE 2 - the section v1 reserved for exactly
+// this - as comma-separated decimal indices, empty meaning absent. The options
+// line is NOT widened, so `name` keeps the last tab-separated slot to itself
+// and stays the only free-text field on its line. D5-4: the wire version is 2
+// and decode is backward-compatible, so every v1 link ever emitted still opens.
 
 const vm = require("node:vm");
 
@@ -470,6 +471,61 @@ function withOrder(seed, order) {
 
 function identity(n) {
   return Array.from({ length: n }, (_, i) => i);
+}
+
+/** The three payload lines inside a share string, version byte and check off. */
+function payloadOf(str) {
+  const body = str.slice(1, str.length - 6);
+  const bytes = [];
+  let bits = 0;
+  let acc = 0;
+  for (const ch of body) {
+    acc = (acc << 6) | VERSION_CHARS.indexOf(ch);
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((acc >> bits) & 0xff);
+    }
+  }
+  return Buffer.from(bytes).toString("utf8").split("\n");
+}
+
+/** Build a well-formed share string, checksum and all, at any wire version. */
+function forgePayload(version, lines) {
+  const bytes = [...Buffer.from(lines.join("\n"), "utf8")];
+  let body = "";
+  let acc = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    acc = (acc << 8) | byte;
+    bits += 8;
+    while (bits >= 6) {
+      bits -= 6;
+      body += VERSION_CHARS.charAt((acc >> bits) & 0x3f);
+    }
+  }
+  if (bits > 0) body += VERSION_CHARS.charAt((acc << (6 - bits)) & 0x3f);
+  const head = VERSION_CHARS.charAt(version) + body;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < head.length; i += 1) {
+    hash = (hash ^ head.charCodeAt(i)) >>> 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  const octets = [(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
+                  (hash >>> 8) & 0xff, hash & 0xff];
+  let check = "";
+  acc = 0;
+  bits = 0;
+  for (const byte of octets) {
+    acc = (acc << 8) | byte;
+    bits += 8;
+    while (bits >= 6) {
+      bits -= 6;
+      check += VERSION_CHARS.charAt((acc >> bits) & 0x3f);
+    }
+  }
+  if (bits > 0) check += VERSION_CHARS.charAt((acc << (6 - bits)) & 0x3f);
+  return head + check;
 }
 
 test("an order survives the round trip, unchanged element for element", () => {
@@ -606,6 +662,55 @@ test("the longest possible link - every option, a full order - fits the cap", ()
 /* ---------------------------------------------------------------------- */
 /* (k) D5-4: the version gate is backward-compatible                       */
 /* ---------------------------------------------------------------------- */
+
+test("the correction rides on line 2 and never widens the options line", () => {
+  // The options line is tab-separated and `name` is its only free-text field.
+  // Widening that line would put machine indices next to the one field a user
+  // controls; line 2 was reserved for the delta, so that is where it goes.
+  const seed = parsed(BASE, { palette: 3, parent: 7, mirror: true, name: "Pan" });
+  const n = slotCount(seed);
+  const plain = payloadOf(encoded(seed));
+  const moved = payloadOf(encoded(withOrder(seed, identity(n).reverse())));
+
+  assert.equal(plain.length, 3, "the payload is not three lines");
+  assert.equal(moved.length, 3, "a correction changed the payload's line count");
+  assert.equal(moved[0], plain[0], "a correction touched the scale line");
+  assert.equal(moved[1], plain[1], "a correction widened the OPTIONS line");
+  assert.equal(plain[1].split("\t").length, 4,
+    "the options line is no longer four fields");
+  assert.equal(plain[2], "", "an absent correction wrote something on line 2");
+  assert.equal(moved[2], identity(n).reverse().join(","),
+    "line 2 is not the correction as comma-separated decimal indices");
+});
+
+test("an uncorrected v2 payload is the v1 payload, byte for byte", () => {
+  // Only the version character may differ: a bump that changed the bytes of
+  // every existing link would be a format change dressed as a version bump.
+  const v1 = engineAtVersion(1);
+  for (const options of OPTION_CASES) {
+    const seed = parsed(BASE, options);
+    const older = v1.encode(seed);
+    const newer = encoded(seed);
+    assert.equal(older.ok, true, older.reason);
+    assert.deepStrictEqual(payloadOf(newer), payloadOf(older.value),
+      `v2 rewrote the payload for ${JSON.stringify(options)}`);
+    assert.equal(newer.charAt(0), "2");
+    assert.equal(older.value.charAt(0), "1");
+  }
+});
+
+test("a v1 link carrying anything on line 2 is a corrupt payload", () => {
+  // v1 RESERVED the section: an old string with content there was never
+  // emitted by any shipped app, so reading it as a v2 correction would be
+  // repairing a link, not decoding one.
+  const seed = parsed(BASE);
+  const forged = forgePayload(1, [payloadOf(encoded(seed))[0],
+                                  payloadOf(encoded(seed))[1],
+                                  identity(slotCount(seed)).reverse().join(",")]);
+  const r = share.decode(forged);
+  assert.equal(r.ok, false, "a v1 link with a layout delta was accepted");
+  assert.equal(r.code, "BAD_NOTE");
+});
 
 test("this app writes wire version 2", () => {
   assert.equal(share.VERSION, 2);
