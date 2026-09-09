@@ -1,8 +1,9 @@
 # suite: node --test tests/select.test.js
-# kills: the ENGINE-SPEC section 8 cap itself. With no trim the 12-note pan
-# ships all 27 collapsed candidates instead of 25.
+# kills: the SIZE SCALING of the ENGINE-SPEC section 8 cap, amended by owner
+# review 2026-09-08 from a flat 25. Pinned flat the cap stops growing with the
+# pan, so the 18-field Pygmy deck caps at 25 and loses Gm7b5, Bbm7 and Cm7.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..087d5da 100644
+index 6e11744..ace122c 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -106,7 +106,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
@@ -10,7 +11,7 @@ index 6e11744..087d5da 100644
    function cap(fields) {
      var fieldCount = ids(fields).length;
 -    return CAP_BASE + Math.max(0, fieldCount - CAP_HINGE);
-+    return 9999;
++    return CAP_BASE;
    }
 
    /* ---- section 8: raw candidates ---------------------------------------- */

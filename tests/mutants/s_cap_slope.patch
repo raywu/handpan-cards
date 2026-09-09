@@ -1,8 +1,9 @@
 # suite: node --test tests/select.test.js
-# kills: the ENGINE-SPEC section 8 cap itself. With no trim the 12-note pan
-# ships all 27 collapsed candidates instead of 25.
+# kills: the SLOPE of the ENGINE-SPEC section 8 cap. Section 8 says "+1 for
+# every field beyond the twelfth"; at +2 the 18-field Pygmy pan caps at 37
+# rather than 31 and the structural maximum drifts too.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..087d5da 100644
+index 6e11744..a0dba08 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -106,7 +106,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
@@ -10,7 +11,7 @@ index 6e11744..087d5da 100644
    function cap(fields) {
      var fieldCount = ids(fields).length;
 -    return CAP_BASE + Math.max(0, fieldCount - CAP_HINGE);
-+    return 9999;
++    return CAP_BASE + 2 * Math.max(0, fieldCount - CAP_HINGE);
    }
 
    /* ---- section 8: raw candidates ---------------------------------------- */
