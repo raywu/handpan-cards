@@ -1,0 +1,17 @@
+# suite: node --test tests/select.test.js
+# kills: the D4 equivalence annotation of ENGINE-SPEC section 8 - an m7 is
+# annotatable as ( = (X+3)6 ) and an m7b5 as ( = (X+3)m6 ), and a generated
+# deck derives both mechanically.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..4108810 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -322,7 +322,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // derive them mechanically.
+   function equivalenceRoot(fields, candidate) {
+     if (candidate.suffix !== "m7" && candidate.suffix !== "m7b5") return null;
+-    return spellingOfPc(fields, candidate.root + 3);
++    return null;
+   }
+ 
+   function card(fields, candidate) {

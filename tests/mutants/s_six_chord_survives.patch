@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: the ENGINE-SPEC section 5 collapse of X6 into the m7 built on its
+# sixth, so a 6-chord candidate survives beside the m7.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..151e7be 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -30,7 +30,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+    * sus2, m7 beats 6, m7b5 beats m6. `sus2` is listed for completeness - the
+    * section 16 quality table carries no sus2 entry, so that clause is vacuous
+    * under the shipped vocabulary. */
+-  var COLLAPSE_LOSERS = ["sus2", "6", "m6"];
++  var COLLAPSE_LOSERS = ["sus2", "m6"];
+ 
+   /* Section 13: the D6 palette set, index 0-5. */
+   var PALETTES = [

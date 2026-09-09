@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: the 25-card cap of ENGINE-SPEC section 8. Without it the 12-note
+# pan ships all 27 collapsed candidates.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..1350107 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -18,7 +18,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   /* ---- section 8: the cap and the ranking tiers -------------------------- */
+ 
+-  var CAP = 25;                       /* DEFAULT[owner-review]: 25 cards      */
++  var CAP = 9999;                       /* DEFAULT[owner-review]: 25 cards      */
+   var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
+   var ELLIPSIS = "…";
+ 
