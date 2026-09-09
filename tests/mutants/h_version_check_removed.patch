@@ -1,0 +1,14 @@
+# suite: node --test tests/share.test.js
+# kills: decode: a newer version byte must be NEEDS_NEWER_APP, not a generic corrupt-link rejection
+diff --git a/src/engine/share.js b/src/engine/share.js
+index a40e4d3..defae87 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -260,7 +260,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // 2. The version byte.
+     var version = INDEX[text.charAt(0)];
+     if (version === undefined) return badNote(text);
+-    if (version > VERSION) return err("NEEDS_NEWER_APP", {});
+     if (version !== VERSION) return badNote(text);
+ 
+     // 3. Integrity, before the payload is looked at.
