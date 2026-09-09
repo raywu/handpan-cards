@@ -1,0 +1,15 @@
+# suite: node --test tests/layout.test.js
+# kills: solve never changes a zone
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index f5d1cd5..c43a94d 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -274,7 +274,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+     for (i = 0; i < zones.ding.length; i += 1) fields[zones.ding[i]][4] = null;
+     for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = rims[i];
+-    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = inners[i];
++    for (i = 0; i < zones.inner.length; i += 1) { fields[zones.inner[i]][3] = "rim"; fields[zones.inner[i]][4] = inners[i]; }
+     for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = bottoms[i];
+ 
+     return { ok: true, value: { geom: geom, fields: fields } };

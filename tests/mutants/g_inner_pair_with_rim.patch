@@ -1,0 +1,15 @@
+# suite: node --test tests/layout.test.js
+# kills: the inner pair ascends OPPOSITE the rim direction, so it starts on the far side from rim field 1
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index f5d1cd5..d39d833 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -33,7 +33,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var INNER_ORB = 0.38;       /* pygmy literal                               */
+   var BOTTOM_ORB = 1.15;      /* pygmy literal, x-ray ring outside the shell */
+   var INNER_RING_DECOR = 0.355; /* hijaz / amara decorative circle           */
+-  var INNER_ANGLES = [128, 52]; /* left first: opposite the rim direction    */
++  var INNER_ANGLES = [52, 128]; /* left first: opposite the rim direction    */
+ 
+   var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
+   var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */

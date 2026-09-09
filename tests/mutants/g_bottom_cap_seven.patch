@@ -1,0 +1,15 @@
+# suite: node --test tests/layout.test.js
+# kills: a seventh bottom field is TOO_MANY_RIM
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index f5d1cd5..5cf0c58 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -22,7 +22,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   var RIM_MAX = 11;
+   var INNER_MAX = 2;
+-  var BOTTOM_MAX = 6;
++  var BOTTOM_MAX = 7;
+ 
+   /* ---- D12 fixed geometry, anchored on the built-in literals ------------- */
+ 

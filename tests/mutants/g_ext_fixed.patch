@@ -1,0 +1,15 @@
+# suite: node --test tests/layout.test.js
+# kills: ext is the furthest DRAWN element, so a bottom-shell pan needs an ext well past 1.06
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index f5d1cd5..cb3c90a 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -245,7 +245,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       reach = Math.max(reach, bottomOrb + rBnote);
+       reach = Math.max(reach, bottomOrb + rBnote + nOut + fNum * LABEL_REACH);
+     }
+-    var ext = round(reach + EXT_PAD, 4);
++    var ext = 1.06;
+ 
+     var geom = {
+       rim: round(rimOrb, 4),
