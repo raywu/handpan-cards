@@ -41,7 +41,7 @@ FLOORS = {
     "tests/app.test.js": 79,
     "tests/e2e.test.js": 27,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 33,
+    "tests/core.test.js": 34,
     "tests/voicing.test.js": 14,
     "tests/layout.test.js": 50,
     "tests/naming.test.js": 26,
