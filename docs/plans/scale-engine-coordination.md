@@ -382,7 +382,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | PR #15, adding root-field-given 58/59 test | pending | 2026-09-08 |
 | 1B | scale-engine/w7-layout | PR #17 verified at 1e4d795, reviewer spawned | pending | 2026-09-08 |
-| 1C | scale-engine/w8-naming | spawned (wave 3) | - | 2026-09-08 |
+| 1C | scale-engine/w8-naming | PR #16 verified at ff2c485, reviewer spawned | pending | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -414,6 +414,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 22 | main | Milestone receipt after wave 2 (contract §8): integrator script parsed the three `maker_string`s from `tests/fixtures/golden_decks_v1.json` through `loadEngine(['core'])`; name/octave/midi/label/zone equal for all 27+18 fields except Pygmy ids 10 and 11 (grammar `rim`, literal `inner`; the DECIDED section 3 divergence), `formatSeed(parse(x).value)` equals the fixture string for all three, deckIds custom:626198f8 / custom:b936039c / custom:977311b5 | receipt recorded |
 
 | 23 | 1A | The acceptance row's "voicing 58/59" is Premise 2's figure (root FIELD given); with only (root pc, intervals) the spec-predicted figure is 50/59 (Premise 3). Lane asked to expose `opts.rootField` on `choose` and assert both; the 50/59 exception table (Fm9, Db, Dbmaj7, Eb7, 5 alternates) stays two-sided. Phase 2 brief: `select.build` calls `choose` with the pc only | sent to 1A, attempt 1 |
+| 24 | 1C readings for the Phase 1 owner-review gate: numerals read off a mode REFERENCE scale (major/natural minor) not parent-degree index; minor-relative b2 reads `#I` under the section 10 tie-break; octatonic both-thirds -> lowercase; caps enforced by RangeError throw; `degrees` labels every pan pc. Amara 3 degree exceptions match spec section 10 frozen list. | 1C | integrator | open (Phase 1 owner-review gate) |
 
 ## Review log
 
@@ -440,5 +441,5 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | returned done, re-briefed | agent-managed | scale-engine/w6-voicing | #15 | d93ea39 | 2026-09-08 gh pr view + run 34311107260 success | pre-review clarification sent | 1 | no | - | - |
 | 1B | returned done | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | reviewer spawned | 0 | no | - | - |
-| 1C | running (spawned 2026-09-08) | agent-managed | scale-engine/w8-naming | - | - | - | - | 0 | no | - | - |
+| 1C | returned done | agent-managed | scale-engine/w8-naming | #16 | ff2c485 | 2026-09-08 gh pr view + run 34311111548 success | reviewer spawned | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
