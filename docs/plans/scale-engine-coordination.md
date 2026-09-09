@@ -238,7 +238,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #9 | P0b | PASS_WITH_NITS | 2 major (both cross-lane: Pygmy inner-zone gap in the D13 grammar; f_ mutant deferred), 4 nits (token test tolerant of misplaced `\|`; sha self-consistent only; deep-equality skips name/sub; duplicated CHORD_COUNTS) | merged 66453e8; queue rows 7-9 |
 | #11 | P0c | FAIL (CI success at 81830c4) | 1 blocker: suite_health `==` floor asserts crash when a pre-seeded row is raised; 1 high: mutation_check EXIT trap installed before REFUSING check deletes untracked lane files; 3 medium (restore() all-or-nothing, check_node skips unlisted files, header suites count any non-zero as kill); 8 nits incl. output format vs plan greps | Bounced to lane, attempt 1 |
 | #11 | P0c | PASS_WITH_NITS (2nd, CI success at 4eafe8e) | all 13 prior findings reproduced fixed; nits: TERM trap does not exit, e_ skip precedes apply --check, `$*` word-splits header | Merged d6935d1 |
-| #12 | preview (non-swarm) | PASS_WITH_NITS (CI success at c64feab) | fork PR fetch, exit status on bind failure, trap window, README | awaiting operator |
+| #12 | preview (non-swarm) | PASS_WITH_NITS (CI success at c64feab) | fork PR fetch, exit status on bind failure, trap window, README | nits fixed 672e003, merged |
 
 ## Cycle state
 
