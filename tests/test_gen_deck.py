@@ -284,6 +284,21 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             for f in fields:
                 self.assertIn(f, d["spec"])
 
+    def test_a_missing_ext_raises_instead_of_defaulting_the_radius(self):
+        """`geom.ext` is load-bearing OUTSIDE the engine: no silent default.
+
+        It used to be read as ``.get("ext") or 1.0``.  Drop or rename the key
+        and every generated deck quietly got R = 74.0; on a bottom-shell pan
+        (real ext ~1.4767) the drawn reach becomes 109.3pt on a 247.2pt card
+        half 88.8 wide - the diagram runs over the header, over the note lines
+        and off both sides, and nothing goes red.  A KeyError is the failure.
+        """
+        payload = generate(SEED_WITH_BOTTOM)
+        self.assertGreater(decks.from_generated(payload)["R"], 0)
+        del payload["deck"]["geom"]["ext"]
+        with self.assertRaises(KeyError):
+            decks.from_generated(payload)
+
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
         for deck in (decks.HIJAZ, decks.PYGMY, decks.AMARA):
