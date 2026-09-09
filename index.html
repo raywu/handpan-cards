@@ -997,6 +997,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  * emits the FULL geom shape - every key pan() reads, zeroes and false where a
  * zone is empty, never a missing key and never null - because pan() yields NaN
  * for a missing key. Built-in decks bypass this module entirely.
+ *
+ * Phase 5 adds ONE option, `options.order` - the user's correction of the
+ * generated layout, a permutation over the non-ding fields. Absent is the
+ * generated default; see readOrder below.
  */
 var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
@@ -1060,6 +1064,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function err(code) {
     return { ok: false, code: code, reason: reasonFor(code) };
+  }
+
+  /* Section 2's enum is CLOSED and carries no code for "that correction is not
+   * a permutation", so a rejected `order` is BAD_NOTE naming the value, exactly
+   * as core.parseSeed names an unparseable token. */
+  function badNote(token) {
+    return {
+      ok: false,
+      code: "BAD_NOTE",
+      reason: reasonFor("BAD_NOTE").split("<X>").join(String(token).slice(0, 12))
+    };
   }
 
   function point(orb, angle) {
@@ -1144,6 +1159,40 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return zones;
   }
 
+  /* ---- the D5 layout correction ----------------------------------------- */
+
+  /* `options.order` is the ONE layout-correction option: a permutation of
+   * [0 .. n-1] over the non-ding fields in the order collect() yields them
+   * (rim, then inner, then bottom, each ascending by id), where order[i] is the
+   * solved SLOT that field i takes. Absent or null is the generated default -
+   * every deck that never opened the layout editor solves byte-identically to
+   * how it always did. Rotation is not a second option: the UI writes a cyclic
+   * shift into this one.
+   *
+   * Returns a result, never a throw: an order that is not a permutation of
+   * exactly that length is BAD_NOTE. */
+  function readOrder(value, n) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (!isArray(value) || value.length !== n) return badNote(value);
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < n; i += 1) {
+      var slot = value[i];
+      if (typeof slot !== "number" || !isFinite(slot) ||
+          slot !== Math.floor(slot) || slot < 0 || slot >= n ||
+          Object.prototype.hasOwnProperty.call(seen, String(slot))) {
+        return badNote(value);
+      }
+      seen[String(slot)] = true;
+      out.push(slot);
+    }
+    return { ok: true, value: out };
+  }
+
+  function isArray(value) {
+    return Object.prototype.toString.call(value) === "[object Array]";
+  }
+
   function solve(seedOrFields, options) {
     var source = fieldsOf(seedOrFields);
     var zones = collect(source);
@@ -1158,6 +1207,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var hasRim = zones.rim.length > 0;
     var hasInner = zones.inner.length > 0;
     var hasBottom = zones.bottom.length > 0;
+
+    var wanted = readOrder(
+      (options && "order" in options) ? options.order : seedOptions.order,
+      zones.rim.length + zones.inner.length + zones.bottom.length);
+    if (!wanted.ok) return wanted;
 
     var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
     var innerOrb = hasInner ? INNER_ORB : 0;
@@ -1250,6 +1304,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rim_num_out: rimNumOut,
       ext: ext
     };
+
+    /* The correction is applied LAST, to the field-to-slot assignment only.
+     * The SET of solved angles is unchanged - order says who sits where, not
+     * where the seats are - so every geom value computed above is untouched
+     * and mirror, which reflects the ANGLES, composes with it either way. */
+    if (wanted.value) {
+      var slots = rims.concat(inners, bottoms);
+      var moved = [];
+      var nRim = rims.length;
+      var nInner = inners.length;
+      for (i = 0; i < wanted.value.length; i += 1) moved.push(slots[wanted.value[i]]);
+      rims = moved.slice(0, nRim);
+      inners = moved.slice(nRim, nRim + nInner);
+      bottoms = moved.slice(nRim + nInner);
+    }
 
     var fields = {};
     var id;
