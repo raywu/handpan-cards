@@ -1,0 +1,15 @@
+# kills: test_every_builtin_deck_key_is_synthesised_or_named_as_omitted
+# A print-only per-deck key vanishes from the generated deck without being
+# declared omitted; the key inventory must notice.
+diff --git a/tools/decks.py b/tools/decks.py
+index 92e6630..15d4ed9 100644
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -302,7 +302,6 @@ def from_generated(payload):
+              if has_bottom else "%d + 1" % len(tops)),
+         credit=name.upper(),
+         blurb=_blurb(spec, len(chords)),
+-        legend_lines=_legend_lines(spec, has_bottom),
+         legend_demo=_legend_demo(spec, chords),
+         # --- data -------------------------------------------------------
+         spec=spec,

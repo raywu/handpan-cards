@@ -1,0 +1,16 @@
+# kills: test_a_rejected_seed_exits_non_zero_with_the_engines_own_reason
+# A rejected seed must fail loudly: exiting 0 lets a pipeline read a refusal
+# as an empty success and print nothing.
+diff --git a/tools/gen_deck.js b/tools/gen_deck.js
+index 0566778..4597da5 100644
+--- a/tools/gen_deck.js
++++ b/tools/gen_deck.js
+@@ -61,7 +61,7 @@ const PRESETS = [
+ 
+ function die(message) {
+   process.stderr.write(message + "\n");
+-  process.exit(1);
++  process.exit(0);
+ }
+ 
+ function parseArgs(argv) {
