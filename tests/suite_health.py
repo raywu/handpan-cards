@@ -38,8 +38,8 @@ FLOORS = {
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
     # node
-    "tests/app.test.js": 79,
-    "tests/e2e.test.js": 27,
+    "tests/app.test.js": 85,
+    "tests/e2e.test.js": 29,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 33,
     "tests/voicing.test.js": 14,

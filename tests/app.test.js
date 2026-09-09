@@ -1357,7 +1357,7 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
 test("deleting a NON-selected custom deck leaves the selection alone", () => {
   const app = boot();
   const a = makeCustom(app);
-  const b = makeCustom(app, scale("builtin hijaz"));
+  const b = makeCustom(app, OTHER_STRING);
   app.select(b.id);
   const said = app.announcer().textContent;
   app.run(`deleteDeck(${JSON.stringify(a.id)})`);
@@ -1624,7 +1624,7 @@ const EDIT_MORE = AMARA_STRING + " D5";      // one note appended: new fields, n
 test("a field edit replaces the deck and the new one takes the old chip position", () => {
   const app = boot();
   const a = makeCustom(app);
-  const b = makeCustom(app, scale("builtin hijaz"));
+  const b = makeCustom(app, OTHER_STRING);
   const before = chipRow(app).map((c) => c.label);
   const at = before.indexOf(a.name);
   assert.ok(at >= 0, "the deck under test has no chip");
@@ -1669,7 +1669,7 @@ test("a field edit drops the old seed record instead of adding a second one", ()
 test("a boot after a field edit shows exactly one deck, in the same chip position", () => {
   const app = boot();
   const a = makeCustom(app);
-  const b = makeCustom(app, scale("builtin hijaz"));
+  const b = makeCustom(app, OTHER_STRING);
   const at = chipRow(app).map((c) => c.label).indexOf(a.name);
   const now = editFields(app, a, EDIT_MORE);
   const name = app.registry()[now].name;
@@ -1731,4 +1731,182 @@ test("a field edit still runs select.build exactly once (13A)", () => {
   const calls = spyBuild(app);
   app.els["scale-generate"].click();
   assert.strictEqual(calls(), 1, "a replacing save must run select.build exactly once");
+});
+
+/* ------------------------- 25. an edit never destroys ANOTHER deck (row 131) */
+//
+// Owner decision on coordination-doc queue row 131 (2026-09-09): editing deck A
+// onto deck B's exact scale REFUSES the save. Both decks survive, the sheet
+// stays open, the box is marked bad the way a parse error marks it, and the
+// live region carries UI copy - never an engine reason, because the section 2
+// code enum is CLOSED and has no code for "that scale is taken".
+
+const COLLIDE_MSG = /Another deck already uses this scale/;
+// Deliberately NOT a built-in's scale: the built-in Hijaz chip already reads
+// "C# HIJAZ 9", which is also what autoName gives a pan seeded from it, so a
+// chip lookup by label could not tell the two apart.
+const OTHER_STRING = "(E3) B3 D4 E4 F#4 G4 A4 B4";
+const THIRD_STRING = "(G3) D4 F4 G4 A4 Bb4 D5";
+
+/** Rename the deck under the Edit sheet and recolour/flip it, then save. */
+function editOptions(app, d, name) {
+  app.select(d.id);
+  app.clickChip(d.name);
+  if (name !== undefined) {
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+  }
+  app.els["scale-swatches"].children[4].click();
+  app.els["scale-mirror-l"].click();
+  app.els["scale-generate"].click();
+  return app.registry()[app.deckId()];
+}
+
+test("an edit onto another deck's scale is refused and both decks survive", () => {
+  const app = boot();
+  const key = app.get("SCALES_KEY");
+  const a = makeCustom(app);
+  const b = makeCustom(app, OTHER_STRING);
+  const bNamed = editOptions(app, b, "RAY'S PAN");
+  assert.strictEqual(bNamed.name, "RAY'S PAN", "the setup did not rename the victim");
+  assert.strictEqual(bNamed.options.palette, 4, "the setup did not recolour the victim");
+  assert.strictEqual(bNamed.options.mirror, true, "the setup did not flip the victim");
+
+  const bSeed = app.get(`HPE.core.formatSeed(CUSTOM[${JSON.stringify(b.id)}].fields)`);
+  app.select(a.id);
+  const storedBefore = app.store[key];
+  const keysBefore = Object.keys(app.registry());
+
+  app.clickChip(a.name);
+  app.type(bSeed);                       // A's fields, retyped as B's exact scale
+  app.els["scale-generate"].click();
+
+  assert.deepStrictEqual(Object.keys(app.registry()), keysBefore,
+    "the refused save changed the registry");
+  const after = app.registry()[b.id];
+  assert.ok(after, "the victim deck was destroyed by the edit");
+  assert.strictEqual(after.name, "RAY'S PAN", "the victim lost its name");
+  assert.strictEqual(after.options.palette, 4, "the victim lost its palette");
+  assert.strictEqual(after.options.mirror, true, "the victim lost its mirror");
+  assert.deepStrictEqual(app.registry()[a.id], a, "the edited deck was changed by a refusal");
+
+  assert.strictEqual(app.store[key], storedBefore,
+    `a refused save wrote to hpfc.scales: ${app.store[key]}`);
+  assert.strictEqual(app.deckId(), a.id, "the refusal moved the selection");
+  assert.strictEqual(app.sheetOpen(), true, "the refusal closed the sheet");
+  assert.ok(app.els["scale-box"].classList.contains("bad"),
+    "the scale box was not marked bad on a refusal");
+  assert.match(app.els["scale-msg"].textContent, COLLIDE_MSG);
+  assert.match(app.announcer().textContent, COLLIDE_MSG);
+  // UI copy, not an engine reason: nothing in the closed section 2 enum says this.
+  const reasons = app.get("Object.keys(HPE.core.REASONS).map(k => HPE.core.REASONS[k].reason)");
+  assert.strictEqual(reasons.includes(app.els["scale-msg"].textContent), false,
+    "the refusal message masquerades as an engine reason");
+});
+
+test("the collision refusal never fires on an options-only edit, a new scale, a re-save or ADD", () => {
+  // (a) an options-only edit
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, OTHER_STRING);
+  editOptions(app, b, "RAY'S PAN");
+  assert.strictEqual(app.registry()[b.id].options.palette, 4,
+    "an options-only edit was refused");
+
+  // (b) a field edit to a genuinely new scale
+  const now = editFields(app, a, EDIT_MORE);
+  assert.notStrictEqual(now, a.id, "the field edit did not land");
+  assert.ok(app.registry()[now], "a field edit to a new scale was refused");
+
+  // (c) a re-save of an unchanged deck
+  const d = app.registry()[now];
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.sheetOpen(), false, "an unchanged re-save was refused");
+  assert.ok(app.registry()[d.id], "an unchanged re-save lost the deck");
+
+  // (d) the ADD path on a seed that already exists: dedupe by id, not a refusal
+  const keys = Object.keys(app.registry());
+  openSheet(app);
+  app.type(app.get(`HPE.core.formatSeed(CUSTOM[${JSON.stringify(b.id)}].fields)`));
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.sheetOpen(), false, "the ADD path was refused as a collision");
+  assert.deepStrictEqual(Object.keys(app.registry()), keys,
+    "the ADD path forked a deck instead of deduping by id");
+  assert.strictEqual(app.deckId(), b.id, "the ADD path did not select the existing deck");
+});
+
+test("a refused save still runs select.build exactly once (13A)", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, OTHER_STRING);
+  const bSeed = app.get(`HPE.core.formatSeed(CUSTOM[${JSON.stringify(b.id)}].fields)`);
+  app.select(a.id);
+  app.clickChip(a.name);
+  app.type(bSeed);
+  const calls = spyBuild(app);
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.sheetOpen(), true, "the collision was not refused");
+  assert.ok(calls() <= 1, `a refused save ran select.build ${calls()} times`);
+});
+
+/* ------------------- 26. an options-only edit keeps its chip index (row 132) */
+
+test("an options-only edit keeps its chip index across a reload with three decks", () => {
+  const app = boot();
+  const key = app.get("SCALES_KEY");
+  const one = makeCustom(app);
+  const two = makeCustom(app, OTHER_STRING);
+  const three = makeCustom(app, THIRD_STRING);
+  const before = chipRow(app).map((c) => c.label);
+  const at = before.indexOf(two.name);
+  assert.ok(at >= 0 && at < before.indexOf(three.name), "the setup has no middle deck");
+
+  editOptions(app, two, undefined);        // palette + mirror only: the id cannot move
+  assert.ok(app.registry()[two.id], "an options-only edit moved the id");
+
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] || "[]" } });
+  const row = chipRow(again).map((c) => c.label);
+  assert.strictEqual(row[at], two.name,
+    `an options-only edit moved the chip on the next boot: ${JSON.stringify(row)}`);
+  assert.deepStrictEqual(row, before,
+    `the chip row was reordered by an options-only edit: ${JSON.stringify(row)}`);
+  assert.deepStrictEqual(Object.keys(again.registry()), [one.id, two.id, three.id],
+    "the registry order changed across the reload");
+});
+
+/* ------------------- 27. a typed name is never a coincidence (row 133) */
+
+test("a user-typed name equal to the auto label survives a later field edit", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const auto = app.get(
+    `HPE.select.autoName(CUSTOM[${JSON.stringify(a.id)}].fields, ` +
+    `CUSTOM[${JSON.stringify(a.id)}].options.parent)`);
+  assert.strictEqual(a.name, auto, "the setup deck is not auto-named");
+
+  // the user opens Edit and DELIBERATELY types the very string the box holds
+  app.select(a.id);
+  app.clickChip(a.name);
+  app.els["scale-name"].value = auto;
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.registry()[a.id].options.name, auto,
+    "a deliberately typed name was discarded as a coincidence");
+
+  // and it is a real name: a later FIELD edit keeps it instead of re-deriving
+  const now = editFields(app, app.registry()[a.id], EDIT_MORE);
+  assert.strictEqual(app.registry()[now].name, auto,
+    "the field edit renamed the deck out from under the user");
+  const list = JSON.parse(app.store[app.get("SCALES_KEY")] || "[]");
+  assert.strictEqual(list[0].o.name, auto, "the typed name did not reach storage");
+});
+
+test("an untouched Edit box still leaves an auto-named deck free to re-derive its name", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const now = editFields(app, a, EDIT_MORE);
+  assert.strictEqual(app.registry()[now].options.name, undefined,
+    "an untouched auto name was pinned onto the new fields");
 });
