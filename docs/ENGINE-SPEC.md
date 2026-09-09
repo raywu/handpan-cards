@@ -156,7 +156,7 @@ ding.`
 ## 3. The scale string grammar (D13)
 
 ```
-seed_string := ding  top_note+  ( "|"  bottom_note+ )?
+seed_string := ding  rim_note+  ( "/"  inner_note+ )?  ( "|"  bottom_note+ )?
 ding        := "(" note ")" | note "/"
 note        := [A-G] ("#" | "b")? ([0-9])?
 ```
@@ -173,6 +173,29 @@ note        := [A-G] ("#" | "b")? ([0-9])?
 - DECIDED(D13) Separators are whitespace; `(`, `)`, `/` and `|` are the only
   punctuation. Any other token, or a note name outside `[A-G](#|b)?(\d)?`, is
   `BAD_NOTE`.
+- DECIDED(owner 2026-09-09, the D13 inner-shell amendment) The top run may be
+  split by a single `/`: the notes before it are `rim`, the notes after it are
+  `inner`. The separator is OPTIONAL. A seed without one keeps the POSITIONAL
+  zone rule of section 4 byte for byte, so no seed that parsed before the
+  amendment changes its fields, its canonical string or its deck id.
+- DECIDED(owner 2026-09-09) DISAMBIGUATION from the trailing-slash ding: the
+  ding's slash is ATTACHED to a note (`F3/`), and the inner separator STANDS
+  ALONE, exactly as `|` does. That one rule settles every spelling. `F3/ A3 B3`
+  is a trailing-slash ding; `(F3) A3 / B3` is a rim note, the separator and an
+  inner note; `F3/ A3 / B3` is both at once. `F3/A3` and `F3//A3` carry no
+  ding token at all and are `NO_DING`; `(F3) A3/B3` is one token that does not
+  lex and is `BAD_NOTE`; `(F3) A3/ B3` is a SECOND ding-shaped token and is
+  `NO_DING` by the count-first rule.
+- DECIDED(owner 2026-09-09) A malformed separator is `BAD_NOTE` naming `/` -
+  the section 2 enum is closed and the amendment mints no code. Malformed
+  means: more than one separator in the top run, a separator with no note
+  before it or none after it, and a separator after the `|` (it is then an
+  ordinary bottom token that does not lex). A separator written BEFORE the
+  ding leaves the ding token in a position other than the first, so the
+  count-first rule of this section reaches it earlier and it is `NO_DING`.
+- DECIDED(owner 2026-09-09) Exceeding the section 4 caps with an explicit split
+  stays `TOO_MANY_RIM`: more than 11 notes before the separator, or more than 2
+  after it, whatever the top run totals.
 - DECIDED(D13) Note tokens match `[A-G](#|b)?(\d)?`: a letter, an optional
   single accidental, an optional single-digit octave in scientific pitch
   notation (middle C = C4, so the built-in Amara ding is `D3`).
@@ -252,17 +275,36 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   from these strings on `name`, `octave`, `midi` and `label` for every field.
   `angle` is lane B's output and is excluded.
 - DECIDED(swarm-2026-09-08) `zone` is reproduced for Hijaz and Amara only. The
-  Pygmy string yields ELEVEN rim fields from the grammar (11 top notes, all
-  within the D7 rim cap), whereas the built-in literal ships 9 rim + 2 inner
-  (F5 and G5 on the inner ring). This is not a defect: the D13 grammar carries
-  no inner-shell marker, and per D12 the built-in `geom` and `zone` literals
-  bypass the solver entirely, so the divergence never reaches a rendered
-  built-in card. `synthetic_scales.json` records the parse-side expectation
-  (`zones.rim` = 11) on the `builtin pygmy` row, tagged
-  `zones-diverge-from-builtin`.
-- DECIDED(swarm-2026-09-08) The grammar's zone assignment therefore governs
-  GENERATED decks only. A future inner-shell marker is a D13 amendment, not a
-  lane decision.
+  Pygmy string AS WRITTEN ABOVE yields ELEVEN rim fields from the grammar (11
+  top notes, all within the D7 rim cap), whereas the built-in literal ships 9
+  rim + 2 inner (F5 and G5 on the inner ring). This is not a defect: that
+  string names no inner shell, and per D12 the built-in `geom` and `zone`
+  literals bypass the solver entirely, so the divergence never reaches a
+  rendered built-in card. `synthetic_scales.json` records the parse-side
+  expectation (`zones.rim` = 11) on the `builtin pygmy` row, tagged
+  `zones-diverge-from-builtin`. That row is about the unmarked string and stays
+  correct after the amendment.
+- DECIDED(owner 2026-09-09, superseding the "not reproducible" reading) The
+  divergence is a property of the STRING, not a limit of the engine. With the
+  inner shell named,
+
+  ```
+  (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5
+  ```
+
+  parses to 9 rim + 2 inner + 6 bottom + the ding and, solved through
+  `layout.solve` with `mirror: false`, reproduces the measured F3 Low Pygmy 18
+  instrument with ZERO angle differences across all 18 fields, zones included.
+  `tests/core.test.js` holds that receipt against the golden fixture. The
+  residue is four `geom` fractions (`r_note`, `f_note`, `f_num` and
+  `inner_ring`) plus `ext`, which the built-in literal does not carry; none of
+  them moves a note.
+- DECIDED(owner 2026-09-09) The two strings are two DIFFERENT decks and hash to
+  different ids: the id is a pure function of `formatSeed` (section 12), and
+  `formatSeed` prints the separator. Adding a separator to a shared seed
+  therefore mints a new deck rather than editing one.
+- DECIDED(swarm-2026-09-08) The grammar's zone assignment governs GENERATED
+  decks only.
 
 ## 4. Zone assignment, field ids and caps
 
@@ -286,9 +328,22 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   `U6` for the bottom notes.
 - DECIDED(D13) The ding is its own zone and is assigned from the `( )` / `/`
   token only.
-- DECIDED(D7, D12) Top notes are assigned in ascending order: the first up to
-  11 are `rim` (the D7 stroke-aware ceiling), the next up to 2 are `inner`
-  (D12).
+- DECIDED(D7, D12) Top notes are assigned in ascending order. With no `/` in
+  the seed the rule is POSITIONAL: the first up to 11 are `rim` (the D7
+  stroke-aware ceiling), the next up to 2 are `inner` (D12).
+- DECIDED(owner 2026-09-09, the D13 inner-shell amendment) With a `/` in the
+  seed the split is EXPLICIT and the positional rule does not run: every note
+  before the separator is `rim` and every note after it is `inner`, so a pan
+  whose rim is not full can still carry an inner ring. Ids and labels are
+  unchanged - one ascending sequence, rim first then inner (`(F3) A3 B3 / C5`
+  is rim `"1"`, `"2"` and inner `"3"`).
+- DECIDED(owner 2026-09-09) Section 12's canonical string prints the separator
+  only when it CARRIES information - when the split is not the one the
+  positional rule would produce. A seed whose inner ring starts exactly at the
+  positional boundary prints without one (`... G4 / A4 B4` with 13 top notes
+  round-trips as `... G4 A4 B4`), which is what keeps every pre-amendment
+  canonical string, and therefore every pre-amendment deck id, exactly where it
+  was.
 - DECIDED(D12, plan P0d [review D3]) A 14th top note is `TOO_MANY_RIM`.
 - DECIDED(D12) Notes after `|` are `bottom`, at most 6; a 7th bottom note is
   `TOO_MANY_RIM`.

@@ -1,0 +1,15 @@
+# suite: node --test tests/core.test.js
+# kills: formatSeed prints the separator, and drops it when it says nothing (the canonical string loses the /, so the two decks collapse to one id)
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..6a1bd40 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -399,7 +399,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (n = 0; n < ids.top.length; n += 1) {
+       if (fields[ids.top[n]][3] === "inner") { split = n; break; }
+     }
+-    var mark = (split > 0 && split !== positionalRim(ids.top.length)) ? split : -1;
++    var mark = -1;
+     for (n = 0; n < ids.top.length; n += 1) {
+       if (n === mark) out += " " + INNER_MARK;
+       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];

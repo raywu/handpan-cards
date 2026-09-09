@@ -1,0 +1,25 @@
+# suite: node --test tests/core.test.js
+# kills: a misplaced or repeated separator is BAD_NOTE naming the slash
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..2d1d143 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -267,16 +267,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     //     after it are inner. At most one, notes on both sides. A `/` after the
+     //     bar is left in bottomTokens, where it fails to lex and is BAD_NOTE.
+     var rimCount = null;
+-    var slash = -1;
+-    for (var s = 0; s < topTokens.length; s += 1) {
+-      if (topTokens[s] !== INNER_MARK) continue;
+-      if (slash >= 0) return badNote(INNER_MARK);
+-      slash = s;
+-    }
++    var slash = topTokens.indexOf(INNER_MARK);
+     if (slash >= 0) {
+       if (slash === 0 || slash === topTokens.length - 1) return badNote(INNER_MARK);
+       rimCount = slash;
+-      topTokens = topTokens.slice(0, slash).concat(topTokens.slice(slash + 1));
++      topTokens = topTokens.filter(function (t) { return t !== INNER_MARK; });
+     }
+ 
+     // 3. Lex every remaining token.

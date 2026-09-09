@@ -50,6 +50,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var TOP_MAX = RIM_MAX + INNER_MAX;
 
   var NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
+  var INNER_MARK = "/";
   var DEFAULT_OPTIONS = { palette: 0, parent: null, name: "", mirror: false };
 
   /* ---- small helpers ---------------------------------------------------- */
@@ -113,7 +114,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // `(D3) (A3) C4` is NO_DING rather than BAD_NOTE. A single, first,
   // ding-shaped token that is not exactly `(NAME)` or `NAME/` is a malformed
   // note token and therefore BAD_NOTE.
+  //
+  // The lone `/` is the inner-shell separator, not a ding: the trailing-slash
+  // ding is a slash ATTACHED to a note (`F3/`), and the separator stands alone
+  // exactly as `|` does. That is the whole disambiguation rule.
   function isDingShaped(token) {
+    if (token === INNER_MARK) return false;
     return token.charAt(0) === "(" ||
            token.charAt(token.length - 1) === ")" ||
            token.charAt(token.length - 1) === "/";
@@ -156,6 +162,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var below = dingMidi - (step === 0 ? 12 : step);
     var above = step === 0 ? dingMidi + 12 : below + 12;
     return (dingMidi - below) <= (above - dingMidi) ? below : above;
+  }
+
+  // The positional zone rule of section 4: with no separator, the first up to
+  // RIM_MAX top notes are rim and the rest are inner.
+  function positionalRim(topCount) {
+    return topCount < RIM_MAX ? topCount : RIM_MAX;
   }
 
   function place(note, previousMidi, seedFn) {
@@ -250,6 +262,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var bottomTokens = bar < 0 ? [] : rest.slice(bar + 1);
     if (bar >= 0 && bottomTokens.length === 0) return badNote("|");
 
+    // 2b. The OPTIONAL inner-shell separator (the D13 amendment). A lone `/`
+    //     inside the top run splits it: the notes before it are rim, the notes
+    //     after it are inner. At most one, notes on both sides. A `/` after the
+    //     bar is left in bottomTokens, where it fails to lex and is BAD_NOTE.
+    var rimCount = null;
+    var slash = -1;
+    for (var s = 0; s < topTokens.length; s += 1) {
+      if (topTokens[s] !== INNER_MARK) continue;
+      if (slash >= 0) return badNote(INNER_MARK);
+      slash = s;
+    }
+    if (slash >= 0) {
+      if (slash === 0 || slash === topTokens.length - 1) return badNote(INNER_MARK);
+      rimCount = slash;
+      topTokens = topTokens.slice(0, slash).concat(topTokens.slice(slash + 1));
+    }
+
     // 3. Lex every remaining token.
     var topNotes = [];
     var bottomNotes = [];
@@ -297,6 +326,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (topNotes.length > TOP_MAX || bottomNotes.length > BOTTOM_MAX) {
       return err("TOO_MANY_RIM", {});
     }
+    // An explicit split is capped per ring, not only in total.
+    if (rimCount !== null &&
+        (rimCount > RIM_MAX || topNotes.length - rimCount > INNER_MAX)) {
+      return err("TOO_MANY_RIM", {});
+    }
 
     // 6. A perfect fifth above the ding must exist on the TOP shell.
     var wanted = pitchClass(dingMidi + 7);
@@ -315,11 +349,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var fields = {};
     fields["0"] = [spell(dingNote.letter, dingNote.accidental), dingNote.octave,
                    dingMidi, "ding", null, "Ding"];
+    // Without a separator the POSITIONAL rule stands, byte for byte: the first
+    // up to 11 top notes are rim and the rest are inner.
+    var rim = rimCount === null ? positionalRim(topNotes.length) : rimCount;
     for (n = 0; n < topNotes.length; n += 1) {
       var id = String(n + 1);
       fields[id] = [spell(topNotes[n].letter, topNotes[n].accidental),
                     topNotes[n].octave, topNotes[n].midi,
-                    n < RIM_MAX ? "rim" : "inner", null, id];
+                    n < rim ? "rim" : "inner", null, id];
     }
     for (n = 0; n < bottomNotes.length; n += 1) {
       fields[String(101 + n)] = [
@@ -354,7 +391,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var ding = fields["0"];
     var out = "(" + ding[0] + ding[1] + ")";
     var n;
+    // The separator is printed only when it CARRIES information: a split the
+    // positional rule would not reproduce. A deck whose inner ring starts
+    // exactly where the positional rule puts it prints without one, so no seed
+    // that parsed before the amendment moves its canonical string or its id.
+    var split = -1;
     for (n = 0; n < ids.top.length; n += 1) {
+      if (fields[ids.top[n]][3] === "inner") { split = n; break; }
+    }
+    var mark = (split > 0 && split !== positionalRim(ids.top.length)) ? split : -1;
+    for (n = 0; n < ids.top.length; n += 1) {
+      if (n === mark) out += " " + INNER_MARK;
       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
     }
     if (ids.bottom.length) {

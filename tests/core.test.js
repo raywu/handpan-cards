@@ -388,3 +388,167 @@ test("deckId accepts a seed or a bare fields map and never sees the options", ()
   assert.equal(core.deckId(value.fields), core.deckId(value));
   assert.equal(core.formatSeed(value.fields), core.formatSeed(value));
 });
+
+/* --------- section 3: the inner-shell separator (the D13 amendment) ------- */
+
+test("a lone / splits the top run into rim notes and inner notes", () => {
+  // Section 3: notes before the separator are rim, notes after it are inner.
+  const f = parsed("(F3) G3 Ab3 C4 Eb4 / F4 G4").fields;
+  assert.deepEqual(zoneCounts(f), { ding: 1, rim: 4, inner: 2, bottom: 0 });
+  for (const id of ["1", "2", "3", "4"]) assert.equal(f[id][3], "rim", `field ${id}`);
+  for (const id of ["5", "6"]) assert.equal(f[id][3], "inner", `field ${id}`);
+  // Section 4 is unchanged: ids stay one ascending sequence, rim then inner.
+  assert.deepEqual(Object.keys(f).sort(), ["0", "1", "2", "3", "4", "5", "6"]);
+  assert.equal(f["6"][5], "6", "an inner field is still labelled by its id");
+  // The separator is not a note: the notes and octaves are what they would be
+  // without it.
+  const flat = parsed("(F3) G3 Ab3 C4 Eb4 F4 G4").fields;
+  for (const id of Object.keys(flat)) {
+    assert.deepEqual(host(f[id]).slice(0, 3), host(flat[id]).slice(0, 3), `field ${id}`);
+  }
+});
+
+test("the separator is optional and its absence keeps the positional rule", () => {
+  // Section 3: a seed with no separator zones exactly as it did before the
+  // amendment - the first up to 11 top notes are rim, the rest inner.
+  assert.deepEqual(zoneCounts(parsed("(F3) G3 Ab3 C4 Eb4 F4 G4").fields),
+    { ding: 1, rim: 6, inner: 0, bottom: 0 });
+  assert.deepEqual(zoneCounts(parsed(
+    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4").fields),
+    { ding: 1, rim: 11, inner: 2, bottom: 0 });
+  // And every fixture row that records zones is still met - see the
+  // "zone counts match every fixture row" test, which no separator changed.
+});
+
+test("the separator and the trailing-slash ding never collide", () => {
+  // The ding slash is ATTACHED to a note; the separator stands alone, as `|`
+  // does. That single rule settles every mixed spelling.
+  assert.deepEqual(host(parsed("F3/ G3 Ab3 C4")),
+    host(parsed("(F3) G3 Ab3 C4")), "a trailing-slash ding is still a ding");
+  const both = parsed("F3/ G3 Ab3 C4 / Eb4 F4");
+  assert.deepEqual(zoneCounts(both.fields), { ding: 1, rim: 3, inner: 2, bottom: 0 },
+    "a trailing-slash ding and a separator coexist in one string");
+  assert.deepEqual(host(both), host(parsed("(F3) G3 Ab3 C4 / Eb4 F4")));
+
+  // An unattached slash inside a token is neither, so the token does not lex.
+  for (const s of ["(F3) G3/Ab3 C4", "(F3) G3 Ab3/C4 Eb4"]) {
+    const r = core.parseSeed(s);
+    assert.equal(r.ok, false, s);
+    assert.equal(r.code, "BAD_NOTE", s);
+  }
+  // A slash attached to a LATER note is a second ding token, so the ding count
+  // rule fires first, exactly as it always did.
+  assert.equal(core.parseSeed("(F3) G3 Ab3/ C4").code, "NO_DING");
+  // With no parenthesised or trailing-slash ding at all there is no ding.
+  for (const s of ["F3/A3", "F3//A3", "/ (F3) G3 Ab3 C4"]) {
+    assert.equal(core.parseSeed(s).code, "NO_DING", s);
+  }
+});
+
+test("a misplaced or repeated separator is BAD_NOTE naming the slash", () => {
+  // Section 2's enum is closed, so a malformed separator is BAD_NOTE. It needs
+  // notes on both sides, may appear at most once, and only in the top run.
+  for (const s of ["(F3) / G3 Ab3 C4",          // nothing before it
+                   "(F3) G3 Ab3 C4 /",          // nothing after it
+                   "(F3) G3 / Ab3 / C4",        // twice
+                   "(F3) G3 / / Ab3 C4",        // twice, adjacent
+                   "(F3) G3 Ab3 C4 | Db3 / Eb3" // after the bar
+                  ]) {
+    const r = core.parseSeed(s);
+    assert.equal(r.ok, false, `${s} should be rejected`);
+    assert.equal(r.code, "BAD_NOTE", s);
+    assert.equal(r.reason, core.REASONS.BAD_NOTE.reason.replace("<X>", "/"), s);
+  }
+});
+
+test("an explicit split is capped per ring, not only in total", () => {
+  // Section 4: at most 11 rim and at most 2 inner, however the split is written.
+  for (const s of ["(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 / B4", // 12 rim
+                   "(C3) D3 E3 F3 G3 / A3 B3 C4"                    // 3 inner
+                  ]) {
+    const r = core.parseSeed(s);
+    assert.equal(r.ok, false, `${s} should be rejected`);
+    assert.equal(r.code, "TOO_MANY_RIM", s);
+    assert.equal(r.reason, core.REASONS.TOO_MANY_RIM.reason, s);
+  }
+  assert.deepEqual(zoneCounts(parsed(
+    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 / A4 B4").fields),
+    { ding: 1, rim: 11, inner: 2, bottom: 0 }, "11 rim + 2 inner is accepted");
+});
+
+test("formatSeed prints the separator, and drops it when it says nothing", () => {
+  // Section 12: the canonical string carries the separator whenever the split
+  // is not the one the positional rule would produce, and omits it when it is -
+  // so no seed that parsed before the amendment moves its canonical string.
+  const withMark = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+  assert.equal(core.formatSeed(parsed(withMark)), withMark);
+  assert.equal(core.formatSeed(parsed("F3/ G3 Ab3 C4 / Eb4 F4")),
+    "(F3) G3 Ab3 C4 / Eb4 F4");
+  // A split at the positional boundary is redundant and is not printed.
+  assert.equal(core.formatSeed(parsed(
+    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 / A4 B4")),
+    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4");
+  // Round trip, both directions, for every seed that carries a separator.
+  for (const s of [withMark, "(F3) G3 Ab3 C4 Eb4 / F4 G4", "F3/ G3 Ab3 C4 / Eb4 F4"]) {
+    const value = parsed(s);
+    const printed = core.formatSeed(value);
+    assert.deepEqual(host(parsed(printed)), host(value), `${s}: round trip`);
+    assert.equal(core.formatSeed(parsed(printed)), printed, `${s}: idempotent`);
+  }
+});
+
+test("no seed that parsed before the separator existed prints one", () => {
+  // The deck id is a pure function of formatSeed (section 12), so this is the
+  // id-stability proof: every pre-amendment corpus string still prints the
+  // string it always printed, therefore hashes to the id it always had.
+  for (const deck of golden.decks) {
+    assert.equal(core.formatSeed(parsed(deck.maker_string)).includes("/"), false,
+      `${deck.id}: the built-in maker string still prints without a separator`);
+    assert.equal(core.formatSeed(parsed(deck.maker_string)), deck.maker_string);
+  }
+  for (const entry of synthetic.filter(e => e.expect.ok)) {
+    assert.equal(core.formatSeed(parsed(entry.string)).includes("/"), false,
+      `${entry.name}: no separator appears in a corpus string that never had one`);
+  }
+});
+
+test("the separator changes the deck id, because the deck is different", () => {
+  // Section 12 / D14: the id hashes formatSeed, which now carries the split.
+  const notes = "G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+  const flat = parsed(`(F3) ${notes}`);
+  const split = parsed(`(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5`);
+  assert.deepEqual(zoneCounts(flat.fields), { ding: 1, rim: 11, inner: 0, bottom: 6 });
+  assert.deepEqual(zoneCounts(split.fields), { ding: 1, rim: 9, inner: 2, bottom: 6 });
+  assert.notEqual(core.deckId(split.fields), core.deckId(flat.fields),
+    "two different pans are two different decks");
+  assert.match(core.deckId(split.fields), /^custom:[0-9a-f]{8}$/);
+  // Options still never reach the id.
+  assert.equal(core.deckId(parsed(core.formatSeed(split), { mirror: true }).fields),
+    core.deckId(split.fields));
+});
+
+test("the Pygmy seed with a separator solves to the golden Pygmy angles", () => {
+  // The receipt for the amendment: with the inner pair named, the generated
+  // layout reproduces the measured F3 Low Pygmy 18 instrument exactly - every
+  // one of the 18 non-ding angles, and every zone.
+  const layout = loadEngine(["core", "layout"]);
+  const pygmy = deckByIdes.pygmy;
+  const seed = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+  const value = layout.core.parseSeed(seed, { mirror: false });
+  assert.equal(value.ok, true, `${seed}: ${value.code}`);
+  assert.deepEqual(zoneCounts(value.value.fields),
+    { ding: 1, rim: 9, inner: 2, bottom: 6 }, "9 rim, 2 inner, 6 bottom, 1 ding");
+
+  const solved = layout.layout.solve(value.value);
+  assert.equal(solved.ok, true, `solve: ${solved.code}`);
+  const diffs = [];
+  for (const id of Object.keys(pygmy.fields)) {
+    const want = pygmy.fields[id];
+    const got = solved.value.fields[id];
+    assert.equal(got[3], want[3], `field ${id} (${want[0]}${want[1]}): zone`);
+    if (got[4] !== want[4]) diffs.push(`${id} ${want[0]}${want[1]}: ${want[4]} -> ${got[4]}`);
+  }
+  assert.deepEqual(diffs, [], "every angle matches the measured instrument");
+  assert.equal(Object.keys(pygmy.fields).length, 18,
+    "all 18 fields were compared: 9 rim + 2 inner + 6 bottom + the ding");
+});

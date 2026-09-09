@@ -1,0 +1,15 @@
+# suite: node --test tests/core.test.js
+# kills: a lone / splits the top run into rim notes and inner notes
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..5e14b6e 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -351,7 +351,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+                    dingMidi, "ding", null, "Ding"];
+     // Without a separator the POSITIONAL rule stands, byte for byte: the first
+     // up to 11 top notes are rim and the rest are inner.
+-    var rim = rimCount === null ? positionalRim(topNotes.length) : rimCount;
++    var rim = positionalRim(topNotes.length);
+     for (n = 0; n < topNotes.length; n += 1) {
+       var id = String(n + 1);
+       fields[id] = [spell(topNotes[n].letter, topNotes[n].accidental),

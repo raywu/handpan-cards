@@ -1,15 +1,15 @@
 # suite: node --test tests/core.test.js
 # kills: formatSeed: the ding must print its octave, so the round trip re-infers octave 3 and a non-3 ding comes back wrong
 diff --git a/src/engine/core.js b/src/engine/core.js
-index dc78a30..99355e5 100644
+index d8d9491..14969eb 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -352,7 +352,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -389,7 +389,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var fields = fieldsOf(seed);
      var ids = orderedIds(fields);
      var ding = fields["0"];
 -    var out = "(" + ding[0] + ding[1] + ")";
 +    var out = "(" + ding[0] + ")";
      var n;
-     for (n = 0; n < ids.top.length; n += 1) {
-       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
+     // The separator is printed only when it CARRIES information: a split the
+     // positional rule would not reproduce. A deck whose inner ring starts

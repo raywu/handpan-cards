@@ -1,0 +1,14 @@
+# suite: node --test tests/core.test.js
+# kills: a misplaced or repeated separator is BAD_NOTE naming the slash (a separator after the bar is silently swallowed)
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d8d9491..ce30f0f 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -261,6 +261,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var topTokens = bar < 0 ? rest : rest.slice(0, bar);
+     var bottomTokens = bar < 0 ? [] : rest.slice(bar + 1);
+     if (bar >= 0 && bottomTokens.length === 0) return badNote("|");
++    bottomTokens = bottomTokens.filter(function (t) { return t !== INNER_MARK; });
+ 
+     // 2b. The OPTIONAL inner-shell separator (the D13 amendment). A lone `/`
+     //     inside the top run splits it: the notes before it are rim, the notes
