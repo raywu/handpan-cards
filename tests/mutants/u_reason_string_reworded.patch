@@ -1,0 +1,15 @@
+# suite: node --test tests/core.test.js
+# kills: REASONS carries the ENGINE-SPEC section 2 strings character for character
+diff --git a/src/engine/core.js b/src/engine/core.js
+index dc78a30..7990d38 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -20,7 +20,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     },
+     NO_FIFTH: {
+       kind: "error",
+-      reason: "No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding."
++      reason: "No perfect fifth above the ding <X>. Add <fifth of X>, or check the ding."
+     },
+     TOO_MANY_RIM: {
+       kind: "error",

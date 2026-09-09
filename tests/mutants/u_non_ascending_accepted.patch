@@ -1,0 +1,14 @@
+# suite: node --test tests/core.test.js
+# kills: an explicit octave at or below the previous note is BAD_NOTE; the ding counts as the element before the first top note
+diff --git a/src/engine/core.js b/src/engine/core.js
+index dc78a30..481422e 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -272,7 +272,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var top = topNotes[n];
+       top.midi = place(top, previous, nextAbove);
+       if (top.midi < 0 || top.midi > 127) return badNote(top.token);
+-      if (top.midi <= previous) return badNote(top.token);
+       top.octave = octaveOf(top.letter, top.accidental, top.midi);
+       var topKey = "top " + spell(top.letter, top.accidental) + top.octave;
+       if (seen[topKey]) return badNote(top.token);

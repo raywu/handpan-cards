@@ -1,0 +1,15 @@
+# suite: node --test tests/core.test.js
+# kills: formatSeed: the bottom shell must be printed after a ` |`, or the bottom notes re-parse as top notes
+diff --git a/src/engine/core.js b/src/engine/core.js
+index dc78a30..6945d2c 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -358,7 +358,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
+     }
+     if (ids.bottom.length) {
+-      out += " |";
++      out += "";
+       for (n = 0; n < ids.bottom.length; n += 1) {
+         out += " " + fields[ids.bottom[n]][0] + fields[ids.bottom[n]][1];
+       }
