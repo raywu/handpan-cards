@@ -31,10 +31,10 @@ from tests import paths  # noqa: E402
 # path -> minimum number of tests that must RUN in that file.
 FLOORS = {
     # python
-    "tests/test_deck_data.py": 12,
-    "tests/test_pdf_build.py": 6,
+    "tests/test_deck_data.py": 14,
+    "tests/test_pdf_build.py": 7,
     "tests/test_gen_deck.py": 16,
-    "tests/test_print.py": 15,
+    "tests/test_print.py": 17,
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
     # node
