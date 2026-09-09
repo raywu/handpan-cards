@@ -590,6 +590,7 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 | 2b | scale-engine/w10-select-cap | merged dd9d501 | PASS_WITH_NITS (#21) | 2026-09-09 |
 | 3a | scale-engine/w11-app-plumbing | merged e348de7 | PASS_WITH_NITS (#22) | 2026-09-09 |
 | 3b | scale-engine/w12-scale-sheet | spawned (scale sheet UI, Phase 3 UI spec) | - | 2026-09-09 |
+| 4a | scale-engine/w6-share | spawned (share encode/decode engine module, Phase 4) | - | 2026-09-09 |
 | spec | claude/spec-owner-decisions | merged dad182c (owner-gate amendments, docs only) | n/a (integrator, CI green) | 2026-09-09 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
@@ -681,7 +682,7 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 ## Cycle state
 
 Cycle: 1   Wave: 5   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f, dad182c, c94b43c, dd9d501, e348de7
-PHASES 0, 1 AND 2 ARE COMPLETE, and Phase 3 is half done. All five engine modules are on main, and the engine is now INLINED INTO index.html behind a desync gate, with the custom-deck registry, generateDeck(), the share-version guard and pan() ext support - all with no UI. Wave 5 (2b cap, 3a app plumbing) is merged. Wave 6 = lane 3b, the scale sheet UI, spawned serially after 3a as planned. Phase 4 (share) follows.
+PHASES 0, 1 AND 2 ARE COMPLETE, and Phase 3 is half done. All five engine modules are on main, and the engine is now INLINED INTO index.html behind a desync gate, with the custom-deck registry, generateDeck(), the share-version guard and pan() ext support - all with no UI. Wave 5 (2b cap, 3a app plumbing) is merged. Wave 6 = lane 3b (the scale sheet UI, index.html) and lane 4a (the share encoding ENGINE MODULE), running in parallel. They are disjoint by construction: 4a owns only src/engine/share.js, tests/share.test.js, tests/mutants/h_* and the share.test.js FLOORS row, and is explicitly forbidden to touch index.html or tools/inline_engine.py. That is safe because inline_engine.py's MODULES is an EXPLICIT LIST (core, voicing, layout, naming, select), not a glob over src/engine/*.js, so a new unlisted module cannot trip validate.py check 4; wiring share.js into index.html and into MODULES is deliberately deferred to the Phase 4 wiring lane, which also owes the queue row 46 type check. The wave 5/6 milestone receipt is TAKEN and recorded as queue row 50 (row 49 closed).
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
@@ -693,6 +694,7 @@ PHASES 0, 1 AND 2 ARE COMPLETE, and Phase 3 is half done. All five engine module
 | 2b | merged, released | agent-managed | scale-engine/w10-select-cap | #21 | c4d240f | 2026-09-09 (gh pr view OPEN + run 34318930997 success at that exact SHA) | PASS_WITH_NITS | 0 | yes dd9d501 | - | no |
 | 3a | merged, released | agent-managed | scale-engine/w11-app-plumbing | #22 | 86fe974 | 2026-09-09 (gh pr view OPEN + run 34319025044 success at that exact SHA) | PASS_WITH_NITS | 0 | yes e348de7 | - | no |
 | 3b | spawned | agent-managed | scale-engine/w12-scale-sheet | - | - | - | - | 0 | no | - | - |
+| 4a | spawned | agent-managed | scale-engine/w6-share | - | - | - | - | 0 | no | - | - |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
 | 1C-2 | merged ceaac1f; released | agent-managed | scale-engine/w8b-naming-numerals | #18 | 5eee2da | 2026-09-08 (gh pr view + origin tip + run 34314377350 success) | PASS_WITH_NITS | 0 | yes | - | no |
