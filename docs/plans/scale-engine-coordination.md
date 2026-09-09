@@ -778,7 +778,7 @@ ALL SEVEN PHASES (0, 1, 2, 3, 4, 5, 6) ARE COMPLETE. `docs/SCALE_ENGINE_PLAN.md`
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 12 | spawned 2026-09-09 (wave 9) | agent-managed | scale-engine/w20-edit-collision | - | - | - | - | 0 | no | - | yes |
-| 13 | spawned 2026-09-09 (wave 9) | agent-managed | scale-engine/w21-comment-floors | - | - | - | - | 0 | no | - | yes |
+| 13 | returned; reviewer live | agent-managed | scale-engine/w21-comment-floors | #33 | 3a3d765 | 2026-09-09 (gh pr view OPEN + MERGEABLE + CLEAN + base main, ls-remote tip and run 34382311164 success all at that exact SHA, workflow validate, 5/5 jobs green, names quoted) | pending | 0 | no | - | yes |
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
