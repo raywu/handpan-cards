@@ -61,8 +61,9 @@ If you need the *app* private, use Cloudflare Pages with Cloudflare Access,
 or Netlify with password protection, both of which deploy this same single
 file unchanged.
 
-Quickest local test: `python3 -m http.server` in this folder, then open
-`http://localhost:8000` on your phone (same Wi-Fi) or laptop.
+Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
+`tools/preview.sh pr:<n>` to preview before merging), then open the printed
+`http://localhost:8000` on your laptop or the LAN URL on your phone (same Wi-Fi).
 
 ## Regenerating deck data
 
