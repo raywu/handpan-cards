@@ -152,6 +152,19 @@ button.nav:active{background:#2e281e}
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-name{font-family:Bitter, serif; font-weight:400; font-size:16px}
 #scale-degrees{font:400 16px/1.2 "Nunito Sans"}
+/* ---- LAYOUT correction (Phase 5). Every control here is a SECONDARY: the
+   sheet's only full-width primary stays #scale-generate. The slot list is a
+   single tab stop with a roving tabindex, so a keyboard reaches it in one Tab
+   and moves inside it with the arrow keys - there is no drag-only path. */
+#scale-layout-row .ctlrow{gap:8px}
+#scale-slots{display:flex; flex-wrap:wrap; gap:6px}
+#scale-slots .slot{min-width:44px; min-height:44px; padding:6px 8px; cursor:pointer;
+  border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
+  font-family:Bitter, serif; font-weight:400; font-size:13px}
+#scale-slots .slot[aria-pressed="true"]{border-color:#f1ece1; color:#f1ece1}
+#scale-layout-reset{background:none; border:none; color:#a79d8b; cursor:pointer;
+  min-height:44px; padding:0 4px;
+  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 /* Quiet, never a primary: auto width, so the sheet's only full-width button
    stays #scale-generate. */
 #scale-delete-row{align-items:center}
@@ -215,6 +228,29 @@ button.nav:active{background:#2e281e}
     <div class="editrow" id="scale-degrees-row" hidden>
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
       <select id="scale-degrees"></select>
+    </div>
+    <!-- D5: the generated layout is a guess; this corrects it. Edit path only -
+         there is nothing to correct until a pan has been solved. -->
+    <div class="editrow" id="scale-layout-row" hidden>
+      <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
+      <div class="ctlrow">
+        <div class="mirror" role="group" aria-labelledby="scale-layout-label">
+          <button class="mode" type="button" id="scale-rot-l"
+                  aria-label="Rotate the rim one position back">ROTATE &larr;</button>
+          <button class="mode" type="button" id="scale-rot-r"
+                  aria-label="Rotate the rim one position on">ROTATE &rarr;</button>
+        </div>
+        <button id="scale-layout-reset" type="button"
+                aria-label="Reset the layout to the generated one">RESET</button>
+      </div>
+      <div id="scale-slots" role="group"
+           aria-label="Notes in layout order. Use the arrow keys to choose one."></div>
+      <div class="mirror">
+        <button class="mode" type="button" id="scale-move-l"
+                aria-label="Move the chosen note one position back">MOVE &larr;</button>
+        <button class="mode" type="button" id="scale-move-r"
+                aria-label="Move the chosen note one position on">MOVE &rarr;</button>
+      </div>
     </div>
     <div class="ctlrow">
       <div class="mirror">
@@ -2613,6 +2649,23 @@ function generateDeck(text, options) {
   // rename survives a reload while the id, which hashes fields only, does not
   // move (D14).
   if (seed.value.options.name) built.value.options.name = seed.value.options.name;
+  // The layout correction (D5-1/D5-2) is the same story one step further on:
+  // core.parseSeed's option whitelist drops `order`, and select.build solves the
+  // GENERATED layout knowing nothing about it, so the correction is applied here
+  // - to the field-to-slot assignment only, which is what layout.solve does with
+  // it - and carried back onto the options so it travels. The id hashes the
+  // fields alone, so a correction never moves it (D14, D5-5).
+  const wanted = options && options.order !== undefined && options.order !== null
+    ? options.order : null;
+  if (wanted !== null) {
+    const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} },
+                                   { mirror: !!built.value.options.mirror, order: wanted });
+    if (!moved.ok) return moved;
+    for (const id of Object.keys(moved.value.fields)) {
+      if (built.value.fields[id]) built.value.fields[id][4] = moved.value.fields[id][4];
+    }
+    built.value.options.order = wanted;
+  }
   registerDeck(built.value);
   return built;
 }
@@ -2903,6 +2956,15 @@ const degRow    = document.getElementById("scale-degrees-row");
 const degSel    = document.getElementById("scale-degrees");
 const delRow    = document.getElementById("scale-delete-row");
 const delBtn    = document.getElementById("scale-delete");
+// The Phase 5 LAYOUT section. Secondaries only: the sheet's single primary is
+// still #scale-generate, relabelled SAVE CHANGES on the Edit path.
+const layoutRow = document.getElementById("scale-layout-row");
+const rotL      = document.getElementById("scale-rot-l");
+const rotR      = document.getElementById("scale-rot-r");
+const slotsBox  = document.getElementById("scale-slots");
+const moveL     = document.getElementById("scale-move-l");
+const moveR     = document.getElementById("scale-move-r");
+const resetBtn  = document.getElementById("scale-layout-reset");
 // The practice screen's own live region; created if the markup lost it, so the
 // success message is never announced into nothing.
 const announce = document.querySelector(".announce") || document.createElement("div");
@@ -2918,6 +2980,17 @@ let mirror = false;              // section 13: false = right-first (the default
 let sheetOpen = false;
 let editingId = null;            // the custom deck the sheet is editing, or null
 let sheetOpener = null;          // the control focus returns to on close
+// D5. `layoutOrder` is the user's correction of the generated layout: a
+// permutation over the non-ding fields, in the order layout.solve collects
+// them, saying which field takes which solved slot. NULL means ABSENT - the
+// generated layout - and never an identity permutation, so a pan that was
+// never corrected keeps exactly the share string it had (D5-1, D5-3).
+let layoutOrder = null;
+let layoutSel = 0;               // the position the slot list has chosen
+// The live preview is painted straight onto the deck behind the sheet, so
+// closing without saving has to put the generated angles back.
+let layoutPreviewOf = null;
+let layoutPreviewFields = null;
 const generated = new Set();     // deck ids generated in this page session
 
 /** The one adapter from a result/warning reason to a message tier. */
@@ -2975,6 +3048,158 @@ function buildDegrees(selected) {
   degSel.value = String(selected);
 }
 
+/* ---- the LAYOUT correction (D5) ----
+ * The generated layout is a GUESS, and LAYOUT_HINT says so; this is how it is
+ * corrected. Everything works from the keyboard: ROTATE and MOVE are ordinary
+ * buttons, and the slot list is ONE tab stop with a roving tabindex whose arrow
+ * keys choose a position - there is no drag-only path to any of it. */
+
+/** The non-ding field ids in the order layout.solve assigns slots. */
+function layoutIds(fields) {
+  const of = (z) => Object.keys(fields).filter((id) => fields[id][3] === z)
+    .sort((a, b) => Number(a) - Number(b));
+  return [...of("rim"), ...of("inner"), ...of("bottom")];
+}
+const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
+/** at[slot] = the field sitting in that slot - the inverse of an order. */
+function slotOccupants(order) {
+  const at = [];
+  order.forEach((slot, i) => { at[slot] = i; });
+  return at;
+}
+function orderFromSlots(at) {
+  const out = [];
+  at.forEach((field, slot) => { out[field] = slot; });
+  return out;
+}
+/** ABSENT, never the identity: a correction that undoes itself is no correction. */
+function setLayoutOrder(next) {
+  layoutOrder = next.every((slot, i) => slot === i) ? null : next;
+}
+const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
+/** The half-open slot range of the zone a slot belongs to. */
+function zoneBlock(fields, slot) {
+  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
+  const rim = count("rim");
+  const inner = count("inner");
+  const n = layoutIds(fields).length;
+  for (const [a, b] of [[0, rim], [rim, rim + inner], [rim + inner, n]]) {
+    if (slot >= a && slot < b) return [a, b];
+  }
+  return [0, 0];
+}
+const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
+
+/** One control per solved position, showing the note that sits in it. */
+function buildSlots() {
+  slotsBox.innerHTML = "";
+  const d = editedDeck();
+  if (!d) return;
+  const ids = layoutIds(d.fields);
+  const n = ids.length;
+  if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;
+  if (layoutSel >= n) layoutSel = 0;
+  const at = slotOccupants(layoutOrder || identityOrder(n));
+  for (let slot = 0; slot < n; slot += 1) {
+    const f = d.fields[ids[at[slot]]];
+    const note = f[0] + f[1];
+    const b = document.createElement("button");
+    b.type = "button";
+    b.id = "scale-slot-" + slot;
+    b.className = "slot";
+    b.textContent = note;          // text position: nothing is interpolated
+    b.setAttribute("aria-pressed", String(slot === layoutSel));
+    b.setAttribute("aria-label", "Position " + (slot + 1) + " of " + n + ", " + note);
+    b.tabIndex = slot === layoutSel ? 0 : -1;
+    b.onclick = () => { layoutSel = slot; buildSlots(); };
+    slotsBox.appendChild(b);
+  }
+}
+
+/** Solve the pan under the sheet's current mirror and correction. */
+function solveSheetLayout(order) {
+  const d = editedDeck();
+  if (!d) return null;
+  const res = HPE.layout.solve({ fields: d.fields, options: {} },
+                               { mirror: mirror, order: order });
+  return res.ok ? res.value : null;
+}
+
+// The preview is the real card behind the sheet, re-rendered: the correction is
+// only about WHERE a note sits, so nothing but the angles moves.
+function previewLayout() {
+  const d = editedDeck();
+  if (!d) return;
+  if (layoutPreviewOf !== editingId) {
+    layoutPreviewOf = editingId;
+    layoutPreviewFields = JSON.parse(JSON.stringify(d.fields));
+  }
+  const solved = solveSheetLayout(layoutOrder);
+  if (!solved) return;
+  for (const id of Object.keys(solved.fields)) {
+    if (d.fields[id]) d.fields[id][4] = solved.fields[id][4];
+  }
+  render();
+}
+function dropLayoutPreview() {
+  layoutPreviewOf = null;
+  layoutPreviewFields = null;
+}
+function restoreLayoutPreview() {
+  const d = layoutPreviewOf ? CUSTOM[layoutPreviewOf] : null;
+  if (d && layoutPreviewFields) {
+    for (const id of Object.keys(layoutPreviewFields)) {
+      if (d.fields[id]) d.fields[id][4] = layoutPreviewFields[id][4];
+    }
+    render();
+  }
+  dropLayoutPreview();
+}
+
+// ROTATE is a cyclic shift of the RIM (D5-1): the whole ring turns, which is
+// what a pan whose zig-zag starts somewhere else actually looks like.
+function rotateLayout(by) {
+  const d = editedDeck();
+  if (!d) return;
+  const n = layoutIds(d.fields).length;
+  const [a, b] = zoneBlock(d.fields, 0);
+  const span = b - a;
+  if (span < 2) return;
+  const at = slotOccupants(layoutOrder || identityOrder(n));
+  const next = at.slice();
+  for (let j = a; j < b; j += 1) next[wrap(j + by, a, span)] = at[j];
+  setLayoutOrder(orderFromSlots(next));
+  if (layoutSel >= a && layoutSel < b) layoutSel = wrap(layoutSel + by, a, span);
+  buildSlots();
+  previewLayout();
+}
+// MOVE takes the chosen note to the next position, and whatever was there takes
+// its place - a swap, so a note is never lost and the result is always still a
+// permutation. It stays inside the note's own zone: a rim note is on the rim.
+function moveNote(by) {
+  const d = editedDeck();
+  if (!d) return;
+  const n = layoutIds(d.fields).length;
+  const [a, b] = zoneBlock(d.fields, layoutSel);
+  const span = b - a;
+  if (span < 2) return;
+  const to = wrap(layoutSel + by, a, span);
+  const at = slotOccupants(layoutOrder || identityOrder(n));
+  const held = at[layoutSel];
+  at[layoutSel] = at[to];
+  at[to] = held;
+  setLayoutOrder(orderFromSlots(at));
+  layoutSel = to;
+  buildSlots();
+  previewLayout();
+}
+function resetLayout() {
+  layoutOrder = null;
+  layoutSel = 0;
+  buildSlots();
+  previewLayout();
+}
+
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
   const o = { palette, mirror };
@@ -2982,6 +3207,7 @@ function sheetOptions() {
     o.parent = Number(degSel.value);
     const n = String(nameBox.value || "").trim();
     if (n) o.name = n;             // validated by core.parseSeed, never here
+    if (layoutOrder) o.order = layoutOrder.slice();
   }
   return o;
 }
@@ -3012,7 +3238,7 @@ function updateParse() {
 
 /** Show or hide the three Edit-only rows and relabel the single primary. */
 function setSheetMode(edit) {
-  for (const el of [nameRow, degRow, delRow]) {
+  for (const el of [nameRow, degRow, layoutRow, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
@@ -3036,6 +3262,9 @@ function openScaleSheet(opener) {
   palette = 0;
   buildSwatches();
   setMirror(false);
+  layoutOrder = null;
+  layoutSel = 0;
+  buildSlots();
   showSheet(opener);
 }
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the deck
@@ -3049,6 +3278,11 @@ function openEditSheet(d, opener) {
   buildSwatches();
   setMirror(!!d.options.mirror);
   buildDegrees(d.options.parent);
+  // The correction is a seed option like the others, so Edit shows the one the
+  // deck already carries and RESET is what clears it.
+  layoutOrder = Array.isArray(d.options.order) ? d.options.order.slice() : null;
+  layoutSel = 0;
+  buildSlots();
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -3059,6 +3293,9 @@ function closeScaleSheet() {
   if (!sheetOpen) return;
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
+  // Escape and the backdrop are "without saving", and the preview was painted
+  // on the real deck, so it has to come back off.
+  restoreLayoutPreview();
   editingId = null;
   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
   (sheetOpener || addChip).focus();
@@ -3111,6 +3348,10 @@ function runGenerate() {
   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
   if (warned.length) text += " " + warned.join(" ");
 
+  // The save REPLACED the deck the preview was painted on, so there is nothing
+  // left to put back: dropping the snapshot keeps closeScaleSheet from undoing
+  // the correction it just committed.
+  dropLayoutPreview();
   closeScaleSheet();
   rememberScale(seedOf(d));
   selectDeck(d.id);
@@ -3123,6 +3364,26 @@ genBtn.onclick = runGenerate;
 delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
 mirrorL.onclick = () => setMirror(true);
 mirrorR.onclick = () => setMirror(false);
+rotL.onclick = () => rotateLayout(-1);
+rotR.onclick = () => rotateLayout(1);
+moveL.onclick = () => moveNote(-1);
+moveR.onclick = () => moveNote(1);
+resetBtn.onclick = resetLayout;
+// The roving tabindex: one Tab reaches the slot list, the arrows move inside it.
+slotsBox.addEventListener("keydown", (e) => {
+  const n = slotsBox.children.length;
+  if (!n) return;
+  let to;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (layoutSel + 1) % n;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (layoutSel + n - 1) % n;
+  else if (e.key === "Home") to = 0;
+  else if (e.key === "End") to = n - 1;
+  else return;
+  e.preventDefault();
+  layoutSel = to;
+  buildSlots();
+  slotsBox.children[layoutSel].focus();
+});
 scaleBox.addEventListener("input", updateParse);
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
 // through the same parse line every other input goes through.
@@ -3135,6 +3396,10 @@ sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet()
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+                 editingId ? rotL : null, editingId ? rotR : null,
+                 editingId ? resetBtn : null,
+                 editingId ? slotsBox.children[layoutSel] : null,
+                 editingId ? moveL : null, editingId ? moveR : null,
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(el => el && !el.disabled);
