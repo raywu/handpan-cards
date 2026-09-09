@@ -39,7 +39,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 6,
     # node
     "tests/app.test.js": 93,
-    "tests/e2e.test.js": 31,
+    "tests/e2e.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 34,
     "tests/voicing.test.js": 14,
@@ -147,10 +147,34 @@ def check_python():
     return problems
 
 
+# `node --test` runs with no per-test deadline here, so a suite that wedges -
+# a browser that never reports ready, a server socket that never binds - used to
+# hang this script forever and burn a whole CI job with no log. Every node suite
+# therefore runs under a wall clock. The slowest suite measured locally is the
+# e2e one at ~5s, so this is ~35x headroom; it matches the SUITE_TIMEOUT that
+# tests/mutation_check.sh already uses, and NODE_SUITE_TIMEOUT overrides it.
+NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "180"))
+
+
 def run_node_file(path):
-    """-> (total, failed, skipped, output) for one node test file."""
-    proc = subprocess.run(["node", "--test", "--test-reporter=tap", path],
-                          capture_output=True, text=True, cwd=paths.ROOT)
+    """-> (total, failed, skipped, output) for one node test file.
+
+    A suite that overruns NODE_TIMEOUT returns totals of None with the timeout
+    named in the output, so the caller reports a problem instead of raising.
+    """
+    try:
+        proc = subprocess.run(["node", "--test", "--test-reporter=tap", path],
+                              capture_output=True, text=True, cwd=paths.ROOT,
+                              timeout=NODE_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        def text(buf):
+            if buf is None:
+                return ""
+            return buf if isinstance(buf, str) else buf.decode("utf-8", "replace")
+        tail = (text(exc.stdout) + text(exc.stderr))[-2000:]
+        return None, None, 0, (
+            f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
+            f"{tail}")
     out = proc.stdout + proc.stderr
 
     def field(name):
@@ -188,7 +212,13 @@ def check_node():
             continue
         total, failed, skipped, out = run_node_file(path)
         if total is None:
-            problems.append(f"{path}: could not parse TAP summary")
+            if "TIMED OUT" in out:
+                print(f"  {path}: TIMED OUT after {NODE_TIMEOUT}s")
+                problems.append(f"{path}: timed out after {NODE_TIMEOUT}s "
+                                f"- the suite hung (raise NODE_SUITE_TIMEOUT only "
+                                f"if it is genuinely this slow)")
+            else:
+                problems.append(f"{path}: could not parse TAP summary")
             continue
         total_counted += total
         print(f"  {path}: ran {total}, failed {failed}, skipped {skipped}, floor {floor}")

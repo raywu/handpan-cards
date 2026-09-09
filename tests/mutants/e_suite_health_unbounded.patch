@@ -1,0 +1,18 @@
+# kills: suite_health bounds every node suite with a wall clock
+# The subprocess loses its timeout=, so a wedged node suite hangs suite_health
+# forever instead of being killed and reported - the second half of the port
+# defect, and what turned one stuck socket into a whole burned CI job.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+index e27fdb6..b0642e2 100644
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -164,8 +164,7 @@ def run_node_file(path):
+     """
+     try:
+         proc = subprocess.run(["node", "--test", "--test-reporter=tap", path],
+-                              capture_output=True, text=True, cwd=paths.ROOT,
+-                              timeout=NODE_TIMEOUT)
++                              capture_output=True, text=True, cwd=paths.ROOT)
+     except subprocess.TimeoutExpired as exc:
+         def text(buf):
+             if buf is None:
