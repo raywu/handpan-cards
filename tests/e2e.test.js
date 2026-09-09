@@ -136,9 +136,19 @@ function run() {
   // a CDP round trip outright (the driver's own 20s request timeout), which
   // says nothing about the page under test: retry rather than redden whichever
   // test happened to be holding the wheel.
+  //
+  // The retries are also why this trips a breaker. If the browser itself goes
+  // away - it crashed, or the debug socket dropped - every CDP request costs
+  // its full 20s timeout, so each remaining test would burn ~a minute before
+  // reporting the same dead browser. The mutation gate kills a suite that hangs
+  // past MUTANT_TIMEOUT, so a slow cascade reads as "mutant survived" rather
+  // than "mutant killed". Once navigation is gone it is gone for the run: latch
+  // the first failure and hand it straight to every later test.
+  let navDead = null;
   async function navigate() {
+    if (navDead) throw navDead;
     let last = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
         await b.eval(`window.__stale = true; return true;`);
         await b.goto(URL);
@@ -148,10 +158,12 @@ function run() {
         last = e;
       }
     }
+    navDead = last;
     throw last;
   }
 
   async function freshLoad() {
+    if (navDead) throw navDead;
     await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
     await navigate();
     // "+ ADD" ships in the markup, so waiting on ".chip" alone can be satisfied
