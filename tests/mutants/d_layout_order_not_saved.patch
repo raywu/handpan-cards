@@ -1,0 +1,15 @@
+# kills: ROTATE moves every note one position and SAVE keeps the id but moves the link
+# The sheet previews the correction and then drops it on save, so SAVE
+# CHANGES silently throws the correction away.
+diff --git a/index.html b/index.html
+index 2a111a2..2a85f1c 100644
+--- a/index.html
++++ b/index.html
+@@ -3221,7 +3221,6 @@ function sheetOptions() {
+     o.parent = Number(degSel.value);
+     const n = String(nameBox.value || "").trim();
+     if (n) o.name = n;             // validated by core.parseSeed, never here
+-    if (layoutOrder) o.order = layoutOrder.slice();
+   }
+   return o;
+ }

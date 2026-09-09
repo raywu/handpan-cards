@@ -1,0 +1,17 @@
+# suite: node --test tests/layout.test.js
+# kills: a non-trivial order actually moves at least one field
+# The correction is read, validated and then quietly not applied, so every
+# corrected pan solves to the generated layout.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index 51051bb..fdf05f1 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -324,7 +324,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+      * The SET of solved angles is unchanged - order says who sits where, not
+      * where the seats are - so every geom value computed above is untouched
+      * and mirror, which reflects the ANGLES, composes with it either way. */
+-    if (wanted.value) {
++    if (false) {
+       var slots = rims.concat(inners, bottoms);
+       var moved = [];
+       var nRim = rims.length;

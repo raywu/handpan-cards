@@ -1,0 +1,16 @@
+# kills: a correction is reachable with the keyboard alone: arrows select, MOVE swaps
+# The roving tabindex becomes nineteen tab stops, so Tab walks the whole
+# slot list before it reaches anything else in the sheet.
+diff --git a/index.html b/index.html
+index 2a111a2..5d9c6ac 100644
+--- a/index.html
++++ b/index.html
+@@ -3124,7 +3124,7 @@ function buildSlots() {
+     b.textContent = note;          // text position: nothing is interpolated
+     b.setAttribute("aria-pressed", String(slot === layoutSel));
+     b.setAttribute("aria-label", "Position " + (slot + 1) + " of " + n + ", " + note);
+-    b.tabIndex = slot === layoutSel ? 0 : -1;
++    b.tabIndex = 0;
+     b.onclick = () => { layoutSel = slot; buildSlots(); };
+     slotsBox.appendChild(b);
+   }

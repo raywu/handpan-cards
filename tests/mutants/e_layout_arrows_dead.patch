@@ -1,0 +1,18 @@
+# kills: the arrow keys choose a position and MOVE swaps it with its neighbour
+# The arrow keys stop choosing a position, so the only way left to pick a
+# note is a pointer - exactly the drag-only path D5 forbids.
+diff --git a/index.html b/index.html
+index 2a111a2..0602e77 100644
+--- a/index.html
++++ b/index.html
+@@ -3388,8 +3388,8 @@ slotsBox.addEventListener("keydown", (e) => {
+   const n = slotsBox.children.length;
+   if (!n) return;
+   let to;
+-  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (layoutSel + 1) % n;
+-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (layoutSel + n - 1) % n;
++  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = layoutSel;
++  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = layoutSel;
+   else if (e.key === "Home") to = 0;
+   else if (e.key === "End") to = n - 1;
+   else return;
