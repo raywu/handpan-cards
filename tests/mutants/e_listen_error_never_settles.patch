@@ -1,0 +1,24 @@
+# kills: a taken port fails the harness fast, naming the port and E2E_PORT
+# The listen() await settles only on success again, so a taken port hangs the
+# whole run instead of failing: listen() calls its callback ONLY when the bind
+# succeeds, and on EADDRINUSE it emits an event nobody here is waiting on.
+diff --git a/tests/e2e.test.js b/tests/e2e.test.js
+index 917a2f8..ae7cdc8 100644
+--- a/tests/e2e.test.js
++++ b/tests/e2e.test.js
+@@ -80,14 +80,7 @@ function run() {
+     // unbounded hang on a taken port - the exact case waitForServer's message
+     // below was written for, and one that used to stall CI until it was killed
+     // from outside. So settle on BOTH outcomes and fail loudly.
+-    await new Promise((resolve, reject) => {
+-      server.once("error", (e) => {
+-        reject(new Error(
+-          `the test server could not listen on 127.0.0.1:${PORT} (${e.code || e.message})` +
+-          ` - is port ${PORT} taken? (E2E_PORT pins this port; unset it to let the` +
+-          ` OS pick a free one)`,
+-        ));
+-      });
++    await new Promise((resolve) => {
+       server.listen(PORT, "127.0.0.1", resolve);
+     });
+     // Port 0 is only resolved once the socket is bound.
