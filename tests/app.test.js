@@ -2060,157 +2060,33 @@ test("replaceRegistered still replaces in place when there is no collision", () 
 // noticed at all. This is a source scan, so it is coarse by construction - it
 // counts names, not call graphs, and a rename of the function moves the count
 // to zero rather than reporting a subtler truth. Both failures are loud.
-// COMMENTS ARE PROSE, CODE IS CODE (queue row 160). A mention inside a comment
-// cannot execute, so it can never reintroduce row 131 - and this repo does
-// document functions in prose, including inside /* ... */ blocks (see the block
-// comment at index.html:3072). Both whole-line // comments and /* ... */ spans
-// (which may run over several lines) are therefore blanked out. Blanked, not
-// deleted: the newlines survive so the reported line numbers stay real.
-// A minimal JS tokenizer, used only to find comment spans. It walks the source
-// once, tracking which literal form (if any) it is inside, and blanks every
-// character of every // and /* */ comment - newlines survive so reported line
-// numbers stay real. Everything else, literals included, is left as written.
-function stripComments(source) {
-  const n = source.length;
-  const out = source.split("");
-  const blank = (from, to) => {
-    for (let k = from; k < to && k < n; k++) if (out[k] !== "\n") out[k] = " ";
-  };
-  const WORD = /[A-Za-z0-9_$]/;
-  // After any of these a `/` opens a REGEX literal; after a value it divides.
-  const REGEX_AFTER_WORD = new Set([
-    "return", "typeof", "instanceof", "in", "of", "new", "delete", "void",
-    "throw", "case", "do", "else", "yield", "await",
-  ]);
-  const REGEX_AFTER_CHAR = "(,=:[!&|?{};+-*%<>~^";
-
-  let i = 0;
-  let mode = "code";        // "code" | "tmpl"
-  let depth = 0;            // brace depth inside the current code context
-  const tmplDepths = [];    // brace depths at which a ${...} returns to "tmpl"
-  let prevChar = "";        // last significant code character
-  let prevWord = "";        // last identifier, for the regex heuristic
-  const value = () => { prevChar = "x"; prevWord = ""; };
-
-  while (i < n) {
-    const c = source[i];
-
-    if (mode === "tmpl") {
-      if (c === "\\") { i += 2; continue; }
-      if (c === "`") { i++; mode = "code"; value(); continue; }
-      if (c === "$" && source[i + 1] === "{") {
-        tmplDepths.push(depth);
-        i += 2; mode = "code"; prevChar = "{"; prevWord = "";
-        continue;
-      }
-      i++;
-      continue;
-    }
-
-    if (c === "/" && source[i + 1] === "/") {
-      const from = i;
-      while (i < n && source[i] !== "\n") i++;
-      blank(from, i);
-      prevChar = ""; prevWord = "";
-      continue;
-    }
-    if (c === "/" && source[i + 1] === "*") {
-      const from = i;
-      const end = source.indexOf("*/", i + 2);
-      i = end === -1 ? n : end + 2;
-      blank(from, i);
-      prevChar = ""; prevWord = "";
-      continue;
-    }
-    if (c === '"' || c === "'") {
-      const quote = c;
-      i++;
-      while (i < n) {
-        const d = source[i];
-        if (d === "\\") { i += 2; continue; }
-        if (d === quote || d === "\n") { i++; break; }
-        i++;
-      }
-      value();
-      continue;
-    }
-    if (c === "`") { i++; mode = "tmpl"; continue; }
-    if (c === "/") {
-      const isRegex = prevChar === "" ||
-        REGEX_AFTER_CHAR.includes(prevChar) || REGEX_AFTER_WORD.has(prevWord);
-      if (!isRegex) { i++; prevChar = "/"; prevWord = ""; continue; }
-      i++;
-      let inClass = false;
-      while (i < n) {
-        const d = source[i];
-        if (d === "\\") { i += 2; continue; }
-        if (d === "\n") { i++; break; }
-        if (inClass) { if (d === "]") inClass = false; }
-        else if (d === "[") inClass = true;
-        else if (d === "/") { i++; break; }
-        i++;
-      }
-      value();
-      continue;
-    }
-    if (c === "{") { depth++; i++; prevChar = "{"; prevWord = ""; continue; }
-    if (c === "}") {
-      if (tmplDepths.length && depth === tmplDepths[tmplDepths.length - 1]) {
-        tmplDepths.pop(); i++; mode = "tmpl"; continue;
-      }
-      depth--; i++; prevChar = "}"; prevWord = "";
-      continue;
-    }
-    if (WORD.test(c)) {
-      const from = i;
-      while (i < n && WORD.test(source[i])) i++;
-      prevWord = source.slice(from, i);
-      prevChar = source[i - 1];
-      continue;
-    }
-    if (!/\s/.test(c)) { prevChar = c; prevWord = ""; }
-    i++;
-  }
-  return out.join("");
-}
-
-// A trailing // comment is blanked FROM THE // ONWARD, so the live code before
-// it on the same line still counts. That asymmetry is why the scan counts
-// OCCURRENCES and not lines (queue row 159) - a second call appended to the
-// line that already names the function must not hide behind the first.
-// STRIPPING MUST NOT BECOME AN EVASION, and a regex over the raw text is not
-// enough for that: a `/*` inside a string, template or regex LITERAL opens no
-// comment, and a `/*` inside a // comment that is already running opens no
-// comment either - yet a text-level regex reads all four as a comment start and
-// blanks the live code that follows. Four such shapes were demonstrated hiding
-// a real second call site while this suite stayed green. So the delimiters are
-// located by an actual left-to-right tokenizer (above) that knows the literal
-// forms, not by pattern-matching text. Only COMMENT spans are blanked; string,
-// template and regex literals are not - a mention inside one is code by this
-// ruling and counts (assertion (c)).
-// Residual holes, stated plainly because the next maintainer will trust this
-// paragraph: it is a JS tokenizer pointed at a whole HTML file, so (1) the
-// regex-vs-division decision is the usual previous-token heuristic and can be
-// fooled, (2) an unterminated string or regex is abandoned at the newline
-// instead of running on, and (3) markup outside <script> is tokenized as if it
-// were JS. Each can only mis-classify within a single line, and the blast
-// radius is a WRONG COUNT, which is loud - the failure mode it replaces was a
-// SILENT miss of everything after a fake comment opener.
-// What does NOT backstop any of this is the caller's "hits[0] is still the
-// definition" assertion: the definition sits ~850 lines above the call site, so
-// a span that swallowed everything below the definition leaves hits[0] intact
-// and merely drops the total to 1. This file used to claim otherwise; the claim
-// was false and has been removed.
+//
+// NOTHING IS STRIPPED (queue rows 159, 160, 184). An earlier revision of this
+// scan blanked comment spans first, so that documenting the primitive in prose
+// stayed free. Two independent reviews broke it in a row, and the second one
+// showed why the shape cannot be repaired: a `/*` opens a comment only when it
+// is CODE, so deciding which `/*` is real means tokenizing a whole HTML file as
+// JS, and EVERY mis-classification converts into a blanked span - a live call
+// silently swallowed while this suite stays green. That is a false NEGATIVE,
+// the one direction a tripwire must never fail in.
+//
+// So the scan strips nothing. It counts every word-boundary OCCURRENCE of the
+// name - occurrences, not lines (row 159), so a second call appended to the
+// line that already names the function cannot hide behind the first - and it
+// counts them in comments too. A prose mention therefore reddens this test.
+// That is accepted deliberately (row 160, WONTFIX per row 184): the failure is
+// loud, the message lists every occurrence with its line number, and re-pinning
+// the count is a one-line reviewed act. Nothing is ever hidden from the count,
+// so a false negative is now structurally impossible.
 function scanNames(source, name) {
-  const code = stripComments(source);
   const re = new RegExp("\\b" + name + "\\b", "g");
   const hits = [];
   let total = 0;
-  code.split("\n").forEach((line, i) => {
+  source.split("\n").forEach((line, i) => {
     const named = line.match(re);
     if (!named) return;
     total += named.length;
-    hits.push([i + 1, line, named.length]);
+    hits.push([i + 1, line.trim(), named.length]);
   });
   return { total, hits };
 }
@@ -2221,28 +2097,28 @@ test("replaceRegistered has exactly one call site, and a new one must read the r
 
   assert.strictEqual(total, 2,
     "replaceRegistered is named " + total + " times in index.html " +
-    "(expected 2: the definition and its one call). Lines: " +
-    JSON.stringify(hits) + ". If you added a call: replaceRegistered REFUSES " +
-    "rather than throwing when another deck already sits at next.id, so " +
-    "inspect its boolean return and handle false - do not discard it the way " +
-    "the pre-existing edit-path call safely can (its collision is ruled out " +
-    "upstream by the row-131 veto). Then update this count deliberately.");
+    "(expected 2: the definition and its one call). Every occurrence, with its " +
+    "line number: " + JSON.stringify(hits) + ". This scan counts mentions in " +
+    "COMMENTS too - it strips nothing, deliberately - so if you only added " +
+    "prose, re-pin the count above. If you added a call: replaceRegistered " +
+    "REFUSES rather than throwing when another deck already sits at next.id, " +
+    "so inspect its boolean return and handle false - do not discard it the " +
+    "way the pre-existing edit-path call safely can (its collision is ruled " +
+    "out upstream by the row-131 veto). Then update this count deliberately.");
 
-  assert.ok(/^function replaceRegistered\(/.test(hits[0][1].trim()),
+  assert.ok(/^function replaceRegistered\(/.test(hits[0][1]),
     "the first mention of replaceRegistered is no longer its definition: " +
     JSON.stringify(hits[0]));
 });
 
-// Queue rows 159 and 160. The scan above runs against the real index.html, so
-// a mutant can only ever prove that ONE evasion is caught. This pins the whole
-// ruling on synthetic source instead: which shapes are CODE (counted, so a new
-// one is caught) and which are PROSE (not counted, so documenting the primitive
-// is free). The line is drawn at "could this execute": a mention inside any
-// comment cannot, and deleting a call by commenting it out is not an evasion
-// because the call is gone. Everything else - including a live call sharing a
-// line with a trailing comment, a string literal, an alias, or a second call
-// appended to an existing one - counts.
-test("the caller scan counts occurrences of code and ignores every comment", () => {
+// Queue rows 159, 160 and 184. The scan above runs against the real index.html,
+// which can hold exactly one shape at a time, so it can never prove more than a
+// single evasion is caught. This pins the ruling on synthetic source instead.
+// The ruling is short: EVERY word-boundary occurrence counts, wherever it sits.
+// Half of these shapes were demonstrated by reviewers hiding a live second call
+// site behind a fake comment opener while the suite stayed green; under a scan
+// that blanks nothing they are not special cases, they simply count.
+test("the caller scan counts every occurrence, in code and in prose alike", () => {
   const DEF = "function replaceRegistered(oldId, next) {\n}\n" +
     "if (replaced) replaceRegistered(wasId, d);\n";
   const scan = (extra) => scanNames(DEF + extra, "replaceRegistered").total;
@@ -2267,23 +2143,11 @@ test("the caller scan counts occurrences of code and ignores every comment", () 
   assert.strictEqual(scanNames(DEF.replace(/replaceRegistered/g, "swapRegistered"),
     "replaceRegistered").total, 0, "(f) a rename of the primitive went unnoticed");
 
-  // PROSE - none of these may move the count, or the tripwire fires on an
-  // innocent documentation edit.
-  assert.strictEqual(scan("// replaceRegistered(d.id, d);\n"), 2,
-    "(g) a whole-line // comment reddened the scan");
-  assert.strictEqual(scan("/* replaceRegistered returns false on a\n" +
-    "   same-id collision; see queue row 144. */\n"), 2,
-    "(row 160) documenting the primitive in a /* */ block reddened the scan");
-  assert.strictEqual(scan("/*\nreplaceRegistered(d.id, d);\n*/\n"), 2,
-    "(b) a call commented OUT in a /* */ block reddened the scan");
-  // ...but only the comment is prose: live code sharing the line still counts.
-  assert.strictEqual(scan("/* note */ replaceRegistered(d.id, d);\n"), 3,
-    "a real call was hidden by an inline /* */ comment on the same line");
-
-  // EVASION SHAPES. A comment delimiter only opens a comment when it is CODE.
-  // One that sits inside a string, template or regex literal, or inside a //
-  // comment that is already running, opens nothing - so a live call parked
-  // after it is still live, and must still be counted.
+  // EVASION SHAPES. Each parks a live call after something that a text-level
+  // comment stripper would read as `/*` but that opens no comment at all: a
+  // delimiter inside a string, template or regex literal, or inside a // comment
+  // already running. Every one of them hid a real call from an earlier revision
+  // of this scan. Nothing is blanked now, so every one of them counts.
   assert.strictEqual(
     scan('const OPEN = "/*";\nreplaceRegistered(d.id, d);\nconst CLOSE = "*/";\n'), 3,
     "(i) a call fenced by /* and */ inside STRING literals slipped past the scan");
@@ -2298,22 +2162,24 @@ test("the caller scan counts occurrences of code and ignores every comment", () 
     "(l) a /* carried inside a // comment opened a block comment and swallowed a call");
   assert.strictEqual(scan("const T = `${replaceRegistered(d.id, d)}`;\n"), 3,
     "(m) a call inside a template interpolation slipped past the scan");
+  // The shape that finished the previous revision off: a regex literal opening
+  // in a position the tokenizer read as division, so `/[/*]/` became a comment.
+  assert.strictEqual(
+    scan("if (replaced) /[/*]/.test(d.name);\nreplaceRegistered(d.id, d);\n"), 3,
+    "(F1) a regex literal after `)` swallowed the call that followed it");
 
-  // ...and the mirror of each: an innocent literal that merely CONTAINS a
-  // comment delimiter, with no call anywhere, must not move the count. That is
-  // the row-160 false positive in its second form.
-  assert.strictEqual(scan('const GLOB = "/*";\n'), 2,
-    "(n) a bare \"/*\" string literal reddened the scan (row 160 all over again)");
-  assert.strictEqual(scan("const GLOB = `/*`;\n"), 2,
-    "(o) a bare `/*` template literal reddened the scan");
-  assert.strictEqual(scan("const GLOB = /[/*]/;\n"), 2,
-    "(p) a bare /[/*]/ regex literal reddened the scan");
-  assert.strictEqual(scan("// this line mentions /* and nothing else\nconst x = 1;\n"), 2,
-    "(q) a /* inside a line comment reddened the scan");
-
-  // A TRAILING // comment is blanked from the * comment onward only: the live
-  // code before it on the same line still counts (assertion (a) above), and
-  // prose after it does not.
-  assert.strictEqual(scan("const x = 1; // replaceRegistered(d.id, d) once did this\n"), 2,
-    "(r) prose in a trailing // comment reddened the scan");
+  // PROSE COUNTS TOO. Not an oversight - the accepted cost of a scan that can
+  // never swallow a call (row 160, WONTFIX per row 184). Pinned so that anyone
+  // reintroducing stripping has to delete these assertions on purpose.
+  assert.strictEqual(scan("// replaceRegistered(d.id, d);\n"), 3,
+    "(g) a whole-line // comment was stripped - stripping is what row 184 removed");
+  assert.strictEqual(scan("/* replaceRegistered returns false on a\n" +
+    "   same-id collision; see queue row 144. */\n"), 3,
+    "(row 160) a /* */ prose mention was stripped - stripping is what row 184 removed");
+  assert.strictEqual(scan("/*\nreplaceRegistered(d.id, d);\n*/\n"), 3,
+    "(b) a call commented OUT in a /* */ block was stripped");
+  assert.strictEqual(scan("/* note */ replaceRegistered(d.id, d);\n"), 3,
+    "an inline /* */ comment sharing a line with a real call disturbed the count");
+  assert.strictEqual(scan("const x = 1; // replaceRegistered(d.id, d) once did this\n"), 3,
+    "(r) a trailing // comment was stripped");
 });
