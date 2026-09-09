@@ -209,10 +209,27 @@ GENERATED_OMITTED = {
 # HOW CLOSE IS IT TO THE MEASURED LITERALS?  (re-derived 2026-09-09; the earlier
 # note here compared 74.0 - a REACH, `_BAND_HALF` - against 73.0, a RADIUS, and
 # read the built-ins' own `ext` rather than the generated one, so it understated
-# the gap.)  Running the real pipeline - `gen_deck.js <seed>` then this formula:
+# the gap.)  EVERY FIGURE BELOW NAMES THE EXACT SEED IT WAS MEASURED ON.  A
+# measured number quoted without its seed has been wrong three times already:
+# `ext` moves with the SHAPE of the string, not with a loose family name like
+# "Pygmy-shaped".  Running the real pipeline - `gen_deck.js "<seed>"`, then this
+# formula - on these three strings:
 #
-#   Hijaz-shaped seed  ext 1.0600 -> R 69.8 vs the literal 73.0   = -4.4%
-#   Pygmy-shaped seed  ext 1.4767 -> R 50.1 vs the literal 60.0   = -16.5%
+#   S_HIJAZ  (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4
+#   S_PYGMY  (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5
+#            | C3 Db3 Eb3 Bb3 Db4 Ab5        <- canonical, docs/ENGINE-SPEC.md
+#   S_NOSEP  S_PYGMY with the `/` omitted: 11 rim, 0 inner, 6 bottom
+#                                          <- tests/test_gen_deck.py's
+#                                             SEED_WITH_BOTTOM
+#
+#   S_HIJAZ  ext 1.0600 -> R 69.8 vs the literal 73.0   = -4.4%
+#   S_PYGMY  ext 1.4620 -> R 50.6 vs the literal 60.0   = -15.7%
+#   S_NOSEP  ext 1.4767 -> R 50.1 vs the literal 60.0   = -16.5%
+#
+# S_PYGMY and S_NOSEP differ only in that separator, and that alone moves `ext`:
+# with no inner shell there is no rim-vs-inner radial crowding, so `r_note`
+# solves to 0.1783 instead of 0.1456 and the rim ring pushes further out.  The
+# 1.4767 / 50.1 pair is S_NOSEP's, NOT the real Pygmy string's.
 #
 # Like for like on REACH (R * ext, the furthest drawn element from the centre)
 # means running `src/engine/layout.js`'s OWN reach formula over the built-in's
@@ -221,14 +238,19 @@ GENERATED_OMITTED = {
 # (2026-09-09, re-derived a second time after the first correction still
 # compared unlike things):
 #
-#   Hijaz  generated 1.0600 x 69.8 = 73.99  vs  built-in 1.0600 x 73.0 = 77.38
-#                                                                       = -4.4%
-#   Pygmy  generated 1.4767 x 50.1 = 73.98  vs  built-in 1.4606 x 60.0 = 87.64
-#                                                                      = -15.6%
+#   S_HIJAZ generated 1.0600 x 69.8 = 73.99  vs  HIJAZ_SPEC 1.0600 x 73.0 = 77.38
+#                                                                         = -4.4%
+#   S_PYGMY generated 1.4620 x 50.6 = 73.98  vs  PYGMY_SPEC 1.4606 x 60.0 = 87.64
+#                                                                        = -15.6%
 #
-# The Pygmy pair was previously quoted as "73.98 vs 76.13 (-2.8%)", but 76.13
-# is `60.0 x 1.2688` - the outer edge of the bottom note CIRCLES only - while
-# the generated 1.4767 also counts the orange bottom NUMBERS that
+# The REACH column is seed-insensitive by construction - R is defined below as
+# `_BAND_HALF / ext`, so R * ext is 74.0 for ANY seed, and S_NOSEP gives the
+# same 1.4767 x 50.1 = 73.98.  Only the RADIUS column moves with the seed, which
+# is why the two Pygmy strings disagree above but not here.
+#
+# The S_PYGMY reach pair was previously quoted as "73.98 vs 76.13 (-2.8%)", but
+# 76.13 is `60.0 x 1.2688` - the outer edge of PYGMY_SPEC's bottom note CIRCLES
+# only - while the generated `ext` also counts the orange bottom NUMBERS that
 # `tools/hifi.py` draws at `orb + rr + R * n_out`, their glyph reach, and the
 # 6% pad.  Comparing a circle edge against a padded label reach understated the
 # gap by an order of magnitude.

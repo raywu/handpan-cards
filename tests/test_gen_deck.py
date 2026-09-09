@@ -362,10 +362,14 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             warnings[0]["reason"].upper(), deck["blurb"],
             "the engine's own reason string, verbatim and upper-cased, "
             "belongs on the title card - a warning nobody prints is lost")
-        # Not vacuous the other way: an unwarned deck gains no blurb line.
+        # Not vacuous the other way: an unwarned deck prints no warning line.
+        # Assert on the LINE, not on the blurb's length - two blurbs are only
+        # comparable by length while both seeds happen to be top-only.
         quiet = decks.from_generated(generate(SEED_TOP_ONLY))
         self.assertEqual(quiet["warnings"], [])
-        self.assertEqual(len(quiet["blurb"]), len(deck["blurb"]) - 1)
+        self.assertNotIn(warnings[0]["reason"].upper(), quiet["blurb"],
+                         "a deck the engine did not flag must not print a "
+                         "warning line it never earned")
 
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
