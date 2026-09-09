@@ -17,6 +17,34 @@ Pass a glob, not the directory: this Node build rejects a directory argument to
 E2E skips with a printed reason if no Chromium is found - it never fails the
 run over a missing browser.
 
+    ./tests/mutation_check.sh                        # the red-proof gate
+    python3 tests/suite_health.py                    # floors + no silent skips
+
+**Mutants pick their suite from a header.** A patch may carry a
+`# suite: <command>` line next to its `# kills:` line; that command always wins
+over `mutation_check.sh`'s filename-prefix table, so a new mutant prefix needs
+no change to the script. A patch with neither a known prefix nor a header is
+reported as a survivor. Reverting is driven by the patch itself, so a mutant may
+touch any path. Each suite runs under a wall clock (`MUTANT_TIMEOUT`, default
+180s) and a hang is retried once, then reported as `timeout` - never as a kill:
+an unfinished CI step's log cannot be read, so a hang has to end by itself. A
+header command is also run once on the CLEAN tree and must be green there: a
+suite that is already red (or a typo, rc 126/127) would "kill" every mutant
+aimed at it while testing nothing, and is reported `broken` instead. Result
+lines are machine-readable - the first two fields are
+`<patch basename> killed|survived|timeout|stale|skipped|broken`.
+
+**Floors are a per-file table.** `suite_health.py`'s `FLOORS` has one row per
+test file, and rows are pre-seeded at 0 for files that do not exist yet. Adding
+tests means editing YOUR row's number - never inserting, reordering or lowering
+someone else's. **Nothing enforces "never lower a row" - it is a reviewer rule.**
+The only arithmetic check is that the rows still SUM to at least the legacy
+aggregates (python 40, node unit 12, node total 17), so raising a row is always
+safe and lowering one is caught by review, not by the script. A 0 row for a
+missing file is a placeholder, not a failure; a `tests/*.test.js` file with NO
+row is a failure - add a row (0 is a fine start). Node counts come from
+`node --test --test-reporter=tap <file>`, per file.
+
 ## Rules
 
 1. **Spec-first.** Derive assertions from `CLAUDE.md` or from user-observable
@@ -24,18 +52,25 @@ run over a missing browser.
 2. **No test file may import a constant from the module it tests.** No
    `from hifi import CW, CH, GX, GY`; no reading geometry out of the sandbox to
    compare against itself. A test that recomputes the implementation's formula
-   is a mirror, not a test, and CI greps for this.
+   is a mirror, not a test.
+   Carve-out: comparing a module's exported table (e.g. the naming interval
+   table) to the spec fixture in `tests/fixtures/` is allowed; that is
+   spec-first - the fixture IS the spec, and the module carries its own literal
+   copy that the test holds to it.
 3. **Every test group needs a killing mutant.** Add a patch to `tests/mutants/`
    naming the test it must break. `tests/mutation_check.sh` applies each, runs
    the named test, asserts failure, and reverts. A test nothing can kill is not
    a test.
 4. **A red against unmutated code is triaged, not "fixed".** Run
-   `git diff origin/main -- index.html tools/decks.py tools/hifi.py`.
+   `git diff origin/main -- index.html tools/decks.py tools/hifi.py src/engine/**`.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
    Data changed -> the PR broke something; stop and report.
    Never silently amend either side.
-5. **The test PR is additive.** It must not modify `index.html`,
-   `tools/decks.py`, or `tools/hifi.py`. Verify before pushing with
+5. **A test-only PR is additive.** A PR whose purpose is to add or change tests
+   must not modify `index.html`, `tools/decks.py`, or `tools/hifi.py`. (A
+   feature PR obviously does change them - it then owns the rebuild and the
+   mutant regeneration; this rule is about the test PR only.) Verify before
+   pushing with
    `git diff --quiet origin/main -- index.html tools/decks.py tools/hifi.py`.
    This is a reviewer check, not a CI job: making it permanent would forbid all
    future deck-data changes, which the PDF staleness gate already handles
