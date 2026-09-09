@@ -1,0 +1,16 @@
+# suite: node --test tests/naming.test.js
+# kills: the rooted flag decides whether the subtitle carries the root
+# The rooted flag is ignored: every subtitle carries the root.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+index eda20de..5961ed6 100644
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -146,7 +146,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // `( = Xm6 )` on an m7b5, where X is the sixth a minor third above the root.
+   function subtitle(rootName, suffix, equivRootName) {
+     var q = quality(suffix);
+-    var out = q.rooted ? rootName + " " + q.display : q.display;
++    var out = rootName + " " + q.display;
+     if (equivRootName !== undefined && equivRootName !== null && equivRootName !== "") {
+       if (suffix === "m7") {
+         out += " ( = " + equivRootName + "6 )";

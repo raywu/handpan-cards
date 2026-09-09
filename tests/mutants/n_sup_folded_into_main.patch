@@ -1,0 +1,16 @@
+# suite: node --test tests/naming.test.js
+# kills: every built-in card's main and sup come from the quality table
+# The superscript is folded into main, so no card renders a sup.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+index eda20de..2653ec6 100644
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -134,7 +134,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // bug in the caller's root spelling, never user input.
+   function name(rootName, suffix) {
+     var q = quality(suffix);
+-    var out = {main: rootName + q.main_suffix, sup: q.sup};
++    var out = {main: rootName + q.main_suffix + q.sup, sup: ""};
+     if ((out.main + out.sup).length > NAME_MAX) {
+       throw new RangeError("naming: chord name over " + NAME_MAX +
+         " characters: " + out.main + out.sup);

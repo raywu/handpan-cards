@@ -1,0 +1,18 @@
+# suite: node --test tests/naming.test.js
+# kills: distance counts PAN pitch classes outside the parent, not the reverse
+# Distance counts parent notes missing from the pan instead of the reverse.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+index eda20de..6d4ee55 100644
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -179,8 +179,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var pan = uniquePcs(pitchClasses);
+     var parent = parentPcs(index, tonicPc);
+     var distance = 0;
+-    for (var i = 0; i < pan.length; i += 1) {
+-      if (!member(parent, pan[i])) distance += 1;
++    for (var i = 0; i < parent.length; i += 1) {
++      if (!member(pan, parent[i])) distance += 1;
+     }
+     return distance;
+   }

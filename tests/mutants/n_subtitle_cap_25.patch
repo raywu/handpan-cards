@@ -1,0 +1,16 @@
+# suite: node --test tests/naming.test.js
+# kills: the 26-character subtitle cap and the 16-character name cap are hard
+# The subtitle cap is 25, so the longest m7b5 equivalence no longer fits.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+index eda20de..7314f5c 100644
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -68,7 +68,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   /* ---- caps (section 9) ------------------------------------------------- */
+ 
+   var NAME_MAX = 16;      // main + sup
+-  var SUBTITLE_MAX = 26;  // the longest m7b5 equivalence, HALF-DIMINISHED ( = Bbm6 )
++  var SUBTITLE_MAX = 25;  // the longest m7b5 equivalence, HALF-DIMINISHED ( = Bbm6 )
+ 
+   /* ---- degree reference scales (D8) ------------------------------------- */
+ 
