@@ -1,0 +1,16 @@
+# kills: Escape closes the sheet without keeping the previewed correction
+# An abandoned preview is left on the deck, so Escape commits the very
+# correction the user backed out of.
+diff --git a/index.html b/index.html
+index 2a111a2..4f0dbfc 100644
+--- a/index.html
++++ b/index.html
+@@ -3309,7 +3309,7 @@ function closeScaleSheet() {
+   sheetOpen = false;
+   // Escape and the backdrop are "without saving", and the preview was painted
+   // on the real deck, so it has to come back off.
+-  restoreLayoutPreview();
++  dropLayoutPreview();
+   editingId = null;
+   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
+   (sheetOpener || addChip).focus();

@@ -188,20 +188,9 @@ test("D14: no option changes the deckId of the decoded seed", () => {
 /* ---------------------------------------------------------------------- */
 
 test("the share string leads with the version byte", () => {
-  assert.equal(share.VERSION, 1);
   const str = encoded(parsed(BASE));
-  assert.equal(str.charAt(0), String(share.VERSION));
-});
-
-test("a newer version byte is rejected with NEEDS_NEWER_APP", () => {
-  const str = encoded(parsed(BASE));
-  for (const bump of [1, 2, 8]) {
-    const newer = String(share.VERSION + bump) + str.slice(1);
-    const r = share.decode(newer);
-    assert.equal(r.ok, false);
-    assert.equal(r.code, "NEEDS_NEWER_APP");
-    assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
-  }
+  assert.equal(str.charAt(0), "0123456789".charAt(share.VERSION),
+    "the version byte of a single-digit version is its decimal digit");
 });
 
 /* ---------------------------------------------------------------------- */
@@ -384,10 +373,10 @@ test("encode is deterministic, byte for byte", () => {
   }
 });
 
-test("the v1 payload reserves an empty section for Phase-5 layout deltas", () => {
-  // D14 reserves space for layout deltas behind the version byte. In v1 that
-  // section is present and empty; a v1 string carrying content there is a
-  // corrupt payload, and a future version fills it behind version byte 2.
+test("the payload's third section is where the layout delta goes", () => {
+  // D14 reserved a third section behind the version byte and Phase 5 spends
+  // it (D5-3): empty means no correction, so an uncorrected v2 payload still
+  // looks exactly like the v1 one it replaces.
   const doc = SHARE_SRC.slice(0, SHARE_SRC.indexOf("(function"));
   assert.match(doc, /layout delta/i,
     "share.js does not document the reserved layout-delta section");
@@ -432,4 +421,350 @@ test("share answers only with codes from the closed section 2 enum", () => {
     assert.ok(r.reason.length > 0);
     assert.equal("value" in r, false, "an err result carries no value");
   }
+});
+
+/* ---------------------------------------------------------------------- */
+/* (j) Phase 5 / D5: options.order travels in the share string             */
+/* ---------------------------------------------------------------------- */
+
+// D5-3: `order` rides on payload LINE 2 - the section v1 reserved for exactly
+// this - as comma-separated decimal indices, empty meaning absent. The options
+// line is NOT widened, so `name` keeps the last tab-separated slot to itself
+// and stays the only free-text field on its line. D5-4: the wire version is 2
+// and decode is backward-compatible, so every v1 link ever emitted still opens.
+
+const vm = require("node:vm");
+
+/** The engine as an app pinned to a DIFFERENT wire version would run it. */
+function engineAtVersion(version) {
+  const src = SHARE_SRC.replace(/var VERSION = \d+;/, `var VERSION = ${version};`);
+  assert.ok(new RegExp(`var VERSION = ${version};`).test(src),
+    "share.js no longer declares its wire version as a plain `var VERSION`");
+  const sandbox = {
+    console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
+    btoa, atob,
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(
+    fs.readFileSync(path.join(ROOT, "src", "engine", "core.js"), "utf8"), sandbox);
+  vm.runInContext(src, sandbox);
+  assert.equal(sandbox.HPE.share.VERSION, version);
+  return sandbox.HPE.share;
+}
+
+// The alphabet's version character. Digits come first, so versions 0-9 are the
+// plain decimal digit and 10 is "A"; spelled out here rather than read out of
+// the module, per tests/CONTRACT.md rule 2.
+const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                      "abcdefghijklmnopqrstuvwxyz-_";
+
+/** The non-ding field count of a seed - the length `order` must have. */
+function slotCount(seed) {
+  return Object.keys(seed.fields).filter(id => seed.fields[id][3] !== "ding").length;
+}
+
+function withOrder(seed, order) {
+  const out = host(seed);
+  out.options.order = order;
+  return out;
+}
+
+function identity(n) {
+  return Array.from({ length: n }, (_, i) => i);
+}
+
+/** The three payload lines inside a share string, version byte and check off. */
+function payloadOf(str) {
+  const body = str.slice(1, str.length - 6);
+  const bytes = [];
+  let bits = 0;
+  let acc = 0;
+  for (const ch of body) {
+    acc = (acc << 6) | VERSION_CHARS.indexOf(ch);
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((acc >> bits) & 0xff);
+    }
+  }
+  return Buffer.from(bytes).toString("utf8").split("\n");
+}
+
+/** Build a well-formed share string, checksum and all, at any wire version. */
+function forgePayload(version, lines) {
+  const bytes = [...Buffer.from(lines.join("\n"), "utf8")];
+  let body = "";
+  let acc = 0;
+  let bits = 0;
+  for (const byte of bytes) {
+    acc = (acc << 8) | byte;
+    bits += 8;
+    while (bits >= 6) {
+      bits -= 6;
+      body += VERSION_CHARS.charAt((acc >> bits) & 0x3f);
+    }
+  }
+  if (bits > 0) body += VERSION_CHARS.charAt((acc << (6 - bits)) & 0x3f);
+  const head = VERSION_CHARS.charAt(version) + body;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < head.length; i += 1) {
+    hash = (hash ^ head.charCodeAt(i)) >>> 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  const octets = [(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
+                  (hash >>> 8) & 0xff, hash & 0xff];
+  let check = "";
+  acc = 0;
+  bits = 0;
+  for (const byte of octets) {
+    acc = (acc << 8) | byte;
+    bits += 8;
+    while (bits >= 6) {
+      bits -= 6;
+      check += VERSION_CHARS.charAt((acc >> bits) & 0x3f);
+    }
+  }
+  if (bits > 0) check += VERSION_CHARS.charAt((acc << (6 - bits)) & 0x3f);
+  return head + check;
+}
+
+test("an order survives the round trip, unchanged element for element", () => {
+  for (const row of OK_ROWS) {
+    const seed = parsed(row.string);
+    const n = slotCount(seed);
+    const order = identity(n).reverse();
+    const back = decoded(encoded(withOrder(seed, order)));
+    assert.deepStrictEqual(back.options.order, order, `order lost for ${row.name}`);
+    assert.deepStrictEqual(back.fields, seed.fields,
+      `${row.name}: order disturbed the fields`);
+  }
+});
+
+test("a rotation - a cyclic shift - round-trips like any other permutation", () => {
+  const seed = parsed(BASE);
+  const n = slotCount(seed);
+  for (const by of [1, 2, n - 1]) {
+    const order = identity(n).map(i => (i + by) % n);
+    assert.deepStrictEqual(decoded(encoded(withOrder(seed, order))).options.order, order);
+  }
+});
+
+test("an absent order round-trips as ABSENT, never as the identity", () => {
+  // The reset control clears the correction, so the link has to shorten back:
+  // an identity permutation on the wire would be a silent one-way door.
+  const seed = parsed(BASE);
+  const back = decoded(encoded(seed));
+  assert.deepStrictEqual(back, seed);
+  assert.equal("order" in back.options, false, "decode invented an order");
+  const n = slotCount(seed);
+  assert.ok(encoded(seed).length < encoded(withOrder(seed, identity(n).reverse())).length,
+    "an ordered link is not longer than a default one");
+});
+
+test("clearing an order restores the byte-for-byte default share string", () => {
+  const seed = parsed(BASE);
+  const before = encoded(seed);
+  const scrambled = encoded(withOrder(seed, identity(slotCount(seed)).reverse()));
+  assert.notEqual(scrambled, before);
+  const cleared = host(seed);
+  cleared.options.order = null;
+  assert.equal(encoded(cleared), before, "a cleared order did not shorten the link");
+});
+
+test("D5-5: an order changes the share string but never the deckId", () => {
+  const seed = parsed(BASE);
+  const n = slotCount(seed);
+  const id = core.deckId(seed);
+  const seen = new Set([encoded(seed)]);
+  for (const by of [1, 2, 3]) {
+    const order = identity(n).map(i => (i + by) % n);
+    const str = encoded(withOrder(seed, order));
+    assert.equal(seen.has(str), false, "two corrections share one string");
+    seen.add(str);
+    assert.equal(core.deckId(decoded(str)), id, "the deck id moved");
+  }
+});
+
+test("order composes with every other option on the wire", () => {
+  const n = slotCount(parsed(BASE));
+  const order = identity(n).map(i => (i + 1) % n);
+  for (const options of OPTION_CASES) {
+    const seed = withOrder(parsed(BASE, options), order);
+    assert.deepStrictEqual(decoded(encoded(seed)), seed,
+      `options lost for ${JSON.stringify(options)}`);
+  }
+});
+
+test("a name carrying tabs and separators still survives beside an order", () => {
+  // The name is LAST on the options line precisely so it may hold anything
+  // printable; adding a field before it must not change that.
+  const n = slotCount(parsed(BASE));
+  const seed = withOrder(parsed(BASE, { name: "1,2,3 | tabbed (D3) name" }),
+                         identity(n).reverse());
+  const back = decoded(encoded(seed));
+  assert.equal(back.options.name, "1,2,3 | tabbed (D3) name");
+  assert.deepStrictEqual(back.options.order, identity(n).reverse());
+});
+
+test("an order that is not a permutation of the field count is rejected", () => {
+  const seed = parsed(BASE);
+  const n = slotCount(seed);
+  const bad = [
+    identity(n).slice(0, n - 1),        // too short
+    identity(n).concat([n]),            // too long
+    identity(n - 1).concat([0]),        // a repeated index
+    identity(n - 1).concat([n]),        // out of range
+  ];
+  for (const order of bad) {
+    const r = share.decode(encoded(withOrder(seed, order)));
+    assert.equal(r.ok, false, `decode accepted ${JSON.stringify(order)}`);
+    assert.equal(r.code, "BAD_NOTE", `wrong code for ${JSON.stringify(order)}`);
+    assert.equal(r.reason, specReason("BAD_NOTE").split("<X>").join(
+      String(encoded(withOrder(seed, order))).slice(0, 12)));
+  }
+});
+
+test("a malformed order FIELD is refused, never repaired", () => {
+  const seed = parsed(BASE);
+  for (const order of [["x"], ["-1"], [1.5], ["1;2"]]) {
+    const r = share.decode(encoded(withOrder(seed, order)));
+    assert.equal(r.ok, false, `decode accepted ${JSON.stringify(order)}`);
+    assert.ok(CODES.includes(r.code), `invented code ${r.code}`);
+  }
+});
+
+test("flipping any single character of an ordered link is rejected", () => {
+  const seed = parsed(BASE, { palette: 2, name: "Amara" });
+  const str = encoded(withOrder(seed, identity(slotCount(seed)).reverse()));
+  for (let i = 0; i < str.length; i += 1) {
+    const swap = str.charAt(i) === "A" ? "B" : "A";
+    const broken = str.slice(0, i) + swap + str.slice(i + 1);
+    let r;
+    assert.doesNotThrow(() => { r = share.decode(broken); },
+      `decode threw on a flip at ${i}`);
+    assert.equal(r.ok, false, `flip at ${i} was accepted`);
+    assert.ok(CODES.includes(r.code), `flip at ${i} invented code ${r.code}`);
+  }
+});
+
+test("the longest possible link - every option, a full order - fits the cap", () => {
+  for (const row of OK_ROWS) {
+    const seed = parsed(row.string, {
+      palette: 5, parent: 10, mirror: true,
+      name: "A B~C 40 chars long name padded out ok!!",
+    });
+    const full = withOrder(seed, identity(slotCount(seed)).reverse());
+    assert.ok(encoded(full).length <= share.CAPS.payload,
+      `${row.name} with an order does not fit the share cap`);
+  }
+});
+
+/* ---------------------------------------------------------------------- */
+/* (k) D5-4: the version gate is backward-compatible                       */
+/* ---------------------------------------------------------------------- */
+
+test("the correction rides on line 2 and never widens the options line", () => {
+  // The options line is tab-separated and `name` is its only free-text field.
+  // Widening that line would put machine indices next to the one field a user
+  // controls; line 2 was reserved for the delta, so that is where it goes.
+  const seed = parsed(BASE, { palette: 3, parent: 7, mirror: true, name: "Pan" });
+  const n = slotCount(seed);
+  const plain = payloadOf(encoded(seed));
+  const moved = payloadOf(encoded(withOrder(seed, identity(n).reverse())));
+
+  assert.equal(plain.length, 3, "the payload is not three lines");
+  assert.equal(moved.length, 3, "a correction changed the payload's line count");
+  assert.equal(moved[0], plain[0], "a correction touched the scale line");
+  assert.equal(moved[1], plain[1], "a correction widened the OPTIONS line");
+  assert.equal(plain[1].split("\t").length, 4,
+    "the options line is no longer four fields");
+  assert.equal(plain[2], "", "an absent correction wrote something on line 2");
+  assert.equal(moved[2], identity(n).reverse().join(","),
+    "line 2 is not the correction as comma-separated decimal indices");
+});
+
+test("an uncorrected v2 payload is the v1 payload, byte for byte", () => {
+  // Only the version character may differ: a bump that changed the bytes of
+  // every existing link would be a format change dressed as a version bump.
+  const v1 = engineAtVersion(1);
+  for (const options of OPTION_CASES) {
+    const seed = parsed(BASE, options);
+    const older = v1.encode(seed);
+    const newer = encoded(seed);
+    assert.equal(older.ok, true, older.reason);
+    assert.deepStrictEqual(payloadOf(newer), payloadOf(older.value),
+      `v2 rewrote the payload for ${JSON.stringify(options)}`);
+    assert.equal(newer.charAt(0), "2");
+    assert.equal(older.value.charAt(0), "1");
+  }
+});
+
+test("a v1 link carrying anything on line 2 is a corrupt payload", () => {
+  // v1 RESERVED the section: an old string with content there was never
+  // emitted by any shipped app, so reading it as a v2 correction would be
+  // repairing a link, not decoding one.
+  const seed = parsed(BASE);
+  const forged = forgePayload(1, [payloadOf(encoded(seed))[0],
+                                  payloadOf(encoded(seed))[1],
+                                  identity(slotCount(seed)).reverse().join(",")]);
+  const r = share.decode(forged);
+  assert.equal(r.ok, false, "a v1 link with a layout delta was accepted");
+  assert.equal(r.code, "BAD_NOTE");
+});
+
+test("this app writes wire version 2", () => {
+  assert.equal(share.VERSION, 2);
+  assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
+});
+
+test("a v1 link emitted by an older app still decodes here, unchanged", () => {
+  // The PWA row of the plan: a link is forever. Bumping the version must not
+  // turn every link ever shared into a corrupt-payload rejection.
+  const v1 = engineAtVersion(1);
+  for (const options of OPTION_CASES) {
+    const seed = parsed(BASE, options);
+    const link = v1.encode(seed);
+    assert.equal(link.ok, true, `the v1 app could not encode ${JSON.stringify(options)}`);
+    assert.equal(link.value.charAt(0), "1", "the fixture link is not v1");
+    assert.deepStrictEqual(decoded(link.value), seed,
+      `a v1 link decoded differently for ${JSON.stringify(options)}`);
+  }
+});
+
+test("a v1 link carries no order and decodes as the generated default", () => {
+  const v1 = engineAtVersion(1);
+  const seed = parsed(BASE);
+  const link = v1.encode(withOrder(seed, identity(slotCount(seed)).reverse()));
+  assert.equal(link.ok, true);
+  const back = decoded(link.value);
+  assert.equal("order" in back.options, false,
+    "a v1 link cannot carry an order, so decode must not report one");
+});
+
+test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
+  const v1 = engineAtVersion(1);
+  const str = encoded(parsed(BASE));
+  const r = v1.decode(str);
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NEEDS_NEWER_APP");
+  assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
+});
+
+test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
+  const str = encoded(parsed(BASE));
+  for (const bump of [1, 2, 8]) {
+    const newer = VERSION_CHARS.charAt(share.VERSION + bump) + str.slice(1);
+    const r = share.decode(newer);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.VERSION + bump}`);
+    assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
+  }
+});
+
+test("a version byte BELOW the oldest format is a corrupt payload", () => {
+  // No version 0 ever shipped, so a "0" byte is junk, not an old link.
+  const str = encoded(parsed(BASE));
+  const r = share.decode("0" + str.slice(1));
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "BAD_NOTE");
 });

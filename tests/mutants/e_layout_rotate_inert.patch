@@ -1,0 +1,18 @@
+# kills: ROTATE corrects the layout from the keyboard alone at 380px
+# ROTATE is wired to a zero shift, so the control focuses and presses and
+# nothing on the pan moves.
+diff --git a/index.html b/index.html
+index 2a111a2..b3eac72 100644
+--- a/index.html
++++ b/index.html
+@@ -3378,8 +3378,8 @@ genBtn.onclick = runGenerate;
+ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+ mirrorL.onclick = () => setMirror(true);
+ mirrorR.onclick = () => setMirror(false);
+-rotL.onclick = () => rotateLayout(-1);
+-rotR.onclick = () => rotateLayout(1);
++rotL.onclick = () => rotateLayout(0);
++rotR.onclick = () => rotateLayout(0);
+ moveL.onclick = () => moveNote(-1);
+ moveR.onclick = () => moveNote(1);
+ resetBtn.onclick = resetLayout;

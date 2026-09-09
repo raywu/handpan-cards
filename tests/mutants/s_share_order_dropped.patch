@@ -1,0 +1,18 @@
+# suite: node --test tests/share.test.js
+# kills: an order survives the round trip, unchanged element for element
+# encode never writes the delta section, so a correction is lost the moment
+# it is shared and the far side renders the generated layout instead.
+diff --git a/src/engine/share.js b/src/engine/share.js
+index 935ecbd..bbcb79e 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -242,8 +242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   // Line 2. A build that writes v1 has no section to write into.
+   function deltaLine(options) {
+-    if (VERSION < 2) return "";
+-    return orderField((options || {}).order);
++    return "";
+   }
+ 
+   var UINT_RE = /^[0-9]{1,3}$/;

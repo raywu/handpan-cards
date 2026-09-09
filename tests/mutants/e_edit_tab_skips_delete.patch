@@ -1,12 +1,12 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
 diff --git a/index.html b/index.html
-index a127d86..5be5544 100644
+index f27316d..ce59480 100644
 --- a/index.html
 +++ b/index.html
-@@ -2977,8 +2977,7 @@ sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet()
- sheet.addEventListener("keydown", e => {
-   if (e.key !== "Tab") return;
-   const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+@@ -3414,8 +3414,7 @@ sheet.addEventListener("keydown", e => {
+                  editingId ? resetBtn : null,
+                  editingId ? slotsBox.children[layoutSel] : null,
+                  editingId ? moveL : null, editingId ? moveR : null,
 -                 mirrorL, mirrorR, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
 +                 mirrorL, mirrorR, ...swatches.children, genBtn]

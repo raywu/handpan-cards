@@ -1,0 +1,17 @@
+# suite: node --test tests/share.test.js
+# kills: a v1 link carrying anything on line 2 is a corrupt payload
+# The per-version reader stops being per-version: v1 reserved line 2 and
+# allowed nothing on it, and reading it anyway repairs a link nothing wrote.
+diff --git a/src/engine/share.js b/src/engine/share.js
+index 935ecbd..d9d0e65 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -268,7 +268,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // measured against v2's (D5-4). v1 reserved line 2 and allowed nothing on
+   // it; v2 spends it on the correction. null is ABSENT, undefined is CORRUPT.
+   function readDeltaLine(line, version) {
+-    if (version < 2) return line === "" ? null : undefined;
++    if (version < 2) return null;
+     if (line === "") return null;
+     if (!ORDER_RE.test(line)) return undefined;
+     var order = [];

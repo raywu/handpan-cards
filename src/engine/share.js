@@ -34,11 +34,15 @@
  *     line 0   the canonical scale string, core.formatSeed(seed)
  *     line 1   the options, "palette \t parent \t mirror \t name"; parent is
  *              empty for "infer", mirror is "0" (right-first) or "1", and the
- *              name is last so it may hold any printable character
- *     line 2   RESERVED FOR PHASE-5 LAYOUT DELTAS. Empty in v1, and a v1
- *              string carrying anything here is a corrupt payload. The section
- *              exists so a layout delta needs only a version bump, not a new
- *              shape.
+ *              name is last so it may hold any printable character. UNCHANGED
+ *              by v2: the layout delta does NOT widen this line, so the one
+ *              free-text field keeps the last slot to itself.
+ *     line 2   THE LAYOUT DELTA (D5-3), the section v1 reserved for it. Empty
+ *              in v1, and a v1 string carrying anything here is a corrupt
+ *              payload. In v2 it is the `order` permutation as comma-separated
+ *              decimal indices, and EMPTY still means absent - so a v2 payload
+ *              with no correction is byte-identical to the v1 one apart from
+ *              the version character.
  *
  * CODES: section 2's enum is CLOSED and there is no code for "corrupt link".
  * Its last row makes an unparseable token a BAD_NOTE rejection, so every
@@ -52,12 +56,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 (function (HPE) {
   "use strict";
 
-  var VERSION = 1;
+  // The version this build WRITES. Every version <= this one is still
+  // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a layout
+  // correction on it. The options line is the same in both.
+  var VERSION = 2;
+  var NEWEST = VERSION;   // an alias decode can still see past its own shadow
+  var OLDEST = 1;         // no version 0 ever shipped
 
   // Max characters in a whole share string. A 19-field pan with a 40-character
-  // name encodes to well under 300; the cap is the first gate on decode, so an
-  // over-cap link is refused before anything is parsed.
-  var CAPS = { payload: 512 };
+  // name and a full 19-entry layout correction encodes to well under 400; the
+  // cap is the first gate on decode, so an over-cap link is refused before
+  // anything is parsed.
+  var CAPS = { payload: 640 };
 
   // URL-safe, digits FIRST so the version character of an early version is the
   // plain decimal digit. Extending the format never renumbers this.
@@ -202,6 +212,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the payload ------------------------------------------------------ */
 
+  // The D5 layout correction, comma-separated decimal indices. Empty is
+  // ABSENT - the generated layout - never the identity permutation, so
+  // clearing a correction shortens the link back to what it was.
+  function orderField(order) {
+    if (order === undefined || order === null) return "";
+    if (Object.prototype.toString.call(order) !== "[object Array]") {
+      return String(order);
+    }
+    var parts = [];
+    for (var i = 0; i < order.length; i += 1) parts.push(String(order[i]));
+    return parts.join(",");
+  }
+
   function optionsLine(options) {
     var opts = options || {};
     var palette = opts.palette === undefined || opts.palette === null
@@ -210,12 +233,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       ? "" : opts.parent;
     var mirror = opts.mirror ? "1" : "0";
     var name = opts.name === undefined || opts.name === null ? "" : opts.name;
-    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP +
-           mirror + FIELD_SEP + String(name);
+    // `name` stays LAST and ALONE at the end of this line: the correction rides
+    // on line 2, not here, so the one user-controlled free-text field never
+    // gains a neighbour (D5-3).
+    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror +
+           FIELD_SEP + String(name);
+  }
+
+  // Line 2. A build that writes v1 has no section to write into.
+  function deltaLine(options) {
+    if (VERSION < 2) return "";
+    return orderField((options || {}).order);
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
+  var ORDER_RE = /^[0-9]{1,2}(,[0-9]{1,2})*$/;
 
+  // The options line is version-independent: v2 added no field to it.
   function readOptionsLine(line) {
     var parts = String(line).split(FIELD_SEP);
     if (parts.length !== 4) return null;
@@ -230,6 +264,42 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     };
   }
 
+  // One reader per wire version, so a v1 link is read by v1's rules and never
+  // measured against v2's (D5-4). v1 reserved line 2 and allowed nothing on
+  // it; v2 spends it on the correction. null is ABSENT, undefined is CORRUPT.
+  function readDeltaLine(line, version) {
+    if (version < 2) return line === "" ? null : undefined;
+    if (line === "") return null;
+    if (!ORDER_RE.test(line)) return undefined;
+    var order = [];
+    var digits = line.split(",");
+    for (var i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
+    return order;
+  }
+
+  // The correction is a permutation over the non-ding fields of the seed it
+  // travels with, so it can only be checked once the seed has been parsed.
+  // core.parseSeed is the one seed validator and its option whitelist drops
+  // `order`, so this is where the wire value is held to its meaning.
+  function checkOrder(order, seed) {
+    if (order === null) return true;
+    var n = 0;
+    var id;
+    for (id in seed.fields) {
+      if (!Object.prototype.hasOwnProperty.call(seed.fields, id)) continue;
+      if (seed.fields[id][3] !== "ding") n += 1;
+    }
+    if (order.length !== n) return false;
+    var seen = {};
+    for (var i = 0; i < n; i += 1) {
+      var slot = order[i];
+      if (slot < 0 || slot >= n ||
+          Object.prototype.hasOwnProperty.call(seen, String(slot))) return false;
+      seen[String(slot)] = true;
+    }
+    return true;
+  }
+
   /* ---- encode ----------------------------------------------------------- */
 
   // Takes the value of a core.parseSeed success. It does not re-validate: the
@@ -239,7 +309,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
     var payload = HPE.core.formatSeed(seed.fields) + SEP +
                   optionsLine(seed.options) + SEP +
-                  "";  // line 2: reserved for Phase-5 layout deltas.
+                  deltaLine(seed.options);  // line 2: the layout delta (D5-3).
     var body = toAlphabet(utf8Bytes(payload));
     var head = ALPHABET.charAt(VERSION) + body;
     var out = head + checksum(head);
@@ -249,8 +319,37 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- decode ----------------------------------------------------------- */
 
+  // The layout correction is core's blind spot: parseSeed owns seed validation
+  // and drops the option it does not know, so decode re-attaches the carried
+  // value and holds it to its meaning here, against the seed parseSeed just
+  // approved. A correction that is not a permutation of that seed's non-ding
+  // fields is a corrupt payload like any other (D5-2).
   function decode(text) {
+    var carry = {};
+    var result = decodeSeed(text, carry);
+    if (!result.ok) return result;
+    if (carry.order) {
+      if (!checkOrder(carry.order, result.value)) return badNote(text);
+      result.value.options.order = carry.order;
+    }
+    return result;
+  }
+
+  // The whole decode except the last step, which has to stay the bare
+  // core.parseSeed call. `carry` is how the layout correction gets past that
+  // call: parseSeed's option whitelist is core's, core.js is frozen, and it
+  // drops any option it does not know - so the value is re-attached by decode
+  // below, after parseSeed has approved everything it does own.
+  function decodeSeed(text, carry) {
     if (typeof text !== "string") return badNote(text);
+
+    // D5-4. The two version gates below are written against VERSION - and from
+    // here VERSION means the version being READ, clamped to the newest this
+    // build understands. Deliberately shadowing the module's VERSION (the one
+    // encode WRITES): it leaves both gates reading exactly as they did in v1
+    // while making every version this build knows decodable, so a v1 link
+    // still opens in a v2 app and only a genuinely NEWER one is refused.
+    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
     //    before the version byte and before any parsing at all.
@@ -277,8 +376,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var lines = payload.split(SEP);
     if (lines.length !== LINES) return badNote(text);
-    // Line 2 is the reserved layout-delta section: empty in v1.
-    if (lines[2] !== "") return badNote(text);
+
+    // Line 2 is the layout-delta section: empty in v1, the correction in v2.
+    // The LINE COUNT is the same in both - only what may stand here changes.
+    var delta = readDeltaLine(lines[2], version);
+    if (delta === undefined) return badNote(text);
+    if (carry) carry.order = delta;
 
     var options = readOptionsLine(lines[1]);
     if (options === null) return badNote(text);

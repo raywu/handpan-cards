@@ -1,0 +1,15 @@
+# kills: Tab is trapped inside the Edit sheet and reaches every Edit control
+# RESET drops out of the sheet's tab order, so a keyboard user can see the
+# control but never reach it.
+diff --git a/index.html b/index.html
+index 2a111a2..5b41d0f 100644
+--- a/index.html
++++ b/index.html
+@@ -3411,7 +3411,6 @@ sheet.addEventListener("keydown", e => {
+   if (e.key !== "Tab") return;
+   const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+                  editingId ? rotL : null, editingId ? rotR : null,
+-                 editingId ? resetBtn : null,
+                  editingId ? slotsBox.children[layoutSel] : null,
+                  editingId ? moveL : null, editingId ? moveR : null,
+                  mirrorL, mirrorR, ...swatches.children, genBtn,

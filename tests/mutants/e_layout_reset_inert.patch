@@ -1,0 +1,16 @@
+# kills: RESET puts the generated layout back in one keyboard action
+# RESET is not wired up, so the only way back to the generated layout is to
+# undo every correction by hand.
+diff --git a/index.html b/index.html
+index 2a111a2..40babb4 100644
+--- a/index.html
++++ b/index.html
+@@ -3382,7 +3382,7 @@ rotL.onclick = () => rotateLayout(-1);
+ rotR.onclick = () => rotateLayout(1);
+ moveL.onclick = () => moveNote(-1);
+ moveR.onclick = () => moveNote(1);
+-resetBtn.onclick = resetLayout;
++resetBtn.onclick = () => {};
+ // The roving tabindex: one Tab reaches the slot list, the arrows move inside it.
+ slotsBox.addEventListener("keydown", (e) => {
+   const n = slotsBox.children.length;

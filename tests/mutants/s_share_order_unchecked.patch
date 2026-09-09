@@ -1,0 +1,16 @@
+# suite: node --test tests/share.test.js
+# kills: an order that is not a permutation of the field count is rejected
+# The carried correction is re-attached without being held to the seed
+# parseSeed just approved, so a corrupt link is repaired instead of refused.
+diff --git a/src/engine/share.js b/src/engine/share.js
+index 935ecbd..35004c4 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -329,7 +329,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var result = decodeSeed(text, carry);
+     if (!result.ok) return result;
+     if (carry.order) {
+-      if (!checkOrder(carry.order, result.value)) return badNote(text);
+       result.value.options.order = carry.order;
+     }
+     return result;

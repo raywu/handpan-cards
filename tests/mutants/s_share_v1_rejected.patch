@@ -1,0 +1,17 @@
+# suite: node --test tests/share.test.js
+# kills: a v1 link emitted by an older app still decodes here, unchanged
+# The naked version bump: decode reads only the version it writes, so every
+# link ever shared becomes a corrupt payload the day the format grows.
+diff --git a/src/engine/share.js b/src/engine/share.js
+index 935ecbd..6d2cae6 100644
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -349,7 +349,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // encode WRITES): it leaves both gates reading exactly as they did in v1
+     // while making every version this build knows decodable, so a v1 link
+     // still opens in a v2 app and only a genuinely NEWER one is refused.
+-    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
++    var VERSION = NEWEST;
+ 
+     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
+     //    before the version byte and before any parsing at all.

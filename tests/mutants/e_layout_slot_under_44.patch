@@ -1,0 +1,16 @@
+# kills: every LAYOUT control is a 44px target with a visible focus ring
+# The slot controls shrink under the 44px minimum, so on a phone the notes
+# are too small to hit.
+diff --git a/index.html b/index.html
+index 2a111a2..e3b3d19 100644
+--- a/index.html
++++ b/index.html
+@@ -158,7 +158,7 @@ button.nav:active{background:#2e281e}
+    and moves inside it with the arrow keys - there is no drag-only path. */
+ #scale-layout-row .ctlrow{gap:8px}
+ #scale-slots{display:flex; flex-wrap:wrap; gap:6px}
+-#scale-slots .slot{min-width:44px; min-height:44px; padding:6px 8px; cursor:pointer;
++#scale-slots .slot{min-width:24px; min-height:24px; padding:6px 8px; cursor:pointer;
+   border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
+   font-family:Bitter, serif; font-weight:400; font-size:13px}
+ #scale-slots .slot[aria-pressed="true"]{border-color:#f1ece1; color:#f1ece1}

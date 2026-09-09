@@ -1,10 +1,10 @@
 # kills: Escape closes the Edit sheet and focus returns to the chip that opened it
 diff --git a/index.html b/index.html
-index a127d86..1ff99c8 100644
+index f27316d..cf7fe1e 100644
 --- a/index.html
 +++ b/index.html
-@@ -2903,7 +2903,7 @@ function closeScaleSheet() {
-   sheetOpen = false;
+@@ -3312,7 +3312,7 @@ function closeScaleSheet() {
+   restoreLayoutPreview();
    editingId = null;
    for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
 -  (sheetOpener || addChip).focus();

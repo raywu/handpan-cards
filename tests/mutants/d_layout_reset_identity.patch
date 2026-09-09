@@ -1,0 +1,16 @@
+# kills: RESET clears the correction to ABSENT in one action, not to the identity
+# RESET writes the identity permutation instead of clearing the correction,
+# so a reset deck carries a correction on the wire that says nothing.
+diff --git a/index.html b/index.html
+index 2a111a2..4305c2a 100644
+--- a/index.html
++++ b/index.html
+@@ -3208,7 +3208,7 @@ function moveNote(by) {
+   previewLayout();
+ }
+ function resetLayout() {
+-  layoutOrder = null;
++  layoutOrder = identityOrder(slotsBox.children.length);
+   layoutSel = 0;
+   buildSlots();
+   previewLayout();

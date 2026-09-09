@@ -38,15 +38,15 @@ FLOORS = {
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
     # node
-    "tests/app.test.js": 62,
-    "tests/e2e.test.js": 21,
+    "tests/app.test.js": 73,
+    "tests/e2e.test.js": 25,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 25,
     "tests/voicing.test.js": 14,
-    "tests/layout.test.js": 35,
+    "tests/layout.test.js": 50,
     "tests/naming.test.js": 26,
     "tests/select.test.js": 35,
-    "tests/share.test.js": 25,
+    "tests/share.test.js": 44,
 }
 
 # The e2e suite is the only one allowed to vanish: it skips itself when no

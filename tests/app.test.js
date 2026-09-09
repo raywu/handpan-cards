@@ -953,7 +953,12 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
 
   // decode reads the version byte BEFORE the checksum, so bumping the leading
   // character is exactly the PWA case: a cached old app opening a newer link.
-  const newer = "2" + payload(url.value).slice(1);
+  // The alphabet puts the digits first, so version N is the plain digit N; it
+  // is spelled out here rather than read out of the engine (CONTRACT rule 2).
+  const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                        "abcdefghijklmnopqrstuvwxyz-_";
+  const newer = VERSION_CHARS.charAt(app.get("SHARE_VERSION") + 1) +
+                payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
   assert.strictEqual(res.code, "NEEDS_NEWER_APP");
@@ -1363,4 +1368,235 @@ test("deleting a NON-selected custom deck leaves the selection alone", () => {
     "deleting a deck the user is not looking at must not announce a fallback");
   const row = chipRow(app);
   assert.strictEqual(row.some((c) => c.label === a.name), false, "the chip is still in the row");
+});
+
+/* ------------------------------------------- 23. the LAYOUT section (5) */
+//
+// Phase 5 / D5. A generated layout is a GUESS; the real pan may have the same
+// notes in a different arrangement. The LAYOUT section corrects it - rotate the
+// rim, move a single note - entirely from the keyboard, and the correction
+// travels in the share URL as options.order without moving the deck id (D5-5).
+
+/** The note under each solved position, left to right. */
+const slotLabels = (app) => app.els["scale-slots"].children.map((b) => b.textContent);
+
+/** The position the slot list currently has selected. */
+const slotSelected = (app) =>
+  app.els["scale-slots"].children.findIndex((b) => b.getAttribute("aria-pressed") === "true");
+
+/** Press a key on the slot list, as a keyboard user does. */
+function slotKey(app, key) {
+  let prevented = false;
+  app.els["scale-slots"].dispatchEvent(
+    { type: "keydown", key, preventDefault() { prevented = true; } });
+  return prevented;
+}
+
+const LAYOUT_IDS = ["scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
+                    "scale-move-l", "scale-move-r", "scale-layout-reset"];
+
+function openEdit(app, d) {
+  app.select(d.id);
+  app.clickChip(d.name);
+}
+
+test("the LAYOUT section is Edit-only, like the other correction rows", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), true,
+    "the create sheet offers a layout correction for a pan that does not exist yet");
+  openEdit(app, d);
+  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), false,
+    "the Edit sheet hides the layout correction");
+});
+
+test("the slot list shows every non-ding note in the solved order", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const ids = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] !== "ding");
+  assert.strictEqual(app.els["scale-slots"].children.length, ids.length,
+    "the slot list is not one control per non-ding field");
+  // Every note is present exactly once, and the ding is not among them.
+  const shown = slotLabels(app).slice().sort();
+  const want = ids.map((id) => d.fields[id][F_NAME] + d.fields[id][F_OCT]).sort();
+  assert.deepStrictEqual(shown, want, "the slot list is not the pan's non-ding notes");
+  for (const b of app.els["scale-slots"].children) {
+    assert.ok(String(b.getAttribute("aria-label") || "").length > 0,
+      "a slot control has no accessible name");
+  }
+});
+
+test("ROTATE moves every note one position and SAVE keeps the id but moves the link", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  const before = link(app, d.id);
+  assert.strictEqual(before.ok, true, before.reason);
+  openEdit(app, d);
+
+  const was = slotLabels(app);
+  app.els["scale-rot-r"].click();
+  const now = slotLabels(app);
+  assert.notDeepStrictEqual(now, was, "ROTATE did not move anything");
+  assert.deepStrictEqual(now.slice().sort(), was.slice().sort(),
+    "ROTATE invented or lost a note");
+
+  app.els["scale-generate"].click();
+  assert.strictEqual(app.deckId(), d.id, "a layout correction moved the deck id (D5-5)");
+  const after = app.registry()[d.id];
+  assert.ok(Array.isArray(after.options.order), "the correction did not reach the deck");
+  const moved = link(app, d.id);
+  assert.strictEqual(moved.ok, true, moved.reason);
+  assert.notStrictEqual(moved.value, before.value,
+    "the correction never reached the share URL (D5-5)");
+});
+
+test("a correction is reachable with the keyboard alone: arrows select, MOVE swaps", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const was = slotLabels(app);
+  assert.strictEqual(slotSelected(app), 0, "no position is selected to begin with");
+  assert.strictEqual(slotKey(app, "ArrowRight"), true,
+    "the arrow key was not handled by the slot list");
+  assert.strictEqual(slotSelected(app), 1, "ArrowRight did not move the selection");
+  slotKey(app, "ArrowLeft");
+  assert.strictEqual(slotSelected(app), 0, "ArrowLeft did not move the selection back");
+  slotKey(app, "ArrowRight");
+
+  app.els["scale-move-r"].click();
+  const now = slotLabels(app);
+  assert.strictEqual(now[1], was[2], "MOVE did not move the selected note");
+  assert.strictEqual(now[2], was[1], "MOVE did not displace the note it passed");
+  assert.strictEqual(slotSelected(app), 2, "the selection did not follow the note");
+  for (let i = 0; i < was.length; i += 1) {
+    if (i === 1 || i === 2) continue;
+    assert.strictEqual(now[i], was[i], `MOVE disturbed position ${i}`);
+  }
+
+  // Only the selected slot is a tab stop; the others are reached with arrows.
+  const stops = app.els["scale-slots"].children.filter((b) => b.tabIndex === 0);
+  assert.strictEqual(stops.length, 1, "the slot list is not a single tab stop");
+});
+
+test("RESET clears the correction to ABSENT in one action, not to the identity", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  // The baseline is a save that corrects NOTHING: an Edit always commits the
+  // name too, so only an uncorrected save isolates what `order` costs.
+  openEdit(app, d);
+  app.els["scale-generate"].click();
+  const before = link(app, d.id);
+  openEdit(app, app.registry()[d.id]);
+  app.els["scale-rot-r"].click();
+  app.els["scale-generate"].click();
+  assert.notStrictEqual(link(app, d.id).value, before.value);
+
+  openEdit(app, app.registry()[d.id]);
+  app.els["scale-layout-reset"].click();
+  app.els["scale-generate"].click();
+
+  const after = app.registry()[d.id];
+  assert.strictEqual(after.options.order === undefined || after.options.order === null, true,
+    "RESET left an identity permutation on the deck instead of clearing it");
+  assert.strictEqual(link(app, d.id).value, before.value,
+    "RESET did not restore the byte-for-byte default share link");
+});
+
+test("rotating all the way round is absent again, never a stored identity", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+  app.els["scale-generate"].click();
+  const before = link(app, d.id);
+  const plain0 = app.registry()[d.id].fields;
+  openEdit(app, app.registry()[d.id]);
+  const rim = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "rim").length;
+  for (let i = 0; i < rim; i += 1) app.els["scale-rot-r"].click();
+  app.els["scale-generate"].click();
+
+  assert.deepStrictEqual(app.registry()[d.id].fields, plain0,
+    "a full rotation did not come back to the generated layout");
+  assert.strictEqual(link(app, d.id).value, before.value,
+    "a full rotation left a longer link than the default");
+});
+
+test("a correction survives a save, a reopen and a reload", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+  app.els["scale-rot-r"].click();
+  const corrected = slotLabels(app);
+  app.els["scale-generate"].click();
+
+  openEdit(app, app.registry()[d.id]);
+  assert.deepStrictEqual(slotLabels(app), corrected,
+    "reopening the sheet forgot the correction");
+  app.keydown("Escape");
+
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.deepStrictEqual(again.registry()[d.id].fields, app.registry()[d.id].fields,
+    "the correction did not survive a reload");
+});
+
+test("a correction travels in a share link and lands on the same deck id", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+  app.els["scale-rot-r"].click();
+  app.els["scale-generate"].click();
+  const url = link(app, d.id);
+  assert.strictEqual(url.ok, true, url.reason);
+
+  const opened = boot({ href: "https://example.test/index.html#s=" + payload(url.value) });
+  assert.strictEqual(opened.deckId(), d.id, "the shared correction landed on a different deck");
+  assert.deepStrictEqual(opened.registry()[d.id].fields, app.registry()[d.id].fields,
+    "the shared layout is not the corrected one");
+});
+
+test("Escape closes the sheet without keeping the previewed correction", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+  app.els["scale-rot-r"].click();
+  app.keydown("Escape");
+
+  assert.strictEqual(app.sheetOpen(), false, "Escape did not close the sheet");
+  assert.deepStrictEqual(app.registry()[d.id].fields, d.fields,
+    "an abandoned preview was left on the deck");
+});
+
+test("the layout controls are tab stops inside the sheet and never a second primary", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const seen = new Set();
+  for (let i = 0; i < 40; i += 1) {
+    app.els["scale-sheet"].dispatchEvent(
+      { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+    seen.add(app.activeId());
+  }
+  for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
+                    "scale-layout-reset"]) {
+    assert.ok(seen.has(id), `Tab never reached #${id}`);
+  }
+  assert.ok([...seen].some((id) => String(id).startsWith("scale-slot-")),
+    "Tab never reached the slot list");
+  assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES",
+    "the single primary was relabelled by the layout section");
+  assert.strictEqual(app.els["scale-generate"].disabled, false,
+    "the layout section disabled the sheet's only primary");
+});
+
+test("the layout markup exists and a built-in deck is never editable", () => {
+  const app = boot();
+  for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
+  app.select("amara");
+  app.clickChip("D AMARA 9");
+  assert.strictEqual(app.sheetOpen(), false,
+    "a built-in chip opened the sheet, so it could be corrected");
 });

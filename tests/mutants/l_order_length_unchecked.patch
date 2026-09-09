@@ -1,0 +1,17 @@
+# suite: node --test tests/layout.test.js
+# kills: an order that is not a permutation is rejected BAD_NOTE, never thrown
+# An order longer than the pan is accepted and its tail silently ignored,
+# so a permutation over the wrong field count is no longer BAD_NOTE.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+index 51051bb..0f46ac5 100644
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -188,7 +188,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+    * exactly that length is BAD_NOTE. */
+   function readOrder(value, n) {
+     if (value === undefined || value === null) return { ok: true, value: null };
+-    if (!isArray(value) || value.length !== n) return badNote(value);
++    if (!isArray(value)) return { ok: true, value: null };
+     var seen = {};
+     var out = [];
+     for (var i = 0; i < n; i += 1) {
