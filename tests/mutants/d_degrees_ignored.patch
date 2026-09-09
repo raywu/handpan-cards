@@ -1,0 +1,13 @@
+# kills: the Degrees select lists the parent candidates with the inferred one preselected
+diff --git a/index.html b/index.html
+index a127d86..b6d07ae 100644
+--- a/index.html
++++ b/index.html
+@@ -2821,7 +2821,6 @@ function buildDegrees(selected) {
+ function sheetOptions() {
+   const o = { palette, mirror };
+   if (editingId) {
+-    o.parent = Number(degSel.value);
+     const n = String(nameBox.value || "").trim();
+     if (n) o.name = n;             // validated by core.parseSeed, never here
+   }

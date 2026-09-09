@@ -1,0 +1,13 @@
+# kills: renaming from the Edit sheet relabels the chip
+diff --git a/index.html b/index.html
+index a127d86..49da74d 100644
+--- a/index.html
++++ b/index.html
+@@ -2823,7 +2823,6 @@ function sheetOptions() {
+   if (editingId) {
+     o.parent = Number(degSel.value);
+     const n = String(nameBox.value || "").trim();
+-    if (n) o.name = n;             // validated by core.parseSeed, never here
+   }
+   return o;
+ }

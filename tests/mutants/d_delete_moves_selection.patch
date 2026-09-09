@@ -1,0 +1,13 @@
+# kills: deleting a NON-selected custom deck leaves the selection alone
+diff --git a/index.html b/index.html
+index a127d86..6b62e52 100644
+--- a/index.html
++++ b/index.html
+@@ -2919,7 +2919,6 @@ function deleteDeck(id) {
+   delete CUSTOM[id];
+   forgetScale(HPE.core.formatSeed(d.fields));
+   if (editingId === id) closeScaleSheet();
+-  if (!wasSelected) { buildChips(); return; }
+   selectDeck(DECKS[0].id);
+   say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
+ }

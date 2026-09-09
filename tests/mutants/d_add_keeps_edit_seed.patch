@@ -1,0 +1,13 @@
+# kills: + ADD after an Edit opens a clean create sheet, never the edited deck's seed
+diff --git a/index.html b/index.html
+index a127d86..26a1f25 100644
+--- a/index.html
++++ b/index.html
+@@ -2873,7 +2873,6 @@ function showSheet(opener) {
+ function openScaleSheet(opener) {
+   editingId = null;
+   setSheetMode(false);
+-  scaleBox.value = "";
+   nameBox.value = "";
+   palette = 0;
+   buildSwatches();
