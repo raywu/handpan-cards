@@ -144,6 +144,20 @@ button.nav:active{background:#2e281e}
   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
   font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em}
 #scale-generate:disabled{opacity:.5; cursor:default}
+/* ---- Edit state (Phase 4). The rows below are the ONLY difference between
+   the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
+   there is never a second primary button on the surface. */
+.editrow{display:flex; flex-direction:column; gap:9px}
+#scale-name, #scale-degrees{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;
+  background:#151310; border:1px solid #433b2c; border-radius:8px}
+#scale-name{font-family:Bitter, serif; font-weight:400; font-size:16px}
+#scale-degrees{font:400 16px/1.2 "Nunito Sans"}
+/* Quiet, never a primary: auto width, so the sheet's only full-width button
+   stays #scale-generate. */
+#scale-delete-row{align-items:center}
+#scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
+  color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer}
 .announce{width:100%; max-width:520px; margin-top:8px; text-align:center;
   font:400 11.5px/1.45 "Nunito Sans"; color:#c4bcab; min-height:1.45em}
 </style>
@@ -185,6 +199,11 @@ button.nav:active{background:#2e281e}
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-label="Add a scale" hidden>
   <div class="sheetsurf">
+    <div class="editrow" id="scale-name-row" hidden>
+      <label class="sheetlabel" for="scale-name">DECK NAME</label>
+      <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
+             autocomplete="off" spellcheck="false" maxlength="40">
+    </div>
     <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
     <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
            autocomplete="off" spellcheck="false" enterkeyhint="go"
@@ -192,6 +211,11 @@ button.nav:active{background:#2e281e}
     <div id="scale-parse"></div>
     <!-- Above the control row, so the soft keyboard never covers it. -->
     <div id="scale-msg" aria-live="polite"></div>
+    <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
+    <div class="editrow" id="scale-degrees-row" hidden>
+      <label class="sheetlabel" for="scale-degrees">DEGREES</label>
+      <select id="scale-degrees"></select>
+    </div>
     <div class="ctlrow">
       <div class="mirror">
         <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
@@ -200,6 +224,9 @@ button.nav:active{background:#2e281e}
       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
     </div>
     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+    <div class="editrow" id="scale-delete-row" hidden>
+      <button id="scale-delete" type="button">DELETE THIS DECK</button>
+    </div>
   </div>
 </div>
 
@@ -2421,6 +2448,13 @@ function generateDeck(text, options) {
   if (!seed.ok) return seed;
   const built = HPE.select.build(seed.value);
   if (!built.ok) return built;
+  // select.build resolves the palette, mirror and parent onto deck.options but
+  // consumes the NAME (section 13 makes it the deck's name and drops it from
+  // the options). The name is a seed option that has to travel - into the share
+  // URL and into the saved record - so the app carries it back, which is why a
+  // rename survives a reload while the id, which hashes fields only, does not
+  // move (D14).
+  if (seed.value.options.name) built.value.options.name = seed.value.options.name;
   registerDeck(built.value);
   return built;
 }
@@ -2476,11 +2510,20 @@ function savedScales() {
   const raw = readStore(SCALES_KEY);
   return Array.isArray(raw) ? raw : [];
 }
+function writeScales(list) {
+  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
+}
 function rememberScale(seed) {
   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
   const list = savedScales().filter(r => !r || r.s !== rec.s);
   list.push(rec);
-  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
+  writeScales(list);
+}
+// The canonical scale string IS the record's key (D14: the id is its hash), so
+// dropping the record is a filter on that string and nothing has to look the
+// deck up a second time.
+function forgetScale(str) {
+  writeScales(savedScales().filter(r => !r || r.s !== str));
 }
 // Boot must stay resilient: an unusable record is DROPPED, never fatal.
 function restoreScales() {
@@ -2664,7 +2707,12 @@ function buildChips() {
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
-    b.onclick = () => selectDeck(d.id);
+    // [design-review 7A] the ALREADY-SELECTED custom chip is the one and only
+    // way into the Edit sheet; every other chip just selects its deck. No
+    // context menu, no long press, no swipe.
+    b.onclick = () => (d.id === deckId && CUSTOM[d.id])
+      ? openEditSheet(CUSTOM[d.id], b)
+      : selectDeck(d.id);
     nav.appendChild(b);
     if (d.id === deckId) active = b;
   }
@@ -2689,6 +2737,14 @@ const mirrorR   = document.getElementById("scale-mirror-r");
 const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
 const addChip   = document.getElementById("deck-add");
+// Edit state (Phase 4). The same sheet, three extra rows and a relabelled
+// primary - never a second sheet and never a second primary button.
+const nameRow   = document.getElementById("scale-name-row");
+const nameBox   = document.getElementById("scale-name");
+const degRow    = document.getElementById("scale-degrees-row");
+const degSel    = document.getElementById("scale-degrees");
+const delRow    = document.getElementById("scale-delete-row");
+const delBtn    = document.getElementById("scale-delete");
 // The practice screen's own live region; created if the markup lost it, so the
 // success message is never announced into nothing.
 const announce = document.querySelector(".announce") || document.createElement("div");
@@ -2702,6 +2758,8 @@ const background = [...document.querySelectorAll("header, main, footer")];
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // section 13: false = right-first (the default)
 let sheetOpen = false;
+let editingId = null;            // the custom deck the sheet is editing, or null
+let sheetOpener = null;          // the control focus returns to on close
 const generated = new Set();     // deck ids generated in this page session
 
 /** The one adapter from a result/warning reason to a message tier. */
@@ -2747,6 +2805,29 @@ function parseLineText(fields) {
   return rest.length ? head + " | " + rest.map(part).join(" ") : head;
 }
 
+/** The D10 parent candidates, in the engine's FIXED list order (section 10). */
+function buildDegrees(selected) {
+  degSel.innerHTML = "";
+  HPE.naming.PARENTS.forEach((p, i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = p.name;        // text position, so nothing is interpolated
+    degSel.appendChild(o);
+  });
+  degSel.value = String(selected);
+}
+
+/** The seed options the sheet currently describes. */
+function sheetOptions() {
+  const o = { palette, mirror };
+  if (editingId) {
+    o.parent = Number(degSel.value);
+    const n = String(nameBox.value || "").trim();
+    if (n) o.name = n;             // validated by core.parseSeed, never here
+  }
+  return o;
+}
+
 /** Re-parse on every input: the parse line, the outline and Generate follow. */
 function updateParse() {
   const text = String(scaleBox.value || "");
@@ -2757,7 +2838,7 @@ function updateParse() {
     say("", "");
     return;
   }
-  const res = HPE.core.parseSeed(text, { palette, mirror });
+  const res = HPE.core.parseSeed(text, sheetOptions());
   if (res.ok) {
     parseLine.textContent = parseLineText(res.value.fields);
     scaleBox.classList.remove("bad");
@@ -2771,31 +2852,91 @@ function updateParse() {
   }
 }
 
-function openScaleSheet() {
+/** Show or hide the three Edit-only rows and relabel the single primary. */
+function setSheetMode(edit) {
+  for (const el of [nameRow, degRow, delRow]) {
+    if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
+  }
+  genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
+  sheet.setAttribute("aria-label", edit ? "Edit this scale" : "Add a scale");
+}
+function showSheet(opener) {
+  sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
   updateParse();
   scaleBox.focus();
 }
+// The create path. Everything is reset, so an Edit never leaks its seed, its
+// palette or its mirror into the next "+ ADD".
+function openScaleSheet(opener) {
+  editingId = null;
+  setSheetMode(false);
+  scaleBox.value = "";
+  nameBox.value = "";
+  palette = 0;
+  buildSwatches();
+  setMirror(false);
+  showSheet(opener);
+}
+// The Edit path [design-review 7A]: the SAME sheet, prefilled from the deck
+// already in the registry.
+function openEditSheet(d, opener) {
+  editingId = d.id;
+  setSheetMode(true);
+  nameBox.value = d.name;
+  scaleBox.value = HPE.core.formatSeed(d.fields);     // 8A: the canonical string
+  palette = d.options.palette;
+  buildSwatches();
+  setMirror(!!d.options.mirror);
+  buildDegrees(d.options.parent);
+  showSheet(opener);
+  // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
+  // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+  const warned = (d.warnings || []).map(w => w.reason);
+  if (warned.length) say(warned.join(" "), "warn");
+}
 function closeScaleSheet() {
   if (!sheetOpen) return;
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
+  editingId = null;
   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
-  addChip.focus();
+  (sheetOpener || addChip).focus();
+  sheetOpener = null;
+}
+
+// Removing a deck the user is LOOKING AT would otherwise leave the practice
+// screen on a deck that no longer exists, so it falls back to the first
+// built-in and says so. That sentence is UI copy, not an engine reason: the
+// section 2 code enum is closed and has no code for "you deleted this".
+function deleteDeck(id) {
+  const d = CUSTOM[id];
+  if (!d) return;
+  const gone = d.name;
+  const wasSelected = deckId === id;
+  delete CUSTOM[id];
+  forgetScale(HPE.core.formatSeed(d.fields));
+  if (editingId === id) closeScaleSheet();
+  if (!wasSelected) { buildChips(); return; }
+  selectDeck(DECKS[0].id);
+  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
 }
 
 function runGenerate() {
   if (genBtn.disabled) return;
   const label = genBtn.textContent;
-  genBtn.textContent = "GENERATING";
+  genBtn.textContent = editingId ? "SAVING" : "GENERATING";
   genBtn.disabled = true;
   scaleBox.setAttribute("readonly", "");
   say("", "");
 
+  // ONE generation per submit, on the create path and the Edit path alike
+  // (13A): a save re-parses and rebuilds exactly once, and D14 keeps the id
+  // when the canonical seed is unchanged, so the deck is replaced in place.
   const known = new Set(Object.keys(CUSTOM));
-  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror });
+  const res = generateDeck(String(scaleBox.value || ""), sheetOptions());
 
   scaleBox.removeAttribute("readonly");
   genBtn.textContent = label;
@@ -2819,19 +2960,26 @@ function runGenerate() {
   genBtn.disabled = false;
 }
 
-addChip.onclick = openScaleSheet;
+addChip.onclick = () => openScaleSheet(addChip);
 genBtn.onclick = runGenerate;
+delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
 mirrorL.onclick = () => setMirror(true);
 mirrorR.onclick = () => setMirror(false);
 scaleBox.addEventListener("input", updateParse);
+// The name is a seed option, so an unusable one is rejected by core.parseSeed
+// through the same parse line every other input goes through.
+nameBox.addEventListener("input", updateParse);
+degSel.addEventListener("change", updateParse);
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
 // A tap whose target IS the layer is a tap on the backdrop, never on the sheet.
 sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  const stops = [scaleBox, mirrorL, mirrorR, ...swatches.children, genBtn]
-    .filter(el => !el.disabled);
+  const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+                 mirrorL, mirrorR, ...swatches.children, genBtn,
+                 editingId ? delBtn : null]
+    .filter(el => el && !el.disabled);
   const i = stops.indexOf(document.activeElement);
   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
   e.preventDefault();
