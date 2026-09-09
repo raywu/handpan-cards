@@ -20,10 +20,15 @@ const path = require("node:path");
 const { launch, findBrowser } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
-// Fixed high port, loopback only. E2E_PORT is an escape hatch for the rare case
-// where something else already owns it (e.g. two suites running side by side).
-const PORT = Number(process.env.E2E_PORT) || 8973;
-const URL = `http://127.0.0.1:${PORT}/index.html`;
+// Loopback only, and by default port 0 - the OS hands out a free port, so two
+// suites running side by side (several agents share this machine) simply cannot
+// collide. E2E_PORT pins a specific port when you want one; a pinned port that
+// is already taken is a LOUD, immediate failure, never a hang - see the before()
+// hook and the "a taken port fails the harness fast" test at the end of this file.
+const PORT = Number(process.env.E2E_PORT) || 0;
+// Not known until the server is listening (port 0 is resolved by the OS).
+// NB: this deliberately shadows the global URL class for the whole module.
+let URL = "";
 
 /* ------------------------------------------------------------------ *
  * skip-if-no-browser
@@ -70,7 +75,23 @@ function run() {
       });
     });
     server.on("error", (e) => { spawnError = e; });
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    // listen() calls its callback ONLY on success: on EADDRINUSE it emits
+    // 'error' and the callback never runs. Awaiting the callback alone is an
+    // unbounded hang on a taken port - the exact case waitForServer's message
+    // below was written for, and one that used to stall CI until it was killed
+    // from outside. So settle on BOTH outcomes and fail loudly.
+    await new Promise((resolve, reject) => {
+      server.once("error", (e) => {
+        reject(new Error(
+          `the test server could not listen on 127.0.0.1:${PORT} (${e.code || e.message})` +
+          ` - is port ${PORT} taken? (E2E_PORT pins this port; unset it to let the` +
+          ` OS pick a free one)`,
+        ));
+      });
+      server.listen(PORT, "127.0.0.1", resolve);
+    });
+    // Port 0 is only resolved once the socket is bound.
+    URL = `http://127.0.0.1:${server.address().port}/index.html`;
     await waitForServer();
 
     b = await launch();
@@ -99,7 +120,7 @@ function run() {
       if (spawnError) throw spawnError;
       if (Date.now() > deadline) {
         throw new Error(
-          `the test server never came up on ${URL} - is port ${PORT} taken? (set E2E_PORT)`,
+          `the test server never came up on ${URL} - is that port taken? (E2E_PORT pins one)`,
         );
       }
       await new Promise((r) => setTimeout(r, 50));
@@ -1611,5 +1632,126 @@ function run() {
     }
   });
 
+  /* ---------------------------------------------------------------- *
+   * harness contract: a taken port fails loudly, it does not hang
+   * ---------------------------------------------------------------- */
+
+  // Regression guard. Several agents share this machine and the port is fixed,
+  // so a collision is routine; before this test the `listen` await never
+  // settled on EADDRINUSE (the callback only fires on success), so the run hung
+  // until something outside killed it and waitForServer's "is port N taken?"
+  // message was dead code in exactly the case it was written for.
+  //
+  // The child is marked with E2E_HARNESS_CHILD so it cannot re-enter here.
+  test("a taken port fails the harness fast, naming the port and E2E_PORT", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const net = require("node:net");
+    const { spawnSync } = require("node:child_process");
+
+    // Port 0: the OS picks a free one, so this can never collide with a
+    // parallel agent the way a hardcoded number would.
+    const squatter = net.createServer();
+    await new Promise((res, rej) => {
+      squatter.once("error", rej);
+      squatter.listen(0, "127.0.0.1", res);
+    });
+    const taken = squatter.address().port;
+
+    // This file is itself running inside node's test runner, which marks the
+    // environment with NODE_TEST_CONTEXT. Inherited, that makes the child think
+    // it is a runner-managed worker and exit 0 immediately - which would make
+    // this test pass against a broken harness. Strip it.
+    const env = { ...process.env, E2E_PORT: String(taken), E2E_HARNESS_CHILD: "1" };
+    delete env.NODE_TEST_CONTEXT;
+
+    let r;
+    try {
+      r = spawnSync(process.execPath, ["--test", "tests/e2e.test.js"], {
+        cwd: REPO,
+        encoding: "utf8",
+        timeout: 30000,
+        env,
+      });
+    } finally {
+      await new Promise((res) => squatter.close(res));
+    }
+
+    const out = (r.stdout || "") + (r.stderr || "");
+    // A timeout kill shows up as a signal (and, on some platforms, an error).
+    // That IS the hang, so it must fail here rather than pass quietly.
+    assert.strictEqual(r.signal, null,
+      `the harness was killed by ${r.signal} - it hung on a taken port instead of failing`);
+    assert.strictEqual(r.error, undefined,
+      `spawnSync failed: ${r.error && r.error.message}`);
+    assert.strictEqual(typeof r.status, "number", "no exit status from the harness");
+    assert.notStrictEqual(r.status, 0, "the harness exited 0 with its port taken");
+    assert.ok(out.includes(String(taken)),
+      `the failure never named port ${taken}:\n${out.slice(-2000)}`);
+    assert.ok(out.includes("E2E_PORT"),
+      `the failure never mentioned E2E_PORT:\n${out.slice(-2000)}`);
+  });
+
+  // The other half of the same defect: `node --test` has no per-test deadline,
+  // so a wedged suite used to hang tests/suite_health.py forever - which is how
+  // a single stuck port burned a whole CI job. run_node_file must bound every
+  // suite it starts and report the overrun as a PROBLEM, not a traceback.
+  test("suite_health bounds every node suite with a wall clock", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const os = require("node:os");
+    const { spawnSync } = require("node:child_process");
+
+    // A suite that never finishes. Written outside tests/ so the *.test.js glob
+    // in suite_health.py cannot pick it up and demand a FLOORS row for it.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "suite-health-hang-"));
+    const hang = path.join(dir, "hang.test.js");
+    fs.writeFileSync(hang,
+      'require("node:test").test("never finishes", () => ' +
+      "new Promise((r) => setTimeout(r, 60000)));\n");
+
+    const probe = [
+      "import sys",
+      "from tests import suite_health",
+      "total, failed, skipped, out = suite_health.run_node_file(sys.argv[1])",
+      'print("TOTAL", total)',
+      "print(out)",
+    ].join("\n");
+
+    // Same NODE_TEST_CONTEXT trap as above: inherited, the node run_node_file
+    // starts would think it is a runner-managed worker and exit at once.
+    const env = { ...process.env, NODE_SUITE_TIMEOUT: "3" };
+    delete env.NODE_TEST_CONTEXT;
+
+    const started = Date.now();
+    let r;
+    try {
+      r = spawnSync("python3", ["-c", probe, hang], {
+        cwd: REPO,
+        encoding: "utf8",
+        timeout: 60000,
+        env,
+      });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    const elapsed = Date.now() - started;
+    const out = (r.stdout || "") + (r.stderr || "");
+
+    assert.strictEqual(r.signal, null,
+      `run_node_file was killed by ${r.signal} - it never bounded the hung suite`);
+    assert.strictEqual(r.error, undefined,
+      `run_node_file never returned: ${r.error && r.error.message} (after ${elapsed}ms)`);
+    assert.strictEqual(r.status, 0,
+      `run_node_file raised instead of reporting the timeout:\n${out.slice(-2000)}`);
+    assert.ok(!/Traceback \(most recent call last\)/.test(out),
+      `the timeout surfaced as a traceback:\n${out.slice(-2000)}`);
+    assert.ok(/^TOTAL None$/m.test(out),
+      `a timed-out suite must not report a test count:\n${out.slice(-2000)}`);
+    assert.ok(out.includes("TIMED OUT after 3s"),
+      `the timeout was not reported with its limit:\n${out.slice(-2000)}`);
+    assert.ok(out.includes("hang.test.js"),
+      `the timeout report did not name the file:\n${out.slice(-2000)}`);
+  });
 
 }
