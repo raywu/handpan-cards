@@ -438,12 +438,18 @@ test("index.html carries the whole engine inline, with no external script", () =
 
   const app = boot();
   const HPE = app.get("HPE");
-  for (const mod of ["core", "voicing", "layout", "naming", "select"]) {
+  for (const mod of ["core", "voicing", "layout", "naming", "select", "share"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads first.
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
-  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select"]);
+  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select", "share"]);
+  // share is the app's share surface: encode, decode and the version it guards.
+  const share = app.get("HPE.share");
+  for (const key of ["encode", "decode"]) {
+    assert.strictEqual(typeof share[key], "function", `HPE.share.${key} missing`);
+  }
+  assert.strictEqual(typeof share.VERSION, "number");
 });
 
 /* ------------------------------------------- 12. the generated deck registry */
