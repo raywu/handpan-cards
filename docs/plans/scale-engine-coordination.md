@@ -587,7 +587,7 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 | 1C | scale-engine/w8-naming | merged 5c26ae0; follow-up 1C-2 merged ceaac1f | PASS_WITH_NITS (#18) | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | merged 4f5137c | PASS_WITH_NITS | 2026-09-09 |
 | 2 | scale-engine/w9-select | merged c94b43c | PASS (rebase re-review, #19) | 2026-09-09 |
-| 2b | scale-engine/w10-select-cap | returned done, PR #21 verified, review running | - | 2026-09-09 |
+| 2b | scale-engine/w10-select-cap | merged dd9d501 | PASS_WITH_NITS (#21) | 2026-09-09 |
 | 3a | scale-engine/w11-app-plumbing | returned done, PR #22 verified, review running | - | 2026-09-09 |
 | spec | claude/spec-owner-decisions | merged dad182c (owner-gate amendments, docs only) | n/a (integrator, CI green) | 2026-09-09 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
@@ -643,10 +643,15 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 | 41 | 3a | open | Retro note, no action: mid-lane the 3a agent ran `git checkout -- index.html` to revert a scratch mutation and lost its entire first round of index.html edits. It redid them and reports no net effect on the delivered diff. Recorded because it means index.html on that branch is freshly rewritten code rather than iterated code - the #22 reviewer was told to read it as such rather than assuming coverage carried over. |
 | 42 | main | open | Merge-order note for wave 5: PR #21 (2b) and PR #22 (3a) both edit `tests/suite_health.py` FLOORS, on DIFFERENT rows (`tests/select.test.js` 32->35 and `tests/app.test.js` 12->23). Same shape as the #16/#19 FLOORS collisions, which GitHub merged cleanly in one case and required a rebase in the other. Merge the first on PASS, then re-check the second for a real content conflict before merging - behind is not stale. 3a also claims no dependency on a generated card count, so 2b's cap change should not reach it; the #22 reviewer is verifying that claim by grep. |
 
+| 43 | 2b | closed | Lane self-report inaccuracy, corrected here so it does not propagate: the 2b report says "five new `s_cap_*` mutants". It is THREE new files (`s_cap_flat`, `s_cap_hinge`, `s_cap_slope`) plus TWO rewritten for the new constant names (`s_cap_removed`, `s_cap_widened`) - five cap mutants total, not five new. No mutant was deleted and all twelve `s_` are killed, so the substance of the claim stands. |
+| 44 | 2b | open | The three rewritten override notes in `divergence_v1.json` now assert in prose that a given engine spelling "is listed extra", but the schema test only checks `note.length > 0`. The underlying divergence IS mechanically checked (every override must appear in a live-derived `missing`); only the sentence describing it can go stale silently. Low severity - candidate for a later lane that owns the fixture. |
+| 45 | main | closed | Reviewer nit 3 on #21 was a MISREADING; recording the resolution so nobody "fixes" a correct constant. The reviewer reported the briefing's frozen sha `0475970330...ad16a` disagrees with the file's sha256 `d51f1d24bb...c9e9e`. Both numbers are right and they measure different things: `tests/test_fixture_integrity.py:22-24` pins `0475970330...` as the sha256 of the CANONICAL SERIALISATION of `{version, decks}` (sorted keys, no whitespace), not of the raw file bytes, and `test_sha256_matches_canonical_serialisation` proves the two agree. `d51f1d24bb...` is just the raw file digest, which nothing pins. The briefing wording ("fixture bytes are read-only (golden sha ...)") is what invited the confusion - the sha is of the payload, not the bytes. No action beyond this note. |
+
 ## Review log
 
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #21 | 2b select cap | PASS_WITH_NITS | boundary clean over 9 files; CI success at c4d240f (reviewer re-read it: exact headSha, all 5 jobs); all 12 `s_` mutants killed, 0 survived; 35/35 select + 100/100 sibling engine suites. Reviewer independently RE-DERIVED the divergence fixture by running `build` on all three frozen seeds - every `missing`/`extra` set matches, so the fixture was regenerated and not hand-edited. Confirmed the cap counts every zone at select.js:106-110 via an unfiltered `ids()`; hijaz/amara serialise byte-identically to main; only pygmy moved (13->10 missing, 13->16 extra, exactly the named keys). **The fixture edit judged sound and, more to the point, structurally unfakeable**: select.test.js:556-572 requires every override to also appear in a live-derived `missing`, so a laundered override fails the suite. The three removed overrides cited the 25-cap as their entire reason and are now generated identically; the three rewritten notes changed only the clause after the `;`, leaving each primary reason and spec citation byte-identical. Worked example not weakened (still asserts 25 cards, gains fieldCount/cap assertions); structural-max test uses the formula. No `select.CAP` consumer anywhere incl. index.html and tools/. Nits: rows 43-45. | merged dd9d501 |
 | #10 | P0a | PASS_WITH_NITS (3rd, integrator fix) | 6 nits (formatSeed(fields) spelling in section 12; round-trip stated on wrapper not .value; ding-count vs precedence wording; tier names sus/seventh in ranking prose; B# ding fifth spelling; name default vs whitelist) | merged 386a856; nit 1 and plan line 378 fixed by integrator docs commit; rest row 14 |
 | #10 | P0a | FAIL (2nd) | 1 blocker (range row in range), 4 majors (ding-only candidacy, parseSeed payload undefined, Object.keys order, degree rules contradict D10), 9 nits | cap reached; integrator fixed all in b81ad84; plan line 378 needs the 25->26 subtitle amendment (row 11, done) |
 | #10 | P0a | FAIL | 1 blocker (zone rule vs built-in reproduction), 9 majors (trim order, Amara infers Dorian, omitted ding octave, id/label scheme, sup union, NO_FIFTH literal, formatSeed/deckId wrapping, subtitle cap vs m7b5, pitch-set rule), 9 nits | bounced with 19 integrator decisions (row 10); fresh re-review after fix push |
@@ -667,7 +672,7 @@ system; test at a 380px viewport; do NOT alter deck data or diagram geometry.
 
 ## Cycle state
 
-Cycle: 1   Wave: 5   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f, dad182c, c94b43c
+Cycle: 1   Wave: 5   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33, 5c26ae0, 4f5137c, ceaac1f, dad182c, c94b43c, dd9d501
 PHASES 0, 1 AND 2 ARE COMPLETE. All five engine modules (core, voicing, layout, naming, select) are on main. Wave 5 = lanes 2b (cap) and 3a (app plumbing), running in parallel; 3b is serial after 3a merges.
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -677,7 +682,7 @@ PHASES 0, 1 AND 2 ARE COMPLETE. All five engine modules (core, voicing, layout, 
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | merged, released | agent-managed | scale-engine/w6-voicing | #15 | 75e1981 | 2026-09-08 gh pr view + run 34312798919 success | PASS_WITH_NITS | 1 | yes 4f5137c | - | no |
 | 2 | merged, released | agent-managed | scale-engine/w9-select | #19 | d6e1740 | 2026-09-09 (gh pr view CLEAN + run 34317045654 success at that exact SHA) | PASS (rebase re-review) | 1 | yes c94b43c | - | no |
-| 2b | returned | agent-managed | scale-engine/w10-select-cap | #21 | c4d240f | 2026-09-09 (gh pr view OPEN + run 34318930997 success at that exact SHA) | review running | 0 | no | - | yes (until verdict) |
+| 2b | merged, released | agent-managed | scale-engine/w10-select-cap | #21 | c4d240f | 2026-09-09 (gh pr view OPEN + run 34318930997 success at that exact SHA) | PASS_WITH_NITS | 0 | yes dd9d501 | - | no |
 | 3a | returned | agent-managed | scale-engine/w11-app-plumbing | #22 | 86fe974 | 2026-09-09 (gh pr view OPEN + run 34319025044 success at that exact SHA) | review running | 0 | no | - | yes (until verdict) |
 | 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | merged, released | agent-managed | scale-engine/w8-naming | #16 | 2078bf3 | 2026-09-08 gh pr view + run 34312599567 success | PASS (rebase re-review) | 1 | yes 5c26ae0 | - | no |
