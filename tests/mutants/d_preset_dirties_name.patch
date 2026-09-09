@@ -1,0 +1,13 @@
+# kills: a preset never names the deck: it is auto-named exactly as a typed scale is
+diff --git a/index.html b/index.html
+index 7e9b7f6..db6d6e6 100644
+--- a/index.html
++++ b/index.html
+@@ -3179,6 +3179,7 @@ function buildSwatches() {
+ // touches nameDirty, so the deck is auto-named by section 13 exactly as a typed
+ // scale is - which keeps preset LABELS out of the deck-name space entirely.
+ function applyPreset(p) {
++  nameDirty = true;
+   scaleBox.value = p.seed;
+   // The same live parse a keystroke fires: the event the box already listens
+   // for, never a second call to the parse logic from here.

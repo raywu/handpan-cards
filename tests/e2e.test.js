@@ -1382,6 +1382,19 @@ function run() {
       assert.ok(st.primaries <= 1, `${st.primaries} enabled primaries while the sheet is open`);
       assert.ok(st.body.sw <= st.body.cw + 1, "the refusal scrolls the page horizontally");
 
+      // Queue row 142: `primaries <= 1` also holds with the primary stuck at 0
+      // forever, so it cannot fail in the direction that matters. The refusal
+      // must be RECOVERABLE - retyping brings the primary back and clears the
+      // message, without closing and reopening the sheet.
+      await typeScale(SIX_SCALES[3]);
+      const back = await sheetState();
+      assert.strictEqual(back.open, true, "retyping closed the sheet");
+      assert.strictEqual(back.primaries, 1,
+        `${back.primaries} enabled primaries after retyping past the refusal - ` +
+        "the refusal is a dead end");
+      assert.strictEqual(back.bad, false, "the box is still marked bad after a valid retype");
+      assert.strictEqual(back.msg, "", `the refusal message survived the retype: "${back.msg}"`);
+
       await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close on Escape" });
@@ -1432,5 +1445,171 @@ function run() {
       await b.setViewport(900, 900, false);
     }
   });
+
+
+  /* ---------------------------------------------------------------- *
+   * the preset row (Phase 6)
+   *
+   * What a unit test cannot show: that six more buttons above the box still
+   * fit a 380px sheet without a horizontal scrollbar, are real 44px targets,
+   * and are inside the sheet's focus trap rather than beside it.
+   * ---------------------------------------------------------------- */
+
+  const presetMeta = () => b.eval(`
+    return {
+      seeds: SCALE_PRESETS.map(p => p.seed),
+      labels: SCALE_PRESETS.map(p => p.label),
+      buttons: [...document.querySelectorAll("#scale-presets .preset")]
+        .map(el => ({ id: el.dataset.preset, label: el.textContent.trim() })),
+    };
+  `);
+
+  test("a preset is one tap from a parsed scale and an auto-named deck at 380px", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      await openSheet();
+      const meta = await presetMeta();
+      assert.strictEqual(meta.buttons.length, meta.seeds.length,
+        `${meta.buttons.length} preset buttons for ${meta.seeds.length} seeds`);
+      assert.deepStrictEqual(meta.buttons.map(x => x.label), meta.labels,
+        "the row does not show the preset labels");
+
+      const at = 1;
+      await b.click(`#scale-presets .preset:nth-child(${at + 1})`);
+      const after = await b.eval(`
+        const box = document.getElementById("scale-box");
+        return {
+          value: box.value,
+          bad: box.classList.contains("bad"),
+          parse: document.getElementById("scale-parse").textContent.trim(),
+          disabled: document.getElementById("scale-generate").disabled,
+          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+        };
+      `);
+      assert.strictEqual(after.value, meta.seeds[at],
+        `the preset left "${after.value}" in the box`);
+      assert.strictEqual(after.bad, false, "the preset seed does not parse");
+      assert.strictEqual(after.disabled, false, "the preset left the primary disabled");
+      assert.ok(after.parse.length > 0, "the preset left the parse line empty");
+      assert.ok(after.body.sw <= after.body.cw + 1,
+        `the preset row scrolls the page horizontally at 380px (${after.body.sw} > ${after.body.cw})`);
+
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after generating from a preset" });
+
+      const made = await b.eval(`
+        const d = CUSTOM[deckId];
+        return d ? {
+          name: d.name,
+          explicit: d.options.name,
+          auto: HPE.select.autoName(d.fields, d.options.parent),
+          chips: [...document.querySelectorAll("#decks .chip:not(#deck-add)")]
+                   .map(c => c.textContent.trim()),
+          on: [...document.querySelectorAll("#decks .chip.on")].map(c => c.textContent.trim()),
+          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+        } : null;
+      `);
+      assert.ok(made, "generating from a preset produced no custom deck");
+      assert.strictEqual(made.explicit, undefined,
+        "the preset label was pinned onto the deck as an explicit name");
+      assert.strictEqual(made.name, made.auto,
+        `the preset deck is named "${made.name}", not the section 13 auto name "${made.auto}"`);
+      assert.notStrictEqual(made.name, meta.labels[at],
+        "the preset label reached the deck-name space");
+      assert.strictEqual(made.on.length, 1, `${made.on.length} selected chips`);
+      assert.ok(made.chips.length > 3,
+        `no new chip after generating from a preset: ${JSON.stringify(made.chips)}`);
+      assert.ok(made.body.sw <= made.body.cw + 1, "the new chip blew the row out");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("every preset is a 44px target inside the sheet's focus trap at 380px", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      const cardW = () => b.eval(
+        `return getComputedStyle(document.documentElement).getPropertyValue("--card-w");`);
+      const before = await cardW();
+      await openSheet();
+
+      const hits = await b.eval(`
+        const out = { small: [], probes: [], inside: true };
+        const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
+        for (const el of document.querySelectorAll("#scale-presets .preset")) {
+          const r = el.getBoundingClientRect();
+          if (r.height < 44) out.small.push((el.dataset.preset || "?") + " " + r.height.toFixed(1));
+          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          // +/-21 pins the documented 44px; +/-18 would pass on anything 36px up.
+          out.probes.push([cy - 21, cy + 21].every(y => {
+            const hit = document.elementFromPoint(cx, y);
+            return hit === el || el.contains(hit);
+          }));
+          if (r.left < surf.left - 1 || r.right > surf.right + 1) out.inside = false;
+        }
+        return out;
+      `);
+      assert.deepStrictEqual(hits.small, [], "preset buttons shorter than 44px");
+      assert.strictEqual(hits.probes.length, 6);
+      assert.ok(hits.probes.every(Boolean),
+        `a preset has no 44px hit area: ${JSON.stringify(hits.probes)}`);
+      assert.strictEqual(hits.inside, true, "a preset sits outside the sheet surface at 380px");
+
+      // Keyboard only: Tab must reach every preset and never leave the sheet.
+      const seen = [];
+      for (let i = 0; i < 20; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`
+          const el = document.activeElement;
+          const sheet = document.getElementById("scale-sheet");
+          return { id: (el && el.dataset && el.dataset.preset) || (el && el.id) || "",
+                   inside: !!(el && sheet.contains(el)) };
+        `));
+      }
+      assert.ok(seen.every(s => s.inside),
+        `Tab escaped the create sheet: ${JSON.stringify(seen)}`);
+      const ids = new Set(seen.map(s => s.id));
+      for (const p of (await presetMeta()).buttons) {
+        assert.ok(ids.has(p.id), `Tab never reached the ${p.label} preset: ${JSON.stringify([...ids])}`);
+      }
+
+      // Enter on a focused preset fills the box: the browser's OWN default
+      // activation, so the row is not a pointer-only path.
+      let focused = null;
+      for (let i = 0; i < 20 && !focused; i++) {
+        focused = await b.eval(`
+          const el = document.activeElement;
+          return (el && el.dataset && el.dataset.preset) || null;
+        `);
+        if (!focused) await b.key("Tab", "Tab", 9);
+      }
+      assert.ok(focused, "Tab never landed on a preset button");
+      await b.eval(`
+        const box = document.getElementById("scale-box");
+        box.value = "";
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      `);
+      await pressActive();
+      const meta = await presetMeta();
+      const want = meta.seeds[meta.buttons.findIndex(x => x.id === focused)];
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-box").value;`),
+        want, `Enter on the focused ${focused} preset did not fill the box`);
+
+      const state = await b.eval(`
+        return { body: { sw: document.body.scrollWidth, cw: document.body.clientWidth } };
+      `);
+      assert.ok(state.body.sw <= state.body.cw + 1,
+        "the preset row scrolls the page horizontally at 380px");
+      assert.strictEqual(await cardW(), before, "the sheet changed --card-w");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
 
 }

@@ -117,6 +117,14 @@ button.nav:active{background:#2e281e}
   display:flex; flex-direction:column; gap:9px}
 .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
   text-transform:uppercase}
+/* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.
+   Secondaries, like every other control that is not #scale-generate: the row
+   wraps rather than scrolls, so nothing is off-screen at 380px. */
+#scale-presets-row{display:flex; flex-direction:column; gap:9px}
+#scale-presets{display:flex; flex-wrap:wrap; gap:6px}
+#scale-presets .preset{min-height:44px; padding:6px 10px; cursor:pointer;
+  border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
+  font-family:Bitter, serif; font-weight:400; font-size:13px}
 #scale-box{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;
   font-family:Bitter, serif; font-weight:400; font-size:16px;
   background:#151310; border:1px solid #433b2c; border-radius:8px}
@@ -216,6 +224,13 @@ button.nav:active{background:#2e281e}
       <label class="sheetlabel" for="scale-name">DECK NAME</label>
       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
              autocomplete="off" spellcheck="false" maxlength="40">
+    </div>
+    <!-- Phase 6: six INLINED seeds. A tap fills the box below and nothing else -
+         the deck is auto-named from its fields like any typed scale. Create
+         path only: from Edit, one tap would overwrite the deck's fields. -->
+    <div id="scale-presets-row">
+      <span class="sheetlabel" id="scale-presets-label">PRESETS</span>
+      <div id="scale-presets" role="group" aria-labelledby="scale-presets-label"></div>
     </div>
     <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
     <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
@@ -2703,7 +2718,16 @@ const registerDeck = d => (CUSTOM[d.id] = d);
 // registry and the replacement is re-inserted AT ITS POSITION, because chip
 // order is the registry's insertion order. Re-keying an object in place is not
 // possible, so the registry is rebuilt - it holds a handful of entries.
+// Queue row 144, belt and braces: the loop below DROPS whatever already sits at
+// `next.id`, so the primitive refuses when some OTHER deck sits there - the
+// entry generateDeck just wrote for `next` itself is not a collision - instead
+// of trusting every caller to have checked first. Today
+// the only caller that can collide sits behind the row-131 guard, so this
+// changes nothing a user can see; it is here so that a future caller cannot
+// reintroduce row 131 silently. Returns whether the replacement happened.
 function replaceRegistered(oldId, next) {
+  const sitting = next.id !== oldId ? CUSTOM[next.id] : null;
+  if (sitting && sitting !== next) return false;
   const was = Object.entries(CUSTOM);
   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
   let placed = false;
@@ -2712,6 +2736,7 @@ function replaceRegistered(oldId, next) {
     else if (k !== next.id) CUSTOM[k] = v;
   }
   if (!placed) CUSTOM[next.id] = next;
+  return true;
 }
 // `guard` is an optional veto consulted with the PARSED seed, between the parse
 // and the build: it is how the submit path can refuse a save without a second
@@ -3047,6 +3072,25 @@ function buildChips() {
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
 const PARSE_HINT = "Type your ding first, e.g. (D) or D/";
+// Phase 6 presets: INLINED seed strings, never fetched (fetch fails under
+// file://, is absent in the sandbox and breaks "offline-ish") and never merged
+// into the DECKS literal - a preset is a seed a person could have typed, not a
+// deck. The same six live in tools/gen_deck.js's PRESETS; a unit test holds the
+// two lists to each other so they cannot drift.
+const SCALE_PRESETS = [
+  { id: "d_kurd_9", label: "D Kurd 9",
+    seed: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4" },
+  { id: "d_celtic_minor_9", label: "D Celtic Minor 9",
+    seed: "(D3) A3 C4 D4 E4 G4 A4 C5 D5" },
+  { id: "csharp_annaziska_9", label: "C# Annaziska 9",
+    seed: "(C#3) G#3 B3 C#4 D#4 E4 F#4 G#4 B4" },
+  { id: "e_la_sirena_9", label: "E La Sirena 9",
+    seed: "(E3) B3 C4 D4 E4 F#4 G4 B4 C5" },
+  { id: "f_low_pygmy_9", label: "F Low Pygmy 9",
+    seed: "(F3) Ab3 C4 Db4 Eb4 F4 Ab4 C5 Eb5" },
+  { id: "g_hijaz_9", label: "G Hijaz 9",
+    seed: "(G3) D4 Eb4 F#4 G4 A4 Bb4 C5 D5" },
+];
 const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored.";
 const sheet     = document.getElementById("scale-sheet");
 const scaleBox  = document.getElementById("scale-box");
@@ -3056,6 +3100,8 @@ const mirrorL   = document.getElementById("scale-mirror-l");
 const mirrorR   = document.getElementById("scale-mirror-r");
 const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
+const presetRow = document.getElementById("scale-presets-row");
+const presetBox = document.getElementById("scale-presets");
 const addChip   = document.getElementById("deck-add");
 // Edit state (Phase 4). The same sheet, three extra rows and a relabelled
 // primary - never a second sheet and never a second primary button.
@@ -3128,6 +3174,30 @@ function buildSwatches() {
     b.onclick = () => { palette = i; buildSwatches(); };
     swatches.appendChild(b);
   });
+}
+// A preset fills the SCALE BOX and nothing else. It sets no deck name and never
+// touches nameDirty, so the deck is auto-named by section 13 exactly as a typed
+// scale is - which keeps preset LABELS out of the deck-name space entirely.
+function applyPreset(p) {
+  scaleBox.value = p.seed;
+  // The same live parse a keystroke fires: the event the box already listens
+  // for, never a second call to the parse logic from here.
+  scaleBox.dispatchEvent(new Event("input", { bubbles: true }));
+  scaleBox.focus();
+}
+// The row is static, so it is built once. Labels go in through textContent -
+// nothing here is an innerHTML sink.
+function buildPresets() {
+  presetBox.innerHTML = "";
+  for (const p of SCALE_PRESETS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "preset";
+    b.setAttribute("data-preset", p.id);
+    b.textContent = p.label;
+    b.onclick = () => applyPreset(p);
+    presetBox.appendChild(b);
+  }
 }
 function setMirror(left) {
   mirror = left;
@@ -3364,6 +3434,9 @@ function setSheetMode(edit) {
   for (const el of [nameRow, degRow, layoutRow, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
+  // The presets are the mirror image: create-only. From Edit, one tap would
+  // overwrite the deck's fields, which is the collision path row 131 closed.
+  if (edit) presetRow.setAttribute("hidden", ""); else presetRow.removeAttribute("hidden");
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
   sheet.setAttribute("aria-label", edit ? "Edit this scale" : "Add a scale");
 }
@@ -3521,6 +3594,7 @@ function runGenerate() {
   genBtn.disabled = false;
 }
 
+buildPresets();
 addChip.onclick = () => openScaleSheet(addChip);
 genBtn.onclick = runGenerate;
 delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
@@ -3557,7 +3631,9 @@ sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet()
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  const stops = [editingId ? nameBox : null, scaleBox, editingId ? degSel : null,
+  const stops = [editingId ? nameBox : null,
+                 ...(editingId ? [] : [...presetBox.children]),
+                 scaleBox, editingId ? degSel : null,
                  editingId ? rotL : null, editingId ? rotR : null,
                  editingId ? resetBtn : null,
                  editingId ? slotsBox.children[layoutSel] : null,

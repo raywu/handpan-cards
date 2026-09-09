@@ -1,0 +1,13 @@
+# kills: the create sheet offers six presets, each one tap from a parsed scale
+diff --git a/index.html b/index.html
+index 7e9b7f6..037529d 100644
+--- a/index.html
++++ b/index.html
+@@ -3182,7 +3182,6 @@ function applyPreset(p) {
+   scaleBox.value = p.seed;
+   // The same live parse a keystroke fires: the event the box already listens
+   // for, never a second call to the parse logic from here.
+-  scaleBox.dispatchEvent(new Event("input", { bubbles: true }));
+   scaleBox.focus();
+ }
+ // The row is static, so it is built once. Labels go in through textContent -

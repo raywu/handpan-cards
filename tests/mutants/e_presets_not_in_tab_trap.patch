@@ -1,0 +1,13 @@
+# kills: every preset is a 44px target inside the sheet's focus trap at 380px
+diff --git a/index.html b/index.html
+index 7e9b7f6..f3d0836 100644
+--- a/index.html
++++ b/index.html
+@@ -3632,7 +3632,6 @@ sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet()
+ sheet.addEventListener("keydown", e => {
+   if (e.key !== "Tab") return;
+   const stops = [editingId ? nameBox : null,
+-                 ...(editingId ? [] : [...presetBox.children]),
+                  scaleBox, editingId ? degSel : null,
+                  editingId ? rotL : null, editingId ? rotR : null,
+                  editingId ? resetBtn : null,

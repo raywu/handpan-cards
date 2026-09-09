@@ -1,0 +1,14 @@
+# kills: every preset is a 44px target inside the sheet's focus trap at 380px
+diff --git a/index.html b/index.html
+index 7e9b7f6..7ee65b3 100644
+--- a/index.html
++++ b/index.html
+@@ -122,7 +122,7 @@ button.nav:active{background:#2e281e}
+    wraps rather than scrolls, so nothing is off-screen at 380px. */
+ #scale-presets-row{display:flex; flex-direction:column; gap:9px}
+ #scale-presets{display:flex; flex-wrap:wrap; gap:6px}
+-#scale-presets .preset{min-height:44px; padding:6px 10px; cursor:pointer;
++#scale-presets .preset{min-height:30px; padding:6px 10px; cursor:pointer;
+   border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
+   font-family:Bitter, serif; font-weight:400; font-size:13px}
+ #scale-box{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;

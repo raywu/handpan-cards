@@ -1914,3 +1914,133 @@ test("an untouched Edit box still leaves an auto-named deck free to re-derive it
   assert.strictEqual(app.registry()[now].options.name, undefined,
     "an untouched auto name was pinned onto the new fields");
 });
+
+/* ------------------------------- 28. the preset row (Phase 6, lane 10) */
+
+/** The preset buttons in the sheet, as [{id, label}] in document order. */
+function presetRow(app) {
+  return app.els["scale-presets"].children.map((b) => ({
+    id: b.dataset.preset,
+    label: (b.textContent || "").trim(),
+  }));
+}
+
+/** Tap the preset at index `at`, the way a finger does. */
+function tapPreset(app, at) {
+  const b = app.els["scale-presets"].children[at];
+  assert.ok(b, "no preset button at index " + at);
+  b.click();
+  return b;
+}
+
+test("the create sheet offers six presets, each one tap from a parsed scale", () => {
+  const app = boot();
+  openSheet(app);
+  const row = presetRow(app);
+  assert.strictEqual(row.length, 6, `${row.length} presets in the row`);
+  assert.ok(row.every((p) => p.id && p.label), JSON.stringify(row));
+
+  const presets = app.get("SCALE_PRESETS");
+  for (let i = 0; i < 6; i++) {
+    const seed = presets[i].seed;
+    tapPreset(app, i);
+    assert.strictEqual(app.els["scale-box"].value, seed,
+      `preset ${i} left "${app.els["scale-box"].value}" in the box`);
+    // the SAME live parse a keystroke fires, with no second call from the test
+    assert.strictEqual(app.els["scale-box"].classList.contains("bad"), false,
+      `preset ${i} does not parse`);
+    assert.strictEqual(app.els["scale-generate"].disabled, false,
+      `preset ${i} left the primary disabled`);
+    assert.ok(app.els["scale-parse"].textContent.trim().length > 0,
+      `preset ${i} left the parse line empty`);
+    assert.notStrictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"),
+      `preset ${i} left the hint on the parse line`);
+  }
+});
+
+test("a preset never names the deck: it is auto-named exactly as a typed scale is", () => {
+  const app = boot();
+  openSheet(app);
+  const preset = app.get("SCALE_PRESETS")[0];
+  tapPreset(app, 0);
+  assert.strictEqual(app.get("nameDirty"), false,
+    "a preset tap dirtied the name box");
+
+  app.els["scale-generate"].click();
+  const d = app.registry()[app.deckId()];
+  assert.ok(d, "no deck was generated from the preset");
+  assert.strictEqual(d.options.name, undefined,
+    "the preset label was pinned onto the deck as an explicit name");
+  const auto = app.get(
+    `HPE.select.autoName(CUSTOM[${JSON.stringify(d.id)}].fields, ` +
+    `CUSTOM[${JSON.stringify(d.id)}].options.parent)`);
+  assert.strictEqual(d.name, auto,
+    `the preset deck is named "${d.name}", not the section 13 auto name "${auto}"`);
+  assert.notStrictEqual(d.name, preset.label,
+    "the preset label reached the deck-name space");
+});
+
+test("the app's presets and tools/gen_deck.js's PRESETS cannot drift apart", () => {
+  const { PRESETS } = require("../tools/gen_deck.js");
+  const app = boot();
+  const inApp = app.get("SCALE_PRESETS");
+  assert.strictEqual(inApp.length, PRESETS.length, "the two lists differ in length");
+  for (let i = 0; i < PRESETS.length; i++) {
+    assert.strictEqual(inApp[i].id, PRESETS[i].id, `preset ${i}: id drifted`);
+    assert.strictEqual(inApp[i].label, PRESETS[i].label, `preset ${i}: label drifted`);
+    assert.strictEqual(inApp[i].seed, PRESETS[i].seed,
+      `preset ${i}: seed drifted - app has "${inApp[i].seed}", ` +
+      `tools/gen_deck.js has "${PRESETS[i].seed}"`);
+  }
+});
+
+test("the preset row is create-only: an Edit sheet never offers one", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openSheet(app);
+  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), false,
+    "the create sheet hid the preset row");
+
+  app.select(d.id);
+  app.clickChip(d.name);
+  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), true,
+    "the Edit sheet offers a preset row - one tap from overwriting the deck's fields");
+
+  openSheet(app);
+  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), false,
+    "the preset row never came back on the create path");
+});
+
+/* ------------------ 29. replaceRegistered defends its own invariant (row 144) */
+
+test("replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, OTHER_STRING);
+  const before = app.registry();
+
+  // The destructive line is `else if (k !== next.id)`: without a defence of its
+  // own, replacing `a` with a deck carrying `b`'s id silently drops `b`.
+  const ok = app.get(
+    `replaceRegistered(${JSON.stringify(a.id)}, ` +
+    `Object.assign({}, CUSTOM[${JSON.stringify(b.id)}]))`);
+  assert.strictEqual(ok, false, "the primitive accepted a same-id collision");
+  assert.deepStrictEqual(app.registry(), before,
+    "a same-id collision changed the registry");
+});
+
+test("replaceRegistered still replaces in place when there is no collision", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, OTHER_STRING);
+  const at = Object.keys(app.registry()).indexOf(a.id);
+
+  const ok = app.get(
+    `replaceRegistered(${JSON.stringify(a.id)}, ` +
+    `Object.assign({}, CUSTOM[${JSON.stringify(a.id)}], { id: "custom:zzz" }))`);
+  assert.strictEqual(ok, true, "an uncontested replacement was refused");
+  const keys = Object.keys(app.registry());
+  assert.strictEqual(keys[at], "custom:zzz", `the replacement moved: ${JSON.stringify(keys)}`);
+  assert.ok(keys.includes(b.id), "the bystander deck was dropped");
+  assert.strictEqual(keys.includes(a.id), false, "the old id survived the replacement");
+});
