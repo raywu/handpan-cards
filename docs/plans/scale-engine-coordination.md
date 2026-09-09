@@ -395,8 +395,9 @@ NEXT:
    `parent` the inferred index when the seed's parent is null; `colors` from
    the section 13 palette table with `ga == root`, `gb == tone`; `degrees` from
    `HPE.naming.degrees` over every pan pitch class with the tonic = ding pc;
-   `geom` and per-field angles from `HPE.layout.solve(fields, options)` (copy
-   angles into `fields[id][4]`, ding angle stays null); `chords[]` entries
+   `geom` and per-field angles from `HPE.layout.solve(fields, options)`, which
+   returns the RESULT type `{ok, value:{geom, fields}}` (row 25; propagate a
+   not-ok result unchanged; copy angles into `fields[id][4]`, ding angle stays null); `chords[]` entries
    EXACTLY `{main, sup, subtitle, fields, roots}` with ids as NUMBERS.
    Pipeline: for every root pc present on a non-ding field and every quality
    whose tier is a candidate tier, keep it iff every interval pc is on a
