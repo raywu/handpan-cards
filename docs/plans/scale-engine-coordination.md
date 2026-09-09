@@ -785,7 +785,7 @@ ALL SEVEN PHASES (0, 1, 2, 3, 4, 5, 6) ARE COMPLETE. `docs/SCALE_ENGINE_PLAN.md`
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 10 | spawned 2026-09-09 | agent-managed | scale-engine/w20-preset-row | pending | - | - | pending | 0 | no | - | yes |
-| 14 | spawned 2026-09-09 | agent-managed | scale-engine/w20-measurement-hygiene | pending | - | - | pending | 0 | no | - | yes |
+| 14 | returned; reviewer live | agent-managed | scale-engine/w20-measurement-hygiene | #35 | 23bd410 | 2026-09-09 (gh pr view OPEN + MERGEABLE + CLEAN + base main, ls-remote tip and run 34387917584 success all at that exact SHA, workflow validate, 5/5 jobs green, names quoted; diff file list = tools/decks.py, tests/test_gen_deck.py, tests/suite_health.py, all owned) | pending | 0 | no | - | yes |
 | 12 | merged, released | agent-managed | scale-engine/w20-edit-collision | #34 | d752391 | 2026-09-09 (gh pr view OPEN + MERGEABLE + CLEAN + base main, ls-remote tip and run 34383143759 success all at that exact SHA, workflow validate, 5/5 jobs green, names quoted; diff file list confined to owned paths) | PASS_WITH_NITS (nothing covered_by neither) | 0 | yes ac3499e | - | no |
 | 13 | merged, released | agent-managed | scale-engine/w21-comment-floors | #33 | 3a3d765 | 2026-09-09 (gh pr view OPEN + MERGEABLE + CLEAN + base main, ls-remote tip and run 34382311164 success all at that exact SHA, workflow validate, 5/5 jobs green, names quoted) | PASS_WITH_NITS | 0 | yes ee36b0f | - | no |
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
