@@ -152,7 +152,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 |---|---|---|---|---|
 | P0a | scale-engine/w1-spec | merged 386a856 | PASS_WITH_NITS (3rd) | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
-| P0c | scale-engine/w3-harness | PR #11 bounced, lane fixing | FAIL+1 | 2026-09-08 |
+| P0c | scale-engine/w3-harness | PR #11 fixed at 4eafe8e, 2nd review running | FAIL+1 | 2026-09-08 |
 
 ## Handoff queue (append-only)
 
@@ -190,4 +190,4 @@ Cycle: 1   Wave: 1   Merged this batch: -
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
-| P0c | live (bounced) | agent-managed | scale-engine/w3-harness | #11 | 81830c4 | 2026-09-08 gh pr view + run 34289135665 success | FAIL | 1 | no | - | yes |
+| P0c | returned done (fix) | agent-managed | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | 2nd reviewer spawned | 1 | no | - | yes |
