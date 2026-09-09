@@ -456,7 +456,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | PR #15, adding root-field-given 58/59 test | pending | 2026-09-08 |
-| 1B | scale-engine/w7-layout | PR #17 verified at 1e4d795, reviewer spawned | pending | 2026-09-08 |
+| 1B | scale-engine/w7-layout | merged 6467a33 | PASS_WITH_NITS | 2026-09-08 |
 | 1C | scale-engine/w8-naming | PR #16 verified at ff2c485, reviewer spawned | pending | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
@@ -490,6 +490,9 @@ Written when their wave opens, from the plan rows and the acceptance table.
 
 | 23 | 1A | The acceptance row's "voicing 58/59" is Premise 2's figure (root FIELD given); with only (root pc, intervals) the spec-predicted figure is 50/59 (Premise 3). Lane asked to expose `opts.rootField` on `choose` and assert both; the 50/59 exception table (Fm9, Db, Dbmaj7, Eb7, 5 alternates) stays two-sided. Phase 2 brief: `select.build` calls `choose` with the pc only | sent to 1A, attempt 1 |
 | 24 | 1C readings for the Phase 1 owner-review gate: numerals read off a mode REFERENCE scale (major/natural minor) not parent-degree index; minor-relative b2 reads `#I` under the section 10 tie-break; octatonic both-thirds -> lowercase; caps enforced by RangeError throw; `degrees` labels every pan pc. Amara 3 degree exceptions match spec section 10 frozen list. | 1C | integrator | open (Phase 1 owner-review gate) |
+| 25 | reviewer #17 | `layout.solve` returns `{ok, value:{geom, fields}}` while spec §1 says plain function; `mirror` false = right-first (generated default), true = left-first, inverting §13's label. Spec §1 and §13 need a one-line amendment each. | integrator | open (Phase 1 owner-review gate); lane 2 brief cites the result type |
+| 26 | reviewer #17 | 3a: `pan()` (index.html:160) ignores `g.ext` and derives its own extent; must read `ext` for generated decks per §11. Harmless for reachable configs today. | 3a brief | open |
+| 27 | reviewer #17 | Nits for a later sweep: `"mirror" in options` treats `{mirror: undefined}` as explicit false; `tests/layout.test.js:475` identical ternary branches; inner-pair sign(cos) float-fragile at 270°; decorative `inner_ring` 0.355 clears the offset ding by 0.0225R (taste call). | 1B follow-up | open |
 
 ## Review log
 
@@ -503,11 +506,12 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #11 | P0c | PASS_WITH_NITS (2nd, CI success at 4eafe8e) | all 13 prior findings reproduced fixed; nits: TERM trap does not exit, e_ skip precedes apply --check, `$*` word-splits header | Merged d6935d1 |
 | #12 | preview (non-swarm) | PASS_WITH_NITS (CI success at c64feab) | fork PR fetch, exit status on bind failure, trap window, README | nits fixed 672e003, merged |
 | #14 | P0d | PASS_WITH_NITS (CI success at 6a24d38) | 25 tests, 7 u_ mutants killed, golden strings + round-trip + FNV hash hand-verified; decisions (a)-(h) all consistent with spec; 3 nits (options BAD_NOTE wording, NO_DING-first precedence vs DEFAULT text, null palette/mirror) | Merged 40ff645; rows 18-21 |
+| #17 | 1B layout | PASS_WITH_NITS | boundary clean; CI success at 1e4d795; 7 g_ killed; 502-config overlap sweep clean (min clearance 0.0518R reachable); mirror false=right-first pinned; solve returns result type (spec §1 says plain function) | merged 6467a33; nits rows 25-27 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
 
 ## Cycle state
 
-Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645
+Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645, 6467a33
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
@@ -515,6 +519,6 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | returned done, re-briefed | agent-managed | scale-engine/w6-voicing | #15 | d93ea39 | 2026-09-08 gh pr view + run 34311107260 success | pre-review clarification sent | 1 | no | - | - |
-| 1B | returned done | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | reviewer spawned | 0 | no | - | - |
+| 1B | merged, released | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | PASS_WITH_NITS | 0 | yes 6467a33 | - | no |
 | 1C | returned done | agent-managed | scale-engine/w8-naming | #16 | ff2c485 | 2026-09-08 gh pr view + run 34311111548 success | reviewer spawned | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
