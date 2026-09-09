@@ -52,12 +52,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 (function (HPE) {
   "use strict";
 
-  var VERSION = 1;
+  // The version this build WRITES. Every version <= this one is still
+  // readable: see decode step 2 (D5-4). v1 = four options fields, v2 adds the
+  // layout correction as the fourth of five.
+  var VERSION = 2;
+  var NEWEST = VERSION;   // an alias decode can still see past its own shadow
+  var OLDEST = 1;         // no version 0 ever shipped
 
   // Max characters in a whole share string. A 19-field pan with a 40-character
-  // name encodes to well under 300; the cap is the first gate on decode, so an
-  // over-cap link is refused before anything is parsed.
-  var CAPS = { payload: 512 };
+  // name and a full 19-entry layout correction encodes to well under 400; the
+  // cap is the first gate on decode, so an over-cap link is refused before
+  // anything is parsed.
+  var CAPS = { payload: 640 };
 
   // URL-safe, digits FIRST so the version character of an early version is the
   // plain decimal digit. Extending the format never renumbers this.
@@ -202,6 +208,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the payload ------------------------------------------------------ */
 
+  // The D5 layout correction, comma-separated decimal indices. Empty is
+  // ABSENT - the generated layout - never the identity permutation, so
+  // clearing a correction shortens the link back to what it was.
+  function orderField(order) {
+    if (order === undefined || order === null) return "";
+    if (Object.prototype.toString.call(order) !== "[object Array]") {
+      return String(order);
+    }
+    var parts = [];
+    for (var i = 0; i < order.length; i += 1) parts.push(String(order[i]));
+    return parts.join(",");
+  }
+
   function optionsLine(options) {
     var opts = options || {};
     var palette = opts.palette === undefined || opts.palette === null
@@ -210,24 +229,64 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       ? "" : opts.parent;
     var mirror = opts.mirror ? "1" : "0";
     var name = opts.name === undefined || opts.name === null ? "" : opts.name;
-    return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP +
-           mirror + FIELD_SEP + String(name);
+    // `name` stays LAST so it may hold any printable character; `order` goes in
+    // ahead of it (D5-3). A build that writes v1 writes v1's four fields: the
+    // options line is a per-version format, and only v2 has a correction field.
+    var head = String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror;
+    if (VERSION >= 2) head += FIELD_SEP + orderField(opts.order);
+    return head + FIELD_SEP + String(name);
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
+  var ORDER_RE = /^[0-9]{1,2}(,[0-9]{1,2})*$/;
 
-  function readOptionsLine(line) {
+  // One reader per wire version, so a v1 link is read by v1's rules and never
+  // measured against v2's field count (D5-4). v1 has four fields and can carry
+  // no correction at all; v2 has five, `order` fourth.
+  function readOptionsLine(line, version) {
+    var count = version >= 2 ? 5 : 4;
     var parts = String(line).split(FIELD_SEP);
-    if (parts.length !== 4) return null;
+    if (parts.length !== count) return null;
     if (!UINT_RE.test(parts[0])) return null;
     if (parts[1] !== "" && !UINT_RE.test(parts[1])) return null;
     if (parts[2] !== "0" && parts[2] !== "1") return null;
+    var order = null;
+    if (count === 5 && parts[3] !== "") {
+      if (!ORDER_RE.test(parts[3])) return null;
+      order = [];
+      var digits = parts[3].split(",");
+      for (var i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
+    }
     return {
       palette: Number(parts[0]),
       parent: parts[1] === "" ? null : Number(parts[1]),
       mirror: parts[2] === "1",
-      name: parts[3]
+      order: order,
+      name: parts[count - 1]
     };
+  }
+
+  // The correction is a permutation over the non-ding fields of the seed it
+  // travels with, so it can only be checked once the seed has been parsed.
+  // core.parseSeed is the one seed validator and its option whitelist drops
+  // `order`, so this is where the wire value is held to its meaning.
+  function checkOrder(order, seed) {
+    if (order === null) return true;
+    var n = 0;
+    var id;
+    for (id in seed.fields) {
+      if (!Object.prototype.hasOwnProperty.call(seed.fields, id)) continue;
+      if (seed.fields[id][3] !== "ding") n += 1;
+    }
+    if (order.length !== n) return false;
+    var seen = {};
+    for (var i = 0; i < n; i += 1) {
+      var slot = order[i];
+      if (slot < 0 || slot >= n ||
+          Object.prototype.hasOwnProperty.call(seen, String(slot))) return false;
+      seen[String(slot)] = true;
+    }
+    return true;
   }
 
   /* ---- encode ----------------------------------------------------------- */
@@ -249,8 +308,37 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- decode ----------------------------------------------------------- */
 
+  // The layout correction is core's blind spot: parseSeed owns seed validation
+  // and drops the option it does not know, so decode re-attaches the carried
+  // value and holds it to its meaning here, against the seed parseSeed just
+  // approved. A correction that is not a permutation of that seed's non-ding
+  // fields is a corrupt payload like any other (D5-2).
   function decode(text) {
+    var carry = {};
+    var result = decodeSeed(text, carry);
+    if (!result.ok) return result;
+    if (carry.order) {
+      if (!checkOrder(carry.order, result.value)) return badNote(text);
+      result.value.options.order = carry.order;
+    }
+    return result;
+  }
+
+  // The whole decode except the last step, which has to stay the bare
+  // core.parseSeed call. `carry` is how the layout correction gets past that
+  // call: parseSeed's option whitelist is core's, core.js is frozen, and it
+  // drops any option it does not know - so the value is re-attached by decode
+  // below, after parseSeed has approved everything it does own.
+  function decodeSeed(text, carry) {
     if (typeof text !== "string") return badNote(text);
+
+    // D5-4. The two version gates below are written against VERSION - and from
+    // here VERSION means the version being READ, clamped to the newest this
+    // build understands. Deliberately shadowing the module's VERSION (the one
+    // encode WRITES): it leaves both gates reading exactly as they did in v1
+    // while making every version this build knows decodable, so a v1 link
+    // still opens in a v2 app and only a genuinely NEWER one is refused.
+    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
     //    before the version byte and before any parsing at all.
@@ -280,8 +368,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // Line 2 is the reserved layout-delta section: empty in v1.
     if (lines[2] !== "") return badNote(text);
 
-    var options = readOptionsLine(lines[1]);
+    var options = readOptionsLine(lines[1], version);
     if (options === null) return badNote(text);
+    if (carry) carry.order = options.order;
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.
