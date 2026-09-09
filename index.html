@@ -2651,6 +2651,21 @@ const save = () => {
 // unchanged: {ok:true, value, warnings} or {ok:false, code, reason}.
 const isBuiltIn = id => DECKS.some(d => d.id === id);
 const registerDeck = d => (CUSTOM[d.id] = d);
+// Queue row 73, the owner's "edit means edit". A field edit necessarily mints a
+// new id (D14 hashes the fields), and the OLD deck goes: it is dropped from the
+// registry and the replacement is re-inserted AT ITS POSITION, because chip
+// order is the registry's insertion order. Re-keying an object in place is not
+// possible, so the registry is rebuilt - it holds a handful of entries.
+function replaceRegistered(oldId, next) {
+  const was = Object.entries(CUSTOM);
+  for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
+  let placed = false;
+  for (const [k, v] of was) {
+    if (k === oldId) { CUSTOM[next.id] = next; placed = true; }
+    else if (k !== next.id) CUSTOM[k] = v;
+  }
+  if (!placed) CUSTOM[next.id] = next;
+}
 function generateDeck(text, options) {
   const seed = HPE.core.parseSeed(text, options);
   if (!seed.ok) return seed;
@@ -2749,6 +2764,23 @@ function rememberScale(seed) {
 // deck up a second time.
 function forgetScale(str) {
   writeScales(savedScales().filter(r => !r || r.s !== str));
+}
+// Queue row 73: editing the NOTES replaces the deck, so the old record leaves
+// storage and the new one takes ITS INDEX - restoreScales rebuilds the registry
+// in list order, so the index is what carries the chip position across a
+// reload. Appending would move the deck to the end of the row on the next boot
+// while it sat in place until then.
+function replaceScale(oldStr, seed) {
+  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const list = savedScales();
+  const at = list.findIndex(r => r && r.s === oldStr);
+  if (at < 0) { rememberScale(seed); return; }
+  const out = [];
+  list.forEach((r, i) => {
+    if (i === at) out.push(rec);
+    else if (!r || r.s !== rec.s) out.push(r);   // never a duplicate of the new record
+  });
+  writeScales(out);
 }
 // Boot must stay resilient: an unusable record is DROPPED, never fatal.
 function restoreScales() {
@@ -3220,7 +3252,14 @@ function sheetOptions() {
   if (editingId) {
     o.parent = Number(degSel.value);
     const n = String(nameBox.value || "").trim();
-    if (n) o.name = n;             // validated by core.parseSeed, never here
+    // The box is PREFILLED with the deck's name, so a name the user never
+    // touched is the engine's own auto name (section 13) and is treated as
+    // ABSENT: otherwise a field edit would pin the old fields' name onto the
+    // new deck and the row would show two chips reading the same thing (queue
+    // row 73). autoName has ONE producer, in select.js; this only compares.
+    const d = editedDeck();
+    const auto = d ? HPE.select.autoName(d.fields, d.options.parent) : null;
+    if (n && n !== auto) o.name = n;  // validated by core.parseSeed, never here
     if (layoutOrder) o.order = layoutOrder.slice();
   }
   return o;
@@ -3345,6 +3384,11 @@ function runGenerate() {
   // (13A): a save re-parses and rebuilds exactly once, and D14 keeps the id
   // when the canonical seed is unchanged, so the deck is replaced in place.
   const known = new Set(Object.keys(CUSTOM));
+  // Queue row 73: what the OLD record becomes is decided here, before the id
+  // can move. The seed string is read now because the registry entry is gone by
+  // the time storage is written.
+  const wasId = editingId;
+  const wasSeed = editedDeck() ? HPE.core.formatSeed(editedDeck().fields) : null;
   const res = generateDeck(String(scaleBox.value || ""), sheetOptions());
 
   scaleBox.removeAttribute("readonly");
@@ -3355,10 +3399,17 @@ function runGenerate() {
     return;
   }
   const d = res.value;
+  // "Edit means edit" (queue row 73). D14 could not keep the id across a field
+  // change, so the deck is REPLACED instead: the old entry leaves the registry
+  // and the new one takes its chip position. An options-only edit never gets
+  // here - the id is unchanged and generateDeck already replaced it in place.
+  const replaced = !!wasId && d.id !== wasId;
+  if (replaced) replaceRegistered(wasId, d);
   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
   // produced; nothing is rebuilt to re-derive them.
   const warned = (d.warnings || []).map(w => w.reason);
-  let text = known.has(d.id) ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+  let text = (replaced || known.has(d.id))
+    ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
   if (warned.length) text += " " + warned.join(" ");
 
@@ -3367,7 +3418,7 @@ function runGenerate() {
   // the correction it just committed.
   dropLayoutPreview();
   closeScaleSheet();
-  rememberScale(seedOf(d));
+  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
   selectDeck(d.id);
   say(text, warned.length ? "warn" : "ok");
   genBtn.disabled = false;

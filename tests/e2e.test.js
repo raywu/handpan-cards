@@ -1219,4 +1219,97 @@ function run() {
     }
   });
 
+  /* ----------------------------------------------------------------
+   * a field edit REPLACES the deck (queue row 73), at 380px
+   *
+   * "Edit means edit": the old deck leaves the row, the replacement takes its
+   * position and its selection, and its label is re-derived from the new notes
+   * - so the two indistinguishable chips of the reproduction cannot appear.
+   * ---------------------------------------------------------------- */
+
+  const EDIT_MORE_SCALE = EDIT_SCALE + " D5";   // one note appended: new fields
+
+  /** Retype the scale box and press SAVE CHANGES on an open Edit sheet. */
+  async function saveFields(scale) {
+    await typeScale(scale);
+    await b.click("#scale-generate");
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "the Edit sheet to close after SAVE CHANGES" });
+  }
+
+  const chipReport = () => b.eval(`
+    return {
+      chips: [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(c => c.textContent.trim()),
+      on: [...document.querySelectorAll("#decks .chip.on")].map(c => c.textContent.trim()),
+      cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
+      body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+    };
+  `);
+
+  test("a field edit leaves one chip for the deck, selected and relabelled, at 380px", async () => {
+    try {
+      await editFreshDeck();
+      const before = await chipReport();
+      assert.strictEqual(before.on.length, 1, "the setup did not leave one selected chip");
+      const was = before.on[0];
+
+      await saveFields(EDIT_MORE_SCALE);
+      const after = await chipReport();
+
+      assert.strictEqual(after.chips.length, before.chips.length,
+        `the edit forked the deck: ${JSON.stringify(after.chips)}`);
+      assert.strictEqual(after.on.length, 1,
+        `not exactly one selected chip after a field edit: ${JSON.stringify(after.on)}`);
+      assert.notStrictEqual(after.on[0], was,
+        "the chip label was pinned to the pre-edit notes");
+      assert.strictEqual(after.chips.filter(c => c === was).length, 0,
+        `the pre-edit chip is still in the row: ${JSON.stringify(after.chips)}`);
+      assert.strictEqual(after.cardW, before.cardW, "--card-w moved on a field edit");
+      assert.ok(after.body.sw <= after.body.cw + 1,
+        `the row scrolls the page horizontally (${after.body.sw} > ${after.body.cw})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the replacement takes the old chip's position and keeps it across a reload", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(SIX_SCALES[2]);
+      const before = await chipReport();
+      const at = before.chips.indexOf(before.on[0]) - 1;   // the FIRST custom deck
+      assert.ok(at >= 0, `no two custom chips: ${JSON.stringify(before.chips)}`);
+      const target = before.chips[at];
+
+      // select the first custom deck, then reopen it in Edit and change its notes
+      await b.eval(`
+        const c = [...document.querySelectorAll("#decks .chip:not(#deck-add)")][${at}];
+        c.scrollIntoView({ block: "nearest", inline: "nearest" });
+        c.click();
+        return true;
+      `);
+      await openEdit();
+      await saveFields(EDIT_MORE_SCALE);
+
+      const after = await chipReport();
+      assert.strictEqual(after.chips.length, before.chips.length,
+        `the edit forked the deck: ${JSON.stringify(after.chips)}`);
+      assert.notStrictEqual(after.chips[at], target, "the chip was never relabelled");
+      assert.deepStrictEqual(after.on, [after.chips[at]],
+        `the replacement is not the chip at position ${at}: ${JSON.stringify(after)}`);
+      assert.ok(after.body.sw <= after.body.cw + 1, "the row scrolls the page horizontally");
+
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+        { label: "deck chips after the reload" });
+      const back = await chipReport();
+      assert.deepStrictEqual(back.chips, after.chips,
+        `the chip row changed across a reload: ${JSON.stringify(back.chips)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
 }
