@@ -369,7 +369,82 @@ NEXT:
 Acceptance: `ALL && node --test tests/naming.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^n_' | grep -vq survived`
 Owns: `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*`, that FLOORS row. Never: `core.js`, `index.html`, fixtures, spec, other tests.
 
-### 2, 3a, 3b, 4
+### 2 select
+Why: the first module that produces a whole deck; Phase 3 renders exactly its
+output. Depends on merged `HPE.core`, `HPE.voicing` (PR #15), `HPE.naming`
+(PR #16), and consumes `HPE.layout` (PR #17) for `geom` and angles.
+Read: ENGINE-SPEC sections 1, 5 (collapse rules, 6-note trim), 7 (D9 root
+octave: `voicing.rootField`), 8 (candidates by `tier`, non-ding rule,
+extended-only-on-top-shell, cap 25, ranking, symmetric tie-break, canonical
+order, overrides, equivalence annotations), 9-10 (call `HPE.naming`; never
+re-implement), 11 (deck object, EXACT key set), 12 (`core.deckId`), 13
+(palette table, mirror, name `""` = auto), 16 (`select_warnings`,
+divergence schema below), 17; plan Phase 2 (lines 389-406), Premise 4
+(89-118), acceptance row `2 select`. Queue rows 10, 14, 16, 17, 23, 24.
+NEXT:
+1. `src/engine/select.js` exporting `HPE.select = {build, candidates, rank, collapse, ...}`.
+   `build(seed)` takes the `core.parseSeed(...).value` shape (`{fields, options}`)
+   and returns `{ok:true, value:<deck>, warnings:[...]}` or `{ok:false, code, reason}`
+   using only `HPE.core.REASONS` codes. The deck has EXACTLY the section 11
+   keys `id, name, options, colors, degrees, geom, fields, chords, warnings`:
+   `id = HPE.core.deckId(seed)`; `name` = user name if `options.name` is
+   non-empty, else the auto name `<DING PC NAME> <PARENT display> <N>` where N
+   counts TOP-SHELL fields including the ding (section 13 D5A; uppercase; at
+   most 16 chars, ellipsised with `…` beyond that; the ding pitch class is
+   spelled as the seed spells it); `options` = `{palette, mirror, parent}` with
+   `parent` the inferred index when the seed's parent is null; `colors` from
+   the section 13 palette table with `ga == root`, `gb == tone`; `degrees` from
+   `HPE.naming.degrees` over every pan pitch class with the tonic = ding pc;
+   `geom` and per-field angles from `HPE.layout.solve(fields, options)` (copy
+   angles into `fields[id][4]`, ding angle stays null); `chords[]` entries
+   EXACTLY `{main, sup, subtitle, fields, roots}` with ids as NUMBERS.
+   Pipeline: for every root pc present on a non-ding field and every quality
+   whose tier is a candidate tier, keep it iff every interval pc is on a
+   non-ding field (extended tier: on the TOP shell); collapse coinciding pitch
+   sets (sus2 -> sus4, 6 -> m7, m6 -> m7b5; symmetric sets by section 8
+   tie-break via `HPE.naming.symmetricRoot`); voice with
+   `HPE.voicing.choose(fields, rootPc, intervals)` (pc only, NOT the root
+   field; row 23); drop any candidate whose `choose` is not ok; dedup on
+   identical `fields` list; rank per section 8 and trim to 25; order per the
+   canonical order; name each with `HPE.naming.name` / `HPE.naming.subtitle`
+   (equivalence annotation for m7 / m7b5 derived mechanically per D4).
+   Warnings: `NO_THIRDS` when no root has a third above it on the top shell
+   (`{C,G,D}` fixture yields it; a diatonic pan yields none). Determinism:
+   same seed, same deck, byte-for-byte after JSON round-trip.
+2. `tests/fixtures/divergence_v1.json`, schema
+   `{"version":1, "decks": {"<builtin id>": {"missing": [<card main+sup the engine does not produce>], "extra": [<generated main+sup not in the built-in>], "overrides": [{"main","sup","subtitle","fields","roots","note"}]}}}`.
+   Populate it by RUNNING `build` on the three built-in seeds from
+   `tests/fixtures/golden_decks_v1.json` (`maker_string` via `core.parseSeed`)
+   and diffing against the fixture chords by (main, sup, fields). `overrides`
+   holds the built-ins' out-of-vocabulary / hand-authored cards: at least
+   Hijaz `Dmaj7` and `Dmaj7#11` `(NO 5)`, the five HIGH/LOW alternates, and
+   whatever else the diff surfaces; each with a one-line `note` citing the
+   spec section. NO numeric expectation anywhere.
+3. `tests/select.test.js`: (a) diff test: for each built-in, the generated
+   deck's (main, sup, fields) set vs the fixture equals exactly the committed
+   `missing`/`extra` (the table can only shrink: a two-sided test asserts each
+   `missing` entry is really absent and each `extra` really present);
+   (b) deck object key set and `chords[]` key set exact, ids numeric, ding
+   angle null, `colors.ga === colors.root`; (c) `id` equals
+   `core.deckId(seed)` and is unchanged when every option changes;
+   (d) `twelve note pan` fixture entry: 29 raw candidates, 27 after collapse,
+   25 after cap (section 8 worked example), and the cap bites; (e) ranking
+   order and sus2/6/m6 collapse asserted on a synthetic pan; (f) `{C,G,D}`
+   yields ok + `NO_THIRDS`; every `synthetic_scales.json` ok row's
+   `select_warnings` matches; (g) every emitted voicing passes
+   `HPE.voicing.isLegal`; (h) auto name for the three built-in seeds
+   (`C# HIJAZ 9`, `F PYGMY 18`? -> assert whatever section 13 yields and
+   record it; `D AEOLIAN 9` is fixed by the spec) and the 16-char ellipsis on
+   the 12-note pan; (i) determinism. Normalise vm values through JSON (row 16).
+4. `tests/mutants/s_*.patch` (`# suite: node --test tests/select.test.js`):
+   cap removed or widened; ranking tier order swapped; sus2 survives collapse;
+   6-chord survives; `NO_THIRDS` never emitted; extended allowed off the top
+   shell; ding-only pitch class allowed as a root; dedup dropped.
+5. Raise only the `tests/select.test.js` FLOORS row.
+Acceptance: `ALL && node --test tests/select.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^s_' | grep -vq survived`
+Owns: `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`, `tests/fixtures/divergence_v1.json`, that FLOORS row. Never: other `src/engine/*`, `index.html`, other fixtures, spec, other tests. Readings that the spec leaves open go in the return report, not the spec.
+
+### 3a, 3b, 4
 Written when their wave opens, from the plan rows and the acceptance table.
 
 ## Status
