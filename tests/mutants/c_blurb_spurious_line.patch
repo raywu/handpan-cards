@@ -1,0 +1,17 @@
+# kills: test_a_warning_survives_the_adapter_and_reaches_the_title_blurb
+# The unwarned path grows a line the seed never earned.  Nothing leaks the
+# NO_THIRDS string, so the assertNotIn half of the test still passes; only
+# the whole-blurb pin on the quiet deck catches it - the axis PR #35 gave up.
+diff --git a/tools/decks.py b/tools/decks.py
+index fecd2b5..87875d1 100644
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -349,6 +349,8 @@ def _blurb(spec, chord_count, warnings=()):
+     # that the app had flagged it; the engine's own reason string, verbatim.
+     for w in warnings:
+         out.append(w["reason"].upper())
++    if not warnings:
++        out.append("SPURIOUS EXTRA LINE")
+     return out
+ 
+ 
