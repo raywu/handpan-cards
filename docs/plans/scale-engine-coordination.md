@@ -196,7 +196,180 @@ NEXT:
 Acceptance: `ALL && python3 -m unittest tests.test_fixture_integrity && ./tests/mutation_check.sh 2>&1 | grep -q 'f_.*killed'`
 Owns: `tests/mutants/f_*`, `tests/test_fixture_integrity.py`, that FLOORS row. Never: the fixture bytes (sha stays 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a), `src/`, other tests.
 
-### 1A, 1B, 1C, 2, 3a, 3b, 4
+### Shared preamble for every Phase 1 lane (1A, 1B, 1C)
+Read first: `docs/ENGINE-SPEC.md` sections 1 (result contract), 16 (fixture
+schemas), 17 (degenerate cases) plus the lane's own sections below;
+`tests/CONTRACT.md`; `tests/helpers/engine.js` (header comment = module
+convention); `src/engine/core.js` and `tests/core.test.js` as the worked
+example of a shipped lane. Rules that bit P0d (queue rows 12, 16, 17):
+- Plain script, `var HPE = (typeof HPE !== 'undefined') ? HPE : {}`, wrapped
+  in an IIFE that attaches `HPE.<module> = {...}`. No require/import/export,
+  no TextEncoder, no ES features the vm rejects (ES2015 is fine).
+- Load in tests via `loadEngine(['core', '<module>'])` (module NAMES; engine.js
+  joins `src/engine/<name>.js`; core loads first so `HPE.core` is visible).
+- Engine values live in a node:vm realm: normalise through
+  `JSON.parse(JSON.stringify(v))` before `assert.deepStrictEqual`.
+- Every mutant patch: `tests/mutants/<prefix>_<slug>.patch`, first line
+  `# suite: node --test tests/<module>.test.js`, generated with `git diff`
+  against the committed file, one behaviour change each. Run
+  `./tests/mutation_check.sh` on a CLEAN tree (it refuses otherwise) and read
+  the `<name> killed` lines; `survived`, `stale` and `broken` all fail you.
+- Raise ONLY your own row in `tests/suite_health.py` FLOORS (seeded at 0) to
+  the exact count you land. Never another row, never LEGACY_*.
+- Fixture bytes are read-only (golden sha 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a).
+  Spec ambiguities: pick the reading closest to a DECIDED rule, record it in
+  the report's blockers/notes, never edit `docs/ENGINE-SPEC.md`.
+- `ALL` (CI baseline) = `python3 tools/validate.py && node tools/boot_sim.js && python3 -m unittest discover -s tests -t . && node --test tests/*.test.js && python3 tests/suite_health.py && ./tests/mutation_check.sh`.
+  Local e2e/`e_` mutants may skip or flake on this machine (rows 13, 15); CI at
+  your final SHA is the evidence.
+
+### 1A voicing
+Why: `select.build` (wave 4) calls `HPE.voicing` for every candidate; the
+59-card containment gate is the plan's Premise 2 proof.
+Read: ENGINE-SPEC sections 5 (legality), 6 (D2 cluster rule, D11 tie-break,
+Fm9 exception, containment gate), 7 (D9 root octave, recorded exceptions,
+HIGH/LOW alternates are data); plan Premises 2, 3, 5 (lines 29-118).
+NEXT:
+1. `src/engine/voicing.js` exporting `HPE.voicing = {candidates, choose, rootField, isLegal, ...}`:
+   `candidates(fields, rootPc, intervals)` enumerates every legal voicing
+   (arrays of field ids as NUMBERS in chord-spelling order root,3,5,7,9,11,13
+   per section 5 DEFAULT) for a pitch-class interval set over a `fields` map
+   (section 11 shape, ids as strings): ding never included, no two fields of
+   one pitch class, power chord = exactly root+5th, at most 6 notes with the
+   lowest optional extension dropped first (9 before 11 before 13; chord tones
+   never dropped). `rootField(fields, rootPc)` per D9: lowest top-shell
+   instance, else lowest overall. `choose(fields, rootPc, intervals, opts?)`
+   applies D2/D11: forced test = ANY non-root tone (chord tone or extension)
+   has no instance above the root field; forced -> chord tones to highest
+   instance below the root (bottom shell counts), stay put if none; extensions
+   keep nearest above unless themselves forced; not forced -> every tone
+   nearest instance above the root. Returns `{ok:true, value:{fields:[ids],
+   roots:[rootId]}}` or `{ok:false, code, reason}` using ONLY
+   `HPE.core.REASONS` codes (no new codes; if no legal voicing exists return
+   an empty candidate list and let `choose` report that in a way the spec
+   allows, and record the reading).
+2. `tests/voicing.test.js`: for all 59 chords in `tests/fixtures/golden_decks_v1.json`,
+   derive (root pc, interval set) from the fixture's `roots[0]` and `fields`
+   midis and assert the fixture `fields` tuple is a member of `candidates`
+   (59/59). Assert `choose` equals the fixture for 58/59 with Pygmy `Fm9` the
+   declared TWO-SIDED exception (assert it differs, G4 vs fixture G5). Exclude
+   nothing else; the D9 root-octave exceptions (Pygmy `Db`, `Dbmaj7`, `Eb7`)
+   and the five HIGH/LOW alternates are NOT excluded from containment, only
+   handle them the way section 7 says: if `choose` cannot reproduce them,
+   assert containment and record each as a two-sided exception in the test
+   with the section 7 citation. Legality invariants over every ok entry of
+   `tests/fixtures/synthetic_scales.json` for every (root pc, quality) pair in
+   `tests/fixtures/qualities.json`: no ding, no doubled pc, power = 2, <= 6
+   notes. Determinism: same input, same output.
+3. `tests/mutants/v_*.patch`, one per group, `# suite: node --test tests/voicing.test.js`:
+   ding allowed in a voicing; doubled pitch class allowed; forced test ignores
+   extensions; clustered tone takes lowest (not highest) lower instance;
+   nearest-above becomes any-above; 7-note voicing allowed; root octave takes
+   highest top-shell instance.
+4. Raise the `tests/voicing.test.js` FLOORS row.
+Acceptance: `ALL && node --test tests/voicing.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^v_' | grep -vq survived`
+Owns: `src/engine/voicing.js`, `tests/voicing.test.js`, `tests/mutants/v_*`, that FLOORS row. Never: `core.js`, `index.html`, fixtures, spec, other tests.
+
+### 1B layout
+Why: 3a inlines `HPE.layout.solve` for every generated deck; `pan()` NaNs on
+any missing geom key (plan lines 259-267).
+Read: ENGINE-SPEC sections 4 (zones are core's, `layout.solve` never changes a
+zone), 11 (deck object; FULL geom shape, `ext` derived for generated decks
+only), 16 (lane B builds its own N=5..19 sweep); plan D7 and D12 (lines
+129, 134), "pan() does not generalise" (259-267); `pan()` in `index.html`
+lines 155-218 for the exact geom keys consumed (`rim, inner, bottom, r_ding,
+ding_dy, r_note, r_bnote, inner_ring, f_ding, f_note, f_bnote, f_num, n_in,
+n_out, rim_num_out`) and the built-in literals (Hijaz/Amara/Pygmy `geom`).
+NEXT:
+1. `src/engine/layout.js` exporting `HPE.layout = {solve, ...}`.
+   `solve(seedOrFields, options?)` takes the section 1 parse value (fields
+   with `angle` null) and returns `{ok:true, value:{geom, fields}}` where
+   `fields` is the same map with every `angle` filled (ding stays null) and
+   NO zone changed, or `{ok:false, code:'TOO_MANY_RIM', reason}` (from
+   `HPE.core.REASONS`) beyond 11 rim / 2 inner / 6 bottom. D12 default
+   geometry: ding `r_ding=0.19`, `ding_dy=0.1425` (toward the player); rim
+   zig-zag right-first ascending from ~290 deg toward top centre (mirror of
+   the Pygmy pattern; `options.mirror` true flips to left-first, i.e. the
+   Hijaz/Amara pattern); inner ring at most 2 at ~128/~52 deg ascending
+   OPPOSITE to the rim direction; bottom ring dashed, at most 6, as an outer
+   ring in x-ray view. `r_note`, `f_note`, `f_num`, `n_in`, `n_out`, `r_bnote`,
+   `f_bnote` are functions of N (fit the built-in values at N=8 and N=11 as
+   anchors; never shrink below the stroke-aware D7 ceiling reasoning). ALWAYS
+   emit every key above, zeroes/false where a zone is empty (never a missing
+   key, never `null` except where a built-in uses null for `inner_ring`
+   deliberately; prefer 0). Emit `ext` = furthest drawn element (outermost
+   circle edge + its number label offset) as an extra geom key for generated
+   decks; built-ins never call `solve`.
+2. `tests/layout.test.js`: generate the N=5..19 sweep yourself from the
+   12-note and 19-field synthetic entries (parse via `HPE.core.parseSeed`,
+   truncate/extend top and bottom lists); for every N assert: no two field
+   circles closer than r1+r2 (angles in degrees, radii in R units, ding
+   included with its dy offset); every field circle and its number label
+   inside `ext`; inner pair ascends opposite the rim; all geom keys present
+   and finite; zones untouched (deep-equal the zone column before/after);
+   `mirror` reflects every angle about the vertical axis; a 20th non-ding
+   field is rejected `TOO_MANY_RIM`; determinism.
+3. `tests/mutants/g_*.patch`, `# suite: node --test tests/layout.test.js`:
+   inner pair ascends WITH the rim; overlap check disabled by shrinking radii
+   to 0; `ext` fixed at 1.06; a geom key dropped; mirror ignored; zone
+   rewritten by solve; bottom cap 7.
+4. Raise the `tests/layout.test.js` FLOORS row.
+Acceptance: `ALL && node --test tests/layout.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^g_' | grep -vq survived`
+Owns: `src/engine/layout.js`, `tests/layout.test.js`, `tests/mutants/g_*`, that FLOORS row. Never: `core.js`, `index.html` (do not touch `pan()`; 3a adapts it), fixtures, spec, other tests.
+
+### 1C naming
+Why: `select.build` (wave 4) calls `HPE.naming` for every card's `main`,
+`sup`, `subtitle` and the deck's `degrees` map.
+Read: ENGINE-SPEC sections 9 (quality table is the spec; main/sup split;
+subtitle <= 26 and chord name <= 16; rooted flag; recorded editorial
+exceptions; Hijaz `Dmaj7`/`Dmaj7#11` excluded), 10 (D8 numerals, D10 case,
+parents list order, distance rule, index override, NO_THIRDS uppercase,
+outside-parent `bN`/`#N` naming), section 3 DEFAULT at line 219 (accidental
+spelling is the user's typed spelling, never re-spelled), section 8 lines
+408-410 (symmetric-set root tie-break DEFAULT: tonic, else lowest scale
+degree); queue row 4 (qualities.json keyed on the FULL suffix, e.g. `m7b5`,
+with `main_suffix`/`sup` split).
+NEXT:
+1. `src/engine/naming.js` exporting `HPE.naming = {QUALITIES, PARENTS, name, subtitle, inferParent, degrees, ...}`:
+   `QUALITIES` and `PARENTS` are literals equal to `tests/fixtures/qualities.json`
+   and `tests/fixtures/parents.json` (tests deep-equal them; rule-2 carve-out
+   as core did for REASONS). `name(rootName, suffix)` -> `{main, sup}` =
+   root spelling + `main_suffix`, `sup`. `subtitle(rootName, suffix, equiv?)`
+   -> `<ROOT> <DISPLAY>` when `rooted`, bare `<DISPLAY>` otherwise, plus
+   ` ( = X6 )` / ` ( = Xm6 )` equivalence for m7 / m7b5 when the 6-chord
+   collapse applies (section 5); hard-assert <= 26 chars and name <= 16.
+   `inferParent(pitchClasses, tonicPc)` -> index 0-10 by section 10 distance
+   with list-order tie-break. `degrees(fields, tonicPc, parentIndex, opts?)`
+   -> `{"<pc>": label}` for every pan pitch class: D8 numerals (minor-relative
+   when the pan has a minor third above the tonic, else major-relative with
+   flats), D10 case from stacked thirds over the parent, `°` for a diminished
+   fifth, outside-parent pcs as `bN`/`#N` per the section 10 rule, all
+   uppercase and no D10 when `opts.noThirds`. Symmetric-set root tie-break
+   helper per section 8 DEFAULT.
+2. `tests/naming.test.js`: for all 59 fixture chords reproduce `main`, `sup`
+   and `subtitle` modulo the recorded two-sided exception list (assert the
+   exceptions DIFFER): `HIJAZ SIGNATURE CHORD`, ` - HIGH VOICING` /
+   ` - LOW VOICING` subtitles, the two `( = X6 )` equivalences if your
+   generated form differs, Hijaz `Dmaj7` and `Dmaj7#11` `(NO 5)` cards
+   excluded entirely per section 9. Reproduce every `degrees` label of all
+   three decks with Amara `bIII`/`bVII` (D8) and `IV` (D10) as two-sided
+   frozen exceptions; assert the inferred parents are Phrygian dominant /
+   Aeolian / Aeolian with the Amara Aeolian-Dorian tie won on list order.
+   Over every ok synthetic entry: deterministic naming on the octatonic and
+   augmented-hexatonic seeds, D10 inference on each seed, the parent override
+   index flipping case, uppercase throughout under `noThirds`. Deep-equal
+   `QUALITIES`/`PARENTS` to the fixtures. Every subtitle in the table for a
+   two-character root fits 26.
+3. `tests/mutants/n_*.patch`, `# suite: node --test tests/naming.test.js`:
+   parents list order swapped (Dorian before Aeolian); distance counts parent
+   notes not on the pan instead; major-relative numerals always; case from
+   the pan instead of the parent; subtitle cap 25; rooted flag ignored;
+   `sup` folded into `main`.
+4. Raise the `tests/naming.test.js` FLOORS row.
+Acceptance: `ALL && node --test tests/naming.test.js && ./tests/mutation_check.sh 2>&1 | grep -E '^n_' | grep -vq survived`
+Owns: `src/engine/naming.js`, `tests/naming.test.js`, `tests/mutants/n_*`, that FLOORS row. Never: `core.js`, `index.html`, fixtures, spec, other tests.
+
+### 2, 3a, 3b, 4
 Written when their wave opens, from the plan rows and the acceptance table.
 
 ## Status
@@ -206,7 +379,10 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0a | scale-engine/w1-spec | merged 386a856 | PASS_WITH_NITS (3rd) | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
-| P0d | scale-engine/w5-core | PR #14 under review | pending | 2026-09-08 |
+| P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
+| 1A | scale-engine/w6-voicing | spawned (wave 3) | - | 2026-09-08 |
+| 1B | scale-engine/w7-layout | spawned (wave 3) | - | 2026-09-08 |
+| 1C | scale-engine/w8-naming | spawned (wave 3) | - | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -230,7 +406,12 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 15 | P0b2 | mutation_check.sh's browser probe (tests/helpers/cdp.js findBrowser) ignores CHROME_BIN, so e_* mutants always skip locally on macOS; CI unaffected | backlog, fold into 3a brief |
 | 16 | P0d | Engine values are built in a node:vm realm; assert.deepStrictEqual against host literals fails on prototype identity. Tests normalise through JSON (a `host()` helper) first. Every Phase 1 lane must do the same | recorded, 1A/1B/1C/2 briefs |
 | 17 | P0d | loadEngine takes module NAMES (`loadEngine(['core'])`), engine.js joins src/engine/<name>.js | recorded, 1A/1B/1C/2 briefs |
-| 18 | P0d | Spec gaps read by the lane: rejected OPTIONS (palette/parent/name/mirror) return BAD_NOTE naming the value (section 2 has no options code); `(D3)` with no top notes returns NO_FIFTH; REASONS is `{CODE: {kind, reason}}`. Pending reviewer #14 judgement; Phase 4 may want an options code amendment | open |
+| 18 | P0d | Spec gaps read by the lane: rejected OPTIONS (palette/parent/name/mirror) return BAD_NOTE naming the value (section 2 has no options code); `(D3)` with no top notes returns NO_FIFTH; REASONS is `{CODE: {kind, reason}}`. Reviewer #14: all three consistent with the spec (no invented codes; `(D3)` fails NO_FIFTH as the first real rule; REASONS kind column is in section 2). Phase 4 may still want an options code amendment | closed, Phase 4 brief cites |
+
+| 19 | reviewer #14 | core.js:178-184 readOptions: an empty/whitespace `name` after trim, or a non-string option, yields BAD_NOTE whose `<X>` is the raw value (` is not a note.` / `6 is not a note.`). Cosmetic; spec has no options code | backlog, Phase 4 brief |
+| 20 | reviewer #14 | core.js:232-239 precedence is NO_DING before BAD_NOTE per the DECIDED D13 count-first bullet; section 3 DEFAULT precedence list says otherwise. `( D3 )` returns NO_DING not BAD_NOTE. Align the DEFAULT text at the Phase 1 owner-review gate | integrator, Phase 1 gate |
+| 21 | reviewer #14 | core.js:172 readOptions rejects `palette: null` / `mirror: null` as BAD_NOTE while `parent: null` is accepted; spec defines null only for parent. Phase 4 decoder must not emit null for palette/mirror | recorded, Phase 4 brief |
+| 22 | main | Milestone receipt after wave 2 (contract §8): integrator script parsed the three `maker_string`s from `tests/fixtures/golden_decks_v1.json` through `loadEngine(['core'])`; name/octave/midi/label/zone equal for all 27+18 fields except Pygmy ids 10 and 11 (grammar `rim`, literal `inner`; the DECIDED section 3 divergence), `formatSeed(parse(x).value)` equals the fixture string for all three, deckIds custom:626198f8 / custom:b936039c / custom:977311b5 | receipt recorded |
 
 ## Review log
 
@@ -243,15 +424,19 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | #11 | P0c | FAIL (CI success at 81830c4) | 1 blocker: suite_health `==` floor asserts crash when a pre-seeded row is raised; 1 high: mutation_check EXIT trap installed before REFUSING check deletes untracked lane files; 3 medium (restore() all-or-nothing, check_node skips unlisted files, header suites count any non-zero as kill); 8 nits incl. output format vs plan greps | Bounced to lane, attempt 1 |
 | #11 | P0c | PASS_WITH_NITS (2nd, CI success at 4eafe8e) | all 13 prior findings reproduced fixed; nits: TERM trap does not exit, e_ skip precedes apply --check, `$*` word-splits header | Merged d6935d1 |
 | #12 | preview (non-swarm) | PASS_WITH_NITS (CI success at c64feab) | fork PR fetch, exit status on bind failure, trap window, README | nits fixed 672e003, merged |
+| #14 | P0d | PASS_WITH_NITS (CI success at 6a24d38) | 25 tests, 7 u_ mutants killed, golden strings + round-trip + FNV hash hand-verified; decisions (a)-(h) all consistent with spec; 3 nits (options BAD_NOTE wording, NO_DING-first precedence vs DEFAULT text, null palette/mirror) | Merged 40ff645; rows 18-21 |
 | #13 | P0b2 | PASS_WITH_NITS (CI success at 619619d) | mutant hand-verified; nits: BUMP message omits EXPECTED_SHA256, count test partly redundant, unused `sep` | Merged 5f03262 |
 
 ## Cycle state
 
-Cycle: 1   Wave: 2   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262
+Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff645
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
-| P0d | returned done | agent-managed | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | reviewer spawned | 0 | no | - | - |
+| P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
+| 1A | spawning | agent-managed | scale-engine/w6-voicing | - | - | - | - | 0 | no | - | - |
+| 1B | spawning | agent-managed | scale-engine/w7-layout | - | - | - | - | 0 | no | - | - |
+| 1C | spawning | agent-managed | scale-engine/w8-naming | - | - | - | - | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
