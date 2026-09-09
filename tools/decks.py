@@ -175,6 +175,152 @@ AMARA = dict(
                   "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"],
 )
 
+# ================================================== GENERATED DECKS (ADAPTER)
+# `tools/gen_deck.js` turns a scale seed into the generated deck object of
+# ENGINE-SPEC section 11.  The engine knows about fields, chords, degrees and
+# colours; the print pipeline needs a dozen more per-deck keys it has never
+# heard of.  from_generated() synthesises them.
+#
+# ADDITIVE ONLY: the three built-in dicts above and their spec/chord literals
+# stay byte-identical, because tools/validate.py check 1 asserts decks.py
+# equals the app JSON and check 2 runs invariants over all 59 cards.
+#
+# Every key a built-in deck dict carries is either produced here or named in
+# GENERATED_OMITTED with a reason; tests/test_gen_deck.py reads the key set off
+# the built-ins at RUNTIME, so a key added above later fails that test instead
+# of slipping through.
+
+GENERATED_OMITTED = {
+    "blank_cards": (
+        "Padding preference, not deck data: PYGMY asks for 9 write-your-own "
+        "cards so its last sheet comes out full. hifi.build already pads to a "
+        "multiple of 9 with blanks, and how many spare cards a person wants "
+        "is not derivable from a scale, so a generated deck asks for none."
+    ),
+}
+
+# The diagram band on the card, in points from the card's bottom edge: the
+# note line and its badge end near 50, the header block starts near 198.  R is
+# then whatever radius makes the furthest drawn element (`geom.ext`, which the
+# solver derives from the outermost ring plus its note radius) reach the edge
+# of that band, and the pan is centred in it.  On the built-ins the same
+# arithmetic lands within 3% of the measured literals (74.0 vs C# Hijaz's 73.0,
+# 58.3 vs F3 Low Pygmy's 60.0), which is the check that it is not arbitrary.
+_BAND_LOW, _BAND_HIGH = 50.0, 198.0
+_BAND_CY = (_BAND_LOW + _BAND_HIGH) / 2.0
+_BAND_HALF = (_BAND_HIGH - _BAND_LOW) / 2.0
+
+# The two text baselines are the same on all three built-in decks - they are
+# properties of the CARD, not of the instrument - so they are carried over
+# rather than derived.
+_Y_NOTE, _Y_NUM = 30.0, 14.0
+
+
+def _hex_color(value):
+    """'#RRGGBB' -> reportlab Color."""
+    s = value.lstrip("#")
+    if len(s) != 6:
+        raise ValueError("not a #RRGGBB colour: %r" % (value,))
+    return Color(*(int(s[i:i + 2], 16) / 255.0 for i in (0, 2, 4)))
+
+
+def _spec_from(generated):
+    """The engine's geom + fields as hifi's `spec` dict."""
+    spec = {"_geom": dict(generated["geom"])}
+    for fid, value in generated["fields"].items():
+        name, octave, midi, zone, angle, label = value
+        spec[int(fid)] = (name, octave, midi, zone, angle, label)
+    return spec
+
+
+def _blurb(spec, chord_count):
+    """Title-card copy: the pan's own notes, then the deck size."""
+    def line(zone_test):
+        return "  ".join(
+            "%s%d" % (spec[k][0], spec[k][1])
+            for k in sorted(k for k in spec if k != "_geom" and zone_test(spec[k][3])))
+
+    ding = [k for k in spec if k != "_geom" and spec[k][3] == "ding"]
+    head = "%s%d  |  " % (spec[ding[0]][0], spec[ding[0]][1]) if ding else ""
+    out = [head + line(lambda z: z in ("rim", "inner"))]
+    bottom = line(lambda z: z == "bottom")
+    if bottom:
+        out.append("BOTTOM:  " + bottom)
+    out.append("%d CHORD%s - ONE CARD PER CHORD"
+               % (chord_count, "S" if chord_count != 1 else ""))
+    return out
+
+
+def _legend_lines(spec, has_bottom):
+    tops = [k for k in spec if k != "_geom" and spec[k][3] in ("rim", "inner")]
+    bottoms = [k for k in spec if k != "_geom" and spec[k][3] == "bottom"]
+    lines = []
+    if has_bottom:
+        # hifi.legend_card prints the FIRST line in the bottom-shell accent
+        # when has_bottom, so the bottom-note line has to lead.
+        lines.append("U1 - U%d: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)"
+                     % len(bottoms))
+    lines.append("NOTE NAME + OCTAVE INSIDE EACH TONEFIELD")
+    lines.append("TONEFIELD NUMBERS RUN 1 - %d FROM THE LOWEST %sNOTE"
+                 % (len(tops), "TOP " if has_bottom else ""))
+    return lines
+
+
+def _legend_demo(spec, chords):
+    """(field to light, field to light as root) for the how-to-read card."""
+    if chords:
+        _main, _sup, _sub, fields, roots = chords[0]
+        root = next(f for f in fields if f in roots)
+        other = next((f for f in fields if f != root), root)
+        return (other, root)
+    ids = sorted(k for k in spec if k != "_geom")
+    return (ids[-1], ids[0])
+
+
+def from_generated(payload):
+    """A gen_deck.js payload (or its bare `deck`) -> a hifi.build deck dict."""
+    generated = payload.get("deck", payload)
+
+    spec = _spec_from(generated)
+    chords = [(c["main"], c["sup"], c["subtitle"], list(c["fields"]),
+               set(c["roots"])) for c in generated["chords"]]
+    has_bottom = any(v[3] == "bottom" for k, v in spec.items() if k != "_geom")
+
+    root = _hex_color(generated["colors"]["root"])
+    tone = _hex_color(generated["colors"]["tone"])
+
+    ext = generated["geom"].get("ext") or 1.0
+    name = generated["name"]
+    tops = [k for k in spec if k != "_geom" and spec[k][3] in ("rim", "inner")]
+    bottoms = [k for k in spec if k != "_geom" and spec[k][3] == "bottom"]
+
+    return dict(
+        # --- identity and card copy -------------------------------------
+        title="%s - Chord Cards" % name,
+        name=name,
+        sub=("%d + 1 TOP  /  %d BOTTOM" % (len(tops), len(bottoms))
+             if has_bottom else "%d + 1" % len(tops)),
+        credit=name.upper(),
+        blurb=_blurb(spec, len(chords)),
+        legend_lines=_legend_lines(spec, has_bottom),
+        legend_demo=_legend_demo(spec, chords),
+        # --- data -------------------------------------------------------
+        spec=spec,
+        chords=chords,
+        degrees={int(pc): label for pc, label in generated["degrees"].items()},
+        has_bottom=has_bottom,
+        # --- geometry and baselines -------------------------------------
+        R=round(_BAND_HALF / ext, 1),
+        cy=_BAND_CY,
+        y_note=_Y_NOTE,
+        y_num=_Y_NUM,
+        # --- palette (the two-tone split frame) -------------------------
+        col_root=root,
+        col_tone=tone,
+        grad=(root, tone),
+    )
+
+
 if __name__ == "__main__":
     import os
     OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -275,5 +275,24 @@ class BuildTest(BuiltDecksTest):
             "and commit the result:\n  " + "\n  ".join(stale))
 
 
+def load_tests(loader, standard_tests, pattern):
+    """Pull tests/test_gen_deck.py in when this module is loaded BY NAME.
+
+    tests/mutation_check.sh maps the ``c_*`` (print+pdf) mutant prefix to
+    ``python3 -m unittest -k <test> tests.test_print tests.test_pdf_build``,
+    and that script is not ours to edit.  The generated-deck tests belong in
+    their own file, so they are attached here for ``-k`` to find.
+
+    ``pattern`` is None only on a direct ``loadTestsFromModule`` - i.e. exactly
+    the by-name invocation above.  Under ``unittest discover`` it is a string,
+    and the bridge stays shut, because discovery loads tests/test_gen_deck.py
+    itself and would otherwise run every one of its tests twice.
+    """
+    if pattern is None:
+        from tests import test_gen_deck
+        standard_tests.addTests(loader.loadTestsFromModule(test_gen_deck))
+    return standard_tests
+
+
 if __name__ == "__main__":
     unittest.main()
