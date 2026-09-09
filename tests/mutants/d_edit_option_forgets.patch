@@ -1,0 +1,14 @@
+# kills: an options-only edit still replaces in place and keeps its stored record
+diff --git a/index.html b/index.html
+index 8a5bb64..30a00d9 100644
+--- a/index.html
++++ b/index.html
+@@ -3418,7 +3418,7 @@ function runGenerate() {
+   // the correction it just committed.
+   dropLayoutPreview();
+   closeScaleSheet();
+-  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
++  rememberScale(seedOf(d)); if (wasId) forgetScale(wasSeed);
+   selectDeck(d.id);
+   say(text, warned.length ? "warn" : "ok");
+   genBtn.disabled = false;

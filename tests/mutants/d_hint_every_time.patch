@@ -2,13 +2,13 @@
 # The mirror hint is appended to every generation instead of the first per
 # deck, so it degrades into noise the user learns to ignore.
 diff --git a/index.html b/index.html
-index f27316d..4abdffb 100644
+index 8a5bb64..29d7e93 100644
 --- a/index.html
 +++ b/index.html
-@@ -3359,7 +3359,7 @@ function runGenerate() {
-   // produced; nothing is rebuilt to re-derive them.
+@@ -3410,7 +3410,7 @@ function runGenerate() {
    const warned = (d.warnings || []).map(w => w.reason);
-   let text = known.has(d.id) ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+   let text = (replaced || known.has(d.id))
+     ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
 -  if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
 +  { generated.add(d.id); text += " " + LAYOUT_HINT; }
    if (warned.length) text += " " + warned.join(" ");

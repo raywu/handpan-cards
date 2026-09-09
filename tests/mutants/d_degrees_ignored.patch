@@ -1,13 +1,13 @@
 # kills: the Degrees select lists the parent candidates with the inferred one preselected
 diff --git a/index.html b/index.html
-index f27316d..6eb43ac 100644
+index 8a5bb64..65d702a 100644
 --- a/index.html
 +++ b/index.html
-@@ -3218,7 +3218,6 @@ function resetLayout() {
+@@ -3250,7 +3250,6 @@ function resetLayout() {
  function sheetOptions() {
    const o = { palette, mirror };
    if (editingId) {
 -    o.parent = Number(degSel.value);
      const n = String(nameBox.value || "").trim();
-     if (n) o.name = n;             // validated by core.parseSeed, never here
-     if (layoutOrder) o.order = layoutOrder.slice();
+     // The box is PREFILLED with the deck's name, so a name the user never
+     // touched is the engine's own auto name (section 13) and is treated as

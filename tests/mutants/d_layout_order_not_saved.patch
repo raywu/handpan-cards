@@ -2,13 +2,13 @@
 # The sheet previews the correction and then drops it on save, so SAVE
 # CHANGES silently throws the correction away.
 diff --git a/index.html b/index.html
-index 2a111a2..2a85f1c 100644
+index 8a5bb64..89cf8ce 100644
 --- a/index.html
 +++ b/index.html
-@@ -3221,7 +3221,6 @@ function sheetOptions() {
-     o.parent = Number(degSel.value);
-     const n = String(nameBox.value || "").trim();
-     if (n) o.name = n;             // validated by core.parseSeed, never here
+@@ -3260,7 +3260,6 @@ function sheetOptions() {
+     const d = editedDeck();
+     const auto = d ? HPE.select.autoName(d.fields, d.options.parent) : null;
+     if (n && n !== auto) o.name = n;  // validated by core.parseSeed, never here
 -    if (layoutOrder) o.order = layoutOrder.slice();
    }
    return o;

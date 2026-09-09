@@ -1,0 +1,14 @@
+# kills: a field edit keeps the edited deck selected and renames its chip from the new fields
+diff --git a/index.html b/index.html
+index 8a5bb64..2b413cd 100644
+--- a/index.html
++++ b/index.html
+@@ -3419,7 +3419,7 @@ function runGenerate() {
+   dropLayoutPreview();
+   closeScaleSheet();
+   if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
+-  selectDeck(d.id);
++  selectDeck(replaced ? DECKS[0].id : d.id);
+   say(text, warned.length ? "warn" : "ok");
+   genBtn.disabled = false;
+ }

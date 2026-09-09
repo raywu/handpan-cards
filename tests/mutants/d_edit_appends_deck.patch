@@ -1,0 +1,14 @@
+# kills: a field edit replaces the deck and the new one takes the old chip position
+diff --git a/index.html b/index.html
+index 8a5bb64..c65688f 100644
+--- a/index.html
++++ b/index.html
+@@ -2661,7 +2661,7 @@ function replaceRegistered(oldId, next) {
+   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
+   let placed = false;
+   for (const [k, v] of was) {
+-    if (k === oldId) { CUSTOM[next.id] = next; placed = true; }
++    if (k === oldId) { placed = false; }
+     else if (k !== next.id) CUSTOM[k] = v;
+   }
+   if (!placed) CUSTOM[next.id] = next;

@@ -1600,3 +1600,135 @@ test("the layout markup exists and a built-in deck is never editable", () => {
   assert.strictEqual(app.sheetOpen(), false,
     "a built-in chip opened the sheet, so it could be corrected");
 });
+
+/* ------------------------------- 24. a field edit REPLACES the deck (row 73) */
+//
+// Owner decision on coordination-doc queue row 73 (2026-09-09): "Edit means
+// edit." D14 makes the id the hash of the FIELDS, so editing the notes cannot
+// keep the id - but the OLD record must not survive the edit. The new deck
+// takes the old one's chip position, its selection and a name re-derived from
+// its own fields, so the row never shows two chips a user cannot tell apart.
+// A user who wants a fork pastes the seed into "+ ADD".
+
+/** Open Edit on a custom deck and save a DIFFERENT scale string into it. */
+function editFields(app, d, text) {
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.type(text);
+  app.els["scale-generate"].click();
+  return app.deckId();
+}
+
+const EDIT_MORE = AMARA_STRING + " D5";      // one note appended: new fields, new id
+
+test("a field edit replaces the deck and the new one takes the old chip position", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, scale("builtin hijaz"));
+  const before = chipRow(app).map((c) => c.label);
+  const at = before.indexOf(a.name);
+  assert.ok(at >= 0, "the deck under test has no chip");
+
+  const now = editFields(app, a, EDIT_MORE);
+  assert.notStrictEqual(now, a.id, "a field edit must mint a new id (D14)");
+  const keys = Object.keys(app.registry());
+  assert.strictEqual(keys.length, 2, `the registry forked: ${JSON.stringify(keys)}`);
+  assert.strictEqual(keys.includes(a.id), false, "the edited deck's old id survived");
+  assert.ok(keys.includes(now) && keys.includes(b.id), JSON.stringify(keys));
+
+  const after = chipRow(app).map((c) => c.label);
+  assert.strictEqual(after.length, before.length, `the chip row grew: ${JSON.stringify(after)}`);
+  assert.strictEqual(after[at], app.registry()[now].name,
+    `the replacement did not take the old chip's position: ${JSON.stringify(after)}`);
+  // the symptom: two chips a user cannot tell apart. The custom decks' labels
+  // are compared, not the whole row - a generated pan may legitimately auto-name
+  // itself after the built-in it was seeded from.
+  const custom = Object.values(app.registry()).map((x) => x.name);
+  assert.strictEqual(new Set(custom).size, custom.length,
+    `two custom chips share a label: ${JSON.stringify(custom)}`);
+  assert.strictEqual(after.filter((l) => l === a.name).length, 0,
+    `the pre-edit label is still in the row: ${JSON.stringify(after)}`);
+});
+
+test("a field edit drops the old seed record instead of adding a second one", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const key = app.get("SCALES_KEY");
+  const was = JSON.parse(app.store[key] || "[]");
+  assert.strictEqual(was.length, 1, "the setup did not store exactly one record");
+
+  const now = editFields(app, a, EDIT_MORE);
+  const list = JSON.parse(app.store[key] || "[]");
+  assert.strictEqual(list.length, 1, `the old record survived: ${JSON.stringify(list)}`);
+  assert.strictEqual(list[0].s, app.get(`HPE.core.formatSeed(CUSTOM[${JSON.stringify(now)}].fields)`),
+    "the stored record is not the edited scale");
+  assert.strictEqual(list.some((r) => r.s === was[0].s), false,
+    "the pre-edit scale string is still in storage");
+});
+
+test("a boot after a field edit shows exactly one deck, in the same chip position", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const b = makeCustom(app, scale("builtin hijaz"));
+  const at = chipRow(app).map((c) => c.label).indexOf(a.name);
+  const now = editFields(app, a, EDIT_MORE);
+  const name = app.registry()[now].name;
+
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] || "[]" } });
+  const keys = Object.keys(again.registry());
+  assert.strictEqual(keys.length, 2, `a deck was resurrected on boot: ${JSON.stringify(keys)}`);
+  assert.strictEqual(keys.includes(a.id), false, "the replaced deck came back on the next boot");
+  const row = chipRow(again).map((c) => c.label);
+  assert.strictEqual(row[at], name,
+    `the replacement lost its chip position across a reload: ${JSON.stringify(row)}`);
+  assert.ok(row.includes(b.name), "the untouched deck lost its chip");
+});
+
+test("a field edit keeps the edited deck selected and renames its chip from the new fields", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const now = editFields(app, a, EDIT_MORE);
+
+  assert.strictEqual(app.deckId(), now,
+    "the user was bounced off the deck they were editing");
+  const made = app.registry()[now];
+  // autoName lives in select.js and is the ONE producer of a generated name;
+  // nothing here reimplements it and nothing disambiguates a duplicate.
+  const auto = app.get(
+    `HPE.select.autoName(CUSTOM[${JSON.stringify(now)}].fields, ` +
+    `CUSTOM[${JSON.stringify(now)}].options.parent)`);
+  assert.strictEqual(made.name, auto, "the auto name was pinned to the old fields");
+  assert.notStrictEqual(made.name, a.name, "the chip label did not change with the notes");
+  const on = chipRow(app).filter((c) => c.on).map((c) => c.label);
+  assert.deepStrictEqual(on, [auto], `the selected chip reads ${JSON.stringify(on)}`);
+});
+
+test("an options-only edit still replaces in place and keeps its stored record", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  const key = app.get("SCALES_KEY");
+  app.select(a.id);
+  app.clickChip(a.name);
+  app.els["scale-swatches"].children[2].click();
+  app.els["scale-generate"].click();
+
+  assert.deepStrictEqual(Object.keys(app.registry()), [a.id],
+    "an options-only edit moved the id");
+  assert.strictEqual(app.registry()[a.id].options.palette, 2);
+  const list = JSON.parse(app.store[key] || "[]");
+  assert.strictEqual(list.length, 1,
+    `an options-only edit disturbed the stored record: ${JSON.stringify(list)}`);
+  assert.strictEqual(list[0].s, app.get(`HPE.core.formatSeed(CUSTOM[${JSON.stringify(a.id)}].fields)`));
+});
+
+test("a field edit still runs select.build exactly once (13A)", () => {
+  const app = boot();
+  const a = makeCustom(app);
+  app.select(a.id);
+  app.clickChip(a.name);
+  app.type(EDIT_MORE);
+  const calls = spyBuild(app);
+  app.els["scale-generate"].click();
+  assert.strictEqual(calls(), 1, "a replacing save must run select.build exactly once");
+});
