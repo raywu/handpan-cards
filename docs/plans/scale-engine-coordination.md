@@ -206,7 +206,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0a | scale-engine/w1-spec | merged 386a856 | PASS_WITH_NITS (3rd) | 2026-09-08 |
 | P0b | scale-engine/w2-corpus | merged 66453e8 | PASS_WITH_NITS | 2026-09-08 |
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
-| P0d | scale-engine/w5-core | spawned | - | 2026-09-08 |
+| P0d | scale-engine/w5-core | PR #14 under review | pending | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
 ## Handoff queue (append-only)
@@ -228,6 +228,9 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | 13 | P0c | mutation_check.sh now has MUTANT_TIMEOUT (180s default), one retry, TIMEOUT counted as survivor; e2e mutants can flake on headless Chrome launch | recorded |
 | 3 | P0b | fixture sha256 0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a; data changes bump to v2 | recorded |
 | 15 | P0b2 | mutation_check.sh's browser probe (tests/helpers/cdp.js findBrowser) ignores CHROME_BIN, so e_* mutants always skip locally on macOS; CI unaffected | backlog, fold into 3a brief |
+| 16 | P0d | Engine values are built in a node:vm realm; assert.deepStrictEqual against host literals fails on prototype identity. Tests normalise through JSON (a `host()` helper) first. Every Phase 1 lane must do the same | recorded, 1A/1B/1C/2 briefs |
+| 17 | P0d | loadEngine takes module NAMES (`loadEngine(['core'])`), engine.js joins src/engine/<name>.js | recorded, 1A/1B/1C/2 briefs |
+| 18 | P0d | Spec gaps read by the lane: rejected OPTIONS (palette/parent/name/mirror) return BAD_NOTE naming the value (section 2 has no options code); `(D3)` with no top notes returns NO_FIFTH; REASONS is `{CODE: {kind, reason}}`. Pending reviewer #14 judgement; Phase 4 may want an options code amendment | open |
 
 ## Review log
 
@@ -250,5 +253,5 @@ Cycle: 1   Wave: 2   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262
 | P0a | released | released | scale-engine/w1-spec | #10 | b81ad84 | 2026-09-08 run 34288832378 success | PASS_WITH_NITS | 2 (cap) | yes 386a856 | - | no |
 | P0b | released | released | scale-engine/w2-corpus | #9 | da34ba2 | 2026-09-08 gh pr view + run 34284011482 success | PASS_WITH_NITS | 0 | yes 66453e8 | - | no |
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
-| P0d | live | agent-managed | scale-engine/w5-core | - | - | - | - | 0 | no | - | - |
+| P0d | returned done | agent-managed | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | reviewer spawned | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
