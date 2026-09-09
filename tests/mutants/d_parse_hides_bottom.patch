@@ -1,0 +1,16 @@
+# kills: bottom notes reach the parse line under their own U labels
+# The parse line lists only the top shell, so a player who typed bottom
+# notes gets no confirmation that they were understood.
+diff --git a/index.html b/index.html
+index 16984c6..2856c68 100644
+--- a/index.html
++++ b/index.html
+@@ -2360,7 +2360,7 @@ function parseLineText(fields) {
+     return (zone === "ding" ? "Ding" : label) + " " + name + oct;
+   };
+   const ding = ids.filter(i => fields[i][3] === "ding");
+-  const rest = ids.filter(i => fields[i][3] !== "ding");
++  const rest = ids.filter(i => fields[i][3] !== "ding" && fields[i][3] !== "bottom");
+   const head = ding.map(part).join(" ");
+   return rest.length ? head + " | " + rest.map(part).join(" ") : head;
+ }

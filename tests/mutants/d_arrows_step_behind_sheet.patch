@@ -1,0 +1,15 @@
+# kills: arrow keys do not step the card while the sheet is open
+# Arrow keys still step the practice deck while the sheet is open, so moving
+# the caret inside the scale box shuffles the card behind it.
+diff --git a/index.html b/index.html
+index 16984c6..c172923 100644
+--- a/index.html
++++ b/index.html
+@@ -2484,7 +2484,6 @@ document.addEventListener("keydown", e => {
+   // arrow key is cursor movement inside the box, never a card step.
+   if (sheetOpen) {
+     if (e.key === "Escape") { e.preventDefault(); closeScaleSheet(); }
+-    return;
+   }
+   if (e.key === "ArrowRight") step(1);
+   else if (e.key === "ArrowLeft") step(-1);

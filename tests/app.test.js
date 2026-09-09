@@ -607,3 +607,262 @@ function budget(fixture, ms) {
 }
 budget("twelve note pan", 200);
 budget("nineteen field maximum", 500);
+
+/* ================================================================ Phase 3 UI
+ * The scale sheet: the "+ ADD" chip, the live parse line, the message tiers,
+ * the mirror and palette controls, and Generate.
+ *
+ * Everything here is derived from the LOCKED Phase 3 UI specification in
+ * docs/SCALE_ENGINE_PLAN.md ("Phase 3 UI specification [design-review
+ * 2026-09-08, locked]") and from docs/ENGINE-SPEC.md sections 1, 2, 11, 13 and
+ * 15 - never from restating the app's implementation. Reason sentences come
+ * from the engine's own REASONS table, so a copy edit there cannot make these
+ * pass against stale text.
+ */
+
+/* ---------------------------------------------------------- 16. the sheet */
+
+const REASON = (app, code) => app.get(`HPE.core.REASONS[${JSON.stringify(code)}].reason`);
+
+/** The deck-chip row, as [{label, on, id}] in document order. */
+function chipRow(app) {
+  return app.els.decks.children.map((c) => ({
+    label: (c._html || c._text || "").replace(/<[^>]*>/g, "").trim(),
+    on: c.classList.contains("on"),
+    id: c.id,
+  }));
+}
+
+function openSheet(app) {
+  app.els["deck-add"].click();
+  return app.els;
+}
+
+test("the deck row ends with a + ADD chip that opens the sheet, focusing the box", () => {
+  const app = boot();
+  const row = chipRow(app);
+  assert.strictEqual(row.length, decks(app).length + 1, "one chip per deck, plus + ADD");
+  assert.strictEqual(row[row.length - 1].id, "deck-add", "+ ADD is the last chip in the row");
+
+  assert.strictEqual(app.sheetOpen(), false, "the sheet starts closed");
+  openSheet(app);
+  assert.strictEqual(app.sheetOpen(), true);
+  assert.strictEqual(app.activeId(), "scale-box", "focus moves to the scale box on open");
+  // role="dialog" / aria-modal live in the markup, so e2e asserts those.
+});
+
+test("Escape closes the sheet and focus returns to + ADD", () => {
+  const app = boot();
+  openSheet(app);
+  app.keydown("Escape");
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.activeId(), "deck-add", "focus returns to the + ADD chip");
+});
+
+test("a tap on the backdrop closes the sheet; a tap inside it does not", () => {
+  const app = boot();
+  const sheet = app.els["scale-sheet"];
+  openSheet(app);
+  sheet.dispatchEvent({ type: "click", target: app.els["scale-box"] });
+  assert.strictEqual(app.sheetOpen(), true, "a tap inside the sheet keeps it open");
+  sheet.dispatchEvent({ type: "click", target: sheet });
+  assert.strictEqual(app.sheetOpen(), false, "a tap on the backdrop closes it");
+});
+
+test("an empty box shows the parse hint and Generate is disabled", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("");
+  assert.match(app.els["scale-parse"].textContent, /^Type your ding first/);
+  assert.strictEqual(app.els["scale-generate"].disabled, true);
+  assert.strictEqual(app.els["scale-msg"].textContent, "");
+});
+
+test("a valid scale fills the parse line with the ding and the numbered notes", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(scale("omitted ding octave"));       // "(D) A C D E F G A C"
+  const line = app.els["scale-parse"].textContent;
+  assert.match(line, /^Ding D3 \| 1 A3 2 C4 3 D4 /, `parse line was "${line}"`);
+  assert.strictEqual(app.els["scale-generate"].disabled, false);
+  assert.strictEqual(app.els["scale-msg"].textContent, "", "a valid scale shows no message");
+});
+
+test("bottom notes reach the parse line under their own U labels", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(scale("bottom notes after bar"));
+  assert.match(app.els["scale-parse"].textContent, /U1 C3 U2 E3$/);
+});
+
+for (const [fixture, code] of [
+  ["no ding", "NO_DING"],
+  ["whole tone subset", "NO_FIFTH"],
+  ["fourteen top notes", "TOO_MANY_RIM"],
+  ["bad note token", "BAD_NOTE"],
+]) {
+  test(`${code} shows the engine's own sentence and keeps Generate disabled`, () => {
+    const app = boot();
+    openSheet(app);
+    app.type(scale(fixture));
+    const msg = app.els["scale-msg"];
+    assert.strictEqual(msg.classList.contains("err"), true, "error tier not applied");
+    assert.ok(msg.textContent.length > 0, "no message rendered");
+    // The reason is the engine's, with its substitutions already applied.
+    const template = REASON(app, code).replace(/<[^>]+>/g, "");
+    for (const word of template.split(/\s+/).filter((w) => w.length > 3).slice(0, 3)) {
+      assert.ok(msg.textContent.includes(word),
+        `"${msg.textContent}" does not read like ${code}'s reason "${template}"`);
+    }
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.strictEqual(app.els["scale-box"].classList.contains("bad"), true,
+      "the box keeps the text and gains the error outline");
+    assert.strictEqual(app.els["scale-box"].value, scale(fixture));
+  });
+}
+
+test("Generate builds the deck, closes the sheet, selects it and announces the count", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.sheetOpen(), false, "the sheet closes on success");
+  const ids = Object.keys(app.registry());
+  assert.strictEqual(ids.length, 1);
+  const d = app.registry()[ids[0]];
+  assert.strictEqual(app.deckId(), d.id, "the generated deck is selected");
+  assert.strictEqual(app.get("idx"), 0, "card 1 is showing");
+  assert.strictEqual(app.get("flipped"), false, "card 1 is face-up");
+
+  const said = app.announcer();
+  assert.ok(said, "no practice-screen live region");
+  assert.ok(said.textContent.includes(`${d.chords.length} cards generated`),
+    `announced "${said.textContent}"`);
+
+  const row = chipRow(app);
+  const mine = row.find((c) => c.label === d.name);
+  assert.ok(mine, `no chip for ${d.name} in ${JSON.stringify(row)}`);
+  assert.strictEqual(mine.on, true, "the new chip is not selected");
+  assert.strictEqual(row[row.length - 1].id, "deck-add", "+ ADD stays last");
+});
+
+test("the one-time layout hint is appended on the first generation of a deck, not the second", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const first = app.announcer().textContent;
+  assert.match(first, /LEFT-FIRST \/ RIGHT-FIRST/, `first message was "${first}"`);
+
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const second = app.announcer().textContent;
+  assert.doesNotMatch(second, /LEFT-FIRST \/ RIGHT-FIRST/,
+    `the hint fired twice: "${second}"`);
+});
+
+test("a same-id generate replaces the deck in place, keeps the id and says Updated", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const id = app.deckId();
+  const before = app.registry()[id];
+
+  // Same notes, a different palette: D14 keeps options out of the id.
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-swatches"].children[3].click();
+  app.els["scale-generate"].click();
+
+  assert.deepStrictEqual(Object.keys(app.registry()), [id], "a second entry appeared");
+  assert.strictEqual(app.deckId(), id, "the replaced deck is not selected");
+  const after = app.registry()[id];
+  assert.strictEqual(after.options.palette, 3, "the new palette did not land");
+  assert.deepStrictEqual(after.chords, before.chords, "the cards changed");
+  assert.ok(app.announcer().textContent.startsWith(`Updated ${after.name}`),
+    `announced "${app.announcer().textContent}"`);
+});
+
+test("the success path reads deck.warnings without generating a second time", () => {
+  const app = boot();
+  app.run(`
+    globalThis.__buildCalls = 0;
+    const __realBuild = HPE.select.build;
+    HPE.select.build = function (seed) { globalThis.__buildCalls += 1; return __realBuild(seed); };
+  `);
+  openSheet(app);
+  app.type(scale("three pitch classes"));       // a pan with no thirds
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.get("__buildCalls"), 1, "select.build ran more than once");
+  const d = app.registry()[app.deckId()];
+  assert.ok(d.warnings.length > 0, "this fixture is meant to warn");
+  const said = app.announcer();
+  assert.strictEqual(said.classList.contains("warn"), true, "warning tier not applied");
+  for (const w of d.warnings) assert.ok(said.textContent.includes(w.reason),
+    `"${said.textContent}" is missing "${w.reason}"`);
+});
+
+test("the mirror pair defaults to right-first and carries the choice into the deck", () => {
+  const app = boot();
+  openSheet(app);
+  assert.strictEqual(app.els["scale-mirror-r"].classList.contains("on"), true,
+    "right-first is the default (D12)");
+  assert.strictEqual(app.els["scale-mirror-l"].classList.contains("on"), false);
+
+  app.type(AMARA_STRING);
+  app.els["scale-mirror-l"].click();
+  assert.strictEqual(app.els["scale-mirror-l"].classList.contains("on"), true);
+  assert.strictEqual(app.els["scale-mirror-r"].classList.contains("on"), false);
+  app.els["scale-generate"].click();
+  // ENGINE-SPEC section 13: mirror true = left-first.
+  assert.strictEqual(app.registry()[app.deckId()].options.mirror, true);
+});
+
+test("six palette swatches carry the D6 indices and the selected one is ringed", () => {
+  const app = boot();
+  openSheet(app);
+  const dots = app.els["scale-swatches"].children;
+  const palettes = app.get("HPE.select.PALETTES");
+  assert.strictEqual(dots.length, 6, "the D6 set is six swatches");
+  assert.strictEqual(dots.filter((d) => d.classList.contains("sel")).length, 1);
+  assert.strictEqual(dots[0].classList.contains("sel"), true, "index 0 is the default");
+  for (let i = 0; i < 6; i++) {
+    assert.strictEqual(dots[i].style._props["--dga"], palettes[i].root, `swatch ${i} root`);
+    assert.strictEqual(dots[i].style._props["--dgb"], palettes[i].tone, `swatch ${i} tone`);
+  }
+
+  app.type(AMARA_STRING);
+  dots[4].click();
+  assert.strictEqual(app.els["scale-swatches"].children[4].classList.contains("sel"), true);
+  app.els["scale-generate"].click();
+  const d = app.registry()[app.deckId()];
+  assert.strictEqual(d.options.palette, 4);
+  assert.strictEqual(d.colors.root, palettes[4].root);
+});
+
+test("a custom chip label is capped at 16 characters with an ellipsis", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const id = app.deckId();
+  // Phase 4 lets a user rename; the display cap is the UI's, not the engine's.
+  app.run(`CUSTOM[${JSON.stringify(id)}].name = "A RIDICULOUSLY LONG PAN NAME"`);
+  app.select(id);
+  const label = chipRow(app).find((c) => c.on).label;
+  assert.strictEqual(label.length, 16, `chip label "${label}" is not capped at 16`);
+  assert.ok(label.endsWith("…"), `chip label "${label}" is not ellipsised`);
+});
+
+test("arrow keys do not step the card while the sheet is open", () => {
+  const app = boot();
+  app.keydown("ArrowRight");
+  assert.strictEqual(app.get("idx"), 1, "arrows step the card on the practice screen");
+  openSheet(app);
+  app.keydown("ArrowRight");
+  assert.strictEqual(app.get("idx"), 1, "an arrow inside the sheet moved the card");
+});

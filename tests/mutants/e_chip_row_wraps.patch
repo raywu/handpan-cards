@@ -1,0 +1,16 @@
+# kills: six custom decks keep the chip row on one line with the active chip in view
+# The deck row wraps instead of scrolling, so each new custom deck adds a
+# line of chips and pushes the card down and off a 380px screen.
+diff --git a/index.html b/index.html
+index 16984c6..6c9d24c 100644
+--- a/index.html
++++ b/index.html
+@@ -29,7 +29,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ /* The chip row scrolls horizontally and never wraps; auto margins on the end
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+-.decks{display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
++.decks{display:flex; gap:8px; flex-wrap:wrap; overflow-x:auto; scrollbar-width:none;
+   -webkit-overflow-scrolling:touch;
+   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}

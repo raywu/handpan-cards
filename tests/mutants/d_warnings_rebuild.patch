@@ -1,0 +1,18 @@
+# kills: the success path reads deck.warnings without generating a second time
+# The warnings are re-derived by generating the deck a second time. The text
+# is identical, so only a call count can see it - and the cost is paid on
+# every successful generate.
+diff --git a/index.html b/index.html
+index 16984c6..4ba5ddb 100644
+--- a/index.html
++++ b/index.html
+@@ -2425,7 +2425,8 @@ function runGenerate() {
+   const d = res.value;
+   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
+   // produced; nothing is rebuilt to re-derive them.
+-  const warned = (d.warnings || []).map(w => w.reason);
++  const __again = generateDeck(String(scaleBox.value || ""), { palette, mirror });
++  const warned = ((__again.ok ? __again.value.warnings : d.warnings) || []).map(w => w.reason);
+   let text = known.has(d.id) ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
+   if (warned.length) text += " " + warned.join(" ");

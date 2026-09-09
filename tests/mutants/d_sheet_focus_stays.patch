@@ -1,0 +1,15 @@
+# kills: the deck row ends with a + ADD chip that opens the sheet, focusing the box
+# The sheet opens but focus is left on the + ADD chip, so a keyboard or
+# screen-reader user lands outside the modal they just opened.
+diff --git a/index.html b/index.html
+index 16984c6..50f2ccd 100644
+--- a/index.html
++++ b/index.html
+@@ -2394,7 +2394,6 @@ function openScaleSheet() {
+   sheetOpen = true;
+   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+   updateParse();
+-  scaleBox.focus();
+ }
+ function closeScaleSheet() {
+   if (!sheetOpen) return;

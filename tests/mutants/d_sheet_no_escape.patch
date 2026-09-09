@@ -1,0 +1,15 @@
+# kills: Escape closes the sheet and focus returns to + ADD
+# Escape inside the sheet does nothing, so the modal can only be dismissed
+# by pointer - it is a trap for the keyboard.
+diff --git a/index.html b/index.html
+index 16984c6..d72ecce 100644
+--- a/index.html
++++ b/index.html
+@@ -2483,7 +2483,6 @@ document.addEventListener("keydown", e => {
+   // While the sheet is open it owns the keyboard: Escape closes it, and an
+   // arrow key is cursor movement inside the box, never a card step.
+   if (sheetOpen) {
+-    if (e.key === "Escape") { e.preventDefault(); closeScaleSheet(); }
+     return;
+   }
+   if (e.key === "ArrowRight") step(1);

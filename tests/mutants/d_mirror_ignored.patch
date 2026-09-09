@@ -1,0 +1,16 @@
+# kills: the mirror pair defaults to right-first and carries the choice into the deck
+# LEFT-FIRST lights up but the choice never reaches the engine, so a mirrored
+# pan is always laid out the wrong way round.
+diff --git a/index.html b/index.html
+index 16984c6..33d2734 100644
+--- a/index.html
++++ b/index.html
+@@ -2413,7 +2413,7 @@ function runGenerate() {
+   say("", "");
+ 
+   const known = new Set(Object.keys(CUSTOM));
+-  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror });
++  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror: false });
+ 
+   scaleBox.removeAttribute("readonly");
+   genBtn.textContent = label;

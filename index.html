@@ -26,12 +26,23 @@ body{
 header{width:100%; max-width:520px; text-align:center; margin-bottom:6px}
 h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
    letter-spacing:.04em; margin:2px 0 8px; color:#f4f0e8}
-.decks{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
+/* The chip row scrolls horizontally and never wraps; auto margins on the end
+   chips keep it centred while it fits, without making either end unreachable
+   once it overflows. The right edge fades so a cut-off chip reads as "more". */
+.decks{display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+  mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
+.decks::-webkit-scrollbar{display:none}
+.decks > :first-child{margin-left:auto}
+.decks > :last-child{margin-right:auto}
 .chip{
+  flex:0 0 auto; min-height:44px; display:inline-flex; align-items:center;
   border:1.5px solid transparent; border-radius:999px; padding:7px 13px 6px;
   font:600 11px/1 "Nunito Sans"; letter-spacing:.09em; color:#d5cec2; background:#272219;
-  cursor:pointer; position:relative;
+  cursor:pointer; position:relative; white-space:nowrap;
 }
+.chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
@@ -92,12 +103,57 @@ button.nav:active{background:#2e281e}
   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 .shuffle.on{color:#f1ece1}
 :focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
+
+/* ---- the scale sheet (Phase 3) ----
+   #scale-sheet is the modal layer: it carries the dialog role and paints the
+   backdrop, and its single child is the surface. A tap whose target IS the
+   layer is a backdrop tap. */
+#scale-sheet{position:fixed; inset:0; z-index:30; background:#0009;
+  display:flex; align-items:flex-end; justify-content:center}
+[hidden]{display:none !important}
+.sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
+  border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto;
+  padding:14px 14px max(14px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:9px}
+.sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
+  text-transform:uppercase}
+#scale-box{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;
+  font-family:Bitter, serif; font-weight:400; font-size:16px;
+  background:#151310; border:1px solid #433b2c; border-radius:8px}
+#scale-box.bad{border-color:#E27005}
+#scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.45;
+  color:#c4bcab; overflow-wrap:anywhere}
+#scale-msg{font:400 11.5px/1.45 "Nunito Sans"; min-height:1.45em; color:#c4bcab;
+  overflow-wrap:anywhere}
+#scale-msg.err, .announce.err{color:#E27005}
+#scale-msg.warn, .announce.warn{color:#e3b25c}
+#scale-msg.ok, .announce.ok{color:#a4c9a0}
+.ctlrow{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-wrap:wrap}
+.mirror{display:flex; gap:8px}
+.mirror .mode{min-height:44px}
+#scale-swatches{display:flex; gap:10px; align-items:center}
+#scale-swatches .dot{width:14px; height:14px; border-radius:50%; border:none; padding:0;
+  position:relative; cursor:pointer;
+  background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+/* 14px is the spec'd size, so the 44px hit area is an invisible overlay. */
+#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
+  width:44px; height:44px; transform:translate(-50%,-50%)}
+#scale-swatches .dot.sel{box-shadow:0 0 0 2px #f1ece1}
+#scale-generate{width:100%; min-height:44px; border-radius:8px; cursor:pointer;
+  border:1px solid #f1ece1; background:#f1ece1; color:#272219;
+  font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em}
+#scale-generate:disabled{opacity:.5; cursor:default}
+.announce{width:100%; max-width:520px; margin-top:8px; text-align:center;
+  font:400 11.5px/1.45 "Nunito Sans"; color:#c4bcab; min-height:1.45em}
 </style>
 </head>
 <body>
 <header>
   <h1>Handpan Chord Cards</h1>
-  <nav class="decks" id="decks"></nav>
+  <nav class="decks" id="decks">
+    <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
+  </nav>
   <div class="modebar">
     <button class="mode on" id="modeA">NAME &rarr; NOTES</button>
     <button class="mode" id="modeB">NOTES &rarr; NAME</button>
@@ -121,6 +177,31 @@ button.nav:active{background:#2e281e}
   </div>
   <button class="nav" id="next" aria-label="Next card">&rarr;</button>
 </footer>
+
+<!-- The practice-screen live region. It is a sibling of the landmarks the
+     sheet makes inert, so a success message announced as the sheet closes is
+     still read out. -->
+<div class="announce" role="status" aria-live="polite"></div>
+
+<div id="scale-sheet" role="dialog" aria-modal="true" aria-label="Add a scale" hidden>
+  <div class="sheetsurf">
+    <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
+    <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
+           autocomplete="off" spellcheck="false" enterkeyhint="go"
+           placeholder="(D) A C D E F G A C">
+    <div id="scale-parse"></div>
+    <!-- Above the control row, so the soft keyboard never covers it. -->
+    <div id="scale-msg" aria-live="polite"></div>
+    <div class="ctlrow">
+      <div class="mirror">
+        <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
+        <button class="mode on" type="button" id="scale-mirror-r" aria-pressed="true">RIGHT-FIRST</button>
+      </div>
+      <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+    </div>
+    <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+  </div>
+</div>
 
 <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
      single-file by contract, so these are copies rather than external script
@@ -2184,19 +2265,195 @@ function setOrder() {
   }
   idx = 0; flipped = false;
 }
+// Built-ins first, then generated decks in the order they were made.
+const allDecks = () => [...DECKS, ...Object.values(CUSTOM)];
+// [5A] chip labels are capped at 16 characters with an ellipsis.
+const CHIP_CAP = 16;
+const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" : n);
+
 function buildChips() {
   const nav = document.getElementById("decks");
   nav.innerHTML = "";
-  for (const d of DECKS) {
+  let active = null;
+  for (const d of allDecks()) {
     const b = document.createElement("button");
+    b.type = "button";
     b.className = "chip" + (d.id === deckId ? " on" : "");
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
-    b.innerHTML = `<span class="dot"></span>${esc(d.name)}`;
+    b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
     b.onclick = () => selectDeck(d.id);
     nav.appendChild(b);
+    if (d.id === deckId) active = b;
+  }
+  nav.appendChild(addChip);           // "+ ADD" always sits at the end
+  // The row scrolls, so the selected chip may be off-screen after a rebuild.
+  if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+/* ---------------- scale sheet ----------------
+ * The Phase 3 UI: "+ ADD" opens a bottom sheet, the box parses on every input
+ * through HPE.core.parseSeed, and Generate hands the text to generateDeck().
+ * There is exactly ONE adapter from the engine's result shape to the message
+ * area (say()), and nothing here composes a reason sentence of its own. */
+const PARSE_HINT = "Type your ding first, e.g. (D) or D/";
+const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored.";
+const sheet     = document.getElementById("scale-sheet");
+const scaleBox  = document.getElementById("scale-box");
+const parseLine = document.getElementById("scale-parse");
+const msgLine   = document.getElementById("scale-msg");
+const mirrorL   = document.getElementById("scale-mirror-l");
+const mirrorR   = document.getElementById("scale-mirror-r");
+const swatches  = document.getElementById("scale-swatches");
+const genBtn    = document.getElementById("scale-generate");
+const addChip   = document.getElementById("deck-add");
+// The practice screen's own live region; created if the markup lost it, so the
+// success message is never announced into nothing.
+const announce = document.querySelector(".announce") || document.createElement("div");
+announce.className = "announce";
+
+// The landmarks behind the sheet. inert while it is open, so the modal really
+// is modal: nothing behind it is clickable, focusable or read by a screen
+// reader, and Generate is the only enabled primary button on the page.
+const background = [...document.querySelectorAll("header, main, footer")];
+
+let palette = 0;                 // D6 index 0-5
+let mirror = false;              // section 13: false = right-first (the default)
+let sheetOpen = false;
+const generated = new Set();     // deck ids generated in this page session
+
+/** The one adapter from a result/warning reason to a message tier. */
+function say(text, tier) {
+  for (const el of [msgLine, announce]) {
+    el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
+    el.textContent = text;
   }
 }
+
+function buildSwatches() {
+  swatches.innerHTML = "";
+  HPE.select.PALETTES.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "dot" + (i === palette ? " sel" : "");
+    b.setAttribute("aria-label", "Palette " + (i + 1));
+    b.setAttribute("aria-pressed", String(i === palette));
+    b.style.setProperty("--dga", p.root);
+    b.style.setProperty("--dgb", p.tone);
+    b.onclick = () => { palette = i; buildSwatches(); };
+    swatches.appendChild(b);
+  });
+}
+function setMirror(left) {
+  mirror = left;
+  mirrorL.classList.toggle("on", left);
+  mirrorR.classList.toggle("on", !left);
+  mirrorL.setAttribute("aria-pressed", String(left));
+  mirrorR.setAttribute("aria-pressed", String(!left));
+}
+
+/** "Ding D3 | 1 A3 2 C4 ..." - the ding, then every field under its label. */
+function parseLineText(fields) {
+  const ids = Object.keys(fields).map(Number).sort((a, b) => a - b);
+  const part = id => {
+    const [name, oct, , zone, , label] = fields[id];
+    return (zone === "ding" ? "Ding" : label) + " " + name + oct;
+  };
+  const ding = ids.filter(i => fields[i][3] === "ding");
+  const rest = ids.filter(i => fields[i][3] !== "ding");
+  const head = ding.map(part).join(" ");
+  return rest.length ? head + " | " + rest.map(part).join(" ") : head;
+}
+
+/** Re-parse on every input: the parse line, the outline and Generate follow. */
+function updateParse() {
+  const text = String(scaleBox.value || "");
+  if (!text.trim()) {
+    parseLine.textContent = PARSE_HINT;
+    scaleBox.classList.remove("bad");
+    genBtn.disabled = true;
+    say("", "");
+    return;
+  }
+  const res = HPE.core.parseSeed(text, { palette, mirror });
+  if (res.ok) {
+    parseLine.textContent = parseLineText(res.value.fields);
+    scaleBox.classList.remove("bad");
+    genBtn.disabled = false;
+    say("", "");
+  } else {
+    parseLine.textContent = "";
+    scaleBox.classList.add("bad");
+    genBtn.disabled = true;
+    say(res.reason, "err");
+  }
+}
+
+function openScaleSheet() {
+  sheet.removeAttribute("hidden");
+  sheetOpen = true;
+  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+  updateParse();
+  scaleBox.focus();
+}
+function closeScaleSheet() {
+  if (!sheetOpen) return;
+  sheet.setAttribute("hidden", "");
+  sheetOpen = false;
+  for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
+  addChip.focus();
+}
+
+function runGenerate() {
+  if (genBtn.disabled) return;
+  const label = genBtn.textContent;
+  genBtn.textContent = "GENERATING";
+  genBtn.disabled = true;
+  scaleBox.setAttribute("readonly", "");
+  say("", "");
+
+  const known = new Set(Object.keys(CUSTOM));
+  const res = generateDeck(String(scaleBox.value || ""), { palette, mirror });
+
+  scaleBox.removeAttribute("readonly");
+  genBtn.textContent = label;
+  if (!res.ok) {
+    scaleBox.classList.add("bad");
+    say(res.reason, "err");
+    return;
+  }
+  const d = res.value;
+  // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
+  // produced; nothing is rebuilt to re-derive them.
+  const warned = (d.warnings || []).map(w => w.reason);
+  let text = known.has(d.id) ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
+  if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
+  if (warned.length) text += " " + warned.join(" ");
+
+  closeScaleSheet();
+  selectDeck(d.id);
+  say(text, warned.length ? "warn" : "ok");
+  genBtn.disabled = false;
+}
+
+addChip.onclick = openScaleSheet;
+genBtn.onclick = runGenerate;
+mirrorL.onclick = () => setMirror(true);
+mirrorR.onclick = () => setMirror(false);
+scaleBox.addEventListener("input", updateParse);
+scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
+// A tap whose target IS the layer is a tap on the backdrop, never on the sheet.
+sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
+// Tab is trapped inside: the sheet's own controls, in visual order.
+sheet.addEventListener("keydown", e => {
+  if (e.key !== "Tab") return;
+  const stops = [scaleBox, mirrorL, mirrorR, ...swatches.children, genBtn]
+    .filter(el => !el.disabled);
+  const i = stops.indexOf(document.activeElement);
+  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+  e.preventDefault();
+  stops[next].focus();
+});
 
 /* ---------------- interaction ---------------- */
 const card = document.getElementById("card");
@@ -2223,6 +2480,12 @@ function setMode(m) {
   render();
 }
 document.addEventListener("keydown", e => {
+  // While the sheet is open it owns the keyboard: Escape closes it, and an
+  // arrow key is cursor movement inside the box, never a card step.
+  if (sheetOpen) {
+    if (e.key === "Escape") { e.preventDefault(); closeScaleSheet(); }
+    return;
+  }
   if (e.key === "ArrowRight") step(1);
   else if (e.key === "ArrowLeft") step(-1);
 });
@@ -2235,6 +2498,7 @@ card.addEventListener("touchend", e => {
 }, { passive: true });
 
 /* ---------------- go ---------------- */
+sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); updateParse();
 deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
 </script>
 </body>

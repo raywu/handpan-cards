@@ -1,0 +1,16 @@
+# kills: every chip and sheet control has a 44px hit area
+# The invisible 44px overlay on the palette swatches is gone, leaving a 14px
+# tap target - well under the minimum for a thumb.
+diff --git a/index.html b/index.html
+index 16984c6..5d16296 100644
+--- a/index.html
++++ b/index.html
+@@ -137,8 +137,6 @@ button.nav:active{background:#2e281e}
+   position:relative; cursor:pointer;
+   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+ /* 14px is the spec'd size, so the 44px hit area is an invisible overlay. */
+-#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
+-  width:44px; height:44px; transform:translate(-50%,-50%)}
+ #scale-swatches .dot.sel{box-shadow:0 0 0 2px #f1ece1}
+ #scale-generate{width:100%; min-height:44px; border-radius:8px; cursor:pointer;
+   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
