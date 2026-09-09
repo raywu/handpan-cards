@@ -1,0 +1,22 @@
+# kills: test_an_omitted_key_is_actually_absent_and_carries_a_reason
+# The omission table is padded with keys the adapter still emits, which would
+# let it excuse any missing key at all.
+diff --git a/tools/decks.py b/tools/decks.py
+index 92e6630..4288066 100644
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -191,6 +191,14 @@ AMARA = dict(
+ # of slipping through.
+ 
+ GENERATED_OMITTED = {
++    "credit": (
++        "Padded in: the adapter still emits this key, so calling it omitted "
++        "says nothing and would excuse the next real gap."
++    ),
++    "legend_demo": (
++        "Padded in: the adapter still emits this key, so calling it omitted "
++        "says nothing and would excuse the next real gap."
++    ),
+     "blank_cards": (
+         "Padding preference, not deck data: PYGMY asks for 9 write-your-own "
+         "cards so its last sheet comes out full. hifi.build already pads to a "
