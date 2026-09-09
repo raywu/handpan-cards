@@ -1312,4 +1312,125 @@ function run() {
     }
   });
 
+  /* ---------------------------------------------------------------- *
+   * an edit never destroys ANOTHER deck (queue rows 131, 132)
+   *
+   * What a unit test cannot show: that at a real 380px viewport the refused
+   * save leaves the sheet standing with its message readable and both chips
+   * in the row, and that an options-only edit's chip is still where the user
+   * left it after a real reload out of a real localStorage.
+   * ---------------------------------------------------------------- */
+
+  const COLLIDE_SCALE = SIX_SCALES[2];      // a second custom deck's exact scale
+
+  /** Select the custom chip at index `at` in the deck row. */
+  const selectChipAt = (at) => b.eval(`
+    const c = [...document.querySelectorAll("#decks .chip:not(#deck-add)")][${at}];
+    c.scrollIntoView({ block: "nearest", inline: "nearest" });
+    c.click();
+    return c.textContent.trim();
+  `);
+
+  const sheetState = () => b.eval(`
+    const box = document.getElementById("scale-box");
+    const msg = document.getElementById("scale-msg");
+    return {
+      open: !document.getElementById("scale-sheet").hasAttribute("hidden"),
+      bad: box.classList.contains("bad"),
+      msg: msg.textContent.trim(),
+      msgVisible: msg.getBoundingClientRect().height > 0,
+      primaries: [...document.querySelectorAll("#scale-sheet button")]
+        .filter(el => !el.disabled && el.textContent.trim().match(/^(GENERATE|SAVE)/)).length,
+      body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+    };
+  `);
+
+  test("an edit onto another deck's scale is refused at 380px and both chips stay", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+
+      // name the second deck, so the loss the refusal prevents is visible
+      await openEdit();
+      await b.eval(`
+        const el = document.getElementById("scale-name");
+        el.value = "RAY'S PAN";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return el.value;
+      `);
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after the rename" });
+
+      const before = await chipReport();
+      const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales");`);
+      assert.ok(before.chips.includes("RAY'S PAN"), JSON.stringify(before.chips));
+
+      await selectChipAt(before.chips.indexOf("RAY'S PAN") - 1);   // the FIRST custom deck
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const st = await sheetState();
+      assert.strictEqual(st.open, true, "the refused save closed the sheet");
+      assert.strictEqual(st.bad, true, "the scale box was not marked bad");
+      assert.match(st.msg, /Another deck already uses this scale/,
+        `the sheet says "${st.msg}"`);
+      assert.strictEqual(st.msgVisible, true, "the refusal message has no height");
+      assert.ok(st.primaries <= 1, `${st.primaries} enabled primaries while the sheet is open`);
+      assert.ok(st.body.sw <= st.body.cw + 1, "the refusal scrolls the page horizontally");
+
+      await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close on Escape" });
+      const after = await chipReport();
+      assert.deepStrictEqual(after.chips, before.chips,
+        `a deck was destroyed by the refused edit: ${JSON.stringify(after.chips)}`);
+      assert.strictEqual(
+        await b.eval(`return localStorage.getItem("hpfc.scales");`), storedBefore,
+        "a refused save wrote to hpfc.scales");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("an options-only edit keeps its chip position across a reload at 380px", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      await generate(SIX_SCALES[4]);
+      const before = await chipReport();
+      const at = before.chips.indexOf(before.on[0]) - 1;    // the MIDDLE custom deck
+      assert.ok(at > 0, `no three custom chips: ${JSON.stringify(before.chips)}`);
+      const target = before.chips[at];
+
+      await selectChipAt(at);
+      await openEdit();
+      await b.click("#scale-swatches > *:nth-child(5)");    // an OPTION only: the id cannot move
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after SAVE CHANGES" });
+
+      const saved = await chipReport();
+      assert.strictEqual(saved.chips[at], target,
+        `the options-only edit moved the chip before any reload: ${JSON.stringify(saved.chips)}`);
+
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+        { label: "deck chips after the reload" });
+      const back = await chipReport();
+      assert.strictEqual(back.chips[at], target,
+        `an options-only edit sent the chip to the end of the row on the next boot: ` +
+        JSON.stringify(back.chips));
+      assert.deepStrictEqual(back.chips, before.chips,
+        `the chip row was reordered by an options-only edit: ${JSON.stringify(back.chips)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
 }

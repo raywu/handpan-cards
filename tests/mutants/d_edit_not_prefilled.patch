@@ -1,12 +1,12 @@
 # kills: tapping the already-selected custom chip opens the sheet in Edit state, prefilled
 diff --git a/index.html b/index.html
-index a127d86..14c84bb 100644
+index 3509543..f7b8796 100644
 --- a/index.html
 +++ b/index.html
-@@ -2886,7 +2886,7 @@ function openEditSheet(d, opener) {
-   editingId = d.id;
+@@ -3398,7 +3398,7 @@ function openEditSheet(d, opener) {
    setSheetMode(true);
    nameBox.value = d.name;
+   nameDirty = false;                                 // prefilled, not typed
 -  scaleBox.value = HPE.core.formatSeed(d.fields);     // 8A: the canonical string
 +  scaleBox.value = "";
    palette = d.options.palette;

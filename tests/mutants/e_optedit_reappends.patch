@@ -1,0 +1,15 @@
+# kills: an options-only edit keeps its chip position across a reload at 380px
+diff --git a/index.html b/index.html
+index 3509543..4e9e449 100644
+--- a/index.html
++++ b/index.html
+@@ -3515,7 +3515,8 @@ function runGenerate() {
+   // the correction it just committed.
+   dropLayoutPreview();
+   closeScaleSheet();
+-  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
++  if (replaced) replaceScale(wasSeed, seedOf(d));
++  else { if (wasSeed) forgetScale(wasSeed); rememberScale(seedOf(d)); }
+   selectDeck(d.id);
+   say(text, warned.length ? "warn" : "ok");
+   genBtn.disabled = false;

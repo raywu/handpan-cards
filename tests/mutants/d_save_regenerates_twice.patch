@@ -1,13 +1,13 @@
 # kills: saving from the Edit sheet regenerates exactly once (13A)
 diff --git a/index.html b/index.html
-index 8a5bb64..6a4bc5d 100644
+index 3509543..cc59021 100644
 --- a/index.html
 +++ b/index.html
-@@ -3389,6 +3389,7 @@ function runGenerate() {
-   // the time storage is written.
-   const wasId = editingId;
-   const wasSeed = editedDeck() ? HPE.core.formatSeed(editedDeck().fields) : null;
+@@ -3472,6 +3472,7 @@ function runGenerate() {
+   // deck"), nor on an options-only edit or an unchanged re-save (the id does
+   // not move), nor on a field edit to a scale no other deck holds.
+   let taken = null;
 +  generateDeck(String(scaleBox.value || ""), sheetOptions());
-   const res = generateDeck(String(scaleBox.value || ""), sheetOptions());
- 
-   scaleBox.removeAttribute("readonly");
+   const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+     if (!wasId) return null;
+     const id = HPE.core.deckId(seed.fields);

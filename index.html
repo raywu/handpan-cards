@@ -2713,9 +2713,15 @@ function replaceRegistered(oldId, next) {
   }
   if (!placed) CUSTOM[next.id] = next;
 }
-function generateDeck(text, options) {
+// `guard` is an optional veto consulted with the PARSED seed, between the parse
+// and the build: it is how the submit path can refuse a save without a second
+// parse, a second build (13A pins exactly one) or any registry write. It returns
+// a falsy value to let generation run, or the result to return instead.
+function generateDeck(text, options, guard) {
   const seed = HPE.core.parseSeed(text, options);
   if (!seed.ok) return seed;
+  const vetoed = guard ? guard(seed.value) : null;
+  if (vetoed) return vetoed;
   const built = HPE.select.build(seed.value);
   if (!built.ok) return built;
   // select.build resolves the palette, mirror and parent onto deck.options but
@@ -2800,11 +2806,21 @@ function savedScales() {
 function writeScales(list) {
   try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
 }
+// Queue row 132: an EXISTING record is rewritten AT ITS INDEX, and only a
+// genuinely new one is appended. restoreScales rebuilds the registry in list
+// order, so the index is the chip position across a reload - filtering the old
+// record out and pushing the new one would send an options-only edit to the end
+// of the row on the next boot while it sat in place until then.
 function rememberScale(seed) {
   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
-  const list = savedScales().filter(r => !r || r.s !== rec.s);
-  list.push(rec);
-  writeScales(list);
+  const out = [];
+  let placed = false;
+  for (const r of savedScales()) {
+    if (r && r.s === rec.s) { if (!placed) { out.push(rec); placed = true; } }
+    else out.push(r);                     // a duplicate of the key is collapsed
+  }
+  if (!placed) out.push(rec);
+  writeScales(out);
 }
 // The canonical scale string IS the record's key (D14: the id is its hash), so
 // dropping the record is a filter on that string and nothing has to look the
@@ -3073,6 +3089,11 @@ let mirror = false;              // section 13: false = right-first (the default
 let sheetOpen = false;
 let editingId = null;            // the custom deck the sheet is editing, or null
 let sheetOpener = null;          // the control focus returns to on close
+// Queue row 133: whether the user has TYPED in the name box since the sheet
+// prefilled it. String equality against the auto name cannot tell "never
+// touched the box" from "typed exactly that", and a user who deliberately types
+// the auto label must keep it as a real name.
+let nameDirty = false;
 // D5. `layoutOrder` is the user's correction of the generated layout: a
 // permutation over the non-ding fields, in the order layout.solve collects
 // them, saying which field takes which solved slot. NULL means ABSENT - the
@@ -3299,14 +3320,16 @@ function sheetOptions() {
   if (editingId) {
     o.parent = Number(degSel.value);
     const n = String(nameBox.value || "").trim();
-    // The box is PREFILLED with the deck's name, so a name the user never
-    // touched is the engine's own auto name (section 13) and is treated as
-    // ABSENT: otherwise a field edit would pin the old fields' name onto the
-    // new deck and the row would show two chips reading the same thing (queue
-    // row 73). autoName has ONE producer, in select.js; this only compares.
+    // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
+    // treated as ABSENT: otherwise a field edit would pin the old fields' name
+    // onto the new deck and the row would show two chips reading the same thing
+    // (queue row 73). What counts as untouched is `nameDirty`, not the string -
+    // comparing against autoName could not tell a user who deliberately typed
+    // the auto label from one who never touched the box (queue row 133). A deck
+    // that already carries an EXPLICIT name keeps it either way.
     const d = editedDeck();
-    const auto = d ? HPE.select.autoName(d.fields, d.options.parent) : null;
-    if (n && n !== auto) o.name = n;  // validated by core.parseSeed, never here
+    const kept = !!(d && d.options && d.options.name);
+    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
     if (layoutOrder) o.order = layoutOrder.slice();
   }
   return o;
@@ -3359,6 +3382,7 @@ function openScaleSheet(opener) {
   setSheetMode(false);
   scaleBox.value = "";
   nameBox.value = "";
+  nameDirty = false;
   palette = 0;
   buildSwatches();
   setMirror(false);
@@ -3373,6 +3397,7 @@ function openEditSheet(d, opener) {
   editingId = d.id;
   setSheetMode(true);
   nameBox.value = d.name;
+  nameDirty = false;                                 // prefilled, not typed
   scaleBox.value = HPE.core.formatSeed(d.fields);     // 8A: the canonical string
   palette = d.options.palette;
   buildSwatches();
@@ -3436,10 +3461,35 @@ function runGenerate() {
   // the time storage is written.
   const wasId = editingId;
   const wasSeed = editedDeck() ? HPE.core.formatSeed(editedDeck().fields) : null;
-  const res = generateDeck(String(scaleBox.value || ""), sheetOptions());
+  // Queue row 131, the owner's decision: an EDIT whose new fields hash to an id
+  // a DIFFERENT custom deck already holds is REFUSED. Without this the deck at
+  // that id is silently overwritten and its name, palette and mirror are gone.
+  // The veto runs between the parse and the build - before generateDeck can
+  // register anything over the victim, and without a second build (13A) - and
+  // the id comes from D14, the hash of the fields alone, so nothing has to be
+  // built to find it out. It cannot fire on the ADD path (no wasId there:
+  // generating an existing seed is the benign dedupe-by-id, "same scale, same
+  // deck"), nor on an options-only edit or an unchanged re-save (the id does
+  // not move), nor on a field edit to a scale no other deck holds.
+  let taken = null;
+  const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+    if (!wasId) return null;
+    const id = HPE.core.deckId(seed.fields);
+    if (id === wasId || !CUSTOM[id]) return null;
+    taken = CUSTOM[id];
+    return { ok: false };
+  });
 
   scaleBox.removeAttribute("readonly");
   genBtn.textContent = label;
+  if (taken) {
+    // UI copy, like the delete fallback above it - NOT an engine reason. The
+    // section 2 code enum is closed and has no code for "that scale is taken",
+    // so this composes no sentence that could pass for one and carries no code.
+    scaleBox.classList.add("bad");
+    say("Another deck already uses this scale.", "err");
+    return;
+  }
   if (!res.ok) {
     scaleBox.classList.add("bad");
     say(res.reason, "err");
@@ -3499,7 +3549,7 @@ slotsBox.addEventListener("keydown", (e) => {
 scaleBox.addEventListener("input", updateParse);
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
 // through the same parse line every other input goes through.
-nameBox.addEventListener("input", updateParse);
+nameBox.addEventListener("input", () => { nameDirty = true; updateParse(); });
 degSel.addEventListener("change", updateParse);
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
 // A tap whose target IS the layer is a tap on the backdrop, never on the sheet.

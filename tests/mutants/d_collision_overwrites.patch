@@ -1,0 +1,15 @@
+# kills: an edit onto another deck's scale is refused and both decks survive
+diff --git a/index.html b/index.html
+index 3509543..f9f7570 100644
+--- a/index.html
++++ b/index.html
+@@ -3476,8 +3476,7 @@ function runGenerate() {
+     if (!wasId) return null;
+     const id = HPE.core.deckId(seed.fields);
+     if (id === wasId || !CUSTOM[id]) return null;
+-    taken = CUSTOM[id];
+-    return { ok: false };
++    return null;
+   });
+ 
+   scaleBox.removeAttribute("readonly");
