@@ -1,0 +1,14 @@
+# kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
+diff --git a/index.html b/index.html
+index 7e9b7f6..c764f05 100644
+--- a/index.html
++++ b/index.html
+@@ -2726,8 +2726,6 @@ const registerDeck = d => (CUSTOM[d.id] = d);
+ // changes nothing a user can see; it is here so that a future caller cannot
+ // reintroduce row 131 silently. Returns whether the replacement happened.
+ function replaceRegistered(oldId, next) {
+-  const sitting = next.id !== oldId ? CUSTOM[next.id] : null;
+-  if (sitting && sitting !== next) return false;
+   const was = Object.entries(CUSTOM);
+   for (const k of Object.keys(CUSTOM)) delete CUSTOM[k];
+   let placed = false;

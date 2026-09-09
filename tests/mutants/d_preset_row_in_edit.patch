@@ -1,0 +1,14 @@
+# kills: the preset row is create-only: an Edit sheet never offers one
+diff --git a/index.html b/index.html
+index 7e9b7f6..991da57 100644
+--- a/index.html
++++ b/index.html
+@@ -3436,7 +3436,7 @@ function setSheetMode(edit) {
+   }
+   // The presets are the mirror image: create-only. From Edit, one tap would
+   // overwrite the deck's fields, which is the collision path row 131 closed.
+-  if (edit) presetRow.setAttribute("hidden", ""); else presetRow.removeAttribute("hidden");
++  presetRow.removeAttribute("hidden");
+   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
+   sheet.setAttribute("aria-label", edit ? "Edit this scale" : "Add a scale");
+ }
