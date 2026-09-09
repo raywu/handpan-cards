@@ -962,7 +962,7 @@ function run() {
     try {
       await editFreshDeck();
       const seen = [];
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 26; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`
           const el = document.activeElement;
@@ -974,7 +974,9 @@ function run() {
       assert.ok(seen.every(s => s.inside),
         `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
       const ids = new Set(seen.map(s => s.id));
-      for (const id of ["scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete"]) {
+      for (const id of ["scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete",
+                        "scale-rot-l", "scale-rot-r", "scale-layout-reset",
+                        "scale-move-l", "scale-move-r"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
       }
     } finally {
@@ -1002,6 +1004,177 @@ function run() {
       assert.deepStrictEqual(row.on, ["RAY'S PAN"], "the chip kept the old label");
       assert.ok(row.body.sw <= row.body.cw + 1, "the renamed chip blew the row out");
     } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+
+  /* ---------------------------------------------------------------- *
+   * the LAYOUT correction (Phase 5)
+   *
+   * What a unit test cannot show: that someone with only a keyboard can
+   * reach these controls and use them, at a real 380px viewport, without
+   * the page growing a horizontal scrollbar or the card behind the sheet
+   * changing size.
+   * ---------------------------------------------------------------- */
+
+  /** Tab until `id` has focus. Keyboard only - no click, no .focus() call. */
+  async function tabTo(id, max = 28) {
+    for (let i = 0; i < max; i++) {
+      if (await activeId() === id) return true;
+      await b.key("Tab", "Tab", 9);
+    }
+    return (await activeId()) === id;
+  }
+
+  /** Press the focused control the way a keyboard user does. A button is
+   *  activated by the browser's OWN default handler, and that only runs when
+   *  the key event carries its text: a bare keyDown produces no keypress and
+   *  so no activation. Nothing here is a click - if the app needed a pointer,
+   *  none of this would work. */
+  const pressActive = async () => {
+    for (const type of ["keyDown", "keyUp"]) {
+      await b.send("Input.dispatchKeyEvent", {
+        type, key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r",
+        windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13,
+      });
+    }
+  };
+
+  const slotState = () => b.eval(`
+    const slots = [...document.getElementById("scale-slots").children];
+    const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+    return {
+      notes: slots.map(s => s.textContent.trim()),
+      pressed: slots.findIndex(s => s.getAttribute("aria-pressed") === "true"),
+      stops: slots.filter(s => s.tabIndex === 0).length,
+      named: slots.every(s => (s.getAttribute("aria-label") || "").length > 0),
+      inside: slots.every(s => {
+        const r = s.getBoundingClientRect();
+        return r.left >= row.left - 1 && r.right <= row.right + 1;
+      }),
+      body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+      cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
+    };
+  `);
+
+  const noOverflow = (st, what) =>
+    assert.ok(st.body.sw <= st.body.cw + 1,
+      `${what} scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
+
+  test("ROTATE corrects the layout from the keyboard alone at 380px", async () => {
+    try {
+      await editFreshDeck();
+      const before = await slotState();
+      assert.ok(before.notes.length >= 8, `the slot list is ${JSON.stringify(before.notes)}`);
+      assert.strictEqual(before.stops, 1, "the slot list is not a single tab stop");
+      assert.strictEqual(before.named, true, "a slot control has no accessible name");
+      assert.strictEqual(before.inside, true, "the slot list overflows its row");
+      noOverflow(before, "the LAYOUT section");
+
+      assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
+      await pressActive();
+      const after = await slotState();
+      assert.notDeepStrictEqual(after.notes, before.notes, "ROTATE moved nothing");
+      assert.deepStrictEqual([...after.notes].sort(), [...before.notes].sort(),
+        "ROTATE invented or lost a note");
+      noOverflow(after, "a rotated layout");
+      assert.strictEqual(after.cardW, before.cardW, "ROTATE moved --card-w");
+
+      // and it commits through the sheet's ONE primary
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after SAVE CHANGES" });
+      await openEdit();
+      assert.deepStrictEqual((await slotState()).notes, after.notes,
+        "the saved correction did not come back with the sheet");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the arrow keys choose a position and MOVE swaps it with its neighbour", async () => {
+    try {
+      await editFreshDeck();
+      const before = await slotState();
+      assert.ok(await tabTo("scale-slot-" + before.pressed), "Tab never reached the slot list");
+      await b.key("ArrowRight", "ArrowRight", 39);
+      const chosen = await slotState();
+      assert.strictEqual(chosen.pressed, before.pressed + 1,
+        "ArrowRight did not move the chosen position");
+      assert.strictEqual(await activeId(), "scale-slot-" + chosen.pressed,
+        "focus did not follow the chosen position");
+
+      assert.ok(await tabTo("scale-move-r"), "Tab never reached MOVE");
+      await pressActive();
+      const moved = await slotState();
+      assert.strictEqual(moved.notes[chosen.pressed], before.notes[chosen.pressed + 1],
+        "MOVE did not move the chosen note");
+      assert.strictEqual(moved.notes[chosen.pressed + 1], before.notes[chosen.pressed],
+        "MOVE did not displace the note it passed");
+      assert.strictEqual(moved.pressed, chosen.pressed + 1,
+        "the chosen position did not follow the note");
+      noOverflow(moved, "a moved note");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("RESET puts the generated layout back in one keyboard action", async () => {
+    try {
+      await editFreshDeck();
+      const before = await slotState();
+      assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
+      await pressActive();
+      await pressActive();
+      assert.notDeepStrictEqual((await slotState()).notes, before.notes,
+        "two rotations moved nothing");
+
+      assert.ok(await tabTo("scale-layout-reset"), "Tab never reached RESET");
+      await pressActive();
+      const back = await slotState();
+      assert.deepStrictEqual(back.notes, before.notes,
+        "RESET did not put the generated layout back");
+      noOverflow(back, "the reset layout");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("every LAYOUT control is a 44px target with a visible focus ring", async () => {
+    try {
+      await editFreshDeck();
+      const ids = ["scale-rot-l", "scale-rot-r", "scale-layout-reset",
+                   "scale-move-l", "scale-move-r"];
+      const small = await b.eval(`
+        const ids = ${JSON.stringify(ids)}.concat(["scale-slot-0"]);
+        return ids.map(id => {
+          const el = document.getElementById(id);
+          const r = el.getBoundingClientRect();
+          return { id, w: Math.round(r.width), h: Math.round(r.height) };
+        }).filter(t => t.w < 44 || t.h < 44);
+      `);
+      assert.deepStrictEqual(small, [], `LAYOUT controls under 44px: ${JSON.stringify(small)}`);
+
+      // A keyboard user must be able to SEE where they are: the sheet's
+      // :focus-visible ring is #e3b25c and these controls are no exception.
+      for (const id of ids) {
+        assert.ok(await tabTo(id), `Tab never reached #${id}`);
+        const ring = await b.eval(`
+          const cs = getComputedStyle(document.activeElement);
+          return { id: document.activeElement.id, color: cs.outlineColor,
+                   width: parseFloat(cs.outlineWidth) || 0, style: cs.outlineStyle };
+        `);
+        assert.strictEqual(ring.id, id);
+        assert.strictEqual(ring.color, "rgb(227, 178, 92)", `#${id} has no #e3b25c ring`);
+        assert.ok(ring.width >= 2, `#${id} focus ring is ${ring.width}px`);
+        assert.notStrictEqual(ring.style, "none", `#${id} focus ring is styled away`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });
