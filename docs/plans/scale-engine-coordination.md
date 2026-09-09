@@ -381,7 +381,7 @@ Written when their wave opens, from the plan rows and the acceptance table.
 | P0c | scale-engine/w3-harness | merged d6935d1 | PASS_WITH_NITS (2nd) | 2026-09-08 |
 | P0d | scale-engine/w5-core | merged 40ff645 | PASS_WITH_NITS | 2026-09-08 |
 | 1A | scale-engine/w6-voicing | PR #15, adding root-field-given 58/59 test | pending | 2026-09-08 |
-| 1B | scale-engine/w7-layout | spawned (wave 3) | - | 2026-09-08 |
+| 1B | scale-engine/w7-layout | PR #17 verified at 1e4d795, reviewer spawned | pending | 2026-09-08 |
 | 1C | scale-engine/w8-naming | spawned (wave 3) | - | 2026-09-08 |
 | P0b2 | scale-engine/w4-corpus-mutant | merged 5f03262 | PASS_WITH_NITS | 2026-09-08 |
 
@@ -439,6 +439,6 @@ Cycle: 1   Wave: 3   Merged this batch: 66453e8, 386a856, d6935d1, 5f03262, 40ff
 | P0c | released | released | scale-engine/w3-harness | #11 | 4eafe8e | 2026-09-08 gh pr view + run 34308168091 success | PASS_WITH_NITS | 1 | yes d6935d1 | - | no |
 | P0d | released | released | scale-engine/w5-core | #14 | 6a24d38 | 2026-09-08 gh pr view + run 34309621849 success | PASS_WITH_NITS | 0 | yes 40ff645 | - | no |
 | 1A | returned done, re-briefed | agent-managed | scale-engine/w6-voicing | #15 | d93ea39 | 2026-09-08 gh pr view + run 34311107260 success | pre-review clarification sent | 1 | no | - | - |
-| 1B | running (spawned 2026-09-08) | agent-managed | scale-engine/w7-layout | - | - | - | - | 0 | no | - | - |
+| 1B | returned done | agent-managed | scale-engine/w7-layout | #17 | 1e4d795 | 2026-09-08 gh pr view + run 34311187834 success | reviewer spawned | 0 | no | - | - |
 | 1C | running (spawned 2026-09-08) | agent-managed | scale-engine/w8-naming | - | - | - | - | 0 | no | - | - |
 | P0b2 | released | released | scale-engine/w4-corpus-mutant | #13 | 619619d | 2026-09-08 gh pr view + run 34309255857 success | PASS_WITH_NITS | 0 | yes 5f03262 | - | no |
