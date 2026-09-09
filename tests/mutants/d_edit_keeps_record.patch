@@ -1,0 +1,14 @@
+# kills: a field edit drops the old seed record instead of adding a second one
+diff --git a/index.html b/index.html
+index 8a5bb64..300d2a9 100644
+--- a/index.html
++++ b/index.html
+@@ -2774,7 +2774,7 @@ function replaceScale(oldStr, seed) {
+   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+   const list = savedScales();
+   const at = list.findIndex(r => r && r.s === oldStr);
+-  if (at < 0) { rememberScale(seed); return; }
++  rememberScale(seed); return;
+   const out = [];
+   list.forEach((r, i) => {
+     if (i === at) out.push(rec);

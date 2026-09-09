@@ -1,0 +1,13 @@
+# kills: a field edit leaves one chip for the deck, selected and relabelled, at 380px
+diff --git a/index.html b/index.html
+index 8a5bb64..d063b2c 100644
+--- a/index.html
++++ b/index.html
+@@ -3404,7 +3404,6 @@ function runGenerate() {
+   // and the new one takes its chip position. An options-only edit never gets
+   // here - the id is unchanged and generateDeck already replaced it in place.
+   const replaced = !!wasId && d.id !== wasId;
+-  if (replaced) replaceRegistered(wasId, d);
+   // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
+   // produced; nothing is rebuilt to re-derive them.
+   const warned = (d.warnings || []).map(w => w.reason);

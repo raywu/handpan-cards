@@ -1,0 +1,14 @@
+# kills: a boot after a field edit shows exactly one deck, in the same chip position
+diff --git a/index.html b/index.html
+index 8a5bb64..e419f8a 100644
+--- a/index.html
++++ b/index.html
+@@ -2773,7 +2773,7 @@ function forgetScale(str) {
+ function replaceScale(oldStr, seed) {
+   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+   const list = savedScales();
+-  const at = list.findIndex(r => r && r.s === oldStr);
++  const at = list.length - 1;
+   if (at < 0) { rememberScale(seed); return; }
+   const out = [];
+   list.forEach((r, i) => {
