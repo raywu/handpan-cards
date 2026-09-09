@@ -360,6 +360,33 @@ test("names and subtitles respect the section 9 caps", () => {
   }
 });
 
+test("m7 and m7b5 derive the D4 equivalence annotation mechanically", () => {
+  // Section 8 / D4: an m7 is annotatable as `( = (X+3)6 )` and an m7b5 as
+  // `( = (X+3)m6 )`. Hijaz ships that exact m7b5 subtitle.
+  const hijaz = golden.decks.find((d) => d.id === "hijaz");
+  const shipped = hijaz.chords.find((c) => c.sup === "b5");
+  assert.equal(shipped.subtitle, "HALF-DIMINISHED ( = Bm6 )");
+  const generated = built(hijaz.maker_string).chords
+    .find((c) => nameOf(c) === shipped.main + shipped.sup);
+  assert.equal(generated.subtitle, shipped.subtitle);
+  // Amara's m7 cards ship unannotated (provenance, section 8), so a generated
+  // deck is the two-sided case: the annotation IS derived.
+  const amara = built("(D3) A3 C4 D4 E4 F4 G4 A4 C5").chords;
+  assert.equal(amara.find((c) => nameOf(c) === "Dm7").subtitle,
+    "D MINOR 7 ( = F6 )");
+  assert.equal(amara.find((c) => nameOf(c) === "Am7").subtitle,
+    "A MINOR 7 ( = C6 )");
+  // Nothing else is ever annotated.
+  for (const row of synthetic) {
+    if (!row.expect.ok) continue;
+    for (const chord of built(row.string).chords) {
+      if (!/\( = /.test(chord.subtitle)) continue;
+      assert.ok(chord.sup === "b5" || (chord.sup === "7" && /m$/.test(chord.main)),
+        `${row.name} ${nameOf(chord)}: only m7 and m7b5 carry an equivalence`);
+    }
+  }
+});
+
 /* ---------------- section 16 / 17: warnings ------------------------------ */
 
 test("a pan with no third yields ok plus NO_THIRDS", () => {

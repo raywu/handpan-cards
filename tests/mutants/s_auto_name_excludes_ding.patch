@@ -1,0 +1,16 @@
+# suite: node --test tests/select.test.js
+# kills: ENGINE-SPEC section 13 D5A - N counts the TOP-SHELL fields
+# INCLUDING the ding (D Amara = 1 ding + 8 rim = D AEOLIAN 9).
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 6ec8d54..02b0d6d 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -368,7 +368,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var top = 0;
+     for (var i = 0; i < list.length; i += 1) {
+       var record = fields[list[i]];
+-      if (isTopShell(record) || isDing(record)) top += 1;
++      if (isTopShell(record)) top += 1;
+     }
+     var name = fields["0"][0] + " " + naming().PARENTS[parentIndex].display +
+       " " + top;
