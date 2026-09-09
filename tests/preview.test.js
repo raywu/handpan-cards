@@ -203,6 +203,16 @@ test("an empty box shows no preview", () => {
   assert.ok(!previewHTML(app).includes("<svg"), "an empty box should show no pan");
 });
 
+test("the Edit sheet shows no mock - the deck's own card is already the preview", () => {
+  const app = boot();
+  app.generate(PLAIN, {});
+  const id = app.get("Object.keys(CUSTOM)[0]");
+  app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
+  assert.ok(!previewHTML(app).includes("<svg"),
+    "from Edit the pan behind the sheet is the live preview; a second mock only " +
+    "pushes SAVE CHANGES off a 380px screen");
+});
+
 /* ------------------------------------------------- the card path is untouched */
 
 test("the preview is drawn by the same pan() the cards use", () => {

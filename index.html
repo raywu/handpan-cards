@@ -135,7 +135,7 @@ button.nav:active{background:#2e281e}
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
    CARDS below the fold. */
-#scale-preview{align-self:center; width:100%; max-width:216px; padding:8px;
+#scale-preview{align-self:center; width:100%; max-width:184px; padding:8px;
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 #scale-preview svg{display:block; width:100%; height:auto}
 #scale-msg{font:400 11.5px/1.45 "Nunito Sans"; min-height:1.45em; color:#c4bcab;
@@ -3429,14 +3429,8 @@ function sheetOptions() {
  * through the same pan() the cards use, which is why the preview cannot drift
  * from the real output. */
 
-/** Solve the typed seed under the sheet's mirror (and, in Edit, its correction). */
+/** Solve the typed seed under the sheet's mirror. */
 function solvePreviewLayout(seed) {
-  if (layoutOrder) {
-    const corrected = HPE.layout.solve(seed, { mirror: mirror, order: layoutOrder });
-    // A correction from a DIFFERENT field count is stale while the box is being
-    // retyped; the generated layout is still previewable, so fall through to it.
-    if (corrected.ok) return corrected.value;
-  }
   const res = HPE.layout.solve(seed, { mirror: mirror });
   return res.ok ? res.value : null;
 }
@@ -3446,8 +3440,16 @@ function clearPanPreview() {
   previewBox.setAttribute("hidden", "");
 }
 
-/** Paint the pan mock for a parsed seed, unhighlighted. */
+/** Paint the pan mock for a parsed seed, unhighlighted.
+ *
+ * CREATE PATH ONLY, for two reasons that agree. The request is about the moment
+ * BEFORE committing - from Edit the deck already exists, and previewLayout()
+ * repaints its real card live behind the sheet, so a mock there would be a
+ * second preview of the same pan. And the Edit sheet already carries the name,
+ * degrees and LAYOUT rows: at 380px a mock on top of those pushes the primary
+ * button off the screen, which is the one thing a phone sheet may never do. */
 function showPanPreview(seed) {
+  if (editingId) { clearPanPreview(); return; }
   const solved = solvePreviewLayout(seed);
   if (!solved) { clearPanPreview(); return; }
   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
