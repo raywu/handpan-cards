@@ -1,13 +1,13 @@
 # kills: the Degrees select lists the parent candidates with the inferred one preselected
 diff --git a/index.html b/index.html
-index 8a5bb64..65d702a 100644
+index 3509543..1aaa6ba 100644
 --- a/index.html
 +++ b/index.html
-@@ -3250,7 +3250,6 @@ function resetLayout() {
+@@ -3318,7 +3318,6 @@ function resetLayout() {
  function sheetOptions() {
    const o = { palette, mirror };
    if (editingId) {
 -    o.parent = Number(degSel.value);
      const n = String(nameBox.value || "").trim();
-     // The box is PREFILLED with the deck's name, so a name the user never
-     // touched is the engine's own auto name (section 13) and is treated as
+     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
+     // treated as ABSENT: otherwise a field edit would pin the old fields' name
