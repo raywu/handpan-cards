@@ -1,0 +1,23 @@
+# kills: the caller scan counts every occurrence, in code and in prose alike
+# Queue row 186. Proves the row-186 assertion is not vacuous. The scan resolves
+# \uXXXX escapes before counting, which CLOSES the residual hole the assertion
+# pins: the escaped call site is now seen, so the count moves off 2 and the
+# assertion reddens with its own message. Nothing else in the file changes -
+# every other fixture spells the name literally, and index.html carries no
+# escape that decodes to this name, so the real-source scan is untouched.
+# Mutating a test file is precedent-backed (tests/CONTRACT.md rule 3): what has
+# to be proved live is a test's own oracle. The patch body is generated, per
+# rule 4.
+diff --git a/tests/app.test.js b/tests/app.test.js
+index b6ea112..6871305 100644
+--- a/tests/app.test.js
++++ b/tests/app.test.js
+@@ -2093,6 +2093,8 @@ test("replaceRegistered still replaces in place when there is no collision", ()
+ // tokenizing would fix, because there is nothing in the text to find. It is
+ // pinned below as a known, reviewed hole rather than an accidental one.
+ function scanNames(source, name) {
++  source = source.replace(/\\u([0-9a-fA-F]{4})/g,
++    (m, h) => String.fromCharCode(parseInt(h, 16)));
+   const re = new RegExp("\\b" + name + "\\b", "g");
+   const hits = [];
+   let total = 0;
