@@ -1,0 +1,41 @@
+# kills: suite_health prints a failing PYTHON suite's own output
+# suite: python3 -m unittest tests.test_failure_diagnosability.SuiteHealthReportsPythonFailureOutput
+# Queue row 257. Puts check_python() back the way it was: the unittest runner's
+# stream goes to /dev/null and the verdict is a bare "python: suite is not
+# green" with every traceback dropped on the floor. This is the identical defect
+# rows 249/256 fixed on the node side, and h_suite_health_failure_silent.patch
+# guards that side; without this one, a regression could re-blind the python
+# half alone and the node mutant would not notice.
+#
+# The header is targeted at the python-side class so the evidence is not diluted
+# by the node-side tests, which pass under this mutation. Counts, not exit code:
+# clean 3 tests / OK, mutant 3 tests / 2 failures.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+index 4525a28..a7441cc 100644
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -118,11 +118,7 @@ def check_python():
+         for e in loader.errors:
+             print(e)
+         return ["python: test discovery raised errors"]
+-    # Captured, not discarded: a red python suite used to report a bare verdict
+-    # with its tracebacks streamed to /dev/null, which is the same defect the
+-    # node path carried and the same reason main was unexplainably red.
+-    captured = io.StringIO()
+-    runner = unittest.TextTestRunner(verbosity=0, stream=captured,
++    runner = unittest.TextTestRunner(verbosity=0, stream=open("/dev/null", "w"),
+                                      resultclass=PerFileResult)
+     result = runner.run(suite)
+     problems = []
+@@ -151,10 +147,6 @@ def check_python():
+         problems.append("python: skipped tests are not allowed: "
+                         + ", ".join(str(s[0]) for s in result.skipped))
+     if result.failures or result.errors:
+-        print(f"--- python: {len(result.failures)} failing, {len(result.errors)} "
+-              f"erroring test(s), the suite's own output follows ---")
+-        print(excerpt(captured.getvalue()))
+-        print("--- end of python output ---")
+         problems.append("python: suite is not green")
+     return problems
+ 
