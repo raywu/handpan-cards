@@ -139,15 +139,19 @@ baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC
       [ "$BASELINE_RC" -eq 0 ]; return
     fi
   done
-  # Deliberately NO 124/137 retry here, unlike the per-mutant run at the bottom.
-  # There the retry exists because a hang says nothing about whether the MUTANT
-  # was caught, and the alternative is scoring a hang as a kill. A baseline that
-  # cannot finish inside the wall clock on the CLEAN tree is a different fact:
-  # the suite is not usable as evidence in this environment, which is exactly
-  # what the abort below reports. Retrying would only double the wait before
-  # saying so - and a baseline slow enough to be flaky at the timeout is slow
-  # enough that every mutant aimed at it is about to time out too. Queue row 191.
+  # Queue row 191, sighted live in row 195: a mutant run that hangs is retried
+  # once (below), but a BASELINE that hung was treated as "not green" and
+  # aborted the entire sweep - so one slow clean-tree run threw away every
+  # verdict, including the 200-odd mutants whose suites were fine. A timeout is
+  # not a red: it is an absence of evidence either way, and the per-mutant path
+  # already says so. Mirror it here. A second timeout still falls through to the
+  # abort, which is correct - a suite that cannot finish twice on the clean tree
+  # genuinely is unusable as evidence in this environment.
   run_suite "$1"; BASELINE_RC=$?
+  if [ "$BASELINE_RC" -eq 124 ] || [ "$BASELINE_RC" -eq 137 ]; then
+    echo "note: baseline hung for ${SUITE_TIMEOUT}s, retrying once: $1"
+    run_suite "$1"; BASELINE_RC=$?
+  fi
   BASELINE_CMDS+=("$1"); BASELINE_RCS+=("$BASELINE_RC")
   [ "$BASELINE_RC" -eq 0 ]
 }

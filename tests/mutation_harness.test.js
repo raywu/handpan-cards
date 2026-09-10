@@ -51,8 +51,22 @@ function git(cwd, args) {
   return execFileSync("git", args, { cwd, encoding: "utf8", env: childEnv() });
 }
 
+// The fixture suite. Three levers, kept separate on purpose:
+//   subject.txt - what the fixture MUTANT flips (ok -> bad)
+//   health.txt  - whether the suite is green on the clean tree
+//   flaky.txt   - "once"/"always" makes it exit 124, exactly what `timeout`
+//                 reports for a wall-clock kill.
+// Simulating the timeout by RETURNING 124 rather than by actually sleeping past
+// MUTANT_TIMEOUT keeps the hang cases deterministic and instant, and keeps them
+// working on a machine with no `timeout` binary (stock macOS), where the script
+// runs suites unbounded and a real sleep would simply finish.
 const CHECK_JS = `const fs = require("fs");
 const read = f => fs.readFileSync(f, "utf8").trim();
+const mode = read("flaky.txt");
+if (mode === "always" || (mode === "once" && !fs.existsSync("tripped"))) {
+  fs.writeFileSync("tripped", "1");
+  process.exit(124);
+}
 process.exit(read("subject.txt") === "ok" && read("health.txt") === "green" ? 0 : 1);
 `;
 
@@ -69,13 +83,14 @@ process.exit(read("subject.txt") === "ok" && read("health.txt") === "green" ? 0 
 // GENERATED from a real `git diff` on the committed fixture tree - the same
 // discipline tests/CONTRACT.md rule 4 imposes on the real corpus, and here it
 // is free.
-function makeFixture(t, { health = "green", mutants }) {
+function makeFixture(t, { health = "green", flaky = "no", mutants }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mutharness-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
   fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
   fs.writeFileSync(path.join(dir, "subject.txt"), "ok\n");
   fs.writeFileSync(path.join(dir, "health.txt"), `${health}\n`);
+  fs.writeFileSync(path.join(dir, "flaky.txt"), `${flaky}\n`);
   fs.writeFileSync(path.join(dir, "check.js"), CHECK_JS);
   fs.copyFileSync(SCRIPT, path.join(dir, "tests", "mutation_check.sh"));
   fs.chmodSync(path.join(dir, "tests", "mutation_check.sh"), 0o755);
@@ -154,6 +169,30 @@ test("the baseline is evaluated even for a built-in prefix command", (t) => {
   const dir = makeFixture(t, { health: "red", mutants: [KILLABLE] });
   const { code, out } = sweep(dir);
   assert.match(out, /node check\.js/, out);
+  assert.equal(code, 4, out);
+});
+
+test("a baseline that hangs once is retried, not scored as red", (t) => {
+  // Queue rows 191/195. The per-mutant run has always retried a 124/137 once;
+  // the baseline did not, so a single slow clean-tree run aborted the whole
+  // sweep and threw away every other verdict. A timeout is an absence of
+  // evidence, not a red.
+  const dir = makeFixture(t, { flaky: "once", mutants: [KILLABLE] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /baseline hung.*retrying once/, out);
+  assert.doesNotMatch(out, /ABORTING - BASELINE NOT GREEN/, out);
+  assert.match(out, /MUTATION GATE PASSED/, out);
+  assert.equal(code, 0, out);
+});
+
+test("a baseline that hangs twice still aborts", (t) => {
+  // The retry must not become a way for a suite that never finishes to be
+  // treated as green: two timeouts on the clean tree really is unusable.
+  const dir = makeFixture(t, { flaky: "always", mutants: [KILLABLE] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /ABORTING - BASELINE NOT GREEN/, out);
+  assert.match(out, /rc 124/, out);
+  assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
   assert.equal(code, 4, out);
 });
 
