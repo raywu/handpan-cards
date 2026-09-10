@@ -2,13 +2,13 @@
 # The reason is rendered in the neutral tier, so an error reads exactly like
 # a success and the three-tier colour scale carries no information.
 diff --git a/index.html b/index.html
-index 16984c6..25eee00 100644
+index f7b0bb9..d98f617 100644
 --- a/index.html
 +++ b/index.html
-@@ -2385,7 +2385,7 @@ function updateParse() {
-     parseLine.textContent = "";
+@@ -3484,7 +3484,7 @@ function updateParse() {
      scaleBox.classList.add("bad");
      genBtn.disabled = true;
+     clearPanPreview();
 -    say(res.reason, "err");
 +    say(res.reason, "");
    }

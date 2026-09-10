@@ -1,0 +1,16 @@
+# suite: node --test tests/preview.test.js
+# kills: an unparseable seed leaves no stale preview on the sheet
+# A typo mid-seed leaves the LAST good pan on the sheet, so the mock claims to
+# show a layout the box no longer describes - the exact way a preview lies.
+diff --git a/index.html b/index.html
+index f7b0bb9..c9a079f 100644
+--- a/index.html
++++ b/index.html
+@@ -3483,7 +3483,6 @@ function updateParse() {
+     parseLine.textContent = "";
+     scaleBox.classList.add("bad");
+     genBtn.disabled = true;
+-    clearPanPreview();
+     say(res.reason, "err");
+   }
+ }

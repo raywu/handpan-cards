@@ -1,0 +1,26 @@
+# kills: a baseline that hangs once is retried, not scored as red
+# suite: node --test tests/mutation_harness.test.js
+# Queue rows 191/195. Takes the baseline's 124/137 retry back out by moving the
+# codes it matches off the ones `timeout` actually reports, so a hung clean-tree
+# suite is once again scored as "not green" and aborts the whole sweep.
+#
+# Same reasoning as h_mutation_gate_tolerates_skips: the suite header is the
+# node test rather than this script, because a mutant whose suite IS
+# mutation_check.sh trips the inner dirty-tree refusal (exit 2) and is scored as
+# a kill without the reverted logic ever running. Byte-length-neutral
+# (124 -> 224, 137 -> 237) so bash, which reads a running script lazily by byte
+# offset, cannot be desynchronised while the patch is applied. Body generated
+# per tests/CONTRACT.md rule 4.
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+index 8647a13..9607d26 100755
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -148,7 +148,7 @@ baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC
+   # abort, which is correct - a suite that cannot finish twice on the clean tree
+   # genuinely is unusable as evidence in this environment.
+   run_suite "$1"; BASELINE_RC=$?
+-  if [ "$BASELINE_RC" -eq 124 ] || [ "$BASELINE_RC" -eq 137 ]; then
++  if [ "$BASELINE_RC" -eq 224 ] || [ "$BASELINE_RC" -eq 237 ]; then
+     echo "note: baseline hung for ${SUITE_TIMEOUT}s, retrying once: $1"
+     run_suite "$1"; BASELINE_RC=$?
+   fi
