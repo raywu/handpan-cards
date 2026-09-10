@@ -1063,11 +1063,36 @@ Cycle: 3   Wave: 18 LIVE.   Base: main at `51eafe2`, verified GREEN (run 3451820
 
 | Lane | Rows | Owns | Never touches | Branch | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|---|---|---|
-| 32 (`launch-retry`) | 271 | `tests/helpers/cdp.js`, `tests/e2e.test.js`, its FLOORS row, one new mutant | `index.html`, `tests/mutation_check.sh`, existing mutants' headers | scale-engine/w32-launch-retry | pending | pending | pending | 0 of 2 |
-| 33 (`mutant-header-audit`) | 263 | `tests/mutation_check.sh`, HEADER lines of existing `tests/mutants/*.patch`, the gate-behaviour test file, one new mutant | `index.html`, `tests/helpers/cdp.js`, `tests/e2e.test.js`, the MUTATION lines of any existing patch | scale-engine/w33-mutant-headers | pending | pending | pending | 0 of 2 |
+| 32 (`launch-retry`) | 271 | `tests/helpers/cdp.js`, `tests/e2e.test.js`, its FLOORS row, one new mutant | `index.html`, `tests/mutation_check.sh`, existing mutants' headers | scale-engine/w32-launch-retry | #54 OPEN | `f1a9699` | in review | 1 of 2 |
+| 33 (`mutant-header-audit`) | 263 | `tests/mutation_check.sh`, HEADER lines of existing `tests/mutants/*.patch`, the gate-behaviour test file, one new mutant | `index.html`, `tests/helpers/cdp.js`, `tests/e2e.test.js`, the MUTATION lines of any existing patch | scale-engine/w33-mutant-headers | #55 OPEN | `1fa08eb` | in review | 1 of 2 |
 
 The lanes are disjoint by file with one shared directory: both add a mutant to `tests/mutants/`, under different filenames, which git merges cleanly. Only lane 33 may touch EXISTING patches, and only their header lines - `tests/mutation_check.sh:176` reports a non-applying patch as a SURVIVOR, so a careless context edit reddens the gate. Both may raise the same `tests/suite_health.py` FLOORS integers, so a one-line conflict on the second merge is EXPECTED; per the contract the still-live authoring lane does the rebase, and neither may skip its floor bump to dodge it.
 
 Lane 33 carries an explicit licence to STOP and report if the audit shows row 263's premise is wrong. Row 213 is the standing example in this workstream of a premise surviving two rounds of being wrong, and row 265 is the process rule that came out of it.
 
 Both briefs require the mutant to carry a `# suite:` header naming its exact test, and require the lane to verify by hand that the named test is the one that dies - which is row 263's own defect applied to the fix for row 263.
+
+
+### Wave 18 - both lanes delivered, both in review
+
+**PR #54 (lane 32, row 271)** at `f1a9699`, CI run 34521385541 attempt 1, all five green, gate **1017s at 233 mutants**. `launch()` split into `launchOnce()` plus a wrapper that retries only the `browser did not report a debug port` rejection, once. Option (a) from row 271, as recommended. The lane added an env var `HPFC_CDP_PORT_TIMEOUT_MS` clamped by `Math.min(raw, PORT_TIMEOUT_MS)` so it can only LOWER the bound - a test seam, so the tests reach the path in 0.5s instead of 20s, which matters because the e2e suite runs 233x per sweep. That is scope the brief did not ask for and the reviewer was told to judge it, including what the clamp does for a non-numeric value (`Math.min(NaN, x)` is `NaN`, and `setTimeout(NaN)` fires immediately).
+
+**PR #55 (lane 33, row 263)** at `1fa08eb`, CI run 34522190840, all five green, gate **382s at 233 mutants**. The lane CORRECTED this integrator's brief: the old `suite_for()` already spliced `-k $target` for `b_`/`c_`/`r_`, so those 36 header-less patches were never exposed. The genuinely exposed class was **113** (75 `d_` + 38 `e_`), the two node prefixes that ran a whole suite file and were scored on its exit code. Row 263's premise was two-thirds right, and the lane taking the licence to say so is the behaviour rows 213/265 asked for.
+
+**It found a real fake kill, which converts row 263 from a hypothesis into a measured defect.** `e_layout_rotate_inert.patch` carried `# kills: ROTATE corrects the layout from the keyboard alone at 380px` - **a test that does not exist**; the real one is `ROTATE makes its correction from the keyboard alone at 380px`. Under the old fallback the whole e2e file ran, something unrelated went red, and the mutant was recorded `killed` while proving nothing about its own assertion. Given a targeted header it surfaced immediately as a survivor. This had been sitting inside a green gate for the life of the corpus.
+
+**An anomaly is under investigation before #55 can merge, and it is a timing one.** Three points, same runner class, same workflow, one commit apart:
+
+| branch | corpus | gate |
+|---|---|---|
+| main `51eafe2` (run 34518203026 attempt 2) | 232 | 1032s |
+| PR #54 - same merge-base, +1 mutant, headers untouched | 233 | **1017s** |
+| PR #55 | 233 | **382s** |
+
+PR #54 is the control and it lands right on the row-258 anchor, which removes "warm machine" and "CI parallelism" (the gate is a single job running one shell script) and isolates the whole 635-second drop to the header change. The legitimate reading is real: replacing a whole-file `node --test tests/e2e.test.js` - 53 tests each paying a browser launch - with one `--test-name-pattern` run is an enormous saving on the `e_` bucket, which is most of the sweep. But the lane's own local observation was the OPPOSITE ("well over an hour", "one extra clean-tree run per mutant"), and both cannot be true of one script. The failure mode being hunted is specific and was demonstrated by the author on themselves: **a `--test-name-pattern` matching nothing runs 0 tests and exits 0, which reads as a pass.** The reviewer's primary instrument is a per-header test COUNT, not the timing; the timing must then reconcile arithmetically or the remainder is the finding.
+
+**Disclosed by lane 33, and it halves the value of the fix:** 83 pre-existing headers name only a FILE (`node --test tests/core.test.js` and friends), so they are still scored on exit code alone. `mutation_check.sh` cannot enforce targeting - a header is an opaque command string. Row 263 is HALF closed until those are rewritten and re-verified, and the lane rates it likely that more fake kills are hiding there. Filed as row 272.
+
+| # | Source | Item | Status |
+|---|---|---|---|
+| 272 | lane 33 | **Row 263 is only half closed.** 83 pre-existing `# suite:` headers name a FILE rather than a test, so those mutants are still scored on the file's exit code and still cannot prove their own assertion died. The refusal lane 33 added catches a MISSING header, not an untargeted one, and it cannot do better - a header is an opaque command string the script cannot introspect. Rewriting and re-verifying those 83 is the other half. `e_layout_rotate_inert` is the proof this is not theoretical: it is exactly what an untargeted header hides | open - MEDIUM |
