@@ -44,11 +44,31 @@ function findBrowser() {
 // ---------------------------------------------------------------------------
 const LIVE = new Set();
 
+// A synchronous sleep. The 'exit' handler cannot await, and the wait below has
+// to happen there too.
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 function reap(entry) {
   if (!entry) return;
   LIVE.delete(entry);
-  try { entry.proc.kill("SIGKILL"); } catch {}
-  try { fs.rmSync(entry.profileDir, { recursive: true, force: true }); } catch {}
+  // Kill the GROUP, not just the root. Chrome is one root plus four children;
+  // signalling only the root leaves the renderers running for a few more
+  // milliseconds, and on Linux one of them recreates --user-data-dir straight
+  // after the rmSync - CI failed exactly that way ("the profile directory
+  // survived") while the root was already gone. launch() spawns detached so
+  // the browser leads its own group and the whole tree dies at once.
+  try { process.kill(-entry.proc.pid, "SIGKILL"); }
+  catch { try { entry.proc.kill("SIGKILL"); } catch {} }
+  // And then remove the profile, retrying briefly in case a dying child wins
+  // the race anyway. Bounded at 100ms: this runs on the way out of a killed
+  // suite, which must never become a hang.
+  for (let i = 0; i < 5; i++) {
+    try { fs.rmSync(entry.profileDir, { recursive: true, force: true }); } catch {}
+    if (!fs.existsSync(entry.profileDir)) return;
+    sleepSync(20);
+  }
 }
 
 function reapAll() {
@@ -192,7 +212,9 @@ async function launch() {
     "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run",
     "--autoplay-policy=no-user-gesture-required",  // roadmap: audio playback
     `--user-data-dir=${profileDir}`, "about:blank",
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+    // detached: the browser leads its own process group, which is what lets
+    // reap() take the whole tree down in one signal. See reap().
+  ], { stdio: ["ignore", "ignore", "pipe"], detached: true });
 
   const entry = { proc, profileDir };
   LIVE.add(entry);
