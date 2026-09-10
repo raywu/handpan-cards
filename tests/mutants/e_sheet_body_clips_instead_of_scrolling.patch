@@ -7,10 +7,10 @@
 # overflow:hidden box still accepts a scrollTop from SCRIPT, so this mutant is
 # also the reason that test scrolls with a real wheel event.
 diff --git a/index.html b/index.html
-index 6a831d1..36f5dc8 100644
+index bacb75c..9195f45 100644
 --- a/index.html
 +++ b/index.html
-@@ -142,7 +142,7 @@ button.nav:active{background:#2e281e}
+@@ -143,7 +143,7 @@ button.nav:active{background:#2e281e}
     already 0, so overflow-y is the same declaration doing both jobs.
     .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
     where the footer alone exceeds the cap. */
