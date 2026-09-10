@@ -1852,10 +1852,14 @@ function run() {
       child.kill("SIGTERM");
       // A handler that swallows the signal would be a WORSE bug than the leak:
       // an overrunning suite would stop being killable. The child must die.
+      // The race has an explicit settle point, so the loser's timer is cleared
+      // rather than left armed: an armed timer holds node's event loop open for
+      // its full budget, and this suite runs 34 more times in every sweep.
+      let bail;
       const gone = await Promise.race([
         exited,
-        new Promise((r) => setTimeout(() => r(null), 15000)),
-      ]);
+        new Promise((r) => { bail = setTimeout(() => r(null), 15000); }),
+      ]).finally(() => clearTimeout(bail));
       assert.ok(gone, "SIGTERM did not terminate the child - the handler swallowed it");
 
       const reaped = await until(() => !alive(browserPid), 10000);
@@ -1916,7 +1920,9 @@ function run() {
       c.stdout.on("data", (d) => { o += d.toString(); });
       c.stderr.on("data", (d) => { e += d.toString(); });
       c.on("exit", (code) => resolve({ code, o, e }));
-      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000);
+      // unref: a pure backstop must not by itself keep the process alive for a
+      // minute after the child has already exited.
+      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000).unref();
     });
 
     try {
