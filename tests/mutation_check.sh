@@ -116,20 +116,32 @@ suite_for() {   # $1 = patch path, $2 = "# kills:" target (may be empty)
 
 # A suite is only evidence if it is GREEN before the mutant is applied and RED
 # after. A command that is red (or missing, or a typo: 126/127) on the clean tree
-# "kills" every mutant pointed at it while testing nothing. The five built-in
-# prefix commands are the ones CI already runs green in its own steps, so only
-# a "# suite:" header - free-form text a lane wrote - is baselined here, once per
-# distinct command, cached.
-BASELINE_CMDS=(); BASELINE_RCS=()
-baseline_ok() {   # $1 = command string -> 0 green, 1 not
+# "kills" every mutant pointed at it while testing nothing.
+#
+# EVERY command the sweep uses is baselined here - the five built-in prefix
+# commands exactly as much as a lane-written "# suite:" header. Trusting the
+# built-ins because "CI runs them green in its own steps" was the defect: CI's
+# environment is not this one, and a single environmental difference (a pinned
+# E2E_PORT that is already taken makes the e2e server fail to listen, fast and
+# silently) turns a whole prefix red, whereupon every mutant pointed at it is
+# recorded "killed" and the sweep reports a full green having tested nothing.
+#
+# A baseline that is not green is therefore a HARD ABORT, never a per-mutant
+# verdict: a red suite must not be able to manufacture a "killed". Baselines run
+# on the clean tree (before any patch is applied), once per distinct command,
+# cached.
+BASELINE_CMDS=(); BASELINE_RCS=(); BASELINE_RC=0
+baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC
   local i
   for i in "${!BASELINE_CMDS[@]}"; do
-    if [ "${BASELINE_CMDS[$i]}" = "$1" ]; then return "${BASELINE_RCS[$i]}"; fi
+    if [ "${BASELINE_CMDS[$i]}" = "$1" ]; then
+      BASELINE_RC="${BASELINE_RCS[$i]}"
+      [ "$BASELINE_RC" -eq 0 ]; return
+    fi
   done
-  local rc=0
-  run_suite "$1" || rc=1
-  BASELINE_CMDS+=("$1"); BASELINE_RCS+=("$rc")
-  return "$rc"
+  run_suite "$1"; BASELINE_RC=$?
+  BASELINE_CMDS+=("$1"); BASELINE_RCS+=("$BASELINE_RC")
+  [ "$BASELINE_RC" -eq 0 ]
 }
 
 SURVIVORS=(); KILLED=0
@@ -137,8 +149,6 @@ for p in "${PATCHES[@]}"; do
   base="${p##*/}"
   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
   cmd=$(suite_for "$p" "$target")
-  from_header=0
-  grep -q '^# suite:' "$p" && from_header=1
   if [ -z "$cmd" ]; then
     echo "$base skipped  (unknown suite prefix and no '# suite:' header)"
     SURVIVORS+=("$p (no suite)"); continue
@@ -154,9 +164,17 @@ for p in "${PATCHES[@]}"; do
   if ! git apply --check "$p" 2>/dev/null; then
     echo "$base stale     (does not apply)"; SURVIVORS+=("$p (stale)"); continue
   fi
-  if [ "$from_header" -eq 1 ] && ! baseline_ok "$cmd"; then
-    echo "$base broken    -> suite is NOT green on the clean tree: $cmd"
-    SURVIVORS+=("$p (broken suite)"); continue
+  if ! baseline_ok "$cmd"; then
+    echo
+    echo "ABORTING - BASELINE NOT GREEN. The suite for $base fails on the CLEAN"
+    echo "tree (rc $BASELINE_RC), with no mutant applied:"
+    echo "    $cmd"
+    echo "Every mutant pointed at that command would be recorded 'killed' while"
+    echo "testing nothing, and the sweep would report a green it has not earned."
+    echo "Fix the suite, or the environment it runs in - most often a pinned,"
+    echo "already-taken E2E_PORT: unset it and the e2e server binds a free"
+    echo "ephemeral port - then re-run the sweep."
+    exit 4
   fi
 
   PATHS=(); while IFS= read -r line; do PATHS+=("$line"); done < <(patch_paths "$p")

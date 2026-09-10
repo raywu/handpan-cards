@@ -10,7 +10,7 @@
 # Reversal is the same mutation - a content-preserving rebuild - and is
 # order-changing for any registry with two or more entries.)
 diff --git a/index.html b/index.html
-index 7e9b7f6..a1b2c3d 100644
+index 7e9b7f6..fc1a73a 100644
 --- a/index.html
 +++ b/index.html
 @@ -2727,7 +2727,12 @@ const registerDeck = d => (CUSTOM[d.id] = d);

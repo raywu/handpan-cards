@@ -68,12 +68,30 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    `d_caller_scan_counts_lines.patch` (makes the replaceRegistered caller scan
    count lines instead of occurrences). "No mutant patches tests/" is not a rule
    and never was, and is not a reason to ship a test helper with nothing that can kill it.
-4. **A red against unmutated code is triaged, not "fixed".** Run
+4. **A mutant's diff body is GENERATED, never hand-written.** Produce it by
+   editing a committed tree and running `git diff`, then paste the result under
+   the patch's `# kills:` / `# suite:` prose. Do not hand-type or hand-edit the
+   `index <pre>..<post>` line. The mechanism that makes this invisible:
+   `tests/mutation_check.sh` applies mutants with a bare `git apply` - no
+   `--index`, no `--3way` - and bare `git apply` never reads the index line, so
+   a patch carrying a placeholder postimage (`a1b2c3d`) applies, kills its test
+   and reports green while claiming a blob that never existed. One shipped that
+   way and survived two reviews before an audit caught it. The consequence is
+   the reason for the rule: `--3way` and `--index` both DO consult those
+   hashes, so nobody can add either flag to `mutation_check.sh` casually - a
+   fleet of hand-typed index lines would fail to apply the moment the flag went
+   in, and each failure would look like a broken mutant rather than a broken
+   hash. Audit with: on a clean tree, resolve the declared preimage blob
+   (`git cat-file blob <pre>`), apply the patch to it in a scratch directory,
+   and check `git hash-object` of the result against the declared postimage.
+   A stale-but-real pair (generated against an older commit) is genuine and
+   fine; a pair that cannot be reproduced this way is fabricated.
+5. **A red against unmutated code is triaged, not "fixed".** Run
    `git diff origin/main -- index.html tools/decks.py tools/hifi.py src/engine/**`.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
    Data changed -> the PR broke something; stop and report.
    Never silently amend either side.
-5. **A test-only PR is additive.** A PR whose purpose is to add or change tests
+6. **A test-only PR is additive.** A PR whose purpose is to add or change tests
    must not modify `index.html`, `tools/decks.py`, or `tools/hifi.py`. (A
    feature PR obviously does change them - it then owns the rebuild and the
    mutant regeneration; this rule is about the test PR only.) Verify before
@@ -83,7 +101,7 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    future deck-data changes, which the PDF staleness gate already handles
    correctly by requiring a rebuild in the same commit. Bugs found are reported
    with a failing-test repro, not fixed here.
-6. **Assert structure, not styling.** Read colours and fonts from the deck data;
+7. **Assert structure, not styling.** Read colours and fonts from the deck data;
    never hardcode a hex or a font name. A future restyle must not turn tests red.
 
 ## Traps (each one already bit us)

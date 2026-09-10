@@ -301,10 +301,14 @@ serial; lanes inside a phase are parallel.
 
 ### Operating rules for every lane
 
-- **One git worktree per lane** and a distinct `E2E_PORT` per lane:
-  `mutation_check.sh` mutates the working tree in place and `e2e.test.js`
-  binds a fixed port, so lanes sharing a checkout serialise or corrupt each
-  other.
+- **One git worktree per lane**, and **leave `E2E_PORT` unset**:
+  `mutation_check.sh` mutates the working tree in place, so lanes sharing a
+  checkout serialise or corrupt each other. The port needs no coordination -
+  with `E2E_PORT` unset the e2e server binds an ephemeral port the OS picks, so
+  parallel lanes cannot collide. Pinning one is strictly worse: a pinned port
+  that something else already holds makes the e2e suite fail to listen, fast
+  and silently, which is the only way left to reach the vacuous-sweep bug that
+  `mutation_check.sh` now aborts on.
 - **The mutation gate runs on a clean tree, pre-push,** and in CI on the clean
   checkout. It refuses a dirty tree by design; that refusal is local-only.
 - **Test files are `tests/<name>.test.js`** (the runners, `suite_health.py` and
