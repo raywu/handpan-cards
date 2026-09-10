@@ -139,12 +139,20 @@ baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC
       [ "$BASELINE_RC" -eq 0 ]; return
     fi
   done
+  # Deliberately NO 124/137 retry here, unlike the per-mutant run at the bottom.
+  # There the retry exists because a hang says nothing about whether the MUTANT
+  # was caught, and the alternative is scoring a hang as a kill. A baseline that
+  # cannot finish inside the wall clock on the CLEAN tree is a different fact:
+  # the suite is not usable as evidence in this environment, which is exactly
+  # what the abort below reports. Retrying would only double the wait before
+  # saying so - and a baseline slow enough to be flaky at the timeout is slow
+  # enough that every mutant aimed at it is about to time out too. Queue row 191.
   run_suite "$1"; BASELINE_RC=$?
   BASELINE_CMDS+=("$1"); BASELINE_RCS+=("$BASELINE_RC")
   [ "$BASELINE_RC" -eq 0 ]
 }
 
-SURVIVORS=(); KILLED=0
+SURVIVORS=(); KILLED=0; SKIPPED=0
 for p in "${PATCHES[@]}"; do
   base="${p##*/}"
   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
@@ -158,7 +166,7 @@ for p in "${PATCHES[@]}"; do
     e_*)
       if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
         echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
-        continue
+        SKIPPED=$((SKIPPED + 1)); continue
       fi ;;
   esac
   if ! git apply --check "$p" 2>/dev/null; then
@@ -213,10 +221,30 @@ done
 
 echo
 echo "$KILLED/${#PATCHES[@]} mutants killed"
+[ "$SKIPPED" -ne 0 ] && echo "$SKIPPED/${#PATCHES[@]} mutants NOT EVALUATED (skipped)"
 if [ ${#SURVIVORS[@]} -ne 0 ]; then
   printf 'SURVIVING MUTANT: %s\n' "${SURVIVORS[@]}"
   echo "A surviving mutant means the named test cannot detect the defect it claims to cover."
   exit 1
+fi
+# A partial sweep is not a pass. Printing MUTATION GATE PASSED over a corpus
+# the run never evaluated is the same class of defect as baselining nothing:
+# the words say "every test is proved live" while some were never touched.
+#
+# This is deliberately a LOUD NON-ZERO rather than a tolerated skip, even though
+# a browserless machine is a supported configuration elsewhere in this repo
+# (tests/suite_health.py lets the e2e suite skip itself). The two gates answer
+# different questions. suite_health asks "did the suite run?", and a developer
+# with no browser can still get a truthful answer for everything else. This
+# script asks "is every test in the corpus provably killable?", and the only
+# honest answer over an unevaluated subset is "unknown" - which must not be
+# spelled with a zero exit, because CI and every wrapper read exactly that.
+# CI always has a browser, so a complete sweep there still exits 0.
+if [ "$SKIPPED" -ne 0 ]; then
+  echo "MUTATION GATE INCOMPLETE - $SKIPPED of ${#PATCHES[@]} mutants were never evaluated."
+  echo "Nothing above says those tests are live; it says they were not checked."
+  echo "Install a browser (or point CHROME_BIN at one) and re-run for a verdict."
+  exit 5
 fi
 if [ "$KILLED" -eq 0 ]; then
   echo "NO MUTANT WAS KILLED - the gate validated nothing."; exit 1
