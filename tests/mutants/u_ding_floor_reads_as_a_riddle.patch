@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^a.top.note.that.does.not.clear.the.ding.is.told.the.ding.is.the.floor$ tests/core.test.js
+# kills: the ding alternate says "at or below" and offers only the fix the user can make - the reverted wording is the riddle "F3 is not above the ding F3" plus advice to retune the pan
+diff --git a/src/engine/core.js b/src/engine/core.js
+index 4605b49..ffb93f0 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -40,7 +40,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       // Section 2, ALTERNATE SENTENCES. Same code, different sentence, chosen
+       // by the named condition. The enum stays closed.
+       alternates: {
+-        ding: "<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave."
++        ding: "<A> is not above the ding <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one."
+       }
+     },
+     NOTE_REPEATED: {
