@@ -2,19 +2,18 @@
 # suite: node --test --test-name-pattern SAVE.CHANGES.is.reachable.without.scrolling.on.the.largest.pan tests/e2e.test.js
 # The surface stops being a flex column. Nothing then constrains .sheetbody to
 # the space the footer leaves, so the whole sheet flows past the 85dvh cap and
-# the primary goes back under the fold - 41px down at 390x745 on the largest
-# pan the engine accepts. The layout of this sheet is load-bearing, not
-# decoration.
+# the primary goes back under the fold. The layout of this sheet is
+# load-bearing, not decoration.
 diff --git a/index.html b/index.html
-index 572fb69..ef97d97 100644
+index 574a311..cc9513a 100644
 --- a/index.html
 +++ b/index.html
-@@ -146,7 +146,7 @@ button.nav:active{background:#2e281e}
+@@ -292,7 +292,7 @@ button.nav:active{background:#2e281e}
  .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
    border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto;
-   padding:14px 14px max(14px, env(safe-area-inset-bottom));
--  display:flex; flex-direction:column; gap:9px}
+   padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
+-  display:flex; flex-direction:column; gap:var(--sp-4)}
 +  display:block}
- /* The surface is capped at 85dvh, so on the Edit sheet, in landscape, or with
-    a soft keyboard up its content is taller than the cap. Before .sheetbody
-    existed the WHOLE surface scrolled, which put the sheet's only primary -
+ /* The grab handle. Purely a signal that this surface is a sheet with an edge,
+    which is what makes the padding above read as deliberate rather than as slack
+    - and it is a ::before rather than markup so it can never take a tab stop or

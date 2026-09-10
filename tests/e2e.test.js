@@ -1562,12 +1562,19 @@ function run() {
    * ---------------------------------------------------------------- */
   const CHROME_BUDGET = [
     // vw,  vh,   minCardW, maxChrome   (chrome = vh - main.height)
-    [390, 844, 343.19, 270.17],
-    [390, 745, 342.69, 270.17],
-    [375, 667, 288.80, 268.17],
-    [320, 568, 217.11, 268.17],
-    [844, 390, 82.42, 276.17],
-    [926, 428, 109.94, 276.17],
+    // Re-measured 2026-09 after "+ ADD" moved into the deck strip. That retired
+    // a whole 50px row of chrome and the spacing ramp spent part of it back, so
+    // every row here moved the RIGHT way and the table was tightened onto the
+    // new numbers - which is what makes the gain a floor rather than a windfall
+    // some later change can quietly spend. Portrait chrome 269.17 -> 263.67;
+    // landscape 276.17 -> 251.67, and the card at 844x390 is 82.42 -> 100.16px
+    // wide, +21.5%.
+    [390, 844, 343.19, 263.67],
+    [390, 745, 342.69, 263.67],
+    [375, 667, 292.78, 262.67],
+    [320, 568, 221.09, 262.67],
+    [844, 390, 100.16, 251.67],
+    [926, 428, 127.67, 251.67],
   ];
 
   test("the header and footer stay inside their pixel budget, so the card keeps its size",

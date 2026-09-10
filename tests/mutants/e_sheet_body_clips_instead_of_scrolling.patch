@@ -7,15 +7,15 @@
 # overflow:hidden box still accepts a scrollTop from SCRIPT, so this mutant is
 # also the reason that test scrolls with a real wheel event.
 diff --git a/index.html b/index.html
-index 572fb69..aaaed2f 100644
+index 574a311..f6b040e 100644
 --- a/index.html
 +++ b/index.html
-@@ -170,7 +170,7 @@ button.nav:active{background:#2e281e}
+@@ -322,7 +322,7 @@ button.nav:active{background:#2e281e}
     already 0, so overflow-y is the same declaration doing both jobs.
     .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
     where the footer alone exceeds the cap. */
--.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:9px}
-+.sheetbody{overflow-y:hidden; display:flex; flex-direction:column; gap:9px}
- .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
-   text-transform:uppercase}
- /* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.
+-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3)}
++.sheetbody{overflow-y:hidden; display:flex; flex-direction:column; gap:var(--sp-3)}
+ /* A label, its control and the line that explains the control are ONE group:
+    --sp-1 inside, and the group is separated from the next by .sheetbody. */
+ .fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
