@@ -144,18 +144,23 @@ suite_for() {   # $1 = patch path
 # after. A command that is red (or missing, or a typo: 126/127) on the clean tree
 # "kills" every mutant pointed at it while testing nothing.
 #
-# EVERY command the sweep uses is baselined here - the five built-in prefix
-# commands exactly as much as a lane-written "# suite:" header. Trusting the
-# built-ins because "CI runs them green in its own steps" was the defect: CI's
+# EVERY command the sweep uses is baselined here, without exception. When this
+# script still had built-in prefix commands, trusting those because "CI runs
+# them green in its own steps" was the defect: CI's
 # environment is not this one, and a single environmental difference (a pinned
 # E2E_PORT that is already taken makes the e2e server fail to listen, fast and
-# silently) turns a whole prefix red, whereupon every mutant pointed at it is
-# recorded "killed" and the sweep reports a full green having tested nothing.
+# silently) turns a whole family of suites red, whereupon every mutant pointed
+# at one is recorded "killed" and the sweep reports a green it has not earned.
 #
 # A baseline that is not green is therefore a HARD ABORT, never a per-mutant
 # verdict: a red suite must not be able to manufacture a "killed". Baselines run
 # on the clean tree (before any patch is applied), once per distinct command,
 # cached.
+#
+# Cost note: now that headers name individual tests, nearly every mutant has its
+# own distinct command, so the cache saves much less than it did and the sweep
+# runs roughly one extra clean-tree run per mutant. That is the price of a
+# verdict that is actually about the named test, and it is worth paying.
 BASELINE_CMDS=(); BASELINE_RCS=(); BASELINE_RC=0
 baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC
   local i

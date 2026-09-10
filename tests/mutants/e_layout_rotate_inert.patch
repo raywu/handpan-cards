@@ -1,5 +1,5 @@
-# kills: ROTATE corrects the layout from the keyboard alone at 380px
-# suite: node --test --test-name-pattern ^ROTATE.corrects.the.layout.from.the.keyboard.alone.at.380px$ tests/e2e.test.js
+# kills: ROTATE makes its correction from the keyboard alone at 380px
+# suite: node --test --test-name-pattern ^ROTATE.makes.its.correction.from.the.keyboard.alone.at.380px$ tests/e2e.test.js
 # ROTATE is wired to a zero shift, so the control focuses and presses and
 # nothing on the pan moves.
 diff --git a/index.html b/index.html
