@@ -62,8 +62,9 @@ PAGES_TOP_ONLY_PRINT = 3
 CHORDS_TOP_ONLY = 25
 
 # The closed code enum of ENGINE-SPEC section 2.
-CODES = {"NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE", "NEEDS_NEWER_APP",
-         "NO_THIRDS"}
+CODES = {"NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
+         "NOTE_OUT_OF_RANGE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED",
+         "NEEDS_NEWER_APP", "NO_THIRDS"}
 
 
 def run_gen(*args, **kw):
@@ -128,6 +129,9 @@ class GenDeckCliTest(unittest.TestCase):
             ("D3 A3 C4", "NO_DING"),
             ("(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4", "NO_FIFTH"),
             ("(D3) A3 Zz3 C4", "BAD_NOTE"),
+            # A real note in the wrong place says so, and does not claim the
+            # note is not a note (ENGINE-SPEC section 2, swarm-2026-09-10).
+            ("(D) A B C D E F G | C D2", "NOTE_OUT_OF_ORDER"),
         ]
         for seed, code in cases:
             with self.subTest(seed=seed):

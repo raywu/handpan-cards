@@ -515,6 +515,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       kind: "error",
       reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave."
     },
+    NOTE_OUT_OF_RANGE: {
+      kind: "error",
+      reason: "<A> is off the keyboard: a note must be between C-1 and G9."
+    },
+    NOTE_OUT_OF_ORDER: {
+      kind: "error",
+      reason: "<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one."
+    },
+    NOTE_REPEATED: {
+      kind: "error",
+      reason: "<A> is already on this shell, and a note may appear only once per shell."
+    },
     NEEDS_NEWER_APP: {
       kind: "error",
       reason: "This link needs a newer version of the app. Reload."
@@ -592,6 +604,49 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return err("BAD_NOTE", { "<X>": String(token).slice(0, 12) });
   }
 
+  /* ---- section 2: the three positional codes ---------------------------- *
+   * A token that LEXES as a note and is refused for where it landed does not
+   * get told it is not a note - that sentence was the shipped bug: a bare `C`
+   * before `D2` infers to C3, so `D2` is below it, and the message claimed D2
+   * was not a note at all. These substitute the note as the parser PLACED it,
+   * because the placed octave is the part the user cannot see.
+   */
+
+  // <A>/<B>: the note as placed, name plus the octave the parser gave it.
+  function placed(note, midi) {
+    return spell(note.letter, note.accidental) +
+           octaveOf(note.letter, note.accidental, midi);
+  }
+
+  // <B>: the element the offending note had to clear, flagged when the octave
+  // in it is the parser's inference rather than the user's typing.
+  function before(note, midi, isDing) {
+    return (isDing ? "the ding " : "") + placed(note, midi) +
+           (note.typed ? "" : " (inferred from " + note.token + ")");
+  }
+
+  function outOfRange(note, midi) {
+    return err("NOTE_OUT_OF_RANGE", { "<A>": placed(note, midi) });
+  }
+
+  function repeated(note, midi) {
+    return err("NOTE_REPEATED", { "<A>": placed(note, midi) });
+  }
+
+  // A note that fails the ascending rule against a previous note it is spelled
+  // IDENTICALLY to is a repeat, and saying "C4 is not above C4" would be a
+  // riddle. The ding is not on either shell, so a top note repeating it is an
+  // ordering failure, not a repeat.
+  function outOfOrder(note, midi, prevNote, prevMidi, prevIsDing) {
+    if (!prevIsDing && placed(note, midi) === placed(prevNote, prevMidi)) {
+      return repeated(note, midi);
+    }
+    return err("NOTE_OUT_OF_ORDER", {
+      "<A>": placed(note, midi),
+      "<B>": before(prevNote, prevMidi, prevIsDing)
+    });
+  }
+
   /* ---- tokenising ------------------------------------------------------- */
 
   // A token is DING-SHAPED when it carries any of the ding punctuation. These
@@ -625,6 +680,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       letter: m[1],
       accidental: m[2] || "",
       octave: m[3] === undefined ? null : Number(m[3]),
+      // `octave` is overwritten with the placed octave once inference has run,
+      // so the diagnostics of section 2 keep their own record of whether the
+      // user typed one - that is the half of the message they cannot see.
+      typed: m[3] !== undefined,
       token: token
     };
   }
@@ -732,7 +791,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // A ding written without an octave is octave 3 (all three built-ins).
     if (dingNote.octave === null) dingNote.octave = 3;
     var dingMidi = midiFromName(dingNote.letter, dingNote.accidental, dingNote.octave);
-    if (dingMidi < 0 || dingMidi > 127) return badNote(tokens[0]);
+    if (dingMidi < 0 || dingMidi > 127) return outOfRange(dingNote, dingMidi);
 
     // 2. Split the rest on the bar, which must stand alone.
     var rest = tokens.slice(1);
@@ -781,17 +840,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     //    counts as the element before the first top note.
     var seen = {};
     var previous = dingMidi;
+    var previousNote = dingNote;
     var n;
     for (n = 0; n < topNotes.length; n += 1) {
       var top = topNotes[n];
       top.midi = place(top, previous, nextAbove);
-      if (top.midi < 0 || top.midi > 127) return badNote(top.token);
-      if (top.midi <= previous) return badNote(top.token);
+      if (top.midi < 0 || top.midi > 127) return outOfRange(top, top.midi);
+      if (top.midi <= previous) {
+        return outOfOrder(top, top.midi, previousNote, previous, n === 0);
+      }
       top.octave = octaveOf(top.letter, top.accidental, top.midi);
       var topKey = "top " + spell(top.letter, top.accidental) + top.octave;
-      if (seen[topKey]) return badNote(top.token);
+      // Unreachable: a shell is strictly ascending by the check above, and
+      // spelling plus octave fixes the MIDI, so two equal keys cannot both
+      // survive it. Kept as the belt-and-braces guard section 3 asks for.
+      if (seen[topKey]) return repeated(top, top.midi);
       seen[topKey] = true;
       previous = top.midi;
+      previousNote = top;
     }
 
     for (n = 0; n < bottomNotes.length; n += 1) {
@@ -799,11 +865,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       low.midi = n === 0
         ? place(low, dingMidi, nearestToDing)
         : place(low, bottomNotes[n - 1].midi, nextAbove);
-      if (low.midi < 0 || low.midi > 127) return badNote(low.token);
-      if (n > 0 && low.midi <= bottomNotes[n - 1].midi) return badNote(low.token);
+      if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+      if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
+        return outOfOrder(low, low.midi, bottomNotes[n - 1],
+                          bottomNotes[n - 1].midi, false);
+      }
       low.octave = octaveOf(low.letter, low.accidental, low.midi);
       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
-      if (seen[lowKey]) return badNote(low.token);
+      // Unreachable for the same reason as the top-shell guard above.
+      if (seen[lowKey]) return repeated(low, low.midi);
       seen[lowKey] = true;
     }
 

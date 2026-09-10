@@ -1,14 +1,16 @@
-# suite: node --test --test-name-pattern ^an.explicit.octave.that.breaks.the.ascending.order.is.BAD.NOTE$ tests/core.test.js
-# kills: an explicit octave at or below the previous note is BAD_NOTE; the ding counts as the element before the first top note
+# suite: node --test --test-name-pattern ^an.explicit.octave.that.breaks.the.ascending.order.is.NOTE_OUT_OF_ORDER$ tests/core.test.js
+# kills: an explicit octave at or below the previous note is NOTE_OUT_OF_ORDER; the ding counts as the element before the first top note
 diff --git a/src/engine/core.js b/src/engine/core.js
-index dc78a30..481422e 100644
+index d5690cb..0b1ee91 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -272,7 +272,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -361,9 +361,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var top = topNotes[n];
        top.midi = place(top, previous, nextAbove);
-       if (top.midi < 0 || top.midi > 127) return badNote(top.token);
--      if (top.midi <= previous) return badNote(top.token);
+       if (top.midi < 0 || top.midi > 127) return outOfRange(top, top.midi);
+-      if (top.midi <= previous) {
+-        return outOfOrder(top, top.midi, previousNote, previous, n === 0);
+-      }
        top.octave = octaveOf(top.letter, top.accidental, top.midi);
        var topKey = "top " + spell(top.letter, top.accidental) + top.octave;
-       if (seen[topKey]) return badNote(top.token);
+       // Unreachable: a shell is strictly ascending by the check above, and

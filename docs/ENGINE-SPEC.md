@@ -114,8 +114,9 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
 
 `<X>` is the offending value as the user typed it; `<fifth of X>` is the note
 name a perfect fifth above the ding pitch class, spelled in the ding's own
-accidental convention. P0d embeds these strings in `core.js` VERBATIM, so they
-are final: a change here is a change to shipped copy.
+accidental convention. `<A>` and `<B>` are notes as the PARSER PLACED them (see
+the substitution bullet below). P0d embeds these strings in `core.js` VERBATIM,
+so they are final: a change here is a change to shipped copy.
 
 | code | kind | reason |
 |---|---|---|
@@ -123,6 +124,9 @@ are final: a change here is a change to shipped copy.
 | `NO_FIFTH` | error | `No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding.` |
 | `TOO_MANY_RIM` | error | `Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom.` |
 | `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave.` |
+| `NOTE_OUT_OF_RANGE` | error | `<A> is off the keyboard: a note must be between C-1 and G9.` |
+| `NOTE_OUT_OF_ORDER` | error | `<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one.` |
+| `NOTE_REPEATED` | error | `<A> is already on this shell, and a note may appear only once per shell.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
 | `NO_THIRDS` | warning | `No 3rds on this pan: only power chords and sus chords.` |
 
@@ -130,21 +134,50 @@ The whole-tone fixture entry `(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4` therefore
 produces, literally: `No perfect fifth above the ding C3. Add a G, or check the
 ding.`
 
-- DECIDED(plan [eng-review 7A]) The enum is exactly `NO_DING`, `NO_FIFTH`,
-  `TOO_MANY_RIM`, `BAD_NOTE`, `NEEDS_NEWER_APP` (errors) and `NO_THIRDS`
-  (warning); a lane that needs a new code amends this table rather than
-  inventing one at the call site.
+- DECIDED(plan [eng-review 7A], amended swarm-2026-09-10) The enum is exactly
+  `NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`, `BAD_NOTE`, `NOTE_OUT_OF_RANGE`,
+  `NOTE_OUT_OF_ORDER`, `NOTE_REPEATED`, `NEEDS_NEWER_APP` (errors) and
+  `NO_THIRDS` (warning); a lane that needs a new code amends this table rather
+  than inventing one at the call site.
+- DECIDED(swarm-2026-09-10) `BAD_NOTE` means one thing only: the offending text
+  is not a note (or not the punctuation the grammar wanted there). A token that
+  DOES lex as a note and is rejected for WHERE it landed carries its own code -
+  `NOTE_OUT_OF_RANGE`, `NOTE_OUT_OF_ORDER` or, when it repeats the note
+  immediately before it on the same shell, `NOTE_REPEATED`. The ding is on no
+  shell, so a first top note repeating it is `NOTE_OUT_OF_ORDER`. This is a
+  message change, not a grammar change: the set of accepted seeds is unchanged
+  by the amendment, and `BAD_NOTE` keeps the wording, the `<X>` rule and the
+  12-character truncation it always had. Rationale: `(D) A B C D E F G | C D2`
+  was rejected as "D2 is not a note", which is false - D2 is a note, it just
+  sits below the C3 the parser inferred from the bare `C` before it.
+- DECIDED(swarm-2026-09-10) The three positional codes substitute notes as the
+  PARSER PLACED them, never the raw token, because the placed octave is the
+  part the user cannot see: `<A>` is the offending note as name plus octave
+  (`D2`, `D10`), and `<B>` is the element immediately before it, likewise as
+  name plus octave, written `the ding <name><octave>` when that element is the
+  ding, and suffixed ` (inferred from <token>)` when the user typed no octave
+  for it. The 12-character truncation of `<X>` does not apply: these values are
+  engine-spelled note names, not user text. So the seed above now reads: `D2 is
+  not above C3 (inferred from C), and notes must ascend. Give D2 a higher
+  octave, or the note before it a lower one.`
+- DECIDED(swarm-2026-09-10) `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` are
+  reachable only from a token that carries an EXPLICIT octave, because
+  inference always places the next note strictly above the previous one. `<A>`
+  therefore always echoes the token the user typed; the surprising half of the
+  sentence is `<B>`.
 - DECIDED(swarm-2026-09-08) The `NO_FIFTH` reason substitutes twice: `<X>` is
   the ding as `formatSeed` prints it (name plus octave, e.g. `C3`), and
   `<fifth of X>` is the pitch-class name 7 semitones above the ding, without an
   octave, spelled as the letter four steps above the ding's letter carrying
   whatever accidental makes it a perfect fifth (`G` for C, `Ab` for Db, `F#`
   for B, `Cb` for Fb, `E#` for A#).
-- DEFAULT[owner-review] The `BAD_NOTE` reason's `<X>` is the offending token
-  verbatim, truncated to 12 characters. For every `BAD_NOTE` cause (a token
-  that does not lex, a MIDI out of range, a duplicate field, an order
-  violation, zero notes after `|`) `<X>` is the note token at which the rule
-  tripped, as typed (for zero notes after `|`, `<X>` is `|`).
+- DEFAULT[owner-review, narrowed swarm-2026-09-10] The `BAD_NOTE` reason's
+  `<X>` is the offending token verbatim, truncated to 12 characters. For every
+  remaining `BAD_NOTE` cause (a token that does not lex, a malformed separator,
+  zero notes after `|`) `<X>` is the token at which the rule tripped, as typed
+  (for zero notes after `|`, `<X>` is `|`). A MIDI out of range, a duplicate
+  field and an order violation left `BAD_NOTE` under the amendment above and
+  substitute `<A>`/`<B>` instead.
 - DECIDED(plan [eng-review 2, 2A]) Error and warning reason strings live in
   this table and nowhere else; the UI never composes a sentence, and P0d copies
   them into `core.js` character for character.
@@ -234,8 +267,13 @@ note        := [A-G] ("#" | "b")? ([0-9])?
 - DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT) Error
   precedence when a string trips more than one rule: the ding count is checked
   FIRST, so `NO_DING` precedes `BAD_NOTE`; then `BAD_NOTE` (a token that does
-  not lex, a MIDI out of range, a duplicate field, an order violation), then
-  `TOO_MANY_RIM` (caps), then `NO_FIFTH` (musical). `( D3 )` returns `NO_DING`,
+  not lex), then the positional codes IN THE ORDER THE PARSER REACHES THEM
+  per note - `NOTE_OUT_OF_RANGE`, then the ascending rule, which answers
+  `NOTE_REPEATED` when the note is spelled exactly as the one before it and
+  `NOTE_OUT_OF_ORDER` otherwise - then `TOO_MANY_RIM` (caps), then
+  `NO_FIFTH` (musical). Every
+  token lexes before any note is placed, so a string carrying both an
+  unlexable token and a misplaced one is `BAD_NOTE`. `( D3 )` returns `NO_DING`,
   not `BAD_NOTE`. This aligns the precedence list with the D13 count-first
   bullet in this section and with `core.parseSeed` as shipped.
 - DECIDED(swarm-2026-09-08) A ding written without an octave defaults to octave
@@ -258,9 +296,9 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   and reseeds the inference for the notes after it.
 - DECIDED(swarm-2026-09-08) After inference, the top notes must be strictly
   ascending in MIDI and the bottom notes must be strictly ascending in MIDI. An
-  explicit octave that breaks either order is `BAD_NOTE`; the ding counts as
-  the element before the first top note, so an explicit top note at or below
-  the ding (`(D3) A2 ...`, `(F3) F3 ...`) is `BAD_NOTE`. This is what makes
+  explicit octave that breaks either order is `NOTE_OUT_OF_ORDER`; the ding
+  counts as the element before the first top note, so an explicit top note at or
+  below the ding (`(D3) A2 ...`, `(F3) F3 ...`) is `NOTE_OUT_OF_ORDER`. This is what makes
   `parseSeed(formatSeed(x))` equal `x` for every accepted seed: `formatSeed`
   prints explicit octaves, and only a strictly ascending printing can be
   re-parsed to the same fields.
@@ -268,9 +306,17 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   verbatim, on the field label and on the card; the engine never re-spells
   enharmonics.
 - DECIDED(plan "Sharing is untrusted input") Every resulting MIDI number must
-  be 0-127; outside that range is `BAD_NOTE`.
-- DECIDED(plan P0d "no duplicate fields") Two fields may not be identical (same
-  name, octave and zone); a duplicate is `BAD_NOTE`. Duplicate PITCH CLASSES
+  be 0-127; outside that range is `NOTE_OUT_OF_RANGE`, and that includes the
+  ding itself (`(B#9) ...`).
+- DECIDED(plan P0d "no duplicate fields", clarified swarm-2026-09-10) Two fields
+  may not be identical (same name, octave and zone). On one shell that is not a
+  separate rule but a consequence of the strictly-ascending rule above - a
+  spelling plus an octave fixes the MIDI, so two identical fields cannot both
+  ascend - and the parser reports it there: `NOTE_REPEATED` when the repeat is
+  the note IMMEDIATELY before it (`(D3) A3 C4 C4`), `NOTE_OUT_OF_ORDER` when
+  something else intervenes (`(D3) A3 C4 E4 C4`, which is equally not ascending).
+  The `seen` map in `core.parseSeed` is a belt-and-braces guard behind that
+  proof and is unreachable. Duplicate PITCH CLASSES
   across octaves are legal and expected, and one pitch class may appear on both
   shells, even at the same MIDI (a top field and a bottom field with the same
   note and octave are distinct fields because their zones differ). When a
@@ -854,6 +900,9 @@ sheets); the rule is that phases APPEND, never renumber or rename.
 | no ding, or more than one | `NO_DING` | `core.parseSeed` (P0d) |
 | ding pitch class absent from the top shell | ok; tonic still the ding | `core.parseSeed` (P0d) |
 | beyond 11 rim / 2 inner / 6 bottom | `TOO_MANY_RIM` | `core.parseSeed` (P0d) |
+| a note placed outside MIDI 0-127 | `NOTE_OUT_OF_RANGE` | `core.parseSeed` (P0d) |
+| an explicit octave that breaks the ascending order | `NOTE_OUT_OF_ORDER` | `core.parseSeed` (P0d) |
+| the same note twice in a row on one shell | `NOTE_REPEATED` | `core.parseSeed` (P0d) |
 | a newer share link | `NEEDS_NEWER_APP` | `share.decode` (Phase 4) |
 
 - DECIDED(plan "Degenerate cases", eng-review owners) Each parse-layer

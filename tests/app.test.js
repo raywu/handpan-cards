@@ -709,6 +709,9 @@ for (const [fixture, code] of [
   ["whole tone subset", "NO_FIFTH"],
   ["fourteen top notes", "TOO_MANY_RIM"],
   ["bad note token", "BAD_NOTE"],
+  ["midi out of range", "NOTE_OUT_OF_RANGE"],
+  ["bottom note below the inferred one before it", "NOTE_OUT_OF_ORDER"],
+  ["duplicate field", "NOTE_REPEATED"],
 ]) {
   test(`${code} shows the engine's own sentence and keeps Generate disabled`, () => {
     const app = boot();
