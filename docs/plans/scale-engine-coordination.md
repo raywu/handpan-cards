@@ -1063,8 +1063,8 @@ Cycle: 3   Wave: 18 LIVE.   Base: main at `51eafe2`, verified GREEN (run 3451820
 
 | Lane | Rows | Owns | Never touches | Branch | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|---|---|---|
-| 32 (`launch-retry`) | 271 | `tests/helpers/cdp.js`, `tests/e2e.test.js`, its FLOORS row, one new mutant | `index.html`, `tests/mutation_check.sh`, existing mutants' headers | scale-engine/w32-launch-retry | #54 OPEN | `f1a9699` | in review | 1 of 2 |
-| 33 (`mutant-header-audit`) | 263 | `tests/mutation_check.sh`, HEADER lines of existing `tests/mutants/*.patch`, the gate-behaviour test file, one new mutant | `index.html`, `tests/helpers/cdp.js`, `tests/e2e.test.js`, the MUTATION lines of any existing patch | scale-engine/w33-mutant-headers | #55 OPEN | `1fa08eb` | in review | 1 of 2 |
+| 32 (`launch-retry`) | 271 | `tests/helpers/cdp.js`, `tests/e2e.test.js`, its FLOORS row, one new mutant | `index.html`, `tests/mutation_check.sh`, existing mutants' headers | scale-engine/w32-launch-retry | #54 MERGED | `f1a9699` | PASS | 1 of 2 |
+| 33 (`mutant-header-audit`) | 263 | `tests/mutation_check.sh`, HEADER lines of existing `tests/mutants/*.patch`, the gate-behaviour test file, one new mutant | `index.html`, `tests/helpers/cdp.js`, `tests/e2e.test.js`, the MUTATION lines of any existing patch | scale-engine/w33-mutant-headers | #55 MERGED | `1fa08eb` | PASS_WITH_NITS | 1 of 2 |
 
 The lanes are disjoint by file with one shared directory: both add a mutant to `tests/mutants/`, under different filenames, which git merges cleanly. Only lane 33 may touch EXISTING patches, and only their header lines - `tests/mutation_check.sh:176` reports a non-applying patch as a SURVIVOR, so a careless context edit reddens the gate. Both may raise the same `tests/suite_health.py` FLOORS integers, so a one-line conflict on the second merge is EXPECTED; per the contract the still-live authoring lane does the rebase, and neither may skip its floor bump to dodge it.
 
@@ -1168,3 +1168,15 @@ Two pre-existing defects the reviewer found and correctly declined to fix in thi
 |---|---|---|---|
 | 275 | #54 review | A WebSocket open failure rejects with the raw `error` event, so the message reaching the caller is the **empty string**. Scoping still works (`"" !== SLOW_START`), but a connection failure surfaces as a blank diagnostic - the same class of problem PR #51 fixed for the port timeout. Pre-existing at the merge-base | open - LOW |
 | 276 | #54 review | If `spawn()` itself throws, `profileDir` is created before `LIVE.add(entry)`, so the dir leaks with nothing tracking it. Pre-existing, untouched by this lane | open - LOW |
+
+
+### Wave 18 closed - both merged, main green, a new anchor
+
+`af70afd` (#55) then `b138328` (#54). Main at `af70afd` ran all five jobs green with the gate at **391s over 233 mutants**, which confirms the speedup on main and not merely on a branch.
+
+**Row 258's anchor is hereby reset.** The old 1030s-ish constant is dead - anchoring to it would now read every future run as a 2.6x anomaly, which is the exact failure the row exists to prevent, inverted. **New anchor: `af70afd` = 391s at 233 mutants, ~1.68s per mutant.** Anchor to the immediately preceding main run as always; the per-mutant figure is the portable number, since the corpus grows.
+
+| # | Item | Status |
+|---|---|---|
+| 271 | e2e browser launch flake - browser alive but silent past 20s | **closed** - PR #54, with the standing caveat that a load-race fix is probabilistic and a recurrence is not automatically a regression |
+| 263 | mutants scored on a whole-suite exit code | **half closed** - PR #55 fixed the 113 exposed node patches and added a refusal for missing headers; the 73 file-only headers are row 272 |
