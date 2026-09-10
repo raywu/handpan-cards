@@ -1,4 +1,5 @@
 # kills: test_slots_are_in_reading_order
+# suite: python3 -m unittest -k test_slots_are_in_reading_order tests.test_print tests.test_pdf_build
 # Card #1 must print top-left; the sheet reads down the page.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..6058881 100644

@@ -1,4 +1,5 @@
 # kills: chordSets: a Pygmy chord on a bottom note lights that bottom field
+# suite: node --test --test-name-pattern ^chordSets..a.Pygmy.chord.on.a.bottom.note.lights.that.bottom.field$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 2b54068..e139e44 100644
 --- a/index.html

@@ -1,4 +1,5 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
+# suite: node --test --test-name-pattern ^Tab.is.trapped.inside.the.Edit.sheet.and.reaches.every.Edit.control$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index f27316d..ce59480 100644
 --- a/index.html

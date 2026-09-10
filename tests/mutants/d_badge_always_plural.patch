@@ -1,4 +1,5 @@
 # kills: bottom-note badge appears with the right count, and only for bottom voicings
+# suite: node --test --test-name-pattern ^bottom.note.badge.appears.with.the.right.count..and.only.for.bottom.voicings$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 2b54068..9fb5e03 100644
 --- a/index.html

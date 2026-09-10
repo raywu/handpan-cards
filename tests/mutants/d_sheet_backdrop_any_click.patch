@@ -1,4 +1,5 @@
 # kills: a tap on the backdrop closes the sheet; a tap inside it does not
+# suite: node --test --test-name-pattern ^a.tap.on.the.backdrop.closes.the.sheet..a.tap.inside.it.does.not$ tests/app.test.js
 # Any click that reaches the layer closes the sheet, so typing into the box
 # or picking a palette dismisses the work in progress.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: bottom notes reach the parse line under their own U labels
+# suite: node --test --test-name-pattern ^bottom.notes.reach.the.parse.line.under.their.own.U.labels$ tests/app.test.js
 # The parse line lists only the top shell, so a player who typed bottom
 # notes gets no confirmation that they were understood.
 diff --git a/index.html b/index.html

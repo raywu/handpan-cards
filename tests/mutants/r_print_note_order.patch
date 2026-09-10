@@ -1,4 +1,5 @@
 # kills: test_drawn_note_line_agrees
+# suite: python3 -m unittest -k test_drawn_note_line_agrees tests.test_render_agreement
 # Prints the note line in pitch order instead of chord-spelling order.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..4ae3f58 100644

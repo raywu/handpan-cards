@@ -1,0 +1,37 @@
+# kills: a patch with no '# suite:' header is refused, never guessed at
+# suite: node --test --test-name-pattern ^a.patch.with.no....suite...header.is.refused..never.guessed.at$ tests/mutation_harness.test.js
+# Queue row 263. Puts the filename-prefix fallback back: a patch with no
+# "# suite:" header is no longer refused, it is silently pointed at the WHOLE
+# node suite for its prefix. The verdict then rests on that file's exit code
+# alone and never on the test the patch claims to kill, which is how a mutant
+# that breaks some unrelated test in the same file gets recorded "killed" while
+# proving nothing. The corpus really did carry one: e_layout_rotate_inert named
+# a test that does not exist and scored a kill anyway.
+#
+# Mutating tests/ is precedent-backed (tests/CONTRACT.md rule 3): the thing that
+# has to be proved live is the GATE's own oracle, and mutation_check.sh is that
+# oracle. The suite header is deliberately the node test, NOT this script - a
+# mutant whose suite is mutation_check.sh runs the sweep inside itself, where
+# the outer sweep's applied patch trips the dirty-tree refusal (exit 2) and is
+# scored as a kill without the reverted guard ever being evaluated. The node
+# test drives a COPY of the script against a throwaway fixture repo instead.
+#
+# The edit is byte-length-neutral (the two replacement lines are exactly as
+# long as the two they replace) so bash, which reads a running script lazily by
+# byte offset, cannot be desynchronised while the patch is applied. Body
+# generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+index 56eaf18..9867647 100755
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -188,8 +188,8 @@ for p in "${PATCHES[@]}"; do
+   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
+   cmd=$(suite_for "$p")
+   if [ -z "$cmd" ]; then
+-    echo "$base broken    -> no '# suite:' header, so there is no command that could prove ${target:-?} dies"
+-    SURVIVORS+=("$p (no '# suite:' header)"); continue
++    case "$base" in d_*) cmd="node --test tests/app.test.js" ;; e_*) cmd="node --test tests/e2e.test.js" ;; esac
++    [ -z "$cmd" ] && { SURVIVORS+=($p); continue; }
+   fi
+   # A skipped suite exits 0, which would look identical to a surviving mutant.
+   case "$base" in

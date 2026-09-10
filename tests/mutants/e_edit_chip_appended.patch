@@ -1,4 +1,5 @@
 # kills: the replacement takes the old chip's position and keeps it across a reload
+# suite: node --test --test-name-pattern ^the.replacement.takes.the.old.chip.s.position.and.keeps.it.across.a.reload$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index 8a5bb64..c65688f 100644
 --- a/index.html

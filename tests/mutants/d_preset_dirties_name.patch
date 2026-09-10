@@ -1,4 +1,5 @@
 # kills: a preset never names the deck: it is auto-named exactly as a typed scale is
+# suite: node --test --test-name-pattern ^a.preset.never.names.the.deck..it.is.auto.named.exactly.as.a.typed.scale.is$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 7e9b7f6..db6d6e6 100644
 --- a/index.html

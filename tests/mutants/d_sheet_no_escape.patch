@@ -1,4 +1,5 @@
 # kills: Escape closes the sheet and focus returns to + ADD
+# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to...ADD$ tests/app.test.js
 # Escape inside the sheet does nothing, so the modal can only be dismissed
 # by pointer - it is a trap for the keyboard.
 diff --git a/index.html b/index.html

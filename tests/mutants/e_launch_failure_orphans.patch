@@ -1,4 +1,5 @@
 # kills: a launch() that fails after spawn leaves no browser and no profile
+# suite: node --test --test-name-pattern ^a.launch...that.fails.after.spawn.leaves.no.browser.and.no.profile$ tests/e2e.test.js
 # launch() rethrows a post-spawn failure without reaping, so every failed
 # launch orphans a browser process and an hpfc-prof-* directory.
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js

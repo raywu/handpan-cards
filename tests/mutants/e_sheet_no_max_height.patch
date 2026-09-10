@@ -1,4 +1,5 @@
 # kills: the sheet is a modal dialog with the spec'd anatomy
+# suite: node --test --test-name-pattern ^the.sheet.is.a.modal.dialog.with.the.spec.d.anatomy$ tests/e2e.test.js
 # The sheet surface loses its 85dvh ceiling and internal scroll, so on a
 # short screen a long message pushes Generate off the bottom with no way to
 # reach it.

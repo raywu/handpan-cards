@@ -1,4 +1,5 @@
 # kills: test_voicings_unique_within_deck
+# suite: python3 -m unittest -k test_voicings_unique_within_deck tests.test_deck_data
 # Amara Csus4 given C major's exact field list - a duplicate card that
 # validate.py cannot see (it only rejects duplicate fields WITHIN a card).
 diff --git a/index.html b/index.html

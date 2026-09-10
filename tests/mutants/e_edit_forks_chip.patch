@@ -1,4 +1,5 @@
 # kills: a field edit leaves one chip for the deck, selected and relabelled, at 380px
+# suite: node --test --test-name-pattern ^a.field.edit.leaves.one.chip.for.the.deck..selected.and.relabelled..at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index 8a5bb64..d063b2c 100644
 --- a/index.html

@@ -1,4 +1,5 @@
 # kills: shuffle yields a valid permutation and shuffle-off restores card order
+# suite: node --test --test-name-pattern ^shuffle.yields.a.valid.permutation.and.shuffle.off.restores.card.order$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 2b54068..096bc59 100644
 --- a/index.html

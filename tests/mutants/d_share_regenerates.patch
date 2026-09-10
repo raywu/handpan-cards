@@ -1,4 +1,5 @@
 # kills: consuming a share link runs select.build exactly once
+# suite: node --test --test-name-pattern ^consuming.a.share.link.runs.select.build.exactly.once$ tests/app.test.js
 # Consuming a link builds the deck twice - the shape a rebuild-per-read would
 # have. ENGINE-SPEC section 11: generation runs ONCE per restore.
 diff --git a/index.html b/index.html

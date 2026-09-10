@@ -1,4 +1,5 @@
 # kills: the mirror pair defaults to right-first and carries the choice into the deck
+# suite: node --test --test-name-pattern ^the.mirror.pair.defaults.to.right.first.and.carries.the.choice.into.the.deck$ tests/app.test.js
 # LEFT-FIRST lights up but the choice never reaches the engine, so a mirrored
 # pan is always laid out the wrong way round.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: a custom chip label is capped at 16 characters with an ellipsis
+# suite: node --test --test-name-pattern ^a.custom.chip.label.is.capped.at.16.characters.with.an.ellipsis$ tests/app.test.js
 # Chip labels are no longer capped, so one long pan name can push the whole
 # deck row - and the practice card with it - off a narrow screen.
 diff --git a/index.html b/index.html

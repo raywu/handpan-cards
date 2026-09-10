@@ -1,4 +1,5 @@
 # kills: no deck chip ever rests under + ADD, at any width, state or scroll
+# suite: node --test --test-name-pattern ^no.deck.chip.ever.rests.under...ADD..at.any.width..state.or.scroll$ tests/e2e.test.js
 # + ADD stops reserving its own row and is lifted back on top of the scrolling
 # strip. It is then still fully on screen - rects alone see nothing wrong - but
 # deck chips come to rest underneath it: elementFromPoint at a visible chip

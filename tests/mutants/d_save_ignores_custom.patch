@@ -1,4 +1,5 @@
 # kills: selecting a deck persists its id, custom decks included
+# suite: node --test --test-name-pattern ^selecting.a.deck.persists.its.id..custom.decks.included$ tests/app.test.js
 # selectDeck reinstates the Phase 3 built-ins-only guard, so a custom deck the
 # user selected is not restored on the next boot.
 diff --git a/index.html b/index.html

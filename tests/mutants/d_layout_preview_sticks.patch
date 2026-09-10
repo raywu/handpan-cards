@@ -1,4 +1,5 @@
 # kills: Escape closes the sheet without keeping the previewed correction
+# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.without.keeping.the.previewed.correction$ tests/app.test.js
 # An abandoned preview is left on the deck, so Escape commits the very
 # correction the user backed out of.
 diff --git a/index.html b/index.html

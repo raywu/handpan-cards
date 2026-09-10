@@ -1,4 +1,5 @@
 # kills: buttons and arrow keys step through the deck and wrap
+# suite: node --test --test-name-pattern ^buttons.and.arrow.keys.step.through.the.deck.and.wrap$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

@@ -1,4 +1,5 @@
 # kills: the deck row ends with a + ADD chip that opens the sheet, focusing the box
+# suite: node --test --test-name-pattern ^the.deck.row.ends.with.a...ADD.chip.that.opens.the.sheet..focusing.the.box$ tests/app.test.js
 # The sheet opens but focus is left on the + ADD chip, so a keyboard or
 # screen-reader user lands outside the modal they just opened.
 diff --git a/index.html b/index.html

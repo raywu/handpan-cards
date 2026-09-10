@@ -1,4 +1,5 @@
 # kills: test_degrees_cover_chord_roots
+# suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data
 # Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree.
 diff --git a/index.html b/index.html
 index b018e51..50292d6 100644

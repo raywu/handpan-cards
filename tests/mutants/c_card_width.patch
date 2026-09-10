@@ -1,4 +1,5 @@
 # kills: test_card_geometry_and_calibration_bar_measured_from_the_sheet
+# suite: python3 -m unittest -k test_card_geometry_and_calibration_bar_measured_from_the_sheet tests.test_print tests.test_pdf_build
 # Cards cut on the crop marks must come out poker size.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..3e6a567 100644

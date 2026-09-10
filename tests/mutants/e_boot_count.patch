@@ -1,4 +1,5 @@
 # kills: boots with the first deck loaded
+# suite: node --test --test-name-pattern ^boots.with.the.first.deck.loaded$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index 7ea4e13..acb9f50 100644
 --- a/index.html

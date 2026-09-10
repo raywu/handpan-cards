@@ -1,4 +1,5 @@
 # kills: a corrupt share string surfaces BAD_NOTE's reason and changes nothing
+# suite: node --test --test-name-pattern ^a.corrupt.share.string.surfaces.BAD_NOTE.s.reason.and.changes.nothing$ tests/app.test.js
 # The UI composes a sentence of its own instead of surfacing the engine's
 # reason verbatim (ENGINE-SPEC sections 1 and 2).
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: a correction is reachable with the keyboard alone: arrows select, MOVE swaps
+# suite: node --test --test-name-pattern ^a.correction.is.reachable.with.the.keyboard.alone..arrows.select..MOVE.swaps$ tests/app.test.js
 # The roving tabindex becomes nineteen tab stops, so Tab walks the whole
 # slot list before it reaches anything else in the sheet.
 diff --git a/index.html b/index.html

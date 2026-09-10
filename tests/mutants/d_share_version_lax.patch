@@ -1,4 +1,5 @@
 # kills: the share version guard rejects a newer payload with NEEDS_NEWER_APP
+# suite: node --test --test-name-pattern ^the.share.version.guard.rejects.a.newer.payload.with.NEEDS_NEWER_APP$ tests/app.test.js
 # The Phase 4 guard accepts one version above the running app, so a PWA-cached
 # old index.html would misread a newer link instead of rejecting it.
 diff --git a/index.html b/index.html

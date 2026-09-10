@@ -1,4 +1,5 @@
 # kills: BAD_NOTE shows the engine's own sentence and keeps Generate disabled
+# suite: node --test --test-name-pattern ^BAD_NOTE.shows.the.engine.s.own.sentence.and.keeps.Generate.disabled$ tests/app.test.js
 # The reason is rendered in the neutral tier, so an error reads exactly like
 # a success and the three-tier colour scale carries no information.
 diff --git a/index.html b/index.html

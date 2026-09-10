@@ -1,4 +1,5 @@
 # kills: an options-only edit keeps its chip position across a reload at 380px
+# suite: node --test --test-name-pattern ^an.options.only.edit.keeps.its.chip.position.across.a.reload.at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index 3509543..4e9e449 100644
 --- a/index.html

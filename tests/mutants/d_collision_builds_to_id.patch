@@ -1,4 +1,5 @@
 # kills: a refused save still runs select.build exactly once (13A)
+# suite: node --test --test-name-pattern ^a.refused.save.still.runs.select.build.exactly.once..13A.$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 3509543..3c6f5c1 100644
 --- a/index.html

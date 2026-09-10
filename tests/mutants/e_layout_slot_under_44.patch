@@ -1,4 +1,5 @@
 # kills: every LAYOUT control is a 44px target with a visible focus ring
+# suite: node --test --test-name-pattern ^every.LAYOUT.control.is.a.44px.target.with.a.visible.focus.ring$ tests/e2e.test.js
 # The slot controls shrink under the 44px minimum, so on a phone the notes
 # are too small to hit.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: suite_health bounds every node suite with a wall clock
+# suite: node --test --test-name-pattern ^suite_health.bounds.every.node.suite.with.a.wall.clock$ tests/e2e.test.js
 # The subprocess loses its timeout=, so a wedged node suite hangs suite_health
 # forever instead of being killed and reported - the second half of the port
 # defect, and what turned one stuck socket into a whole burned CI job.

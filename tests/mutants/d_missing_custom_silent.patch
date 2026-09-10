@@ -1,4 +1,5 @@
 # kills: an unknown BUILT-IN deck id falls back silently; a missing custom: id says so
+# suite: node --test --test-name-pattern ^an.unknown.BUILT.IN.deck.id.falls.back.silently..a.missing.custom..id.says.so$ tests/app.test.js
 # The missing-custom-deck fallback goes silent, so a user whose saved scale is
 # gone just sees a different deck with no explanation.
 diff --git a/index.html b/index.html

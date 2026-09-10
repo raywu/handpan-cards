@@ -1,4 +1,5 @@
 # kills: pan() draws one circle per field, two more per lit field, plus the chrome
+# suite: node --test --test-name-pattern ^pan...draws.one.circle.per.field..two.more.per.lit.field..plus.the.chrome$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 2b54068..4295b5a 100644
 --- a/index.html

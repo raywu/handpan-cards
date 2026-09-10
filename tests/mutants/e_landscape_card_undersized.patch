@@ -1,4 +1,5 @@
 # kills: portrait is unchanged: the card keeps its full --card-w width and nothing is buried
+# suite: node --test --test-name-pattern ^portrait.is.unchanged..the.card.keeps.its.full...card.w.width.and.nothing.is.buried$ tests/e2e.test.js
 # Over-constrains the height the fix introduced: min(70%, ...) instead of
 # min(100%, ...). Nothing overflows and every control is reachable, so the
 # containment and hit-test assertions all pass - but the card is now smaller

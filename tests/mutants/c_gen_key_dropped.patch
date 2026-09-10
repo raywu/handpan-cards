@@ -1,4 +1,5 @@
 # kills: test_every_builtin_deck_key_is_synthesised_or_named_as_omitted
+# suite: python3 -m unittest -k test_every_builtin_deck_key_is_synthesised_or_named_as_omitted tests.test_print tests.test_pdf_build
 # A print-only per-deck key vanishes from the generated deck without being
 # declared omitted; the key inventory must notice.
 diff --git a/tools/decks.py b/tools/decks.py

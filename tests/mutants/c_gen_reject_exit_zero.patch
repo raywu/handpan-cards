@@ -1,4 +1,5 @@
 # kills: test_a_rejected_seed_exits_non_zero_with_the_engines_own_reason
+# suite: python3 -m unittest -k test_a_rejected_seed_exits_non_zero_with_the_engines_own_reason tests.test_print tests.test_pdf_build
 # A rejected seed must fail loudly: exiting 0 lets a pipeline read a refusal
 # as an empty success and print nothing.
 diff --git a/tools/gen_deck.js b/tools/gen_deck.js

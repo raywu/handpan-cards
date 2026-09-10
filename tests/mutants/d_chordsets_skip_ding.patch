@@ -1,4 +1,5 @@
 # kills: chordSets: Amara Gsus4 lights the ding as a chord tone
+# suite: node --test --test-name-pattern ^chordSets..Amara.Gsus4.lights.the.ding.as.a.chord.tone$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 2b54068..4af78d3 100644
 --- a/index.html

@@ -1,4 +1,5 @@
 # kills: test_the_repo_pdfs_were_not_rebuilt
+# suite: python3 -m unittest -k test_the_repo_pdfs_were_not_rebuilt tests.test_print tests.test_pdf_build
 # The staleness oracle stops reading the six committed PDFs, which is exactly
 # what the old version of that test did: it hashed nothing, so pointing a build
 # at the repo root would have left it green.

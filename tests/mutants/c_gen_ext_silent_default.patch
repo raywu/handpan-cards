@@ -1,4 +1,5 @@
 # kills: test_a_missing_ext_raises_instead_of_defaulting_the_radius
+# suite: python3 -m unittest -k test_a_missing_ext_raises_instead_of_defaulting_the_radius tests.test_print tests.test_pdf_build
 # The silent default is back: a missing or renamed geom.ext quietly gives every
 # generated deck R = 74.0 instead of raising, which on a bottom-shell pan draws
 # the diagram over the header and off both edges of the card.

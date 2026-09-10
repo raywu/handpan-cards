@@ -1,4 +1,5 @@
 # kills: six palette swatches carry the D6 indices and the selected one is ringed
+# suite: node --test --test-name-pattern ^six.palette.swatches.carry.the.D6.indices.and.the.selected.one.is.ringed$ tests/app.test.js
 # Tapping a swatch re-renders the row but never records the choice, so every
 # generated deck comes out in palette 0.
 diff --git a/index.html b/index.html

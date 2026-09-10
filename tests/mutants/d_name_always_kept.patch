@@ -1,4 +1,5 @@
 # kills: an untouched Edit box still leaves an auto-named deck free to re-derive its name
+# suite: node --test --test-name-pattern ^an.untouched.Edit.box.still.leaves.an.auto.named.deck.free.to.re.derive.its.name$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 3509543..d6f4e00 100644
 --- a/index.html

@@ -1,4 +1,5 @@
 # kills: replaceRegistered refuses to overwrite a DIFFERENT deck holding the new id
+# suite: node --test --test-name-pattern ^replaceRegistered.refuses.to.overwrite.a.DIFFERENT.deck.holding.the.new.id$ tests/app.test.js
 # Queue row 161. d_replace_registered_undefended trips the order-blind
 # deepStrictEqual first, so the key-ORDER assertion added alongside it was
 # itself unmutated. This refusal keeps every entry - so the order-blind check

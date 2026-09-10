@@ -1,4 +1,5 @@
 # kills: test_a_warning_survives_the_adapter_and_reaches_the_title_blurb
+# suite: python3 -m unittest -k test_a_warning_survives_the_adapter_and_reaches_the_title_blurb tests.test_print tests.test_pdf_build
 # An off-by-one in the adapter: the last generated chord never becomes a card.
 # This is the defect the blurb pin could NOT see until 2026-09-09, because the
 # expected line was built from `len(quiet["chords"])` - the very count `_blurb`

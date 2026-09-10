@@ -1,4 +1,5 @@
 # kills: test_all_drawn_card_text_stays_inside_the_card
+# suite: python3 -m unittest -k test_all_drawn_card_text_stays_inside_the_card tests.test_print tests.test_pdf_build
 # No drawn glyph may run off the edge of the card.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..0243fdf 100644

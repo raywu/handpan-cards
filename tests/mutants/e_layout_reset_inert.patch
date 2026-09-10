@@ -1,4 +1,5 @@
 # kills: RESET puts the generated layout back in one keyboard action
+# suite: node --test --test-name-pattern ^RESET.puts.the.generated.layout.back.in.one.keyboard.action$ tests/e2e.test.js
 # RESET is not wired up, so the only way back to the generated layout is to
 # undo every correction by hand.
 diff --git a/index.html b/index.html
