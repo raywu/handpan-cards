@@ -6,10 +6,10 @@
 # Note this is the "it fits on MY phone" defect - the eight-note Edit sheet
 # clears 390x844 with a few pixels to spare and only fails in landscape.
 diff --git a/index.html b/index.html
-index bacb75c..c5f9bc0 100644
+index 572fb69..5a9862e 100644
 --- a/index.html
 +++ b/index.html
-@@ -143,7 +143,7 @@ button.nav:active{background:#2e281e}
+@@ -170,7 +170,7 @@ button.nav:active{background:#2e281e}
     already 0, so overflow-y is the same declaration doing both jobs.
     .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
     where the footer alone exceeds the cap. */
