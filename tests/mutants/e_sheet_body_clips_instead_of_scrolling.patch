@@ -1,0 +1,21 @@
+# kills: keeping the primary out of the scroll still leaves the sheet's own content reachable
+# suite: node --test --test-name-pattern keeping.the.primary.out.of.the.scroll tests/e2e.test.js
+# The sheet body still shrinks to leave the footer its place, and the primary
+# still measures fine - but the part of the sheet that no longer fits is now
+# clipped with no way for a finger to reach it: on a tall Edit sheet the LAYOUT
+# row and the notes field become permanently unreachable, silently. An
+# overflow:hidden box still accepts a scrollTop from SCRIPT, so this mutant is
+# also the reason that test scrolls with a real wheel event.
+diff --git a/index.html b/index.html
+index 572fb69..aaaed2f 100644
+--- a/index.html
++++ b/index.html
+@@ -170,7 +170,7 @@ button.nav:active{background:#2e281e}
+    already 0, so overflow-y is the same declaration doing both jobs.
+    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
+    where the footer alone exceeds the cap. */
+-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:9px}
++.sheetbody{overflow-y:hidden; display:flex; flex-direction:column; gap:9px}
+ .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
+   text-transform:uppercase}
+ /* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.

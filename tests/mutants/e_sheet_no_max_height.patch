@@ -3,10 +3,10 @@
 # short screen a long message pushes Generate off the bottom with no way to
 # reach it.
 diff --git a/index.html b/index.html
-index 16984c6..34cfd34 100644
+index 572fb69..a9afdc6 100644
 --- a/index.html
 +++ b/index.html
-@@ -112,7 +112,7 @@ button.nav:active{background:#2e281e}
+@@ -144,7 +144,7 @@ button.nav:active{background:#2e281e}
    display:flex; align-items:flex-end; justify-content:center}
  [hidden]{display:none !important}
  .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
@@ -14,4 +14,4 @@ index 16984c6..34cfd34 100644
 +  border-radius:18px 18px 0 0;
    padding:14px 14px max(14px, env(safe-area-inset-bottom));
    display:flex; flex-direction:column; gap:9px}
- .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
+ /* The surface is capped at 85dvh, so on the Edit sheet, in landscape, or with

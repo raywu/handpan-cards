@@ -1889,6 +1889,271 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * the primary action never falls below the fold (queue rows 211, 212)
+   *
+   * .sheetsurf is a scrolling surface capped at 85dvh. Whenever the content
+   * is taller than the cap, whatever sits at the BOTTOM of the flow - which
+   * is the sheet's only primary, #scale-generate (GENERATE CARDS on the
+   * create path, SAVE CHANGES on the Edit path) - starts below the fold, and
+   * it reads as a dead end rather than as something scrollable: scrollTop is
+   * 0 on open and iOS overlay scrollbars are invisible until touched.
+   *
+   * So the check is the RESTING state, at scrollTop 0, with no scrolling of
+   * any kind performed first: the button must be inside the viewport AND be
+   * the element a tap at its own centre actually reaches. A rect alone is not
+   * enough - a sticky or fixed neighbour can cover a rect that measures fine.
+   *
+   * What this CANNOT see, and no headless Chromium can: Safari's dynamic
+   * toolbars and its real dvh, real env(safe-area-inset-*) values (0 under
+   * emulation), and the soft keyboard - Safari shrinks the VISUAL viewport,
+   * not the layout viewport, so dvh does not shrink there. The shrunk
+   * viewports below are a PROXY for a keyboard, not the thing itself.
+   * ---------------------------------------------------------------- */
+
+  // 380 is the repo's stated test width; 390x844 is the owner's phone; 390x745
+  // approximates the same phone with Safari's toolbars showing; 844x390 is it
+  // in landscape, where the 85dvh cap is at its most brutal.
+  const FOLD_VIEWPORTS = [[380, 800], [390, 844], [390, 745], [844, 390]];
+
+  // The largest pan the engine accepts (13 top + 6 bottom = 19 layout slots
+  // beside the ding), which is the tallest the Edit sheet can ever be.
+  const BIG_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 G5 A5 | C3 E3 F3 G3 A3 B3";
+
+  // Everything the fold check needs, read in one round trip and with nothing
+  // scrolled first. `hit` is named so a failure says what is covering it.
+  const primaryFold = () => b.eval(`
+    // Every scrollable box in the sheet, so "nothing was scrolled first" is
+    // checked against whichever one actually carries the overflow.
+    const surf = document.getElementById("scale-sheet").firstElementChild;
+    const scrolled = [surf, ...surf.querySelectorAll("*")]
+      .filter(el => el.scrollTop > 0).map(el => (el.id || el.className) + ":" + el.scrollTop);
+    const gen = document.getElementById("scale-generate");
+    const r = gen.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+    return {
+      scrolled,
+      top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height,
+      vw: window.innerWidth, vh: window.innerHeight,
+      label: (gen.textContent || "").trim(),
+      hitsSelf: hit === gen,
+      hit: hit ? (hit.id || hit.className || hit.tagName) : null,
+      slots: document.querySelectorAll("#scale-slots .slot").length,
+      body: (() => {
+        const el = surf.querySelector(".sheetbody");
+        if (!el) return null;
+        // How far the last row sits past the bottom of the box that holds it.
+        const last = el.lastElementChild.getBoundingClientRect();
+        return {
+          clientH: el.clientHeight,
+          overhang: last.bottom - el.getBoundingClientRect().bottom,
+        };
+      })(),
+    };
+  `);
+
+  function assertPrimaryVisible(m, where) {
+    assert.deepStrictEqual(m.scrolled, [],
+      `${where}: something in the sheet was already scrolled ` +
+      `(${m.scrolled.join(", ")}) - this check is only meaningful at rest`);
+    assert.ok(m.height >= 44,
+      `${where}: the primary is only ${m.height.toFixed(1)}px tall`);
+    assert.ok(m.top >= -0.5 && m.bottom <= m.vh + 0.5,
+      `${where}: "${m.label}" is outside the ${m.vw}x${m.vh} viewport ` +
+      `(top ${m.top.toFixed(1)}, bottom ${m.bottom.toFixed(1)}) - ` +
+      `${(m.bottom - m.vh).toFixed(1)}px below the fold`);
+    assert.ok(m.left >= -0.5 && m.right <= m.vw + 0.5,
+      `${where}: "${m.label}" runs off the side (${m.left.toFixed(1)}..${m.right.toFixed(1)})`);
+    assert.ok(m.hitsSelf,
+      `${where}: "${m.label}" measures on-screen but a tap at its centre lands ` +
+      `on "${m.hit}" instead`);
+  }
+
+  // Opening the sheet is SETUP for these tests, not the thing under test - the
+  // assertion is always about #scale-generate. That matters at 844x390, where
+  // the tap path cannot be used at all: + ADD wraps onto a second line which
+  // #decks (overflow:auto) clips, so a tap at its centre lands on #hdr and the
+  // sheet never opens. That is deck-nav geometry owned by another lane, and it
+  // reproduces unchanged on origin/main, so it is not this lane's to fix or to
+  // hide. Tap where a finger can reach the chip; where it cannot, PROVE that
+  // clipping is the reason before falling back to a scripted click, so a
+  // different breakage still fails here instead of being papered over.
+  const openSheetForFold = async (w, h) => {
+    const reach = await b.eval(`
+      const el = document.getElementById("deck-add");
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      const r = el.getBoundingClientRect();
+      const box = document.getElementById("decks").getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+      return {
+        tappable: hit === el,
+        clippedByDecks: r.bottom > box.bottom + 0.5 || r.top < box.top - 0.5,
+        hit: hit ? (hit.id || hit.className || hit.tagName) : null,
+      };
+    `);
+    if (reach.tappable) {
+      await b.click("#deck-add");
+    } else {
+      assert.ok(reach.clippedByDecks,
+        `at ${w}x${h}: + ADD is not tappable (a tap at its centre lands on ` +
+        `"${reach.hit}") for some reason other than the known deck-nav clipping - ` +
+        `these tests' setup needs re-checking before their result means anything`);
+      await b.eval(`document.getElementById("deck-add").click(); return true;`);
+    }
+    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: `the scale sheet to open at ${w}x${h}` });
+  };
+
+  test("GENERATE CARDS is reachable without scrolling at every phone viewport", async () => {
+    try {
+      await freshLoad();
+      for (const [w, h] of FOLD_VIEWPORTS) {
+        await b.setViewport(w, h, true);
+        // Freshly opened each time: the resting state is the one that matters.
+        await openSheetForFold(w, h);
+        await typeScale(BIG_SCALE);
+        // The preview is drawn on parse and is the tallest thing on the create
+        // sheet; measuring before it lands would flatter the result.
+        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+          { label: `the preview to render at ${w}x${h}` });
+        assertPrimaryVisible(await primaryFold(), `create sheet at ${w}x${h}`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SAVE CHANGES is reachable without scrolling on a built-in-sized deck", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(EDIT_SCALE);
+      for (const [w, h] of FOLD_VIEWPORTS) {
+        await b.setViewport(w, h, true);
+        await openEdit();
+        const m = await primaryFold();
+        assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
+        assertPrimaryVisible(m, `Edit sheet (8 notes) at ${w}x${h}`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the Edit sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("SAVE CHANGES is reachable without scrolling on the largest pan the engine allows", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(BIG_SCALE);
+      for (const [w, h] of FOLD_VIEWPORTS) {
+        await b.setViewport(w, h, true);
+        await openEdit();
+        const m = await primaryFold();
+        assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
+        assert.ok(m.slots >= 17,
+          `the worst case regressed: the LAYOUT row lists only ${m.slots} slots`);
+        assertPrimaryVisible(m, `Edit sheet (${m.slots} slots) at ${w}x${h}`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the Edit sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("GENERATE CARDS survives a viewport shrunk the way a soft keyboard shrinks one", async () => {
+    // PROXY ONLY. A real iOS keyboard shrinks the visual viewport and leaves
+    // dvh alone, so this is the friendlier of the two cases, not the honest
+    // one; the honest one needs a device. It still pins the regression that a
+    // short viewport must not bury the primary.
+    try {
+      await freshLoad();
+      for (const h of [544, 508]) {
+        await b.setViewport(390, h, true);
+        await openSheet();
+        await typeScale(BIG_SCALE);
+        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+          { label: `the preview to render at 390x${h}` });
+        assertPrimaryVisible(await primaryFold(), `create sheet at 390x${h} (keyboard proxy)`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("keeping the primary out of the scroll still leaves the sheet's own content reachable", async () => {
+    // The failure mode of the fix: a fixed footer that eats the cap leaves a
+    // scrolling area too small to use, or one that cannot reach its own end.
+    // The worst case is the tallest sheet at the shortest viewport.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(BIG_SCALE);
+      await b.setViewport(844, 390, true);
+      await openEdit();
+
+      const at = await primaryFold();
+      assert.ok(at.body, "the sheet has no .sheetbody - this test is measuring the wrong thing");
+      // Measured from the rows themselves, not from scrollHeight: a box that
+      // is not a scroll container reports scrollHeight === clientHeight while
+      // its content spills out of it in plain sight, and this test has to see
+      // that case as "unreachable content", not as "nothing overflows".
+      assert.ok(at.body.overhang > 0,
+        "the largest pan no longer overflows in landscape: pick a taller case");
+      assert.ok(at.body.clientH >= 100,
+        `the footer left only ${at.body.clientH}px to scroll in - the sheet is unusable`);
+
+      // Scrolled with a REAL wheel over the sheet, not by assigning scrollTop:
+      // an overflow:hidden box still takes a scrollTop from script, so the
+      // scripted form passes on a sheet no finger can actually scroll.
+      const where = await b.eval(`
+        const r = document.querySelector(".sheetbody").getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+      `);
+      for (let i = 0; i < 12; i++) {
+        await b.send("Input.dispatchMouseEvent", {
+          type: "mouseWheel", x: where.x, y: where.y, deltaX: 0, deltaY: 400,
+        });
+      }
+
+      // The end of the content is reachable, and the primary has not moved
+      // while getting there.
+      const end = await b.eval(`
+        const body = document.querySelector(".sheetbody");
+        const last = body.lastElementChild.getBoundingClientRect();
+        const gen = document.getElementById("scale-generate").getBoundingClientRect();
+        return {
+          atEnd: body.scrollTop + body.clientHeight >= body.scrollHeight - 1,
+          lastBottom: last.bottom, bodyBottom: body.getBoundingClientRect().bottom,
+          genBottom: gen.bottom, vh: window.innerHeight,
+        };
+      `);
+      assert.ok(end.atEnd, "the sheet body cannot be scrolled to its end");
+      // 1.5px, not 0.5: scrollHeight is an integer and the flow is fractional,
+      // so a fully scrolled box can sit a rounding step short of its own end.
+      assert.ok(end.lastBottom <= end.bodyBottom + 1.5,
+        `the last row of the sheet is still cut off at the bottom of the scroll ` +
+        `(${end.lastBottom.toFixed(1)} vs ${end.bodyBottom.toFixed(1)})`);
+      assert.ok(end.genBottom <= end.vh + 0.5,
+        `the primary left the viewport once the body was scrolled ` +
+        `(bottom ${end.genBottom.toFixed(1)} of ${end.vh})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
    * harness contract: a taken port fails loudly, it does not hang
    * ---------------------------------------------------------------- */
 
