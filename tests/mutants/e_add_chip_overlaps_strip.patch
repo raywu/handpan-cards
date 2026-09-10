@@ -1,0 +1,19 @@
+# kills: no deck chip ever rests under + ADD, at any width, state or scroll
+# + ADD stops reserving its own row and is lifted back on top of the scrolling
+# strip. It is then still fully on screen - rects alone see nothing wrong - but
+# deck chips come to rest underneath it: elementFromPoint at a visible chip
+# returns the button, so tapping "D AMARA 9" opens the create sheet instead of
+# switching decks. That is the mis-tap the vertical reserve exists to prevent.
+diff --git a/index.html b/index.html
+index aeba397..6ae4e7f 100644
+--- a/index.html
++++ b/index.html
+@@ -66,7 +66,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ .deckrow{display:flex; flex-direction:column; align-items:center; gap:6px;
+   width:100%; max-width:520px}
+ #decks{align-self:stretch}
+-#deck-add{flex:0 0 auto}
++#deck-add{flex:0 0 auto; position:relative; top:-46px; margin-bottom:-46px; z-index:1}
+ .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
+   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+ .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
