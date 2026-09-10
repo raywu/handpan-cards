@@ -2,15 +2,15 @@
 # Generate stays live while the seed does not parse, so the primary action
 # invites a tap that can only fail.
 diff --git a/index.html b/index.html
-index 16984c6..759f370 100644
+index f7b0bb9..90f4433 100644
 --- a/index.html
 +++ b/index.html
-@@ -2384,7 +2384,7 @@ function updateParse() {
+@@ -3482,7 +3482,7 @@ function updateParse() {
    } else {
      parseLine.textContent = "";
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
+     clearPanPreview();
      say(res.reason, "err");
    }
- }
