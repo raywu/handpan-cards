@@ -40,7 +40,7 @@ FLOORS = {
     "tests/test_failure_diagnosability.py": 7,
     # node
     "tests/app.test.js": 93,
-    "tests/e2e.test.js": 49,
+    "tests/e2e.test.js": 53,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 34,
     "tests/voicing.test.js": 14,

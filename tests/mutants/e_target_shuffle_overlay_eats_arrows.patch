@@ -1,0 +1,24 @@
+# kills: the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours
+# suite: node --test tests/e2e.test.js
+# The other way to give Shuffle a 44px target: leave the box where it is and lay
+# an oversized ::after over the footer strip, so "the whole strip toggles
+# shuffle". This is what row 216's warning is about and what the min-height
+# comment in index.html argues against. Every rect stays correct and #shuffle
+# still measures 44px tall, so a height assertion passes - but the overlay is a
+# later, positioned box, so it wins the hit test over #prev and #next and both
+# arrows go dead. Only a probe on the NEIGHBOURS sees it.
+diff --git a/index.html b/index.html
+index 62ab2bb..7cc1ed3 100644
+--- a/index.html
++++ b/index.html
+@@ -218,7 +218,10 @@ button.nav:active{background:#2e281e}
+    visual change, accepted as the price of the target. */
+ .shuffle{margin-top:0; min-height:44px; display:inline-flex; align-items:center;
+   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
++  position:relative;
+   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
++/* the whole footer strip should toggle shuffle, not just the 95px label */
++.shuffle::after{content:""; position:absolute; top:0; height:44px; left:-200px; right:-200px}
+ .shuffle.on{color:#f1ece1}
+ :focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
+ 

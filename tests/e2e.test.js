@@ -1319,6 +1319,250 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * tap targets and contrast (lane 31; coordination rows 214-216)
+   *
+   * The test above probes the swatch overlay VERTICALLY only, which is why
+   * it stayed green while the horizontal half of the same overlay was
+   * unreachable: six 44px overlays on a 24px pitch overlap by 20px each and
+   * the later sibling wins the hit test, so the right half of every swatch
+   * but the last belonged to its neighbour. A rect check cannot see that -
+   * every rect was correct - so everything below probes with
+   * elementFromPoint at the target's OWN extremes.
+   * ---------------------------------------------------------------- */
+
+  // WCAG 2.x relative luminance and contrast ratio, from computed rgb().
+  function srgbToLuminance(rgb) {
+    const [r, g, bl] = rgb.map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  }
+
+  function contrastRatio(fg, bg) {
+    const a = srgbToLuminance(fg);
+    const c = srgbToLuminance(bg);
+    const [hi, lo] = a > c ? [a, c] : [c, a];
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  const AA_NORMAL = 4.5;
+
+  test("every palette swatch owns its full 44px hit area on BOTH axes", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      await openSheet();
+      const probe = await b.eval(`
+        const dots = [...document.querySelectorAll("#scale-swatches .dot")];
+        const name = (el) => !el ? "null"
+          : el === document.documentElement ? "html"
+          : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
+            (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
+        return dots.map((dot, i) => {
+          const r = dot.getBoundingClientRect();
+          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          // +/-21 pins the documented 44px box; +/-18 would pass on 36px.
+          const pts = { left: [cx - 21, cy], right: [cx + 21, cy],
+                        top: [cx, cy - 21], bottom: [cx, cy + 21] };
+          const bad = [];
+          for (const [where, [x, y]] of Object.entries(pts)) {
+            const hit = document.elementFromPoint(x, y);
+            if (!(hit === dot || dot.contains(hit))) {
+              bad.push(where + " -> " + name(hit) + " (index " + dots.indexOf(hit) + ")");
+            }
+          }
+          return { i, cx: +cx.toFixed(1), bad };
+        });
+      `);
+      const broken = probe.filter((p) => p.bad.length);
+      assert.strictEqual(probe.length, 6);
+      assert.deepStrictEqual(broken, [],
+        "a palette swatch does not own its own 44px box - a thumb landing inside " +
+        "swatch N selects swatch N+1 with no feedback:\n" +
+        broken.map((p) => `  swatch ${p.i} (centre x=${p.cx}): ${p.bad.join(", ")}`).join("\n"));
+
+      // The pitch itself, so a future gap edit that re-creates the overlap
+      // fails on the cause and not only on the symptom.
+      const pitch = await b.eval(`
+        const d = [...document.querySelectorAll("#scale-swatches .dot")]
+          .map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+        const gaps = [];
+        for (let i = 1; i < d.length; i++) gaps.push(+(d[i] - d[i - 1]).toFixed(2));
+        return gaps;
+      `);
+      assert.ok(pitch.every((g) => g >= 44 - 0.5),
+        `palette swatch centres are ${JSON.stringify(pitch)}px apart; 44px overlays ` +
+        `on a pitch under 44 necessarily overlap`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the card's small print meets AA contrast against the paper", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      const measured = await b.eval(`
+        const face = document.querySelector("#front");
+        const paper = getComputedStyle(face).backgroundColor;
+        const parse = (s) => (s.match(/[\\d.]+/g) || []).slice(0, 3).map(Number);
+        const out = [];
+        // .hint is the ONLY instruction a first-run user gets; the rest are
+        // the same family (row 215), lower priority but the same paper.
+        for (const [label, sel] of [
+          ["hint", "#front .hint"],
+          ["hdr index", "#front .hdr .l .num"],
+          ["separator", "#back .sepc"],
+        ]) {
+          const el = document.querySelector(sel);
+          if (!el) { out.push({ label, sel, missing: true }); continue; }
+          const cs = getComputedStyle(el);
+          out.push({ label, sel, fg: parse(cs.color), px: parseFloat(cs.fontSize) });
+        }
+        return { paper: parse(paper), out };
+      `);
+      const failures = [];
+      for (const m of measured.out) {
+        assert.ok(!m.missing, `${m.sel} is not on the page - the probe is measuring nothing`);
+        const ratio = contrastRatio(m.fg, measured.paper);
+        if (ratio < AA_NORMAL) {
+          failures.push(`${m.label} (${m.sel}) rgb(${m.fg.join(",")}) at ${m.px}px = ` +
+            `${ratio.toFixed(2)}:1, AA needs ${AA_NORMAL}`);
+        }
+      }
+      assert.deepStrictEqual(failures, [],
+        "card text below WCAG AA on the paper:\n  " + failures.join("\n  "));
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours",
+    async () => {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      try {
+        const probe = await b.eval(`
+          const name = (el) => !el ? "null"
+            : el === document.documentElement ? "html"
+            : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
+              (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
+          const rows = [];
+          // The three under-sized controls, plus the ones that already pass:
+          // a min-height that swallows a neighbour is the row-214 bug again.
+          const sels = ["#modeA", "#modeB", "#shuffle", "#prev", "#next",
+                        "#deck-add", "#decks .chip:not(#deck-add)"];
+          for (const sel of sels) {
+            const el = document.querySelector(sel);
+            if (!el) { rows.push({ sel, missing: true }); continue; }
+            const r = el.getBoundingClientRect();
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            // Its OWN extremes, inset 1px so the probe is inside the box. The
+            // horizontal pair is taken on the vertical midline, where even a
+            // 999px-radius pill spans its full width - corners would not be
+            // inside a chip at all.
+            const pts = { top: [cx, r.top + 1], bottom: [cx, r.bottom - 1],
+                          centre: [cx, cy],
+                          left: [r.left + r.width / 4, cy],
+                          right: [r.right - r.width / 4, cy] };
+            const bad = [];
+            for (const [where, [x, y]] of Object.entries(pts)) {
+              const hit = document.elementFromPoint(x, y);
+              if (!(hit === el || el.contains(hit))) bad.push(where + " -> " + name(hit));
+            }
+            rows.push({ sel, h: +r.height.toFixed(1), w: +r.width.toFixed(1), bad });
+          }
+          return rows;
+        `);
+        const short = probe.filter((p) => !p.missing && p.h < 44);
+        const stolen = probe.filter((p) => !p.missing && p.bad.length);
+        assert.deepStrictEqual(probe.filter((p) => p.missing), []);
+        assert.deepStrictEqual(short.map((p) => `${p.sel} ${p.w}x${p.h}`), [],
+          "interactive controls under the 44px minimum at 390x844");
+        assert.deepStrictEqual(stolen.map((p) => `${p.sel}: ${p.bad.join(", ")}`), [],
+          "a control's own box hit-tests to something else - an expanded target " +
+          "has been laid over a neighbour");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  /* ---------------------------------------------------------------- *
+   * the chrome budget
+   *
+   * `main` is flex:1 and .scene is height:min(100%, ...), so on every
+   * viewport where the VERTICAL axis binds, one pixel added to the header
+   * or the footer is one pixel taken off the card - 1:1, silently.
+   *
+   * assertCardFits above CANNOT see that. Its maximality guard is
+   *     fitW = min(cardW, main.height * ratio)
+   * which is derived from the CURRENT main height, so when main shrinks the
+   * expectation shrinks with it and the assertion stays green while the card
+   * collapses. It answers "is the card as big as the space allows", never
+   * "is the space still there".
+   *
+   * So this guard pins the space itself, against numbers MEASURED on the
+   * merge-base and written down here. Both bounds are one-sided - chrome may
+   * only get smaller, the card may only get bigger - so a genuine improvement
+   * never has to touch this table, but growing the chrome does. The listed
+   * viewports are the ones where the vertical axis binds: 844x390 is iPhone 14
+   * landscape (the device rows 210/216 are about), 375x667 an SE, 390x745 an
+   * iPhone 14 with Safari's toolbar showing, 320x568 the narrowest phone still
+   * in the wild. 390x844 and 926x428 are included as controls: 88vw binds
+   * there, so the card must not move at all.
+   *
+   * If you change this table, say in the commit message what you took off the
+   * card and why the owner agreed to it.
+   * ---------------------------------------------------------------- */
+  const CHROME_BUDGET = [
+    // vw,  vh,   minCardW, maxChrome   (chrome = vh - main.height)
+    [390, 844, 343.19, 270.17],
+    [390, 745, 342.69, 270.17],
+    [375, 667, 288.80, 268.17],
+    [320, 568, 217.11, 268.17],
+    [844, 390, 82.42, 276.17],
+    [926, 428, 109.94, 276.17],
+  ];
+
+  test("the header and footer stay inside their pixel budget, so the card keeps its size",
+    async () => {
+      await freshLoad();
+      try {
+        const bad = [];
+        for (const [vw, vh, minCardW, maxChrome] of CHROME_BUDGET) {
+          await b.setViewport(vw, vh, true);
+          const m = await b.eval(`
+            const mn = document.querySelector("main").getBoundingClientRect();
+            const sc = document.querySelector(".scene").getBoundingClientRect();
+            return {
+              main: +mn.height.toFixed(2),
+              card: +sc.width.toFixed(2),
+              vh: document.documentElement.clientHeight,
+              header: +document.querySelector("header").getBoundingClientRect().height.toFixed(2),
+              footer: +document.querySelector("footer").getBoundingClientRect().height.toFixed(2),
+            };
+          `);
+          const chrome = +(m.vh - m.main).toFixed(2);
+          if (chrome > maxChrome + 1) {
+            bad.push(`${vw}x${vh}: chrome is ${chrome}px, budget ${maxChrome}px ` +
+              `(header ${m.header}, footer ${m.footer}) - main is ${m.main}px`);
+          }
+          if (m.card < minCardW - 1) {
+            bad.push(`${vw}x${vh}: the card is ${m.card}px wide, was ${minCardW}px ` +
+              `(-${(100 * (1 - m.card / minCardW)).toFixed(1)}%) - growing the chrome ` +
+              `takes this off the card 1:1`);
+          }
+        }
+        assert.deepStrictEqual(bad, [],
+          "the practice screen's chrome has grown at the card's expense");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  /* ---------------------------------------------------------------- *
    * the Edit sheet (Phase 4, lane 4c)
    *
    * The SAME sheet, reopened from the already-selected custom chip. Every
