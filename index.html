@@ -159,12 +159,14 @@ button.nav:active{background:#2e281e}
    Edit path) sits in the fixed remainder below. A reserved footer, not a
    sticky one: a sticky primary would sit ON TOP of the palette swatches at
    rest, which is a covered 44px target and no better than a hidden button.
-   min-height:0 is load-bearing - without it a flex item refuses to shrink
-   below its content and the footer is pushed out of the cap again.
+   The SHRINK is load-bearing: the body has to give way to the footer instead
+   of keeping its content height, or the footer is pushed past the cap again
+   (flex-shrink:0 here reproduces the original bug exactly). It needs no
+   min-height:0 to do that - a scroll container's automatic minimum size is
+   already 0, so overflow-y is the same declaration doing both jobs.
    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
    where the footer alone exceeds the cap. */
-.sheetbody{min-height:0; overflow-y:auto;
-  display:flex; flex-direction:column; gap:9px}
+.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:9px}
 .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
   text-transform:uppercase}
 /* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.

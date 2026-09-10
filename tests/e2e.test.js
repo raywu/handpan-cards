@@ -1942,7 +1942,12 @@ function run() {
       body: (() => {
         const el = surf.querySelector(".sheetbody");
         if (!el) return null;
-        return { clientH: el.clientHeight, scrollH: el.scrollHeight };
+        // How far the last row sits past the bottom of the box that holds it.
+        const last = el.lastElementChild.getBoundingClientRect();
+        return {
+          clientH: el.clientHeight,
+          overhang: last.bottom - el.getBoundingClientRect().bottom,
+        };
       })(),
     };
   `);
@@ -2064,16 +2069,20 @@ function run() {
 
       const at = await primaryFold();
       assert.ok(at.body, "the sheet has no .sheetbody - this test is measuring the wrong thing");
-      assert.ok(at.body.scrollH > at.body.clientH,
+      // Measured from the rows themselves, not from scrollHeight: a box that
+      // is not a scroll container reports scrollHeight === clientHeight while
+      // its content spills out of it in plain sight, and this test has to see
+      // that case as "unreachable content", not as "nothing overflows".
+      assert.ok(at.body.overhang > 0,
         "the largest pan no longer overflows in landscape: pick a taller case");
       assert.ok(at.body.clientH >= 100,
         `the footer left only ${at.body.clientH}px to scroll in - the sheet is unusable`);
 
-      // The end of the scrolling content is reachable, and the primary has not
-      // moved while getting there.
+      // The end of the content is reachable, and the primary has not moved
+      // while getting there.
       const end = await b.eval(`
         const body = document.querySelector(".sheetbody");
-        body.scrollTop = body.scrollHeight;
+        body.scrollTop = 1e7;
         const last = body.lastElementChild.getBoundingClientRect();
         const gen = document.getElementById("scale-generate").getBoundingClientRect();
         return {

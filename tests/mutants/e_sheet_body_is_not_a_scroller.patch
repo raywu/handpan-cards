@@ -1,0 +1,20 @@
+# kills: keeping the primary out of the scroll still leaves the sheet's own content reachable
+# suite: node --test --test-name-pattern keeping.the.primary.out.of.the.scroll tests/e2e.test.js
+# The sheet body stops being a scroll container. The footer still holds its
+# place - a flex item with min-height:0 shrinks either way - so the primary
+# still looks fine, and the content that no longer fits simply spills out of
+# the box with no way to reach it: on a tall Edit sheet the LAYOUT row and the
+# notes field become permanently unreachable, silently.
+diff --git a/index.html b/index.html
+index 2681e9b..57c7a83 100644
+--- a/index.html
++++ b/index.html
+@@ -139,7 +139,7 @@ button.nav:active{background:#2e281e}
+    below its content and the footer is pushed out of the cap again.
+    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
+    where the footer alone exceeds the cap. */
+-.sheetbody{min-height:0; overflow-y:auto;
++.sheetbody{min-height:0;
+   display:flex; flex-direction:column; gap:9px}
+ .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
+   text-transform:uppercase}

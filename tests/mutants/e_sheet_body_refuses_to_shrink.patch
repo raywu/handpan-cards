@@ -1,0 +1,20 @@
+# kills: SAVE CHANGES is reachable without scrolling on a built-in-sized deck
+# suite: node --test --test-name-pattern SAVE.CHANGES.is.reachable.without.scrolling.on.a.built-in-sized tests/e2e.test.js
+# The sheet body refuses to shrink, so it keeps its full content height inside
+# a surface capped at 85dvh, the surface scrolls again and the footer under it
+# is pushed past the cap: SAVE CHANGES starts 243px below the fold at 844x390.
+# Note this is the "it fits on MY phone" defect - the eight-note Edit sheet
+# clears 390x844 with a few pixels to spare and only fails in landscape.
+diff --git a/index.html b/index.html
+index 2681e9b..c861eb6 100644
+--- a/index.html
++++ b/index.html
+@@ -139,7 +139,7 @@ button.nav:active{background:#2e281e}
+    below its content and the footer is pushed out of the cap again.
+    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
+    where the footer alone exceeds the cap. */
+-.sheetbody{min-height:0; overflow-y:auto;
++.sheetbody{min-height:0; flex-shrink:0; overflow-y:auto;
+   display:flex; flex-direction:column; gap:9px}
+ .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
+   text-transform:uppercase}
