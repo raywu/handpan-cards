@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^formatSeed.prints.the.canonical.D13.string.with.explicit.octaves$ tests/core.test.js
 # kills: formatSeed: the ding must print its octave, so the round trip re-infers octave 3 and a non-3 ding comes back wrong
 diff --git a/src/engine/core.js b/src/engine/core.js
 index d8d9491..14969eb 100644

@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^MIDI.is.letter.anchored..so.Cb4.is.59.and.B.3.is.60$ tests/core.test.js
 # kills: midiFromName: a flat lowers the pitch by a semitone, so Ab3 is 56 and Cb4 is 59
 diff --git a/src/engine/core.js b/src/engine/core.js
 index dc78a30..b3fb5b9 100644

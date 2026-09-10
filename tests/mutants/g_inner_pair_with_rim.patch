@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^the.inner.pair.ascends.opposite.the.rim.direction$ tests/layout.test.js
 # kills: the inner pair ascends OPPOSITE the rim direction, so it starts on the far side from rim field 1
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 index f5d1cd5..d39d833 100644

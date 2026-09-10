@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^an.order.survives.the.round.trip..unchanged.element.for.element$ tests/share.test.js
 # kills: an order survives the round trip, unchanged element for element
 # encode never writes the delta section, so a correction is lost the moment
 # it is shared and the far side renders the generated layout instead.

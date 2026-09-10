@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^an.empty.zone.yields.zero..not.a.missing.key$ tests/layout.test.js
 # kills: geom always carries every key pan() reads - n_out is emitted as 0, never omitted
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 index f5d1cd5..fa111b0 100644

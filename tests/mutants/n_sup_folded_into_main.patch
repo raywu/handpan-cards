@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^every.built.in.card.s.main.and.sup.come.from.the.quality.table$ tests/naming.test.js
 # kills: every built-in card's main and sup come from the quality table
 # The superscript is folded into main, so no card renders a sup.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

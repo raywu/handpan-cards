@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^formatSeed.prints.the.separator..and.drops.it.when.it.says.nothing$ tests/core.test.js
 # kills: formatSeed prints the separator, and drops it when it says nothing (the canonical string loses the /, so the two decks collapse to one id)
 diff --git a/src/engine/core.js b/src/engine/core.js
 index d8d9491..6a1bd40 100644

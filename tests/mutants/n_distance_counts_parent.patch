@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^distance.counts.PAN.pitch.classes.outside.the.parent..not.the.reverse$ tests/naming.test.js
 # kills: distance counts PAN pitch classes outside the parent, not the reverse
 # Distance counts parent notes missing from the pan instead of the reverse.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^D8.in.parent..a.chromatic.parent.degree.is.numbered.by.its.degree.index$ tests/naming.test.js
 # kills: D8 in-parent: a chromatic parent degree is numbered by its degree index
 # An in-parent pitch class is numbered from the D8 reference scale again
 # instead of from its parent-degree index, so F Phrygian's Gb reads #I.

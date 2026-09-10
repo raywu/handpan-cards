@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^PARENTS.is.tests.fixtures.parents.json..in.the.fixed.list.order$ tests/naming.test.js
 # kills: PARENTS is tests/fixtures/parents.json, in the fixed list order
 # Dorian precedes Aeolian, so D Amara's distance-0 tie is won by Dorian.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

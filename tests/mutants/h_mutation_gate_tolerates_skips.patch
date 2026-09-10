@@ -1,5 +1,5 @@
 # kills: a partial sweep does not print MUTATION GATE PASSED
-# suite: node --test tests/mutation_harness.test.js
+# suite: node --test --test-name-pattern ^a.partial.sweep.does.not.print.MUTATION.GATE.PASSED$ tests/mutation_harness.test.js
 # Queue row 193. Restores the defect this lane closed: with the guard disabled
 # a sweep that skipped part of its corpus falls straight through to
 # "MUTATION GATE PASSED" and exit 0, so tests/mutation_harness.test.js's two

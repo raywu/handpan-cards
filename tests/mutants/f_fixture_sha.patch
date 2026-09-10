@@ -1,4 +1,4 @@
-# suite: python3 -m unittest tests.test_fixture_integrity
+# suite: python3 -m unittest -k test_sha256_matches_canonical_serialisation tests.test_fixture_integrity
 # kills: test_sha256_matches_canonical_serialisation
 # Hijaz C#sus4 voicing silently retuned from [3, 6, 7] to [3, 5, 7] - the
 # suspended 4th (F#4) swapped for the major 3rd (F4). Nothing outside the

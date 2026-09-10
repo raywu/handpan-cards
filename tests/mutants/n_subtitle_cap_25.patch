@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^the.26.character.subtitle.cap.and.the.16.character.name.cap.are.hard$ tests/naming.test.js
 # kills: the 26-character subtitle cap and the 16-character name cap are hard
 # The subtitle cap is 25, so the longest m7b5 equivalence no longer fits.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

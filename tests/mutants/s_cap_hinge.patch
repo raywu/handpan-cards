@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.cap.scales.with.pan.size..the.18.field.Pygmy.pan.caps.at.31$ tests/select.test.js
 # kills: the HINGE of the ENGINE-SPEC section 8 cap. The spec counts fields
 # "beyond the twelfth"; at 13 the 12-field worked example is unmoved but the
 # 18-field Pygmy pan caps at 30 instead of 31 and drops a card.

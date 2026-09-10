@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^a.version.byte.above.this.app.s.is.still.NEEDS.NEWER.APP$ tests/share.test.js
 # kills: decode: a newer version byte must be NEEDS_NEWER_APP, not a generic corrupt-link rejection
 diff --git a/src/engine/share.js b/src/engine/share.js
 index a40e4d3..defae87 100644

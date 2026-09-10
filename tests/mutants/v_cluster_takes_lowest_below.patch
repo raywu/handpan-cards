@@ -1,4 +1,4 @@
-# suite: node --test tests/voicing.test.js
+# suite: node --test --test-name-pattern ^(D2.forced.chords.keep.their.extensions.above.the.root.unless.forced.too|choose.reproduces.the.corpus.outside.the.recorded.two.sided.exceptions)$ tests/voicing.test.js
 # kills: D2 "every chord tone moves to its HIGHEST instance below the root".
 # Here a clustered chord tone takes the LOWEST instance below the root.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js

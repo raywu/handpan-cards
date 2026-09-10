@@ -1,5 +1,5 @@
 # kills: the header and footer stay inside their pixel budget, so the card keeps its size
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^the.header.and.footer.stay.inside.their.pixel.budget..so.the.card.keeps.its.size$ tests/e2e.test.js
 # Puts the four chrome margins back where they were before the 44px targets were
 # paid for: h1 2/8, .modebar 9, header 6, footer 10. Nothing about the controls
 # changes - every target is still 44px and still hit-tests to itself - so every

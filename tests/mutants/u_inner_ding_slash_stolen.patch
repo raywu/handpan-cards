@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^the.separator.and.the.trailing.slash.ding.never.collide$ tests/core.test.js
 # kills: the separator and the trailing-slash ding never collide (a trailing-slash ding is read as an inner separator)
 diff --git a/src/engine/core.js b/src/engine/core.js
 index d8d9491..2eebd81 100644

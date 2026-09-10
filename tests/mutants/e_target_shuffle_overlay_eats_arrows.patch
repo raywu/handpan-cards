@@ -1,5 +1,5 @@
 # kills: the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^the.mode.buttons.and.Shuffle.are.44px.tall.and.steal.nothing.from.their.neighbours$ tests/e2e.test.js
 # The other way to give Shuffle a 44px target: leave the box where it is and lay
 # an oversized ::after over the footer strip, so "the whole strip toggles
 # shuffle". This is what row 216's warning is about and what the min-height

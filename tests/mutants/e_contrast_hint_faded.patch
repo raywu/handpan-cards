@@ -1,5 +1,5 @@
 # kills: the card's small print meets AA contrast against the paper
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^the.card.s.small.print.meets.AA.contrast.against.the.paper$ tests/e2e.test.js
 # Fades "TAP TO REVEAL THE NOTES" back to #b6ae9f - 2.20:1 on the white paper,
 # less than half what WCAG AA asks at 9.5px, on the one string that tells a
 # first-run user what to do. The comment above it still claims 5.65:1, which is

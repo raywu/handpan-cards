@@ -1,5 +1,5 @@
 # kills: a baseline that hangs once is retried, not scored as red
-# suite: node --test tests/mutation_harness.test.js
+# suite: node --test --test-name-pattern ^a.baseline.that.hangs.once.is.retried..not.scored.as.red$ tests/mutation_harness.test.js
 # Queue rows 191/195. Takes the baseline's 124/137 retry back out by moving the
 # codes it matches off the ones `timeout` actually reports, so a hung clean-tree
 # suite is once again scored as "not green" and aborts the whole sweep.

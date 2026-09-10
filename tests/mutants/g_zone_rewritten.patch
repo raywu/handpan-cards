@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^solve.never.changes.a.zone$ tests/layout.test.js
 # kills: solve never changes a zone
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 index f5d1cd5..c43a94d 100644

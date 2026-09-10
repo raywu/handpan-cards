@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^D10..case.comes.from.stacked.thirds.over.the.parent$ tests/naming.test.js
 # kills: D10: case comes from stacked thirds over the parent
 # Case comes from stacked thirds over the pan instead of the parent.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

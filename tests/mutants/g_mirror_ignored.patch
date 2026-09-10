@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^mirror.reflects.every.angle.about.the.vertical.axis$ tests/layout.test.js
 # kills: mirror reflects every angle about the vertical axis
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 index f5d1cd5..a3118a7 100644

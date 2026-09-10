@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^a.v1.link.emitted.by.an.older.app.still.decodes.here..unchanged$ tests/share.test.js
 # kills: a v1 link emitted by an older app still decodes here, unchanged
 # The naked version bump: decode reads only the version it writes, so every
 # link ever shared becomes a corrupt payload the day the format grows.

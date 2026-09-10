@@ -1,4 +1,4 @@
-# suite: node --test tests/voicing.test.js
+# suite: node --test --test-name-pattern ^legality.invariants.hold.over.every.candidate.on.every.synthetic.pan$ tests/voicing.test.js
 # kills: the section 5 invariant that the ding never appears in a voicing.
 # playable() stops skipping the ding, so candidate sets carry ding fields.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js

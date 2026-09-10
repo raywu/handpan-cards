@@ -1,4 +1,4 @@
-# suite: node --test tests/voicing.test.js
+# suite: node --test --test-name-pattern ^the.6.note.budget.drops.the.lowest.optional.extension.first$ tests/voicing.test.js
 # kills: the 6-note budget of ENGINE-SPEC section 5 / D3 (the print floor,
 # measured at Pygmy Fm11). Here a 7-note voicing is legal and a 13 chord
 # keeps its 9th.
