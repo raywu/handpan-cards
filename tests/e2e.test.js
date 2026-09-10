@@ -1458,10 +1458,15 @@ function run() {
             const el = document.querySelector(sel);
             if (!el) { rows.push({ sel, missing: true }); continue; }
             const r = el.getBoundingClientRect();
-            const cx = r.left + r.width / 2;
-            // Its OWN extremes, inset 1px so the probe is inside the box.
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            // Its OWN extremes, inset 1px so the probe is inside the box. The
+            // horizontal pair is taken on the vertical midline, where even a
+            // 999px-radius pill spans its full width - corners would not be
+            // inside a chip at all.
             const pts = { top: [cx, r.top + 1], bottom: [cx, r.bottom - 1],
-                          centre: [cx, r.top + r.height / 2] };
+                          centre: [cx, cy],
+                          left: [r.left + r.width / 4, cy],
+                          right: [r.right - r.width / 4, cy] };
             const bad = [];
             for (const [where, [x, y]] of Object.entries(pts)) {
               const hit = document.elementFromPoint(x, y);
