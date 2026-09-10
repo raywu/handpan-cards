@@ -1,0 +1,45 @@
+# kills: the header and footer stay inside their pixel budget, so the card keeps its size
+# suite: node --test tests/e2e.test.js
+# Puts the four chrome margins back where they were before the 44px targets were
+# paid for: h1 2/8, .modebar 9, header 6, footer 10. Nothing about the controls
+# changes - every target is still 44px and still hit-tests to itself - so every
+# tap-target assertion stays green. What moves is `main`, by exactly 29.5px, and
+# because .scene is height:min(100%, ...) that comes straight off the card:
+# 82.42 -> 61.06px wide at 844x390. This is the regression the first round of
+# this lane shipped, and assertCardFits could not see it, because its
+# expectation min(cardW, main.height * ratio) is derived from the very quantity
+# that moved. Only a guard with a FIXED expectation catches it.
+diff --git a/index.html b/index.html
+index 62ab2bb..dacb820 100644
+--- a/index.html
++++ b/index.html
+@@ -52,9 +52,9 @@ body{
+    pins this against measured numbers. assertCardFits CANNOT: it derives its
+    expectation from the current main height, so it moves with the regression.
+    ------------------------------------------------------------------------ */
+-header{width:100%; max-width:520px; text-align:center; margin-bottom:1px}
++header{width:100%; max-width:520px; text-align:center; margin-bottom:6px}
+ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
+-   letter-spacing:.04em; margin:0 0 2px; color:#f4f0e8}
++   letter-spacing:.04em; margin:2px 0 8px; color:#f4f0e8}
+ /* The chip row scrolls horizontally and never wraps; auto margins on the end
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+@@ -101,7 +101,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
+   border-radius:999px; border:1.5px solid var(--dga);
+   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
+-.modebar{display:flex; gap:8px; justify-content:center; margin-top:1.5px}
++.modebar{display:flex; gap:8px; justify-content:center; margin-top:9px}
+ /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
+    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
+    above .modebar there are only a couple of pixels of margin before "+ ADD"
+@@ -199,7 +199,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    root/tone colours it sits between. */
+ .sepc{color:#75707c}
+ footer{width:100%; max-width:520px; display:flex; align-items:center;
+-  justify-content:space-between; gap:10px; margin-top:1px}
++  justify-content:space-between; gap:10px; margin-top:10px}
+ button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
+   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
+ button.nav:active{background:#2e281e}

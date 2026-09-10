@@ -4,18 +4,18 @@
 # one and the primary - last in the flow - goes back below the fold: this is
 # the reported bug verbatim (queue row 211), 245px down at 844x390.
 diff --git a/index.html b/index.html
-index 7d08ee3..71cbdd7 100644
+index 62ab2bb..2fbf075 100644
 --- a/index.html
 +++ b/index.html
-@@ -403,7 +403,6 @@ button.nav:active{background:#2e281e}
+@@ -446,7 +446,6 @@ button.nav:active{background:#2e281e}
                  aria-label="Move the chosen note one position on">MOVE &rarr;</button>
        </div>
      </div>
 -   </div>
-     <!-- Outside .sheetbody, with the primary: this row is 44px tall by spec
-          (both the mirror toggles and the palette swatches are full-size
-          targets), so it is the row a scrolling body would most readily clip.
-@@ -420,6 +419,7 @@ button.nav:active{background:#2e281e}
+     <!-- Outside .sheetbody, with the primary. The original reason - that the
+          swatches' 44px hit area was an ::after overlay a scroll container
+          would clip - is gone: the swatch button IS 44px now, so nothing
+@@ -471,6 +470,7 @@ button.nav:active{background:#2e281e}
      <div class="editrow" id="scale-delete-row" hidden>
        <button id="scale-delete" type="button">DELETE THIS DECK</button>
      </div>

@@ -8,11 +8,11 @@
 # later, positioned box, so it wins the hit test over #prev and #next and both
 # arrows go dead. Only a probe on the NEIGHBOURS sees it.
 diff --git a/index.html b/index.html
-index 7d08ee3..bb10be1 100644
+index 62ab2bb..7cc1ed3 100644
 --- a/index.html
 +++ b/index.html
-@@ -183,7 +183,10 @@ button.nav:active{background:#2e281e}
-    at 380x780 - see the .scene comment above. */
+@@ -218,7 +218,10 @@ button.nav:active{background:#2e281e}
+    visual change, accepted as the price of the target. */
  .shuffle{margin-top:0; min-height:44px; display:inline-flex; align-items:center;
    justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
 +  position:relative;

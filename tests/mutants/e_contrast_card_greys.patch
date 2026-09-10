@@ -4,24 +4,24 @@
 # Without this the hint mutant alone would prove the test live while the
 # .hdr .l .num (3.45:1 at 9px) and .sepc (2.95:1) probes could be dead code.
 diff --git a/index.html b/index.html
-index 7d08ee3..259fc07 100644
+index 62ab2bb..d473e60 100644
 --- a/index.html
 +++ b/index.html
-@@ -138,7 +138,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
- /* NOT var(--sep) (#8a8a8a, 3.45:1 on the paper): --sep is also the diagram's
-    receded-field grey, which is ground truth, so the fix is local to this
-    9px label. #757575 is 4.61:1. */
+@@ -168,7 +168,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    grey is ground truth. Note the consequence: --sep now has NO consumer at
+    all, in CSS or in JS. It is a dead token, left in place only because
+    removing it is a restyle beyond these three rows. */
 -.hdr .l .num{color:#757575; font-weight:400}
 +.hdr .l .num{color:var(--sep); font-weight:400}
  .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
  .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
    text-align:right; max-width:55%; text-transform:uppercase}
-@@ -167,7 +167,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -197,7 +197,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
  /* The note/number-line separators: #9a949f was 2.95:1 on the paper. #75707c
     keeps the same cool cast at 4.81:1 and stays clearly recessive against the
     root/tone colours it sits between. */
 -.sepc{color:#75707c}
 +.sepc{color:#9a949f}
  footer{width:100%; max-width:520px; display:flex; align-items:center;
-   justify-content:space-between; gap:10px; margin-top:10px}
+   justify-content:space-between; gap:10px; margin-top:1px}
  button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
