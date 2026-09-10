@@ -233,7 +233,14 @@ function run() {
   }
 
   // Click the i-th deck chip and wait for the deck to actually change over.
+  // The strip is scrolled first, exactly as a thumb would: at phone widths the
+  // row overflows and the pinned + ADD chip sits over its right end, so a chip
+  // near the end is genuinely under it until you scroll. That the scroll always
+  // frees it is asserted on its own, by "pinning + ADD leaves every deck chip
+  // reachable at 380px" - this helper must not be read as that guarantee.
   async function selectDeck(i, meta) {
+    await b.eval(`document.querySelectorAll("#decks .chip")[${i}]
+                    .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
     await b.click(`#decks .chip:nth-child(${i + 1})`);
     await expectCount(`1 / ${meta[i].chords}`, `deck ${meta[i].id} selected`);
   }
@@ -812,6 +819,156 @@ function run() {
       assert.strictEqual(row.activeInView, true, "the active chip is not scrolled into view");
       assert.strictEqual(row.addLast, "deck-add", "+ ADD is no longer last");
       assert.ok(row.body.sw <= row.body.cw + 1, "the chip row blew the page out horizontally");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * + ADD reachability at phone widths
+   *
+   * Owner-reported: "I do not see the pan visual before generating the chord
+   * cards." The preview was fine - its ONLY entry point was not. With the
+   * three built-in decks the chip row already overflows a phone viewport
+   * (scrollWidth 469 vs clientWidth 356 at 380px) and + ADD, being last, started
+   * at x=416 - entirely past the right edge at 380, 390 and 430 CSS px alike.
+   * It is on-screen at 768px and above, which is why review never caught it.
+   *
+   * 390x844 is the owner's own device (iPhone 14, iOS 26.6, Safari) and comes
+   * first; 380x800 is the repo's stated test width (CLAUDE.md); 430x930 is the
+   * widest phone that still overflows.
+   *
+   * These tests deliberately do NOT scrollIntoView first - the owner cannot
+   * do that, and neither may the test that guards them.
+   * ---------------------------------------------------------------- */
+  test("+ ADD is fully on-screen and hit-testable at phone widths", async () => {
+    await freshLoad();
+    try {
+      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
+        await b.setViewport(vw, vh, true);
+        const m = await b.eval(`
+          const add = document.getElementById("deck-add");
+          const nav = document.getElementById("decks");
+          const r = add.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return {
+            r: { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height },
+            vw: document.documentElement.clientWidth,
+            vh: document.documentElement.clientHeight,
+            overflows: nav.scrollWidth > nav.clientWidth + 1,
+            hitIsAdd: !!hit && (hit === add || add.contains(hit)),
+            body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+          };
+        `);
+        const at = `at ${vw}x${vh}`;
+        assert.strictEqual(m.overflows, true,
+          `the chip row does not overflow ${at}, so this width proves nothing`);
+        assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
+          `+ ADD is not inside the viewport ${at}: ${JSON.stringify(m.r)}`);
+        assert.ok(m.r.t >= -1 && m.r.b <= m.vh + 1,
+          `+ ADD is cut off vertically ${at}: ${JSON.stringify(m.r)}`);
+        assert.ok(m.r.h >= 43.5 && m.r.w > 20,
+          `+ ADD lost its 44px touch target ${at}: ${JSON.stringify(m.r)}`);
+        assert.strictEqual(m.hitIsAdd, true,
+          `nothing hit-tests to + ADD at its own centre ${at}: ${JSON.stringify(m.r)}`);
+        assert.ok(m.body.sw <= m.body.cw + 1,
+          `the page scrolls horizontally ${at} (${m.body.sw} > ${m.body.cw})`);
+
+        // A real click at that centre point, with no scrolling first.
+        await b.click("#deck-add");
+        await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: `the sheet to open from a plain tap on + ADD ${at}` });
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: `the sheet to close again ${at}` });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the owner's journey at 380px: tap + ADD, type a scale, see the pan", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      await b.click("#deck-add");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the scale sheet to open from a plain tap on + ADD at 380px" });
+      await typeScale("(D) A C D E F G A C");
+      await b.waitFor(
+        `(() => { const p = document.getElementById("scale-preview");
+                  return !!p && !p.hasAttribute("hidden") && !!p.querySelector("svg"); })()`,
+        { label: "the pan preview to render" });
+
+      const m = await b.eval(`
+        const p = document.getElementById("scale-preview");
+        const s = document.querySelector(".sheetsurf");
+        const pr = p.getBoundingClientRect(), sr = s.getBoundingClientRect();
+        const sv = p.querySelector("svg").getBoundingClientRect();
+        return {
+          pr: { l: pr.left, r: pr.right, t: pr.top, b: pr.bottom, w: pr.width, h: pr.height },
+          sr: { l: sr.left, r: sr.right, t: sr.top, b: sr.bottom },
+          sv: { w: sv.width, h: sv.height },
+          vh: document.documentElement.clientHeight,
+          vw: document.documentElement.clientWidth,
+        };
+      `);
+      assert.ok(m.pr.w > 40 && m.pr.h > 40,
+        `the pan preview has no size: ${JSON.stringify(m.pr)}`);
+      assert.ok(m.sv.w > 20 && m.sv.h > 20,
+        `the preview svg has no size: ${JSON.stringify(m.sv)}`);
+      assert.ok(m.pr.l >= m.sr.l - 1 && m.pr.r <= m.sr.r + 1
+                && m.pr.t >= m.sr.t - 1 && m.pr.b <= m.sr.b + 1,
+        `the pan preview is outside the visible sheet surface: ` +
+        `${JSON.stringify(m.pr)} vs ${JSON.stringify(m.sr)}`);
+      assert.ok(m.pr.t >= -1 && m.pr.b <= m.vh + 1 && m.pr.l >= -1 && m.pr.r <= m.vw + 1,
+        `the pan preview is off a 380x800 screen: ${JSON.stringify(m.pr)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("pinning + ADD leaves every deck chip reachable at 380px", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    await b.setViewport(380, 800, true);
+    try {
+      // scrollIntoView with inline:"nearest" is the minimum scroll that puts a
+      // chip in view - so it is exactly the case a pinned overlay breaks, and
+      // the case .decks' scroll-padding-right has to cover.
+      const probe = (i) => b.eval(`
+        const c = document.querySelectorAll("#decks .chip:not(#deck-add)")[${i}];
+        if (!c) throw new Error("no deck chip ${i}");
+        c.scrollIntoView({ block: "nearest", inline: "nearest" });
+        const r = c.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return {
+          hitIsChip: !!hit && (hit === c || c.contains(hit)),
+          r: { l: r.left, r: r.right, w: r.width },
+          vw: document.documentElement.clientWidth,
+        };
+      `);
+      const check = async (i, label) => {
+        const m = await probe(i);
+        assert.strictEqual(m.hitIsChip, true,
+          `deck chip ${label} is covered or off-screen even after scrolling ` +
+          `it into view: ${JSON.stringify(m)}`);
+        assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
+          `deck chip ${label} is not inside the viewport: ${JSON.stringify(m.r)}`);
+      };
+
+      for (let i = 0; i < meta.length; i++) {
+        await check(i, meta[i].id);
+        await selectDeck(i, meta);
+      }
+
+      // And with the strip long enough that the LAST deck chip only comes into
+      // view at maximum scroll - where the pin has nowhere left to slide.
+      for (const s of SIX_SCALES) await generate(s);
+      const n = await b.eval(
+        `return document.querySelectorAll("#decks .chip:not(#deck-add)").length;`);
+      assert.strictEqual(n, meta.length + SIX_SCALES.length, "the six custom decks are not all there");
+      for (let i = 0; i < n; i++) await check(i, `#${i} of ${n}`);
     } finally {
       await b.setViewport(900, 900, false);
     }

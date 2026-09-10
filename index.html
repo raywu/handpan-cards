@@ -43,6 +43,33 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   cursor:pointer; position:relative; white-space:nowrap;
 }
 .chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
+/* + ADD is the only entry point to the custom-deck sheet (and the pan
+   preview), so it may never scroll out of reach. It is PINNED to the right of
+   the scrolling strip and the deck chips scroll UNDER it: an opaque table
+   ground plus a soft left shadow so a chip passing beneath reads as occluded,
+   not as clipped. The 22px floor on the right inset parks it just clear of the
+   strip's right-edge fade, which keeps doing its "more chips this way" job in
+   the gap; the max(...) is this file's safe-area idiom, so on a notched phone
+   in landscape the chip clears the rounded corner too. Sticky - never a
+   scroll-driven transform - so it cannot lag behind iOS momentum scrolling,
+   and it carries no touch-action override, so a swipe that starts on it still
+   scrolls the strip. Auto margins still centre the row while it fits, and
+   sticky does nothing at all until the row overflows.
+
+   Two consequences of pinning, both paid for here:
+   - the pin pulls + ADD --addpin to the LEFT of where it sits in flow, so at
+     maximum scroll it would overlap the last deck chip. The matching
+     margin-left lengthens the strip by exactly that much, handing the last
+     chip its normal 8px gap back.
+   - anything scrolled into view with inline:"nearest" would land UNDER the
+     pinned chip. scroll-padding-right reserves the pinned chip's width plus
+     that gap, so scrollIntoView (and the app's own "keep the active chip in
+     view") stops short of it. */
+#decks{--addpin:max(22px, env(safe-area-inset-right));
+  scroll-padding-right:calc(74px + var(--addpin))}
+#deck-add{position:sticky; right:var(--addpin); margin-left:var(--addpin);
+  z-index:1; background:var(--table2);
+  box-shadow:-14px 0 10px -4px var(--table2)}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
