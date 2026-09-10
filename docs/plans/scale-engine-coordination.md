@@ -1132,3 +1132,39 @@ Sweep cost is now 1.60s per mutant (`e_` 5.60s, non-`e_` 0.39s) against GitHub's
 |---|---|---|---|
 | 273 | #55 review | **The code comment at `tests/mutation_check.sh:180-184` misrepresents the change as a cost.** Its mechanism is right ("the cache saves much less... roughly one extra clean-tree run per mutant") but it frames the trade as "that is the price... worth paying" when the measured result is a 2.7x win. A maintainer reading only that comment could conclude targeted headers are expensive and avoid adding them - the exact opposite of the incentive the change creates. Rewrite it with the measured numbers | open - LOW |
 | 274 | #55 review | Two numbers in the PR #55 write-up are wrong and are corrected here for the record: the new mutant is byte-neutral at **13864** both sides, not 13576 (the neutrality property itself holds and was verified), and the file-only header count is **73**, not 83 - 83 was the count of patches that already had A header, 10 of which were already targeted. All 149 headers the lane ADDED are targeted; none took the file-only shortcut | closed - recorded |
+
+
+### PR #54 review - PASS
+
+Verdict PASS at `f1a9699`, run 34521385541 attempt 1, all five jobs success, gate 16m57s and `233/233 mutants killed`.
+
+**The central risk was retry scoping, and the reviewer proved it by execution with its own stand-ins** - a mode-switched script plus a hand-rolled WebSocket server for the setup-send case, each recording its own spawn count:
+
+| mode | attempts | outcome |
+|---|---|---|
+| ok | 1 | browser |
+| nobinary | 0 | null |
+| exit3 / exit0 | 1 | throw, original error |
+| badws | 1 | throw |
+| setupfail | 1 | throw |
+| **silent** | **2** | throw `browser did not report a debug port` |
+| **slowthenfast** | **2** | browser |
+
+Every real-breakage case fails on the FIRST attempt with its ORIGINAL error. Only the slow-start case retries, exactly once. Scoping is correct.
+
+**The NaN hazard this integrator flagged is unreachable, and the reviewer showed why rather than asserting it.** `raw > 0` short-circuits first and `NaN > 0` is false, so `Math.min(NaN, x)` is never evaluated. Full truth table run: unset, empty, garbage, `NaN`, `-1`, `0`, `Infinity`, `1e9`, `1,000`, `null`, `true`, `[]` all yield 20000; `500`/`19999`/`20000` pass through; `20001` clamps to 20000. Floor-only as claimed, and the unchanged default was confirmed by measurement (`ms:20103` on a retry with the var unset). The seam is scope the brief did not ask for, and it is justified: the slow-start test costs 20367ms against the merge-base hardcoded bound versus 887ms on the branch, and that ~19.5s is paid twice per e2e run and 233 times per sweep.
+
+**No leaks.** After ~100 real-Chrome launches including ~15 retries, `$TMPDIR` held the same 3 `hpfc-prof-*` dirs it held before, all dated a day earlier. The retry path instrumented 3x and 5x leaves exactly one profile dir (the successful browser's, legitimately in use) and zero after `close()`. The lane's probe reads `TMPDIR` and runs `ps` from INSIDE the child before `process.exit(0)`, so the teardown reaper cannot mask a leak - the reviewer verified that claim rather than accepting it.
+
+**Non-vacuity established the right way for each test.** Test 1 goes red on the merge-base at the assertion (`LAUNCHES 1`, `1 !== 2`, `tests/e2e.test.js:3192`), not in setup. Test 2 **cannot** go red on the merge-base - code that never retries trivially satisfies "not retried" - so its instrument is the mutant instead, which is the correct call. The mutant's header command run verbatim on the clean tree gives `tests 1 / pass 1`, so it is NOT in lane 33's vacuous class; applied it gives `tests 1 / fail 1`, exit 1.
+
+**And the reviewer reproduced the mechanism causally on real Chromium**, which is more than the brief asked for. Under 12 saturating CPU hogs with the bound tightened to 70ms, branch versus a scratch no-retry copy, same binary, same load, 45 trials each: nine genuine slow-start events on both sides, **1 failure with the retry against 9 without**. The retry rescued eight of nine.
+
+**The honest caveat, and it is the one that matters:** `covered_by: neither` on "the CI intermittent is actually gone". A retry against a load-dependent scheduling race cannot be proven fixed by any number of green runs, only made less likely - and the reviewer's own experiment did not reach zero, because 1 of 45 lost the lottery twice. **A fifth occurrence of row 271's signature would not, by itself, mean this fix is wrong.** Recorded here so a future integrator does not reopen it as a regression.
+
+Two pre-existing defects the reviewer found and correctly declined to fix in this lane, filed below. It also confirmed the two orphan `node` processes CI logs at job end are pre-existing: the pre-PR main run at `d4b9e13` logs exactly the same two.
+
+| # | Source | Item | Status |
+|---|---|---|---|
+| 275 | #54 review | A WebSocket open failure rejects with the raw `error` event, so the message reaching the caller is the **empty string**. Scoping still works (`"" !== SLOW_START`), but a connection failure surfaces as a blank diagnostic - the same class of problem PR #51 fixed for the port timeout. Pre-existing at the merge-base | open - LOW |
+| 276 | #54 review | If `spawn()` itself throws, `profileDir` is created before `LIVE.add(entry)`, so the dir leaks with nothing tracking it. Pre-existing, untouched by this lane | open - LOW |
