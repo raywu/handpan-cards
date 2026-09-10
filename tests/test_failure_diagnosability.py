@@ -58,6 +58,29 @@ def _run_check_node(fake_output, total=5, failed=2, skipped=0):
     return buf.getvalue(), problems
 
 
+def _run_check_python(body):
+    """Drive check_python over ONE synthetic python test and capture its stdout.
+
+    Discovery is replaced with a single injected TestCase, so no real suite runs
+    and the assertion is about the tool's reporting, not about any real test file.
+    The per-file floor table is emptied for the same reason: this is a report
+    about a red suite, not about how many tests a file owns.
+    """
+    class Synthetic(unittest.TestCase):
+        def runTest(self):
+            body(self)
+
+    suite = unittest.TestSuite([Synthetic()])
+    buf = io.StringIO()
+    with mock.patch.object(unittest.TestLoader, "discover",
+                           lambda self, **kw: suite), \
+            mock.patch.object(suite_health, "PY_FILES", []), \
+            mock.patch.object(suite_health, "LEGACY_PYTHON", 0), \
+            contextlib.redirect_stdout(buf):
+        problems = suite_health.check_python()
+    return buf.getvalue(), problems
+
+
 class SuiteHealthReportsFailureOutput(unittest.TestCase):
     def test_failing_node_suite_output_reaches_stdout(self):
         tap = ("TAP version 13\n"
@@ -81,6 +104,24 @@ class SuiteHealthReportsFailureOutput(unittest.TestCase):
         self.assertLess(len(out), 20000,
                         "an unbounded dump would drown the log; got %d chars" % len(out))
 
+    def test_failure_excerpt_keeps_both_ends_of_a_huge_stream(self):
+        # The bound is a HEAD-plus-TAIL excerpt, and both halves are load-bearing:
+        # the first failure says what broke, the trailing summary says how much.
+        # A tail-only reduction still satisfies test_failure_excerpt_is_bounded,
+        # so the head half needs its own marker, planted far enough from the tail
+        # that no bound short enough to be useful could contain both by accident.
+        head_marker = MARKER + "_AT_THE_HEAD"
+        tail_marker = MARKER + "_AT_THE_TAIL"
+        huge = head_marker + "\n" + ("x" * 200000) + "\n" + tail_marker + "\n"
+        out, _ = _run_check_node(huge)
+        self.assertIn(tail_marker, out,
+                      "the tail of a huge failing suite was lost")
+        self.assertIn(head_marker, out,
+                      "the HEAD of a huge failing suite was lost - the first "
+                      "failure is the half that says what broke:\n" + out)
+        self.assertLess(len(out), 20000,
+                        "an unbounded dump would drown the log; got %d chars" % len(out))
+
     def test_green_node_suite_prints_no_excerpt(self):
         out, problems = _run_check_node(f"ok 1 - fine\n{MARKER}\n", failed=0)
         self.assertNotIn(MARKER, out,
@@ -88,6 +129,35 @@ class SuiteHealthReportsFailureOutput(unittest.TestCase):
         self.assertEqual(
             [p for p in problems if "not green" in p], [],
             "a green suite was reported as not green")
+
+
+class SuiteHealthReportsPythonFailureOutput(unittest.TestCase):
+    """The python runner had the same defect the node runner did.
+
+    Its output went to /dev/null and the verdict was a bare "not green", so a red
+    python suite in CI could only be diagnosed by re-running it locally.
+    """
+
+    def test_failing_python_suite_output_reaches_stdout(self):
+        out, problems = _run_check_python(lambda t: t.fail(MARKER))
+        self.assertTrue(problems, "a failing suite must still be reported as a problem")
+        self.assertIn(MARKER, out,
+                      "a failing python suite's own output never reached stdout:\n" + out)
+
+    def test_python_failure_excerpt_is_bounded(self):
+        huge = "y" * 200000
+        out, _ = _run_check_python(lambda t: t.fail(huge + "\n" + MARKER))
+        self.assertIn(MARKER, out, "the tail of a huge python failure was lost")
+        self.assertLess(len(out), 20000,
+                        "an unbounded dump would drown the log; got %d chars" % len(out))
+
+    def test_green_python_suite_prints_no_excerpt(self):
+        out, problems = _run_check_python(lambda t: None)
+        self.assertEqual(
+            [p for p in problems if "not green" in p], [],
+            "a green suite was reported as not green")
+        self.assertNotIn("Traceback", out,
+                         "a GREEN suite's output was dumped into the log:\n" + out)
 
 
 def _git(cwd, *args):

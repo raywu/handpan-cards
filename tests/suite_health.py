@@ -19,6 +19,7 @@ else's row" is a reviewer rule (tests/CONTRACT.md), not something arithmetic can
 see.
 """
 import glob
+import io
 import os
 import re
 import subprocess
@@ -37,7 +38,7 @@ FLOORS = {
     "tests/test_print.py": 17,
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
-    "tests/test_failure_diagnosability.py": 7,
+    "tests/test_failure_diagnosability.py": 11,
     # node
     "tests/app.test.js": 93,
     "tests/e2e.test.js": 55,
@@ -117,7 +118,11 @@ def check_python():
         for e in loader.errors:
             print(e)
         return ["python: test discovery raised errors"]
-    runner = unittest.TextTestRunner(verbosity=0, stream=open("/dev/null", "w"),
+    # Captured, not discarded: a red python suite used to report a bare verdict
+    # with its tracebacks streamed to /dev/null, which is the same defect the
+    # node path carried and the same reason main was unexplainably red.
+    captured = io.StringIO()
+    runner = unittest.TextTestRunner(verbosity=0, stream=captured,
                                      resultclass=PerFileResult)
     result = runner.run(suite)
     problems = []
@@ -146,6 +151,10 @@ def check_python():
         problems.append("python: skipped tests are not allowed: "
                         + ", ".join(str(s[0]) for s in result.skipped))
     if result.failures or result.errors:
+        print(f"--- python: {len(result.failures)} failing, {len(result.errors)} "
+              f"erroring test(s), the suite's own output follows ---")
+        print(excerpt(captured.getvalue()))
+        print("--- end of python output ---")
         problems.append("python: suite is not green")
     return problems
 
