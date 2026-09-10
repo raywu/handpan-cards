@@ -53,11 +53,16 @@ ok      = {ok: true,  value: <payload>, warnings?: [{code, reason}]}
 err     = {ok: false, code: <CODE>, reason: <English sentence>}
 ```
 
-- DECIDED(swarm-2026-09-08) Three entry points take untrusted input and return
-  the result type: `core.parseSeed`, `select.build` and `share.decode` (which
-  delegates to `core.parseSeed`). They never throw on user input. Three more
-  return it without taking untrusted input: `share.encode` below, and
-  `layout.solve` and `voicing.choose` under the amendment below that.
+- DECIDED(swarm-2026-09-08) Six entry points return the result type, and what
+  they have in common is that each CAN FAIL, not where their argument came
+  from: `core.parseSeed`, `select.build` and `share.decode` (which delegates to
+  `core.parseSeed`), plus `share.encode` below and `layout.solve` and
+  `voicing.choose` under the amendment below that. They never throw on user
+  input. Untrusted input reaches `core.parseSeed` and `share.decode`, and also
+  `layout.solve`, whose `options.order` arrives from a decoded share payload or
+  a restored localStorage record and is validated by `readOrder`
+  (`src/engine/layout.js:189-205`, section 14); `select.build` by contrast is
+  handed an already-parsed seed.
 - DECIDED(swarm-2026-09-08) `core.parseSeed(string, options?)` returns, on
   success, `value` = the SEED: `{fields, options}` where `fields` is the map
   `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
