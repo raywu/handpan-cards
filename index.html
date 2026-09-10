@@ -158,8 +158,11 @@ button.nav:active{background:#2e281e}
    So the scroll moved INSIDE: everything above the primary scrolls in
    .sheetbody and the primary (with DELETE THIS DECK, which follows it on the
    Edit path) sits in the fixed remainder below. A reserved footer, not a
-   sticky one: a sticky primary would sit ON TOP of the palette swatches at
-   rest, which is a covered 44px target and no better than a hidden button.
+   sticky one: a sticky primary overlaps the palette swatches MID-SCROLL (at
+   scrollTop 188-228 of a 259 max on the Edit sheet, all six swatches hit-test
+   to #scale-generate, not to themselves), so it trades a button below the fold
+   for six 44px targets a finger cannot reach at some scroll offsets. A
+   reserved footer occludes nothing at any offset.
    The SHRINK is load-bearing: the body has to give way to the footer instead
    of keeping its content height, or the footer is pushed past the cap again
    (flex-shrink:0 here reproduces the original bug exactly). It needs no
