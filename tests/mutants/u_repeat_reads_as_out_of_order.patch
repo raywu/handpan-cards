@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^NOTE_REPEATED.names.the.note.that.is.already.on.that.shell$ tests/core.test.js
+# kills: the same note twice in a row reads as a repeat, not as the riddle "C4 is not above C4"
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d5690cb..571c91c 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -153,9 +153,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // riddle. The ding is not on either shell, so a top note repeating it is an
+   // ordering failure, not a repeat.
+   function outOfOrder(note, midi, prevNote, prevMidi, prevIsDing) {
+-    if (!prevIsDing && placed(note, midi) === placed(prevNote, prevMidi)) {
+-      return repeated(note, midi);
+-    }
+     return err("NOTE_OUT_OF_ORDER", {
+       "<A>": placed(note, midi),
+       "<B>": before(prevNote, prevMidi, prevIsDing)

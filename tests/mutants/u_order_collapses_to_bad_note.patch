@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^a.bottom.note.below.the.octave.inferred.for.the.note.before.it.says.so$ tests/core.test.js
+# kills: a bottom note out of order is diagnosed as such, not collapsed back into the generic "is not a note" - the exact regression the owner reported
+diff --git a/src/engine/core.js b/src/engine/core.js
+index d5690cb..455efa0 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -382,8 +382,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         : place(low, bottomNotes[n - 1].midi, nextAbove);
+       if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
+       if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
+-        return outOfOrder(low, low.midi, bottomNotes[n - 1],
+-                          bottomNotes[n - 1].midi, false);
++        return badNote(low.token);
+       }
+       low.octave = octaveOf(low.letter, low.accidental, low.midi);
+       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
