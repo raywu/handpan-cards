@@ -1189,7 +1189,7 @@ Wave 18 fixed the half of row 263 that a script could enforce. Wave 19 takes the
 | Lane | Rows | Worktree | Branch | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|---|---|
 | 34 (`header-retarget`) | 272, 273 | agent | scale-engine/w34-header-retarget | pending | pending | pending | 0 of 2 |
-| 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | #56 OPEN | `c3bdbad` | in review | 1 of 2 |
+| 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | #56 MERGED | `c3bdbad` | PASS_WITH_NITS | 1 of 2 |
 
 Boundary: lane 34 owns `tests/mutants/*.patch` and `tests/mutation_check.sh`. Lane 35 owns `tests/suite_health.py`, `tests/test_failure_diagnosability.py`, and the ONE new mutant file it adds. Neither touches `index.html`, `src/engine/`, `tools/`, or deck data.
 
@@ -1210,3 +1210,28 @@ Row 259 done first as briefed: a test planting markers at BOTH ends of a 200,000
 2. **The lane's local sweep figure is not a datapoint and it said so.** 94.6s over 181 evaluated mutants looks like 0.52s/mutant, 3.2x under the anchor - but **55 mutants were skipped locally for a missing browser**, and those are precisely the slow e2e ones. This is the row-258 instrument working: a suspicious timing number was chased to its cause instead of being reported as a speedup. CI's 1.58s/mutant at the same SHA is the real figure.
 
 The one thing the lane reasoned about rather than ran: that a targeted `-m unittest <dotted path>` header is safer than `-k` because a mistyped dotted path errors out instead of running 0 tests and exiting 0. It did not mistype one to confirm. The reviewer was told to actually test it - if a mistyped dotted path can exit 0, these headers are in the vacuous class and the conclusion flips.
+
+
+### PR #56 review - PASS_WITH_NITS, merged as `5e27ceb`. Rows 257 and 259 CLOSED
+
+**The reviewer did the test the lane declined to do, and the lane's reasoning survived it.** The lane asserted without checking that a mistyped `-m unittest <dotted path>` errors out rather than running 0 tests and exiting 0. The reviewer mistyped it three ways - method, class, module - and all three give `Ran 1 test / FAILED (errors=1)`, exit 1. Caught twice over, in fact, since `tests/mutation_check.sh:144-157` runs every header on the clean tree first and reports `broken` on a red baseline.
+
+**But it found the vacuous dotted-path form that DOES exist, and this is the durable finding.** `python3 -m unittest tests.paths` - a real module containing no TestCases - gives **`Ran 0 tests / OK`, exit 0**. Neither header here is in that class. Note how it degrades: a vacuous header exits 0 on the clean tree AND under the mutant, so the script scores it `survived` and the gate goes red. Same fail-safe the #55 review established for node patterns. **The hollow-header trap cannot manufacture a false kill in this harness by either route** - it can only produce a loud false survivor. That is now established for both languages and should stop being re-litigated.
+
+**Guard strength was measured against the class, not the author's own mutation.** The reviewer wrote four independent re-blindings of `check_python()`, none of them the lane's mutant - devnull with the StringIO still in place, narrowing the predicate to `if result.errors:`, redirecting the print to stderr, and the symmetric head-only `excerpt()` reduction. All four go red. A guard that only catches the exact mutation its author wrote is much weaker than one that catches the behaviour class; this one catches the class.
+
+**My brief's premise D was wrong and the reviewer corrected it.** I framed the second mutant as over-delivery against a one-mutant budget. It ran the check the justification rests on: the pre-existing node-side `h_suite_health_failure_silent.patch` applied against the new python group gives `Ran 3 tests / OK` - it leaves the entire group unkilled. So `tests/CONTRACT.md` rule 3 *requires* the python counterpart, and row 259's brief explicitly asked for the other one. Neither mutant was discretionary; **the budget line in my brief undercounted.** Fourth time a lane or reviewer has corrected a brief in this workstream, and the third time the correction was load-bearing.
+
+Also confirmed: a genuine mirror of the node path (`:153-157` against `:260-264` - same `excerpt()`, same bounds, same envelope), not a third convention; the fix incidentally closes a leaked file descriptor, since the old `open("/dev/null","w")` was never closed. FLOORS 11 re-derived three times AND proven enforced live by bumping it to 12 in-memory and watching the problem appear. Both patches' `index` blob hashes resolved and verified genuine rather than hand-typed - a CONTRACT rule 4 audit nobody asked for.
+
+| # | Item | Status |
+|---|---|---|
+| 257 | `check_python()` discards evidence on the python side | **closed** - PR #56 |
+| 259 | the head half of `excerpt()` is unenforced | **closed** - PR #56 |
+
+| # | Source | Item | Status |
+|---|---|---|---|
+| 277 | #56 review | **`test_green_python_suite_prints_no_excerpt` uses a weaker oracle than necessary, and there is a one-line stronger one.** `tests/test_failure_diagnosability.py:158-160` asserts `"Traceback" not in out`; the reviewer demonstrated by running that moving the report block outside the `if` - an unconditional dump of a GREEN run - leaves all three tests green. The lane's premise (a passing python test cannot write into the runner's stream) is true but does not imply this oracle: the **envelope** is a marker the production code itself writes, so `assertNotIn("the suite's own output follows", out)` catches it and does not depend on the stream's content at all. The missed direction is noise rather than silence, which is why this is a nit | open - LOW |
+| 278 | #56 review | The lane report's "Ran 8 tests" for the row-259 red/green flip is not reproducible at the head SHA, where the file has 11. It was a true measurement at an intermediate state, before the row-257 tests landed, and went stale in the write-up. **Process lesson: re-measure reported counts at the FINAL commit**, not when the sub-task was finished | closed - recorded |
+
+**What the review could not cover, in its own words:** `check_python()` was never exercised against the real 78-test suite in a genuinely red state - all three tests drive one synthetic `TestCase` with `PY_FILES` and `LEGACY_PYTHON` mocked out, so the excerpt bound under a real multi-traceback failure is reasoned, not measured. Worth knowing the first time a python suite actually goes red in CI.
