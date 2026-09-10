@@ -1887,10 +1887,23 @@ function run() {
 
     const profiles = path.join(tmp, "profiles");
     fs.mkdirSync(profiles);
+    // The child reports what is left the moment launch() rejects, BEFORE it
+    // exits. Checking after exit would prove nothing: the process-teardown
+    // reaper cleans up on the way out, so a launch() that never reaped its own
+    // failure would still look clean from outside. The leak this closes is the
+    // window a long-lived process spends holding an orphan it already gave up on.
     const script =
+      "const { execFileSync } = require('node:child_process');" +
+      "const fs = require('node:fs');" +
       "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
       "(async () => { try { await launch(); console.log('NOTHROW'); }" +
       "  catch (e) { console.log('THREW ' + (e && (e.message || e.type || e))); }" +
+      "  const root = process.env.TMPDIR;" +
+      "  const left = fs.readdirSync(root).filter((n) => n.startsWith('hpfc-prof-'));" +
+      "  const ps = execFileSync('ps', ['-eo', 'pid=,args=', '-ww'], { encoding: 'utf8' })" +
+      "    .split('\\n').filter((l) => l.includes(root));" +
+      "  console.log('LEFT ' + JSON.stringify(left));" +
+      "  console.log('PROCS ' + ps.length);" +
       "  process.exit(0); })();";
 
     const r = await new Promise((resolve) => {
@@ -1912,13 +1925,18 @@ function run() {
       // The original error is a diagnostic other lanes read; it must survive.
       assert.ok(!/THREW (undefined|null)\b/.test(r.o), `the failure lost its error:\n${r.o}`);
 
-      const left = fs.existsSync(profiles)
-        ? fs.readdirSync(profiles).filter((n) => n.startsWith("hpfc-prof-")) : [];
-      assert.deepStrictEqual(left, [],
-        `launch() left profile directories behind: ${left.join(", ")}`);
+      const leftLine = r.o.match(/LEFT (\[.*\])/);
+      assert.ok(leftLine, `the child never reported its profile directories:\n${r.o}`);
+      assert.deepStrictEqual(JSON.parse(leftLine[1]), [],
+        `launch() left profile directories behind: ${leftLine[1]}`);
+      const procLine = r.o.match(/PROCS (\d+)/);
+      assert.ok(procLine, `the child never reported surviving processes:\n${r.o}`);
+      assert.strictEqual(Number(procLine[1]), 0,
+        `launch() left ${procLine[1]} process(es) holding the profile`);
+      // And nothing outlived the child either.
       const clear = await until(() => processesUnder(profiles).length === 0, 5000);
       assert.ok(clear,
-        `launch() left the browser running:\n${processesUnder(profiles).join("\n")}`);
+        `a browser outlived the failed launch:\n${processesUnder(profiles).join("\n")}`);
     } finally {
       killUnder(tmp);
       fs.rmSync(tmp, { recursive: true, force: true });
