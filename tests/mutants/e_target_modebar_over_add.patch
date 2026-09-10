@@ -1,0 +1,21 @@
+# kills: the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours
+# suite: node --test tests/e2e.test.js
+# Keeps the 44px height and buys the extra 18.5px back by pulling .modebar up
+# over "+ ADD" - the obvious way to "fix" a header that got taller. Both mode
+# buttons still measure 44px and every rect is still on screen, but the mode bar
+# is the later sibling so it wins the hit test and + ADD, the only entry point
+# to the create sheet, is dead. A height-only assertion cannot see this; the
+# elementFromPoint probe on the neighbours can.
+diff --git a/index.html b/index.html
+index 7d08ee3..44113b8 100644
+--- a/index.html
++++ b/index.html
+@@ -80,7 +80,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
+   border-radius:999px; border:1.5px solid var(--dga);
+   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
+-.modebar{display:flex; gap:8px; justify-content:center; margin-top:9px}
++.modebar{display:flex; gap:8px; justify-content:center; margin-top:-19px}
+ /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
+    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
+    above .modebar there is only a 9px margin before "+ ADD" while below it is

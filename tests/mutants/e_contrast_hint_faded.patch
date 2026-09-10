@@ -1,0 +1,19 @@
+# kills: the card's small print meets AA contrast against the paper
+# suite: node --test tests/e2e.test.js
+# Fades "TAP TO REVEAL THE NOTES" back to #b6ae9f - 2.20:1 on the white paper,
+# less than half what WCAG AA asks at 9.5px, on the one string that tells a
+# first-run user what to do. The comment above it still claims 5.65:1, which is
+# the shape this regression would really take.
+diff --git a/index.html b/index.html
+index 7d08ee3..ed368c4 100644
+--- a/index.html
++++ b/index.html
+@@ -152,7 +152,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    #6f6658 is the same warm grey darkened to 5.65:1, comfortably past the 4.5:1
+    WCAG AA needs at this size. It is a UI grey, not a deck palette colour, so
+    the design system is untouched. */
+-.hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#6f6658;
++.hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#b6ae9f;
+   text-transform:uppercase}
+ .diagwrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0;
+   padding:2px 6px 0}

@@ -1,0 +1,32 @@
+# kills: every palette swatch owns its full 44px hit area on BOTH axes
+# suite: node --test tests/e2e.test.js
+# Puts the swatches back on a 14px box with a 44px invisible ::after overlay
+# and a 10px gap. Every rect is still correct and the vertical probe in "every
+# chip and sheet control has a 44px hit area" still passes - but the centres
+# are 24px apart while the overlays are 44px wide, so each overlay covers the
+# right half of its left-hand neighbour and wins the hit test as the later
+# sibling. Tapping inside Palette 3 selects Palette 4.
+diff --git a/index.html b/index.html
+index 7d08ee3..49b9e2e 100644
+--- a/index.html
++++ b/index.html
+@@ -266,13 +266,13 @@ button.nav:active{background:#2e281e}
+    A target that IS the element has neither failure mode, at any alignment.
+    The dot keeps its 14px spec; the visible gap widens to 30px, which is the
+    pitch 44px targets require. */
+-#scale-swatches{display:flex; gap:0; align-items:center}
+-#scale-swatches .dot{width:44px; height:44px; border:none; padding:0; background:none;
+-  position:relative; cursor:pointer}
+-#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
+-  width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
++#scale-swatches{display:flex; gap:10px; align-items:center}
++#scale-swatches .dot{width:14px; height:14px; border-radius:50%; border:none; padding:0;
++  position:relative; cursor:pointer;
+   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+-#scale-swatches .dot.sel::after{box-shadow:0 0 0 2px #f1ece1}
++#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
++  width:44px; height:44px; transform:translate(-50%,-50%)}
++#scale-swatches .dot.sel{box-shadow:0 0 0 2px #f1ece1}
+ #scale-generate{width:100%; min-height:44px; border-radius:8px; cursor:pointer;
+   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
+   font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em}
