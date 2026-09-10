@@ -1296,3 +1296,24 @@ Worth carrying forward as a general fact about this repo's CI: **a `pull_request
 |---|---|---|---|
 | 283 | #57 review | **Three headers in the corpus still run more than one test, and one of them re-imports the defect this wave removed.** Verified by this integrator on merged main: 236 mutants, 233 single-test headers, plus two node alternations (`h_integrity_ignored`, `v_cluster_takes_lowest_below`) and one python CLASS-level header (`h_suite_health_python_silent`, lane 35's, naming `SuiteHealthReportsPythonFailureOutput` - three methods). The reviewer went past the lane's disclosure and established the sharper fact: **each alternation branch dies independently**, so one test would do in each case. The live exposure is `v_cluster_takes_lowest_below`, which can score `killed` off `choose reproduces the corpus...` - a test that dies broadly because many chords move - **without the direction-sensitive test ever going red**. Narrow all three. For `v_cluster_takes_lowest_below` keep `D2 forced chords keep their extensions above the root unless forced too` | open - MEDIUM |
 | 284 | #57 review | The rewritten cost comment in `tests/mutation_check.sh` cites corpus counts (233/232) from the wave-18 transition it describes. Main is now at 236 and a reader re-deriving those figures from today's logs will not reproduce them - the reviewer's own timing agent did exactly that and flagged the comment as unsupported before the discrepancy was traced. Date it or cite the run id | open - LOW |
+
+
+### Main green at `160ae9b`. New row-258 anchor, and the prediction landed
+
+All five jobs green, gate **280s over 236 mutants = 1.186s per mutant**. The #57 reviewer's prediction from the branch run was 1.196s. That is a 0.8% miss on a forward prediction of a figure that has moved 1.72 -> 1.19 in one merge, which is the strongest evidence yet that per-mutant is the portable number and per-prefix attribution is a real instrument rather than a story fitted after the fact.
+
+**Anchor history, updated: `af70afd` 391s/233 = 1.68 | `b138328` 389s/234 = 1.66 | `5e27ceb` 406s/236 = 1.72 | `bd06361` 378s/236 = 1.60 | `160ae9b` 280s/236 = 1.186.** The 1.6-1.7 plateau is now historical; anchor future predictions to 1.186 and re-anchor after every main run.
+
+### Wave 20 opened. Lane 36 delivered PR #58 at `2caa606`, in review
+
+Rows 279 and 283 taken together deliberately, because they are the same defect at two levels: a test that does not test what its title says, and a header that lets a mutant score a kill off something other than the assertion it breaks. Fixing the header without fixing the test would have pointed a narrowed header at a vacuous test - a worse outcome than leaving it alone, because it would LOOK closed.
+
+Verified by this integrator before spawning the reviewer: PR OPEN, head SHA equals the remote branch tip, base main, merge-base `0948e08`, run 34532254688 at exactly that SHA all five jobs green. Diff +37/-6 over 4 files - `tests/voicing.test.js` plus the three patches, nothing else.
+
+The lane reports the row-279 flip as a real red/green: clean tree `pass 1`, with `v_cluster_takes_lowest_below` applied `fail 1` at `tests/voicing.test.js:305` with `tone 2 of Fm11 took 48, not the highest instance below the root / 48 !== 60`. It also confirmed rather than assumed the #57 reviewer's both-branches-die claim for `h_integrity_ignored`, and checked the python retarget's baseline SHAPE (`Ran 1 test / OK`) rather than only its exit code - which is the right discipline, since the vacuous form and the healthy form differ only in the count line.
+
+**FLOORS unchanged** - the case went inside an existing test, so `tests/voicing.test.js` stays at 14. Derived by running, per row 253's rule.
+
+**One disclosed scope excursion, sent to the reviewer as a judgment call rather than a finding.** The brief said to change ONLY the `# suite:` line. The lane also edited two lines of PROSE above the diff in `h_suite_health_python_silent.patch`, which asserted the header was class-targeted and quoted counts the retarget made false. Leaving them would have produced a patch documenting the opposite of its own header. The patch body and `index` line are claimed untouched; the reviewer is asked to verify that against `tests/CONTRACT.md` rule 4 rather than accept it, and to say if it disagrees with my read - I wrote the restrictive brief, so I am not neutral on whether breaking it was right.
+
+Second correction from this lane, minor: `tests/voicing.test.js` loads `tests/fixtures/golden_decks_v1.json`, not `golden_decks.json`.
