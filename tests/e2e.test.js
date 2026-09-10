@@ -844,7 +844,12 @@ function run() {
   test("+ ADD is fully on-screen and hit-testable at phone widths", async () => {
     await freshLoad();
     try {
-      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
+      // Every width twice: once with the three built-ins (103px of overflow)
+      // and once with three more custom decks on top, because the overflow
+      // grows with every deck generated and buildChips only ever scrolls the
+      // SELECTED chip into view - never + ADD.
+      const widths = [[390, 844], [380, 800], [430, 930]];
+      for (const [vw, vh] of [...widths, ...widths]) {
         await b.setViewport(vw, vh, true);
         const m = await b.eval(`
           const add = document.getElementById("deck-add");
@@ -856,11 +861,12 @@ function run() {
             vw: document.documentElement.clientWidth,
             vh: document.documentElement.clientHeight,
             overflows: nav.scrollWidth > nav.clientWidth + 1,
+            decks: nav.querySelectorAll(".chip:not(#deck-add)").length,
             hitIsAdd: !!hit && (hit === add || add.contains(hit)),
             body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
           };
         `);
-        const at = `at ${vw}x${vh}`;
+        const at = `at ${vw}x${vh} with ${m.decks} decks`;
         assert.strictEqual(m.overflows, true,
           `the chip row does not overflow ${at}, so this width proves nothing`);
         assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
@@ -881,6 +887,11 @@ function run() {
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: `the sheet to close again ${at}` });
+
+        // Halfway through, lengthen the strip and go round again.
+        if (m.decks === 3 && vw === 430) {
+          for (const s of SIX_SCALES.slice(0, 3)) await generate(s);
+        }
       }
     } finally {
       await b.setViewport(900, 900, false);
