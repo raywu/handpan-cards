@@ -275,6 +275,36 @@ test("D2 forced chords cluster chord tones to the highest instance below the roo
     [0, 3, 7, 10]);
   assert.deepStrictEqual(plain(gotCm7.value.fields), cm7.fields);
   assert.strictEqual(zoneOf(pygmy.fields, plain(gotCm7.value.fields)[1]), "bottom");
+
+  // HIGHEST, not merely "below": Pygmy Fm11 (root F4) is the case with TWO
+  // instances below the root for both the 5th (C4, C3) and the 7th (Eb4, Eb3).
+  // The rule names the highest of them, so C4/Eb4 - a "lowest below" reading
+  // would give C3/Eb3 and is what this case exists to reject.
+  const fm11 = pygmy.chords.find((c) => c.main === "Fm" && c.sup === "11");
+  const gotFm11 = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, fm11.roots[0])),
+    [0, 3, 7, 10, 14, 17]);
+  const fm11Ids = plain(gotFm11.value.fields);
+  const fm11Root = midiOf(pygmy.fields, fm11Ids[0]);
+  for (const i of [2, 3]) {
+    const midi = midiOf(pygmy.fields, fm11Ids[i]);
+    assert.ok(midi < fm11Root, `tone ${i} of Fm11 sits below the root`);
+    let highestBelow = -Infinity;
+    for (const key of Object.keys(pygmy.fields)) {
+      const r = pygmy.fields[key];
+      if (r[3] === "ding") continue;
+      if (pc(r[2]) !== pc(midi) || r[2] >= fm11Root) continue;
+      if (r[2] > highestBelow) highestBelow = r[2];
+    }
+    let instancesBelow = 0;
+    for (const key of Object.keys(pygmy.fields)) {
+      const r = pygmy.fields[key];
+      if (r[3] === "ding") continue;
+      if (pc(r[2]) === pc(midi) && r[2] < fm11Root) instancesBelow += 1;
+    }
+    assert.strictEqual(instancesBelow, 2, `tone ${i} of Fm11 has two instances below`);
+    assert.strictEqual(midi, highestBelow,
+      `tone ${i} of Fm11 took ${midi}, not the highest instance below the root`);
+  }
 });
 
 test("D2 forced chords keep their extensions above the root unless forced too", () => {
