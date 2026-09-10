@@ -1,0 +1,17 @@
+# kills: only the face that is showing is exposed, and the counter is a live region
+# suite: node --test --test-name-pattern only.the.face.that.is.showing.is.exposed tests/e2e.test.js
+# The card counter stops being a live region, so stepping with the arrows or a
+# swipe announces nothing at all.
+diff --git a/index.html b/index.html
+index 7ea4e13..ed7b9d3 100644
+--- a/index.html
++++ b/index.html
+@@ -299,7 +299,7 @@ button.nav:active{background:#2e281e}
+   <div class="mid">
+     <!-- polite, not assertive: stepping is the user's own action, so the new
+          position should follow the card, never interrupt it. -->
+-    <div class="count" id="count" aria-live="polite"></div>
++    <div class="count" id="count"></div>
+     <button class="shuffle" id="shuffle">Shuffle: off</button>
+   </div>
+   <button class="nav" id="next" aria-label="Next card">&rarr;</button>

@@ -1,0 +1,20 @@
+# kills: GENERATE and SAVE CHANGES leave focus on the deck that was just made
+# suite: node --test --test-name-pattern GENERATE.and.SAVE.CHANGES.leave.focus.on.the.deck tests/e2e.test.js
+# The chip strip is rebuilt without re-homing focus, so the caret lands on
+# <body> (DELETE) or is left on "+ ADD" (GENERATE / SAVE CHANGES) instead of
+# on the deck that is now showing.
+diff --git a/index.html b/index.html
+index 7ea4e13..8a0899a 100644
+--- a/index.html
++++ b/index.html
+@@ -3004,10 +3004,6 @@ function selectDeck(id) {
+   deckId = id;
+   storedDeck = id;
+   save(); setOrder(); buildChips(); render();
+-  if (rehome) {
+-    const chip = document.querySelector("#decks .chip.on");
+-    if (chip) chip.focus();
+-  }
+ }
+ 
+ /* ---------------- helpers ---------------- */
