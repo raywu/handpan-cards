@@ -91,8 +91,8 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
    landscape the height is the axis that runs out: at 844x390 `main` has 113.8px
    to give while 46vh asks for a 179.4-wide card, i.e. a 247.7-tall one. The
    ~134px of overflow was split above and below by align-items:center, laying
-   the card over the header and the footer - four controls (NAME<->NOTES, both
-   mode buttons, SHUFFLE, the counter and + ADD) had perfect on-screen rects
+   the card over the header and the footer - five controls (both mode buttons,
+   SHUFFLE, the counter and + ADD) had perfect on-screen rects
    that elementFromPoint resolved to the card.
    So the HEIGHT is the definite axis and the width is derived from it:
    height = min(what the box has, what --card-w would have asked for), which
