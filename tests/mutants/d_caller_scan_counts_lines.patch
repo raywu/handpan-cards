@@ -1,4 +1,5 @@
 # kills: the caller scan counts every occurrence, in code and in prose alike
+# suite: node --test --test-name-pattern ^the.caller.scan.counts.every.occurrence..in.code.and.in.prose.alike$ tests/app.test.js
 # Queue row 159. The scan goes back to counting LINES instead of occurrences,
 # so a second call appended to the line that already names the function hides
 # behind the first. Mutating a test file is precedent-backed (see

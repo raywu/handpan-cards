@@ -1,4 +1,5 @@
 # kills: writing the app's own keys leaves a sibling key in hpfc untouched
+# suite: node --test --test-name-pattern ^writing.the.app.s.own.keys.leaves.a.sibling.key.in.hpfc.untouched$ tests/app.test.js
 # save() goes back to replacing the whole hpfc object, so any sibling key
 # another feature stored there is silently dropped on the next write.
 diff --git a/index.html b/index.html

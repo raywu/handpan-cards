@@ -1,4 +1,5 @@
 # kills: a corrupt saved scale is dropped and the app still boots on the built-ins
+# suite: node --test --test-name-pattern ^a.corrupt.saved.scale.is.dropped.and.the.app.still.boots.on.the.built.ins$ tests/app.test.js
 # restoreScales trusts whatever is in storage, so one unusable record throws
 # and takes the whole boot down with it.
 diff --git a/index.html b/index.html

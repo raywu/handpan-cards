@@ -1,4 +1,5 @@
 # kills: in landscape every control stays tappable and the card fits, at every size and state
+# suite: node --test --test-name-pattern ^in.landscape.every.control.stays.tappable.and.the.card.fits..at.every.size.and.state$ tests/e2e.test.js
 # Applies the fix the mobile audit itself suggested for row 210:
 #   .scene{max-height:100%; width:auto; max-width:var(--card-w)}
 # It leaves BOTH axes indefinite. .card and both .faces are percentage- and

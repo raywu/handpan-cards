@@ -1,4 +1,5 @@
 # kills: test_layouts_match_spec
+# suite: python3 -m unittest -k test_layouts_match_spec tests.test_deck_data
 # Hijaz rim angles 4 (180) and 6 (135) swapped in BOTH index.html and
 # tools/decks.py, so validate.py's cross-check still passes: only the
 # CLAUDE.md layout table catches it.

@@ -1,4 +1,5 @@
 # kills: test_highlight_band_sits_between_the_outline_and_the_hairline
+# suite: python3 -m unittest -k test_highlight_band_sits_between_the_outline_and_the_hairline tests.test_print tests.test_pdf_build
 # The coloured band must stay between the outline and the inner hairline.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..ed5f2b6 100644

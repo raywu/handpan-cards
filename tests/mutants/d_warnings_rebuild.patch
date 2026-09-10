@@ -1,4 +1,5 @@
 # kills: the success path reads deck.warnings without generating a second time
+# suite: node --test --test-name-pattern ^the.success.path.reads.deck.warnings.without.generating.a.second.time$ tests/app.test.js
 # The warnings are re-derived by generating the deck a second time. The text
 # is identical, so only a call count can see it - and the cost is paid on
 # every successful generate.

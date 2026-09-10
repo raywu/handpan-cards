@@ -1,4 +1,5 @@
 # kills: a non-string stored deck id is ignored and never eats a share link
+# suite: node --test --test-name-pattern ^a.non.string.stored.deck.id.is.ignored.and.never.eats.a.share.link$ tests/app.test.js
 # The stored deck id goes back to a truthiness check, so a non-string value
 # reaches the boot tail and throws on .indexOf - taking the share-link handler
 # at the end of the script with it.

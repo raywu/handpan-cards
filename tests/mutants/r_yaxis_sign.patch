@@ -1,4 +1,5 @@
 # kills: test_tonefield_positions_agree
+# suite: python3 -m unittest -k test_tonefield_positions_agree tests.test_render_agreement
 # Flips the y-axis sign in the app's polar helper, so the SVG mirrors
 # vertically while the PDF does not.
 diff --git a/index.html b/index.html

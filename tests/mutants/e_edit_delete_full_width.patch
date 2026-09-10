@@ -1,4 +1,5 @@
 # kills: the selected custom chip reopens the sheet in Edit state, prefilled, at 380px
+# suite: node --test --test-name-pattern ^the.selected.custom.chip.reopens.the.sheet.in.Edit.state..prefilled..at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index a127d86..7ee351c 100644
 --- a/index.html

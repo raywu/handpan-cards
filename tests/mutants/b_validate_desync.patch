@@ -1,4 +1,5 @@
 # kills: test_validate_py_passes
+# suite: python3 -m unittest -k test_validate_py_passes tests.test_deck_data
 # tools/decks.py alone drifts from the JSON embedded in index.html - the
 # print deck and the app would ship different card copy.
 diff --git a/tools/decks.py b/tools/decks.py

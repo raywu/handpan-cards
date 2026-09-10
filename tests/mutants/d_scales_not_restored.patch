@@ -1,4 +1,5 @@
 # kills: a generated deck survives a reload, rebuilt from its saved seed
+# suite: node --test --test-name-pattern ^a.generated.deck.survives.a.reload..rebuilt.from.its.saved.seed$ tests/app.test.js
 # Boot stops rebuilding the saved scales, so a custom deck does not survive a
 # reload and its stored id silently falls back to a built-in.
 diff --git a/index.html b/index.html

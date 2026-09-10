@@ -1,4 +1,5 @@
 # kills: an options-only edit keeps its chip index across a reload with three decks
+# suite: node --test --test-name-pattern ^an.options.only.edit.keeps.its.chip.index.across.a.reload.with.three.decks$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 3509543..526f8a7 100644
 --- a/index.html

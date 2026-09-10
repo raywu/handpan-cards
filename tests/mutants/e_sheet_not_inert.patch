@@ -1,4 +1,5 @@
 # kills: while the sheet is open Generate is the only reachable primary button
+# suite: node --test --test-name-pattern ^while.the.sheet.is.open.Generate.is.the.only.reachable.primary.button$ tests/e2e.test.js
 # The landmarks behind the sheet stay live, so the modal is only visually
 # modal: the practice screen's buttons remain clickable and focusable
 # underneath it.

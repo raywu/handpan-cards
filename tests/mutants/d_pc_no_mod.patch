@@ -1,4 +1,5 @@
 # kills: chordSets: Amara C major has two root-coloured fields (C4 + C5)
+# suite: node --test --test-name-pattern ^chordSets..Amara.C.major.has.two.root.coloured.fields..C4...C5.$ tests/app.test.js
 diff --git a/index.html b/index.html
 index d2aeb5a..fbd6c0e 100644
 --- a/index.html

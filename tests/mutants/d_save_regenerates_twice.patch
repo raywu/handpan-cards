@@ -1,4 +1,5 @@
 # kills: saving from the Edit sheet regenerates exactly once (13A)
+# suite: node --test --test-name-pattern ^saving.from.the.Edit.sheet.regenerates.exactly.once..13A.$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 3509543..cc59021 100644
 --- a/index.html

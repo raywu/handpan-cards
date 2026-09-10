@@ -1,4 +1,5 @@
 # kills: test_an_omitted_key_is_actually_absent_and_carries_a_reason
+# suite: python3 -m unittest -k test_an_omitted_key_is_actually_absent_and_carries_a_reason tests.test_print tests.test_pdf_build
 # The omission table is padded with keys the adapter still emits, which would
 # let it excuse any missing key at all.
 diff --git a/tools/decks.py b/tools/decks.py

@@ -1,4 +1,5 @@
 # kills: a same-id generate replaces the deck in place, keeps the id and says Updated
+# suite: node --test --test-name-pattern ^a.same.id.generate.replaces.the.deck.in.place..keeps.the.id.and.says.Updated$ tests/app.test.js
 # A regenerate of a deck that already exists reports it as newly generated,
 # so the user cannot tell a replacement from an addition.
 diff --git a/index.html b/index.html

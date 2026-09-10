@@ -1,4 +1,5 @@
 # kills: replaceRegistered has exactly one call site, and a new one must read the return
+# suite: node --test --test-name-pattern ^replaceRegistered.has.exactly.one.call.site..and.a.new.one.must.read.the.return$ tests/app.test.js
 # Queue row 159. Distinct from d_replace_registered_second_caller: that one adds
 # a whole new LINE, this one appends the second call to the line that already
 # names the function. A scan that filters lines rather than counting

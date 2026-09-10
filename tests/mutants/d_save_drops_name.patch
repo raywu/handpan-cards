@@ -1,4 +1,5 @@
 # kills: renaming keeps the id, relabels the chip and survives a reload
+# suite: node --test --test-name-pattern ^renaming.keeps.the.id..relabels.the.chip.and.survives.a.reload$ tests/app.test.js
 diff --git a/index.html b/index.html
 index f27316d..b1ae745 100644
 --- a/index.html

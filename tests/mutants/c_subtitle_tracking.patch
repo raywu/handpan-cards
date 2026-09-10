@@ -1,4 +1,5 @@
 # kills: test_drawn_subtitle_fits_the_header_budget_on_every_card
+# suite: python3 -m unittest -k test_drawn_subtitle_fits_the_header_budget_on_every_card tests.test_print tests.test_pdf_build
 # The subtitle is measured with one tracking value and drawn with another;
 # the DRAWN width is what has to fit the header budget.
 diff --git a/tools/hifi.py b/tools/hifi.py

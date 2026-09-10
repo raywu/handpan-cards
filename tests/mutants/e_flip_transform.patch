@@ -1,4 +1,5 @@
 # kills: tapping the card flips it
+# suite: node --test --test-name-pattern ^tapping.the.card.flips.it$ tests/e2e.test.js
 # Regenerated, not rewritten: the mutation is the same one this patch has always
 # made (delete the .card.flip transform), but it carried the old
 # `.scene{width:var(--card-w); ...}` line as hunk CONTEXT, and the landscape

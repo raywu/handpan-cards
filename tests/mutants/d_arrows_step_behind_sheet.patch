@@ -1,4 +1,5 @@
 # kills: arrow keys do not step the card while the sheet is open
+# suite: node --test --test-name-pattern ^arrow.keys.do.not.step.the.card.while.the.sheet.is.open$ tests/app.test.js
 # Arrow keys still step the practice deck while the sheet is open, so moving
 # the caret inside the scale box shuffles the card behind it.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: test_state_selects_root_or_tone_colour_but_never_both
+# suite: python3 -m unittest -k test_state_selects_root_or_tone_colour_but_never_both tests.test_print tests.test_pdf_build
 # Root fields must light in the root colour, chord tones in the tone colour.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..937d76d 100644

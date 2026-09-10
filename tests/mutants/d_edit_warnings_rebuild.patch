@@ -1,4 +1,5 @@
 # kills: the Edit sheet shows deck.warnings from the registry with no generation call
+# suite: node --test --test-name-pattern ^the.Edit.sheet.shows.deck.warnings.from.the.registry.with.no.generation.call$ tests/app.test.js
 diff --git a/index.html b/index.html
 index a127d86..99b84a4 100644
 --- a/index.html

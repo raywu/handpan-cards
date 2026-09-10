@@ -1,4 +1,5 @@
 # kills: checkShareVersion rejects a version that is not a finite number
+# suite: node --test --test-name-pattern ^checkShareVersion.rejects.a.version.that.is.not.a.finite.number$ tests/app.test.js
 # The guard drops its type check, so undefined, null, NaN, "2" and {} all read
 # as an acceptable version: none of them is > SHARE_VERSION.
 diff --git a/index.html b/index.html

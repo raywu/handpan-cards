@@ -1,4 +1,5 @@
 # kills: pan() sizes a generated deck's viewBox from the solver's ext
+# suite: node --test --test-name-pattern ^pan...sizes.a.generated.deck.s.viewBox.from.the.solver.s.ext$ tests/app.test.js
 # pan() re-derives the extent instead of reading the one layout.solve computed,
 # so a generated pan is cropped or padded wrongly (ENGINE-SPEC section 11).
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
 # kills: test_a_warning_survives_the_adapter_and_reaches_the_title_blurb
+# suite: python3 -m unittest -k test_a_warning_survives_the_adapter_and_reaches_the_title_blurb tests.test_print tests.test_pdf_build
 # The title blurb stops printing the engine's warnings, so a NO_THIRDS pan
 # prints with no sign anywhere on the sheets that the app had flagged it.
 diff --git a/tools/decks.py b/tools/decks.py

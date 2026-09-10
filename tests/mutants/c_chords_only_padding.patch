@@ -1,4 +1,5 @@
 # kills: test_all_six_pdfs_build_with_the_expected_page_counts
+# suite: python3 -m unittest -k test_all_six_pdfs_build_with_the_expected_page_counts tests.test_print tests.test_pdf_build
 # build() must report the number of sheets it actually wrote.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..49b0547 100644

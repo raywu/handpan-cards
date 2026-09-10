@@ -1,4 +1,5 @@
 # kills: the arrow keys choose a position and MOVE swaps it with its neighbour
+# suite: node --test --test-name-pattern ^the.arrow.keys.choose.a.position.and.MOVE.swaps.it.with.its.neighbour$ tests/e2e.test.js
 # The arrow keys stop choosing a position, so the only way left to pick a
 # note is a pointer - exactly the drag-only path D5 forbids.
 diff --git a/index.html b/index.html

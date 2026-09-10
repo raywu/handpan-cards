@@ -1,4 +1,5 @@
 # kills: test_midi_matches_note_name
+# suite: python3 -m unittest -k test_midi_matches_note_name tests.test_deck_data
 # Amara ding D3 given MIDI 51 (= Eb3). The ding is in no voicing, so every
 # chord invariant and validate.py stay green; only the note-name <-> MIDI
 # pitch-class check (and the layout table) notice.

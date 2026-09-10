@@ -1,4 +1,5 @@
 # kills: test_fit_shrinks_overlong_text_but_stops_at_the_floor
+# suite: python3 -m unittest -k test_fit_shrinks_overlong_text_but_stops_at_the_floor tests.test_print tests.test_pdf_build
 # fit() must stop shrinking at its floor instead of vanishing.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..492460a 100644

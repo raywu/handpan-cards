@@ -126,13 +126,20 @@ function sweep(dir) {
   return { code: r.status, out: `${r.stdout || ""}${r.stderr || ""}` };
 }
 
-// A patch with an `e_` name and NO `# suite:` header falls through to the
-// filename-prefix table, which points it at the real repo's e2e suite. The
-// fixture repo has no tests/helpers/cdp.js, so the script's browser probe
-// yields "" and the mutant takes the no-browser skip branch - deterministically,
-// whether or not a browser exists on this machine.
-const E2E_SKIPPED = { name: "e_fixture_needs_browser", header: "a fixture e2e assertion", suiteHeader: "" };
+// A patch with an `e_` name takes the no-browser skip branch: the fixture repo
+// has no tests/helpers/cdp.js, so the script's browser probe yields "" and the
+// mutant is skipped deterministically, whether or not a browser exists on this
+// machine. It still carries a `# suite:` header, because a header-less patch is
+// refused outright (see the refusal tests below) and would never reach the skip.
+const E2E_SKIPPED = {
+  name: "e_fixture_needs_browser", header: "a fixture e2e assertion",
+  suiteHeader: "# suite: node --test tests/e2e.test.js\n",
+};
 const KILLABLE = { name: "x_subject_is_ok", header: "subject.txt stays ok" };
+// A patch carrying `# kills:` but NO `# suite:` line at all.
+const HEADERLESS = {
+  name: "d_fixture_has_no_suite_header", header: "some app assertion", suiteHeader: "",
+};
 
 test("green baseline: the sweep kills its fixture mutant and passes", (t) => {
   const dir = makeFixture(t, { mutants: [KILLABLE] });
@@ -237,6 +244,41 @@ test("the sweep leaves the fixture tree clean", (t) => {
   const dir = makeFixture(t, { mutants: [KILLABLE] });
   sweep(dir);
   assert.equal(git(dir, ["status", "--porcelain"]).trim(), "", "sweep left the tree dirty");
+});
+
+// Queue row 263. The sweep used to pick a command for a header-less patch off
+// its FILENAME PREFIX, and for the node prefixes that command was the whole
+// suite - so the verdict rested on the suite's exit code alone and never on the
+// test the patch claims to kill. A mutant that broke some unrelated test in the
+// same file was recorded "killed" while proving nothing. That is the same class
+// of unearned green as a red baseline manufacturing kills (rows 187/173), and
+// the fix is the same shape: refuse, loudly, instead of guessing.
+test("a patch with no '# suite:' header is refused, never guessed at", (t) => {
+  const dir = makeFixture(t, { mutants: [HEADERLESS] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /^d_fixture_has_no_suite_header\.patch broken/m, out);
+  assert.match(out, /# suite:/, out);
+  assert.notEqual(code, 0, out);
+});
+
+test("a header-less patch cannot be scored as killed", (t) => {
+  // The whole point: no verdict of any kind may be manufactured for it, and the
+  // sweep must not print a pass over a corpus containing one.
+  const dir = makeFixture(t, { mutants: [HEADERLESS] });
+  const { out } = sweep(dir);
+  assert.doesNotMatch(out, /^d_fixture_has_no_suite_header\.patch killed/m, out);
+  assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
+});
+
+test("the refusal is per-patch: well-formed siblings are still evaluated", (t) => {
+  // Refusing must not degrade into aborting the sweep - the other mutants still
+  // carry evidence, and losing it would push lanes toward not adding the guard.
+  const dir = makeFixture(t, { mutants: [HEADERLESS, KILLABLE] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /^x_subject_is_ok\.patch killed/m, out);
+  assert.match(out, /^d_fixture_has_no_suite_header\.patch broken/m, out);
+  assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
+  assert.notEqual(code, 0, out);
 });
 
 test("children are spawned without NODE_TEST_CONTEXT", () => {

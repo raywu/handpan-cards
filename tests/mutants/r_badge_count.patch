@@ -1,4 +1,5 @@
 # kills: test_drawn_bottom_note_badge_agrees
+# suite: python3 -m unittest -k test_drawn_bottom_note_badge_agrees tests.test_render_agreement
 # Prints the wrong bottom-note count on every affected card.
 diff --git a/tools/hifi.py b/tools/hifi.py
 index f81d582..2af5cec 100644

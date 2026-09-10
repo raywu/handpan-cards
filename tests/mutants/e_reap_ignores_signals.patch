@@ -1,4 +1,5 @@
 # kills: a SIGTERMed suite reaps its browser and its profile directory
+# suite: node --test --test-name-pattern ^a.SIGTERMed.suite.reaps.its.browser.and.its.profile.directory$ tests/e2e.test.js
 # The reaper registers only the exit handler, so a suite killed by SIGTERM
 # dies before it can clean up and its browser is reparented to init - the
 # leak exactly as observed on a dev box.

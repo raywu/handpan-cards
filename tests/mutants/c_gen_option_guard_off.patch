@@ -1,4 +1,5 @@
 # kills: test_an_option_typo_is_a_usage_error_and_never_an_engine_code
+# suite: python3 -m unittest -k test_an_option_typo_is_a_usage_error_and_never_an_engine_code tests.test_print tests.test_pdf_build
 # The option guard stops validating: `--palette abc` becomes NaN and reaches
 # the engine, which answers BAD_NOTE - a NOTE error for a FLAG typo, and
 # `--palette 6` silently builds a deck from an out-of-range palette index.

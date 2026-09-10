@@ -1,4 +1,5 @@
 # kills: test_committed_pdfs_match_a_fresh_build
+# suite: python3 -m unittest -k test_committed_pdfs_match_a_fresh_build tests.test_print tests.test_pdf_build
 # Deck data changed without the print PDFs being rebuilt.
 diff --git a/tools/decks.py b/tools/decks.py
 index ebbf65d..dff2c4f 100644

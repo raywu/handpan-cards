@@ -1,4 +1,5 @@
 # kills: test_roots_appear_in_voicing
+# suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data
 # Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use.
 diff --git a/index.html b/index.html
 index b018e51..a26f1e2 100644

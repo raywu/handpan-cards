@@ -1,4 +1,5 @@
 # kills: rotating all the way round is absent again, never a stored identity
+# suite: node --test --test-name-pattern ^rotating.all.the.way.round.is.absent.again..never.a.stored.identity$ tests/app.test.js
 # A correction that undoes itself is stored anyway, so rotating the rim all
 # the way round leaves a longer link than the deck started with.
 diff --git a/index.html b/index.html

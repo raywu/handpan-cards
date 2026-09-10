@@ -3,12 +3,12 @@
 # not a test. Each tests/mutants/*.patch carries a "# kills: <test>" header and
 # must make its suite FAIL when applied.
 #
-# Suite selection, in order:
-#   1. a "# suite: <command>" header line in the patch - always wins, so a new
-#      mutant prefix needs no change to this script;
-#   2. otherwise the filename prefix:
-#      b_ deck data | c_ print+pdf | d_ app units | e_ e2e | r_ render agreement
-#   3. otherwise the mutant is reported as a survivor (unknown suite).
+# Suite selection: a "# suite: <command>" header line in the patch, and nothing
+# else. There is no filename-prefix fallback - a patch without a header is
+# refused (see suite_for below for why). The header should NAME the test the
+# "# kills:" line claims, not just its file: `-k <test>` for python, and
+# `--test-name-pattern <regex>` for node (no spaces - the command is
+# word-split, so write the test name with '.' for every space).
 #
 # Reverting is driven by the patch itself (git apply -R plus a scoped
 # checkout/clean of the paths it names), so a mutant against any file - engine
@@ -118,24 +118,26 @@ trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}; rm -f "$SUITE_LOG"; exit 130' INT
 
 HAVE_BROWSER=$(node -e "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))" 2>/dev/null)
 
-# For the python suites the NAMED test is run (unittest -k), so a mutant that
-# happens to be caught by some other test does not count: it must kill the one
-# it claims to cover, or the guarantee that that test is live is silently void.
-# The node suites still run whole - their test names contain spaces.
-suite_for() {   # $1 = patch path, $2 = "# kills:" target (may be empty)
-  local header
-  header=$(grep -m1 '^# suite:' "$1" | sed 's/^# suite:[[:space:]]*//')
-  if [ -n "$header" ]; then echo "$header"; return; fi
-  local k=""
-  [ -n "$2" ] && k="-k $2"
-  case "$(basename "$1")" in
-    b_*) echo "python3 -m unittest $k tests.test_deck_data" ;;
-    c_*) echo "python3 -m unittest $k tests.test_print tests.test_pdf_build" ;;
-    d_*) echo "node --test tests/app.test.js" ;;
-    e_*) echo "node --test tests/e2e.test.js" ;;
-    r_*) echo "python3 -m unittest $k tests.test_render_agreement" ;;
-    *)   echo "" ;;
-  esac
+# The command a mutant is judged by comes from its own "# suite:" header and
+# from NOWHERE ELSE. There used to be a fallback keyed on the filename prefix
+# (b_/c_/d_/e_/r_), and for the two node prefixes the command it produced was
+# the WHOLE suite file - so the verdict rested on that file's exit code alone
+# and never on the test the patch claims to kill. A mutant that happened to
+# break some unrelated test in the same file was recorded "killed" while
+# proving nothing about its own assertion (queue row 263).
+#
+# Guessing cannot be made safe, so it is gone: a patch with no header is
+# REFUSED. That is the same shape as the clean-tree baseline abort (rows
+# 187/173) - an unearned green is worse than a loud stop - and it makes the
+# invariant structural rather than a property of today's corpus: the next
+# header-less patch is refused on the day it is written, not audited for later.
+#
+# A header should also NAME the test, not just the file: `-k <test>` for the
+# python suites, `--test-name-pattern <regex>` for the node ones. The script
+# cannot enforce that (a header is an opaque command string) but every mutant
+# added since row 263 does it, and a whole-file header is a review finding.
+suite_for() {   # $1 = patch path
+  grep -m1 '^# suite:' "$1" | sed 's/^# suite:[[:space:]]*//'
 }
 
 # A suite is only evidence if it is GREEN before the mutant is applied and RED
@@ -184,10 +186,10 @@ SURVIVORS=(); KILLED=0; SKIPPED=0
 for p in "${PATCHES[@]}"; do
   base="${p##*/}"
   target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
-  cmd=$(suite_for "$p" "$target")
+  cmd=$(suite_for "$p")
   if [ -z "$cmd" ]; then
-    echo "$base skipped  (unknown suite prefix and no '# suite:' header)"
-    SURVIVORS+=("$p (no suite)"); continue
+    echo "$base broken    -> no '# suite:' header, so there is no command that could prove ${target:-?} dies"
+    SURVIVORS+=("$p (no '# suite:' header)"); continue
   fi
   # A skipped suite exits 0, which would look identical to a surviving mutant.
   case "$base" in

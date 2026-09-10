@@ -1,4 +1,5 @@
 # kills: + ADD is fully on-screen and hit-testable at phone widths
+# suite: node --test --test-name-pattern ^..ADD.is.fully.on.screen.and.hit.testable.at.phone.widths$ tests/e2e.test.js
 # buildChips puts + ADD back inside the scrolling strip, which is the
 # owner-reported bug: with the three built-in decks the strip already overflows
 # a phone, so the only entry point to the create sheet - and so to the pan

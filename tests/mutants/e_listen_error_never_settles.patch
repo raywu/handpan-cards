@@ -1,4 +1,5 @@
 # kills: a taken port fails the harness fast, naming the port and E2E_PORT
+# suite: node --test --test-name-pattern ^a.taken.port.fails.the.harness.fast..naming.the.port.and.E2E_PORT$ tests/e2e.test.js
 # The listen() await settles only on success again, so a taken port hangs the
 # whole run instead of failing: listen() calls its callback ONLY when the bind
 # succeeds, and on EADDRINUSE it emits an event nobody here is waiting on.

@@ -1,4 +1,5 @@
 # kills: NO_DING shows the engine's own sentence and keeps Generate disabled
+# suite: node --test --test-name-pattern ^NO_DING.shows.the.engine.s.own.sentence.and.keeps.Generate.disabled$ tests/app.test.js
 # Generate stays live while the seed does not parse, so the primary action
 # invites a tap that can only fail.
 diff --git a/index.html b/index.html

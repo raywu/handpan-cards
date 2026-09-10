@@ -1,4 +1,5 @@
 # kills: a user-typed name equal to the auto label survives a later field edit
+# suite: node --test --test-name-pattern ^a.user.typed.name.equal.to.the.auto.label.survives.a.later.field.edit$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 3509543..fb794ae 100644
 --- a/index.html

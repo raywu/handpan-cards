@@ -1,4 +1,5 @@
 # kills: generation runs once at submit, never inside deck() or render()
+# suite: node --test --test-name-pattern ^generation.runs.once.at.submit..never.inside.deck...or.render..$ tests/app.test.js
 # deck() hands out a fresh copy per call, which is the shape a per-call rebuild
 # would have: identity is the only thing that distinguishes them.
 diff --git a/index.html b/index.html

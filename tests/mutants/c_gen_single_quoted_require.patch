@@ -1,4 +1,5 @@
 # kills: test_the_tool_never_reaches_the_network
+# suite: python3 -m unittest -k test_the_tool_never_reaches_the_network tests.test_print tests.test_pdf_build
 # A SINGLE-QUOTED network require, the exact form the old banned-substring scan
 # let through: it listed require("http and friends in double quotes only.
 diff --git a/tools/gen_deck.js b/tools/gen_deck.js

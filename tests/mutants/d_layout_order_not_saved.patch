@@ -1,4 +1,5 @@
 # kills: ROTATE moves every note one position and SAVE keeps the id but moves the link
+# suite: node --test --test-name-pattern ^ROTATE.moves.every.note.one.position.and.SAVE.keeps.the.id.but.moves.the.link$ tests/app.test.js
 # The sheet previews the correction and then drops it on save, so SAVE
 # CHANGES silently throws the correction away.
 diff --git a/index.html b/index.html

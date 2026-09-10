@@ -1,4 +1,5 @@
 # kills: Escape closes the sheet and focus returns to + ADD
+# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to...ADD$ tests/e2e.test.js
 # Closing the sheet drops focus on the body instead of returning it to the
 # chip that opened it, so a keyboard user restarts from the top of the page.
 diff --git a/index.html b/index.html

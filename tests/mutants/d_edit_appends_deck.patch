@@ -1,4 +1,5 @@
 # kills: a field edit replaces the deck and the new one takes the old chip position
+# suite: node --test --test-name-pattern ^a.field.edit.replaces.the.deck.and.the.new.one.takes.the.old.chip.position$ tests/app.test.js
 diff --git a/index.html b/index.html
 index 8a5bb64..c65688f 100644
 --- a/index.html

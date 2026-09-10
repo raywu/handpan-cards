@@ -1,4 +1,5 @@
 # kills: an edit onto another deck's scale is refused at 380px and both chips stay
+# suite: node --test --test-name-pattern ^an.edit.onto.another.deck.s.scale.is.refused.at.380px.and.both.chips.stay$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 index 3509543..16ee488 100644
 --- a/index.html

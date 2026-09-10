@@ -1,4 +1,5 @@
 # kills: the app's share version IS the engine's, not a second copy of the number
+# suite: node --test --test-name-pattern ^the.app.s.share.version.IS.the.engine.s..not.a.second.copy.of.the.number$ tests/app.test.js
 # The app restates the share version as a literal instead of reading the
 # engine's. Equal today; the day either side is bumped every link breaks.
 diff --git a/index.html b/index.html

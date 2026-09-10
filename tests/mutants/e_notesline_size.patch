@@ -1,4 +1,5 @@
 # kills: card lines and diagram stay inside the card at 380px
+# suite: node --test --test-name-pattern ^card.lines.and.diagram.stay.inside.the.card.at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

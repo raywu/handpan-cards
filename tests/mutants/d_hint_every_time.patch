@@ -1,4 +1,5 @@
 # kills: the one-time layout hint is appended on the first generation of a deck, not the second
+# suite: node --test --test-name-pattern ^the.one.time.layout.hint.is.appended.on.the.first.generation.of.a.deck..not.the.second$ tests/app.test.js
 # The mirror hint is appended to every generation instead of the first per
 # deck, so it degrades into noise the user learns to ignore.
 diff --git a/index.html b/index.html

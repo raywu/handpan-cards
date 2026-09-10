@@ -1,4 +1,5 @@
 # kills: six custom decks keep the chip row on one line with the active chip in view
+# suite: node --test --test-name-pattern ^six.custom.decks.keep.the.chip.row.on.one.line.with.the.active.chip.in.view$ tests/e2e.test.js
 # The deck row wraps instead of scrolling, so each new custom deck adds a
 # line of chips and pushes the card down and off a 380px screen.
 diff --git a/index.html b/index.html
