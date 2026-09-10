@@ -1235,3 +1235,8 @@ Also confirmed: a genuine mirror of the node path (`:153-157` against `:260-264`
 | 278 | #56 review | The lane report's "Ran 8 tests" for the row-259 red/green flip is not reproducible at the head SHA, where the file has 11. It was a true measurement at an intermediate state, before the row-257 tests landed, and went stale in the write-up. **Process lesson: re-measure reported counts at the FINAL commit**, not when the sub-task was finished | closed - recorded |
 
 **What the review could not cover, in its own words:** `check_python()` was never exercised against the real 78-test suite in a genuinely red state - all three tests drive one synthetic `TestCase` with `PY_FILES` and `LEGACY_PYTHON` mocked out, so the excerpt bound under a real multi-traceback failure is reasoned, not measured. Worth knowing the first time a python suite actually goes red in CI.
+
+
+**Anchor update.** `5e27ceb` all five jobs green, gate **406s over 236 mutants = 1.72s/mutant**. Three consecutive main runs now: 1.68, 1.66, 1.72. The spread is ~4% and the figure is stable. **Anchor for judging lane 34: `5e27ceb` = 406s / 236.**
+
+Lane 34 is expected to move this materially downward - it converts up to 49 whole-file runs into single-test runs - so a large drop there is predicted, not anomalous. What would be anomalous is the drop being LARGER than the arithmetic supports, and per the #55 and #56 reviews the residual-after-attribution is the instrument, not the raw delta.
