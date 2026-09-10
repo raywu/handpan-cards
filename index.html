@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- interactive-widget=resizes-content: when the soft keyboard opens, shrink the
+     LAYOUT viewport rather than only the visual one, so 85dvh (the scale
+     sheet's cap) shrinks with it and the sheet sits above the keyboard instead
+     of behind it (queue row 212). Chromium honours it; browsers that do not
+     ignore the token and keep the default resizes-visual, which is why the
+     sheet's primary is also sticky rather than relying on this alone. -->
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Handpan Chord Flashcards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -139,6 +146,25 @@ button.nav:active{background:#2e281e}
   border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto;
   padding:14px 14px max(14px, env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:9px}
+/* The surface is capped at 85dvh, so on the Edit sheet, in landscape, or with
+   a soft keyboard up its content is taller than the cap. Before .sheetbody
+   existed the WHOLE surface scrolled, which put the sheet's only primary -
+   #scale-generate, last in the flow - below the fold: at 844x390 it started
+   245px down, and with a keyboard-shrunk viewport GENERATE CARDS was off-screen
+   entirely (queue rows 211, 212). It read as a dead end rather than as
+   something scrollable, because scrollTop is 0 on open and iOS overlay
+   scrollbars stay invisible until touched.
+   So the scroll moved INSIDE: everything above the primary scrolls in
+   .sheetbody and the primary (with DELETE THIS DECK, which follows it on the
+   Edit path) sits in the fixed remainder below. A reserved footer, not a
+   sticky one: a sticky primary would sit ON TOP of the palette swatches at
+   rest, which is a covered 44px target and no better than a hidden button.
+   min-height:0 is load-bearing - without it a flex item refuses to shrink
+   below its content and the footer is pushed out of the cap again.
+   .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
+   where the footer alone exceeds the cap. */
+.sheetbody{min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; gap:9px}
 .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
   text-transform:uppercase}
 /* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.
@@ -252,6 +278,10 @@ button.nav:active{background:#2e281e}
 
 <div id="scale-sheet" role="dialog" aria-modal="true" aria-label="Add a scale" hidden>
   <div class="sheetsurf">
+   <!-- The scrolling part. The primary below it is deliberately OUTSIDE, so it
+        cannot be pushed under the fold by a tall Edit sheet or a short
+        viewport - see .sheetbody in the stylesheet. DOM order is unchanged. -->
+   <div class="sheetbody">
     <div class="editrow" id="scale-name-row" hidden>
       <label class="sheetlabel" for="scale-name">DECK NAME</label>
       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
@@ -305,6 +335,12 @@ button.nav:active{background:#2e281e}
                 aria-label="Move the chosen note one position on">MOVE &rarr;</button>
       </div>
     </div>
+   </div>
+    <!-- Outside .sheetbody, with the primary: the palette swatches carry their
+         44px hit area as an invisible ::after overlay that is LARGER than the
+         14px dot, and a scroll container would clip it (a scrolling box cannot
+         paint or hit-test outside itself). Keeping the row here also keeps the
+         mirror toggle beside the button it affects. DOM order is unchanged. -->
     <div class="ctlrow">
       <div class="mirror">
         <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
