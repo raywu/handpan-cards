@@ -1,0 +1,32 @@
+# kills: a partial sweep does not print MUTATION GATE PASSED
+# suite: node --test tests/mutation_harness.test.js
+# Queue row 193. Restores the defect this lane closed: with the guard disabled
+# a sweep that skipped part of its corpus falls straight through to
+# "MUTATION GATE PASSED" and exit 0, so tests/mutation_harness.test.js's two
+# partial-sweep cases both redden.
+#
+# Mutating tests/ is precedent-backed (tests/CONTRACT.md rule 3): the thing that
+# has to be proved live is the GATE's own oracle, and mutation_check.sh is that
+# oracle. The suite header is deliberately the node test, NOT this script - a
+# mutant whose suite is mutation_check.sh runs the sweep inside itself, where
+# the outer sweep's applied patch trips the dirty-tree refusal (exit 2) and is
+# scored as a kill without the reverted guard ever being evaluated. The node
+# test drives a COPY of the script against a throwaway fixture repo instead, so
+# the mutated logic is genuinely exercised.
+#
+# The edit is byte-length-neutral (-ne -> -lt) so bash, which reads a running
+# script lazily by byte offset, cannot be desynchronised while the patch is
+# applied. Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+index 8647a13..ac21c81 100755
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -244,7 +244,7 @@ fi
+ # honest answer over an unevaluated subset is "unknown" - which must not be
+ # spelled with a zero exit, because CI and every wrapper read exactly that.
+ # CI always has a browser, so a complete sweep there still exits 0.
+-if [ "$SKIPPED" -ne 0 ]; then
++if [ "$SKIPPED" -lt 0 ]; then
+   echo "MUTATION GATE INCOMPLETE - $SKIPPED of ${#PATCHES[@]} mutants were never evaluated."
+   echo "Nothing above says those tests are live; it says they were not checked."
+   echo "Install a browser (or point CHROME_BIN at one) and re-run for a verdict."
