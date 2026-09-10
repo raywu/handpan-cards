@@ -1174,7 +1174,7 @@ Two pre-existing defects the reviewer found and correctly declined to fix in thi
 
 `af70afd` (#55) then `b138328` (#54). Main at `af70afd` ran all five jobs green with the gate at **391s over 233 mutants**, which confirms the speedup on main and not merely on a branch.
 
-**Row 258's anchor is hereby reset.** The old 1030s-ish constant is dead - anchoring to it would now read every future run as a 2.6x anomaly, which is the exact failure the row exists to prevent, inverted. **New anchor: `af70afd` = 391s at 233 mutants, ~1.68s per mutant.** Anchor to the immediately preceding main run as always; the per-mutant figure is the portable number, since the corpus grows.
+**Row 258's anchor is hereby reset.** The old 1030s-ish constant is dead - anchoring to it would now read every future run as a 2.6x anomaly, which is the exact failure the row exists to prevent, inverted. **New anchor: `b138328` = 389s at 234 mutants, ~1.66s per mutant** (the preceding run, `af70afd`, was 391s at 233 - so adding lane 32's mutant cost nothing measurable, and the two runs one commit apart agree to within 0.5%, which is the first evidence that the new figure is stable rather than a single lucky run). Anchor to the immediately preceding main run as always; the per-mutant figure is the portable number, since the corpus grows.
 
 | # | Item | Status |
 |---|---|---|
