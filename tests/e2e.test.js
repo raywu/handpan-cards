@@ -233,14 +233,10 @@ function run() {
   }
 
   // Click the i-th deck chip and wait for the deck to actually change over.
-  // The strip is scrolled first, exactly as a thumb would: at phone widths the
-  // row overflows and the pinned + ADD chip sits over its right end, so a chip
-  // near the end is genuinely under it until you scroll. That the scroll always
-  // frees it is asserted on its own, by "pinning + ADD leaves every deck chip
-  // reachable at 380px" - this helper must not be read as that guarantee.
+  // Deliberately does NOT scroll first: this helper is load-bearing for tests
+  // that are not about scrolling, and a scroll here hides exactly the class of
+  // bug where something else has come to rest on top of the chip.
   async function selectDeck(i, meta) {
-    await b.eval(`document.querySelectorAll("#decks .chip")[${i}]
-                    .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
     await b.click(`#decks .chip:nth-child(${i + 1})`);
     await expectCount(`1 / ${meta[i].chords}`, `deck ${meta[i].id} selected`);
   }
@@ -808,16 +804,19 @@ function run() {
           rowScrolls: nav.scrollWidth > nav.clientWidth + 1,
           wraps: nav.scrollHeight > nav.clientHeight + 1,
           activeInView: on.left >= navR.left - 1 && on.right <= navR.right + 1,
-          addLast: chips[chips.length - 1].id,
+          // + ADD is deliberately NOT one of these chips: it lives outside the
+          // scrollport so that it is always reachable and no chip can come to
+          // rest under it. Its own tests are further down this file.
+          addInsideStrip: nav.contains(document.getElementById("deck-add")),
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.strictEqual(row.chips, 3 + 6 + 1, "three built-ins, six customs and + ADD");
+      assert.strictEqual(row.chips, 3 + 6, "three built-ins and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
-      assert.strictEqual(row.rowScrolls, true, "ten chips at 380px should scroll horizontally");
+      assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
       assert.strictEqual(row.activeInView, true, "the active chip is not scrolled into view");
-      assert.strictEqual(row.addLast, "deck-add", "+ ADD is no longer last");
+      assert.strictEqual(row.addInsideStrip, false, "+ ADD is back inside the scrolling strip");
       assert.ok(row.body.sw <= row.body.cw + 1, "the chip row blew the page out horizontally");
     } finally {
       await b.setViewport(900, 900, false);
@@ -849,6 +848,7 @@ function run() {
       // grows with every deck generated and buildChips only ever scrolls the
       // SELECTED chip into view - never + ADD.
       const widths = [[390, 844], [380, 800], [430, 930]];
+      let overflowed = 0;
       for (const [vw, vh] of [...widths, ...widths]) {
         await b.setViewport(vw, vh, true);
         const m = await b.eval(`
@@ -867,8 +867,11 @@ function run() {
           };
         `);
         const at = `at ${vw}x${vh} with ${m.decks} decks`;
-        assert.strictEqual(m.overflows, true,
-          `the chip row does not overflow ${at}, so this width proves nothing`);
+        // The strip spans the full width now, so a three-deck row happens to
+        // fit at 430. Count the states that DO overflow instead of demanding it
+        // everywhere, and assert the count after the loop so the matrix can
+        // never go vacuous.
+        if (m.overflows) overflowed++;
         assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
           `+ ADD is not inside the viewport ${at}: ${JSON.stringify(m.r)}`);
         assert.ok(m.r.t >= -1 && m.r.b <= m.vh + 1,
@@ -893,6 +896,9 @@ function run() {
           for (const s of SIX_SCALES.slice(0, 3)) await generate(s);
         }
       }
+      assert.ok(overflowed >= 4,
+        `only ${overflowed} of the probed states overflowed the chip row; ` +
+        `this test proves nothing unless + ADD is reachable while the strip scrolls`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -939,47 +945,129 @@ function run() {
     }
   });
 
-  test("pinning + ADD leaves every deck chip reachable at 380px", async () => {
+  /* No deck chip may ever come to rest UNDER + ADD.
+   *
+   * This is the test the first attempt at this fix did not have, and the
+   * regression it let through: with + ADD pinned over the strip as a sticky
+   * overlay, D AMARA 9 sat at x 296.1-407.9 under a pin at 290.8-356 on a plain
+   * fresh load at 390x844. The chip was fully visible, its centre hit-tested to
+   * deck-add, and tapping it opened the create sheet instead of switching decks
+   * - a wrong-action mis-tap on a built-in deck, worse than the unreachable
+   * + ADD it was meant to fix.
+   *
+   * A rect check cannot see that; only elementFromPoint can, which is why every
+   * assertion below is a hit test. Three points per chip - the centre and both
+   * inner thirds - because an overlay can leave a sliver of a chip exposed and
+   * still steal the tap anyone would actually aim. Points outside the strip's
+   * scrollport are simply scrolled out of view and are not the subject here;
+   * points inside it must belong to whatever is drawn there.
+   */
+  test("no deck chip ever rests under + ADD, at any width, state or scroll", async () => {
     await freshLoad();
     const meta = await decksMeta();
-    await b.setViewport(380, 800, true);
     try {
-      // scrollIntoView with inline:"nearest" is the minimum scroll that puts a
-      // chip in view - so it is exactly the case a pinned overlay breaks, and
-      // the case .decks' scroll-padding-right has to cover.
-      const probe = (i) => b.eval(`
-        const c = document.querySelectorAll("#decks .chip:not(#deck-add)")[${i}];
-        if (!c) throw new Error("no deck chip ${i}");
-        c.scrollIntoView({ block: "nearest", inline: "nearest" });
-        const r = c.getBoundingClientRect();
-        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return {
-          hitIsChip: !!hit && (hit === c || c.contains(hit)),
-          r: { l: r.left, r: r.right, w: r.width },
-          vw: document.documentElement.clientWidth,
-        };
+      // Hit-test every visible point of every chip, plus + ADD, in one pass.
+      const sweep = (state) => b.eval(`
+        const nav = document.getElementById("decks");
+        const add = document.getElementById("deck-add");
+        const nr = nav.getBoundingClientRect();
+        const owns = (el, hit) => !!hit && (hit === el || el.contains(hit));
+        const pts = (r) => [
+          { name: "left third", x: r.left + r.width / 3 },
+          { name: "centre", x: r.left + r.width / 2 },
+          { name: "right third", x: r.left + (r.width * 2) / 3 },
+        ];
+        const bad = [];
+        let probed = 0;
+        for (const c of nav.querySelectorAll(".chip")) {
+          const r = c.getBoundingClientRect();
+          const y = r.top + r.height / 2;
+          for (const p of pts(r)) {
+            // Only points actually inside the scrollport can be tapped at all.
+            if (p.x < nr.left || p.x > nr.right) continue;
+            probed++;
+            const hit = document.elementFromPoint(p.x, y);
+            if (!owns(c, hit)) bad.push({
+              chip: c.textContent.trim(), point: p.name, x: Math.round(p.x),
+              got: hit ? (hit.id || hit.className || hit.tagName) : null,
+              chipRect: [Math.round(r.left), Math.round(r.right)],
+              addRect: [Math.round(add.getBoundingClientRect().left),
+                        Math.round(add.getBoundingClientRect().right)],
+            });
+          }
+        }
+        // + ADD must answer for itself at all three of its own points.
+        const ar = add.getBoundingClientRect();
+        const ay = ar.top + ar.height / 2;
+        for (const p of pts(ar)) {
+          probed++;
+          if (!owns(add, document.elementFromPoint(p.x, ay)))
+            bad.push({ chip: "+ ADD", point: p.name, x: Math.round(p.x), got: "not itself" });
+        }
+        return { bad, probed, chips: nav.querySelectorAll(".chip").length };
       `);
-      const check = async (i, label) => {
-        const m = await probe(i);
-        assert.strictEqual(m.hitIsChip, true,
-          `deck chip ${label} is covered or off-screen even after scrolling ` +
-          `it into view: ${JSON.stringify(m)}`);
-        assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
-          `deck chip ${label} is not inside the viewport: ${JSON.stringify(m.r)}`);
+
+      const expectClean = async (state) => {
+        const m = await sweep(state);
+        assert.ok(m.probed > 0, `${state}: nothing was probed at all`);
+        assert.deepStrictEqual(m.bad, [],
+          `${state}: a visible point does not hit-test to what is drawn there ` +
+          `(${JSON.stringify(m.bad)})`);
       };
 
-      for (let i = 0; i < meta.length; i++) {
-        await check(i, meta[i].id);
-        await selectDeck(i, meta);
+      // Fresh load, then selecting each deck in turn, then flicked to each end
+      // - buildChips scrolls the SELECTED chip into view, so selecting one deck
+      // is what parks a different one wherever it lands.
+      const flick = (to) => b.eval(
+        `const n = document.getElementById("decks");
+         n.scrollLeft = ${to === "end" ? "n.scrollWidth" : "0"};
+         return n.scrollLeft;`);
+
+      // Scrolling belongs inside the test that needs it, never in the shared
+      // selectDeck helper - a scroll there hides the very bug this test hunts.
+      const selectChip = async (i) => {
+        await b.eval(`document.querySelectorAll("#decks .chip")[${i}]
+                        .scrollIntoView({ block: "nearest", inline: "nearest" });
+                      return true;`);
+        await b.click(`#decks .chip:nth-child(${i + 1})`);
+        await b.waitFor(
+          `document.querySelectorAll("#decks .chip")[${i}].classList.contains("on")`,
+          { label: `deck chip ${i} to become the active deck` });
+      };
+
+      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
+        await b.setViewport(vw, vh, true);
+        const size = () => b.eval(
+          `return document.querySelectorAll("#decks .chip").length;`);
+        const at = `${vw}x${vh}, ${await size()} decks`;
+
+        await expectClean(`${at}, fresh load`);
+        for (let i = 0; i < meta.length; i++) {
+          await selectChip(i);
+          await expectClean(`${at}, after selecting ${meta[i].id}`);
+        }
+        await flick("start");
+        await expectClean(`${at}, flicked to the start`);
+        await flick("end");
+        await expectClean(`${at}, flicked to the end`);
       }
 
-      // And with the strip long enough that the LAST deck chip only comes into
-      // view at maximum scroll - where the pin has nowhere left to slide.
+      // And again with nine decks, where the strip is three times its width.
+      await b.setViewport(380, 800, true);
       for (const s of SIX_SCALES) await generate(s);
-      const n = await b.eval(
-        `return document.querySelectorAll("#decks .chip:not(#deck-add)").length;`);
-      assert.strictEqual(n, meta.length + SIX_SCALES.length, "the six custom decks are not all there");
-      for (let i = 0; i < n; i++) await check(i, `#${i} of ${n}`);
+      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
+        await b.setViewport(vw, vh, true);
+        const at = `${vw}x${vh}, nine decks`;
+        await expectClean(`${at}, fresh from a generate`);
+        for (let i = 0; i < meta.length; i++) {
+          await selectChip(i);
+          await expectClean(`${at}, after selecting ${meta[i].id}`);
+        }
+        await flick("start");
+        await expectClean(`${at}, flicked to the start`);
+        await flick("end");
+        await expectClean(`${at}, flicked to the end`);
+      }
     } finally {
       await b.setViewport(900, 900, false);
     }
