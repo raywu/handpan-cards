@@ -1,0 +1,23 @@
+# suite: node --test --test-name-pattern ^the.ding.is.resolved.before.any.other.token..so.its.range.comes.first$ tests/core.test.js
+# kills: the ding is range-checked BEFORE the separator checks and the lex loop, so `(B9) Zz3` is NOTE_OUT_OF_RANGE and section 3 precedence holds
+diff --git a/src/engine/core.js b/src/engine/core.js
+index 4605b49..3227271 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -330,7 +330,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // A ding written without an octave is octave 3 (all three built-ins).
+     if (dingNote.octave === null) dingNote.octave = 3;
+     var dingMidi = midiFromName(dingNote.letter, dingNote.accidental, dingNote.octave);
+-    if (dingMidi < 0 || dingMidi > 127) return outOfRange(dingNote, dingMidi);
+ 
+     // 2. Split the rest on the bar, which must stand alone.
+     var rest = tokens.slice(1);
+@@ -375,6 +374,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       }
+     }
+ 
++    if (dingMidi < 0 || dingMidi > 127) return outOfRange(dingNote, dingMidi);
++
+     // 4. Octave inference, MIDI range and the strict-ascending rule. The ding
+     //    counts as the element before the first top note.
+     var seen = {};

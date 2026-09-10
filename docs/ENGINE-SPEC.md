@@ -126,13 +126,23 @@ so they are final: a change here is a change to shipped copy.
 | `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave.` |
 | `NOTE_OUT_OF_RANGE` | error | `<A> is off the keyboard: a note must be between C-1 and G9.` |
 | `NOTE_OUT_OF_ORDER` | error | `<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one.` |
-| `NOTE_REPEATED` | error | `<A> is already on this shell, and a note may appear only once per shell.` |
+| `NOTE_REPEATED` | error | `<B> and <A> are the same note, and a note may appear only once per shell.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
 | `NO_THIRDS` | warning | `No 3rds on this pan: only power chords and sus chords.` |
 
 The whole-tone fixture entry `(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4` therefore
 produces, literally: `No perfect fifth above the ding C3. Add a G, or check the
 ding.`
+
+ALTERNATE SENTENCES. One code may tabulate more than one sentence when the same
+fault reads as nonsense in one of its cases. Each alternate names the condition
+that selects it and is tabulated here in full, exactly as the enum sentences
+are. This adds SENTENCES, never codes: the enum above stays closed, and the
+`code` a caller receives is unchanged by the choice of sentence.
+
+| code | when | reason |
+|---|---|---|
+| `NOTE_OUT_OF_ORDER` | `ding` - the element before the offending note is the ding | `<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave.` |
 
 - DECIDED(plan [eng-review 7A], amended swarm-2026-09-10) The enum is exactly
   `NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`, `BAD_NOTE`, `NOTE_OUT_OF_RANGE`,
@@ -150,16 +160,37 @@ ding.`
   12-character truncation it always had. Rationale: `(D) A B C D E F G | C D2`
   was rejected as "D2 is not a note", which is false - D2 is a note, it just
   sits below the C3 the parser inferred from the bare `C` before it.
-- DECIDED(swarm-2026-09-10) The three positional codes substitute notes as the
-  PARSER PLACED them, never the raw token, because the placed octave is the
-  part the user cannot see: `<A>` is the offending note as name plus octave
-  (`D2`, `D10`), and `<B>` is the element immediately before it, likewise as
-  name plus octave, written `the ding <name><octave>` when that element is the
-  ding, and suffixed ` (inferred from <token>)` when the user typed no octave
-  for it. The 12-character truncation of `<X>` does not apply: these values are
-  engine-spelled note names, not user text. So the seed above now reads: `D2 is
-  not above C3 (inferred from C), and notes must ascend. Give D2 a higher
-  octave, or the note before it a lower one.`
+- DECIDED(swarm-2026-09-10, amended swarm-2026-09-10 w39) The three positional
+  codes substitute notes as the PARSER PLACED them, never the raw token,
+  because the placed octave is the part the user cannot see: `<A>` is the
+  offending note as name plus octave (`D2`, `D10`), and `<B>` is the element
+  immediately before it, likewise as name plus octave, suffixed
+  ` (inferred from <token>)` when the user typed no octave for it. That
+  annotation is not decoration: it is the only thing on screen that tells the
+  user where a bare `C` landed. `<B>` does NOT itself say "the ding" - the ding
+  alternate sentence above says it, so the two never collide into `the ding the
+  ding D3`. The 12-character truncation of `<X>` does not apply: these values
+  are engine-spelled note names, not user text. So the seed above now reads:
+  `D2 is not above C3 (inferred from C), and notes must ascend. Give D2 a
+  higher octave, or the note before it a lower one.`
+- DECIDED(swarm-2026-09-10 w39) BOTH positions are named whenever the fault is
+  a relation between two notes, and either may carry the inference annotation.
+  `NOTE_REPEATED` substitutes `<B>` for the earlier of the two and `<A>` for
+  the offender, in that order, because `(D3) A3 C C4 E4` puts no literal `C4`
+  twice on the user's screen: the sentence has to say that the bare `C` is the
+  C4 that is already there. Rationale: the w37 lane applied the placed-octave
+  rule to `NOTE_OUT_OF_ORDER` and not to `NOTE_REPEATED`, which left exactly
+  the invisibility the rule exists to remove.
+- DECIDED(swarm-2026-09-10 w39) A top note at or below the DING takes the
+  `ding` alternate sentence rather than the enum sentence. The code stays
+  `NOTE_OUT_OF_ORDER` - ordering is what failed, and `NOTE_REPEATED`'s "on this
+  shell" would be false because the ding is on no shell - but the enum sentence
+  is wrong twice over here: `(F3) F3 C4` would read "F3 is not above the ding
+  F3", a riddle, and its advice, "or the note before it a lower one", tells the
+  user to retune their instrument. The alternate says "at or below" so the
+  equal case reads plainly, and offers only the fix the user can actually make.
+  It covers every ding case, not just the equal one, because the advice half is
+  wrong for `(F3) E3 C4` too.
 - DECIDED(swarm-2026-09-10) `NOTE_OUT_OF_ORDER` and `NOTE_REPEATED` are
   reachable only from a token that carries an EXPLICIT octave, because
   inference always places the next note strictly above the previous one. `<A>`
@@ -271,11 +302,20 @@ note        := [A-G] ("#" | "b")? ([0-9])?
   per note - `NOTE_OUT_OF_RANGE`, then the ascending rule, which answers
   `NOTE_REPEATED` when the note is spelled exactly as the one before it and
   `NOTE_OUT_OF_ORDER` otherwise - then `TOO_MANY_RIM` (caps), then
-  `NO_FIFTH` (musical). Every
-  token lexes before any note is placed, so a string carrying both an
-  unlexable token and a misplaced one is `BAD_NOTE`. `( D3 )` returns `NO_DING`,
-  not `BAD_NOTE`. This aligns the precedence list with the D13 count-first
-  bullet in this section and with `core.parseSeed` as shipped.
+  `NO_FIFTH` (musical). The DING is resolved before any other token is
+  examined - lexed, defaulted to octave 3 and range-checked - so an
+  off-keyboard ding beats a bad token anywhere after it: `(B9) Zz3`,
+  `(B9) A3 |` and `(B9) / A3` are all `NOTE_OUT_OF_RANGE`, not `BAD_NOTE`.
+  PAST the ding, the separators are checked and then every remaining token
+  lexes, all before any note is PLACED, so a string carrying both an unlexable
+  token and a misplaced one is `BAD_NOTE` in either order. `( D3 )` returns
+  `NO_DING`, not `BAD_NOTE`. This aligns the precedence list with the D13
+  count-first bullet in this section and with `core.parseSeed` as shipped.
+  (Corrected swarm-2026-09-10 w39: the previous wording claimed every token
+  lexed before any note was placed, full stop, which the ding's own range check
+  has always contradicted. The guard order is right; only this sentence was
+  wrong, and it was invisible until the w37 lane gave the ding check a code of
+  its own.)
 - DECIDED(swarm-2026-09-08) A ding written without an octave defaults to octave
   3: `(D)` is `D3`, matching all three built-ins. Every top note is then
   inferred strictly above it, so the ding remains the lowest note of the top

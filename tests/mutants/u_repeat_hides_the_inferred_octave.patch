@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^NOTE_REPEATED.names.both.positions..inference.and.all$ tests/core.test.js
+# kills: both positions of a repeat carry the inference annotation, so `(D3) A3 C C4 E4` says which C4 the bare C became
+diff --git a/src/engine/core.js b/src/engine/core.js
+index 4605b49..f8db5aa 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -158,7 +158,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function repeated(note, midi, prevNote, prevMidi) {
+     return err("NOTE_REPEATED", {
+       "<A>": placed(note, midi),
+-      "<B>": before(prevNote, prevMidi)
++      "<B>": placed(prevNote, prevMidi)
+     });
+   }
+ 

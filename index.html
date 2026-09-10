@@ -521,11 +521,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     NOTE_OUT_OF_ORDER: {
       kind: "error",
-      reason: "<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one."
+      reason: "<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one.",
+      // Section 2, ALTERNATE SENTENCES. Same code, different sentence, chosen
+      // by the named condition. The enum stays closed.
+      alternates: {
+        ding: "<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave."
+      }
     },
     NOTE_REPEATED: {
       kind: "error",
-      reason: "<A> is already on this shell, and a note may appear only once per shell."
+      reason: "<B> and <A> are the same note, and a note may appear only once per shell."
     },
     NEEDS_NEWER_APP: {
       kind: "error",
@@ -590,8 +595,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { ok: true, value: value };
   }
 
-  function err(code, substitutions) {
-    var reason = REASONS[code].reason;
+  function err(code, substitutions, alternate) {
+    var entry = REASONS[code];
+    var reason = alternate ? entry.alternates[alternate] : entry.reason;
     for (var key in substitutions) {
       if (Object.prototype.hasOwnProperty.call(substitutions, key)) {
         reason = reason.split(key).join(substitutions[key]);
@@ -619,9 +625,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // <B>: the element the offending note had to clear, flagged when the octave
-  // in it is the parser's inference rather than the user's typing.
-  function before(note, midi, isDing) {
-    return (isDing ? "the ding " : "") + placed(note, midi) +
+  // in it is the parser's inference rather than the user's typing. It does NOT
+  // say "the ding" - the ding alternate sentence does, so the two cannot
+  // collide into "the ding the ding D3".
+  function before(note, midi) {
+    return placed(note, midi) +
            (note.typed ? "" : " (inferred from " + note.token + ")");
   }
 
@@ -629,21 +637,37 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return err("NOTE_OUT_OF_RANGE", { "<A>": placed(note, midi) });
   }
 
-  function repeated(note, midi) {
-    return err("NOTE_REPEATED", { "<A>": placed(note, midi) });
+  // Both positions, because a repeat is the one message where neither may be
+  // guessed at: in `(D3) A3 C C4 E4` there is no literal `C4` twice on screen,
+  // and only `<B>` can say that the bare `C` is the C4 already there.
+  function repeated(note, midi, prevNote, prevMidi) {
+    return err("NOTE_REPEATED", {
+      "<A>": placed(note, midi),
+      "<B>": before(prevNote, prevMidi)
+    });
   }
 
   // A note that fails the ascending rule against a previous note it is spelled
   // IDENTICALLY to is a repeat, and saying "C4 is not above C4" would be a
-  // riddle. The ding is not on either shell, so a top note repeating it is an
-  // ordering failure, not a repeat.
+  // riddle. The ding is not on either shell, so a top note that fails against
+  // it is an ordering failure, not a repeat - but the enum sentence is wrong
+  // for it twice over ("F3 is not above the ding F3" is the same riddle, and
+  // "the note before it a lower one" would be advice to retune the pan), so it
+  // takes the section 2 `ding` alternate. That covers the below-the-ding case
+  // too, where the advice half is just as wrong.
   function outOfOrder(note, midi, prevNote, prevMidi, prevIsDing) {
-    if (!prevIsDing && placed(note, midi) === placed(prevNote, prevMidi)) {
-      return repeated(note, midi);
+    if (prevIsDing) {
+      return err("NOTE_OUT_OF_ORDER", {
+        "<A>": placed(note, midi),
+        "<B>": before(prevNote, prevMidi)
+      }, "ding");
+    }
+    if (placed(note, midi) === placed(prevNote, prevMidi)) {
+      return repeated(note, midi, prevNote, prevMidi);
     }
     return err("NOTE_OUT_OF_ORDER", {
       "<A>": placed(note, midi),
-      "<B>": before(prevNote, prevMidi, prevIsDing)
+      "<B>": before(prevNote, prevMidi)
     });
   }
 
@@ -854,8 +878,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       // Unreachable: a shell is strictly ascending by the check above, and
       // spelling plus octave fixes the MIDI, so two equal keys cannot both
       // survive it. Kept as the belt-and-braces guard section 3 asks for.
-      if (seen[topKey]) return repeated(top, top.midi);
-      seen[topKey] = true;
+      if (seen[topKey]) return repeated(top, top.midi, seen[topKey].note, seen[topKey].midi);
+      seen[topKey] = { note: top, midi: top.midi };
       previous = top.midi;
       previousNote = top;
     }
@@ -873,8 +897,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       low.octave = octaveOf(low.letter, low.accidental, low.midi);
       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
       // Unreachable for the same reason as the top-shell guard above.
-      if (seen[lowKey]) return repeated(low, low.midi);
-      seen[lowKey] = true;
+      if (seen[lowKey]) return repeated(low, low.midi, seen[lowKey].note, seen[lowKey].midi);
+      seen[lowKey] = { note: low, midi: low.midi };
     }
 
     // 5. Caps (section 4).

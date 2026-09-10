@@ -318,6 +318,19 @@ test("decode propagates parseSeed's own code for an invalid seed", () => {
     // back unchanged. (Section 2's positional codes name the octave the parser
     // placed, so a row whose octaves were supplied by the fixture builder
     // reports against those.)
+    //
+    // What this gave up, so the next reader need not rediscover it: the
+    // anchor used to be `parseSeed(row.string)`, an INDEPENDENT value, and it
+    // stopped being a valid invariant once reasons started naming placed
+    // octaves - `unvalidatedSeed` defaults a missing octave to 3, so the
+    // round-tripped string legitimately reports a different sentence from the
+    // row's own text. The replacement is close to tautological, since decode
+    // itself does parseSeed(formatSeed(...)) and both sides now compute the
+    // same string. It still catches decode COMPOSING a sentence of its own
+    // instead of propagating the engine's, which is the defect the paired
+    // mutant h_decode_repairs.patch injects - but it no longer catches decode
+    // re-parsing the wrong string, because there is no longer an independent
+    // expectation to disagree with it.
     assert.equal(r.reason, core.parseSeed(core.formatSeed(seed)).reason,
       `decode changed the reason for ${row.name}`);
     checked += 1;
