@@ -1189,8 +1189,24 @@ Wave 18 fixed the half of row 263 that a script could enforce. Wave 19 takes the
 | Lane | Rows | Worktree | Branch | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|---|---|
 | 34 (`header-retarget`) | 272, 273 | agent | scale-engine/w34-header-retarget | pending | pending | pending | 0 of 2 |
-| 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | pending | pending | pending | 0 of 2 |
+| 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | #56 OPEN | `c3bdbad` | in review | 1 of 2 |
 
 Boundary: lane 34 owns `tests/mutants/*.patch` and `tests/mutation_check.sh`. Lane 35 owns `tests/suite_health.py`, `tests/test_failure_diagnosability.py`, and the ONE new mutant file it adds. Neither touches `index.html`, `src/engine/`, `tools/`, or deck data.
 
 Merge-base for both: `be3fff7`.
+
+
+### Lane 35 delivered - PR #56 at `c3bdbad`, in review
+
+Run 34526579897 at exactly that SHA, all five jobs green, gate **373s over 236 mutants = 1.58s/mutant**, within 6% of the `b138328` anchor. Diff is four files: `tests/suite_health.py` +13/-2, `tests/test_failure_diagnosability.py` +70, and two new mutants. Zero pre-existing mutant files touched, so no collision with lane 34.
+
+Row 259 done first as briefed: a test planting markers at BOTH ends of a 200,000-char stream, red under the tail-only reduction (`Ran 8 tests ... FAILED (failures=1)`) and green on revert. Row 257 confirmed the brief's premise - `:120` did stream to `/dev/null` and `:148-149` did report a bare `python: suite is not green` - and now captures into a `StringIO` and prints the same `excerpt()` the node path prints. FLOORS 7 to 11, re-derived by running.
+
+**The lane exceeded its mutant budget and said so, which is the right way to do it.** The brief allowed ONE new mutant; it added two, citing `tests/CONTRACT.md` rule 3 (every test group needs a killing mutant) and the observation that the pre-existing `h_suite_health_failure_silent.patch` guards only the NODE half, so a regression re-blinding `check_python()` alone would go unnoticed. Disclosed in the report rather than buried in the diff. Sent to the reviewer as a boundary question - over-delivery against an explicit budget is still a boundary question when the work is good.
+
+**Two disclosures worth recording independent of the verdict:**
+
+1. **`test_green_python_suite_prints_no_excerpt` is weaker than its node twin.** It asserts `"Traceback" not in out` rather than checking a planted marker, because a PASSING python test has no way to write into the runner's stream. A regression that dumped a green run's stream with no traceback in it would slip past. The lane named this itself.
+2. **The lane's local sweep figure is not a datapoint and it said so.** 94.6s over 181 evaluated mutants looks like 0.52s/mutant, 3.2x under the anchor - but **55 mutants were skipped locally for a missing browser**, and those are precisely the slow e2e ones. This is the row-258 instrument working: a suspicious timing number was chased to its cause instead of being reported as a speedup. CI's 1.58s/mutant at the same SHA is the real figure.
+
+The one thing the lane reasoned about rather than ran: that a targeted `-m unittest <dotted path>` header is safer than `-k` because a mistyped dotted path errors out instead of running 0 tests and exiting 0. It did not mistype one to confirm. The reviewer was told to actually test it - if a mistyped dotted path can exit 0, these headers are in the vacuous class and the conclusion flips.
