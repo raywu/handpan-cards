@@ -1754,4 +1754,175 @@ function run() {
       `the timeout report did not name the file:\n${out.slice(-2000)}`);
   });
 
+
+  /* ---------------------------------------------------------------- *
+   * browser reaping (tests/helpers/cdp.js)
+   *
+   * The harness spawns a real browser and a real profile directory. Both are
+   * cleaned up by close(), which only ever runs from after(). Two paths skip
+   * after() entirely and used to orphan the browser: a launch() that rejects
+   * AFTER spawn (the debug-port timeout, the WebSocket open, any of the setup
+   * CDP sends), and a suite killed by a signal - which is exactly how
+   * SUITE_TIMEOUT in tests/mutation_check.sh and NODE_TIMEOUT in
+   * tests/suite_health.py end an overrunning run. The orphans were observed on
+   * a dev box as chrome-headless-shell roots reparented to init, alongside 52
+   * abandoned hpfc-prof-* directories.
+   *
+   * Both tests give the child its own TMPDIR, so "was the profile directory
+   * removed?" is answerable without guessing which hpfc-prof-* was ours, and
+   * so a stray process can be recognised by its --user-data-dir argument.
+   * Every child strips NODE_TEST_CONTEXT: inherited, a node child believes it
+   * is a runner-managed worker and exits 0 at once, which would make these
+   * pass against the very code they exist to condemn.
+   * ---------------------------------------------------------------- */
+
+  const { spawn: spawnChild, execFileSync } = require("node:child_process");
+  const osmod = require("node:os");
+
+  function childEnv(extra) {
+    const env = { ...process.env, E2E_HARNESS_CHILD: "1", ...extra };
+    delete env.NODE_TEST_CONTEXT;
+    return env;
+  }
+
+  function alive(pid) {
+    try { process.kill(pid, 0); return true; } catch { return false; }
+  }
+
+  // Anything still running that was pointed at this profile root - the browser
+  // root process and every renderer/zygote child carry --user-data-dir.
+  function processesUnder(dir) {
+    let out = "";
+    try { out = execFileSync("ps", ["-eo", "pid=,args=", "-ww"], { encoding: "utf8" }); } catch { return []; }
+    return out.split("\n").filter((l) => l.includes(dir));
+  }
+
+  function killUnder(dir) {
+    for (const line of processesUnder(dir)) {
+      const pid = Number(line.trim().split(/\s+/)[0]);
+      if (pid && pid !== process.pid) { try { process.kill(pid, "SIGKILL"); } catch {} }
+    }
+  }
+
+  async function until(pred, ms) {
+    const deadline = Date.now() + ms;
+    for (;;) {
+      if (pred()) return true;
+      if (Date.now() > deadline) return false;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
+  const CDP_HELPER = path.join(REPO, "tests/helpers/cdp.js");
+
+  test("a SIGTERMed suite reaps its browser and its profile directory", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "reap-term-"));
+    // Launch a browser, announce the root pid, then sit still: no after(), no
+    // close() - only a signal handler can save this.
+    const script =
+      "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
+      "(async () => { const b = await launch();" +
+      "  if (!b) { console.log('NOBROWSER'); process.exit(0); }" +
+      "  console.log('PID ' + b.proc.pid + ' DIR ' + b.profileDir);" +
+      "  setInterval(() => {}, 1000); })();";
+
+    const child = spawnChild(process.execPath, ["-e", script], {
+      cwd: REPO, env: childEnv({ TMPDIR: tmp }), stdio: ["ignore", "pipe", "pipe"],
+    });
+    let out = "", err = "";
+    child.stdout.on("data", (d) => { out += d.toString(); });
+    child.stderr.on("data", (d) => { err += d.toString(); });
+    const exited = new Promise((r) => child.on("exit", (c, s) => r({ c, s })));
+
+    const announced = await until(() => /PID \d+ DIR \S+/.test(out) || /NOBROWSER/.test(out), 60000);
+    if (/NOBROWSER/.test(out)) {
+      child.kill("SIGKILL"); await exited;
+      fs.rmSync(tmp, { recursive: true, force: true });
+      return;
+    }
+    assert.ok(announced, `the child never launched a browser:\n${out}\n${err.slice(-2000)}`);
+    const m = out.match(/PID (\d+) DIR (\S+)/);
+    const browserPid = Number(m[1]);
+    const profileDir = m[2];
+    assert.ok(alive(browserPid), "the browser was not running before the kill");
+
+    try {
+      child.kill("SIGTERM");
+      // A handler that swallows the signal would be a WORSE bug than the leak:
+      // an overrunning suite would stop being killable. The child must die.
+      const gone = await Promise.race([
+        exited,
+        new Promise((r) => setTimeout(() => r(null), 15000)),
+      ]);
+      assert.ok(gone, "SIGTERM did not terminate the child - the handler swallowed it");
+
+      const reaped = await until(() => !alive(browserPid), 10000);
+      assert.ok(reaped, `browser pid ${browserPid} outlived the SIGTERMed suite`);
+      const clear = await until(() => processesUnder(profileDir).length === 0, 10000);
+      assert.ok(clear, `processes still hold the profile:\n${processesUnder(profileDir).join("\n")}`);
+      const removed = await until(() => !fs.existsSync(profileDir), 10000);
+      assert.ok(removed, `the profile directory survived: ${profileDir}`);
+    } finally {
+      try { child.kill("SIGKILL"); } catch {}
+      killUnder(tmp);
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("a launch() that fails after spawn leaves no browser and no profile", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "reap-fail-"));
+    // A stand-in browser that reports a debug port nothing is listening on, so
+    // launch() gets past spawn and then fails at the WebSocket - the shape of
+    // every post-spawn failure, without a 20s wait for the port timeout.
+    const fake = path.join(tmp, "fake-browser");
+    fs.writeFileSync(fake,
+      "#!/bin/sh\n" +
+      "echo 'DevTools listening on ws://127.0.0.1:1/devtools/browser/dead' 1>&2\n" +
+      "exec sleep 300\n");
+    fs.chmodSync(fake, 0o755);
+
+    const profiles = path.join(tmp, "profiles");
+    fs.mkdirSync(profiles);
+    const script =
+      "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
+      "(async () => { try { await launch(); console.log('NOTHROW'); }" +
+      "  catch (e) { console.log('THREW ' + (e && (e.message || e.type || e))); }" +
+      "  process.exit(0); })();";
+
+    const r = await new Promise((resolve) => {
+      const c = spawnChild(process.execPath, ["-e", script], {
+        cwd: REPO,
+        env: childEnv({ TMPDIR: profiles, CHROME_BIN: fake }),
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let o = "", e = "";
+      c.stdout.on("data", (d) => { o += d.toString(); });
+      c.stderr.on("data", (d) => { e += d.toString(); });
+      c.on("exit", (code) => resolve({ code, o, e }));
+      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000);
+    });
+
+    try {
+      assert.ok(/THREW/.test(r.o),
+        `launch() should have rejected past spawn:\n${r.o}\n${r.e.slice(-2000)}`);
+      // The original error is a diagnostic other lanes read; it must survive.
+      assert.ok(!/THREW (undefined|null)\b/.test(r.o), `the failure lost its error:\n${r.o}`);
+
+      const left = fs.existsSync(profiles)
+        ? fs.readdirSync(profiles).filter((n) => n.startsWith("hpfc-prof-")) : [];
+      assert.deepStrictEqual(left, [],
+        `launch() left profile directories behind: ${left.join(", ")}`);
+      const clear = await until(() => processesUnder(profiles).length === 0, 5000);
+      assert.ok(clear,
+        `launch() left the browser running:\n${processesUnder(profiles).join("\n")}`);
+    } finally {
+      killUnder(tmp);
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
 }
