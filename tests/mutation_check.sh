@@ -66,8 +66,32 @@ if command -v timeout >/dev/null 2>&1; then
 else
   echo "note: no 'timeout' binary (stock macOS) - suites run UNBOUNDED here; CI has one."
 fi
+# Suite output is ALWAYS captured and only SOMETIMES printed. A per-mutant run
+# is red on purpose, so reprinting 219 of those buries the log; the one run
+# whose output is pure signal is a BASELINE that failed - the clean tree, no
+# mutant applied - which used to abort the sweep quoting nothing but a return
+# code. Three unexplainable main-is-red incidents in a day came from exactly
+# that. The log is overwritten per run, and only ever read on the abort path,
+# which happens immediately after the run that produced it.
+SUITE_LOG=$(mktemp -t mutation_suite_log.XXXXXX)
+trap 'rm -f "$SUITE_LOG"' EXIT
 run_suite() {   # $* = command string, deliberately word-split
-  ${TMO[@]+"${TMO[@]}"} $* >/dev/null 2>&1
+  ${TMO[@]+"${TMO[@]}"} $* >"$SUITE_LOG" 2>&1
+}
+
+# Both ends of a long stream: the first failure says what broke, the tail says
+# how much. Matches the excerpt() bound in tests/suite_health.py.
+print_suite_log() {
+  local n
+  n=$(wc -c <"$SUITE_LOG" | tr -d ' ')
+  if [ "$n" -le 4000 ]; then
+    cat "$SUITE_LOG"
+  else
+    head -c 2000 "$SUITE_LOG"
+    printf '\n... [%s characters elided] ...\n' "$((n - 4000))"
+    tail -c 2000 "$SUITE_LOG"
+  fi
+  echo
 }
 
 # Union of every path any mutant names: the dirty check and the interrupt
@@ -89,8 +113,8 @@ fi
 # From here the tree is known clean at those paths, so restoring them can only
 # throw away what this script itself applied. An interrupted sweep must never
 # leave a mutant in the working tree.
-trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}' EXIT TERM
-trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}; exit 130' INT
+trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}; rm -f "$SUITE_LOG"' EXIT TERM
+trap 'restore ${ALLPATHS[@]+"${ALLPATHS[@]}"}; rm -f "$SUITE_LOG"; exit 130' INT
 
 HAVE_BROWSER=$(node -e "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))" 2>/dev/null)
 
@@ -181,6 +205,11 @@ for p in "${PATCHES[@]}"; do
     echo "ABORTING - BASELINE NOT GREEN. The suite for $base fails on the CLEAN"
     echo "tree (rc $BASELINE_RC), with no mutant applied:"
     echo "    $cmd"
+    echo
+    echo "--- what that suite actually said (bounded excerpt) ---"
+    print_suite_log
+    echo "--- end of suite output ---"
+    echo
     echo "Every mutant pointed at that command would be recorded 'killed' while"
     echo "testing nothing, and the sweep would report a green it has not earned."
     echo "Fix the suite, or the environment it runs in - most often a pinned,"

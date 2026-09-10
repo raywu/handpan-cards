@@ -37,6 +37,7 @@ FLOORS = {
     "tests/test_print.py": 17,
     "tests/test_render_agreement.py": 7,
     "tests/test_fixture_integrity.py": 6,
+    "tests/test_failure_diagnosability.py": 7,
     # node
     "tests/app.test.js": 93,
     "tests/e2e.test.js": 45,
@@ -158,6 +159,27 @@ def check_python():
 NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "180"))
 
 
+# How much of a failing suite's own output to reprint. A return code with no
+# text is unexplainable from a CI log (three main-is-red incidents in one day
+# proved it), and an unbounded dump of 219 mutant runs is worse than silence.
+# The TimeoutExpired path above already settled on a 2000-char bound; the
+# failure path needs BOTH ends - the first failure says what broke, the trailing
+# TAP summary says how much - so a long stream keeps 2000 characters of each and
+# elides the middle.
+EXCERPT_HEAD = 2000
+EXCERPT_TAIL = 2000
+
+
+def excerpt(out):
+    """A bounded, both-ends view of a suite's output."""
+    if len(out) <= EXCERPT_HEAD + EXCERPT_TAIL:
+        return out
+    elided = len(out) - EXCERPT_HEAD - EXCERPT_TAIL
+    return (out[:EXCERPT_HEAD]
+            + f"\n... [{elided} characters elided] ...\n"
+            + out[-EXCERPT_TAIL:])
+
+
 def run_node_file(path):
     """-> (total, failed, skipped, output) for one node test file.
 
@@ -227,6 +249,9 @@ def check_node():
         if total < floor:
             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
         if failed:
+            print(f"--- {path}: {failed} failing test(s), its own output follows ---")
+            print(excerpt(out))
+            print(f"--- end of {path} output ---")
             problems.append(f"{path}: suite is not green")
         if skipped:
             # node emits "ok N - <test name> # SKIP" - the name comes BEFORE the
