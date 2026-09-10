@@ -1,0 +1,27 @@
+# kills: a browser that exits at once is not retried
+# suite: node --test --test-name-pattern ^a.browser.that.exits.at.once.is.not.retried$ tests/e2e.test.js
+# The launch retry fires on EVERY rejection instead of only the slow-start
+# timeout, so real breakage - a browser that exits, a WebSocket that will not
+# open, a setup send that fails - is paid for twice before the same error
+# reaches the caller. The e2e suite is the slowest thing in a 232-mutant sweep;
+# doubling every failed launch in it is the difference between a red suite and
+# a timed-out one, and a timeout is not evidence.
+#
+# The suite header runs the NAMED test alone: node --test has no unittest -k,
+# so without it this mutant would be scored on the whole file's exit code and
+# would never prove that this test is the one that is live.
+# The pattern has no spaces or quotes on purpose: run_suite in
+# tests/mutation_check.sh word-splits its command, so a quoted argument would
+# arrive as several words with the quote characters still in them.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+index 46cda75..ea083a5 100644
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -296,7 +296,6 @@ async function launch() {
+   try {
+     return await launchOnce();
+   } catch (err) {
+-    if (!err || err.message !== SLOW_START) throw err;
+     process.stderr.write(
+       `[cdp] ${SLOW_START} within ${portTimeoutMs()}ms - reaped it and retrying the launch once\n`);
+     return await launchOnce();
