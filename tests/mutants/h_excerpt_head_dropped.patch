@@ -1,0 +1,36 @@
+# kills: excerpt() keeps the HEAD of a long stream, not just the tail
+# suite: python3 -m unittest tests.test_failure_diagnosability.SuiteHealthReportsFailureOutput.test_failure_excerpt_keeps_both_ends_of_a_huge_stream
+# Queue row 259. This is the exact reduction a PR #51 reviewer shipped by hand,
+# and all 7 tests of the day stayed green under it: the only bounded-excerpt
+# test planted its marker at the END of the synthetic stream, so a tail-only
+# excerpt still contained it. The head half is the half that says WHAT BROKE -
+# the first failing test and its assertion - while the tail is the TAP summary
+# that says how much. Losing the head silently is a diagnosability regression
+# that would ship.
+#
+# The suite header is TARGETED at the one test that owns this behaviour rather
+# than the whole file, because the file's other bounded-excerpt tests pass under
+# the tail-only reduction and would dilute the evidence. A targeted header is
+# accepted only on a pair of counts - >= 1 test run and green on the clean tree,
+# the SAME count with >= 1 failure under the mutant - never on an exit code:
+# `-m unittest -k <typo>` runs 0 tests and exits 0, which reads as a pass.
+# Verified: clean 1 test / OK, mutant 1 test / 1 failure.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+index 4525a28..4e66252 100644
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -181,12 +181,7 @@ EXCERPT_TAIL = 2000
+ 
+ def excerpt(out):
+     """A bounded, both-ends view of a suite's output."""
+-    if len(out) <= EXCERPT_HEAD + EXCERPT_TAIL:
+-        return out
+-    elided = len(out) - EXCERPT_HEAD - EXCERPT_TAIL
+-    return (out[:EXCERPT_HEAD]
+-            + f"\n... [{elided} characters elided] ...\n"
+-            + out[-EXCERPT_TAIL:])
++    return out[-EXCERPT_TAIL:]
+ 
+ 
+ def run_node_file(path):
