@@ -275,16 +275,21 @@ button.nav:active{background:#2e281e}
     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
   </div>
   <div class="modebar">
-    <button class="mode on" id="modeA">NAME &rarr; NOTES</button>
-    <button class="mode" id="modeB">NOTES &rarr; NAME</button>
+    <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+    <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
   </div>
 </header>
 
 <main>
   <div class="scene">
-    <div class="card" id="card" role="button" aria-label="Flip card" tabindex="0">
+    <!-- Both faces stay in the DOM (the flip is a CSS transform), so the one
+         turned away is aria-hidden and the one showing is the card's
+         accessible description - otherwise the card reads as the question and
+         the answer at once. render() keeps both in step with `flipped`. -->
+    <div class="card" id="card" role="button" aria-label="Flip card" tabindex="0"
+         aria-describedby="front">
       <div class="face front" id="front"></div>
-      <div class="face back" id="back"></div>
+      <div class="face back" id="back" aria-hidden="true"></div>
     </div>
   </div>
 </main>
@@ -292,7 +297,9 @@ button.nav:active{background:#2e281e}
 <footer>
   <button class="nav" id="prev" aria-label="Previous card">&larr;</button>
   <div class="mid">
-    <div class="count" id="count"></div>
+    <!-- polite, not assertive: stepping is the user's own action, so the new
+         position should follow the card, never interrupt it. -->
+    <div class="count" id="count" aria-live="polite"></div>
     <button class="shuffle" id="shuffle">Shuffle: off</button>
   </div>
   <button class="nav" id="next" aria-label="Next card">&rarr;</button>
@@ -2983,9 +2990,24 @@ function restoreScales() {
 }
 
 function selectDeck(id) {
+  // buildChips() below throws the whole strip away and builds it again, so any
+  // focus resting ON the strip is about to be invalidated: the chip that was
+  // clicked is detached outright, and "+ ADD" - where closeScaleSheet() has
+  // just put focus after GENERATE / SAVE CHANGES / DELETE - is now pointing at
+  // "make another deck" rather than the deck that was just made. Either way
+  // the caret must be re-homed onto the chip for the deck now showing, and it
+  // has to happen AFTER the rebuild. Focus that was never on the strip (boot,
+  // a share link) is left exactly where it was.
+  const a = document.activeElement;
+  const rehome = !!a && a !== document.body &&
+    (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
+  if (rehome) {
+    const chip = document.querySelector("#decks .chip.on");
+    if (chip) chip.focus();
+  }
 }
 
 /* ---------------- helpers ---------------- */
@@ -3127,7 +3149,18 @@ function render() {
   document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
   document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
   document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
-  document.getElementById("card").classList.toggle("flip", flipped);
+  const cardEl = document.getElementById("card");
+  cardEl.classList.toggle("flip", flipped);
+  // The flip is a CSS transform, so BOTH faces stay in the DOM and in the
+  // accessibility tree unless we say otherwise - which would read the answer
+  // out alongside the question. Expose only the face that is showing, and make
+  // it the card's description (descendants of role="button" are presentational,
+  // so the text has to reach the button by an idref, not by traversal).
+  const shown = document.getElementById(flipped ? "back" : "front");
+  const away  = document.getElementById(flipped ? "front" : "back");
+  away.setAttribute("aria-hidden", "true");
+  shown.removeAttribute("aria-hidden");
+  cardEl.setAttribute("aria-describedby", shown.id);
 }
 
 /* ---------------- deck / order ---------------- */
@@ -3153,6 +3186,9 @@ function buildChips() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip" + (d.id === deckId ? " on" : "");
+    // Same rule as the mode bar: the .on colour is not state a screen reader
+    // can see, so the selected chip says so out loud.
+    if (d.id === deckId) b.setAttribute("aria-current", "true");
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
@@ -3817,8 +3853,12 @@ document.getElementById("modeA").onclick = () => setMode("A");
 document.getElementById("modeB").onclick = () => setMode("B");
 function setMode(m) {
   mode = m; flipped = false; save();
-  document.getElementById("modeA").classList.toggle("on", m === "A");
-  document.getElementById("modeB").classList.toggle("on", m === "B");
+  // .on is a colour; aria-pressed is the state. Both, always together.
+  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
+    const el = document.getElementById(id);
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+  }
   render();
 }
 document.addEventListener("keydown", e => {
