@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^an.explicit.split.is.capped.per.ring..not.only.in.total$ tests/core.test.js
 # kills: an explicit split is capped per ring, not only in total (12 rim or 3 inner slip through TOP_MAX)
 diff --git a/src/engine/core.js b/src/engine/core.js
 index d8d9491..16027b7 100644

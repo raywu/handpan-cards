@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.pitch.set.collapse.takes.the.12.note.pan.from.29.to.27$ tests/select.test.js
 # kills: the ENGINE-SPEC section 5 collapse of X6 into the m7 built on its
 # sixth, so a 6-chord candidate survives beside the m7.
 diff --git a/src/engine/select.js b/src/engine/select.js

@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^an.extended.quality.is.a.candidate.only.on.the.TOP.shell$ tests/select.test.js
 # kills: ENGINE-SPEC section 8, "an extended-tier quality is a candidate only
 # when every one of its tones lies on the TOP shell".
 diff --git a/src/engine/select.js b/src/engine/select.js

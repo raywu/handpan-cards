@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^every.option.combination.round.trips.whole$ tests/share.test.js
 # kills: encode: the seed options must travel beside the fields, not be dropped
 diff --git a/src/engine/share.js b/src/engine/share.js
 index 8318eba..b868653 100644

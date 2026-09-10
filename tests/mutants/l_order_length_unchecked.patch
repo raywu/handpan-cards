@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^an.order.that.is.not.a.permutation.is.rejected.BAD.NOTE..never.thrown$ tests/layout.test.js
 # kills: an order that is not a permutation is rejected BAD_NOTE, never thrown
 # An order longer than the pan is accepted and its tail silently ignored,
 # so a permutation over the wrong field count is no longer BAD_NOTE.

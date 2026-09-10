@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^m7.and.m7b5.derive.the.D4.equivalence.annotation.mechanically$ tests/select.test.js
 # kills: the D4 equivalence annotation of ENGINE-SPEC section 8 - an m7 is
 # annotatable as ( = (X+3)6 ) and an m7b5 as ( = (X+3)m6 ), and a generated
 # deck derives both mechanically.

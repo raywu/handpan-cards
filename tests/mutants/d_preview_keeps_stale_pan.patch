@@ -1,4 +1,4 @@
-# suite: node --test tests/preview.test.js
+# suite: node --test --test-name-pattern ^an.unparseable.seed.leaves.no.stale.preview.on.the.sheet$ tests/preview.test.js
 # kills: an unparseable seed leaves no stale preview on the sheet
 # A typo mid-seed leaves the LAST good pan on the sheet, so the mock claims to
 # show a layout the box no longer describes - the exact way a preview lies.

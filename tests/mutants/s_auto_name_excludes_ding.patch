@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.auto.name.is..DING...PARENT.DISPLAY...TOP.SHELL.COUNT.$ tests/select.test.js
 # kills: ENGINE-SPEC section 13 D5A - N counts the TOP-SHELL fields
 # INCLUDING the ding (D Amara = 1 ding + 8 rim = D AEOLIAN 9).
 diff --git a/src/engine/select.js b/src/engine/select.js

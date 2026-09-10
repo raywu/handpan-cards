@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^decode.propagates.parseSeed.s.own.code.for.an.invalid.seed$ tests/share.test.js
 # kills: decode: a payload parseSeed refuses must be rejected, never repaired into an ok result
 diff --git a/src/engine/share.js b/src/engine/share.js
 index a40e4d3..effe867 100644

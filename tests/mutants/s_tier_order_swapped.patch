@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^canonical.order..root.degree..then.tier..then.the.quality.rank$ tests/select.test.js
 # kills: the ranking and canonical tier order of ENGINE-SPEC section 8 -
 # triads > power > sus4 > 7ths > extended.
 diff --git a/src/engine/select.js b/src/engine/select.js

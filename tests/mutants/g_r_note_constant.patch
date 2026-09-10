@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^field.circles.stay.legible..they.are.never.shrunk.away.to.clear.a.clash$ tests/layout.test.js
 # kills: r_note is a packing bound, not a constant: field circles stay legible instead of shrinking away to clear a clash
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 index f5d1cd5..c24151f 100644

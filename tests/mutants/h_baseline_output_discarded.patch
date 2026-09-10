@@ -1,5 +1,5 @@
 # kills: mutation_check prints a red baseline's own suite output
-# suite: python3 -m unittest tests.test_failure_diagnosability
+# suite: python3 -m unittest -k test_red_baseline_prints_the_suite_output tests.test_failure_diagnosability
 # Throws the suite output away again, exactly as it was before: the baseline
 # abort can then report a return code and a command and NOT ONE WORD of what
 # the suite said, which is the state main was left in three times in one day.

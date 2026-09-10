@@ -1,5 +1,5 @@
 # kills: every chip and sheet control has a 44px hit area
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^every.chip.and.sheet.control.has.a.44px.hit.area$ tests/e2e.test.js
 # Shrinks the palette swatch BUTTON back to the 14px dot it paints, leaving a
 # 14px tap target - well under the minimum for a thumb. (Before lane 31 this
 # mutant deleted a 44px ::after overlay; the target is now the button itself,

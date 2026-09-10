@@ -1,5 +1,5 @@
 # kills: the card's small print meets AA contrast against the paper
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^the.card.s.small.print.meets.AA.contrast.against.the.paper$ tests/e2e.test.js
 # Reverts the two LOWER-priority greys of row 215 only, leaving .hint correct.
 # Without this the hint mutant alone would prove the test live while the
 # .hdr .l .num (3.45:1 at 9px) and .sepc (2.95:1) probes could be dead code.

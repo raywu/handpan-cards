@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.cap.scales.with.pan.size..the.18.field.Pygmy.pan.caps.at.31$ tests/select.test.js
 # kills: the SIZE SCALING of the ENGINE-SPEC section 8 cap, amended by owner
 # review 2026-09-08 from a flat 25. Pinned flat the cap stops growing with the
 # pan, so the 18-field Pygmy deck caps at 25 and loses Gm7b5, Bbm7 and Cm7.

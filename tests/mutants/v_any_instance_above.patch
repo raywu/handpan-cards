@@ -1,4 +1,4 @@
-# suite: node --test tests/voicing.test.js
+# suite: node --test --test-name-pattern ^D11.unforced.chords.take.the.nearest.instance.above.the.root$ tests/voicing.test.js
 # kills: the D11 tie-break, "the NEAREST instance above the root". Here an
 # unforced tone takes any instance above the root (the highest one), which
 # CLAUDE.md rule 3 as worded would still permit but D11 does not.

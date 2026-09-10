@@ -1,4 +1,4 @@
-# suite: node --test tests/voicing.test.js
+# suite: node --test --test-name-pattern ^D2.forced.chords.keep.their.extensions.above.the.root.unless.forced.too$ tests/voicing.test.js
 # kills: the D2 forced test, which is over ANY non-root tone, chord tones AND
 # extensions alike (ENGINE-SPEC section 6). Here it ignores extensions, so
 # Pygmy Fm11 - forced only by its 11th - stops clustering.

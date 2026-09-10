@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.cap.bites.on.the.12.note.pan..27.candidates..25.cards$ tests/select.test.js
 # kills: the BASE of the ENGINE-SPEC section 8 cap. At 27 the 12-note pan of
 # section 8's worked example goes through untrimmed, so the cap no longer
 # bites where the spec says it does.

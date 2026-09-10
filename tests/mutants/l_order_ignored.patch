@@ -1,4 +1,4 @@
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^a.non.trivial.order.actually.moves.at.least.one.field$ tests/layout.test.js
 # kills: a non-trivial order actually moves at least one field
 # The correction is read, validated and then quietly not applied, so every
 # corrected pan solves to the generated layout.

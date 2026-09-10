@@ -1,4 +1,4 @@
-# suite: node --test tests/select.test.js
+# suite: node --test --test-name-pattern ^the.cap.scales.with.pan.size..the.18.field.Pygmy.pan.caps.at.31$ tests/select.test.js
 # kills: the SLOPE of the ENGINE-SPEC section 8 cap. Section 8 says "+1 for
 # every field beyond the twelfth"; at +2 the 18-field Pygmy pan caps at 37
 # rather than 31 and the structural maximum drifts too.

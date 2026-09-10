@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^the.rooted.flag.decides.whether.the.subtitle.carries.the.root$ tests/naming.test.js
 # kills: the rooted flag decides whether the subtitle carries the root
 # The rooted flag is ignored: every subtitle carries the root.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

@@ -1,5 +1,5 @@
 # kills: every palette swatch owns its full 44px hit area on BOTH axes
-# suite: node --test tests/e2e.test.js
+# suite: node --test --test-name-pattern ^every.palette.swatch.owns.its.full.44px.hit.area.on.BOTH.axes$ tests/e2e.test.js
 # Puts the swatches back on a 14px box with a 44px invisible ::after overlay
 # and a 10px gap. Every rect is still correct and the vertical probe in "every
 # chip and sheet control has a 44px hit area" still passes - but the centres

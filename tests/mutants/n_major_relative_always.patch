@@ -1,4 +1,4 @@
-# suite: node --test tests/naming.test.js
+# suite: node --test --test-name-pattern ^D8..numerals.are.minor.relative.only.when.the.pan.has.a.minor.third$ tests/naming.test.js
 # kills: D8: numerals are minor-relative only when the pan has a minor third
 # Numerals are always major-relative, so Pygmy's III and VII gain flats.
 diff --git a/src/engine/naming.js b/src/engine/naming.js

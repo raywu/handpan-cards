@@ -1,4 +1,4 @@
-# suite: node --test tests/share.test.js
+# suite: node --test --test-name-pattern ^an.order.that.is.not.a.permutation.of.the.field.count.is.rejected$ tests/share.test.js
 # kills: an order that is not a permutation of the field count is rejected
 # The carried correction is re-attached without being held to the seed
 # parseSeed just approved, so a corrupt link is repaired instead of refused.

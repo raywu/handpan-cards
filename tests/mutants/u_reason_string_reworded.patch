@@ -1,4 +1,4 @@
-# suite: node --test tests/core.test.js
+# suite: node --test --test-name-pattern ^REASONS.is.the.ENGINE.SPEC.section.2.table..verbatim$ tests/core.test.js
 # kills: REASONS carries the ENGINE-SPEC section 2 strings character for character
 diff --git a/src/engine/core.js b/src/engine/core.js
 index dc78a30..7990d38 100644
