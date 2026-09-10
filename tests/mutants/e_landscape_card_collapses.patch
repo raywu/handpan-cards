@@ -1,0 +1,24 @@
+# kills: in landscape every control stays tappable and the card fits, at every size and state
+# Applies the fix the mobile audit itself suggested for row 210:
+#   .scene{max-height:100%; width:auto; max-width:var(--card-w)}
+# It leaves BOTH axes indefinite. .card and both .faces are percentage- and
+# absolutely-sized, so the scene has no intrinsic width to fall back on, and it
+# measures 0x0 at every viewport probed here - portrait included. Every control
+# then hit-tests to itself perfectly, because there is no card on the page at
+# all. This is the mutant the "the card is smaller than the space allows"
+# assertion exists for: containment alone cannot tell a fitted card from a
+# deleted one, so the matrix demands the card be MAXIMAL for its box. It also
+# reddens the portrait guard and the pre-existing 380px card-fit test.
+diff --git a/index.html b/index.html
+index 810ab84..efaa16b 100644
+--- a/index.html
++++ b/index.html
+@@ -105,7 +105,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    every viewport, portrait included. Every control hit-tests clean with no card
+    on the page - which is why the test asserts the card is MAXIMAL, not merely
+    contained. */
+-.scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
++.scene{max-height:100%; width:auto; max-width:var(--card-w);
+   aspect-ratio:63/87; perspective:1400px}
+ .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
+   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}

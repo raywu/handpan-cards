@@ -85,7 +85,28 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer}
 .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
-.scene{width:var(--card-w); aspect-ratio:63/87; perspective:1400px}
+/* The card is sized from whichever axis runs out first.
+   --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and
+   letting aspect-ratio derive the height is a one-way constraint, and in
+   landscape the height is the axis that runs out: at 844x390 `main` has 113.8px
+   to give while 46vh asks for a 179.4-wide card, i.e. a 247.7-tall one. The
+   ~134px of overflow was split above and below by align-items:center, laying
+   the card over the header and the footer - five controls (both mode buttons,
+   SHUFFLE, the counter and + ADD) had perfect on-screen rects
+   that elementFromPoint resolved to the card.
+   So the HEIGHT is the definite axis and the width is derived from it:
+   height = min(what the box has, what --card-w would have asked for), which
+   makes the used width min(available-height x 63/87, --card-w). Portrait is
+   arithmetically untouched - at 380x800 the box offers 529.8px, worth a 383.6
+   wide card, so the 88vw cap of 334.4 still binds and the card is byte-identical.
+   NOT `max-height:100%; width:auto; max-width:var(--card-w)`: that leaves both
+   axes indefinite and, since .card and both .faces are percentage/absolutely
+   sized, the scene has no intrinsic width to fall back on and measures 0x0 at
+   every viewport, portrait included. Every control hit-tests clean with no card
+   on the page - which is why the test asserts the card is MAXIMAL, not merely
+   contained. */
+.scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
+  aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
 .card.flip{transform:rotateY(180deg)}
