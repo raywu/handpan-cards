@@ -56,7 +56,22 @@ function specReasons() {
     const m = line.match(/^\| `([A-Z_]+)` \| (\w+) \| `(.+)` \|$/);
     if (m) table[m[1]] = { kind: m[2], reason: m[3] };
   }
+  // Section 2, ALTERNATE SENTENCES: a second table, keyed by code AND by the
+  // name of the condition that selects the sentence. It adds sentences, never
+  // codes - the enum above stays closed - so it folds into the same entry.
+  for (const line of SPEC.slice(start, end).split("\n")) {
+    const m = line.match(/^\| `([A-Z_]+)` \| `(\w+)`[^|]*\| `(.+)` \|$/);
+    if (!m) continue;
+    assert.ok(table[m[1]], "an alternate sentence for a code not in the enum");
+    table[m[1]].alternates = table[m[1]].alternates || {};
+    table[m[1]].alternates[m[2]] = m[3];
+  }
   return table;
+}
+
+// An alternate sentence, selected by the condition named in the spec table.
+function alternate(code, name, subs) {
+  return substitute(specReasons()[code].alternates[name], subs);
 }
 
 test("REASONS is the ENGINE-SPEC section 2 table, verbatim", () => {
@@ -341,10 +356,13 @@ test("BAD_NOTE names the offending token, truncated to 12 characters", () => {
 // Section 2, DECIDED(swarm-2026-09-10): <A> is the offending note as the parser
 // PLACED it, <B> the element before it, carrying `the ding ` when it is the
 // ding and ` (inferred from <token>)` when the user typed no octave for it.
-function positional(code, subs) {
-  let reason = specReasons()[code].reason;
+function substitute(reason, subs) {
   for (const [key, value] of Object.entries(subs)) reason = reason.split(key).join(value);
   return reason;
+}
+
+function positional(code, subs) {
+  return substitute(specReasons()[code].reason, subs);
 }
 
 test("a bottom note below the octave inferred for the note before it says so", () => {
@@ -364,8 +382,8 @@ test("a bottom note below the octave inferred for the note before it says so", (
 test("NOTE_OUT_OF_ORDER names the ding as the ding, and an explicit note plainly", () => {
   const ding = core.parseSeed("(D3) A2 C4 E4");
   assert.equal(ding.code, "NOTE_OUT_OF_ORDER");
-  assert.equal(ding.reason, positional("NOTE_OUT_OF_ORDER",
-    { "<A>": "A2", "<B>": "the ding D3" }));
+  assert.equal(ding.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
+    { "<A>": "A2", "<B>": "D3" }));
 
   const typed = core.parseSeed("(D3) A3 C5 B3 E4");
   assert.equal(typed.code, "NOTE_OUT_OF_ORDER");
@@ -388,7 +406,8 @@ test("NOTE_REPEATED names the note that is already on that shell", () => {
   const r = core.parseSeed("(D3) A3 C4 C4 E4");
   assert.equal(r.ok, false);
   assert.equal(r.code, "NOTE_REPEATED");
-  assert.equal(r.reason, positional("NOTE_REPEATED", { "<A>": "C4" }));
+  assert.equal(r.reason, positional("NOTE_REPEATED",
+    { "<A>": "C4", "<B>": "C4" }));
   assert.equal(core.parseSeed("(D3) A3 C4 | C3 C3").code, "NOTE_REPEATED",
     "the bottom shell reads the same way");
 
@@ -402,6 +421,76 @@ test("NOTE_REPEATED names the note that is already on that shell", () => {
   // Section 3: the same note on the OTHER shell is a different field, so it
   // stays accepted - the diagnostic must not have widened what is rejected.
   assert.equal(core.parseSeed("(D3) A3 C4 D4 E4 | C4 D5").ok, true);
+});
+
+test("NOTE_REPEATED names both positions, inference and all", () => {
+  // Nit 2 of the w37 review: the placed octave is the half the user cannot
+  // see, and a repeat is the one message where NEITHER position may be
+  // guessed at - the user typed `C` and `C4`, and no literal `C4` twice.
+  const inferred = core.parseSeed("(D3) A3 C C4 E4");
+  assert.equal(inferred.ok, false, "the seed is still rejected");
+  assert.equal(inferred.code, "NOTE_REPEATED");
+  assert.equal(inferred.reason, positional("NOTE_REPEATED",
+    { "<A>": "C4", "<B>": "C4 (inferred from C)" }));
+  assert.match(inferred.reason, /\(inferred from C\)/,
+    "the bare C the parser placed at C4 has to be named as such");
+
+  const flat = core.parseSeed("(Eb4) Ab5 Bb Bb5");
+  assert.equal(flat.code, "NOTE_REPEATED");
+  assert.equal(flat.reason, positional("NOTE_REPEATED",
+    { "<A>": "Bb5", "<B>": "Bb5 (inferred from Bb)" }));
+
+  // Both typed: nothing is annotated, because nothing was inferred.
+  assert.equal(core.parseSeed("(D3) A3 C4 C4 E4").reason,
+    positional("NOTE_REPEATED", { "<A>": "C4", "<B>": "C4" }));
+});
+
+test("a top note that does not clear the ding is told the ding is the floor", () => {
+  // Nit 3 of the w37 review. The code is right - the ding is on no shell, so
+  // this is an ordering fault, not a repeat - but "F3 is not above the ding
+  // F3" is the riddle, and "or the note before it a lower one" tells the user
+  // to redefine their instrument. One sentence covers at-the-ding and
+  // below-the-ding, and neither offers to move the ding.
+  const same = core.parseSeed("(F3) F3 C4");
+  assert.equal(same.ok, false, "the seed is still rejected");
+  assert.equal(same.code, "NOTE_OUT_OF_ORDER");
+  assert.equal(same.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
+    { "<A>": "F3", "<B>": "F3" }));
+  assert.ok(!same.reason.includes("is not above"),
+    "a note equal to the ding must not be told it is 'not above' itself");
+  assert.ok(!same.reason.includes("a lower one"),
+    "the ding is the instrument; the message must not offer to lower it");
+
+  const below = core.parseSeed("(F3) E3 C4");
+  assert.equal(below.code, "NOTE_OUT_OF_ORDER");
+  assert.equal(below.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
+    { "<A>": "E3", "<B>": "F3" }));
+  assert.ok(!below.reason.includes("a lower one"));
+
+  // The ding's own octave can itself be inferred, and that annotation - the
+  // whole point of the w37 lane - must survive into this sentence.
+  const inferredDing = core.parseSeed("(D) D3 A3");
+  assert.equal(inferredDing.code, "NOTE_OUT_OF_ORDER");
+  assert.equal(inferredDing.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
+    { "<A>": "D3", "<B>": "D3 (inferred from D)" }));
+
+  // A note that clears the ding is still accepted: the boundary has not moved.
+  assert.equal(core.parseSeed("(F3) G3 C4").ok, true);
+});
+
+test("the ding is resolved before any other token, so its range comes first", () => {
+  // Section 3 precedence. The ding is lexed and range-checked at the top of
+  // parseSeed, BEFORE the bar check, the separator checks and the lex loop,
+  // so an off-keyboard ding beats an unlexable token later in the string.
+  for (const s of ["(B9) Zz3", "(B9) A3 |", "(B9) / A3"]) {
+    assert.equal(core.parseSeed(s).code, "NOTE_OUT_OF_RANGE", s);
+  }
+  // Past the ding, every remaining token lexes before any note is PLACED, so
+  // a string carrying both an unlexable token and a misplaced one is BAD_NOTE
+  // whichever order the two appear in.
+  for (const s of ["(D3) A3 Zz3 B9", "(D3) A3 B9 Zz3"]) {
+    assert.equal(core.parseSeed(s).code, "BAD_NOTE", s);
+  }
 });
 
 test("NEEDS_NEWER_APP is carried but never raised by parseSeed", () => {
