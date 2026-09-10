@@ -1490,6 +1490,79 @@ function run() {
     });
 
   /* ---------------------------------------------------------------- *
+   * the chrome budget
+   *
+   * `main` is flex:1 and .scene is height:min(100%, ...), so on every
+   * viewport where the VERTICAL axis binds, one pixel added to the header
+   * or the footer is one pixel taken off the card - 1:1, silently.
+   *
+   * assertCardFits above CANNOT see that. Its maximality guard is
+   *     fitW = min(cardW, main.height * ratio)
+   * which is derived from the CURRENT main height, so when main shrinks the
+   * expectation shrinks with it and the assertion stays green while the card
+   * collapses. It answers "is the card as big as the space allows", never
+   * "is the space still there".
+   *
+   * So this guard pins the space itself, against numbers MEASURED on the
+   * merge-base and written down here. Both bounds are one-sided - chrome may
+   * only get smaller, the card may only get bigger - so a genuine improvement
+   * never has to touch this table, but growing the chrome does. The listed
+   * viewports are the ones where the vertical axis binds: 844x390 is iPhone 14
+   * landscape (the device rows 210/216 are about), 375x667 an SE, 390x745 an
+   * iPhone 14 with Safari's toolbar showing, 320x568 the narrowest phone still
+   * in the wild. 390x844 and 926x428 are included as controls: 88vw binds
+   * there, so the card must not move at all.
+   *
+   * If you change this table, say in the commit message what you took off the
+   * card and why the owner agreed to it.
+   * ---------------------------------------------------------------- */
+  const CHROME_BUDGET = [
+    // vw,  vh,   minCardW, maxChrome   (chrome = vh - main.height)
+    [390, 844, 343.19, 270.17],
+    [390, 745, 342.69, 270.17],
+    [375, 667, 288.80, 268.17],
+    [320, 568, 217.11, 268.17],
+    [844, 390, 82.42, 276.17],
+    [926, 428, 109.94, 276.17],
+  ];
+
+  test("the header and footer stay inside their pixel budget, so the card keeps its size",
+    async () => {
+      await freshLoad();
+      try {
+        const bad = [];
+        for (const [vw, vh, minCardW, maxChrome] of CHROME_BUDGET) {
+          await b.setViewport(vw, vh, true);
+          const m = await b.eval(`
+            const mn = document.querySelector("main").getBoundingClientRect();
+            const sc = document.querySelector(".scene").getBoundingClientRect();
+            return {
+              main: +mn.height.toFixed(2),
+              card: +sc.width.toFixed(2),
+              vh: document.documentElement.clientHeight,
+              header: +document.querySelector("header").getBoundingClientRect().height.toFixed(2),
+              footer: +document.querySelector("footer").getBoundingClientRect().height.toFixed(2),
+            };
+          `);
+          const chrome = +(m.vh - m.main).toFixed(2);
+          if (chrome > maxChrome + 1) {
+            bad.push(`${vw}x${vh}: chrome is ${chrome}px, budget ${maxChrome}px ` +
+              `(header ${m.header}, footer ${m.footer}) - main is ${m.main}px`);
+          }
+          if (m.card < minCardW - 1) {
+            bad.push(`${vw}x${vh}: the card is ${m.card}px wide, was ${minCardW}px ` +
+              `(-${(100 * (1 - m.card / minCardW)).toFixed(1)}%) - growing the chrome ` +
+              `takes this off the card 1:1`);
+          }
+        }
+        assert.deepStrictEqual(bad, [],
+          "the practice screen's chrome has grown at the card's expense");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  /* ---------------------------------------------------------------- *
    * the Edit sheet (Phase 4, lane 4c)
    *
    * The SAME sheet, reopened from the already-selected custom chip. Every

@@ -31,9 +31,30 @@ body{
   min-height:100dvh; padding:max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   user-select:none;
 }
-header{width:100%; max-width:520px; text-align:center; margin-bottom:6px}
+/* ---- the chrome budget -------------------------------------------------
+   `main` is flex:1 and .scene is height:min(100%, ...), so on every viewport
+   where the VERTICAL axis binds - which is most phones once Safari's toolbar
+   is showing, and every phone in landscape - a pixel added to the header or
+   the footer comes off the CARD, one for one.
+
+   Raising .mode and .shuffle to the 44px minimum grew the header by 18.5px
+   and the footer by 11px. That 29.5px is paid for HERE, out of margins that
+   existed only to separate rows the 44px boxes now separate themselves: a
+   44px button carries its own optical padding, so the gaps between the title,
+   the deck row, the mode row and the card can shrink without the screen
+   reading as crowded. Sum of the reductions is exactly 29.5px
+   (h1 10 -> 2, .modebar 9 -> 1.5, header 6 -> 1, footer 10 -> 1), which holds
+   `main` - and therefore the card - byte-identical at every viewport against
+   the merge base. The .5 is not arbitrary: the old .mode box was 25.5px tall,
+   so the growth it has to cancel is itself fractional.
+
+   tests/e2e.test.js "the header and footer stay inside their pixel budget"
+   pins this against measured numbers. assertCardFits CANNOT: it derives its
+   expectation from the current main height, so it moves with the regression.
+   ------------------------------------------------------------------------ */
+header{width:100%; max-width:520px; text-align:center; margin-bottom:1px}
 h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
-   letter-spacing:.04em; margin:2px 0 8px; color:#f4f0e8}
+   letter-spacing:.04em; margin:0 0 2px; color:#f4f0e8}
 /* The chip row scrolls horizontally and never wraps; auto margins on the end
    chips keep it centred while it fits, without making either end unreachable
    once it overflows. The right edge fades so a cut-off chip reads as "more". */
@@ -80,15 +101,18 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
-.modebar{display:flex; gap:8px; justify-content:center; margin-top:9px}
+.modebar{display:flex; gap:8px; justify-content:center; margin-top:1.5px}
 /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
-   above .modebar there is only a 9px margin before "+ ADD" while below it is
-   `main`, so in landscape the overlay would lie over the card. An overlay that
+   above .modebar there are only a couple of pixels of margin before "+ ADD"
+   while below it is `main`, so in landscape the overlay would lie over the
+   card. (Note the direction of that argument: it is precisely because the
+   chrome budget above squeezes these margins to near zero that an overlay
+   would now be worse, not better.) An overlay that
    reaches outside its element is the row-214 defect in another costume. Making
    the box itself 44px cannot steal from a neighbour: normal flow gives it the
-   room. Precedent: .chip, button.nav and .mirror .mode are already sized this
-   way. The label stays optically where it was via flex centring; the vertical
+   room. Precedent: .chip, button.nav, #scale-generate and #scale-slots .slot
+   are already sized this way. The label stays optically where it was via flex centring; the vertical
    padding is now inert but is kept so the button still measures 25.5px if the
    min-height is ever removed. */
 .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
@@ -135,9 +159,15 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .hdr{display:flex; justify-content:space-between; align-items:flex-start;
   padding:11px 13px 0; color:var(--ink)}
 .hdr .l{font:600 9px/1.5 "Nunito Sans"; letter-spacing:.12em; color:var(--ink)}
-/* NOT var(--sep) (#8a8a8a, 3.45:1 on the paper): --sep is also the diagram's
-   receded-field grey, which is ground truth, so the fix is local to this
-   9px label. #757575 is 4.61:1. */
+/* Was var(--sep) (#8a8a8a), 3.45:1 on the paper. #757575 is 4.61:1.
+   Fixed here rather than by darkening the token: --sep resolves to the same
+   #8a8a8a the DIAGRAM uses for a receded bottom-shell label, but the diagram
+   does not READ the token - it hardcodes the literal "#8a8a8a" in JS (search
+   for it below, in the label() call). Retuning --sep would therefore have
+   silently split one grey into two rather than moved both, and the diagram's
+   grey is ground truth. Note the consequence: --sep now has NO consumer at
+   all, in CSS or in JS. It is a dead token, left in place only because
+   removing it is a restyle beyond these three rows. */
 .hdr .l .num{color:#757575; font-weight:400}
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
@@ -169,7 +199,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
    root/tone colours it sits between. */
 .sepc{color:#75707c}
 footer{width:100%; max-width:520px; display:flex; align-items:center;
-  justify-content:space-between; gap:10px; margin-top:10px}
+  justify-content:space-between; gap:10px; margin-top:1px}
 button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
 button.nav:active{background:#2e281e}
@@ -178,9 +208,14 @@ button.nav:active{background:#2e281e}
 /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
    that toggles a mode the user must be able to turn OFF. Same reasoning as
    .mode: the box grows, nothing is overlaid. The 7px top margin is folded into
-   the 44px box (16.25px of it now sits above the label) so the counter above
-   does not drift; net footer growth is 25.5px, which portrait still fits under
-   at 380x780 - see the .scene comment above. */
+   the 44px box, so .mid grows 25.5px - but footer is align-items:center around
+   two 44px nav buttons, so only 11px of that reaches the page. That 11px is
+   paid back in the chrome budget above.
+   It does NOT leave the counter where it was: "1 / 18" rises 18.25px at
+   390x844 relative to the old footer, and the visible gap between it and
+   "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
+   in a 44px box instead of sitting 7px under the counter. That is a real
+   visual change, accepted as the price of the target. */
 .shuffle{margin-top:0; min-height:44px; display:inline-flex; align-items:center;
   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
@@ -253,7 +288,8 @@ button.nav:active{background:#2e281e}
 .ctlrow{display:flex; align-items:center; justify-content:space-between; gap:10px;
   flex-wrap:wrap}
 .mirror{display:flex; gap:8px}
-.mirror .mode{min-height:44px}
+/* No min-height here: .mode carries the 44px minimum for every .mode on the
+   page, sheet buttons included. */
 /* The swatch BUTTON is the 44px target and the 14px dot is painted inside it,
    rather than a 14px button carrying a larger invisible ::after overlay.
    The overlay version measured correct on every rect and was still wrong: six
@@ -411,11 +447,19 @@ button.nav:active{background:#2e281e}
       </div>
     </div>
    </div>
-    <!-- Outside .sheetbody, with the primary: this row is 44px tall by spec
-         (both the mirror toggles and the palette swatches are full-size
-         targets), so it is the row a scrolling body would most readily clip.
-         Keeping it here also keeps the mirror toggle beside the button it
-         affects. DOM order is unchanged. -->
+    <!-- Outside .sheetbody, with the primary. The original reason - that the
+         swatches' 44px hit area was an ::after overlay a scroll container
+         would clip - is gone: the swatch button IS 44px now, so nothing
+         reaches outside its own box.
+         The row stays here for the reason that is still testable: .sheetbody
+         is the scrolling box, and everything below it is what the sheet
+         guarantees is reachable WITHOUT scrolling. Move this </div> up so the
+         row joins the scroll and GENERATE CARDS goes 245.5px below the fold at
+         380x780 - which is exactly what tests/mutants/
+         e_sheet_primary_back_in_the_scroll.patch does, and it dies on
+         "GENERATE CARDS is reachable without scrolling at every phone
+         viewport". Keeping the row here also keeps the mirror toggle beside
+         the button it affects. DOM order is unchanged. -->
     <div class="ctlrow">
       <div class="mirror">
         <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
