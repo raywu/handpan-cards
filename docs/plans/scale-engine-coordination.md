@@ -1095,4 +1095,40 @@ PR #54 is the control and it lands right on the row-258 anchor, which removes "w
 
 | # | Source | Item | Status |
 |---|---|---|---|
-| 272 | lane 33 | **Row 263 is only half closed.** 83 pre-existing `# suite:` headers name a FILE rather than a test, so those mutants are still scored on the file's exit code and still cannot prove their own assertion died. The refusal lane 33 added catches a MISSING header, not an untargeted one, and it cannot do better - a header is an opaque command string the script cannot introspect. Rewriting and re-verifying those 83 is the other half. `e_layout_rotate_inert` is the proof this is not theoretical: it is exactly what an untargeted header hides | open - MEDIUM |
+| 272 | lane 33 | **Row 263 is only half closed.** 73 pre-existing `# suite:` headers name a FILE rather than a test, so those mutants are still scored on the file's exit code and still cannot prove their own assertion died. The refusal lane 33 added catches a MISSING header, not an untargeted one, and it cannot do better - a header is an opaque command string the script cannot introspect. Rewriting and re-verifying those 73 is the other half. The reviewer measured the blast radius of every one: all 73 go red under their mutant, 24 kill exactly one test (as tight as a targeted header), 49 kill two or more (worst: `h_version_ge` 23, `u_flat_raises_midi` 17). No second fake kill found. Note these older patches use `# kills:` as PROSE describing an invariant rather than a test name, so the `e_layout_rotate_inert` check is not even well-defined for most of them - the exposure is that deleting the specific named assertion would still score a kill off some other failure in the file `e_layout_rotate_inert` is the proof this is not theoretical: it is exactly what an untargeted header hides | open - MEDIUM |
+
+
+### PR #55 review - PASS_WITH_NITS, merged as `af70afd`
+
+Verdict PASS_WITH_NITS at `1fa08eb`, run 34522190840, all five jobs green at exactly that SHA, log ends `233/233 mutants killed` with zero skipped, survived or broken.
+
+**The timing anomaly is resolved and the answer is (a): the speedup is real, and it reconciles to the second.** The reviewer did not sample - it ran all 233 headers against the clean tree and counted the tests each one actually executes:
+
+| bucket | n | runs 1 test | runs whole file | **runs 0 tests** |
+|---|---|---|---|---|
+| non-`e_` | 179 | 113 | 66 | **0** |
+| `e_` | 54 | 47 | 7 | **0** |
+
+Not one hollow header. Then it attributed the drop per prefix across the two CI logs:
+
+| prefix | main (pre-fix) | PR #55 | delta |
+|---|---|---|---|
+| `e_` | 888.2s | 302.6s | **-585.6s** |
+| `d_` | 70.3s | 18.7s | **-51.6s** |
+| the other 11 prefixes | 51.6s | 50.6s | -1.0s (noise) |
+| total | 1010s | 372s | **-638s** |
+
+585.6 + 51.6 + 1.0 = 638.2. **Zero unexplained remainder**, and the entire drop lands on exactly the two prefixes whose commands changed while `b_`/`c_`/`r_` stay flat - which is the lane's premise correction confirmed from the other direction. One e2e test costs 0.50s locally against 9.49s for the whole file; in CI 1.8s against 16.45s. The lane's "one extra clean-tree run per mutant" is mechanically true and simply swamped by each run getting ~9-19x cheaper.
+
+**And hypothesis (b) is not merely absent, it is structurally impossible here.** A hollow header exits 0 on the clean tree AND under the mutant, so `mutation_check.sh:238` scores it **survived** - a loud red. Hollowness fails safe in this design. That is worth keeping: the row-258 instrument reads a suspicious speedup as a possible hollow run, and in THIS harness that particular inference does not hold. The instrument still stands for suites where a vacuous pattern reads as a pass; it does not stand for the mutation gate.
+
+**The fake kill reproduces completely, and the reviewer built its own instance of the defect class rather than trusting the lane's.** At merge-base the only occurrence of `ROTATE corrects the layout from the keyboard alone at 380px` in the whole tree is the patch's own `# kills:` line, and main's CI log shows it scoring `killed` against that non-existent test. Independently: a two-test fixture with a header-less `d_` mutant naming `beta stays beta` while breaking only `alpha` - merge-base script prints `killed -> beta stays beta` and exits 0, while the named test passes untouched. Head script: `broken`, `SURVIVING MUTANT`, exit 1.
+
+**Nothing but headers moved, proven twice.** Across all 150 touched patch files the diff contains exactly ONE removed line, the bogus `# kills:`. Independently, stripping every `#` comment from all 232 pre-existing patches and SHA-comparing merge-base against head gives zero body changes. No mutant was softened.
+
+Sweep cost is now 1.60s per mutant (`e_` 5.60s, non-`e_` 0.39s) against GitHub's 360-minute default, ~56x headroom. The marginal cost of a new targeted `e_` mutant is ~3.6s against ~33s for a file-only one, so **the incentive now points the right way** - which matters more than the one-time saving.
+
+| # | Source | Item | Status |
+|---|---|---|---|
+| 273 | #55 review | **The code comment at `tests/mutation_check.sh:180-184` misrepresents the change as a cost.** Its mechanism is right ("the cache saves much less... roughly one extra clean-tree run per mutant") but it frames the trade as "that is the price... worth paying" when the measured result is a 2.7x win. A maintainer reading only that comment could conclude targeted headers are expensive and avoid adding them - the exact opposite of the incentive the change creates. Rewrite it with the measured numbers | open - LOW |
+| 274 | #55 review | Two numbers in the PR #55 write-up are wrong and are corrected here for the record: the new mutant is byte-neutral at **13864** both sides, not 13576 (the neutrality property itself holds and was verified), and the file-only header count is **73**, not 83 - 83 was the count of patches that already had A header, 10 of which were already targeted. All 149 headers the lane ADDED are targeted; none took the file-only shortcut | closed - recorded |
