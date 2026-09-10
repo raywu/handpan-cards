@@ -9,10 +9,10 @@
 # #deck-add returns the card's own .hdr. Every one of those rects stays fully
 # on-screen and correctly sized throughout, so only the hit-test sees it.
 diff --git a/index.html b/index.html
-index 93f00c9..0e62125 100644
+index 810ab84..0d6f6d0 100644
 --- a/index.html
 +++ b/index.html
-@@ -97,8 +97,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -105,8 +105,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
     every viewport, portrait included. Every control hit-tests clean with no card
     on the page - which is why the test asserts the card is MAXIMAL, not merely
     contained. */

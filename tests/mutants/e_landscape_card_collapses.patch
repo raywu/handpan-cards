@@ -10,10 +10,10 @@
 # deleted one, so the matrix demands the card be MAXIMAL for its box. It also
 # reddens the portrait guard and the pre-existing 380px card-fit test.
 diff --git a/index.html b/index.html
-index 93f00c9..d050b2b 100644
+index 810ab84..efaa16b 100644
 --- a/index.html
 +++ b/index.html
-@@ -97,7 +97,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -105,7 +105,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
     every viewport, portrait included. Every control hit-tests clean with no card
     on the page - which is why the test asserts the card is MAXIMAL, not merely
     contained. */
