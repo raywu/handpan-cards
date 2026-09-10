@@ -1969,13 +1969,49 @@ function run() {
       `on "${m.hit}" instead`);
   }
 
+  // Opening the sheet is SETUP for these tests, not the thing under test - the
+  // assertion is always about #scale-generate. That matters at 844x390, where
+  // the tap path cannot be used at all: + ADD wraps onto a second line which
+  // #decks (overflow:auto) clips, so a tap at its centre lands on #hdr and the
+  // sheet never opens. That is deck-nav geometry owned by another lane, and it
+  // reproduces unchanged on origin/main, so it is not this lane's to fix or to
+  // hide. Tap where a finger can reach the chip; where it cannot, PROVE that
+  // clipping is the reason before falling back to a scripted click, so a
+  // different breakage still fails here instead of being papered over.
+  const openSheetForFold = async (w, h) => {
+    const reach = await b.eval(`
+      const el = document.getElementById("deck-add");
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      const r = el.getBoundingClientRect();
+      const box = document.getElementById("decks").getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+      return {
+        tappable: hit === el,
+        clippedByDecks: r.bottom > box.bottom + 0.5 || r.top < box.top - 0.5,
+        hit: hit ? (hit.id || hit.className || hit.tagName) : null,
+      };
+    `);
+    if (reach.tappable) {
+      await b.click("#deck-add");
+    } else {
+      assert.ok(reach.clippedByDecks,
+        `at ${w}x${h}: + ADD is not tappable (a tap at its centre lands on ` +
+        `"${reach.hit}") for some reason other than the known deck-nav clipping - ` +
+        `these tests' setup needs re-checking before their result means anything`);
+      await b.eval(`document.getElementById("deck-add").click(); return true;`);
+    }
+    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: `the scale sheet to open at ${w}x${h}` });
+  };
+
   test("GENERATE CARDS is reachable without scrolling at every phone viewport", async () => {
     try {
       await freshLoad();
       for (const [w, h] of FOLD_VIEWPORTS) {
         await b.setViewport(w, h, true);
         // Freshly opened each time: the resting state is the one that matters.
-        await openSheet();
+        await openSheetForFold(w, h);
         await typeScale(BIG_SCALE);
         // The preview is drawn on parse and is the tallest thing on the create
         // sheet; measuring before it lands would flatter the result.
