@@ -1,0 +1,21 @@
+# kills: suite_health prints a failing node suite's own output
+# suite: python3 -m unittest tests.test_failure_diagnosability
+# Deletes the excerpt, restoring the defect: a node suite that fails is recorded
+# as "suite is not green" with its entire TAP stream - the failing test names,
+# the assertion text, the stack - captured and then dropped on the floor. The
+# CI log then carries a verdict nobody can act on.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+index 804ac21..5601b79 100644
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -249,9 +249,6 @@ def check_node():
+         if total < floor:
+             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
+         if failed:
+-            print(f"--- {path}: {failed} failing test(s), its own output follows ---")
+-            print(excerpt(out))
+-            print(f"--- end of {path} output ---")
+             problems.append(f"{path}: suite is not green")
+         if skipped:
+             # node emits "ok N - <test name> # SKIP" - the name comes BEFORE the

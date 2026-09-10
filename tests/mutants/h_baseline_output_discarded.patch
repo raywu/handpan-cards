@@ -1,0 +1,29 @@
+# kills: mutation_check prints a red baseline's own suite output
+# suite: python3 -m unittest tests.test_failure_diagnosability
+# Throws the suite output away again, exactly as it was before: the baseline
+# abort can then report a return code and a command and NOT ONE WORD of what
+# the suite said, which is the state main was left in three times in one day.
+#
+# The suite header is the python test rather than this script, for the reason
+# h_baseline_hang_scored_red.patch already records: a mutant whose suite IS
+# tests/mutation_check.sh trips the inner dirty-tree refusal (exit 2) and is
+# scored a kill without the reverted logic ever running. The python test copies
+# the script into a throwaway git sandbox instead.
+#
+# Byte-length-neutral (>/dev/null padded with three spaces) so bash, which reads
+# a running script lazily by byte offset, cannot be desynchronised while the
+# patch is applied to the very file the outer sweep is executing.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+index 021c2cb..df5fdcf 100755
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -76,7 +76,7 @@ fi
+ SUITE_LOG=$(mktemp -t mutation_suite_log.XXXXXX)
+ trap 'rm -f "$SUITE_LOG"' EXIT
+ run_suite() {   # $* = command string, deliberately word-split
+-  ${TMO[@]+"${TMO[@]}"} $* >"$SUITE_LOG" 2>&1
++  ${TMO[@]+"${TMO[@]}"} $* >/dev/null    2>&1
+ }
+
+ # Both ends of a long stream: the first failure says what broke, the tail says
