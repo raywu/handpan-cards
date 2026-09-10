@@ -3104,4 +3104,142 @@ function run() {
     }
   });
 
+
+  /* ---------------------------------------------------------------- *
+   * launch retry (tests/helpers/cdp.js)
+   *
+   * CI run 34518203026 aborted the mutation gate at its BASELINE check: the
+   * e2e suite failed on the CLEAN tree with "browser did not report a debug
+   * port", ~2 minutes into a 232-mutant sweep, and attempt 2 with no code
+   * change was green. The exit branch of the launch race did NOT fire, so the
+   * browser was alive and had simply not printed its DevTools ws URL inside
+   * the 20s bound - a loaded runner, not breakage. Fourth occurrence, first
+   * captured signature.
+   *
+   * So launch() retries that ONE rejection ONCE. The two tests below are the
+   * whole contract: a slow start is retried (and its first, still-alive
+   * browser reaped first), and a browser that really fails is NOT - retrying
+   * real breakage only doubles the wall clock before the same failure.
+   *
+   * Both drive a stand-in browser through CHROME_BIN, the seam findBrowser()
+   * already has, and both lower the port bound through
+   * HPFC_CDP_PORT_TIMEOUT_MS - which can only ever LOWER it - so the slow-start
+   * path costs the sweep half a second instead of 20 seconds twice.
+   * ---------------------------------------------------------------- */
+
+  // Reports, from inside the child and BEFORE it exits (see the reaping tests
+  // above for why "after exit" would prove nothing): how many times the fake
+  // browser was executed, what launch() finally threw, and what it left behind.
+  const LAUNCH_PROBE =
+    "const { execFileSync } = require('node:child_process');" +
+    "const fs = require('node:fs');" +
+    "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
+    "(async () => { try { await launch(); console.log('NOTHROW'); }" +
+    "  catch (e) { console.log('THREW ' + (e && (e.message || e.type || e))); }" +
+    "  const log = process.env.FAKE_LOG;" +
+    "  console.log('LAUNCHES ' + (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\\n').filter(Boolean).length : 0));" +
+    "  const root = process.env.TMPDIR;" +
+    "  const left = fs.readdirSync(root).filter((n) => n.startsWith('hpfc-prof-'));" +
+    "  const ps = execFileSync('ps', ['-eo', 'pid=,args=', '-ww'], { encoding: 'utf8' })" +
+    "    .split('\\n').filter((l) => l.includes(root));" +
+    "  console.log('LEFT ' + JSON.stringify(left));" +
+    "  console.log('PROCS ' + ps.length);" +
+    "  process.exit(0); })();";
+
+  function runLaunchProbe(fakeBody, tmp) {
+    const fake = path.join(tmp, "fake-browser");
+    const log = path.join(tmp, "invocations");
+    fs.writeFileSync(fake, fakeBody.replace(/@LOG@/g, log));
+    fs.chmodSync(fake, 0o755);
+    const profiles = path.join(tmp, "profiles");
+    fs.mkdirSync(profiles);
+    return new Promise((resolve) => {
+      const c = spawnChild(process.execPath, ["-e", LAUNCH_PROBE], {
+        cwd: REPO,
+        env: childEnv({
+          TMPDIR: profiles, CHROME_BIN: fake, FAKE_LOG: log,
+          HPFC_CDP_PORT_TIMEOUT_MS: "500",
+        }),
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let o = "", e = "";
+      c.stdout.on("data", (d) => { o += d.toString(); });
+      c.stderr.on("data", (d) => { e += d.toString(); });
+      c.on("exit", (code) => resolve({ code, o, e }));
+      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000).unref();
+    });
+  }
+
+  test("a slow-starting browser is retried once, and the first one is reaped", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "launch-slow-"));
+    // First run: alive, silent, past the bound - the observed CI signature
+    // exactly (NOT an exit, which is a different branch and must not retry).
+    // Second run: reports a port nothing listens on, so the retry is provably
+    // reached without this test needing a real browser.
+    const body =
+      "#!/bin/sh\n" +
+      "echo run >> '@LOG@'\n" +
+      "if [ \"$(wc -l < '@LOG@')\" -le 1 ]; then exec sleep 120; fi\n" +
+      "echo 'DevTools listening on ws://127.0.0.1:1/devtools/browser/dead' 1>&2\n" +
+      "exec sleep 120\n";
+    const r = await runLaunchProbe(body, tmp);
+
+    try {
+      const launches = r.o.match(/LAUNCHES (\d+)/);
+      assert.ok(launches, `the child never reported the launch count:\n${r.o}\n${r.e.slice(-2000)}`);
+      assert.strictEqual(Number(launches[1]), 2,
+        "a slow start must be retried exactly once (two browsers spawned, not " +
+        `${launches[1]}):\n${r.o}\n${r.e.slice(-2000)}`);
+      // Not the timeout again: the retry got past the port wait and died at the
+      // dead WebSocket, which is only reachable on the second attempt.
+      assert.ok(!/THREW browser did not report a debug port/.test(r.o),
+        `the retry never happened - launch() rethrew the slow-start timeout:\n${r.o}`);
+      // A silent retry turns a known intermittent into an unknown slowdown.
+      assert.ok(/retry/i.test(r.e),
+        `the retry was silent - nothing on stderr names it:\n${r.e.slice(-2000)}`);
+      // The first browser is ALIVE when the retry starts; not reaping it leaks a
+      // Chrome and a profile dir per retry.
+      const leftLine = r.o.match(/LEFT (\[.*\])/);
+      assert.ok(leftLine, `the child never reported its profile directories:\n${r.o}`);
+      assert.deepStrictEqual(JSON.parse(leftLine[1]), [],
+        `the retry left profile directories behind: ${leftLine[1]}`);
+      const procLine = r.o.match(/PROCS (\d+)/);
+      assert.ok(procLine, `the child never reported surviving processes:\n${r.o}`);
+      assert.strictEqual(Number(procLine[1]), 0,
+        `the retry left ${procLine[1]} process(es) holding a profile`);
+    } finally {
+      killUnder(tmp);
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("a browser that exits at once is not retried", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+
+    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "launch-dead-"));
+    // Real breakage, not a slow runner: retrying it just pays the same failure
+    // twice, and on a 232-mutant sweep that is the difference between a red
+    // suite and a timed-out one.
+    const body =
+      "#!/bin/sh\n" +
+      "echo run >> '@LOG@'\n" +
+      "exit 3\n";
+    const r = await runLaunchProbe(body, tmp);
+
+    try {
+      const launches = r.o.match(/LAUNCHES (\d+)/);
+      assert.ok(launches, `the child never reported the launch count:\n${r.o}\n${r.e.slice(-2000)}`);
+      assert.strictEqual(Number(launches[1]), 1,
+        "a browser that exited must NOT be retried (one spawn, not " +
+        `${launches[1]}):\n${r.o}\n${r.e.slice(-2000)}`);
+      assert.ok(/THREW browser exited: 3/.test(r.o),
+        `the original failure must reach the caller unchanged:\n${r.o}`);
+    } finally {
+      killUnder(tmp);
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
 }

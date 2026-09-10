@@ -203,7 +203,25 @@ class Browser {
   }
 }
 
-async function launch() {
+// The wait for the browser to print its DevTools ws URL. NOT raisable: a longer
+// bound only trades an abort for a longer hang, and the runs that hit it were
+// not slow by a few seconds, they were a loaded runner losing a scheduling
+// lottery. HPFC_CDP_PORT_TIMEOUT_MS exists for the retry tests, which have to
+// reach this path on purpose; Math.min makes it a floor-only knob, so nothing -
+// a stray CI env, a future lane - can use it to lengthen the bound.
+const PORT_TIMEOUT_MS = 20000;
+function portTimeoutMs() {
+  const raw = Number(process.env.HPFC_CDP_PORT_TIMEOUT_MS);
+  return raw > 0 ? Math.min(raw, PORT_TIMEOUT_MS) : PORT_TIMEOUT_MS;
+}
+// The one rejection that is retried. Compared by message because it is the only
+// handle the race gives us, and because it is already a documented diagnostic.
+const SLOW_START = "browser did not report a debug port";
+
+// One launch attempt: spawn, wait for the port, connect, set the session up.
+// Reaps its own browser on every post-spawn failure and rethrows the ORIGINAL
+// error - callers, and launch()'s retry test below, read the message.
+async function launchOnce() {
   const bin = findBrowser();
   if (!bin) return null;
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "hpfc-prof-"));
@@ -228,7 +246,7 @@ async function launch() {
   try {
     const wsUrl = await new Promise((resolve, reject) => {
       let buf = "";
-      const t = setTimeout(() => reject(new Error("browser did not report a debug port")), 20000);
+      const t = setTimeout(() => reject(new Error(SLOW_START)), portTimeoutMs());
       proc.stderr.on("data", (d) => {
         buf += d.toString();
         const m = buf.match(/ws:\/\/[^\s]+/);
@@ -256,6 +274,32 @@ async function launch() {
     try { if (ws) ws.close(); } catch {}
     reap(entry);
     throw err;
+  }
+}
+
+// CI run 34518203026 aborted the mutation gate at its baseline check: the e2e
+// suite failed on the CLEAN tree with SLOW_START, ~2 minutes into a 232-mutant
+// sweep, and a re-run with no code change was green. The exit branch did NOT
+// fire - the browser was alive and had simply not printed its ws URL yet. That
+// is a loaded runner, not breakage, and it is the fourth occurrence.
+//
+// So that ONE rejection gets ONE more attempt. Everything else - no binary, a
+// browser that exited, a WebSocket that would not open, a setup send that
+// failed - is real breakage, and retrying real breakage only pays the same
+// failure twice. launchOnce() has already reaped the first, still-running
+// browser and its profile directory by the time we get here (its catch), which
+// is what keeps a retry from leaking a live Chrome and a temp dir.
+//
+// The notice goes to stderr on purpose: a silent retry would convert a known
+// intermittent into an unexplained 20s of dead air in the log.
+async function launch() {
+  try {
+    return await launchOnce();
+  } catch (err) {
+    if (!err || err.message !== SLOW_START) throw err;
+    process.stderr.write(
+      `[cdp] ${SLOW_START} within ${portTimeoutMs()}ms - reaped it and retrying the launch once\n`);
+    return await launchOnce();
   }
 }
 
