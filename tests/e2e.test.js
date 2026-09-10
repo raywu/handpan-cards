@@ -2078,11 +2078,23 @@ function run() {
       assert.ok(at.body.clientH >= 100,
         `the footer left only ${at.body.clientH}px to scroll in - the sheet is unusable`);
 
+      // Scrolled with a REAL wheel over the sheet, not by assigning scrollTop:
+      // an overflow:hidden box still takes a scrollTop from script, so the
+      // scripted form passes on a sheet no finger can actually scroll.
+      const where = await b.eval(`
+        const r = document.querySelector(".sheetbody").getBoundingClientRect();
+        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+      `);
+      for (let i = 0; i < 12; i++) {
+        await b.send("Input.dispatchMouseEvent", {
+          type: "mouseWheel", x: where.x, y: where.y, deltaX: 0, deltaY: 400,
+        });
+      }
+
       // The end of the content is reachable, and the primary has not moved
       // while getting there.
       const end = await b.eval(`
         const body = document.querySelector(".sheetbody");
-        body.scrollTop = 1e7;
         const last = body.lastElementChild.getBoundingClientRect();
         const gen = document.getElementById("scale-generate").getBoundingClientRect();
         return {

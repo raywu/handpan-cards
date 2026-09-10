@@ -6,15 +6,15 @@
 # Note this is the "it fits on MY phone" defect - the eight-note Edit sheet
 # clears 390x844 with a few pixels to spare and only fails in landscape.
 diff --git a/index.html b/index.html
-index 2681e9b..c861eb6 100644
+index 6a831d1..adb6fe6 100644
 --- a/index.html
 +++ b/index.html
-@@ -139,7 +139,7 @@ button.nav:active{background:#2e281e}
-    below its content and the footer is pushed out of the cap again.
+@@ -142,7 +142,7 @@ button.nav:active{background:#2e281e}
+    already 0, so overflow-y is the same declaration doing both jobs.
     .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
     where the footer alone exceeds the cap. */
--.sheetbody{min-height:0; overflow-y:auto;
-+.sheetbody{min-height:0; flex-shrink:0; overflow-y:auto;
-   display:flex; flex-direction:column; gap:9px}
+-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:9px}
++.sheetbody{overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; gap:9px}
  .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
    text-transform:uppercase}
+ /* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.
