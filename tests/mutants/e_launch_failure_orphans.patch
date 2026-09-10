@@ -2,10 +2,10 @@
 # launch() rethrows a post-spawn failure without reaping, so every failed
 # launch orphans a browser process and an hpfc-prof-* directory.
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
-index 790cff1..fefef92 100644
+index e6888ee..833f854 100644
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -232,7 +232,6 @@ async function launch() {
+@@ -254,7 +254,6 @@ async function launch() {
      return b;
    } catch (err) {
      try { if (ws) ws.close(); } catch {}
