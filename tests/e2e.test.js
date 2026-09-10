@@ -1098,6 +1098,191 @@ function run() {
     }
   });
 
+  /* ---------------------------------------------------------------- *
+   * 7b. landscape - the card must FIT, not float over the chrome
+   *
+   * Owner-reported via the mobile audit (coordination row 210): held
+   * sideways, an iPhone 14 (844x390) loses NAME<->NOTES, SHUFFLE, the
+   * counter and + ADD. The cause is a one-way size constraint. `--card-w`
+   * is min(88vw, 46vh, 420px) and `.scene` took it as its WIDTH, deriving
+   * height from aspect-ratio 63/87 - so at 390px tall the card asked for
+   * 46vh = 179.4 wide and therefore 247.7 TALL, inside a `main` that only
+   * had 113.8px to give. `align-items:center` split the ~134px of overflow
+   * above and below, laying the card over the header and the footer.
+   *
+   * Why these assertions are hit-tests and not rectangles: every one of
+   * those controls has a rect that is fully on-screen and correctly sized
+   * even while it is buried. Only `document.elementFromPoint` at the point
+   * a thumb actually lands can see the difference, and two escaped defects
+   * in this workstream came from checking rects instead.
+   *
+   * Why the matrix also asserts the card is MAXIMAL, not merely contained:
+   * the obvious fixes make the card fit by destroying it. The audit's own
+   * suggestion (`max-height:100%; width:auto; max-width:var(--card-w)`)
+   * leaves BOTH axes indefinite - `.card` and both `.face`es are
+   * percentage- and absolutely-sized, so the scene has no intrinsic width
+   * to fall back on - and it measures 0x0 at every viewport probed here,
+   * portrait included. Every control hit-tests perfectly with no card on
+   * the page at all. So each cell also demands the card be as large as the
+   * ratio and the available box allow, which is what pins the fix to
+   * "derive the binding axis from the space" rather than "collapse".
+   * ---------------------------------------------------------------- */
+
+  // The controls the audit measured as buried, plus the two arrows it
+  // measured as still reachable (they sit outside the card's x-range, so
+  // they are the negative control: a fix that moves the card sideways
+  // instead of shrinking it would show up here).
+  const LANDSCAPE_CONTROLS = ["#modeA", "#modeB", ".shuffle", ".count", "#deck-add", "#prev", "#next"];
+
+  // One reading of the whole page: where every control's centre actually
+  // hit-tests, where the card sits relative to its container, and how big
+  // the card is against the largest size the box could hold.
+  //
+  // --card-w is resolved by measuring a throwaway element rather than by
+  // re-implementing its min() here, and the ratio is read off the computed
+  // aspect-ratio, so a restyle of either cannot make this test lie.
+  const layoutProbe = () => b.eval(`
+    const sels = ${JSON.stringify(LANDSCAPE_CONTROLS)};
+    const name = (n) => !n ? "null"
+      : (n.id ? "#" + n.id
+        : n.tagName.toLowerCase() + (typeof n.className === "string" && n.className.trim()
+          ? "." + n.className.trim().split(/\\s+/).join(".") : ""));
+    const controls = sels.map((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return { sel, missing: true };
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return {
+        sel,
+        hitsSelf: !!hit && (hit === el || el.contains(hit)),
+        hit: name(hit),
+        r: { l: +r.left.toFixed(1), t: +r.top.toFixed(1), r: +r.right.toFixed(1), b: +r.bottom.toFixed(1) },
+      };
+    });
+    const scene = document.querySelector(".scene");
+    const s = scene.getBoundingClientRect();
+    const mn = document.querySelector("main").getBoundingClientRect();
+    // Resolve var(--card-w) exactly, without duplicating its formula.
+    const ruler = document.createElement("div");
+    ruler.style.cssText = "position:absolute;visibility:hidden;width:var(--card-w)";
+    document.body.appendChild(ruler);
+    const cardW = ruler.getBoundingClientRect().width;
+    ruler.remove();
+    const ar = getComputedStyle(scene).aspectRatio.split("/").map((n) => parseFloat(n));
+    const ratio = ar.length === 2 && ar[1] ? ar[0] / ar[1] : 63 / 87;
+    return {
+      controls,
+      scene: { l: +s.left.toFixed(1), t: +s.top.toFixed(1), r: +s.right.toFixed(1), b: +s.bottom.toFixed(1),
+               w: +s.width.toFixed(1), h: +s.height.toFixed(1) },
+      main: { l: +mn.left.toFixed(1), t: +mn.top.toFixed(1), r: +mn.right.toFixed(1), b: +mn.bottom.toFixed(1),
+              w: +mn.width.toFixed(1), h: +mn.height.toFixed(1) },
+      // The widest the card may be (its own cap) and the widest the box can
+      // hold at this ratio. A correct fix lands on the smaller of the two.
+      cardW: +cardW.toFixed(1),
+      fitW: +Math.min(cardW, mn.height * ratio).toFixed(1),
+      vw: document.documentElement.clientWidth,
+      vh: document.documentElement.clientHeight,
+      body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+    };
+  `);
+
+  // Assert one cell of the matrix: nothing buried, card inside its box, card
+  // as big as that box allows. `at` names the viewport AND the state, so a
+  // failure line says which cell without counting loop iterations.
+  async function assertCardFits(at) {
+    const m = await layoutProbe();
+    for (const c of m.controls) {
+      assert.ok(!c.missing, `${c.sel} is missing from the page ${at}`);
+      assert.strictEqual(c.hitsSelf, true,
+        `${c.sel} is not tappable ${at}: elementFromPoint at its centre returned ` +
+        `${c.hit} (its rect is ${JSON.stringify(c.r)}, so a rect check would have passed). ` +
+        `The card is at ${JSON.stringify(m.scene)} inside main ${JSON.stringify(m.main)}.`);
+    }
+    assert.ok(m.scene.t >= m.main.t - 1 && m.scene.b <= m.main.b + 1,
+      `the card overflows main vertically ${at}: card ${JSON.stringify(m.scene)} ` +
+      `vs main ${JSON.stringify(m.main)}`);
+    assert.ok(m.scene.l >= m.main.l - 1 && m.scene.r <= m.main.r + 1,
+      `the card overflows main horizontally ${at}: card ${JSON.stringify(m.scene)} ` +
+      `vs main ${JSON.stringify(m.main)}`);
+    assert.ok(m.scene.w >= m.fitW - 1.5,
+      `the card is smaller than the space allows ${at}: ${m.scene.w}px wide where ` +
+      `${m.fitW}px fits (cap ${m.cardW}px, main is ${m.main.h}px tall). ` +
+      `Making the controls reachable by collapsing the card is not a fix.`);
+    assert.ok(m.scene.w <= m.cardW + 1,
+      `the card exceeds its own --card-w cap ${at}: ${m.scene.w} > ${m.cardW}`);
+    assert.ok(m.body.sw <= m.body.cw + 1,
+      `the page scrolls horizontally ${at} (${m.body.sw} > ${m.body.cw})`);
+    return m;
+  }
+
+  const flip = async (want) => {
+    await b.click("#card");
+    await b.waitFor(
+      `document.getElementById("card").classList.contains("flip") === ${want}`,
+      { label: `the card to ${want ? "flip" : "flip back"}` },
+    );
+  };
+
+  test("in landscape every control stays tappable and the card fits, at every size and state", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    try {
+      // 844x390 is the reported device (iPhone 14 sideways); 926x428 is the
+      // largest current phone; 667x375 is an SE, the shortest landscape a
+      // phone offers; 1280x500 is a short-but-wide desktop window, which the
+      // audit never probed and which is broken on main too. A single-width
+      // landscape probe is what nit (b) was filed against last cycle.
+      for (const [vw, vh] of [[844, 390], [926, 428], [667, 375], [1280, 500]]) {
+        await b.setViewport(vw, vh, true);
+        await assertCardFits(`at ${vw}x${vh} on load`);
+
+        // Flipped: the back face is the taller content, and the flip is a
+        // 3d transform under `perspective`, which a width:auto scene can
+        // resolve differently from a width-driven one.
+        await flip(true);
+        await assertCardFits(`at ${vw}x${vh} with the card flipped`);
+        await flip(false);
+
+        // Switching decks re-renders the card and rebuilds the chip row, so
+        // it is the state in which a height-driven card could relayout.
+        await selectDeck(1, meta);
+        await assertCardFits(`at ${vw}x${vh} after switching to ${meta[1].id}`);
+        await selectDeck(0, meta);
+        await assertCardFits(`at ${vw}x${vh} after switching back to ${meta[0].id}`);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("portrait is unchanged: the card keeps its full --card-w width and nothing is buried", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    try {
+      // The repo's stated test width plus the owner's own device. In every
+      // one of these the HEIGHT constraint must NOT bind - the card is as
+      // wide as --card-w allows, exactly as it was before the landscape fix.
+      for (const [vw, vh] of [[380, 800], [380, 780], [390, 844]]) {
+        await b.setViewport(vw, vh, true);
+        const m = await assertCardFits(`at ${vw}x${vh} on load (portrait)`);
+        assert.ok(Math.abs(m.scene.w - m.cardW) <= 1,
+          `portrait regressed at ${vw}x${vh}: the card is ${m.scene.w}px wide but ` +
+          `--card-w still resolves to ${m.cardW}px, so the landscape fix has ` +
+          `narrowed the card in portrait too`);
+
+        await flip(true);
+        await assertCardFits(`at ${vw}x${vh} with the card flipped (portrait)`);
+        await flip(false);
+
+        await selectDeck(1, meta);
+        await assertCardFits(`at ${vw}x${vh} after switching deck (portrait)`);
+        await selectDeck(0, meta);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("every chip and sheet control has a 44px hit area", async () => {
     await freshLoad();
     await b.setViewport(380, 780, true);
