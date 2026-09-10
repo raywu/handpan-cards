@@ -78,6 +78,7 @@ function specReason(code) {
 
 // Section 2 is a CLOSED enum; share may only ever answer with one of these.
 const CODES = ["NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
+               "NOTE_OUT_OF_RANGE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED",
                "NEEDS_NEWER_APP", "NO_THIRDS"];
 
 /* ---------------------------------------------------------------------- */
@@ -312,7 +313,12 @@ test("decode propagates parseSeed's own code for an invalid seed", () => {
     assert.equal(r.ok, false, `decode repaired ${row.name}`);
     assert.equal(r.code, row.expect.code,
       `decode changed the code for ${row.name}`);
-    assert.equal(r.reason, core.parseSeed(row.string).reason,
+    // The payload carries fields, not the row's text, so the string decode
+    // re-parses is formatSeed's - which is the string whose reason must come
+    // back unchanged. (Section 2's positional codes name the octave the parser
+    // placed, so a row whose octaves were supplied by the fixture builder
+    // reports against those.)
+    assert.equal(r.reason, core.parseSeed(core.formatSeed(seed)).reason,
       `decode changed the reason for ${row.name}`);
     checked += 1;
   }

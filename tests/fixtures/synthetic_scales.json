@@ -113,13 +113,19 @@
   {
     "name": "midi out of range",
     "string": "(C9) D9 E9 A9",
-    "expect": {"code": "BAD_NOTE"},
+    "expect": {"code": "NOTE_OUT_OF_RANGE"},
     "tags": ["grammar", "range"]
   },
   {
     "name": "duplicate field",
     "string": "(D3) A3 C4 C4 E4",
-    "expect": {"code": "BAD_NOTE"},
+    "expect": {"code": "NOTE_REPEATED"},
     "tags": ["grammar", "duplicate", "not-ascending"]
+  },
+  {
+    "name": "bottom note below the inferred one before it",
+    "string": "(D) A B C D E F G | C D2",
+    "expect": {"code": "NOTE_OUT_OF_ORDER"},
+    "tags": ["grammar", "not-ascending", "inference", "owner-report"]
   }
 ]
