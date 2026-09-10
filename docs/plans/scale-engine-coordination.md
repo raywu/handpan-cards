@@ -1180,3 +1180,17 @@ Two pre-existing defects the reviewer found and correctly declined to fix in thi
 |---|---|---|
 | 271 | e2e browser launch flake - browser alive but silent past 20s | **closed** - PR #54, with the standing caveat that a load-race fix is probabilistic and a recurrence is not automatically a regression |
 | 263 | mutants scored on a whole-suite exit code | **half closed** - PR #55 fixed the 113 exposed node patches and added a refusal for missing headers; the 73 file-only headers are row 272 |
+
+
+### Cycle state - wave 19 (gate integrity, part 2)
+
+Wave 18 fixed the half of row 263 that a script could enforce. Wave 19 takes the half that needs judgment, plus the two remaining MEDIUM gate-integrity rows. After this the queue is empty of anything that does not need the owner or their iPhone.
+
+| Lane | Rows | Worktree | Branch | PR | Head SHA | Verdict | Attempts |
+|---|---|---|---|---|---|---|---|
+| 34 (`header-retarget`) | 272, 273 | agent | scale-engine/w34-header-retarget | pending | pending | pending | 0 of 2 |
+| 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | pending | pending | pending | 0 of 2 |
+
+Boundary: lane 34 owns `tests/mutants/*.patch` and `tests/mutation_check.sh`. Lane 35 owns `tests/suite_health.py`, `tests/test_failure_diagnosability.py`, and the ONE new mutant file it adds. Neither touches `index.html`, `src/engine/`, `tools/`, or deck data.
+
+Merge-base for both: `be3fff7`.
