@@ -1,0 +1,17 @@
+# kills: a SIGTERMed suite reaps its browser and its profile directory
+# The reaper registers only the exit handler, so a suite killed by SIGTERM
+# dies before it can clean up and its browser is reparented to init - the
+# leak exactly as observed on a dev box.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+index e6888ee..7a2c764 100644
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -82,7 +82,7 @@ function installReaper() {
+   // 'exit' cannot await anything - kill() and rmSync() are both synchronous,
+   // which is the whole reason the reaper is shaped this way.
+   process.on("exit", reapAll);
+-  for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"]) {
++  for (const sig of []) {
+     const handler = () => {
+       reapAll();
+       // Installing a handler REPLACES node's default action for the signal, so

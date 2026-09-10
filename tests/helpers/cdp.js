@@ -32,9 +32,77 @@ function findBrowser() {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Reaping. A launched browser is a real OS process plus a real profile
+// directory, and close() - the only cleanup there used to be - runs from the
+// suite's after() hook. Two paths never reach it: a launch() that rejects after
+// spawn, and a suite killed by a signal (SUITE_TIMEOUT in mutation_check.sh and
+// NODE_TIMEOUT in suite_health.py both SIGTERM an overrunning run). Either way
+// the browser root was reparented to init and stayed alive, and its
+// hpfc-prof-* directory stayed on disk. Every live browser is therefore
+// registered here, and reaped from process teardown as well as from close().
+// ---------------------------------------------------------------------------
+const LIVE = new Set();
+
+// A synchronous sleep. The 'exit' handler cannot await, and the wait below has
+// to happen there too.
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function reap(entry) {
+  if (!entry) return;
+  LIVE.delete(entry);
+  // Kill the GROUP, not just the root. Chrome is one root plus four children;
+  // signalling only the root leaves the renderers running for a few more
+  // milliseconds, and on Linux one of them recreates --user-data-dir straight
+  // after the rmSync - CI failed exactly that way ("the profile directory
+  // survived") while the root was already gone. launch() spawns detached so
+  // the browser leads its own group and the whole tree dies at once.
+  try { process.kill(-entry.proc.pid, "SIGKILL"); }
+  catch { try { entry.proc.kill("SIGKILL"); } catch {} }
+  // And then remove the profile, retrying briefly in case a dying child wins
+  // the race anyway. Bounded at 100ms: this runs on the way out of a killed
+  // suite, which must never become a hang.
+  for (let i = 0; i < 5; i++) {
+    try { fs.rmSync(entry.profileDir, { recursive: true, force: true }); } catch {}
+    if (!fs.existsSync(entry.profileDir)) return;
+    sleepSync(20);
+  }
+}
+
+function reapAll() {
+  for (const entry of [...LIVE]) reap(entry);
+}
+
+let reaperInstalled = false;
+function installReaper() {
+  if (reaperInstalled) return;
+  reaperInstalled = true;
+  // 'exit' cannot await anything - kill() and rmSync() are both synchronous,
+  // which is the whole reason the reaper is shaped this way.
+  process.on("exit", reapAll);
+  for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"]) {
+    const handler = () => {
+      reapAll();
+      // Installing a handler REPLACES node's default action for the signal, so
+      // not re-raising here would turn "kill the overrunning suite" into "hang
+      // forever" - a worse bug than the leak. Step aside and let the signal
+      // land: with no listeners left the default terminates the process; if
+      // something else is listening, that owner decides.
+      process.off(sig, handler);
+      if (process.listenerCount(sig) === 0) {
+        try { process.kill(process.pid, sig); } catch { process.exit(1); }
+      }
+    };
+    process.on(sig, handler);
+  }
+}
+
 class Browser {
-  constructor(proc, ws, profileDir) {
+  constructor(proc, ws, profileDir, entry) {
     this.proc = proc; this.ws = ws; this.profileDir = profileDir;
+    this.entry = entry || { proc, profileDir };
     this.id = 0; this.pending = new Map(); this.sessionId = null;
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
@@ -129,8 +197,9 @@ class Browser {
   }
   async close() {
     try { this.ws.close(); } catch {}
-    try { this.proc.kill("SIGKILL"); } catch {}
-    try { fs.rmSync(this.profileDir, { recursive: true, force: true }); } catch {}
+    // Deregisters as well as kills, so a normally-closed browser is not killed
+    // a second time at process exit.
+    reap(this.entry);
   }
 }
 
@@ -143,34 +212,51 @@ async function launch() {
     "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run",
     "--autoplay-policy=no-user-gesture-required",  // roadmap: audio playback
     `--user-data-dir=${profileDir}`, "about:blank",
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+    // detached: the browser leads its own process group, which is what lets
+    // reap() take the whole tree down in one signal. See reap().
+  ], { stdio: ["ignore", "ignore", "pipe"], detached: true });
 
-  const wsUrl = await new Promise((resolve, reject) => {
-    let buf = "";
-    const t = setTimeout(() => reject(new Error("browser did not report a debug port")), 20000);
-    proc.stderr.on("data", (d) => {
-      buf += d.toString();
-      const m = buf.match(/ws:\/\/[^\s]+/);
-      if (m) { clearTimeout(t); resolve(m[0]); }
+  const entry = { proc, profileDir };
+  LIVE.add(entry);
+  installReaper();
+
+  // Everything past the spawn can reject with the child already running: the
+  // debug-port timeout, the WebSocket open, any of the setup sends. Reap before
+  // rethrowing, and rethrow the ORIGINAL error - "browser did not report a
+  // debug port" is a diagnostic callers read.
+  let ws = null;
+  try {
+    const wsUrl = await new Promise((resolve, reject) => {
+      let buf = "";
+      const t = setTimeout(() => reject(new Error("browser did not report a debug port")), 20000);
+      proc.stderr.on("data", (d) => {
+        buf += d.toString();
+        const m = buf.match(/ws:\/\/[^\s]+/);
+        if (m) { clearTimeout(t); resolve(m[0]); }
+      });
+      proc.on("exit", (c) => { clearTimeout(t); reject(new Error("browser exited: " + c)); });
     });
-    proc.on("exit", (c) => { clearTimeout(t); reject(new Error("browser exited: " + c)); });
-  });
 
-  const ws = new WebSocket(wsUrl);
-  await new Promise((res, rej) => { ws.addEventListener("open", res); ws.addEventListener("error", rej); });
-  const b = new Browser(proc, ws, profileDir);
+    ws = new WebSocket(wsUrl);
+    await new Promise((res, rej) => { ws.addEventListener("open", res); ws.addEventListener("error", rej); });
+    const b = new Browser(proc, ws, profileDir, entry);
 
-  // Fresh target per launch => no service-worker or storage carry-over.
-  const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
-  const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
-  b.sessionId = sessionId;
-  await b.send("Page.enable");
-  await b.send("Runtime.enable");
-  // Google Fonts is render-blocking in index.html; block it so runs are
-  // deterministic and work offline. Tests therefore measure fallback metrics.
-  await b.send("Network.enable");
-  await b.send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
-  return b;
+    // Fresh target per launch => no service-worker or storage carry-over.
+    const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
+    const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
+    b.sessionId = sessionId;
+    await b.send("Page.enable");
+    await b.send("Runtime.enable");
+    // Google Fonts is render-blocking in index.html; block it so runs are
+    // deterministic and work offline. Tests therefore measure fallback metrics.
+    await b.send("Network.enable");
+    await b.send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
+    return b;
+  } catch (err) {
+    try { if (ws) ws.close(); } catch {}
+    reap(entry);
+    throw err;
+  }
 }
 
 module.exports = { launch, findBrowser };
