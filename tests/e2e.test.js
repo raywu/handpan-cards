@@ -2339,6 +2339,211 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * accessible state and focus on the practice screen
+   *
+   * (coordination rows 213, 217, 219). Only reachable through a browser:
+   * activeElement across a DOM rebuild, and the attributes a screen reader
+   * reads off the live tree. Every expectation is derived from the page's
+   * own state - no deck id, chord name or count is hardcoded.
+   * ---------------------------------------------------------------- */
+
+  // What holds focus right now, described well enough to name in a failure.
+  const activeDesc = () => b.eval(`
+    const a = document.activeElement;
+    return {
+      isBody: a === document.body || !a,
+      id: (a && a.id) || null,
+      tag: a ? a.tagName : null,
+      cls: (a && typeof a.className === "string") ? a.className : null,
+      inDecks: !!(a && a.closest && a.closest("#decks")),
+      isSelectedChip: !!(a && a.matches && a.matches("#decks .chip.on")),
+    };
+  `);
+
+  // Row 213. closeScaleSheet() restores focus correctly, and then the deck
+  // switch rebuilds the chip strip underneath it - so the fix has to survive
+  // buildChips(), not merely run before it.
+  test("GENERATE and SAVE CHANGES leave focus on the deck that was just made", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const afterGen = await activeDesc();
+    assert.strictEqual(afterGen.isBody, false,
+      "focus was dumped on <body> after GENERATE CARDS - a screen reader " +
+      "restarts from the top of the page just as the success message fires");
+    assert.strictEqual(afterGen.isSelectedChip, true,
+      `after GENERATE focus should rest on the selected deck chip, but it is on ` +
+      `${JSON.stringify(afterGen)}`);
+
+    // The Edit path lands in the same place: SAVE CHANGES also closes the
+    // sheet and then re-selects, so it rebuilds the strip too.
+    try {
+      await editFreshDeck();
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after SAVE CHANGES" });
+      const afterSave = await activeDesc();
+      assert.strictEqual(afterSave.isBody, false,
+        "focus was dumped on <body> after SAVE CHANGES");
+      assert.strictEqual(afterSave.isSelectedChip, true,
+        `after SAVE CHANGES focus should rest on the selected deck chip, but it is on ` +
+        `${JSON.stringify(afterSave)}`);
+
+      // DELETE is the one path where the chip holding focus is genuinely
+      // detached by the rebuild, so it is the strictest case of the same bug.
+      await editFreshDeck();
+      await b.click("#scale-delete");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after DELETE" });
+      const afterDelete = await activeDesc();
+      assert.strictEqual(afterDelete.isBody, false,
+        "focus was dumped on <body> after DELETE - the chip it was resting on " +
+        "was detached by the chip-strip rebuild and nothing put it back");
+      assert.strictEqual(afterDelete.isSelectedChip, true,
+        `after DELETE focus should rest on the fallback deck's chip, but it is on ` +
+        `${JSON.stringify(afterDelete)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  // Regression guard for the same row: the two closes that were measured
+  // CORRECT must stay correct. They do not re-select, so nothing rebuilds the
+  // strip and focus belongs on the control that opened the sheet.
+  test("Escape and a backdrop tap still hand focus back to the opener", async () => {
+    await freshLoad();
+    await openSheet();
+    await b.key("Escape", "Escape", 27);
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "Escape to close the sheet" });
+    assert.strictEqual(await activeId(), "deck-add",
+      "Escape no longer returns focus to + ADD");
+
+    await openSheet();
+    await clickPoint(8, 8);
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "a backdrop tap to close the sheet" });
+    assert.strictEqual(await activeId(), "deck-add",
+      "a backdrop tap no longer returns focus to + ADD");
+  });
+
+  // Row 217. The `.on` class is a colour, and colour is not state.
+  test("the selected deck and the active mode carry accessible state", async () => {
+    await freshLoad();
+    const readState = () => b.eval(`
+      return {
+        modes: ["modeA", "modeB"].map(id => {
+          const el = document.getElementById(id);
+          return { id, on: el.classList.contains("on"),
+                   pressed: el.getAttribute("aria-pressed") };
+        }),
+        chips: [...document.querySelectorAll("#decks .chip:not(#deck-add)")]
+          .map(c => ({ text: c.textContent.trim(), on: c.classList.contains("on"),
+                       current: c.getAttribute("aria-current") })),
+      };
+    `);
+
+    // The invariants, not a snapshot: aria mirrors the class the app already
+    // maintains, so this cannot go stale on a deck or a mode being added.
+    const check = (st, when) => {
+      for (const m of st.modes) {
+        assert.strictEqual(m.pressed, m.on ? "true" : "false",
+          `${when}: #${m.id} is ${m.on ? "" : "not "}active but reports ` +
+          `aria-pressed=${JSON.stringify(m.pressed)}`);
+      }
+      const lit = st.chips.filter(c => c.on);
+      assert.strictEqual(lit.length, 1, `${when}: ${lit.length} chips carry .on`);
+      const marked = st.chips.filter(c => c.current === "true");
+      assert.deepStrictEqual(marked.map(c => c.text), lit.map(c => c.text),
+        `${when}: aria-current="true" should be on exactly the selected chip; ` +
+        `chips read ${JSON.stringify(st.chips)}`);
+    };
+
+    check(await readState(), "on load");
+
+    await b.click("#modeB");
+    await b.waitFor(`document.getElementById("modeB").classList.contains("on")`,
+      { label: "mode B to become active" });
+    check(await readState(), "after switching to NOTES -> NAME");
+
+    const meta = await decksMeta();
+    await selectDeck(1, meta);
+    check(await readState(), "after switching deck");
+
+    // And a generated deck's own chip gets the same treatment.
+    await generate(SIX_SCALES[2]);
+    check(await readState(), "after generating a deck");
+  });
+
+  // Row 219. REASONED, not measured: Chromium cannot tell us what VoiceOver
+  // announces. What IS checkable is that only one face is exposed at a time
+  // and that the counter is a live region.
+  test("only the face that is showing is exposed, and the counter is a live region", async () => {
+    await freshLoad();
+    const readCard = () => b.eval(`
+      const card = document.getElementById("card");
+      const front = document.getElementById("front");
+      const back = document.getElementById("back");
+      const desc = (card.getAttribute("aria-describedby") || "").trim();
+      const ids = desc ? desc.split(/\\s+/) : [];
+      const flat = s => (s || "").replace(/\\s+/g, " ").trim();
+      return {
+        flipped: card.classList.contains("flip"),
+        countLive: document.getElementById("count").getAttribute("aria-live"),
+        frontHidden: front.getAttribute("aria-hidden"),
+        backHidden: back.getAttribute("aria-hidden"),
+        describedIds: ids,
+        describedText: flat(ids.map(id => (document.getElementById(id) || {}).textContent || "")
+          .join(" ")),
+        frontText: flat(front.textContent),
+        backText: flat(back.textContent),
+      };
+    `);
+
+    const check = (st, when) => {
+      assert.strictEqual(st.countLive, "polite",
+        `${when}: #count reports aria-live=${JSON.stringify(st.countLive)}, so ` +
+        `stepping through the deck announces nothing`);
+      const shown = st.flipped ? "back" : "front";
+      const away = st.flipped ? "front" : "back";
+      assert.strictEqual(st.flipped ? st.backHidden : st.frontHidden, null,
+        `${when}: the face that is showing (#${shown}) is aria-hidden`);
+      assert.strictEqual(st.flipped ? st.frontHidden : st.backHidden, "true",
+        `${when}: the turned-away face (#${away}) is not aria-hidden, so the ` +
+        `card's accessible text carries both faces at once`);
+      assert.deepStrictEqual(st.describedIds, [shown],
+        `${when}: the card should be described by #${shown}, but ` +
+        `aria-describedby reads ${JSON.stringify(st.describedIds)}`);
+      const want = st.flipped ? st.backText : st.frontText;
+      assert.ok(want.length > 0, `${when}: #${shown} rendered no text at all`);
+      assert.strictEqual(st.describedText, want,
+        `${when}: the card's description does not match the visible face`);
+    };
+
+    const first = await readCard();
+    assert.strictEqual(first.flipped, false, "the card booted flipped");
+    check(first, "on load");
+    // The whole point: unflipped, the answer must not be in the description.
+    assert.notStrictEqual(first.describedText, first.backText,
+      "the question side's description is the answer side's text");
+
+    await b.click("#card");
+    await b.waitFor(`document.getElementById("card").classList.contains("flip")`,
+      { label: "the card to flip" });
+    check(await readCard(), "flipped");
+
+    await b.click("#next");
+    await b.waitFor(`!document.getElementById("card").classList.contains("flip")`,
+      { label: "the next card to come up unflipped" });
+    check(await readCard(), "after stepping to the next card");
+
+    // Mode B swaps which face holds the diagram; the exposure rule does not care.
+    await b.click("#modeB");
+    await b.waitFor(`document.getElementById("modeB").classList.contains("on")`,
+      { label: "mode B to become active" });
+    check(await readCard(), "in NOTES -> NAME");
+  });
+
+  /* ---------------------------------------------------------------- *
    * harness contract: a taken port fails loudly, it does not hang
    * ---------------------------------------------------------------- */
 

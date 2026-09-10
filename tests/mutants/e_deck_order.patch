@@ -1,14 +1,14 @@
 # kills: deck chips switch the deck
 diff --git a/index.html b/index.html
-index b018e51..ed55e6b 100644
+index 7ea4e13..f2be039 100644
 --- a/index.html
 +++ b/index.html
-@@ -2492,7 +2492,7 @@ function restoreScales() {
- function selectDeck(id) {
+@@ -3003,7 +3003,7 @@ function selectDeck(id) {
+     (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
    deckId = id;
    storedDeck = id;
 -  save(); setOrder(); buildChips(); render();
 +  save(); buildChips(); render();
- }
- 
- /* ---------------- helpers ---------------- */
+   if (rehome) {
+     const chip = document.querySelector("#decks .chip.on");
+     if (chip) chip.focus();

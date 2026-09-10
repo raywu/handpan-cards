@@ -2,15 +2,15 @@
 # selectDeck reinstates the Phase 3 built-ins-only guard, so a custom deck the
 # user selected is not restored on the next boot.
 diff --git a/index.html b/index.html
-index b018e51..ed3cd2d 100644
+index 7ea4e13..ceb2dba 100644
 --- a/index.html
 +++ b/index.html
-@@ -2491,7 +2491,7 @@ function restoreScales() {
- 
- function selectDeck(id) {
+@@ -3002,7 +3002,7 @@ function selectDeck(id) {
+   const rehome = !!a && a !== document.body &&
+     (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
    deckId = id;
 -  storedDeck = id;
 +  if (isBuiltIn(id)) storedDeck = id;
    save(); setOrder(); buildChips(); render();
- }
- 
+   if (rehome) {
+     const chip = document.querySelector("#decks .chip.on");

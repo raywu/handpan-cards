@@ -1,13 +1,14 @@
 # kills: boots with the first deck loaded
 diff --git a/index.html b/index.html
+index 7ea4e13..acb9f50 100644
 --- a/index.html
 +++ b/index.html
-@@ -268,7 +268,7 @@
+@@ -3148,7 +3148,7 @@ function render() {
  
    document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
    document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
 -  document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
 +  document.getElementById("count").textContent = `${idx} / ${order.length}`;
-   document.getElementById("card").classList.toggle("flip", flipped);
- }
- 
+   const cardEl = document.getElementById("card");
+   cardEl.classList.toggle("flip", flipped);
+   // The flip is a CSS transform, so BOTH faces stay in the DOM and in the

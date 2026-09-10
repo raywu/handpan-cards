@@ -1,0 +1,20 @@
+# kills: only the face that is showing is exposed, and the counter is a live region
+# suite: node --test --test-name-pattern only.the.face.that.is.showing.is.exposed tests/e2e.test.js
+# Both faces stay in the accessibility tree, so the card reads out the question
+# and its answer together and flipping changes nothing.
+diff --git a/index.html b/index.html
+index 7ea4e13..9856370 100644
+--- a/index.html
++++ b/index.html
+@@ -3156,11 +3156,6 @@ function render() {
+   // out alongside the question. Expose only the face that is showing, and make
+   // it the card's description (descendants of role="button" are presentational,
+   // so the text has to reach the button by an idref, not by traversal).
+-  const shown = document.getElementById(flipped ? "back" : "front");
+-  const away  = document.getElementById(flipped ? "front" : "back");
+-  away.setAttribute("aria-hidden", "true");
+-  shown.removeAttribute("aria-hidden");
+-  cardEl.setAttribute("aria-describedby", shown.id);
+ }
+ 
+ /* ---------------- deck / order ---------------- */
