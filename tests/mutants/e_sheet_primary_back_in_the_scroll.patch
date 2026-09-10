@@ -4,10 +4,10 @@
 # one and the primary - last in the flow - goes back below the fold: this is
 # the reported bug verbatim (queue row 211), 245px down at 844x390.
 diff --git a/index.html b/index.html
-index 2681e9b..92e2ce2 100644
+index 6a831d1..76d94a9 100644
 --- a/index.html
 +++ b/index.html
-@@ -310,7 +310,6 @@ button.nav:active{background:#2e281e}
+@@ -312,7 +312,6 @@ button.nav:active{background:#2e281e}
                  aria-label="Move the chosen note one position on">MOVE &rarr;</button>
        </div>
      </div>
@@ -15,7 +15,7 @@ index 2681e9b..92e2ce2 100644
      <!-- Outside .sheetbody, with the primary: the palette swatches carry their
           44px hit area as an invisible ::after overlay that is LARGER than the
           14px dot, and a scroll container would clip it (a scrolling box cannot
-@@ -327,6 +326,7 @@ button.nav:active{background:#2e281e}
+@@ -329,6 +328,7 @@ button.nav:active{background:#2e281e}
      <div class="editrow" id="scale-delete-row" hidden>
        <button id="scale-delete" type="button">DELETE THIS DECK</button>
      </div>

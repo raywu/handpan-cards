@@ -6,7 +6,7 @@
 # pan the engine accepts. The layout of this sheet is load-bearing, not
 # decoration.
 diff --git a/index.html b/index.html
-index 2681e9b..e96f43f 100644
+index 6a831d1..b91f8d6 100644
 --- a/index.html
 +++ b/index.html
 @@ -121,7 +121,7 @@ button.nav:active{background:#2e281e}
