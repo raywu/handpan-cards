@@ -1,5 +1,5 @@
 # kills: suite_health prints a failing PYTHON suite's own output
-# suite: python3 -m unittest tests.test_failure_diagnosability.SuiteHealthReportsPythonFailureOutput
+# suite: python3 -m unittest tests.test_failure_diagnosability.SuiteHealthReportsPythonFailureOutput.test_failing_python_suite_output_reaches_stdout
 # Queue row 257. Puts check_python() back the way it was: the unittest runner's
 # stream goes to /dev/null and the verdict is a bare "python: suite is not
 # green" with every traceback dropped on the floor. This is the identical defect
@@ -7,9 +7,10 @@
 # guards that side; without this one, a regression could re-blind the python
 # half alone and the node mutant would not notice.
 #
-# The header is targeted at the python-side class so the evidence is not diluted
-# by the node-side tests, which pass under this mutation. Counts, not exit code:
-# clean 3 tests / OK, mutant 3 tests / 2 failures.
+# The header is targeted at ONE python-side method so the evidence cannot be
+# diluted by any other test failing in the same run (a multi-test header lets a
+# mutant score a kill off an unrelated failure). Counts, not exit code:
+# clean 1 test / OK, mutant 1 test / 1 failure.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 index 4525a28..a7441cc 100644
