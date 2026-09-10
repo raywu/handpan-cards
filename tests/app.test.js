@@ -648,8 +648,10 @@ function openSheet(app) {
 test("the deck row ends with a + ADD chip that opens the sheet, focusing the box", () => {
   const app = boot();
   const row = chipRow(app);
-  assert.strictEqual(row.length, decks(app).length + 1, "one chip per deck, plus + ADD");
-  assert.strictEqual(row[row.length - 1].id, "deck-add", "+ ADD is the last chip in the row");
+  assert.strictEqual(row.length, decks(app).length, "one chip per deck");
+  // + ADD lives OUTSIDE the scrolling strip (its sibling), so that no deck chip
+  // can scroll to rest underneath it - see the .deckrow comment in index.html.
+  assert.ok(!row.some((c) => c.id === "deck-add"), "+ ADD is inside the scrolling strip");
 
   assert.strictEqual(app.sheetOpen(), false, "the sheet starts closed");
   openSheet(app);
@@ -751,7 +753,7 @@ test("Generate builds the deck, closes the sheet, selects it and announces the c
   const mine = row.find((c) => c.label === d.name);
   assert.ok(mine, `no chip for ${d.name} in ${JSON.stringify(row)}`);
   assert.strictEqual(mine.on, true, "the new chip is not selected");
-  assert.strictEqual(row[row.length - 1].id, "deck-add", "+ ADD stays last");
+  assert.ok(!row.some((c) => c.id === "deck-add"), "+ ADD is inside the scrolling strip");
 });
 
 test("the one-time layout hint is appended on the first generation of a deck, not the second", () => {

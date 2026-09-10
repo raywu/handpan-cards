@@ -43,6 +43,30 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   cursor:pointer; position:relative; white-space:nowrap;
 }
 .chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
+/* + ADD is the only entry point to the custom-deck sheet, and so to the pan
+   preview, so it may never scroll out of reach. It therefore sits OUTSIDE the
+   scrolling strip, on its own row BELOW it: the strip keeps the full row width
+   and scrolls inside it, and + ADD is always on screen at every width.
+   The alternative - pinning + ADD over the strip with position:sticky - is
+   worse than the bug it fixes. An overlay is only ever on TOP of the chips,
+   never beside them, so a deck chip can come to rest underneath it, still
+   visible but no longer tappable: elementFromPoint at the visible "D AMARA 9"
+   chip returned the pinned button, and tapping it opened the create sheet
+   instead of switching decks. Reserving the space is the only arrangement in
+   which no chip can rest beneath + ADD, because none of the strip's scrollport
+   is under it.
+   The reserve is VERTICAL rather than beside the strip because taking the width
+   out of the strip is nearly as bad: at 380-390px it narrows the scrollport
+   enough to push the last built-in deck entirely outside it. A second row costs
+   ~50px of header height, which the card still fits under at 380x780.
+   Being in normal flow, + ADD also cannot lag behind iOS momentum scrolling,
+   needs no safe-area inset of its own (the row is centred and capped at 520px,
+   far inside any notch), and takes no touch-action override, so a swipe that
+   starts on it still scrolls the strip. */
+.deckrow{display:flex; flex-direction:column; align-items:center; gap:6px;
+  width:100%; max-width:520px}
+#decks{align-self:stretch}
+#deck-add{flex:0 0 auto}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
@@ -193,9 +217,10 @@ button.nav:active{background:#2e281e}
 <body>
 <header>
   <h1>Handpan Chord Cards</h1>
-  <nav class="decks" id="decks">
+  <div class="deckrow">
+    <nav class="decks" id="decks"></nav>
     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
-  </nav>
+  </div>
   <div class="modebar">
     <button class="mode on" id="modeA">NAME &rarr; NOTES</button>
     <button class="mode" id="modeB">NOTES &rarr; NAME</button>
@@ -3077,7 +3102,8 @@ function buildChips() {
     nav.appendChild(b);
     if (d.id === deckId) active = b;
   }
-  nav.appendChild(addChip);           // "+ ADD" always sits at the end
+  // "+ ADD" is NOT in here: it is the strip's sibling, outside the scrollport,
+  // so a rebuild neither moves it nor lets a chip come to rest under it.
   // The row scrolls, so the selected chip may be off-screen after a rebuild.
   if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
 }

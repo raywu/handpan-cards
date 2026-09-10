@@ -1,0 +1,21 @@
+# kills: + ADD is fully on-screen and hit-testable at phone widths
+# buildChips puts + ADD back inside the scrolling strip, which is the
+# owner-reported bug: with the three built-in decks the strip already overflows
+# a phone, so the only entry point to the create sheet - and so to the pan
+# preview - starts at x=416, off-screen at 380, 390 and 430 CSS px alike and
+# visible only from 768px up.
+diff --git a/index.html b/index.html
+index aeba397..f778d8e 100644
+--- a/index.html
++++ b/index.html
+@@ -3102,9 +3102,7 @@ function buildChips() {
+     nav.appendChild(b);
+     if (d.id === deckId) active = b;
+   }
+-  // "+ ADD" is NOT in here: it is the strip's sibling, outside the scrollport,
+-  // so a rebuild neither moves it nor lets a chip come to rest under it.
+-  // The row scrolls, so the selected chip may be off-screen after a rebuild.
++  document.getElementById("decks").appendChild(document.getElementById("deck-add"));
+   if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+ }
+ 
