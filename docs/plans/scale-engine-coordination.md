@@ -1188,7 +1188,7 @@ Wave 18 fixed the half of row 263 that a script could enforce. Wave 19 takes the
 
 | Lane | Rows | Worktree | Branch | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|---|---|
-| 34 (`header-retarget`) | 272, 273 | agent | scale-engine/w34-header-retarget | pending | pending | pending | 0 of 2 |
+| 34 (`header-retarget`) | 272, 273 | agent | scale-engine/w34-header-retarget | #57 OPEN | `5b8fce3` | in review | 1 of 2 |
 | 35 (`python-evidence`) | 257, 259 | agent | scale-engine/w35-python-evidence | #56 MERGED | `c3bdbad` | PASS_WITH_NITS | 1 of 2 |
 
 Boundary: lane 34 owns `tests/mutants/*.patch` and `tests/mutation_check.sh`. Lane 35 owns `tests/suite_health.py`, `tests/test_failure_diagnosability.py`, and the ONE new mutant file it adds. Neither touches `index.html`, `src/engine/`, `tools/`, or deck data.
@@ -1240,3 +1240,28 @@ Also confirmed: a genuine mirror of the node path (`:153-157` against `:260-264`
 **Anchor update.** `5e27ceb` all five jobs green, gate **406s over 236 mutants = 1.72s/mutant**. Three consecutive main runs now: 1.68, 1.66, 1.72. The spread is ~4% and the figure is stable. **Anchor for judging lane 34: `5e27ceb` = 406s / 236.**
 
 Lane 34 is expected to move this materially downward - it converts up to 49 whole-file runs into single-test runs - so a large drop there is predicted, not anomalous. What would be anomalous is the drop being LARGER than the arithmetic supports, and per the #55 and #56 reviews the residual-after-attribution is the instrument, not the raw delta.
+
+
+### Lane 34 delivered - PR #57 at `5b8fce3`, in review. Two more fake kills found
+
+All 73 whole-file headers retargeted: 70 node via `--test-name-pattern`, 3 python via `-m unittest -k`. Run 34528548247 at exactly that SHA, all five jobs green. Independently confirmed by this integrator: of 146 changed lines under `tests/mutants/`, **zero** fall outside a `# suite:` or `# kills:` line, and the diff is 73 files at exactly 1 insertion / 1 deletion each. No body touched.
+
+**The lane found a node-specific hollow-pattern subtlety that the #55 and #56 findings do NOT cover, and it matters.** A `--test-name-pattern` matching nothing does not report zero tests - node reports the FILE itself passing as one subtest, so a naive count reads `# tests 1 / # pass 1` and looks like a healthy targeted run. Counting is therefore not sufficient on its own; the lane's harness counts top-level TAP entries BY NAME and discards any named `tests/*.test.js`. This is a real refinement of the row-258 instrument: **on the node side the test COUNT alone can be fooled, and only the entry NAMES settle it.** Calibrated against a known-good wave-18 header and a deliberately hollow pattern before being trusted on the 73.
+
+**Two more fake kills, both found by running rather than reading, and the first one is the most interesting defect this workstream has surfaced.**
+
+1. `v_cluster_takes_lowest_below` - the test literally named *"D2 forced chords cluster chord tones to the highest instance below the root"* **passes** under a mutant that takes the LOWEST instance below the root. Both its cases (Amara Fmaj7, Pygmy Cm7) have exactly one instance below the root, so highest == lowest and **the test cannot see the direction it is named for.** It is not a mis-targeted header; the test itself is vacuous with respect to its own name. That is a class beyond `e_layout_rotate_inert`, which merely named a test that did not exist.
+2. `v_ding_in_voicing` - prose points at an assertion inside `isLegal enforces the section 5 invariants` (`tests/voicing.test.js:433`), but the mutant is in `playable()` and that test passes.
+
+Running total of fake kills found by the row-263 line of work: **three**, all of which sat inside a green gate. Every verdict recorded in this doc that leaned on the mutation gate before wave 18 was weaker than it read.
+
+Gate timing per the lane: branch 4m59s at 234 against main's 6m30s and 6m46s at 236. A large drop is PREDICTED here (up to 49 whole-file runs become single-test runs) so the delta's size is not the instrument - the residual after per-prefix attribution is, and corpus sizes differ by 2 so it must be normalised per mutant. Sent to the reviewer that way.
+
+**Four disclosures from the lane, all recorded regardless of the verdict:**
+
+| # | Source | Item | Status |
+|---|---|---|---|
+| 279 | lane 34 | **`tests/voicing.test.js:256` is a weak test independent of any mutant.** Its D2-cluster assertion cannot distinguish highest-below from lowest-below, because both its cases have exactly one instance below the root. It needs a case with TWO instances below the root or it does not test the rule it is named for. Fixing it means editing a test file, outside a header-only lane's ownership | open - MEDIUM |
+| 280 | lane 34 | **The hollow-header verification harness exists nowhere in the repo.** It lived in untracked worktree scratch and died with the worktree. It is the only thing that can catch a hollow pattern, and `tests/suite_health.py` cannot detect one either - so today nothing in the repo can tell a targeted header from a vacuous one. Promote it into `tests/` and wire it into the health check | open - MEDIUM |
+| 281 | lane 34 | **`tests/share.test.js` contains a non-UTF-8 byte**, which silently produces EMPTY `grep` output unless `-a` is passed. A live trap for any tooling that greps the suite: it does not error, it returns nothing, which reads as "no matches" | open - LOW |
+| 282 | lane 34 | A whole-file e2e baseline exceeds `SUITE_TIMEOUT` (180s) on a local machine, and a second timeout is a HARD ABORT. Observed once during an abandoned sweep, so it is a single datum rather than a measurement - but it is independent evidence for why file-level e2e headers had to go | open - LOW |
