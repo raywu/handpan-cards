@@ -1,0 +1,22 @@
+# kills: portrait is unchanged: the card keeps its full --card-w width and nothing is buried
+# Over-constrains the height the fix introduced: min(70%, ...) instead of
+# min(100%, ...). Nothing overflows and every control is reachable, so the
+# containment and hit-test assertions all pass - but the card is now smaller
+# than its box allows in EVERY orientation. In portrait at 380x800 it drops to
+# 268.6px wide where --card-w still resolves to 334.4, which is the regression
+# the portrait guard exists to catch: a landscape fix that quietly shrinks the
+# card on the phone the repo actually tests at. The landscape matrix's
+# "smaller than the space allows" assertion reddens on the same mutation.
+diff --git a/index.html b/index.html
+index 93f00c9..8183074 100644
+--- a/index.html
++++ b/index.html
+@@ -97,7 +97,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    every viewport, portrait included. Every control hit-tests clean with no card
+    on the page - which is why the test asserts the card is MAXIMAL, not merely
+    contained. */
+-.scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
++.scene{height:min(70%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
+   aspect-ratio:63/87; perspective:1400px}
+ .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
+   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
