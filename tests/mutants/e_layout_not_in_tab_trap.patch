@@ -3,11 +3,11 @@
 # RESET drops out of the sheet's tab order, so a keyboard user can see the
 # control but never reach it.
 diff --git a/index.html b/index.html
-index 7e9b7f6..d6c73e9 100644
+index 574a311..64335da 100644
 --- a/index.html
 +++ b/index.html
-@@ -3635,7 +3635,6 @@ sheet.addEventListener("keydown", e => {
-                  ...(editingId ? [] : [...presetBox.children]),
+@@ -3951,7 +3951,6 @@ sheet.addEventListener("keydown", e => {
+   const stops = [editingId ? nameBox : null,
                   scaleBox, editingId ? degSel : null,
                   editingId ? rotL : null, editingId ? rotR : null,
 -                 editingId ? resetBtn : null,

@@ -21,6 +21,34 @@
   --table:#1a1815; --table2:#26221c;
   --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;
   --card-w:min(88vw, 46vh, 420px);
+  /* ---- the spacing ramp ------------------------------------------------
+     One value (9px, and 1-2px in the chrome) used to do every job here, so
+     nothing grouped and nothing separated - which is what the owner reported
+     on an iPhone 14 and on desktop alike: "there is not enough spacing between
+     each ui component". Four steps, each with exactly ONE job:
+
+       --sp-1   inside a group: a label to the control it names
+       --sp-2   between peers in one group: chips, mode buttons, mirror pair
+       --sp-3   between groups: the rows of the sheet, the rows of the header
+       --sp-4   around a surface, and between a scrolling body and its footer
+
+     If something seems to need a fifth step it is usually two groups, not one
+     gap. The desktop step-up below is the same ramp with more air; it is
+     deliberately gated on BOTH axes so that no phone viewport - portrait or
+     landscape - ever picks it up and spends the chrome budget on it. */
+  --sp-1:4px; --sp-2:8px; --sp-3:14px; --sp-4:22px;
+}
+@media (min-width:640px) and (min-height:700px){
+  :root{--sp-1:6px; --sp-2:12px; --sp-3:20px; --sp-4:28px}
+}
+/* A phone in landscape has 390 CSS px of height and the sheet is capped at 85%
+   of it, so air there costs the SCROLLING BODY its whole height - the primary
+   is outside the scroll, so the first thing an over-generous ramp does is push
+   the box the user is typing into out of sight. The ramp keeps its proportions
+   and gives back roughly a third; the rhythm still reads because it is the
+   RATIOS that group things, not the absolute values. */
+@media (max-height:520px){
+  :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -38,31 +66,46 @@ body{
    the footer comes off the CARD, one for one.
 
    Raising .mode and .shuffle to the 44px minimum grew the header by 18.5px
-   and the footer by 11px. That 29.5px is paid for HERE, out of margins that
-   existed only to separate rows the 44px boxes now separate themselves: a
-   44px button carries its own optical padding, so the gaps between the title,
-   the deck row, the mode row and the card can shrink without the screen
-   reading as crowded. Sum of the reductions is exactly 29.5px
-   (h1 10 -> 2, .modebar 9 -> 1.5, header 6 -> 1, footer 10 -> 1), which holds
-   `main` - and therefore the card - byte-identical at every viewport against
-   the merge base. The .5 is not arbitrary: the old .mode box was 25.5px tall,
-   so the growth it has to cancel is itself fractional.
+   and the footer by 11px. That 29.5px was paid for HERE, by squeezing the
+   margins between the title, the deck row, the mode row and the card down to
+   1-2px - which is exactly the crowding the owner then reported ("there is not
+   enough spacing between each ui component"), on the phone and on the desktop.
+
+   The room to undo that came from MOVING "+ ADD" into the deck strip as its
+   first chip (see .chip.add below). That retired a whole second row - a 44px
+   chip plus a 6px gap, 50px of header - and the ramp above spends 45.5px of it
+   putting real gaps back: h1 2 -> 8, .modebar 1.5 -> 14, header 1 -> 14,
+   footer 1 -> 14. The net is 4.5px OFF the chrome, so the card gets very
+   slightly bigger at every viewport where the vertical axis binds, and the
+   header reads as three separated groups instead of one block.
+
+   Desktop takes the wider rung of the ramp (the media query above), which is
+   gated on both axes so no phone viewport in the CHROME_BUDGET table can reach
+   it.
 
    tests/e2e.test.js "the header and footer stay inside their pixel budget"
    pins this against measured numbers. assertCardFits CANNOT: it derives its
    expectation from the current main height, so it moves with the regression.
    ------------------------------------------------------------------------ */
-header{width:100%; max-width:520px; text-align:center; margin-bottom:1px}
+header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
 h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
-   letter-spacing:.04em; margin:0 0 2px; color:#f4f0e8}
+   letter-spacing:.04em; margin:0 0 var(--sp-2); color:#f4f0e8}
 /* The chip row scrolls horizontally and never wraps; auto margins on the end
    chips keep it centred while it fits, without making either end unreachable
    once it overflows. The right edge fades so a cut-off chip reads as "more". */
-.decks{display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+.decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
 .decks::-webkit-scrollbar{display:none}
+/* On a desktop the 520px column that suits the card is the wrong measure for
+   the deck strip: four chips already overflow it and the fade makes a machine
+   with 1280px of width look as cramped as a phone. Widen the header - and only
+   the header - so the strip uses the room that is actually there. The card is
+   sized by --card-w and is untouched by this. */
+@media (min-width:640px){
+  header{max-width:min(92vw, 900px)}
+}
 .decks > :first-child{margin-left:auto}
 .decks > :last-child{margin-right:auto}
 .chip{
@@ -72,43 +115,53 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   cursor:pointer; position:relative; white-space:nowrap;
 }
 .chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
-/* + ADD is the only entry point to the custom-deck sheet, and so to the pan
-   preview, so it may never scroll out of reach. It therefore sits OUTSIDE the
-   scrolling strip, on its own row BELOW it: the strip keeps the full row width
-   and scrolls inside it, and + ADD is always on screen at every width.
-   The alternative - pinning + ADD over the strip with position:sticky - is
-   worse than the bug it fixes. An overlay is only ever on TOP of the chips,
-   never beside them, so a deck chip can come to rest underneath it, still
-   visible but no longer tappable: elementFromPoint at the visible "D AMARA 9"
-   chip returned the pinned button, and tapping it opened the create sheet
-   instead of switching decks. Reserving the space is the only arrangement in
-   which no chip can rest beneath + ADD, because none of the strip's scrollport
-   is under it.
-   The reserve is VERTICAL rather than beside the strip because taking the width
-   out of the strip is nearly as bad: at 380-390px it narrows the scrollport
-   enough to push the last built-in deck entirely outside it. A second row costs
-   ~50px of header height, which the card still fits under at 380x780.
-   Being in normal flow, + ADD also cannot lag behind iOS momentum scrolling,
-   needs no safe-area inset of its own (the row is centred and capped at 520px,
-   far inside any notch), and takes no touch-action override, so a swipe that
-   starts on it still scrolls the strip. */
-.deckrow{display:flex; flex-direction:column; align-items:center; gap:6px;
-  width:100%; max-width:520px}
-#decks{align-self:stretch}
-#deck-add{flex:0 0 auto}
+/* "+ ADD" is the FIRST chip in the strip, in normal flow with the deck chips
+   (owner, 2026-09: "'Add' call to action can be inline as first option with the
+   different scale selections to save vertical space"). Being first, it is on
+   screen at rest at every width; being in flow, it costs no second row - and
+   the ~50px of header that row used to take is what pays for the spacing ramp
+   at the top of this stylesheet.
+
+   The cost this arrangement DOES carry, named so nobody has to rediscover it:
+   past three or four decks the strip overflows, and buildChips scrolls the
+   SELECTED chip into view - so after generating a deck "+ ADD" is parked off
+   the left edge until the user flicks back. That is a scroll away, not a dead
+   end, which is the trade the owner asked for.
+
+   Row 214 - the history, kept because the lesson is still live. An earlier fix
+   for an unreachable "+ ADD" pinned it OVER the strip with position:sticky.
+   An overlay is only ever on TOP of the chips, never beside them, so a deck
+   chip could come to rest underneath it - fully visible and no longer tappable:
+   elementFromPoint at the centre of "D AMARA 9" returned the pinned button, and
+   tapping the deck opened the create sheet instead of switching decks. The
+   defect was the OVERLAP, not the position: a chip in normal flow INSIDE the
+   strip overlaps nothing, so no chip can rest beneath it, and nothing here may
+   ever reintroduce position:sticky, a negative margin or a z-index that lifts
+   this button off the line. tests/e2e.test.js "no deck chip ever rests under
+   + ADD, at any width, state or scroll" hit-tests every chip at three points
+   and is what holds that.
+
+   The other arrangement rejected at the time - a fixed column BESIDE the strip
+   - was rejected on WIDTH: at 380-390px a reserved column narrows the
+   scrollport enough to push the last built-in deck out of it. A chip that
+   scrolls WITH the others reserves nothing, so that objection does not reach
+   this one either.
+
+   In normal flow "+ ADD" also cannot lag behind iOS momentum scrolling, needs
+   no safe-area inset of its own (the strip is centred and capped at 520px, far
+   inside any notch), and takes no touch-action override, so a swipe that starts
+   on it still scrolls the strip. */
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
-.modebar{display:flex; gap:8px; justify-content:center; margin-top:1.5px}
+.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:var(--sp-3)}
 /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
-   above .modebar there are only a couple of pixels of margin before "+ ADD"
-   while below it is `main`, so in landscape the overlay would lie over the
-   card. (Note the direction of that argument: it is precisely because the
-   chrome budget above squeezes these margins to near zero that an overlay
-   would now be worse, not better.) An overlay that
+   .modebar has --sp-3 of margin above it and `main` below, so in landscape -
+   where the ramp is at its narrowest rung and the card is already the binding
+   axis - the overlay would lie over the card. An overlay that
    reaches outside its element is the row-214 defect in another costume. Making
    the box itself 44px cannot steal from a neighbour: normal flow gives it the
    room. Precedent: .chip, button.nav, #scale-generate and #scale-slots .slot
@@ -199,7 +252,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
    root/tone colours it sits between. */
 .sepc{color:#75707c}
 footer{width:100%; max-width:520px; display:flex; align-items:center;
-  justify-content:space-between; gap:10px; margin-top:1px}
+  justify-content:space-between; gap:var(--sp-2); margin-top:var(--sp-3)}
 button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
 button.nav:active{background:#2e281e}
@@ -229,10 +282,23 @@ button.nav:active{background:#2e281e}
 #scale-sheet{position:fixed; inset:0; z-index:30; background:#0009;
   display:flex; align-items:flex-end; justify-content:center}
 [hidden]{display:none !important}
+/* The drawer. The owner called it "particularly cramped": every gap in it was
+   the same 9px and the surface had 14px of padding, so the label, the box, the
+   parse line, the preview and the message all sat at one distance and read as
+   one undifferentiated block. The ramp does the separating now - --sp-4 around
+   the surface and between the scrolling body and its footer, --sp-3 between the
+   body's groups, --sp-1 inside a group between a label and the control it
+   names - and the structure is unchanged: cap, scroll, reserved footer. */
 .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
   border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto;
-  padding:14px 14px max(14px, env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; gap:9px}
+  padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:var(--sp-4)}
+/* The grab handle. Purely a signal that this surface is a sheet with an edge,
+   which is what makes the padding above read as deliberate rather than as slack
+   - and it is a ::before rather than markup so it can never take a tab stop or
+   a hit test away from a control. */
+.sheetsurf::before{content:""; flex:0 0 auto; align-self:center;
+  width:38px; height:4px; border-radius:2px; background:#433b2c}
 /* The surface is capped at 85dvh, so on the Edit sheet, in landscape, or with
    a soft keyboard up its content is taller than the cap. Before .sheetbody
    existed the WHOLE surface scrolled, which put the sheet's only primary -
@@ -256,38 +322,57 @@ button.nav:active{background:#2e281e}
    already 0, so overflow-y is the same declaration doing both jobs.
    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
    where the footer alone exceeds the cap. */
-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:9px}
+.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3)}
+/* A label, its control and the line that explains the control are ONE group:
+   --sp-1 inside, and the group is separated from the next by .sheetbody. */
+.fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
 .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
   text-transform:uppercase}
-/* ---- the preset row (Phase 6). Six seeds, one tap from a parsed scale.
-   Secondaries, like every other control that is not #scale-generate: the row
-   wraps rather than scrolls, so nothing is off-screen at 380px. */
-#scale-presets-row{display:flex; flex-direction:column; gap:9px}
-#scale-presets{display:flex; flex-wrap:wrap; gap:6px}
-#scale-presets .preset{min-height:44px; padding:6px 10px; cursor:pointer;
-  border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
-  font-family:Bitter, serif; font-weight:400; font-size:13px}
-#scale-box{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;
+#scale-box{width:100%; min-height:48px; padding:12px var(--sp-3); color:#eae6df;
   font-family:Bitter, serif; font-weight:400; font-size:16px;
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-box.bad{border-color:#E27005}
-#scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.45;
+#scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
   color:#c4bcab; overflow-wrap:anywhere}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
    CARDS below the fold. */
-#scale-preview{align-self:center; width:100%; max-width:184px; padding:8px;
+#scale-preview{align-self:center; width:100%; max-width:184px; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 #scale-preview svg{display:block; width:100%; height:auto}
-#scale-msg{font:400 11.5px/1.45 "Nunito Sans"; min-height:1.45em; color:#c4bcab;
+#scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
   overflow-wrap:anywhere}
 #scale-msg.err, .announce.err{color:#E27005}
 #scale-msg.warn, .announce.warn{color:#e3b25c}
 #scale-msg.ok, .announce.ok{color:#a4c9a0}
-.ctlrow{display:flex; align-items:center; justify-content:space-between; gap:10px;
-  flex-wrap:wrap}
-.mirror{display:flex; gap:8px}
+.ctlrow{display:flex; align-items:center; justify-content:space-between;
+  gap:var(--sp-3); flex-wrap:wrap}
+.mirror{display:flex; gap:var(--sp-2)}
+/* The reserved footer - the mirror/palette row plus the primary - is what the
+   sheet guarantees is reachable without scrolling, so it gets a hairline of its
+   own rather than only a gap: at a scroll offset where the body still has more
+   to give, the rule is what says "this part does not move". Direct child only,
+   so the LAYOUT row's nested .ctlrow is untouched. */
+.sheetsurf > .ctlrow{border-top:1px solid #332c22; padding-top:var(--sp-4)}
+/* Landscape on a phone: 85dvh of 390px, and every pixel of chrome in the sheet
+   comes straight off the scrolling body. The ramp is already a third smaller
+   here; this drops the two things that are decoration rather than structure -
+   the grab handle, and the footer's breathing room above its own hairline -
+   and returns the primary to the 44px floor. The hairline stays: it is what
+   says the footer does not scroll, and it costs one pixel. */
+@media (max-height:520px){
+  .sheetsurf::before{display:none}
+  .sheetsurf > .ctlrow{padding-top:var(--sp-2)}
+  #scale-generate{min-height:44px}
+  /* Text fields go back to the 44px floor with tighter padding: on the Edit
+     sheet there are two of them above the fold and the box the caret lands in
+     is the lower one, so four pixels each is the difference between opening at
+     rest and opening already scrolled. */
+  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
+  .sheetbody{gap:var(--sp-2)}
+  .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
+}
 /* No min-height here: .mode carries the 44px minimum for every .mode on the
    page, sheet buttons included. */
 /* The swatch BUTTON is the 44px target and the 14px dot is painted inside it,
@@ -309,15 +394,15 @@ button.nav:active{background:#2e281e}
   width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 #scale-swatches .dot.sel::after{box-shadow:0 0 0 2px #f1ece1}
-#scale-generate{width:100%; min-height:44px; border-radius:8px; cursor:pointer;
+#scale-generate{width:100%; min-height:52px; border-radius:10px; cursor:pointer;
   border:1px solid #f1ece1; background:#f1ece1; color:#272219;
-  font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em}
+  font:600 11.5px/1 "Nunito Sans"; letter-spacing:.12em}
 #scale-generate:disabled{opacity:.5; cursor:default}
 /* ---- Edit state (Phase 4). The rows below are the ONLY difference between
    the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
    there is never a second primary button on the surface. */
-.editrow{display:flex; flex-direction:column; gap:9px}
-#scale-name, #scale-degrees{width:100%; min-height:44px; padding:10px 12px; color:#eae6df;
+.editrow{display:flex; flex-direction:column; gap:var(--sp-1)}
+#scale-name, #scale-degrees{width:100%; min-height:48px; padding:12px var(--sp-3); color:#eae6df;
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-name{font-family:Bitter, serif; font-weight:400; font-size:16px}
 #scale-degrees{font:400 16px/1.2 "Nunito Sans"}
@@ -325,8 +410,9 @@ button.nav:active{background:#2e281e}
    sheet's only full-width primary stays #scale-generate. The slot list is a
    single tab stop with a roving tabindex, so a keyboard reaches it in one Tab
    and moves inside it with the arrow keys - there is no drag-only path. */
-#scale-layout-row .ctlrow{gap:8px}
-#scale-slots{display:flex; flex-wrap:wrap; gap:6px}
+#scale-layout-row{gap:var(--sp-2)}
+#scale-layout-row .ctlrow{gap:var(--sp-2)}
+#scale-slots{display:flex; flex-wrap:wrap; gap:var(--sp-2)}
 #scale-slots .slot{min-width:44px; min-height:44px; padding:6px 8px; cursor:pointer;
   border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
   font-family:Bitter, serif; font-weight:400; font-size:13px}
@@ -340,17 +426,19 @@ button.nav:active{background:#2e281e}
 #scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
   color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
   text-transform:uppercase; cursor:pointer}
-.announce{width:100%; max-width:520px; margin-top:8px; text-align:center;
+.announce{width:100%; max-width:520px; margin-top:var(--sp-2); text-align:center;
   font:400 11.5px/1.45 "Nunito Sans"; color:#c4bcab; min-height:1.45em}
 </style>
 </head>
 <body>
 <header>
   <h1>Handpan Chord Cards</h1>
-  <div class="deckrow">
-    <nav class="decks" id="decks"></nav>
+  <!-- "+ ADD" is authored as the strip's first child and buildChips keeps it
+       there on every rebuild - see the .chip.add comment for why it is inside
+       the strip and why it must stay in normal flow. -->
+  <nav class="decks" id="decks">
     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
-  </div>
+  </nav>
   <div class="modebar">
     <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
     <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
@@ -398,18 +486,19 @@ button.nav:active{background:#2e281e}
       <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
              autocomplete="off" spellcheck="false" maxlength="40">
     </div>
-    <!-- Phase 6: six INLINED seeds. A tap fills the box below and nothing else -
-         the deck is auto-named from its fields like any typed scale. Create
-         path only: from Edit, one tap would overwrite the deck's fields. -->
-    <div id="scale-presets-row">
-      <span class="sheetlabel" id="scale-presets-label">PRESETS</span>
-      <div id="scale-presets" role="group" aria-labelledby="scale-presets-label"></div>
+    <!-- The label, the box and the live parse line are ONE group (.fieldrow),
+         so they sit --sp-1 apart and the next group is --sp-3 away. With the
+         preset row gone (owner, 2026-09: "I don't know if we need the preset
+         options"), this label, this placeholder and PARSE_HINT are the ONLY
+         teaching of the seed grammar there is - keep all three saying the same
+         thing, and keep the placeholder a seed that actually parses. -->
+    <div class="fieldrow">
+      <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
+      <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
+             autocomplete="off" spellcheck="false" enterkeyhint="go"
+             placeholder="(D) A C D E F G A C">
+      <div id="scale-parse"></div>
     </div>
-    <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
-    <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
-           autocomplete="off" spellcheck="false" enterkeyhint="go"
-           placeholder="(D) A C D E F G A C">
-    <div id="scale-parse"></div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
          renderer the cards use, with no chord chosen, so what is previewed
@@ -3359,7 +3448,15 @@ const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" :
 
 function buildChips() {
   const nav = document.getElementById("decks");
+  // "+ ADD" is the strip's FIRST chip. It is MOVED, not rebuilt: innerHTML=""
+  // detaches it, and every reference the app holds - its onclick, the element
+  // closeScaleSheet() returns focus to - is to THAT node, so it is read out
+  // first and put back at the head of the new row. Appending it LAST instead
+  // would leave it off-screen at rest on a phone, which is the whole point of
+  // it being first (tests/mutants/e_add_chip_appended_last.patch).
+  const add = document.getElementById("deck-add");
   nav.innerHTML = "";
+  nav.appendChild(add);
   let active = null;
   for (const d of allDecks()) {
     const b = document.createElement("button");
@@ -3380,8 +3477,6 @@ function buildChips() {
     nav.appendChild(b);
     if (d.id === deckId) active = b;
   }
-  // "+ ADD" is NOT in here: it is the strip's sibling, outside the scrollport,
-  // so a rebuild neither moves it nor lets a chip come to rest under it.
   // The row scrolls, so the selected chip may be off-screen after a rebuild.
   if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
@@ -3391,26 +3486,7 @@ function buildChips() {
  * through HPE.core.parseSeed, and Generate hands the text to generateDeck().
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
-const PARSE_HINT = "Type your ding first, e.g. (D) or D/";
-// Phase 6 presets: INLINED seed strings, never fetched (fetch fails under
-// file://, is absent in the sandbox and breaks "offline-ish") and never merged
-// into the DECKS literal - a preset is a seed a person could have typed, not a
-// deck. The same six live in tools/gen_deck.js's PRESETS; a unit test holds the
-// two lists to each other so they cannot drift.
-const SCALE_PRESETS = [
-  { id: "d_kurd_9", label: "D Kurd 9",
-    seed: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4" },
-  { id: "d_celtic_minor_9", label: "D Celtic Minor 9",
-    seed: "(D3) A3 C4 D4 E4 G4 A4 C5 D5" },
-  { id: "csharp_annaziska_9", label: "C# Annaziska 9",
-    seed: "(C#3) G#3 B3 C#4 D#4 E4 F#4 G#4 B4" },
-  { id: "e_la_sirena_9", label: "E La Sirena 9",
-    seed: "(E3) B3 C4 D4 E4 F#4 G4 B4 C5" },
-  { id: "f_low_pygmy_9", label: "F Low Pygmy 9",
-    seed: "(F3) Ab3 C4 Db4 Eb4 F4 Ab4 C5 Eb5" },
-  { id: "g_hijaz_9", label: "G Hijaz 9",
-    seed: "(G3) D4 Eb4 F#4 G4 A4 Bb4 C5 D5" },
-];
+const PARSE_HINT = "Type your ding first, in brackets - then the top notes, low to high, exactly like the example in the box. Put | before any bottom-shell notes.";
 const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored.";
 const sheet     = document.getElementById("scale-sheet");
 const scaleBox  = document.getElementById("scale-box");
@@ -3421,8 +3497,6 @@ const mirrorL   = document.getElementById("scale-mirror-l");
 const mirrorR   = document.getElementById("scale-mirror-r");
 const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
-const presetRow = document.getElementById("scale-presets-row");
-const presetBox = document.getElementById("scale-presets");
 const addChip   = document.getElementById("deck-add");
 // Edit state (Phase 4). The same sheet, three extra rows and a relabelled
 // primary - never a second sheet and never a second primary button.
@@ -3495,30 +3569,6 @@ function buildSwatches() {
     b.onclick = () => { palette = i; buildSwatches(); };
     swatches.appendChild(b);
   });
-}
-// A preset fills the SCALE BOX and nothing else. It sets no deck name and never
-// touches nameDirty, so the deck is auto-named by section 13 exactly as a typed
-// scale is - which keeps preset LABELS out of the deck-name space entirely.
-function applyPreset(p) {
-  scaleBox.value = p.seed;
-  // The same live parse a keystroke fires: the event the box already listens
-  // for, never a second call to the parse logic from here.
-  scaleBox.dispatchEvent(new Event("input", { bubbles: true }));
-  scaleBox.focus();
-}
-// The row is static, so it is built once. Labels go in through textContent -
-// nothing here is an innerHTML sink.
-function buildPresets() {
-  presetBox.innerHTML = "";
-  for (const p of SCALE_PRESETS) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "preset";
-    b.setAttribute("data-preset", p.id);
-    b.textContent = p.label;
-    b.onclick = () => applyPreset(p);
-    presetBox.appendChild(b);
-  }
 }
 function setMirror(left) {
   mirror = left;
@@ -3797,9 +3847,6 @@ function setSheetMode(edit) {
   for (const el of [nameRow, degRow, layoutRow, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
-  // The presets are the mirror image: create-only. From Edit, one tap would
-  // overwrite the deck's fields, which is the collision path row 131 closed.
-  if (edit) presetRow.setAttribute("hidden", ""); else presetRow.removeAttribute("hidden");
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
   sheet.setAttribute("aria-label", edit ? "Edit this scale" : "Add a scale");
 }
@@ -3957,7 +4004,6 @@ function runGenerate() {
   genBtn.disabled = false;
 }
 
-buildPresets();
 addChip.onclick = () => openScaleSheet(addChip);
 genBtn.onclick = runGenerate;
 delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
@@ -3997,7 +4043,6 @@ sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet()
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const stops = [editingId ? nameBox : null,
-                 ...(editingId ? [] : [...presetBox.children]),
                  scaleBox, editingId ? degSel : null,
                  editingId ? rotL : null, editingId ? rotR : null,
                  editingId ? resetBtn : null,

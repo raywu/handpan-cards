@@ -1,20 +1,21 @@
 # kills: no deck chip ever rests under + ADD, at any width, state or scroll
 # suite: node --test --test-name-pattern ^no.deck.chip.ever.rests.under...ADD..at.any.width..state.or.scroll$ tests/e2e.test.js
-# + ADD stops reserving its own row and is lifted back on top of the scrolling
-# strip. It is then still fully on screen - rects alone see nothing wrong - but
-# deck chips come to rest underneath it: elementFromPoint at a visible chip
-# returns the button, so tapping "D AMARA 9" opens the create sheet instead of
-# switching decks. That is the mis-tap the vertical reserve exists to prevent.
+# + ADD stops travelling with the strip and is pinned to its left edge on top
+# of the row. It is then still fully on screen - rects alone see nothing wrong
+# - but deck chips scroll to rest underneath it: elementFromPoint at a visible
+# chip returns the button, so tapping "D AMARA 9" opens the create sheet
+# instead of switching decks. That is the mis-tap normal flow prevents.
 diff --git a/index.html b/index.html
-index aeba397..6ae4e7f 100644
+index 574a311..dd72f52 100644
 --- a/index.html
 +++ b/index.html
-@@ -66,7 +66,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
- .deckrow{display:flex; flex-direction:column; align-items:center; gap:6px;
-   width:100%; max-width:520px}
- #decks{align-self:stretch}
--#deck-add{flex:0 0 auto}
-+#deck-add{flex:0 0 auto; position:relative; top:-46px; margin-bottom:-46px; z-index:1}
- .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
-   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
- .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
+@@ -114,7 +114,8 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+   font:600 11px/1 "Nunito Sans"; letter-spacing:.09em; color:#d5cec2; background:#272219;
+   cursor:pointer; position:relative; white-space:nowrap;
+ }
+-.chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
++.chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b;
++  position:sticky; left:0; z-index:1}
+ /* "+ ADD" is the FIRST chip in the strip, in normal flow with the deck chips
+    (owner, 2026-09: "'Add' call to action can be inline as first option with the
+    different scale selections to save vertical space"). Being first, it is on

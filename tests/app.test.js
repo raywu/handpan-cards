@@ -631,8 +631,9 @@ budget("nineteen field maximum", 500);
 
 const REASON = (app, code) => app.get(`HPE.core.REASONS[${JSON.stringify(code)}].reason`);
 
-/** The deck-chip row, as [{label, on, id}] in document order. */
-function chipRow(app) {
+/** The strip's children, as [{label, on, id}] in document order - "+ ADD"
+ *  included, because it is one of them now. */
+function stripRow(app) {
   return app.els.decks.children.map((c) => ({
     label: (c._html || c._text || "").replace(/<[^>]*>/g, "").trim(),
     on: c.classList.contains("on"),
@@ -640,18 +641,24 @@ function chipRow(app) {
   }));
 }
 
+/** The DECK chips only: the strip without its leading "+ ADD". */
+function chipRow(app) {
+  return stripRow(app).filter((c) => c.id !== "deck-add");
+}
+
 function openSheet(app) {
   app.els["deck-add"].click();
   return app.els;
 }
 
-test("the deck row ends with a + ADD chip that opens the sheet, focusing the box", () => {
+test("the deck row opens with a + ADD chip that opens the sheet, focusing the box", () => {
   const app = boot();
   const row = chipRow(app);
   assert.strictEqual(row.length, decks(app).length, "one chip per deck");
-  // + ADD lives OUTSIDE the scrolling strip (its sibling), so that no deck chip
-  // can scroll to rest underneath it - see the .deckrow comment in index.html.
-  assert.ok(!row.some((c) => c.id === "deck-add"), "+ ADD is inside the scrolling strip");
+  // + ADD is the strip's FIRST child, in normal flow with the deck chips -
+  // see the .chip.add comment in index.html for why first, and why in flow.
+  assert.strictEqual(stripRow(app)[0].id, "deck-add",
+    "+ ADD is not the first chip in the strip");
 
   assert.strictEqual(app.sheetOpen(), false, "the sheet starts closed");
   openSheet(app);
@@ -756,7 +763,8 @@ test("Generate builds the deck, closes the sheet, selects it and announces the c
   const mine = row.find((c) => c.label === d.name);
   assert.ok(mine, `no chip for ${d.name} in ${JSON.stringify(row)}`);
   assert.strictEqual(mine.on, true, "the new chip is not selected");
-  assert.ok(!row.some((c) => c.id === "deck-add"), "+ ADD is inside the scrolling strip");
+  assert.strictEqual(stripRow(app)[0].id, "deck-add",
+    "a generate left + ADD somewhere other than the head of the strip");
 });
 
 test("the one-time layout hint is appended on the first generation of a deck, not the second", () => {
@@ -1920,100 +1928,98 @@ test("an untouched Edit box still leaves an auto-named deck free to re-derive it
     "an untouched auto name was pinned onto the new fields");
 });
 
-/* ------------------------------- 28. the preset row (Phase 6, lane 10) */
+/* ---------------- 28. the deck strip, and the drawer without presets ----
+ * The owner moved "+ ADD" inline as the strip's first chip and had the preset
+ * row deleted outright (2026-09). Both are asserted here as facts about the
+ * shipped app, not as preferences: the first because a rebuild that loses it,
+ * or appends it last, puts the only entry point to the create sheet off-screen
+ * on a phone; the second because "removed" has to mean the seeds are gone from
+ * the file, not merely hidden. */
 
-/** The preset buttons in the sheet, as [{id, label}] in document order. */
-function presetRow(app) {
-  return app.els["scale-presets"].children.map((b) => ({
-    id: b.dataset.preset,
-    label: (b.textContent || "").trim(),
-  }));
-}
-
-/** Tap the preset at index `at`, the way a finger does. */
-function tapPreset(app, at) {
-  const b = app.els["scale-presets"].children[at];
-  assert.ok(b, "no preset button at index " + at);
-  b.click();
-  return b;
-}
-
-test("the create sheet offers six presets, each one tap from a parsed scale", () => {
+test("+ ADD leads the strip through every rebuild, as the same node", () => {
   const app = boot();
-  openSheet(app);
-  const row = presetRow(app);
-  assert.strictEqual(row.length, 6, `${row.length} presets in the row`);
-  assert.ok(row.every((p) => p.id && p.label), JSON.stringify(row));
+  const add = app.els["deck-add"];
+  assert.strictEqual(app.els.decks.children[0], add,
+    "+ ADD is not the strip's first child on boot");
 
-  const presets = app.get("SCALE_PRESETS");
-  for (let i = 0; i < 6; i++) {
-    const seed = presets[i].seed;
-    tapPreset(app, i);
-    assert.strictEqual(app.els["scale-box"].value, seed,
-      `preset ${i} left "${app.els["scale-box"].value}" in the box`);
-    // the SAME live parse a keystroke fires, with no second call from the test
-    assert.strictEqual(app.els["scale-box"].classList.contains("bad"), false,
-      `preset ${i} does not parse`);
-    assert.strictEqual(app.els["scale-generate"].disabled, false,
-      `preset ${i} left the primary disabled`);
-    assert.ok(app.els["scale-parse"].textContent.trim().length > 0,
-      `preset ${i} left the parse line empty`);
-    assert.notStrictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"),
-      `preset ${i} left the hint on the parse line`);
-  }
-});
-
-test("a preset never names the deck: it is auto-named exactly as a typed scale is", () => {
-  const app = boot();
-  openSheet(app);
-  const preset = app.get("SCALE_PRESETS")[0];
-  tapPreset(app, 0);
-  assert.strictEqual(app.get("nameDirty"), false,
-    "a preset tap dirtied the name box");
-
-  app.els["scale-generate"].click();
-  const d = app.registry()[app.deckId()];
-  assert.ok(d, "no deck was generated from the preset");
-  assert.strictEqual(d.options.name, undefined,
-    "the preset label was pinned onto the deck as an explicit name");
-  const auto = app.get(
-    `HPE.select.autoName(CUSTOM[${JSON.stringify(d.id)}].fields, ` +
-    `CUSTOM[${JSON.stringify(d.id)}].options.parent)`);
-  assert.strictEqual(d.name, auto,
-    `the preset deck is named "${d.name}", not the section 13 auto name "${auto}"`);
-  assert.notStrictEqual(d.name, preset.label,
-    "the preset label reached the deck-name space");
-});
-
-test("the app's presets and tools/gen_deck.js's PRESETS cannot drift apart", () => {
-  const { PRESETS } = require("../tools/gen_deck.js");
-  const app = boot();
-  const inApp = app.get("SCALE_PRESETS");
-  assert.strictEqual(inApp.length, PRESETS.length, "the two lists differ in length");
-  for (let i = 0; i < PRESETS.length; i++) {
-    assert.strictEqual(inApp[i].id, PRESETS[i].id, `preset ${i}: id drifted`);
-    assert.strictEqual(inApp[i].label, PRESETS[i].label, `preset ${i}: label drifted`);
-    assert.strictEqual(inApp[i].seed, PRESETS[i].seed,
-      `preset ${i}: seed drifted - app has "${inApp[i].seed}", ` +
-      `tools/gen_deck.js has "${PRESETS[i].seed}"`);
-  }
-});
-
-test("the preset row is create-only: an Edit sheet never offers one", () => {
-  const app = boot();
+  // A rebuild throws the strip away (innerHTML = "") and builds it again. The
+  // node must be MOVED, not recreated: closeScaleSheet() and selectDeck() both
+  // hold this exact element, and its onclick is a property on it.
   const d = makeCustom(app);
-  openSheet(app);
-  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), false,
-    "the create sheet hid the preset row");
-
   app.select(d.id);
-  app.clickChip(d.name);
-  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), true,
-    "the Edit sheet offers a preset row - one tap from overwriting the deck's fields");
+  assert.strictEqual(app.els.decks.children[0], add,
+    "a rebuild replaced or displaced the + ADD node");
+  assert.strictEqual(app.els.decks.children.length, app.get("allDecks().length") + 1,
+    "the strip is not one + ADD plus one chip per deck");
 
+  // Still live after the rebuild: the click still opens the sheet.
+  assert.strictEqual(app.sheetOpen(), false);
+  add.click();
+  assert.strictEqual(app.sheetOpen(), true, "+ ADD stopped opening the sheet after a rebuild");
+});
+
+/** The app's own <style> block, with comments stripped. */
+function appCss() {
+  const src = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  const m = /<style>([\s\S]*?)<\/style>/.exec(src);
+  assert.ok(m, "index.html has no <style> block");
+  return m[1].replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+test("every gap in the app comes from the spacing ramp, never a fresh literal", () => {
+  const css = appCss();
+  // The ramp itself: four steps, defined on :root, strictly increasing.
+  const steps = [1, 2, 3, 4].map((i) => {
+    const m = new RegExp("--sp-" + i + ":(\\d+(?:\\.\\d+)?)px").exec(css);
+    assert.ok(m, `--sp-${i} is not defined in :root`);
+    return Number(m[1]);
+  });
+  for (let i = 1; i < steps.length; i++) {
+    assert.ok(steps[i] > steps[i - 1],
+      `the ramp is not strictly increasing: ${JSON.stringify(steps)}`);
+  }
+  // And nothing reintroduces the one-value rhythm the owner reported ("there is
+  // not enough spacing between each ui component" - every gap in the chrome and
+  // the whole sheet was the same 9px). gap:0 is allowed: #scale-swatches butts
+  // its 44px targets together on purpose.
+  const bad = [...css.matchAll(/gap:\s*([^;}]+)/g)]
+    .map((m) => m[1].trim())
+    .filter((v) => v !== "0" && !v.startsWith("var(--sp-"));
+  assert.deepStrictEqual(bad, [],
+    `these gaps bypass the ramp: ${JSON.stringify(bad)}`);
+});
+
+test("the presets are gone from the app, not merely hidden", () => {
+  const app = boot();
+  assert.strictEqual(app.get("typeof SCALE_PRESETS"), "undefined",
+    "the inlined preset seed list is still in index.html");
+  assert.strictEqual(app.get("typeof applyPreset"), "undefined",
+    "the preset handler is still in index.html");
+  const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  assert.doesNotMatch(html, /scale-presets/,
+    "index.html still carries preset markup, CSS or ids");
+});
+
+test("with the presets gone, the standing hint teaches the whole seed grammar", () => {
+  const app = boot();
   openSheet(app);
-  assert.strictEqual(app.els["scale-presets-row"].hasAttribute("hidden"), false,
-    "the preset row never came back on the create path");
+  // An empty box shows the hint and nothing else, so the hint is the only
+  // teaching there is besides the label and the placeholder.
+  assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"));
+  const hint = app.get("PARSE_HINT");
+  assert.match(hint, /ding/i, "the hint does not name the ding");
+  assert.match(hint, /\|/, "the hint does not mention the bottom-note bar");
+
+  // And the example it points at - the placeholder - must actually parse, or
+  // the one worked example in the sheet is a lie. The stub does not parse
+  // markup, so the placeholder is read out of index.html itself.
+  const src = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  const m = /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(src);
+  assert.ok(m, "the scale box lost its placeholder");
+  const ph = m[1];
+  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ph)})`);
+  assert.strictEqual(res.ok, true,
+    `the placeholder "${ph}" does not parse: ${res.code}`);
 });
 
 /* ------------------ 29. replaceRegistered defends its own invariant (row 144) */

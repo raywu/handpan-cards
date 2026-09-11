@@ -233,11 +233,27 @@ function run() {
   }
 
   // Click the i-th deck chip and wait for the deck to actually change over.
-  // Deliberately does NOT scroll first: this helper is load-bearing for tests
-  // that are not about scrolling, and a scroll here hides exactly the class of
-  // bug where something else has come to rest on top of the chip.
+  // + ADD is the strip's first child, so deck i is the (i + 2)-th chip, and
+  // with + ADD leading, the last built-in starts past the right edge at 380px.
+  // So the chip IS scrolled into view - but the hit test below is what keeps
+  // this helper honest about the bug class the old "never scroll" rule was
+  // protecting (row 214: something coming to rest ON TOP of a chip). Scrolling
+  // moves a chip into the port; it cannot move an overlay off it, so the
+  // assertion still fails on exactly the regression it was written for, and
+  // "+ ADD is on screen at rest" is proved by its own tests further down.
   async function selectDeck(i, meta) {
-    await b.click(`#decks .chip:nth-child(${i + 1})`);
+    const sel = `#decks .chip:nth-child(${i + 2})`;
+    const hit = await b.eval(`
+      const el = document.querySelector(${JSON.stringify(sel)});
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      const r = el.getBoundingClientRect();
+      const got = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { own: !!got && (got === el || el.contains(got)),
+               got: got ? (got.id || got.className || got.tagName) : null };
+    `);
+    assert.strictEqual(hit.own, true,
+      `a tap at the centre of the ${meta[i].id} chip lands on "${hit.got}" instead`);
+    await b.click(sel);
     await expectCount(`1 / ${meta[i].chords}`, `deck ${meta[i].id} selected`);
   }
 
@@ -804,19 +820,20 @@ function run() {
           rowScrolls: nav.scrollWidth > nav.clientWidth + 1,
           wraps: nav.scrollHeight > nav.clientHeight + 1,
           activeInView: on.left >= navR.left - 1 && on.right <= navR.right + 1,
-          // + ADD is deliberately NOT one of these chips: it lives outside the
-          // scrollport so that it is always reachable and no chip can come to
-          // rest under it. Its own tests are further down this file.
-          addInsideStrip: nav.contains(document.getElementById("deck-add")),
+          // + ADD IS one of these chips now (owner, 2026-09: "'Add' call to
+          // action can be inline as first option with the different scale
+          // selections to save vertical space"), and it leads the row. It is in
+          // normal flow, so it overlays nothing; see the row-214 test below.
+          addFirst: nav.children[0] === document.getElementById("deck-add"),
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.strictEqual(row.chips, 3 + 6, "three built-ins and six customs");
+      assert.strictEqual(row.chips, 1 + 3 + 6, "+ ADD, three built-ins and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
       assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
       assert.strictEqual(row.activeInView, true, "the active chip is not scrolled into view");
-      assert.strictEqual(row.addInsideStrip, false, "+ ADD is back inside the scrolling strip");
+      assert.strictEqual(row.addFirst, true, "+ ADD is no longer the strip's first chip");
       assert.ok(row.body.sw <= row.body.cw + 1, "the chip row blew the page out horizontally");
     } finally {
       await b.setViewport(900, 900, false);
@@ -837,8 +854,18 @@ function run() {
    * first; 380x800 is the repo's stated test width (CLAUDE.md); 430x930 is the
    * widest phone that still overflows.
    *
-   * These tests deliberately do NOT scrollIntoView first - the owner cannot
-   * do that, and neither may the test that guards them.
+   * These tests deliberately do NOT scrollIntoView the button - the owner
+   * cannot do that, and neither may the test that guards them.
+   *
+   * 2026-09: + ADD moved INTO the strip as its first chip, at the owner's
+   * request. That trades one cost for another and the trade is deliberate: it
+   * can no longer be pushed off the right edge by decks (it is ahead of all of
+   * them), but it CAN be scrolled off the left, because buildChips scrolls the
+   * SELECTED chip into view. So the guarantee this test now pins is "on screen
+   * at rest", where rest is the strip's own origin: scrollLeft 0, which is where
+   * every load starts and where a swipe back always lands. The strip is reset to
+   * 0 below for exactly that reason, and for no other - no scrollIntoView on the
+   * button itself, and the click that follows is a real click at its centre.
    * ---------------------------------------------------------------- */
   test("+ ADD is fully on-screen and hit-testable at phone widths", async () => {
     await freshLoad();
@@ -854,6 +881,8 @@ function run() {
         const m = await b.eval(`
           const add = document.getElementById("deck-add");
           const nav = document.getElementById("decks");
+          nav.scrollLeft = 0;                        // the strip at rest
+          const restedAtZero = nav.scrollLeft === 0;
           const r = add.getBoundingClientRect();
           const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
           return {
@@ -863,10 +892,14 @@ function run() {
             overflows: nav.scrollWidth > nav.clientWidth + 1,
             decks: nav.querySelectorAll(".chip:not(#deck-add)").length,
             hitIsAdd: !!hit && (hit === add || add.contains(hit)),
+            first: nav.children[0] === add,
+            restedAtZero,
             body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
           };
         `);
         const at = `at ${vw}x${vh} with ${m.decks} decks`;
+        assert.strictEqual(m.first, true, `+ ADD is not the first chip ${at}`);
+        assert.strictEqual(m.restedAtZero, true, `the strip would not rest at scrollLeft 0 ${at}`);
         // The strip spans the full width now, so a three-deck row happens to
         // fit at 430. Count the states that DO overflow instead of demanding it
         // everywhere, and assert the count after the loop so the matrix can
@@ -955,6 +988,11 @@ function run() {
    * - a wrong-action mis-tap on a built-in deck, worse than the unreachable
    * + ADD it was meant to fix.
    *
+   * The overlay is gone: + ADD is the strip's first chip, in normal flow, and
+   * nothing in its CSS may ever reintroduce position:sticky, a negative margin
+   * or a z-index. This test is what says so, and it now sweeps + ADD itself as
+   * one of the chips.
+   *
    * A rect check cannot see that; only elementFromPoint can, which is why every
    * assertion below is a hit test. Three points per chip - the centre and both
    * inner thirds - because an overlay can leave a sliver of a chip exposed and
@@ -996,10 +1034,14 @@ function run() {
             });
           }
         }
-        // + ADD must answer for itself at all three of its own points.
+        // + ADD must answer for itself at all three of its own points. It is
+        // one of the .chip nodes above now, so this is belt and braces - and it
+        // takes the same scrollport guard, because as the strip's FIRST child
+        // it is the one thing that can be scrolled off the LEFT edge.
         const ar = add.getBoundingClientRect();
         const ay = ar.top + ar.height / 2;
         for (const p of pts(ar)) {
+          if (p.x < nr.left || p.x > nr.right) continue;
           probed++;
           if (!owns(add, document.elementFromPoint(p.x, ay)))
             bad.push({ chip: "+ ADD", point: p.name, x: Math.round(p.x), got: "not itself" });
@@ -1025,13 +1067,15 @@ function run() {
 
       // Scrolling belongs inside the test that needs it, never in the shared
       // selectDeck helper - a scroll there hides the very bug this test hunts.
+      // i indexes DECKS; + ADD is the strip's first chip, so it is one along.
       const selectChip = async (i) => {
-        await b.eval(`document.querySelectorAll("#decks .chip")[${i}]
+        const n = i + 1;
+        await b.eval(`document.querySelectorAll("#decks .chip")[${n}]
                         .scrollIntoView({ block: "nearest", inline: "nearest" });
                       return true;`);
-        await b.click(`#decks .chip:nth-child(${i + 1})`);
+        await b.click(`#decks .chip:nth-child(${n + 1})`);
         await b.waitFor(
-          `document.querySelectorAll("#decks .chip")[${i}].classList.contains("on")`,
+          `document.querySelectorAll("#decks .chip")[${n}].classList.contains("on")`,
           { label: `deck chip ${i} to become the active deck` });
       };
 
@@ -1518,12 +1562,19 @@ function run() {
    * ---------------------------------------------------------------- */
   const CHROME_BUDGET = [
     // vw,  vh,   minCardW, maxChrome   (chrome = vh - main.height)
-    [390, 844, 343.19, 270.17],
-    [390, 745, 342.69, 270.17],
-    [375, 667, 288.80, 268.17],
-    [320, 568, 217.11, 268.17],
-    [844, 390, 82.42, 276.17],
-    [926, 428, 109.94, 276.17],
+    // Re-measured 2026-09 after "+ ADD" moved into the deck strip. That retired
+    // a whole 50px row of chrome and the spacing ramp spent part of it back, so
+    // every row here moved the RIGHT way and the table was tightened onto the
+    // new numbers - which is what makes the gain a floor rather than a windfall
+    // some later change can quietly spend. Portrait chrome 269.17 -> 263.67;
+    // landscape 276.17 -> 251.67, and the card at 844x390 is 82.42 -> 100.16px
+    // wide, +21.5%.
+    [390, 844, 343.19, 263.67],
+    [390, 745, 342.69, 263.67],
+    [375, 667, 292.78, 262.67],
+    [320, 568, 221.09, 262.67],
+    [844, 390, 100.16, 251.67],
+    [926, 428, 127.67, 251.67],
   ];
 
   test("the header and footer stay inside their pixel budget, so the card keeps its size",
@@ -2154,170 +2205,6 @@ function run() {
 
 
   /* ---------------------------------------------------------------- *
-   * the preset row (Phase 6)
-   *
-   * What a unit test cannot show: that six more buttons above the box still
-   * fit a 380px sheet without a horizontal scrollbar, are real 44px targets,
-   * and are inside the sheet's focus trap rather than beside it.
-   * ---------------------------------------------------------------- */
-
-  const presetMeta = () => b.eval(`
-    return {
-      seeds: SCALE_PRESETS.map(p => p.seed),
-      labels: SCALE_PRESETS.map(p => p.label),
-      buttons: [...document.querySelectorAll("#scale-presets .preset")]
-        .map(el => ({ id: el.dataset.preset, label: el.textContent.trim() })),
-    };
-  `);
-
-  test("a preset is one tap from a parsed scale and an auto-named deck at 380px", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      await openSheet();
-      const meta = await presetMeta();
-      assert.strictEqual(meta.buttons.length, meta.seeds.length,
-        `${meta.buttons.length} preset buttons for ${meta.seeds.length} seeds`);
-      assert.deepStrictEqual(meta.buttons.map(x => x.label), meta.labels,
-        "the row does not show the preset labels");
-
-      const at = 1;
-      await b.click(`#scale-presets .preset:nth-child(${at + 1})`);
-      const after = await b.eval(`
-        const box = document.getElementById("scale-box");
-        return {
-          value: box.value,
-          bad: box.classList.contains("bad"),
-          parse: document.getElementById("scale-parse").textContent.trim(),
-          disabled: document.getElementById("scale-generate").disabled,
-          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
-        };
-      `);
-      assert.strictEqual(after.value, meta.seeds[at],
-        `the preset left "${after.value}" in the box`);
-      assert.strictEqual(after.bad, false, "the preset seed does not parse");
-      assert.strictEqual(after.disabled, false, "the preset left the primary disabled");
-      assert.ok(after.parse.length > 0, "the preset left the parse line empty");
-      assert.ok(after.body.sw <= after.body.cw + 1,
-        `the preset row scrolls the page horizontally at 380px (${after.body.sw} > ${after.body.cw})`);
-
-      await b.click("#scale-generate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the sheet to close after generating from a preset" });
-
-      const made = await b.eval(`
-        const d = CUSTOM[deckId];
-        return d ? {
-          name: d.name,
-          explicit: d.options.name,
-          auto: HPE.select.autoName(d.fields, d.options.parent),
-          chips: [...document.querySelectorAll("#decks .chip:not(#deck-add)")]
-                   .map(c => c.textContent.trim()),
-          on: [...document.querySelectorAll("#decks .chip.on")].map(c => c.textContent.trim()),
-          body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
-        } : null;
-      `);
-      assert.ok(made, "generating from a preset produced no custom deck");
-      assert.strictEqual(made.explicit, undefined,
-        "the preset label was pinned onto the deck as an explicit name");
-      assert.strictEqual(made.name, made.auto,
-        `the preset deck is named "${made.name}", not the section 13 auto name "${made.auto}"`);
-      assert.notStrictEqual(made.name, meta.labels[at],
-        "the preset label reached the deck-name space");
-      assert.strictEqual(made.on.length, 1, `${made.on.length} selected chips`);
-      assert.ok(made.chips.length > 3,
-        `no new chip after generating from a preset: ${JSON.stringify(made.chips)}`);
-      assert.ok(made.body.sw <= made.body.cw + 1, "the new chip blew the row out");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("every preset is a 44px target inside the sheet's focus trap at 380px", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      const cardW = () => b.eval(
-        `return getComputedStyle(document.documentElement).getPropertyValue("--card-w");`);
-      const before = await cardW();
-      await openSheet();
-
-      const hits = await b.eval(`
-        const out = { small: [], probes: [], inside: true };
-        const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
-        for (const el of document.querySelectorAll("#scale-presets .preset")) {
-          const r = el.getBoundingClientRect();
-          if (r.height < 44) out.small.push((el.dataset.preset || "?") + " " + r.height.toFixed(1));
-          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-          // +/-21 pins the documented 44px; +/-18 would pass on anything 36px up.
-          out.probes.push([cy - 21, cy + 21].every(y => {
-            const hit = document.elementFromPoint(cx, y);
-            return hit === el || el.contains(hit);
-          }));
-          if (r.left < surf.left - 1 || r.right > surf.right + 1) out.inside = false;
-        }
-        return out;
-      `);
-      assert.deepStrictEqual(hits.small, [], "preset buttons shorter than 44px");
-      assert.strictEqual(hits.probes.length, 6);
-      assert.ok(hits.probes.every(Boolean),
-        `a preset has no 44px hit area: ${JSON.stringify(hits.probes)}`);
-      assert.strictEqual(hits.inside, true, "a preset sits outside the sheet surface at 380px");
-
-      // Keyboard only: Tab must reach every preset and never leave the sheet.
-      const seen = [];
-      for (let i = 0; i < 20; i++) {
-        await b.key("Tab", "Tab", 9);
-        seen.push(await b.eval(`
-          const el = document.activeElement;
-          const sheet = document.getElementById("scale-sheet");
-          return { id: (el && el.dataset && el.dataset.preset) || (el && el.id) || "",
-                   inside: !!(el && sheet.contains(el)) };
-        `));
-      }
-      assert.ok(seen.every(s => s.inside),
-        `Tab escaped the create sheet: ${JSON.stringify(seen)}`);
-      const ids = new Set(seen.map(s => s.id));
-      for (const p of (await presetMeta()).buttons) {
-        assert.ok(ids.has(p.id), `Tab never reached the ${p.label} preset: ${JSON.stringify([...ids])}`);
-      }
-
-      // Enter on a focused preset fills the box: the browser's OWN default
-      // activation, so the row is not a pointer-only path.
-      let focused = null;
-      for (let i = 0; i < 20 && !focused; i++) {
-        focused = await b.eval(`
-          const el = document.activeElement;
-          return (el && el.dataset && el.dataset.preset) || null;
-        `);
-        if (!focused) await b.key("Tab", "Tab", 9);
-      }
-      assert.ok(focused, "Tab never landed on a preset button");
-      await b.eval(`
-        const box = document.getElementById("scale-box");
-        box.value = "";
-        box.dispatchEvent(new Event("input", { bubbles: true }));
-        return true;
-      `);
-      await pressActive();
-      const meta = await presetMeta();
-      const want = meta.seeds[meta.buttons.findIndex(x => x.id === focused)];
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-box").value;`),
-        want, `Enter on the focused ${focused} preset did not fill the box`);
-
-      const state = await b.eval(`
-        return { body: { sw: document.body.scrollWidth, cw: document.body.clientWidth } };
-      `);
-      assert.ok(state.body.sw <= state.body.cw + 1,
-        "the preset row scrolls the page horizontally at 380px");
-      assert.strictEqual(await cardW(), before, "the sheet changed --card-w");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  /* ---------------------------------------------------------------- *
    * the primary action never falls below the fold (queue rows 211, 212)
    *
    * .sheetsurf is a scrolling surface capped at 85dvh. Whenever the content
@@ -2368,6 +2255,12 @@ function run() {
       hitsSelf: hit === gen,
       hit: hit ? (hit.id || hit.className || hit.tagName) : null,
       slots: document.querySelectorAll("#scale-slots .slot").length,
+      // The preset row used to sit directly above the box and was the tallest
+      // single thing between the top of the sheet and this button (owner,
+      // 2026-09: "I don't know if we need the preset options" - they went).
+      // Checked in the LIVE sheet, at every fold viewport, so "removed" cannot
+      // quietly become "display:none".
+      presets: document.querySelectorAll("#scale-presets, #scale-presets-row, .preset").length,
       body: (() => {
         const el = surf.querySelector(".sheetbody");
         if (!el) return null;
@@ -2396,6 +2289,8 @@ function run() {
     assert.ok(m.hitsSelf,
       `${where}: "${m.label}" measures on-screen but a tap at its centre lands ` +
       `on "${m.hit}" instead`);
+    assert.strictEqual(m.presets, 0,
+      `${where}: ${m.presets} preset element(s) are still in the open sheet`);
   }
 
   // Opening the sheet is SETUP for these tests, not the thing under test - the

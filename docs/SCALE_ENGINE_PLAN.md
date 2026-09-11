@@ -461,7 +461,7 @@ practice screen itself (card, nav, mode buttons) does not change.
 | 0 | Surface | `#1f1b15`, top border `1px #433b2c`, 18px top radius, backdrop `#0009`, `role="dialog"` `aria-modal="true"`, max-height 85dvh, internal scroll |
 | 1 | Label | visible, Nunito Sans 600 9.5px uppercase `.13em` `#a79d8b`: "SCALE: DING, THEN TOP NOTES, \| BOTTOM NOTES" |
 | 2 | Scale box | Bitter 16px, bg `#151310`, border `1px #433b2c`, radius 8px, min-height 44px, placeholder "(D) A C D E F G A C"; `autocapitalize=off`, `spellcheck=false` |
-| 3 | Live parse line | Bitter 12px `#c4bcab`, updates on every input from `core.parseSeed`: "Ding D3 \| 1 A3 2 C4 3 D4 ..."; empty box shows "Type your ding first, e.g. (D) or D/" |
+| 3 | Live parse line | Bitter 12px `#c4bcab`, updates on every input from `core.parseSeed`: "Ding D3 \| 1 A3 2 C4 3 D4 ..."; empty box shows the standing hint. With the preset row removed (owner, 2026-09) that hint, the label and the placeholder are the ONLY teaching of the seed grammar, so it spells the whole of it: "Type your ding first, in brackets - then the top notes, low to high, exactly like the example in the box. Put \| before any bottom-shell notes." |
 | 4 | Message line | Nunito Sans 11.5px, `aria-live="polite"`; error `#E27005`, warning `#e3b25c`, success `#a4c9a0`; sits ABOVE the control row so the soft keyboard never covers it |
 | 5 | Control row | left: mirror pair as two `.mode` buttons "LEFT-FIRST" / "RIGHT-FIRST" (D12, default right-first per D12 shown as `.on`); right: six 14px `.dot` swatches (D6 index 0-5), selected one ringed `#f1ece1` |
 | 6 | Generate | full-width `.mode.on` style (`#f1ece1` on `#272219`), 44px, "GENERATE CARDS"; disabled at 50% opacity until the parse line is valid; the only primary button while the sheet is open |
@@ -558,11 +558,16 @@ delete or weaken the existing assertion.
 Rotate / reorder (mirror shipped in Phase 3 per 17B), filling the space Phase 4
 reserved; keyboard-accessible reorder (4A), never drag-only.
 
-### Phase 6 - print, then presets
+### Phase 6 - print (the presets are gone)
 `tools/gen_deck.js` + `decks.py` adapter (synthesising or omitting the ~17
-print-only per-deck keys, listed under "Still missing" and owned here per 4A); presets as INLINED seeds, never `fetch` (fails under
-`file://`, absent in the sandbox, against "offline-ish") and never merged into
-the `DECKS` literal.
+print-only per-deck keys, listed under "Still missing" and owned here per 4A).
+
+The sheet's preset row shipped in Phase 6 and was REMOVED on owner instruction
+(2026-09: "I don't know if we need the preset options"). It is gone from
+`index.html` outright - seeds, handlers, markup and CSS - not hidden behind a
+flag, and `tests/app.test.js` asserts its absence in the file while the fold
+tests assert it in the live sheet. `tools/gen_deck.js` keeps its OWN `--preset`
+list: that is the CLI tool's, and the owner removed the drawer's, not that.
 
 ## Open decisions and their swarm defaults
 

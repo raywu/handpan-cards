@@ -1,0 +1,27 @@
+# kills: + ADD is fully on-screen and hit-testable at phone widths
+# suite: node --test --test-name-pattern ^..ADD.is.fully.on.screen.and.hit.testable.at.phone.widths$ tests/e2e.test.js
+# buildChips appends + ADD at the END of the strip instead of the head. With
+# the three built-in decks the strip already overflows a phone, so the only
+# entry point to the create sheet - and so to the pan preview - starts past
+# the right edge at rest, off-screen at 380, 390 and 430 CSS px alike and
+# reachable only by scrolling the row.
+diff --git a/index.html b/index.html
+index 574a311..8c909d8 100644
+--- a/index.html
++++ b/index.html
+@@ -3362,7 +3362,6 @@ function buildChips() {
+   // it being first (tests/mutants/e_add_chip_appended_last.patch).
+   const add = document.getElementById("deck-add");
+   nav.innerHTML = "";
+-  nav.appendChild(add);
+   let active = null;
+   for (const d of allDecks()) {
+     const b = document.createElement("button");
+@@ -3383,6 +3382,7 @@ function buildChips() {
+     nav.appendChild(b);
+     if (d.id === deckId) active = b;
+   }
++  nav.appendChild(add);
+   // The row scrolls, so the selected chip may be off-screen after a rebuild.
+   if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+ }
