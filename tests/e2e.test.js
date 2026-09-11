@@ -2478,6 +2478,254 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * drawer polish (owner, 2026-09-11)
+   *
+   * Four requests, and all four are geometry a browser has to measure:
+   * the focus ring's paint rect against a scrollport, a gap between two
+   * boxes, the sheet's height across parse states, and a width that is a
+   * function of the viewport. None of it is visible to the DOM-stubbed
+   * unit suite, which is why it lives here.
+   * ---------------------------------------------------------------- */
+
+  // The ring's own paint rectangle: the border box grown by outline-offset
+  // plus outline-width, which is where the browser actually puts it.
+  const ringVsScrollport = () => b.eval(`
+    const box = document.getElementById("scale-box");
+    const body = document.querySelector(".sheetbody");
+    const cs = getComputedStyle(box);
+    const grow = parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth);
+    const r = box.getBoundingClientRect();
+    const s = body.getBoundingClientRect();
+    const bs = getComputedStyle(body);
+    // The scrollPORT is the padding box, and only the padding box: overflow
+    // is clipped at it, so the body's own inline padding is the room a ring
+    // has to paint in. Borders are outside it; margins are outside that.
+    const port = {
+      left: s.left + parseFloat(bs.borderLeftWidth),
+      right: s.right - parseFloat(bs.borderRightWidth),
+    };
+    return {
+      focusVisible: box.matches(":focus-visible"),
+      outlineStyle: cs.outlineStyle,
+      ringLeft: r.left - grow, ringRight: r.right + grow,
+      portLeft: port.left, portRight: port.right,
+      overflowX: bs.overflowX,
+      // A clipped ring with no scrollbar is invisible with no way to reach it.
+      scrollable: body.scrollWidth > body.clientWidth,
+    };
+  `);
+
+  test("the focus ring on the seed box is not clipped by the sheet body", async () => {
+    // Confirmed on 2026-09-11 not to be a headless artifact: a text input
+    // matches :focus-visible on a real pointer click too, so this is what the
+    // owner sees on iOS after tapping the box, not only what a script sees.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      await b.click("#scale-box");
+      await b.settle();
+
+      const m = await ringVsScrollport();
+      assert.ok(m.focusVisible && m.outlineStyle !== "none",
+        "the box is not showing a focus ring - this test is measuring nothing");
+      assert.ok(m.ringLeft >= m.portLeft - 0.5,
+        `the focus ring is clipped on the left (ring ${m.ringLeft.toFixed(1)} ` +
+        `vs scrollport ${m.portLeft.toFixed(1)}), and overflow-x is ` +
+        `"${m.overflowX}" with scrollable=${m.scrollable}, so nothing can reach it`);
+      assert.ok(m.ringRight <= m.portRight + 0.5,
+        `the focus ring is clipped on the right (ring ${m.ringRight.toFixed(1)} ` +
+        `vs scrollport ${m.portRight.toFixed(1)})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the parse line sits a step further from the box than its own label", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      const m = await b.eval(`
+        const label = document.querySelector('label[for="scale-box"]');
+        const box = document.getElementById("scale-box");
+        const parse = document.getElementById("scale-parse");
+        const g = (a, bEl) => bEl.getBoundingClientRect().top - a.getBoundingClientRect().bottom;
+        const ramp = n => parseFloat(getComputedStyle(document.documentElement)
+          .getPropertyValue("--sp-" + n));
+        return { labelToBox: g(label, box), boxToParse: g(box, parse),
+                 sp1: ramp(1), sp2: ramp(2) };
+      `);
+      // The label BELONGS to the box; the parse line COMMENTS on it. Two
+      // relationships, two steps of the ramp - asserted as ramp steps so the
+      // desktop and landscape rungs scale with it.
+      assert.ok(Math.abs(m.labelToBox - m.sp1) < 0.5,
+        `label-to-box is ${m.labelToBox.toFixed(1)}px, expected --sp-1 (${m.sp1})`);
+      assert.ok(Math.abs(m.boxToParse - m.sp2) < 0.5,
+        `box-to-parse is ${m.boxToParse.toFixed(1)}px, expected --sp-2 (${m.sp2})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the sheet does not change height as the seed is typed", async () => {
+    // Owner request 3, read literally: "the drawer doesn't need to resize
+    // based on the input". Three sources fed it - the preview leaving the
+    // flow, #scale-parse collapsing to zero on an invalid parse, and text
+    // wrapping - and a test that only covers the preview would pass on two
+    // of them still live. So this measures the SHEET, across the states a
+    // keystroke moves between.
+    //
+    // The one step that is NOT covered here is empty -> first valid parse:
+    // PARSE_HINT is three wrapped lines at 380px and the note list is one, a
+    // 37px difference measured on 2026-09-11. Reserving it would cost every
+    // phone 37px of sheet permanently to hold still at a moment BEFORE the
+    // user has typed anything, so it is spent on the typing path instead.
+    // The next test pins that step so it cannot quietly grow.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      const h = async (label) => {
+        await b.settle();
+        return { label, ...(await b.eval(`
+          const surf = document.querySelector(".sheetsurf");
+          return { h: surf.getBoundingClientRect().height,
+                   preview: !document.getElementById("scale-preview").hasAttribute("hidden"),
+                   parse: document.getElementById("scale-parse").getBoundingClientRect().height };
+        `)) };
+      };
+      const states = [];
+      await typeScale("(D) A C D E F G A C");
+      states.push(await h("valid"));
+      await typeScale("(D) A C D zzzz");
+      states.push(await h("invalid"));
+      await typeScale("(D) A C D E F G A C");
+      states.push(await h("valid again"));
+      // A seed long enough that its failure reason is a different length from
+      // the short one above: #scale-msg wraps too, and it is inside the sheet.
+      await typeScale("(D) A C D E F G A C | Q# Q# Q# Q# Q# Q# Q#");
+      states.push(await h("invalid, long reason"));
+
+      for (const s of states) {
+        assert.ok(s.preview,
+          `${s.label}: the pan left the flow - the drawer resizes on input`);
+        assert.ok(s.parse > 0,
+          `${s.label}: the parse line collapsed to zero height`);
+      }
+      const base = states[0].h;
+      for (const s of states) {
+        assert.ok(Math.abs(s.h - base) < 0.5,
+          `the sheet is ${s.h.toFixed(1)}px in "${s.label}" but ` +
+          `${base.toFixed(1)}px valid: ` +
+          states.map(x => `${x.label}=${x.h.toFixed(1)}`).join(", "));
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the only height the first keystroke changes is the hint's own wrap", async () => {
+    // The accepted step from the test above, pinned: the sheet may differ
+    // between empty and typed by the parse line's height and nothing else.
+    // If the pan, the message row or anything else starts contributing, this
+    // goes red rather than the difference quietly becoming "normal".
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      const m = () => b.eval(`
+        return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
+                 parse: document.getElementById("scale-parse").getBoundingClientRect().height };
+      `);
+      await b.settle();
+      const empty = await m();
+      await typeScale("(D) A C D E F G A C");
+      await b.settle();
+      const typed = await m();
+
+      const sheetDelta = empty.h - typed.h;
+      const parseDelta = empty.parse - typed.parse;
+      assert.ok(Math.abs(sheetDelta - parseDelta) < 0.5,
+        `the sheet moved ${sheetDelta.toFixed(1)}px between empty and typed but ` +
+        `the parse line only accounts for ${parseDelta.toFixed(1)}px - something ` +
+        `else in the drawer is resizing on input`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("a held pan is never announced as the current one", async () => {
+    // The pan is role="img" with a name, so it is content: a stale render
+    // left under the live name tells a screen reader the user is looking at
+    // a seed they are not. Dimming alone is not enough - it says nothing in
+    // the accessibility tree.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      const name = () => b.eval(`
+        const p = document.getElementById("scale-preview");
+        return { label: p.getAttribute("aria-label"),
+                 opacity: parseFloat(getComputedStyle(p).opacity) };
+      `);
+      const empty = await name();
+      await typeScale("(D) A C D E F G A C");
+      await b.settle();
+      const valid = await name();
+      await typeScale("(D) A C D zzzz");
+      await b.settle();
+      const held = await name();
+
+      assert.notStrictEqual(held.label, valid.label,
+        `a stale pan kept the live name ("${held.label}")`);
+      assert.notStrictEqual(empty.label, valid.label,
+        `the placeholder example kept the live name ("${empty.label}")`);
+      // One dim treatment for "not your current input", two names.
+      assert.ok(held.opacity < valid.opacity && empty.opacity < valid.opacity,
+        `not-current states are not dimmed (empty ${empty.opacity}, ` +
+        `held ${held.opacity}, current ${valid.opacity})`);
+      // Floored so the plate's black rim ink keeps its contrast: this is
+      // graphic content, not decoration.
+      assert.ok(held.opacity >= 0.5 && empty.opacity >= 0.5,
+        `dimmed below the 0.5 contrast floor (${held.opacity}, ${empty.opacity})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the sheet widens with the viewport on desktop, and the pan with it", async () => {
+    // Request 4. Nothing inside the drawer scales with its width on its own -
+    // the seed is a short string and the plate was pinned at a 184px phone
+    // measurement - so widening the surface alone buys an empty band. The
+    // plate has to grow too, which is why both are asserted together.
+    const CLAMP = (vw) => Math.min(Math.max(520, vw * 0.52), 680);
+    try {
+      for (const [w, hgt] of [[640, 800], [1024, 800], [1280, 900], [1440, 900], [1920, 1080]]) {
+        await freshLoad();
+        await b.setViewport(w, hgt, false);
+        await openSheet();
+        await b.settle();
+        const m = await b.eval(`
+          const surf = document.querySelector(".sheetsurf");
+          const plate = document.getElementById("scale-preview");
+          return { surf: surf.getBoundingClientRect().width,
+                   plate: plate.getBoundingClientRect().width,
+                   vw: window.innerWidth };
+        `);
+        assert.ok(Math.abs(m.surf - CLAMP(m.vw)) < 1,
+          `at ${w}px the sheet is ${m.surf.toFixed(1)}px, expected ` +
+          `${CLAMP(m.vw).toFixed(1)}px (clamp(520px, 52vw, 680px))`);
+        assert.ok(Math.abs(m.plate - 240) < 1,
+          `at ${w}px the pan plate is ${m.plate.toFixed(1)}px, expected 240px - ` +
+          `a wide sheet around a phone-sized plate is a wide empty band`);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
    * accessible state and focus on the practice screen
    *
    * (coordination rows 213, 217, 219). Only reachable through a browser:
