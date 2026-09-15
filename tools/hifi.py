@@ -342,6 +342,17 @@ def build(path, deck, chords_only=False):
     return len(cards) // 9
 
 
+# Short card copy per engine warning code. The title card prints the engine's
+# own full reason string; a chord card has room for a badge, not a sentence.
+CARD_WARNINGS = {"NO_THIRDS": "NO 3RDS ON THIS PAN"}
+
+
+def card_warnings(deck):
+    """The warning badges a chord card of this deck carries, in order."""
+    return [CARD_WARNINGS[w["code"]] for w in deck.get("warnings", ())
+            if w["code"] in CARD_WARNINGS]
+
+
 # ---- card types -----------------------------------------------------------
 def chord_card(c, x, y, deck, num, chord):
     main, sup, subtitle, fields, roots = chord
@@ -367,6 +378,13 @@ def chord_card(c, x, y, deck, num, chord):
                 "LabelSB", 4.6, 0.7, "c", ORANGE)
     bottom_lines(c, x, y, CW, fields, roots, spec,
                  y + deck["y_note"], y + deck["y_num"])
+
+    # Owner decision 2026-09-15 (queue row 113): a pan-wide warning belongs on
+    # the CARDS. PRINTER_ONLY ships chord cards and nothing else, so a warning
+    # drawn only on the title card is dropped by the file the print shop gets.
+    for i, line in enumerate(card_warnings(deck)):
+        tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+                "c", ORANGE)
 
 
 def title_card(c, x, y, deck):

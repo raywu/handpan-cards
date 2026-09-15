@@ -407,7 +407,7 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             self.assertNotIn("warnings", deck)
         self.assertEqual(decks.HIJAZ["name"], "C# HIJAZ 9")
         self.assertEqual(len(decks.HIJAZ["chords"]), 18)
-        self.assertEqual(len(decks.PYGMY["chords"]), 25)
+        self.assertEqual(len(decks.PYGMY["chords"]), 27)
         self.assertEqual(len(decks.AMARA["chords"]), 16)
 
 
@@ -471,6 +471,22 @@ class GeneratedDeckPdfTest(unittest.TestCase):
         self.assertIn("BOTTOMNOTE", squeezed,
                       "a voicing that uses the bottom shell needs its badge")
         self.assertEqual(self.pages_bottom, pages)
+
+    def test_a_no_thirds_warning_reaches_the_PRINTER_ONLY_chord_cards(self):
+        """Owner decision 2026-09-15 (queue row 113): the warning goes on the
+        CARDS, not only on the title card.
+
+        PRINTER_ONLY omits the title and legend cards, so a warning that lives
+        only in `_blurb` is dropped by exactly the file the print shop gets.
+        The oracle is the PRINTER_ONLY text, which contains chord cards only.
+        """
+        tmp = os.path.join(self.tmp, "no_thirds_print.pdf")
+        deck = decks.from_generated(generate(SEED_NO_THIRDS))
+        self.assertTrue(deck["warnings"], "this seed is only useful while it warns")
+        hifi.build(tmp, deck, chords_only=True)
+        squeezed = "".join(self.text_of(tmp)[0].split())
+        self.assertIn("NO3RDSONTHISPAN", squeezed,
+                      "the print shop's file must carry the warning too")
 
     def test_the_repo_pdfs_were_not_rebuilt(self):
         """reportlab stamps a creation date - a rebuild churns the binaries.

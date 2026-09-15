@@ -87,8 +87,10 @@ LAYOUTS = {
     ],
 }
 
-# CLAUDE.md > "Decks:" - chord counts per deck, 59 cards in total.
-CHORD_COUNTS = {"hijaz": 18, "pygmy": 25, "amara": 16}
+# CLAUDE.md > "Decks:" - chord counts per deck, 61 cards in total.
+# Pygmy went 25 -> 27 on 2026-09-15 (owner instruction): the two low-register
+# sevenths in SEVENTH_REGISTERS below.
+CHORD_COUNTS = {"hijaz": 18, "pygmy": 27, "amara": 16}
 
 # CLAUDE.md > "Scale degrees per deck", keyed by note name.
 DEGREES = {
@@ -119,14 +121,34 @@ PYGMY_BADGE = [
     0,  # Cm high voicing
     0,  # C5
     0,  # Csus4
+    3,  # Cm7 low voicing (C3 + Eb3 + Bb3)
     2,  # Cm7 (clustered: Eb3 + Bb3 are both bottom-shell)
     1,  # Db
     1,  # Dbmaj7
     2,  # Eb low voicing
     1,  # Eb
-    3,  # Eb7
+    3,  # Eb7 low voicing
+    2,  # Eb7 (clustered: Bb3 + Db4)
     2,  # G dim
     2,  # Gm7b5
+]
+
+# Pygmy's two seventh chords each exist in two registers, and the owner asked
+# for the missing halves on 2026-09-15. Transcribed from the voicing rules,
+# not from decks.py: a spelling-order field list per card, root first.
+#
+#   Cm7 rooted at C3 (U1) forces nothing - Eb3, G3 and Bb3 all lie ABOVE C3 -
+#   so it is an ordinary unforced card, and the one Pygmy voicing that uses
+#   three bottom-shell fields.
+#   Eb7 rooted at Eb4 IS forced: Bb exists only as Bb3, below the root, so
+#   every chord tone drops to its highest lower instance (G3, Bb3, Db4).
+#
+# Both were legal under CLAUDE.md rule 3 all along and simply absent.
+SEVENTH_REGISTERS = [
+    ("Cm", "7", "C MINOR 7 - LOW VOICING", [101, 103, 1, 104], 101),
+    ("Cm", "7", "C MINOR 7", [3, 103, 1, 104], 3),
+    ("Eb", "7", "Eb DOMINANT 7 - LOW VOICING", [103, 1, 104, 105], 103),
+    ("Eb", "7", "Eb DOMINANT 7", [4, 1, 104, 105], 4),
 ]
 
 # F natural minor, complete (CLAUDE.md, Pygmy).
@@ -167,7 +189,7 @@ class LayoutTest(unittest.TestCase):
     def test_deck_inventory(self):
         got = {d["id"]: len(d["chords"]) for d in decks()}
         self.assertEqual(got, CHORD_COUNTS)
-        self.assertEqual(sum(got.values()), 59, "59 cards total")
+        self.assertEqual(sum(got.values()), 61, "61 cards total")
 
     def test_midi_matches_note_name(self):
         for deck in decks():
@@ -369,6 +391,34 @@ class PygmyBottomShellTest(unittest.TestCase):
                           if field_of(deck, f)[0] in ("Bb", "Db")]
             self.assertLessEqual(len(uses_bb_db), len(got),
                                  (ch["main"], "Bb/Db imply bottom notes"))
+
+    def test_both_sevenths_ship_in_both_registers(self):
+        """The four cards of SEVENTH_REGISTERS, by name and by field list.
+
+        The register a card teaches is the whole of what separates these
+        four - pitch-class-complete highlighting lights the SAME fields for
+        a low and a normal voicing of one chord, so the note line and the
+        badge are the only places the difference is visible. That is why
+        this test pins the field list and not the rendering.
+        """
+        by_sub = {ch["subtitle"]: ch for ch in self.deck["chords"]}
+        for main, sup, subtitle, fields, root in SEVENTH_REGISTERS:
+            with self.subTest(card=subtitle):
+                self.assertIn(subtitle, by_sub, "missing card")
+                ch = by_sub[subtitle]
+                self.assertEqual(ch["main"], main)
+                self.assertEqual(ch["sup"], sup)
+                self.assertEqual(ch["fields"], fields, "spelling order")
+                self.assertEqual(ch["roots"], [root])
+
+    def test_low_voicing_subtitles_are_unambiguous(self):
+        """No two Pygmy cards may read the same, or the deck cannot say which
+        register it means. Adding Eb7 in the normal register is what forced
+        the existing Eb7 card to be renamed to '- LOW VOICING'."""
+        subs = [ch["subtitle"] for ch in self.deck["chords"]]
+        dupes = sorted({s for s in subs if subs.count(s) > 1})
+        self.assertEqual(dupes, ["POWER CHORD", "SUSPENDED CHORD"],
+                         "only the two generic subtitles may repeat")
 
     def test_pitch_class_set_is_complete_f_natural_minor(self):
         names = {v[0] for v in self.deck["fields"].values()}

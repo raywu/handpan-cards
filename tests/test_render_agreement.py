@@ -153,8 +153,8 @@ class RenderAgreement(unittest.TestCase):
             yield card, self.print_[card["deck"]][card["index"]]
 
     def test_every_card_is_compared(self):
-        self.assertEqual(len(self.app), 59)
-        self.assertEqual(sum(len(v) for v in self.print_.values()), 59)
+        self.assertEqual(len(self.app), 61)
+        self.assertEqual(sum(len(v) for v in self.print_.values()), 61)
 
     def test_chord_names_line_up(self):
         for app_c, print_c in self.each_card():

@@ -1,4 +1,4 @@
-"""The frozen 59-card corpus. Engine tests read this fixture, never the live DECKS.
+"""The frozen 61-card corpus. Engine tests read this fixture, never the live DECKS.
 
 A deliberate deck-data change must bump the fixture version and regenerate the
 sha256 - it is never regenerated from the engine.
@@ -11,7 +11,7 @@ import unittest
 from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "fixtures", "golden_decks_v1.json")
+                       "fixtures", "golden_decks_v2.json")
 
 DECK_KEYS = ("id", "name", "sub", "colors", "degrees", "geom", "fields",
              "chords", "maker_string")
@@ -20,23 +20,23 @@ TOP_ZONES = ("ding", "rim", "inner")
 # The canonical serialisation's sha256, pinned here so a fixture edit fails
 # against a constant a reviewer can see in the diff, not only against a number
 # the fixture carries about itself.
-EXPECTED_SHA256 = ("0475970330455878d252ae6695ddf92138"
-                   "f384cae5cb08f68f91a575a58ad16a")
+EXPECTED_SHA256 = ("c4c5d1de6ad387b67f4b1cda3929da954f"
+                   "681ddee4174a0fa35ead1073b3d7cf")
 
 
 def chord_counts():
     """Card counts per deck, read from the live decks via tests.paths.
 
-    The 18/25/16 literals are asserted against CLAUDE.md once, in
+    The 18/27/16 literals are asserted against CLAUDE.md once, in
     tests/test_deck_data.py. Repeating them here would be a second copy free to
     drift; what this suite must prove is that the FROZEN corpus still holds the
     same cards the app does, so it derives the counts instead of restating them.
-    The total is still pinned to the spec's 59 below.
+    The total is still pinned to the spec's 61 below.
     """
     return {d["id"]: len(d["chords"]) for d in paths.app_decks()}
 
 BUMP = ("Deck data changed. This fixture is frozen on purpose: bump it to "
-        "golden_decks_v2.json and regenerate sha256, do not edit in place.")
+        "golden_decks_v3.json and regenerate sha256, do not edit in place.")
 
 
 def load():
@@ -52,17 +52,17 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
                          "fixture content and its stored sha256 disagree. " + BUMP)
 
-    def test_sha256_is_the_pinned_v1_digest(self):
+    def test_sha256_is_the_pinned_v2_digest(self):
         self.assertEqual(load()["sha256"], EXPECTED_SHA256,
-                         "the v1 corpus digest changed. " + BUMP)
+                         "the v2 corpus digest changed. " + BUMP)
 
     def test_shape_and_card_counts(self):
         doc = load()
-        self.assertEqual(doc["version"], 1)
+        self.assertEqual(doc["version"], 2)
         self.assertEqual(len(doc["decks"]), 3)
         counts = {d["id"]: len(d["chords"]) for d in doc["decks"]}
         self.assertEqual(counts, chord_counts())
-        self.assertEqual(sum(counts.values()), 59)
+        self.assertEqual(sum(counts.values()), 61)
         for d in doc["decks"]:
             self.assertEqual(tuple(sorted(d)), tuple(sorted(DECK_KEYS)), d["id"])
 

@@ -70,6 +70,7 @@
     "Db (105,5,7)",
     "Dbmaj7 (105,5,7,8)",
     "Eb (103,1,104)",
+    "Cm7 (101,103,1,104)",
     "Eb7 (103,1,104,105)"
    ],
    "extra": [
@@ -87,8 +88,7 @@
     "Dbmaj7 (102,5,2,3)",
     "Eb5 (4,104)",
     "Ebsus4 (4,2,104)",
-    "Eb7sus4 (4,2,104,105)",
-    "Eb7 (4,1,104,105)"
+    "Eb7sus4 (4,2,104,105)"
    ],
    "overrides": [
     {
@@ -226,9 +226,24 @@
      "note": "LOW VOICING alternate: opt-in multi-voicing data (spec section 7)."
     },
     {
+     "main": "Cm",
+     "sup": "7",
+     "subtitle": "C MINOR 7 - LOW VOICING",
+     "fields": [
+      101,
+      103,
+      1,
+      104
+     ],
+     "roots": [
+      101
+     ],
+     "note": "LOW VOICING alternate: opt-in multi-voicing data (spec section 7)."
+    },
+    {
      "main": "Eb",
      "sup": "7",
-     "subtitle": "Eb DOMINANT 7",
+     "subtitle": "Eb DOMINANT 7 - LOW VOICING",
      "fields": [
       103,
       1,
@@ -238,7 +253,7 @@
      "roots": [
       103
      ],
-     "note": "Recorded D9 root-octave exception - the built-in ships Eb3 although rim Eb4 exists (spec section 7); the engine's Eb4-rooted spelling now survives the size-scaled cap and is listed extra (spec section 8)."
+     "note": "LOW VOICING alternate: opt-in multi-voicing data (spec section 7)."
     }
    ]
   },

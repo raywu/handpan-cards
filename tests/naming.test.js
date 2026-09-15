@@ -29,7 +29,7 @@ function fixture(file) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", file), "utf8"));
 }
 
-const golden = fixture("golden_decks_v1.json");
+const golden = fixture("golden_decks_v2.json");
 const synthetic = fixture("synthetic_scales.json");
 
 // The engine runs in its own node:vm realm, so its values carry that realm's
@@ -61,7 +61,9 @@ const SUBTITLE_EXCEPTIONS = [
   {deck: "pygmy", subtitle: "Ab MAJOR - HIGH VOICING"},
   {deck: "pygmy", subtitle: "C MINOR - LOW VOICING"},
   {deck: "pygmy", subtitle: "C MINOR - HIGH VOICING"},
-  {deck: "pygmy", subtitle: "Eb MAJOR - LOW VOICING"}
+  {deck: "pygmy", subtitle: "C MINOR 7 - LOW VOICING"},
+  {deck: "pygmy", subtitle: "Eb MAJOR - LOW VOICING"},
+  {deck: "pygmy", subtitle: "Eb DOMINANT 7 - LOW VOICING"}
 ];
 
 // deck id + pitch class -> the frozen degree label (section 10, D8 and D10).
@@ -149,7 +151,7 @@ test("every built-in card's main and sup come from the quality table", () => {
       checked += 1;
     }
   }
-  assert.equal(checked, 57, "59 built-in cards less the two excluded (NO 5) cards");
+  assert.equal(checked, 59, "61 built-in cards less the two excluded (NO 5) cards");
 });
 
 test("every built-in subtitle is generated, modulo the recorded exceptions", () => {

@@ -72,7 +72,7 @@ def main():
             for f in ch["fields"]:
                 assert f in root_f or f in tone_f, (d["id"], ch["main"], f)
             assert len(pcs) == len(ch["fields"]), (d["id"], ch["main"], "doubled pc")
-    assert total == 59, total
+    assert total == 61, total
     print("2. invariants over all %d cards: OK" % total)
 
     # 3. English-only card copy

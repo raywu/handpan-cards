@@ -2,7 +2,7 @@
 //
 // Spec-first per tests/CONTRACT.md rule 1: every assertion comes from
 // docs/ENGINE-SPEC.md sections 1, 5, 8, 9, 10, 11, 12, 13, 16 and 17, from
-// tests/fixtures/golden_decks_v1.json, tests/fixtures/synthetic_scales.json or
+// tests/fixtures/golden_decks_v2.json, tests/fixtures/synthetic_scales.json or
 // tests/fixtures/divergence_v1.json. Nothing is read back out of
 // src/engine/select.js to compare against itself.
 //
@@ -31,7 +31,7 @@ function fixture(name) {
   return JSON.parse(
     fs.readFileSync(path.join(ROOT, "tests", "fixtures", name), "utf8"));
 }
-const golden = fixture("golden_decks_v1.json");
+const golden = fixture("golden_decks_v2.json");
 const synthetic = fixture("synthetic_scales.json");
 const divergence = fixture("divergence_v1.json");
 const SPEC = fs.readFileSync(path.join(ROOT, "docs", "ENGINE-SPEC.md"), "utf8");
@@ -574,7 +574,7 @@ test("every override is a built-in card the engine does not produce", () => {
         `${b.id}: override ${key} must also be listed missing`);
     }
   }
-  // Section 9 / section 7: the two hand-authored Hijaz cards and the five
+  // Section 9 / section 7: the two hand-authored Hijaz cards and the seven
   // HIGH / LOW VOICING alternates are overrides by name.
   assert.ok(seen.hijaz.some((k) => k.startsWith("Dmaj7 (")),
     "Hijaz Dmaj7 is a recorded override");
@@ -586,7 +586,7 @@ test("every override is a built-in card the engine does not produce", () => {
       if (/VOICING/.test(chord.subtitle)) alternates.push([b.id, keyOf(chord)]);
     }
   }
-  assert.equal(alternates.length, 5, "the fixture ships five HIGH/LOW alternates");
+  assert.equal(alternates.length, 7, "the fixture ships seven HIGH/LOW alternates");
   for (const [id, key] of alternates) {
     assert.ok(seen[id].includes(key),
       `${id}: the alternate ${key} is a recorded override`);

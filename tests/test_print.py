@@ -399,6 +399,53 @@ class CardWidthBudgetTest(unittest.TestCase):
             % (worst[0], MIN_TEXT_MARGIN, worst[1], worst[2], worst[3]))
 
 
+class CardWarningTest(PaletteSafeTest):
+    """Owner decision 2026-09-15 (queue row 113): warnings go on the CARDS.
+
+    A warning drawn only on the title card is lost in PRINTER_ONLY, which
+    ships chord cards and nothing else.  Measured off the recording canvas,
+    like every other assertion in this file.
+    """
+
+    WARNED = "NO 3RDS ON THIS PAN"
+
+    def warned_deck(self):
+        deck = dict(decks.HIJAZ)
+        deck["warnings"] = [{"code": "NO_THIRDS",
+                             "reason": "No 3rds on this pan: only power "
+                                       "chords and sus chords."}]
+        return deck
+
+    def test_a_warned_deck_prints_the_line_on_every_chord_card(self):
+        deck = self.warned_deck()
+        self.use_palette(deck)
+        for i, chord in enumerate(deck["chords"]):
+            canvas = render_chord_card(deck, i + 1, chord)
+            drawn = ["".join(t["text"] for t in canvas.texts)]
+            self.assertIn(self.WARNED.replace(" ", ""),
+                          "".join(drawn[0].split()),
+                          "card %d lost the warning" % (i + 1,))
+
+    def test_an_unwarned_deck_prints_no_warning_line(self):
+        deck = decks.HIJAZ
+        self.use_palette(deck)
+        canvas = render_chord_card(deck, 1, deck["chords"][0])
+        self.assertNotIn("3RDS", "".join(t["text"] for t in canvas.texts))
+
+    def test_the_warning_line_stays_inside_the_card(self):
+        deck = self.warned_deck()
+        self.use_palette(deck)
+        canvas = render_chord_card(deck, 1, deck["chords"][0])
+        marks = [t for t in canvas.texts if not t["rotated"]]
+        self.assertTrue(marks)
+        for t in marks:
+            self.assertGreaterEqual(t["x"], MIN_TEXT_MARGIN, t["text"])
+            self.assertGreaterEqual(SPEC_CARD_W - (t["x"] + t["w"]),
+                                    MIN_TEXT_MARGIN, t["text"])
+            self.assertGreaterEqual(t["y"], MIN_TEXT_MARGIN, t["text"])
+            self.assertLessEqual(t["y"], SPEC_CARD_H - MIN_TEXT_MARGIN, t["text"])
+
+
 # --------------------------------------------------------------------------
 # sheet layout
 # --------------------------------------------------------------------------

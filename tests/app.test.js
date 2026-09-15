@@ -248,7 +248,7 @@ test("bottom-note badge appears with the right count, and only for bottom voicin
 
 /* ------------------------------------------ 4. every rendered face is XML-ok */
 
-test("every rendered face is well-formed markup (59 cards x 2 modes)", () => {
+test("every rendered face is well-formed markup (61 cards x 2 modes)", () => {
   const app = boot();
   let seen = 0;
   for (const d of decks(app)) {
@@ -267,7 +267,7 @@ test("every rendered face is well-formed markup (59 cards x 2 modes)", () => {
       }
     }
   }
-  assert.strictEqual(seen, 59, "expected 59 cards across the three decks");
+  assert.strictEqual(seen, 61, "expected 61 cards across the three decks");
 });
 
 /* ------------------------------------------------------------- 5. step() */

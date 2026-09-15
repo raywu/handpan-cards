@@ -5,10 +5,9 @@
 # frozen corpus moves, so every other suite stays green; only the fixture's
 # own sha256 self-assertion and the deep-equality check against index.html
 # notice that the corpus is no longer the corpus it claims to be.
-diff --git a/tests/fixtures/golden_decks_v1.json b/tests/fixtures/golden_decks_v1.json
-index 09fa2aa..b6cff72 100644
---- a/tests/fixtures/golden_decks_v1.json
-+++ b/tests/fixtures/golden_decks_v1.json
+diff --git a/tests/fixtures/golden_decks_v2.json b/tests/fixtures/golden_decks_v2.json
+--- a/tests/fixtures/golden_decks_v2.json
++++ b/tests/fixtures/golden_decks_v2.json
 @@ -30,7 +30,7 @@
      {
       "fields": [
