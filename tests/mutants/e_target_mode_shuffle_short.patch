@@ -5,19 +5,19 @@
 # app, and the one that toggles a mode the user must be able to turn off. Every
 # one still hit-tests to itself, so only a height assertion can see this.
 diff --git a/index.html b/index.html
-index 62ab2bb..4880cb0 100644
+index 140fa68..3ee7c28 100644
 --- a/index.html
 +++ b/index.html
-@@ -117,7 +117,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -199,7 +199,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     min-height is ever removed. */
  .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
 -  min-height:44px; display:inline-flex; align-items:center; justify-content:center}
 +  display:inline-flex; align-items:center; justify-content:center}
  .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
- main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
- /* The card is sized from whichever axis runs out first.
-@@ -216,7 +216,7 @@ button.nav:active{background:#2e281e}
+ /* ---- landscape: the header is ONE row ---------------------------------
+    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
+@@ -351,7 +351,7 @@ button.nav:active{background:#2e281e}
     "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */

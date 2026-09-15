@@ -1,0 +1,19 @@
+# kills: portrait is byte-identical: the landscape header never reaches it
+# suite: node --test --test-name-pattern ^portrait.is.byte.identical:.the.landscape.header.never.reaches.it$ tests/e2e.test.js
+# The gate is opened to every viewport, so the landscape one-row header applies
+# in PORTRAIT too. The card gets bigger there, which is why a one-sided budget
+# would not catch it: row 245's acceptance condition is that portrait does not
+# move AT ALL, in either direction, and this moves it.
+diff --git a/index.html b/index.html
+index 140fa68..ed05f18 100644
+--- a/index.html
++++ b/index.html
+@@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    in landscape and hands the room to the card" measures the gain, and
+    "portrait is byte-identical" measures the absence of a cost.
+    ------------------------------------------------------------------------ */
+-@media (max-height:520px){
++@media (min-height:1px){
+   header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2);
+     max-width:none}
+   /* Visually hidden, NOT display:none: the h1 stays in the accessibility

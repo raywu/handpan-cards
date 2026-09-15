@@ -5,15 +5,15 @@
 # is pushed past the cap. Note this is the "it fits on MY phone" defect - the
 # eight-note Edit sheet clears 390x844 and only fails on a short screen.
 diff --git a/index.html b/index.html
-index f489642..23d8521 100644
+index 140fa68..fe8ef63 100644
 --- a/index.html
 +++ b/index.html
-@@ -335,7 +335,7 @@ button.nav:active{background:#2e281e}
+@@ -417,7 +417,7 @@ button.nav:active{background:#2e281e}
     with scrollWidth === clientWidth so there is not even a scrollbar to reach
     it. The negative margin gives the padding back to the layout, so nothing
     moves: the rows still align with the surface's own padding. */
--.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);
-+.sheetbody{overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; gap:var(--sp-3);
+-.sheetbody{overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:var(--sp-3);
++.sheetbody{overflow-y:auto; overscroll-behavior:contain; flex-shrink:0; display:flex; flex-direction:column; gap:var(--sp-3);
    padding-inline:var(--ring); margin-inline:calc(-1 * var(--ring))}
  /* A label, its control and the line that explains the control are ONE group:
     --sp-1 inside, and the group is separated from the next by .sheetbody. */

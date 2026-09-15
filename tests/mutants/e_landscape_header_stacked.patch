@@ -1,0 +1,19 @@
+# kills: the header shrinks in landscape and hands the room to the card
+# suite: node --test --test-name-pattern ^the.header.shrinks.in.landscape.and.hands.the.room.to.the.card$ tests/e2e.test.js
+# The landscape header query is gated on a height no phone has, so the header
+# falls back to the portrait STACK in landscape: 134px of a 390px viewport,
+# main back to 138.3px and the card back to 100.16px wide - row 245's
+# measurements exactly, which is the state the owner asked to be fixed.
+diff --git a/index.html b/index.html
+index 140fa68..10c1e85 100644
+--- a/index.html
++++ b/index.html
+@@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    in landscape and hands the room to the card" measures the gain, and
+    "portrait is byte-identical" measures the absence of a cost.
+    ------------------------------------------------------------------------ */
+-@media (max-height:520px){
++@media (max-height:120px){
+   header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2);
+     max-width:none}
+   /* Visually hidden, NOT display:none: the h1 stays in the accessibility

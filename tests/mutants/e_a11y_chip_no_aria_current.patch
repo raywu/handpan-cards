@@ -3,14 +3,14 @@
 # The selected deck chip goes back to signalling itself with colour alone, so
 # a screen reader cannot tell which deck is loaded.
 diff --git a/index.html b/index.html
-index 7ea4e13..dbda727 100644
+index 140fa68..6906363 100644
 --- a/index.html
 +++ b/index.html
-@@ -3188,7 +3188,6 @@ function buildChips() {
+@@ -3637,7 +3637,6 @@ function buildChips() {
      b.className = "chip" + (d.id === deckId ? " on" : "");
      // Same rule as the mode bar: the .on colour is not state a screen reader
      // can see, so the selected chip says so out loud.
 -    if (d.id === deckId) b.setAttribute("aria-current", "true");
      b.style.setProperty("--dga", d.colors.ga);
      b.style.setProperty("--dgb", d.colors.gb);
-     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
+     // [row 218] The one chip with a SECOND action says so. A selected custom

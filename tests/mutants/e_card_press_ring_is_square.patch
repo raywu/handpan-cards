@@ -1,0 +1,28 @@
+# kills: the card's press ring is as round as the card
+# suite: node --test --test-name-pattern ^the.card.s.press.ring.is.as.round.as.the.card$ tests/e2e.test.js
+# .card loses its border-radius again. Nothing about the card's own appearance
+# changes - .card paints no background and no border, and .face keeps the 12px
+# - so every layout, flip and fit assertion in the suite stays green. What
+# changes is the one thing that reads .card's own box: .card:active's
+# box-shadow, which takes the radius of the element it is ON and so rings a
+# rounded card with a hard rectangle, ~3.5px of square nub at each corner, for
+# as long as the finger is down.
+diff --git a/index.html b/index.html
+index 77d0b3d..1d46172 100644
+--- a/index.html
++++ b/index.html
+@@ -293,13 +293,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+ .scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
+   aspect-ratio:63/87; perspective:1400px}
+ .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
+-  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+-  /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
+-     and a box-shadow takes the radius of the element it is ON - so without
+-     this the press ring is a hard rectangle around a rounded card, with a
+-     square nub of ring at each corner. It clips nothing: .card paints no
+-     background and no border, and .face already carries the same radius. */
+-  border-radius:12px}
++  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
+ .card.flip{transform:rotateY(180deg)}
+ @media (prefers-reduced-motion: reduce){ .card{transition:none} }
+ .face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;

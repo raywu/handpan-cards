@@ -9,11 +9,15 @@
 # the centre of #modeA, #modeB, .shuffle and .count returns .prompt, and at
 # #deck-add returns the card's own .hdr. Every one of those rects stays fully
 # on-screen and correctly sized throughout, so only the hit-test sees it.
+# Re-cut 2026-09-15 (lane w43b): the .card rule two lines down gained a
+# border-radius - the press ring follows the card's corners now - and this
+# patch carried that line as hunk CONTEXT, so it went stale. The mutation
+# itself is byte-identical to before.
 diff --git a/index.html b/index.html
-index 810ab84..0d6f6d0 100644
+index 77d0b3d..e3a6525 100644
 --- a/index.html
 +++ b/index.html
-@@ -105,8 +105,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -290,8 +290,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
     every viewport, portrait included. Every control hit-tests clean with no card
     on the page - which is why the test asserts the card is MAXIMAL, not merely
     contained. */
@@ -21,5 +25,5 @@ index 810ab84..0d6f6d0 100644
 -  aspect-ratio:63/87; perspective:1400px}
 +.scene{width:var(--card-w); aspect-ratio:63/87; perspective:1400px}
  .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
-   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
- .card.flip{transform:rotateY(180deg)}
+   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+   /* The 12px radius lives on .face, but .card:active's ring is a box-shadow

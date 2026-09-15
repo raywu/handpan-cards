@@ -6,14 +6,18 @@
 # card-fit fix rewrote exactly that line - so the patch went stale and the
 # sweep reported it as a survivor. Re-cut against the current index.html with
 # real hashes; the removed and added lines are byte-identical to before.
+# Re-cut 2026-09-15 (lane w43b): the .card rule two lines down gained a
+# border-radius - the press ring follows the card's corners now - and this
+# patch carried that line as hunk CONTEXT, so it went stale. The mutation
+# itself is byte-identical to before.
 diff --git a/index.html b/index.html
-index 810ab84..ee12771 100644
+index 77d0b3d..cf2004f 100644
 --- a/index.html
 +++ b/index.html
-@@ -109,7 +109,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
-   aspect-ratio:63/87; perspective:1400px}
- .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
-   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
+@@ -300,7 +300,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+      square nub of ring at each corner. It clips nothing: .card paints no
+      background and no border, and .face already carries the same radius. */
+   border-radius:12px}
 -.card.flip{transform:rotateY(180deg)}
 +/* .card.flip transform rule deleted */
  @media (prefers-reduced-motion: reduce){ .card{transition:none} }
