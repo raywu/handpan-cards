@@ -16,6 +16,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { loadEngine } = require("./helpers/engine.js");
+const { boot } = require("./helpers/sandbox.js");
 
 const HPE = loadEngine(["core", "layout"]);
 const DEG = Math.PI / 180;
@@ -447,44 +448,103 @@ test("field circles stay legible: they are never shrunk away to clear a clash", 
   }
 });
 
-test("the labels the renderers actually DRAW stay legible", () => {
-  // The geom's f_note / f_bnote / f_num are outputs of the diagram label
-  // rule (CLAUDE.md, "Design system"), not figures any renderer reads, so a
-  // guard on them alone guards nothing about the drawn size. These are the
-  // rule's ratios, re-declared from the spec, applied to the radius the
-  // solver actually returns.
-  const RATIO_NOTE = 0.80325, RATIO_BNOTE = 0.8232, RATIO_NUM = 0.64;
+/* ---- the label a field actually gets, measured against the field ---------
+ *
+ * The geom's f_note / f_bnote / f_num are outputs of the diagram label rule
+ * (CLAUDE.md, "Design system"), not figures any renderer reads, so a guard on
+ * them alone guards nothing about the drawn size.
+ *
+ * The guard that stood here re-declared the rule's ratios as literals and
+ * then compared them against themselves - `0.80325 * r < r` is true for every
+ * r and every ratio under 1, so the assertion held no matter what the shipped
+ * constant said. Raising LABEL_RATIO_NOTE to 1.60650 in both renderers, which
+ * draws every rim name at 1.6x the radius of the circle it sits in, left the
+ * file at 51/51 green.
+ *
+ * So: no ratio is restated here. `labelSize()` and `numSize()` are read out
+ * of the booted app - the very functions pan() calls - and what they return
+ * is measured against two things the app does not get to choose: the metrics
+ * of the face the label is set in, and the radius the solver handed back.
+ * Rule 2 of tests/CONTRACT.md is satisfied because nothing is compared to
+ * itself; the bound comes from the font and the circle, not from the rule.
+ */
+
+/* Nunito Sans advance widths, in em, measured off the shipped face
+ * (tools/fonts/NunitoSans-Regular.ttf, unitsPerEm 1000) - the face the print
+ * pipeline embeds and the app names first in its font stack. These are the
+ * only glyphs a note name or an octave can be built from. */
+const ADVANCE = {
+  A: 0.729, B: 0.676, C: 0.673, D: 0.742, E: 0.583, F: 0.548, G: 0.726,
+  "#": 0.6, b: 0.583,
+  0: 0.6, 1: 0.6, 2: 0.6, 3: 0.6, 4: 0.6, 5: 0.6, 6: 0.6, 7: 0.6, 8: 0.6, 9: 0.6,
+};
+/* hhea ascent / descent of the same face. Deliberately the face's full
+ * declared extent rather than a cap-height estimate: it over-states the ink
+ * box, so a pass here is a pass for any glyph the face can set. */
+const ASCENT = 1.011, DESCENT = 0.353;
+
+function advance(str) {
+  let w = 0;
+  for (const ch of String(str)) {
+    assert.ok(ch in ADVANCE, `no measured advance for glyph "${ch}"`);
+    w += ADVANCE[ch];
+  }
+  return w;
+}
+
+/* The ink box pan()'s label() puts inside a field, as {halfW, up, down} in R
+ * units, relative to the CENTRE of the field circle. label() sets the name at
+ * `fs` on a baseline at cy + fs*0.34 and the octave as a tspan at fs*0.66
+ * dropped a further fs*0.18. */
+function inkBox(name, oct, fs) {
+  const sub = fs * 0.66;
+  const halfW = (advance(name) * fs + advance(oct) * sub) / 2;
+  const base = fs * 0.34;
+  return { halfW, up: ASCENT * fs - base, down: base + fs * 0.18 + DESCENT * sub };
+}
+
+/** The furthest any corner of that box sits from the centre of the field. */
+function inkReach(box) {
+  return Math.max(Math.hypot(box.halfW, box.up), Math.hypot(box.halfW, box.down));
+}
+
+test("every name the app draws fits inside the field it labels", () => {
+  const app = boot();
+  const labelSize = (r, zone) => app.get(`labelSize(${r}, ${JSON.stringify(zone)})`);
+  const numSize = (rNote) => app.get(`numSize(${rNote})`);
+
+  for (const entry of SWEEP) {
+    const { geom, fields } = solved(entry);
+    for (const id of Object.keys(fields)) {
+      const [name, oct, , zone] = fields[id];
+      const r = zone === "ding" ? geom.r_ding
+              : zone === "bottom" ? geom.r_bnote : geom.r_note;
+      const fs = labelSize(r, zone);
+      const reach = inkReach(inkBox(name, oct, fs));
+      // THE bound: the glyphs the app emits for this field stay inside the
+      // circle it drew for that field. Nothing else in the suite makes it,
+      // which is how a ratio over 1.0 could ship green.
+      assert.ok(reach <= r,
+        `${entry.label}: "${name}${oct}" (${zone}) reaches ${reach.toFixed(4)} `
+        + `outside its field radius ${r.toFixed(4)} at size ${fs.toFixed(4)}`);
+    }
+  }
+
+  // The name must outrank the index number beside it. Both sizes come from
+  // the app, so this moves the moment either constant does.
   for (const entry of SWEEP) {
     const { geom } = solved(entry);
-    const name = RATIO_NOTE * geom.r_note;
-    const num = RATIO_NUM * geom.r_note;
-    assert.ok(name >= 0.06, `${entry.label}: drawn name ${name}`);
-    assert.ok(num >= 0.05, `${entry.label}: drawn number ${num}`);
-    assert.ok(name > num, `${entry.label}: name ${name} under number ${num}`);
-    // The upper bound, which is the one worth asserting here. A name is drawn
-    // at 5% over the solver's own budget for the field (the app has always
-    // done so and the rule keeps it, CLAUDE.md "Design system"), so the thing
-    // that can go wrong is the name outgrowing the circle it sits in - not
-    // falling under f_note, which IS ratio x r_note rounded and so cannot
-    // fail. The name's size must stay inside the field radius. The no-shrink
-    // direction is asserted where it is not circular: on the sizes the two
-    // renderers EMIT, in tests/test_render_agreement.py.
-    assert.ok(name < geom.r_note,
-      `${entry.label}: drawn name ${name} does not fit the field radius ${geom.r_note}`);
-    if (geom.bottom) {
-      const bname = RATIO_BNOTE * geom.r_bnote;
-      assert.ok(bname >= 0.05, `${entry.label}: drawn bottom name ${bname}`);
-      // NOT asserted here: bname > num. On a generated deck whose bottom
-      // shell is packed tighter than its rim, the engine's own rBnote falls
-      // far enough under rNote that the bottom name lands under the index
-      // number (e.g. "mixed N=5": 0.0931 vs 0.1216). That inversion comes
-      // from the solver's radii, is what main already ships, and belongs to
-      // src/engine/layout.js - out of this lane's boundary. The three
-      // built-in decks ARE asserted, in tests/test_print.py and
-      // tests/test_render_agreement.py.
-      assert.ok(bname < geom.r_bnote,
-        `${entry.label}: drawn bottom name ${bname} does not fit the bottom field radius ${geom.r_bnote}`);
-    }
+    assert.ok(labelSize(geom.r_note, "rim") > numSize(geom.r_note),
+      `${entry.label}: rim name is not larger than the index number`);
+    assert.ok(labelSize(geom.r_ding, "ding") > numSize(geom.r_note),
+      `${entry.label}: ding name is not larger than the index number`);
+    // NOT asserted: a BOTTOM name over the index number. On a generated deck
+    // whose bottom shell is packed tighter than its rim, the solver's own
+    // r_bnote falls far enough under r_note that the bottom name lands under
+    // the number ("mixed N=5": 0.0931 vs 0.1216). That inversion comes from
+    // the solver's radii, is what main already ships, and belongs to
+    // src/engine/layout.js. The three built-in decks ARE asserted, in
+    // tests/test_print.py and tests/test_render_agreement.py.
   }
 });
 

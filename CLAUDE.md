@@ -174,23 +174,61 @@ this by attaching per-instrument images.
   fields on one pan means smaller fields, and a smaller field draws a smaller
   label; multiplying an extra `k(field count)` on top double-counts density
   and shrinks the busiest deck - the one already hardest to read - further
-  still. A rule change may never draw any deck smaller than it ships today,
-  and the note NAME must always be larger than the index number beside it;
-  both are asserted (`tests/test_print.py::LabelSizeRuleTest`).
-  Each ratio is `src/engine/layout.js`'s own solver constant **times 1.05**:
-  0.675 x 1.05 for the ding (0.675 is the larger of the two built-in ding
-  ratios, deliberately not the engine's `F_DING_RATIO` 0.6), `F_NOTE_RATIO`
-  0.765 x 1.05, `F_BNOTE_RATIO` 0.784 x 1.05. That 1.05 is historic: before
-  the rule, `index.html` multiplied every diagram name by 1.05 while
-  `tools/hifi.py` multiplied by nothing, so the two renderers were 5% apart on
-  every card. **Exact parity with the solver and an unshrunk app are not
-  simultaneously satisfiable, and the OWNER CHOSE NO-SHRINK** (2026-09-15):
-  print grows ~5% to meet the app and the app is left exactly as it was. Names
-  therefore draw 5% over the solver's budget for the field circle, which is
-  safe because ring clearance (`ext`) is computed from `f_num` ALONE
-  (`src/engine/layout.js:288-302`), so a name's size cannot reach it, and
-  because `fit_note` shrinks anything that genuinely overflows. `NUM_RATIO`
-  takes no 1.05: both renderers already drew the index number at `f_num`.
+  still. **The no-shrink baseline is the PRE-RULE `f_*`, per renderer** - print
+  against `f_*`, the app against `f_* x 1.05` - and NOT "whatever the rule
+  draws today". Stated loosely it licenses the shrink it exists to forbid: a
+  later change could pull Hijaz names back to `f_note x 1.05` (13.6% down from
+  what this rule ships) and still call itself no-shrink.
+  The note NAME must also be larger than the index number beside it. That is
+  asserted for **the three built-in decks only**
+  (`tests/test_print.py::LabelSizeRuleTest` runs over `ALL_DECKS`), and it is
+  not universal: on a generated deck whose bottom shell packs tighter than its
+  rim, the solver's `r_bnote` falls far enough under `r_note` that the BOTTOM
+  name lands under the number - `mixed N=5` in the layout sweep draws 0.0931
+  against 0.1216. That inversion is the solver's radii, not the rule, and
+  `tests/layout.test.js` records it rather than asserting it away.
+
+  **Where the ratios come from, and what actually changed.** They are NOT
+  uniformly "a solver constant x 1.05". `src/engine/layout.js` derives all four
+  of its `F_*_RATIO` constants from **Pygmy alone** (its own comments say so:
+  `F_NOTE_RATIO` 0.765 = 0.109/0.1425, `F_BNOTE_RATIO` 0.784 = 0.0931/0.1188,
+  `F_NUM_RATIO` 0.64 = 0.0912/0.1425, `F_DING_RATIO` 0.6 = 0.114/0.19). The
+  Hijaz/Amara geom literals were tuned independently and sit at different
+  ratios: `f_note/r_note` 0.6737, `f_num/r_note` 0.5526, `f_ding/r_ding`
+  **0.675** - and 0.675 is a deck literal that appears nowhere in `layout.js`.
+  One rule for two ratio families means picking one per zone, and the rule
+  takes **the max of the two**, the only choice that shrinks nothing:
+
+  | zone | ratio | source | effect |
+  |---|---|---|---|
+  | ding | 0.675 x 1.05 = 0.70875 | Hijaz/Amara's ratio imposed on Pygmy | Hijaz/Amara app unchanged, print +5.0%; **Pygmy app +12.5%**, print +18.1% |
+  | rim/inner | 0.765 x 1.05 = 0.80325 | Pygmy's ratio imposed on Hijaz/Amara | Pygmy app unchanged, print +5.0%; **Hijaz/Amara app +13.6%**, print +19.2% |
+  | bottom | 0.784 x 1.05 = 0.8232 | Pygmy only (the sole deck with a bottom shell) | app unchanged, print +5.0% - pure 1.05 |
+  | number | 0.64, no 1.05 | Pygmy's ratio imposed on Hijaz/Amara | Pygmy unchanged; **Hijaz/Amara +15.8% in BOTH renderers** |
+
+  So **three of the seven deck-zone combinations move for a reason that has
+  nothing to do with the 1.05** - they move because two independently tuned
+  ratio families were unified. `NUM_RATIO` taking no 1.05 does not mean the
+  numbers are unaffected: it means no 1.05 is involved in a +15.8% re-ratioing
+  that both renderers apply to Hijaz and Amara.
+
+  That 1.05 is historic and applies to names only: before the rule,
+  `index.html` multiplied every diagram name by 1.05 while `tools/hifi.py`
+  multiplied by nothing, so the two renderers were 5% apart on every card.
+  **Exact parity with the solver and an unshrunk app are not simultaneously
+  satisfiable, and the OWNER CHOSE NO-SHRINK** (2026-09-15).
+  Names therefore draw over the solver's own budget for the field circle. What
+  keeps that safe is **`fit_note` in print and the field circle itself in the
+  app** - not `ext`. `ext` IS computed from `f_num` alone
+  (`src/engine/layout.js:288-302`), but it is emitted for **generated decks
+  only**: none of the three shipped geoms carries an `ext` key, so
+  `index.html:3392` falls back to `R * 1.06` for Hijaz and Amara and to the
+  bottom-ring derivation for Pygmy. The `f_num` argument therefore covers
+  generated decks and says nothing about the built-ins, whose extent is a fixed
+  literal no label size can reach in the first place. The bound that does hold
+  everywhere - that a name's glyph box stays inside the circle it labels - is
+  asserted over the whole N=5..19 sweep in `tests/layout.test.js`, against the
+  app's own `labelSize()` and the shipped Nunito Sans metrics.
   `hifi.LABEL_WIDTH_RATIO` (1.47 = 1.40 x 1.05) carries the same factor, so
   the fitter fires on exactly the labels it fired on before the growth.
   Print then applies `hifi.fit_note`, which shrinks a label further only when
