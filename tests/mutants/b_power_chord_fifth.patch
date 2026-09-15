@@ -1,4 +1,5 @@
 # kills: test_power_chords_are_root_and_fifth
+# suite: python3 -m unittest -k test_power_chords_are_root_and_fifth tests.test_deck_data
 # Amara G5 voiced G4 + C5: a fourth above the root, not a fifth. C5 sits
 # above G4, so the cluster rule is satisfied and only the fifth check fails.
 diff --git a/index.html b/index.html

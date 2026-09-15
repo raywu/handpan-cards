@@ -1,4 +1,5 @@
 # kills: test_forced_tones_cluster_below_root
+# suite: python3 -m unittest -k test_forced_tones_cluster_below_root tests.test_deck_data
 # Pygmy Fsus4 put back to its pre-retrofit shape: Bb3 is forced below the
 # root but C is left above at C5 instead of clustering to C4. validate.py,
 # voicing uniqueness and the badge count (still 1) all stay green - only

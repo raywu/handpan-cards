@@ -45,6 +45,7 @@ def chord(decks, deck_id, main, sup):
 MUTANTS = {
     "b_degree_missing": (
         ["# kills: test_degrees_cover_chord_roots",
+         "# suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data",
          "# Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree."],
         [('degrees={2: "i", 9: "v", 7: "IV", 0: "bVII", 5: "bIII"},',
           'degrees={2: "i", 9: "v", 0: "bVII", 5: "bIII"},')],
@@ -52,6 +53,7 @@ MUTANTS = {
     ),
     "b_ding_in_voicing": (
         ["# kills: test_ding_never_in_voicing",
+         "# suite: python3 -m unittest -k test_ding_never_in_voicing tests.test_deck_data",
          "# Hijaz B MINOR voiced with the ding added. Its pitch class (C#) is not",
          "# already in the chord, so no highlighting invariant breaks."],
         [('("Bm", "", "B MINOR", [2, 4, 6], {2}),',
@@ -60,6 +62,7 @@ MUTANTS = {
     ),
     "b_doubled_pitch_class": (
         ["# kills: test_no_doubled_pitch_classes",
+         "# suite: python3 -m unittest -k test_no_doubled_pitch_classes tests.test_deck_data",
          "# Hijaz B MINOR ADD 9 doubles B (B3 + B4) in one voicing."],
         [('("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3], {2}),',
           '("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3, 8], {2}),')],
@@ -67,6 +70,7 @@ MUTANTS = {
     ),
     "b_duplicate_voicing": (
         ["# kills: test_voicings_unique_within_deck",
+         "# suite: python3 -m unittest -k test_voicings_unique_within_deck tests.test_deck_data",
          "# Amara Csus4 given C major's exact field list - a duplicate card that",
          "# validate.py cannot see (it only rejects duplicate fields WITHIN a card)."],
         [('("Csus", "4", "SUSPENDED CHORD", [2, 5, 6], {2}),',
@@ -75,6 +79,7 @@ MUTANTS = {
     ),
     "b_layout_angle_swap": (
         ["# kills: test_layouts_match_spec",
+         "# suite: python3 -m unittest -k test_layouts_match_spec tests.test_deck_data",
          "# Hijaz rim angles 4 (180) and 6 (135) swapped in BOTH index.html and",
          "# tools/decks.py, so validate.py's cross-check still passes: only the",
          "# CLAUDE.md layout table catches it."],
@@ -85,6 +90,7 @@ MUTANTS = {
     ),
     "b_midi_off_by_one": (
         ["# kills: test_midi_matches_note_name",
+         "# suite: python3 -m unittest -k test_midi_matches_note_name tests.test_deck_data",
          "# Amara ding D3 given MIDI 51 (= Eb3). The ding is in no voicing, so every",
          "# chord invariant and validate.py stay green; only the note-name <-> MIDI",
          "# pitch-class check (and the layout table) notice."],
@@ -93,6 +99,7 @@ MUTANTS = {
     ),
     "b_power_chord_fifth": (
         ["# kills: test_power_chords_are_root_and_fifth",
+         "# suite: python3 -m unittest -k test_power_chords_are_root_and_fifth tests.test_deck_data",
          "# Amara G5 voiced G4 + C5: a fourth above the root, not a fifth. C5 sits",
          "# above G4, so the cluster rule is satisfied and only the fifth check fails."],
         [('("G5", "", "POWER CHORD", [6, 3], {6}),', '("G5", "", "POWER CHORD", [6, 8], {6}),')],
@@ -100,6 +107,7 @@ MUTANTS = {
     ),
     "b_pygmy_badge_count": (
         ["# kills: test_badge_counts_bottom_notes_in_the_voicing",
+         "# suite: python3 -m unittest -k test_badge_counts_bottom_notes_in_the_voicing tests.test_deck_data",
          "# Pygmy Fsus4 voiced G4 + C5 instead of the bottom-shell Bb3, so the badge",
          "# count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster",
          "# rule is satisfied and only the badge test sees it."],
@@ -109,6 +117,7 @@ MUTANTS = {
     ),
     "b_root_not_in_voicing": (
         ["# kills: test_roots_appear_in_voicing",
+         "# suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data",
          "# Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use."],
         [('("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {5}),',
           '("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {7}),')],
@@ -116,6 +125,7 @@ MUTANTS = {
     ),
     "b_cluster_forced_only": (
         ["# kills: test_forced_tones_cluster_below_root",
+         "# suite: python3 -m unittest -k test_forced_tones_cluster_below_root tests.test_deck_data",
          "# Pygmy Fsus4 put back to its pre-retrofit shape: Bb3 is forced below the",
          "# root but C is left above at C5 instead of clustering to C4. validate.py,",
          "# voicing uniqueness and the badge count (still 1) all stay green - only",
@@ -126,6 +136,7 @@ MUTANTS = {
     ),
     "b_validate_desync": (
         ["# kills: test_validate_py_passes",
+         "# suite: python3 -m unittest -k test_validate_py_passes tests.test_deck_data",
          "# tools/decks.py alone drifts from the JSON embedded in index.html - the",
          "# print deck and the app would ship different card copy."],
         [('("Dm", "7", "D MINOR 7", [3, 5, 7, 8], {3}),',

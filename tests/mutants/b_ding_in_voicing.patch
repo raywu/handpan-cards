@@ -1,4 +1,5 @@
 # kills: test_ding_never_in_voicing
+# suite: python3 -m unittest -k test_ding_never_in_voicing tests.test_deck_data
 # Hijaz B MINOR voiced with the ding added. Its pitch class (C#) is not
 # already in the chord, so no highlighting invariant breaks.
 diff --git a/index.html b/index.html

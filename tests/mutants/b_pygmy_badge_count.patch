@@ -1,4 +1,5 @@
 # kills: test_badge_counts_bottom_notes_in_the_voicing
+# suite: python3 -m unittest -k test_badge_counts_bottom_notes_in_the_voicing tests.test_deck_data
 # Pygmy Fsus4 voiced G4 + C5 instead of the bottom-shell Bb3, so the badge
 # count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster
 # rule is satisfied and only the badge test sees it.
