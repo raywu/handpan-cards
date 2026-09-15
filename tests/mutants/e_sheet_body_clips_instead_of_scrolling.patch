@@ -7,15 +7,15 @@
 # overflow:hidden box still accepts a scrollTop from SCRIPT, so this mutant is
 # also the reason that test scrolls with a real wheel event.
 diff --git a/index.html b/index.html
-index 574a311..f6b040e 100644
+index f489642..493ded7 100644
 --- a/index.html
 +++ b/index.html
-@@ -322,7 +322,7 @@ button.nav:active{background:#2e281e}
-    already 0, so overflow-y is the same declaration doing both jobs.
-    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
-    where the footer alone exceeds the cap. */
--.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3)}
-+.sheetbody{overflow-y:hidden; display:flex; flex-direction:column; gap:var(--sp-3)}
+@@ -335,7 +335,7 @@ button.nav:active{background:#2e281e}
+    with scrollWidth === clientWidth so there is not even a scrollbar to reach
+    it. The negative margin gives the padding back to the layout, so nothing
+    moves: the rows still align with the surface's own padding. */
+-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);
++.sheetbody{overflow-y:hidden; display:flex; flex-direction:column; gap:var(--sp-3);
+   padding-inline:var(--ring); margin-inline:calc(-1 * var(--ring))}
  /* A label, its control and the line that explains the control are ONE group:
     --sp-1 inside, and the group is separated from the next by .sheetbody. */
- .fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
