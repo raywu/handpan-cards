@@ -1,0 +1,20 @@
+# kills: the page reserves a safe-area inset on all four edges
+# suite: node --test --test-name-pattern ^the.page.reserves.a.safe.area.inset.on.all.four.edges$ tests/e2e.test.js
+# Back to reserving only the top and bottom insets. viewport-fit=cover is
+# still set, so in LANDSCAPE - the orientation row 245 just made usable - the
+# deck strip and the mode bar run under the notch on one side and under the
+# rounded corner on the other, with nothing between them and the glass.
+diff --git a/index.html b/index.html
+index 4706826..4d7c7e0 100644
+--- a/index.html
++++ b/index.html
+@@ -66,8 +66,7 @@ body{
+      original padding with max(), so a device that reports no inset at all
+      (every desktop, and Chromium in the e2e harness) measures exactly what it
+      measured before: 10px / 12px / 12px / 12px. */
+-  padding:max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+-          max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
++  padding:max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+   user-select:none;
+ }
+ /* ---- the chrome budget -------------------------------------------------

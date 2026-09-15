@@ -1,0 +1,19 @@
+# kills: every interactive control has a press state
+# suite: node --test --test-name-pattern ^every.interactive.control.has.a.press.state$ tests/e2e.test.js
+# ONE control loses its :active rule - the deck chip, which is also "+ ADD".
+# With -webkit-tap-highlight-color:transparent set globally and no hover on a
+# phone, that control gives a finger nothing back for the whole time it is
+# down (row 223f). The mutant is deliberately a single line: the test has to
+# fail on a GAP in the coverage, not only on the whole block being deleted.
+diff --git a/index.html b/index.html
+index 4706826..d9f0279 100644
+--- a/index.html
++++ b/index.html
+@@ -567,7 +567,6 @@ button.nav:active{background:#2e281e}
+    .card.flip's own rotateY, while a filter flattens the 3D context and takes
+    backface-visibility with it. A shadow paints in the element's own plane
+    and touches neither. */
+-.chip:active{background:#332c22}
+ .mode:active{background:#2e281e}
+ .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
+ .shuffle:active{opacity:.6}

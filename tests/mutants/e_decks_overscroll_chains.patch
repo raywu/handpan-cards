@@ -1,0 +1,19 @@
+# kills: every scrolling surface contains its overscroll
+# suite: node --test --test-name-pattern ^every.scrolling.surface.contains.its.overscroll$ tests/e2e.test.js
+# The deck strip goes back to chaining its overscroll. On iOS a horizontal
+# flick past the last chip then drags the page behind it and rubber-bands the
+# whole app - row 223(e), and the surface it happens on most is the one the
+# owner flicks every time they change deck.
+diff --git a/index.html b/index.html
+index 4706826..57668ab 100644
+--- a/index.html
++++ b/index.html
+@@ -105,7 +105,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+ .decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
+-  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
++  -webkit-overflow-scrolling:touch;
+   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
+ .decks::-webkit-scrollbar{display:none}
