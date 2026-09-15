@@ -1,0 +1,17 @@
+# suite: node --test --test-name-pattern ^the.sheet.does.not.change.height.as.the.seed.is.typed$ tests/e2e.test.js
+# kills: the sheet does not change height as the seed is typed
+# The parse line stops reserving its line, so updateParse() blanking it on an
+# invalid parse shrinks the sheet on most keystrokes.
+diff --git a/index.html b/index.html
+index f489642..e493445 100644
+--- a/index.html
++++ b/index.html
+@@ -355,7 +355,7 @@ button.nav:active{background:#2e281e}
+    own line; this was the asymmetry. */
+ #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
+   color:#c4bcab; overflow-wrap:anywhere;
+-  margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
++  margin-top:calc(var(--sp-2) - var(--sp-1))}
+ /* The pan mock sits on a light plate because the pan is drawn in card ink -
+    black rim, #242424 labels - and the sheet surface is dark. Capped so the
+    whole sheet still fits a 380px phone without the preview pushing GENERATE

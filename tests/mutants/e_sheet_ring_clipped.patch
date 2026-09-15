@@ -1,0 +1,18 @@
+# suite: node --test --test-name-pattern ^the.focus.ring.on.the.seed.box.is.not.clipped.by.the.sheet.body$ tests/e2e.test.js
+# kills: the focus ring on the seed box is not clipped by the sheet body
+# The sheet body stops reserving room for the ring, so the scroll container
+# clips its left and right sides and the focused box reads as a broken border.
+diff --git a/index.html b/index.html
+index f489642..b7e9c5e 100644
+--- a/index.html
++++ b/index.html
+@@ -335,8 +335,7 @@ button.nav:active{background:#2e281e}
+    with scrollWidth === clientWidth so there is not even a scrollbar to reach
+    it. The negative margin gives the padding back to the layout, so nothing
+    moves: the rows still align with the surface's own padding. */
+-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);
+-  padding-inline:var(--ring); margin-inline:calc(-1 * var(--ring))}
++.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);}
+ /* A label, its control and the line that explains the control are ONE group:
+    --sp-1 inside, and the group is separated from the next by .sheetbody. */
+ .fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
