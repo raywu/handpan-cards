@@ -151,8 +151,20 @@ def render_print(deck):
                 if t["font"] == "Label" and t["anchor"] == "l"
                 and t["text"][:1].isalpha() and in_diagram(t))
 
+            # The index numbers are the centred runs whose text is one of
+            # the deck's own field labels. The bottom shell's numbers sit
+            # past 1.36R, outside the names' bound, so they are identified
+            # by what they SAY rather than by where they are.
+            numbering = set(v[5] for k, v in deck["spec"].items()
+                            if k != "_geom" and v[3] != "ding")
+            number_sizes = sorted(
+                round(t["size"] / R * 100, 3) for t in rec.texts
+                if t["font"] in ("Label", "LabelSB") and t["anchor"] == "c"
+                and t["text"] in numbering)
+
             out.append({"name": chord[0] + chord[1], "fields": fields,
                         "labelSizes": label_sizes,
+                        "numberSizes": number_sizes,
                         "noteLine": [t.strip() for t in note_line.split("-") if t.strip()],
                         "numLine": [t.strip() for t in num_line.split("-") if t.strip()],
                         "badgeText": badge.strip()})
@@ -233,6 +245,31 @@ class RenderAgreement(unittest.TestCase):
                 self.assertAlmostEqual(a, p, delta=TOL,
                                        msg="%s: %.3f (app) vs %.3f (print)"
                                            % (where, a, p))
+
+    def test_diagram_number_sizes_agree(self):
+        """The index numbers come out of the same rule, so they match too."""
+        for app_c, print_c in self.each_card():
+            where = "%s %s: number sizes" % (app_c["deck"], app_c["name"])
+            self.assertTrue(app_c["numberSizes"], where + " (none drawn)")
+            self.assertEqual(len(app_c["numberSizes"]),
+                             len(print_c["numberSizes"]), where + " (count)")
+            for a, p in zip(app_c["numberSizes"], print_c["numberSizes"]):
+                self.assertAlmostEqual(a, p, delta=TOL,
+                                       msg="%s: %.3f (app) vs %.3f (print)"
+                                           % (where, a, p))
+
+    def test_the_name_is_always_larger_than_the_number_beside_it(self):
+        """The hierarchy row 221 is about: the note NAME is the primary
+        label. A rule that sizes names and numbers separately can invert it,
+        so this is asserted on what both renderers actually emit."""
+        for app_c, print_c in self.each_card():
+            for side, card in (("app", app_c), ("print", print_c)):
+                self.assertGreater(
+                    min(card["labelSizes"]), max(card["numberSizes"]),
+                    "%s %s (%s): smallest name %.3f is not above the largest "
+                    "index number %.3f" % (app_c["deck"], app_c["name"], side,
+                                           min(card["labelSizes"]),
+                                           max(card["numberSizes"])))
 
     def test_drawn_bottom_note_badge_agrees(self):
         """The printed badge text itself - nothing else asserts what it says."""

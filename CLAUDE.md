@@ -157,25 +157,43 @@ this by attaching per-instrument images.
     app AND in print (`hifi.ORANGE`; print caught up 2026-09-15, owner
     decision - it used to draw a different `#D96605`).
 - **Diagram label rule** (2026-09-15, owner decision: "the size should scale
-  down based on number of notes"). ONE rule sizes every note label in the pan,
+  down based on number of notes"). ONE rule sizes every glyph the pan draws,
   on every deck and in BOTH outputs:
 
-      size = r x 0.675 x k(N)      k(N) = clamp((9 / N) ^ 0.2, 0.62, 1)
+      name   = r x RATIO[zone]      ding 0.675, rim/inner 0.765, bottom 0.784
+      number = r_note x 0.64
+      octave digit = 0.66 x its name (print and app alike)
 
   `r` is the field's OWN drawn radius, so the ding, the top shell and the
-  bottom shell all fall out of one expression - `f_ding`, `f_note` and
-  `f_bnote` are outputs of the rule, not figures anything reads (the geom keys
-  still exist and still feed the solver's `ext` budget, but no renderer sizes a
-  label from them). `N` is the deck's field count, ding and bottom shell
-  included: the busier the pan, the smaller every label on it. A 9-field deck
-  is the reference and draws at the full ratio; k never exceeds 1, so a sparse
-  pan gets no bigger labels. Print then applies `hifi.fit_note`, which shrinks
-  a label further only when the name would overflow its own circle.
-  Today's smallest label is Pygmy's bottom shell at **4.19 pt** (18 fields,
-  k = 0.871), clear of the 3.6 pt floor the pipeline's text fitting uses.
-  The constants live twice - `tools/hifi.py` (`LABEL_RATIO` and friends) and
-  `pan()` in `index.html` - and `tests/test_render_agreement.py` pins the two
-  renderers to the same drawn sizes.
+  bottom shell all fall out of one expression - `f_ding`, `f_note`, `f_bnote`
+  and `f_num` are OUTPUTS of the rule, not figures anything reads. (The geom
+  keys still exist because the solver emits them and `ext` is computed from
+  `f_num`; no renderer sizes anything from any of them.)
+  **The radius term is the whole of the "scale down with the number of notes"
+  response, and there is deliberately no density factor on top of it.** More
+  fields on one pan means smaller fields, and a smaller field draws a smaller
+  label; multiplying an extra `k(field count)` on top double-counts density
+  and shrinks the busiest deck - the one already hardest to read - further
+  still. A rule change may never draw any deck smaller than it ships today,
+  and the note NAME must always be larger than the index number beside it;
+  both are asserted (`tests/test_print.py::LabelSizeRuleTest`).
+  The ratios are the ones `src/engine/layout.js` already solves with
+  (`F_NOTE_RATIO`, `F_BNOTE_RATIO`, `F_NUM_RATIO`), so a generated deck draws
+  at exactly the size its layout budgeted, `ext` clearance included. The ding
+  takes 0.675 rather than the engine's `F_DING_RATIO` 0.6 because 0.675 is the
+  larger of the two built-in ding ratios and nothing may shrink.
+  Print then applies `hifi.fit_note`, which shrinks a label further only when
+  the name would overflow its own circle - it does not fire on any of the 61
+  cards. Note that `fit_note`'s own floor is 2.5 pt, NOT the 3.6 pt of
+  `hifi.fit`: **no floor in the pipeline protects a diagram label**, so the
+  3.6 pt floor is asserted explicitly by
+  `test_no_label_falls_below_the_print_floor`, over every glyph including the
+  octave digit (the smallest text in the PDFs). Today's smallest glyph is the
+  octave on Pygmy's bottom shell at **3.69 pt**; the smallest note name is
+  Pygmy's bottom shell at **5.59 pt**.
+  The constants live twice - `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`)
+  and `pan()` in `index.html` - and `tests/test_render_agreement.py` pins the
+  two renderers to the same drawn sizes, names and numbers alike.
 - **Card anatomy:** header (deck name, #index, root-coloured scale-degree
   label, small-caps subtitle), Marcellus chord name with superscript,
   diagram, optional bottom-note badge, note line, number line.

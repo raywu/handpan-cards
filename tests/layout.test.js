@@ -447,6 +447,39 @@ test("field circles stay legible: they are never shrunk away to clear a clash", 
   }
 });
 
+test("the labels the renderers actually DRAW stay legible", () => {
+  // The geom's f_note / f_bnote / f_num are outputs of the diagram label
+  // rule (CLAUDE.md, "Design system"), not figures any renderer reads, so a
+  // guard on them alone guards nothing about the drawn size. These are the
+  // rule's ratios, re-declared from the spec, applied to the radius the
+  // solver actually returns.
+  const RATIO_NOTE = 0.765, RATIO_BNOTE = 0.784, RATIO_NUM = 0.64;
+  for (const entry of SWEEP) {
+    const { geom } = solved(entry);
+    const name = RATIO_NOTE * geom.r_note;
+    const num = RATIO_NUM * geom.r_note;
+    assert.ok(name >= 0.06, `${entry.label}: drawn name ${name}`);
+    assert.ok(num >= 0.05, `${entry.label}: drawn number ${num}`);
+    assert.ok(name > num, `${entry.label}: name ${name} under number ${num}`);
+    assert.ok(name >= geom.f_note - 5e-5,
+      `${entry.label}: drawn name ${name} below the f_note ${geom.f_note} it replaces`);
+    if (geom.bottom) {
+      const bname = RATIO_BNOTE * geom.r_bnote;
+      assert.ok(bname >= 0.05, `${entry.label}: drawn bottom name ${bname}`);
+      // NOT asserted here: bname > num. On a generated deck whose bottom
+      // shell is packed tighter than its rim, the engine's own rBnote falls
+      // far enough under rNote that the bottom name lands under the index
+      // number (e.g. "mixed N=5": 0.0931 vs 0.1216). That inversion comes
+      // from the solver's radii, is what main already ships, and belongs to
+      // src/engine/layout.js - out of this lane's boundary. The three
+      // built-in decks ARE asserted, in tests/test_print.py and
+      // tests/test_render_agreement.py.
+      assert.ok(bname >= geom.f_bnote - 5e-5,
+        `${entry.label}: drawn bottom name ${bname} below f_bnote ${geom.f_bnote}`);
+    }
+  }
+});
+
 test("eleven rim fields still fit without overlapping - the D7 ceiling", () => {
   const eleven = { ...seedOf(TWELVE, 11, 0), label: "eleven rim" };
   const { geom, fields } = solved(eleven);

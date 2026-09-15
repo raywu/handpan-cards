@@ -51,6 +51,11 @@ for (const d of DECKS) {
     const labelSizes = [...svg.matchAll(/<text[^>]*font-size="([\d.eE+-]+)"[^>]*>[^<]*<tspan/g)]
       .map((m) => r3(+m[1])).sort((a, b) => a - b);
 
+    // The index numbers: the diagram's other <text> runs, the ones with no
+    // <tspan>. They come out of the same rule and must agree too.
+    const numberSizes = [...svg.matchAll(/<text[^>]*font-size="([\d.eE+-]+)"[^>]*>([^<]*)<\/text>/g)]
+      .map((m) => r3(+m[1])).sort((a, b) => a - b);
+
     // The note line, number line and badge as the app actually RENDERS them,
     // parsed back out of linesHTML - not re-read from ch.fields, which would
     // just compare two copies of the same input data.
@@ -69,6 +74,7 @@ for (const d of DECKS) {
       numLine,
       badgeText: badgeMatch ? badgeMatch[1].trim() : "",
       labelSizes,
+      numberSizes,
       fields,
     });
   }

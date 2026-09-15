@@ -69,32 +69,51 @@ def note_w(name, octv, font, size):
 
 
 # ---- diagram label sizing -------------------------------------------------
-# ONE rule sizes every note label drawn in the pan, in BOTH outputs: the same
-# three constants and the same arithmetic live in `pan()` in index.html.
+# ONE rule sizes every glyph the pan draws, in BOTH outputs: the same
+# constants and the same arithmetic live in `pan()` in index.html.
 #
-#   size = r * LABEL_RATIO * k(N)      k(N) = clamp((9 / N) ** 0.2, 0.62, 1)
+#   name   = r * LABEL_RATIO[zone]
+#   number = r_note * NUM_RATIO
 #
 # `r` is the field's OWN drawn radius, so the ding, the top shell and the
 # bottom shell all fall out of one expression and none of them needs a stored
-# figure of its own. `N` is the deck's field count: the busier the pan, the
-# smaller every label on it. A 9-field deck (the 8+1 pans the ratio was
-# measured on) draws at the full ratio.
-LABEL_RATIO = 0.675          # label size as a fraction of its field's radius
-LABEL_REF_FIELDS = 9         # the field count at which k(N) is 1
-LABEL_DENSITY_EXP = 0.2      # how fast the ratio decays with field count
-LABEL_DENSITY_FLOOR = 0.62   # the rule never shrinks a label past this
+# figure of its own: f_ding, f_note, f_bnote and f_num are OUTPUTS of this
+# rule, not figures any renderer reads.
+#
+# The radius term is the whole of the "scale down with the number of notes"
+# response, and it is enough: more fields on one pan means smaller fields,
+# and a smaller field draws a smaller label. There is deliberately NO extra
+# density factor on top - multiplying one in double-counts density and makes
+# the busiest deck, the one already hardest to read, smaller still.
+#
+# The ratios are the ones the scale engine already solves with
+# (`src/engine/layout.js` F_NOTE_RATIO / F_BNOTE_RATIO / F_NUM_RATIO), so a
+# generated deck is drawn at exactly the size its layout budgeted - including
+# the `ext` clearance, which reaches via f_num. The ding takes 0.675 rather
+# than the engine's 0.6: it is the larger of the two built-in ding ratios, and
+# the rule is not allowed to draw any deck smaller than it ships today.
+LABEL_RATIO_DING = 0.675     # name inside the ding
+LABEL_RATIO_NOTE = 0.765     # name inside a rim or inner field
+LABEL_RATIO_BNOTE = 0.784    # name inside a bottom-shell field
+NUM_RATIO = 0.64             # index number, from the top-field radius
 
 
-def label_density(n_fields):
-    if n_fields <= 0:
-        return 1.0
-    k = (float(LABEL_REF_FIELDS) / n_fields) ** LABEL_DENSITY_EXP
-    return max(LABEL_DENSITY_FLOOR, min(1.0, k))
+def label_ratio(zone):
+    if zone == "ding":
+        return LABEL_RATIO_DING
+    if zone == "bottom":
+        return LABEL_RATIO_BNOTE
+    return LABEL_RATIO_NOTE
 
 
-def label_size(r, n_fields):
-    """Diagram label size for a field of radius `r` on an `n_fields` deck."""
-    return r * LABEL_RATIO * label_density(n_fields)
+def label_size(r, zone):
+    """Diagram name size for a field of radius `r` in `zone`."""
+    return r * label_ratio(zone)
+
+
+def num_size(r_note):
+    """Index-number size, from the deck's top-field radius."""
+    return r_note * NUM_RATIO
 
 
 def fit_note(name, octv, font, size, maxw):
@@ -246,7 +265,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
              numbers=True):
     """spec: dict field -> (name, octave, midi, zone, angle, label)"""
     g = spec["_geom"]
-    n_fields = len([k for k in spec if k != "_geom"])
+    nfs = num_size(R * g["r_note"])
     c.setStrokeColor(black); c.setLineWidth(1.15); c.setDash()
     c.circle(cx, cy, R, stroke=1, fill=0)
     if g.get("inner_ring"):
@@ -273,7 +292,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
             rr = R * g["r_ding"]
             dy = R * g.get("ding_dy", 0.0)
             draw_ring(c, cx, cy - dy, rr, state(i))
-            fs0 = fit_note(nm, ov, "Label", label_size(rr, n_fields),
+            fs0 = fit_note(nm, ov, "Label", label_size(rr, zone),
                            rr * 1.40)
             note_text(c, cx, cy - dy - rr * 0.30, nm, ov, "Label", fs0, INK)
             continue
@@ -282,18 +301,18 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
         a = math.radians(ang)
         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
-        fs = fit_note(nm, ov, "Label", label_size(rr, n_fields), rr * 1.40)
+        fs = fit_note(nm, ov, "Label", label_size(rr, zone), rr * 1.40)
         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
         if numbers:
             if zone == "bottom":
                 nr = orb + rr + R * g["n_out"]
-                col, nfs, fnt = ORANGE, R * g["f_num"], "LabelSB"
+                col, fnt = ORANGE, "LabelSB"
             elif zone == "rim" and g.get("rim_num_out"):
                 nr = orb + rr + R * g["n_in"]
-                col, nfs, fnt = INK, R * g["f_num"], "Label"
+                col, fnt = INK, "Label"
             else:
                 nr = orb - rr - R * g["n_in"]
-                col, nfs, fnt = INK, R * g["f_num"], "Label"
+                col, fnt = INK, "Label"
             c.setFillColor(col); c.setFont(fnt, nfs)
             c.drawCentredString(cx + nr * math.cos(a),
                                 cy + nr * math.sin(a) - nfs * 0.36, lab)

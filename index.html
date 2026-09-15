@@ -3345,24 +3345,33 @@ function chordSets(d, ch) {
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
 /* ---------------- diagram label sizing ----------------
-   ONE rule sizes every note label in the pan, and tools/hifi.py carries the
-   same three constants and the same arithmetic for print:
+   ONE rule sizes every glyph the pan draws, and tools/hifi.py carries the
+   same constants and the same arithmetic for print:
 
-     size = r * LABEL_RATIO * k(N)   k(N) = clamp((9 / N) ** 0.2, 0.62, 1)
+     name   = r * LABEL_RATIO[zone]
+     number = r_note * NUM_RATIO
 
    `r` is the field's own drawn radius, so the ding, the top shell and the
    bottom shell all come out of one expression - the geom's f_ding / f_note /
-   f_bnote figures are no longer what gets drawn. `N` is the deck's field
-   count: the busier the pan, the smaller every label on it, with a 9-field
-   deck (the 8+1 pans the ratio was measured on) at the full ratio. */
-const LABEL_RATIO = 0.675, LABEL_REF_FIELDS = 9,
-      LABEL_DENSITY_EXP = 0.2, LABEL_DENSITY_FLOOR = 0.62;
-function labelDensity(n) {
-  if (!(n > 0)) return 1;
-  return Math.max(LABEL_DENSITY_FLOOR,
-                  Math.min(1, Math.pow(LABEL_REF_FIELDS / n, LABEL_DENSITY_EXP)));
+   f_bnote / f_num figures are OUTPUTS of this rule, not figures anything
+   reads. The radius is the whole of the "scale down with the number of
+   notes" response: more fields on one pan means smaller fields, and a
+   smaller field draws a smaller label. There is deliberately no density
+   factor on top of it - one would double-count density and shrink the
+   busiest deck, the hardest to read already, further still.
+
+   The ratios are the ones src/engine/layout.js already solves with, so a
+   generated deck draws at exactly the size its layout budgeted, clearance
+   included. The ding takes the larger of the two built-in ding ratios: no
+   deck may draw smaller than it does today. */
+const LABEL_RATIO_DING = 0.675, LABEL_RATIO_NOTE = 0.765,
+      LABEL_RATIO_BNOTE = 0.784, NUM_RATIO = 0.64;
+function labelRatio(zone) {
+  return zone === "ding" ? LABEL_RATIO_DING
+       : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
 }
-function labelSize(r, n) { return r * LABEL_RATIO * labelDensity(n); }
+function labelSize(r, zone) { return r * labelRatio(zone); }
+function numSize(rNote) { return rNote * NUM_RATIO; }
 
 /* ---------------- SVG pan ---------------- */
 function pan(d, ch) {
@@ -3406,14 +3415,14 @@ function pan(d, ch) {
       font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
   }
 
-  const nFields = Object.keys(d.fields).length;
+  const numFs = numSize(R * g.r_note);
   for (const fid in d.fields) {
     const id = +fid;
     const [name, oct, , zone, ang, lab] = d.fields[fid];
     if (zone === "ding") {
       const dy = (g.ding_dy || 0) * R, rr = R * g.r_ding;
       s += field(0, dy, rr, id, false);
-      s += label(0, dy, name, oct, labelSize(rr, nFields), "#242424");
+      s += label(0, dy, name, oct, labelSize(rr, zone), "#242424");
       continue;
     }
     const isB = zone === "bottom";
@@ -3422,10 +3431,10 @@ function pan(d, ch) {
     const [x, y] = P(orb, ang);
     s += field(x, y, rr, id, isB);
     const lit = blue.has(id) || green.has(id);
-    s += label(x, y, name, oct, labelSize(rr, nFields),
+    s += label(x, y, name, oct, labelSize(rr, zone),
                isB && !lit ? "#8a8a8a" : "#242424");
     // numbers
-    let nr, col, fs = R * g.f_num;
+    let nr, col, fs = numFs;
     if (isB) { nr = orb + rr + R * g.n_out; col = "#E27005"; }
     else if (zone === "rim" && g.rim_num_out) { nr = orb + rr + R * g.n_in; col = "#333"; }
     else { nr = orb - rr - R * g.n_in; col = "#333"; }
