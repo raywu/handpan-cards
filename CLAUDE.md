@@ -160,7 +160,7 @@ this by attaching per-instrument images.
   down based on number of notes"). ONE rule sizes every glyph the pan draws,
   on every deck and in BOTH outputs:
 
-      name   = r x RATIO[zone]      ding 0.675, rim/inner 0.765, bottom 0.784
+      name   = r x RATIO[zone]   ding 0.70875, rim/inner 0.80325, bottom 0.8232
       number = r_note x 0.64
       octave digit = 0.66 x its name (print and app alike)
 
@@ -177,23 +177,37 @@ this by attaching per-instrument images.
   still. A rule change may never draw any deck smaller than it ships today,
   and the note NAME must always be larger than the index number beside it;
   both are asserted (`tests/test_print.py::LabelSizeRuleTest`).
-  The ratios are the ones `src/engine/layout.js` already solves with
-  (`F_NOTE_RATIO`, `F_BNOTE_RATIO`, `F_NUM_RATIO`), so a generated deck draws
-  at exactly the size its layout budgeted, `ext` clearance included. The ding
-  takes 0.675 rather than the engine's `F_DING_RATIO` 0.6 because 0.675 is the
-  larger of the two built-in ding ratios and nothing may shrink.
+  Each ratio is `src/engine/layout.js`'s own solver constant **times 1.05**:
+  0.675 x 1.05 for the ding (0.675 is the larger of the two built-in ding
+  ratios, deliberately not the engine's `F_DING_RATIO` 0.6), `F_NOTE_RATIO`
+  0.765 x 1.05, `F_BNOTE_RATIO` 0.784 x 1.05. That 1.05 is historic: before
+  the rule, `index.html` multiplied every diagram name by 1.05 while
+  `tools/hifi.py` multiplied by nothing, so the two renderers were 5% apart on
+  every card. **Exact parity with the solver and an unshrunk app are not
+  simultaneously satisfiable, and the OWNER CHOSE NO-SHRINK** (2026-09-15):
+  print grows ~5% to meet the app and the app is left exactly as it was. Names
+  therefore draw 5% over the solver's budget for the field circle, which is
+  safe because ring clearance (`ext`) is computed from `f_num` ALONE
+  (`src/engine/layout.js:288-302`), so a name's size cannot reach it, and
+  because `fit_note` shrinks anything that genuinely overflows. `NUM_RATIO`
+  takes no 1.05: both renderers already drew the index number at `f_num`.
+  `hifi.LABEL_WIDTH_RATIO` (1.47 = 1.40 x 1.05) carries the same factor, so
+  the fitter fires on exactly the labels it fired on before the growth.
   Print then applies `hifi.fit_note`, which shrinks a label further only when
   the name would overflow its own circle - it does not fire on any of the 61
   cards. Note that `fit_note`'s own floor is 2.5 pt, NOT the 3.6 pt of
   `hifi.fit`: **no floor in the pipeline protects a diagram label**, so the
   3.6 pt floor is asserted explicitly by
-  `test_no_label_falls_below_the_print_floor`, over every glyph including the
-  octave digit (the smallest text in the PDFs). Today's smallest glyph is the
-  octave on Pygmy's bottom shell at **3.69 pt**; the smallest note name is
-  Pygmy's bottom shell at **5.59 pt**.
+  `test_no_label_falls_below_the_print_floor`, over every glyph the pan draws
+  (names, octave digits and index numbers). Today's smallest glyph is the
+  octave on Pygmy's bottom shell at **3.87 pt**; the smallest note name is
+  Pygmy's bottom shell at **5.87 pt**.
   The constants live twice - `tools/hifi.py` (`LABEL_RATIO_*`, `NUM_RATIO`)
   and `pan()` in `index.html` - and `tests/test_render_agreement.py` pins the
-  two renderers to the same drawn sizes, names and numbers alike.
+  two renderers to the same drawn sizes, names and numbers alike, **per
+  field**, and asserts the no-shrink baseline PER RENDERER (print vs `f_*`,
+  app vs `f_* x 1.05`) on the sizes they actually emit. A single baseline
+  there is a tautology that a 5% app-side shrink passes straight through.
 - **Card anatomy:** header (deck name, #index, root-coloured scale-degree
   label, small-caps subtitle), Marcellus chord name with superscript,
   diagram, optional bottom-note badge, note line, number line.

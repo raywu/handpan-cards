@@ -3360,12 +3360,17 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
    factor on top of it - one would double-count density and shrink the
    busiest deck, the hardest to read already, further still.
 
-   The ratios are the ones src/engine/layout.js already solves with, so a
-   generated deck draws at exactly the size its layout budgeted, clearance
-   included. The ding takes the larger of the two built-in ding ratios: no
-   deck may draw smaller than it does today. */
-const LABEL_RATIO_DING = 0.675, LABEL_RATIO_NOTE = 0.765,
-      LABEL_RATIO_BNOTE = 0.784, NUM_RATIO = 0.64;
+   Each ratio is src/engine/layout.js's own solver constant (F_NOTE_RATIO
+   0.765, F_BNOTE_RATIO 0.784, and 0.675 for the ding - the larger of the two
+   built-in ding ratios, not the engine's F_DING_RATIO 0.6) times 1.05. This
+   file used to multiply every diagram name by that 1.05 while print
+   multiplied by nothing, so the two renderers were 5% apart. One rule cannot
+   be exact parity with the solver AND leave this side unshrunk; the owner
+   chose no-shrink, so the 5% is baked in and print grows to meet the app.
+   Safe above the solver's budget because ring clearance is computed from
+   f_num alone, and fit_note shrinks anything that truly overflows. */
+const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
+      LABEL_RATIO_BNOTE = 0.8232, NUM_RATIO = 0.64;
 function labelRatio(zone) {
   return zone === "ding" ? LABEL_RATIO_DING
        : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;

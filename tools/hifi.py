@@ -86,16 +86,36 @@ def note_w(name, octv, font, size):
 # density factor on top - multiplying one in double-counts density and makes
 # the busiest deck, the one already hardest to read, smaller still.
 #
-# The ratios are the ones the scale engine already solves with
-# (`src/engine/layout.js` F_NOTE_RATIO / F_BNOTE_RATIO / F_NUM_RATIO), so a
-# generated deck is drawn at exactly the size its layout budgeted - including
-# the `ext` clearance, which reaches via f_num. The ding takes 0.675 rather
-# than the engine's 0.6: it is the larger of the two built-in ding ratios, and
-# the rule is not allowed to draw any deck smaller than it ships today.
-LABEL_RATIO_DING = 0.675     # name inside the ding
-LABEL_RATIO_NOTE = 0.765     # name inside a rim or inner field
-LABEL_RATIO_BNOTE = 0.784    # name inside a bottom-shell field
-NUM_RATIO = 0.64             # index number, from the top-field radius
+# Each ratio is the engine's own solver constant (`src/engine/layout.js`
+# F_NOTE_RATIO 0.765 / F_BNOTE_RATIO 0.784, and 0.675 for the ding - the
+# larger of the two built-in ding ratios, not the engine's F_DING_RATIO 0.6)
+# times 1.05. That 1.05 is what the APP multiplied every diagram name by
+# before this rule existed, while print multiplied by nothing: the two
+# renderers were 5% apart, and a single rule cannot be exact parity with the
+# solver AND leave the app unshrunk. OWNER DECISION (2026-09, queue row 221):
+# no-shrink wins. Print therefore grows ~5% to meet the app, and no glyph in
+# either output is smaller than it is today.
+#
+# Drawing 5% over the solver's budget for the field circle is safe because
+# (1) ring clearance is computed from f_num alone (src/engine/layout.js
+# 288-302), so a name's size cannot reach it; and (2) fit_note auto-shrinks
+# any label that genuinely overflows its field, and it does not fire on any
+# of the 61 cards even after the growth - that is the headroom being spent.
+LABEL_RATIO_DING = 0.70875   # name inside the ding          (0.675 x 1.05)
+LABEL_RATIO_NOTE = 0.80325   # name inside a rim/inner field (0.765 x 1.05)
+LABEL_RATIO_BNOTE = 0.8232   # name inside a bottom field    (0.784 x 1.05)
+NUM_RATIO = 0.64             # index number, from the top-field radius.
+                             # Both renderers already drew this at f_num,
+                             # so it takes no 1.05.
+
+# The width a name may occupy inside its field before fit_note steps it down,
+# as a multiple of the field radius. It carries the same 1.05 as the sizes
+# above, and for the same reason: the glyphs grew 5%, so their box grows 5%,
+# and fit_note fires on exactly the labels it fired on before - no more, no
+# fewer. Without it the growth alone would trip the fitter on Pygmy's bottom
+# shell and pull print back under the app, which is the shrink this rule
+# exists to prevent. 1.47r is still well inside the 2r field.
+LABEL_WIDTH_RATIO = 1.47     # 1.40 x 1.05
 
 
 def label_ratio(zone):
@@ -293,7 +313,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
             dy = R * g.get("ding_dy", 0.0)
             draw_ring(c, cx, cy - dy, rr, state(i))
             fs0 = fit_note(nm, ov, "Label", label_size(rr, zone),
-                           rr * 1.40)
+                           rr * LABEL_WIDTH_RATIO)
             note_text(c, cx, cy - dy - rr * 0.30, nm, ov, "Label", fs0, INK)
             continue
         orb = R * g[zone]
@@ -301,7 +321,8 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
         a = math.radians(ang)
         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
-        fs = fit_note(nm, ov, "Label", label_size(rr, zone), rr * 1.40)
+        fs = fit_note(nm, ov, "Label", label_size(rr, zone),
+                      rr * LABEL_WIDTH_RATIO)
         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
         if numbers:
             if zone == "bottom":

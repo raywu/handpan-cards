@@ -453,7 +453,7 @@ test("the labels the renderers actually DRAW stay legible", () => {
   // guard on them alone guards nothing about the drawn size. These are the
   // rule's ratios, re-declared from the spec, applied to the radius the
   // solver actually returns.
-  const RATIO_NOTE = 0.765, RATIO_BNOTE = 0.784, RATIO_NUM = 0.64;
+  const RATIO_NOTE = 0.80325, RATIO_BNOTE = 0.8232, RATIO_NUM = 0.64;
   for (const entry of SWEEP) {
     const { geom } = solved(entry);
     const name = RATIO_NOTE * geom.r_note;
@@ -461,8 +461,16 @@ test("the labels the renderers actually DRAW stay legible", () => {
     assert.ok(name >= 0.06, `${entry.label}: drawn name ${name}`);
     assert.ok(num >= 0.05, `${entry.label}: drawn number ${num}`);
     assert.ok(name > num, `${entry.label}: name ${name} under number ${num}`);
-    assert.ok(name >= geom.f_note - 5e-5,
-      `${entry.label}: drawn name ${name} below the f_note ${geom.f_note} it replaces`);
+    // The upper bound, which is the one worth asserting here. A name is drawn
+    // at 5% over the solver's own budget for the field (the app has always
+    // done so and the rule keeps it, CLAUDE.md "Design system"), so the thing
+    // that can go wrong is the name outgrowing the circle it sits in - not
+    // falling under f_note, which IS ratio x r_note rounded and so cannot
+    // fail. The name's size must stay inside the field radius. The no-shrink
+    // direction is asserted where it is not circular: on the sizes the two
+    // renderers EMIT, in tests/test_render_agreement.py.
+    assert.ok(name < geom.r_note,
+      `${entry.label}: drawn name ${name} does not fit the field radius ${geom.r_note}`);
     if (geom.bottom) {
       const bname = RATIO_BNOTE * geom.r_bnote;
       assert.ok(bname >= 0.05, `${entry.label}: drawn bottom name ${bname}`);
@@ -474,8 +482,8 @@ test("the labels the renderers actually DRAW stay legible", () => {
       // src/engine/layout.js - out of this lane's boundary. The three
       // built-in decks ARE asserted, in tests/test_print.py and
       // tests/test_render_agreement.py.
-      assert.ok(bname >= geom.f_bnote - 5e-5,
-        `${entry.label}: drawn bottom name ${bname} below f_bnote ${geom.f_bnote}`);
+      assert.ok(bname < geom.r_bnote,
+        `${entry.label}: drawn bottom name ${bname} does not fit the bottom field radius ${geom.r_bnote}`);
     }
   }
 });
