@@ -149,7 +149,7 @@ function boot(opts = {}) {
   // here. showPlaceholderPan() draws the seed the placeholder shows, so a stub
   // with no placeholder would silently exercise the empty-string path and
   // report a pass for behaviour the browser does not have.
-  for (const [, id, ph] of require("node:fs").readFileSync(APP, "utf8")
+  for (const [, id, ph] of html
       .matchAll(/<input[^>]*\bid="([^"]+)"[^>]*\bplaceholder="([^"]*)"/g)) {
     if (els[id]) els[id].placeholder = ph;
   }

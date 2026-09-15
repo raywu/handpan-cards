@@ -1,5 +1,5 @@
-# suite: node --test --test-name-pattern ^an.empty.box.shows.the.placeholder.seed.as.an.example$ tests/preview.test.js
 # kills: an empty box shows the placeholder seed as an example
+# suite: node --test --test-name-pattern ^an.empty.box.shows.the.placeholder.seed.as.an.example$ tests/preview.test.js
 # The empty box draws nothing again, so the only teaching of the seed grammar
 # before the first keystroke is the text hint, and the plate enters the flow on
 # the first character.

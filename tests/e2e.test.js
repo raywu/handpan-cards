@@ -2581,7 +2581,9 @@ function run() {
     // 37px difference measured on 2026-09-11. Reserving it would cost every
     // phone 37px of sheet permanently to hold still at a moment BEFORE the
     // user has typed anything, so it is spent on the typing path instead.
-    // The next test pins that step so it cannot quietly grow.
+    // The next test pins what the step is MADE of - nothing but the parse
+    // line contributes to it - not its magnitude, which moves with how
+    // PARSE_HINT happens to wrap.
     try {
       await freshLoad();
       await b.setViewport(380, 800, true);
