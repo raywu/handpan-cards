@@ -41,6 +41,7 @@ class RecordingCanvas:
         self._stroke = None
         self._dashed = False
         self._font = None
+        self._size = 0.0
 
     # --- state the renderer sets -----------------------------------------
     def setStrokeColor(self, c):
@@ -55,12 +56,15 @@ class RecordingCanvas:
 
     def setFont(self, name, size, *a, **k):
         self._font = name
+        self._size = size
 
     def drawString(self, x, y, text, *a, **k):
-        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
+                           "size": self._size, "anchor": "l"})
 
     def drawCentredString(self, x, y, text, *a, **k):
-        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
+                           "size": self._size, "anchor": "c"})
 
     # --- everything else is ignored --------------------------------------
     def __getattr__(self, _name):
@@ -130,7 +134,46 @@ def render_print(deck):
             num_line = line_at(deck["y_num"], "Notes")
             badge = line_at(deck["y_note"] + 13, "LabelSB")
 
+            # Diagram note-NAME label sizes, normalised to R = 100 like the
+            # positions above. note_text() draws the name with drawString and
+            # its octave digit after it at 0.66x, so the alphabetic glyph of
+            # each label is the one carrying the label's size; the index
+            # numbers go out through drawCentredString and are excluded.
+            # The card's own chrome also draws "Label" runs (the deck name in
+            # the header and the footer), so the diagram is bounded: every
+            # tonefield sits within 1.15R of the pan centre, nothing else on
+            # the card is closer than 1.4R.
+            def in_diagram(t):
+                return math.hypot(t["x"] - cx, t["y"] - cy) <= R * 1.25
+
+            # Keyed by the FIELD each label names - its note plus its octave,
+            # unique within a deck - not sorted into a multiset. Two
+            # renderers can draw the same set of sizes and still hand them to
+            # different fields, and a comparison of sorted lists cannot see
+            # it. note_text() emits the name and then its octave digit, so
+            # the glyphs arrive in pairs and the first of each carries the
+            # label's size.
+            glyphs = [t for t in rec.texts if t["font"] == "Label"
+                      and t["anchor"] == "l" and in_diagram(t)]
+            label_sizes = {}
+            for name_g, oct_g in zip(glyphs[0::2], glyphs[1::2]):
+                label_sizes[name_g["text"] + oct_g["text"]] = \
+                    round(name_g["size"] / R * 100, 3)
+
+            # The index numbers are the centred runs whose text is one of
+            # the deck's own field labels, keyed by that text. The bottom
+            # shell's numbers sit past 1.36R, outside the names' bound, so
+            # they are identified by what they SAY rather than by where.
+            numbering = set(v[5] for k, v in deck["spec"].items()
+                            if k != "_geom" and v[3] != "ding")
+            number_sizes = {
+                t["text"]: round(t["size"] / R * 100, 3) for t in rec.texts
+                if t["font"] in ("Label", "LabelSB") and t["anchor"] == "c"
+                and t["text"] in numbering}
+
             out.append({"name": chord[0] + chord[1], "fields": fields,
+                        "labelSizes": label_sizes,
+                        "numberSizes": number_sizes,
                         "noteLine": [t.strip() for t in note_line.split("-") if t.strip()],
                         "numLine": [t.strip() for t in num_line.split("-") if t.strip()],
                         "badgeText": badge.strip()})
@@ -194,6 +237,97 @@ class RenderAgreement(unittest.TestCase):
         for app_c, print_c in self.each_card():
             self.assertEqual(app_c["numLine"], print_c["numLine"],
                              "%s %s: drawn number line" % (app_c["deck"], app_c["name"]))
+
+    def test_diagram_label_sizes_agree(self):
+        """One label rule, two renderers: the drawn sizes must match.
+
+        Both sides are measured from emitted output and normalised to R = 100,
+        so a renderer that keeps its own fudge factor - or reads a stored
+        f_note / f_bnote figure instead of the rule - separates here.
+        """
+        for app_c, print_c in self.each_card():
+            where = "%s %s: label sizes" % (app_c["deck"], app_c["name"])
+            self.assertTrue(app_c["labelSizes"], where + " (none drawn)")
+            self.assertEqual(sorted(app_c["labelSizes"]),
+                             sorted(print_c["labelSizes"]),
+                             where + " (the two renderers label different "
+                                     "fields)")
+            for field, a in app_c["labelSizes"].items():
+                p = print_c["labelSizes"][field]
+                self.assertAlmostEqual(
+                    a, p, delta=TOL,
+                    msg="%s, field %s: %.3f (app) vs %.3f (print)"
+                        % (where, field, a, p))
+
+    def test_diagram_number_sizes_agree(self):
+        """The index numbers come out of the same rule, so they match too."""
+        for app_c, print_c in self.each_card():
+            where = "%s %s: number sizes" % (app_c["deck"], app_c["name"])
+            self.assertTrue(app_c["numberSizes"], where + " (none drawn)")
+            self.assertEqual(sorted(app_c["numberSizes"]),
+                             sorted(print_c["numberSizes"]),
+                             where + " (different numbers drawn)")
+            for field, a in app_c["numberSizes"].items():
+                p = print_c["numberSizes"][field]
+                self.assertAlmostEqual(
+                    a, p, delta=TOL,
+                    msg="%s, number %s: %.3f (app) vs %.3f (print)"
+                        % (where, field, a, p))
+
+    def test_the_name_is_always_larger_than_the_number_beside_it(self):
+        """The hierarchy row 221 is about: the note NAME is the primary
+        label. A rule that sizes names and numbers separately can invert it,
+        so this is asserted on what both renderers actually emit."""
+        for app_c, print_c in self.each_card():
+            for side, card in (("app", app_c), ("print", print_c)):
+                small = min(card["labelSizes"].values())
+                big = max(card["numberSizes"].values())
+                self.assertGreater(
+                    small, big,
+                    "%s %s (%s): smallest name %.3f is not above the largest "
+                    "index number %.3f"
+                    % (app_c["deck"], app_c["name"], side, small, big))
+
+    def test_neither_renderer_draws_smaller_than_it_did_before_the_rule(self):
+        """The no-shrink invariant, measured on EMITTED OUTPUT, per renderer.
+
+        Before the one rule, the two renderers disagreed by a constant: the
+        app multiplied every diagram name by 1.05, print by nothing, so their
+        baselines are different numbers and have to be written out separately.
+        A single baseline of ``f_* `` - the print figure - is satisfied by a
+        rule that quietly takes 5% off every name in the APP, which is what
+        shipped and what this catches. The numbers were drawn at f_num by
+        both sides, so they share one baseline.
+
+        Sizes here are normalised to R = 100, the same units the geom
+        fractions are already in, so the geom fraction times 100 IS the
+        baseline.
+        """
+        APP_INFLATION = 1.05
+        for app_c, print_c in self.each_card():
+            deck = DECK_BY_ID[app_c["deck"]]
+            geom = deck["spec"]["_geom"]
+            spec = deck["spec"]
+            zone_of = {v[0] + str(v[1]): v[3]
+                       for k, v in spec.items() if k != "_geom"}
+            for side, card, inflation in (("app", app_c, APP_INFLATION),
+                                          ("print", print_c, 1.0)):
+                for field, drawn in card["labelSizes"].items():
+                    zone = zone_of[field]
+                    key = ("f_ding" if zone == "ding" else
+                           "f_bnote" if zone == "bottom" else "f_note")
+                    was = geom[key] * 100 * inflation
+                    self.assertGreaterEqual(
+                        drawn + 1e-3, was,
+                        "%s %s (%s): %s draws at %.3f, under the %.3f this "
+                        "renderer drew before the label rule"
+                        % (app_c["deck"], app_c["name"], side, field,
+                           drawn, was))
+                for label, drawn in card["numberSizes"].items():
+                    self.assertGreaterEqual(
+                        drawn + 1e-3, geom["f_num"] * 100,
+                        "%s %s (%s): number %s draws at %.3f, under f_num"
+                        % (app_c["deck"], app_c["name"], side, label, drawn))
 
     def test_drawn_bottom_note_badge_agrees(self):
         """The printed badge text itself - nothing else asserts what it says."""

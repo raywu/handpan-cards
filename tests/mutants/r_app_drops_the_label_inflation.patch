@@ -1,0 +1,22 @@
+# kills: test_neither_renderer_draws_smaller_than_it_did_before_the_rule
+# suite: python3 -m unittest -k test_neither_renderer_draws_smaller_than_it_did_before_the_rule tests.test_render_agreement
+# Takes the app's historic 1.05 back off the zone ratios - the exact
+# regression this PR shipped once: every diagram NAME in the app loses
+# ~4.7%, on all three decks, while print is untouched. A no-shrink
+# baseline written only against the print figure passes it straight
+# through, which is why the baseline is now written per renderer.
+diff --git a/index.html b/index.html
+index 2c421ff..c477043 100644
+--- a/index.html
++++ b/index.html
+@@ -3369,8 +3369,8 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    chose no-shrink, so the 5% is baked in and print grows to meet the app.
+    Safe above the solver's budget because ring clearance is computed from
+    f_num alone, and fit_note shrinks anything that truly overflows. */
+-const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
+-      LABEL_RATIO_BNOTE = 0.8232, NUM_RATIO = 0.64;
++const LABEL_RATIO_DING = 0.675, LABEL_RATIO_NOTE = 0.765,
++      LABEL_RATIO_BNOTE = 0.784, NUM_RATIO = 0.64;
+ function labelRatio(zone) {
+   return zone === "ding" ? LABEL_RATIO_DING
+        : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;

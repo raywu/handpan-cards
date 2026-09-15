@@ -44,6 +44,29 @@ for (const d of DECKS) {
     }
     fields.sort((a, b) => a.x - b.x || a.y - b.y);
 
+    // The note-NAME labels the diagram actually draws, keyed by the field
+    // they name (its note plus its octave, e.g. "Ab4" - unique within a
+    // deck). A name label is the only <text> carrying a <tspan> (its
+    // octave), so this cannot pick up the index numbers. R is 100 in the
+    // app's own viewBox, the same normalisation the Python side puts the
+    // print sizes into. Keyed rather than sorted so the comparison is
+    // per FIELD: two renderers can draw the same multiset of sizes and still
+    // hand them to different fields.
+    const labelSizes = {};
+    for (const m of svg.matchAll(
+      /<text[^>]*font-size="([\d.eE+-]+)"[^>]*>([^<]*)<tspan[^>]*>([^<]*)<\/tspan>/g)) {
+      labelSizes[m[2] + m[3]] = r3(+m[1]);
+    }
+
+    // The index numbers: the diagram's other <text> runs, the ones with no
+    // <tspan>, keyed by what each one says ("1".."9", "U1"..). They come out
+    // of the same rule and must agree per field too.
+    const numberSizes = {};
+    for (const m of svg.matchAll(
+      /<text[^>]*font-size="([\d.eE+-]+)"[^>]*>([^<]*)<\/text>/g)) {
+      numberSizes[m[2]] = r3(+m[1]);
+    }
+
     // The note line, number line and badge as the app actually RENDERS them,
     // parsed back out of linesHTML - not re-read from ch.fields, which would
     // just compare two copies of the same input data.
@@ -61,6 +84,8 @@ for (const d of DECKS) {
       noteLine,
       numLine,
       badgeText: badgeMatch ? badgeMatch[1].trim() : "",
+      labelSizes,
+      numberSizes,
       fields,
     });
   }

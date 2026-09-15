@@ -31,6 +31,47 @@ SPEC_CROP_MARGIN = 6.0   # crop marks live 6 pt from the page edge
 # the outermost ink on a card, so text has to stay inside it.
 MIN_TEXT_MARGIN = 2.0
 
+# --- diagram label rule, quoted from CLAUDE.md ("Design system") -----------
+# Every glyph the pan draws is sized from the field's OWN radius times a
+# constant for its zone. Nothing is read out of the geometry table, and no
+# density term multiplies on top of the radius: the radius already IS the
+# deck's answer to "more notes" - more fields on one pan means smaller
+# fields, so smaller labels.
+#
+# Each zone ratio carries the app's historic 1.05: before the rule, the app
+# drew every diagram name 5% above the stored f_* figure the print pipeline
+# used, so the two renderers never agreed. Unifying them on the print figure
+# would have SHRUNK the app on all three decks, which the rule is forbidden
+# to do, so the 5% is baked into the constants and print grows to meet the
+# app instead.  MAIN_APP_INFLATION below is that factor, kept separate so the
+# no-shrink baselines can be written per renderer.
+SPEC_LABEL_RATIO_DING = 0.70875   # name inside the ding        (0.675 x 1.05)
+SPEC_LABEL_RATIO_NOTE = 0.80325   # name inside a rim/inner field (0.765 x 1.05)
+SPEC_LABEL_RATIO_BNOTE = 0.8232   # name inside a bottom field    (0.784 x 1.05)
+SPEC_NUM_RATIO = 0.64             # the index number beside a field
+SPEC_OCTAVE_RATIO = 0.66          # the octave digit, relative to its name
+MAIN_APP_INFLATION = 1.05         # what main's APP multiplied f_ding/f_note/
+                                  # f_bnote by (index.html, pre-rule). Print
+                                  # multiplied by nothing.
+SPEC_LABEL_PRINT_FLOOR = 3.6      # asserted HERE only. The pipeline does not
+                                  # enforce it: diagram labels go through
+                                  # fit_note (floor 2.5), not fit (floor 3.6),
+                                  # and fit_note never fires on these decks.
+
+
+def spec_label_ratio(zone):
+    """CLAUDE.md's label rule, written out from the spec."""
+    if zone == "ding":
+        return SPEC_LABEL_RATIO_DING
+    if zone == "bottom":
+        return SPEC_LABEL_RATIO_BNOTE
+    return SPEC_LABEL_RATIO_NOTE
+
+
+def spec_label_size(radius, zone):
+    return radius * spec_label_ratio(zone)
+
+
 ALL_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
 
 
@@ -591,5 +632,242 @@ class DrawRingTest(PaletteSafeTest):
                     "the coloured band swallows the inner hairline")
 
 
-if __name__ == "__main__":
-    unittest.main()
+class LabelSizeRuleTest(unittest.TestCase):
+    """ONE label rule, applied to every deck, every shell and every glyph.
+
+    Sizes are measured from the glyphs ``draw_pan`` actually lays down, never
+    read back out of the geometry table it was handed.
+    """
+
+    def drawn_glyphs(self, deck, R, numbers=True):
+        canvas = RecordingCanvas()
+        hifi.draw_pan(canvas, 0.0, 0.0, R, deck["spec"], numbers=numbers)
+        return canvas.texts
+
+    def drawn_name_sizes(self, deck, R):
+        """Sizes of every glyph a note label draws: the name AND its octave.
+
+        The octave digit is drawn at 0.66x the name and is the smallest text
+        the pipeline emits anywhere, so a floor check that skips it checks
+        nothing.
+        """
+        return sorted(round(t["size"], 6)
+                      for t in self.drawn_glyphs(deck, R, numbers=False))
+
+    def expected_name_sizes(self, deck, R):
+        """The same multiset, derived from the deck data and the spec rule."""
+        spec = deck["spec"]
+        geom = spec["_geom"]
+        out = []
+        for f in [k for k in spec if k != "_geom"]:
+            zone = spec[f][3]
+            frac = (geom["r_ding"] if zone == "ding" else
+                    geom["r_bnote"] if zone == "bottom" else geom["r_note"])
+            size = spec_label_size(R * frac, zone)
+            out.append(round(size, 6))
+            out.append(round(size * SPEC_OCTAVE_RATIO, 6))
+        return sorted(out)
+
+    def name_sizes_by_zone(self, deck, R):
+        """zone -> the name size the rule asks for, per the spec."""
+        spec = deck["spec"]
+        geom = spec["_geom"]
+        out = {}
+        for f in [k for k in spec if k != "_geom"]:
+            zone = spec[f][3]
+            frac = (geom["r_ding"] if zone == "ding" else
+                    geom["r_bnote"] if zone == "bottom" else geom["r_note"])
+            out[zone] = spec_label_size(R * frac, zone)
+        return out
+
+    def test_every_note_label_is_sized_by_the_rule(self):
+        for deck in ALL_DECKS:
+            with self.subTest(deck=deck["name"]):
+                R = deck["R"]
+                drawn = self.drawn_name_sizes(deck, R)
+                want = self.expected_name_sizes(deck, R)
+                self.assertEqual(len(drawn), len(want),
+                                 "every field must carry a name and an octave")
+                for got, expect in zip(drawn, want):
+                    self.assertAlmostEqual(
+                        got, expect, places=4,
+                        msg="%s: label %.4f pt, rule says %.4f pt"
+                            % (deck["name"], got, expect))
+
+    def test_a_denser_pan_gets_smaller_labels_through_its_radius(self):
+        """Row 221, via the only term that carries it: the field radius.
+
+        The rule multiplies no density factor on top. A pan that fits more
+        notes has smaller fields, and smaller fields are the whole of the
+        response - which is why the rule can never shrink a label past what
+        the deck's own geometry already asked for.
+        """
+        for zone in ("ding", "rim", "bottom"):
+            sizes = [hifi.label_size(r, zone) for r in (12.0, 10.0, 8.0, 6.0)]
+            for a, b in zip(sizes, sizes[1:]):
+                self.assertGreater(a, b, "a smaller field must draw a smaller "
+                                         "label in zone %r: %r" % (zone, sizes))
+        pygmy = decks.PYGMY["spec"]["_geom"]
+        hijaz = decks.HIJAZ["spec"]["_geom"]
+        self.assertGreater(
+            hifi.label_size(decks.HIJAZ["R"] * hijaz["r_note"], "rim"),
+            hifi.label_size(decks.PYGMY["R"] * pygmy["r_note"], "rim"),
+            "the 18-field pan must draw smaller rim labels than the 9-field pan")
+        for zone in ("ding", "rim", "inner", "bottom"):
+            self.assertAlmostEqual(
+                hifi.label_size(10.0, zone), 10.0 * spec_label_ratio(zone),
+                places=6, msg="zone %r must use the spec ratio" % (zone,))
+
+    def test_no_label_is_smaller_than_what_either_renderer_drew_before(self):
+        """The rule may never draw a label smaller than the size the glyph
+        ACTUALLY CAME OUT AT before the rule existed - in EITHER renderer.
+
+        The two renderers did not draw the same size, which is the whole
+        reason the baseline has to be written per renderer:
+
+            print (tools/hifi.py) drew  R * f_*
+            app   (index.html)   drew  R * f_* * 1.05
+
+        Comparing only against ``R * f_*`` compares the unified rule to the
+        SMALLER of the two and passes while the app silently loses 5% on
+        every name on every card - which is exactly what happened. The app's
+        number is the binding one; ``fit_note`` is what absorbs the growth on
+        the print side. Pygmy is the deck row 221 calls too small to read
+        already, and the rule is not allowed to make it worse anywhere.
+
+        The app is pinned to these same numbers by
+        tests/test_render_agreement.py, which measures its emitted SVG.
+        """
+        for deck in ALL_DECKS:
+            spec = deck["spec"]
+            geom = spec["_geom"]
+            R = deck["R"]
+            for f in [k for k in spec if k != "_geom"]:
+                zone = spec[f][3]
+                key = ("f_ding" if zone == "ding" else
+                       "f_bnote" if zone == "bottom" else "f_note")
+                frac = (geom["r_ding"] if zone == "ding" else
+                        geom["r_bnote"] if zone == "bottom" else geom["r_note"])
+                drawn = hifi.label_size(R * frac, zone)
+                for side, was in (("print", R * geom[key]),
+                                  ("app", R * geom[key] * MAIN_APP_INFLATION)):
+                    with self.subTest(deck=deck["name"], zone=zone, side=side):
+                        self.assertGreaterEqual(
+                            drawn + 1e-9, was,
+                            "%s %s name draws at %.4f pt, under the %.4f pt "
+                            "the %s renderer drew before the rule"
+                            % (deck["name"], zone, drawn, was, side))
+                        self.assertGreaterEqual(
+                            drawn * SPEC_OCTAVE_RATIO + 1e-9,
+                            was * SPEC_OCTAVE_RATIO,
+                            "%s %s octave shrank on the %s side"
+                            % (deck["name"], zone, side))
+            if any(spec[k][3] != "ding" for k in spec if k != "_geom"):
+                # Both renderers drew the index number at exactly R * f_num;
+                # neither inflated it, so there is one baseline here.
+                self.assertGreaterEqual(
+                    hifi.num_size(R * geom["r_note"]) + 1e-9, R * geom["f_num"],
+                    "%s index number shrank below f_num" % deck["name"])
+
+    def test_every_name_is_larger_than_the_number_beside_it(self):
+        """The hierarchy the rule has to keep: the note NAME is the primary
+        label and the index number is secondary, on every deck and shell."""
+        for deck in ALL_DECKS:
+            spec = deck["spec"]
+            geom = spec["_geom"]
+            R = deck["R"]
+            num = hifi.num_size(R * geom["r_note"])
+            with self.subTest(deck=deck["name"]):
+                for zone, size in self.name_sizes_by_zone(deck, R).items():
+                    self.assertGreater(
+                        size, num,
+                        "%s: the %s name draws at %.3f pt under a %.3f pt "
+                        "index number" % (deck["name"], zone, size, num))
+
+    def test_numbers_are_drawn_by_the_rule_too(self):
+        for deck in ALL_DECKS:
+            spec = deck["spec"]
+            geom = spec["_geom"]
+            R = deck["R"]
+            want = round(R * geom["r_note"] * SPEC_NUM_RATIO, 4)
+            with_nums = [round(t["size"], 4)
+                         for t in self.drawn_glyphs(deck, R)]
+            without = [round(t["size"], 4)
+                       for t in self.drawn_glyphs(deck, R, numbers=False)]
+            for size in without:
+                with_nums.remove(size)
+            drawn = set(with_nums)
+            with self.subTest(deck=deck["name"]):
+                self.assertEqual(drawn, {want},
+                                 "%s index numbers: drawn %r, rule says %r"
+                                 % (deck["name"], sorted(drawn), want))
+
+    def test_bottom_labels_are_an_output_of_the_rule(self):
+        """Row 112: the bottom shell no longer carries its own stored figure."""
+        deck = decks.PYGMY
+        R = deck["R"]
+        geom = deck["spec"]["_geom"]
+        want = spec_label_size(R * geom["r_bnote"], "bottom")
+        names = sorted(round(t["size"], 6)
+                       for t in self.drawn_glyphs(deck, R, numbers=False)
+                       if t["text"][:1].isalpha())
+        self.assertAlmostEqual(min(names), want, places=4,
+                               msg="the smallest name is a bottom-shell name "
+                                   "and must come from the rule")
+        self.assertNotAlmostEqual(
+            min(names), R * geom["r_bnote"] * 0.675, places=2,
+            msg="a flat ratio is not what the bottom shell draws")
+
+    def test_no_label_falls_below_the_print_floor(self):
+        """EVERY glyph the pan draws: names, octave digits and the index
+        numbers beside the fields. The octave is the smallest text in the
+        PDF, but the sample is not narrowed to it - the numbers are drawn by
+        the same rule and have to clear the same floor, so this renders with
+        `numbers=True` rather than measuring names alone."""
+        for deck in ALL_DECKS:
+            with self.subTest(deck=deck["name"]):
+                smallest = min(round(t["size"], 6) for t in
+                               self.drawn_glyphs(deck, deck["R"]))
+                self.assertGreaterEqual(
+                    smallest, SPEC_LABEL_PRINT_FLOOR,
+                    "%s draws a %.2f pt glyph, under the %.1f pt floor"
+                    % (deck["name"], smallest, SPEC_LABEL_PRINT_FLOOR))
+
+
+# --- bottom-shell accent colour, quoted from CLAUDE.md ("Design system") ----
+SPEC_BOTTOM_ACCENT = "#E27005"   # Pygmy U-labels and the bottom-note badge
+
+
+class BottomAccentColourTest(PaletteSafeTest):
+    """CLAUDE.md names ONE orange for every bottom-shell accent. Nothing else
+    in this suite reads that constant, so a drift in it - the pipeline shipped
+    #D96605 for a while - is invisible until someone holds a printed card up
+    against the palette."""
+
+    def hex_of(self, color):
+        """The 8-bit colour a PDF reader shows, which is what the palette
+        names. The constant is written to 4 decimal places, so comparing the
+        floats would fail on a rounding difference nothing can see."""
+        return "#%02X%02X%02X" % tuple(
+            round(c * 255) for c in (color.red, color.green, color.blue))
+
+    def test_the_accent_constant_is_the_palette_orange(self):
+        self.assertEqual(self.hex_of(hifi.ORANGE), SPEC_BOTTOM_ACCENT,
+                         "hifi.ORANGE is not %s" % SPEC_BOTTOM_ACCENT)
+
+    def test_the_bottom_note_badge_prints_in_it(self):
+        """Measured from the emitted glyphs rather than from the constant:
+        the badge is the accent's most visible use on a chord card."""
+        deck = decks.PYGMY
+        self.use_palette(deck)
+        chord = next(ch for ch in deck["chords"]
+                     if any(deck["spec"][f][3] == "bottom" for f in ch[3]))
+        canvas = RecordingCanvas()
+        hifi.chord_card(canvas, 0.0, 0.0, deck, 1, chord)
+        painted = {self.hex_of(t["fill"]) for t in canvas.texts
+                   if t["font"] == "LabelSB"
+                   and abs(t["y"] - (deck["y_note"] + 13)) < 1.0}
+        self.assertTrue(painted, "no badge glyphs were drawn at all")
+        self.assertEqual(painted, {SPEC_BOTTOM_ACCENT},
+                         "the BOTTOM NOTES badge is not drawn in %s (drew %r)"
+                         % (SPEC_BOTTOM_ACCENT, sorted(painted)))

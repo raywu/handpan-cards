@@ -28,7 +28,8 @@ _BLUE0, _GREEN0 = BLUE, GREEN
 NAME = Color(0.329, 0.329, 0.329)   # #545454  chord name
 INK = Color(0.141, 0.141, 0.141)    # #242424  small caps / labels
 SEP = Color(0.451, 0.451, 0.451)    # #737373  separators
-ORANGE = Color(0.850, 0.400, 0.020)
+ORANGE = Color(0.8863, 0.4392, 0.0196)  # #E27005  bottom-shell accent,
+                                        #          the value the app uses
 FAINT = Color(0.78, 0.78, 0.78)
 
 PAGE = (612.0, 792.0)               # US Letter
@@ -65,6 +66,74 @@ def fit(text, font, size, maxw, track=0.0, floor=3.6):
 def note_w(name, octv, font, size):
     return (pdfmetrics.stringWidth(name, font, size)
             + pdfmetrics.stringWidth(str(octv), font, size * 0.66))
+
+
+# ---- diagram label sizing -------------------------------------------------
+# ONE rule sizes every glyph the pan draws, in BOTH outputs: the same
+# constants and the same arithmetic live in `pan()` in index.html.
+#
+#   name   = r * LABEL_RATIO[zone]
+#   number = r_note * NUM_RATIO
+#
+# `r` is the field's OWN drawn radius, so the ding, the top shell and the
+# bottom shell all fall out of one expression and none of them needs a stored
+# figure of its own: f_ding, f_note, f_bnote and f_num are OUTPUTS of this
+# rule, not figures any renderer reads.
+#
+# The radius term is the whole of the "scale down with the number of notes"
+# response, and it is enough: more fields on one pan means smaller fields,
+# and a smaller field draws a smaller label. There is deliberately NO extra
+# density factor on top - multiplying one in double-counts density and makes
+# the busiest deck, the one already hardest to read, smaller still.
+#
+# Each ratio is the engine's own solver constant (`src/engine/layout.js`
+# F_NOTE_RATIO 0.765 / F_BNOTE_RATIO 0.784, and 0.675 for the ding - the
+# larger of the two built-in ding ratios, not the engine's F_DING_RATIO 0.6)
+# times 1.05. That 1.05 is what the APP multiplied every diagram name by
+# before this rule existed, while print multiplied by nothing: the two
+# renderers were 5% apart, and a single rule cannot be exact parity with the
+# solver AND leave the app unshrunk. OWNER DECISION (2026-09, queue row 221):
+# no-shrink wins. Print therefore grows ~5% to meet the app, and no glyph in
+# either output is smaller than it is today.
+#
+# Drawing 5% over the solver's budget for the field circle is safe because
+# (1) ring clearance is computed from f_num alone (src/engine/layout.js
+# 288-302), so a name's size cannot reach it; and (2) fit_note auto-shrinks
+# any label that genuinely overflows its field, and it does not fire on any
+# of the 61 cards even after the growth - that is the headroom being spent.
+LABEL_RATIO_DING = 0.70875   # name inside the ding          (0.675 x 1.05)
+LABEL_RATIO_NOTE = 0.80325   # name inside a rim/inner field (0.765 x 1.05)
+LABEL_RATIO_BNOTE = 0.8232   # name inside a bottom field    (0.784 x 1.05)
+NUM_RATIO = 0.64             # index number, from the top-field radius.
+                             # Both renderers already drew this at f_num,
+                             # so it takes no 1.05.
+
+# The width a name may occupy inside its field before fit_note steps it down,
+# as a multiple of the field radius. It carries the same 1.05 as the sizes
+# above, and for the same reason: the glyphs grew 5%, so their box grows 5%,
+# and fit_note fires on exactly the labels it fired on before - no more, no
+# fewer. Without it the growth alone would trip the fitter on Pygmy's bottom
+# shell and pull print back under the app, which is the shrink this rule
+# exists to prevent. 1.47r is still well inside the 2r field.
+LABEL_WIDTH_RATIO = 1.47     # 1.40 x 1.05
+
+
+def label_ratio(zone):
+    if zone == "ding":
+        return LABEL_RATIO_DING
+    if zone == "bottom":
+        return LABEL_RATIO_BNOTE
+    return LABEL_RATIO_NOTE
+
+
+def label_size(r, zone):
+    """Diagram name size for a field of radius `r` in `zone`."""
+    return r * label_ratio(zone)
+
+
+def num_size(r_note):
+    """Index-number size, from the deck's top-field radius."""
+    return r_note * NUM_RATIO
 
 
 def fit_note(name, octv, font, size, maxw):
@@ -216,6 +285,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
              numbers=True):
     """spec: dict field -> (name, octave, midi, zone, angle, label)"""
     g = spec["_geom"]
+    nfs = num_size(R * g["r_note"])
     c.setStrokeColor(black); c.setLineWidth(1.15); c.setDash()
     c.circle(cx, cy, R, stroke=1, fill=0)
     if g.get("inner_ring"):
@@ -242,7 +312,8 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
             rr = R * g["r_ding"]
             dy = R * g.get("ding_dy", 0.0)
             draw_ring(c, cx, cy - dy, rr, state(i))
-            fs0 = fit_note(nm, ov, "Label", R * g["f_ding"], rr * 1.40)
+            fs0 = fit_note(nm, ov, "Label", label_size(rr, zone),
+                           rr * LABEL_WIDTH_RATIO)
             note_text(c, cx, cy - dy - rr * 0.30, nm, ov, "Label", fs0, INK)
             continue
         orb = R * g[zone]
@@ -250,19 +321,19 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
         a = math.radians(ang)
         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
-        fs = R * (g["f_bnote"] if zone == "bottom" else g["f_note"])
-        fs = fit_note(nm, ov, "Label", fs, rr * 1.40)
+        fs = fit_note(nm, ov, "Label", label_size(rr, zone),
+                      rr * LABEL_WIDTH_RATIO)
         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
         if numbers:
             if zone == "bottom":
                 nr = orb + rr + R * g["n_out"]
-                col, nfs, fnt = ORANGE, R * g["f_num"], "LabelSB"
+                col, fnt = ORANGE, "LabelSB"
             elif zone == "rim" and g.get("rim_num_out"):
                 nr = orb + rr + R * g["n_in"]
-                col, nfs, fnt = INK, R * g["f_num"], "Label"
+                col, fnt = INK, "Label"
             else:
                 nr = orb - rr - R * g["n_in"]
-                col, nfs, fnt = INK, R * g["f_num"], "Label"
+                col, fnt = INK, "Label"
             c.setFillColor(col); c.setFont(fnt, nfs)
             c.drawCentredString(cx + nr * math.cos(a),
                                 cy + nr * math.sin(a) - nfs * 0.36, lab)

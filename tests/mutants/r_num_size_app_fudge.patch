@@ -1,0 +1,17 @@
+# kills: test_diagram_number_sizes_agree
+# suite: python3 -m unittest -k test_diagram_number_sizes_agree tests.test_render_agreement
+# Gives the app its own fudge factor on the index number, so the two
+# renderers stop drawing the same diagram.
+diff --git a/index.html b/index.html
+index 2c421ff..b3bdefd 100644
+--- a/index.html
++++ b/index.html
+@@ -3376,7 +3376,7 @@ function labelRatio(zone) {
+        : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
+ }
+ function labelSize(r, zone) { return r * labelRatio(zone); }
+-function numSize(rNote) { return rNote * NUM_RATIO; }
++function numSize(rNote) { return rNote * NUM_RATIO * 1.1; }
+ 
+ /* ---------------- SVG pan ---------------- */
+ function pan(d, ch) {
