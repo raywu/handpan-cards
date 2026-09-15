@@ -342,6 +342,30 @@ Derived from the findings above; ordered as the Sequencing section requires.
 12. Queue row 302: the ramp test only guards the `:root` rung, so items 2 and 4 ship
     breakpoint values nothing asserts. Separate lane, listed in NOT in scope.
 
+## Implementation notes (written during execution, 2026-09-14)
+
+Two decisions the plan left open, settled by measurement rather than taste.
+
+**The evidence gap in item 1 is closed.** The plan flagged that the broken
+border had only been reproduced under programmatic focus, which would have made
+it a headless artifact. Measured against a real pointer click
+(`Input.dispatchMouseEvent`): a text input matches `:focus-visible` either way,
+`#scale-box` spans `.sheetbody`'s content box exactly, `overflow-x` computes to
+`auto` because `overflow-y:auto` makes it so, and `scrollWidth === clientWidth`,
+so the ring is clipped 4px on each side with no scrollbar that could reach it.
+What the owner reported on their phone is real. The fix carries a `--ring`
+token next to the rule that sets the ring, because the padding the scrollport
+reserves and the offset-plus-stroke the ring paints have to move together.
+
+**The empty-to-first-keystroke step is accepted, not reserved.** The plan asked
+for the measurement. At 380px `PARSE_HINT` wraps to three lines and the note
+list is one, so the sheet is 37px taller before anything is typed than after.
+Reserving that permanently costs every phone 37px of vertical room to hold
+still in a state that precedes typing, which is the wrong trade on the viewport
+this app is tested at. The drawer is instead pinned invariant across every
+TYPED state, and a second test pins the empty-to-typed delta to the parse
+line's own height so it cannot silently grow past the hint's wrap.
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
