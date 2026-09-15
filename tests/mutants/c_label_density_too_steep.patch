@@ -1,0 +1,16 @@
+# kills: test_no_label_falls_below_the_print_floor
+# suite: python3 -m unittest -k test_no_label_falls_below_the_print_floor tests.test_print
+# Decays the label size far too fast, driving Pygmy under the print floor.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index 4c8dfb0..ab06bb5 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -81,7 +81,7 @@ def note_w(name, octv, font, size):
+ # measured on) draws at the full ratio.
+ LABEL_RATIO = 0.675          # label size as a fraction of its field's radius
+ LABEL_REF_FIELDS = 9         # the field count at which k(N) is 1
+-LABEL_DENSITY_EXP = 0.2      # how fast the ratio decays with field count
++LABEL_DENSITY_EXP = 2.0      # how fast the ratio decays with field count
+ LABEL_DENSITY_FLOOR = 0.62   # the rule never shrinks a label past this
+ 
+ 

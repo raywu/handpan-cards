@@ -1,0 +1,16 @@
+# kills: test_labels_shrink_as_a_deck_gains_fields
+# suite: python3 -m unittest -k test_labels_shrink_as_a_deck_gains_fields tests.test_print
+# Flattens the density term, so every deck draws at the 9-field size.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index 4c8dfb0..caafbe2 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -88,7 +88,7 @@ LABEL_DENSITY_FLOOR = 0.62   # the rule never shrinks a label past this
+ def label_density(n_fields):
+     if n_fields <= 0:
+         return 1.0
+-    k = (float(LABEL_REF_FIELDS) / n_fields) ** LABEL_DENSITY_EXP
++    k = 1.0
+     return max(LABEL_DENSITY_FLOOR, min(1.0, k))
+ 
+ 

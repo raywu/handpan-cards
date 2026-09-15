@@ -1,0 +1,16 @@
+# kills: test_diagram_label_sizes_agree
+# suite: python3 -m unittest -k test_diagram_label_sizes_agree tests.test_render_agreement
+# Gives the app a label fudge factor print does not have.
+diff --git a/index.html b/index.html
+index c656896..d8d1a5b 100644
+--- a/index.html
++++ b/index.html
+@@ -3362,7 +3362,7 @@ function labelDensity(n) {
+   return Math.max(LABEL_DENSITY_FLOOR,
+                   Math.min(1, Math.pow(LABEL_REF_FIELDS / n, LABEL_DENSITY_EXP)));
+ }
+-function labelSize(r, n) { return r * LABEL_RATIO * labelDensity(n); }
++function labelSize(r, n) { return r * LABEL_RATIO * labelDensity(n) * 1.05; }
+ 
+ /* ---------------- SVG pan ---------------- */
+ function pan(d, ch) {

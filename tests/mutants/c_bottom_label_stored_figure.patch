@@ -1,0 +1,17 @@
+# kills: test_bottom_labels_are_an_output_of_the_rule
+# suite: python3 -m unittest -k test_bottom_labels_are_an_output_of_the_rule tests.test_print
+# Sizes bottom-shell labels from the stored f_bnote figure again.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index 4c8dfb0..28dd787 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -282,7 +282,8 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
+         a = math.radians(ang)
+         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
+         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
+-        fs = fit_note(nm, ov, "Label", label_size(rr, n_fields), rr * 1.40)
++        fs = R * g["f_bnote"] if zone == "bottom" else label_size(rr, n_fields)
++        fs = fit_note(nm, ov, "Label", fs, rr * 1.40)
+         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
+         if numbers:
+             if zone == "bottom":
