@@ -1614,6 +1614,410 @@ function run() {
     });
 
   /* ---------------------------------------------------------------- *
+   * the landscape header (coordination row 245)
+   *
+   * Row 245 closed the landscape card as "genuinely small, and that is a
+   * disclosed cost": at 844x390 the STACKED header - title, deck strip,
+   * mode bar, three rows plus their gaps - ate 134px of a 390px viewport,
+   * `main` was left 138.3px and the fit rule capped the card at 100.2px
+   * wide. The owner's decision was the first of the two paths the row
+   * offered: shrink the header in landscape.
+   *
+   * The rows below are MEASURED on the shrunk header and written down as
+   * one-sided budgets, exactly like CHROME_BUDGET above - chrome may only
+   * get smaller, the card may only get bigger - so an improvement never has
+   * to touch the table and a regression does.
+   *
+   * Two guards, not one. This test says landscape got better; the test
+   * after it says portrait did not move AT ALL, by equality rather than by
+   * a bound, because the acceptance condition the owner set for row 245 is
+   * that portrait stays byte-identical. A media query is the whole reason
+   * that is even possible, so the pair is what proves the query's gate and
+   * not merely its body.
+   * ---------------------------------------------------------------- */
+  const LANDSCAPE_BUDGET = [
+    // vw,  vh,  minCardW, maxChrome, maxHeader   (chrome = vh - main.height)
+    // Measured 2026-09-15 with the header collapsed to a single 44px row.
+    // Before: chrome 251.67 and header 134 at every one of these; the card
+    // was 100.16 / 127.67 / 89.30 / 179.81px wide.
+    [844, 390, 167.50, 158.67, 44],
+    [926, 428, 195.02, 158.67, 44],
+    [667, 375, 156.64, 158.67, 44],
+    [1280, 500, 229.98, 158.67, 44],
+  ];
+
+  test("the header shrinks in landscape and hands the room to the card", async () => {
+    await freshLoad();
+    try {
+      const bad = [];
+      for (const [vw, vh, minCardW, maxChrome, maxHeader] of LANDSCAPE_BUDGET) {
+        await b.setViewport(vw, vh, true);
+        const m = await b.eval(`
+          const mn = document.querySelector("main").getBoundingClientRect();
+          const sc = document.querySelector(".scene").getBoundingClientRect();
+          return {
+            main: +mn.height.toFixed(2),
+            card: +sc.width.toFixed(2),
+            vh: document.documentElement.clientHeight,
+            header: +document.querySelector("header").getBoundingClientRect().height.toFixed(2),
+            footer: +document.querySelector("footer").getBoundingClientRect().height.toFixed(2),
+          };
+        `);
+        const chrome = +(m.vh - m.main).toFixed(2);
+        if (m.header > maxHeader + 1) {
+          bad.push(`${vw}x${vh}: the header is ${m.header}px tall, budget ${maxHeader}px - ` +
+            `in landscape it must be ONE row, not the portrait stack`);
+        }
+        if (chrome > maxChrome + 1) {
+          bad.push(`${vw}x${vh}: chrome is ${chrome}px, budget ${maxChrome}px ` +
+            `(header ${m.header}, footer ${m.footer}) - main is ${m.main}px`);
+        }
+        if (m.card < minCardW - 1) {
+          bad.push(`${vw}x${vh}: the card is ${m.card}px wide, budget ${minCardW}px ` +
+            `(-${(100 * (1 - m.card / minCardW)).toFixed(1)}%) - the room the header ` +
+            `gives up belongs to the card`);
+        }
+      }
+      assert.deepStrictEqual(bad, [],
+        "the landscape header has grown back at the card's expense (row 245)");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Portrait is the acceptance test for row 245: if any portrait measurement
+   * moves, the change is wrong. Equality, not a bound - a one-sided budget
+   * would let a landscape rule that leaked into portrait pass as long as it
+   * leaked in the "good" direction, and the owner's condition is that
+   * portrait is UNTOUCHED, in either direction. Every number was read off
+   * the merge-base before the landscape query existed. */
+  const PORTRAIT_PIN = [
+    // vw, vh,  header, footer, main,   card
+    [390, 844, 134, 55, 580.33, 343.19],
+    [390, 745, 134, 55, 481.33, 342.69],
+    [375, 667, 133, 55, 404.33, 292.78],
+    [320, 568, 133, 55, 305.33, 221.09],
+    [380, 800, 134, 55, 536.33, 334.39],
+    [380, 780, 134, 55, 516.33, 334.39],
+  ];
+
+  test("portrait is byte-identical: the landscape header never reaches it", async () => {
+    await freshLoad();
+    try {
+      const bad = [];
+      for (const [vw, vh, header, footer, main, card] of PORTRAIT_PIN) {
+        await b.setViewport(vw, vh, true);
+        const m = await b.eval(`
+          const q = s => document.querySelector(s).getBoundingClientRect();
+          return {
+            header: +q("header").height.toFixed(2),
+            footer: +q("footer").height.toFixed(2),
+            main: +q("main").height.toFixed(2),
+            card: +q(".scene").width.toFixed(2),
+            h1: +q("h1").height.toFixed(2),
+            display: getComputedStyle(document.querySelector("header")).display,
+            modeTop: getComputedStyle(document.querySelector(".modebar")).marginTop,
+          };
+        `);
+        const want = { header, footer, main, card };
+        for (const k of Object.keys(want)) {
+          if (Math.abs(m[k] - want[k]) > 0.02) {
+            bad.push(`${vw}x${vh}: ${k} is ${m[k]}px, was ${want[k]}px before the ` +
+              `landscape header shrank - portrait must not move at all`);
+          }
+        }
+        // The stack itself, not only its height: a header that became a row
+        // and happened to measure the same total would still be a portrait
+        // change.
+        if (m.display !== "block") {
+          bad.push(`${vw}x${vh}: header display is "${m.display}", was "block" - ` +
+            `the landscape one-row layout has leaked into portrait`);
+        }
+        if (m.modeTop !== "14px") {
+          bad.push(`${vw}x${vh}: .modebar margin-top is ${m.modeTop}, was 14px`);
+        }
+      }
+      assert.deepStrictEqual(bad, [],
+        "portrait moved - row 245's acceptance condition is that it does not");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * the pencil on a selected CUSTOM chip (coordination row 218)
+   *
+   * Row 218: "editing a custom deck is undiscoverable". The already-selected
+   * custom chip is the one and only way into the Edit sheet, and it looks
+   * exactly like an already-selected built-in, which does nothing when
+   * tapped. The fix is an affordance the built-ins do not get.
+   *
+   * What this asserts, and why each half matters:
+   *  - the glyph and the accessible name appear ONLY on a chip that is both
+   *    selected AND custom. Row 262 is the reason the negative half is not
+   *    decoration: any change that advertises Edit on a NON-selected chip
+   *    re-opens a focus trap in deleteDeck that selectDeck's guard does not
+   *    cover. The chip's behaviour must stay exactly "second tap on the
+   *    selected custom chip", and an affordance that appears anywhere else
+   *    would be the first step to breaking it.
+   *  - the glyph hit-tests to the CHIP. A separate button inside the chip
+   *    would be a second target inside a 44px pill and a second tab stop for
+   *    a control that is already reachable; the glyph is a marker, so the
+   *    whole pill stays one target.
+   * ---------------------------------------------------------------- */
+
+  const chipProbe = () => b.eval(`
+    const out = [];
+    for (const el of document.querySelectorAll("#decks .chip")) {
+      if (el.id === "deck-add") continue;
+      const r = el.getBoundingClientRect();
+      const pen = el.querySelector(".pencil");
+      let penHit = null;
+      if (pen) {
+        const pr = pen.getBoundingClientRect();
+        const h = document.elementFromPoint(pr.left + pr.width / 2, pr.top + pr.height / 2);
+        penHit = !!h && (h === el || el.contains(h));
+      }
+      out.push({
+        text: el.textContent.trim(),
+        on: el.classList.contains("on"),
+        label: el.getAttribute("aria-label"),
+        pencil: !!pen,
+        penHidden: pen ? pen.getAttribute("aria-hidden") : null,
+        penTab: pen ? pen.tagName.toLowerCase() : null,
+        penHit,
+        h: +r.height.toFixed(1),
+      });
+    }
+    return out;
+  `);
+
+  test("a selected custom chip carries a pencil; no built-in chip ever does", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      const meta = await decksMeta();
+      await generate(EDIT_SCALE);
+
+      const after = await chipProbe();
+      const sel = after.filter((c) => c.on);
+      assert.strictEqual(sel.length, 1, "exactly one chip is selected after Generate");
+      const mine = sel[0];
+      assert.strictEqual(mine.pencil, true,
+        `the selected custom chip "${mine.text}" has no pencil - row 218 is that ` +
+        "Edit is undiscoverable, and the chip looks identical to a built-in");
+      assert.strictEqual(mine.penHidden, "true",
+        "the pencil is decorative next to the aria-label and must be aria-hidden");
+      assert.strictEqual(mine.penTab, "span",
+        `the pencil is a <${mine.penTab}> - a nested button would be a second ` +
+        "target inside a 44px pill and a second tab stop");
+      assert.strictEqual(mine.penHit, true,
+        "the pencil does not hit-test to its own chip: a tap on the glyph must " +
+        "be a tap on the chip, or the affordance points at a dead pixel");
+      assert.ok(/^Edit .+/.test(mine.label || ""),
+        `the selected custom chip's aria-label is ${JSON.stringify(mine.label)}, ` +
+        'expected "Edit <name>"');
+      assert.ok(mine.h >= 44,
+        `the pencil shrank the chip below the 44px target: ${mine.h}px`);
+
+      // Every OTHER chip - the three built-ins, all unselected here - is
+      // untouched: no glyph, no Edit name.
+      for (const c of after.filter((x) => !x.on)) {
+        assert.strictEqual(c.pencil, false,
+          `an unselected chip ("${c.text}") carries a pencil - Edit must be ` +
+          "offered only where it actually works (row 262)");
+        assert.strictEqual(c.label, null,
+          `an unselected chip ("${c.text}") has aria-label ${JSON.stringify(c.label)}`);
+      }
+
+      // And a SELECTED built-in: selected is not enough, custom is not enough.
+      await selectDeck(0, meta);
+      const builtin = (await chipProbe()).find((c) => c.on);
+      assert.ok(builtin, "no chip is selected after switching to a built-in deck");
+      assert.strictEqual(builtin.pencil, false,
+        `the selected built-in chip "${builtin.text}" carries a pencil - tapping ` +
+        "it does nothing, so the affordance would be a lie");
+      assert.strictEqual(builtin.label, null,
+        `the selected built-in chip has aria-label ${JSON.stringify(builtin.label)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("tapping the pencil opens the Edit sheet, from the glyph itself", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await b.eval(`document.querySelector("#decks .chip.on")
+                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      // Click the GLYPH's own centre point, not the chip's - the affordance
+      // is only real if the pixel it draws is the pixel that acts.
+      const at = await b.eval(`
+        const r = document.querySelector("#decks .chip.on .pencil").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      await clickPoint(at.x, at.y);
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to open from a tap on the pencil" });
+      const primary = await b.eval(
+        `return document.getElementById("scale-generate").textContent.trim();`);
+      assert.strictEqual(primary, "SAVE CHANGES",
+        "the pencil opened the CREATE sheet, not the Edit sheet");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * defensive mobile chrome (coordination row 223 e/f, and the notch)
+   *
+   * Three of row 223's items are fixable without the device even though
+   * their final confirmation is not:
+   *
+   *  (e) no scrolling surface set `overscroll-behavior`, so a flick past the
+   *      end of the sheet - or of the deck strip - chains to the page behind
+   *      it and rubber-bands the whole app under a modal.
+   *  (f) `-webkit-tap-highlight-color:transparent` removes iOS's only
+   *      default touch feedback, and `button.nav:active` was the app's ONLY
+   *      `:active` rule. iOS has no hover, so `:active` is the entire press
+   *      channel: without it a tap that missed and a tap that landed look
+   *      the same.
+   *  (notch) the body reserved the top and bottom insets but not the left
+   *      and right, which are the ones that are non-zero in LANDSCAPE - the
+   *      orientation row 245 just made usable.
+   *
+   * The insets themselves are 0 in Chromium, so the third test reads the
+   * authored declaration rather than a computed pixel. That is the honest
+   * limit: row 223(c) says the real values need the owner's device, and
+   * nothing headless can say otherwise. What IS testable is that the
+   * declaration exists and names all four edges.
+   * ---------------------------------------------------------------- */
+
+  test("every scrolling surface contains its overscroll", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      await openSheet();
+      const seen = await b.eval(`
+        const out = {};
+        for (const sel of [".decks", ".sheetsurf", ".sheetbody"]) {
+          const el = document.querySelector(sel);
+          out[sel] = el ? getComputedStyle(el).overscrollBehavior : "MISSING";
+        }
+        return out;
+      `);
+      for (const sel of Object.keys(seen)) {
+        assert.strictEqual(seen[sel], "contain",
+          `${sel} has overscroll-behavior: ${seen[sel]} - a flick past its end ` +
+          "chains to the page behind it and drags the whole app (row 223e)");
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("every interactive control has a press state", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      // A custom deck first, so the Edit-only controls (DELETE THIS DECK, the
+      // degrees row) and a custom chip are on the page too. Then the sheet,
+      // so the swatches, the mirror pair, the slot list and the primary are.
+      await generate(EDIT_SCALE);
+      await b.eval(`document.querySelector("#decks .chip.on")
+                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      await b.click("#decks .chip.on");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to open" });
+
+      const bad = await b.eval(`
+        // Collect every selector in the document's own stylesheet that has an
+        // :active state, media queries included, and strip the pseudo-class so
+        // it can be matched against a live element.
+        //
+        // Two CSSOM traps, both of which return an EMPTY list rather than an
+        // error - i.e. both of which would make this test pass vacuously:
+        //  - CSSRuleList and StyleSheetList are array-like but NOT iterable in
+        //    Chrome, so a bare for..of throws and the catch below swallows it;
+        //    hence Array.from.
+        //  - since nested CSS, EVERY CSSStyleRule carries a .cssRules of its
+        //    own (empty), so "if (r.cssRules) { recurse; continue; }" skips
+        //    every real rule in the sheet. Recurse only into a NON-empty list
+        //    and never skip the rule itself.
+        // The assertion message prints the collected list for exactly this
+        // reason: an empty one is a broken sweep, not a clean app.
+        const actives = [];
+        const walk = (rules) => {
+          for (const r of Array.from(rules)) {
+            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+            if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
+            // A declaration that changes nothing is not feedback.
+            if (!r.style || r.style.length === 0) continue;
+            for (const one of r.selectorText.split(",")) {
+              actives.push(one.trim().replace(/:active\\b/g, ""));
+            }
+          }
+        };
+        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+
+        const name = (el) => el.id ? "#" + el.id
+          : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
+            ? "." + el.className.trim().split(/\\s+/).join(".") : "");
+        const out = [];
+        const seen = new Set();
+        for (const el of document.querySelectorAll('button, [role="button"]')) {
+          if (el.closest("[hidden]")) continue;
+          const n = name(el);
+          if (seen.has(n)) continue;
+          seen.add(n);
+          const hit = actives.some((sel) => { try { return el.matches(sel); } catch (e) { return false; } });
+          if (!hit) out.push(n);
+        }
+        return { bad: out, actives };
+      `);
+      assert.deepStrictEqual(bad.bad, [],
+        "these controls have no :active rule, so on iOS - which has no hover and " +
+        "whose tap highlight this app turns off - a press gives no feedback at all " +
+        `(row 223f). The :active selectors that do exist are ${JSON.stringify(bad.actives)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the page reserves a safe-area inset on all four edges", async () => {
+    await freshLoad();
+    try {
+      const decl = await b.eval(`
+        const out = [];
+        const walk = (rules) => {
+          for (const r of Array.from(rules)) {
+            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+            if (!r.selectorText || !/(^|,)\\s*body\\s*($|,)/.test(r.selectorText)) continue;
+            out.push(r.style.padding || [r.style.paddingTop, r.style.paddingRight,
+              r.style.paddingBottom, r.style.paddingLeft].join(" "));
+          }
+        };
+        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+        return out.join(" | ");
+      `);
+      for (const edge of ["top", "right", "bottom", "left"]) {
+        assert.ok(decl.includes(`safe-area-inset-${edge}`),
+          `body's padding does not reserve env(safe-area-inset-${edge}): "${decl}". ` +
+          "viewport-fit=cover puts the page under the notch and the home indicator, " +
+          "and left/right are the non-zero pair in landscape.");
+      }
+      // The floors the insets replace, so a device with no inset is unchanged.
+      assert.ok(/max\(/.test(decl),
+        `the insets are not floored with max(): "${decl}" - on a device with no ` +
+        "inset at all the padding would collapse to 0 and the chrome would touch " +
+        "the screen edge");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- *
    * the Edit sheet (Phase 4, lane 4c)
    *
    * The SAME sheet, reopened from the already-selected custom chip. Every

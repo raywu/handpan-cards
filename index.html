@@ -56,7 +56,18 @@ body{
   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
   background: radial-gradient(120% 90% at 50% 8%, var(--table2) 0%, var(--table) 62%);
   display:flex; flex-direction:column; align-items:center;
-  min-height:100dvh; padding:max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  min-height:100dvh;
+  /* All four edges, not two (queue row 223c and the notch). The meta tag sets
+     viewport-fit=cover, so the page is laid out edge to edge and iOS hands the
+     insets back through env(). Top and bottom were already reserved; LEFT and
+     RIGHT are the pair that is non-zero in LANDSCAPE - the notch on one side,
+     the rounded corner on the other - which is the orientation the header
+     query above has just made worth using. Each inset is floored at the
+     original padding with max(), so a device that reports no inset at all
+     (every desktop, and Chromium in the e2e harness) measures exactly what it
+     measured before: 10px / 12px / 12px / 12px. */
+  padding:max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   user-select:none;
 }
 /* ---- the chrome budget -------------------------------------------------
@@ -94,7 +105,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    chips keep it centred while it fits, without making either end unreachable
    once it overflows. The right edge fades so a cut-off chip reads as "more". */
 .decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
 .decks::-webkit-scrollbar{display:none}
@@ -151,6 +162,20 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    no safe-area inset of its own (the strip is centred and capped at 520px, far
    inside any notch), and takes no touch-action override, so a swipe that starts
    on it still scrolls the strip. */
+/* The pencil on a SELECTED CUSTOM chip (queue row 218). A second tap on that
+   one chip is the only way into the Edit sheet, and until now a selected
+   custom chip looked exactly like a selected built-in, which does nothing
+   when tapped - so the owner had to guess. The glyph says which chip has a
+   second action.
+   It is a <span>, not a button: the chip is already a 44px target with an
+   onclick that does exactly this, so a nested button would only add a second
+   tab stop and a smaller target inside the pill. buildChips also sets
+   aria-label="Edit <name>" on the same chip, which is what a screen reader
+   gets; the glyph is aria-hidden and purely visual.
+   Row 262 is why it appears nowhere else: any affordance on a NON-selected
+   chip invites a fix that opens Edit from one, and deleteDeck still drops
+   focus to <body> on that path. */
+.chip .pencil{margin-left:6px; font-size:12px; line-height:1; opacity:.85}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
@@ -172,6 +197,41 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
   min-height:44px; display:inline-flex; align-items:center; justify-content:center}
 .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
+/* ---- landscape: the header is ONE row ---------------------------------
+   Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
+   and the STACKED header spent 134 of them - the title, the deck strip and
+   the mode bar are three rows plus their gaps - so `main` was left 138.3px
+   and the fit rule capped the card at 100.2px wide. The row offered two
+   paths and the owner took this one: shrink the header in landscape.
+
+   The three groups go side by side instead of on top of each other. Nothing
+   is hidden and nothing is dropped: in landscape the horizontal axis is the
+   one with room to spare (844px against 390), which is exactly the axis a
+   stack refuses to use. Measured: header 134 -> 44, chrome 251.67 -> 158.67,
+   and the card at 844x390 goes 100.16 -> 167.5px wide, +67%.
+
+   The 44px floor on .chip and .mode is untouched - the row is as tall as the
+   targets in it, which is the whole 44px and not a pixel more. The title
+   drops to 13px because it is the only thing here that is not a target: it
+   names the app, and in landscape it earns a line only if it costs none.
+
+   Gated on max-height, NOT on orientation. Portrait's acceptance condition
+   for row 245 is that it stays byte-identical, and no portrait phone in the
+   CHROME_BUDGET table is under 520px tall, so the query cannot reach one -
+   the same gate, and the same reasoning, as the spacing ramp at the top of
+   this stylesheet. tests/e2e.test.js pins both halves: "the header shrinks
+   in landscape and hands the room to the card" measures the gain, and
+   "portrait is byte-identical" measures the absence of a cost.
+   ------------------------------------------------------------------------ */
+@media (max-height:520px){
+  header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2)}
+  h1{flex:0 0 auto; margin:0; font-size:13px; letter-spacing:.06em; text-align:left}
+  /* The strip takes what is left and keeps scrolling. min-width:0 is what
+     lets it: a flex item's automatic minimum is its content, so without it
+     the strip would refuse to shrink and push the mode bar off the row. */
+  .decks{flex:1 1 auto; min-width:0}
+  .modebar{flex:0 0 auto; margin-top:0}
+}
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
 /* The card is sized from whichever axis runs out first.
    --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and
@@ -297,7 +357,7 @@ button.nav:active{background:#2e281e}
    body's groups, --sp-1 inside a group between a label and the control it
    names - and the structure is unchanged: cap, scroll, reserved footer. */
 .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
-  border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto;
+  border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto; overscroll-behavior:contain;
   padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:var(--sp-4)}
 /* The grab handle. Purely a signal that this surface is a sheet with an edge,
@@ -335,7 +395,7 @@ button.nav:active{background:#2e281e}
    with scrollWidth === clientWidth so there is not even a scrollbar to reach
    it. The negative margin gives the padding back to the layout, so nothing
    moves: the rows still align with the surface's own padding. */
-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);
+.sheetbody{overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:var(--sp-3);
   padding-inline:var(--ring); margin-inline:calc(-1 * var(--ring))}
 /* A label, its control and the line that explains the control are ONE group:
    --sp-1 inside, and the group is separated from the next by .sheetbody. */
@@ -479,6 +539,46 @@ button.nav:active{background:#2e281e}
   text-transform:uppercase; cursor:pointer}
 .announce{width:100%; max-width:520px; margin-top:var(--sp-2); text-align:center;
   font:400 11.5px/1.45 "Nunito Sans"; color:#c4bcab; min-height:1.45em}
+
+/* ---- press feedback (queue row 223f) ----------------------------------
+   `*{-webkit-tap-highlight-color:transparent}` at the top of this stylesheet
+   removes the ONLY touch feedback iOS gives by default, and until now
+   button.nav:active was the app's only :active rule - so on the owner's
+   phone every other control gave a tap back exactly nothing. A phone has no
+   hover: :active is not an extra polish channel there, it is the entire
+   press channel, and without it a tap that missed and a tap that landed look
+   identical for the whole time the finger is down.
+
+   One block rather than a declaration tacked onto each rule, because the
+   thing being guaranteed is coverage - "every interactive control", pinned
+   by tests/e2e.test.js "every interactive control has a press state", which
+   sweeps the stylesheet for :active selectors and matches them against every
+   button and role=button on the page. A new control added without a press
+   state reddens that test; a new control added to this block is one line.
+
+   Each rule moves a property the control already uses, so nothing here is a
+   new colour in the design system: the dark controls lighten toward their
+   own hover-less pressed shade, the light primary darkens, and the quiet
+   text buttons come up to full ink.
+
+   The CARD is a box-shadow and not a transform or a filter: .card carries
+   transform-style:preserve-3d and a .45s transform transition, so a pressed
+   transform would animate for 450ms (not feedback) and would fight
+   .card.flip's own rotateY, while a filter flattens the 3D context and takes
+   backface-visibility with it. A shadow paints in the element's own plane
+   and touches neither. */
+.chip:active{background:#332c22}
+.mode:active{background:#2e281e}
+.mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
+.shuffle:active{opacity:.6}
+.card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
+#scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
+#scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
+#scale-swatches .dot:active::after{box-shadow:0 0 0 2px #a79d8b}
+#scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
+#scale-swatches .dot:active{opacity:.75}
+#scale-slots .slot:active{background:#211d16; color:#f1ece1}
+#scale-layout-reset:active, #scale-delete:active{color:#eae6df}
 </style>
 </head>
 <body>
@@ -3518,7 +3618,16 @@ function buildChips() {
     if (d.id === deckId) b.setAttribute("aria-current", "true");
     b.style.setProperty("--dga", d.colors.ga);
     b.style.setProperty("--dgb", d.colors.gb);
-    b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
+    // [row 218] The one chip with a SECOND action says so. A selected custom
+    // chip reopens the sheet in Edit state; a selected built-in does nothing
+    // at all, and the two were pixel-identical. The pencil is decorative
+    // (aria-hidden) and the accessible name carries the same fact in words.
+    // Only ever on the chip that is BOTH selected and custom: row 262 is a
+    // live focus trap on any path that opens Edit from an unselected chip.
+    const editable = d.id === deckId && !!CUSTOM[d.id];
+    b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}` +
+      (editable ? `<span class="pencil" aria-hidden="true">&#9998;</span>` : "");
+    if (editable) b.setAttribute("aria-label", "Edit " + d.name);
     // [design-review 7A] the ALREADY-SELECTED custom chip is the one and only
     // way into the Edit sheet; every other chip just selects its deck. No
     // context menu, no long press, no swipe.
