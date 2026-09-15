@@ -584,6 +584,20 @@
     },
     {
      "fields": [
+      101,
+      103,
+      1,
+      104
+     ],
+     "main": "Cm",
+     "roots": [
+      101
+     ],
+     "subtitle": "C MINOR 7 - LOW VOICING",
+     "sup": "7"
+    },
+    {
+     "fields": [
       3,
       103,
       1,
@@ -659,6 +673,20 @@
      "main": "Eb",
      "roots": [
       103
+     ],
+     "subtitle": "Eb DOMINANT 7 - LOW VOICING",
+     "sup": "7"
+    },
+    {
+     "fields": [
+      4,
+      1,
+      104,
+      105
+     ],
+     "main": "Eb",
+     "roots": [
+      4
      ],
      "subtitle": "Eb DOMINANT 7",
      "sup": "7"
@@ -1189,6 +1217,6 @@
    "sub": "8 + 1"
   }
  ],
- "sha256": "0475970330455878d252ae6695ddf92138f384cae5cb08f68f91a575a58ad16a",
- "version": 1
+ "sha256": "c4c5d1de6ad387b67f4b1cda3929da954f681ddee4174a0fa35ead1073b3d7cf",
+ "version": 2
 }

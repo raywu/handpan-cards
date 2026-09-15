@@ -98,12 +98,14 @@ PYGMY_CHORDS = [
     ("Cm", "", "C MINOR - HIGH VOICING", [8, 9, 11], {8}),
     ("C5", "", "POWER CHORD", [3, 6], {3}),
     ("Csus", "4", "SUSPENDED CHORD", [3, 5, 6], {3}),
+    ("Cm", "7", "C MINOR 7 - LOW VOICING", [101, 103, 1, 104], {101}),
     ("Cm", "7", "C MINOR 7", [3, 103, 1, 104], {3}),
     ("Db", "", "Db MAJOR", [105, 5, 7], {105}),
     ("Dbmaj", "7", "Db MAJOR 7", [105, 5, 7, 8], {105}),
     ("Eb", "", "Eb MAJOR - LOW VOICING", [103, 1, 104], {103}),
     ("Eb", "", "Eb MAJOR", [4, 1, 104], {4}),
-    ("Eb", "7", "Eb DOMINANT 7", [103, 1, 104, 105], {103}),
+    ("Eb", "7", "Eb DOMINANT 7 - LOW VOICING", [103, 1, 104, 105], {103}),
+    ("Eb", "7", "Eb DOMINANT 7", [4, 1, 104, 105], {4}),
     ("G\u00b0", "", "DIMINISHED", [1, 104, 105], {1}),
     ("Gm7", "b5", "HALF-DIMINISHED", [1, 104, 105, 5], {1}),
 ]
@@ -114,7 +116,7 @@ PYGMY = dict(
     credit="F3 LOW PYGMY / F AEOLIAN",
     spec=PYGMY_SPEC, chords=PYGMY_CHORDS, R=60.0, cy=121.0,
     y_note=30.0, y_num=14.0, has_bottom=True,
-    legend_demo=(3, 0), blank_cards=9, grad=(Color(0.427, 0.251, 0.639), Color(0.788, 0.592, 0.118)),
+    legend_demo=(3, 0), blank_cards=7, grad=(Color(0.427, 0.251, 0.639), Color(0.788, 0.592, 0.118)),
     col_root=Color(0.427, 0.251, 0.639), col_tone=Color(0.788, 0.592, 0.118),
     degrees={5: 'i', 8: 'III', 10: 'iv', 0: 'v', 1: 'VI', 3: 'VII', 7: 'ii\u00b0'},
     blurb=["F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5",
@@ -183,7 +185,7 @@ AMARA = dict(
 #
 # ADDITIVE ONLY: the three built-in dicts above and their spec/chord literals
 # stay byte-identical, because tools/validate.py check 1 asserts decks.py
-# equals the app JSON and check 2 runs invariants over all 59 cards.
+# equals the app JSON and check 2 runs invariants over all 61 cards.
 #
 # Every key a built-in deck dict carries is either produced here or named in
 # GENERATED_OMITTED with a reason; tests/test_gen_deck.py reads the key set off

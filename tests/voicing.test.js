@@ -15,7 +15,7 @@ const { loadEngine } = require("./helpers/engine.js");
 const FIXTURES = path.join(__dirname, "fixtures");
 const readFixture = (n) => JSON.parse(fs.readFileSync(path.join(FIXTURES, n), "utf8"));
 
-const GOLDEN = readFixture("golden_decks_v1.json");
+const GOLDEN = readFixture("golden_decks_v2.json");
 const QUALITIES = readFixture("qualities.json");
 const SYNTHETIC = readFixture("synthetic_scales.json");
 
@@ -65,8 +65,8 @@ function everyCard(fn) {
 //  * ENGINE-SPEC section 6 / plan Premise 2: Pygmy `Fm9` ships G5 where the
 //    D11 nearest-above tie-break gives G4.
 //  * ENGINE-SPEC section 7 / plan Premise 3: the D9 root-octave exceptions
-//    Pygmy `Db`, `Dbmaj7` and `Eb7`.
-//  * ENGINE-SPEC section 7: the five HIGH / LOW VOICING alternates are opt-in
+//    Pygmy `Db` and `Dbmaj7`.
+//  * ENGINE-SPEC section 7: the seven HIGH / LOW VOICING alternates are opt-in
 //    multi-voicing DATA, unreachable by any function of (root pitch class,
 //    interval set) - one card of each group is reproduced, the rest are not.
 // ---------------------------------------------------------------------------
@@ -74,7 +74,8 @@ const TWO_SIDED = {
   "pygmy Fm9": "section 6 D11: curated G5, nearest-above gives G4",
   "pygmy Db": "section 7 D9: curated Db4 = U5, the higher bottom-shell instance",
   "pygmy Dbmaj7": "section 7 D9: curated Db4 = U5, the higher bottom-shell instance",
-  "pygmy Eb7": "section 7 D9: curated Eb3 on the bottom although rim Eb4 exists",
+  "pygmy Cm7": "section 7: LOW VOICING alternate, multi-voicing data",
+  "pygmy Eb7": "section 7: LOW VOICING alternate, multi-voicing data",
   "hijaz Bm": "section 7: HIGH VOICING alternate, multi-voicing data",
   "pygmy Ab": "section 7: HIGH VOICING alternate, multi-voicing data",
   "pygmy Cm": "section 7: HIGH / LOW VOICING alternates, multi-voicing data",
@@ -83,9 +84,12 @@ const TWO_SIDED = {
 
 // The alternates ship two or three cards under one key; exactly one card of
 // each group is the one the engine reproduces.
-const ALTERNATE_GROUPS = { "hijaz Bm": 2, "pygmy Ab": 2, "pygmy Cm": 3, "pygmy Eb": 2 };
+const ALTERNATE_GROUPS = {
+  "hijaz Bm": 2, "pygmy Ab": 2, "pygmy Cm": 3, "pygmy Cm7": 2,
+  "pygmy Eb": 2, "pygmy Eb7": 2,
+};
 
-test("containment: every one of the 59 fixture voicings is a legal candidate", () => {
+test("containment: every one of the 61 fixture voicings is a legal candidate", () => {
   let checked = 0;
   everyCard((deck, chord) => {
     const rootPc = pc(midiOf(deck.fields, chord.roots[0]));
@@ -97,7 +101,7 @@ test("containment: every one of the 59 fixture voicings is a legal candidate", (
       `candidate set (${set.length} candidates)`);
     checked += 1;
   });
-  assert.strictEqual(checked, 59, "the corpus is 59 cards");
+  assert.strictEqual(checked, 61, "the corpus is 61 cards");
 });
 
 test("candidate ids are numbers in chord-spelling order starting at the root", () => {
@@ -146,18 +150,18 @@ test("choose reproduces the corpus outside the recorded two-sided exceptions", (
       `${key} is recorded as a two-sided exception (${TWO_SIDED[key]}) but ` +
       `diverged ${n} times, expected ${expected}`);
   }
-  assert.strictEqual(matched.length + diverged.length, 59);
-  // Plan Premise 3: "50/59 cards fully automatically", 8 root-octave misses
-  // (5 of them the alternates) plus the Fm9 register.
-  assert.strictEqual(diverged.length, 9);
-  assert.strictEqual(matched.length, 50);
+  assert.strictEqual(matched.length + diverged.length, 61);
+  // Plan Premise 3: "51/61 cards fully automatically", 9 root-octave misses
+  // (7 of them the alternates) plus the Fm9 register.
+  assert.strictEqual(diverged.length, 10);
+  assert.strictEqual(matched.length, 51);
 });
 
-test("with the root field given, choose reproduces 58/59 - only Fm9 diverges", () => {
+test("with the root field given, choose reproduces 60/61 - only Fm9 diverges", () => {
   // Plan Premise 2 measures the register rules with the ROOT FIELD supplied
   // ("giving the engine the root FIELD, the spelling order of pitch classes
   // and the chord symbol"): the strict reading - unforced tones take the
-  // NEAREST instance above the root - reproduces 58/59. The one divergence is
+  // NEAREST instance above the root - reproduces 60/61. The one divergence is
   // Pygmy Fm9, which CLAUDE.md rule 3 names as a permitted free choice.
   //
   // This gate is stricter than the (root pitch class, interval set) one above:
@@ -182,7 +186,7 @@ test("with the root field given, choose reproduces 58/59 - only Fm9 diverges", (
       diverged.push(cardKey(deck, chord));
     }
   });
-  assert.strictEqual(matched.length, 58, "plan Premise 2: 58/59 under the strict reading");
+  assert.strictEqual(matched.length, 60, "plan Premise 2: 60/61 under the strict reading");
   assert.deepStrictEqual(diverged, ["pygmy Fm9"]);
 
   // Two-sided: Fm9 must STILL diverge, and by the documented note - the
@@ -226,8 +230,9 @@ test("D9 root octave: lowest top-shell instance, else lowest overall", () => {
   // The recorded root-octave exceptions of section 7 plus the alternates whose
   // divergence is the root field; every other card's roots[0] IS the policy.
   const rootExceptions = new Set([
-    "pygmy Db", "pygmy Dbmaj7", "pygmy Eb7",
-    "hijaz Bm", "pygmy Ab", "pygmy Cm", "pygmy Eb",
+    "pygmy Db", "pygmy Dbmaj7",
+    "hijaz Bm", "pygmy Ab", "pygmy Cm", "pygmy Cm7",
+    "pygmy Eb", "pygmy Eb7",
   ]);
   everyCard((deck, chord) => {
     const key = cardKey(deck, chord);
@@ -270,7 +275,9 @@ test("D2 forced chords cluster chord tones to the highest instance below the roo
   // ENGINE-SPEC section 6: bottom-shell fields are ordinary instances - Pygmy
   // Cm7 clusters its 3rd to Eb3 on the bottom shell (U3).
   const pygmy = GOLDEN.decks.find((d) => d.id === "pygmy");
-  const cm7 = pygmy.chords.find((c) => c.main === "Cm" && c.sup === "7");
+  // Two Cm7 cards ship (the LOW VOICING alternate is opt-in data); this is the
+  // one the engine reproduces from (root pitch class, interval set).
+  const cm7 = pygmy.chords.find((c) => c.subtitle === "C MINOR 7");
   const gotCm7 = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, cm7.roots[0])),
     [0, 3, 7, 10]);
   assert.deepStrictEqual(plain(gotCm7.value.fields), cm7.fields);
