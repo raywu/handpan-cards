@@ -31,6 +31,22 @@ SPEC_CROP_MARGIN = 6.0   # crop marks live 6 pt from the page edge
 # the outermost ink on a card, so text has to stay inside it.
 MIN_TEXT_MARGIN = 2.0
 
+# --- diagram label rule, quoted from CLAUDE.md ("Design system") -----------
+# One rule for every note label drawn in the pan: size = r * RATIO * k(N),
+# where r is the field's OWN radius and N the deck's field count.
+SPEC_LABEL_RATIO = 0.675          # measured on the 8+1 decks
+SPEC_LABEL_REF_FIELDS = 9
+SPEC_LABEL_EXP = 0.2
+SPEC_LABEL_DENSITY_FLOOR = 0.62
+SPEC_LABEL_PRINT_FLOOR = 3.6      # the pipeline's own text floor, in points
+
+
+def spec_label_size(radius, n_fields):
+    """CLAUDE.md's label rule, written out from the spec."""
+    k = (SPEC_LABEL_REF_FIELDS / float(n_fields)) ** SPEC_LABEL_EXP
+    return radius * SPEC_LABEL_RATIO * max(SPEC_LABEL_DENSITY_FLOOR,
+                                           min(1.0, k))
+
 ALL_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
 
 
@@ -589,6 +605,97 @@ class DrawRingTest(PaletteSafeTest):
                 self.assertGreaterEqual(
                     band["r"] - band["line_width"] / 2.0, hairline - eps,
                     "the coloured band swallows the inner hairline")
+
+
+class LabelSizeRuleTest(unittest.TestCase):
+    """ONE label rule, applied to every deck and every shell.
+
+    Sizes are measured from the glyphs ``draw_pan`` actually lays down, never
+    read back out of the geometry table it was handed.
+    """
+
+    def drawn_name_sizes(self, deck, R):
+        """Sorted sizes of every note-NAME glyph the pan draws.
+
+        Numbers are switched off, so the only text left is note labels: the
+        name, then its octave digit at 0.66x. The name glyph is alphabetic.
+        """
+        canvas = RecordingCanvas()
+        hifi.draw_pan(canvas, 0.0, 0.0, R, deck["spec"], numbers=False)
+        return sorted(round(t["size"], 6) for t in canvas.texts
+                      if t["text"][:1].isalpha())
+
+    def expected_name_sizes(self, deck, R):
+        """The same multiset, derived from the deck data and the spec rule."""
+        spec = deck["spec"]
+        geom = spec["_geom"]
+        fields = [k for k in spec if k != "_geom"]
+        out = []
+        for f in fields:
+            zone = spec[f][3]
+            frac = (geom["r_ding"] if zone == "ding" else
+                    geom["r_bnote"] if zone == "bottom" else geom["r_note"])
+            out.append(round(spec_label_size(R * frac, len(fields)), 6))
+        return sorted(out)
+
+    def test_every_note_label_is_sized_by_the_rule(self):
+        for deck in ALL_DECKS:
+            with self.subTest(deck=deck["name"]):
+                R = deck["R"]
+                drawn = self.drawn_name_sizes(deck, R)
+                want = self.expected_name_sizes(deck, R)
+                self.assertEqual(len(drawn), len(want),
+                                 "every field must carry one name label")
+                for got, expect in zip(drawn, want):
+                    self.assertAlmostEqual(
+                        got, expect, places=4,
+                        msg="%s: label %.4f pt, rule says %.4f pt"
+                            % (deck["name"], got, expect))
+
+    def test_labels_shrink_as_a_deck_gains_fields(self):
+        """The whole point of the rule: busier pan, smaller labels."""
+        counts = [6, 9, 12, 18, 24, 36]
+        sizes = [hifi.label_size(10.0, n) for n in counts]
+        for n, got in zip(counts, sizes):
+            self.assertAlmostEqual(
+                got, spec_label_size(10.0, n), places=6,
+                msg="label_size(10, %d) = %.6f, spec says %.6f"
+                    % (n, got, spec_label_size(10.0, n)))
+        for a, b in zip(sizes, sizes[1:]):
+            self.assertGreaterEqual(a, b, "the rule may never grow a label as "
+                                          "fields are added: %r" % (sizes,))
+        for a, b in zip(sizes[1:], sizes[2:]):
+            self.assertGreater(a, b, "past the reference count the rule must "
+                                     "strictly shrink: %r" % (sizes,))
+        for n in (6, 9):
+            self.assertAlmostEqual(
+                hifi.label_size(10.0, n), 10.0 * SPEC_LABEL_RATIO, places=6,
+                msg="at or under the reference count there is no shrink")
+
+    def test_bottom_labels_are_an_output_of_the_rule(self):
+        """Row 112: the bottom shell no longer carries its own stored figure."""
+        deck = decks.PYGMY
+        R = deck["R"]
+        spec = deck["spec"]
+        geom = spec["_geom"]
+        n = len([k for k in spec if k != "_geom"])
+        want = spec_label_size(R * geom["r_bnote"], n)
+        drawn = self.drawn_name_sizes(deck, R)
+        self.assertAlmostEqual(min(drawn), want, places=4,
+                               msg="the smallest label is a bottom-shell name "
+                                   "and must come from the rule")
+        self.assertNotAlmostEqual(
+            min(drawn), R * geom["f_bnote"], places=2,
+            msg="the stored f_bnote figure is no longer what gets drawn")
+
+    def test_no_label_falls_below_the_print_floor(self):
+        for deck in ALL_DECKS:
+            with self.subTest(deck=deck["name"]):
+                smallest = min(self.drawn_name_sizes(deck, deck["R"]))
+                self.assertGreaterEqual(
+                    smallest, SPEC_LABEL_PRINT_FLOOR,
+                    "%s draws a %.2f pt label, under the %.1f pt floor"
+                    % (deck["name"], smallest, SPEC_LABEL_PRINT_FLOOR))
 
 
 if __name__ == "__main__":

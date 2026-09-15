@@ -3344,6 +3344,26 @@ function chordSets(d, ch) {
 }
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
+/* ---------------- diagram label sizing ----------------
+   ONE rule sizes every note label in the pan, and tools/hifi.py carries the
+   same three constants and the same arithmetic for print:
+
+     size = r * LABEL_RATIO * k(N)   k(N) = clamp((9 / N) ** 0.2, 0.62, 1)
+
+   `r` is the field's own drawn radius, so the ding, the top shell and the
+   bottom shell all come out of one expression - the geom's f_ding / f_note /
+   f_bnote figures are no longer what gets drawn. `N` is the deck's field
+   count: the busier the pan, the smaller every label on it, with a 9-field
+   deck (the 8+1 pans the ratio was measured on) at the full ratio. */
+const LABEL_RATIO = 0.675, LABEL_REF_FIELDS = 9,
+      LABEL_DENSITY_EXP = 0.2, LABEL_DENSITY_FLOOR = 0.62;
+function labelDensity(n) {
+  if (!(n > 0)) return 1;
+  return Math.max(LABEL_DENSITY_FLOOR,
+                  Math.min(1, Math.pow(LABEL_REF_FIELDS / n, LABEL_DENSITY_EXP)));
+}
+function labelSize(r, n) { return r * LABEL_RATIO * labelDensity(n); }
+
 /* ---------------- SVG pan ---------------- */
 function pan(d, ch) {
   const g = d.geom, R = 100;
@@ -3386,13 +3406,14 @@ function pan(d, ch) {
       font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
   }
 
+  const nFields = Object.keys(d.fields).length;
   for (const fid in d.fields) {
     const id = +fid;
     const [name, oct, , zone, ang, lab] = d.fields[fid];
     if (zone === "ding") {
       const dy = (g.ding_dy || 0) * R, rr = R * g.r_ding;
       s += field(0, dy, rr, id, false);
-      s += label(0, dy, name, oct, R * g.f_ding * 1.05, "#242424");
+      s += label(0, dy, name, oct, labelSize(rr, nFields), "#242424");
       continue;
     }
     const isB = zone === "bottom";
@@ -3401,7 +3422,7 @@ function pan(d, ch) {
     const [x, y] = P(orb, ang);
     s += field(x, y, rr, id, isB);
     const lit = blue.has(id) || green.has(id);
-    s += label(x, y, name, oct, R * (isB ? g.f_bnote : g.f_note) * 1.05,
+    s += label(x, y, name, oct, labelSize(rr, nFields),
                isB && !lit ? "#8a8a8a" : "#242424");
     // numbers
     let nr, col, fs = R * g.f_num;

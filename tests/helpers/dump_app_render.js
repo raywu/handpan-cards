@@ -44,6 +44,13 @@ for (const d of DECKS) {
     }
     fields.sort((a, b) => a.x - b.x || a.y - b.y);
 
+    // The note-NAME labels the diagram actually draws, by size. A name label
+    // is the only <text> carrying a <tspan> (its octave), so this cannot pick
+    // up the index numbers. R is 100 in the app's own viewBox, which is the
+    // same normalisation the Python side puts the print sizes into.
+    const labelSizes = [...svg.matchAll(/<text[^>]*font-size="([\d.eE+-]+)"[^>]*>[^<]*<tspan/g)]
+      .map((m) => r3(+m[1])).sort((a, b) => a - b);
+
     // The note line, number line and badge as the app actually RENDERS them,
     // parsed back out of linesHTML - not re-read from ch.fields, which would
     // just compare two copies of the same input data.
@@ -61,6 +68,7 @@ for (const d of DECKS) {
       noteLine,
       numLine,
       badgeText: badgeMatch ? badgeMatch[1].trim() : "",
+      labelSizes,
       fields,
     });
   }

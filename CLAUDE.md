@@ -135,8 +135,9 @@ this by attaching per-instrument images.
    enforced by `tests/test_deck_data.py::test_forced_tones_cluster_below_root`.
 4. **Highlighted-field rendering:** thin black circle (always), coloured
    band inside at radius 0.87r with stroke 0.24r, inner black hairline at
-   0.74r, label auto-fit inside. Unhighlighted bottom fields: dashed grey
-   circle with grey label (receded).
+   0.74r, label auto-fit inside (sized by the label rule in "Design system",
+   then shrunk further only if the name would not fit). Unhighlighted bottom
+   fields: dashed grey circle with grey label (receded).
 
 ## Design system (2026-08 restyle - current ground truth)
 
@@ -152,7 +153,29 @@ this by attaching per-instrument images.
     for text contrast on white)
   - Amara: teal `#0B7B75` / amber `#DD8F00` (replaced the reference deck's
     blue/green; amber chosen warmer than Pygmy gold so the decks don't twin)
-  - Bottom-shell accents (Pygmy U-labels, badges): orange `#E27005`.
+  - Bottom-shell accents (Pygmy U-labels, badges): orange `#E27005`, in the
+    app AND in print (`hifi.ORANGE`; print caught up 2026-09-15, owner
+    decision - it used to draw a different `#D96605`).
+- **Diagram label rule** (2026-09-15, owner decision: "the size should scale
+  down based on number of notes"). ONE rule sizes every note label in the pan,
+  on every deck and in BOTH outputs:
+
+      size = r x 0.675 x k(N)      k(N) = clamp((9 / N) ^ 0.2, 0.62, 1)
+
+  `r` is the field's OWN drawn radius, so the ding, the top shell and the
+  bottom shell all fall out of one expression - `f_ding`, `f_note` and
+  `f_bnote` are outputs of the rule, not figures anything reads (the geom keys
+  still exist and still feed the solver's `ext` budget, but no renderer sizes a
+  label from them). `N` is the deck's field count, ding and bottom shell
+  included: the busier the pan, the smaller every label on it. A 9-field deck
+  is the reference and draws at the full ratio; k never exceeds 1, so a sparse
+  pan gets no bigger labels. Print then applies `hifi.fit_note`, which shrinks
+  a label further only when the name would overflow its own circle.
+  Today's smallest label is Pygmy's bottom shell at **4.19 pt** (18 fields,
+  k = 0.871), clear of the 3.6 pt floor the pipeline's text fitting uses.
+  The constants live twice - `tools/hifi.py` (`LABEL_RATIO` and friends) and
+  `pan()` in `index.html` - and `tests/test_render_agreement.py` pins the two
+  renderers to the same drawn sizes.
 - **Card anatomy:** header (deck name, #index, root-coloured scale-degree
   label, small-caps subtitle), Marcellus chord name with superscript,
   diagram, optional bottom-note badge, note line, number line.

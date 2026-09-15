@@ -28,7 +28,8 @@ _BLUE0, _GREEN0 = BLUE, GREEN
 NAME = Color(0.329, 0.329, 0.329)   # #545454  chord name
 INK = Color(0.141, 0.141, 0.141)    # #242424  small caps / labels
 SEP = Color(0.451, 0.451, 0.451)    # #737373  separators
-ORANGE = Color(0.850, 0.400, 0.020)
+ORANGE = Color(0.8863, 0.4392, 0.0196)  # #E27005  bottom-shell accent,
+                                        #          the value the app uses
 FAINT = Color(0.78, 0.78, 0.78)
 
 PAGE = (612.0, 792.0)               # US Letter
@@ -65,6 +66,35 @@ def fit(text, font, size, maxw, track=0.0, floor=3.6):
 def note_w(name, octv, font, size):
     return (pdfmetrics.stringWidth(name, font, size)
             + pdfmetrics.stringWidth(str(octv), font, size * 0.66))
+
+
+# ---- diagram label sizing -------------------------------------------------
+# ONE rule sizes every note label drawn in the pan, in BOTH outputs: the same
+# three constants and the same arithmetic live in `pan()` in index.html.
+#
+#   size = r * LABEL_RATIO * k(N)      k(N) = clamp((9 / N) ** 0.2, 0.62, 1)
+#
+# `r` is the field's OWN drawn radius, so the ding, the top shell and the
+# bottom shell all fall out of one expression and none of them needs a stored
+# figure of its own. `N` is the deck's field count: the busier the pan, the
+# smaller every label on it. A 9-field deck (the 8+1 pans the ratio was
+# measured on) draws at the full ratio.
+LABEL_RATIO = 0.675          # label size as a fraction of its field's radius
+LABEL_REF_FIELDS = 9         # the field count at which k(N) is 1
+LABEL_DENSITY_EXP = 0.2      # how fast the ratio decays with field count
+LABEL_DENSITY_FLOOR = 0.62   # the rule never shrinks a label past this
+
+
+def label_density(n_fields):
+    if n_fields <= 0:
+        return 1.0
+    k = (float(LABEL_REF_FIELDS) / n_fields) ** LABEL_DENSITY_EXP
+    return max(LABEL_DENSITY_FLOOR, min(1.0, k))
+
+
+def label_size(r, n_fields):
+    """Diagram label size for a field of radius `r` on an `n_fields` deck."""
+    return r * LABEL_RATIO * label_density(n_fields)
 
 
 def fit_note(name, octv, font, size, maxw):
@@ -216,6 +246,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
              numbers=True):
     """spec: dict field -> (name, octave, midi, zone, angle, label)"""
     g = spec["_geom"]
+    n_fields = len([k for k in spec if k != "_geom"])
     c.setStrokeColor(black); c.setLineWidth(1.15); c.setDash()
     c.circle(cx, cy, R, stroke=1, fill=0)
     if g.get("inner_ring"):
@@ -242,7 +273,8 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
             rr = R * g["r_ding"]
             dy = R * g.get("ding_dy", 0.0)
             draw_ring(c, cx, cy - dy, rr, state(i))
-            fs0 = fit_note(nm, ov, "Label", R * g["f_ding"], rr * 1.40)
+            fs0 = fit_note(nm, ov, "Label", label_size(rr, n_fields),
+                           rr * 1.40)
             note_text(c, cx, cy - dy - rr * 0.30, nm, ov, "Label", fs0, INK)
             continue
         orb = R * g[zone]
@@ -250,8 +282,7 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
         a = math.radians(ang)
         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
-        fs = R * (g["f_bnote"] if zone == "bottom" else g["f_note"])
-        fs = fit_note(nm, ov, "Label", fs, rr * 1.40)
+        fs = fit_note(nm, ov, "Label", label_size(rr, n_fields), rr * 1.40)
         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
         if numbers:
             if zone == "bottom":

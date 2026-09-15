@@ -41,6 +41,7 @@ class RecordingCanvas:
         self._stroke = None
         self._dashed = False
         self._font = None
+        self._size = 0.0
 
     # --- state the renderer sets -----------------------------------------
     def setStrokeColor(self, c):
@@ -55,12 +56,15 @@ class RecordingCanvas:
 
     def setFont(self, name, size, *a, **k):
         self._font = name
+        self._size = size
 
     def drawString(self, x, y, text, *a, **k):
-        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
+                           "size": self._size, "anchor": "l"})
 
     def drawCentredString(self, x, y, text, *a, **k):
-        self.texts.append({"x": x, "y": y, "text": text, "font": self._font})
+        self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
+                           "size": self._size, "anchor": "c"})
 
     # --- everything else is ignored --------------------------------------
     def __getattr__(self, _name):
@@ -130,7 +134,25 @@ def render_print(deck):
             num_line = line_at(deck["y_num"], "Notes")
             badge = line_at(deck["y_note"] + 13, "LabelSB")
 
+            # Diagram note-NAME label sizes, normalised to R = 100 like the
+            # positions above. note_text() draws the name with drawString and
+            # its octave digit after it at 0.66x, so the alphabetic glyph of
+            # each label is the one carrying the label's size; the index
+            # numbers go out through drawCentredString and are excluded.
+            # The card's own chrome also draws "Label" runs (the deck name in
+            # the header and the footer), so the diagram is bounded: every
+            # tonefield sits within 1.15R of the pan centre, nothing else on
+            # the card is closer than 1.4R.
+            def in_diagram(t):
+                return math.hypot(t["x"] - cx, t["y"] - cy) <= R * 1.25
+
+            label_sizes = sorted(
+                round(t["size"] / R * 100, 3) for t in rec.texts
+                if t["font"] == "Label" and t["anchor"] == "l"
+                and t["text"][:1].isalpha() and in_diagram(t))
+
             out.append({"name": chord[0] + chord[1], "fields": fields,
+                        "labelSizes": label_sizes,
                         "noteLine": [t.strip() for t in note_line.split("-") if t.strip()],
                         "numLine": [t.strip() for t in num_line.split("-") if t.strip()],
                         "badgeText": badge.strip()})
@@ -194,6 +216,23 @@ class RenderAgreement(unittest.TestCase):
         for app_c, print_c in self.each_card():
             self.assertEqual(app_c["numLine"], print_c["numLine"],
                              "%s %s: drawn number line" % (app_c["deck"], app_c["name"]))
+
+    def test_diagram_label_sizes_agree(self):
+        """One label rule, two renderers: the drawn sizes must match.
+
+        Both sides are measured from emitted output and normalised to R = 100,
+        so a renderer that keeps its own fudge factor - or reads a stored
+        f_note / f_bnote figure instead of the rule - separates here.
+        """
+        for app_c, print_c in self.each_card():
+            where = "%s %s: label sizes" % (app_c["deck"], app_c["name"])
+            self.assertEqual(len(app_c["labelSizes"]), len(print_c["labelSizes"]),
+                             where + " (count)")
+            self.assertTrue(app_c["labelSizes"], where + " (none drawn)")
+            for a, p in zip(app_c["labelSizes"], print_c["labelSizes"]):
+                self.assertAlmostEqual(a, p, delta=TOL,
+                                       msg="%s: %.3f (app) vs %.3f (print)"
+                                           % (where, a, p))
 
     def test_drawn_bottom_note_badge_agrees(self):
         """The printed badge text itself - nothing else asserts what it says."""
