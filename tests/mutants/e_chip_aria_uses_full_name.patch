@@ -1,0 +1,23 @@
+# kills: a selected custom chip carries a pencil; no built-in chip ever does
+# suite: node --test --test-name-pattern ^a.selected.custom.chip.carries.a.pencil..no.built.in.chip.ever.does$ tests/e2e.test.js
+# The accessible name goes back to the FULL deck name while the chip keeps
+# rendering chipLabel(). Below CHIP_CAP the two are the same string and nothing
+# moves; past it the chip reads "MY LOW PYGMY SC..." and announces "Edit MY LOW
+# PYGMY SCALE", so the visible string stops being contained in the accessible
+# name - WCAG 2.5.3 Label-in-Name, and Voice Control's "tap <what I can read>"
+# matches nothing. This is the mutant the old /^Edit .+/ assertion could not
+# catch: it passes on both spellings, which is why it was tightened to a
+# substring check against a name long enough to be elided.
+diff --git a/index.html b/index.html
+index 77d0b3d..779c588 100644
+--- a/index.html
++++ b/index.html
+@@ -3676,7 +3676,7 @@ function buildChips() {
+       // and an accessible name built from the full one stops containing the
+       // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
+       // Control matches "tap <the words I can see>" against.
+-      b.setAttribute("aria-label", "Edit " + chipLabel(d.name));
++      b.setAttribute("aria-label", "Edit " + d.name);
+     }
+     // [design-review 7A] the ALREADY-SELECTED custom chip is the one and only
+     // way into the Edit sheet; every other chip just selects its deck. No

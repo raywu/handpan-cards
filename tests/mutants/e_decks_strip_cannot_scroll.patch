@@ -1,0 +1,22 @@
+# kills: the landscape deck strip scrolls rather than clips, at both ends
+# suite: node --test --test-name-pattern ^the.landscape.deck.strip.scrolls.rather.than.clips..at.both.ends$ tests/e2e.test.js
+# overflow-x:auto -> hidden. This is the defect the landscape comment's old
+# "no scroll at all" claim would have hidden: the strip is genuinely wider than
+# the viewport at 844x390 and 667x375 with a custom deck, and auto is the only
+# reason that is a scroll and not a clip. With hidden the chips still lay out
+# at the same widths and every existing landscape assertion (header height,
+# chrome budget, card width, body scrollWidth) is unmoved - the strip simply
+# cannot be scrolled, so 41px and 218px of chip become untappable.
+diff --git a/index.html b/index.html
+index 77d0b3d..0bee548 100644
+--- a/index.html
++++ b/index.html
+@@ -104,7 +104,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ /* The chip row scrolls horizontally and never wraps; auto margins on the end
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+-.decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
++.decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:hidden; scrollbar-width:none;
+   -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}

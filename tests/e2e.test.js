@@ -1685,6 +1685,107 @@ function run() {
     }
   });
 
+  /* ---------------------------------------------------------------- *
+   * what the landscape header actually buys, measured
+   *
+   * The stylesheet used to claim that with the title out "every landscape
+   * viewport in the budget table holds the whole strip with no scroll at
+   * all". It does not, and never did - the comment's own arithmetic
+   * (463 + 241 > 643 at 667x375) disproves it. The two landscape tests
+   * above both run freshLoad() with the three BUILT-INS only and assert
+   * nothing at all about the strip's width, which is exactly why a false
+   * claim could ship green.
+   *
+   * So: pin the real numbers, with a CUSTOM deck on the strip, which is the
+   * owner's actual configuration and the one the old claim was furthest
+   * from. The strip overflowing is FINE - .decks is overflow-x:auto, so it
+   * scrolls and never clips. What is NOT fine is either end becoming
+   * unreachable: `.decks > :first-child{margin-left:auto}` centres the row
+   * while it fits, and an auto margin in a scroll container is the classic
+   * way to strand the leading item off the scrollable origin. That is the
+   * real risk in this rule, so it is what gets asserted.
+   * ---------------------------------------------------------------- */
+  test("the landscape deck strip scrolls rather than clips, at both ends", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    try {
+      await generate(EDIT_SCALE);           // four chips + "+ ADD", the owner's case
+      const bad = [];
+      const seen = {};
+      for (const [vw, vh] of LANDSCAPE_BUDGET) {
+        await b.setViewport(vw, vh, true);
+        const m = await b.eval(`
+          const nav = document.querySelector(".decks");
+          const first = nav.firstElementChild, last = nav.lastElementChild;
+          const box = () => nav.getBoundingClientRect();
+          // Leading end: scroll to the origin and ask whether the first chip
+          // is actually inside the box. An auto margin that strands it puts
+          // its left edge to the LEFT of the container with scrollLeft 0.
+          nav.scrollLeft = 0;
+          const atStart = first.getBoundingClientRect().left - box().left;
+          // Trailing end: scroll as far as the container allows.
+          nav.scrollLeft = nav.scrollWidth;
+          const atEnd = box().right - last.getBoundingClientRect().right;
+          const maxScroll = nav.scrollLeft;
+          nav.scrollLeft = 0;
+          return {
+            sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll,
+            atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2),
+            chips: nav.children.length,
+            bodySw: document.body.scrollWidth, bodyCw: document.body.clientWidth,
+          };
+        `);
+        seen[`${vw}x${vh}`] = m;
+        // The strip may overflow. The PAGE may not - an overflowing strip
+        // that pushes the body wide is a clip, not a scroll.
+        if (m.bodySw > m.bodyCw + 1) {
+          bad.push(`${vw}x${vh}: the strip took the whole page horizontal ` +
+            `(body ${m.bodySw} > ${m.bodyCw}) instead of scrolling inside .decks`);
+        }
+        // A strip that overflows must be scrollable by exactly its overflow.
+        const over = m.sw - m.cw;
+        if (over > 1 && Math.abs(m.maxScroll - over) > 1) {
+          bad.push(`${vw}x${vh}: .decks overflows by ${over}px but scrolls only ` +
+            `${m.maxScroll}px - ${over - m.maxScroll}px of chip is unreachable`);
+        }
+        // Both ends land flush. Negative = the chip sits outside the box even
+        // at the extreme of the scroll range, i.e. it can never be tapped.
+        if (m.atStart < -1) {
+          bad.push(`${vw}x${vh}: at scrollLeft 0 the FIRST chip starts ${-m.atStart}px ` +
+            "left of .decks - margin-left:auto has stranded it outside the " +
+            "scrollable origin and no gesture can bring it back");
+        }
+        if (m.atEnd < -1) {
+          bad.push(`${vw}x${vh}: fully scrolled, the LAST chip still ends ` +
+            `${-m.atEnd}px past .decks' right edge`);
+        }
+      }
+      assert.deepStrictEqual(bad, [], JSON.stringify(seen, null, 2));
+
+      // And the positive claim, stated as a RELATIONSHIP rather than as a
+      // pixel count: the strip is wider than the viewport gives it at the
+      // shortest landscape a phone offers. Measured 2026-09-15 on a Mac with
+      // Nunito Sans resolved: .decks scrollWidth / clientWidth is 611/570 at
+      // 844x390, 652/652 at 926x428, 611/393 at 667x375 and 1006/1006 at
+      // 1280x500, i.e. 41px and 218px of overflow on the two narrow rows.
+      // Built-ins alone already overflow 667x375 by 70px (463 vs 393).
+      //
+      // Those pixel counts are font-metric dependent - a CI box without the
+      // webfont measures different chips - so what is ASSERTED is the sign,
+      // on the row where the margin is 200px and no font substitution can
+      // flip it. That is precisely the claim the stylesheet used to get
+      // wrong, and the whole reason this test exists.
+      const narrow = seen["667x375"];
+      assert.ok(narrow.sw > narrow.cw + 100,
+        "at 667x375 with a custom deck the strip now FITS " +
+        `(${narrow.sw} <= ${narrow.cw}): ${JSON.stringify(seen, null, 2)}. If a ` +
+        "layout change really did buy that, index.html's landscape comment - " +
+        "which states the strip scrolls and by how much - is now the stale one.");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* Portrait is the acceptance test for row 245: if any portrait measurement
    * moves, the change is wrong. So this does not compare portrait against a
    * table of numbers someone once measured - those numbers are one machine's
@@ -1839,6 +1940,25 @@ function run() {
       const meta = await decksMeta();
       await generate(EDIT_SCALE);
 
+      // A name LONGER than CHIP_CAP (16), so the chip's visible text is
+      // actually elided. WCAG 2.5.3 Label-in-Name: the visible string must be
+      // contained in the accessible name, or Voice Control's "tap <what I can
+      // read>" hits nothing. An aria-label built from the FULL name announces
+      // "Edit MY LOW PYGMY SCALE" over a chip that reads "MY LOW PYGMY SC…",
+      // and the ellipsis makes the visible string a non-substring. A short
+      // name cannot catch this - the two agree whenever nothing is elided.
+      const LONG_NAME = "MY LOW PYGMY SCALE";
+      await openEdit();
+      await b.eval(`
+        const el = document.getElementById("scale-name");
+        el.value = ${JSON.stringify(LONG_NAME)};
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return el.value;
+      `);
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after the rename" });
+
       const after = await chipProbe();
       const sel = after.filter((c) => c.on);
       assert.strictEqual(sel.length, 1, "exactly one chip is selected after Generate");
@@ -1857,6 +1977,16 @@ function run() {
       assert.ok(/^Edit .+/.test(mine.label || ""),
         `the selected custom chip's aria-label is ${JSON.stringify(mine.label)}, ` +
         'expected "Edit <name>"');
+      // The chip really is elided at this name length, or the check below is
+      // vacuous: a full name and a capped one agree trivially.
+      assert.ok(mine.text.length < LONG_NAME.length && /…$/.test(mine.text),
+        `the chip reads ${JSON.stringify(mine.text)} for a ${LONG_NAME.length}-char ` +
+        "name - CHIP_CAP no longer elides, so this test can no longer see the bug");
+      assert.ok((mine.label || "").includes(mine.text),
+        `WCAG 2.5.3 Label-in-Name: the chip READS ${JSON.stringify(mine.text)} but ` +
+        `ANNOUNCES ${JSON.stringify(mine.label)}. The visible string is not contained ` +
+        "in the accessible name, so Voice Control's \"tap " + mine.text + "\" matches " +
+        "nothing. The aria-label must be built from chipLabel(name), not from name.");
       assert.ok(mine.h >= 44,
         `the pencil shrank the chip below the 44px target: ${mine.h}px`);
       // The glyph is decoration and must stay out of the chip's TEXT: the
@@ -2038,6 +2168,80 @@ function run() {
     } finally {
       await b.setViewport(900, 900, false);
     }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * a press state may not walk back the AA floor PR #53 bought
+   *
+   * The footer's quiet text buttons are 9.5px - "small text" by WCAG, so the
+   * 4.5:1 floor applies, and PR #53 raised them to it deliberately. `opacity`
+   * is the one press treatment that cannot be reasoned about locally: it
+   * composites the text toward the BACKGROUND, so .6 takes 6.61:1 to 3.21:1
+   * and the press state is the least readable moment of the interaction.
+   * The sibling rule (#scale-layout-reset, #scale-delete) already does it the
+   * right way, by moving `color` UP to full ink, which is also what the block
+   * comment says it does.
+   *
+   * Asserted as "no :active rule sets opacity on .shuffle" rather than as a
+   * computed contrast number, because the computed style of a non-pressed
+   * element never carries the :active declaration at all - a probe that read
+   * getComputedStyle would pass on the broken file.
+   * ---------------------------------------------------------------- */
+  test("no press state dims the footer's small text with opacity", async () => {
+    await freshLoad();
+    const found = await b.eval(`
+      const out = [];
+      const walk = (rules) => {
+        for (const r of Array.from(rules)) {
+          if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
+          if (!r.style || r.style.length === 0) continue;
+          for (const one of r.selectorText.split(",")) {
+            const sel = one.trim().replace(/:active\\b/g, "");
+            let hits = false;
+            try { hits = document.querySelector(".shuffle").matches(sel); } catch (e) {}
+            if (hits) out.push({ sel: one.trim(), opacity: r.style.opacity, color: r.style.color });
+          }
+        }
+      };
+      for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+      return out;
+    `);
+    assert.ok(found.length > 0,
+      "no :active rule matches .shuffle at all - the sweep is broken, or the " +
+      "footer button lost its press state entirely");
+    const dims = found.filter((r) => r.opacity !== "");
+    assert.deepStrictEqual(dims, [],
+      "these :active rules dim .shuffle with opacity: " + JSON.stringify(dims) +
+      ". The footer is 9.5px, so WCAG's 4.5:1 small-text floor applies; opacity " +
+      ".6 composites it toward the background and drops 6.61:1 to 3.21:1, below " +
+      "AA - which is exactly the floor PR #53 raised this footer to. Lift `color` " +
+      "to full ink instead, the way #scale-layout-reset:active already does.");
+    assert.ok(found.some((r) => r.color !== ""),
+      "no :active rule on .shuffle moves `color` - the block's own comment says " +
+      "the quiet text buttons come up to full ink, and nothing else here can");
+  });
+
+  /* ---------------------------------------------------------------- *
+   * the press ring follows the card's corners
+   *
+   * .card:active paints a box-shadow ring, but the 12px radius lives on
+   * .face, one level down. A box-shadow takes the radius of the element it
+   * is ON, so a .card with no radius rings a rounded card in a hard
+   * rectangle - a square nub at each corner, on every tap.
+   * ---------------------------------------------------------------- */
+  test("the card's press ring is as round as the card", async () => {
+    await freshLoad();
+    const r = await b.eval(`
+      const px = (el) => parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+      return { card: px(document.getElementById("card")),
+               face: px(document.querySelector("#card .face")) };
+    `);
+    assert.ok(r.face > 0, "the face lost its radius - this test's premise is gone");
+    assert.strictEqual(r.card, r.face,
+      `.card has a ${r.card}px radius and .face has ${r.face}px, so .card:active's ` +
+      "box-shadow ring is drawn square around a rounded card and a nub of ring " +
+      "sticks out past each corner while the finger is down");
   });
 
   test("the page reserves a safe-area inset on all four edges", async () => {

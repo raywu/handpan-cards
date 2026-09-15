@@ -222,8 +222,23 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    An overflowing strip is not merely tight - selecting a deck scrolls the
    chip that opened the sheet out from under the thumb, which is what
    "in landscape every control stays tappable" caught when the title was
-   merely made small. With the title out, every landscape viewport in the
-   budget table holds the whole strip with no scroll at all.
+   merely made small.
+
+   With the title out the strip gets the whole width, and on the two WIDER
+   rows it then fits: measured 2026-09-15, .decks scrollWidth/clientWidth is
+   652/652 at 926x428 and 1006/1006 at 1280x500, custom deck included. The
+   two narrow rows still overflow and SCROLL - .decks is overflow-x:auto, so
+   an over-wide strip is a scroll and never a clip. With one custom deck on
+   the strip that is 611/570 at 844x390 (41px) and 611/393 at 667x375
+   (218px); with the three built-ins alone 667x375 is 463/393 (70px), which
+   is just the arithmetic three lines up. The title was never what stood
+   between this row and a strip that fits, and chasing those 41px with a
+   layout change is not worth what it would cost the card (owner, 2026-09).
+   Both ends stay reachable, which is the thing that actually has to hold
+   here: the auto margins on the end chips centre the row while it fits and
+   collapse once it does not. tests/e2e.test.js "the landscape deck strip
+   scrolls rather than clips, at both ends" pins that, and pins the sign of
+   the overflow so this paragraph cannot quietly go stale again.
 
    The 44px floor on .chip and .mode is untouched - the row is as tall as the
    targets in it, which is the whole 44px and not a pixel more. The header
@@ -278,7 +293,13 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
   aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
-  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
+  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+  /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
+     and a box-shadow takes the radius of the element it is ON - so without
+     this the press ring is a hard rectangle around a rounded card, with a
+     square nub of ring at each corner. It clips nothing: .card paints no
+     background and no border, and .face already carries the same radius. */
+  border-radius:12px}
 .card.flip{transform:rotateY(180deg)}
 @media (prefers-reduced-motion: reduce){ .card{transition:none} }
 .face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
@@ -592,7 +613,7 @@ button.nav:active{background:#2e281e}
 .chip:active{background:#332c22}
 .mode:active{background:#2e281e}
 .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
-.shuffle:active{opacity:.6}
+.shuffle:active{color:#eae6df}
 .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
 #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
 #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
@@ -3651,7 +3672,11 @@ function buildChips() {
     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
     if (editable) {
       b.classList.add("editable");
-      b.setAttribute("aria-label", "Edit " + d.name);
+      // chipLabel, not d.name: past CHIP_CAP the chip READS an elided name,
+      // and an accessible name built from the full one stops containing the
+      // visible string - WCAG 2.5.3 Label-in-Name, which is what Voice
+      // Control matches "tap <the words I can see>" against.
+      b.setAttribute("aria-label", "Edit " + chipLabel(d.name));
     }
     // [design-review 7A] the ALREADY-SELECTED custom chip is the one and only
     // way into the Edit sheet; every other chip just selects its deck. No

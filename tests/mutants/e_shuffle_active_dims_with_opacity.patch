@@ -1,0 +1,22 @@
+# kills: no press state dims the footer's small text with opacity
+# suite: node --test --test-name-pattern ^no.press.state.dims.the.footer.s.small.text.with.opacity$ tests/e2e.test.js
+# The footer's press state goes back to dimming instead of brightening. The
+# control still HAS an :active rule, so "every interactive control has a press
+# state" stays green - the whole point of this mutant is that press-state
+# COVERAGE and press-state CONTRAST are different claims. .shuffle is 9.5px, so
+# WCAG's 4.5:1 small-text floor applies, and opacity .6 composites the ink
+# toward the background: 6.61:1 becomes 3.21:1, i.e. the pressed moment is the
+# one moment the footer is below AA. PR #53 raised this footer to AA on purpose.
+diff --git a/index.html b/index.html
+index 77d0b3d..8f43095 100644
+--- a/index.html
++++ b/index.html
+@@ -613,7 +613,7 @@ button.nav:active{background:#2e281e}
+ .chip:active{background:#332c22}
+ .mode:active{background:#2e281e}
+ .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
+-.shuffle:active{color:#eae6df}
++.shuffle:active{opacity:.6}
+ .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
+ #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
+ #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
