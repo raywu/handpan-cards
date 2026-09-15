@@ -5,15 +5,15 @@
 # main back to 138.3px and the card back to 100.16px wide - row 245's
 # measurements exactly, which is the state the owner asked to be fixed.
 diff --git a/index.html b/index.html
-index 4706826..6c823d2 100644
+index 140fa68..10c1e85 100644
 --- a/index.html
 +++ b/index.html
-@@ -223,7 +223,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     in landscape and hands the room to the card" measures the gain, and
     "portrait is byte-identical" measures the absence of a cost.
     ------------------------------------------------------------------------ */
 -@media (max-height:520px){
 +@media (max-height:120px){
-   header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2)}
-   h1{flex:0 0 auto; margin:0; font-size:13px; letter-spacing:.06em; text-align:left}
-   /* The strip takes what is left and keeps scrolling. min-width:0 is what
+   header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2);
+     max-width:none}
+   /* Visually hidden, NOT display:none: the h1 stays in the accessibility

@@ -6,10 +6,10 @@
 # down (row 223f). The mutant is deliberately a single line: the test has to
 # fail on a GAP in the coverage, not only on the whole block being deleted.
 diff --git a/index.html b/index.html
-index 4706826..d9f0279 100644
+index 140fa68..a699552 100644
 --- a/index.html
 +++ b/index.html
-@@ -567,7 +567,6 @@ button.nav:active{background:#2e281e}
+@@ -589,7 +589,6 @@ button.nav:active{background:#2e281e}
     .card.flip's own rotateY, while a filter flattens the 3D context and takes
     backface-visibility with it. A shadow paints in the element's own plane
     and touches neither. */

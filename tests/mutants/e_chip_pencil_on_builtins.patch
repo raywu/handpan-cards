@@ -5,15 +5,15 @@
 # promises an Edit sheet that never opens - the affordance becomes a lie on
 # three of the four chips, which is worse than row 218's original silence.
 diff --git a/index.html b/index.html
-index 4706826..ab297f0 100644
+index 140fa68..76e7e08 100644
 --- a/index.html
 +++ b/index.html
-@@ -3624,7 +3624,7 @@ function buildChips() {
-     // (aria-hidden) and the accessible name carries the same fact in words.
+@@ -3647,7 +3647,7 @@ function buildChips() {
+     // text stays the deck's name - and the accessible name says it in words.
      // Only ever on the chip that is BOTH selected and custom: row 262 is a
      // live focus trap on any path that opens Edit from an unselected chip.
 -    const editable = d.id === deckId && !!CUSTOM[d.id];
 +    const editable = d.id === deckId;
-     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}` +
-       (editable ? `<span class="pencil" aria-hidden="true">&#9998;</span>` : "");
-     if (editable) b.setAttribute("aria-label", "Edit " + d.name);
+     b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
+     if (editable) {
+       b.classList.add("editable");

@@ -5,7 +5,7 @@
 # deck strip and the mode bar run under the notch on one side and under the
 # rounded corner on the other, with nothing between them and the glass.
 diff --git a/index.html b/index.html
-index 4706826..4d7c7e0 100644
+index 140fa68..4eefbe5 100644
 --- a/index.html
 +++ b/index.html
 @@ -66,8 +66,7 @@ body{

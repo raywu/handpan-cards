@@ -1,19 +1,21 @@
 # kills: tapping the pencil opens the Edit sheet, from the glyph itself
 # suite: node --test --test-name-pattern ^tapping.the.pencil.opens.the.Edit.sheet,.from.the.glyph.itself$ tests/e2e.test.js
-# The glyph is painted off the chip (the classic off-screen absolute), so the
-# pixel the owner sees and the pixel that opens Edit are no longer the same
-# pixel: a tap at the glyph's centre lands outside the chip entirely. Every
-# rect in the DOM still looks correct, which is why the test taps the point.
+# The glyph is painted off the chip (the classic off-screen absolute). The
+# computed ::after content still reads as a pencil and the chip still opens
+# Edit when tapped anywhere - what is gone is the glyph's BOX on the chip, so
+# the owner sees the same undifferentiated pill row 218 was filed about. The
+# test measures that box (the width the chip loses when .editable comes off)
+# rather than believing the content string, which is why it notices.
 diff --git a/index.html b/index.html
-index 4706826..c20799d 100644
+index 140fa68..731f0d1 100644
 --- a/index.html
 +++ b/index.html
-@@ -175,7 +175,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -178,7 +178,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     Row 262 is why it appears nowhere else: any affordance on a NON-selected
     chip invites a fix that opens Edit from one, and deleteDeck still drops
     focus to <body> on that path. */
--.chip .pencil{margin-left:6px; font-size:12px; line-height:1; opacity:.85}
-+.chip .pencil{position:absolute; left:-9999px; font-size:12px; line-height:1; opacity:.85}
+-.chip.editable::after{content:"\270E"; margin-left:6px; font-size:12px; line-height:1;
++.chip.editable::after{content:"\270E"; position:absolute; left:-9999px; font-size:12px; line-height:1;
+   opacity:.85}
  .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
    margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
- .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
