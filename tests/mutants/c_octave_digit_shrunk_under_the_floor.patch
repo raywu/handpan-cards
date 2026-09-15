@@ -3,10 +3,10 @@
 # Shrinks the octave subscript. It is the smallest text in the PDFs, so a
 # floor check that only measures alphabetic glyphs never sees this.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index 06ef98c..e4cbdb0 100644
+index 0433f0d..3ba5b54 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
-@@ -130,7 +130,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
+@@ -150,7 +150,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
      c.setFillColor(color)
      c.setFont(font, size)
      c.drawString(x, y, name)

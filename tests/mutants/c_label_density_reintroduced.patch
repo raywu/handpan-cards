@@ -1,12 +1,12 @@
-# kills: test_no_label_is_smaller_than_the_figure_it_replaces
-# suite: python3 -m unittest -k test_no_label_is_smaller_than_the_figure_it_replaces tests.test_print
+# kills: test_no_label_is_smaller_than_what_either_renderer_drew_before
+# suite: python3 -m unittest -k test_no_label_is_smaller_than_what_either_renderer_drew_before tests.test_print
 # Multiplies a field-count density factor back on top of the radius,
 # the double-count that made Pygmy's labels smaller than main ships.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index 06ef98c..ff3e50a 100644
+index 0433f0d..05020e7 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
-@@ -106,9 +106,9 @@ def label_ratio(zone):
+@@ -126,9 +126,9 @@ def label_ratio(zone):
      return LABEL_RATIO_NOTE
  
  

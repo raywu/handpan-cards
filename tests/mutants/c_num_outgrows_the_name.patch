@@ -3,15 +3,15 @@
 # Sizes the index number above the note name, the hierarchy inversion
 # review caught on Pygmy.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index 06ef98c..030cacb 100644
+index 0433f0d..e481171 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
-@@ -95,7 +95,7 @@ def note_w(name, octv, font, size):
- LABEL_RATIO_DING = 0.675     # name inside the ding
- LABEL_RATIO_NOTE = 0.765     # name inside a rim or inner field
- LABEL_RATIO_BNOTE = 0.784    # name inside a bottom-shell field
--NUM_RATIO = 0.64             # index number, from the top-field radius
-+NUM_RATIO = 0.80             # index number, from the top-field radius
+@@ -104,7 +104,7 @@ def note_w(name, octv, font, size):
+ LABEL_RATIO_DING = 0.70875   # name inside the ding          (0.675 x 1.05)
+ LABEL_RATIO_NOTE = 0.80325   # name inside a rim/inner field (0.765 x 1.05)
+ LABEL_RATIO_BNOTE = 0.8232   # name inside a bottom field    (0.784 x 1.05)
+-NUM_RATIO = 0.64             # index number, from the top-field radius.
++NUM_RATIO = 0.95             # index number, from the top-field radius.
+                              # Both renderers already drew this at f_num,
+                              # so it takes no 1.05.
  
- 
- def label_ratio(zone):
