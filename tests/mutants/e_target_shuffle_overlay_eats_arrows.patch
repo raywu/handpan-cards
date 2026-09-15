@@ -8,10 +8,10 @@
 # later, positioned box, so it wins the hit test over #prev and #next and both
 # arrows go dead. Only a probe on the NEIGHBOURS sees it.
 diff --git a/index.html b/index.html
-index 62ab2bb..7cc1ed3 100644
+index f489642..cd34e15 100644
 --- a/index.html
 +++ b/index.html
-@@ -218,7 +218,10 @@ button.nav:active{background:#2e281e}
+@@ -271,7 +271,10 @@ button.nav:active{background:#2e281e}
     visual change, accepted as the price of the target. */
  .shuffle{margin-top:0; min-height:44px; display:inline-flex; align-items:center;
    justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
@@ -20,5 +20,5 @@ index 62ab2bb..7cc1ed3 100644
 +/* the whole footer strip should toggle shuffle, not just the 95px label */
 +.shuffle::after{content:""; position:absolute; top:0; height:44px; left:-200px; right:-200px}
  .shuffle.on{color:#f1ece1}
- :focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
- 
+ /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
+    the stroke. Anything that clips its children (a scroll container, and

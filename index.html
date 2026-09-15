@@ -273,6 +273,13 @@ button.nav:active{background:#2e281e}
   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 .shuffle.on{color:#f1ece1}
+/* --ring is how far the ring paints OUTSIDE the border box: the offset plus
+   the stroke. Anything that clips its children (a scroll container, and
+   overflow-y:auto makes overflow-x auto too) has to reserve that much or the
+   ring loses its left and right sides and reads as a broken border - which is
+   what the owner reported on 2026-09-11. Kept next to the rule that sets it,
+   because the two numbers have to move together. */
+:root{--ring:4px}
 :focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
 
 /* ---- the scale sheet (Phase 3) ----
@@ -322,7 +329,14 @@ button.nav:active{background:#2e281e}
    already 0, so overflow-y is the same declaration doing both jobs.
    .sheetsurf keeps overflow-y:auto as the backstop for the degenerate case
    where the footer alone exceeds the cap. */
-.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3)}
+/* The inline padding is NOT spacing - it is the room the focus ring needs to
+   paint in. #scale-box is width:100% so it fills the content box exactly, and
+   a ring 4px outside that box falls outside the scrollport and is clipped,
+   with scrollWidth === clientWidth so there is not even a scrollbar to reach
+   it. The negative margin gives the padding back to the layout, so nothing
+   moves: the rows still align with the surface's own padding. */
+.sheetbody{overflow-y:auto; display:flex; flex-direction:column; gap:var(--sp-3);
+  padding-inline:var(--ring); margin-inline:calc(-1 * var(--ring))}
 /* A label, its control and the line that explains the control are ONE group:
    --sp-1 inside, and the group is separated from the next by .sheetbody. */
 .fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
@@ -332,14 +346,31 @@ button.nav:active{background:#2e281e}
   font-family:Bitter, serif; font-weight:400; font-size:16px;
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-box.bad{border-color:#E27005}
+/* Two things beyond type. The margin: .fieldrow's --sp-1 binds a label to the
+   control it names, but this line COMMENTS on what was typed and wants the
+   next step up - expressed as the difference so the ramp still owns both
+   numbers at every breakpoint. The min-height: updateParse() blanks this line
+   on an invalid parse, so without a reserved height the sheet jumped a line on
+   most keystrokes while typing a seed. #scale-msg below already reserved its
+   own line; this was the asymmetry. */
 #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
-  color:#c4bcab; overflow-wrap:anywhere}
+  color:#c4bcab; overflow-wrap:anywhere;
+  margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
    CARDS below the fold. */
 #scale-preview{align-self:center; width:100%; max-width:184px; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
+/* Not-current: the placeholder example before anything is typed, and the last
+   render held through an invalid parse. ONE treatment for both, because the
+   invalid case already shouts in two other channels (#scale-box.bad's orange
+   border and the orange message) - what separates them is the accessible name,
+   set in JS. The whole plate dims, not the SVG inside it: an undimmed
+   #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
+   an empty box that is an example nobody typed. .62 and not lower because the
+   pan is role="img" content, so the rim ink has to keep its contrast. */
+#scale-preview.stale{opacity:.62}
 #scale-preview svg{display:block; width:100%; height:auto}
 #scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
   overflow-wrap:anywhere}
@@ -372,6 +403,26 @@ button.nav:active{background:#2e281e}
   #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
   .sheetbody{gap:var(--sp-2)}
   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
+  /* 85dvh of 390px leaves the body around 200px, and the plate is now always
+     in the flow rather than only after a valid parse, so at 184px it would be
+     most of the scrollport. The pan stays readable at 120px - it is a
+     where-do-the-notes-sit mock, not the card. */
+  #scale-preview{max-width:120px}
+}
+/* Desktop: the sheet was pinned at the phone's 520px whatever the viewport,
+   which on a 1440px screen is a narrow column floating in the middle of a wide
+   backdrop while the header beside it runs to min(92vw, 900px). 52vw tracks
+   the viewport between a 520px floor (the phone measurement, so nothing gets
+   NARROWER) and a 680px cap (past that the seed's line length stops being
+   comfortable and the side margins read as slack).
+   The plate goes with it. Nothing else in the drawer scales with width - the
+   seed is a short string and only the parse line wraps - so a wider sheet
+   around a 184px plate is a wider EMPTY band, not a better composition. 240px
+   is as far as it goes: beyond that the mock starts competing with the card.
+   Gated on both axes like the ramp, so no phone in landscape picks it up. */
+@media (min-width:640px) and (min-height:700px){
+  .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
+  #scale-preview{max-width:240px}
 }
 /* No min-height here: .mode carries the 44px minimum for every .mode on the
    page, sheet buttons included. */
@@ -3789,12 +3840,37 @@ function solvePreviewLayout(seed) {
   return res.ok ? res.value : null;
 }
 
+/* The pan is role="img" with a name, so a screen reader reads it as content.
+ * Three states, three names, because a render that is NOT of what is currently
+ * in the box must not claim to be: "current" is the seed as typed, "example" is
+ * the placeholder drawn for an empty box, and "held" is the last render kept
+ * through an invalid parse so a typo does not throw away the pan being edited.
+ * Visually "example" and "held" share one dim treatment (#scale-preview.stale)
+ * - the invalid case is already distinguished by the box's orange border and
+ * the orange message, so a second visual vocabulary would only be noise. */
+const PAN_NAMES = {
+  current: "Preview of where the notes sit on the pan",
+  example: "Example pan for the placeholder seed",
+  held: "Preview of the last seed that parsed",
+};
+
+/** Edit path only. On the create path the plate is always in the flow: it
+ * entering and leaving was the biggest of the three things that made the
+ * drawer resize while the owner typed. */
 function clearPanPreview() {
   previewBox.innerHTML = "";
+  previewBox.removeAttribute("aria-label");
+  previewBox.classList.remove("stale");
   previewBox.setAttribute("hidden", "");
 }
 
-/** Paint the pan mock for a parsed seed, unhighlighted.
+function markPan(state) {
+  previewBox.classList.toggle("stale", state !== "current");
+  previewBox.setAttribute("aria-label", PAN_NAMES[state]);
+}
+
+/** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the
+ * seed has no solvable layout, which leaves whatever is on screen alone.
  *
  * CREATE PATH ONLY, for two reasons that agree. The request is about the moment
  * BEFORE committing - from Edit the deck already exists, and previewLayout()
@@ -3802,10 +3878,9 @@ function clearPanPreview() {
  * second preview of the same pan. And the Edit sheet already carries the name,
  * degrees and LAYOUT rows: at 380px a mock on top of those pushes the primary
  * button off the screen, which is the one thing a phone sheet may never do. */
-function showPanPreview(seed) {
-  if (editingId) { clearPanPreview(); return; }
+function paintPan(seed, state) {
   const solved = solvePreviewLayout(seed);
-  if (!solved) { clearPanPreview(); return; }
+  if (!solved) return false;
   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
   // A chordless deck shape: pan() reads geom, fields and colours, and with no
   // chord it lights nothing, so the colours are only ever a fallback.
@@ -3813,6 +3888,36 @@ function showPanPreview(seed) {
     { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
     null);
   previewBox.removeAttribute("hidden");
+  markPan(state);
+  return true;
+}
+
+function showPanPreview(seed) {
+  if (editingId) { clearPanPreview(); return; }
+  if (!paintPan(seed, "current")) holdPanPreview();
+}
+
+/** An empty box still gets a pan, so the drawer is the same height before the
+ * first keystroke as after it. The seed comes from the placeholder ATTRIBUTE
+ * rather than a second copy of it in JS: the label, the placeholder and
+ * PARSE_HINT are the only teaching of the grammar there is, and this way the
+ * example drawn is provably the example shown. */
+function showPlaceholderPan() {
+  if (editingId) { clearPanPreview(); return; }
+  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
+  if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
+}
+
+/** Invalid parse: keep the render but stop it claiming to be current. Mid-word
+ * a seed is invalid on most keystrokes, so clearing here would be the resize
+ * the owner asked us to remove, one character at a time. */
+function holdPanPreview() {
+  if (editingId) { clearPanPreview(); return; }
+  if (previewBox.hasAttribute("hidden") || !previewBox.innerHTML) {
+    showPlaceholderPan();
+    return;
+  }
+  markPan(previewBox.getAttribute("aria-label") === PAN_NAMES.example ? "example" : "held");
 }
 
 /** Re-parse on every input: the parse line, the outline and Generate follow. */
@@ -3822,7 +3927,7 @@ function updateParse() {
     parseLine.textContent = PARSE_HINT;
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
-    clearPanPreview();
+    showPlaceholderPan();
     say("", "");
     return;
   }
@@ -3834,10 +3939,12 @@ function updateParse() {
     showPanPreview(res.value);
     say("", "");
   } else {
+    // Blanked, not removed: #scale-parse reserves its line in CSS, so the
+    // sheet does not jump while a half-typed seed is invalid.
     parseLine.textContent = "";
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
-    clearPanPreview();
+    holdPanPreview();
     say(res.reason, "err");
   }
 }

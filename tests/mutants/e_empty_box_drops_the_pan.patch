@@ -1,0 +1,17 @@
+# kills: the only height the first keystroke changes is the hint's own wrap
+# suite: node --test --test-name-pattern ^the.only.height.the.first.keystroke.changes.is.the.hint.s.own.wrap$ tests/e2e.test.js
+# An empty box shows no pan again, so the plate enters the flow on the first
+# keystroke and the drawer jumps by the height of the whole plate.
+diff --git a/index.html b/index.html
+index f489642..c929549 100644
+--- a/index.html
++++ b/index.html
+@@ -3927,7 +3927,7 @@ function updateParse() {
+     parseLine.textContent = PARSE_HINT;
+     scaleBox.classList.remove("bad");
+     genBtn.disabled = true;
+-    showPlaceholderPan();
++    clearPanPreview();
+     say("", "");
+     return;
+   }

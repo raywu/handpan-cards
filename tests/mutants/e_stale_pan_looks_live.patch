@@ -1,0 +1,18 @@
+# kills: a held pan is never announced as the current one
+# suite: node --test --test-name-pattern ^a.held.pan.is.never.announced.as.the.current.one$ tests/e2e.test.js
+# The dim treatment goes, so a held or example pan is painted exactly as
+# solidly as the seed in the box. The accessible name still says otherwise,
+# which is the worse half of the same lie: a sighted user is told nothing at
+# all while a screen reader is told the truth.
+diff --git a/index.html b/index.html
+index f489642..dfa5d41 100644
+--- a/index.html
++++ b/index.html
+@@ -370,7 +370,6 @@ button.nav:active{background:#2e281e}
+    #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
+    an empty box that is an example nobody typed. .62 and not lower because the
+    pan is role="img" content, so the rim ink has to keep its contrast. */
+-#scale-preview.stale{opacity:.62}
+ #scale-preview svg{display:block; width:100%; height:auto}
+ #scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
+   overflow-wrap:anywhere}

@@ -1,0 +1,19 @@
+# kills: an empty box shows the placeholder seed as an example
+# suite: node --test --test-name-pattern ^an.empty.box.shows.the.placeholder.seed.as.an.example$ tests/preview.test.js
+# The empty box draws nothing again, so the only teaching of the seed grammar
+# before the first keystroke is the text hint, and the plate enters the flow on
+# the first character.
+diff --git a/index.html b/index.html
+index f489642..c7650c4 100644
+--- a/index.html
++++ b/index.html
+@@ -3904,8 +3904,7 @@ function showPanPreview(seed) {
+  * example drawn is provably the example shown. */
+ function showPlaceholderPan() {
+   if (editingId) { clearPanPreview(); return; }
+-  const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
+-  if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
++  clearPanPreview();
+ }
+ 
+ /** Invalid parse: keep the render but stop it claiming to be current. Mid-word

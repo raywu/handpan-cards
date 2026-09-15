@@ -187,20 +187,48 @@ test("a chordless pan render does not throw and lights no field", () => {
 
 /* ------------------------------------------------------------ bad input */
 
-test("an unparseable seed leaves no stale preview on the sheet", () => {
+// Both of these used to assert the preview was CLEARED. It is not any more
+// (owner, 2026-09-11: "the drawer doesn't need to resize based on the input") -
+// the plate is always in the flow on the create path, so what has to be true
+// instead is that a pan which is not of the current box never says it is. The
+// visual half of that is #scale-preview.stale; the half that matters to a
+// screen reader is the accessible name, which is why these read aria-label.
+const panName = (app) => app.els["scale-preview"].getAttribute("aria-label");
+
+test("an unparseable seed holds the last pan but stops it claiming to be current", () => {
   const app = boot();
   typeInSheet(app, PLAIN);
   assert.ok(previewHTML(app).includes("<svg"));
+  const live = panName(app);
   app.type("(D3) A3 zzz");
-  assert.ok(!previewHTML(app).includes("<svg"),
-    "a seed that does not parse should clear the preview, not keep the old pan");
+  assert.ok(previewHTML(app).includes("<svg"),
+    "a transient error mid-typing should not throw away the pan being edited");
+  assert.ok(app.els["scale-preview"].classList.contains("stale"),
+    "the held pan is not marked stale, so it reads as the current seed");
+  assert.notStrictEqual(panName(app), live,
+    `a stale pan kept the live accessible name ("${panName(app)}")`);
 });
 
-test("an empty box shows no preview", () => {
+test("an empty box shows the placeholder seed as an example", () => {
   const app = boot();
   typeInSheet(app, PLAIN);
+  const live = panName(app);
   app.type("");
-  assert.ok(!previewHTML(app).includes("<svg"), "an empty box should show no pan");
+  assert.ok(previewHTML(app).includes("<svg"),
+    "an empty box should still reserve the pan, or the drawer resizes on the " +
+    "first keystroke");
+  assert.ok(app.els["scale-preview"].classList.contains("stale"),
+    "the example pan is not marked stale");
+  assert.notStrictEqual(panName(app), live,
+    "the example pan is announced as the user's own seed");
+  // Drawn from the placeholder ATTRIBUTE, so the example rendered is provably
+  // the example shown - the placeholder, the label and PARSE_HINT are the only
+  // teaching of the grammar there is.
+  const ph = app.els["scale-box"].placeholder;
+  assert.ok(ph, "the seed box has no placeholder to draw");
+  app.type(ph);
+  assert.ok(!app.els["scale-preview"].classList.contains("stale"),
+    "typing the placeholder itself should give a CURRENT pan, not a stale one");
 });
 
 test("the Edit sheet shows no mock - the deck's own card is already the preview", () => {

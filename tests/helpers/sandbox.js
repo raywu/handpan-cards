@@ -145,6 +145,14 @@ function boot(opts = {}) {
   };
   const served = [...ELEMENT_IDS, ...(opts.extraIds || [])];
   for (const id of served) els[id] = bindFocus(makeElement(id));
+  // Real placeholders, read out of the shipped markup rather than restated
+  // here. showPlaceholderPan() draws the seed the placeholder shows, so a stub
+  // with no placeholder would silently exercise the empty-string path and
+  // report a pass for behaviour the browser does not have.
+  for (const [, id, ph] of html
+      .matchAll(/<input[^>]*\bid="([^"]+)"[^>]*\bplaceholder="([^"]*)"/g)) {
+    if (els[id]) els[id].placeholder = ph;
+  }
   const created = [];
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");

@@ -1,0 +1,20 @@
+# kills: an unparseable seed holds the last pan but stops it claiming to be current
+# suite: node --test --test-name-pattern ^an.unparseable.seed.holds.the.last.pan.but.stops.it.claiming.to.be.current$ tests/preview.test.js
+# A held or example pan keeps the live name and the live treatment, so the
+# mock claims to show a layout the box no longer describes - the exact way a
+# preview lies, now that the plate never leaves the flow.
+diff --git a/index.html b/index.html
+index f489642..4d91a89 100644
+--- a/index.html
++++ b/index.html
+@@ -3865,8 +3865,8 @@ function clearPanPreview() {
+ }
+ 
+ function markPan(state) {
+-  previewBox.classList.toggle("stale", state !== "current");
+-  previewBox.setAttribute("aria-label", PAN_NAMES[state]);
++  previewBox.classList.remove("stale");
++  previewBox.setAttribute("aria-label", PAN_NAMES.current);
+ }
+ 
+ /** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the
