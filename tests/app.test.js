@@ -635,14 +635,7 @@ const REASON = (app, code) => app.get(`HPE.core.REASONS[${JSON.stringify(code)}]
  *  included, because it is one of them now. */
 function stripRow(app) {
   return app.els.decks.children.map((c) => ({
-    // The decorative pencil on a selected CUSTOM chip (coordination row 218)
-    // is dropped whole, glyph and all, BEFORE the tags come off: it is not
-    // part of the deck's label, and the stub keeps innerHTML as raw text, so
-    // its "&#9998;" would otherwise survive tag-stripping as four characters
-    // of the name. The glyph itself is pinned by e2e, where it has a box.
-    label: (c._html || c._text || "")
-      .replace(/<span class="pencil"[^>]*>.*?<\/span>/g, "")
-      .replace(/<[^>]*>/g, "").trim(),
+    label: (c._html || c._text || "").replace(/<[^>]*>/g, "").trim(),
     on: c.classList.contains("on"),
     id: c.id,
   }));

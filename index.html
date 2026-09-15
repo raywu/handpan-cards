@@ -167,15 +167,19 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    custom chip looked exactly like a selected built-in, which does nothing
    when tapped - so the owner had to guess. The glyph says which chip has a
    second action.
-   It is a <span>, not a button: the chip is already a 44px target with an
-   onclick that does exactly this, so a nested button would only add a second
-   tab stop and a smaller target inside the pill. buildChips also sets
-   aria-label="Edit <name>" on the same chip, which is what a screen reader
-   gets; the glyph is aria-hidden and purely visual.
+   It is generated CONTENT on the chip, not an element: the chip is already a
+   44px target with an onclick that does exactly this, so a child would only
+   add a smaller target inside the pill - and, as a real node, it would put
+   the glyph inside the chip's textContent, where every reader of the chip's
+   LABEL (the tests, and anything that ever reads a chip to announce it) would
+   then have to know to skip it. A ::after cannot leak that way. buildChips
+   marks the chip with .editable and sets aria-label="Edit <name>", which is
+   what a screen reader gets; the glyph is decoration.
    Row 262 is why it appears nowhere else: any affordance on a NON-selected
    chip invites a fix that opens Edit from one, and deleteDeck still drops
    focus to <body> on that path. */
-.chip .pencil{margin-left:6px; font-size:12px; line-height:1; opacity:.85}
+.chip.editable::after{content:"\270E"; margin-left:6px; font-size:12px; line-height:1;
+  opacity:.85}
 .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
@@ -204,16 +208,27 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    and the fit rule capped the card at 100.2px wide. The row offered two
    paths and the owner took this one: shrink the header in landscape.
 
-   The three groups go side by side instead of on top of each other. Nothing
-   is hidden and nothing is dropped: in landscape the horizontal axis is the
-   one with room to spare (844px against 390), which is exactly the axis a
-   stack refuses to use. Measured: header 134 -> 44, chrome 251.67 -> 158.67,
-   and the card at 844x390 goes 100.16 -> 167.5px wide, +67%.
+   The deck strip and the mode bar go side by side instead of on top of each
+   other: in landscape the horizontal axis is the one with room to spare
+   (844px against 390), which is exactly the axis a stack refuses to use.
+   Measured: header 134 -> 44, chrome 251.67 -> 158.67, and the card at
+   844x390 goes 100.16 -> 167.5px wide, +67%.
+
+   The title is the one thing that goes, and only VISUALLY - it keeps its box
+   in the accessibility tree, so the page still has its h1 and the landmark
+   still has its name. It has to go, and shrinking it is not enough: the deck
+   strip needs 463px for its chips and the mode bar takes 241 of the 643
+   available at 667x375, so a title of ANY width leaves the strip overflowing.
+   An overflowing strip is not merely tight - selecting a deck scrolls the
+   chip that opened the sheet out from under the thumb, which is what
+   "in landscape every control stays tappable" caught when the title was
+   merely made small. With the title out, every landscape viewport in the
+   budget table holds the whole strip with no scroll at all.
 
    The 44px floor on .chip and .mode is untouched - the row is as tall as the
-   targets in it, which is the whole 44px and not a pixel more. The title
-   drops to 13px because it is the only thing here that is not a target: it
-   names the app, and in landscape it earns a line only if it costs none.
+   targets in it, which is the whole 44px and not a pixel more. The header
+   also drops its 520px measure here: the strip needs the real width, and the
+   card is sized by --card-w, so widening the header cannot touch it.
 
    Gated on max-height, NOT on orientation. Portrait's acceptance condition
    for row 245 is that it stays byte-identical, and no portrait phone in the
@@ -224,11 +239,18 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    "portrait is byte-identical" measures the absence of a cost.
    ------------------------------------------------------------------------ */
 @media (max-height:520px){
-  header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2)}
-  h1{flex:0 0 auto; margin:0; font-size:13px; letter-spacing:.06em; text-align:left}
-  /* The strip takes what is left and keeps scrolling. min-width:0 is what
-     lets it: a flex item's automatic minimum is its content, so without it
-     the strip would refuse to shrink and push the mode bar off the row. */
+  header{display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-2);
+    max-width:none}
+  /* Visually hidden, NOT display:none: the h1 stays in the accessibility
+     tree, so the document keeps its heading and the header keeps its name.
+     The clip-rect pair is the old and the current spelling of the same
+     thing; both are here because Safari honoured clip long before it
+     honoured clip-path. */
+  h1{position:absolute; width:1px; height:1px; margin:0; padding:0; border:0;
+    overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0); clip-path:inset(50%)}
+  /* The strip takes what is left. min-width:0 is what lets it: a flex item's
+     automatic minimum is its content, so without it the strip would refuse to
+     shrink and push the mode bar off the row. */
   .decks{flex:1 1 auto; min-width:0}
   .modebar{flex:0 0 auto; margin-top:0}
 }
@@ -3620,14 +3642,17 @@ function buildChips() {
     b.style.setProperty("--dgb", d.colors.gb);
     // [row 218] The one chip with a SECOND action says so. A selected custom
     // chip reopens the sheet in Edit state; a selected built-in does nothing
-    // at all, and the two were pixel-identical. The pencil is decorative
-    // (aria-hidden) and the accessible name carries the same fact in words.
+    // at all, and the two were pixel-identical. The class paints a pencil
+    // through ::after - decoration, and deliberately NOT a node, so the chip's
+    // text stays the deck's name - and the accessible name says it in words.
     // Only ever on the chip that is BOTH selected and custom: row 262 is a
     // live focus trap on any path that opens Edit from an unselected chip.
     const editable = d.id === deckId && !!CUSTOM[d.id];
-    b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}` +
-      (editable ? `<span class="pencil" aria-hidden="true">&#9998;</span>` : "");
-    if (editable) b.setAttribute("aria-label", "Edit " + d.name);
+    b.innerHTML = `<span class="dot"></span>${esc(chipLabel(d.name))}`;
+    if (editable) {
+      b.classList.add("editable");
+      b.setAttribute("aria-label", "Edit " + d.name);
+    }
     // [design-review 7A] the ALREADY-SELECTED custom chip is the one and only
     // way into the Edit sheet; every other chip just selects its deck. No
     // context menu, no long press, no swipe.

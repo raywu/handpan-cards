@@ -1686,55 +1686,82 @@ function run() {
   });
 
   /* Portrait is the acceptance test for row 245: if any portrait measurement
-   * moves, the change is wrong. Equality, not a bound - a one-sided budget
-   * would let a landscape rule that leaked into portrait pass as long as it
-   * leaked in the "good" direction, and the owner's condition is that
-   * portrait is UNTOUCHED, in either direction. Every number was read off
-   * the merge-base before the landscape query existed. */
-  const PORTRAIT_PIN = [
-    // vw, vh,  header, footer, main,   card
-    [390, 844, 134, 55, 580.33, 343.19],
-    [390, 745, 134, 55, 481.33, 342.69],
-    [375, 667, 133, 55, 404.33, 292.78],
-    [320, 568, 133, 55, 305.33, 221.09],
-    [380, 800, 134, 55, 536.33, 334.39],
-    [380, 780, 134, 55, 516.33, 334.39],
+   * moves, the change is wrong. So this does not compare portrait against a
+   * table of numbers someone once measured - those numbers are one machine's
+   * font metrics, and CI's are different. It compares portrait against
+   * ITSELF with the landscape block deleted from the stylesheet at runtime.
+   *
+   * Identical geometry with and without the rule is the whole claim, stated
+   * exactly: not "portrait is within a budget", not "portrait matches a
+   * number measured on a Mac" - portrait does not move, on whatever machine
+   * is asking, in either direction. A rule that leaked into portrait "in the
+   * flattering direction" fails here just as loudly as one that crowded it.
+   *
+   * The block is found by its CONTENT (the visually-hidden h1's clip-path),
+   * never by its media condition: a mutant that widens the GATE - the exact
+   * defect this is here to catch - would slip past a search for
+   * "max-height", because it is no longer a max-height query at all. */
+  const PORTRAIT_VIEWPORTS = [
+    [390, 844], [390, 745], [375, 667], [320, 568], [380, 800], [380, 780],
   ];
 
   test("portrait is byte-identical: the landscape header never reaches it", async () => {
     await freshLoad();
     try {
       const bad = [];
-      for (const [vw, vh, header, footer, main, card] of PORTRAIT_PIN) {
+      for (const [vw, vh] of PORTRAIT_VIEWPORTS) {
         await b.setViewport(vw, vh, true);
         const m = await b.eval(`
-          const q = s => document.querySelector(s).getBoundingClientRect();
-          return {
-            header: +q("header").height.toFixed(2),
-            footer: +q("footer").height.toFixed(2),
-            main: +q("main").height.toFixed(2),
-            card: +q(".scene").width.toFixed(2),
-            h1: +q("h1").height.toFixed(2),
-            display: getComputedStyle(document.querySelector("header")).display,
-            modeTop: getComputedStyle(document.querySelector(".modebar")).marginTop,
+          const read = () => {
+            const q = s => document.querySelector(s).getBoundingClientRect();
+            return {
+              header: +q("header").height.toFixed(2),
+              headerW: +q("header").width.toFixed(2),
+              footer: +q("footer").height.toFixed(2),
+              main: +q("main").height.toFixed(2),
+              card: +q(".scene").width.toFixed(2),
+              h1: +q("h1").height.toFixed(2),
+              display: getComputedStyle(document.querySelector("header")).display,
+              modeTop: getComputedStyle(document.querySelector(".modebar")).marginTop,
+              h1Pos: getComputedStyle(document.querySelector("h1")).position,
+            };
           };
-        `);
-        const want = { header, footer, main, card };
-        for (const k of Object.keys(want)) {
-          if (Math.abs(m[k] - want[k]) > 0.02) {
-            bad.push(`${vw}x${vh}: ${k} is ${m[k]}px, was ${want[k]}px before the ` +
-              `landscape header shrank - portrait must not move at all`);
+          const before = read();
+          // Pull the landscape block out of the cascade, then read the same
+          // page again. Anything it was doing to portrait shows up as a
+          // difference; if it reaches portrait not at all, nothing moves.
+          const pulled = [];
+          for (const sh of Array.from(document.styleSheets)) {
+            let rules;
+            try { rules = Array.from(sh.cssRules); } catch (e) { continue; }
+            for (let i = rules.length - 1; i >= 0; i--) {
+              const r = rules[i];
+              if (r.media && /clip-path/.test(r.cssText)) {
+                pulled.push([sh, i, r.cssText]);
+                sh.deleteRule(i);
+              }
+            }
           }
+          const after = read();
+          for (const [sh, i, text] of pulled.reverse()) sh.insertRule(text, i);
+          return { before, after, pulled: pulled.length,
+                   gate: window.matchMedia("(max-height:520px)").matches };
+        `);
+        if (m.pulled !== 1) {
+          bad.push(`${vw}x${vh}: found ${m.pulled} landscape blocks in the ` +
+            "stylesheet, expected exactly 1 - this test can no longer find the " +
+            "rule it is pinning, so its silence would mean nothing");
         }
-        // The stack itself, not only its height: a header that became a row
-        // and happened to measure the same total would still be a portrait
-        // change.
-        if (m.display !== "block") {
-          bad.push(`${vw}x${vh}: header display is "${m.display}", was "block" - ` +
-            `the landscape one-row layout has leaked into portrait`);
+        if (m.gate !== false) {
+          bad.push(`${vw}x${vh}: the max-height:520px gate MATCHES in portrait`);
         }
-        if (m.modeTop !== "14px") {
-          bad.push(`${vw}x${vh}: .modebar margin-top is ${m.modeTop}, was 14px`);
+        for (const k of Object.keys(m.before)) {
+          const a = m.before[k], z = m.after[k];
+          const moved = typeof a === "number" ? Math.abs(a - z) > 0.01 : a !== z;
+          if (moved) {
+            bad.push(`${vw}x${vh}: ${k} is ${a} with the landscape block and ` +
+              `${z} without it - portrait must not move at all (row 245)`);
+          }
         }
       }
       assert.deepStrictEqual(bad, [],
@@ -1766,26 +1793,39 @@ function run() {
    *    whole pill stays one target.
    * ---------------------------------------------------------------- */
 
+  // The glyph is generated content, so it has no node to query. Two things
+  // stand in for one, and between them they say everything a node would:
+  //  - getComputedStyle(el, "::after").content is the glyph itself;
+  //  - the width the chip LOSES when .editable is taken off and put back is
+  //    the box that glyph occupies ON the chip. A rule that drew the pencil
+  //    somewhere else - out of flow, off-screen, invisible - takes that box
+  //    with it, and `grew` goes to zero while `content` still reads "✎".
+  // The midpoint of that recovered box is then hit-tested, so the pixel the
+  // glyph draws is shown to be a pixel that acts.
   const chipProbe = () => b.eval(`
     const out = [];
     for (const el of document.querySelectorAll("#decks .chip")) {
       if (el.id === "deck-add") continue;
       const r = el.getBoundingClientRect();
-      const pen = el.querySelector(".pencil");
-      let penHit = null;
-      if (pen) {
-        const pr = pen.getBoundingClientRect();
-        const h = document.elementFromPoint(pr.left + pr.width / 2, pr.top + pr.height / 2);
-        penHit = !!h && (h === el || el.contains(h));
+      const marked = el.classList.contains("editable");
+      let grew = null, hit = null;
+      if (marked) {
+        el.classList.remove("editable");
+        const plain = el.getBoundingClientRect().width;
+        el.classList.add("editable");
+        grew = +(el.getBoundingClientRect().width - plain).toFixed(1);
+        const pad = parseFloat(getComputedStyle(el).paddingRight) || 0;
+        const h = document.elementFromPoint(r.right - pad - grew / 2, r.top + r.height / 2);
+        hit = !!h && (h === el || el.contains(h));
       }
       out.push({
         text: el.textContent.trim(),
         on: el.classList.contains("on"),
         label: el.getAttribute("aria-label"),
-        pencil: !!pen,
-        penHidden: pen ? pen.getAttribute("aria-hidden") : null,
-        penTab: pen ? pen.tagName.toLowerCase() : null,
-        penHit,
+        marked,
+        glyph: getComputedStyle(el, "::after").content,
+        grew,
+        hit,
         h: +r.height.toFixed(1),
       });
     }
@@ -1803,15 +1843,15 @@ function run() {
       const sel = after.filter((c) => c.on);
       assert.strictEqual(sel.length, 1, "exactly one chip is selected after Generate");
       const mine = sel[0];
-      assert.strictEqual(mine.pencil, true,
+      assert.strictEqual(mine.marked, true,
         `the selected custom chip "${mine.text}" has no pencil - row 218 is that ` +
         "Edit is undiscoverable, and the chip looks identical to a built-in");
-      assert.strictEqual(mine.penHidden, "true",
-        "the pencil is decorative next to the aria-label and must be aria-hidden");
-      assert.strictEqual(mine.penTab, "span",
-        `the pencil is a <${mine.penTab}> - a nested button would be a second ` +
-        "target inside a 44px pill and a second tab stop");
-      assert.strictEqual(mine.penHit, true,
+      assert.ok(/\u270E/.test(mine.glyph),
+        `the chip's ::after draws ${JSON.stringify(mine.glyph)}, not a pencil`);
+      assert.ok(mine.grew >= 6,
+        `the pencil takes ${mine.grew}px on the chip: it is drawn somewhere ` +
+        "else, so the chip the owner taps looks no different from a built-in");
+      assert.strictEqual(mine.hit, true,
         "the pencil does not hit-test to its own chip: a tap on the glyph must " +
         "be a tap on the chip, or the affordance points at a dead pixel");
       assert.ok(/^Edit .+/.test(mine.label || ""),
@@ -1819,11 +1859,19 @@ function run() {
         'expected "Edit <name>"');
       assert.ok(mine.h >= 44,
         `the pencil shrank the chip below the 44px target: ${mine.h}px`);
+      // The glyph is decoration and must stay out of the chip's TEXT: the
+      // deck's label is read by the chip row, by the announcements and by
+      // every test that names a deck, and none of them should have to know
+      // the pencil exists.
+      for (const c of after) {
+        assert.ok(!/\u270E/.test(c.text),
+          `the pencil leaked into a chip's text: ${JSON.stringify(c.text)}`);
+      }
 
       // Every OTHER chip - the three built-ins, all unselected here - is
       // untouched: no glyph, no Edit name.
       for (const c of after.filter((x) => !x.on)) {
-        assert.strictEqual(c.pencil, false,
+        assert.strictEqual(c.marked, false,
           `an unselected chip ("${c.text}") carries a pencil - Edit must be ` +
           "offered only where it actually works (row 262)");
         assert.strictEqual(c.label, null,
@@ -1834,7 +1882,7 @@ function run() {
       await selectDeck(0, meta);
       const builtin = (await chipProbe()).find((c) => c.on);
       assert.ok(builtin, "no chip is selected after switching to a built-in deck");
-      assert.strictEqual(builtin.pencil, false,
+      assert.strictEqual(builtin.marked, false,
         `the selected built-in chip "${builtin.text}" carries a pencil - tapping ` +
         "it does nothing, so the affordance would be a lie");
       assert.strictEqual(builtin.label, null,
@@ -1854,9 +1902,16 @@ function run() {
       // Click the GLYPH's own centre point, not the chip's - the affordance
       // is only real if the pixel it draws is the pixel that acts.
       const at = await b.eval(`
-        const r = document.querySelector("#decks .chip.on .pencil").getBoundingClientRect();
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        const el = document.querySelector("#decks .chip.on");
+        const r = el.getBoundingClientRect();
+        el.classList.remove("editable");
+        const plain = el.getBoundingClientRect().width;
+        el.classList.add("editable");
+        const grew = el.getBoundingClientRect().width - plain;
+        const pad = parseFloat(getComputedStyle(el).paddingRight) || 0;
+        return { x: r.right - pad - grew / 2, y: r.top + r.height / 2, grew };
       `);
+      assert.ok(at.grew >= 6, `the pencil occupies ${at.grew}px on the chip`);
       await clickPoint(at.x, at.y);
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open from a tap on the pencil" });
