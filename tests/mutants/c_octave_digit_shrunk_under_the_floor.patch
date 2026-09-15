@@ -1,0 +1,17 @@
+# kills: test_no_label_falls_below_the_print_floor
+# suite: python3 -m unittest -k test_no_label_falls_below_the_print_floor tests.test_print
+# Shrinks the octave subscript. It is the smallest text in the PDFs, so a
+# floor check that only measures alphabetic glyphs never sees this.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index 06ef98c..e4cbdb0 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -130,7 +130,7 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
+     c.setFillColor(color)
+     c.setFont(font, size)
+     c.drawString(x, y, name)
+-    c.setFont(font, size * 0.66)
++    c.setFont(font, size * 0.40)
+     c.drawString(x + pdfmetrics.stringWidth(name, font, size), y - size * 0.20, str(octv))
+     return w
+ 

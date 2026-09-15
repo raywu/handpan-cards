@@ -1,0 +1,20 @@
+# kills: test_no_label_is_smaller_than_the_figure_it_replaces
+# suite: python3 -m unittest -k test_no_label_is_smaller_than_the_figure_it_replaces tests.test_print
+# Multiplies a field-count density factor back on top of the radius,
+# the double-count that made Pygmy's labels smaller than main ships.
+diff --git a/tools/hifi.py b/tools/hifi.py
+index 06ef98c..ff3e50a 100644
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -106,9 +106,9 @@ def label_ratio(zone):
+     return LABEL_RATIO_NOTE
+ 
+ 
+-def label_size(r, zone):
++def label_size(r, zone, n_fields=18):
+     """Diagram name size for a field of radius `r` in `zone`."""
+-    return r * label_ratio(zone)
++    return r * label_ratio(zone) * (9.0 / n_fields) ** 0.2
+ 
+ 
+ def num_size(r_note):
