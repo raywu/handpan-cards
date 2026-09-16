@@ -57,6 +57,18 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    table) to the spec fixture in `tests/fixtures/` is allowed; that is
    spec-first - the fixture IS the spec, and the module carries its own literal
    copy that the test holds to it.
+   Carve-out: `data/decks.json` is DATA, not a module, so reading it is not a
+   mirror. `CanonicalSourceTest` compares `index.html`'s generated `DECKS`
+   line to it exactly as the engine-region tests compare an inlined region to
+   `src/engine/<name>.js` - the check is that the generated copy matches its
+   source, and only the two files together can be wrong.
+   Narrow exemption: `PrintDeckSnapshotTest` DOES import `tools/decks.py`,
+   which rule 2 otherwise forbids. It exists to prove the three print deck
+   dicts are byte-identical to `tests/fixtures/print_decks_v1.json`, captured
+   BEFORE `decks.py` stopped holding literals - the frozen pre-refactor values
+   are the spec, so the fixture is the oracle and the module is the thing under
+   test. Do not widen it: a new test that reads `decks.py` to derive what it
+   then asserts is still a mirror.
 3. **Every test group needs a killing mutant.** Add a patch to `tests/mutants/`
    naming the test it must break. `tests/mutation_check.sh` applies each, runs
    the named test, asserts failure, and reverts. A test nothing can kill is not
@@ -87,16 +99,19 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    A stale-but-real pair (generated against an older commit) is genuine and
    fine; a pair that cannot be reproduced this way is fabricated.
 5. **A red against unmutated code is triaged, not "fixed".** Run
-   `git diff origin/main -- index.html tools/decks.py tools/hifi.py src/engine/**`.
+   `git diff origin/main -- data/decks.json index.html tools/decks.py \
+   tools/hifi.py src/engine/**`.
    Data unchanged -> the test transcribed the spec wrong; fix the test.
    Data changed -> the PR broke something; stop and report.
    Never silently amend either side.
 6. **A test-only PR is additive.** A PR whose purpose is to add or change tests
-   must not modify `index.html`, `tools/decks.py`, or `tools/hifi.py`. (A
+   must not modify `data/decks.json`, `index.html`, `tools/decks.py`, or
+   `tools/hifi.py`. (A
    feature PR obviously does change them - it then owns the rebuild and the
    mutant regeneration; this rule is about the test PR only.) Verify before
    pushing with
-   `git diff --quiet origin/main -- index.html tools/decks.py tools/hifi.py`.
+   `git diff --quiet origin/main -- data/decks.json index.html tools/decks.py \
+   tools/hifi.py`.
    This is a reviewer check, not a CI job: making it permanent would forbid all
    future deck-data changes, which the PDF staleness gate already handles
    correctly by requiring a rebuild in the same commit. Bugs found are reported
