@@ -15,7 +15,7 @@ const { loadEngine } = require("./helpers/engine.js");
 const FIXTURES = path.join(__dirname, "fixtures");
 const readFixture = (n) => JSON.parse(fs.readFileSync(path.join(FIXTURES, n), "utf8"));
 
-const GOLDEN = readFixture("golden_decks_v2.json");
+const GOLDEN = readFixture("golden_decks_v3.json");
 const QUALITIES = readFixture("qualities.json");
 const SYNTHETIC = readFixture("synthetic_scales.json");
 

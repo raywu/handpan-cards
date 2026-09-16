@@ -2,7 +2,7 @@
 //
 // Spec-first per tests/CONTRACT.md rule 1: every assertion comes from
 // docs/ENGINE-SPEC.md sections 1, 5, 8, 9, 10, 11, 12, 13, 16 and 17, from
-// tests/fixtures/golden_decks_v2.json, tests/fixtures/synthetic_scales.json or
+// tests/fixtures/golden_decks_v3.json, tests/fixtures/synthetic_scales.json or
 // tests/fixtures/divergence_v1.json. Nothing is read back out of
 // src/engine/select.js to compare against itself.
 //
@@ -31,7 +31,7 @@ function fixture(name) {
   return JSON.parse(
     fs.readFileSync(path.join(ROOT, "tests", "fixtures", name), "utf8"));
 }
-const golden = fixture("golden_decks_v2.json");
+const golden = fixture("golden_decks_v3.json");
 const synthetic = fixture("synthetic_scales.json");
 const divergence = fixture("divergence_v1.json");
 const SPEC = fs.readFileSync(path.join(ROOT, "docs", "ENGINE-SPEC.md"), "utf8");
