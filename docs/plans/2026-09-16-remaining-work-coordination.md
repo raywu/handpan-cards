@@ -422,7 +422,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | Lane | State | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
-| W2 | in review | #73 | `bbb9545` | pending | 0 |
+| W2 | merged | #73 | `bbb9545` | PASS_WITH_NITS | 0 |
 | W3 | in review | #72 | `c51fef4` | pending | 0 |
 | W4 | CI bounce fixed by integrator, re-running | #74 | `d8866d5` | pending | 1 |
 | W5 | blocked on W2 | - | - | - | 0 |
@@ -433,6 +433,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | PR | Lane | Verdict | Findings | Outcome |
 |---|---|---|---|---|
 | #71 | W1 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations | merged `4a06641`; nits filed as queue rows 15-18 |
+| #73 | W2 | PASS_WITH_NITS | 0 blocking, 4 nits (N1-N4), 1 boundary edit adjudicated NOT a violation | merged `7329033`; nits filed as queue rows 25-28; criterion 10 to the owner as row 29 |
 
 ## Queue
 
@@ -462,6 +463,12 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 22 | W4-F3: `interactive-widget=resizes-content` (`index.html:5-13`, pre-existing) is Chromium-only; Safari ignores it, which is why W4's `visualViewport` JS is load-bearing rather than redundant. Informational | W4 report | open |
 | 23 | W4-F4: `env(safe-area-inset-*)` reads 0 under headless emulation, so the insets look structurally right but are unconfirmed on hardware. Rolls into the owner device check | W4 report | open |
 | 24 | Re-anchoring a mutant patch is the AUTHORING lane's job, not a later cycle's. W4 stopped at diagnosis because `tests/mutants/` was outside its ownership row; the integrator had to take the bounce after the lane had already exited. Extend a lane's ownership to the patches its own edit staleness-breaks, at spawn time | integrator, W4 bounce | open |
+| 25 | W2-N1: `tools/decks.py:399` comment still says "the two-tone split frame" in the `from_generated` adapter. One-line fix | reviewer PR #73 | open |
+| 26 | W2-N2: `tests/test_render_agreement.py:283-293` compares two test-local literals (`NEW_BW/OLD_BW` vs `NEW_PAD/OLD_PAD`), so that assertion cannot fail regardless of the code. The two `assertAlmostEqual` pins above it are the real check | reviewer PR #73 | open |
+| 27 | W2-N3 (surviving mutant): `render_border` filters on full-WIDTH fills and asserts the colour set is `{root}`, so a half-HEIGHT band at `tools/hifi.py:183` passes the whole suite. Harden by asserting the frame rect's drawn height equals `hifi.CH` | reviewer PR #73 | open |
+| 28 | W2-N4: `tools/decks.py:285` source literal still reads `25 CHORDS` while the card prints 27 (the regex overwrites at runtime). Correct behaviour, misleading source | reviewer PR #73 | open |
+| 29 | W2 criterion 10 came back `covered_by: neither` — nothing in the repo looks at a rendered card, so whether the new border LOOKS right is the owner's call. Mechanically verified by pixel probe at 8x: all four sides root-coloured (Pygmy `#6C40A2`, Amara `#0A7A75`, Hijaz `#DF549A` top and bottom alike), weight 2.00pt to 2.62pt measured. Owner to eyeball a printed sheet | reviewer PR #73 | open |
+| 30 | The `c_*` mutant count is 27, not the 8 in the W2 brief nor the 26 in the lane report. The 8 traces to a stale gstack learning `handpan-b-mutants-track-deck-data-only`, which the reviewer corrected. All 27 apply cleanly | reviewer PR #73 | open |
 
 ## Cycle state
 
@@ -470,7 +477,7 @@ Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
-| W2 | harness | `print/blurb-and-border` | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
+| W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
 | W3 | harness | `app/print-button` | #72 | `c51fef4` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
 | W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 mutation gate FAIL at `938c799` | bounced, no reviewer spawned | 1 | no | owner device check | - |
 | W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
