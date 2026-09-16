@@ -3964,6 +3964,14 @@ function buildChips() {
 const PARSE_HINT = "Type your ding first, in brackets - then the top notes, low to high, exactly like the example in the box. Put | before any bottom-shell notes.";
 const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored.";
 const sheet     = document.getElementById("scale-sheet");
+// The scrolling surface itself (.sheetsurf), looked up by DOM position rather
+// than by id: it is the one thing the iOS keyboard fix below has to move, and
+// #scale-sheet's single static child (see the markup comment on .sheetsurf)
+// is a stronger guarantee than adding a second id nobody else needs.
+// Undefined in the unit sandbox, where #scale-sheet is a bare stub with no
+// children - applyKbOffset() guards on that the same way it guards on
+// window.visualViewport.
+const sheetSurf = sheet.firstElementChild;
 const scaleBox  = document.getElementById("scale-box");
 const parseLine = document.getElementById("scale-parse");
 const previewBox = document.getElementById("scale-preview");
@@ -4373,6 +4381,33 @@ function updateParse() {
   }
 }
 
+/* ---- iOS keyboard fix (TODOS.md "The iOS keyboard covers GENERATE CARDS
+   while typing a seed") ----
+   iOS Safari resizes the VISUAL viewport when the soft keyboard opens, not
+   the layout viewport #scale-sheet's position:fixed is anchored to:
+   window.innerHeight stays put while window.visualViewport.height shrinks
+   and its offsetTop can move. Every layout unit the sheet is built from -
+   dvh included - is a layout-viewport unit, so nothing in .sheetsurf's own
+   CSS can react to the keyboard; the gap between the two viewports is
+   exactly how far the sheet has to translate up to stay above it.
+   kbOffset() is the pure half of that: given the three viewport numbers,
+   the translate distance. It is unit-tested directly (tests/app.test.js) -
+   headless Chromium cannot open a real keyboard, so that pure function is
+   the only part of this fix CI can verify (see TODOS.md and the PR body). */
+function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
+  return Math.max(0, innerHeight - vvHeight - vvOffsetTop);
+}
+function applyKbOffset() {
+  const vv = window.visualViewport;
+  if (!vv || !sheetSurf) return;
+  const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+  sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", applyKbOffset);
+  window.visualViewport.addEventListener("scroll", applyKbOffset);
+}
+
 /** Show or hide the three Edit-only rows and relabel the single primary. */
 function setSheetMode(edit) {
   for (const el of [nameRow, degRow, layoutRow, delRow]) {
@@ -4387,6 +4422,7 @@ function showSheet(opener) {
   sheetOpen = true;
   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
   updateParse();
+  applyKbOffset();
   scaleBox.focus();
 }
 // The create path. Everything is reset, so an Edit never leaks its seed, its
@@ -4432,6 +4468,10 @@ function closeScaleSheet() {
   if (!sheetOpen) return;
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
+  // Undo any keyboard translate before the next open, or a sheet that opens
+  // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
+  // previous session's offset for one frame.
+  if (sheetSurf) sheetSurf.style.transform = "";
   // Escape and the backdrop are "without saving", and the preview was painted
   // on the real deck, so it has to come back off.
   restoreLayoutPreview();
