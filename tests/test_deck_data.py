@@ -13,8 +13,10 @@ would be a mirror, and `tools/validate.py` already does that cross-check
 Highlighting derivation, root/tone non-overlap and "every voicing field is
 lit" belong to validate.py and are deliberately not repeated here.
 """
+import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -463,6 +465,154 @@ class ValidateScriptTest(unittest.TestCase):
             subprocess.run([sys.executable, "-B",
                             os.path.join("tools", "validate.py")],
                            cwd=paths.ROOT, env=env, check=True)
+
+
+class CanonicalSourceTest(unittest.TestCase):
+    """data/decks.json is the source; index.html's DECKS line is its copy."""
+
+    def test_canonical_file_equals_the_payload_embedded_in_index_html(self):
+        self.assertEqual(paths.canonical_decks(), paths.app_decks())
+
+    def test_canonical_reserialises_to_the_embedded_bytes_exactly(self):
+        # The injected form is json.dumps with DEFAULT arguments. Measured
+        # 2026-09-16: default 8567 bytes == the committed payload;
+        # ensure_ascii=False gives 8542 and compact separators 7398, either of
+        # which rewrites the whole line and breaks the identical assertion in
+        # tools/regen_data_mutants.py:158.
+        html = open(paths.INDEX_HTML, encoding="utf-8").read()
+        m = re.search(r"^const DECKS = (\[.*\]);$", html, re.M)
+        self.assertIsNotNone(m, "DECKS JSON not found in index.html")
+        self.assertEqual(json.dumps(paths.canonical_decks()), m.group(1))
+
+    def test_sync_decks_check_passes_on_the_committed_tree(self):
+        out = subprocess.run(
+            [sys.executable, os.path.join(paths.TOOLS, "sync_decks.py"), "--check"],
+            capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+
+    def test_sync_decks_check_fails_when_the_canonical_file_drifts(self):
+        # The gate has to FIRE, not merely exist. Mutate a copy of the tree,
+        # not the tree: a test that edits data/decks.json in place and restores
+        # it leaves the repo dirty when it fails.
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(paths.ROOT, tmp, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "*.pdf"))
+            path = os.path.join(tmp, "data", "decks.json")
+            decks = json.load(open(path, encoding="utf-8"))
+            decks[0]["chords"][0]["subtitle"] = "DRIFTED"
+            json.dump(decks, open(path, "w", encoding="utf-8"),
+                      indent=2, ensure_ascii=False)
+            out = subprocess.run(
+                [sys.executable, os.path.join(tmp, "tools", "sync_decks.py"), "--check"],
+                capture_output=True, text=True, cwd=tmp)
+            self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+            self.assertIn("DECKS", out.stdout + out.stderr)
+
+    def test_sync_decks_rejects_unknown_arguments(self):
+        # Substring matching on argv would let a typo alongside a real flag
+        # select WRITE mode, which on this tool overwrites index.html.
+        out = subprocess.run(
+            [sys.executable, os.path.join(paths.TOOLS, "sync_decks.py"), "--chek"],
+            capture_output=True, text=True)
+        self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
+
+    def test_validate_py_fails_when_index_html_drifts_from_canonical(self):
+        """check 1 is the only thing that catches a hand-edited DECKS line.
+
+        tools/decks.py no longer holds a second copy of the data - it derives
+        its deck dicts from data/decks.json - so nothing else in validate.py
+        compares index.html to anything. This is the check-4 analogue for data:
+        index.html's DECKS line is a GENERATED copy, and an editor or a merge
+        resolved inside it has to redden CI.
+        """
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; validate.py needs it")
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(paths.ROOT, tmp, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "*.pdf"))
+            index = os.path.join(tmp, "index.html")
+            html = open(index, encoding="utf-8").read()
+            html = html.replace("C# MAJOR", "C# MAJOUR", 1)
+            open(index, "w", encoding="utf-8").write(html)
+            out = subprocess.run(
+                [sys.executable, "-B", os.path.join(tmp, "tools", "validate.py")],
+                capture_output=True, text=True, cwd=tmp)
+            self.assertNotEqual(out.returncode, 0, out.stdout + out.stderr)
+
+
+def _plain(deck):
+    """A print deck dict, normalised to JSON-comparable primitives.
+
+    The same normaliser wrote tests/fixtures/print_decks_v1.json, so the
+    fixture and the assertion below cannot disagree about shape.
+    """
+    out = {}
+    for k, v in deck.items():
+        if k == "spec":
+            out[k] = {str(fk): (list(fv) if fk != "_geom" else dict(fv))
+                      for fk, fv in v.items()}
+        elif k == "chords":
+            out[k] = [[m, s, sub, list(f), sorted(r)] for m, s, sub, f, r in v]
+        elif k in ("col_root", "col_tone"):
+            out[k] = [v.red, v.green, v.blue]
+        elif k == "grad":
+            out[k] = [[c.red, c.green, c.blue] for c in v]
+        elif k == "degrees":
+            out[k] = {str(dk): dv for dk, dv in v.items()}
+        elif k == "legend_demo":
+            out[k] = list(v)
+        else:
+            out[k] = v
+    return out
+
+
+class PrintDeckSnapshotTest(unittest.TestCase):
+    """The print deck dicts are byte-for-byte what they were before the
+    canonical file existed. This is the whole acceptance case for the
+    decks.py rewrite: the refactor is a content no-op or it is a bug.
+
+    This file otherwise never imports tools/decks.py (tests/CONTRACT.md
+    rule 2). The exemption is deliberate and narrow: the assertion is
+    against a FROZEN FIXTURE taken before the refactor, not against the
+    app data, so it is a pin on decks.py and not a mirror of it.
+    """
+
+    def test_deck_dicts_match_the_pre_refactor_snapshot(self):
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; decks.py needs Color")
+        import types
+        sys.path.insert(0, paths.TOOLS)
+        sys.modules.setdefault("hifi", types.ModuleType("hifi"))
+        import decks as D
+        want = json.load(open(os.path.join(paths.ROOT, "tests", "fixtures",
+                                           "print_decks_v1.json"),
+                              encoding="utf-8"))
+        got = {i: _plain(d) for i, d in
+               (("hijaz", D.HIJAZ), ("pygmy", D.PYGMY), ("amara", D.AMARA))}
+        self.assertEqual(got, want)
+
+    def test_print_overlay_may_not_shadow_canonical_data(self):
+        """The overlay carries what the shared data cannot, and nothing else.
+
+        Without this guard a stray `name=` or `chords=` in an overlay would
+        silently win over the canonical value and rebuild, one key at a time,
+        the second copy this refactor deleted.
+        """
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; decks.py needs Color")
+        import types
+        sys.path.insert(0, paths.TOOLS)
+        sys.modules.setdefault("hifi", types.ModuleType("hifi"))
+        import decks as D
+        with self.assertRaises(ValueError) as caught:
+            D._from_canonical("hijaz", name="SHADOWED", R=73.0)
+        self.assertIn("name", str(caught.exception))
 
 
 if __name__ == "__main__":

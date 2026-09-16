@@ -2,11 +2,24 @@
 # suite: python3 -m unittest -k test_power_chords_are_root_and_fifth tests.test_deck_data
 # Amara G5 voiced G4 + C5: a fourth above the root, not a fifth. C5 sits
 # above G4, so the cluster rule is satisfied and only the fifth check fails.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..7455174 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -1114,7 +1114,7 @@
+         "subtitle": "POWER CHORD",
+         "fields": [
+           6,
+-          3
++          8
+         ],
+         "roots": [
+           6
 diff --git a/index.html b/index.html
-index d7ace2b..d1aaa63 100644
+index 00fc903..64bbb05 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -15,16 +28,3 @@ index d7ace2b..d1aaa63 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..130d9f3 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -153,7 +153,7 @@ AMARA_CHORDS = [
-     ("Am", "7", "A MINOR 7", [1, 2, 4, 6], {1}),
-     ("A5", "", "POWER CHORD", [1, 4], {1}),
-     ("Asus", "4", "SUSPENDED CHORD", [1, 3, 4], {1}),
--    ("G5", "", "POWER CHORD", [6, 3], {6}),
-+    ("G5", "", "POWER CHORD", [6, 8], {6}),
-     ("Gsus", "4", "SUSPENDED CHORD", [6, 2, 3], {6}),
-     ("C", "", "C MAJOR", [2, 4, 6], {2}),
-     ("C5", "", "POWER CHORD", [2, 6], {2}),

@@ -25,12 +25,19 @@ Decks: **C# Hijaz / Orion 9** (18 chords), **F3 Low Pygmy 18** (27 chords),
 
 ## Repo layout
 
-- `index.html` - the app. Deck data is embedded as `const DECKS = [...]`.
-  For app work, this embedded JSON is the canonical data.
+- `data/decks.json` - THE canonical deck data. `index.html`'s `const DECKS`
+  line and `tools/decks.py`'s deck dicts are both derived from it.
+- `index.html` - the app. Deck data is embedded as `const DECKS = [...]`, a
+  GENERATED copy of `data/decks.json` written by `tools/sync_decks.py`.
 - `README.md` - usage, hosting, layout provenance notes.
 - `*.pdf` - print outputs ("Cards" = full deck with title/legend/blank
   templates; "PRINTER_ONLY" = chord cards only, for the print shop).
 - `tools/decks.py`, `tools/hifi.py` - print generator (see "Print pipeline").
+  `decks.py` reads `data/decks.json` and carries only the PRINT OVERLAY
+  (R, cy, title, credit, blurb, legend copy, blank-card padding) as literals.
+- `tools/sync_decks.py` - re-injects `data/decks.json` into `index.html`.
+  A SYNC STEP, NOT A BUILD STEP, same as `inline_engine.py`. `--check`
+  reports drift without writing.
 - `src/engine/*.js` - the scale engine (the `HPE` namespace), kept readable and
   unit-tested on its own.
 - `tools/inline_engine.py` - copies those modules into the `<!-- engine:... -->`
@@ -56,6 +63,12 @@ Decks: **C# Hijaz / Orion 9** (18 chords), **F3 Low Pygmy 18** (27 chords),
   conflict inside an engine region by taking either side and re-running the
   tool, never by merging the region by hand. Application markup, CSS and app
   JS all live OUTSIDE the engine block.
+- **The `const DECKS` line in `index.html` is GENERATED** from
+  `data/decks.json` by `python3 tools/sync_decks.py`. Never hand-edit it;
+  edit the canonical file and re-run the tool. Resolve a conflict inside that
+  line by taking either side and re-running the tool, never by merging it by
+  hand. `tools/validate.py` check 1 fails if the two sides diverge - the
+  data analogue of check 4.
 - **Do not alter deck data or diagram geometry** without explicit owner
   instruction. Layouts were verified against the physical instruments and
   some look "wrong" against generic handpan references - they are not.
@@ -269,7 +282,7 @@ this by attaching per-instrument images.
   Pygmy {F:i, Ab:III, Bb:iv, C:v, Db:VI, Eb:VII, G:ii deg};
   Amara {D:i, A:v, G:IV, C:bVII, F:bIII}.
 
-## App data model (embedded DECKS JSON)
+## App data model (data/decks.json, embedded as DECKS)
 
 Per deck: `id, name, sub, colors{root,tone,ga,gb}, degrees{pc:label},
 geom{...fractions of R}, fields{id:[name, octave, midi, zone, angle, label]},
@@ -284,8 +297,11 @@ pitch classes (midi % 12), never stored.
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a
   naive `re.sub(pattern, data)` treats them as escapes and silently fails.
-  Use a lambda replacement, and ALWAYS verify by parsing the injected JSON
-  back out of the written file - a smoke test against stale data passes.
+  `tools/sync_decks.py` now owns this: it substitutes through a lambda and
+  re-parses the JSON back out of the file it just wrote before reporting
+  success. That re-parse is the reason the tool is trusted - a smoke test
+  against stale data passes. Any other code that writes the DECKS line
+  (e.g. `tools/regen_data_mutants.py`) owes the same two steps.
 - **Verification style:** invariant checks over all 61 cards (every voicing
   field lit; every root field root-coloured; no root/tone overlap) plus a
   DOM-stubbed boot simulation caught real bugs; keep both when refactoring.
@@ -306,8 +322,11 @@ Print spec, measured from the commercial original at 300dpi: card
 **62.65 x 87.21 mm (177.6 x 247.2 pt, poker size)**, US Letter 3x3, gutters
 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar on
 page 1 (instruct printers: 100% / Actual Size; verify the bar with a ruler).
-If deck data changes: edit `decks.py`, rebuild PDFs, re-export the JSON and
-re-inject into `index.html` so app and print never diverge.
+If deck data changes: edit `data/decks.json` - the ONE canonical copy - then
+run `python3 tools/sync_decks.py` to re-inject it into `index.html`, and
+`python3 tools/decks.py` to rebuild the PDFs. App and print cannot diverge:
+both read the same file. `tools/validate.py` check 1 fails if `index.html`
+is stale, check 1b if the print adapter drifts.
 Then run `python3 tools/regen_data_mutants.py` on a clean tree: the data
 mutants anchor on the DECKS line and go stale on every data change.
 

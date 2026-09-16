@@ -2,11 +2,26 @@
 # suite: python3 -m unittest -k test_ding_never_in_voicing tests.test_deck_data
 # Hijaz B MINOR voiced with the ding added. Its pitch class (C#) is not
 # already in the chord, so no highlighting invariant breaks.
+# (Lockstep is now index.html + data/decks.json.)
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..99aed1f 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -192,7 +192,8 @@
+         "fields": [
+           2,
+           4,
+-          6
++          6,
++          0
+         ],
+         "roots": [
+           2
 diff --git a/index.html b/index.html
-index d7ace2b..b8092ad 100644
+index 00fc903..ca51f4b 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -15,16 +30,3 @@ index d7ace2b..b8092ad 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..2f7d2e1 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -26,7 +26,7 @@ HIJAZ_CHORDS = [
-     ("C#", "7", "C# DOMINANT 7", [3, 5, 7, 8], {3}),
-     ("C#7sus", "4", "SUSPENDED DOMINANT 7", [3, 6, 7, 8], {3}),
-     ("C#7", "b9", "HIJAZ SIGNATURE CHORD", [3, 5, 7, 8, 4], {3}),
--    ("Bm", "", "B MINOR", [2, 4, 6], {2}),
-+    ("Bm", "", "B MINOR", [2, 4, 6, 0], {2}),
-     ("Bm", "", "B MINOR - HIGH VOICING", [8, 4, 6], {8}),
-     ("B5", "", "POWER CHORD", [2, 6], {2}),
-     ("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3], {2}),

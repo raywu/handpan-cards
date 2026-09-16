@@ -3,11 +3,11 @@
 # The omission table is padded with keys the adapter still emits, which would
 # let it excuse any missing key at all.
 diff --git a/tools/decks.py b/tools/decks.py
-index 92e6630..4288066 100644
+index 23c6136..01c9af5 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
-@@ -191,6 +191,14 @@ AMARA = dict(
- # of slipping through.
+@@ -21,6 +21,14 @@ from reportlab.lib.colors import Color
+ # instead of slipping through.
  
  GENERATED_OMITTED = {
 +    "credit": (

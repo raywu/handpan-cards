@@ -1,11 +1,24 @@
 # kills: test_roots_appear_in_voicing
 # suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data
 # Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..f35873d 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -1207,7 +1207,7 @@
+           4
+         ],
+         "roots": [
+-          5
++          7
+         ]
+       }
+     ]
 diff --git a/index.html b/index.html
-index d7ace2b..441f101 100644
+index 00fc903..7231544 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -14,16 +27,3 @@ index d7ace2b..441f101 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..0a2f9bb 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -160,7 +160,7 @@ AMARA_CHORDS = [
-     ("Csus", "4", "SUSPENDED CHORD", [2, 5, 6], {2}),
-     ("F", "", "F MAJOR", [5, 7, 8], {5}),
-     ("F5", "", "POWER CHORD", [5, 8], {5}),
--    ("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {5}),
-+    ("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {7}),
- ]
- 
- AMARA = dict(

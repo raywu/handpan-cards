@@ -8,15 +8,19 @@ Run from the repo root on a clean tree after ANY change to deck data:
     python3 tools/regen_data_mutants.py --check   # regenerate NOTHING; exit 1
                                                   # if any b_*.patch is stale
 
-Why this exists: the b_* mutants edit tools/decks.py and the DECKS JSON in
+Why this exists: the b_* mutants edit data/decks.json and the DECKS JSON in
 index.html in lockstep (so validate.py stays green and only the named test
-catches them), and they anchor on the single-line DECKS literal. Any data
+catches them), and they anchor on the single-line DECKS literal. The lockstep
+partner used to be tools/decks.py, which held a second hand-maintained copy of
+the data; since 2026-09-16 it derives from data/decks.json and has no literal
+left to edit, so every behavioural mutant's decks.py replacement list is []. Any data
 change therefore turns every one of them STALE and fails the mutation gate.
 Re-deriving them from intent takes seconds; hand-editing 17 KB diffs does not.
 
 Adding a mutant: append an entry to MUTANTS - header lines (the first must be
-"# kills: <test name>"), exact-string replacements for decks.py, and a mutator
-for the parsed app JSON (None for a decks.py-only mutant). Keep each mutant
+"# kills: <test name>"), exact-string replacements for decks.py (normally [];
+see above), and a mutator for the parsed app JSON. Name it in DESYNC_ONLY if it
+wants index.html and data/decks.json to DISAGREE. Keep each mutant
 orthogonal: it must fail ONLY the test it names, or the gate's guarantee that
 that test is live is void (tests/mutation_check.sh runs the named test).
 """
@@ -28,8 +32,9 @@ import sys
 
 DECKS_PY = "tools/decks.py"
 INDEX = "index.html"
+CANONICAL = "data/decks.json"
 OUT = "tests/mutants"
-TRACKED = [INDEX, DECKS_PY]
+TRACKED = [INDEX, DECKS_PY, CANONICAL]
 
 
 def sh(*a):
@@ -52,25 +57,23 @@ MUTANTS = {
         ["# kills: test_degrees_cover_chord_roots",
          "# suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data",
          "# Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree."],
-        [('degrees={2: "i", 9: "v", 7: "IV", 0: "bVII", 5: "bIII"},',
-          'degrees={2: "i", 9: "v", 0: "bVII", 5: "bIII"},')],
+        [],
         lambda D: next(x for x in D if x["id"] == "amara")["degrees"].pop("7"),
     ),
     "b_ding_in_voicing": (
         ["# kills: test_ding_never_in_voicing",
          "# suite: python3 -m unittest -k test_ding_never_in_voicing tests.test_deck_data",
          "# Hijaz B MINOR voiced with the ding added. Its pitch class (C#) is not",
-         "# already in the chord, so no highlighting invariant breaks."],
-        [('("Bm", "", "B MINOR", [2, 4, 6], {2}),',
-          '("Bm", "", "B MINOR", [2, 4, 6, 0], {2}),')],
+         "# already in the chord, so no highlighting invariant breaks.",
+         "# (Lockstep is now index.html + data/decks.json.)"],
+        [],
         lambda D: chord(D, "hijaz", "Bm", "").update(fields=[2, 4, 6, 0]),
     ),
     "b_doubled_pitch_class": (
         ["# kills: test_no_doubled_pitch_classes",
          "# suite: python3 -m unittest -k test_no_doubled_pitch_classes tests.test_deck_data",
          "# Hijaz B MINOR ADD 9 doubles B (B3 + B4) in one voicing."],
-        [('("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3], {2}),',
-          '("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3, 8], {2}),')],
+        [],
         lambda D: chord(D, "hijaz", "Bm", "add9").update(fields=[2, 4, 6, 3, 8]),
     ),
     "b_duplicate_voicing": (
@@ -78,18 +81,16 @@ MUTANTS = {
          "# suite: python3 -m unittest -k test_voicings_unique_within_deck tests.test_deck_data",
          "# Amara Csus4 given C major's exact field list - a duplicate card that",
          "# validate.py cannot see (it only rejects duplicate fields WITHIN a card)."],
-        [('("Csus", "4", "SUSPENDED CHORD", [2, 5, 6], {2}),',
-          '("Csus", "4", "SUSPENDED CHORD", [2, 4, 6], {2}),')],
+        [],
         lambda D: chord(D, "amara", "Csus", "4").update(fields=[2, 4, 6]),
     ),
     "b_layout_angle_swap": (
         ["# kills: test_layouts_match_spec",
          "# suite: python3 -m unittest -k test_layouts_match_spec tests.test_deck_data",
          "# Hijaz rim angles 4 (180) and 6 (135) swapped in BOTH index.html and",
-         "# tools/decks.py, so validate.py's cross-check still passes: only the",
+         "# data/decks.json, so validate.py's cross-check still passes: only the",
          "# CLAUDE.md layout table catches it."],
-        [('4:  ("D",  4, 62, "rim", 180, "4"),', '4:  ("D",  4, 62, "rim", 135, "4"),'),
-         ('6:  ("F#", 4, 66, "rim", 135, "6"),', '6:  ("F#", 4, 66, "rim", 180, "6"),')],
+        [],
         lambda D: (next(x for x in D if x["id"] == "hijaz")["fields"]["4"].__setitem__(4, 135),
                    next(x for x in D if x["id"] == "hijaz")["fields"]["6"].__setitem__(4, 180)),
     ),
@@ -99,7 +100,7 @@ MUTANTS = {
          "# Amara ding D3 given MIDI 51 (= Eb3). The ding is in no voicing, so every",
          "# chord invariant and validate.py stay green; only the note-name <-> MIDI",
          "# pitch-class check (and the layout table) notice."],
-        [('0: ("D", 3, 50, "ding", None, "Ding"),', '0: ("D", 3, 51, "ding", None, "Ding"),')],
+        [],
         lambda D: next(x for x in D if x["id"] == "amara")["fields"]["0"].__setitem__(2, 51),
     ),
     "b_power_chord_fifth": (
@@ -107,7 +108,7 @@ MUTANTS = {
          "# suite: python3 -m unittest -k test_power_chords_are_root_and_fifth tests.test_deck_data",
          "# Amara G5 voiced G4 + C5: a fourth above the root, not a fifth. C5 sits",
          "# above G4, so the cluster rule is satisfied and only the fifth check fails."],
-        [('("G5", "", "POWER CHORD", [6, 3], {6}),', '("G5", "", "POWER CHORD", [6, 8], {6}),')],
+        [],
         lambda D: chord(D, "amara", "G5", "").update(fields=[6, 8]),
     ),
     "b_pygmy_badge_count": (
@@ -116,16 +117,14 @@ MUTANTS = {
          "# Pygmy Fsus4 voiced G4 + C5 instead of the bottom-shell Bb3, so the badge",
          "# count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster",
          "# rule is satisfied and only the badge test sees it."],
-        [('("Fsus", "4", "SUSPENDED CHORD", [5, 104, 8], {5}),',
-          '("Fsus", "4", "SUSPENDED CHORD", [5, 6, 8], {5}),')],
+        [],
         lambda D: chord(D, "pygmy", "Fsus", "4").update(fields=[5, 6, 8]),
     ),
     "b_root_not_in_voicing": (
         ["# kills: test_roots_appear_in_voicing",
          "# suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data",
          "# Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use."],
-        [('("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {5}),',
-          '("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {7}),')],
+        [],
         lambda D: chord(D, "amara", "Fmaj", "7").update(roots=[7]),
     ),
     "b_cluster_forced_only": (
@@ -136,30 +135,65 @@ MUTANTS = {
          "# voicing uniqueness and the badge count (2, also wrong but asserted by a",
          "# different test) do not see it - only the cluster rule in CLAUDE.md rule 3",
          "# catches it."],
-        [('("Cm", "7", "C MINOR 7", [3, 4, 6, 104], {3}),',
-          '("Cm", "7", "C MINOR 7", [3, 103, 1, 104], {3}),')],
+        [],
         lambda D: card(D, "pygmy", "C MINOR 7").update(fields=[3, 103, 1, 104]),
     ),
-    "b_validate_desync": (
+    "b_decks_json_desync": (
         ["# kills: test_validate_py_passes",
          "# suite: python3 -m unittest -k test_validate_py_passes tests.test_deck_data",
-         "# tools/decks.py alone drifts from the JSON embedded in index.html - the",
-         "# print deck and the app would ship different card copy."],
-        [('("Dm", "7", "D MINOR 7", [3, 5, 7, 8], {3}),',
-          '("Dm", "7", "D MINOR SEVEN", [3, 5, 7, 8], {3}),')],
-        None,
+         "# The canonical data/decks.json drifts from the copy embedded in",
+         "# index.html - the app would ship card copy the print deck does not,",
+         "# which is exactly the failure the single-source refactor removes the",
+         "# HAND-EDIT path to and therefore has to keep a GATE on: index.html is",
+         "# a committed generated file and an editor or a merge can still write",
+         "# inside it. This is the check-4 analogue for data.",
+         "# NOTE: this replaced b_validate_desync (2026-09-16), whose mechanism",
+         "# - tools/decks.py holding a second hand-maintained copy - no longer",
+         "# exists. Do not restore that one; there is nothing left to desync.",
+         "# This is the ONE mutant that calls apply_json(sync=False); every",
+         "# other b_* moves both copies together."],
+        [],
+        lambda D: card(D, "hijaz", "C# MAJOR").update(subtitle="C# MAJOUR"),
     ),
 }
 
+# The one mutant whose MECHANISM is the disagreement between the two copies.
+# A fourth tuple element would be tidier and would force an edit to all eleven
+# entries for one mutant's benefit; this set keeps that diff at [].
+DESYNC_ONLY = {"b_decks_json_desync"}
 
-def apply_json(mutator):
+
+PATTERN = re.compile(r"^const DECKS = (\[.*\]);$", re.M)
+
+
+def apply_json(mutator, sync=True):
+    """Apply a JSON mutation to index.html, and to data/decks.json unless sync=False.
+
+    sync=True is the lockstep case: both copies move together, validate.py
+    check 1 stays green, and only the test named in the mutant's header fails.
+    sync=False is the DESYNC case - exactly one mutant (b_decks_json_desync)
+    wants index.html to disagree with canonical, which check 1 exists to catch.
+    """
     html = open(INDEX).read()
-    m = re.search(r"^const DECKS = (\[.*\]);$", html, re.M)
+    m = PATTERN.search(html)
     decks = json.loads(m.group(1))
     assert json.dumps(decks) == m.group(1), "serialisation format drifted"
     mutator(decks)
-    html = html.replace(m.group(0), "const DECKS = " + json.dumps(decks) + ";", 1)
+    # A LAMBDA replacement plus a re-parse of the WRITTEN file: the degrees
+    # carry U+00B0 and re's replacement template eats backslash escapes
+    # (CLAUDE.md, "Known pitfalls"), and a smoke test on stale data passes.
+    line = "const DECKS = " + json.dumps(decks) + ";"
+    html = PATTERN.sub(lambda _m: line, html, count=1)
     open(INDEX, "w").write(html)
+    again = PATTERN.search(open(INDEX).read())
+    assert again is not None and json.loads(again.group(1)) == decks, \
+        "re-injection did not land"
+    if sync:
+        # Byte-identical to Task 1's writer, or every patch carries a
+        # whole-file reformat of data/decks.json as noise.
+        with open(CANONICAL, "w", encoding="utf-8") as fh:
+            json.dump(decks, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
 
 
 def check_only():
@@ -204,7 +238,7 @@ for name, (header, replacements, mutator) in MUTANTS.items():
         src = src.replace(old, new)
     open(DECKS_PY, "w").write(src)
     if mutator is not None:
-        apply_json(mutator)
+        apply_json(mutator, sync=name not in DESYNC_ONLY)
     diff = sh("git", "diff", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
     with open(f"{OUT}/{name}.patch", "w") as f:

@@ -3,11 +3,24 @@
 # Amara ding D3 given MIDI 51 (= Eb3). The ding is in no voicing, so every
 # chord invariant and validate.py stay green; only the note-name <-> MIDI
 # pitch-class check (and the layout table) notice.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..60b5e10 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -933,7 +933,7 @@
+       "0": [
+         "D",
+         3,
+-        50,
++        51,
+         "ding",
+         null,
+         "Ding"
 diff --git a/index.html b/index.html
-index d7ace2b..813a309 100644
+index 00fc903..63e4654 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -16,16 +29,3 @@ index d7ace2b..813a309 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..4942938 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -133,7 +133,7 @@ AMARA_SPEC = {
-     "_geom": dict(rim=0.745, r_ding=0.200, r_note=0.190, inner_ring=0.355,
-                   f_ding=0.135, f_note=0.128, f_num=0.105,
-                   n_in=0.085, n_out=0.0, r_bnote=0.0, f_bnote=0.0),
--    0: ("D", 3, 50, "ding", None, "Ding"),
-+    0: ("D", 3, 51, "ding", None, "Ding"),
-     1: ("A", 3, 57, "rim", 270, "1"),
-     2: ("C", 4, 60, "rim", 225, "2"),
-     3: ("D", 4, 62, "rim", 315, "3"),

@@ -86,9 +86,10 @@ Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
 
 ## Regenerating deck data
 
-Card data is generated from the same `decks.py` that produces the printed
-PDFs, exported as JSON and embedded in the HTML. If a chord or note position
-changes in the print decks, re-export and re-inject to keep both in sync.
+`data/decks.json` is the one canonical copy of the deck data. The app's
+embedded `const DECKS` line and the print generator both derive from it.
+Edit that file, then run `python3 tools/sync_decks.py` (re-injects it into
+`index.html`) and `python3 tools/decks.py` (rebuilds the PDFs).
 
 Layout notes (intentional, verified against the physical instruments -
 do not "correct"):
