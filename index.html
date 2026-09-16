@@ -3878,6 +3878,15 @@ function render() {
   const away  = document.getElementById(flipped ? "front" : "back");
   away.setAttribute("aria-hidden", "true");
   shown.removeAttribute("aria-hidden");
+  // aria-hidden alone does not remove a link from the tab order, and
+  // headerHTML() renders .prints into BOTH faces - so a keyboard user would
+  // tab into two invisible links, and a screen reader would meet focusable
+  // content inside an aria-hidden subtree.
+  // Scoped through document, not through the face element: the face is the
+  // node whose innerHTML was just replaced, and the unit suite's DOM stub
+  // serves selectors from the document only.
+  for (const a of document.querySelectorAll("#" + away.id + " .prints a")) a.tabIndex = -1;
+  for (const a of document.querySelectorAll("#" + shown.id + " .prints a")) a.removeAttribute("tabindex");
   cardEl.setAttribute("aria-describedby", shown.id);
 }
 
@@ -4587,7 +4596,15 @@ function step(dir) {
   flipped = false; render();
 }
 card.addEventListener("click", flip);
-card.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });
+// Bound to #card, so it fires for keys that BUBBLE from any descendant.
+// .prints' onclick="event.stopPropagation()" guards the mouse path only:
+// without this target check, Enter on a focused print link is swallowed by
+// preventDefault() before the anchor activates - no PDF, and the card flips
+// instead, revealing the answer in NAME->NOTES mode.
+card.addEventListener("keydown", e => {
+  if (e.target && e.target.closest && e.target.closest("a, button")) return;
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
+});
 document.getElementById("prev").onclick = () => step(-1);
 document.getElementById("next").onclick = () => step(1);
 document.getElementById("shuffle").onclick = function () {
