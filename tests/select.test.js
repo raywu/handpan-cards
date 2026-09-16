@@ -613,8 +613,13 @@ test("every override is a built-in card the engine does not produce", () => {
         `${b.id}: override ${key} must also be listed missing`);
     }
   }
-  // Section 9 / section 7: the two hand-authored Hijaz cards and the seven
-  // HIGH / LOW VOICING alternates are overrides by name.
+  // Section 9 / section 7: the two hand-authored Hijaz cards are overrides
+  // by name. Of the fixture's seven shipped HIGH/LOW VOICING alternates,
+  // root-instance enumeration (this plan) now DERIVES six of them (Pygmy's
+  // Ab/Cm/Cm7/Eb/Eb7 multi-voicings) - they are reproduced cards, not
+  // opt-in override data, so they are deliberately no longer recorded as
+  // overrides. Hijaz's `Bm - HIGH VOICING` is explicitly out of scope for
+  // this plan (deferred, not dropped) and stays a recorded override.
   assert.ok(seen.hijaz.some((k) => k.startsWith("Dmaj7 (")),
     "Hijaz Dmaj7 is a recorded override");
   assert.ok(seen.hijaz.some((k) => k.startsWith("Dmaj7#11 (")),
@@ -626,7 +631,9 @@ test("every override is a built-in card the engine does not produce", () => {
     }
   }
   assert.equal(alternates.length, 7, "the fixture ships seven HIGH/LOW alternates");
+  const stillDeferred = new Set(["hijaz"]);
   for (const [id, key] of alternates) {
+    if (!stillDeferred.has(id)) continue;
     assert.ok(seen[id].includes(key),
       `${id}: the alternate ${key} is a recorded override`);
   }
