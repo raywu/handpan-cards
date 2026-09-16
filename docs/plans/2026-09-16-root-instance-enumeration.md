@@ -42,7 +42,7 @@ From the 2026-09-16 engineering review, measured before answering:
 - `index.html` stays a single file with no `<script src>`.
 - Do not alter deck data or diagram geometry.
 - ES5 only in `src/engine/*.js`: `var`, no arrow functions, no `const`/`let`, no template literals.
-- Every task ends green: `node --test tests/` and `python3 -m unittest discover tests` both pass before the commit.
+- Every task ends green: `node --test "tests/*.test.js"` and `python3 -m unittest discover tests` both pass before the commit.
 - Commits end with:
   `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` then `Claude-Session: https://claude.ai/code/session_01S24msyK6JGS18wpqWjZzJc`.
 
@@ -134,7 +134,7 @@ cd ../hc-partb
 
 - [ ] **Step 2: Confirm the suite is green on the base commit**
 
-Run: `node --test tests/ && python3 -m unittest discover tests`
+Run: `node --test "tests/*.test.js" && python3 -m unittest discover tests`
 Expected: PASS, both.
 
 ---
@@ -166,15 +166,25 @@ test("an unknown voicing class throws", () => {
   assert.throws(() => naming.subtitle("C", "m", null, "MIDDLE"), /voicing class/);
 });
 
-test("the voicing class is inside the subtitle ceiling", () => {
-  // the longest real case: a rooted display + equivalence + the suffix
-  const out = naming.subtitle("Db", "m7b5", "E", "HIGH");
-  assert.ok(out.length <= 64, `subtitle ${out.length} chars: ${out}`);
+test("the voicing class ceiling test does not throw at the worst case", () => {
+  // naming.CAPS.subtitle is SUBTITLE_MAX, read at runtime rather than
+  // restated as a literal - a cap change should not need this test rewritten.
+  const cap = naming().CAPS.subtitle;
+  const out = naming.subtitle("Bb", "m7b5", "Bb", "HIGH");
+  assert.equal(out, "HALF-DIMINISHED ( = Bbm6 ) - HIGH VOICING");
+  assert.equal(out.length, 41);
+  assert.ok(out.length <= cap, `subtitle ${out.length} chars: ${out}`);
 });
 ```
 
-Note: read `SUBTITLE_MAX` out of `src/engine/naming.js` and use its real value in
-the last assertion rather than the literal 64 above.
+**Correction (2026-09-16 ruling):** the original ceiling test asserted
+`out.length <= 64` on `naming.subtitle("Db","m7b5","E","HIGH")`, which is 40
+chars - but at the OLD cap of 26 `subtitle` throws a RangeError before
+returning, so the assertion was unreachable. Read the cap out of
+`naming().CAPS.subtitle` rather than a literal, and assert that the real
+41-char worst case (`subtitle("Bb","m7b5","Bb","HIGH")`, which produces
+`HALF-DIMINISHED ( = Bbm6 ) - HIGH VOICING`) does NOT throw and fits inside
+the cap.
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -933,7 +943,7 @@ Expected: PASS, zero survivors.
 - [ ] **Step 1: Run everything**
 
 ```bash
-node --test tests/
+node --test "tests/*.test.js"
 python3 -m unittest discover tests
 python3 tools/validate.py
 python3 tools/inline_engine.py --check
