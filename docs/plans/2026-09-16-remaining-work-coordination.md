@@ -473,7 +473,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 
 ## Cycle state
 
-Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
+Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, PR #73)
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -481,8 +481,8 @@ Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 | W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
 | W3 | harness (unreachable) | `app/print-button` | #72 | `f6242cd` | 2026-09-16 CI pending at `f6242cd` | reviewer FAIL at `c51fef4`; integrator fixed P1+P2, awaiting fresh reviewer | 1 | no | - | - |
 | W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 mutation gate FAIL at `938c799` | bounced, no reviewer spawned | 1 | no | owner device check | - |
-| W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
-| W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
+| W5 | swarm worktree | `engine/adopt-generated-decks` | - | - | - | spawned 2026-09-16 off `main` @ `4760d37` (W1+W2 merged) | 0 | no | - | - |
+| W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
 
 Wave 1 spawned 2026-09-16 off `main` @ `839d70e` (the doc commit; base content
 identical to `28117a8`). Agent IDs are held in the integrator session only.
