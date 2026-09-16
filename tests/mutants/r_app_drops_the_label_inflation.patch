@@ -6,11 +6,11 @@
 # baseline written only against the print figure passes it straight
 # through, which is why the baseline is now written per renderer.
 diff --git a/index.html b/index.html
-index 2c421ff..c477043 100644
+index c03540b..79e1e56 100644
 --- a/index.html
 +++ b/index.html
-@@ -3369,8 +3369,8 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
-    chose no-shrink, so the 5% is baked in and print grows to meet the app.
+@@ -3523,8 +3523,8 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    "Where the ratios come from, and what actually changed".
     Safe above the solver's budget because ring clearance is computed from
     f_num alone, and fit_note shrinks anything that truly overflows. */
 -const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,

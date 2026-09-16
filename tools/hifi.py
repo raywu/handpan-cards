@@ -93,10 +93,25 @@ def note_w(name, octv, font, size):
 # before this rule existed, while print multiplied by nothing: the two
 # renderers were 5% apart, and a single rule cannot be exact parity with the
 # solver AND leave the app unshrunk. OWNER DECISION (2026-09, queue row 221):
-# no-shrink wins. Print therefore grows ~5% to meet the app, and no glyph in
-# either output is smaller than it is today.
+# no-shrink wins.
 #
-# Drawing 5% over the solver's budget for the field circle is safe because
+# "Print grows ~5% to meet the app" is NOT what happens, and reading it that
+# way hides most of the change. The 1.05 is only one of two things moving.
+# The solver's ratios come from Pygmy alone, while the Hijaz/Amara geom
+# literals were tuned independently and sit at different ratios
+# (f_note/r_note 0.6737, f_ding/r_ding 0.675, f_num/r_note 0.5526). One rule
+# for two ratio families means picking one per zone, and this rule takes the
+# MAX - the only choice that shrinks nothing. So ~5% is the growth only where
+# the two families already agreed; elsewhere the re-ratioing dominates. Per
+# zone, app / print: ding 0.0 / +5.0% on Hijaz and Amara but +12.5% / +18.1%
+# on Pygmy; rim and inner 0.0 / +5.0% on Pygmy but +13.6% / +19.2% on Hijaz
+# and Amara; bottom (Pygmy only) 0.0 / +5.0%, the one pure-1.05 row; and the
+# index number +15.8% in BOTH renderers on Hijaz and Amara with no 1.05 in it
+# at all. Three of the seven deck-zone combinations move for a reason that
+# has nothing to do with the 1.05. The full table is in CLAUDE.md under
+# "Where the ratios come from, and what actually changed".
+#
+# Drawing over the solver's budget for the field circle is safe because
 # (1) ring clearance is computed from f_num alone (src/engine/layout.js
 # 288-302), so a name's size cannot reach it; and (2) fit_note auto-shrinks
 # any label that genuinely overflows its field, and it does not fire on any
@@ -109,10 +124,12 @@ NUM_RATIO = 0.64             # index number, from the top-field radius.
                              # so it takes no 1.05.
 
 # The width a name may occupy inside its field before fit_note steps it down,
-# as a multiple of the field radius. It carries the same 1.05 as the sizes
-# above, and for the same reason: the glyphs grew 5%, so their box grows 5%,
-# and fit_note fires on exactly the labels it fired on before - no more, no
-# fewer. Without it the growth alone would trip the fitter on Pygmy's bottom
+# as a multiple of the field radius. It carries the same 1.05 the sizes above
+# carry, and for the same reason: it keeps the fitter's box in step with the
+# historic app-vs-print 5%, so fit_note fires on exactly the labels it fired
+# on before - no more, no fewer. (It does NOT track the per-zone re-ratioing
+# described above; nothing needs it to, because the fitter only has to not
+# newly fire.) Without it the growth alone would trip the fitter on Pygmy's bottom
 # shell and pull print back under the app, which is the shrink this rule
 # exists to prevent. 1.47r is still well inside the 2r field.
 LABEL_WIDTH_RATIO = 1.47     # 1.40 x 1.05

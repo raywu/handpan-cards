@@ -3517,7 +3517,18 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
    file used to multiply every diagram name by that 1.05 while print
    multiplied by nothing, so the two renderers were 5% apart. One rule cannot
    be exact parity with the solver AND leave this side unshrunk; the owner
-   chose no-shrink, so the 5% is baked in and print grows to meet the app.
+   chose no-shrink, so the 5% is baked in.
+
+   That 1.05 is NOT the size of the change, here or in print. The solver's
+   ratios come from Pygmy alone, while the Hijaz/Amara geom literals were
+   tuned independently (f_note/r_note 0.6737, f_ding/r_ding 0.675,
+   f_num/r_note 0.5526), and this rule takes the LARGER of the two families
+   per zone - the only choice that shrinks nothing. On this side that leaves
+   Hijaz and Amara unchanged in the ding, +13.6% in the rim and inner fields
+   and +15.8% on the index number (which carries no 1.05 at all), and Pygmy
+   +12.5% in the ding with its rim, inner and bottom fields unchanged. Print
+   grows 5% on top of each of those. The per-zone table is in CLAUDE.md under
+   "Where the ratios come from, and what actually changed".
    Safe above the solver's budget because ring clearance is computed from
    f_num alone, and fit_note shrinks anything that truly overflows. */
 const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,

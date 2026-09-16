@@ -188,7 +188,7 @@ this by attaching per-instrument images.
   (`tests/test_print.py::LabelSizeRuleTest` runs over `ALL_DECKS`), and it is
   not universal: on a generated deck whose bottom shell packs tighter than its
   rim, the solver's `r_bnote` falls far enough under `r_note` that the BOTTOM
-  name lands under the number - `mixed N=5` in the layout sweep draws 0.0931
+  name lands under the number - `mixed N=5` in the layout sweep draws 0.0978
   against 0.1216. That inversion is the solver's radii, not the rule, and
   `tests/layout.test.js` records it rather than asserting it away.
 

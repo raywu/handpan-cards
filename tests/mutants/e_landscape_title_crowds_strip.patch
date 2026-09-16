@@ -1,0 +1,28 @@
+# kills: the landscape deck strip scrolls rather than clips, at both ends
+# suite: node --test --test-name-pattern ^the.landscape.deck.strip.scrolls.rather.than.clips..at.both.ends$ tests/e2e.test.js
+# The landscape h1 goes from visually-hidden back to a drawn 14px title. This
+# is the defect the landscape block's own comment describes and then claims
+# to have fixed: "with the title out the strip gets the whole width, and on
+# the two WIDER rows it then fits". Nothing used to hold that half of the
+# claim - the test asserted only that the NARROW row still overflows, which a
+# re-drawn title makes MORE true, not less.
+#
+# Restoring the title takes ~126px of the header row, and 926x428 drops from
+# a strip that fits (652 of 652) to one that overflows (611 of 526). The
+# header-height and chrome-budget assertions next door do not move: the row
+# is still one 44px line, because the title sits INSIDE it.
+diff --git a/index.html b/index.html
+index 77d0b3d..8fba33b 100644
+--- a/index.html
++++ b/index.html
+@@ -261,8 +261,7 @@
+      tree, so the document keeps its heading and the header keeps its name.
+      The clip-rect pair is the old and the current spelling of the same
+      thing; both are here because Safari honoured clip long before it
+      honoured clip-path. */
+-  h1{position:absolute; width:1px; height:1px; margin:0; padding:0; border:0;
+-    overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0); clip-path:inset(50%)}
++  h1{font-size:14px}
+   /* The strip takes what is left. min-width:0 is what lets it: a flex item's
+      automatic minimum is its content, so without it the strip would refuse to
+      shrink and push the mode bar off the row. */
