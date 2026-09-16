@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 
 import hifi
 from reportlab.lib.colors import Color
@@ -246,6 +247,14 @@ def _from_canonical(deck_id, **overlay):
         raise ValueError("%s: print overlay shadows canonical data: %s"
                          % (deck_id, ", ".join(clash)))
     shared.update(overlay)
+    if "blurb" in shared:
+        # The chord count in the blurb's last line is DERIVED from the
+        # deck's own chord list, not hand-typed - a hand-typed literal goes
+        # stale the moment a chord is added or removed (Pygmy shipped
+        # "25 CHORDS" after it grew to 27).
+        lines = list(shared["blurb"])
+        lines[-1] = re.sub(r"\d+(?=\s*CHORDS)", str(len(chords)), lines[-1])
+        shared["blurb"] = lines
     return shared
 
 

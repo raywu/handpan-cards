@@ -871,3 +871,36 @@ class BottomAccentColourTest(PaletteSafeTest):
         self.assertEqual(painted, {SPEC_BOTTOM_ACCENT},
                          "the BOTTOM NOTES badge is not drawn in %s (drew %r)"
                          % (SPEC_BOTTOM_ACCENT, sorted(painted)))
+
+
+class TitleBlurbChordCountTest(unittest.TestCase):
+    """The title-card blurb's chord count must come FROM the deck's own
+    chord list, not a hand-typed literal that can go stale the moment a
+    chord is added or removed (Pygmy shipped "25 CHORDS" after it grew to
+    27). Hijaz and Amara already had the right literal, so deriving it must
+    leave their blurbs byte-identical - the only visible change is Pygmy's."""
+
+    def test_hijaz_blurb_is_unchanged(self):
+        self.assertEqual(
+            decks.HIJAZ["blurb"],
+            ["C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4",
+             "PHRYGIAN DOMINANT, NO b6   -   18 CHORDS"])
+
+    def test_amara_blurb_is_unchanged(self):
+        self.assertIn("16 CHORDS", decks.AMARA["blurb"][-1])
+
+    def test_pygmy_blurb_reads_the_true_chord_count(self):
+        self.assertEqual(len(decks.PYGMY["chords"]), 27,
+                         "fixture drift: Pygmy no longer has 27 chords")
+        self.assertIn("27 CHORDS", decks.PYGMY["blurb"][-1],
+                      "Pygmy's blurb still reads a stale chord count: %r"
+                      % (decks.PYGMY["blurb"][-1],))
+        self.assertNotIn("25 CHORDS", decks.PYGMY["blurb"][-1])
+
+    def test_every_deck_blurb_count_matches_its_own_chord_list(self):
+        for deck in ALL_DECKS:
+            n = len(deck["chords"])
+            last_line = deck["blurb"][-1]
+            self.assertIn("%d CHORDS" % n, last_line,
+                         "%s: blurb does not say %d CHORDS (%r)"
+                         % (deck["name"], n, last_line))

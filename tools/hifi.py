@@ -173,19 +173,15 @@ def note_text(c, x, y, name, octv, font, size, color=black, centre=True):
 
 
 # ---- card chrome ----------------------------------------------------------
-def duo_frame(c, x, y, w, h, bw=2.2, rad=7.0, ga=None, gb=None):
-    """Two-tone split frame: root colour on the top half of the border,
-    tone colour on the bottom half, hard split at mid-height."""
-    ga, gb = ga or BLUE, gb or GREEN
-    c.saveState()
-    p = c.beginPath()
-    p.roundRect(x, y, w, h, rad)
-    c.clipPath(p, stroke=0, fill=0)
+def duo_frame(c, x, y, w, h, bw=2.8, rad=7.0, ga=None, gb=None):
+    """Single-colour, four-sided frame in the deck's root colour.
+
+    `gb` is accepted (and every caller still passes it) so the deck grad
+    tuples stay intact for whatever else reads them; it is unused here -
+    the flat frame draws `ga` alone on all four sides."""
+    ga = ga or BLUE
     c.setFillColor(ga)
-    c.rect(x, y + h / 2, w, h / 2, stroke=0, fill=1)
-    c.setFillColor(gb)
-    c.rect(x, y, w, h / 2, stroke=0, fill=1)
-    c.restoreState()
+    c.roundRect(x, y, w, h, rad, stroke=0, fill=1)
     c.setFillColor(white)
     c.roundRect(x + bw, y + bw, w - 2 * bw, h - 2 * bw, max(1.0, rad - bw),
                 stroke=0, fill=1)
