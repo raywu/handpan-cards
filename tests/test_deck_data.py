@@ -517,13 +517,13 @@ class CanonicalSourceTest(unittest.TestCase):
         self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
 
     def test_validate_py_fails_when_index_html_drifts_from_canonical(self):
-        """Before Task 4 this passes for the WRONG reason.
+        """check 1 is the only thing that catches a hand-edited DECKS line.
 
-        Today check 1 compares index.html against tools/decks.py, so editing
-        index.html alone reddens validate.py either way. Once decks.py derives
-        from the canonical file it must still redden - via check 1's
-        data/decks.json comparison, which is the only thing left that can catch
-        a hand-edit of the generated DECKS line.
+        tools/decks.py no longer holds a second copy of the data - it derives
+        its deck dicts from data/decks.json - so nothing else in validate.py
+        compares index.html to anything. This is the check-4 analogue for data:
+        index.html's DECKS line is a GENERATED copy, and an editor or a merge
+        resolved inside it has to redden CI.
         """
         try:
             import reportlab  # noqa: F401
@@ -540,6 +540,79 @@ class CanonicalSourceTest(unittest.TestCase):
                 [sys.executable, "-B", os.path.join(tmp, "tools", "validate.py")],
                 capture_output=True, text=True, cwd=tmp)
             self.assertNotEqual(out.returncode, 0, out.stdout + out.stderr)
+
+
+def _plain(deck):
+    """A print deck dict, normalised to JSON-comparable primitives.
+
+    The same normaliser wrote tests/fixtures/print_decks_v1.json, so the
+    fixture and the assertion below cannot disagree about shape.
+    """
+    out = {}
+    for k, v in deck.items():
+        if k == "spec":
+            out[k] = {str(fk): (list(fv) if fk != "_geom" else dict(fv))
+                      for fk, fv in v.items()}
+        elif k == "chords":
+            out[k] = [[m, s, sub, list(f), sorted(r)] for m, s, sub, f, r in v]
+        elif k in ("col_root", "col_tone"):
+            out[k] = [v.red, v.green, v.blue]
+        elif k == "grad":
+            out[k] = [[c.red, c.green, c.blue] for c in v]
+        elif k == "degrees":
+            out[k] = {str(dk): dv for dk, dv in v.items()}
+        elif k == "legend_demo":
+            out[k] = list(v)
+        else:
+            out[k] = v
+    return out
+
+
+class PrintDeckSnapshotTest(unittest.TestCase):
+    """The print deck dicts are byte-for-byte what they were before the
+    canonical file existed. This is the whole acceptance case for the
+    decks.py rewrite: the refactor is a content no-op or it is a bug.
+
+    This file otherwise never imports tools/decks.py (tests/CONTRACT.md
+    rule 2). The exemption is deliberate and narrow: the assertion is
+    against a FROZEN FIXTURE taken before the refactor, not against the
+    app data, so it is a pin on decks.py and not a mirror of it.
+    """
+
+    def test_deck_dicts_match_the_pre_refactor_snapshot(self):
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; decks.py needs Color")
+        import types
+        sys.path.insert(0, paths.TOOLS)
+        sys.modules.setdefault("hifi", types.ModuleType("hifi"))
+        import decks as D
+        want = json.load(open(os.path.join(paths.ROOT, "tests", "fixtures",
+                                           "print_decks_v1.json"),
+                              encoding="utf-8"))
+        got = {i: _plain(d) for i, d in
+               (("hijaz", D.HIJAZ), ("pygmy", D.PYGMY), ("amara", D.AMARA))}
+        self.assertEqual(got, want)
+
+    def test_print_overlay_may_not_shadow_canonical_data(self):
+        """The overlay carries what the shared data cannot, and nothing else.
+
+        Without this guard a stray `name=` or `chords=` in an overlay would
+        silently win over the canonical value and rebuild, one key at a time,
+        the second copy this refactor deleted.
+        """
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; decks.py needs Color")
+        import types
+        sys.path.insert(0, paths.TOOLS)
+        sys.modules.setdefault("hifi", types.ModuleType("hifi"))
+        import decks as D
+        with self.assertRaises(ValueError) as caught:
+            D._from_canonical("hijaz", name="SHADOWED", R=73.0)
+        self.assertIn("name", str(caught.exception))
 
 
 if __name__ == "__main__":
