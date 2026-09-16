@@ -755,14 +755,29 @@ test("Amara's shipped cards are reproduced unchanged", () => {
 // FAILS this one, which is the point.
 const HAND_AUTHORED_MULTI_VOICINGS = [
   // main+sup, voicing class, fields - transcribed from the shipped DECKS blob
+  ["Ab",  "",     [2, 3, 4]],
+  ["Ab",  "HIGH", [7, 8, 9]],
   ["Cm",  "LOW",  [101, 103, 1]],
-  ["Cm",  "",     [1, 3, 5]],
+  ["Cm",  "",     [3, 4, 6]],
   ["Cm",  "HIGH", [8, 9, 11]],
   ["Cm7", "LOW",  [101, 103, 1, 104]],
+  ["Cm7", "",     [3, 4, 6, 104]],
   ["Eb",  "LOW",  [103, 1, 104]],
-  ["Eb7", "LOW",  [103, 1, 104, 105]]
+  ["Eb",  "",     [4, 6, 104]],
+  ["Eb7", "LOW",  [103, 1, 104, 105]],
+  ["Eb7", "",     [4, 6, 104, 105]]
 ];
+```
 
+**Correction (2026-09-16 ruling):** the list above (the plan's original draft)
+was WRONG - it was transcribed from memory rather than from the shipped
+`DECKS` blob. The real Pygmy home `Cm` is `[3,4,6]`, not `[1,3,5]`, and five
+cards were missing entirely: `Ab` HOME, `Ab` HIGH, `Cm7` HOME, `Eb` HOME,
+`Eb7` HOME. The list is 11 cards, not 6. Running the transcription script
+below against the shipped `index.html` produces the corrected list, which
+replaces the wrong one above:
+
+```js
 test("every hand-authored multi-voicing card is derived by the engine", () => {
   const deck = built(PYGMY_SEED);
   for (const [name, cls, fields] of HAND_AUTHORED_MULTI_VOICINGS) {
