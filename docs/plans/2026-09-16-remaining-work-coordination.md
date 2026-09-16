@@ -421,7 +421,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 
 | Lane | State | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|
-| W1 | not spawned | - | - | - | 0 |
+| W1 | in review | #71 | `c8e603e` | pending | 0 |
 | W2 | not spawned | - | - | - | 0 |
 | W3 | not spawned | - | - | - | 0 |
 | W4 | not spawned | - | - | - | 0 |
@@ -456,7 +456,7 @@ Cycle: 1   Wave: 1   Merged this batch: -
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
-| W1 | harness | `nits/sync-decks-hardening` | - | - | - | - | 0 | no | - | - |
+| W1 | harness | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
 | W2 | harness | `print/blurb-and-border` | - | - | - | - | 0 | no | - | - |
 | W3 | harness | `app/print-button` | - | - | - | - | 0 | no | - | - |
 | W4 | harness | `mobile/audit-pass-1` | - | - | - | - | 0 | no | owner device check | - |
