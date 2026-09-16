@@ -122,13 +122,13 @@ PYGMY_BADGE = [
     0,  # C5
     0,  # Csus4
     3,  # Cm7 low voicing (C3 + Eb3 + Bb3)
-    2,  # Cm7 (clustered: Eb3 + Bb3 are both bottom-shell)
+    1,  # Cm7 (Bb3 is the only bottom-shell field; Eb and G sit above C4)
     1,  # Db
     1,  # Dbmaj7
     2,  # Eb low voicing
     1,  # Eb
     3,  # Eb7 low voicing
-    2,  # Eb7 (clustered: Bb3 + Db4)
+    2,  # Eb7 (Bb3 + Db4, both bottom-shell-only)
     2,  # G dim
     2,  # Gm7b5
 ]
@@ -140,15 +140,17 @@ PYGMY_BADGE = [
 #   Cm7 rooted at C3 (U1) forces nothing - Eb3, G3 and Bb3 all lie ABOVE C3 -
 #   so it is an ordinary unforced card, and the one Pygmy voicing that uses
 #   three bottom-shell fields.
-#   Eb7 rooted at Eb4 IS forced: Bb exists only as Bb3, below the root, so
-#   every chord tone drops to its highest lower instance (G3, Bb3, Db4).
+#   Eb7 rooted at Eb4 is NOT forced: Bb and Db exist only on the bottom shell,
+#   and a bottom-shell-only tone forces nothing (owner decision 2026-09-15).
+#   G takes its nearest instance above the root, G4; Bb3 and Db4 are the two
+#   bottom-shell fields.
 #
 # Both were legal under CLAUDE.md rule 3 all along and simply absent.
 SEVENTH_REGISTERS = [
     ("Cm", "7", "C MINOR 7 - LOW VOICING", [101, 103, 1, 104], 101),
-    ("Cm", "7", "C MINOR 7", [3, 103, 1, 104], 3),
+    ("Cm", "7", "C MINOR 7", [3, 4, 6, 104], 3),
     ("Eb", "7", "Eb DOMINANT 7 - LOW VOICING", [103, 1, 104, 105], 103),
-    ("Eb", "7", "Eb DOMINANT 7", [4, 1, 104, 105], 4),
+    ("Eb", "7", "Eb DOMINANT 7", [4, 6, 104, 105], 4),
 ]
 
 # F natural minor, complete (CLAUDE.md, Pygmy).
@@ -280,6 +282,7 @@ class VoicingTest(unittest.TestCase):
         for deck in decks():
             playable = [int(f) for f in deck["fields"] if field_of(deck, int(f))[3] != "ding"]
             midi = lambda f: field_of(deck, f)[2]
+            zone = lambda f: field_of(deck, f)[3]
             for ch in deck["chords"]:
                 root = ch["roots"][0]
                 rm = midi(root)
@@ -297,7 +300,7 @@ class VoicingTest(unittest.TestCase):
                 # subTest so a failure names EVERY non-compliant card, not just
                 # the first one the loop reaches.
                 with self.subTest(deck=deck["id"], card=ch["main"] + ch["sup"]):
-                    self._check_cluster(ch, rm, others, card, midi, instances)
+                    self._check_cluster(ch, rm, others, card, midi, instances, zone)
 
     @staticmethod
     def extension_intervals(symbol):
@@ -326,15 +329,26 @@ class VoicingTest(unittest.TestCase):
             ext |= {2, 5, 9}
         return ext
 
-    def _check_cluster(self, ch, rm, others, card, midi, instances):
+    def _check_cluster(self, ch, rm, others, card, midi, instances, zone):
         ext = self.extension_intervals(ch["main"] + ch["sup"])
 
-        forced = any(not instances(f, below=False) for f in others)
+        # Owner decision 2026-09-15: a tone forces the chord only when it has no
+        # instance above the root AND its highest lower instance is on the TOP
+        # shell. A bottom-shell-only tone takes its bottom field, forces nothing.
+        forced = any(not instances(f, below=False)
+                     and zone(max(instances(f, True), key=midi)) != "bottom"
+                     for f in others)
         for f in others:
             lower, upper = instances(f, True), instances(f, False)
             if not forced:
-                self.assertGreater(midi(f), rm,
-                                   ("unforced card: tone below the root", card, f))
+                if upper:
+                    self.assertGreater(midi(f), rm,
+                                       ("unforced card: tone below the root", card, f))
+                else:
+                    self.assertEqual(midi(f), max(midi(g) for g in lower),
+                                     ("bottom-shell-only tone not at its highest "
+                                      "instance", card, f))
+                    self.assertEqual(zone(f), "bottom", card)
             elif (midi(f) - rm) % 12 in ext:
                 if upper:
                     self.assertEqual(midi(f), min(midi(g) for g in upper),
