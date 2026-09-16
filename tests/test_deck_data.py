@@ -484,6 +484,38 @@ class CanonicalSourceTest(unittest.TestCase):
         self.assertIsNotNone(m, "DECKS JSON not found in index.html")
         self.assertEqual(json.dumps(paths.canonical_decks()), m.group(1))
 
+    def test_sync_decks_check_passes_on_the_committed_tree(self):
+        out = subprocess.run(
+            [sys.executable, os.path.join(paths.TOOLS, "sync_decks.py"), "--check"],
+            capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+
+    def test_sync_decks_check_fails_when_the_canonical_file_drifts(self):
+        # The gate has to FIRE, not merely exist. Mutate a copy of the tree,
+        # not the tree: a test that edits data/decks.json in place and restores
+        # it leaves the repo dirty when it fails.
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(paths.ROOT, tmp, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "*.pdf"))
+            path = os.path.join(tmp, "data", "decks.json")
+            decks = json.load(open(path, encoding="utf-8"))
+            decks[0]["chords"][0]["subtitle"] = "DRIFTED"
+            json.dump(decks, open(path, "w", encoding="utf-8"),
+                      indent=2, ensure_ascii=False)
+            out = subprocess.run(
+                [sys.executable, os.path.join(tmp, "tools", "sync_decks.py"), "--check"],
+                capture_output=True, text=True, cwd=tmp)
+            self.assertEqual(out.returncode, 1, out.stdout + out.stderr)
+            self.assertIn("DECKS", out.stdout + out.stderr)
+
+    def test_sync_decks_rejects_unknown_arguments(self):
+        # Substring matching on argv would let a typo alongside a real flag
+        # select WRITE mode, which on this tool overwrites index.html.
+        out = subprocess.run(
+            [sys.executable, os.path.join(paths.TOOLS, "sync_decks.py"), "--chek"],
+            capture_output=True, text=True)
+        self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
