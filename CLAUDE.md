@@ -80,7 +80,8 @@ instrument. Bottom notes drawn as an outer dashed ring in **x-ray view
 U5 Db4 @60, U6 Ab5 @120. **Bb and Db exist only on the bottom shell.**
 Any chord whose voicing uses a bottom-shell field carries an orange
 "N BOTTOM NOTES" badge, where N counts bottom-shell FIELDS in the voicing -
-not Bb/Db occurrences (Cm7 clusters Eb to U3, so it reads "2 BOTTOM NOTES").
+not Bb/Db occurrences (Cm7 is C4 Eb4 G4 Bb3, so it reads "1 BOTTOM NOTE";
+Eb7 is Eb4 G4 Bb3 Db4, "2 BOTTOM NOTES").
 Pygmy ships Cm7 and Eb7 in two registers each (2026-09-15, owner instruction):
 the LOW VOICING card roots on the bottom shell (Cm7 on C3/U1, Eb7 on Eb3/U3).
 Pitch-class-complete highlighting means both registers light the IDENTICAL
@@ -115,16 +116,17 @@ this by attaching per-instrument images.
    starts at the root - it says nothing about register. Register is fixed by
    the cluster rule: when no non-root tone is forced below the root, every
    non-root tone sits above it and its register is otherwise free (a spread
-   9th above the 7th, like Fm9's G5, is fine); when ANY non-root
-   tone is only available below the root, every CHORD TONE (3rd, 5th, 7th;
-   the 4th of a sus chord; the 6th of a 6-chord) moves to its highest
-   instance below the root, and one with no lower instance stays put.
+   9th above the 7th, like Fm9's G5, is fine); when ANY non-root tone
+   is only available below the root AND its highest lower instance is on the
+   top shell, every CHORD TONE (3rd, 5th, 7th; the 4th of a sus chord; the
+   6th of a 6-chord) moves to its highest instance below the root, and one
+   with no lower instance stays put.
    On such a forced card, EXTENSIONS implied by the chord symbol (add9, 9,
    b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11)
    keep their nearest instance ABOVE the root unless they are themselves
-   forced. Bottom-
-   shell fields count as ordinary instances - a chord tone clusters to the
-   bottom shell if that is its highest lower instance (Cm7 -> Eb3/U3). The
+   forced. A tone whose highest lower instance is on the bottom shell (Pygmy
+   Bb and Db exist only there) takes that field and forces NOTHING: Cm7 is
+   C4 Eb4 G4 Bb3, not a cluster to Eb3/G3 (owner decision 2026-09-15). The
    root and the spelling order never change.
    Provenance: D Amara's three forced cards (G5, Gsus4, Fmaj7) were observed
    to cluster every tone below the root in the commercial reference. The
@@ -133,6 +135,8 @@ this by attaching per-instrument images.
    the reference has no extension chords or bottom shell - and Hijaz and
    Pygmy were retrofitted to the rule at that time (see git history). It is
    enforced by `tests/test_deck_data.py::test_forced_tones_cluster_below_root`.
+   The top-shell clause of the forced test is an OWNER DECISION (2026-09-15)
+   that leaves every Amara and Hijaz card unchanged.
 4. **Highlighted-field rendering:** thin black circle (always), coloured
    band inside at radius 0.87r with stroke 0.24r, inner black hairline at
    0.74r, label auto-fit inside (sized by the label rule in "Design system",

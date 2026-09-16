@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 const core = loadEngine(["core"]).core;
 
 const golden = JSON.parse(
-  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "golden_decks_v2.json"), "utf8"));
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "golden_decks_v3.json"), "utf8"));
 const synthetic = JSON.parse(
   fs.readFileSync(path.join(ROOT, "tests", "fixtures", "synthetic_scales.json"), "utf8"));
 const SPEC = fs.readFileSync(path.join(ROOT, "docs", "ENGINE-SPEC.md"), "utf8");

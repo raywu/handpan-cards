@@ -1,0 +1,17 @@
+# suite: node --test --test-name-pattern ^D2.a.tone.forced.onto.the.bottom.shell.does.not.trigger.clustering$ tests/voicing.test.js
+# kills: the top-shell clause of the D2 forced test (owner 2026-09-15). Here a
+# bottom-shell-only tone forces the chord again, so Pygmy Cm7 clusters to
+# Eb3/G3 instead of reading C4 Eb4 G4 Bb3.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+index 869291e..20a16a3 100644
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -286,7 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // no bottom shell, so the commercial reference is unchanged by this.
+     var forced = false;
+     for (var t = 0; t < tones.length; t += 1) {
+-      if (!tones[t].up.length && tones[t].down[0].top) forced = true;
++      if (!tones[t].up.length) forced = true;
+     }
+ 
+     var picked = [rf.id];

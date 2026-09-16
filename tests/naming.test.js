@@ -29,7 +29,7 @@ function fixture(file) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", file), "utf8"));
 }
 
-const golden = fixture("golden_decks_v2.json");
+const golden = fixture("golden_decks_v3.json");
 const synthetic = fixture("synthetic_scales.json");
 
 // The engine runs in its own node:vm realm, so its values carry that realm's

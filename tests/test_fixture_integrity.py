@@ -11,7 +11,7 @@ import unittest
 from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "fixtures", "golden_decks_v2.json")
+                       "fixtures", "golden_decks_v3.json")
 
 DECK_KEYS = ("id", "name", "sub", "colors", "degrees", "geom", "fields",
              "chords", "maker_string")
@@ -20,8 +20,8 @@ TOP_ZONES = ("ding", "rim", "inner")
 # The canonical serialisation's sha256, pinned here so a fixture edit fails
 # against a constant a reviewer can see in the diff, not only against a number
 # the fixture carries about itself.
-EXPECTED_SHA256 = ("c4c5d1de6ad387b67f4b1cda3929da954f"
-                   "681ddee4174a0fa35ead1073b3d7cf")
+EXPECTED_SHA256 = ("6377b1e0230926a5aa85be066517647ec0"
+                   "f7606b569429804a4420b540ac1787")
 
 
 def chord_counts():
@@ -36,7 +36,7 @@ def chord_counts():
     return {d["id"]: len(d["chords"]) for d in paths.app_decks()}
 
 BUMP = ("Deck data changed. This fixture is frozen on purpose: bump it to "
-        "golden_decks_v3.json and regenerate sha256, do not edit in place.")
+        "golden_decks_v4.json and regenerate sha256, do not edit in place.")
 
 
 def load():
@@ -52,13 +52,13 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
                          "fixture content and its stored sha256 disagree. " + BUMP)
 
-    def test_sha256_is_the_pinned_v2_digest(self):
+    def test_sha256_is_the_pinned_v3_digest(self):
         self.assertEqual(load()["sha256"], EXPECTED_SHA256,
-                         "the v2 corpus digest changed. " + BUMP)
+                         "the v3 corpus digest changed. " + BUMP)
 
     def test_shape_and_card_counts(self):
         doc = load()
-        self.assertEqual(doc["version"], 2)
+        self.assertEqual(doc["version"], 3)
         self.assertEqual(len(doc["decks"]), 3)
         counts = {d["id"]: len(d["chords"]) for d in doc["decks"]}
         self.assertEqual(counts, chord_counts())

@@ -15,7 +15,7 @@ const { loadEngine } = require("./helpers/engine.js");
 const FIXTURES = path.join(__dirname, "fixtures");
 const readFixture = (n) => JSON.parse(fs.readFileSync(path.join(FIXTURES, n), "utf8"));
 
-const GOLDEN = readFixture("golden_decks_v2.json");
+const GOLDEN = readFixture("golden_decks_v3.json");
 const QUALITIES = readFixture("qualities.json");
 const SYNTHETIC = readFixture("synthetic_scales.json");
 
@@ -261,7 +261,8 @@ test("D9 root octave: lowest top-shell instance, else lowest overall", () => {
 test("D2 forced chords cluster chord tones to the highest instance below the root", () => {
   const amara = GOLDEN.decks.find((d) => d.id === "amara");
   // CLAUDE.md rule 3 / plan Premise 2: Amara Fmaj7 is forced (its 7th, E, has
-  // no instance above F4) and ships spelling order F A C E, all below the root.
+  // no instance above F4 and E4 is on the top shell) and ships spelling order
+  // F A C E, all below the root. This is the commercial reference behaviour.
   const fmaj7 = amara.chords.find((c) => c.main === "Fmaj" && c.sup === "7");
   const got = V.choose(amara.fields, pc(midiOf(amara.fields, fmaj7.roots[0])),
     [0, 4, 7, 11]);
@@ -272,65 +273,112 @@ test("D2 forced chords cluster chord tones to the highest instance below the roo
       "every chord tone of a forced chord sits below the root");
   }
 
-  // ENGINE-SPEC section 6: bottom-shell fields are ordinary instances - Pygmy
-  // Cm7 clusters its 3rd to Eb3 on the bottom shell (U3).
+  // HIGHEST, not merely "below": Pygmy Gm7b5 pinned to root G5 is forced by
+  // its 7th (F5 is top-shell and below G5). F has TWO instances below the
+  // root, F5 and F4; the rule names the highest, F5 = field 10. A "lowest
+  // below" reading would give F4 = field 5 and is what this case rejects.
   const pygmy = GOLDEN.decks.find((d) => d.id === "pygmy");
-  // Two Cm7 cards ship (the LOW VOICING alternate is opt-in data); this is the
-  // one the engine reproduces from (root pitch class, interval set).
-  const cm7 = pygmy.chords.find((c) => c.subtitle === "C MINOR 7");
-  const gotCm7 = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, cm7.roots[0])),
-    [0, 3, 7, 10]);
-  assert.deepStrictEqual(plain(gotCm7.value.fields), cm7.fields);
-  assert.strictEqual(zoneOf(pygmy.fields, plain(gotCm7.value.fields)[1]), "bottom");
-
-  // HIGHEST, not merely "below": Pygmy Fm11 (root F4) is the case with TWO
-  // instances below the root for both the 5th (C4, C3) and the 7th (Eb4, Eb3).
-  // The rule names the highest of them, so C4/Eb4 - a "lowest below" reading
-  // would give C3/Eb3 and is what this case exists to reject.
-  const fm11 = pygmy.chords.find((c) => c.main === "Fm" && c.sup === "11");
-  const gotFm11 = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, fm11.roots[0])),
-    [0, 3, 7, 10, 14, 17]);
-  const fm11Ids = plain(gotFm11.value.fields);
-  const fm11Root = midiOf(pygmy.fields, fm11Ids[0]);
-  for (const i of [2, 3]) {
-    const midi = midiOf(pygmy.fields, fm11Ids[i]);
-    assert.ok(midi < fm11Root, `tone ${i} of Fm11 sits below the root`);
-    let highestBelow = -Infinity;
-    for (const key of Object.keys(pygmy.fields)) {
-      const r = pygmy.fields[key];
-      if (r[3] === "ding") continue;
-      if (pc(r[2]) !== pc(midi) || r[2] >= fm11Root) continue;
-      if (r[2] > highestBelow) highestBelow = r[2];
-    }
-    let instancesBelow = 0;
-    for (const key of Object.keys(pygmy.fields)) {
-      const r = pygmy.fields[key];
-      if (r[3] === "ding") continue;
-      if (pc(r[2]) === pc(midi) && r[2] < fm11Root) instancesBelow += 1;
-    }
-    assert.strictEqual(instancesBelow, 2, `tone ${i} of Fm11 has two instances below`);
-    assert.strictEqual(midi, highestBelow,
-      `tone ${i} of Fm11 took ${midi}, not the highest instance below the root`);
+  const g5 = Object.keys(pygmy.fields).map(Number)
+    .find((id) => midiOf(pygmy.fields, id) === 79 && zoneOf(pygmy.fields, id) !== "ding");
+  const gotG = V.choose(pygmy.fields, pc(79), [0, 3, 6, 10], { rootId: g5 });
+  assert.ok(gotG.ok, gotG.code);
+  const ids = plain(gotG.value.fields);
+  const seventh = midiOf(pygmy.fields, ids[3]);
+  assert.ok(seventh < 79, "the 7th of forced Gm7b5 sits below the root");
+  let highestBelow = -Infinity;
+  let instancesBelow = 0;
+  for (const key of Object.keys(pygmy.fields)) {
+    const r = pygmy.fields[key];
+    if (r[3] === "ding") continue;
+    if (pc(r[2]) !== pc(seventh) || r[2] >= 79) continue;
+    instancesBelow += 1;
+    if (r[2] > highestBelow) highestBelow = r[2];
   }
+  assert.strictEqual(instancesBelow, 2, "F has two instances below G5");
+  assert.strictEqual(seventh, highestBelow,
+    `the 7th took ${seventh}, not the highest instance below the root`);
+  // The b3 and b5 exist only on the bottom shell; on a forced chord a chord
+  // tone still takes its highest lower instance, bottom shell included.
+  assert.strictEqual(zoneOf(pygmy.fields, ids[1]), "bottom");
+  assert.strictEqual(zoneOf(pygmy.fields, ids[2]), "bottom");
 });
 
 test("D2 forced chords keep their extensions above the root unless forced too", () => {
-  const pygmy = GOLDEN.decks.find((d) => d.id === "pygmy");
-  const fm11 = pygmy.chords.find((c) => c.main === "Fm" && c.sup === "11");
-  const rootPc = pc(midiOf(pygmy.fields, fm11.roots[0]));
-  // ENGINE-SPEC section 6: Fm11 counts as forced because its 11th forces it.
-  const got = V.choose(pygmy.fields, rootPc, [0, 3, 7, 10, 14, 17]);
-  assert.deepStrictEqual(plain(got.value.fields), fm11.fields);
-
+  const amara = GOLDEN.decks.find((d) => d.id === "amara");
+  // Amara Fmaj9: A, C and E force the chord below F4 (each is top-shell and
+  // has no instance above F4). The 9th, G, has G4 above the root and keeps it.
+  const got = V.choose(amara.fields, pc(65), [0, 4, 7, 11, 14]);
+  assert.ok(got.ok, got.code);
   const ids = plain(got.value.fields);
-  const rootMidi = midiOf(pygmy.fields, ids[0]);
-  // chord tones (3rd, 5th, 7th) below; the 9th above; the 11th, itself forced,
-  // below.
-  assert.ok(midiOf(pygmy.fields, ids[1]) < rootMidi, "3rd clusters below");
-  assert.ok(midiOf(pygmy.fields, ids[2]) < rootMidi, "5th clusters below");
-  assert.ok(midiOf(pygmy.fields, ids[3]) < rootMidi, "7th clusters below");
-  assert.ok(midiOf(pygmy.fields, ids[4]) > rootMidi, "the 9th keeps its instance above");
-  assert.ok(midiOf(pygmy.fields, ids[5]) < rootMidi, "the 11th is itself forced");
+  const rootMidi = midiOf(amara.fields, ids[0]);
+  assert.strictEqual(rootMidi, 65);
+  assert.ok(midiOf(amara.fields, ids[1]) < rootMidi, "3rd clusters below");
+  assert.ok(midiOf(amara.fields, ids[2]) < rootMidi, "5th clusters below");
+  assert.ok(midiOf(amara.fields, ids[3]) < rootMidi, "7th clusters below");
+  assert.ok(midiOf(amara.fields, ids[4]) > rootMidi, "the 9th keeps its instance above");
+  assert.strictEqual(midiOf(amara.fields, ids[4]), 67, "the 9th is the NEAREST above, G4");
+
+  // The forced test is over ANY non-root tone, extensions included. On this
+  // pan Cadd9 from C5 has E5 and G5 above the root, and D only as D4 on the
+  // top shell below it: the 9th alone forces the chord, so E and G cluster
+  // to E4 and G4 and the forced 9th takes D4.
+  const pan = {
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["D", 4, 62, "rim", 270, "1"],
+    "2": ["E", 4, 64, "rim", 225, "2"],
+    "3": ["G", 4, 67, "rim", 315, "3"],
+    "4": ["C", 5, 72, "rim", 180, "4"],
+    "5": ["E", 5, 76, "rim", 0, "5"],
+    "6": ["G", 5, 79, "rim", 135, "6"],
+  };
+  const add9 = V.choose(pan, pc(72), [0, 4, 7, 14], { rootId: 4 });
+  assert.ok(add9.ok, add9.code);
+  assert.deepStrictEqual(plain(add9.value.fields), [4, 2, 3, 1]);
+});
+
+test("D2 a tone forced onto the bottom shell does not trigger clustering", () => {
+  // Owner decision 2026-09-15: the forced test has a top-shell clause. A tone
+  // whose only lower instance is a bottom-shell field takes that field, and
+  // the OTHER tones stay at their nearest instance above the root. Pygmy Bb
+  // and Db exist only on the bottom shell, so Cm7 from C4 is
+  // C4 Eb4 G4 Bb3(U4) - fields [3,4,6,104] - not the old cluster to Eb3/G3.
+  const pygmy = GOLDEN.decks.find((d) => d.id === "pygmy");
+  const cm7 = V.choose(pygmy.fields, pc(60), [0, 3, 7, 10]);
+  assert.ok(cm7.ok, cm7.code);
+  assert.deepStrictEqual(plain(cm7.value.fields), [3, 4, 6, 104]);
+  const ids = plain(cm7.value.fields);
+  assert.strictEqual(zoneOf(pygmy.fields, ids[3]), "bottom");
+  for (const i of [1, 2]) {
+    assert.ok(midiOf(pygmy.fields, ids[i]) > 60, `tone ${i} stays above the root`);
+  }
+
+  // Same rule, five shipped cards: every Pygmy card rooted on the top shell
+  // whose only forced tones are bottom-shell-only now reads nearest-above.
+  const expect = {
+    "Fsus4": [5, 104, 8],
+    "Fm11": [5, 7, 8, 9, 6, 104],
+    "Eb": [4, 6, 104],
+    "Eb7": [4, 6, 104, 105],
+  };
+  for (const name of Object.keys(expect)) {
+    const chord = pygmy.chords.find((c) => c.main + c.sup === name && !/VOICING/.test(c.subtitle));
+    assert.ok(chord, name);
+    const got = V.choose(pygmy.fields, pc(midiOf(pygmy.fields, chord.roots[0])),
+      intervalsOfCard(pygmy, chord));
+    assert.deepStrictEqual(plain(got.value.fields), expect[name], name);
+  }
+
+  // Amara and Hijaz have no bottom shell, so the clause changes nothing there:
+  // every card of both decks still reproduces (the alternates aside).
+  for (const deckId of ["amara", "hijaz"]) {
+    const deck = GOLDEN.decks.find((d) => d.id === deckId);
+    for (const chord of deck.chords) {
+      if (/VOICING/.test(chord.subtitle)) continue;
+      const got = V.choose(deck.fields, pc(midiOf(deck.fields, chord.roots[0])),
+        intervalsOfCard(deck, chord));
+      assert.deepStrictEqual(plain(got.value.fields), chord.fields, cardKey(deck, chord));
+    }
+  }
 });
 
 test("D11 unforced chords take the nearest instance above the root", () => {
