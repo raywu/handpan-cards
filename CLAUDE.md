@@ -164,9 +164,11 @@ this by attaching per-instrument images.
   lines), Nunito Sans (labels/UI). All OFL; app loads from Google Fonts;
   print pipeline embeds TTFs. (Replaced the original Oranienbaum /
   BioRhyme Expanded / Montserrat set.)
-- **Palettes** (root / tone; card border is a TWO-TONE SPLIT: root colour
-  on the top half of the frame, tone colour on the bottom half, hard split
-  at mid-height - deliberately NOT a gradient):
+- **Palettes** (root / tone; card border is a SINGLE-COLOUR, FOUR-SIDED
+  FRAME in the root colour - 2026-09-16 restyle, replacing the earlier
+  split-colour frame. The `gb` / tone-colour plumbing that fed the old
+  border stays wired through both renderers even though the frame no
+  longer draws it, in case a future restyle wants it back):
   - Hijaz: pink `#E0559A` / orange `#E2761B`
   - Pygmy: purple `#6D40A3` / gold `#C9971E` (gold deliberately darkened
     for text contrast on white)

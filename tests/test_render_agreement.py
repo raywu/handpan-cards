@@ -13,6 +13,7 @@ SVG, the print side's from a recording canvas driven by the real `chord_card`.
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import unittest
@@ -38,7 +39,9 @@ class RecordingCanvas:
     def __init__(self):
         self.circles = []
         self.texts = []
+        self.rects = []
         self._stroke = None
+        self._fill = None
         self._dashed = False
         self._font = None
         self._size = 0.0
@@ -47,12 +50,25 @@ class RecordingCanvas:
     def setStrokeColor(self, c):
         self._stroke = _hex(c) if hasattr(c, "red") else str(c)
 
+    def setFillColor(self, c):
+        self._fill = _hex(c) if hasattr(c, "red") else str(c)
+
     def setDash(self, *a):
         self._dashed = bool(a)
 
     def circle(self, x, y, r, stroke=1, fill=0):
         self.circles.append({"x": x, "y": y, "r": r,
                              "stroke": self._stroke, "dashed": self._dashed})
+
+    def roundRect(self, x, y, w, h, r, stroke=1, fill=0):
+        self.rects.append({"x": x, "y": y, "w": w, "h": h,
+                           "fill": self._fill if fill else None,
+                           "stroke": self._stroke if stroke else None})
+
+    def rect(self, x, y, w, h, stroke=1, fill=0):
+        self.rects.append({"x": x, "y": y, "w": w, "h": h,
+                           "fill": self._fill if fill else None,
+                           "stroke": self._stroke if stroke else None})
 
     def setFont(self, name, size, *a, **k):
         self._font = name
@@ -180,6 +196,108 @@ def render_print(deck):
         return out
     finally:
         hifi.BLUE, hifi.GREEN = saved
+
+
+def render_border(deck):
+    """The card's own frame as the PRINT pipeline actually fills it: every
+    distinct fill colour drawn across the frame's full width, in draw order.
+    """
+    saved = (hifi.BLUE, hifi.GREEN)
+    hifi.BLUE, hifi.GREEN = deck["col_root"], deck["col_tone"]
+    try:
+        rec = RecordingCanvas()
+        hifi.chord_card(rec, 0.0, 0.0, deck, 1, deck["chords"][0])
+        bands = [r for r in rec.rects
+                 if r["fill"] and abs(r["w"] - hifi.CW) < 0.01]
+        return [b["fill"] for b in bands]
+    finally:
+        hifi.BLUE, hifi.GREEN = saved
+
+
+def render_border_weight(deck):
+    """The frame's stroke weight, read back from where PRINT cuts the white
+    interior out of the coloured frame - the inner roundRect's offset from
+    the card's own (0, 0) origin equals `bw`."""
+    saved = (hifi.BLUE, hifi.GREEN)
+    hifi.BLUE, hifi.GREEN = deck["col_root"], deck["col_tone"]
+    try:
+        rec = RecordingCanvas()
+        hifi.chord_card(rec, 0.0, 0.0, deck, 1, deck["chords"][0])
+        white = [r for r in rec.rects if r["fill"] == "#FFFFFF"]
+        return white[0]["x"]
+    finally:
+        hifi.BLUE, hifi.GREEN = saved
+
+
+def render_app_border():
+    """The `.face::before` frame rule, read straight out of index.html - the
+    app draws its border in CSS, not SVG, so there is nothing to boot a page
+    for; the rule itself IS the rendering instruction."""
+    with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+        html = fh.read()
+    m = re.search(r"\.face::before\{([^}]*)\}", html)
+    rule = m.group(1)
+    bg = re.search(r"background:([^;]+);", rule).group(1).strip()
+    pad = float(re.search(r"padding:([\d.]+)px", rule).group(1))
+    return {"background": bg, "padding": pad}
+
+
+class BorderAgreementTest(unittest.TestCase):
+    """D8: the card border is a single-colour, four-sided frame in BOTH
+    renderers. Nothing pinned this before - `tools/validate.py` and the rest
+    of this suite compare DATA and label sizes, never the frame - so the
+    two-tone split could (and did) ship unnoticed by every other test here.
+    """
+
+    def test_print_frame_is_a_single_root_coloured_band(self):
+        for deck_id, deck in DECK_BY_ID.items():
+            bands = render_border(deck)
+            self.assertEqual(
+                len(set(bands)), 1,
+                "%s: print frame draws more than one fill colour across its "
+                "full width: %r" % (deck_id, bands))
+            root_hex = _hex(deck["col_root"])
+            self.assertEqual(
+                bands[0], root_hex,
+                "%s: print frame is drawn in %s, not the root colour %s"
+                % (deck_id, bands[0], root_hex))
+
+    def test_app_frame_is_sourced_from_the_root_colour_token(self):
+        app = render_app_border()
+        self.assertNotIn(
+            "gradient", app["background"].lower(),
+            "app frame background is still a gradient: %r" % app["background"])
+        self.assertIn(
+            "--ga", app["background"],
+            "app frame background is not sourced from --ga (root): %r"
+            % app["background"])
+        self.assertNotIn(
+            "--gb", app["background"],
+            "app frame background still references --gb (tone): %r"
+            % app["background"])
+
+    def test_border_weight_grows_by_the_same_relative_amount_in_both_renderers(self):
+        """Print and the app draw the frame in unrelated unit systems (pt
+        vs css px), so absolute weights can never be compared across them -
+        only how much each renderer's OWN weight moved."""
+        OLD_BW, NEW_BW = 2.2, 2.8
+        OLD_PAD, NEW_PAD = 2.5, 3.2
+        print_bw = render_border_weight(decks.HIJAZ)
+        app_pad = render_app_border()["padding"]
+        self.assertAlmostEqual(
+            print_bw, NEW_BW, places=2,
+            msg="print frame weight is %.3f, not the restyled %.3f"
+                % (print_bw, NEW_BW))
+        self.assertAlmostEqual(
+            app_pad, NEW_PAD, places=2,
+            msg="app frame padding is %.3f, not the restyled %.3f"
+                % (app_pad, NEW_PAD))
+        print_ratio = NEW_BW / OLD_BW
+        app_ratio = NEW_PAD / OLD_PAD
+        self.assertAlmostEqual(
+            print_ratio, app_ratio, delta=0.02,
+            msg="border weight grew by a different relative amount in each "
+                "renderer: print x%.3f vs app x%.3f" % (print_ratio, app_ratio))
 
 
 class RenderAgreement(unittest.TestCase):
