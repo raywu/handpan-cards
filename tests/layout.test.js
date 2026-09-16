@@ -541,7 +541,7 @@ test("every name the app draws fits inside the field it labels", () => {
     // NOT asserted: a BOTTOM name over the index number. On a generated deck
     // whose bottom shell is packed tighter than its rim, the solver's own
     // r_bnote falls far enough under r_note that the bottom name lands under
-    // the number ("mixed N=5": 0.0931 vs 0.1216). That inversion comes from
+    // the number ("mixed N=5": 0.0978 vs 0.1216). That inversion comes from
     // the solver's radii, is what main already ships, and belongs to
     // src/engine/layout.js. The three built-in decks ARE asserted, in
     // tests/test_print.py and tests/test_render_agreement.py.
