@@ -13,8 +13,10 @@ would be a mirror, and `tools/validate.py` already does that cross-check
 Highlighting derivation, root/tone non-overlap and "every voicing field is
 lit" belong to validate.py and are deliberately not repeated here.
 """
+import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -463,6 +465,24 @@ class ValidateScriptTest(unittest.TestCase):
             subprocess.run([sys.executable, "-B",
                             os.path.join("tools", "validate.py")],
                            cwd=paths.ROOT, env=env, check=True)
+
+
+class CanonicalSourceTest(unittest.TestCase):
+    """data/decks.json is the source; index.html's DECKS line is its copy."""
+
+    def test_canonical_file_equals_the_payload_embedded_in_index_html(self):
+        self.assertEqual(paths.canonical_decks(), paths.app_decks())
+
+    def test_canonical_reserialises_to_the_embedded_bytes_exactly(self):
+        # The injected form is json.dumps with DEFAULT arguments. Measured
+        # 2026-09-16: default 8567 bytes == the committed payload;
+        # ensure_ascii=False gives 8542 and compact separators 7398, either of
+        # which rewrites the whole line and breaks the identical assertion in
+        # tools/regen_data_mutants.py:158.
+        html = open(paths.INDEX_HTML, encoding="utf-8").read()
+        m = re.search(r"^const DECKS = (\[.*\]);$", html, re.M)
+        self.assertIsNotNone(m, "DECKS JSON not found in index.html")
+        self.assertEqual(json.dumps(paths.canonical_decks()), m.group(1))
 
 
 if __name__ == "__main__":

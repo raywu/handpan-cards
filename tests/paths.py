@@ -5,6 +5,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 FONTS = os.path.join(TOOLS, "fonts")
 INDEX_HTML = os.path.join(ROOT, "index.html")
+CANONICAL = os.path.join(ROOT, "data", "decks.json")
 
 PDFS = {
     "hijaz_full": "CSharp_Hijaz_Orion_9_Cards_Letter.pdf",
@@ -24,3 +25,10 @@ def app_decks():
     if not m:
         raise AssertionError("DECKS JSON not found in index.html")
     return json.loads(m.group(1))
+
+
+def canonical_decks():
+    """The canonical deck data on disk, parsed."""
+    import json
+    with open(CANONICAL, encoding="utf-8") as fh:
+        return json.load(fh)
