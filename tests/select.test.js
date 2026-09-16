@@ -294,11 +294,16 @@ test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
   assert.equal(select.cap(seed.fields), 25,
     "a 12-field pan caps at 25, exactly as before the amendment");
   const deck = built(TWELVE);
-  assert.equal(deck.chords.length, 25, "the deck is trimmed to the 25-card cap");
+  // D1: the cap counts distinct chord NAMES, not raw cards. This 12-field pan
+  // repeats several roots (D, E, G, A), so some surviving names now carry a
+  // HOME card plus a HIGH-register alternate - the deck can therefore hold
+  // more than 25 cards while still capping at 25 distinct names.
+  const names = deck.chords.map(nameOf);
+  const distinctNames = new Set(names);
+  assert.equal(distinctNames.size, 25, "the deck is trimmed to 25 distinct names");
   // Ranking drops the LOWEST-ranked candidates: within the extended tier, the
   // two with the fewest top-shell tones, ties broken by root degree ascending -
   // Amadd9 (degree 5) then Gadd9 (degree 4). Cadd9 (degree 1) survives.
-  const names = deck.chords.map(nameOf);
   assert.ok(!names.includes("Amadd9"), "Amadd9 is trimmed by the cap");
   assert.ok(!names.includes("Gadd9"), "Gadd9 is trimmed by the cap");
   assert.ok(names.includes("Cadd9"), "Cadd9 outranks both and survives");
@@ -321,9 +326,12 @@ test("the cap scales with pan size: the 18-field Pygmy pan caps at 31", () => {
     assert.ok(names.includes(name),
       `${name} ranks inside the size-scaled cap and must survive`);
   }
-  assert.ok(names.length > 25,
+  // D1: the cap counts distinct chord NAMES; a name can carry a HOME card
+  // plus LOW/HIGH alternates, so raw card count is no longer bounded by 31.
+  const distinctNames = new Set(names);
+  assert.ok(distinctNames.size > 25,
     "the size-scaled cap lets the Pygmy deck past the old flat 25");
-  assert.ok(names.length <= 31, "and never past its own cap");
+  assert.ok(distinctNames.size <= 31, "and never past its own cap");
 });
 
 test("the cap formula holds at the structural maximum", () => {
@@ -359,12 +367,16 @@ test("the cap counts EVERY field, bottom shell included", () => {
 test("canonical order: root degree, then tier, then the quality rank", () => {
   // Section 8: roots by scale degree ascending from the tonic; within a root
   // triad, power, sus4, 7th, extended; within a tier by the `rank` field.
+  // This pan repeats the D/E/G/A pitch classes, so root-instance enumeration
+  // (this plan) legitimately produces a HIGH-register alternate immediately
+  // after several HOME cards - the group stays contiguous, and the deck's
+  // 32 raw cards still cap at 25 distinct NAMES (see the cap test above).
   assert.deepEqual(built(TWELVE).chords.map(nameOf), [
     "C", "C5", "Cmaj7", "Cadd9", "C6/9", "Cmaj9",
-    "D5", "Dsus4", "D7sus4",
-    "Em", "E5", "Esus4", "E7sus4", "Em7",
+    "D5", "D5", "Dsus4", "Dsus4", "D7sus4",
+    "Em", "Em", "E5", "E5", "Esus4", "Esus4", "E7sus4", "Em7",
     "G", "G5", "Gsus4", "G6/9",
-    "Am", "A5", "Asus4", "A7sus4", "Am7", "Am9", "Am11"
+    "Am", "A5", "Asus4", "A7sus4", "Am7", "Am9", "Am9", "Am11", "Am11"
   ]);
 });
 
@@ -440,8 +452,12 @@ test("no generated deck exceeds its own size-scaled cap", () => {
     assert.equal(select.cap(seed.fields), cap,
       `${row.name}: cap for ${fieldCount} fields`);
     const deck = built(row.string);
-    assert.ok(deck.chords.length <= cap,
-      `${row.name}: ${deck.chords.length} cards over a cap of ${cap}`);
+    // D1: the cap counts distinct chord NAMES, not raw cards - a name that
+    // survives can still carry a HOME card plus LOW/HIGH alternates, so the
+    // raw card count is no longer bounded by the name cap.
+    const distinctNames = new Set(deck.chords.map(nameOf));
+    assert.ok(distinctNames.size <= cap,
+      `${row.name}: ${distinctNames.size} names over a cap of ${cap}`);
     assert.ok(cap >= 25, `${row.name}: the cap never drops below 25`);
   }
 });
