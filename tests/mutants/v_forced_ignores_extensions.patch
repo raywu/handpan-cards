@@ -1,17 +1,17 @@
 # suite: node --test --test-name-pattern ^D2.forced.chords.keep.their.extensions.above.the.root.unless.forced.too$ tests/voicing.test.js
 # kills: the D2 forced test, which is over ANY non-root tone, chord tones AND
-# extensions alike (ENGINE-SPEC section 6). Here it ignores extensions, so
-# Pygmy Fm11 - forced only by its 11th - stops clustering.
+# extensions alike (ENGINE-SPEC section 6). Here it ignores extensions, so the
+# five-field pan's Cadd9 - forced only by its 9th - stops clustering.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index b25fcbf..38c1194 100644
+index 869291e..1d1f2d3 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
-@@ -256,7 +256,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
- 
+@@ -286,7 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // no bottom shell, so the commercial reference is unchanged by this.
      var forced = false;
      for (var t = 0; t < tones.length; t += 1) {
--      if (!tones[t].up.length) forced = true;
-+      if (tones[t].interval < OCTAVE && !tones[t].up.length) forced = true;
+-      if (!tones[t].up.length && tones[t].down[0].top) forced = true;
++      if (tones[t].interval < OCTAVE && !tones[t].up.length && tones[t].down[0].top) forced = true;
      }
  
      var picked = [rf.id];

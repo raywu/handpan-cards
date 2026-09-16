@@ -41,6 +41,11 @@ def chord(decks, deck_id, main, sup):
     return next(c for c in d["chords"] if c["main"] == main and c["sup"] == sup)
 
 
+def card(decks, deck_id, subtitle):
+    d = next(x for x in decks if x["id"] == deck_id)
+    return next(c for c in d["chords"] if c["subtitle"] == subtitle)
+
+
 # name -> (header lines, [(old, new) exact decks.py replacements], json mutator or None)
 MUTANTS = {
     "b_degree_missing": (
@@ -111,7 +116,7 @@ MUTANTS = {
          "# Pygmy Fsus4 voiced G4 + C5 instead of the bottom-shell Bb3, so the badge",
          "# count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster",
          "# rule is satisfied and only the badge test sees it."],
-        [('("Fsus", "4", "SUSPENDED CHORD", [5, 104, 3], {5}),',
+        [('("Fsus", "4", "SUSPENDED CHORD", [5, 104, 8], {5}),',
           '("Fsus", "4", "SUSPENDED CHORD", [5, 6, 8], {5}),')],
         lambda D: chord(D, "pygmy", "Fsus", "4").update(fields=[5, 6, 8]),
     ),
@@ -126,13 +131,14 @@ MUTANTS = {
     "b_cluster_forced_only": (
         ["# kills: test_forced_tones_cluster_below_root",
          "# suite: python3 -m unittest -k test_forced_tones_cluster_below_root tests.test_deck_data",
-         "# Pygmy Fsus4 put back to its pre-retrofit shape: Bb3 is forced below the",
-         "# root but C is left above at C5 instead of clustering to C4. validate.py,",
-         "# voicing uniqueness and the badge count (still 1) all stay green - only",
-         "# the cluster rule in CLAUDE.md rule 3 catches it."],
-        [('("Fsus", "4", "SUSPENDED CHORD", [5, 104, 3], {5}),',
-          '("Fsus", "4", "SUSPENDED CHORD", [5, 104, 8], {5}),')],
-        lambda D: chord(D, "pygmy", "Fsus", "4").update(fields=[5, 104, 8]),
+         "# Pygmy Cm7 put back to its pre-2026-09-15 cluster: Bb3 is bottom-shell-only",
+         "# and forces nothing, yet Eb and G sit below the root at Eb3/G3. validate.py,",
+         "# voicing uniqueness and the badge count (2, also wrong but asserted by a",
+         "# different test) do not see it - only the cluster rule in CLAUDE.md rule 3",
+         "# catches it."],
+        [('("Cm", "7", "C MINOR 7", [3, 4, 6, 104], {3}),',
+          '("Cm", "7", "C MINOR 7", [3, 103, 1, 104], {3}),')],
+        lambda D: card(D, "pygmy", "C MINOR 7").update(fields=[3, 103, 1, 104]),
     ),
     "b_validate_desync": (
         ["# kills: test_validate_py_passes",
