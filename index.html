@@ -1581,12 +1581,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //
   // D2 forced test: ANY non-root tone - chord tone AND extension alike - has no
   // instance above the root field.
-  //   forced  -> every CHORD TONE moves to its HIGHEST instance below the root
-  //              (bottom-shell fields are ordinary instances); a chord tone with
-  //              no lower instance stays put. EXTENSIONS keep their NEAREST
-  //              instance above the root unless they are themselves forced.
+  //   forced (D2) -> a non-root tone FORCES the chord when it has no instance
+  //              above the root and its highest lower instance is on the top
+  //              shell. Every CHORD TONE (interval < 12) then moves to its
+  //              HIGHEST instance below the root; a chord tone with no lower
+  //              instance stays put. EXTENSIONS keep their NEAREST instance
+  //              above the root unless they are themselves forced.
   //   unforced (D11) -> every non-root tone takes its NEAREST instance above
-  //              the root.
+  //              the root; a tone whose highest lower instance is on the bottom
+  //              shell takes that instance and forces nothing.
   function choose(fields, rootPc, intervals, opts) {
     var list = playable(fields);
     var ivs = reduceIntervals(intervals);
@@ -1616,9 +1619,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       });
     }
 
+    // D2 forced test (owner decision 2026-09-15): a non-root tone forces the
+    // chord only when it has no instance above the root AND its highest lower
+    // instance is on the TOP shell. A tone whose highest lower instance is on
+    // the bottom shell takes that instance and forces nothing. Amara and Hijaz have
+    // no bottom shell, so the commercial reference is unchanged by this.
     var forced = false;
     for (var t = 0; t < tones.length; t += 1) {
-      if (!tones[t].up.length) forced = true;
+      if (!tones[t].up.length && tones[t].down[0].top) forced = true;
     }
 
     var picked = [rf.id];
@@ -1626,7 +1634,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var tone = tones[u];
       var field;
       if (!forced) {
-        field = tone.up[0];
+        field = tone.up.length ? tone.up[0] : tone.down[0];
       } else if (tone.interval < OCTAVE) {
         field = tone.down.length ? tone.down[0] : tone.up[0];
       } else {
