@@ -423,8 +423,8 @@ variant). Hijaz and Amara are unchanged in sheet count.
 |---|---|---|---|---|---|
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | in review | #73 | `bbb9545` | pending | 0 |
-| W3 | not spawned | - | - | - | 0 |
-| W4 | not spawned | - | - | - | 0 |
+| W3 | in review | #72 | `c51fef4` | pending | 0 |
+| W4 | PR open, report pending | #74 | `938c799` | - | 0 |
 | W5 | blocked on W2 | - | - | - | 0 |
 | W6 | blocked on W2+W4 | - | - | - | 0 |
 
@@ -456,6 +456,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 16 | W1-N2: `tools/regen_data_mutants.py:235,239,244` still bare `open()`; :244 writes diffs over non-ASCII `data/decks.json` | reviewer PR #71 | open |
 | 17 | W1-N3: `CLAUDE.md:301` still says sync_decks re-parses JSON; it now compares bytes. Outside W1's ownership | reviewer PR #71 | open |
 | 18 | W1-N4: `tools/regen_data_mutants.py:189` keeps the semantic compare W1 just declared insufficient | reviewer PR #71 | open |
+| 19 | Mutant patches are line-anchored: W3's first attempt put `PRINT_PDFS` next to the DECKS line and turned ~12 patches stale. Any `index.html` insertion near that anchor pays this | W3 report | open |
 
 ## Cycle state
 
@@ -465,8 +466,8 @@ Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 |---|---|---|---|---|---|---|---|---|---|---|
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | harness | `print/blurb-and-border` | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
-| W3 | harness | `app/print-button` | #72 | - | - | working | 0 | no | - | - |
-| W4 | harness | `mobile/audit-pass-1` | - | - | - | - | 0 | no | owner device check | - |
+| W3 | harness | `app/print-button` | #72 | `c51fef4` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
+| W4 | harness | `mobile/audit-pass-1` | #74 | `938c799` | 4/5 pass, mutation gate pending | report not yet returned | 0 | no | owner device check | - |
 | W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
 
