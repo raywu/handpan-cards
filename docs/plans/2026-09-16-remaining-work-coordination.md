@@ -422,7 +422,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | Lane | State | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|
 | W1 | in review | #71 | `c8e603e` | pending | 0 |
-| W2 | not spawned | - | - | - | 0 |
+| W2 | in review | #73 | `bbb9545` | pending | 0 |
 | W3 | not spawned | - | - | - | 0 |
 | W4 | not spawned | - | - | - | 0 |
 | W5 | blocked on W2 | - | - | - | 0 |
@@ -449,6 +449,8 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 10 | Edit-sheet mirror live-preview + two false comments | earlier session | open |
 | 11 | DESIGN.md via /design-consultation | earlier session | open |
 | 12 | Print calibration check, six preset names | owner's desk | open |
+| 13 | W2 edited `tests/fixtures/print_decks_v1.json` (Pygmy blurb 25->27) outside its ownership; consequence of D5, sent to its reviewer to adjudicate | W2 report | open |
+| 14 | Brief to W2 said 8 hand-written `c_*` mutants; 26 exist. Integrator's miscount, not a lane defect | W2 report | open |
 
 ## Cycle state
 
@@ -457,8 +459,8 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
 | W1 | harness | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
-| W2 | harness | `print/blurb-and-border` | - | - | - | - | 0 | no | - | - |
-| W3 | harness | `app/print-button` | - | - | - | - | 0 | no | - | - |
+| W2 | harness | `print/blurb-and-border` | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
+| W3 | harness | `app/print-button` | #72 | - | - | working | 0 | no | - | - |
 | W4 | harness | `mobile/audit-pass-1` | - | - | - | - | 0 | no | owner device check | - |
 | W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
