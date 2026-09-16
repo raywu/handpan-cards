@@ -7,6 +7,17 @@
 # card is present, not its position within the deck) - it is Task 5's own
 # contiguity test that fails, on the real Pygmy deck: Ab's HIGH alternate now
 # leads the group instead of Ab's home card.
+#
+# Narrower than s_rank_group_scoring_collapsed.patch, not wrong: this mutant
+# breaks home-first itself, which the OTHER planned Task 9 Step 3 item 2
+# mutant (collapsing rank()'s group scoring to per-card) does NOT do - see
+# that patch's header for the corrected analysis. An earlier pass on this
+# plan concluded the per-card-scoring mutant was unreachable because a HIGH
+# alternate's own topShellTones can never strictly exceed its home's; that is
+# true but incomplete - EQUALITY between HOME and a HIGH alternate is enough
+# to demote LOW below HIGH while home-first still holds (Pygmy Cm: HOME and
+# HIGH both measure topShellTones=3, LOW measures 1). Keep both mutants: this
+# one kills on home-first, the other on class order (LOW-before-HIGH).
 diff --git a/src/engine/select.js b/src/engine/select.js
 index acf48ca..6aa3c94 100644
 --- a/src/engine/select.js

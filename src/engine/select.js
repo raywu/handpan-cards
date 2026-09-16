@@ -391,6 +391,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (members[m].item.voicingClass === "") home = members[m];
       }
       members.sort(function (a, b) {
+        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, a.item.voicingClass)) {
+          throw new Error("select: unknown voicing class " + JSON.stringify(a.item.voicingClass));
+        }
+        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, b.item.voicingClass)) {
+          throw new Error("select: unknown voicing class " + JSON.stringify(b.item.voicingClass));
+        }
         var ca = CLASS_ORDER[a.item.voicingClass];
         var cb = CLASS_ORDER[b.item.voicingClass];
         if (ca !== cb) return ca - cb;

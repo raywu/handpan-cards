@@ -710,6 +710,20 @@ test("a chord's cards are contiguous, home first", () => {
   }
 });
 
+test("within a chord's group, LOW precedes HIGH (class order, not just contiguity)", () => {
+  // Pygmy Cm is the one shipped chord where all three classes coexist:
+  // HOME [3,4,6], LOW [101,103,1], HIGH [8,9,11]. Contiguity alone (the test
+  // above) is satisfied by either [HOME, LOW, HIGH] or [HOME, HIGH, LOW] -
+  // both keep Cm's three cards together with HOME first. This test pins the
+  // second property Task 5 actually promises: CLASS_ORDER prints HOME, then
+  // LOW, then HIGH, not merely "HOME first, alternates in any order".
+  const deck = built(PYGMY_SEED);
+  const cmCards = deck.chords.filter((c) => c.main + c.sup === "Cm");
+  assert.deepEqual(cmCards.map((c) => voicingClassOf(c.subtitle)),
+    ["", "LOW", "HIGH"],
+    "Pygmy Cm should print HOME, then LOW, then HIGH, in that order");
+});
+
 test("the deck cap counts chord NAMES, so alternates cannot evict a chord", () => {
   const deck = built(PYGMY_SEED);
   const names = new Set(deck.chords.map((c) => c.main + c.sup));
