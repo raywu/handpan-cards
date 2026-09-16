@@ -516,6 +516,31 @@ class CanonicalSourceTest(unittest.TestCase):
             capture_output=True, text=True)
         self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
 
+    def test_validate_py_fails_when_index_html_drifts_from_canonical(self):
+        """Before Task 4 this passes for the WRONG reason.
+
+        Today check 1 compares index.html against tools/decks.py, so editing
+        index.html alone reddens validate.py either way. Once decks.py derives
+        from the canonical file it must still redden - via check 1's
+        data/decks.json comparison, which is the only thing left that can catch
+        a hand-edit of the generated DECKS line.
+        """
+        try:
+            import reportlab  # noqa: F401
+        except ImportError:
+            self.skipTest("reportlab not installed; validate.py needs it")
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(paths.ROOT, tmp, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "*.pdf"))
+            index = os.path.join(tmp, "index.html")
+            html = open(index, encoding="utf-8").read()
+            html = html.replace("C# MAJOR", "C# MAJOUR", 1)
+            open(index, "w", encoding="utf-8").write(html)
+            out = subprocess.run(
+                [sys.executable, "-B", os.path.join(tmp, "tools", "validate.py")],
+                capture_output=True, text=True, cwd=tmp)
+            self.assertNotEqual(out.returncode, 0, out.stdout + out.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

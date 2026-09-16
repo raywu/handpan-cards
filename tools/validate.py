@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """Data-integrity validation for the handpan chord cards.
 
-Checks that the app's embedded DECKS JSON and tools/decks.py agree
-field-for-field, that every card satisfies the highlighting invariants,
-and that no German card copy sneaks back in. Needs reportlab (for the
-Color class in decks.py) but NOT the tools/fonts TTFs: hifi is stubbed
-out before decks.py is imported, since it is only needed at build time.
+data/decks.json is the SOURCE of deck data. Check 1 gates index.html's
+`const DECKS` line as a current generated copy of it - the check-4 analogue
+for data, and the only thing that catches a hand-edit or a merge resolved
+inside that line. Check 1b is a GUARD ON THE ADAPTER in tools/decks.py: the
+deck dicts are derived from the same canonical file, so they cannot drift by
+construction, and what 1b actually catches is a print-only overlay key
+shadowing a canonical one. Checks 2-4 cover the highlighting invariants, the
+German card copy, and engine-region drift.
+
+Needs reportlab (for the Color class in decks.py) but NOT the tools/fonts
+TTFs: hifi is stubbed out before decks.py is imported, since it is only
+needed at build time.
 """
 import json
 import os
@@ -18,6 +25,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.modules.setdefault("hifi", types.ModuleType("hifi"))  # skip font registration
 import decks as D  # noqa: E402
 import inline_engine  # noqa: E402
+import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
 
 PY = {"hijaz": D.HIJAZ, "pygmy": D.PYGMY, "amara": D.AMARA}
 GERMAN = re.compile(r"\b(MOLL|VERMINDERT|HALBVERMINDERT|LEGENDE)\b|\bDUR\b")
@@ -29,12 +37,17 @@ def hexc(color):
 
 
 def main():
-    html = open(os.path.join(ROOT, "index.html")).read()
-    m = re.search(r"^const DECKS = (\[.*\]);$", html, re.M)
-    assert m, "DECKS JSON not found in index.html"
-    app = json.loads(m.group(1))
+    # 1. index.html's DECKS line is a current copy of data/decks.json.
+    #    data/decks.json is the SOURCE; this is the check-4 analogue for data.
+    assert sync_decks.main(["sync_decks.py", "--check"]) == 0, \
+        "index.html's DECKS line is stale - run `python3 tools/sync_decks.py`"
+    app = sync_decks.canonical()
+    print("1. index.html DECKS == data/decks.json: OK")
 
-    # 1. app JSON == decks.py: fields, geometry, chords, degrees, colors
+    # 1b. tools/decks.py's deck dicts carry the canonical data unchanged.
+    #     After the adapter lands this cannot drift by construction, so the
+    #     check is a GUARD ON THE ADAPTER (a print overlay key must never
+    #     shadow a canonical one), not a drift detector between two copies.
     for d in app:
         py = PY[d["id"]]
         spec = py["spec"]
@@ -54,7 +67,7 @@ def main():
         assert d["colors"]["tone"] == hexc(py["col_tone"]), (d["id"], "tone colour")
         ga, gb = py["grad"]
         assert d["colors"]["ga"] == hexc(ga) and d["colors"]["gb"] == hexc(gb)
-    print("1. app JSON == decks.py (fields, geom, chords, degrees, colours): OK")
+    print("1b. tools/decks.py deck dicts == data/decks.json: OK")
 
     # 2. invariants over every card
     total = 0
@@ -76,7 +89,8 @@ def main():
     print("2. invariants over all %d cards: OK" % total)
 
     # 3. English-only card copy
-    for name in ("index.html", "tools/decks.py", "tools/hifi.py"):
+    for name in ("index.html", "tools/decks.py", "tools/hifi.py",
+                 "data/decks.json"):
         hits = GERMAN.findall(open(os.path.join(ROOT, name)).read())
         assert not hits, (name, hits)
     print("3. no German card copy: OK")
