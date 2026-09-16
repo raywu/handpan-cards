@@ -6,11 +6,11 @@
 # green: the check that stood there re-declared the ratio as a literal and
 # compared it against itself, so no ratio value could falsify it.
 diff --git a/index.html b/index.html
-index 2c421ff..f3516fb 100644
+index c03540b..87596b1 100644
 --- a/index.html
 +++ b/index.html
-@@ -3369,7 +3369,7 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
-    chose no-shrink, so the 5% is baked in and print grows to meet the app.
+@@ -3523,7 +3523,7 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    "Where the ratios come from, and what actually changed".
     Safe above the solver's budget because ring clearance is computed from
     f_num alone, and fit_note shrinks anything that truly overflows. */
 -const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
