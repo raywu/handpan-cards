@@ -1,11 +1,25 @@
 # kills: test_no_doubled_pitch_classes
 # suite: python3 -m unittest -k test_no_doubled_pitch_classes tests.test_deck_data
 # Hijaz B MINOR ADD 9 doubles B (B3 + B4) in one voicing.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..3789bd5 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -231,7 +231,8 @@
+           2,
+           4,
+           6,
+-          3
++          3,
++          8
+         ],
+         "roots": [
+           2
 diff --git a/index.html b/index.html
-index d7ace2b..61c88cc 100644
+index 00fc903..cff3191 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -14,16 +28,3 @@ index d7ace2b..61c88cc 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..6da9ce4 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -29,7 +29,7 @@ HIJAZ_CHORDS = [
-     ("Bm", "", "B MINOR", [2, 4, 6], {2}),
-     ("Bm", "", "B MINOR - HIGH VOICING", [8, 4, 6], {8}),
-     ("B5", "", "POWER CHORD", [2, 6], {2}),
--    ("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3], {2}),
-+    ("Bm", "add9", "B MINOR ADD 9", [2, 4, 6, 3, 8], {2}),
-     ("Bm", "6/9", "B MINOR 6/9", [2, 4, 6, 7, 3], {2}),
-     ("G#\u00b0", "", "DIMINISHED", [1, 2, 4], {1}),
-     ("G#m7", "b5", "HALF-DIMINISHED ( = Bm6 )", [1, 2, 4, 6], {1}),

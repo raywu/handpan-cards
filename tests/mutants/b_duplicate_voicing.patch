@@ -2,11 +2,24 @@
 # suite: python3 -m unittest -k test_voicings_unique_within_deck tests.test_deck_data
 # Amara Csus4 given C major's exact field list - a duplicate card that
 # validate.py cannot see (it only rejects duplicate fields WITHIN a card).
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..4523471 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -1164,7 +1164,7 @@
+         "subtitle": "SUSPENDED CHORD",
+         "fields": [
+           2,
+-          5,
++          4,
+           6
+         ],
+         "roots": [
 diff --git a/index.html b/index.html
-index d7ace2b..5706a3a 100644
+index 00fc903..952966e 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -15,16 +28,3 @@ index d7ace2b..5706a3a 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..42eb63e 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -157,7 +157,7 @@ AMARA_CHORDS = [
-     ("Gsus", "4", "SUSPENDED CHORD", [6, 2, 3], {6}),
-     ("C", "", "C MAJOR", [2, 4, 6], {2}),
-     ("C5", "", "POWER CHORD", [2, 6], {2}),
--    ("Csus", "4", "SUSPENDED CHORD", [2, 5, 6], {2}),
-+    ("Csus", "4", "SUSPENDED CHORD", [2, 4, 6], {2}),
-     ("F", "", "F MAJOR", [5, 7, 8], {5}),
-     ("F5", "", "POWER CHORD", [5, 8], {5}),
-     ("Fmaj", "7", "F MAJOR 7", [5, 1, 2, 4], {5}),

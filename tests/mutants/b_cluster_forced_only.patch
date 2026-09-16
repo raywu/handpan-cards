@@ -5,11 +5,26 @@
 # voicing uniqueness and the badge count (2, also wrong but asserted by a
 # different test) do not see it - only the cluster rule in CLAUDE.md rule 3
 # catches it.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..dc442bd 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -781,8 +781,8 @@
+         "subtitle": "C MINOR 7",
+         "fields": [
+           3,
+-          4,
+-          6,
++          103,
++          1,
+           104
+         ],
+         "roots": [
 diff --git a/index.html b/index.html
-index d7ace2b..f142dc4 100644
+index 00fc903..37a2f43 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -18,16 +33,3 @@ index d7ace2b..f142dc4 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..d44be22 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -99,7 +99,7 @@ PYGMY_CHORDS = [
-     ("C5", "", "POWER CHORD", [3, 6], {3}),
-     ("Csus", "4", "SUSPENDED CHORD", [3, 5, 6], {3}),
-     ("Cm", "7", "C MINOR 7 - LOW VOICING", [101, 103, 1, 104], {101}),
--    ("Cm", "7", "C MINOR 7", [3, 4, 6, 104], {3}),
-+    ("Cm", "7", "C MINOR 7", [3, 103, 1, 104], {3}),
-     ("Db", "", "Db MAJOR", [105, 5, 7], {105}),
-     ("Dbmaj", "7", "Db MAJOR 7", [105, 5, 7, 8], {105}),
-     ("Eb", "", "Eb MAJOR - LOW VOICING", [103, 1, 104], {103}),

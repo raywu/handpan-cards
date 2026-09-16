@@ -3,11 +3,24 @@
 # Pygmy Fsus4 voiced G4 + C5 instead of the bottom-shell Bb3, so the badge
 # count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster
 # rule is satisfied and only the badge test sees it.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..b764ab1 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -563,7 +563,7 @@
+         "subtitle": "SUSPENDED CHORD",
+         "fields": [
+           5,
+-          104,
++          6,
+           8
+         ],
+         "roots": [
 diff --git a/index.html b/index.html
-index d7ace2b..a2b33bf 100644
+index 00fc903..ab8d2f7 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -16,16 +29,3 @@ index d7ace2b..a2b33bf 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..2182ef1 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -83,7 +83,7 @@ PYGMY_SPEC = {
- PYGMY_CHORDS = [
-     ("Fm", "", "F MINOR", [5, 7, 8], {5}),
-     ("F5", "", "POWER CHORD", [5, 8], {5}),
--    ("Fsus", "4", "SUSPENDED CHORD", [5, 104, 8], {5}),
-+    ("Fsus", "4", "SUSPENDED CHORD", [5, 6, 8], {5}),
-     ("Fm", "7", "F MINOR 7", [5, 7, 8, 9], {5}),
-     ("Fm", "9", "F MINOR 9", [5, 7, 8, 9, 11], {5}),
-     ("Fm", "11", "F MINOR 11", [5, 7, 8, 9, 6, 104], {5}),

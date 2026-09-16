@@ -1,11 +1,23 @@
 # kills: test_degrees_cover_chord_roots
 # suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data
 # Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..0aa1e5d 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -912,7 +912,6 @@
+     "degrees": {
+       "2": "i",
+       "9": "v",
+-      "7": "IV",
+       "0": "bVII",
+       "5": "bIII"
+     },
 diff --git a/index.html b/index.html
-index d7ace2b..c317a2f 100644
+index 00fc903..eec96c9 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -14,16 +26,3 @@ index d7ace2b..c317a2f 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..f61a4a8 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -170,7 +170,7 @@ AMARA = dict(
-     y_note=30.0, y_num=14.0, has_bottom=False,
-     legend_demo=(5, 3), grad=(Color(0.043, 0.482, 0.459), Color(0.867, 0.561, 0.000)),
-     col_root=Color(0.043, 0.482, 0.459), col_tone=Color(0.867, 0.561, 0.000),
--    degrees={2: "i", 9: "v", 7: "IV", 0: "bVII", 5: "bIII"},
-+    degrees={2: "i", 9: "v", 0: "bVII", 5: "bIII"},
-     blurb=["D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
-            "16 CHORDS - ONE CARD PER CHORD"],
-     legend_lines=["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",

@@ -1,13 +1,35 @@
 # kills: test_layouts_match_spec
 # suite: python3 -m unittest -k test_layouts_match_spec tests.test_deck_data
 # Hijaz rim angles 4 (180) and 6 (135) swapped in BOTH index.html and
-# tools/decks.py, so validate.py's cross-check still passes: only the
+# data/decks.json, so validate.py's cross-check still passes: only the
 # CLAUDE.md layout table catches it.
+diff --git a/data/decks.json b/data/decks.json
+index d9c47b8..122e9fe 100644
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -67,7 +67,7 @@
+         4,
+         62,
+         "rim",
+-        180,
++        135,
+         "4"
+       ],
+       "5": [
+@@ -83,7 +83,7 @@
+         4,
+         66,
+         "rim",
+-        135,
++        180,
+         "6"
+       ],
+       "7": [
 diff --git a/index.html b/index.html
-index d7ace2b..ff66001 100644
+index 00fc903..56eedfd 100644
 --- a/index.html
 +++ b/index.html
-@@ -3242,7 +3242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  <!-- engine end -->
  
  <script>
@@ -16,19 +38,3 @@ index d7ace2b..ff66001 100644
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
-diff --git a/tools/decks.py b/tools/decks.py
-index 25e4709..f56b6bb 100644
---- a/tools/decks.py
-+++ b/tools/decks.py
-@@ -12,9 +12,9 @@ HIJAZ_SPEC = {
-     1:  ("G#", 3, 56, "rim", 270, "1"),
-     2:  ("B",  3, 59, "rim", 225, "2"),
-     3:  ("C#", 4, 61, "rim", 315, "3"),
--    4:  ("D",  4, 62, "rim", 180, "4"),
-+    4:  ("D",  4, 62, "rim", 135, "4"),
-     5:  ("F",  4, 65, "rim",   0, "5"),
--    6:  ("F#", 4, 66, "rim", 135, "6"),
-+    6:  ("F#", 4, 66, "rim", 180, "6"),
-     7:  ("G#", 4, 68, "rim",  45, "7"),
-     8:  ("B",  4, 71, "rim",  90, "8"),
- }
