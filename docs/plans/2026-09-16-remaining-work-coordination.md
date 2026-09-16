@@ -424,7 +424,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | in review | #73 | `bbb9545` | pending | 0 |
 | W3 | in review | #72 | `c51fef4` | pending | 0 |
-| W4 | PR open, report pending | #74 | `938c799` | - | 0 |
+| W4 | CI bounce fixed by integrator, re-running | #74 | `d8866d5` | pending | 1 |
 | W5 | blocked on W2 | - | - | - | 0 |
 | W6 | blocked on W2+W4 | - | - | - | 0 |
 
@@ -457,6 +457,11 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 17 | W1-N3: `CLAUDE.md:301` still says sync_decks re-parses JSON; it now compares bytes. Outside W1's ownership | reviewer PR #71 | open |
 | 18 | W1-N4: `tools/regen_data_mutants.py:189` keeps the semantic compare W1 just declared insufficient | reviewer PR #71 | open |
 | 19 | Mutant patches are line-anchored: W3's first attempt put `PRINT_PDFS` next to the DECKS line and turned ~12 patches stale. Any `index.html` insertion near that anchor pays this | W3 report | open |
+| 20 | W4-F1: a stale landscape-clipping comment/expectation in `tests/e2e.test.js` did not reproduce during the mobile audit. Confirm the test and its comment are accurate against current main | W4 report | open |
+| 21 | W4-F2: deck-header print links were not on main at W4's base `839d70e`, so the mobile checklist marked them "not applicable". Re-audit them once W3 (#72) lands | W4 report | open |
+| 22 | W4-F3: `interactive-widget=resizes-content` (`index.html:5-13`, pre-existing) is Chromium-only; Safari ignores it, which is why W4's `visualViewport` JS is load-bearing rather than redundant. Informational | W4 report | open |
+| 23 | W4-F4: `env(safe-area-inset-*)` reads 0 under headless emulation, so the insets look structurally right but are unconfirmed on hardware. Rolls into the owner device check | W4 report | open |
+| 24 | Re-anchoring a mutant patch is the AUTHORING lane's job, not a later cycle's. W4 stopped at diagnosis because `tests/mutants/` was outside its ownership row; the integrator had to take the bounce after the lane had already exited. Extend a lane's ownership to the patches its own edit staleness-breaks, at spawn time | integrator, W4 bounce | open |
 
 ## Cycle state
 
@@ -467,7 +472,7 @@ Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | harness | `print/blurb-and-border` | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
 | W3 | harness | `app/print-button` | #72 | `c51fef4` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
-| W4 | harness | `mobile/audit-pass-1` | #74 | `938c799` | 4/5 pass, mutation gate pending | report not yet returned | 0 | no | owner device check | - |
+| W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 mutation gate FAIL at `938c799` | bounced, no reviewer spawned | 1 | no | owner device check | - |
 | W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
 
