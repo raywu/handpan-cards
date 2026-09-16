@@ -11,7 +11,7 @@ import unittest
 from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "fixtures", "golden_decks_v3.json")
+                       "fixtures", "golden_decks_v4.json")
 
 DECK_KEYS = ("id", "name", "sub", "colors", "degrees", "geom", "fields",
              "chords", "maker_string")
@@ -20,18 +20,25 @@ TOP_ZONES = ("ding", "rim", "inner")
 # The canonical serialisation's sha256, pinned here so a fixture edit fails
 # against a constant a reviewer can see in the diff, not only against a number
 # the fixture carries about itself.
-EXPECTED_SHA256 = ("6377b1e0230926a5aa85be066517647ec0"
-                   "f7606b569429804a4420b540ac1787")
+#
+# 2026-09-16 (engine adoption, owner-approved deck-data change): bumped v3
+# -> v4. All three decks now ship the scale engine's generated output
+# (18/27/16 -> 19/52/25 chords); this fixture is frozen so exactly this kind
+# of change fails loudly rather than being regenerated silently - bumping the
+# version and the digest here, in the same PR that changes data/decks.json,
+# is the loud failure this fixture exists to force.
+EXPECTED_SHA256 = ("d9fe93bd3c8cbbe366498cdd4c2101af6c9d262964f72624319af346"
+                   "b929861e")
 
 
 def chord_counts():
     """Card counts per deck, read from the live decks via tests.paths.
 
-    The 18/27/16 literals are asserted against CLAUDE.md once, in
+    The 19/52/25 literals are asserted against CLAUDE.md once, in
     tests/test_deck_data.py. Repeating them here would be a second copy free to
     drift; what this suite must prove is that the FROZEN corpus still holds the
     same cards the app does, so it derives the counts instead of restating them.
-    The total is still pinned to the spec's 61 below.
+    The total is still pinned to the spec's 96 below.
     """
     return {d["id"]: len(d["chords"]) for d in paths.app_decks()}
 
@@ -58,11 +65,11 @@ class TestFixtureSelfAssertion(unittest.TestCase):
 
     def test_shape_and_card_counts(self):
         doc = load()
-        self.assertEqual(doc["version"], 3)
+        self.assertEqual(doc["version"], 4)
         self.assertEqual(len(doc["decks"]), 3)
         counts = {d["id"]: len(d["chords"]) for d in doc["decks"]}
         self.assertEqual(counts, chord_counts())
-        self.assertEqual(sum(counts.values()), 61)
+        self.assertEqual(sum(counts.values()), 96)
         for d in doc["decks"]:
             self.assertEqual(tuple(sorted(d)), tuple(sorted(DECK_KEYS)), d["id"])
 

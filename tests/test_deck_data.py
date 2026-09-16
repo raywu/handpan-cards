@@ -89,14 +89,16 @@ LAYOUTS = {
     ],
 }
 
-# CLAUDE.md > "Decks:" - chord counts per deck, 61 cards in total.
-# Pygmy went 25 -> 27 on 2026-09-15 (owner instruction): the two low-register
-# sevenths in SEVENTH_REGISTERS below.
-CHORD_COUNTS = {"hijaz": 18, "pygmy": 27, "amara": 16}
+# CLAUDE.md > "Decks:" - chord counts per deck, 96 cards in total.
+# 2026-09-16 (D7/D10/D11, engine adoption): all three decks now ship the
+# scale engine's generated output. Hijaz 18 -> 19, Pygmy 27 -> 52 (31 distinct
+# chord names, D10 amended), Amara 16 -> 25 (D11, fully re-ranked).
+CHORD_COUNTS = {"hijaz": 19, "pygmy": 52, "amara": 25}
 
 # CLAUDE.md > "Scale degrees per deck", keyed by note name.
 DEGREES = {
-    "hijaz": {"C#": "I", "D": "bII", "F#": "iv", "G#": "v°", "B": "bvii"},
+    "hijaz": {"C#": "I", "D": "bII", "F": "iii°", "F#": "iv", "G#": "v°",
+              "B": "bvii"},
     "pygmy": {"F": "i", "Ab": "III", "Bb": "iv", "C": "v", "Db": "VI",
               "Eb": "VII", "G": "ii°"},
     "amara": {"D": "i", "A": "v", "G": "IV", "C": "bVII", "F": "bIII"},
@@ -105,34 +107,64 @@ DEGREES = {
 # Bottom notes used by each Pygmy voicing, in card order - the number the
 # orange "N BOTTOM NOTES" badge announces. Zero means the card carries no
 # badge at all.
+# 2026-09-16 (engine adoption, D10 amendment): Pygmy grew from 27 cards / 25
+# names to 52 cards / 31 names - the engine's root-instance enumeration ships
+# every register of a chord name rather than the hand-curated subset. Order
+# and counts below are the engine's generated output for the maker string
+# `(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5`.
 PYGMY_BADGE = [
     0,  # Fm
     0,  # F5
     1,  # Fsus4
+    1,  # F7sus4
     0,  # Fm7
     0,  # Fm9
-    1,  # Fm11
-    0,  # Ab
-    0,  # Ab high voicing
-    0,  # Abmaj7
-    1,  # Abmaj9
-    2,  # Bbm
-    2,  # Bbm7
-    2,  # Cm low voicing
-    0,  # Cm
-    0,  # Cm high voicing
-    0,  # C5
-    0,  # Csus4
-    3,  # Cm7 low voicing (C3 + Eb3 + Bb3)
-    1,  # Cm7 (Bb3 is the only bottom-shell field; Eb and G sit above C4)
-    1,  # Db
-    1,  # Dbmaj7
-    2,  # Eb low voicing
-    1,  # Eb
-    3,  # Eb7 low voicing
-    2,  # Eb7 (Bb3 + Db4, both bottom-shell-only)
     2,  # G dim
     2,  # Gm7b5
+    0,  # Ab
+    0,  # Ab - high voicing (top shell)
+    1,  # Ab - high voicing (bottom shell, Ab5)
+    0,  # Ab5 power chord
+    0,  # Ab5 power chord - high voicing (top shell)
+    1,  # Ab5 power chord - high voicing (bottom shell, Ab5)
+    1,  # Absus4
+    1,  # Abmaj7sus4
+    0,  # Abmaj7
+    0,  # Abmaj7 - high voicing (top shell)
+    1,  # Abmaj7 - high voicing (bottom shell, Ab5)
+    2,  # Bbm
+    1,  # Bb5 power chord
+    1,  # Bbsus4
+    1,  # Bb7sus4
+    2,  # Bbm7
+    0,  # Cm
+    2,  # Cm - low voicing
+    0,  # Cm - high voicing
+    0,  # C5 power chord
+    1,  # C5 power chord - low voicing
+    0,  # C5 power chord - high voicing
+    0,  # Csus4
+    1,  # Csus4 - low voicing
+    0,  # Csus4 - high voicing
+    1,  # C7sus4
+    2,  # C7sus4 - low voicing
+    1,  # Cm7
+    3,  # Cm7 - low voicing (C3 + Eb3 + Bb3)
+    1,  # Db
+    1,  # Db - low voicing
+    1,  # Db5 power chord
+    1,  # Db5 power chord - low voicing
+    1,  # Dbmaj7
+    1,  # Dbmaj7 - low voicing
+    1,  # Eb
+    2,  # Eb - low voicing
+    1,  # Eb5 power chord
+    1,  # Ebsus4
+    2,  # Ebsus4 - low voicing
+    2,  # Eb7sus4
+    3,  # Eb7sus4 - low voicing
+    2,  # Eb7 (Bb3 + Db4, both bottom-shell-only)
+    3,  # Eb7 - low voicing
 ]
 
 # Pygmy's two seventh chords each exist in two registers, and the owner asked
@@ -148,9 +180,12 @@ PYGMY_BADGE = [
 #   bottom-shell fields.
 #
 # Both were legal under CLAUDE.md rule 3 all along and simply absent.
+# 2026-09-16: the engine's naming.js appends an enharmonic equivalence note
+# to Cm7's subtitle ("( = Eb6 )") that the hand-authored data did not carry;
+# the field lists and roots are unchanged.
 SEVENTH_REGISTERS = [
-    ("Cm", "7", "C MINOR 7 - LOW VOICING", [101, 103, 1, 104], 101),
-    ("Cm", "7", "C MINOR 7", [3, 4, 6, 104], 3),
+    ("Cm", "7", "C MINOR 7 ( = Eb6 ) - LOW VOICING", [101, 103, 1, 104], 101),
+    ("Cm", "7", "C MINOR 7 ( = Eb6 )", [3, 4, 6, 104], 3),
     ("Eb", "7", "Eb DOMINANT 7 - LOW VOICING", [103, 1, 104, 105], 103),
     ("Eb", "7", "Eb DOMINANT 7", [4, 6, 104, 105], 4),
 ]
@@ -193,7 +228,7 @@ class LayoutTest(unittest.TestCase):
     def test_deck_inventory(self):
         got = {d["id"]: len(d["chords"]) for d in decks()}
         self.assertEqual(got, CHORD_COUNTS)
-        self.assertEqual(sum(got.values()), 61, "61 cards total")
+        self.assertEqual(sum(got.values()), 96, "96 cards total")
 
     def test_midi_matches_note_name(self):
         for deck in decks():
@@ -246,7 +281,7 @@ class VoicingTest(unittest.TestCase):
                             - field_of(deck, root)[2]) % 12
                 self.assertEqual(interval, 7,
                                  (deck["id"], ch["main"], "fifth above root"))
-        self.assertEqual(found, 9, "power chords across the three decks")
+        self.assertEqual(found, 19, "power chords across the three decks")
 
     def test_voicings_unique_within_deck(self):
         """One card per voicing. Duplicate pitch-class SETS are deliberate
@@ -428,13 +463,40 @@ class PygmyBottomShellTest(unittest.TestCase):
                 self.assertEqual(ch["roots"], [root])
 
     def test_low_voicing_subtitles_are_unambiguous(self):
-        """No two Pygmy cards may read the same, or the deck cannot say which
-        register it means. Adding Eb7 in the normal register is what forced
-        the existing Eb7 card to be renamed to '- LOW VOICING'."""
+        """Every repeated Pygmy subtitle must still mean a genuinely
+        different voicing (a distinct field list).
+
+        Two families of repeats are expected. The generic subtitles (POWER
+        CHORD, SUSPENDED CHORD, SUSPENDED DOMINANT 7, each with a LOW/HIGH
+        VOICING suffix) always repeated by design. 2026-09-16 (engine
+        adoption) adds a second family: three Pygmy chords - Ab MAJOR,
+        Ab5's POWER CHORD, and Ab MAJOR 7 - now exist in THREE registers
+        (a top-shell voicing plus two HIGH-labelled voicings, one rooted on
+        the rim at Ab4 and one rooted on the bottom shell at Ab5), because
+        the engine's naming (src/engine/naming.js) only distinguishes LOW
+        vs HIGH and has no third label for a second HIGH register. The two
+        HIGH cards for each of those three chords therefore print the same
+        subtitle text; they remain distinguishable by fields, root and the
+        bottom-note badge. This is an accepted consequence of engine
+        adoption (see docs/SCALE_ENGINE_PLAN.md), not a naming defect to
+        fix here - src/engine/*.js is out of this lane's scope."""
         subs = [ch["subtitle"] for ch in self.deck["chords"]]
         dupes = sorted({s for s in subs if subs.count(s) > 1})
-        self.assertEqual(dupes, ["POWER CHORD", "SUSPENDED CHORD"],
-                         "only the two generic subtitles may repeat")
+        allowed = {
+            "POWER CHORD", "SUSPENDED CHORD", "SUSPENDED DOMINANT 7",
+            "POWER CHORD - LOW VOICING", "SUSPENDED CHORD - LOW VOICING",
+            "SUSPENDED DOMINANT 7 - LOW VOICING",
+            "Ab MAJOR - HIGH VOICING", "POWER CHORD - HIGH VOICING",
+            "Ab MAJOR 7 - HIGH VOICING",
+        }
+        self.assertEqual(set(dupes), allowed,
+                         "unexpected subtitle collision(s)")
+        for sub in dupes:
+            cards = [ch for ch in self.deck["chords"] if ch["subtitle"] == sub]
+            field_lists = {tuple(ch["fields"]) for ch in cards}
+            self.assertEqual(len(field_lists), len(cards),
+                             (sub, "duplicate subtitle must still be a "
+                                    "distinct voicing"))
 
     def test_pitch_class_set_is_complete_f_natural_minor(self):
         names = {v[0] for v in self.deck["fields"].values()}

@@ -36,15 +36,17 @@ SPEC_CROP_MARK = 8.0           # crop-mark tick length
 SPEC_CROP_INSET = 6.0          # ticks start 6 pt from the page edge
 TOL = 0.01
 
-# Page counts are pinned by CLAUDE.md / tests/CONTRACT.md: full 3/4/2,
-# printer-only 2/3/2.
+# Page counts, computed from each deck's card count padded up to a multiple
+# of 9 (hifi.build pads with blanks). 2026-09-16 (engine adoption): Hijaz
+# 18->19, Pygmy 27->52, Amara 16->25 chords, so full is now 3/7/3 and
+# printer-only is 3/6/3 (was 3/4/2 and 2/3/2).
 JOBS = [
     ("hijaz_full", decks.HIJAZ, False, 3),
-    ("pygmy_full", decks.PYGMY, False, 4),
-    ("amara_full", decks.AMARA, False, 2),
-    ("hijaz_print", decks.HIJAZ, True, 2),
-    ("pygmy_print", decks.PYGMY, True, 3),
-    ("amara_print", decks.AMARA, True, 2),
+    ("pygmy_full", decks.PYGMY, False, 7),
+    ("amara_full", decks.AMARA, False, 3),
+    ("hijaz_print", decks.HIJAZ, True, 3),
+    ("pygmy_print", decks.PYGMY, True, 6),
+    ("amara_print", decks.AMARA, True, 3),
 ]
 
 # Heavily tracked strings extract glyph-spaced ("L E G E N D"), so the German

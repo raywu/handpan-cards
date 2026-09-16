@@ -136,7 +136,7 @@ MUTANTS = {
          "# different test) do not see it - only the cluster rule in CLAUDE.md rule 3",
          "# catches it."],
         [],
-        lambda D: card(D, "pygmy", "C MINOR 7").update(fields=[3, 103, 1, 104]),
+        lambda D: card(D, "pygmy", "C MINOR 7 ( = Eb6 )").update(fields=[3, 103, 1, 104]),
     ),
     "b_decks_json_desync": (
         ["# kills: test_validate_py_passes",
