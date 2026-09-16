@@ -665,6 +665,66 @@ function run() {
     }
   });
 
+  /* The card's own keydown handler treats Space and Enter as "flip", and it
+     is bound to #card, so it fires for a key event that BUBBLES from any
+     descendant. The wrapper's onclick="event.stopPropagation()" guards the
+     mouse path only - keydown is a separate listener on a separate phase.
+     Without a target guard, Enter on a focused print link is swallowed by
+     preventDefault() before the browser activates the anchor: no PDF opens
+     AND the card flips, which in NAME->NOTES mode silently reveals the very
+     answer the user was studying. A wrong action, not a no-op. */
+  test("Enter on a print link opens the PDF and does not flip the card", async () => {
+    await freshLoad();
+    await b.eval(`
+      window.__printLinkActivated = false;
+      document.addEventListener("click", e => {
+        const a = e.target && e.target.closest && e.target.closest(".prints a");
+        if (a) { window.__printLinkActivated = true; e.preventDefault(); }
+      }, true);
+      document.querySelector("#front .prints a").focus();
+      return true;
+    `);
+    await b.key("Enter", "Enter", 13);
+    const m = await b.eval(`
+      return {
+        activated: window.__printLinkActivated,
+        flipped: document.getElementById("card").classList.contains("flip"),
+      };
+    `);
+    assert.strictEqual(m.flipped, false,
+      "Enter on a print link flipped the card - the card's keydown handler is " +
+      "swallowing events that bubble up from the link");
+    assert.strictEqual(m.activated, true,
+      "Enter on a print link never activated the anchor - preventDefault() ran first");
+  });
+
+  /* headerHTML() feeds all four faces, so .prints renders into #front AND
+     #back. The flip is a CSS transform: both faces stay in the DOM, and the
+     hidden one carries aria-hidden="true". Focusable content inside an
+     aria-hidden subtree is a standard axe violation, and a keyboard user
+     tabs into two invisible links. The base had zero focusable elements in
+     either face, so this is the feature's own regression. */
+  test("only the showing face's print links are in the tab order", async () => {
+    await freshLoad();
+    const count = () => b.eval(`
+      const q = f => [...document.querySelectorAll("#" + f + " .prints a")]
+        .filter(a => a.tabIndex >= 0).length;
+      return { front: q("front"), back: q("back") };
+    `);
+
+    const shut = await count();
+    assert.strictEqual(shut.front, 2, "the showing face lost its print links from the tab order");
+    assert.strictEqual(shut.back, 0,
+      `${shut.back} print link(s) inside the aria-hidden #back face are still focusable`);
+
+    await b.click("#card");
+    await b.settle();
+    const open = await count();
+    assert.strictEqual(open.back, 2, "after the flip the showing face's links are not tabbable");
+    assert.strictEqual(open.front, 0,
+      `${open.front} print link(s) inside the now-hidden #front face are still focusable`);
+  });
+
   /* ---------------------------------------------------------------- *
    * the scale sheet (Phase 3)
    *
