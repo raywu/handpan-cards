@@ -24,12 +24,12 @@
 # unreachable: it is not - only the STRICTLY-GREATER-THAN version of it
 # (an alternate scoring higher than its own home) is.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index acf48ca..1f69e17 100644
+index 053dd98..1f69e17 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
-@@ -373,34 +373,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -373,40 +373,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    var CLASS_ORDER = {"": 0, LOW: 1, HIGH: 2};
-
+ 
    function rank(fields, list, tonicPc) {
 -    var groups = {};
 -    var order = [];
@@ -49,6 +49,12 @@ index acf48ca..1f69e17 100644
 -        if (members[m].item.voicingClass === "") home = members[m];
 -      }
 -      members.sort(function (a, b) {
+-        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, a.item.voicingClass)) {
+-          throw new Error("select: unknown voicing class " + JSON.stringify(a.item.voicingClass));
+-        }
+-        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, b.item.voicingClass)) {
+-          throw new Error("select: unknown voicing class " + JSON.stringify(b.item.voicingClass));
+-        }
 -        var ca = CLASS_ORDER[a.item.voicingClass];
 -        var cb = CLASS_ORDER[b.item.voicingClass];
 -        if (ca !== cb) return ca - cb;
@@ -66,7 +72,7 @@ index acf48ca..1f69e17 100644
        });
      }
      decorated.sort(function (a, b) {
-@@ -415,10 +393,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -421,10 +393,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        return a.at - b.at;
      });
      var out = [];
@@ -77,4 +83,4 @@ index acf48ca..1f69e17 100644
 +    for (i = 0; i < decorated.length; i += 1) out.push(decorated[i].item);
      return out;
    }
-
+ 

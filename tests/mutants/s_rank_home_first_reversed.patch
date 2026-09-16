@@ -19,11 +19,11 @@
 # HIGH both measure topShellTones=3, LOW measures 1). Keep both mutants: this
 # one kills on home-first, the other on class order (LOW-before-HIGH).
 diff --git a/src/engine/select.js b/src/engine/select.js
-index acf48ca..6aa3c94 100644
+index 053dd98..cf560d5 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
-@@ -393,7 +393,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       members.sort(function (a, b) {
+@@ -399,7 +399,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         }
          var ca = CLASS_ORDER[a.item.voicingClass];
          var cb = CLASS_ORDER[b.item.voicingClass];
 -        if (ca !== cb) return ca - cb;
