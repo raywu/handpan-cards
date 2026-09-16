@@ -711,11 +711,14 @@ test("a chord's cards are contiguous, home first", () => {
 });
 
 test("within a chord's group, LOW precedes HIGH (class order, not just contiguity)", () => {
-  // Pygmy ships THREE chords where all three classes coexist: Cm
-  // (HOME [3,4,6], LOW [101,103,1], HIGH [8,9,11]), C5
-  // (HOME [3,6], LOW [101,1], HIGH [8,11]) and Csus4
-  // (HOME [3,5,6], LOW [101,5,1], HIGH [8,10,11]). Contiguity alone (the
-  // test above) is satisfied by either [HOME, LOW, HIGH] or
+  // The engine derives THREE Pygmy chords where all three classes coexist:
+  // Cm (HOME [3,4,6], LOW [101,103,1], HIGH [8,9,11]), C5 (HOME [3,6],
+  // LOW [101,1], HIGH [8,11]) and Csus4 (HOME [3,5,6], LOW [101,5,1],
+  // HIGH [8,10,11]). Only Cm's three cards are in the shipped deck today;
+  // C5's and Csus4's alternates are engine output pending owner adoption
+  // (the `extra` inventory in tests/fixtures/divergence_v1.json). The test
+  // asserts class ORDER, which holds regardless of adoption. Contiguity
+  // alone (the test above) is satisfied by either [HOME, LOW, HIGH] or
   // [HOME, HIGH, LOW] - both keep a chord's three cards together with HOME
   // first. This test pins the second property Task 5 actually promises,
   // on every one of the three: CLASS_ORDER prints HOME, then LOW, then
