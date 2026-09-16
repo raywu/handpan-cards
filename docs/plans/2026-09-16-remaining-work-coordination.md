@@ -423,7 +423,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 |---|---|---|---|---|---|
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | merged | #73 | `bbb9545` | PASS_WITH_NITS | 0 |
-| W3 | in review | #72 | `c51fef4` | pending | 0 |
+| W3 | CI bounce fixed by integrator, re-running | #72 | `f6242cd` | FAIL (P1+P2), fixed | 1 |
 | W4 | CI bounce fixed by integrator, re-running | #74 | `d8866d5` | pending | 1 |
 | W5 | blocked on W2 | - | - | - | 0 |
 | W6 | blocked on W2+W4 | - | - | - | 0 |
@@ -434,6 +434,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 |---|---|---|---|---|
 | #71 | W1 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations | merged `4a06641`; nits filed as queue rows 15-18 |
 | #73 | W2 | PASS_WITH_NITS | 0 blocking, 4 nits (N1-N4), 1 boundary edit adjudicated NOT a violation | merged `7329033`; nits filed as queue rows 25-28; criterion 10 to the owner as row 29 |
+| #72 | W3 | FAIL | 2 blocking (P1 Enter on a print link flips the card instead of opening the PDF; P2 the hidden face's print links stay in the tab order inside an aria-hidden subtree) | bounced; authoring lane unreachable, integrator fixed both at `f6242cd` with two new e2e tests and two re-anchored mutants; fresh reviewer pending |
 
 ## Queue
 
@@ -478,7 +479,7 @@ Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 |---|---|---|---|---|---|---|---|---|---|---|
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
-| W3 | harness | `app/print-button` | #72 | `c51fef4` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
+| W3 | harness (unreachable) | `app/print-button` | #72 | `f6242cd` | 2026-09-16 CI pending at `f6242cd` | reviewer FAIL at `c51fef4`; integrator fixed P1+P2, awaiting fresh reviewer | 1 | no | - | - |
 | W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 mutation gate FAIL at `938c799` | bounced, no reviewer spawned | 1 | no | owner device check | - |
 | W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
