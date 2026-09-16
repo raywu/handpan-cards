@@ -437,6 +437,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | #72 | W3 | FAIL | 2 blocking (P1 Enter on a print link flips the card instead of opening the PDF; P2 the hidden face's print links stay in the tab order inside an aria-hidden subtree) | bounced; authoring lane unreachable, integrator fixed both at `f6242cd` with two new e2e tests and two re-anchored mutants; fresh reviewer pending |
 | #72 | W3 | PASS_WITH_NITS (fresh reviewer, at `f6242cd`) | 0 blocking, 4 nits (N1-N4), 0 boundary violations. Laundered-green check resolved CLEAN: `b255b1b` does describe fixes it lacks, but `f6242cd` restores them and both are live at the reviewed head, so CI's green is real. 9 of 10 mutants spent, 7 killed by the lane's own e2e tests | merged `bc9980a`; nits filed as queue rows 37-40 |
 | #74 | W4 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations. Independently confirmed the integrator's `d8866d5` re-anchor is faithful: all three patches mutate the identical lines they mutated at `839d70e`, `# kills:`/`# suite:` headers byte-identical, all three verified clean-green / mutant-red locally (including the browser-driven one against real Chrome). No red gate laundered green | NOT merged - held for the owner's device check; nits filed as queue rows 31-36 |
+| #75 | W5 | CI FAIL (no reviewer spawned) | `data integrity` red at `5d6bf26`: `tools/boot_sim.js:36` hardcodes `if (cards !== 61)`, and the adoption raises the total to 96 cards. Other four checks green at the same SHA | bounced to the still-live lane 2026-09-16; attempt 1 of 2 consumed. A red CI makes the review moot before it starts, so no reviewer was spawned |
 
 ## Queue
 
@@ -484,10 +485,11 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 40 | W3-N4: `index.html:3889`'s `removeAttribute("tabindex")` restore is redundant - `render()` rewrites both faces' innerHTML at `:3867-3868` first, so the shown face's anchors are always fresh elements with no tabindex. Mutant M3 survived. Harmless and defensive, but not load-bearing | reviewer PR #72 | open |
 | 41 | **CHROME_BIN is set-able on this machine** - `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, and the e2e suite runs locally in ~70s. Every past "browser-dependent, so it moves to the integrator's desk" call in this workstream was avoidable. Export it in future lane and reviewer briefs. Known local flake: `buttons and arrow keys step through the deck and wrap` (CDP `Input.dispatchMouseEvent` timeout) passes in isolation and is green in CI | reviewer PR #72 | open |
 | 42 | The repo's gstack learnings store holds `handpan-card-keydown-swallows-child-link-activation` (confidence 9/10), still citing the PRE-FIX line `index.html:4590`. Now fixed and merged at `bc9980a`. Close or update it so a future reviewer does not re-flag fixed code | reviewer PR #72 | open |
+| 43 | **OWNER DECISION NEEDED before PR #75 merges: W5's adoption takes the shipped card count from 61 to 96.** Surfaced by the `data integrity` CI failure, not by the lane's report. The project CLAUDE.md says deck data is not to be altered without explicit owner instruction; the scale-engine plan authorizes the adoption in principle, but a 57% breadth increase is a product call the owner has not seen the number for. Do not merge #75 on a green CI alone - put the count, and a sample of what the 35 new cards are, in front of the owner first | integrator, PR #75 CI | open |
 
 ## Cycle state
 
-Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, PR #73)
+Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, PR #73), `bc9980a` (W3, PR #72). Reviewer worktrees for W3 and W4 swept 2026-09-16 under the standing cleanup auth; only W4's and W5's lane worktrees remain.
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -495,7 +497,7 @@ Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, P
 | W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
 | W3 | released | `app/print-button` (deleted) | #72 | `f6242cd` | 2026-09-16 CI 5/5 pass at `f6242cd` | PASS_WITH_NITS | 1 | yes `bc9980a` | - | no |
 | W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 CI 5/5 pass at `d8866d5` | PASS_WITH_NITS (0 blocking, 6 nits, 0 boundary violations) | 1 | no | **owner iPhone 14 / iOS 26.6 device check** | yes |
-| W5 | swarm worktree | `engine/adopt-generated-decks` | - | - | - | spawned 2026-09-16 off `main` @ `4760d37` (W1+W2 merged) | 0 | no | - | - |
+| W5 | swarm worktree | `engine/adopt-generated-decks` | #75 | `5d6bf26` | 2026-09-16 CI 4/5 - `data integrity` FAIL | CI FAIL, bounced to lane (no reviewer) | 1 | no | its own fix push | yes |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
 
 Wave 1 spawned 2026-09-16 off `main` @ `839d70e` (the doc commit; base content
