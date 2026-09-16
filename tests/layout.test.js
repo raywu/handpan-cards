@@ -492,15 +492,42 @@ function advance(str) {
   return w;
 }
 
+/* The three shape numbers pan()'s label() uses - the baseline drop, the
+ * octave tspan's relative size, and its dy - READ OFF A REAL RENDER rather
+ * than restated here. label() is an inner function of pan(), so the test
+ * calls pan() through the booted app and solves for the ratios from the
+ * <text> it emits: a change to any of them moves this measurement instead of
+ * leaving a stale literal behind.
+ *
+ * The ding of a deck with no `ding_dy` is drawn at cy = 0 exactly (pan()
+ * passes `(g.ding_dy || 0) * R`), which is what makes the baseline ratio
+ * recoverable from the emitted `y` alone. The deck used is asserted to have
+ * no ding_dy, so the derivation cannot silently start measuring an offset. */
+function labelShape() {
+  const app = boot();
+  const geom = app.get("JSON.stringify(DECKS[0].geom)");
+  assert.equal(JSON.parse(geom).ding_dy, undefined,
+    "DECKS[0] grew a ding_dy - its ding is no longer drawn at cy 0 and the "
+    + "baseline ratio can no longer be read off the emitted y");
+  const svg = app.get("pan(DECKS[0], DECKS[0].chords[0])");
+  const m = svg.match(
+    /<text[^>]*\by="([-\d.]+)"[^>]*\bfont-size="([\d.]+)"[^>]*>[^<]*<tspan\s+font-size="([\d.]+)"\s+dy="([\d.]+)"/);
+  assert.ok(m, "pan() emitted no name label in the shape this test reads");
+  const [, y, fs, subFs, dy] = m.map(Number);
+  return { base: y / fs, sub: subFs / fs, dy: dy / fs };
+}
+
+const SHAPE = labelShape();
+
 /* The ink box pan()'s label() puts inside a field, as {halfW, up, down} in R
  * units, relative to the CENTRE of the field circle. label() sets the name at
- * `fs` on a baseline at cy + fs*0.34 and the octave as a tspan at fs*0.66
- * dropped a further fs*0.18. */
+ * `fs` on a baseline at cy + fs*SHAPE.base and the octave as a tspan at
+ * fs*SHAPE.sub dropped a further fs*SHAPE.dy. */
 function inkBox(name, oct, fs) {
-  const sub = fs * 0.66;
+  const sub = fs * SHAPE.sub;
   const halfW = (advance(name) * fs + advance(oct) * sub) / 2;
-  const base = fs * 0.34;
-  return { halfW, up: ASCENT * fs - base, down: base + fs * 0.18 + DESCENT * sub };
+  const base = fs * SHAPE.base;
+  return { halfW, up: ASCENT * fs - base, down: base + fs * SHAPE.dy + DESCENT * sub };
 }
 
 /** The furthest any corner of that box sits from the centre of the field. */
