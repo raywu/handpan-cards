@@ -1,0 +1,28 @@
+# kills: the landscape deck strip scrolls rather than clips, at both ends
+# suite: node --test --test-name-pattern ^the.landscape.deck.strip.scrolls.rather.than.clips..at.both.ends$ tests/e2e.test.js
+# .decks goes overflow-x:auto -> hidden. The sibling mutant
+# e_decks_strip_cannot_scroll.patch uses `clip` and records in its own header
+# that `hidden` would have SURVIVED: an overflow:hidden box in Chrome is
+# still programmatically scrollable, so nav.scrollLeft moves, maxScroll
+# equals the overflow exactly, and both ends land flush. Every behavioural
+# probe in the test reports a healthy scroller.
+#
+# What `hidden` actually removes is the user's half of it - no scrollbar, no
+# drag, no wheel, no touch fling - so the 41px and 218px of chip that the
+# narrow landscape rows push past the edge become unreachable by any gesture
+# while remaining reachable from a script. That is why the test now asserts
+# the computed overflow-x directly and not only its consequences, and this
+# mutant is the proof that the direct assertion is the only thing catching it.
+diff --git a/index.html b/index.html
+index 77d0b3d..8fba33b 100644
+--- a/index.html
++++ b/index.html
+@@ -104,7 +104,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ /* The chip row scrolls horizontally and never wraps; auto margins on the end
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+-.decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
++.decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:hidden; scrollbar-width:none;
+   -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}

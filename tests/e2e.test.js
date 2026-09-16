@@ -1732,6 +1732,7 @@ function run() {
             sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll,
             atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2),
             chips: nav.children.length,
+            overflowX: getComputedStyle(nav).overflowX,
             bodySw: document.body.scrollWidth, bodyCw: document.body.clientWidth,
           };
         `);
@@ -1747,6 +1748,18 @@ function run() {
         if (over > 1 && Math.abs(m.maxScroll - over) > 1) {
           bad.push(`${vw}x${vh}: .decks overflows by ${over}px but scrolls only ` +
             `${m.maxScroll}px - ${over - m.maxScroll}px of chip is unreachable`);
+        }
+        // And the rule itself, not only its consequences. `overflow-x:hidden`
+        // passes every behavioural probe above - a hidden box in Chrome is
+        // still programmatically scrollable, so scrollLeft moves and both ends
+        // land flush - while giving a FINGER nothing to grab: no scrollbar, no
+        // drag, no wheel. Only `auto` and `scroll` are user-scrollable, so the
+        // computed value is asserted directly.
+        if (m.overflowX !== "auto" && m.overflowX !== "scroll") {
+          bad.push(`${vw}x${vh}: .decks computes overflow-x:${m.overflowX}. ` +
+            "Only auto and scroll let a user scroll the strip; clip visibly " +
+            "truncates it, and hidden leaves it scriptable but untouchable, " +
+            "which every other assertion in this test would call a pass");
         }
         // Both ends land flush. Negative = the chip sits outside the box even
         // at the extreme of the scroll range, i.e. it can never be tapped.
@@ -1781,6 +1794,23 @@ function run() {
         `(${narrow.sw} <= ${narrow.cw}): ${JSON.stringify(seen, null, 2)}. If a ` +
         "layout change really did buy that, index.html's landscape comment - " +
         "which states the strip scrolls and by how much - is now the stale one.");
+
+      // The other half of that comment's claim, which nothing used to cover:
+      // "with the title out the strip gets the whole width, and on the two
+      // WIDER rows it then fits". Stated, like the line above, as a SIGN and
+      // not as the measured 652/652 and 1006/1006 - scrollWidth reports
+      // max(content, clientWidth), so a row that fits reads sw == cw whatever
+      // the chips actually measure, and a row that does not reads strictly
+      // wider. That makes it font-metric independent in the direction that
+      // matters: only a real overflow can fail it.
+      for (const row of ["926x428", "1280x500"]) {
+        const wide = seen[row];
+        assert.ok(wide.sw <= wide.cw + 1,
+          `at ${row} the deck strip no longer fits (${wide.sw} > ${wide.cw}), ` +
+          "so a chip is reachable only by scrolling. index.html's landscape " +
+          "comment claims both wider rows fit with a custom deck on the strip; " +
+          `one of the two is now wrong: ${JSON.stringify(seen, null, 2)}`);
+      }
     } finally {
       await b.setViewport(900, 900, false);
     }
