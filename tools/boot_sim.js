@@ -33,5 +33,5 @@ for (const d of DECKS) {
     throw new Error(d.id + " root colour not present in render");
 }
 app.els.shuffle.onclick.call(app.els.shuffle);
-if (cards !== 61) throw new Error("expected 61 cards, exercised " + cards);
+if (cards !== 96) throw new Error("expected 96 cards, exercised " + cards);
 console.log("exercised", cards, "cards x 2 modes; no German, SVG + deck colours present, shuffle OK");

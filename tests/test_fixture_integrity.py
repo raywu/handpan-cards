@@ -1,4 +1,4 @@
-"""The frozen 61-card corpus. Engine tests read this fixture, never the live DECKS.
+"""The frozen 96-card corpus (v4). Engine tests read this fixture, never the live DECKS.
 
 A deliberate deck-data change must bump the fixture version and regenerate the
 sha256 - it is never regenerated from the engine.
