@@ -328,6 +328,12 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
   text-align:right; max-width:55%; text-transform:uppercase}
+/* Sits below .hdr, not inside it - .hdr's height is unaffected. Opens the
+   deck's committed PDFs as-is (D9): no generation, no build step. */
+.prints{display:flex; justify-content:flex-end; gap:var(--sp-2); padding:2px 13px 0}
+.prints a{font:600 7px/1.4 "Nunito Sans"; letter-spacing:.08em; color:var(--tone);
+  text-decoration:none; white-space:nowrap}
+.prints a:hover, .prints a:focus-visible{text-decoration:underline}
 .prompt{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:0 16px 26px}
 .bigname{font-family:Marcellus, serif; color:#545454; line-height:.95; text-align:center}
@@ -3790,12 +3796,31 @@ function pan(d, ch) {
 }
 
 /* ---------------- card faces ---------------- */
+// Literal basenames of the already-committed print PDFs (repo root), keyed by
+// built-in deck id. Not string-built from d.name/d.id and not stored in
+// data/decks.json - see CLAUDE.md's print pipeline and the PR that added
+// this: that file's deck keys are owned by the print-pipeline lane and are
+// regenerated, so a filename field there would be silently dropped. Only the
+// three built-in decks have committed PDFs; a generated/custom deck has none.
+const PRINT_PDFS = {
+  hijaz: { cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf", printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf" },
+  pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },
+  amara: { cards: "D_Amara_9_Cards_Letter.pdf", printerOnly: "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf" },
+};
 function headerHTML(d, ch, n) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
+  const pdfs = PRINT_PDFS[d.id];
+  // A sibling row below .hdr, not a third flex child inside it: .hdr's own
+  // box (and so the deck name's available width/line count) is untouched by
+  // this feature - see the print-button lane's e2e test.
+  const prints = pdfs ? `<div class="prints" onclick="event.stopPropagation()">
+      <a href="${esc(pdfs.cards)}" target="_blank" rel="noopener">FULL DECK PDF</a>
+      <a href="${esc(pdfs.printerOnly)}" target="_blank" rel="noopener">PRINT-ONLY PDF</a>
+    </div>` : "";
   return `<div class="hdr">
     <div class="l">${esc(d.name)}<br><span class="num">#${n}</span>
       ${deg ? `&nbsp;<span class="deg">${esc(deg)}</span>` : ""}</div>
-    <div class="r">${esc(ch.subtitle)}</div></div>`;
+    <div class="r">${esc(ch.subtitle)}</div></div>${prints}`;
 }
 function nameHTML(ch, big) {
   const len = (ch.main + ch.sup).length;
@@ -3853,6 +3878,15 @@ function render() {
   const away  = document.getElementById(flipped ? "front" : "back");
   away.setAttribute("aria-hidden", "true");
   shown.removeAttribute("aria-hidden");
+  // aria-hidden alone does not remove a link from the tab order, and
+  // headerHTML() renders .prints into BOTH faces - so a keyboard user would
+  // tab into two invisible links, and a screen reader would meet focusable
+  // content inside an aria-hidden subtree.
+  // Scoped through document, not through the face element: the face is the
+  // node whose innerHTML was just replaced, and the unit suite's DOM stub
+  // serves selectors from the document only.
+  for (const a of document.querySelectorAll("#" + away.id + " .prints a")) a.tabIndex = -1;
+  for (const a of document.querySelectorAll("#" + shown.id + " .prints a")) a.removeAttribute("tabindex");
   cardEl.setAttribute("aria-describedby", shown.id);
 }
 
@@ -4562,7 +4596,15 @@ function step(dir) {
   flipped = false; render();
 }
 card.addEventListener("click", flip);
-card.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });
+// Bound to #card, so it fires for keys that BUBBLE from any descendant.
+// .prints' onclick="event.stopPropagation()" guards the mouse path only:
+// without this target check, Enter on a focused print link is swallowed by
+// preventDefault() before the anchor activates - no PDF, and the card flips
+// instead, revealing the answer in NAME->NOTES mode.
+card.addEventListener("keydown", e => {
+  if (e.target && e.target.closest && e.target.closest("a, button")) return;
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
+});
 document.getElementById("prev").onclick = () => step(-1);
 document.getElementById("next").onclick = () => step(1);
 document.getElementById("shuffle").onclick = function () {

@@ -574,6 +574,158 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * print links (D9): the deck header opens the already-committed PDFs
+   * as-is, two relative links per built-in deck - no generation, no
+   * client-side PDF library, no server. Basenames are the real files
+   * committed at the repo root (`ls *.pdf`), hardcoded here rather than
+   * derived from deck name/id so a rename on either side cannot silently
+   * agree with itself.
+   * ---------------------------------------------------------------- */
+  const EXPECTED_PDFS = {
+    hijaz: {
+      cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf",
+      printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf",
+    },
+    pygmy: {
+      cards: "F3_Low_Pygmy_18_Cards_Letter.pdf",
+      printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf",
+    },
+    amara: {
+      cards: "D_Amara_9_Cards_Letter.pdf",
+      printerOnly: "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf",
+    },
+  };
+
+  test("the deck header links to both committed PDFs for every deck, with relative hrefs", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+
+    for (let i = 0; i < meta.length; i++) {
+      await selectDeck(i, meta);
+      const id = meta[i].id;
+      const expected = EXPECTED_PDFS[id];
+      assert.ok(expected, `no expected PDF pair recorded for deck ${id} - update EXPECTED_PDFS`);
+
+      const links = await b.eval(`
+        return [...document.querySelectorAll("#front .prints a")]
+          .map(a => ({ href: a.getAttribute("href"), text: a.textContent.trim() }));
+      `);
+
+      assert.strictEqual(links.length, 2,
+        `deck ${id}: expected exactly 2 print links in the header, found ${links.length}`);
+
+      for (const l of links) {
+        assert.ok(!l.href.startsWith("/"),
+          `deck ${id}: href "${l.href}" is root-absolute - GitHub Pages serves under /<repo>/`);
+        assert.ok(!/^[a-z]+:/i.test(l.href),
+          `deck ${id}: href "${l.href}" looks absolute/schemed, expected a relative path`);
+      }
+
+      const hrefs = links.map(l => l.href).sort();
+      const wanted = [expected.cards, expected.printerOnly].sort();
+      assert.deepStrictEqual(hrefs, wanted,
+        `deck ${id}: print link hrefs ${JSON.stringify(hrefs)} != committed PDFs ${JSON.stringify(wanted)}`);
+    }
+  });
+
+  test("the print links sit outside .hdr and do not grow the deck-name box", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    await b.setViewport(380, 800, true);
+    await b.settle();
+
+    try {
+      for (let i = 0; i < meta.length; i++) {
+        await selectDeck(i, meta);
+        const m = await b.eval(`
+          const hdr = document.querySelector("#front .hdr");
+          const l = hdr.querySelector(".l");
+          const prints = document.querySelector("#front .prints");
+          return {
+            hdrChildren: hdr.children.length,
+            nameLines: l.getBoundingClientRect().height,
+            lineHeight: parseFloat(getComputedStyle(l).lineHeight),
+            printsInsideHdr: hdr.contains(prints),
+          };
+        `);
+        assert.strictEqual(m.hdrChildren, 2,
+          `${meta[i].id}: .hdr gained a child - the print links must not join its flex row`);
+        assert.strictEqual(m.printsInsideHdr, false,
+          `${meta[i].id}: .prints is nested inside .hdr`);
+        // The deck name + "#n deg" is authored as one two-line block (a <br>
+        // between them); it must stay exactly two lines, not wrap to three.
+        assert.ok(
+          m.nameLines <= m.lineHeight * 2 + 1,
+          `${meta[i].id}: .hdr .l is ${m.nameLines}px tall (line-height ${m.lineHeight}px) - ` +
+            `the deck name wrapped past its normal two lines`,
+        );
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* The card's own keydown handler treats Space and Enter as "flip", and it
+     is bound to #card, so it fires for a key event that BUBBLES from any
+     descendant. The wrapper's onclick="event.stopPropagation()" guards the
+     mouse path only - keydown is a separate listener on a separate phase.
+     Without a target guard, Enter on a focused print link is swallowed by
+     preventDefault() before the browser activates the anchor: no PDF opens
+     AND the card flips, which in NAME->NOTES mode silently reveals the very
+     answer the user was studying. A wrong action, not a no-op. */
+  test("Enter on a print link opens the PDF and does not flip the card", async () => {
+    await freshLoad();
+    await b.eval(`
+      window.__printLinkActivated = false;
+      document.addEventListener("click", e => {
+        const a = e.target && e.target.closest && e.target.closest(".prints a");
+        if (a) { window.__printLinkActivated = true; e.preventDefault(); }
+      }, true);
+      document.querySelector("#front .prints a").focus();
+      return true;
+    `);
+    await b.key("Enter", "Enter", 13);
+    const m = await b.eval(`
+      return {
+        activated: window.__printLinkActivated,
+        flipped: document.getElementById("card").classList.contains("flip"),
+      };
+    `);
+    assert.strictEqual(m.flipped, false,
+      "Enter on a print link flipped the card - the card's keydown handler is " +
+      "swallowing events that bubble up from the link");
+    assert.strictEqual(m.activated, true,
+      "Enter on a print link never activated the anchor - preventDefault() ran first");
+  });
+
+  /* headerHTML() feeds all four faces, so .prints renders into #front AND
+     #back. The flip is a CSS transform: both faces stay in the DOM, and the
+     hidden one carries aria-hidden="true". Focusable content inside an
+     aria-hidden subtree is a standard axe violation, and a keyboard user
+     tabs into two invisible links. The base had zero focusable elements in
+     either face, so this is the feature's own regression. */
+  test("only the showing face's print links are in the tab order", async () => {
+    await freshLoad();
+    const count = () => b.eval(`
+      const q = f => [...document.querySelectorAll("#" + f + " .prints a")]
+        .filter(a => a.tabIndex >= 0).length;
+      return { front: q("front"), back: q("back") };
+    `);
+
+    const shut = await count();
+    assert.strictEqual(shut.front, 2, "the showing face lost its print links from the tab order");
+    assert.strictEqual(shut.back, 0,
+      `${shut.back} print link(s) inside the aria-hidden #back face are still focusable`);
+
+    await b.click("#card");
+    await b.settle();
+    const open = await count();
+    assert.strictEqual(open.back, 2, "after the flip the showing face's links are not tabbable");
+    assert.strictEqual(open.front, 0,
+      `${open.front} print link(s) inside the now-hidden #front face are still focusable`);
+  });
+
+  /* ---------------------------------------------------------------- *
    * the scale sheet (Phase 3)
    *
    * Derived from the LOCKED "Phase 3 UI specification" in
