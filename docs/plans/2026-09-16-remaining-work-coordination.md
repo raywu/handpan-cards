@@ -424,7 +424,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | merged | #73 | `bbb9545` | PASS_WITH_NITS | 0 |
 | W3 | CI bounce fixed by integrator, re-running | #72 | `f6242cd` | FAIL (P1+P2), fixed | 1 |
-| W4 | CI bounce fixed by integrator, re-running | #74 | `d8866d5` | pending | 1 |
+| W4 | reviewed PASS_WITH_NITS, HELD for owner device check | #74 | `d8866d5` | PASS_WITH_NITS | 1 |
 | W5 | blocked on W2 | - | - | - | 0 |
 | W6 | blocked on W2+W4 | - | - | - | 0 |
 
@@ -435,6 +435,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | #71 | W1 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations | merged `4a06641`; nits filed as queue rows 15-18 |
 | #73 | W2 | PASS_WITH_NITS | 0 blocking, 4 nits (N1-N4), 1 boundary edit adjudicated NOT a violation | merged `7329033`; nits filed as queue rows 25-28; criterion 10 to the owner as row 29 |
 | #72 | W3 | FAIL | 2 blocking (P1 Enter on a print link flips the card instead of opening the PDF; P2 the hidden face's print links stay in the tab order inside an aria-hidden subtree) | bounced; authoring lane unreachable, integrator fixed both at `f6242cd` with two new e2e tests and two re-anchored mutants; fresh reviewer pending |
+| #74 | W4 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations. Independently confirmed the integrator's `d8866d5` re-anchor is faithful: all three patches mutate the identical lines they mutated at `839d70e`, `# kills:`/`# suite:` headers byte-identical, all three verified clean-green / mutant-red locally (including the browser-driven one against real Chrome). No red gate laundered green | NOT merged - held for the owner's device check; nits filed as queue rows 31-36 |
 
 ## Queue
 
@@ -470,6 +471,12 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 28 | W2-N4: `tools/decks.py:285` source literal still reads `25 CHORDS` while the card prints 27 (the regex overwrites at runtime). Correct behaviour, misleading source | reviewer PR #73 | open |
 | 29 | W2 criterion 10 came back `covered_by: neither` — nothing in the repo looks at a rendered card, so whether the new border LOOKS right is the owner's call. Mechanically verified by pixel probe at 8x: all four sides root-coloured (Pygmy `#6C40A2`, Amara `#0A7A75`, Hijaz `#DF549A` top and bottom alike), weight 2.00pt to 2.62pt measured. Owner to eyeball a printed sheet | reviewer PR #73 | open |
 | 30 | The `c_*` mutant count is 27, not the 8 in the W2 brief nor the 26 in the lane report. The 8 traces to a stale gstack learning `handpan-b-mutants-track-deck-data-only`, which the reviewer corrected. All 27 apply cleanly | reviewer PR #73 | open |
+| 31 | W4-N1 (substantive): the iOS keyboard fix's WIRING is untested. `applyKbOffset()` can be replaced with a bare `return;` and all 101 unit tests still pass. The four kbOffset tests exercise only the pure arithmetic helper; the fifth only asserts no throw. The unit sandbox has no `window.visualViewport`, and CI Chromium's visualViewport always equals the layout viewport, so the function is indistinguishable from never running. **The merge rests on the owner's hardware check more than PR #74's body implies** | reviewer PR #74 | open |
+| 32 | W4-N2: `applyKbOffset()` in `showSheet()` (`index.html:4391`) is near-dead and structurally unkillable - it is called BEFORE `scaleBox.focus()`, so the keyboard is not up and `kbOffset()` is always 0. The resize/scroll listener does the real work. Harmless defensive code; recorded so it is not mistaken for covered behaviour | reviewer PR #74 | open |
+| 33 | W4-N3: `docs/2026-09-16-mobile-audit-pass-1.md` row 8a cites an ad-hoc headless verification (monkey-patching `window.innerHeight`, observing `transform: matrix(1,0,0,1,0,-300)`) that was never committed - `tests/e2e.test.js` is unmodified by that branch, so the evidence is unreproducible. Committing that technique as an e2e test would close rows 31 and 32 at once. Cycle-2 candidate | reviewer PR #74 | open |
+| 34 | W4-N4 (for the OWNER's device check list): `.sheetsurf`'s `max-height:85dvh` (`index.html:402`) does not shrink for the keyboard - `dvh` does not react to it on Safari, which is the premise of the fix. With a 300px keyboard on 390x844, a near-cap Edit sheet (~717px) translated up 300px puts its top near -173px. The primary buttons DO become reachable (the footer sits outside the `.sheetbody` scroller and rides the translate), but `.sheetbody`'s scrollport top can leave the screen. **Check the EDIT sheet on Pygmy with the keyboard up, not only the ADD sheet** | reviewer PR #74 | open |
+| 35 | W4-N5: `index.html:3933-3939` calls `.sheetsurf` "The scrolling surface itself" and cites "the markup comment on .sheetsurf", but the markup comment at `:673-675` describes `.sheetbody`; the single-child guarantee is the CSS comment at `:388-390`. The lookup itself is correct and `.sheetsurf` carries `overflow-y:auto` as a backstop - a pointer/wording slip only | reviewer PR #74 | open |
+| 36 | W4-N6: commit `131039f` (integrator's cycle-1 wave-1 Cycle-state record) is an ancestor of `mobile/audit-pass-1` and not on `origin/main`, so merging PR #74 lands a now-stale Cycle-state table. Refresh the doc immediately after that merge | reviewer PR #74 | open |
 
 ## Cycle state
 
@@ -480,7 +487,7 @@ Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, P
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
 | W3 | harness (unreachable) | `app/print-button` | #72 | `f6242cd` | 2026-09-16 CI 5/5 pass at `f6242cd` | fresh reviewer spawned (briefed to scrutinise the integrator-authored fix adversarially) | 1 | no | - | - |
-| W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 mutation gate FAIL at `938c799` | bounced, no reviewer spawned | 1 | no | owner device check | - |
+| W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 CI 5/5 pass at `d8866d5` | PASS_WITH_NITS (0 blocking, 6 nits, 0 boundary violations) | 1 | no | **owner iPhone 14 / iOS 26.6 device check** | yes |
 | W5 | swarm worktree | `engine/adopt-generated-decks` | - | - | - | spawned 2026-09-16 off `main` @ `4760d37` (W1+W2 merged) | 0 | no | - | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
 
