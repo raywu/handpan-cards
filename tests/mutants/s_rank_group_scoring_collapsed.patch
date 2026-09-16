@@ -1,0 +1,86 @@
+# suite: node --test --test-name-pattern ^within.a.chord.s.group..LOW.precedes.HIGH tests/select.test.js
+# kills: within a chord's group, LOW precedes HIGH (class order, not just contiguity)
+# Task 9 Step 3 item 2 (root-instance enumeration plan): collapse rank()'s
+# group scoring back to per-card - score every member by its OWN
+# topShellTones(), not the home card's, and drop the members/CLASS_ORDER
+# machinery that keeps HOME, LOW, HIGH printed in that order within a group.
+#
+# This does NOT reach "a chord's cards are contiguous, home first": a HIGH
+# alternate's own top-shell-tone count can never exceed its home's (every
+# non-root tone the engine ever moves off the top shell only ever moves DOWN
+# relative to the nearest-instance-above rule), so a chord's HOME card always
+# ties or beats every alternate on that key, and the `at` tiebreak (HOME is
+# always inserted into voice()'s `kept` array before any alternate) keeps
+# HOME first regardless. The mechanism that DOES survive is EQUALITY, not
+# exceeding: on Pygmy Cm, HOME [3,4,6] and HIGH [8,9,11] both measure
+# topShellTones = 3 (all three fields are top-shell in both), so the per-card
+# comparator ties them on that key and falls through to `at`, where HOME's
+# lower original-list index wins - HOME still prints first. LOW [101,103,1]
+# measures topShellTones = 1 (it dips to the bottom shell), strictly less
+# than 3, so the "more top-shell tones ranks higher" key alone - now applied
+# per card instead of once per group - sorts LOW below BOTH other cards.
+# Shipped/grouped order is HOME, LOW, HIGH; this mutation reorders the tail
+# to HOME, HIGH, LOW. Read this before concluding the scenario is
+# unreachable: it is not - only the STRICTLY-GREATER-THAN version of it
+# (an alternate scoring higher than its own home) is.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 053dd98..1f69e17 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -373,40 +373,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var CLASS_ORDER = {"": 0, LOW: 1, HIGH: 2};
+ 
+   function rank(fields, list, tonicPc) {
+-    var groups = {};
+-    var order = [];
+-    for (var i = 0; i < list.length; i += 1) {
+-      var name = list[i].root + "|" + list[i].suffix;
+-      if (!Object.prototype.hasOwnProperty.call(groups, name)) {
+-        groups[name] = [];
+-        order.push(name);
+-      }
+-      groups[name].push({item: list[i], at: i});
+-    }
+     var decorated = [];
+-    for (i = 0; i < order.length; i += 1) {
+-      var members = groups[order[i]];
+-      var home = members[0];
+-      for (var m = 0; m < members.length; m += 1) {
+-        if (members[m].item.voicingClass === "") home = members[m];
+-      }
+-      members.sort(function (a, b) {
+-        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, a.item.voicingClass)) {
+-          throw new Error("select: unknown voicing class " + JSON.stringify(a.item.voicingClass));
+-        }
+-        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, b.item.voicingClass)) {
+-          throw new Error("select: unknown voicing class " + JSON.stringify(b.item.voicingClass));
+-        }
+-        var ca = CLASS_ORDER[a.item.voicingClass];
+-        var cb = CLASS_ORDER[b.item.voicingClass];
+-        if (ca !== cb) return ca - cb;
+-        return a.at - b.at;
+-      });
++    for (var i = 0; i < list.length; i += 1) {
+       decorated.push({
+-        members: members,
+-        at: home.at,
+-        top: topShellTones(fields, home.item),
+-        item: home.item
++        at: i,
++        top: topShellTones(fields, list[i]),
++        item: list[i]
+       });
+     }
+     decorated.sort(function (a, b) {
+@@ -421,10 +393,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       return a.at - b.at;
+     });
+     var out = [];
+-    for (i = 0; i < decorated.length; i += 1) {
+-      var group = decorated[i].members;
+-      for (var g = 0; g < group.length; g += 1) out.push(group[g].item);
+-    }
++    for (i = 0; i < decorated.length; i += 1) out.push(decorated[i].item);
+     return out;
+   }
+ 

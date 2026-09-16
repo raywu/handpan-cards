@@ -820,7 +820,60 @@ Not implemented by this plan. Recorded here so the engineering review can judge 
 3. Whether enumeration applies to built-in decks (would retire the seven "opt-in data" overrides in `divergence_v1.json`) or only to generated decks.
 4. Spec section 7's "multi-voicing is opt-in data" bullet is rewritten either way.
 
+**OWNER DECISIONS (2026-09-16, interview) - all five settled, measured before answering:**
+
+1. **Scope: built-in decks are IN.** Amara is the oracle: enumeration must reproduce its 16 cards exactly, and Hijaz and Pygmy are then REPLACED by engine output. The seven opt-in overrides in `divergence_v1.json` are retired.
+2. **Home card / subtitles: the home card is the one rooted on the LOWEST NON-BOTTOM-SHELL instance.** It carries no suffix; roots below it get `- LOW VOICING`, roots above get `- HIGH VOICING`. Fits all 13 shipped cards across the 5 repeated names, including the three-card Cm (C4 home, C3 low, C5 high). NOTE: the earlier phrasing of this decision ("relative to the D9 card's root midi") does NOT fit the data - Eb and Eb7 are rooted on the bottom shell at Eb3 and are labelled LOW, with the rim Eb4 unlabelled.
+3. **Ranking: an alternate survives only if (a) at least one NON-ROOT tone changes field, AND (b) it changes register class (crosses the ding octave, or moves on/off the bottom shell). Cap 3 per chord name.**
+4. **Hijaz `Bm - HIGH VOICING` is DELETED.** It is structurally identical to the five Amara alternates the commercial reference omits: only the root moves (B3 -> B4), D4 and F#4 do not move. No rule can reproduce Amara exactly and keep it. Owner chose consistency over the card; Hijaz was retrofitted by us, not measured. Hijaz 18 -> 17 cards.
+5. **Spec section 7's "multi-voicing is opt-in data" bullet becomes "multi-voicing is DERIVED by root-instance enumeration"**, and the override mechanism is removed.
+
+**Measured outcome of the chosen rule** (scratch `partb5.js`, run against the shipped `DECKS` blob at main `6799dee`, enumerating `choose(fields, rootPc, ivs, {rootId})` per root-field instance):
+
+| deck | shipped | produced | exact-name match |
+|---|---|---|---|
+| amara | 16 | **16** | **16/16 - GATE PASSED** |
+| hijaz | 18 | 17 | 16/17 (only `Bm`, by decision 4) |
+| pygmy | 27 | 36 | 14/21 names |
+
+Rejected variants, same harness: disjoint-fields (amara 16/16 but LOSES the Cm7/Eb/Eb7 LOW VOICING cards the owner asked for on 2026-09-15); tone-moves with no register gate (pygmy 45); cap 2 (pygmy 35 AND drops one of the three shipped Cm cards).
+
+**Open for the Part B plan, not owner decisions:** Pygmy's 9 new cards are mostly a third instance rooted an octave above home - list them in the plan and rebuild the PDFs so they are inspected before merge. `Fm9`'s hand-set spread 9th (G5) is still not reproduced by the engine (it emits G4); decide there whether to keep it as the one remaining data override or accept G4.
+
 **Hook point:** `src/engine/select.js:239-262 voice()`, which today calls `choose(fields, root, intervals)` once per candidate and dedupes by `fields.join(",")`.
+
+**PLAN WRITTEN, 2026-09-16:** `docs/plans/2026-09-16-root-instance-enumeration.md`.
+
+**FOUR FURTHER OWNER DECISIONS (2026-09-16, engineering review of that plan).**
+The review re-measured this section's premises inside `select.build`'s own
+pipeline rather than over the shipped chord list, and four things did not hold:
+
+- **D1 - the deck cap counts chord NAMES, not cards.** Decision 3's rule takes
+  Pygmy from 31 cards to 52 against a cap of 31 (`src/engine/select.js:109`).
+  Counting cards evicts 21 entries off the tail of the rank order, which is
+  whole chord names, not surplus alternates. `cap()` now bounds distinct names;
+  alternates ride free.
+- **D2 - the Amara 16/16 gate is kept but restated, and a positive gate added.**
+  The rule emits ZERO alternates on Amara, which is the entire reason it passes.
+  Any rule that generates nothing there passes it, the rejected disjoint-fields
+  variant included. The restatement is "no alternates on a pan with no repeated
+  roots"; the discriminating test is that every hand-authored multi-voicing card
+  in Pygmy IS reproduced, card by card.
+- **D3 - scope is SPLIT.** The measured-outcome table above compares against
+  shipped decks; adopting engine output for Hijaz and Pygmy deletes 8
+  hand-authored cards (Hijaz `Dmaj7`, `Dmaj7#11`, `Bm - HIGH VOICING`; Pygmy
+  `Fm11`, `Abmaj9`, and Fm9's spread 9th) and adds 34. Part B ships enumeration
+  only, engine-side, with no deck-data change. Reconciliation gets its own plan
+  and a printed proof.
+- **D4 - a bottom-only root takes its HIGHEST instance as home.** Decision 2's
+  "lowest non-bottom-shell instance" has no answer for Pygmy Db (ids 102=Db3,
+  105=Db4, both bottom). The naive lowest-wins fallback demotes the shipped
+  `Db [105,5,7]` to a HIGH VOICING and invents a new home card; D4 leaves `Db`
+  and `Dbmaj7` exactly as shipped and drops Pygmy's LOST list from 5 cards to 3.
+
+**Decision 4 above (delete Hijaz `Bm - HIGH VOICING`) is DEFERRED, not
+reversed** - it is a deck-data edit and rides with the reconciliation plan,
+where the PDF / JSON / mutant pipeline runs anyway.
 
 ---
 

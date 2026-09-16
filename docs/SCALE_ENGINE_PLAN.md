@@ -235,11 +235,31 @@ comment when built.
 - **Scale degrees.** Tonic = ding pitch class in all three decks. Numerals per
   D8, case per D10.
 - **Equivalence annotations.** Decided: D4.
-- **Multi-voicing is opt-in data, not a policy.** 30 shipped chord types have
-  more usable root instances (ding excluded, bottom shell included; 26 with it
-  excluded) than shipped cards; only 4 groups (9 cards) got alternates, with no
-  distinguishing feature. Default one card; record the 9 built-in alternates as
-  data.
+- **Multi-voicing is DERIVED, not opt-in data (2026-09-16 revision).** The
+  engine now enumerates one candidate voicing per playable root-field
+  instance of a chord (`voicing().choose(..., {rootId})`, ascending by
+  midi), instead of one per root pitch class. Each instance is classified
+  HOME, LOW or HIGH: HOME is the lowest non-bottom-shell instance, or - when
+  the root pitch class exists only on the bottom shell (D4) - the HIGHEST
+  bottom-shell instance; instances below HOME are LOW, above are HIGH. An
+  alternate SURVIVES the filter only when both hold: (a) at least one
+  non-root tone changes field between it and HOME, and (b) its
+  `registerClass` (bottom-shell usage plus the octave band measured from
+  the ding) differs from HOME's - so an alternate that is really the same
+  voicing shape one octave up, with nothing else moving, does not print a
+  redundant card. Surviving alternates are capped at 3 cards per chord name
+  (HOME plus up to 2 alternates). `rank()` scores and orders by chord name
+  using the HOME card's sort keys, so HOME/LOW/HIGH stay contiguous and
+  home-first within a group - an alternate can never rank ahead of its own
+  home. The per-deck cap (`25 + max(0, fieldCount - 12)`) counts distinct
+  chord NAMES, not raw cards, so a name with alternates cannot evict other
+  names from the deck. The `overrides` array in `divergence_v1.json` still
+  exists, but only for cards the engine genuinely does not derive (Hijaz's
+  hand-authored `Dmaj7`/`Dmaj7#11` NO-5 cards, and its `Bm - HIGH VOICING`
+  alternate, deferred rather than reconciled) - the alternates this
+  revision derives (Pygmy's `Ab`, `Cm`, `Cm7`, `Eb`, `Eb7` multi-voicings,
+  plus `Db`/`Dbmaj7`'s root-octave choice) were removed from `overrides`
+  because they are reproduced normally now, not hand-authored exceptions.
 - **Card order is editorial.** Root order differs per deck and within-root
   order is inconsistent inside a single deck. PDFs lay out in list order, so
   order is part of the golden output. Canonical order for generated decks

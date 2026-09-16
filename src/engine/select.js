@@ -236,27 +236,113 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- voicing (section 5, 6, 7) ----------------------------------------- */
 
+  // Root-instance enumeration (2026-09-16): a chord is voiced once per
+  // playable ROOT-FIELD INSTANCE, not once per root pitch class. The HOME
+  // card is rooted on the lowest instance that is NOT on the bottom shell;
+  // when the pitch class lives only on the bottom shell (Pygmy Db), the
+  // HIGHEST bottom instance is home instead (owner decision D4) - the naive
+  // "lowest wins" fallback demotes the shipped Db card and invents a new one.
+  //
+  // An alternate earns its card only when a NON-ROOT tone moves field AND the
+  // register class changes. A candidate where only the root moves is the
+  // shape the commercial Amara reference omits five times over, so
+  // reproducing Amara exactly and keeping those are not simultaneously
+  // satisfiable (decision 3).
+  var ALTERNATE_CAP = 3;                /* cards per chord name */
+
+  function registerClass(fields, ding, candidateFields) {
+    var bottom = 0;
+    var lowest = null;
+    for (var i = 0; i < candidateFields.length; i += 1) {
+      var record = fields[String(candidateFields[i])];
+      if (record[3] === "bottom") bottom = 1;
+      if (lowest === null || record[2] < lowest) lowest = record[2];
+    }
+    return bottom + "|" + Math.floor((lowest - ding) / 12);
+  }
+
+  function rootInstances(fields, rootPc) {
+    var list = [];
+    var all = ids(fields);
+    for (var i = 0; i < all.length; i += 1) {
+      var record = fields[String(all[i])];
+      if (record[3] === "ding") continue;
+      if (pc(record[2]) === pc(rootPc)) list.push(all[i]);
+    }
+    list.sort(function (a, b) {
+      return fields[String(a)][2] - fields[String(b)][2];
+    });
+    return list;
+  }
+
+  function homeIndex(fields, instances) {
+    for (var i = 0; i < instances.length; i += 1) {
+      if (fields[String(instances[i])][3] !== "bottom") return i;
+    }
+    return instances.length - 1;        /* D4: bottom-only, highest wins */
+  }
+
+  function dingMidi(fields) {
+    var all = ids(fields);
+    for (var i = 0; i < all.length; i += 1) {
+      if (fields[all[i]][3] === "ding") return fields[all[i]][2];
+    }
+    throw new Error("select: deck has no ding field");
+  }
+
   // `choose` takes the root PITCH CLASS, not the root field: D9 fixes the
   // octave (queue row 23). A not-ok result drops the candidate - `isLegal`
   // checks the note count only, so it is not a pitch-class guard (row 31).
   function voice(fields, list) {
     var out = [];
     var seen = {};
+    var ding = dingMidi(fields);
     for (var i = 0; i < list.length; i += 1) {
-      var picked = voicing().choose(fields, list[i].root, list[i].intervals);
-      if (!picked.ok) continue;
-      var key = picked.value.fields.join(",");
-      if (seen[key]) continue;      // section 5: one fields list per deck
-      seen[key] = true;
-      out.push({
-        root: list[i].root,
-        suffix: list[i].suffix,
-        tier: list[i].tier,
-        rank: list[i].rank,
-        intervals: list[i].intervals,
-        fields: picked.value.fields.slice(),
-        roots: picked.value.roots.slice()
-      });
+      var candidate = list[i];
+      var instances = rootInstances(fields, candidate.root);
+      var picked = [];
+      for (var r = 0; r < instances.length; r += 1) {
+        var got = voicing().choose(fields, candidate.root, candidate.intervals,
+          {rootId: instances[r]});
+        if (!got.ok) continue;
+        picked.push({rootId: instances[r], value: got.value});
+      }
+      // No dedupe pass here: the root field leads every voicing key and
+      // differs per instance, so two instances can never collide.
+      if (!picked.length) continue;
+
+      var homeAt = homeIndex(fields, picked.map(function (p) { return p.rootId; }));
+      var home = picked[homeAt];
+      var homeTones = home.value.fields.slice(1).join(",");
+      var homeClass = registerClass(fields, ding, home.value.fields);
+      var kept = [home];
+      for (r = 0; r < picked.length; r += 1) {
+        if (picked[r] === home) continue;
+        if (kept.length >= ALTERNATE_CAP) break;
+        if (picked[r].value.fields.slice(1).join(",") === homeTones) continue;
+        if (registerClass(fields, ding, picked[r].value.fields) === homeClass) continue;
+        kept.push(picked[r]);
+      }
+
+      for (r = 0; r < kept.length; r += 1) {
+        var key = kept[r].value.fields.join(",");
+        if (seen[key]) continue;        /* section 5: one fields list per deck */
+        seen[key] = true;
+        var rootMidi = fields[String(kept[r].rootId)][2];
+        var homeMidi = fields[String(home.rootId)][2];
+        out.push({
+          root: candidate.root,
+          rootId: kept[r].rootId,
+          voicingClass: rootMidi === homeMidi ? ""
+            : (rootMidi < homeMidi ? "LOW" : "HIGH"),
+          suffix: candidate.suffix,
+          tier: candidate.tier,
+          rank: candidate.rank,
+          intervals: candidate.intervals,
+          fields: kept[r].value.fields.slice(),
+          roots: kept[r].value.roots.slice()
+        });
+      }
     }
     return out;
   }
@@ -275,10 +361,53 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // triads > power > sus4 > 7ths > extended; within a tier, more top-shell
   // tones ranks higher; ties by root scale degree ascending from the tonic,
   // then by the quality's `rank`.
+  //
+  // D1 (2026-09-16): a chord's cards rank as ONE GROUP, scored by the HOME
+  // card, and print HOME, LOW, HIGH inside the group. Ranking cards
+  // individually puts an all-top-shell HIGH voicing ahead of a home card
+  // that dips to the bottom shell (the second key is the top-shell tone
+  // count, descending), which both scatters a chord across the deck and lets
+  // the cap keep an alternate whose home card was cut. Every sort key except
+  // the grouping is byte-identical to before, so a deck with no alternates
+  // ranks exactly as it did before this changed.
+  var CLASS_ORDER = {"": 0, LOW: 1, HIGH: 2};
+
   function rank(fields, list, tonicPc) {
-    var decorated = [];
+    var groups = {};
+    var order = [];
     for (var i = 0; i < list.length; i += 1) {
-      decorated.push({item: list[i], at: i, top: topShellTones(fields, list[i])});
+      var name = list[i].root + "|" + list[i].suffix;
+      if (!Object.prototype.hasOwnProperty.call(groups, name)) {
+        groups[name] = [];
+        order.push(name);
+      }
+      groups[name].push({item: list[i], at: i});
+    }
+    var decorated = [];
+    for (i = 0; i < order.length; i += 1) {
+      var members = groups[order[i]];
+      var home = members[0];
+      for (var m = 0; m < members.length; m += 1) {
+        if (members[m].item.voicingClass === "") home = members[m];
+      }
+      members.sort(function (a, b) {
+        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, a.item.voicingClass)) {
+          throw new Error("select: unknown voicing class " + JSON.stringify(a.item.voicingClass));
+        }
+        if (!Object.prototype.hasOwnProperty.call(CLASS_ORDER, b.item.voicingClass)) {
+          throw new Error("select: unknown voicing class " + JSON.stringify(b.item.voicingClass));
+        }
+        var ca = CLASS_ORDER[a.item.voicingClass];
+        var cb = CLASS_ORDER[b.item.voicingClass];
+        if (ca !== cb) return ca - cb;
+        return a.at - b.at;
+      });
+      decorated.push({
+        members: members,
+        at: home.at,
+        top: topShellTones(fields, home.item),
+        item: home.item
+      });
     }
     decorated.sort(function (a, b) {
       var tierA = TIERS.indexOf(a.item.tier);
@@ -292,7 +421,35 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return a.at - b.at;
     });
     var out = [];
-    for (i = 0; i < decorated.length; i += 1) out.push(decorated[i].item);
+    for (i = 0; i < decorated.length; i += 1) {
+      var group = decorated[i].members;
+      for (var g = 0; g < group.length; g += 1) out.push(group[g].item);
+    }
+    return out;
+  }
+
+  // D1 (2026-09-16): the cap bounds how many CHORDS a player has to learn,
+  // not how many cards the deck prints. Counting cards lets a chord's own
+  // alternates evict a different chord from the tail of the rank order - on
+  // Pygmy that is 21 entries. Alternates ride along with their name for
+  // free. Keyed on `root|suffix` rather than the printed name because
+  // `card()` has not run yet at this point in the pipeline; the two are in
+  // bijection. Runs AFTER `rank` and BEFORE `order`, where the slice used to
+  // be - `rank` now guarantees the group is contiguous and home-first, so a
+  // name is admitted by its home card and never by an alternate.
+  function trimToNames(list, limit) {
+    var seen = {};
+    var count = 0;
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      var name = list[i].root + "|" + list[i].suffix;
+      if (!Object.prototype.hasOwnProperty.call(seen, name)) {
+        if (count >= limit) continue;
+        seen[name] = true;
+        count += 1;
+      }
+      out.push(list[i]);
+    }
     return out;
   }
 
@@ -345,7 +502,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var rootName = spellingOf(fields, candidate.roots[0]);
     var named = naming().name(rootName, candidate.suffix);
     var subtitle = naming().subtitle(rootName, candidate.suffix,
-      equivalenceRoot(fields, candidate));
+      equivalenceRoot(fields, candidate), candidate.voicingClass);
     return {
       main: named.main,
       sup: named.sup,
@@ -424,7 +581,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     list = voice(fields, list);
     list = rank(fields, list, tonicPc);
     var limit = cap(fields);
-    if (list.length > limit) list = list.slice(0, limit);
+    list = trimToNames(list, limit);
     list = order(list, tonicPc);
 
     var chords = [];

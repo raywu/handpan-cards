@@ -86,7 +86,9 @@ Pygmy ships Cm7 and Eb7 in two registers each (2026-09-15, owner instruction):
 the LOW VOICING card roots on the bottom shell (Cm7 on C3/U1, Eb7 on Eb3/U3).
 Pitch-class-complete highlighting means both registers light the IDENTICAL
 diagram fields - only the note line, the number line and the badge differ.
-Pitch-class set is complete F natural minor.
+Pitch-class set is complete F natural minor. (2026-09-16: the scale engine now
+DERIVES this kind of multi-voicing card from root-instance enumeration rather
+than treating it as opt-in data - see `docs/SCALE_ENGINE_PLAN.md`.)
 
 **D Amara 9** - Ding D3. Standard zig-zag: 1 A3 @270, 2 C4 @225, 3 D4 @315,
 4 E4 @180, 5 F4 @0, 6 G4 @135, 7 A4 @45, 8 C5 @90.

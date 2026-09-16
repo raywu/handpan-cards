@@ -73,6 +73,29 @@ const BUILTINS = golden.decks.map((deck) => ({
   name: deck.name
 }));
 
+/* ---------------- root-instance enumeration helpers ----------------------- */
+
+const PYGMY_SEED = BUILTINS.find((b) => b.id === "pygmy").maker;
+const AMARA_SEED = BUILTINS.find((b) => b.id === "amara").maker;
+const HIJAZ_SEED = BUILTINS.find((b) => b.id === "hijaz").maker;
+const ALL_SEEDS = BUILTINS.map((b) => b.maker);
+
+// Parse the trailing " - LOW VOICING" / " - HIGH VOICING" off a subtitle;
+// "" (no suffix) means the home card.
+function voicingClassOf(subtitle) {
+  const m = / - (LOW|HIGH) VOICING$/.exec(subtitle);
+  return m ? m[1] : "";
+}
+
+function midiOf(deck, fieldId) {
+  return deck.fields[String(fieldId)][2];
+}
+
+function capOf(deck) {
+  const fieldCount = Object.keys(deck.fields).length;
+  return 25 + Math.max(0, fieldCount - 12);
+}
+
 /* ---------------- section 11: the generated deck object ------------------ */
 
 const DECK_KEYS = ["id", "name", "options", "colors", "degrees", "geom",
@@ -271,11 +294,16 @@ test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
   assert.equal(select.cap(seed.fields), 25,
     "a 12-field pan caps at 25, exactly as before the amendment");
   const deck = built(TWELVE);
-  assert.equal(deck.chords.length, 25, "the deck is trimmed to the 25-card cap");
+  // D1: the cap counts distinct chord NAMES, not raw cards. This 12-field pan
+  // repeats several roots (D, E, G, A), so some surviving names now carry a
+  // HOME card plus a HIGH-register alternate - the deck can therefore hold
+  // more than 25 cards while still capping at 25 distinct names.
+  const names = deck.chords.map(nameOf);
+  const distinctNames = new Set(names);
+  assert.equal(distinctNames.size, 25, "the deck is trimmed to 25 distinct names");
   // Ranking drops the LOWEST-ranked candidates: within the extended tier, the
   // two with the fewest top-shell tones, ties broken by root degree ascending -
   // Amadd9 (degree 5) then Gadd9 (degree 4). Cadd9 (degree 1) survives.
-  const names = deck.chords.map(nameOf);
   assert.ok(!names.includes("Amadd9"), "Amadd9 is trimmed by the cap");
   assert.ok(!names.includes("Gadd9"), "Gadd9 is trimmed by the cap");
   assert.ok(names.includes("Cadd9"), "Cadd9 outranks both and survives");
@@ -298,9 +326,12 @@ test("the cap scales with pan size: the 18-field Pygmy pan caps at 31", () => {
     assert.ok(names.includes(name),
       `${name} ranks inside the size-scaled cap and must survive`);
   }
-  assert.ok(names.length > 25,
+  // D1: the cap counts distinct chord NAMES; a name can carry a HOME card
+  // plus LOW/HIGH alternates, so raw card count is no longer bounded by 31.
+  const distinctNames = new Set(names);
+  assert.ok(distinctNames.size > 25,
     "the size-scaled cap lets the Pygmy deck past the old flat 25");
-  assert.ok(names.length <= 31, "and never past its own cap");
+  assert.ok(distinctNames.size <= 31, "and never past its own cap");
 });
 
 test("the cap formula holds at the structural maximum", () => {
@@ -336,12 +367,16 @@ test("the cap counts EVERY field, bottom shell included", () => {
 test("canonical order: root degree, then tier, then the quality rank", () => {
   // Section 8: roots by scale degree ascending from the tonic; within a root
   // triad, power, sus4, 7th, extended; within a tier by the `rank` field.
+  // This pan repeats the D/E/G/A pitch classes, so root-instance enumeration
+  // (this plan) legitimately produces a HIGH-register alternate immediately
+  // after several HOME cards - the group stays contiguous, and the deck's
+  // 32 raw cards still cap at 25 distinct NAMES (see the cap test above).
   assert.deepEqual(built(TWELVE).chords.map(nameOf), [
     "C", "C5", "Cmaj7", "Cadd9", "C6/9", "Cmaj9",
-    "D5", "Dsus4", "D7sus4",
-    "Em", "E5", "Esus4", "E7sus4", "Em7",
+    "D5", "D5", "Dsus4", "Dsus4", "D7sus4",
+    "Em", "Em", "E5", "E5", "Esus4", "Esus4", "E7sus4", "Em7",
     "G", "G5", "Gsus4", "G6/9",
-    "Am", "A5", "Asus4", "A7sus4", "Am7", "Am9", "Am11"
+    "Am", "A5", "Asus4", "A7sus4", "Am7", "Am9", "Am9", "Am11", "Am11"
   ]);
 });
 
@@ -417,8 +452,12 @@ test("no generated deck exceeds its own size-scaled cap", () => {
     assert.equal(select.cap(seed.fields), cap,
       `${row.name}: cap for ${fieldCount} fields`);
     const deck = built(row.string);
-    assert.ok(deck.chords.length <= cap,
-      `${row.name}: ${deck.chords.length} cards over a cap of ${cap}`);
+    // D1: the cap counts distinct chord NAMES, not raw cards - a name that
+    // survives can still carry a HOME card plus LOW/HIGH alternates, so the
+    // raw card count is no longer bounded by the name cap.
+    const distinctNames = new Set(deck.chords.map(nameOf));
+    assert.ok(distinctNames.size <= cap,
+      `${row.name}: ${distinctNames.size} names over a cap of ${cap}`);
     assert.ok(cap >= 25, `${row.name}: the cap never drops below 25`);
   }
 });
@@ -574,8 +613,13 @@ test("every override is a built-in card the engine does not produce", () => {
         `${b.id}: override ${key} must also be listed missing`);
     }
   }
-  // Section 9 / section 7: the two hand-authored Hijaz cards and the seven
-  // HIGH / LOW VOICING alternates are overrides by name.
+  // Section 9 / section 7: the two hand-authored Hijaz cards are overrides
+  // by name. Of the fixture's seven shipped HIGH/LOW VOICING alternates,
+  // root-instance enumeration (this plan) now DERIVES six of them (Pygmy's
+  // Ab/Cm/Cm7/Eb/Eb7 multi-voicings) - they are reproduced cards, not
+  // opt-in override data, so they are deliberately no longer recorded as
+  // overrides. Hijaz's `Bm - HIGH VOICING` is explicitly out of scope for
+  // this plan (deferred, not dropped) and stays a recorded override.
   assert.ok(seen.hijaz.some((k) => k.startsWith("Dmaj7 (")),
     "Hijaz Dmaj7 is a recorded override");
   assert.ok(seen.hijaz.some((k) => k.startsWith("Dmaj7#11 (")),
@@ -587,8 +631,218 @@ test("every override is a built-in card the engine does not produce", () => {
     }
   }
   assert.equal(alternates.length, 7, "the fixture ships seven HIGH/LOW alternates");
+  const stillDeferred = new Set(["hijaz"]);
   for (const [id, key] of alternates) {
+    if (!stillDeferred.has(id)) continue;
     assert.ok(seen[id].includes(key),
       `${id}: the alternate ${key} is a recorded override`);
+  }
+});
+
+/* ---------------- root-instance enumeration (Part B) ---------------------- */
+
+// Pygmy C has three playable instances: C3 (bottom), C4 (rim), C5 (rim).
+// Home is the lowest NON-bottom instance, C4.
+test("a repeated root yields one card per surviving instance", () => {
+  const deck = built(PYGMY_SEED);
+  const cm = deck.chords.filter((c) => c.main + c.sup === "Cm");
+  assert.equal(cm.length, 3, "Cm ships low, home and high");
+  const classes = cm.map((c) => voicingClassOf(c.subtitle)).sort();
+  assert.deepEqual(classes, ["", "HIGH", "LOW"]);
+});
+
+test("the home card is rooted on the lowest non-bottom instance", () => {
+  const deck = built(PYGMY_SEED);
+  const home = deck.chords.find(
+    (c) => c.main + c.sup === "Cm" && voicingClassOf(c.subtitle) === "");
+  assert.equal(midiOf(deck, home.roots[0]), 60, "home Cm roots on C4");
+});
+
+test("LOW roots below the home root, HIGH roots above it", () => {
+  const deck = built(PYGMY_SEED);
+  const byClass = {};
+  for (const c of deck.chords.filter((c) => c.main + c.sup === "Cm")) {
+    byClass[voicingClassOf(c.subtitle)] = midiOf(deck, c.roots[0]);
+  }
+  assert.ok(byClass.LOW < byClass[""], "LOW is below home");
+  assert.ok(byClass.HIGH > byClass[""], "HIGH is above home");
+});
+
+// D4: Pygmy Db exists only as Db3 and Db4, both bottom shell.
+test("a bottom-only root takes its HIGHEST instance as home", () => {
+  const deck = built(PYGMY_SEED);
+  const db = deck.chords.filter((c) => c.main + c.sup === "Db");
+  const home = db.find((c) => voicingClassOf(c.subtitle) === "");
+  assert.equal(home.roots[0], 105, "home Db roots on Db4, the higher bottom note");
+  assert.ok(db.some((c) => voicingClassOf(c.subtitle) === "LOW"),
+    "Db3 survives as the LOW voicing");
+});
+
+test("every card's roots[0] is a field of its own root pitch class", () => {
+  for (const seed of ALL_SEEDS) {
+    const deck = built(seed);
+    for (const c of deck.chords) {
+      assert.equal(c.fields[0], c.roots[0],
+        `${seed}: ${c.main}${c.sup} spelling order still starts at the root`);
+    }
+  }
+});
+
+/* ---------------- rank by name group, then cap by name (D1) --------------- */
+
+test("a chord's cards are contiguous, home first", () => {
+  for (const seed of ALL_SEEDS) {
+    const deck = built(seed);
+    const seen = new Map();
+    let prev = null;
+    deck.chords.forEach((c, i) => {
+      const n = c.main + c.sup;
+      if (n !== prev && seen.has(n)) {
+        assert.fail(`${seed}: ${n} is split across the deck at index ${i}`);
+      }
+      if (n !== prev) {
+        assert.equal(voicingClassOf(c.subtitle), "",
+          `${seed}: ${n} leads with an alternate, not its home card`);
+        seen.set(n, i);
+      }
+      prev = n;
+    });
+  }
+});
+
+test("within a chord's group, LOW precedes HIGH (class order, not just contiguity)", () => {
+  // The engine derives THREE Pygmy chords where all three classes coexist:
+  // Cm (HOME [3,4,6], LOW [101,103,1], HIGH [8,9,11]), C5 (HOME [3,6],
+  // LOW [101,1], HIGH [8,11]) and Csus4 (HOME [3,5,6], LOW [101,5,1],
+  // HIGH [8,10,11]). Only Cm's three cards are in the shipped deck today;
+  // C5's and Csus4's alternates are engine output pending owner adoption
+  // (the `extra` inventory in tests/fixtures/divergence_v1.json). The test
+  // asserts class ORDER, which holds regardless of adoption. Contiguity
+  // alone (the test above) is satisfied by either [HOME, LOW, HIGH] or
+  // [HOME, HIGH, LOW] - both keep a chord's three cards together with HOME
+  // first. This test pins the second property Task 5 actually promises,
+  // on every one of the three: CLASS_ORDER prints HOME, then LOW, then
+  // HIGH, not merely "HOME first, alternates in any order".
+  const deck = built(PYGMY_SEED);
+  ["Cm", "C5", "Csus4"].forEach((name) => {
+    const cards = deck.chords.filter((c) => c.main + c.sup === name);
+    assert.deepEqual(cards.map((c) => voicingClassOf(c.subtitle)),
+      ["", "LOW", "HIGH"],
+      `Pygmy ${name} should print HOME, then LOW, then HIGH, in that order`);
+  });
+});
+
+test("the deck cap counts chord NAMES, so alternates cannot evict a chord", () => {
+  const deck = built(PYGMY_SEED);
+  const names = new Set(deck.chords.map((c) => c.main + c.sup));
+  assert.ok(names.size <= capOf(deck), "distinct names stay inside the cap");
+  assert.ok(deck.chords.length > names.size,
+    "Pygmy does carry alternates, so this test is not vacuous");
+});
+
+test("no chord name is half-present after the trim", () => {
+  for (const seed of ALL_SEEDS) {
+    const deck = built(seed);
+    const byName = new Map();
+    for (const c of deck.chords) {
+      const n = c.main + c.sup;
+      byName.set(n, (byName.get(n) || 0) + 1);
+    }
+    for (const [n, count] of byName) {
+      assert.ok(count >= 1 && count <= 3, `${seed}: ${n} has ${count} cards`);
+    }
+  }
+});
+
+// Every built-in stays under its own cap (Amara 25/25, Hijaz 19/25, Pygmy
+// 31/31), so none of the assertions above ever exercises the trim itself.
+// Find a synthetic scale whose untrimmed name count overflows its own cap, so
+// the trim is observed doing its job rather than being a no-op everywhere.
+function untrimmedNameCount(str) {
+  const seed = seedOf(str);
+  var list = select.candidates(seed.fields);
+  list = select.collapse(seed.fields, list, pcOf(seed));
+  list = host(select.voice(seed.fields, list));
+  return new Set(list.map((c) => c.root + "|" + c.suffix)).size;
+}
+
+function pcOf(seed) {
+  return ((seed.fields["0"][2] % 12) + 12) % 12;
+}
+
+const OVERFLOW = synthetic
+  .filter((row) => row.expect.ok)
+  .map((row) => ({row, deck: built(row.string)}))
+  .find((x) =>
+    new Set(x.deck.chords.map((c) => c.main + c.sup)).size === capOf(x.deck) &&
+    untrimmedNameCount(x.row.string) > capOf(x.deck));
+
+test("a deck that overflows its cap loses whole names, never half a name", () => {
+  assert.ok(OVERFLOW, "no synthetic scale overflows its cap - pick a denser one");
+  const {deck} = OVERFLOW;
+  const names = new Set(deck.chords.map((c) => c.main + c.sup));
+  assert.equal(names.size, capOf(deck), "the trim stops exactly at the cap");
+  for (const c of deck.chords) {
+    assert.ok(names.has(c.main + c.sup));
+  }
+  const homes = deck.chords.filter((c) => voicingClassOf(c.subtitle) === "");
+  assert.equal(homes.length, names.size,
+    "every surviving name kept its home card, not just an alternate");
+});
+
+/* ---------------- the acceptance gates (D2) -------------------------------- */
+
+// The commercial D Amara reference ships no repeated-root card. The engine
+// must therefore emit no alternate there - that is the whole content of the
+// "Amara 16/16" gate, because enumeration contributes nothing on a pan with
+// no repeated roots.
+test("a pan with no repeated roots gets no alternates", () => {
+  const deck = built(AMARA_SEED);
+  for (const c of deck.chords) {
+    assert.equal(voicingClassOf(c.subtitle), "",
+      `${c.main}${c.sup} is an alternate, Amara has none`);
+  }
+  assert.equal(deck.chords.length, new Set(
+    deck.chords.map((c) => c.main + c.sup)).size, "one card per name");
+});
+
+test("Amara's shipped cards are reproduced unchanged", () => {
+  const amara = BUILTINS.find((b) => b.id === "amara");
+  const generated = built(AMARA_SEED).chords.map(keyOf);
+  for (const c of amara.fixtureChords) {
+    assert.ok(generated.includes(keyOf(c)), `Amara ${keyOf(c)} is still produced`);
+  }
+});
+
+// The gate that actually constrains the ranking filter. Every hand-authored
+// multi-voicing card in the shipped Pygmy deck must fall out of the engine,
+// card by card. Transcribed directly from the shipped DECKS blob in
+// index.html (not copied from the plan - see the plan's Task 6 Step 2 for the
+// transcription script), because the plan's first draft of this list was
+// wrong: it had Cm HOME as [1,3,5] (actually [3,4,6]) and was missing five
+// cards (Ab HOME, Ab HIGH, Cm7 HOME, Eb HOME, Eb7 HOME).
+const HAND_AUTHORED_MULTI_VOICINGS = [
+  // main+sup, voicing class ("" = home), fields
+  ["Ab",  "",     [2, 3, 4]],
+  ["Ab",  "HIGH", [7, 8, 9]],
+  ["Cm",  "LOW",  [101, 103, 1]],
+  ["Cm",  "",     [3, 4, 6]],
+  ["Cm",  "HIGH", [8, 9, 11]],
+  ["Cm7", "LOW",  [101, 103, 1, 104]],
+  ["Cm7", "",     [3, 4, 6, 104]],
+  ["Eb",  "LOW",  [103, 1, 104]],
+  ["Eb",  "",     [4, 6, 104]],
+  ["Eb7", "LOW",  [103, 1, 104, 105]],
+  ["Eb7", "",     [4, 6, 104, 105]]
+];
+
+test("every hand-authored multi-voicing card is derived by the engine", () => {
+  const deck = built(PYGMY_SEED);
+  for (const [name, cls, fields] of HAND_AUTHORED_MULTI_VOICINGS) {
+    const hit = deck.chords.find((c) =>
+      c.main + c.sup === name &&
+      voicingClassOf(c.subtitle) === cls &&
+      c.fields.join(",") === fields.join(","));
+    assert.ok(hit, `${name} ${cls || "HOME"} [${fields}] is not derived`);
   }
 });

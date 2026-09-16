@@ -1,0 +1,33 @@
+# suite: node --test --test-name-pattern ^a.chord.s.cards.are.contiguous..home.first$ tests/select.test.js
+# kills: a chord's cards are contiguous, home first
+# Task 9 (root-instance enumeration plan): reverse the CLASS_ORDER comparator
+# inside a chord's member sort, so a group prints HIGH, then LOW, then HOME
+# instead of HOME first. Task 6's D2 gates do not catch this (Amara has no
+# alternates; the Pygmy positive gate only checks that each hand-authored
+# card is present, not its position within the deck) - it is Task 5's own
+# contiguity test that fails, on the real Pygmy deck: Ab's HIGH alternate now
+# leads the group instead of Ab's home card.
+#
+# Narrower than s_rank_group_scoring_collapsed.patch, not wrong: this mutant
+# breaks home-first itself, which the OTHER planned Task 9 Step 3 item 2
+# mutant (collapsing rank()'s group scoring to per-card) does NOT do - see
+# that patch's header for the corrected analysis. An earlier pass on this
+# plan concluded the per-card-scoring mutant was unreachable because a HIGH
+# alternate's own topShellTones can never strictly exceed its home's; that is
+# true but incomplete - EQUALITY between HOME and a HIGH alternate is enough
+# to demote LOW below HIGH while home-first still holds (Pygmy Cm: HOME and
+# HIGH both measure topShellTones=3, LOW measures 1). Keep both mutants: this
+# one kills on home-first, the other on class order (LOW-before-HIGH).
+diff --git a/src/engine/select.js b/src/engine/select.js
+index 053dd98..cf560d5 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -399,7 +399,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         }
+         var ca = CLASS_ORDER[a.item.voicingClass];
+         var cb = CLASS_ORDER[b.item.voicingClass];
+-        if (ca !== cb) return ca - cb;
++        if (ca !== cb) return cb - ca;
+         return a.at - b.at;
+       });
+       decorated.push({
