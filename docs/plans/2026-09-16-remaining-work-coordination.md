@@ -423,7 +423,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 |---|---|---|---|---|---|
 | W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | merged | #73 | `bbb9545` | PASS_WITH_NITS | 0 |
-| W3 | CI bounce fixed by integrator, re-running | #72 | `f6242cd` | FAIL (P1+P2), fixed | 1 |
+| W3 | merged `bc9980a` | #72 | `f6242cd` | PASS_WITH_NITS | 1 |
 | W4 | reviewed PASS_WITH_NITS, HELD for owner device check | #74 | `d8866d5` | PASS_WITH_NITS | 1 |
 | W5 | blocked on W2 | - | - | - | 0 |
 | W6 | blocked on W2+W4 | - | - | - | 0 |
@@ -435,6 +435,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | #71 | W1 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations | merged `4a06641`; nits filed as queue rows 15-18 |
 | #73 | W2 | PASS_WITH_NITS | 0 blocking, 4 nits (N1-N4), 1 boundary edit adjudicated NOT a violation | merged `7329033`; nits filed as queue rows 25-28; criterion 10 to the owner as row 29 |
 | #72 | W3 | FAIL | 2 blocking (P1 Enter on a print link flips the card instead of opening the PDF; P2 the hidden face's print links stay in the tab order inside an aria-hidden subtree) | bounced; authoring lane unreachable, integrator fixed both at `f6242cd` with two new e2e tests and two re-anchored mutants; fresh reviewer pending |
+| #72 | W3 | PASS_WITH_NITS (fresh reviewer, at `f6242cd`) | 0 blocking, 4 nits (N1-N4), 0 boundary violations. Laundered-green check resolved CLEAN: `b255b1b` does describe fixes it lacks, but `f6242cd` restores them and both are live at the reviewed head, so CI's green is real. 9 of 10 mutants spent, 7 killed by the lane's own e2e tests | merged `bc9980a`; nits filed as queue rows 37-40 |
 | #74 | W4 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations. Independently confirmed the integrator's `d8866d5` re-anchor is faithful: all three patches mutate the identical lines they mutated at `839d70e`, `# kills:`/`# suite:` headers byte-identical, all three verified clean-green / mutant-red locally (including the browser-driven one against real Chrome). No red gate laundered green | NOT merged - held for the owner's device check; nits filed as queue rows 31-36 |
 
 ## Queue
@@ -477,6 +478,12 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 34 | W4-N4 (for the OWNER's device check list): `.sheetsurf`'s `max-height:85dvh` (`index.html:402`) does not shrink for the keyboard - `dvh` does not react to it on Safari, which is the premise of the fix. With a 300px keyboard on 390x844, a near-cap Edit sheet (~717px) translated up 300px puts its top near -173px. The primary buttons DO become reachable (the footer sits outside the `.sheetbody` scroller and rides the translate), but `.sheetbody`'s scrollport top can leave the screen. **Check the EDIT sheet on Pygmy with the keyboard up, not only the ADD sheet** | reviewer PR #74 | open |
 | 35 | W4-N5: `index.html:3933-3939` calls `.sheetsurf` "The scrolling surface itself" and cites "the markup comment on .sheetsurf", but the markup comment at `:673-675` describes `.sheetbody`; the single-child guarantee is the CSS comment at `:388-390`. The lookup itself is correct and `.sheetsurf` carries `overflow-y:auto` as a backstop - a pointer/wording slip only | reviewer PR #74 | open |
 | 36 | W4-N6: commit `131039f` (integrator's cycle-1 wave-1 Cycle-state record) is an ancestor of `mobile/audit-pass-1` and not on `origin/main`, so merging PR #74 lands a now-stale Cycle-state table. Refresh the doc immediately after that merge | reviewer PR #74 | open |
+| 37 | W3-N1 (only finding with real user impact): dead click zone at `index.html:3819`. `.prints` is a full-width flex row (334px at a 380px viewport) but the links occupy x=207-344, and `onclick="event.stopPropagation()"` sits on the WHOLE div. A real click dispatched at x=115 in that strip did not flip the card; a control click on the card body did. So a ~184x12px band left of "FULL DECK PDF" - previously live card surface - now silently does nothing. Fix: move the handler onto the two anchors instead of the row | reviewer PR #72 | open |
+| 38 | W3-N2: first ATTRIBUTE-context use of a TEXT-context escaper, `index.html:3817-3818`. `esc` at `:3679` escapes `&` and `<` but not `"`. Every pre-existing call site is text content; this diff introduces the pattern. Not exploitable today (both values are hardcoded `[A-Za-z0-9_.]` literals) but becomes a real hole the moment a basename is data-driven | reviewer PR #72 | open |
+| 39 | W3-N3: the P1 guard's BREADTH is untested. Mutant M8 (`closest("a, button")` -> `closest("div")`, which matches `#card` itself and kills keyboard flipping outright) survived the full unit suite AND the full e2e suite. No test asserts that Space/Enter on the card flips it, so a future widening of that selector ships silently | reviewer PR #72 | open |
+| 40 | W3-N4: `index.html:3889`'s `removeAttribute("tabindex")` restore is redundant - `render()` rewrites both faces' innerHTML at `:3867-3868` first, so the shown face's anchors are always fresh elements with no tabindex. Mutant M3 survived. Harmless and defensive, but not load-bearing | reviewer PR #72 | open |
+| 41 | **CHROME_BIN is set-able on this machine** - `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, and the e2e suite runs locally in ~70s. Every past "browser-dependent, so it moves to the integrator's desk" call in this workstream was avoidable. Export it in future lane and reviewer briefs. Known local flake: `buttons and arrow keys step through the deck and wrap` (CDP `Input.dispatchMouseEvent` timeout) passes in isolation and is green in CI | reviewer PR #72 | open |
+| 42 | The repo's gstack learnings store holds `handpan-card-keydown-swallows-child-link-activation` (confidence 9/10), still citing the PRE-FIX line `index.html:4590`. Now fixed and merged at `bc9980a`. Close or update it so a future reviewer does not re-flag fixed code | reviewer PR #72 | open |
 
 ## Cycle state
 
@@ -486,7 +493,7 @@ Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, P
 |---|---|---|---|---|---|---|---|---|---|---|
 | W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | released | `print/blurb-and-border` (deleted) | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | `7329033` | - | no |
-| W3 | harness (unreachable) | `app/print-button` | #72 | `f6242cd` | 2026-09-16 CI 5/5 pass at `f6242cd` | fresh reviewer spawned (briefed to scrutinise the integrator-authored fix adversarially) | 1 | no | - | - |
+| W3 | released | `app/print-button` (deleted) | #72 | `f6242cd` | 2026-09-16 CI 5/5 pass at `f6242cd` | PASS_WITH_NITS | 1 | yes `bc9980a` | - | no |
 | W4 | harness (unreachable) | `mobile/audit-pass-1` | #74 | `d8866d5` | 2026-09-16 CI 5/5 pass at `d8866d5` | PASS_WITH_NITS (0 blocking, 6 nits, 0 boundary violations) | 1 | no | **owner iPhone 14 / iOS 26.6 device check** | yes |
 | W5 | swarm worktree | `engine/adopt-generated-decks` | - | - | - | spawned 2026-09-16 off `main` @ `4760d37` (W1+W2 merged) | 0 | no | - | - |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
