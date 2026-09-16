@@ -3,13 +3,12 @@
 # The sheet opens but focus is left on the + ADD chip, so a keyboard or
 # screen-reader user lands outside the modal they just opened.
 diff --git a/index.html b/index.html
-index a127d86..7206c19 100644
 --- a/index.html
 +++ b/index.html
-@@ -2866,7 +2866,6 @@ function showSheet(opener) {
-   sheetOpen = true;
+@@ -4389,7 +4389,6 @@
    for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
    updateParse();
+   applyKbOffset();
 -  scaleBox.focus();
  }
  // The create path. Everything is reset, so an Edit never leaks its seed, its
