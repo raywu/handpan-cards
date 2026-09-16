@@ -421,7 +421,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 
 | Lane | State | PR | Head SHA | Verdict | Attempts |
 |---|---|---|---|---|---|
-| W1 | in review | #71 | `c8e603e` | pending | 0 |
+| W1 | merged | #71 | `c8e603e` | PASS_WITH_NITS | 0 |
 | W2 | in review | #73 | `bbb9545` | pending | 0 |
 | W3 | not spawned | - | - | - | 0 |
 | W4 | not spawned | - | - | - | 0 |
@@ -432,6 +432,7 @@ variant). Hijaz and Amara are unchanged in sheet count.
 
 | PR | Lane | Verdict | Findings | Outcome |
 |---|---|---|---|---|
+| #71 | W1 | PASS_WITH_NITS | 0 blocking, 6 nits (N1-N6), 0 boundary violations | merged `4a06641`; nits filed as queue rows 15-18 |
 
 ## Queue
 
@@ -451,14 +452,18 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 12 | Print calibration check, six preset names | owner's desk | open |
 | 13 | W2 edited `tests/fixtures/print_decks_v1.json` (Pygmy blurb 25->27) outside its ownership; consequence of D5, sent to its reviewer to adjudicate | W2 report | open |
 | 14 | Brief to W2 said 8 hand-written `c_*` mutants; 26 exist. Integrator's miscount, not a lane defect | W2 report | open |
+| 15 | W1-N1: `tests/test_deck_data.py:556` asserts only a non-zero exit; assert the stderr message instead | reviewer PR #71 | open |
+| 16 | W1-N2: `tools/regen_data_mutants.py:235,239,244` still bare `open()`; :244 writes diffs over non-ASCII `data/decks.json` | reviewer PR #71 | open |
+| 17 | W1-N3: `CLAUDE.md:301` still says sync_decks re-parses JSON; it now compares bytes. Outside W1's ownership | reviewer PR #71 | open |
+| 18 | W1-N4: `tools/regen_data_mutants.py:189` keeps the semantic compare W1 just declared insufficient | reviewer PR #71 | open |
 
 ## Cycle state
 
-Cycle: 1   Wave: 1   Merged this batch: -
+Cycle: 1   Wave: 1   Merged this batch: `4a06641` (W1, PR #71)
 
 | Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|
-| W1 | harness | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
+| W1 | released | `nits/sync-decks-hardening` | #71 | `c8e603e` | 2026-09-16 CI 5/5 pass | PASS_WITH_NITS | 0 | yes `4a06641` | - | no |
 | W2 | harness | `print/blurb-and-border` | #73 | `bbb9545` | 2026-09-16 CI 5/5 pass | in review | 0 | no | - | - |
 | W3 | harness | `app/print-button` | #72 | - | - | working | 0 | no | - | - |
 | W4 | harness | `mobile/audit-pass-1` | - | - | - | - | 0 | no | owner device check | - |
