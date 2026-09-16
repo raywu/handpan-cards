@@ -1,0 +1,20 @@
+# suite: node --test --test-name-pattern ^canonical.order..root.degree..then.tier..then.the.quality.rank$ tests/select.test.js
+# kills: canonical order: root degree, then tier, then the quality rank
+# Task 9 (root-instance enumeration plan): drop the registerClass(...) ===
+# homeClass guard in voice(), so every tone-moving alternate survives
+# regardless of register. Task 6's positive gate does NOT catch this - the
+# Pygmy hand-authored multi-voicing cards still derive - but this repeated-
+# root pan (D/E/G/A each appear twice) now admits extra same-register
+# alternates and its exact card order changes.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index acf48ca..1e90fee 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -320,7 +320,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         if (picked[r] === home) continue;
+         if (kept.length >= ALTERNATE_CAP) break;
+         if (picked[r].value.fields.slice(1).join(",") === homeTones) continue;
+-        if (registerClass(fields, ding, picked[r].value.fields) === homeClass) continue;
+         kept.push(picked[r]);
+       }
+ 

@@ -1,13 +1,15 @@
 # suite: node --test --test-name-pattern ^the.rooted.flag.decides.whether.the.subtitle.carries.the.root$ tests/naming.test.js
 # kills: the rooted flag decides whether the subtitle carries the root
 # The rooted flag is ignored: every subtitle carries the root.
+# Re-anchored 2026-09-16 (root-instance enumeration plan): subtitle() gained
+# a 4th (voicingClass) parameter, shifting this hunk's line numbers.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eda20de..5961ed6 100644
+index eb6e61a..84044e0 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
-@@ -146,7 +146,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -180,7 +180,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    // `( = Xm6 )` on an m7b5, where X is the sixth a minor third above the root.
-   function subtitle(rootName, suffix, equivRootName) {
+   function subtitle(rootName, suffix, equivRootName, voicingClass) {
      var q = quality(suffix);
 -    var out = q.rooted ? rootName + " " + q.display : q.display;
 +    var out = rootName + " " + q.display;

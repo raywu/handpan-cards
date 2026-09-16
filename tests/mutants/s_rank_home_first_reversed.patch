@@ -1,0 +1,22 @@
+# suite: node --test --test-name-pattern ^a.chord.s.cards.are.contiguous..home.first$ tests/select.test.js
+# kills: a chord's cards are contiguous, home first
+# Task 9 (root-instance enumeration plan): reverse the CLASS_ORDER comparator
+# inside a chord's member sort, so a group prints HIGH, then LOW, then HOME
+# instead of HOME first. Task 6's D2 gates do not catch this (Amara has no
+# alternates; the Pygmy positive gate only checks that each hand-authored
+# card is present, not its position within the deck) - it is Task 5's own
+# contiguity test that fails, on the real Pygmy deck: Ab's HIGH alternate now
+# leads the group instead of Ab's home card.
+diff --git a/src/engine/select.js b/src/engine/select.js
+index acf48ca..6aa3c94 100644
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -393,7 +393,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       members.sort(function (a, b) {
+         var ca = CLASS_ORDER[a.item.voicingClass];
+         var cb = CLASS_ORDER[b.item.voicingClass];
+-        if (ca !== cb) return ca - cb;
++        if (ca !== cb) return cb - ca;
+         return a.at - b.at;
+       });
+       decorated.push({
