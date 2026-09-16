@@ -516,6 +516,52 @@ class CanonicalSourceTest(unittest.TestCase):
             capture_output=True, text=True)
         self.assertEqual(out.returncode, 2, out.stdout + out.stderr)
 
+    def test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch(self):
+        """Write mode's re-parse verification must be a BYTE comparison.
+
+        A semantic comparison (json.loads(again) != canonical()) is blind to
+        a write that serialises DIFFERENTLY from `want` but to the same
+        data - e.g. a stray `sort_keys=True` on the write line. That is
+        exactly the kind of mistake the re-parse step exists to catch
+        (CLAUDE.md, "Known pitfalls": "only reading the bytes back proves
+        the write landed"), and a semantic check reads the bytes back but
+        doesn't actually check them.
+
+        This test patches a COPY of sync_decks.py so its write line emits
+        `json.dumps(canonical(), sort_keys=True)` instead of `want`, forces
+        a drift so write mode actually runs, and asserts write mode itself
+        reports failure. Today's semantic comparison instead prints success
+        and exits 0 - this test fails on unmodified tools/sync_decks.py.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(paths.ROOT, tmp, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "*.pdf"))
+            tool = os.path.join(tmp, "tools", "sync_decks.py")
+            src = open(tool, encoding="utf-8").read()
+            needle = 'line = "const DECKS = " + want + ";"'
+            self.assertIn(needle, src, "sync_decks.py write line moved")
+            src = src.replace(
+                needle,
+                'line = "const DECKS = " + '
+                'json.dumps(canonical(), sort_keys=True) + ";"')
+            open(tool, "w", encoding="utf-8").write(src)
+
+            # Force drift so write mode actually takes the write path.
+            data_path = os.path.join(tmp, "data", "decks.json")
+            decks = json.load(open(data_path, encoding="utf-8"))
+            decks[0]["chords"][0]["subtitle"] = "DRIFTED"
+            json.dump(decks, open(data_path, "w", encoding="utf-8"),
+                      indent=2, ensure_ascii=False)
+
+            out = subprocess.run(
+                [sys.executable, tool], capture_output=True, text=True,
+                cwd=tmp)
+            self.assertNotEqual(
+                out.returncode, 0,
+                "write mode reported success for a re-injection that "
+                "matches semantically but not byte-for-byte:\n"
+                + out.stdout + out.stderr)
+
     def test_validate_py_fails_when_index_html_drifts_from_canonical(self):
         """check 1 is the only thing that catches a hand-edited DECKS line.
 
