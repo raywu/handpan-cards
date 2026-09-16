@@ -452,7 +452,21 @@ variant). Hijaz and Amara are unchanged in sheet count.
 
 ## Cycle state
 
-Cycle: 1   Wave: not started   Merged this batch: -
+Cycle: 1   Wave: 1   Merged this batch: -
+
+| Lane | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
+|---|---|---|---|---|---|---|---|---|---|---|
+| W1 | harness | `nits/sync-decks-hardening` | - | - | - | - | 0 | no | - | - |
+| W2 | harness | `print/blurb-and-border` | - | - | - | - | 0 | no | - | - |
+| W3 | harness | `app/print-button` | - | - | - | - | 0 | no | - | - |
+| W4 | harness | `mobile/audit-pass-1` | - | - | - | - | 0 | no | owner device check | - |
+| W5 | - | `engine/adopt-generated-decks` | - | - | - | - | 0 | no | W2 merge | - |
+| W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W2+W4 merge | - |
+
+Wave 1 spawned 2026-09-16 off `main` @ `839d70e` (the doc commit; base content
+identical to `28117a8`). Agent IDs are held in the integrator session only.
+Merge order stands: W1, then W2, then W3/W4 - and W4 only after the owner's
+iPhone 14 / iOS 26.6 device check, never on CI alone.
 
 ---
 
