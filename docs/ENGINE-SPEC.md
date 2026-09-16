@@ -496,11 +496,17 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 
 ## 6. Register: the cluster rule (D2) and the tie-break (D11)
 
-- DECIDED(D2) The forced test is: ANY non-root tone of the chord - chord tones
-  AND extensions alike - has no instance above the root. That is the operative
-  test, exactly as
+- DECIDED(D2, owner 2026-09-15) The forced test is: ANY non-root tone of the
+  chord - chord tones AND extensions alike - has no instance above the root
+  AND its highest lower instance is on the TOP shell. A tone whose highest
+  lower instance is on the BOTTOM shell takes that instance and forces
+  nothing (on the built-in pans that is Pygmy Bb and Db, which exist only
+  there; a pan with a top-shell instance below a bottom-shell one is covered
+  by the same test, not by a "bottom-only" reading). That is the operative test, exactly as
   `tests/test_deck_data.py::test_forced_tones_cluster_below_root` implements
-  it, and it is why Pygmy `Fm11` counts as forced (its 11th forces it).
+  it. Amara and Hijaz have no bottom shell, so the clause is vacuous there and
+  the commercial reference's three forced cards (G5, Gsus4, Fmaj7) are
+  preserved by construction, not by exception.
 - DECIDED(D2, CLAUDE.md rule 3) When the chord is forced, every CHORD TONE
   (3rd, 5th, 7th; the 4th of a sus chord; the 6th of a 6-chord) moves to its
   HIGHEST instance below the root; a chord tone with no lower instance stays
@@ -508,11 +514,15 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
 - DECIDED(D2) On a forced chord, EXTENSIONS implied by the chord symbol (add9,
   9, b9; an 11 chord's 9th and 11th; a 13 chord's 9th, 11th and 13th; #11) keep
   their nearest instance ABOVE the root unless they are themselves forced.
-- DECIDED(D2, CLAUDE.md rule 3) Bottom-shell fields are ordinary instances for
-  the cluster rule: a chord tone clusters to the bottom shell when that is its
-  highest lower instance (Pygmy `Cm7` -> Eb3/U3).
+- DECIDED(D2, owner 2026-09-15) On a FORCED chord, bottom-shell fields are
+  ordinary instances: a chord tone clusters to the bottom shell when that is
+  its highest lower instance (Pygmy `Gm7b5` from G5 -> Bb3/U4, Db4/U5). On an
+  UNFORCED chord a bottom-shell-only tone simply takes its bottom field while
+  every other tone reads nearest-above (Pygmy `Cm7` -> C4 Eb4 G4 Bb3/U4).
 - DECIDED(D11) When the chord is NOT forced, every non-root tone sits above the
-  root and takes its NEAREST instance above the root.
+  root and takes its NEAREST instance above the root, except a tone with no
+  instance above, whose highest lower instance is then on the bottom shell and
+  is the one it takes.
 - DECIDED(CLAUDE.md rule 3, plan Premise 5) "Root position" is the SPELLING
   ORDER of the field list starting at the root; it says nothing about register,
   and the root need not be the bass note (12 of 59 built-in cards are not). The
