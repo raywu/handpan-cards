@@ -225,9 +225,12 @@ test("every subtitle the table can produce for a two-character root fits 26", ()
   assert.equal(longest.length, 26);
 });
 
-test("the 26-character subtitle cap and the 16-character name cap are hard", () => {
+test("the subtitle cap and the 16-character name cap are hard", () => {
   assert.equal(naming.subtitle("Bb", "m7b5", "Bb").length, 26);
-  assert.throws(() => naming.subtitle("Bbbb", "m7b5", "Bbb"), /subtitle over 26 characters/);
+  const cap = naming.CAPS.subtitle;
+  const overflowRoot = "Bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  assert.throws(() => naming.subtitle(overflowRoot, "m7b5", overflowRoot),
+    new RegExp("subtitle over " + cap + " characters"));
   assert.equal((() => { const n = naming.name("Bb", "maj7#11"); return n.main + n.sup; })(),
     "Bbmaj7#11");
   assert.throws(() => naming.name("Bbbbbbbbbbbb", "maj7#11"), /chord name over 16 characters/);
@@ -236,6 +239,35 @@ test("the 26-character subtitle cap and the 16-character name cap are hard", () 
 test("an unknown quality suffix is a programming error, not a result", () => {
   assert.throws(() => naming.name("C", "sus2"), /unknown quality suffix/);
   assert.throws(() => naming.subtitle("C", "m13"), /unknown quality suffix/);
+});
+
+test("subtitle appends the voicing class", () => {
+  assert.equal(naming.subtitle("C", "m", null, ""), "C MINOR");
+  assert.equal(naming.subtitle("C", "m", null, "LOW"), "C MINOR - LOW VOICING");
+  assert.equal(naming.subtitle("C", "m", null, "HIGH"), "C MINOR - HIGH VOICING");
+});
+
+test("the voicing class is appended AFTER the equivalence suffix", () => {
+  assert.equal(naming.subtitle("C", "m7", "Eb", "HIGH"),
+    "C MINOR 7 ( = Eb6 ) - HIGH VOICING");
+});
+
+test("an unknown voicing class throws", () => {
+  assert.throws(() => naming.subtitle("C", "m", null, "MIDDLE"), /voicing class/);
+});
+
+test("the voicing class is inside the subtitle ceiling", () => {
+  // The longest real case (2026-09-16 ruling): HALF-DIMINISHED's
+  // equivalence plus HIGH VOICING, 41 chars against SUBTITLE_MAX 41.
+  const out = naming.subtitle("Bb", "m7b5", "Bb", "HIGH");
+  assert.equal(out, "HALF-DIMINISHED ( = Bbm6 ) - HIGH VOICING");
+  assert.ok(out.length <= naming.CAPS.subtitle,
+    `subtitle ${out.length} chars: ${out}`);
+});
+
+test("naming.subtitle with no class argument is byte-identical to before", () => {
+  assert.equal(naming.subtitle("F", "m7"), "F MINOR 7");
+  assert.equal(naming.subtitle("Bb", "m7", "Db"), "Bb MINOR 7 ( = Db6 )");
 });
 
 /* ===================== section 10: parent inference ====================== */

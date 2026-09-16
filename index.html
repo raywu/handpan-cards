@@ -2097,7 +2097,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   /* ---- caps (section 9) ------------------------------------------------- */
 
   var NAME_MAX = 16;      // main + sup
-  var SUBTITLE_MAX = 26;  // the longest m7b5 equivalence, HALF-DIMINISHED ( = Bbm6 )
+  // 41 (2026-09-16 ruling): the longest subtitle the engine can emit is a
+  // rooted display plus an equivalence plus a voicing-class suffix -
+  // "HALF-DIMINISHED ( = Bbm6 ) - HIGH VOICING" - measured at 101.20pt of the
+  // 106.56pt print subtitle box (card 177.6pt wide x 0.60) at hifi's base
+  // 4.2pt, so the fitter never fires. 26 was only a note about the longest
+  // string that existed before generated multi-voicing subtitles; the shipped
+  // Pygmy deck already prints a 27-char subtitle ("Eb DOMINANT 7 - LOW
+  // VOICING") without incident, because naming.subtitle() is called from one
+  // place (select.js) and that call only runs for generated decks.
+  var SUBTITLE_MAX = 41;
 
   /* ---- degree reference scales (D8) ------------------------------------- */
 
@@ -2190,9 +2199,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  // Root-instance enumeration (2026-09-16): a card whose root is not the
+  // home instance carries a voicing-class suffix, appended AFTER the
+  // equivalence annotation. `voicingClass` is `""`/absent (home, output
+  // byte-identical to before this changed), `"LOW"` or `"HIGH"`.
+  var VOICING_CLASSES = {"": "", LOW: " - LOW VOICING", HIGH: " - HIGH VOICING"};
+
   // Section 5 / D4: the equivalence suffix, `( = X6 )` on an m7 and
   // `( = Xm6 )` on an m7b5, where X is the sixth a minor third above the root.
-  function subtitle(rootName, suffix, equivRootName) {
+  function subtitle(rootName, suffix, equivRootName, voicingClass) {
     var q = quality(suffix);
     var out = q.rooted ? rootName + " " + q.display : q.display;
     if (equivRootName !== undefined && equivRootName !== null && equivRootName !== "") {
@@ -2204,6 +2219,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         throw new Error("naming: no equivalence for quality " + JSON.stringify(suffix));
       }
     }
+    var cls = (voicingClass === undefined || voicingClass === null) ? "" : voicingClass;
+    if (!Object.prototype.hasOwnProperty.call(VOICING_CLASSES, cls)) {
+      throw new Error("naming: unknown voicing class " + JSON.stringify(cls));
+    }
+    out += VOICING_CLASSES[cls];
     if (out.length > SUBTITLE_MAX) {
       throw new RangeError("naming: subtitle over " + SUBTITLE_MAX +
         " characters: " + out);
