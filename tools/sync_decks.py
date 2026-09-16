@@ -71,7 +71,7 @@ def main(argv):
     # (CLAUDE.md again); only reading the bytes back proves the write landed.
     with open(INDEX, encoding="utf-8") as fh:
         again = PATTERN.search(fh.read())
-    if again is None or json.loads(again.group(1)) != canonical():
+    if again is None or again.group(1) != want:
         print("re-injection did not land - index.html NOT in sync", file=sys.stderr)
         return 1
 

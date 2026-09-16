@@ -174,7 +174,7 @@ def apply_json(mutator, sync=True):
     sync=False is the DESYNC case - exactly one mutant (b_decks_json_desync)
     wants index.html to disagree with canonical, which check 1 exists to catch.
     """
-    html = open(INDEX).read()
+    html = open(INDEX, encoding="utf-8").read()
     m = PATTERN.search(html)
     decks = json.loads(m.group(1))
     assert json.dumps(decks) == m.group(1), "serialisation format drifted"
@@ -184,8 +184,8 @@ def apply_json(mutator, sync=True):
     # (CLAUDE.md, "Known pitfalls"), and a smoke test on stale data passes.
     line = "const DECKS = " + json.dumps(decks) + ";"
     html = PATTERN.sub(lambda _m: line, html, count=1)
-    open(INDEX, "w").write(html)
-    again = PATTERN.search(open(INDEX).read())
+    open(INDEX, "w", encoding="utf-8").write(html)
+    again = PATTERN.search(open(INDEX, encoding="utf-8").read())
     assert again is not None and json.loads(again.group(1)) == decks, \
         "re-injection did not land"
     if sync:

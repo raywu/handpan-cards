@@ -1,0 +1,21 @@
+# kills: test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch
+# suite: python3 -m unittest -k test_sync_decks_write_mode_catches_a_byte_level_reinjection_mismatch tests.test_deck_data
+# Reverts the re-injection verification in tools/sync_decks.py write mode
+# from a byte comparison back to a semantic (json.loads) comparison. A
+# write that serialises the SAME data with a different json.dumps() call
+# (e.g. sort_keys=True) reparses equal and this reports success, even
+# though the bytes on disk no longer match `want` - exactly the gap
+# CLAUDE.md's "Known pitfalls" re-injection note exists to close.
+diff --git a/tools/sync_decks.py b/tools/sync_decks.py
+index f403e5f..bc10489 100755
+--- a/tools/sync_decks.py
++++ b/tools/sync_decks.py
+@@ -71,7 +71,7 @@ def main(argv):
+     # (CLAUDE.md again); only reading the bytes back proves the write landed.
+     with open(INDEX, encoding="utf-8") as fh:
+         again = PATTERN.search(fh.read())
+-    if again is None or again.group(1) != want:
++    if again is None or json.loads(again.group(1)) != canonical():
+         print("re-injection did not land - index.html NOT in sync", file=sys.stderr)
+         return 1
+ 
