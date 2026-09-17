@@ -126,11 +126,13 @@ function sweep(dir) {
   return { code: r.status, out: `${r.stdout || ""}${r.stderr || ""}` };
 }
 
-// A patch with an `e_` name takes the no-browser skip branch: the fixture repo
-// has no tests/helpers/cdp.js, so the script's browser probe yields "" and the
-// mutant is skipped deterministically, whether or not a browser exists on this
-// machine. It still carries a `# suite:` header, because a header-less patch is
-// refused outright (see the refusal tests below) and would never reach the skip.
+// A patch whose `# suite:` names tests/e2e.test.js takes the no-browser skip
+// branch - the NAME is irrelevant, and E2E_MISNAMED below exists to prove it.
+// The fixture repo has no tests/helpers/cdp.js, so the script's browser probe
+// yields "" and the mutant is skipped deterministically, whether or not a
+// browser exists on this machine. The header is also what makes the patch
+// legal at all: a header-less patch is refused outright (see the refusal tests
+// below) and would never reach the skip.
 const E2E_SKIPPED = {
   name: "e_fixture_needs_browser", header: "a fixture e2e assertion",
   suiteHeader: "# suite: node --test tests/e2e.test.js\n",

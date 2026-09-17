@@ -2691,6 +2691,51 @@ function run() {
     }
   });
 
+  /* The AC3 hint, judged by what the owner can SEE. The unit test reads
+   * index.html as text because the DOM sandbox conjures an element for any id
+   * asked for - but text cannot tell markup from a comment, cannot tell a
+   * paragraph inside the LAYOUT group from one dumped before </body>, and
+   * cannot see `display:none`. All three of those leave the owner's question
+   * unanswered while the unit test still passes, so the oracle that closes them
+   * has to be a real browser: a box with height, inside the group, carrying the
+   * three gestures. */
+  test("the LAYOUT hint is visible inside the group, not merely present in the file", async () => {
+    try {
+      await editFreshDeck();
+      const hint = await b.eval(`
+        const el = document.getElementById("scale-layout-hint");
+        if (!el) return { missing: true };
+        const row = document.getElementById("scale-layout-row");
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return {
+          inRow: !!(row && row.contains(el)),
+          h: r.height, w: r.width,
+          display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+          text: (el.textContent || "").trim(),
+          describes: document.querySelector('[aria-describedby~="scale-layout-hint"]') !== null,
+        };
+      `);
+      assert.ok(!hint.missing, "#scale-layout-hint never reached the DOM");
+      assert.ok(hint.inRow,
+        "the hint is not inside #scale-layout-row - it explains buttons it does not sit with");
+      assert.ok(hint.h > 0 && hint.w > 0,
+        `the hint draws no box (${hint.w}x${hint.h}, display:${hint.display}) - nothing renders`);
+      assert.notStrictEqual(hint.visibility, "hidden", "the hint is visibility:hidden");
+      assert.notStrictEqual(hint.opacity, "0", "the hint is fully transparent");
+      const said = hint.text.toLowerCase();
+      for (const word of ["tap", "rotate", "move"]) {
+        assert.ok(said.includes(word),
+          `the rendered hint never mentions ${word}: "${hint.text}"`);
+      }
+      assert.ok(hint.describes,
+        "nothing points at the hint with aria-describedby, so a screen reader never hears it");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("renaming from the Edit sheet relabels the chip", async () => {
     try {
       await editFreshDeck();

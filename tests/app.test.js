@@ -1780,7 +1780,17 @@ test("the LAYOUT group explains itself on the page, not only in a comment", () =
   // answers the question that prompted the stage. Read from the FILE, because
   // the sandbox conjures an element for any id asked for and would happily
   // report a hint that is not in the markup.
-  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  //
+  // COMMENTS ARE STRIPPED FIRST, and that is the whole difference between this
+  // test and its own name. A commented-out paragraph is still raw file text, so
+  // without the strip the sentence could survive as `<!-- ... -->` - nothing
+  // rendered, the owner's question unanswered - and a test called "not only in
+  // a comment" would pass on exactly the thing it forbids. What this test still
+  // cannot see is `display:none` or the paragraph's PLACE in the sheet; the e2e
+  // test "the LAYOUT hint is visible inside the group, not merely present in
+  // the file" owns those, in a browser that can measure a box.
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "");
   const m = /<p class="sheethint" id="scale-layout-hint">([^<]+)<\/p>/.exec(html);
   assert.ok(m, "#scale-layout-hint is not in the markup");
   const hint = m[1].toLowerCase();
