@@ -406,9 +406,10 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             self.assertNotIn("options", deck)
             self.assertNotIn("warnings", deck)
         self.assertEqual(decks.HIJAZ["name"], "C# HIJAZ 9")
-        self.assertEqual(len(decks.HIJAZ["chords"]), 18)
-        self.assertEqual(len(decks.PYGMY["chords"]), 27)
-        self.assertEqual(len(decks.AMARA["chords"]), 16)
+        # 2026-09-16 (engine adoption): 18->19, 27->52, 16->25.
+        self.assertEqual(len(decks.HIJAZ["chords"]), 19)
+        self.assertEqual(len(decks.PYGMY["chords"]), 52)
+        self.assertEqual(len(decks.AMARA["chords"]), 25)
 
 
 class GeneratedDeckPdfTest(unittest.TestCase):

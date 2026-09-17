@@ -5,15 +5,15 @@
 # frozen corpus moves, so every other suite stays green; only the fixture's
 # own sha256 self-assertion and the deep-equality check against index.html
 # notice that the corpus is no longer the corpus it claims to be.
-diff --git a/tests/fixtures/golden_decks_v3.json b/tests/fixtures/golden_decks_v3.json
---- a/tests/fixtures/golden_decks_v3.json
-+++ b/tests/fixtures/golden_decks_v3.json
-@@ -30,7 +30,7 @@
-     {
-      "fields": [
-       3,
--      6,
-+      5,
-       7
-      ],
-      "main": "C#sus",
+diff --git a/tests/fixtures/golden_decks_v4.json b/tests/fixtures/golden_decks_v4.json
+--- a/tests/fixtures/golden_decks_v4.json
++++ b/tests/fixtures/golden_decks_v4.json
+@@ -138,7 +138,7 @@
+           "subtitle": "SUSPENDED CHORD",
+           "fields": [
+             3,
+-            6,
++            5,
+             7
+           ],
+           "roots": [

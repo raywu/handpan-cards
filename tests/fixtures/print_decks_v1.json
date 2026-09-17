@@ -1,644 +1,21 @@
 {
-  "amara": {
-    "R": 73.0,
-    "blurb": [
-      "D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
-      "16 CHORDS - ONE CARD PER CHORD"
-    ],
-    "chords": [
-      [
-        "Dm",
-        "",
-        "D MINOR",
-        [
-          3,
-          5,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Dm",
-        "7",
-        "D MINOR 7",
-        [
-          3,
-          5,
-          7,
-          8
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "D5",
-        "",
-        "POWER CHORD",
-        [
-          3,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Dsus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          3,
-          6,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Am",
-        "",
-        "A MINOR",
-        [
-          1,
-          2,
-          4
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "Am",
-        "7",
-        "A MINOR 7",
-        [
-          1,
-          2,
-          4,
-          6
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "A5",
-        "",
-        "POWER CHORD",
-        [
-          1,
-          4
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "Asus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          1,
-          3,
-          4
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "G5",
-        "",
-        "POWER CHORD",
-        [
-          6,
-          3
-        ],
-        [
-          6
-        ]
-      ],
-      [
-        "Gsus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          6,
-          2,
-          3
-        ],
-        [
-          6
-        ]
-      ],
-      [
-        "C",
-        "",
-        "C MAJOR",
-        [
-          2,
-          4,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "C5",
-        "",
-        "POWER CHORD",
-        [
-          2,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Csus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          2,
-          5,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "F",
-        "",
-        "F MAJOR",
-        [
-          5,
-          7,
-          8
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "F5",
-        "",
-        "POWER CHORD",
-        [
-          5,
-          8
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Fmaj",
-        "7",
-        "F MAJOR 7",
-        [
-          5,
-          1,
-          2,
-          4
-        ],
-        [
-          5
-        ]
-      ]
-    ],
-    "col_root": [
-      0.043,
-      0.482,
-      0.459
-    ],
-    "col_tone": [
-      0.867,
-      0.561,
-      0.0
-    ],
-    "credit": "D AMARA / D MINOR",
-    "cy": 126.0,
-    "degrees": {
-      "0": "bVII",
-      "2": "i",
-      "5": "bIII",
-      "7": "IV",
-      "9": "v"
-    },
-    "grad": [
-      [
-        0.043,
-        0.482,
-        0.459
-      ],
-      [
-        0.867,
-        0.561,
-        0.0
-      ]
-    ],
-    "has_bottom": false,
-    "legend_demo": [
-      5,
-      3
-    ],
-    "legend_lines": [
-      "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
-      "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"
-    ],
-    "name": "D AMARA 9",
+  "hijaz": {
+    "name": "C# HIJAZ 9",
+    "sub": "ORION  -  8 + 1",
     "spec": {
-      "0": [
-        "D",
-        3,
-        50,
-        "ding",
-        null,
-        "Ding"
-      ],
-      "1": [
-        "A",
-        3,
-        57,
-        "rim",
-        270,
-        "1"
-      ],
-      "2": [
-        "C",
-        4,
-        60,
-        "rim",
-        225,
-        "2"
-      ],
-      "3": [
-        "D",
-        4,
-        62,
-        "rim",
-        315,
-        "3"
-      ],
-      "4": [
-        "E",
-        4,
-        64,
-        "rim",
-        180,
-        "4"
-      ],
-      "5": [
-        "F",
-        4,
-        65,
-        "rim",
-        0,
-        "5"
-      ],
-      "6": [
-        "G",
-        4,
-        67,
-        "rim",
-        135,
-        "6"
-      ],
-      "7": [
-        "A",
-        4,
-        69,
-        "rim",
-        45,
-        "7"
-      ],
-      "8": [
-        "C",
-        5,
-        72,
-        "rim",
-        90,
-        "8"
-      ],
       "_geom": {
-        "f_bnote": 0.0,
+        "rim": 0.745,
+        "r_ding": 0.2,
+        "r_note": 0.19,
+        "inner_ring": 0.355,
         "f_ding": 0.135,
         "f_note": 0.128,
         "f_num": 0.105,
-        "inner_ring": 0.355,
         "n_in": 0.085,
         "n_out": 0.0,
         "r_bnote": 0.0,
-        "r_ding": 0.2,
-        "r_note": 0.19,
-        "rim": 0.745
-      }
-    },
-    "sub": "8 + 1",
-    "title": "D Amara 9 - Chord Cards",
-    "y_note": 30.0,
-    "y_num": 14.0
-  },
-  "hijaz": {
-    "R": 73.0,
-    "blurb": [
-      "C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4",
-      "PHRYGIAN DOMINANT, NO b6   -   18 CHORDS"
-    ],
-    "chords": [
-      [
-        "C#",
-        "",
-        "C# MAJOR",
-        [
-          3,
-          5,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "C#5",
-        "",
-        "POWER CHORD",
-        [
-          3,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "C#sus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          3,
-          6,
-          7
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "C#",
-        "7",
-        "C# DOMINANT 7",
-        [
-          3,
-          5,
-          7,
-          8
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "C#7sus",
-        "4",
-        "SUSPENDED DOMINANT 7",
-        [
-          3,
-          6,
-          7,
-          8
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "C#7",
-        "b9",
-        "HIJAZ SIGNATURE CHORD",
-        [
-          3,
-          5,
-          7,
-          8,
-          4
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Bm",
-        "",
-        "B MINOR",
-        [
-          2,
-          4,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Bm",
-        "",
-        "B MINOR - HIGH VOICING",
-        [
-          8,
-          4,
-          6
-        ],
-        [
-          8
-        ]
-      ],
-      [
-        "B5",
-        "",
-        "POWER CHORD",
-        [
-          2,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Bm",
-        "add9",
-        "B MINOR ADD 9",
-        [
-          2,
-          4,
-          6,
-          3
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Bm",
-        "6/9",
-        "B MINOR 6/9",
-        [
-          2,
-          4,
-          6,
-          7,
-          3
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "G#°",
-        "",
-        "DIMINISHED",
-        [
-          1,
-          2,
-          4
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "G#m7",
-        "b5",
-        "HALF-DIMINISHED ( = Bm6 )",
-        [
-          1,
-          2,
-          4,
-          6
-        ],
-        [
-          1
-        ]
-      ],
-      [
-        "F#sus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          6,
-          2,
-          3
-        ],
-        [
-          6
-        ]
-      ],
-      [
-        "F#maj7sus",
-        "4",
-        "SUSPENDED MAJOR 7",
-        [
-          6,
-          2,
-          3,
-          5
-        ],
-        [
-          6
-        ]
-      ],
-      [
-        "D°",
-        "7",
-        "DIMINISHED 7",
-        [
-          4,
-          5,
-          7,
-          8
-        ],
-        [
-          4
-        ]
-      ],
-      [
-        "Dmaj",
-        "7",
-        "D MAJOR 7 (NO 5)",
-        [
-          4,
-          6,
-          3
-        ],
-        [
-          4
-        ]
-      ],
-      [
-        "Dmaj7",
-        "#11",
-        "D MAJOR 7 SHARP 11 (NO 5)",
-        [
-          4,
-          6,
-          3,
-          7
-        ],
-        [
-          4
-        ]
-      ]
-    ],
-    "col_root": [
-      0.878,
-      0.333,
-      0.604
-    ],
-    "col_tone": [
-      0.886,
-      0.463,
-      0.106
-    ],
-    "credit": "C# HIJAZ / ORION",
-    "cy": 126.0,
-    "degrees": {
-      "1": "I",
-      "11": "bvii",
-      "2": "bII",
-      "6": "iv",
-      "8": "v°"
-    },
-    "grad": [
-      [
-        0.878,
-        0.333,
-        0.604
-      ],
-      [
-        0.886,
-        0.463,
-        0.106
-      ]
-    ],
-    "has_bottom": false,
-    "legend_demo": [
-      5,
-      3
-    ],
-    "legend_lines": [
-      "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
-      "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"
-    ],
-    "name": "C# HIJAZ 9",
-    "spec": {
+        "f_bnote": 0.0
+      },
       "0": [
         "C#",
         3,
@@ -710,446 +87,335 @@
         "rim",
         90,
         "8"
-      ],
-      "_geom": {
-        "f_bnote": 0.0,
-        "f_ding": 0.135,
-        "f_note": 0.128,
-        "f_num": 0.105,
-        "inner_ring": 0.355,
-        "n_in": 0.085,
-        "n_out": 0.0,
-        "r_bnote": 0.0,
-        "r_ding": 0.2,
-        "r_note": 0.19,
-        "rim": 0.745
-      }
+      ]
     },
-    "sub": "ORION  -  8 + 1",
-    "title": "C# Hijaz / Orion 9 - Chord Cards",
-    "y_note": 30.0,
-    "y_num": 14.0
-  },
-  "pygmy": {
-    "R": 60.0,
-    "blank_cards": 7,
-    "blurb": [
-      "F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5",
-      "BOTTOM:  C3  Db3  Eb3  Bb3  Db4  Ab5",
-      "COMPLETE F NATURAL MINOR   -   27 CHORDS"
-    ],
     "chords": [
       [
-        "Fm",
+        "C#",
         "",
-        "F MINOR",
+        "C# MAJOR",
         [
-          5,
-          7,
-          8
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "F5",
-        "",
-        "POWER CHORD",
-        [
-          5,
-          8
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Fsus",
-        "4",
-        "SUSPENDED CHORD",
-        [
-          5,
-          104,
-          8
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Fm",
-        "7",
-        "F MINOR 7",
-        [
-          5,
-          7,
-          8,
-          9
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Fm",
-        "9",
-        "F MINOR 9",
-        [
-          5,
-          7,
-          8,
-          9,
-          11
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Fm",
-        "11",
-        "F MINOR 11",
-        [
-          5,
-          7,
-          8,
-          9,
-          6,
-          104
-        ],
-        [
-          5
-        ]
-      ],
-      [
-        "Ab",
-        "",
-        "Ab MAJOR",
-        [
-          2,
           3,
-          4
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Ab",
-        "",
-        "Ab MAJOR - HIGH VOICING",
-        [
-          7,
-          8,
-          9
-        ],
-        [
-          7
-        ]
-      ],
-      [
-        "Abmaj",
-        "7",
-        "Ab MAJOR 7",
-        [
-          2,
-          3,
-          4,
-          6
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Abmaj",
-        "9",
-        "Ab MAJOR 9",
-        [
-          2,
-          3,
-          4,
-          6,
-          104
-        ],
-        [
-          2
-        ]
-      ],
-      [
-        "Bbm",
-        "",
-        "Bb MINOR",
-        [
-          104,
-          105,
-          5
-        ],
-        [
-          104
-        ]
-      ],
-      [
-        "Bbm",
-        "7",
-        "Bb MINOR 7 ( = Db6 )",
-        [
-          104,
-          105,
           5,
           7
-        ],
-        [
-          104
-        ]
-      ],
-      [
-        "Cm",
-        "",
-        "C MINOR - LOW VOICING",
-        [
-          101,
-          103,
-          1
-        ],
-        [
-          101
-        ]
-      ],
-      [
-        "Cm",
-        "",
-        "C MINOR",
-        [
-          3,
-          4,
-          6
         ],
         [
           3
         ]
       ],
       [
-        "Cm",
-        "",
-        "C MINOR - HIGH VOICING",
-        [
-          8,
-          9,
-          11
-        ],
-        [
-          8
-        ]
-      ],
-      [
-        "C5",
+        "C#5",
         "",
         "POWER CHORD",
         [
           3,
-          6
+          7
         ],
         [
           3
         ]
       ],
       [
-        "Csus",
+        "C#sus",
         "4",
         "SUSPENDED CHORD",
         [
           3,
-          5,
-          6
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Cm",
-        "7",
-        "C MINOR 7 - LOW VOICING",
-        [
-          101,
-          103,
-          1,
-          104
-        ],
-        [
-          101
-        ]
-      ],
-      [
-        "Cm",
-        "7",
-        "C MINOR 7",
-        [
-          3,
-          4,
           6,
-          104
-        ],
-        [
-          3
-        ]
-      ],
-      [
-        "Db",
-        "",
-        "Db MAJOR",
-        [
-          105,
-          5,
           7
         ],
         [
-          105
+          3
         ]
       ],
       [
-        "Dbmaj",
-        "7",
-        "Db MAJOR 7",
+        "C#7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
         [
-          105,
+          3,
+          6,
+          7,
+          8
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "C#",
+        "7",
+        "C# DOMINANT 7",
+        [
+          3,
           5,
           7,
           8
         ],
         [
-          105
+          3
         ]
       ],
       [
-        "Eb",
-        "",
-        "Eb MAJOR - LOW VOICING",
+        "C#7",
+        "b9",
+        "C# DOMINANT 7 FLAT 9",
         [
-          103,
-          1,
-          104
+          3,
+          5,
+          7,
+          8,
+          4
         ],
         [
-          103
+          3
         ]
       ],
       [
-        "Eb",
+        "D\u00b0",
         "",
-        "Eb MAJOR",
+        "DIMINISHED",
         [
           4,
-          6,
-          104
+          5,
+          7
         ],
         [
           4
         ]
       ],
       [
-        "Eb",
+        "D\u00b0",
         "7",
-        "Eb DOMINANT 7 - LOW VOICING",
-        [
-          103,
-          1,
-          104,
-          105
-        ],
-        [
-          103
-        ]
-      ],
-      [
-        "Eb",
-        "7",
-        "Eb DOMINANT 7",
+        "DIMINISHED 7",
         [
           4,
-          6,
-          104,
-          105
+          5,
+          7,
+          8
         ],
         [
           4
         ]
       ],
       [
-        "G°",
+        "F\u00b0",
+        "",
+        "DIMINISHED",
+        [
+          5,
+          7,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F#5",
+        "",
+        "POWER CHORD",
+        [
+          6,
+          3
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "F#sus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          6,
+          2,
+          3
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "F#maj7sus",
+        "4",
+        "SUSPENDED MAJOR 7",
+        [
+          6,
+          2,
+          3,
+          5
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "G#\u00b0",
         "",
         "DIMINISHED",
         [
           1,
-          104,
-          105
+          2,
+          4
         ],
         [
           1
         ]
       ],
       [
-        "Gm7",
+        "G#m7",
         "b5",
-        "HALF-DIMINISHED",
+        "HALF-DIMINISHED ( = Bm6 )",
         [
           1,
-          104,
-          105,
+          2,
+          4,
+          6
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "Bm",
+        "",
+        "B MINOR",
+        [
+          2,
+          4,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "B\u00b0",
+        "",
+        "DIMINISHED",
+        [
+          2,
+          4,
           5
         ],
         [
-          1
+          2
+        ]
+      ],
+      [
+        "B5",
+        "",
+        "POWER CHORD",
+        [
+          2,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Bm",
+        "add9",
+        "B MINOR ADD 9",
+        [
+          2,
+          4,
+          6,
+          3
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Bm",
+        "6/9",
+        "B MINOR 6/9",
+        [
+          2,
+          4,
+          6,
+          7,
+          3
+        ],
+        [
+          2
         ]
       ]
     ],
-    "col_root": [
-      0.427,
-      0.251,
-      0.639
-    ],
-    "col_tone": [
-      0.788,
-      0.592,
-      0.118
-    ],
-    "credit": "F3 LOW PYGMY / F AEOLIAN",
-    "cy": 121.0,
     "degrees": {
-      "0": "v",
-      "1": "VI",
-      "10": "iv",
-      "3": "VII",
-      "5": "i",
-      "7": "ii°",
-      "8": "III"
+      "1": "I",
+      "2": "bII",
+      "6": "iv",
+      "8": "v\u00b0",
+      "11": "bvii",
+      "5": "iii\u00b0"
     },
+    "has_bottom": false,
+    "title": "C# Hijaz / Orion 9 - Chord Cards",
+    "credit": "C# HIJAZ / ORION",
+    "R": 73.0,
+    "cy": 126.0,
+    "y_note": 30.0,
+    "y_num": 14.0,
+    "legend_demo": [
+      5,
+      3
+    ],
     "grad": [
       [
-        0.427,
-        0.251,
-        0.639
+        0.878,
+        0.333,
+        0.604
       ],
       [
-        0.788,
-        0.592,
-        0.118
+        0.886,
+        0.463,
+        0.106
       ]
     ],
-    "has_bottom": true,
-    "legend_demo": [
-      3,
-      0
+    "col_root": [
+      0.878,
+      0.333,
+      0.604
+    ],
+    "col_tone": [
+      0.886,
+      0.463,
+      0.106
+    ],
+    "blurb": [
+      "C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4",
+      "PHRYGIAN DOMINANT, NO b6   -   19 CHORDS"
     ],
     "legend_lines": [
-      "U1 - U6: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)",
-      "Bb AND Db EXIST ONLY ON THE BOTTOM SHELL",
-      "TONEFIELDS 1 - 11 RUN FROM THE LOWEST TOP NOTE"
-    ],
+      "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
+      "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"
+    ]
+  },
+  "pygmy": {
     "name": "F3 LOW PYGMY 18",
+    "sub": "11 + 1 TOP  /  6 BOTTOM",
     "spec": {
+      "_geom": {
+        "rim": 0.722,
+        "inner": 0.38,
+        "bottom": 1.15,
+        "r_ding": 0.19,
+        "ding_dy": 0.1425,
+        "r_note": 0.1425,
+        "r_bnote": 0.1188,
+        "inner_ring": null,
+        "f_ding": 0.114,
+        "f_note": 0.109,
+        "f_bnote": 0.0931,
+        "f_num": 0.0912,
+        "n_in": 0.052,
+        "n_out": 0.068,
+        "rim_num_out": true
+      },
       "0": [
         "F",
         3,
@@ -1165,70 +431,6 @@
         "rim",
         290,
         "1"
-      ],
-      "10": [
-        "F",
-        5,
-        77,
-        "inner",
-        128,
-        "10"
-      ],
-      "101": [
-        "C",
-        3,
-        48,
-        "bottom",
-        300,
-        "U1"
-      ],
-      "102": [
-        "Db",
-        3,
-        49,
-        "bottom",
-        240,
-        "U2"
-      ],
-      "103": [
-        "Eb",
-        3,
-        51,
-        "bottom",
-        0,
-        "U3"
-      ],
-      "104": [
-        "Bb",
-        3,
-        58,
-        "bottom",
-        180,
-        "U4"
-      ],
-      "105": [
-        "Db",
-        4,
-        61,
-        "bottom",
-        60,
-        "U5"
-      ],
-      "106": [
-        "Ab",
-        5,
-        80,
-        "bottom",
-        120,
-        "U6"
-      ],
-      "11": [
-        "G",
-        5,
-        79,
-        "inner",
-        52,
-        "11"
       ],
       "2": [
         "Ab",
@@ -1294,27 +496,1290 @@
         90,
         "9"
       ],
-      "_geom": {
-        "bottom": 1.15,
-        "ding_dy": 0.1425,
-        "f_bnote": 0.0931,
-        "f_ding": 0.114,
-        "f_note": 0.109,
-        "f_num": 0.0912,
-        "inner": 0.38,
-        "inner_ring": null,
-        "n_in": 0.052,
-        "n_out": 0.068,
-        "r_bnote": 0.1188,
-        "r_ding": 0.19,
-        "r_note": 0.1425,
-        "rim": 0.722,
-        "rim_num_out": true
-      }
+      "10": [
+        "F",
+        5,
+        77,
+        "inner",
+        128,
+        "10"
+      ],
+      "11": [
+        "G",
+        5,
+        79,
+        "inner",
+        52,
+        "11"
+      ],
+      "101": [
+        "C",
+        3,
+        48,
+        "bottom",
+        300,
+        "U1"
+      ],
+      "102": [
+        "Db",
+        3,
+        49,
+        "bottom",
+        240,
+        "U2"
+      ],
+      "103": [
+        "Eb",
+        3,
+        51,
+        "bottom",
+        0,
+        "U3"
+      ],
+      "104": [
+        "Bb",
+        3,
+        58,
+        "bottom",
+        180,
+        "U4"
+      ],
+      "105": [
+        "Db",
+        4,
+        61,
+        "bottom",
+        60,
+        "U5"
+      ],
+      "106": [
+        "Ab",
+        5,
+        80,
+        "bottom",
+        120,
+        "U6"
+      ]
     },
-    "sub": "11 + 1 TOP  /  6 BOTTOM",
+    "chords": [
+      [
+        "Fm",
+        "",
+        "F MINOR",
+        [
+          5,
+          7,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F5",
+        "",
+        "POWER CHORD",
+        [
+          5,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fsus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          5,
+          104,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          5,
+          104,
+          8,
+          9
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fm",
+        "7",
+        "F MINOR 7 ( = Ab6 )",
+        [
+          5,
+          7,
+          8,
+          9
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fm",
+        "9",
+        "F MINOR 9",
+        [
+          5,
+          7,
+          8,
+          9,
+          11
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "G\u00b0",
+        "",
+        "DIMINISHED",
+        [
+          1,
+          104,
+          105
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "Gm7",
+        "b5",
+        "HALF-DIMINISHED ( = Bbm6 )",
+        [
+          1,
+          104,
+          105,
+          5
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "Ab",
+        "",
+        "Ab MAJOR",
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Ab",
+        "",
+        "Ab MAJOR - HIGH VOICING",
+        [
+          7,
+          8,
+          9
+        ],
+        [
+          7
+        ]
+      ],
+      [
+        "Ab",
+        "",
+        "Ab MAJOR - HIGH VOICING",
+        [
+          106,
+          8,
+          9
+        ],
+        [
+          106
+        ]
+      ],
+      [
+        "Ab5",
+        "",
+        "POWER CHORD",
+        [
+          2,
+          4
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Ab5",
+        "",
+        "POWER CHORD - HIGH VOICING",
+        [
+          7,
+          9
+        ],
+        [
+          7
+        ]
+      ],
+      [
+        "Ab5",
+        "",
+        "POWER CHORD - HIGH VOICING",
+        [
+          106,
+          9
+        ],
+        [
+          106
+        ]
+      ],
+      [
+        "Absus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          2,
+          105,
+          4
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Abmaj7sus",
+        "4",
+        "SUSPENDED MAJOR 7",
+        [
+          2,
+          105,
+          4,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Abmaj",
+        "7",
+        "Ab MAJOR 7",
+        [
+          2,
+          3,
+          4,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Abmaj",
+        "7",
+        "Ab MAJOR 7 - HIGH VOICING",
+        [
+          7,
+          8,
+          9,
+          11
+        ],
+        [
+          7
+        ]
+      ],
+      [
+        "Abmaj",
+        "7",
+        "Ab MAJOR 7 - HIGH VOICING",
+        [
+          106,
+          8,
+          9,
+          11
+        ],
+        [
+          106
+        ]
+      ],
+      [
+        "Bbm",
+        "",
+        "Bb MINOR",
+        [
+          104,
+          105,
+          5
+        ],
+        [
+          104
+        ]
+      ],
+      [
+        "Bb5",
+        "",
+        "POWER CHORD",
+        [
+          104,
+          5
+        ],
+        [
+          104
+        ]
+      ],
+      [
+        "Bbsus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          104,
+          4,
+          5
+        ],
+        [
+          104
+        ]
+      ],
+      [
+        "Bb7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          104,
+          4,
+          5,
+          7
+        ],
+        [
+          104
+        ]
+      ],
+      [
+        "Bbm",
+        "7",
+        "Bb MINOR 7 ( = Db6 )",
+        [
+          104,
+          105,
+          5,
+          7
+        ],
+        [
+          104
+        ]
+      ],
+      [
+        "Cm",
+        "",
+        "C MINOR",
+        [
+          3,
+          4,
+          6
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Cm",
+        "",
+        "C MINOR - LOW VOICING",
+        [
+          101,
+          103,
+          1
+        ],
+        [
+          101
+        ]
+      ],
+      [
+        "Cm",
+        "",
+        "C MINOR - HIGH VOICING",
+        [
+          8,
+          9,
+          11
+        ],
+        [
+          8
+        ]
+      ],
+      [
+        "C5",
+        "",
+        "POWER CHORD",
+        [
+          3,
+          6
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "C5",
+        "",
+        "POWER CHORD - LOW VOICING",
+        [
+          101,
+          1
+        ],
+        [
+          101
+        ]
+      ],
+      [
+        "C5",
+        "",
+        "POWER CHORD - HIGH VOICING",
+        [
+          8,
+          11
+        ],
+        [
+          8
+        ]
+      ],
+      [
+        "Csus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          3,
+          5,
+          6
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Csus",
+        "4",
+        "SUSPENDED CHORD - LOW VOICING",
+        [
+          101,
+          5,
+          1
+        ],
+        [
+          101
+        ]
+      ],
+      [
+        "Csus",
+        "4",
+        "SUSPENDED CHORD - HIGH VOICING",
+        [
+          8,
+          10,
+          11
+        ],
+        [
+          8
+        ]
+      ],
+      [
+        "C7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          3,
+          5,
+          6,
+          104
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "C7sus",
+        "4",
+        "SUSPENDED DOMINANT 7 - LOW VOICING",
+        [
+          101,
+          5,
+          1,
+          104
+        ],
+        [
+          101
+        ]
+      ],
+      [
+        "Cm",
+        "7",
+        "C MINOR 7 ( = Eb6 )",
+        [
+          3,
+          4,
+          6,
+          104
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Cm",
+        "7",
+        "C MINOR 7 ( = Eb6 ) - LOW VOICING",
+        [
+          101,
+          103,
+          1,
+          104
+        ],
+        [
+          101
+        ]
+      ],
+      [
+        "Db",
+        "",
+        "Db MAJOR",
+        [
+          105,
+          5,
+          7
+        ],
+        [
+          105
+        ]
+      ],
+      [
+        "Db",
+        "",
+        "Db MAJOR - LOW VOICING",
+        [
+          102,
+          5,
+          2
+        ],
+        [
+          102
+        ]
+      ],
+      [
+        "Db5",
+        "",
+        "POWER CHORD",
+        [
+          105,
+          7
+        ],
+        [
+          105
+        ]
+      ],
+      [
+        "Db5",
+        "",
+        "POWER CHORD - LOW VOICING",
+        [
+          102,
+          2
+        ],
+        [
+          102
+        ]
+      ],
+      [
+        "Dbmaj",
+        "7",
+        "Db MAJOR 7",
+        [
+          105,
+          5,
+          7,
+          8
+        ],
+        [
+          105
+        ]
+      ],
+      [
+        "Dbmaj",
+        "7",
+        "Db MAJOR 7 - LOW VOICING",
+        [
+          102,
+          5,
+          2,
+          3
+        ],
+        [
+          102
+        ]
+      ],
+      [
+        "Eb",
+        "",
+        "Eb MAJOR",
+        [
+          4,
+          6,
+          104
+        ],
+        [
+          4
+        ]
+      ],
+      [
+        "Eb",
+        "",
+        "Eb MAJOR - LOW VOICING",
+        [
+          103,
+          1,
+          104
+        ],
+        [
+          103
+        ]
+      ],
+      [
+        "Eb5",
+        "",
+        "POWER CHORD",
+        [
+          4,
+          104
+        ],
+        [
+          4
+        ]
+      ],
+      [
+        "Ebsus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          4,
+          7,
+          104
+        ],
+        [
+          4
+        ]
+      ],
+      [
+        "Ebsus",
+        "4",
+        "SUSPENDED CHORD - LOW VOICING",
+        [
+          103,
+          2,
+          104
+        ],
+        [
+          103
+        ]
+      ],
+      [
+        "Eb7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          4,
+          7,
+          104,
+          105
+        ],
+        [
+          4
+        ]
+      ],
+      [
+        "Eb7sus",
+        "4",
+        "SUSPENDED DOMINANT 7 - LOW VOICING",
+        [
+          103,
+          2,
+          104,
+          105
+        ],
+        [
+          103
+        ]
+      ],
+      [
+        "Eb",
+        "7",
+        "Eb DOMINANT 7",
+        [
+          4,
+          6,
+          104,
+          105
+        ],
+        [
+          4
+        ]
+      ],
+      [
+        "Eb",
+        "7",
+        "Eb DOMINANT 7 - LOW VOICING",
+        [
+          103,
+          1,
+          104,
+          105
+        ],
+        [
+          103
+        ]
+      ]
+    ],
+    "degrees": {
+      "5": "i",
+      "8": "III",
+      "10": "iv",
+      "0": "v",
+      "1": "VI",
+      "3": "VII",
+      "7": "ii\u00b0"
+    },
+    "has_bottom": true,
     "title": "F3 Low Pygmy 18 - Chord Cards",
+    "credit": "F3 LOW PYGMY / F AEOLIAN",
+    "R": 60.0,
+    "cy": 121.0,
     "y_note": 30.0,
-    "y_num": 14.0
+    "y_num": 14.0,
+    "legend_demo": [
+      3,
+      0
+    ],
+    "blank_cards": 7,
+    "grad": [
+      [
+        0.427,
+        0.251,
+        0.639
+      ],
+      [
+        0.788,
+        0.592,
+        0.118
+      ]
+    ],
+    "col_root": [
+      0.427,
+      0.251,
+      0.639
+    ],
+    "col_tone": [
+      0.788,
+      0.592,
+      0.118
+    ],
+    "blurb": [
+      "F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5",
+      "BOTTOM:  C3  Db3  Eb3  Bb3  Db4  Ab5",
+      "COMPLETE F NATURAL MINOR   -   52 CHORDS"
+    ],
+    "legend_lines": [
+      "U1 - U6: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)",
+      "Bb AND Db EXIST ONLY ON THE BOTTOM SHELL",
+      "TONEFIELDS 1 - 11 RUN FROM THE LOWEST TOP NOTE"
+    ]
+  },
+  "amara": {
+    "name": "D AMARA 9",
+    "sub": "8 + 1",
+    "spec": {
+      "_geom": {
+        "rim": 0.745,
+        "r_ding": 0.2,
+        "r_note": 0.19,
+        "inner_ring": 0.355,
+        "f_ding": 0.135,
+        "f_note": 0.128,
+        "f_num": 0.105,
+        "n_in": 0.085,
+        "n_out": 0.0,
+        "r_bnote": 0.0,
+        "f_bnote": 0.0
+      },
+      "0": [
+        "D",
+        3,
+        50,
+        "ding",
+        null,
+        "Ding"
+      ],
+      "1": [
+        "A",
+        3,
+        57,
+        "rim",
+        270,
+        "1"
+      ],
+      "2": [
+        "C",
+        4,
+        60,
+        "rim",
+        225,
+        "2"
+      ],
+      "3": [
+        "D",
+        4,
+        62,
+        "rim",
+        315,
+        "3"
+      ],
+      "4": [
+        "E",
+        4,
+        64,
+        "rim",
+        180,
+        "4"
+      ],
+      "5": [
+        "F",
+        4,
+        65,
+        "rim",
+        0,
+        "5"
+      ],
+      "6": [
+        "G",
+        4,
+        67,
+        "rim",
+        135,
+        "6"
+      ],
+      "7": [
+        "A",
+        4,
+        69,
+        "rim",
+        45,
+        "7"
+      ],
+      "8": [
+        "C",
+        5,
+        72,
+        "rim",
+        90,
+        "8"
+      ]
+    },
+    "chords": [
+      [
+        "Dm",
+        "",
+        "D MINOR",
+        [
+          3,
+          5,
+          7
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "D5",
+        "",
+        "POWER CHORD",
+        [
+          3,
+          7
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Dsus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          3,
+          6,
+          7
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "D7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          3,
+          6,
+          7,
+          8
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Dm",
+        "7",
+        "D MINOR 7 ( = F6 )",
+        [
+          3,
+          5,
+          7,
+          8
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Dm",
+        "add9",
+        "D MINOR ADD 9",
+        [
+          3,
+          5,
+          7,
+          4
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Dm",
+        "9",
+        "D MINOR 9",
+        [
+          3,
+          5,
+          7,
+          8,
+          4
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "Dm",
+        "11",
+        "D MINOR 11",
+        [
+          3,
+          5,
+          7,
+          8,
+          4,
+          6
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        "F",
+        "",
+        "F MAJOR",
+        [
+          5,
+          7,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F5",
+        "",
+        "POWER CHORD",
+        [
+          5,
+          8
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fmaj",
+        "7",
+        "F MAJOR 7",
+        [
+          5,
+          1,
+          2,
+          4
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F",
+        "6/9",
+        "F MAJOR 6/9",
+        [
+          5,
+          1,
+          2,
+          3,
+          6
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fmaj",
+        "9",
+        "F MAJOR 9",
+        [
+          5,
+          1,
+          2,
+          4,
+          6
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "G5",
+        "",
+        "POWER CHORD",
+        [
+          6,
+          3
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "Gsus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          6,
+          2,
+          3
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "G7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          6,
+          2,
+          3,
+          5
+        ],
+        [
+          6
+        ]
+      ],
+      [
+        "Am",
+        "",
+        "A MINOR",
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "A5",
+        "",
+        "POWER CHORD",
+        [
+          1,
+          4
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "Asus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          1,
+          3,
+          4
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "A7sus",
+        "4",
+        "SUSPENDED DOMINANT 7",
+        [
+          1,
+          3,
+          4,
+          6
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "Am",
+        "7",
+        "A MINOR 7 ( = C6 )",
+        [
+          1,
+          2,
+          4,
+          6
+        ],
+        [
+          1
+        ]
+      ],
+      [
+        "C",
+        "",
+        "C MAJOR",
+        [
+          2,
+          4,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "C5",
+        "",
+        "POWER CHORD",
+        [
+          2,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "Csus",
+        "4",
+        "SUSPENDED CHORD",
+        [
+          2,
+          5,
+          6
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "C",
+        "6/9",
+        "C MAJOR 6/9",
+        [
+          2,
+          4,
+          6,
+          7,
+          3
+        ],
+        [
+          2
+        ]
+      ]
+    ],
+    "degrees": {
+      "2": "i",
+      "9": "v",
+      "7": "IV",
+      "0": "bVII",
+      "5": "bIII"
+    },
+    "has_bottom": false,
+    "title": "D Amara 9 - Chord Cards",
+    "credit": "D AMARA / D MINOR",
+    "R": 73.0,
+    "cy": 126.0,
+    "y_note": 30.0,
+    "y_num": 14.0,
+    "legend_demo": [
+      5,
+      3
+    ],
+    "grad": [
+      [
+        0.043,
+        0.482,
+        0.459
+      ],
+      [
+        0.867,
+        0.561,
+        0.0
+      ]
+    ],
+    "col_root": [
+      0.043,
+      0.482,
+      0.459
+    ],
+    "col_tone": [
+      0.867,
+      0.561,
+      0.0
+    ],
+    "blurb": [
+      "D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
+      "25 CHORDS - ONE CARD PER CHORD"
+    ],
+    "legend_lines": [
+      "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
+      "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"
+    ]
   }
 }

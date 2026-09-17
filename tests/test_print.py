@@ -881,21 +881,28 @@ class TitleBlurbChordCountTest(unittest.TestCase):
     leave their blurbs byte-identical - the only visible change is Pygmy's."""
 
     def test_hijaz_blurb_is_unchanged(self):
+        # 2026-09-16 (engine adoption): Hijaz grew 18 -> 19 chords (the
+        # F DIMINISHED card).
         self.assertEqual(
             decks.HIJAZ["blurb"],
             ["C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4",
-             "PHRYGIAN DOMINANT, NO b6   -   18 CHORDS"])
+             "PHRYGIAN DOMINANT, NO b6   -   19 CHORDS"])
 
     def test_amara_blurb_is_unchanged(self):
-        self.assertIn("16 CHORDS", decks.AMARA["blurb"][-1])
+        # 2026-09-16 (engine adoption, D11): Amara grew 16 -> 25 chords,
+        # fully re-ranked by the scale engine.
+        self.assertIn("25 CHORDS", decks.AMARA["blurb"][-1])
 
     def test_pygmy_blurb_reads_the_true_chord_count(self):
-        self.assertEqual(len(decks.PYGMY["chords"]), 27,
-                         "fixture drift: Pygmy no longer has 27 chords")
-        self.assertIn("27 CHORDS", decks.PYGMY["blurb"][-1],
+        # 2026-09-16 (engine adoption, D10 amendment): Pygmy grew 27 -> 52
+        # cards (31 distinct chord names) via the engine's root-instance
+        # register enumeration.
+        self.assertEqual(len(decks.PYGMY["chords"]), 52,
+                         "fixture drift: Pygmy no longer has 52 chords")
+        self.assertIn("52 CHORDS", decks.PYGMY["blurb"][-1],
                       "Pygmy's blurb still reads a stale chord count: %r"
                       % (decks.PYGMY["blurb"][-1],))
-        self.assertNotIn("25 CHORDS", decks.PYGMY["blurb"][-1])
+        self.assertNotIn("27 CHORDS", decks.PYGMY["blurb"][-1])
 
     def test_every_deck_blurb_count_matches_its_own_chord_list(self):
         for deck in ALL_DECKS:
