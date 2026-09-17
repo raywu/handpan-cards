@@ -2243,3 +2243,103 @@ test("the caller scan counts every occurrence, in code and in prose alike", () =
     "improvement, but delete this assertion deliberately rather than " +
     "leaving a stale claim about what the scan cannot see.");
 });
+
+/* ------------------------------------------------------------------ *
+ * iOS keyboard fix - the visualViewport offset math (TODOS.md
+ * "The iOS keyboard covers GENERATE CARDS while typing a seed")
+ *
+ * iOS Safari resizes the VISUAL viewport when the soft keyboard opens, not
+ * the layout viewport the sheet's position:fixed is anchored to:
+ * window.innerHeight stays put while window.visualViewport.height shrinks
+ * and its offsetTop can move. kbOffset(innerHeight, vvHeight, vvOffsetTop)
+ * is the pure translate distance the sheet has to move up by to stay above
+ * the keyboard - the ONLY part of this fix a unit test (or headless
+ * Chromium) can verify. The device behaviour itself - that the button is
+ * actually reachable with a real keyboard up on an iPhone 14 / iOS 26.6 -
+ * is NOT covered here or anywhere in CI; see the PR body.
+ * ------------------------------------------------------------------ */
+test("kbOffset is zero with no keyboard: viewport heights match, offsetTop 0", () => {
+  const app = boot();
+  assert.strictEqual(app.get("kbOffset(844, 844, 0)"), 0);
+  assert.strictEqual(app.get("kbOffset(390, 390, 0)"), 0);
+});
+
+test("kbOffset is the gap between the layout and visual viewport heights", () => {
+  const app = boot();
+  // A 300px keyboard on an 844px-tall layout viewport: visualViewport.height
+  // drops to 544 and offsetTop stays 0 (the page has not scrolled).
+  assert.strictEqual(app.get("kbOffset(844, 544, 0)"), 300);
+});
+
+test("kbOffset also nets out a nonzero visualViewport.offsetTop", () => {
+  const app = boot();
+  // If the page has scrolled the visual viewport down by 20px while the
+  // keyboard also ate 300px, offsetTop's contribution comes back OUT of the
+  // translate - the sheet should not move further than the keyboard alone
+  // requires.
+  assert.strictEqual(app.get("kbOffset(844, 544, 20)"), 280);
+});
+
+test("kbOffset never goes negative when the visual viewport is taller than innerHeight", () => {
+  const app = boot();
+  // A degenerate/rounding case (or a visualViewport briefly larger than
+  // innerHeight, e.g. during a toolbar animation): the sheet must never be
+  // translated DOWN, only up or not at all.
+  assert.strictEqual(app.get("kbOffset(390, 400, 0)"), 0);
+});
+
+/* The translate alone is only half the fix, and on an iPhone 14 (844pt tall,
+ * ~300pt keyboard) the missing half is what the owner actually hit: the
+ * surface is capped at 85dvh, dvh is a LAYOUT-viewport unit and does not
+ * react to the keyboard, so the surface stays ~717px tall. Translating it up
+ * 300px puts its TOP at -173px - GENERATE CARDS comes into view (it rides the
+ * translate, being in the reserved footer) while #scale-box, at the top of
+ * the .sheetbody scrollport, leaves the screen entirely. The seed field
+ * becomes unreachable exactly while you are typing into it.
+ * kbCap() is the pure half of the cap: given the two viewport heights, the
+ * max-height the surface must take so that it fits ENTIRELY inside the
+ * shrunken visual viewport once translated. 0 means "no override" - leave
+ * the stylesheet's 85dvh alone. */
+test("kbCap does not override the stylesheet cap with no keyboard", () => {
+  const app = boot();
+  assert.strictEqual(app.get("kbCap(844, 844)"), 0);
+  assert.strictEqual(app.get("kbCap(390, 390)"), 0);
+});
+
+test("kbCap caps the surface to the shrunken visual viewport", () => {
+  const app = boot();
+  // iPhone 14 portrait, ~300pt keyboard. 544 - 8px breathing room.
+  assert.strictEqual(app.get("kbCap(844, 544)"), 536);
+});
+
+test("kbCap plus kbOffset keeps the whole surface on screen", () => {
+  const app = boot();
+  // The invariant the owner's screenshot violated: with the surface capped
+  // at kbCap and lifted by kbOffset, its top edge must be >= 0 and its
+  // bottom edge must clear the keyboard.
+  const off = app.get("kbOffset(844, 544, 0)");
+  const cap = app.get("kbCap(844, 544)");
+  const bottom = 844 - off;          // where the surface's bottom edge lands
+  assert.ok(bottom - cap >= 0, "surface top is off-screen");
+  assert.ok(bottom <= 544, "surface bottom is under the keyboard");
+});
+
+test("kbCap never goes negative on a degenerate viewport", () => {
+  const app = boot();
+  assert.strictEqual(app.get("kbCap(390, 400)"), 0);
+  assert.strictEqual(app.get("kbCap(844, 4)"), 0);
+});
+
+test("applyKbOffset is a no-op in an environment with no visualViewport", () => {
+  // The unit sandbox has no window.visualViewport (see tests/helpers/
+  // sandbox.js) and #scale-sheet is a bare stub with no real .sheetsurf
+  // child, so sheetSurf is undefined here. Booting, opening and closing the
+  // sheet must not throw - the guard in applyKbOffset() is exactly what
+  // keeps this safe both here and on a browser that lacks the API.
+  const app = boot();
+  assert.doesNotThrow(() => {
+    app.run("openScaleSheet()");
+    app.run("applyKbOffset()");
+    app.run("closeScaleSheet()");
+  });
+});

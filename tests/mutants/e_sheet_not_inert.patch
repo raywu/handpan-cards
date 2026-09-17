@@ -4,14 +4,13 @@
 # modal: the practice screen's buttons remain clickable and focusable
 # underneath it.
 diff --git a/index.html b/index.html
-index a127d86..d89a1e6 100644
 --- a/index.html
 +++ b/index.html
-@@ -2864,7 +2864,6 @@ function showSheet(opener) {
+@@ -4386,7 +4386,6 @@
    sheetOpener = opener || addChip;
    sheet.removeAttribute("hidden");
    sheetOpen = true;
 -  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
    updateParse();
+   applyKbOffset();
    scaleBox.focus();
- }
