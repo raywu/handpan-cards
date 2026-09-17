@@ -3,16 +3,21 @@
 # Paints the preview onto the real deck, the way Stage 2 did. D4 made "the deck
 # is untouched until SAVE" structural by never writing it at all; write it here
 # and Escape commits the very correction the user backed out of.
+# The write is the SOLVED pan, not layoutFields(): a parsed seed carries no
+# angles yet, so writing it would corrupt the deck rather than leave the
+# rotation on it - the named test would still fail, but on a different defect
+# than the one this mutant claims to model.
 diff --git a/index.html b/index.html
-index 79d9295..148e3b9 100644
+index 79d9295..2a3b237 100644
 --- a/index.html
 +++ b/index.html
-@@ -4332,6 +4332,8 @@ function selectedField(fields) {
+@@ -4332,6 +4332,9 @@ function selectedField(fields) {
   * something a restore function has to remember to do. */
  function previewLayout() {
    if (!editingId) return;
-+  const fields = layoutFields();
-+  if (fields && CUSTOM[editingId]) CUSTOM[editingId].fields = fields;
++  const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
++  const solved = res.ok ? solvePreviewLayout(res.value) : null;
++  if (solved && CUSTOM[editingId]) CUSTOM[editingId].fields = solved.fields;
    updateParse();
  }
  

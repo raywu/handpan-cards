@@ -193,7 +193,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    axis - the overlay would lie over the card. An overlay that
    reaches outside its element is the row-214 defect in another costume. Making
    the box itself 44px cannot steal from a neighbour: normal flow gives it the
-   room. Precedent: .chip, button.nav, #scale-generate and #scale-slots .slot
+   room. Precedent: .chip, button.nav, #scale-generate and #scale-delete
    are already sized this way. The label stays optically where it was via flex centring; the vertical
    padding is now inert but is kept so the button still measures 25.5px if the
    min-height is ever removed. */
@@ -583,6 +583,12 @@ button.nav:active{background:#2e281e}
    #scale-generate. The PAN is the selection and a single tab stop; its arrow
    keys walk the notes, so there is no drag-only path to any of this. */
 #scale-layout-row{gap:var(--sp-2)}
+/* The hint reads as prose, so it takes the parse line's Bitter rather than the
+   label's letter-spaced caps - it is a sentence to read once, not a control
+   label to scan. Dimmer than #scale-parse: that line reports on what is in the
+   box and changes as you type, this one never changes. */
+.sheethint{margin:0; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
+  line-height:1.5; color:#a79d8b; overflow-wrap:anywhere}
 #scale-layout-row .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
 /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
    it has to sit on ONE note at the radius that note was drawn at, which is a
@@ -744,7 +750,17 @@ button.nav:active{background:#2e281e}
          target, one group, both above the fold at 380px. -->
     <div class="editrow" id="scale-layout-row" hidden>
       <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
-      <div class="ctlrow" role="group" aria-labelledby="scale-layout-label">
+      <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
+           intend to do since I can't see the layout of the pan change in real
+           time". Stage 3 answered the second half by putting the mock in the
+           flow; this sentence answers the first, and it has to live HERE - a
+           comment in this file teaches nobody, and a doc is not on the phone
+           the correction is made on. It names the gesture before the buttons
+           because nothing either button does means anything until a note is
+           chosen. -->
+      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+      <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
+           aria-describedby="scale-layout-hint">
         <div class="mirror">
           <button class="mode" type="button" id="scale-rot-l"
                   aria-label="Rotate the selected note's ring one position back">ROTATE &larr;</button>

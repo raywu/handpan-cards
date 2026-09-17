@@ -1,18 +1,24 @@
 # kills: pan()'s two-argument output is unchanged by the interactive layer
 # suite: node --test --test-name-pattern ^pan...s.two-argument.output.is.unchanged.by.the.interactive.layer$ tests/app.test.js
-# Turns the hit layer on for every caller, so the card path emits markup the
-# print renderer has no counterpart for and tests/test_render_agreement.py
-# is comparing two different diagrams.
+# Emits the two interactive layers for every caller, so the card path carries
+# markup the print renderer has no counterpart for and
+# tests/test_render_agreement.py is comparing two different diagrams.
+# Mutating the EMISSION rather than the `interactive` flag is deliberate: the
+# flag also gates `opts.selected`, so flipping it throws on the card path's
+# null opts and takes boot() down with it - which kills every test in the file
+# and proves nothing about the one named above.
 diff --git a/index.html b/index.html
-index 79d9295..8c2628b 100644
+index 79d9295..244b827 100644
 --- a/index.html
 +++ b/index.html
-@@ -3772,7 +3772,7 @@ function numSize(rNote) { return rNote * NUM_RATIO; }
-  * tests/test_render_agreement.py pins its output against tools/hifi.py per
-  * field: with no third argument the bytes are the ones print agrees with. */
- function pan(d, ch, opts) {
--  const interactive = !!(opts && opts.interactive);
-+  const interactive = true;
-   // The SELECTED field id, or null. Drawn, not implied: the LAYOUT controls act
-   // on one note, and a user who cannot see which one is being asked to trust
-   // that ROTATE and MOVE will do what they mean - which is the exact complaint
+@@ -3874,8 +3874,8 @@ function pan(d, ch, opts) {
+   }
+   // After every field, so a target is never painted under the pan it selects,
+   // and the ring under the targets so it can never eat a tap.
+-  if (interactive) s += `<g class="pansels">${rings.join("")}</g>`
+-                      + `<g class="panhits">${hits.join("")}</g>`;
++  s += `<g class="pansels">${rings.join("")}</g>`
++     + `<g class="panhits">${hits.join("")}</g>`;
+   return s + "</svg>";
+ }
+ 
