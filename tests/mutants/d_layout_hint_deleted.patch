@@ -1,0 +1,19 @@
+# kills: the LAYOUT group explains itself on the page, not only in a comment
+# suite: node --test --test-name-pattern ^the.LAYOUT.group.explains.itself.on.the.page,.not.only.in.a.comment$ tests/app.test.js
+# Deletes the one sentence on the page that says what ROTATE and MOVE do. Every
+# button still works and every other test still passes, which is exactly why
+# this needs a mutant of its own: the defect is that the owner cannot tell what
+# the controls are for, and nothing else in the suite can see a missing
+# explanation.
+diff --git a/index.html b/index.html
+index 3034159..b7c8569 100644
+--- a/index.html
++++ b/index.html
+@@ -758,7 +758,6 @@ button.nav:active{background:#2e281e}
+            the correction is made on. It names the gesture before the buttons
+            because nothing either button does means anything until a note is
+            chosen. -->
+-      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+       <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
+            aria-describedby="scale-layout-hint">
+         <div class="mirror">
