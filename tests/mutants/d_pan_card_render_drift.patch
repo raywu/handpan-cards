@@ -1,0 +1,17 @@
+# kills: the card render still matches the committed digest of every built-in card
+# suite: node --test --test-name-pattern ^the.card.render.still.matches.the.committed.digest.of.every.built-in.card$ tests/app.test.js
+# Thins the outer rim of the pan. A real, deliberate-looking render change that
+# the two-argument/three-argument comparison cannot see, because it moves both
+# sides - which is what the committed digest is for.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3759,7 +3759,7 @@
+ 
+   if (hasBottom)
+     s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;
+-  s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="2"/>`;
++  s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="1.6"/>`;
+   if (g.inner_ring)
+     s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
+ 

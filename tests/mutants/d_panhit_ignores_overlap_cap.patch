@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3830,7 +3830,7 @@
-   for (let i = 0; i < pts.length; i += 1)
-     for (let j = i + 1; j < pts.length; j += 1)
-       closest = Math.min(closest, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]));
--  return Math.min(want, closest / 2);
-+  return want;
+@@ -3848,7 +3848,7 @@
+     for (let j = 0; j < pts.length; j += 1)
+       if (j !== i)
+         half = Math.min(half, Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) / 2);
+-    return Math.min(Math.max((minPx / 2) * scale, p[2] || 0), half);
++    return Math.max((minPx / 2) * scale, p[2] || 0);
+   });
  }
  
- /** Size an inserted interactive pan's hit layer. Idempotent, so it can run

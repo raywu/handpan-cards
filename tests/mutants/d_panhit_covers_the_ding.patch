@@ -1,0 +1,16 @@
+# kills: interactive pan() adds one hit target per non-ding field, and none for the ding
+# suite: node --test --test-name-pattern ^interactive.pan...adds.one.hit.target.per.non-ding.field,.and.none.for.the.ding$ tests/app.test.js
+# Counts the ding as selectable. It has no slot in the layout correction, so the
+# 'position N of M' every target announces is off by one on every deck.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3785,7 +3785,7 @@
+   const numFs = numSize(R * g.r_note);
+   // The ding has no slot in the layout correction, so it is not selectable and
+   // is not counted in the "position N of M" a screen reader reads out.
+-  const selectable = Object.keys(d.fields).filter((f) => d.fields[f][3] !== "ding").length;
++  const selectable = Object.keys(d.fields).length;
+   for (const fid in d.fields) {
+     const id = +fid;
+     const [name, oct, , zone, ang, lab] = d.fields[fid];

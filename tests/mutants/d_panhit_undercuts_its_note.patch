@@ -1,0 +1,16 @@
+# kills: a hit target reaches 44px, never undercuts its own note, and never laps a neighbour
+# suite: node --test --test-name-pattern ^a.hit.target.reaches.44px,.never.undercuts.its.own.note,.and.never.laps.a.neighbour$ tests/app.test.js
+# Ignores the drawn radius, so on a sparse pan whose note rings are wider than
+# 44px the hit target is SMALLER than the circle the user is aiming at.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3848,7 +3848,7 @@
+     for (let j = 0; j < pts.length; j += 1)
+       if (j !== i)
+         half = Math.min(half, Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) / 2);
+-    return Math.min(Math.max((minPx / 2) * scale, p[2] || 0), half);
++    return Math.min((minPx / 2) * scale, half);
+   });
+ }
+ 

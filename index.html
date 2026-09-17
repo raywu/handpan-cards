@@ -3677,6 +3677,12 @@ function chordSets(d, ch) {
   return { blue, green, rpc };
 }
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+// esc() is sized for TEXT CONTENT, where a double quote is an ordinary
+// character. In an ATTRIBUTE a double quote ends the attribute and everything
+// after it is markup, so attribute position needs the extra escape. Kept
+// separate rather than folded into esc() because the card path's bytes are
+// pinned against tools/hifi.py per field by tests/test_render_agreement.py.
+const escA = s => esc(s).replace(/"/g, "&quot;");
 
 /* ---------------- diagram label sizing ----------------
    ONE rule sizes every glyph the pan draws, and tools/hifi.py carries the
@@ -3777,6 +3783,9 @@ function pan(d, ch, opts) {
   }
 
   const numFs = numSize(R * g.r_note);
+  // The ding has no slot in the layout correction, so it is not selectable and
+  // is not counted in the "position N of M" a screen reader reads out.
+  const selectable = Object.keys(d.fields).filter((f) => d.fields[f][3] !== "ding").length;
   for (const fid in d.fields) {
     const id = +fid;
     const [name, oct, , zone, ang, lab] = d.fields[fid];
@@ -3806,45 +3815,64 @@ function pan(d, ch, opts) {
     // the layout correction, so there is nothing to select it FOR.
     if (interactive)
       hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
-        + ` fill="transparent" tabindex="-1" role="button"`
-        + ` aria-label="${esc(name + oct)}, position ${esc(String(lab))}"/>`);
+        + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
+        + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
   }
   // After every field, so a target is never painted under the pan it selects.
   if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
   return s + "</svg>";
 }
 
-/** The hit radius in VIEWBOX units, for `minPx` CSS pixels across at a render
- *  `widthPx` wide - capped at half the closest centre-to-centre distance.
+/** The hit radius of EVERY target, in VIEWBOX units, for a pan rendered
+ *  `sizePx` across. `pts` is `[[x, y, rDrawn], ...]`; the answer is per target.
  *
- *  Two things this is answering. CSS cannot do it: vector-effect holds a
+ *  Three things this is answering. CSS cannot do it: vector-effect holds a
  *  STROKE against the viewBox scale and has nothing to say about a circle's hit
- *  area, so the radius has to be computed from a width nobody knows until the
- *  SVG is in the document. And the 44px floor is not always reachable - Pygmy
- *  has 17 selectable fields - so where it is not, NON-OVERLAP WINS: a target
- *  that laps its neighbour silently selects the wrong note, which is a worse
- *  failure than a target that is merely small. */
-function panHitRadius(ext, widthPx, minPx, pts) {
-  const want = (minPx / 2) * ((2 * ext) / widthPx);
-  let closest = Infinity;
-  for (let i = 0; i < pts.length; i += 1)
-    for (let j = i + 1; j < pts.length; j += 1)
-      closest = Math.min(closest, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]));
-  return Math.min(want, closest / 2);
+ *  area, so the radius has to be computed from a size nobody knows until the
+ *  SVG is in the document. The 44px floor is not always reachable - Pygmy has
+ *  17 selectable fields - so where it is not, NON-OVERLAP WINS: a target that
+ *  laps its neighbour silently selects the wrong note, which is a worse failure
+ *  than a target that is merely small. And a target is never smaller than the
+ *  note it covers: on a sparse pan the drawn ring is wider than 44px, and a
+ *  user aiming at a circle they can plainly see must not miss it.
+ *
+ *  Per target rather than one radius for the whole pan, which matters twice.
+ *  It stays provably disjoint - with r_i <= min_j(d_ij)/2 for each i, any pair
+ *  has r_i + r_j <= d_ij - while letting a roomy corner of the pan keep a big
+ *  target that one tight pair elsewhere would otherwise shrink. And two fields
+ *  at the same point zero only each other instead of the entire layer. */
+function panHitRadii(ext, sizePx, minPx, pts) {
+  const scale = (2 * ext) / sizePx;
+  return pts.map((p, i) => {
+    let half = Infinity;
+    for (let j = 0; j < pts.length; j += 1)
+      if (j !== i)
+        half = Math.min(half, Math.hypot(p[0] - pts[j][0], p[1] - pts[j][1]) / 2);
+    return Math.min(Math.max((minPx / 2) * scale, p[2] || 0), half);
+  });
 }
 
-/** Size an inserted interactive pan's hit layer. Idempotent, so it can run
- *  again on resize or orientation change without compounding. */
+/** Size an inserted interactive pan's hit layer from its MEASURED box.
+ *
+ *  Idempotent: each target's own drawn radius is read back from data-r, never
+ *  from the `r` a previous pass wrote, so running again on resize or an
+ *  orientation change cannot compound. A layer that has not been laid out yet
+ *  measures zero and is left with its rendered radii rather than zeroed. */
 function sizePanHits(svg, minPx) {
   if (!svg || !svg.getAttribute) return;
   const ext = Number(svg.getAttribute("data-ext"));
-  const w = svg.getBoundingClientRect ? svg.getBoundingClientRect().width : 0;
-  if (!ext || !w) return;
+  const box = svg.getBoundingClientRect ? svg.getBoundingClientRect() : null;
+  // A square viewBox under the default xMidYMid meet renders at the SMALLER of
+  // the two dimensions: in a short wide box the pan is sized by the height, and
+  // a scale taken from the width alone would make every target too small.
+  const size = box ? Math.min(box.width, box.height) : 0;
+  if (!ext || !size) return;
   const nodes = [].slice.call(svg.querySelectorAll(".panhit"));
   if (!nodes.length) return;
-  const pts = nodes.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy"))]);
-  const r = panHitRadius(ext, w, minPx, pts);
-  for (const n of nodes) n.setAttribute("r", String(r));
+  const pts = nodes.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy")),
+                                Number(n.getAttribute("data-r")) || 0]);
+  const r = panHitRadii(ext, size, minPx, pts);
+  nodes.forEach((n, i) => n.setAttribute("r", String(r[i])));
 }
 
 /* ---------------- card faces ---------------- */

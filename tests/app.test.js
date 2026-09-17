@@ -2367,6 +2367,37 @@ test("pan()'s two-argument output is unchanged by the interactive layer", () => 
   }
 });
 
+/**
+ * The test above compares two renders from the SAME tree, so a change that
+ * moves both is invisible to it. This one holds the card render against a
+ * committed digest, which is the only form of the criterion that survives the
+ * next lane: "the printed cards did not change" is a claim about a previous
+ * tree, and nothing in a single tree can make it.
+ *
+ * A failure here is not automatically a bug - a deliberate render change
+ * regenerates the fixture (node tools/regen_pan_fixture.js) IN THE SAME COMMIT
+ * and says why. It fails so that nobody does it by accident.
+ */
+test("the card render still matches the committed digest of every built-in card", () => {
+  const crypto = require("node:crypto");
+  const fixture = require("./fixtures/pan_render_v1.json");
+  const digest = (x) => crypto.createHash("sha256").update(x).digest("hex").slice(0, 16);
+  const app = boot();
+  const D = decks(app);
+  assert.deepStrictEqual(plain(D.map((d) => d.id)).sort(), Object.keys(fixture.decks).sort(),
+    "the fixture covers exactly the built-in decks");
+  for (let di = 0; di < D.length; di++) {
+    const rows = fixture.decks[D[di].id];
+    assert.strictEqual(digest(app.get(`pan(DECKS[${di}], null)`)), rows.null,
+      `${D[di].id}: the unhighlighted render drifted`);
+    assert.strictEqual(Object.keys(rows).length - 1, D[di].chords.length,
+      `${D[di].id}: the fixture has a row per chord`);
+    for (let ci = 0; ci < D[di].chords.length; ci++)
+      assert.strictEqual(digest(app.get(`pan(DECKS[${di}], DECKS[${di}].chords[${ci}])`)), rows[ci],
+        `${D[di].id} #${ci + 1}: the card render drifted - regenerate the fixture only on purpose`);
+  }
+});
+
 test("interactive pan() adds one hit target per non-ding field, and none for the ding", () => {
   const app = boot();
   const D = decks(app);
@@ -2384,77 +2415,158 @@ test("interactive pan() adds one hit target per non-ding field, and none for the
     for (const f of ding)
       assert.ok(!got.includes(f), `${d.id}: the ding carries no correction slot, so no hit target`);
 
-    // One tab stop for the whole pan (the chip grid's guarantee, moved): every
-    // target is programmatically focusable but none is in the tab order.
+    // Every target is programmatically focusable but none is in the tab order:
+    // the page reaches the pan through one container stop, which Stage 2 adds.
+    // Until then the layer is deliberately unreachable by Tab.
     const stops = (svg.match(/class="panhit"[^>]*tabindex="-1"/g) || []).length;
     assert.strictEqual(stops, selectable.length, `${d.id}: every hit target is tabindex=-1`);
 
-    // Each one names the note a screen reader would be selecting.
+    // A target that paints is a target that hides the note under it: SVG's
+    // default fill is BLACK, so the transparent fill is load-bearing, not
+    // decoration. And a control with no role announces as nothing.
+    assert.strictEqual((svg.match(/class="panhit"[^>]*fill="transparent"/g) || []).length,
+      selectable.length, `${d.id}: every hit target is transparent, not painted`);
+    assert.strictEqual((svg.match(/class="panhit"[^>]*role="button"/g) || []).length,
+      selectable.length, `${d.id}: every hit target announces as a button`);
+
+    // Each one names the note a screen reader would be selecting, and says how
+    // many there are to move through (the plan's "position N of M").
     for (const f of selectable) {
       const [name, oct, , , , lab] = d.fields[f];
-      assert.ok(svg.includes(`aria-label="${name}${oct}, position ${lab}"`),
-        `${d.id}: field ${f} names itself`);
+      assert.ok(svg.includes(`aria-label="${name}${oct}, position ${lab} of ${selectable.length}"`),
+        `${d.id}: field ${f} names itself and the size of the set`);
     }
   }
 });
 
 /**
+ * A hit target that is not centred on the note it selects is the one defect the
+ * count above cannot see: swap cx and cy and there are still exactly the right
+ * number of correctly-labelled targets, all in the wrong places. The pan
+ * already draws a circle at every field centre, so the check needs no geometry
+ * of its own - every target must land on one of them.
+ */
+test("every hit target is centred on the field circle it selects", () => {
+  const app = boot();
+  const D = decks(app);
+  const N = "([-+\\d.eE]+)";   // a field on the vertical axis renders in exponent form
+  for (let di = 0; di < D.length; di++) {
+    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const key = (x, y) => `${Number(x).toFixed(6)},${Number(y).toFixed(6)}`;
+    const drawn = new Set([...svg.matchAll(new RegExp(`<circle cx="${N}" cy="${N}"`, "g"))]
+      .map((m) => key(m[1], m[2])));
+    const hits = [...svg.matchAll(new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}"`, "g"))];
+    assert.ok(hits.length > 0, `${D[di].id}: the layer has targets to check`);
+    for (const h of hits)
+      assert.ok(drawn.has(key(h[1], h[2])),
+        `${D[di].id}: a hit target at ${key(h[1], h[2])} sits on no drawn field`);
+  }
+});
+
+/**
+ * SVG paints in document order with no z-index, so a hit layer emitted BEFORE
+ * the fields is a hit layer the fields cover: every tap would land on the
+ * opaque white field circle and the target would never fire.
+ */
+test("the hit layer is emitted after everything it sits over", () => {
+  const app = boot();
+  const svg = app.get(`pan(DECKS[0], null, {interactive:true})`);
+  const group = svg.indexOf(`<g class="panhits">`);
+  assert.ok(group > 0, "the layer is emitted as one group");
+  assert.strictEqual(svg.slice(0, group).indexOf("panhit"), -1,
+    "nothing of the layer is drawn before the group");
+  assert.ok(svg.lastIndexOf("<text") < group,
+    "every label is already drawn when the layer goes down");
+});
+
+/**
  * The hit radius cannot come from CSS: vector-effect holds STROKE width against
  * the viewBox scale and does nothing for a circle's hit area. It is computed
- * after insertion from the measured width - and where a dense pan cannot hold
- * disjoint 44px targets, NON-OVERLAP WINS, because a target that overlaps its
- * neighbour selects the wrong note silently, which is worse than a small one.
+ * after insertion from the measured size, per target, under two rules:
+ *
+ *   - NON-OVERLAP WINS. A target that laps its neighbour selects the wrong note
+ *     silently, which is worse than a target that is merely small. Where a
+ *     dense pan cannot hold disjoint 44px targets, they stop at touching.
+ *   - A target is never SMALLER than the note it selects. On a sparse pan the
+ *     drawn note is bigger than 44px, and a user aiming at a ring they can
+ *     plainly see must not miss it.
  */
-test("the hit radius reaches 44px where it fits and stops at touching where it does not", () => {
+test("a hit target reaches 44px, never undercuts its own note, and never laps a neighbour", () => {
   const app = boot();
-  const r = (ext, w, min, pts) =>
-    app.get(`panHitRadius(${ext}, ${w}, ${min}, ${JSON.stringify(pts)})`);
+  const rr = (ext, size, min, pts) =>
+    plain(app.get(`panHitRadii(${ext}, ${size}, ${min}, ${JSON.stringify(pts)})`));
 
   // Two fields 100 viewBox units apart, a 106-unit half-extent rendered 380px
-  // wide: one CSS px is 212/380 viewBox units, so 44px wants a radius of 24.5.
+  // across: one CSS px is 212/380 viewBox units, so 44px wants a radius of 22px.
   const perPx = 212 / 380;
-  assert.ok(Math.abs(r(106, 380, 44, [[-50, 0], [50, 0]]) - 22 * perPx) < 1e-9,
+  assert.deepStrictEqual(rr(106, 380, 44, [[-50, 0, 1], [50, 0, 1]]).map((r) => r.toFixed(9)),
+    [22 * perPx, 22 * perPx].map((r) => r.toFixed(9)),
     "a sparse pan gets the full 44px");
+
   // Same pan, the two fields 20 apart: 44px would overlap, so they touch.
-  assert.strictEqual(r(106, 380, 44, [[-10, 0], [10, 0]]), 10,
+  assert.deepStrictEqual(rr(106, 380, 44, [[-10, 0, 1], [10, 0, 1]]), [10, 10],
     "a dense pan stops at touching rather than overlapping");
+
+  // A drawn note wider than 44px keeps its own size - the floor is a floor.
+  assert.deepStrictEqual(rr(106, 380, 44, [[-50, 0, 30], [50, 0, 1]]).map((r) => r.toFixed(9)),
+    [(30).toFixed(9), (22 * perPx).toFixed(9)],
+    "a note bigger than the floor keeps its own radius");
+  // ...but not past its neighbour.
+  assert.deepStrictEqual(rr(106, 380, 44, [[-10, 0, 30], [10, 0, 1]]), [10, 10],
+    "a big note still stops at touching");
+
   // A single field has no neighbour to collide with.
-  assert.ok(Math.abs(r(106, 380, 44, [[0, 0]]) - 22 * perPx) < 1e-9,
+  assert.ok(Math.abs(rr(106, 380, 44, [[0, 0, 1]])[0] - 22 * perPx) < 1e-9,
     "one field is never overlapping");
+
   // A wider render needs fewer viewBox units for the same 44 CSS px.
-  assert.ok(r(106, 760, 44, [[-50, 0], [50, 0]]) < r(106, 380, 44, [[-50, 0], [50, 0]]),
-    "the radius tracks the rendered width");
+  assert.ok(rr(106, 760, 44, [[-50, 0, 1], [50, 0, 1]])[0]
+          < rr(106, 380, 44, [[-50, 0, 1], [50, 0, 1]])[0],
+    "the radius tracks the rendered size");
+
+  // Two fields at the SAME point cannot both be hittable, but the rest of the
+  // pan must not be zeroed with them. Per-target radii are what make that true;
+  // a single shared radius would take the whole layer down to 0.
+  const coincident = rr(106, 380, 44, [[0, 0, 1], [0, 0, 1], [80, 0, 1]]);
+  assert.deepStrictEqual(coincident.slice(0, 2), [0, 0], "a coincident pair is not hittable");
+  assert.ok(coincident[2] > 0, "a coincident pair does not zero its neighbours");
 });
 
 test("every built-in pan holds disjoint hit targets at the page-scale width", () => {
   const app = boot();
   const D = decks(app);
   const N = "([-+\\d.eE]+)";   // a field on the vertical axis renders cx in exponent form
-  // Stage 2 gives the page-scale pan at least 300px at a 380px viewport, where the
-  // drawer's 184px plate gave 184. NON-OVERLAP WINS over the 44px floor: a target
-  // that laps its neighbour silently selects the wrong note, which is worse than a
-  // small one. So the floor is asserted only where the geometry has room for it,
-  // and where it does not the measured size is RECORDED - a regression that shrinks
-  // Pygmy's targets further trips the pin rather than passing unnoticed.
+  // Stage 2 gives the page-scale pan at least 300px at a 380px viewport, where
+  // the drawer's 184px plate gave 184. NON-OVERLAP WINS over the 44px floor, so
+  // the floor is asserted only where the geometry has room for it, and where it
+  // does not the measured size is RECORDED - a regression that shrinks Pygmy's
+  // targets further trips the pin rather than passing unnoticed. Pygmy reaches
+  // 44px only at a 379.45px render, which is why Stage 2 cannot get the floor on
+  // every deck inside a 380px viewport that has any padding at all.
   const CAPPED = { pygmy: 34.8 };   // 17 fields; touching diameter at 300px
   for (let di = 0; di < D.length; di++) {
     const d = D[di];
     const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
     const ext = Number(svg.match(new RegExp(`data-ext="${N}"`))[1]);
-    const pts = [...svg.matchAll(new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}"`, "g"))]
-      .map((m) => [Number(m[1]), Number(m[2])]);
-    assert.ok(pts.length > 0, `${d.id}: hit targets carry their centres`);
-    const rad = app.get(`panHitRadius(${ext}, 300, 44, ${JSON.stringify(pts)})`);
+    const pts = [...svg.matchAll(
+      new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}" r="${N}"`, "g"))]
+      .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]);
+    assert.strictEqual(pts.length,
+      Object.keys(d.fields).filter((f) => d.fields[f][F_ZONE] !== "ding").length,
+      `${d.id}: every target carries its centre and its note's radius`);
+    const rad = plain(app.get(`panHitRadii(${ext}, 300, 44, ${JSON.stringify(pts)})`));
 
-    // Disjoint: no pair of centres is closer than two radii.
+    // Disjoint: no pair of centres is closer than the two radii together.
     for (let i = 0; i < pts.length; i += 1)
       for (let j = i + 1; j < pts.length; j += 1) {
         const gap = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
-        assert.ok(gap >= 2 * rad - 1e-9,
-          `${d.id}: targets ${i} and ${j} overlap (${gap} apart, r=${rad})`);
+        assert.ok(gap >= rad[i] + rad[j] - 1e-9,
+          `${d.id}: targets ${i} and ${j} overlap (${gap} apart, r=${rad[i]}+${rad[j]})`);
       }
 
-    const px = rad * 2 * (300 / (2 * ext));
+    // The smallest target on the pan is the one that decides whether the deck
+    // clears the floor; a per-target radius means the biggest one may exceed it.
+    const px = Math.min(...rad) * 2 * (300 / (2 * ext));
     if (CAPPED[d.id] === undefined) {
       assert.ok(px >= 44 - 1e-9,
         `${d.id}: ${pts.length} targets at 300px measure ${px.toFixed(1)}px, want 44`);
@@ -2463,5 +2575,77 @@ test("every built-in pan holds disjoint hit targets at the page-scale width", ()
         `${d.id}: geometry caps its ${pts.length} targets; measured ${px.toFixed(1)}px, pinned ${CAPPED[d.id]}`);
       assert.ok(px < 44, `${d.id}: capped deck no longer needs its pin - assert the 44px floor instead`);
     }
+    // ...and no target is smaller than the note it selects unless its nearest
+    // neighbour forced it down, which is the one reason that outranks the note.
+    for (let i = 0; i < pts.length; i += 1) {
+      let half = Infinity;
+      for (let j = 0; j < pts.length; j += 1)
+        if (j !== i) half = Math.min(half,
+          Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]) / 2);
+      assert.ok(rad[i] >= Math.min(pts[i][2], half) - 1e-9,
+        `${d.id}: target ${i} (r=${rad[i]}) undercuts its own note (${pts[i][2]}) for no reason`);
+    }
   }
+});
+
+/**
+ * sizePanHits is the post-insert pass: it is the only place the rendered size
+ * is known. Driven here through the same shape a browser hands it, because the
+ * radius written into the document is what the user actually taps.
+ */
+test("sizePanHits sizes an inserted layer from the measured box, idempotently", () => {
+  const app = boot();
+  app.run(`
+    globalThis.__stub = (w, h, pts) => {
+      const nodes = pts.map(([x, y, r]) => {
+        const a = { cx: String(x), cy: String(y), r: String(r), "data-r": String(r) };
+        return { getAttribute: (k) => (k in a ? a[k] : null),
+                 setAttribute: (k, v) => { a[k] = String(v); }, attrs: a };
+      });
+      return { nodes,
+               getAttribute: (k) => (k === "data-ext" ? "106" : null),
+               getBoundingClientRect: () => ({ width: w, height: h }),
+               querySelectorAll: () => nodes };
+    };`);
+  const radii = (w, h, pts) => plain(app.get(
+    `(() => { const s = __stub(${w}, ${h}, ${JSON.stringify(pts)});
+              sizePanHits(s, 44); return s.nodes.map((n) => Number(n.getAttribute("r"))); })()`));
+
+  const sparse = [[-50, 0, 1], [50, 0, 1]];
+  const at380 = radii(380, 380, sparse);
+  assert.ok(Math.abs(at380[0] - 22 * (212 / 380)) < 1e-9, "a measured 380px box gives 44px targets");
+  assert.ok(radii(760, 760, sparse)[0] < at380[0], "a wider box needs fewer viewBox units");
+
+  // xMidYMid meet scales by the SMALLER dimension: a short, wide box renders the
+  // pan at its height, and a radius derived from the width alone is too small.
+  assert.deepStrictEqual(radii(760, 380, sparse), at380,
+    "a short wide box is sized by its height, the dimension the pan actually fits");
+
+  // Idempotent: the second pass reads data-r, not the r it just wrote, so
+  // running again on resize cannot compound.
+  const twice = plain(app.get(
+    `(() => { const s = __stub(380, 380, ${JSON.stringify(sparse)});
+              sizePanHits(s, 44); sizePanHits(s, 44); sizePanHits(s, 44);
+              return s.nodes.map((n) => Number(n.getAttribute("r"))); })()`));
+  assert.deepStrictEqual(twice, at380, "re-running on resize changes nothing");
+
+  // A layer that has not been laid out yet (zero box) is left alone rather than
+  // zeroed, so the default radii keep working until a real measurement arrives.
+  const unlaid = plain(app.get(
+    `(() => { const s = __stub(0, 0, ${JSON.stringify(sparse)});
+              sizePanHits(s, 44); return s.nodes.map((n) => Number(n.getAttribute("r"))); })()`));
+  assert.deepStrictEqual(unlaid, [1, 1], "an unmeasured layer keeps its rendered radii");
+});
+
+/**
+ * The hit layer is the first place esc() output lands in ATTRIBUTE position,
+ * where a double quote ends the attribute and everything after it is markup.
+ * Built-in note names have none; a generated deck is where this would first
+ * bite, so the guard is asserted on the escaper rather than on today's data.
+ */
+test("a note name cannot break out of the hit target's attributes", () => {
+  const app = boot();
+  const out = app.get(`escA('A" onclick="x')`);
+  assert.ok(!out.includes(`"`), "no raw double quote survives into an attribute");
+  assert.strictEqual(app.get(`escA('a<b&c')`), "a&lt;b&amp;c", "and the text escapes still apply");
 });

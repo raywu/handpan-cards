@@ -1,0 +1,17 @@
+# kills: every hit target is centred on the field circle it selects
+# suite: node --test --test-name-pattern ^every.hit.target.is.centred.on.the.field.circle.it.selects$ tests/app.test.js
+# Swaps cx and cy on the hit target. The layer still has exactly the right
+# number of correctly-labelled targets - they are all in the wrong places, and
+# every tap on the pan selects a note reflected across the diagonal.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3814,7 +3814,7 @@
+     // The ding is skipped above and so never reaches here: it has no slot in
+     // the layout correction, so there is nothing to select it FOR.
+     if (interactive)
+-      hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
++      hits.push(`<circle class="panhit" data-field="${id}" cx="${y}" cy="${x}" r="${rr}"`
+         + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
+         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+   }

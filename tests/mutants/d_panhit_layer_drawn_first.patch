@@ -1,0 +1,17 @@
+# kills: the hit layer is emitted after everything it sits over
+# suite: node --test --test-name-pattern ^the.hit.layer.is.emitted.after.everything.it.sits.over$ tests/app.test.js
+# Emits the hit layer BEFORE the fields. SVG paints in document order with no
+# z-index, so every target ends up under an opaque white field circle and no
+# tap on a note ever reaches it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3819,7 +3819,7 @@
+         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+   }
+   // After every field, so a target is never painted under the pan it selects.
+-  if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
++  if (interactive) s = s.replace("<svg", "<g class=\"panhits\">" + hits.join("") + "</g><svg");
+   return s + "</svg>";
+ }
+ 
