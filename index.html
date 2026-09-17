@@ -1,27 +1,4 @@
-    <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
-         scrollport with the primary, on the argument that everything outside
-         .sheetbody is what the sheet guarantees without scrolling - so the
-         palette and the mirror toggle were guaranteed too.
-         The owner overruled that on 2026-09-17 after photographing an
-         iPhone 14 / iOS 26.6 with the keyboard up: "only generate cards
-         button should be part of the bottom drawer. As of current design the
-         keyboard pushes the bottom drawer up and covers the input field."
-         A pinned row is not free - .sheetbody SHRINKS to make room for it
-         (see the .sheetbody comment above), and under a real keyboard there
-         is almost nothing left to shrink. With this row pinned, a 336px iOS
-         keyboard leaves the Edit page a 12px scrollport for a 48px seed
-         field; with it in the scroll, 159px. Guaranteeing the swatches cost
-         the field the owner was typing into.
-         So only #scale-generate (and the Edit-only delete row) stay pinned.
-         The swatches and the mirror toggle lose their reachable-without-
-         scrolling guarantee - that is the trade the owner chose. DOM order is
-         unchanged. Moving this </div> back up is
-         tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
-         a real keyboard up, the seed box is not clipped by the sheet's own
-         scroller"; moving it DOWN past the primary is
-         tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
-         "GENERATE CARDS is reachable without scrolling at every phone
-         viewport". --><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -810,19 +787,30 @@ button.nav:active{background:#2e281e}
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
       <select id="scale-degrees"></select>
     </div>
-    <!-- Outside .sheetbody, with the primary. The original reason - that the
-         swatches' 44px hit area was an ::after overlay a scroll container
-         would clip - is gone: the swatch button IS 44px now, so nothing
-         reaches outside its own box.
-         The row stays here for the reason that is still testable: .sheetbody
-         is the scrolling box, and everything below it is what the sheet
-         guarantees is reachable WITHOUT scrolling. Move this </div> up so the
-         row joins the scroll and GENERATE CARDS goes 245.5px below the fold at
-         844x390 - which is exactly what tests/mutants/
-         e_sheet_primary_back_in_the_scroll.patch does, and it dies on
+    <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
+         scrollport with the primary, on the argument that everything outside
+         .sheetbody is what the sheet guarantees without scrolling - so the
+         palette and the mirror toggle were guaranteed too.
+         The owner overruled that on 2026-09-17 after photographing an
+         iPhone 14 / iOS 26.6 with the keyboard up: "only generate cards
+         button should be part of the bottom drawer. As of current design the
+         keyboard pushes the bottom drawer up and covers the input field."
+         A pinned row is not free - .sheetbody SHRINKS to make room for it
+         (see the .sheetbody comment above), and under a real keyboard there
+         is almost nothing left to shrink. With this row pinned, a 336px iOS
+         keyboard leaves the Edit page a 12px scrollport for a 48px seed
+         field; with it in the scroll, 159px. Guaranteeing the swatches cost
+         the field the owner was typing into.
+         So only #scale-generate (and the Edit-only delete row) stay pinned.
+         The swatches and the mirror toggle lose their reachable-without-
+         scrolling guarantee - that is the trade the owner chose. DOM order is
+         unchanged. Moving this </div> back up is
+         tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
+         a real keyboard up, the seed box is not clipped by the sheet's own
+         scroller"; moving it DOWN past the primary is
+         tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
          "GENERATE CARDS is reachable without scrolling at every phone
-         viewport". Keeping the row here also keeps the mirror toggle beside
-         the button it affects. DOM order is unchanged. -->
+         viewport". -->
     <div class="ctlrow">
       <div class="mirror">
         <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
