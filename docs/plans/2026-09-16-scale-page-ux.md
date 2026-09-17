@@ -321,7 +321,9 @@ correction gets applied to a different pan.
 
 ## Stage 4 - sweep
 
-**Files:** `tests/mutants/`, `docs/`, `TODOS.md`.
+**Files:** `tests/mutants/`, `tests/mutation_check.sh`, `tests/mutation_harness.test.js`,
+`tests/CONTRACT.md`, `tests/app.test.js`, `index.html` (app markup/CSS only - never inside an
+`<!-- engine:... -->` region and never the `const DECKS` line), `docs/`, `TODOS.md`.
 
 The three stages above each re-anchor the mutants they break. This stage
 audits the rest of the 103 content-matching mutants against the new world, retires the ones whose premise is
