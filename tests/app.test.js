@@ -2688,4 +2688,11 @@ test("a note name cannot break out of the hit target's attributes", () => {
       `a note name added an attribute to the target: ${t}`);
   assert.ok(labels.some((l) => l.includes("&quot;")),
     "the quote survives as an entity inside the label, not as a delimiter");
+  // The attribute-name oracle above cannot see a label that truncates and
+  // leaves a fragment carrying no `name="` behind it - ` of 8"` is stray in-tag
+  // markup with no attribute in it. Every label ending where it should is what
+  // catches that, and it holds for the position slot as well as the note name.
+  const M = (svg.match(/class="panhit"/g) || []).length;
+  for (const l of labels)
+    assert.ok(l.endsWith(` of ${M}`), `a label stops short of its count: ${l}`);
 });
