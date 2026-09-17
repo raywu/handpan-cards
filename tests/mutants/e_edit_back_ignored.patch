@@ -4,14 +4,15 @@
 # is a page with no visible way out: only Escape, which a touch user has not
 # got.
 diff --git a/index.html b/index.html
+index 169aa79..2de07c8 100644
 --- a/index.html
 +++ b/index.html
-@@ -4748,7 +4748,7 @@
+@@ -4861,7 +4861,7 @@ function runGenerate() {
  
  addChip.onclick = () => openScaleSheet(addChip);
  // The page's way out. Same handler Escape runs, so there is one close path.
 -backBtn.onclick = () => closeScaleSheet();
 +backBtn.onclick = () => { if (!editingId) closeScaleSheet(); };
  genBtn.onclick = runGenerate;
- delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
- // The mirror is the choice the pan preview exists to make visible, so each
+ /* Owner instruction, 2026-09-17: "Delete cards should require a confirmation."
+    A second tap on the SAME control rather than a dialog: the pinned footer is

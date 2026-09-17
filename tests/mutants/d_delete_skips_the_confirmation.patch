@@ -1,0 +1,18 @@
+# kills: DELETE THIS DECK arms on the first tap and only deletes on the second
+# suite: node --test --test-name-pattern DELETE.THIS.DECK.arms.on.the.first.tap tests/app.test.js
+# The armed check goes away, so the first tap deletes - the one-tap destruction
+# the owner asked to be gated on 2026-09-17.
+diff --git a/index.html b/index.html
+index 169aa79..00fbb08 100644
+--- a/index.html
++++ b/index.html
+@@ -4881,7 +4881,8 @@ function disarmDelete() {
+ }
+ delBtn.onclick = () => {
+   if (!editingId) return;
+-  if (delArmed) { deleteDeck(editingId); return; }
++  deleteDeck(editingId);
++  if (delArmed) return;
+   delArmed = true;
+   delBtn.textContent = DEL_ARMED;
+   delBtn.setAttribute("data-armed", "");

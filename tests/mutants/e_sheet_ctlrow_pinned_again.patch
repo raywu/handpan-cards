@@ -1,0 +1,26 @@
+# kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
+# suite: node --test --test-name-pattern seed.box.is.not.clipped.by.the.sheet tests/e2e.test.js
+# The mirror/palette row goes back into the pinned footer, so .sheetbody shrinks
+# again to make room for it. Under a real iOS keyboard there is nothing left to
+# shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
+# owner's 2026-09-17 screenshot verbatim.
+diff --git a/index.html b/index.html
+index e994f14..1830c97 100644
+--- a/index.html
++++ b/index.html
+@@ -787,6 +787,7 @@ button.nav:active{background:#2e281e}
+       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
+       <select id="scale-degrees"></select>
+     </div>
++   </div>
+     <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
+          scrollport with the primary, on the argument that everything outside
+          .sheetbody is what the sheet guarantees without scrolling - so the
+@@ -818,7 +819,6 @@ button.nav:active{background:#2e281e}
+       </div>
+       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
+     </div>
+-   </div>
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
+     <div class="editrow" id="scale-delete-row" hidden>
+       <button id="scale-delete" type="button">DELETE THIS DECK</button>

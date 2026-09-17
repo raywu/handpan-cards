@@ -4,13 +4,14 @@
 # layer. The page covers the viewport, so the only way to hit the layer is a
 # stray tap on a desktop margin - which silently discards an unsaved edit.
 diff --git a/index.html b/index.html
+index 169aa79..82db8d8 100644
 --- a/index.html
 +++ b/index.html
-@@ -4749,6 +4749,7 @@
+@@ -4862,6 +4862,7 @@ function runGenerate() {
  addChip.onclick = () => openScaleSheet(addChip);
  // The page's way out. Same handler Escape runs, so there is one close path.
  backBtn.onclick = () => closeScaleSheet();
 +sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
  genBtn.onclick = runGenerate;
- delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
- // The mirror is the choice the pan preview exists to make visible, so each
+ /* Owner instruction, 2026-09-17: "Delete cards should require a confirmation."
+    A second tap on the SAME control rather than a dialog: the pinned footer is
