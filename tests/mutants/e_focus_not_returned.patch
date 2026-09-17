@@ -4,10 +4,11 @@
 # the moment the page hides - so the keyboard user lands on <body> and has to
 # tab from the top of the document to get back to where they were.
 diff --git a/index.html b/index.html
+index 79d9295..09b08ea 100644
 --- a/index.html
 +++ b/index.html
-@@ -4631,7 +4631,7 @@
-   restoreLayoutPreview();
+@@ -4705,7 +4705,7 @@ function hideSheet() {
+   if (sheetSurf) sheetSurf.style.transform = "";
    editingId = null;
    for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
 -  (sheetOpener || addChip).focus();

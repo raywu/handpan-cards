@@ -3,15 +3,16 @@
 # RESET writes the identity permutation instead of clearing the correction,
 # so a reset deck carries a correction on the wire that says nothing.
 diff --git a/index.html b/index.html
-index 2a111a2..4305c2a 100644
+index 79d9295..61a621c 100644
 --- a/index.html
 +++ b/index.html
-@@ -3208,7 +3208,7 @@ function moveNote(by) {
+@@ -4384,7 +4384,8 @@ function stepLayoutSel(by) {
    previewLayout();
  }
  function resetLayout() {
 -  layoutOrder = null;
-+  layoutOrder = identityOrder(slotsBox.children.length);
++  const reset = layoutFields();
++  layoutOrder = identityOrder(reset ? syncLayoutOrder(reset) : 0);
    layoutSel = 0;
-   buildSlots();
    previewLayout();
+ }

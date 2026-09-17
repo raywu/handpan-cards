@@ -1409,23 +1409,65 @@ test("deleting a NON-selected custom deck leaves the selection alone", () => {
 // rim, move a single note - entirely from the keyboard, and the correction
 // travels in the share URL as options.order without moving the deck id (D5-5).
 
-/** The note under each solved position, left to right. */
-const slotLabels = (app) => app.els["scale-slots"].children.map((b) => b.textContent);
+// Stage 3 moved the correction ONTO the pan: there is no slot list any more, so
+// every oracle below reads the pan MOCK the Edit page draws - which is the only
+// thing the owner can see, and the thing whose not moving was the complaint.
 
-/** The position the slot list currently has selected. */
-const slotSelected = (app) =>
-  app.els["scale-slots"].children.findIndex((b) => b.getAttribute("aria-pressed") === "true");
+/** The hit targets the mock currently draws, as {field, note, place, selected}.
+ *  `place` is WHERE the note is drawn. The index label a target announces
+ *  travels with its FIELD, not with the position - the solver only ever moves
+ *  angles - so the place is the only thing on screen a correction changes, and
+ *  the only honest oracle for "the pan moved". */
+function mockTargets(app) {
+  const html = String(app.els["scale-preview"].innerHTML || "");
+  return [...html.matchAll(/<circle class="panhit"[^>]*\/>/g)].map((m) => m[0]).map((t) => ({
+    field: (t.match(/data-field="(\d+)"/) || [])[1],
+    note: (t.match(/aria-label="([^",]*), position/) || [])[1],
+    place: (t.match(/cx="([^"]*)" cy="([^"]*)"/) || []).slice(1, 3).join(","),
+    selected: /data-sel="true"/.test(t),
+  }));
+}
 
-/** Press a key on the slot list, as a keyboard user does. */
-function slotKey(app, key) {
+/** note -> the place it is drawn at: the whole visible arrangement. */
+function mockPlaces(app) {
+  const out = {};
+  const ts = mockTargets(app);
+  for (const t of ts) out[t.note] = t.place;
+  assert.strictEqual(Object.keys(out).length, ts.length,
+    "two targets carry the same note name, so places cannot be read by note");
+  return out;
+}
+
+/** The note the pan currently has selected, or null for none. */
+function mockSelected(app) {
+  const hit = mockTargets(app).filter((t) => t.selected);
+  assert.ok(hit.length <= 1, "the pan drew more than one selection");
+  return hit.length ? hit[0].note : null;
+}
+
+/** Press a key on the pan, as a keyboard user does. */
+function panKey(app, key) {
   let prevented = false;
-  app.els["scale-slots"].dispatchEvent(
+  app.els["scale-preview"].dispatchEvent(
     { type: "keydown", key, preventDefault() { prevented = true; } });
   return prevented;
 }
 
-const LAYOUT_IDS = ["scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
+/** Tap a note on the pan, the way the delegated click handler receives it:
+ *  a `.panhit` carrying a FIELD id. */
+function panTap(app, note) {
+  const t = mockTargets(app).find((x) => x.note === note);
+  assert.ok(t, `no target is drawn for ${note}`);
+  app.run(`selectPanField(${JSON.stringify(t.field)})`);
+  return t.note;
+}
+
+const LAYOUT_IDS = ["scale-layout-row", "scale-rot-l", "scale-rot-r",
                     "scale-move-l", "scale-move-r", "scale-layout-reset"];
+
+// A seed WITH a bottom shell. Stage 3 AC2 is about a bottom-shell note, which
+// no rotation could reach while ROTATE was hard-wired to the rim.
+const BOTTOM_STRING = "(F) G Ab C Eb F G Ab C Eb | C Db Eb Bb";
 
 function openEdit(app, d) {
   app.select(d.id);
@@ -1442,22 +1484,48 @@ test("the LAYOUT section is Edit-only, like the other correction rows", () => {
     "the Edit sheet hides the layout correction");
 });
 
-test("the slot list shows every non-ding note in the solved order", () => {
+test("the Edit page draws the pan itself, with one target per non-ding note", () => {
   const app = boot();
   const d = makeCustom(app);
   openEdit(app, d);
 
+  assert.strictEqual(app.els["scale-preview"].hasAttribute("hidden"), false,
+    "the Edit page hides the pan, so the layout controls have nothing to move");
   const ids = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] !== "ding");
-  assert.strictEqual(app.els["scale-slots"].children.length, ids.length,
-    "the slot list is not one control per non-ding field");
-  // Every note is present exactly once, and the ding is not among them.
-  const shown = slotLabels(app).slice().sort();
+  const shown = mockTargets(app).map((t) => t.note);
+  assert.strictEqual(shown.length, ids.length,
+    "the mock is not one target per non-ding field");
   const want = ids.map((id) => d.fields[id][F_NAME] + d.fields[id][F_OCT]).sort();
-  assert.deepStrictEqual(shown, want, "the slot list is not the pan's non-ding notes");
-  for (const b of app.els["scale-slots"].children) {
-    assert.ok(String(b.getAttribute("aria-label") || "").length > 0,
-      "a slot control has no accessible name");
-  }
+  assert.deepStrictEqual(shown.slice().sort(), want,
+    "the mock is not the pan's non-ding notes");
+  // The ding carries no slot in the correction, so it is not selectable.
+  const ding = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "ding");
+  const fields = mockTargets(app).map((t) => t.field);
+  for (const id of ding)
+    assert.ok(!fields.includes(String(id)), "the ding got a correction target");
+});
+
+test("a tap selects the note that was tapped, on a pan that is already corrected", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const notes = mockTargets(app).map((t) => t.note);
+  // Uncorrected first: with an identity order, slot and field agree, so this
+  // half passes whichever way round the conversion is written.
+  panTap(app, notes[2]);
+  assert.strictEqual(mockSelected(app), notes[2], "a tap did not select the note under it");
+
+  // Now correct the pan, so slot and field no longer agree. `order[field] =
+  // slot`: reading it as slot -> field selects a different note, and the
+  // arithmetic is otherwise identical, so this is the only assertion that can
+  // tell the two apart.
+  app.els["scale-rot-r"].click();
+  const target = notes.find((n) => n !== mockSelected(app) && n !== notes[2]);
+  panTap(app, target);
+  assert.strictEqual(mockSelected(app), target,
+    "the tap selected a different note than the one tapped - slot and field are " +
+    "the wrong way round in selectPanField");
 });
 
 test("ROTATE moves every note one position and SAVE keeps the id but moves the link", () => {
@@ -1467,12 +1535,12 @@ test("ROTATE moves every note one position and SAVE keeps the id but moves the l
   assert.strictEqual(before.ok, true, before.reason);
   openEdit(app, d);
 
-  const was = slotLabels(app);
+  const was = mockPlaces(app);
   app.els["scale-rot-r"].click();
-  const now = slotLabels(app);
-  assert.notDeepStrictEqual(now, was, "ROTATE did not move anything");
-  assert.deepStrictEqual(now.slice().sort(), was.slice().sort(),
-    "ROTATE invented or lost a note");
+  const now = mockPlaces(app);
+  assert.notDeepStrictEqual(now, was, "ROTATE did not move anything on the pan");
+  assert.deepStrictEqual(Object.values(now).sort(), Object.values(was).sort(),
+    "ROTATE invented or lost a place on the pan");
 
   app.els["scale-generate"].click();
   assert.strictEqual(app.deckId(), d.id, "a layout correction moved the deck id (D5-5)");
@@ -1489,28 +1557,72 @@ test("a correction is reachable with the keyboard alone: arrows select, MOVE swa
   const d = makeCustom(app);
   openEdit(app, d);
 
-  const was = slotLabels(app);
-  assert.strictEqual(slotSelected(app), 0, "no position is selected to begin with");
-  assert.strictEqual(slotKey(app, "ArrowRight"), true,
-    "the arrow key was not handled by the slot list");
-  assert.strictEqual(slotSelected(app), 1, "ArrowRight did not move the selection");
-  slotKey(app, "ArrowLeft");
-  assert.strictEqual(slotSelected(app), 0, "ArrowLeft did not move the selection back");
-  slotKey(app, "ArrowRight");
+  const first = mockSelected(app);
+  assert.ok(first, "the pan opens with no note selected, so MOVE has no subject");
+  assert.strictEqual(panKey(app, "ArrowRight"), true,
+    "the arrow key was not handled by the pan");
+  const second = mockSelected(app);
+  assert.notStrictEqual(second, first, "ArrowRight did not move the selection");
+  panKey(app, "ArrowLeft");
+  assert.strictEqual(mockSelected(app), first, "ArrowLeft did not move the selection back");
+  panKey(app, "ArrowRight");
 
+  const was = mockPlaces(app);
   app.els["scale-move-r"].click();
-  const now = slotLabels(app);
-  assert.strictEqual(now[1], was[2], "MOVE did not move the selected note");
-  assert.strictEqual(now[2], was[1], "MOVE did not displace the note it passed");
-  assert.strictEqual(slotSelected(app), 2, "the selection did not follow the note");
-  for (let i = 0; i < was.length; i += 1) {
-    if (i === 1 || i === 2) continue;
-    assert.strictEqual(now[i], was[i], `MOVE disturbed position ${i}`);
-  }
+  const now = mockPlaces(app);
+  assert.strictEqual(mockSelected(app), second, "the selection did not follow the note");
+  const moved = Object.keys(was).filter((n) => now[n] !== was[n]).sort();
+  assert.strictEqual(moved.length, 2, `MOVE is not a swap: ${JSON.stringify(moved)}`);
+  assert.ok(moved.includes(second), "MOVE did not move the selected note");
+  const other = moved.find((n) => n !== second);
+  assert.strictEqual(now[second], was[other], "MOVE did not put the note where its neighbour was");
+  assert.strictEqual(now[other], was[second], "MOVE did not displace the note it passed");
+});
 
-  // Only the selected slot is a tab stop; the others are reached with arrows.
-  const stops = app.els["scale-slots"].children.filter((b) => b.tabIndex === 0);
-  assert.strictEqual(stops.length, 1, "the slot list is not a single tab stop");
+test("ROTATE turns the ring the selection is on, bottom shell included", () => {
+  const app = boot();
+  const d = makeCustom(app, BOTTOM_STRING);
+  openEdit(app, d);
+
+  const bottom = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "bottom")
+    .map((id) => d.fields[id][F_NAME] + d.fields[id][F_OCT]);
+  assert.ok(bottom.length >= 3, `the seed has no bottom shell: ${JSON.stringify(bottom)}`);
+
+  const was = mockPlaces(app);
+  const onBottom = Object.keys(was).filter((n) => bottom.includes(n));
+  assert.ok(onBottom.length >= 3, "the mock drew no bottom-shell notes");
+
+  // Select a BOTTOM note, then rotate. Before Stage 3, ROTATE was hard-wired to
+  // zoneBlock(fields, 0) - the rim - so this press turned the rim and left the
+  // bottom shell exactly as it was, whatever was selected.
+  panTap(app, onBottom[0]);
+  app.els["scale-rot-r"].click();
+  const now = mockPlaces(app);
+
+  for (const n of Object.keys(was)) {
+    if (bottom.includes(n)) continue;
+    assert.strictEqual(now[n], was[n],
+      `rotating a bottom-shell note moved ${n}, which is not on that ring`);
+  }
+  assert.notDeepStrictEqual(onBottom.map((n) => now[n]), onBottom.map((n) => was[n]),
+    "ROTATE did not turn the bottom shell the selected note is on");
+  assert.deepStrictEqual(onBottom.map((n) => now[n]).sort(), onBottom.map((n) => was[n]).sort(),
+    "ROTATE invented or lost a bottom-shell place");
+});
+
+test("the deck is untouched while the mock previews the correction", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  const before = JSON.parse(JSON.stringify(app.registry()[d.id].fields));
+  openEdit(app, d);
+
+  app.els["scale-rot-r"].click();
+  app.els["scale-move-r"].click();
+  assert.deepStrictEqual(app.registry()[d.id].fields, before,
+    "a correction was painted onto the real deck before SAVE (D4)");
+  app.keydown("Escape");
+  assert.deepStrictEqual(app.registry()[d.id].fields, before,
+    "the deck did not come back byte-identical after an abandoned correction");
 });
 
 test("RESET clears the correction to ABSENT in one action, not to the identity", () => {
@@ -1560,11 +1672,11 @@ test("a correction survives a save, a reopen and a reload", () => {
   const d = makeCustom(app);
   openEdit(app, d);
   app.els["scale-rot-r"].click();
-  const corrected = slotLabels(app);
+  const corrected = mockPlaces(app);
   app.els["scale-generate"].click();
 
   openEdit(app, app.registry()[d.id]);
-  assert.deepStrictEqual(slotLabels(app), corrected,
+  assert.deepStrictEqual(mockPlaces(app), corrected,
     "reopening the sheet forgot the correction");
   app.keydown("Escape");
 
@@ -1613,11 +1725,9 @@ test("the layout controls are tab stops inside the sheet and never a second prim
     seen.add(app.activeId());
   }
   for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
-                    "scale-layout-reset"]) {
+                    "scale-layout-reset", "scale-preview"]) {
     assert.ok(seen.has(id), `Tab never reached #${id}`);
   }
-  assert.ok([...seen].some((id) => String(id).startsWith("scale-slot-")),
-    "Tab never reached the slot list");
   assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES",
     "the single primary was relabelled by the layout section");
   assert.strictEqual(app.els["scale-generate"].disabled, false,
@@ -1627,6 +1737,10 @@ test("the layout controls are tab stops inside the sheet and never a second prim
 test("the layout markup exists and a built-in deck is never editable", () => {
   const app = boot();
   for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
+  // The slot list is gone: the pan IS the selection now (D1). The sandbox
+  // conjures an element for any id asked for, so this has to read the file.
+  assert.ok(!/id="scale-slots"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")),
+    "the slot list is still in the markup");
   app.select("amara");
   app.clickChip("D AMARA 9");
   assert.strictEqual(app.sheetOpen(), false,
@@ -2701,8 +2815,10 @@ test("a note name cannot break out of the hit target's attributes", () => {
   // The injected text is harmless while it stays INSIDE a quoted value - what
   // the escape prevents is it becoming an attribute of its own, so the check is
   // on the tag's attribute NAMES, not on whether the string appears at all.
+  // data-sel is absent on an unselected target, so it is not in this list: the
+  // selected one is asserted separately, in the LAYOUT section.
   const WANT = ["class", "data-field", "cx", "cy", "r", "data-r",
-                "fill", "tabindex", "role", "aria-label"];
+                "fill", "tabindex", "role", "aria-selected", "aria-label"];
   for (const t of targets)
     assert.deepStrictEqual([...t.matchAll(/([a-z-]+)="/g)].map((m) => m[1]), WANT,
       `a note name added an attribute to the target: ${t}`);

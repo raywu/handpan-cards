@@ -4,17 +4,18 @@
 # mock claims to show a layout the box no longer describes - the exact way a
 # preview lies, now that the plate never leaves the flow.
 diff --git a/index.html b/index.html
-index f489642..4d91a89 100644
+index 79d9295..f875565 100644
 --- a/index.html
 +++ b/index.html
-@@ -3865,8 +3865,8 @@ function clearPanPreview() {
- }
- 
+@@ -4464,9 +4464,9 @@ let panState = "example";
+ const PAN_EDIT_HINT = " Tap a note to choose it, or use the arrow keys.";
  function markPan(state) {
+   panState = state;
 -  previewBox.classList.toggle("stale", state !== "current");
--  previewBox.setAttribute("aria-label", PAN_NAMES[state]);
 +  previewBox.classList.remove("stale");
-+  previewBox.setAttribute("aria-label", PAN_NAMES.current);
+   previewBox.setAttribute("aria-label",
+-    PAN_NAMES[state] + (editingId ? "." + PAN_EDIT_HINT : ""));
++    PAN_NAMES.current + (editingId ? "." + PAN_EDIT_HINT : ""));
  }
  
  /** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the

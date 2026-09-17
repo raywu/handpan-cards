@@ -1,19 +1,19 @@
 # kills: the arrow keys choose a position and MOVE swaps it with its neighbour
 # suite: node --test --test-name-pattern ^the.arrow.keys.choose.a.position.and.MOVE.swaps.it.with.its.neighbour$ tests/e2e.test.js
-# The arrow keys stop choosing a position, so the only way left to pick a
+# The arrow keys stop moving the selection, so the only way left to pick a
 # note is a pointer - exactly the drag-only path D5 forbids.
 diff --git a/index.html b/index.html
-index 2a111a2..0602e77 100644
+index 79d9295..bd53766 100644
 --- a/index.html
 +++ b/index.html
-@@ -3388,8 +3388,8 @@ slotsBox.addEventListener("keydown", (e) => {
-   const n = slotsBox.children.length;
-   if (!n) return;
-   let to;
--  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (layoutSel + 1) % n;
--  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (layoutSel + n - 1) % n;
-+  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = layoutSel;
-+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = layoutSel;
-   else if (e.key === "Home") to = 0;
-   else if (e.key === "End") to = n - 1;
+@@ -4846,8 +4846,8 @@ previewBox.addEventListener("click", (e) => {
+ previewBox.addEventListener("keydown", (e) => {
+   if (!editingId) return;
+   let by;
+-  if (e.key === "ArrowRight" || e.key === "ArrowDown") by = 1;
+-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") by = -1;
++  if (e.key === "ArrowRight" || e.key === "ArrowDown") by = 0;
++  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") by = 0;
+   else if (e.key === "Home") by = "home";
+   else if (e.key === "End") by = "end";
    else return;

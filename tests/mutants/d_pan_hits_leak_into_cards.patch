@@ -4,14 +4,15 @@
 # print renderer has no counterpart for and tests/test_render_agreement.py
 # is comparing two different diagrams.
 diff --git a/index.html b/index.html
+index 79d9295..8c2628b 100644
 --- a/index.html
 +++ b/index.html
-@@ -3730,7 +3730,7 @@
+@@ -3772,7 +3772,7 @@ function numSize(rNote) { return rNote * NUM_RATIO; }
   * tests/test_render_agreement.py pins its output against tools/hifi.py per
   * field: with no third argument the bytes are the ones print agrees with. */
  function pan(d, ch, opts) {
 -  const interactive = !!(opts && opts.interactive);
 +  const interactive = true;
-   const hits = [];
-   const g = d.geom, R = 100;
-   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
+   // The SELECTED field id, or null. Drawn, not implied: the LAYOUT controls act
+   // on one note, and a user who cannot see which one is being asked to trust
+   // that ROTATE and MOVE will do what they mean - which is the exact complaint

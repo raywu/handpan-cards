@@ -5,14 +5,15 @@
 # that only asks 'is this centre one of the drawn centres' passes - but the id
 # a tap reports is the neighbour's, and the scale page selects the wrong note.
 diff --git a/index.html b/index.html
+index 79d9295..a494478 100644
 --- a/index.html
 +++ b/index.html
-@@ -3822,7 +3822,9 @@
-         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
-   }
-   // After every field, so a target is never painted under the pan it selects.
--  if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
-+  if (interactive) s += `<g class="panhits">${hits.map((h, i) =>
+@@ -3875,7 +3875,9 @@ function pan(d, ch, opts) {
+   // After every field, so a target is never painted under the pan it selects,
+   // and the ring under the targets so it can never eat a tap.
+   if (interactive) s += `<g class="pansels">${rings.join("")}</g>`
+-                      + `<g class="panhits">${hits.join("")}</g>`;
++                      + `<g class="panhits">${hits.map((h, i) =>
 +    h.replace(/data-field="\d+"/,
 +      hits[(i + 1) % hits.length].match(/data-field="\d+"/)[0])).join("")}</g>`;
    return s + "</svg>";

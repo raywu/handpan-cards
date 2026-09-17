@@ -1,16 +1,18 @@
 # kills: Escape closes the sheet without keeping the previewed correction
 # suite: node --test --test-name-pattern ^Escape.closes.the.sheet.without.keeping.the.previewed.correction$ tests/app.test.js
-# An abandoned preview is left on the deck, so Escape commits the very
-# correction the user backed out of.
+# Paints the preview onto the real deck, the way Stage 2 did. D4 made "the deck
+# is untouched until SAVE" structural by never writing it at all; write it here
+# and Escape commits the very correction the user backed out of.
 diff --git a/index.html b/index.html
+index 79d9295..148e3b9 100644
 --- a/index.html
 +++ b/index.html
-@@ -4440,7 +4440,7 @@
-   if (sheetSurf) sheetSurf.style.transform = "";
-   // Escape and the backdrop are "without saving", and the preview was painted
-   // on the real deck, so it has to come back off.
--  restoreLayoutPreview();
-+  dropLayoutPreview();
-   editingId = null;
-   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
-   (sheetOpener || addChip).focus();
+@@ -4332,6 +4332,8 @@ function selectedField(fields) {
+  * something a restore function has to remember to do. */
+ function previewLayout() {
+   if (!editingId) return;
++  const fields = layoutFields();
++  if (fields && CUSTOM[editingId]) CUSTOM[editingId].fields = fields;
+   updateParse();
+ }
+ 
