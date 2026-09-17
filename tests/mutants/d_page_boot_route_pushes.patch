@@ -1,0 +1,17 @@
+# kills: booting on a page route opens nothing and leaves a clean hash
+# suite: node --test --test-name-pattern ^booting.on.a.page.route.opens.nothing.and.leaves.a.clean.hash$ tests/app.test.js
+# The boot cleanup pushes the clean URL instead of replacing it, so the
+# rejected route stays an entry behind it and the first back press returns to
+# the route just refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4875,7 +4875,7 @@
+ // pushState, or the clean URL becomes an entry of its own and back returns to
+ // the route that was just rejected.
+ if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
+-  history.replaceState(null, "", location.pathname + location.search);
++  history.pushState(null, "", location.pathname + location.search);
+ // A share link in the address bar is consumed once, at boot, through the same
+ // single entry point; it wins over the stored deck because the user just
+ // followed it. "#s=" is disjoint from the page routes above, so the two reads

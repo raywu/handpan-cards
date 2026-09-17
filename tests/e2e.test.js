@@ -770,8 +770,9 @@ function run() {
       return el.value;
     `);
 
-  // Click a viewport point rather than an element - the backdrop is the sheet
-  // layer itself, so no selector can name only its uncovered part.
+  // Click a viewport point rather than an element. The drawer used this to hit
+  // its backdrop; the page has none, so it is now how a test aims at a spot the
+  // page covers and asserts nothing closes.
   async function clickPoint(x, y) {
     for (const type of ["mousePressed", "mouseReleased"]) {
       await b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
@@ -786,7 +787,7 @@ function run() {
       { label: "the sheet to close after Generate" });
   }
 
-  test("the sheet is a modal dialog with the spec'd anatomy", async () => {
+  test("the page is a modal dialog with the spec'd anatomy", async () => {
     await freshLoad();
     const before = await b.eval(`
       const s = document.getElementById("scale-sheet");
@@ -794,12 +795,15 @@ function run() {
         hidden: s.hasAttribute("hidden"),
         role: s.getAttribute("role"),
         modal: s.getAttribute("aria-modal"),
+        labelledby: s.getAttribute("aria-labelledby"),
         addText: document.getElementById("deck-add").textContent.trim(),
       };
     `);
     assert.strictEqual(before.hidden, true, "the sheet is open before + ADD is tapped");
     assert.strictEqual(before.role, "dialog");
     assert.strictEqual(before.modal, "true");
+    // The page is named by the title it shows, not by an invisible aria-label.
+    assert.strictEqual(before.labelledby, "scale-title");
     assert.match(before.addText, /ADD/);
 
     await openSheet();
@@ -807,10 +811,16 @@ function run() {
       const s = document.getElementById("scale-sheet");
       const surf = s.firstElementChild;
       const cs = getComputedStyle(surf);
+      const sr = surf.getBoundingClientRect();
+      const lr = s.getBoundingClientRect();
       return {
         maxH: cs.maxHeight,
         overflowY: cs.overflowY,
         viewportH: window.innerHeight,
+        surfH: sr.height, layer: { t: lr.top, l: lr.left, h: lr.height, w: lr.width },
+        layerBg: getComputedStyle(s).backgroundColor,
+        title: document.getElementById("scale-title").textContent.trim(),
+        backText: document.getElementById("scale-back").textContent.trim(),
         parseLine: document.getElementById("scale-parse").textContent.trim(),
         msgLive: document.getElementById("scale-msg").getAttribute("aria-live"),
         placeholder: document.getElementById("scale-box").placeholder,
@@ -820,9 +830,31 @@ function run() {
           .filter(el => el.classList.contains("on")).map(el => el.id),
       };
     `);
-    // max-height: 85dvh, resolved by the browser into pixels.
-    assert.ok(Math.abs(parseFloat(open.maxH) - open.viewportH * 0.85) < 2,
+    // AC1: the page fills the viewport. max-height: 100dvh, resolved by the
+    // browser into pixels, and the surface actually drawn that tall.
+    assert.ok(Math.abs(parseFloat(open.maxH) - open.viewportH) < 2,
       `surface max-height is ${open.maxH} at a ${open.viewportH}px viewport`);
+    assert.ok(Math.abs(open.surfH - open.viewportH) < 2,
+      `the surface is ${open.surfH}px tall in a ${open.viewportH}px viewport`);
+    assert.ok(open.layer.t <= 0 && open.layer.l <= 0
+              && open.layer.h >= open.viewportH - 1,
+      `the page layer does not cover the viewport: ${JSON.stringify(open.layer)}`);
+    // Opaque: a translucent layer is a backdrop, and a backdrop is the drawer.
+    // Read the alpha rather than pattern-matching for one: `transparent`
+    // computes to `rgba(0, 0, 0, 0)`, whose alpha has no decimal point, so a
+    // regex looking for a fractional alpha waves the most transparent layer
+    // of all straight through. A bare `rgb(...)` carries no alpha and is 1.
+    const alphaOf = (css) => {
+      const m = /^rgba?\(([^)]*)\)$/.exec(css.trim());
+      assert.ok(m, `the page layer's background is not a colour: ${css}`);
+      const parts = m[1].split(/[,/]/).map((v) => v.trim());
+      return parts.length < 4 ? 1 : parseFloat(parts[3]);
+    };
+    assert.strictEqual(alphaOf(open.layerBg), 1,
+      `the page layer is translucent (${open.layerBg}), so the practice screen ` +
+      "still shows through it");
+    assert.match(open.title, /Add a scale/i, "the page has no visible title");
+    assert.match(open.backText, /BACK/, "the page has no visible way back");
     assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
     assert.match(open.parseLine, /^Type your ding first/);
     assert.strictEqual(open.msgLive, "polite");
@@ -883,31 +915,99 @@ function run() {
       `full-width primary buttons in the sheet: ${JSON.stringify(open.wide)}`);
   });
 
+  // AC6, the half the reachability test above cannot see. That test filters on
+  // [inert] alone, so it passes just as happily whether aria-hidden is set or
+  // not: inert already removes the background from the tab order and from hit
+  // testing. aria-hidden is what removes it from the SCREEN READER, which is a
+  // separate promise to a separate user, and it needs its own assertion or a
+  // change that drops it ships green.
+  test("the background behind the page is hidden from assistive tech, not only from the pointer",
+    async () => {
+      await freshLoad();
+      const shut = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.ok(shut.length >= 2, "the practice screen has no landmark regions to hide");
+      for (const el of shut) {
+        assert.strictEqual(el.hidden, null, `<${el.tag}> is aria-hidden with no page open`);
+        assert.strictEqual(el.inert, false, `<${el.tag}> is inert with no page open`);
+      }
+
+      await openSheet();
+      const open = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.strictEqual(open.length, shut.length, "the landmark set changed while the page was open");
+      for (const el of open) {
+        assert.strictEqual(el.hidden, "true",
+          `<${el.tag}> is still exposed to a screen reader behind the page`);
+        assert.strictEqual(el.inert, true, `<${el.tag}> is still interactive behind the page`);
+      }
+
+      // And it comes back: a page that leaves the app aria-hidden on close is
+      // worse than one that never hid it.
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the page to close" });
+      const after = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      for (const el of after) {
+        assert.strictEqual(el.hidden, null, `<${el.tag}> is still aria-hidden after the page closed`);
+        assert.strictEqual(el.inert, false, `<${el.tag}> is still inert after the page closed`);
+      }
+    });
+
   test("Escape closes the sheet and focus returns to + ADD", async () => {
     await freshLoad();
     await openSheet();
-    assert.strictEqual(await activeId(), "scale-box", "focus did not land in the box");
+    // AC2: the page does not steal focus into the box - no soft keyboard until
+    // the user taps it - but focus does leave the inert background.
+    assert.strictEqual(await activeId(), "scale-back",
+      "focus did not land on BACK when the page opened");
     await b.key("Escape", "Escape", 27);
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "Escape to close the sheet" });
     assert.strictEqual(await activeId(), "deck-add", "focus did not return to + ADD");
   });
 
-  test("a tap on the backdrop closes the sheet and focus returns to + ADD", async () => {
-    await freshLoad();
-    await openSheet();
-    // The top-left corner of the viewport is backdrop: the surface is anchored
-    // to the bottom and is nowhere near 85dvh tall with this content.
-    await clickPoint(8, 8);
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-      { label: "a backdrop tap to close the sheet" });
-    assert.strictEqual(await activeId(), "deck-add");
+  // AC3. The drawer closed on a backdrop tap; the page has no backdrop, and a
+  // stray tap on a full-viewport page would silently discard an unsaved edit.
+  // BACK is the gesture now, and the old one has to be gone, not just unused.
+  test("BACK closes the page and focus returns to + ADD; a stray tap does not",
+    async () => {
+      await freshLoad();
+      await openSheet();
+      // The top-left corner used to be backdrop. It is page now.
+      await clickPoint(8, 8);
+      assert.strictEqual(await sheetShown(), true,
+        "a tap near the page edge closed it - the backdrop gesture is still wired");
+      await b.click("#scale-box");
+      assert.strictEqual(await sheetShown(), true, "a tap inside the page closed it");
 
-    // A tap on the surface must NOT close it.
+      await b.click("#scale-back");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "BACK to close the page" });
+      assert.strictEqual(await activeId(), "deck-add",
+        "BACK did not return focus to the control that opened the page");
+    });
+
+  // AC4. The page owns a history entry, so the platform back gesture is the
+  // same close - and it must not take the browser off the app.
+  test("the browser's Back button closes the page and stays on the app", async () => {
+    await freshLoad();
+    const before = await b.eval(`return location.href`);
     await openSheet();
-    await b.click("#scale-box");
-    assert.strictEqual(await sheetShown(), true, "a tap inside the sheet closed it");
-    await b.key("Escape", "Escape", 27);
+    assert.notStrictEqual(await b.eval(`return location.hash`), "",
+      "the page did not route - the back gesture would leave the app");
+    await b.eval(`history.back(); return true`);
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "the back gesture to close the page" });
+    assert.strictEqual(await b.eval(`return location.href`), before,
+      "the back gesture left the app instead of closing the page");
   });
 
   test("a generated deck lands on the practice screen without moving the card", async () => {
@@ -2548,12 +2648,15 @@ function run() {
     }
   });
 
-  test("a backdrop tap closes the Edit sheet", async () => {
+  test("BACK closes the Edit page, and a tap at its edge does not", async () => {
     try {
       await editFreshDeck();
       await clickPoint(8, 8);
+      assert.strictEqual(await sheetShown(), true,
+        "a tap near the Edit page edge closed it, discarding the edit");
+      await b.click("#scale-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "a backdrop tap to close the Edit sheet" });
+        { label: "BACK to close the Edit page" });
       assert.strictEqual(await sheetShown(), false);
     } finally {
       await b.setViewport(900, 900, false);
@@ -2564,7 +2667,7 @@ function run() {
     try {
       await editFreshDeck();
       const seen = [];
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 27; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`
           const el = document.activeElement;
@@ -2576,7 +2679,8 @@ function run() {
       assert.ok(seen.every(s => s.inside),
         `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
       const ids = new Set(seen.map(s => s.id));
-      for (const id of ["scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete",
+      for (const id of ["scale-back",
+                        "scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete",
                         "scale-rot-l", "scale-rot-r", "scale-layout-reset",
                         "scale-move-l", "scale-move-r"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
@@ -3052,10 +3156,11 @@ function run() {
   /* ---------------------------------------------------------------- *
    * the primary action never falls below the fold (queue rows 211, 212)
    *
-   * .sheetsurf is a scrolling surface capped at 85dvh. Whenever the content
-   * is taller than the cap, whatever sits at the BOTTOM of the flow - which
-   * is the sheet's only primary, #scale-generate (GENERATE CARDS on the
-   * create path, SAVE CHANGES on the Edit path) - starts below the fold, and
+   * .sheetsurf is a scrolling surface that fills the viewport (100dvh since
+   * the page replaced the drawer). Whenever the content is taller than the
+   * viewport, whatever sits at the BOTTOM of the flow - which is the page's
+   * only primary, #scale-generate (GENERATE CARDS on the create path, SAVE
+   * CHANGES on the Edit path) - starts below the fold, and
    * it reads as a dead end rather than as something scrollable: scrollTop is
    * 0 on open and iOS overlay scrollbars are invisible until touched.
    *
@@ -3073,7 +3178,7 @@ function run() {
 
   // 380 is the repo's stated test width; 390x844 is the owner's phone; 390x745
   // approximates the same phone with Safari's toolbars showing; 844x390 is it
-  // in landscape, where the 85dvh cap is at its most brutal.
+  // in landscape, where the viewport height is at its most brutal.
   const FOLD_VIEWPORTS = [[380, 800], [390, 844], [390, 745], [844, 390]];
 
   // The largest pan the engine accepts (13 top + 6 bottom = 19 layout slots
@@ -3256,6 +3361,65 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the sheet to close" });
       }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  // The owner's own bug, in one measurement: "The keyboard pushes up the input
+  // field past the viewport so I can't edit." Both ends of the page have to
+  // survive it - the box being edited AND the button that commits the edit -
+  // so this measures the pair, on the ADD page and on the EDIT page, with the
+  // box focused the way a finger focuses it. Same PROXY caveat as the test
+  // above: a shrunken innerHeight is the friendly case, not the honest one.
+  const boxAndPrimary = () => b.eval(`
+    const box = document.getElementById("scale-box").getBoundingClientRect();
+    const gen = document.getElementById("scale-generate");
+    const g = gen.getBoundingClientRect();
+    return {
+      label: (gen.textContent || "").trim(),
+      focused: document.activeElement && document.activeElement.id,
+      box: { top: box.top, bottom: box.bottom },
+      gen: { top: g.top, bottom: g.bottom },
+      vh: window.innerHeight,
+    };
+  `);
+
+  function assertBothOnScreen(m, where) {
+    assert.strictEqual(m.focused, "scale-box",
+      `${where}: the box is not focused, so no keyboard would be up`);
+    assert.ok(m.box.top >= -0.5 && m.box.bottom <= m.vh + 0.5,
+      `${where}: the scale box is outside the ${m.vh}px viewport ` +
+      `(top ${m.box.top.toFixed(1)}, bottom ${m.box.bottom.toFixed(1)})`);
+    assert.ok(m.gen.top >= -0.5 && m.gen.bottom <= m.vh + 0.5,
+      `${where}: "${m.label}" is outside the ${m.vh}px viewport ` +
+      `(top ${m.gen.top.toFixed(1)}, bottom ${m.gen.bottom.toFixed(1)})`);
+  }
+
+  test("with the box focused and the viewport shrunk, both the box and the primary stay on screen", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await generate(EDIT_SCALE);
+
+      // EDIT first, while the generated deck is the selected chip.
+      await openEdit();
+      await b.click("#scale-box");
+      await b.setViewport(380, 508, true);
+      assertBothOnScreen(await boxAndPrimary(), "the Edit page at 380x508");
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit page to close" });
+
+      // Then ADD, at the same shrunken viewport.
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      await typeScale(BIG_SCALE);
+      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+        { label: "the preview to render" });
+      await b.click("#scale-box");
+      await b.setViewport(380, 508, true);
+      assertBothOnScreen(await boxAndPrimary(), "the Add page at 380x508");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -3456,7 +3620,7 @@ function run() {
 
       for (const s of states) {
         assert.ok(s.preview,
-          `${s.label}: the pan left the flow - the drawer resizes on input`);
+          `${s.label}: the pan left the flow - the page resizes on input`);
         assert.ok(s.parse > 0,
           `${s.label}: the parse line collapsed to zero height`);
       }
@@ -3473,16 +3637,19 @@ function run() {
   });
 
   test("the only height the first keystroke changes is the hint's own wrap", async () => {
-    // The accepted step from the test above, pinned: the sheet may differ
-    // between empty and typed by the parse line's height and nothing else.
-    // If the pan, the message row or anything else starts contributing, this
-    // goes red rather than the difference quietly becoming "normal".
+    // The accepted step from the test above, pinned. As a drawer the surface
+    // grew with its content and the allowance was the parse line's own wrap;
+    // as a page it is the viewport's height, so the surface must not move AT
+    // ALL and the wrap has to be absorbed inside the scrolling body. Both
+    // halves are checked: a page that stays put while something else inside it
+    // silently grows would pass the first assertion on its own.
     try {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await openSheet();
       const m = () => b.eval(`
         return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
+                 body: document.querySelector(".sheetbody").scrollHeight,
                  parse: document.getElementById("scale-parse").getBoundingClientRect().height };
       `);
       await b.settle();
@@ -3491,12 +3658,15 @@ function run() {
       await b.settle();
       const typed = await m();
 
-      const sheetDelta = empty.h - typed.h;
+      assert.ok(Math.abs(empty.h - typed.h) < 0.5,
+        `the page surface resized by ${(empty.h - typed.h).toFixed(1)}px on the ` +
+        "first keystroke - it is the viewport's height and must not move");
+      const bodyDelta = empty.body - typed.body;
       const parseDelta = empty.parse - typed.parse;
-      assert.ok(Math.abs(sheetDelta - parseDelta) < 0.5,
-        `the sheet moved ${sheetDelta.toFixed(1)}px between empty and typed but ` +
-        `the parse line only accounts for ${parseDelta.toFixed(1)}px - something ` +
-        `else in the drawer is resizing on input`);
+      assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
+        `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
+        `typed but the parse line only accounts for ${parseDelta.toFixed(1)}px ` +
+        "- something else in the page is resizing on input");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -3642,8 +3812,9 @@ function run() {
 
   // Regression guard for the same row: the two closes that were measured
   // CORRECT must stay correct. They do not re-select, so nothing rebuilds the
-  // strip and focus belongs on the control that opened the sheet.
-  test("Escape and a backdrop tap still hand focus back to the opener", async () => {
+  // strip and focus belongs on the control that opened the page. (The backdrop
+  // tap of the drawer era is BACK now - same close path, same focus return.)
+  test("Escape and BACK still hand focus back to the opener", async () => {
     await freshLoad();
     await openSheet();
     await b.key("Escape", "Escape", 27);
@@ -3653,11 +3824,11 @@ function run() {
       "Escape no longer returns focus to + ADD");
 
     await openSheet();
-    await clickPoint(8, 8);
+    await b.click("#scale-back");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-      { label: "a backdrop tap to close the sheet" });
+      { label: "BACK to close the sheet" });
     assert.strictEqual(await activeId(), "deck-add",
-      "a backdrop tap no longer returns focus to + ADD");
+      "BACK no longer returns focus to + ADD");
   });
 
   // Row 217. The `.on` class is a colour, and colour is not state.

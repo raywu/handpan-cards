@@ -1,0 +1,17 @@
+# kills: the background behind the page is hidden from assistive tech, not only from the pointer
+# suite: node --test --test-name-pattern ^the.background.behind.the.page.is.hidden.from.assistive.tech..not.only.from.the.pointer$ tests/e2e.test.js
+# inert is set but aria-hidden is not. The background stops taking taps and tab
+# stops, so every pointer and keyboard test still passes, while a screen reader
+# reads straight through the open page into the practice screen behind it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4565,7 +4565,7 @@
+   sheetOpener = opener || addChip;
+   sheet.removeAttribute("hidden");
+   sheetOpen = true;
+-  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
++  for (const el of background) { el.inert = true; }
+   updateParse();
+   applyKbOffset();
+   history.pushState({ scalePage: true }, "", sheetRoute());

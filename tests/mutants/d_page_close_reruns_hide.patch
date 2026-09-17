@@ -1,0 +1,18 @@
+# kills: closing a page that is already closed changes nothing
+# suite: node --test --test-name-pattern ^closing.a.page.that.is.already.closed.changes.nothing$ tests/app.test.js
+# closeScaleSheet loses its re-entry guard, so a second close - BACK after a
+# save that already closed, say - runs the whole close path again on a page
+# that is not open. sheetRouted still stops the extra pop, so nothing moves in
+# the address bar; what moves is FOCUS, yanked to + ADD out of wherever the
+# user actually was.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4638,7 +4638,6 @@
+ // entry showSheet() pushed, so the address bar and the stack end where they
+ // started and the next back press belongs to whatever came before the page.
+ function closeScaleSheet() {
+-  if (!sheetOpen) return;
+   const routed = sheetRouted;
+   sheetRouted = false;
+   hideSheet();

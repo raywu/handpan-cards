@@ -1,0 +1,17 @@
+# kills: a pop with no page open is not an invitation to close something
+# suite: node --test --test-name-pattern ^a.pop.with.no.page.open.is.not.an.invitation.to.close.something$ tests/app.test.js
+# The popstate listener loses its guard and runs hideSheet() on every back
+# press in the app, open page or not. Nothing visibly closes - there was
+# nothing open - but hideSheet ends in (sheetOpener || addChip).focus(), so
+# each stray pop yanks focus to + ADD out of whatever the user was on.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4647,7 +4647,6 @@
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
+-  if (!sheetOpen) return;
+   sheetRouted = false;
+   hideSheet();
+ });

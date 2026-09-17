@@ -1,0 +1,17 @@
+# kills: BACK closes the Edit page, and a tap at its edge does not
+# suite: node --test --test-name-pattern ^BACK.closes.the.Edit.page..and.a.tap.at.its.edge.does.not$ tests/e2e.test.js
+# BACK works on the Add page and does nothing on the Edit page, so an edit
+# is a page with no visible way out: only Escape, which a touch user has not
+# got.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4748,7 +4748,7 @@
+ 
+ addChip.onclick = () => openScaleSheet(addChip);
+ // The page's way out. Same handler Escape runs, so there is one close path.
+-backBtn.onclick = () => closeScaleSheet();
++backBtn.onclick = () => { if (!editingId) closeScaleSheet(); };
+ genBtn.onclick = runGenerate;
+ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+ // The mirror is the choice the pan preview exists to make visible, so each

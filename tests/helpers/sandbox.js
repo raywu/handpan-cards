@@ -32,7 +32,10 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
   "scale-move-l", "scale-move-r", "scale-layout-reset",
   // The pan-layout preview, additive like every row above it.
-  "scale-preview"];
+  "scale-preview",
+  // Stage 2: the page header. The sheet became a full-screen page, so it has a
+  // BACK control and a visible title where the drawer had neither.
+  "scale-back", "scale-title"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -193,7 +196,11 @@ function boot(opts = {}) {
       this.state = state;
       if (url !== undefined && url !== null) location.href = String(url);
     },
-    back() {}, forward() {}, go() {},
+    // Recorded, not simulated: the app calls back() to pop the page's own
+    // history entry, and a unit test asserts the call. The browser's answering
+    // popstate is fired explicitly by the harness's popstate() helper.
+    back() { historyCalls.push({ type: "back" }); },
+    forward() {}, go() {},
   };
 
   const sandbox = {
@@ -233,6 +240,17 @@ function boot(opts = {}) {
     // Object, Error and friends: a context has its own, and importing the host
     // ones would make `x instanceof Array` false for values the code built.
     console, Math: mathStub,
+  };
+  // Window-level listeners. The app registers `popstate` on the window (the
+  // scale page is a history entry, and the browser's Back button is the only
+  // way a user ever pops it), so the stub has to serve the same registration
+  // the browser does - and popstate() below is how a unit test presses Back.
+  const winListeners = {};
+  sandbox.addEventListener = (t, fn) => { (winListeners[t] = winListeners[t] || []).push(fn); };
+  sandbox.removeEventListener = (t, fn) => {
+    const l = winListeners[t] || [];
+    const i = l.indexOf(fn);
+    if (i >= 0) l.splice(i, 1);
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
@@ -306,6 +324,12 @@ function boot(opts = {}) {
     sheetOpen: () => !els["scale-sheet"].hasAttribute("hidden"),
     /** The practice-screen live region the success message is announced in. */
     announcer: () => sandbox.document.querySelector(".announce"),
+    /** Press the browser's Back button. Fires the app's popstate listeners; the
+     *  stub keeps no entry stack, so what a test asserts is what the app does
+     *  in response - it must take the page down and NOT pop anything itself. */
+    popstate: () => {
+      for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
+    },
   };
 }
 

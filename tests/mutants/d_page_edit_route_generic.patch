@@ -1,0 +1,16 @@
+# kills: EDIT routes to the deck it is editing, not to a generic page
+# suite: node --test --test-name-pattern ^EDIT.routes.to.the.deck.it.is.editing..not.to.a.generic.page$ tests/app.test.js
+# Every page routes to #add, so the address bar cannot say which deck is open
+# and a shared or reloaded URL names nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4555,7 +4555,7 @@
+    asserted in tests rather than trusted here. */
+ const ADD_ROUTE  = "#add";
+ const EDIT_ROUTE = "#edit-";
+-function sheetRoute() { return editingId ? EDIT_ROUTE + editingId : ADD_ROUTE; }
++function sheetRoute() { return ADD_ROUTE; }
+ // True while OUR history entry is on the stack. Not derived from the hash: a
+ // user can edit the address bar, and the question this answers is "did we push
+ // something that still needs popping", which only we know.

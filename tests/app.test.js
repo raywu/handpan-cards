@@ -651,7 +651,7 @@ function openSheet(app) {
   return app.els;
 }
 
-test("the deck row opens with a + ADD chip that opens the sheet, focusing the box", () => {
+test("the deck row opens with a + ADD chip that opens the page, focusing BACK", () => {
   const app = boot();
   const row = chipRow(app);
   assert.strictEqual(row.length, decks(app).length, "one chip per deck");
@@ -663,8 +663,15 @@ test("the deck row opens with a + ADD chip that opens the sheet, focusing the bo
   assert.strictEqual(app.sheetOpen(), false, "the sheet starts closed");
   openSheet(app);
   assert.strictEqual(app.sheetOpen(), true);
-  assert.strictEqual(app.activeId(), "scale-box", "focus moves to the scale box on open");
-  // role="dialog" / aria-modal live in the markup, so e2e asserts those.
+  // The owner's second request: the page does not steal focus, so the whole
+  // page is visible before anything is typed and no soft keyboard appears.
+  // Focus still has to MOVE - leaving it on a chip behind an inert background
+  // strands the keyboard - so it goes to BACK, which is a real button and
+  // opens no keyboard.
+  assert.strictEqual(app.activeId(), "scale-back", "focus moves to BACK on open");
+  assert.notStrictEqual(app.activeId(), "scale-box",
+    "the box is focused on open, which raises the soft keyboard over the page");
+  // role="dialog" / aria-labelledby live in the markup, so e2e asserts those.
 });
 
 test("Escape closes the sheet and focus returns to + ADD", () => {
@@ -675,14 +682,26 @@ test("Escape closes the sheet and focus returns to + ADD", () => {
   assert.strictEqual(app.activeId(), "deck-add", "focus returns to the + ADD chip");
 });
 
-test("a tap on the backdrop closes the sheet; a tap inside it does not", () => {
+test("BACK closes the page and returns focus to the control that opened it", () => {
+  const app = boot();
+  openSheet(app);
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false, "BACK did not close the page");
+  assert.strictEqual(app.activeId(), "deck-add", "focus did not return to + ADD");
+});
+
+test("the page fills the viewport, so there is no backdrop left to tap", () => {
   const app = boot();
   const sheet = app.els["scale-sheet"];
   openSheet(app);
-  sheet.dispatchEvent({ type: "click", target: app.els["scale-box"] });
-  assert.strictEqual(app.sheetOpen(), true, "a tap inside the sheet keeps it open");
+  // The drawer closed on a tap whose target WAS the layer. A full-screen page
+  // has no uncovered layer to tap, so that gesture is gone rather than merely
+  // unused: leaving it live makes a stray tap on the desktop page's margin
+  // discard an unsaved edit with no affordance that said it would.
   sheet.dispatchEvent({ type: "click", target: sheet });
-  assert.strictEqual(app.sheetOpen(), false, "a tap on the backdrop closes it");
+  assert.strictEqual(app.sheetOpen(), true, "a tap on the page layer closed it");
+  sheet.dispatchEvent({ type: "click", target: app.els["scale-box"] });
+  assert.strictEqual(app.sheetOpen(), true, "a tap inside the page closed it");
 });
 
 test("an empty box shows the parse hint and Generate is disabled", () => {
@@ -2290,16 +2309,17 @@ test("kbOffset never goes negative when the visual viewport is taller than inner
 
 /* The translate alone is only half the fix, and on an iPhone 14 (844pt tall,
  * ~300pt keyboard) the missing half is what the owner actually hit: the
- * surface is capped at 85dvh, dvh is a LAYOUT-viewport unit and does not
- * react to the keyboard, so the surface stays ~717px tall. Translating it up
- * 300px puts its TOP at -173px - GENERATE CARDS comes into view (it rides the
+ * surface is sized in dvh (85dvh as a drawer, 100dvh as a page), dvh is a
+ * LAYOUT-viewport unit and does not react to the keyboard, so the surface
+ * stays full height. Translating it up 300px puts its TOP off-screen -
+ * GENERATE CARDS comes into view (it rides the
  * translate, being in the reserved footer) while #scale-box, at the top of
  * the .sheetbody scrollport, leaves the screen entirely. The seed field
  * becomes unreachable exactly while you are typing into it.
  * kbCap() is the pure half of the cap: given the two viewport heights, the
  * max-height the surface must take so that it fits ENTIRELY inside the
  * shrunken visual viewport once translated. 0 means "no override" - leave
- * the stylesheet's 85dvh alone. */
+ * the stylesheet's dvh height alone. */
 test("kbCap does not override the stylesheet cap with no keyboard", () => {
   const app = boot();
   assert.strictEqual(app.get("kbCap(844, 844)"), 0);
@@ -2695,4 +2715,129 @@ test("a note name cannot break out of the hit target's attributes", () => {
   const M = (svg.match(/class="panhit"/g) || []).length;
   for (const l of labels)
     assert.ok(l.endsWith(` of ${M}`), `a label stops short of its count: ${l}`);
+});
+
+/* ---------------- 30. the scale PAGE: its route, and what boot does with it
+ * D3: Add and Edit are real destinations, so each pushes a history entry and
+ * the phone's Back gesture closes the page instead of leaving the app. Two
+ * halves that have to stay apart: closing the page POPS the entry it pushed,
+ * and a pop CLOSES the page - wire either one to the other's job and Back
+ * either leaves the app or strands a dead entry on the stack.
+ * The hash is shared with SHARE_PREFIX ("#s="), which is read once at boot.
+ * "#add" and "#edit-" are disjoint from it by construction, but "by
+ * construction" is what silently stops being true, so the share URL is
+ * asserted here and not assumed. */
+
+const ROUTE = (app) => app.location.hash;
+const pushes = (app) => app.history.calls.filter((c) => c.type === "push");
+
+test("opening ADD pushes its own route and closing pops it", () => {
+  const app = boot();
+  assert.strictEqual(ROUTE(app), "", "the app boots with a hash it never set");
+  openSheet(app);
+  assert.deepStrictEqual(pushes(app).map((c) => c.url), ["#add"],
+    "opening the Add page did not push exactly one route");
+  assert.strictEqual(ROUTE(app), "#add");
+
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1,
+    "closing the page left its own history entry on the stack");
+});
+
+test("EDIT routes to the deck it is editing, not to a generic page", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+  assert.strictEqual(ROUTE(app), "#edit-" + d.id,
+    "the Edit page's route does not name the deck it edits");
+  app.keydown("Escape");
+  assert.strictEqual(app.sheetOpen(), false);
+});
+
+test("the browser's Back button closes the page and pops nothing further", () => {
+  const app = boot();
+  openSheet(app);
+  const backs = () => app.history.calls.filter((c) => c.type === "back").length;
+  const before = backs();
+  app.popstate();
+  assert.strictEqual(app.sheetOpen(), false, "Back did not close the page");
+  assert.strictEqual(app.activeId(), "deck-add", "Back did not return focus to + ADD");
+  // The entry is already gone - the browser popped it. Calling back() again
+  // here would walk PAST the app's own entry and leave the site.
+  assert.strictEqual(backs(), before,
+    "closing from a pop popped a second entry and would leave the app");
+});
+
+test("a pop with no page open is not an invitation to close something", () => {
+  const app = boot();
+  const deckBefore = app.deckId();
+  // Where focus is BEFORE the stray pop, so the assertion below is about what
+  // the pop did rather than about where boot happens to leave focus.
+  const focusBefore = app.activeId();
+  app.popstate();
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.deckId(), deckBefore, "a stray pop moved the practice screen");
+  // The guard's real job. hideSheet() ends in (sheetOpener || addChip).focus(),
+  // so a popstate listener that ran its body with no page open would yank focus
+  // to + ADD on every back press anywhere in the app - out of whatever the user
+  // was actually on. Asserting only sheetOpen() leaves that invisible.
+  assert.strictEqual(app.activeId(), focusBefore,
+    "a stray pop stole focus - the popstate listener ran with no page open");
+});
+
+test("closing a page that is already closed changes nothing", () => {
+  // closeScaleSheet() is reachable from BACK, from Escape and from a save that
+  // finishes, so a double call is a live possibility rather than a contrived
+  // one. TWO things stop it doing damage and they stop different halves:
+  // sheetRouted (already false) is what keeps the second call from popping an
+  // entry this page never pushed, and the !sheetOpen guard is what keeps
+  // hideSheet() from running again. The second half is the one with a visible
+  // symptom - hideSheet ends in (sheetOpener || addChip).focus() - so it is the
+  // one worth asserting on, and the pop count is asserted beside it because the
+  // two guards are easy to mistake for one.
+  const app = boot();
+  app.run("openScaleSheet(document.getElementById('deck-add'))");
+  assert.strictEqual(app.sheetOpen(), true);
+  app.run("closeScaleSheet()");
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1,
+    "closing the page did not pop its own route");
+
+  // Move focus somewhere the close path would not have put it, so a second
+  // hideSheet() has something to visibly steal.
+  app.run("document.getElementById('scale-box').focus()");
+  const parked = app.activeId();
+  app.run("closeScaleSheet()");
+  app.run("closeScaleSheet()");
+
+  assert.strictEqual(app.activeId(), parked,
+    "closing an already-closed page re-ran the close path and stole focus");
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1,
+    "closing an already-closed page popped again - more back presses than the " +
+    "user made, and the last one leaves the app");
+});
+
+test("booting on a page route opens nothing and leaves a clean hash", () => {
+  for (const hash of ["#add", "#edit-custom:abc"]) {
+    const app = boot({ href: "https://example.test/index.html" + hash });
+    assert.strictEqual(app.sheetOpen(), false,
+      `booting on ${hash} opened a page for a deck this session never had`);
+    assert.strictEqual(ROUTE(app), "",
+      `booting on ${hash} left the route in the address bar: reloading is now ` +
+      "a page that cannot be backed out of");
+    assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"],
+      `booting on ${hash} pushed an entry instead of replacing the one it found`);
+  }
+});
+
+test("the page routes do not shadow a share URL", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  const url = link(app, d.id);
+  assert.strictEqual(url.ok, true, url.reason);
+
+  const shared = boot({ href: "https://example.test/index.html#s=" + payload(url.value) });
+  assert.strictEqual(shared.deckId(), d.id,
+    "a share link stopped opening its deck once the page routes were added");
+  assert.strictEqual(shared.sheetOpen(), false, "a share link opened the scale page");
 });

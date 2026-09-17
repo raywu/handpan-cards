@@ -1,0 +1,16 @@
+# kills: the page fills the viewport, so there is no backdrop left to tap
+# suite: node --test --test-name-pattern ^the.page.fills.the.viewport..so.there.is.no.backdrop.left.to.tap$ tests/app.test.js
+# The drawer's tap-the-backdrop-to-close gesture is wired back onto the page
+# layer. The page covers the viewport, so the only way to hit the layer is a
+# stray tap on a desktop margin - which silently discards an unsaved edit.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4749,6 +4749,7 @@
+ addChip.onclick = () => openScaleSheet(addChip);
+ // The page's way out. Same handler Escape runs, so there is one close path.
+ backBtn.onclick = () => closeScaleSheet();
++sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
+ genBtn.onclick = runGenerate;
+ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+ // The mirror is the choice the pan preview exists to make visible, so each
