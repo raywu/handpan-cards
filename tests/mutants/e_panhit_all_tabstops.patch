@@ -1,0 +1,19 @@
+# kills: ROTATE makes its correction from the keyboard alone at 380px
+# suite: node --test --test-name-pattern ^ROTATE.makes.its.correction.from.the.keyboard.alone.at.380px$ tests/e2e.test.js
+# Every hit target becomes a tab stop, so Tab walks all nineteen notes before
+# it reaches anything else in the sheet. The pan is meant to be ONE stop with
+# the arrows walking the selection inside it, which is a real tab order and so
+# only a browser can judge it - the DOM sandbox has no tab order to break.
+diff --git a/index.html b/index.html
+index 79d9295..16a5711 100644
+--- a/index.html
++++ b/index.html
+@@ -3867,7 +3867,7 @@ function pan(d, ch, opts) {
+           + ` fill="none" stroke="#E27005" stroke-width="${R * 0.016}"`
+           + ` pointer-events="none"/>`);
+       hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
+-        + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
++        + ` data-r="${rr}" fill="transparent" tabindex="0" role="button"`
+         + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
+         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+     }

@@ -1,0 +1,17 @@
+# kills: every LAYOUT control is a 44px target with a visible focus ring
+# suite: node --test --test-name-pattern ^every.LAYOUT.control.is.a.44px.target.with.a.visible.focus.ring$ tests/e2e.test.js
+# RESET shrinks under the 44px minimum, so on a phone the one control that
+# undoes a wrong correction is too small to hit.
+diff --git a/index.html b/index.html
+index 79d9295..5d69cef 100644
+--- a/index.html
++++ b/index.html
+@@ -596,7 +596,7 @@ button.nav:active{background:#2e281e}
+    the press flash fills it rather than restyling the note. */
+ #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
+ #scale-layout-reset{background:none; border:none; color:#a79d8b; cursor:pointer;
+-  min-height:44px; padding:0 4px;
++  min-height:24px; padding:0 4px;
+   font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+ /* Quiet, never a primary: auto width, so the sheet's only full-width button
+    stays #scale-generate. */

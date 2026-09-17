@@ -1,13 +1,13 @@
 # kills: Tab is trapped inside the Edit sheet and reaches every Edit control
 # suite: node --test --test-name-pattern ^Tab.is.trapped.inside.the.Edit.sheet.and.reaches.every.Edit.control$ tests/e2e.test.js
 diff --git a/index.html b/index.html
-index f27316d..ce59480 100644
+index 79d9295..d450cbf 100644
 --- a/index.html
 +++ b/index.html
-@@ -3414,8 +3414,7 @@ sheet.addEventListener("keydown", e => {
-                  editingId ? resetBtn : null,
-                  editingId ? slotsBox.children[layoutSel] : null,
+@@ -4877,8 +4877,7 @@ sheet.addEventListener("keydown", e => {
                   editingId ? moveL : null, editingId ? moveR : null,
+                  editingId ? resetBtn : null,
+                  editingId ? degSel : null,
 -                 mirrorL, mirrorR, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
 +                 mirrorL, mirrorR, ...swatches.children, genBtn]

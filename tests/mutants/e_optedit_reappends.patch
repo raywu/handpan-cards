@@ -1,12 +1,12 @@
 # kills: an options-only edit keeps its chip position across a reload at 380px
 # suite: node --test --test-name-pattern ^an.options.only.edit.keeps.its.chip.position.across.a.reload.at.380px$ tests/e2e.test.js
 diff --git a/index.html b/index.html
-index 3509543..4e9e449 100644
+index 79d9295..43bd32d 100644
 --- a/index.html
 +++ b/index.html
-@@ -3515,7 +3515,8 @@ function runGenerate() {
-   // the correction it just committed.
-   dropLayoutPreview();
+@@ -4810,7 +4810,8 @@ function runGenerate() {
+   if (warned.length) text += " " + warned.join(" ");
+ 
    closeScaleSheet();
 -  if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
 +  if (replaced) replaceScale(wasSeed, seedOf(d));

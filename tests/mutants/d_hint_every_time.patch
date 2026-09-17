@@ -3,10 +3,10 @@
 # The mirror hint is appended to every generation instead of the first per
 # deck, so it degrades into noise the user learns to ignore.
 diff --git a/index.html b/index.html
-index 8a5bb64..29d7e93 100644
+index 79d9295..ca7be31 100644
 --- a/index.html
 +++ b/index.html
-@@ -3410,7 +3410,7 @@ function runGenerate() {
+@@ -4806,7 +4806,7 @@ function runGenerate() {
    const warned = (d.warnings || []).map(w => w.reason);
    let text = (replaced || known.has(d.id))
      ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
@@ -14,4 +14,4 @@ index 8a5bb64..29d7e93 100644
 +  { generated.add(d.id); text += " " + LAYOUT_HINT; }
    if (warned.length) text += " " + warned.join(" ");
  
-   // The save REPLACED the deck the preview was painted on, so there is nothing
+   closeScaleSheet();

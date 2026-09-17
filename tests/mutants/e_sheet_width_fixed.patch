@@ -3,15 +3,15 @@
 # The sheet goes back to one width at every desktop size, so a 1440px window
 # shows the same 520px column as a 640px one.
 diff --git a/index.html b/index.html
-index f489642..180b0ae 100644
+index 79d9295..e3822c0 100644
 --- a/index.html
 +++ b/index.html
-@@ -421,7 +421,7 @@ button.nav:active{background:#2e281e}
+@@ -542,7 +542,7 @@ button.nav:active{background:#2e281e}
     is as far as it goes: beyond that the mock starts competing with the card.
     Gated on both axes like the ramp, so no phone in landscape picks it up. */
  @media (min-width:640px) and (min-height:700px){
 -  .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
 +  .sheetsurf{max-width:520px}
-   #scale-preview{max-width:240px}
+   #scale-preview{max-width:340px}
  }
  /* No min-height here: .mode carries the 44px minimum for every .mode on the

@@ -4,14 +4,15 @@
 # floor at, so on a sparse pan every target silently shrinks from the note ring
 # the user is aiming at (53.8px on Hijaz) down to the bare 44px minimum.
 diff --git a/index.html b/index.html
+index 79d9295..ec73330 100644
 --- a/index.html
 +++ b/index.html
-@@ -3818,7 +3818,7 @@
-     // the layout correction, so there is nothing to select it FOR.
-     if (interactive)
+@@ -3867,7 +3867,7 @@ function pan(d, ch, opts) {
+           + ` fill="none" stroke="#E27005" stroke-width="${R * 0.016}"`
+           + ` pointer-events="none"/>`);
        hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
 -        + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
 +        + ` fill="transparent" tabindex="-1" role="button"`
+         + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
          + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
-   }
-   // After every field, so a target is never painted under the pan it selects.
+     }

@@ -3,15 +3,15 @@
 # RESET is not wired up, so the only way back to the generated layout is to
 # undo every correction by hand.
 diff --git a/index.html b/index.html
-index 2a111a2..40babb4 100644
+index 79d9295..aef6c69 100644
 --- a/index.html
 +++ b/index.html
-@@ -3382,7 +3382,7 @@ rotL.onclick = () => rotateLayout(-1);
+@@ -4829,7 +4829,7 @@ rotL.onclick = () => rotateLayout(-1);
  rotR.onclick = () => rotateLayout(1);
  moveL.onclick = () => moveNote(-1);
  moveR.onclick = () => moveNote(1);
 -resetBtn.onclick = resetLayout;
 +resetBtn.onclick = () => {};
- // The roving tabindex: one Tab reaches the slot list, the arrows move inside it.
- slotsBox.addEventListener("keydown", (e) => {
-   const n = slotsBox.children.length;
+ // A tap anywhere on the pan chooses the note under it. Delegated to the plate
+ // rather than bound per target, because the targets are rewritten on every
+ // repaint and a listener per circle would be re-attached on every keystroke.
