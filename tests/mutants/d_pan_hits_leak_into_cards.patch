@@ -1,0 +1,17 @@
+# kills: pan()'s two-argument output is unchanged by the interactive layer
+# suite: node --test --test-name-pattern ^pan...s.two-argument.output.is.unchanged.by.the.interactive.layer$ tests/app.test.js
+# Turns the hit layer on for every caller, so the card path emits markup the
+# print renderer has no counterpart for and tests/test_render_agreement.py
+# is comparing two different diagrams.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3730,7 +3730,7 @@
+  * tests/test_render_agreement.py pins its output against tools/hifi.py per
+  * field: with no third argument the bytes are the ones print agrees with. */
+ function pan(d, ch, opts) {
+-  const interactive = !!(opts && opts.interactive);
++  const interactive = true;
+   const hits = [];
+   const g = d.geom, R = 100;
+   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
