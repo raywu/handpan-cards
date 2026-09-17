@@ -1,0 +1,17 @@
+# kills: the browser's Back button closes the page and pops nothing further
+# suite: node --test --test-name-pattern ^the.browser.s.Back.button.closes.the.page.and.pops.nothing.further$ tests/app.test.js
+# popstate routes through the app's own close, which pops AGAIN. The entry the
+# gesture already consumed is gone, so the second pop leaves the site.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4648,8 +4648,7 @@
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
+   if (!sheetOpen) return;
+-  sheetRouted = false;
+-  hideSheet();
++  closeScaleSheet();
+ });
+ 
+ // Removing a deck the user is LOOKING AT would otherwise leave the practice

@@ -1,10 +1,11 @@
 # kills: the Edit sheet shows deck.warnings from the registry with no generation call
 # suite: node --test --test-name-pattern ^the.Edit.sheet.shows.deck.warnings.from.the.registry.with.no.generation.call$ tests/app.test.js
+# The Edit page re-derives the warnings by rebuilding the deck, which gives
+# them a second producer that can disagree with the one that generated it.
 diff --git a/index.html b/index.html
-index a127d86..99b84a4 100644
 --- a/index.html
 +++ b/index.html
-@@ -2894,7 +2894,8 @@ function openEditSheet(d, opener) {
+@@ -4615,7 +4615,8 @@
    showSheet(opener);
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -13,4 +14,4 @@ index a127d86..99b84a4 100644
 +  const warned = ((again.ok ? again.value.warnings : []) || []).map(w => w.reason);
    if (warned.length) say(warned.join(" "), "warn");
  }
- function closeScaleSheet() {
+ /** Take the page down. The DOM half only - the route is the caller's. */

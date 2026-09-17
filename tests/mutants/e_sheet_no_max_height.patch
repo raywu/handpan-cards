@@ -1,18 +1,18 @@
-# kills: the sheet is a modal dialog with the spec'd anatomy
-# suite: node --test --test-name-pattern ^the.sheet.is.a.modal.dialog.with.the.spec.d.anatomy$ tests/e2e.test.js
-# The sheet surface loses its 85dvh ceiling and internal scroll, so on a
-# short screen a long message pushes Generate off the bottom with no way to
-# reach it.
+# kills: the page is a modal dialog with the spec'd anatomy
+# suite: node --test --test-name-pattern ^the.page.is.a.modal.dialog.with.the.spec.d.anatomy$ tests/e2e.test.js
+# The page surface loses its viewport height and internal scroll, so it
+# collapses to its content: the practice screen is covered by an opaque layer
+# with a short box floating at the bottom, and a long page has no way to
+# scroll to its primary.
 diff --git a/index.html b/index.html
-index 140fa68..bd35435 100644
 --- a/index.html
 +++ b/index.html
-@@ -379,7 +379,7 @@ button.nav:active{background:#2e281e}
-    body's groups, --sp-1 inside a group between a label and the control it
-    names - and the structure is unchanged: cap, scroll, reserved footer. */
- .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
--  border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto; overscroll-behavior:contain;
-+  border-radius:18px 18px 0 0; overscroll-behavior:contain;
+@@ -411,7 +411,7 @@
+    between a label and the control it names - and the structure is unchanged
+    apart from the height: header, scroll, reserved footer. */
+ .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
+-  height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
++  overscroll-behavior:contain;
    padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
    display:flex; flex-direction:column; gap:var(--sp-4)}
- /* The grab handle. Purely a signal that this surface is a sheet with an edge,
+ /* The header row: BACK, then the page title. Outside .sheetbody like the

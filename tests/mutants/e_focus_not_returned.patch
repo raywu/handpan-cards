@@ -1,16 +1,17 @@
 # kills: Escape closes the sheet and focus returns to + ADD
 # suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to...ADD$ tests/e2e.test.js
-# Closing the sheet drops focus on the body instead of returning it to the
-# chip that opened it, so a keyboard user restarts from the top of the page.
+# Closing the page leaves focus on whatever was inside it, which is detached
+# the moment the page hides - so the keyboard user lands on <body> and has to
+# tab from the top of the document to get back to where they were.
 diff --git a/index.html b/index.html
-index f27316d..947b3fd 100644
 --- a/index.html
 +++ b/index.html
-@@ -3312,7 +3312,6 @@ function closeScaleSheet() {
+@@ -4631,7 +4631,7 @@
    restoreLayoutPreview();
    editingId = null;
    for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
 -  (sheetOpener || addChip).focus();
++
    sheetOpener = null;
  }
- 
+ // The app's own way out: BACK, Escape, or a save that finishes. It pops the

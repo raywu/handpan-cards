@@ -1,19 +1,17 @@
 # kills: SAVE CHANGES is reachable without scrolling on the largest pan the engine allows
-# suite: node --test --test-name-pattern SAVE.CHANGES.is.reachable.without.scrolling.on.the.largest.pan tests/e2e.test.js
-# The surface stops being a flex column. Nothing then constrains .sheetbody to
-# the space the footer leaves, so the whole sheet flows past the 85dvh cap and
-# the primary goes back under the fold. The layout of this sheet is
-# load-bearing, not decoration.
+# suite: node --test --test-name-pattern ^SAVE.CHANGES.is.reachable.without.scrolling.on.the.largest.pan.the.engine.allows$ tests/e2e.test.js
+# The surface stops being a flex column, so .sheetbody no longer takes the
+# space the header and footer leave. The whole page flows past the viewport
+# and the primary sits below the fold on open.
 diff --git a/index.html b/index.html
-index 140fa68..49f8ea3 100644
 --- a/index.html
 +++ b/index.html
-@@ -381,7 +381,7 @@ button.nav:active{background:#2e281e}
- .sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
-   border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto; overscroll-behavior:contain;
+@@ -413,7 +413,7 @@
+ .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
+   height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
    padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
 -  display:flex; flex-direction:column; gap:var(--sp-4)}
 +  display:block}
- /* The grab handle. Purely a signal that this surface is a sheet with an edge,
-    which is what makes the padding above read as deliberate rather than as slack
-    - and it is a ::before rather than markup so it can never take a tab stop or
+ /* The header row: BACK, then the page title. Outside .sheetbody like the
+    footer, so the way out of the page is never scrolled off the top - which is
+    the drawer's grab handle replaced by something that does a job. */

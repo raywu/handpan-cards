@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <!-- interactive-widget=resizes-content: when the soft keyboard opens, shrink the
-     LAYOUT viewport rather than only the visual one, so 85dvh (the scale
-     sheet's cap) shrinks with it and the sheet sits above the keyboard instead
+     LAYOUT viewport rather than only the visual one, so 100dvh (the scale
+     page's height) shrinks with it and the page sits above the keyboard instead
      of behind it (queue row 212). Chromium honours it; browsers that do not
      ignore the token and keep the default resizes-visual, which is why the
-     sheet's primary sits in a reserved footer outside the scroll rather than
+     page's primary sits in a reserved footer outside the scroll rather than
      relying on this token alone. -->
 <meta name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
@@ -391,31 +391,36 @@ button.nav:active{background:#2e281e}
 :root{--ring:4px}
 :focus-visible{outline:2px solid #e3b25c; outline-offset:2px}
 
-/* ---- the scale sheet (Phase 3) ----
-   #scale-sheet is the modal layer: it carries the dialog role and paints the
-   backdrop, and its single child is the surface. A tap whose target IS the
-   layer is a backdrop tap. */
-#scale-sheet{position:fixed; inset:0; z-index:30; background:#0009;
+/* ---- the scale page (Phase 3, made a page in Stage 2) ----
+   #scale-sheet is the page layer: it carries the dialog role and fills the
+   viewport, and its single child is the surface. It is OPAQUE and the same
+   ink as the surface, not a translucent backdrop - going full-screen was the
+   owner's first request, and a page with the practice screen showing through
+   its margins is still a drawer. Nothing behind it is visible, which is also
+   why the layer-tap-to-close gesture is gone: there is no backdrop to aim at,
+   and on a wide viewport the flanks beside the surface are page, not scrim. */
+#scale-sheet{position:fixed; inset:0; z-index:30; background:#1f1b15;
   display:flex; align-items:flex-end; justify-content:center}
 [hidden]{display:none !important}
-/* The drawer. The owner called it "particularly cramped": every gap in it was
-   the same 9px and the surface had 14px of padding, so the label, the box, the
-   parse line, the preview and the message all sat at one distance and read as
-   one undifferentiated block. The ramp does the separating now - --sp-4 around
-   the surface and between the scrolling body and its footer, --sp-3 between the
-   body's groups, --sp-1 inside a group between a label and the control it
-   names - and the structure is unchanged: cap, scroll, reserved footer. */
-.sheetsurf{width:100%; max-width:520px; background:#1f1b15; border-top:1px solid #433b2c;
-  border-radius:18px 18px 0 0; max-height:85dvh; overflow-y:auto; overscroll-behavior:contain;
+/* The page surface. The owner called the drawer this replaced "particularly
+   cramped": every gap in it was the same 9px and the surface had 14px of
+   padding, so the label, the box, the parse line, the preview and the message
+   all sat at one distance and read as one undifferentiated block. The ramp does
+   the separating now - --sp-4 around the surface and between the scrolling body
+   and its footer, --sp-3 between the body's groups, --sp-1 inside a group
+   between a label and the control it names - and the structure is unchanged
+   apart from the height: header, scroll, reserved footer. */
+.sheetsurf{width:100%; max-width:520px; background:#1f1b15;
+  height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
   padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:var(--sp-4)}
-/* The grab handle. Purely a signal that this surface is a sheet with an edge,
-   which is what makes the padding above read as deliberate rather than as slack
-   - and it is a ::before rather than markup so it can never take a tab stop or
-   a hit test away from a control. */
-.sheetsurf::before{content:""; flex:0 0 auto; align-self:center;
-  width:38px; height:4px; border-radius:2px; background:#433b2c}
-/* The surface is capped at 85dvh, so on the Edit sheet, in landscape, or with
+/* The header row: BACK, then the page title. Outside .sheetbody like the
+   footer, so the way out of the page is never scrolled off the top - which is
+   the drawer's grab handle replaced by something that does a job. */
+.sheethead{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-3)}
+#scale-title{margin:0; font:600 13px/1.4 "Nunito Sans"; letter-spacing:.09em;
+  color:#eae6df; text-transform:uppercase}
+/* The surface fills the viewport, so on the Edit page, in landscape, or with
    a soft keyboard up its content is taller than the cap. Before .sheetbody
    existed the WHOLE surface scrolled, which put the sheet's only primary -
    #scale-generate, last in the flow - below the fold: at 844x390 it started
@@ -495,14 +500,13 @@ button.nav:active{background:#2e281e}
    to give, the rule is what says "this part does not move". Direct child only,
    so the LAYOUT row's nested .ctlrow is untouched. */
 .sheetsurf > .ctlrow{border-top:1px solid #332c22; padding-top:var(--sp-4)}
-/* Landscape on a phone: 85dvh of 390px, and every pixel of chrome in the sheet
+/* Landscape on a phone: 390px of height, and every pixel of chrome on the page
    comes straight off the scrolling body. The ramp is already a third smaller
-   here; this drops the two things that are decoration rather than structure -
-   the grab handle, and the footer's breathing room above its own hairline -
-   and returns the primary to the 44px floor. The hairline stays: it is what
-   says the footer does not scroll, and it costs one pixel. */
+   here; this drops the footer's breathing room above its own hairline, which is
+   decoration rather than structure, and returns the primary to the 44px floor.
+   The hairline stays: it is what says the footer does not scroll, and it costs
+   one pixel. */
 @media (max-height:520px){
-  .sheetsurf::before{display:none}
   .sheetsurf > .ctlrow{padding-top:var(--sp-2)}
   #scale-generate{min-height:44px}
   /* Text fields go back to the 44px floor with tighter padding: on the Edit
@@ -512,9 +516,9 @@ button.nav:active{background:#2e281e}
   #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
   .sheetbody{gap:var(--sp-2)}
   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
-  /* 85dvh of 390px leaves the body around 200px, and the plate is now always
-     in the flow rather than only after a valid parse, so at 184px it would be
-     most of the scrollport. The pan stays readable at 120px - it is a
+  /* A 390px-tall viewport leaves the body a couple of hundred px, and the
+     plate is now always in the flow rather than only after a valid parse, so
+     at 184px it would be most of the scrollport. The pan stays readable at 120px - it is a
      where-do-the-notes-sit mock, not the card. */
   #scale-preview{max-width:120px}
 }
@@ -675,8 +679,19 @@ button.nav:active{background:#2e281e}
      still read out. -->
 <div class="announce" role="status" aria-live="polite"></div>
 
-<div id="scale-sheet" role="dialog" aria-modal="true" aria-label="Add a scale" hidden>
+<div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
   <div class="sheetsurf">
+   <!-- The page header. BACK is a real <button>, which is what lets showSheet()
+        move focus here on open without raising a soft keyboard - the owner's
+        second request was to see the whole page before typing, and focusing
+        the box is what took that away. It is also the page's accessible name
+        (aria-labelledby above), so the title is announced rather than being
+        decoration beside an aria-label nobody can see. -->
+   <div class="sheethead">
+     <button class="mode" type="button" id="scale-back"
+             aria-label="Back to the practice screen">&larr; BACK</button>
+     <h2 id="scale-title">Add a scale</h2>
+   </div>
    <!-- The scrolling part. The primary below it is deliberately OUTSIDE, so it
         cannot be pushed under the fold by a tall Edit sheet or a short
         viewport - see .sheetbody in the stylesheet. DOM order is unchanged. -->
@@ -4064,6 +4079,10 @@ const mirrorR   = document.getElementById("scale-mirror-r");
 const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
 const addChip   = document.getElementById("deck-add");
+// The page header (Stage 2). backBtn is the page's way out AND where focus
+// lands on open; titleEl is the page's accessible name, not decoration.
+const backBtn   = document.getElementById("scale-back");
+const titleEl   = document.getElementById("scale-title");
 // Edit state (Phase 4). The same sheet, three extra rows and a relabelled
 // primary - never a second sheet and never a second primary button.
 const nameRow   = document.getElementById("scale-name-row");
@@ -4480,17 +4499,17 @@ function updateParse() {
 function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
   return Math.max(0, innerHeight - vvHeight - vvOffsetTop);
 }
-/* The translate is only half the fix. max-height:85dvh is a LAYOUT-viewport
-   unit, so the surface keeps its full ~717px on an 844pt phone no matter how
-   far the keyboard shrinks the visual viewport; lifting a 717px surface by
-   300px puts its TOP at -173px. The reserved footer rides the translate, so
+/* The translate is only half the fix. 100dvh is a LAYOUT-viewport unit, so the
+   surface keeps its full 844px on an 844pt phone no matter how far the keyboard
+   shrinks the visual viewport; lifting an 844px surface by 300px puts its TOP
+   at -300px. The reserved footer rides the translate, so
    GENERATE CARDS becomes reachable and the whole thing LOOKS fixed - while
    #scale-box, at the top of the .sheetbody scrollport, goes off-screen. That
    is the state the owner photographed on an iPhone 14 / iOS 26.6: the seed
    field unreachable exactly while typing into it.
    So the surface is also CAPPED to the shrunken viewport, and .sheetbody's
    existing shrink does the rest - the body gives way, the footer stays put,
-   and the field stays on screen. 0 means "no override": leave 85dvh alone so
+   and the field stays on screen. 0 means "no override": leave 100dvh alone so
    the no-keyboard case is untouched CSS. The 8px is a visual margin so the
    surface does not sit flush against the keyboard, not spacing between
    children - subpixel viewport heights are worth well under a pixel of it. */
@@ -4517,8 +4536,31 @@ function setSheetMode(edit) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
-  sheet.setAttribute("aria-label", edit ? "Edit this scale" : "Add a scale");
+  // The page is named by the title it shows (#scale-title, via
+  // aria-labelledby), so there is one string and a sighted user and a screen
+  // reader are told the same thing.
+  titleEl.textContent = edit ? "Edit this scale" : "Add a scale";
 }
+/* ---- the page's route (D3) ----
+   Add and Edit are destinations, so each is a history entry: the phone's back
+   gesture closes the page instead of leaving the app, which is the whole
+   reason the hash is involved at all.
+   The two halves stay apart on purpose. closeScaleSheet() takes the page down
+   and then POPS the entry it pushed; popstate takes the page down and pops
+   NOTHING, because the browser has already done it. Wire either one to the
+   other's job and back either walks past the app's own entry and leaves the
+   site, or leaves a dead entry that swallows the next back press.
+   SHARE_PREFIX is "#s=", so these prefixes cannot shadow a share link - but
+   that is exactly the kind of "cannot" that stops being true quietly, so it is
+   asserted in tests rather than trusted here. */
+const ADD_ROUTE  = "#add";
+const EDIT_ROUTE = "#edit-";
+function sheetRoute() { return editingId ? EDIT_ROUTE + editingId : ADD_ROUTE; }
+// True while OUR history entry is on the stack. Not derived from the hash: a
+// user can edit the address bar, and the question this answers is "did we push
+// something that still needs popping", which only we know.
+let sheetRouted = false;
+
 function showSheet(opener) {
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
@@ -4526,7 +4568,16 @@ function showSheet(opener) {
   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
   updateParse();
   applyKbOffset();
-  scaleBox.focus();
+  history.pushState({ scalePage: true }, "", sheetRoute());
+  sheetRouted = true;
+  // The owner's second request: do not steal focus into the box, so the whole
+  // page is readable before anything is typed and no soft keyboard covers it.
+  // Focus still has to LEAVE the background - it is inert the line above, and
+  // a focused element inside an inert subtree strands the keyboard - so it goes
+  // to BACK. A button, so no keyboard opens; a real tab stop, so it does not
+  // need a tabindex that outlives the page; and first in reading order, so Tab
+  // from there walks the page the way it looks.
+  backBtn.focus();
 }
 // The create path. Everything is reset, so an Edit never leaks its seed, its
 // palette or its mirror into the next "+ ADD".
@@ -4567,8 +4618,8 @@ function openEditSheet(d, opener) {
   const warned = (d.warnings || []).map(w => w.reason);
   if (warned.length) say(warned.join(" "), "warn");
 }
-function closeScaleSheet() {
-  if (!sheetOpen) return;
+/** Take the page down. The DOM half only - the route is the caller's. */
+function hideSheet() {
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
   // Undo any keyboard translate before the next open, or a sheet that opens
@@ -4583,6 +4634,23 @@ function closeScaleSheet() {
   (sheetOpener || addChip).focus();
   sheetOpener = null;
 }
+// The app's own way out: BACK, Escape, or a save that finishes. It pops the
+// entry showSheet() pushed, so the address bar and the stack end where they
+// started and the next back press belongs to whatever came before the page.
+function closeScaleSheet() {
+  if (!sheetOpen) return;
+  const routed = sheetRouted;
+  sheetRouted = false;
+  hideSheet();
+  if (routed) history.back();
+}
+// The browser's way out: the back gesture, or a swipe. The entry is already
+// gone, so this only takes the page down.
+window.addEventListener("popstate", () => {
+  if (!sheetOpen) return;
+  sheetRouted = false;
+  hideSheet();
+});
 
 // Removing a deck the user is LOOKING AT would otherwise leave the practice
 // screen on a deck that no longer exists, so it falls back to the first
@@ -4679,6 +4747,8 @@ function runGenerate() {
 }
 
 addChip.onclick = () => openScaleSheet(addChip);
+// The page's way out. Same handler Escape runs, so there is one close path.
+backBtn.onclick = () => closeScaleSheet();
 genBtn.onclick = runGenerate;
 delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
 // The mirror is the choice the pan preview exists to make visible, so each
@@ -4711,12 +4781,11 @@ scaleBox.addEventListener("input", updateParse);
 nameBox.addEventListener("input", () => { nameDirty = true; updateParse(); });
 degSel.addEventListener("change", updateParse);
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
-// A tap whose target IS the layer is a tap on the backdrop, never on the sheet.
-sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  const stops = [editingId ? nameBox : null,
+  const stops = [backBtn,
+                 editingId ? nameBox : null,
                  scaleBox, editingId ? degSel : null,
                  editingId ? rotL : null, editingId ? rotR : null,
                  editingId ? resetBtn : null,
@@ -4799,10 +4868,19 @@ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode)
 // and a silent switch would look like the app lost their deck, so say so.
 if (wantedDeck !== deckId && wantedDeck.indexOf("custom:") === 0)
   say("That deck is gone. Showing " + deck().name + ".", "warn");
+// A page route in the address bar at boot is a RELOAD of a page, or a link
+// someone pasted. Neither reopens it: #edit-<id> names a deck this session may
+// not have, and a page restored with no entry behind it is one the back
+// gesture cannot leave. So the route is replaced away - replaceState, not
+// pushState, or the clean URL becomes an entry of its own and back returns to
+// the route that was just rejected.
+if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
+  history.replaceState(null, "", location.pathname + location.search);
 // A share link in the address bar is consumed once, at boot, through the same
 // single entry point; it wins over the stored deck because the user just
-// followed it.
-if (location.hash.indexOf(SHARE_PREFIX) === 0)
+// followed it. "#s=" is disjoint from the page routes above, so the two reads
+// never see each other's hash.
+else if (location.hash.indexOf(SHARE_PREFIX) === 0)
   openShare(location.hash.slice(SHARE_PREFIX.length));
 </script>
 </body>

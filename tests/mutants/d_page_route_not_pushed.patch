@@ -1,0 +1,16 @@
+# kills: opening ADD pushes its own route and closing pops it
+# suite: node --test --test-name-pattern ^opening.ADD.pushes.its.own.route.and.closing.pops.it$ tests/app.test.js
+# The page opens without taking a history entry, so the phone's back gesture
+# skips past it and leaves the app instead of closing the page.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4568,8 +4568,6 @@
+   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+   updateParse();
+   applyKbOffset();
+-  history.pushState({ scalePage: true }, "", sheetRoute());
+-  sheetRouted = true;
+   // The owner's second request: do not steal focus into the box, so the whole
+   // page is readable before anything is typed and no soft keyboard covers it.
+   // Focus still has to LEAVE the background - it is inert the line above, and
