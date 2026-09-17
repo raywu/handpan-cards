@@ -163,9 +163,15 @@ this by attaching per-instrument images.
    the original 16 cards is unchanged: every convention in this section
    (pitch-class-complete highlighting, spelling-order bottom lines, the three
    forced cards above) still holds and is still asserted by the same tests -
-   only sequence and deck size changed. The owner was offered "keep matching
-   the commercial reference" as the alternative and chose full re-ranking
-   anyway; see `docs/SCALE_ENGINE_PLAN.md` D11 for the full trade-off.
+   only sequence, deck size and two subtitles changed (`Dm7` gained "( = F6 )"
+   and `Am7` "( = C6 )"; the `fields` and `roots` of all 16 are byte-identical).
+   The owner was offered "keep matching the commercial reference" as the
+   alternative and chose full re-ranking anyway; the trade-off is recorded in
+   `docs/plans/2026-09-16-remaining-work-coordination.md`, decision D11 and the
+   section "D11 supersedes an earlier instruction". Note that
+   `docs/SCALE_ENGINE_PLAN.md` ALSO has a D11, meaning something unrelated
+   (register tie-break for unforced tones) - these are two separate
+   numberings, and this note is not about that one.
 4. **Highlighted-field rendering:** thin black circle (always), coloured
    band inside at radius 0.87r with stroke 0.24r, inner black hairline at
    0.74r, label auto-fit inside (sized by the label rule in "Design system",

@@ -153,7 +153,9 @@ row is a failure - add a row (0 is a fine start). Node counts come from
 
 - Amara `G5` is `[6, 3]` = MIDI 67, 62: a **-5 semitone inverted fifth**, because
   the fifth is only available below the root. Use `(b - a) % 12 == 7`.
-- Duplicate pitch-class sets are deliberate: 4 groups / 9 cards (Hijaz Bm x2;
-  Pygmy Ab x2, Cm x3, Eb x2). The invariant that holds is that no two chords in
-  a deck share an identical `fields` list (18/25/16 all distinct).
-- Page counts: full 3/4/2, printer-only 2/3/2. 59 cards total.
+- Duplicate pitch-class sets are deliberate: Hijaz 0, Pygmy 15 groups / 36
+  cards, Amara 0 (2026-09-16, after the engine adoption at `e872a49` - the
+  earlier "4 groups / 9 cards" predates it). The invariant that holds is that
+  no two chords in a deck share an identical `fields` list (19/52/25 all
+  distinct, verified over all 96 cards).
+- Page counts: full 3/7/3, printer-only 3/6/3. 96 cards total.
