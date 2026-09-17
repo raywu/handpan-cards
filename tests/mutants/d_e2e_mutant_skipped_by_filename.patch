@@ -1,0 +1,23 @@
+# kills: an e2e mutant is skipped for its suite, not for its filename
+# suite: node --test --test-name-pattern ^an.e2e.mutant.is.skipped.for.its.suite..not.for.its.filename$ tests/mutation_harness.test.js
+# The browser skip goes back to keying on the FILENAME. An e2e mutant under a
+# name that does not start with `e_` is then handed to a suite that self-skips
+# for want of a browser, exits 0, and is scored SURVIVED - the one verdict a
+# skipped suite must never produce. This is the defect Stage 4 fixed, and until
+# now the test that catches it had no mutant of its own, against this script's
+# own opening line: every test group must have a mutant that kills it.
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+index 2165c5b..98f5e2d 100755
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -210,8 +210,8 @@ for p in "${PATCHES[@]}"; do
+   # `case "$base" in e_*)`, and d_page_background_still_announced.patch - an
+   # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
+   # skipped itself for want of a browser.
+-  case "$cmd" in
+-    *tests/e2e.test.js*)
++  case "$base" in
++    e_*)
+       if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
+         echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
+         SKIPPED=$((SKIPPED + 1)); continue

@@ -1,0 +1,26 @@
+# kills: the LAYOUT hint is visible inside the group, not merely present in the file
+# suite: node --test --test-name-pattern ^the.LAYOUT.hint.is.visible.inside.the.group..not.merely.present.in.the.file$ tests/e2e.test.js
+# The hint is hoisted out of #scale-layout-row and sits above it. It renders,
+# it reads correctly - and it now explains a group of buttons it is no longer
+# part of, so it is visible when the LAYOUT row is HIDDEN and it no longer
+# travels with the controls it describes. Text-matching cannot see placement.
+diff --git a/index.html b/index.html
+index 3034159..e237032 100644
+--- a/index.html
++++ b/index.html
+@@ -748,6 +748,7 @@ button.nav:active{background:#2e281e}
+          MOVE did because the thing they moved was not on screen - the chips
+          reordered and the pan behind the sheet did not visibly change. One
+          target, one group, both above the fold at 380px. -->
++    <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+     <div class="editrow" id="scale-layout-row" hidden>
+       <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
+       <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
+@@ -758,7 +759,6 @@ button.nav:active{background:#2e281e}
+            the correction is made on. It names the gesture before the buttons
+            because nothing either button does means anything until a note is
+            chosen. -->
+-      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+       <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
+            aria-describedby="scale-layout-hint">
+         <div class="mirror">
