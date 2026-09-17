@@ -1,0 +1,15 @@
+# kills: the LAYOUT hint is visible inside the group, not merely present in the file
+# suite: node --test --test-name-pattern ^the.LAYOUT.hint.is.visible.inside.the.group..not.merely.present.in.the.file$ tests/e2e.test.js
+diff --git a/index.html b/index.html
+index 3034159..e9eb63f 100644
+--- a/index.html
++++ b/index.html
+@@ -582,7 +582,7 @@ button.nav:active{background:#2e281e}
+    control here is a SECONDARY: the sheet's only full-width primary stays
+    #scale-generate. The PAN is the selection and a single tab stop; its arrow
+    keys walk the notes, so there is no drag-only path to any of this. */
+-#scale-layout-row{gap:var(--sp-2)}
++#scale-layout-row{gap:var(--sp-2); max-height:0; overflow:hidden}
+ /* The hint reads as prose, so it takes the parse line's Bitter rather than the
+    label's letter-spaced caps - it is a sentence to read once, not a control
+    label to scan. Dimmer than #scale-parse: that line reports on what is in the

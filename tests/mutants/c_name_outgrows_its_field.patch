@@ -1,5 +1,5 @@
 # kills: every name the app draws fits inside the field it labels
-# suite: node --test tests/layout.test.js
+# suite: node --test --test-name-pattern ^every.name.the.app.draws.fits.inside.the.field.it.labels$ tests/layout.test.js
 # Doubles the app's rim/inner name ratio to 1.60650, so every rim name is drawn
 # at 1.6x the radius of the circle it sits in and spills right out of it.
 # Before the glyph-box guard in tests/layout.test.js this passed the whole file

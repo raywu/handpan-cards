@@ -6,6 +6,15 @@
 # skipped suite must never produce. This is the defect Stage 4 fixed, and until
 # now the test that catches it had no mutant of its own, against this script's
 # own opening line: every test group must have a mutant that kills it.
+#
+# That SURVIVED verdict is the REAL-CORPUS defect, not the path the fixture
+# takes. The fixture repo carries no tests/e2e.test.js, so the mutated script
+# never reaches a skip at all: the suite fails on the clean tree and the sweep
+# aborts on a non-green baseline. The kill is genuine and lands on the test's
+# first named assertion (the expected /skipped/ line), but the test's companion
+# assert.doesNotMatch(out, /survived/) is vacuous in this fixture - nothing
+# there could print `survived` under any mutation. Do not read it as covering
+# the survived branch.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
 index 2165c5b..98f5e2d 100755
 --- a/tests/mutation_check.sh
