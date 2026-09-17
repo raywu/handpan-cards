@@ -503,6 +503,15 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 57 | W4-N10 (2nd review, nit) RESOLVED in `a388857`: the comment above `const sheetSurf` said the value is "Undefined in the unit sandbox"; `firstElementChild` returns `null`, not `undefined`. Cosmetic; the guard is truthiness either way. | RESOLVED |
 | 58 | W4-N11 (2nd review, nit) RESOLVED in `a388857`: `docs/2026-09-16-mobile-audit-pass-1.md` and `TODOS.md:16` both still described the translate-only fix the owner's device check disproved, and checklist item 13 still said the deck-header print affordance was "not yet on `main`" when the rebase brought it in at `index.html:3806-3808` with four e2e tests. The reviewer called the fix description "the one I would want corrected before merge". Both files now record the two-pass history, the 85dvh root cause, and the wiring gap. Item 13 is marked stale and points at F2 / row 21 for the re-audit. | RESOLVED |
 | 50 | W5-N4 / ownership-row defect: the reviewer found ~9 test and tool files edited outside W5's ownership row, every one a mechanically forced count update the lane could not ship without, while the one fixture the row DID assign to W5 (`tests/fixtures/divergence_v1.json`) went unchanged. Adjudicated as a mis-specified ownership row, not lane overreach - correct the row, not the branch. Also: `CLAUDE.md:101-102` still says "Pygmy ships Cm7 and Eb7 in two registers each", true at 27 cards and false at 52, where 15 groups span 36 cards. Someone must own that line | reviewer PR #75 | open |
+| 59 | S3-N1 (surviving mutant): `index.html:4284-4290`'s stale-correction guard (`if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;`) is untested — deleting it passes the whole suite. Consequence is user-visible: after a correction, typing a seed with a different field count makes `HPE.layout.solve` return `BAD_NOTE`, `paintPan` returns false, `holdPanPreview()` keeps the old pan, and the Edit mock freezes instead of following the typing. Worth one test | reviewer PR #79 | open |
+| 60 | S3-N2: that guard is length-only. A same-count zone reshuffle (8 rim -> 6 rim + 2 bottom) carries a stale correction across zone boundaries and silently rotates the bottom shell. No collision, no crash, visible in the mock, fixable with RESET. Named as an accepted risk at `docs/plans/2026-09-16-scale-page-ux.md:368`; pre-existing and plan-sanctioned, now more visible | reviewer PR #79 | open |
+| 61 | S3-N3 (surviving mutant): `rotateLayout`'s `layoutSel = wrap(layoutSel + by, a, span)` — the selection following the rotated note — has no test. Pairs with row 59 as one small test addition | reviewer PR #79 | open |
+| 62 | S3-N4: `tests/mutants/d_pan_hits_leak_into_cards.patch` now kills only by crashing boot. Its `const interactive = true` meets the Stage-3 line `index.html:3780` (`const sel = interactive && opts.selected != null ? ...`); with `opts` null it throws, `boot()` dies, and every `app.test.js` test fails — the named test never reaches its own assertion (`tests/app.test.js:2499`). Verified: `pass 0 / fail 1 / TypeError`. Fix: mutate the emission (drop the `if (interactive)` guard on the two `<g>` appends) instead of the flag | reviewer PR #79 | open |
+| 63 | S3-N5: `tests/mutants/d_edit_moves_selection.patch` also kills via TypeError, and its test oracle is close to a tautology. Same fix shape as row 62 | reviewer PR #79 | open |
+| 64 | S3-N6: `tests/mutants/d_layout_preview_sticks.patch` kills on a real invariant, but not the one its `# kills:` line states. Re-word the header or re-point the patch | reviewer PR #79 | open |
+| 65 | S3-N7: stale comment at `index.html:196` still cites `#scale-slots .slot` as precedent for an id Stage 3 deleted | reviewer PR #79 | open |
+| 66 | S3-N8: `docs/plans/2026-09-16-scale-page-ux.md` still describes `solveSheetLayout` / `buildSlots`, both gone. Outside S3's ownership; Stage 4 work | reviewer PR #79 | open |
+| 67 | **Stage 3's AC5 device half is `covered_by: "neither"`** — the `applyKbOffset` translate+cap path iOS Safari exercises is never run by e2e (same root cause as rows 31/54). Needs an owner check on iPhone 14 / iOS 26.6 of BOTH the ADD and EDIT pages with the keyboard up | reviewer PR #79 | open |
 
 ## Cycle state
 
@@ -517,11 +526,23 @@ Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, P
 | W4 (2nd) | integrator (lane gone) | `mobile/audit-pass-1` | #74 | `2ec374d` | 2026-09-16 CI 5/5 pass at `2ec374d` (run 35173383440, `matches_reviewed_sha: true`) | PASS_WITH_NITS (0 blocking, 0 boundary violations; 10 mutants spent, 4 survived - all one wiring gap, rows 54-58) | 2 | no | **owner iPhone 14 / iOS 26.6 device check, EDIT sheet included** | yes |
 | W5 | released | `engine/adopt-generated-decks` (deleted) | #75 | `d2c06b6` | 2026-09-16 CI 5/5 pass at `d2c06b6` | PASS_WITH_NITS | 1 | yes `e872a49` | - | no |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
+| S3 | released | `scale-page/s3-layout-on-pan` (deleted) | #79 | `71ab7d3` | 2026-09-17 CI 5/5 pass at `71ab7d3` (run 35264003719, mutation gate 288/288) | PASS_WITH_NITS (0 blocking, 0 boundary violations; 8 mutants spent, 2 survived, rows 59-66) | 0 | yes `eeb7329` | - | no |
 
 Wave 1 spawned 2026-09-16 off `main` @ `839d70e` (the doc commit; base content
 identical to `28117a8`). Agent IDs are held in the integrator session only.
 Merge order stands: W1, then W2, then W3/W4 - and W4 only after the owner's
 iPhone 14 / iOS 26.6 device check, never on CI alone.
+
+**Scale-page Stage 3 (`scale-page/s3-layout-on-pan`, PR #79) merged 2026-09-17 as
+`eeb7329`**, one serial lane outside the W-numbering: the Edit page's pan became the
+correction surface (owner decisions D1 tap-the-note, D2 rotate-the-selected-zone,
+D3 real URL route, D4 mock-only-commit-on-save). Two commits - `29f7b2f` (the
+feature) and `71ab7d3` (24 mutant patches re-anchored, 2 retired, 2 added; corpus
+still 288). CI 5/5 green at the reviewed SHA with a complete 288/288 mutation
+sweep. Independent reviewer returned PASS_WITH_NITS; nits are queue rows 59-66,
+and row 67 carries the AC5 device half that no automated harness can reach.
+Worktree and branch swept. Stage 4 remains: close rows 62-66 and explain the
+layout controls in the page itself.
 
 ---
 
