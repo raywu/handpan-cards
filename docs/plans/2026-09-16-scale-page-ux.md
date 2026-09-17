@@ -275,6 +275,17 @@ layoutOrder.length !== n) layoutOrder = null` (`index.html:4131`) - and
 **that guard must move with the slots**, not be deleted with them, or a stale
 correction gets applied to a different pan.
 
+> **As built (Stage 3, shipped).** The two seams named above landed under
+> different names, and this section is kept as written because Stage 4's
+> mutants cite it. `solveSheetLayout` was never added: `solvePreviewLayout`
+> (`index.html:4428`) took the `order` argument instead, so ONE solver serves
+> both the Add and the Edit mock and there is no second path to drift. The
+> length guard moved out of the deleted `buildSlots()` into
+> `syncLayoutOrder()` (`index.html:4284`), which every entry point to the
+> correction calls; `tests/mutants/d_layout_stale_order_guard.patch` is what
+> holds it there.
+
+
 - `#scale-slots` and `buildSlots()` are deleted (D1).
 - Selection lives on the pan. **`layoutSel` is a SLOT index, not a field.**
   A `.panhit` carries a field id, so the tap handler converts:

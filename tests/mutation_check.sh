@@ -204,8 +204,14 @@ for p in "${PATCHES[@]}"; do
     SURVIVORS+=("$p (no '# suite:' header)"); continue
   fi
   # A skipped suite exits 0, which would look identical to a surviving mutant.
-  case "$base" in
-    e_*)
+  # Keyed on the SUITE the patch names, never on the filename: the `e_` prefix
+  # is a naming habit and a patch can carry any name it likes, but what makes a
+  # mutant unevaluable is the command it is judged by. This used to read
+  # `case "$base" in e_*)`, and d_page_background_still_announced.patch - an
+  # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
+  # skipped itself for want of a browser.
+  case "$cmd" in
+    *tests/e2e.test.js*)
       if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
         echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
         SKIPPED=$((SKIPPED + 1)); continue

@@ -140,6 +140,17 @@ const KILLABLE = { name: "x_subject_is_ok", header: "subject.txt stays ok" };
 const HEADERLESS = {
   name: "d_fixture_has_no_suite_header", header: "some app assertion", suiteHeader: "",
 };
+// The same e2e mutant under a name that does NOT start with `e_`. The corpus
+// convention is a naming habit, not a fact the script can rely on: what makes a
+// mutant unevaluable here is the SUITE it names, and a browserless machine runs
+// that suite to a self-skip and a 0 exit no matter what the file is called.
+// tests/mutants/d_page_background_still_announced.patch was exactly this - an
+// e2e mutant carrying a `d_` name - and the sweep reported it as a SURVIVOR,
+// which is the one verdict a skipped suite must never produce.
+const E2E_MISNAMED = {
+  name: "d_fixture_e2e_under_a_d_name", header: "a fixture e2e assertion",
+  suiteHeader: "# suite: node --test tests/e2e.test.js\n",
+};
 
 test("green baseline: the sweep kills its fixture mutant and passes", (t) => {
   const dir = makeFixture(t, { mutants: [KILLABLE] });
@@ -219,6 +230,18 @@ test("a partial sweep says how many mutants it did not evaluate", (t) => {
   const { out } = sweep(dir);
   assert.match(out, /MUTATION GATE INCOMPLETE/, out);
   assert.match(out, /1 of 2/, out);
+});
+
+test("an e2e mutant is skipped for its suite, not for its filename", (t) => {
+  // A suite that self-skips exits 0, which is indistinguishable from a suite
+  // that ran and passed - so the sweep must recognise it BEFORE judging, and
+  // the only reliable signal is the `# suite:` command it was told to run.
+  const dir = makeFixture(t, { mutants: [KILLABLE, E2E_MISNAMED] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /^d_fixture_e2e_under_a_d_name\.patch skipped/m, out);
+  assert.doesNotMatch(out, /^d_fixture_e2e_under_a_d_name\.patch survived/m, out);
+  assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
+  assert.notEqual(code, 0, out);
 });
 
 test("a dirty tree is refused before anything is applied", (t) => {

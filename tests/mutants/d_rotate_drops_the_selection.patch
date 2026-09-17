@@ -1,0 +1,17 @@
+# kills: ROTATE keeps the note you chose selected as its ring turns
+# suite: node --test --test-name-pattern ^ROTATE.keeps.the.note.you.chose.selected.as.its.ring.turns$ tests/app.test.js
+# The ring turns but the selection stays on its old SLOT, which now holds a
+# different note - so the second press of ROTATE, or any MOVE after one,
+# acts on a note the user never chose.
+diff --git a/index.html b/index.html
+index 79d9295..cfa034e 100644
+--- a/index.html
++++ b/index.html
+@@ -4351,7 +4351,6 @@ function rotateLayout(by) {
+   const next = at.slice();
+   for (let j = a; j < b; j += 1) next[wrap(j + by, a, span)] = at[j];
+   setLayoutOrder(orderFromSlots(next));
+-  layoutSel = wrap(layoutSel + by, a, span);
+   previewLayout();
+ }
+ // MOVE takes the chosen note to the next position, and whatever was there takes

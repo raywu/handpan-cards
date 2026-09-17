@@ -1,0 +1,19 @@
+# kills: retyping a seed with a different field count drops the correction and the mock follows
+# suite: node --test --test-name-pattern ^retyping.a.seed.with.a.different.field.count.drops.the.correction.and.the.mock.follows$ tests/app.test.js
+# The length guard is gone, so an 8-slot correction is handed to a 7-field
+# seed. HPE.layout.solve refuses the pan, paintPan returns false, and
+# holdPanPreview keeps the previous pan - the Edit mock stops following
+# what is being typed. The guard used to live in buildSlots(); it moved
+# into syncLayoutOrder when the slot list died, and nothing else checks it.
+diff --git a/index.html b/index.html
+index 79d9295..6580691 100644
+--- a/index.html
++++ b/index.html
+@@ -4283,7 +4283,6 @@ const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
+  *  Returns the non-ding count so callers do not re-derive it. */
+ function syncLayoutOrder(fields) {
+   const n = layoutIds(fields).length;
+-  if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;
+   if (layoutSel >= n) layoutSel = 0;
+   return n;
+ }

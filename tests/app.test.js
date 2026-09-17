@@ -1610,6 +1610,40 @@ test("ROTATE turns the ring the selection is on, bottom shell included", () => {
     "ROTATE invented or lost a bottom-shell place");
 });
 
+test("ROTATE keeps the note you chose selected as its ring turns", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  // The selection is a SLOT and rotation moves every note to a new slot, so the
+  // selection has to move with it or it silently ends up on whichever note
+  // rotated INTO the old slot - a correction aimed at the wrong note from the
+  // second press onward. Nothing else in the suite reads the selection across a
+  // rotation, so this is the only assertion that can catch it.
+  const notes = Object.keys(mockPlaces(app));
+  const chosen = panTap(app, notes[3]);
+  assert.strictEqual(mockSelected(app), chosen, "the tap did not select the note");
+  app.els["scale-rot-r"].click();
+  assert.strictEqual(mockSelected(app), chosen,
+    "ROTATE turned the ring but left the selection behind on the old slot");
+});
+
+test("retyping a seed with a different field count drops the correction and the mock follows", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  // A correction is a permutation of a FIXED length. Carry an 8-slot one onto a
+  // 7-field seed and HPE.layout.solve refuses the whole pan, paintPan returns
+  // false, and holdPanPreview keeps the PREVIOUS pan on screen - so the mock
+  // stops following what is being typed, which is the one thing it is for.
+  app.els["scale-rot-r"].click();
+  app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
+  assert.deepStrictEqual(Object.keys(mockPlaces(app)).sort(),
+    ["A3", "A4", "C4", "D4", "E4", "F4", "G4"],
+    "the mock froze on the pre-edit pan instead of following the typed seed");
+});
+
 test("the deck is untouched while the mock previews the correction", () => {
   const app = boot();
   const d = makeCustom(app);
@@ -1734,6 +1768,29 @@ test("the layout controls are tab stops inside the sheet and never a second prim
     "the layout section disabled the sheet's only primary");
 });
 
+test("the LAYOUT group explains itself on the page, not only in a comment", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  // Stage 4 AC3, and the owner's original complaint: "I'm not sure what any of
+  // these intend to do". A comment in index.html teaches nobody - the sentence
+  // has to be IN the sheet, next to the buttons, and it has to name all three
+  // gestures (tap a note, ROTATE the ring, MOVE the note) or it only half
+  // answers the question that prompted the stage. Read from the FILE, because
+  // the sandbox conjures an element for any id asked for and would happily
+  // report a hint that is not in the markup.
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const m = /<p class="sheethint" id="scale-layout-hint">([^<]+)<\/p>/.exec(html);
+  assert.ok(m, "#scale-layout-hint is not in the markup");
+  const hint = m[1].toLowerCase();
+  for (const word of ["tap", "rotate", "move"]) {
+    assert.ok(hint.includes(word), `the LAYOUT hint never mentions ${word}: "${m[1]}"`);
+  }
+  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), false,
+    "the LAYOUT row carrying the hint is hidden on the Edit page");
+});
+
 test("the layout markup exists and a built-in deck is never editable", () => {
   const app = boot();
   for (const id of LAYOUT_IDS) assert.ok(app.els[id], `#${id} is missing from the markup`);
@@ -1834,8 +1891,17 @@ test("a boot after a field edit shows exactly one deck, in the same chip positio
 test("a field edit keeps the edited deck selected and renames its chip from the new fields", () => {
   const app = boot();
   const a = makeCustom(app);
-  const now = editFields(app, a, EDIT_MORE);
+  editFields(app, a, EDIT_MORE);
 
+  // The expected id is derived from the REGISTRY, not read back from
+  // app.deckId(): an edit replaces in place, so exactly one custom deck is left
+  // and that is the one the user must still be on. Taking the id from
+  // app.deckId() and then asserting app.deckId() equals it is a tautology that
+  // passes even when the edit bounces the user onto a built-in.
+  const ids = Object.keys(app.registry());
+  assert.strictEqual(ids.length, 1,
+    `an edit left ${ids.length} custom decks instead of replacing in place`);
+  const now = ids[0];
   assert.strictEqual(app.deckId(), now,
     "the user was bounced off the deck they were editing");
   const made = app.registry()[now];
