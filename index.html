@@ -3968,7 +3968,7 @@ const sheet     = document.getElementById("scale-sheet");
 // than by id: it is the one thing the iOS keyboard fix below has to move, and
 // #scale-sheet's single static child (see the markup comment on .sheetsurf)
 // is a stronger guarantee than adding a second id nobody else needs.
-// Undefined in the unit sandbox, where #scale-sheet is a bare stub with no
+// null in the unit sandbox, where #scale-sheet is a bare stub with no
 // children - applyKbOffset() guards on that the same way it guards on
 // window.visualViewport.
 const sheetSurf = sheet.firstElementChild;
@@ -4408,8 +4408,9 @@ function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
    So the surface is also CAPPED to the shrunken viewport, and .sheetbody's
    existing shrink does the rest - the body gives way, the footer stays put,
    and the field stays on screen. 0 means "no override": leave 85dvh alone so
-   the no-keyboard case is untouched CSS. The 8px is breathing room against
-   subpixel viewport heights, not spacing. */
+   the no-keyboard case is untouched CSS. The 8px is a visual margin so the
+   surface does not sit flush against the keyboard, not spacing between
+   children - subpixel viewport heights are worth well under a pixel of it. */
 function kbCap(innerHeight, vvHeight) {
   if (innerHeight - vvHeight <= 0) return 0;
   return Math.max(0, Math.round(vvHeight - 8));

@@ -1,7 +1,9 @@
 # Mobile usability audit - pass 1
 
 Lane: W4 (mobile audit, pass 1). Target device: iPhone 14 / iOS 26.6 Safari,
-380px viewport (CLAUDE.md's stated test width). Base: `main` @ 839d70e.
+380px viewport (CLAUDE.md's stated test width). Base: `main` @ 839d70e;
+the branch was later rebased onto `8abaff6` after W5's engine deck adoption
+merged, so line numbers and the deck set below are from the pre-rebase base.
 
 No such checklist exists anywhere else in this repo - the list below was
 built for this audit by walking the app read-only, driven through the same
@@ -34,27 +36,67 @@ than a real custom deck, specifically to inspect that UI without saving one.
 | 6 | Typing a seed - live parse/preview | **pass** | Typing `(D) A C D E F G A C` into `#scale-box` produces an empty (non-error) `#scale-msg`, enables `#scale-generate` (`disabled` clears), and un-hides + un-stales `#scale-preview`. Matches the green "the owner's journey at 380px: tap + ADD, type a scale, see the pan". |
 | 7 | GENERATE CARDS reachable at 380x800 (no keyboard) | **pass** | Button at 726-778px of an 800px viewport; a tap at its own centre hits itself (`hitsSelf: true`). |
 | 8 | GENERATE CARDS reachable at the keyboard-shrink PROXY viewport 390x745 | **pass, but see item 8a** | Button at 671-723px of a 745px viewport, still self-hit. This is `tests/e2e.test.js`'s own documented proxy for a keyboard (shrunk layout viewport), **not the real thing** - see 8a. |
-| 8a | GENERATE CARDS reachable with a REAL iOS soft keyboard up | **not-verifiable-headless — this is the defect this lane fixes** | This is the confirmed defect from `TODOS.md`: iOS Safari resizes the **visual** viewport when the keyboard opens, not the layout viewport `#scale-sheet`'s `position:fixed` and `.sheetsurf`'s `85dvh` cap are both anchored to. `window.innerHeight` stays put while `window.visualViewport.height` shrinks - no CSS layout unit reacts, so the button can end up behind the keyboard even though every proxy viewport above passes. Repro (device): open the Add sheet on an iPhone 14 (iOS 26.6 Safari), tap into the SCALE box, and watch `GENERATE CARDS` - it sits in a footer reserved outside the scrolling body (`.sheetbody`), so at rest it is never below the fold, but the keyboard itself can still cover it because nothing translates the sheet to compensate. **This is the one item CI cannot confirm and the PR says so** - see the PR body's DEVICE-CHECK-PENDING note. Fixed here with a `visualViewport` resize/scroll listener (`kbOffset()` / `applyKbOffset()` in `index.html`) that translates `.sheetsurf` up by the gap between the two viewports; verified end-to-end in headless Chrome by monkey-patching `window.innerHeight` (Chrome does not let a test spoof `visualViewport` itself) - a simulated 300px shrink produced `transform: matrix(1,0,0,1,0,-300)` and it cleared to `none` on sheet close. The pure offset math is unit-tested (`tests/app.test.js`); the actual on-device reachability is not, and must be confirmed on hardware before merge. |
+| 8a | GENERATE CARDS reachable with a REAL iOS soft keyboard up | **not-verifiable-headless — this is the defect this lane fixes** | This is the confirmed defect from `TODOS.md`: iOS Safari resizes the **visual** viewport when the keyboard opens, not the layout viewport `#scale-sheet`'s `position:fixed` and `.sheetsurf`'s `85dvh` cap are both anchored to. `window.innerHeight` stays put while `window.visualViewport.height` shrinks - no CSS layout unit reacts, so the button can end up behind the keyboard even though every proxy viewport above passes. Repro (device): open the Add sheet on an iPhone 14 (iOS 26.6 Safari), tap into the SCALE box, and watch `GENERATE CARDS` - it sits in a footer reserved outside the scrolling body (`.sheetbody`), so at rest it is never below the fold, but the keyboard itself can still cover it because nothing translates the sheet to compensate. **This is the one item CI cannot confirm and the PR says so** - see the PR body's DEVICE-CHECK-PENDING note. Fixed here in TWO parts, and the first part alone was shipped and then DISPROVED on hardware - see "Confirmed defect fixed by this lane" below for the full sequence. Part 1: a `visualViewport` resize/scroll listener (`kbOffset()` / `applyKbOffset()`) that translates `.sheetsurf` up by the gap between the two viewports. Part 2 (added after the owner's device check failed): `kbCap()`, which also CAPS the surface to the shrunken visual viewport, because `85dvh` is a layout-viewport unit that does not shrink for the keyboard. The pure math of both is unit-tested (`tests/app.test.js`); neither function's WIRING is observable to any suite (headless Chromium's `visualViewport` always equals the layout viewport), so on-device reachability must be confirmed on hardware before merge. |
 | 8b | The `interactive-widget=resizes-content` viewport meta tag already on `index.html:13` | **pass, informational — not a new finding** | The page already opts into `interactive-widget=resizes-content` (added earlier, per the inline comment at `index.html:5-11`) so that on a browser that honours it, the *layout* viewport itself shrinks with the keyboard and `85dvh` shrinks with it. Confirmed present via `document.querySelector('meta[name="viewport"]').content`. `TODOS.md` and that same comment already document that Safari does not honour this token (it keeps the default `resizes-visual`), which is exactly why item 8a is still live and exactly why this lane's `visualViewport` fix is necessary rather than redundant. Recorded here only so a future pass doesn't rediscover this meta tag and wonder if it already solved the problem - it solves it only for browsers this app does not currently depend on for the fix. |
 | 9 | Edit sheet: extra rows show, DEGREES/LAYOUT/DELETE reachable at 380x800 | **pass** | Verified with a synthetic in-memory deck (never saved): all four Edit-only rows un-hide, `#scale-generate` relabels to `SAVE CHANGES` (660-712px), `DELETE THIS DECK` sits at 734-778px, both inside the 800px viewport. `#scale-degrees` is 48px tall with 11 options. Palette swatches all measure a full 44x44px hit area (matches the green "every palette swatch owns its full 44px hit area on BOTH axes"). ROTATE/MOVE/RESET buttons are all 44px tall. |
 | 10 | Edit sheet primaries at the landscape proxy 844x390 (tallest case: Pygmy, has a bottom shell + full LAYOUT section) | **pass** | `SAVE CHANGES` at 271-323px of 390px, self-hit; `DELETE THIS DECK` at 332-376px, self-hit. Matches the green "SAVE CHANGES is reachable without scrolling on the largest pan the engine allows". |
 | 11 | Safe-area insets (`env(safe-area-inset-*)`) | **not-verifiable-headless** | `.sheetsurf`'s computed `padding-bottom` read 22px under emulation, which is `max(--sp-4, env(safe-area-inset-bottom))` resolving to `--sp-4` because `env()` reads 0 with no real device notch/home-indicator to report. The CSS itself (`index.html:392` `viewport-fit=cover`, and the four-edge inset comment at `index.html:60-65`) is unit-covered by the passing e2e test "the page reserves a safe-area inset on all four edges", which checks the CSS declarations exist and compute correctly given a value, not that iOS actually reports a nonzero one. A real home-indicator/notch value can only be observed on hardware. |
 | 12 | Landscape orientation, phone-sized (844x390, the owner's own device sideways) | **pass** | Card measures top 60px/bottom 291px inside a 390px-tall viewport; `+ ADD` sits at 65-131px, fully inside an 844px-wide viewport. Mode bar (`modeA`/`modeB`), Shuffle, prev/next all self-hit at their own centres and stay 44px tall. This is the case `tests/e2e.test.js` calls out as historically the worst ("+ ADD wraps onto a second line which `#decks` clips" - that comment describes a state that reproduces on `origin/main` per the test's own note, is deck-nav geometry owned by another lane, and is NOT reproduced here: `+ ADD` measured cleanly on-screen and self-hit in this pass). See finding F1 below for how this is tracked. |
-| 13 | Deck-header print links | **not applicable - not yet on `main`** | Searched `index.html` for any print/PDF-download affordance (`a[href*=".pdf"]`, `a[download]`, `.print`/`#print`/`[id*="print"]`/`[class*="print"]`) and found none. Per the standing memory note ("Print button opens the existing PDF - whole deck set, as-is, no per-chord generation") this is expected work from another lane that had not landed on `main` at 839d70e when this audit ran. No verdict beyond "not present"; re-audit once that lane merges. |
+| 13 | Deck-header print links | **not applicable AT THE TIME OF THIS AUDIT; now stale - re-audit needed** | Searched `index.html` for any print/PDF-download affordance (`a[href*=".pdf"]`, `a[download]`, `.print`/`#print`/`[id*="print"]`/`[class*="print"]`) and found none. **This no longer holds:** the rebase brought the affordance in - `PDF_LINKS` at `index.html:3806-3808`, with four covering tests in `tests/e2e.test.js`. It has never been audited on a phone. Tracked as F2 / queue row 21. Per the standing memory note ("Print button opens the existing PDF - whole deck set, as-is, no per-chord generation") this is expected work from another lane that had not landed on `main` at 839d70e when this audit ran. No verdict beyond "not present"; re-audit once that lane merges. |
 | 14 | Keyboard-only navigation / focus visibility on `+ ADD` and inside the sheets | **pass** | `.focus()` on `#deck-add` lands `document.activeElement` there; Tab-trapping inside the Edit sheet and the seed-box focus ring are both covered and green in `tests/e2e.test.js` ("Tab is trapped inside the Edit sheet and reaches every Edit control", "the focus ring on the seed box is not clipped by the sheet body"). |
 
 ## Confirmed defect fixed by this lane
 
 **The iOS keyboard can cover `GENERATE CARDS` / `SAVE CHANGES`** (checklist
-item 8a). Fixed by a `visualViewport` `resize`/`scroll` listener in
-`index.html` that translates `.sheetsurf` up by
+item 8a). This took two passes, and the record of the first one matters more
+than the code, because it is the case where every automated signal was green
+and the fix was still wrong.
+
+**Pass 1 - translate only, DISPROVED ON HARDWARE.** A `visualViewport`
+`resize`/`scroll` listener translates `.sheetsurf` up by
 `innerHeight - visualViewport.height - visualViewport.offsetTop` (the pure
 function `kbOffset()`), applied via `applyKbOffset()` on sheet open and
-cleared on close. Unit-tested over the pure math in `tests/app.test.js`
-(observed failing before the fix, passing after - see the PR). **The actual
-on-device reachability with a real keyboard is NOT verified by this PR** -
-see the PR title/body. This is the one lane in the current workstream that
-is not merge-authorized by CI alone.
+cleared on close. CI was green, the pure math was unit-tested, and the first
+`/review` passed it. The owner then ran the device check on an iPhone 14 /
+iOS 26.6 and it FAILED: with the keyboard up, `GENERATE CARDS` was indeed
+reachable, but `#scale-box` - the field being typed into - had been pushed
+off the TOP of the screen.
+
+**Why it looked fixed.** `.sheetsurf`'s `max-height:85dvh` is a LAYOUT-
+viewport unit and does not react to the keyboard, so the surface keeps its
+full height (~717px on an 844pt phone). Lifting a 717px surface by a 300px
+keyboard puts its top edge at -173px. The reserved footer sits outside the
+`.sheetbody` scroller and rides the translate, so the primary button - the
+thing everyone checks first, and the thing this item is named after - comes
+INTO view at exactly the moment the seed field leaves it. The first review
+predicted this precisely (nit N4, queue row 34) and it was recorded as a
+device-check instruction rather than treated as a defect.
+
+**Pass 2 - cap as well as translate.** `kbCap(innerHeight, vvHeight)` returns
+the max-height the surface must take to fit entirely inside the shrunken
+visual viewport once translated; `applyKbOffset()` writes it to
+`sheetSurf.style.maxHeight`, and `.sheetbody`'s existing shrink absorbs it.
+It returns 0 when no keyboard is up, leaving the stylesheet's `85dvh`
+untouched. It deliberately ignores `visualViewport.offsetTop`, which
+`kbOffset()` already nets out: the surface is bottom-anchored, so the
+translate places its bottom edge at `vvHeight + offsetTop` for any
+`offsetTop`, and supplying a height rather than a position makes the top edge
+land at `offsetTop + 8` regardless. Feeding `offsetTop` to both would
+double-count it. Four unit tests, including the invariant the owner's
+screenshot violated: capped and lifted, the top edge stays on screen and the
+bottom clears the keyboard.
+
+**What is still NOT verified by CI, and cannot be.** The pure math of both
+functions is unit-tested. The WIRING of neither is: headless Chromium's
+`visualViewport` always equals the layout viewport, so `kbOffset` and
+`kbCap` both return 0 there and every write is the empty string -
+indistinguishable from the functions never running. The second review
+confirmed this by mutation: `applyKbOffset` gutted to `return;`, the
+`maxHeight` write deleted outright, and `showSheet`'s call removed all
+survive the entire suite. **A second on-device check is therefore required,
+and it must cover the EDIT sheet, not only ADD** - Edit is the taller sheet
+and the one pass 1 was never tested against. This is the one lane in the
+current workstream that is not merge-authorized by CI alone.
 
 ## Findings queued for cycle 2 (not fixed here - out of this lane's scope)
 
