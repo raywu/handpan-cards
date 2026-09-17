@@ -440,6 +440,8 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | #75 | W5 | CI FAIL (no reviewer spawned) | `data integrity` red at `5d6bf26`: `tools/boot_sim.js:36` hardcodes `if (cards !== 61)`, and the adoption raises the total to 96 cards. Other four checks green at the same SHA | bounced to the still-live lane 2026-09-16; attempt 1 of 2 consumed. A red CI makes the review moot before it starts, so no reviewer was spawned |
 | #75 | W5 | pending (fresh reviewer at `d2c06b6`) | - | Lane fixed `tools/boot_sim.js:36` (61 -> 96) plus a stale docstring in `tests/test_fixture_integrity.py` and pushed `d2c06b6`; all five checks green at that SHA, head verified unmoved. Reviewer briefed on the data-convention invariants, the three self-reported boundary touches, the Amara re-rank vs the owner's "our current order is correct", and a 10-mutant budget aimed at the data invariants |
 | #75 | W5 | PASS_WITH_NITS (fresh reviewer, at `d2c06b6`) | 0 blocking, 8 nits (N1-N8), 0 blocking boundary violations. 11 mutants spent against a budget of 10, ZERO survivors - the strongest mutant result of the workstream. Independently re-derived the Pygmy 31 from `select.js` rather than taking it on trust, verified identical register lighting across all 15 multi-voiced groups / 36 cards, and confirmed `geom`/`fields`/`colors` byte-identical across all three decks. Did NOT run /review's Step 4.5 specialists or Step 5.7 adversarial passes, and deliberately skipped Step 5.8 logging so no record could later read as a clean full review | merged `e872a49`; nits filed as queue rows 46-50; N1/N2/N3 doc defects fixed directly on main |
+| #79 | S3 | PASS_WITH_NITS | 0 blocking, 0 boundary violations; 8 mutants spent, 2 survived | merged `eeb7329`; nits filed as queue rows 59-66, device half as row 67 |
+| #80 | S4 | PASS_WITH_NITS (at `fa1f647`) | 0 blocking, 8 nits (N1-N8), 0 boundary violations. AC1 reproduced independently: 291/291 killed, gate passed, zero skipped. AC2 verified BY HAND, not via the sweep: all 241 node `--test-name-pattern` headers and all 49 python `-k`/dotted headers resolve to a real test, and all 291 patches carry a `# suite:` line. AC3 confirmed as real markup at `index.html:761` inside `#scale-layout-row`, wired with `aria-describedby`. Skip guard judged sound in BOTH error directions: a false skip raises `SKIPPED` and forces exit 5, a false evaluation scores the 0-exit as survived and forces exit 1 - neither can produce a silent green. 4 of 5 mutants spent; M1 killed, M2-M4 survived and became rows 70-73 | merged `43d83ce`; nits filed as queue rows 70-77 |
 
 ## Queue
 
@@ -512,8 +514,16 @@ variant). Hijaz and Amara are unchanged in sheet count.
 | 65 | S3-N7: stale comment at `index.html:196` still cites `#scale-slots .slot` as precedent for an id Stage 3 deleted | reviewer PR #79 | resolved (8b5520d: comment now cites `#scale-delete`) |
 | 66 | S3-N8: `docs/plans/2026-09-16-scale-page-ux.md` still describes `solveSheetLayout` / `buildSlots`, both gone. Outside S3's ownership; Stage 4 work | reviewer PR #79 | resolved (8b5520d: as-built note added naming `solvePreviewLayout` and `syncLayoutOrder`) |
 | 67 | **Stage 3's AC5 device half is `covered_by: "neither"`** — the `applyKbOffset` translate+cap path iOS Safari exercises is never run by e2e (same root cause as rows 31/54). Needs an owner check on iPhone 14 / iOS 26.6 of BOTH the ADD and EDIT pages with the keyboard up | reviewer PR #79 | open |
-| 68 | **`tests/e2e.test.js` "buttons and arrow keys step through the deck and wrap" is flaky in a full-file run** and passes in 4.4s in isolation. It times out on `Input.dispatchMouseEvent` (20-60s) only when the whole file shares one browser session. Reproduced IDENTICALLY at base `1b63e0e` (75/76, same test), so it predates the s4 branch and is not a blocker for it. Order- or state-dependent in the shared CDP session | Stage 4 sweep | open |
-| 69 | **A `tests/e2e.test.js` run killed by `suite_health.py`'s 180s wall clock LEAKS its headless Chrome and profile dir.** Observed: one browser still alive 23 minutes after the kill (profile `hpfc-prof-n7o60t`) plus 12 stale profile dirs, which then starved the next e2e run into 135 cascading CDP timeouts. `tests/mutation_harness.test.js` asserts a SIGTERMed suite reaps its browser, so the gap is in the timeout path specifically | Stage 4 sweep | open |
+| 68 | **`tests/e2e.test.js` "buttons and arrow keys step through the deck and wrap" is flaky in a full-file run** and passes in 4.4s in isolation. It times out on `Input.dispatchMouseEvent` (20-60s) only when the whole file shares one browser session. Reproduced IDENTICALLY at base `1b63e0e` (75/76, same test), so it predates the s4 branch and is not a blocker for it. Order- or state-dependent in the shared CDP session. The PR #80 reviewer's own full-file run at `fa1f647` passed 76/76 INCLUDING this test, so it is intermittent rather than a deterministic full-file failure | Stage 4 sweep | open |
+| 69 | **A `tests/e2e.test.js` run killed by `suite_health.py`'s 180s wall clock LEAKS its headless Chrome and profile dir.** Observed: one browser still alive 23 minutes after the kill (profile `hpfc-prof-n7o60t`) plus 12 stale profile dirs, which then starved the next e2e run into 135 cascading CDP timeouts. **Mechanism, sharpened by the PR #80 reviewer:** `tests/suite_health.py:199-202` uses `subprocess.run(..., timeout=NODE_TIMEOUT)`, and on `TimeoutExpired` CPython calls `Popen.kill()` - SIGKILL, not SIGTERM. Node cannot trap it, so its reaper never runs and the browser plus profile dir are orphaned BY CONSTRUCTION. That is also why the existing mutant misses it: `a SIGTERMed suite reaps its browser and its profile directory` tests a signal this path never sends. A fix needs `Popen` + `terminate()` + a grace period, or a process-group kill | Stage 4 sweep | open |
+| 70 | **S4-N1: the AC3 test is satisfiable by the exact failure mode it is named for.** `tests/app.test.js:1771-1790` regexes the raw file text, so it cannot tell markup from a comment: burying the sentence in `<!-- ... -->` - nothing renders, the owner's question goes unanswered - leaves the test named *"the LAYOUT group explains itself on the page, not only in a comment"* passing. Shipped code is correct, so not blocking. Fix: also assert the booted DOM's `textContent` for `#scale-layout-hint`, keeping the file read (which exists to stop the sandbox conjuring the element) | reviewer PR #80 | open |
+| 71 | S4-N2: `.sheethint{display:none}` survives the entire suite - app.test.js 128/128 and full e2e 76/76. Nothing asserts the hint actually renders | reviewer PR #80 | open |
+| 72 | S4-N3: the AC3 test does not bind the `<p>` to `#scale-layout-row`; moving the paragraph to just before `</body>` survives, and the row's `hidden` check passes independently of where the paragraph lives | reviewer PR #80 | open |
+| 73 | S4-N4: the new harness test `an e2e mutant is skipped for its suite, not for its filename` has NO mutant, against `mutation_check.sh`'s own opening line "Every test group must have a mutant that kills it." The reviewer's M1 (revert the guard to `case "$base" in e_*)`) is exactly the missing patch and was confirmed killed | reviewer PR #80 | open |
+| 74 | S4-N5: stale comment at `tests/mutation_harness.test.js:120-124` still states "A patch with an `e_` name takes the no-browser skip branch" - the name-keyed mechanism this branch removed, sitting in the same file as the test that denies it | reviewer PR #80 | open |
+| 75 | S4-N6: `tests/CONTRACT.md:30` is 129 chars; every other line in that block is <=79 | reviewer PR #80 | open |
+| 76 | S4-N7: `tests/mutants/c_name_outgrows_its_field.patch` is the corpus's only whole-file `# suite:` header (`node --test tests/layout.test.js`). Pre-existing, but `mutation_check.sh`'s own comment says a whole-file header is a review finding, so it is filed as one | reviewer PR #80 | open |
+| 77 | S4-N8: `docs/plans/2026-09-16-scale-page-ux.md:322` still lists Stage 4's **Files:** as `tests/mutants/`, `docs/`, `TODOS.md`, which does not cover the `index.html` / `tests/*.test.js` / `CONTRACT.md` edits Stage 4 actually made. The edits were sanctioned by the ownership row; the plan line is just stale | reviewer PR #80 | resolved (the Stage 4 **Files:** line now names every file the stage touched) |
 
 ## Cycle state
 
@@ -529,6 +539,7 @@ Cycle: 2   Wave: 2   Merged this batch: `4a06641` (W1, PR #71), `7329033` (W2, P
 | W5 | released | `engine/adopt-generated-decks` (deleted) | #75 | `d2c06b6` | 2026-09-16 CI 5/5 pass at `d2c06b6` | PASS_WITH_NITS | 1 | yes `e872a49` | - | no |
 | W6 | - | `mobile/audit-pass-2` | - | - | - | - | 0 | no | W4 merge (W2 done) | - |
 | S3 | released | `scale-page/s3-layout-on-pan` (deleted) | #79 | `71ab7d3` | 2026-09-17 CI 5/5 pass at `71ab7d3` (run 35264003719, mutation gate 288/288) | PASS_WITH_NITS (0 blocking, 0 boundary violations; 8 mutants spent, 2 survived, rows 59-66) | 0 | yes `eeb7329` | - | no |
+| S4 | released | `scale-page/s4-sweep` | #80 | `fa1f647` | 2026-09-17 CI 5/5 pass at `fa1f647` | PASS_WITH_NITS (0 blocking, 0 boundary violations; 4 mutants spent, 3 survived, rows 70-73) | 0 | yes `43d83ce` | - | no |
 
 Wave 1 spawned 2026-09-16 off `main` @ `839d70e` (the doc commit; base content
 identical to `28117a8`). Agent IDs are held in the integrator session only.
@@ -543,8 +554,21 @@ feature) and `71ab7d3` (24 mutant patches re-anchored, 2 retired, 2 added; corpu
 still 288). CI 5/5 green at the reviewed SHA with a complete 288/288 mutation
 sweep. Independent reviewer returned PASS_WITH_NITS; nits are queue rows 59-66,
 and row 67 carries the AC5 device half that no automated harness can reach.
-Worktree and branch swept. Stage 4 remains: close rows 62-66 and explain the
-layout controls in the page itself.
+Worktree and branch swept.
+
+**Scale-page Stage 4 (`scale-page/s4-sweep`, PR #80) merged 2026-09-17 as `43d83ce`.**
+Three commits on top of Stage 3's follow-ups: `23dc65a` (the mutation gate now skips e2e
+mutants by the `# suite:` command they name, not by their filename), `be726ef` (the
+no-suite-header mutant re-anchored after that guard moved), `fa1f647` (rows 59-66 closed,
+rows 68-69 filed). The defect it closed: a self-skipping suite exits 0, which is
+indistinguishable from a surviving mutant - `d_page_background_still_announced.patch` named
+`tests/e2e.test.js` but carried a `d_` prefix, so the basename-keyed skip let it through and
+the gate scored a browserless self-skip as SURVIVED. Corpus is 291 patches and the sweep now
+evaluates all 74 e2e mutants instead of skipping them: 291/291 killed, zero skipped. CI 5/5
+green at `fa1f647`; independent reviewer PASS_WITH_NITS with AC1/AC2/AC3 each re-derived
+rather than taken on trust. Nits are queue rows 70-77. Row 67 (the owner's iPhone 14 /
+iOS 26.6 check of BOTH the ADD and EDIT pages with the keyboard up) is still the only thing
+no automated harness can settle.
 
 ---
 
