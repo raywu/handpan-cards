@@ -2440,26 +2440,42 @@ test("interactive pan() adds one hit target per non-ding field, and none for the
 });
 
 /**
- * A hit target that is not centred on the note it selects is the one defect the
- * count above cannot see: swap cx and cy and there are still exactly the right
- * number of correctly-labelled targets, all in the wrong places. The pan
- * already draws a circle at every field centre, so the check needs no geometry
- * of its own - every target must land on one of them.
+ * A hit target that is not centred on the note it SELECTS is the defect the
+ * count above cannot see - and "sits on some drawn field" is not enough to
+ * catch it, because rotating the centres among the targets leaves every one of
+ * them on a real field while every tap picks up the neighbouring note. So the
+ * centre is re-derived here from the field the target names, out of the deck
+ * DATA and the layout convention in CLAUDE.md (math-convention degrees, 0 =
+ * right, 90 = up, y-up), never from the renderer.
+ *
+ * data-r is checked in the same place because it is the drawn radius the sizer
+ * floors each target at, and the sizer's own test builds its nodes by hand: if
+ * the attribute vanished from the markup, nothing else in the suite would
+ * notice and every sparse-pan target would silently shrink to 44px in a real
+ * browser.
  */
 test("every hit target is centred on the field circle it selects", () => {
   const app = boot();
   const D = decks(app);
   const N = "([-+\\d.eE]+)";   // a field on the vertical axis renders in exponent form
   for (let di = 0; di < D.length; di++) {
+    const d = D[di], g = d.geom, R = 100;
     const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
-    const key = (x, y) => `${Number(x).toFixed(6)},${Number(y).toFixed(6)}`;
-    const drawn = new Set([...svg.matchAll(new RegExp(`<circle cx="${N}" cy="${N}"`, "g"))]
-      .map((m) => key(m[1], m[2])));
-    const hits = [...svg.matchAll(new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}"`, "g"))];
-    assert.ok(hits.length > 0, `${D[di].id}: the layer has targets to check`);
-    for (const h of hits)
-      assert.ok(drawn.has(key(h[1], h[2])),
-        `${D[di].id}: a hit target at ${key(h[1], h[2])} sits on no drawn field`);
+    const hits = [...svg.matchAll(new RegExp(
+      `class="panhit" data-field="(\\d+)" cx="${N}" cy="${N}" r="${N}" data-r="${N}"`, "g"))];
+    assert.ok(hits.length > 0, `${d.id}: the layer has targets to check`);
+    for (const [, fid, cx, cy, r, dr] of hits) {
+      const [, , , zone, ang] = d.fields[fid];
+      const orb = R * (zone === "bottom" ? g.bottom : zone === "inner" ? g.inner : g.rim);
+      const want = [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
+      assert.ok(Math.hypot(Number(cx) - want[0], Number(cy) - want[1]) < 1e-9,
+        `${d.id}: field ${fid} (${zone} @${ang}) should be selected at `
+        + `${want.map((v) => v.toFixed(3))}, target sits at ${[cx, cy]}`);
+      const rWant = R * (zone === "bottom" ? g.r_bnote : g.r_note);
+      assert.ok(Math.abs(Number(dr) - rWant) < 1e-9,
+        `${d.id}: field ${fid} carries its drawn radius (${dr} vs ${rWant})`);
+      assert.strictEqual(r, dr, `${d.id}: field ${fid} renders at its drawn radius until sized`);
+    }
   }
 });
 
@@ -2638,14 +2654,38 @@ test("sizePanHits sizes an inserted layer from the measured box, idempotently", 
 });
 
 /**
- * The hit layer is the first place esc() output lands in ATTRIBUTE position,
- * where a double quote ends the attribute and everything after it is markup.
- * Built-in note names have none; a generated deck is where this would first
- * bite, so the guard is asserted on the escaper rather than on today's data.
+ * A double quote ends an attribute, and everything after it is markup. Built-in
+ * note names have none, so this drives the renderer with a deck that does - the
+ * case a generated deck reaches first. Asserted at the EMISSION SITE and not
+ * only on the escaper, because an escaper nobody calls escapes nothing.
  */
 test("a note name cannot break out of the hit target's attributes", () => {
   const app = boot();
   const out = app.get(`escA('A" onclick="x')`);
   assert.ok(!out.includes(`"`), "no raw double quote survives into an attribute");
   assert.strictEqual(app.get(`escA('a<b&c')`), "a&lt;b&amp;c", "and the text escapes still apply");
+
+  // A deck whose first non-ding field is named with a quote, and whose position
+  // label carries one too - both interpolate into the same attribute.
+  const svg = app.get(`(() => {
+    const d = JSON.parse(JSON.stringify(DECKS[0]));
+    const f = Object.keys(d.fields).find((k) => d.fields[k][3] !== "ding");
+    d.fields[f][0] = 'A" onmouseover="steal()';
+    d.fields[f][5] = '1"';
+    return pan(d, null, {interactive:true});
+  })()`);
+  const targets = [...svg.matchAll(/<circle class="panhit"[^>]*\/>/g)].map((m) => m[0]);
+  const labels = targets.map((t) => (t.match(/aria-label="([^"]*)"/) || [])[1]);
+  assert.strictEqual(labels.filter((l) => l !== undefined).length, targets.length,
+    "every target's aria-label still terminates where it should");
+  // The injected text is harmless while it stays INSIDE a quoted value - what
+  // the escape prevents is it becoming an attribute of its own, so the check is
+  // on the tag's attribute NAMES, not on whether the string appears at all.
+  const WANT = ["class", "data-field", "cx", "cy", "r", "data-r",
+                "fill", "tabindex", "role", "aria-label"];
+  for (const t of targets)
+    assert.deepStrictEqual([...t.matchAll(/([a-z-]+)="/g)].map((m) => m[1]), WANT,
+      `a note name added an attribute to the target: ${t}`);
+  assert.ok(labels.some((l) => l.includes("&quot;")),
+    "the quote survives as an entity inside the label, not as a delimiter");
 });

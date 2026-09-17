@@ -3682,6 +3682,9 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 // after it is markup, so attribute position needs the extra escape. Kept
 // separate rather than folded into esc() because the card path's bytes are
 // pinned against tools/hifi.py per field by tests/test_render_agreement.py.
+// Not every attribute in this file is escaped this way - the PRINT_PDFS hrefs
+// below are hardcoded literals - so escA marks the places carrying DECK-DERIVED
+// text, which a generated deck controls.
 const escA = s => esc(s).replace(/"/g, "&quot;");
 
 /* ---------------- diagram label sizing ----------------

@@ -1,0 +1,20 @@
+# kills: every hit target is centred on the field circle it selects
+# suite: node --test --test-name-pattern ^every.hit.target.is.centred.on.the.field.circle.it.selects$ tests/app.test.js
+# Rotates data-field by one across the targets. Every target still sits on a
+# real field and still announces the correct note for where it is, so a check
+# that only asks 'is this centre one of the drawn centres' passes - but the id
+# a tap reports is the neighbour's, and the scale page selects the wrong note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3822,7 +3822,9 @@
+         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+   }
+   // After every field, so a target is never painted under the pan it selects.
+-  if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
++  if (interactive) s += `<g class="panhits">${hits.map((h, i) =>
++    h.replace(/data-field="\d+"/,
++      hits[(i + 1) % hits.length].match(/data-field="\d+"/)[0])).join("")}</g>`;
+   return s + "</svg>";
+ }
+ 

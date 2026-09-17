@@ -1,0 +1,17 @@
+# kills: every hit target is centred on the field circle it selects
+# suite: node --test --test-name-pattern ^every.hit.target.is.centred.on.the.field.circle.it.selects$ tests/app.test.js
+# Drops data-r from the emitted target. The sizer then has no drawn radius to
+# floor at, so on a sparse pan every target silently shrinks from the note ring
+# the user is aiming at (53.8px on Hijaz) down to the bare 44px minimum.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3818,7 +3818,7 @@
+     // the layout correction, so there is nothing to select it FOR.
+     if (interactive)
+       hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
+-        + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
++        + ` fill="transparent" tabindex="-1" role="button"`
+         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+   }
+   // After every field, so a target is never painted under the pan it selects.
