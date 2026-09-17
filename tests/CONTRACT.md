@@ -20,11 +20,14 @@ run over a missing browser.
     ./tests/mutation_check.sh                        # the red-proof gate
     python3 tests/suite_health.py                    # floors + no silent skips
 
-**Mutants pick their suite from a header.** A patch may carry a
-`# suite: <command>` line next to its `# kills:` line; that command always wins
-over `mutation_check.sh`'s filename-prefix table, so a new mutant prefix needs
-no change to the script. A patch with neither a known prefix nor a header is
-reported as a survivor. Reverting is driven by the patch itself, so a mutant may
+**Mutants pick their suite from a header.** Every patch carries a
+`# suite: <command>` line next to its `# kills:` line, and that header is the
+ONLY thing that selects the command - there is no filename-prefix fallback, and
+a patch without the header is refused outright rather than guessed at. The
+browser skip reads that same header: a mutant whose suite names
+`tests/e2e.test.js` is skipped on a machine with no browser whatever the patch
+is CALLED, because a self-skipping suite exits 0 and would otherwise be scored
+as a survivor. The `e_` prefix is a reading convention, not a mechanism. Reverting is driven by the patch itself, so a mutant may
 touch any path. Each suite runs under a wall clock (`MUTANT_TIMEOUT`, default
 180s) and a hang is retried once, then reported as `timeout` - never as a kill:
 an unfinished CI step's log cannot be read, so a hang has to end by itself. A

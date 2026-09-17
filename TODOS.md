@@ -11,12 +11,29 @@
 
 ## The iOS keyboard covers GENERATE CARDS while typing a seed
 
-- **What:** On an iPhone 14 (iOS 26.6, Safari) the soft keyboard sits over the bottom of the scale sheet, so the primary the owner is aiming for - `GENERATE CARDS`, and `SAVE CHANGES` on the Edit path - is behind the keyboard for as long as the caret is in `#scale-box`. Owner's screenshot 2, 2026-09.
-- **Why it is not fixed by the spacing work (lane 38):** the drawer was decompressed and the primary is reserved outside the scrolling body, which is what keeps it above the fold - measured at 844x390 the body still has 100px+ of its own to scroll and the button opens at rest, hit-testable at its own centre, at 380x800, 390x844, 390x745 and 844x390 (`tests/e2e.test.js`, "GENERATE CARDS is reachable without scrolling at every phone viewport"). None of that helps here: iOS Safari resizes the VISUAL viewport, not the layout viewport, so `dvh`, `85dvh` and every layout unit the sheet is built from are unchanged while the keyboard is up. No amount of spacing can move a button out from under it.
-- **What a real fix needs:** the `visualViewport` API, in TWO parts - translating alone is not enough and was disproved on hardware. (a) listen for `resize`/`scroll` on `window.visualViewport` and translate the sheet surface by `innerHeight - visualViewport.height - visualViewport.offsetTop`; (b) ALSO cap the surface's height to the shrunken visual viewport, because `85dvh` is a layout-viewport unit that does not shrink for the keyboard - without (b) the translate lifts a full-height surface until the seed field leaves the top of the screen, while the reserved footer rides up into view and makes it look fixed. That is new runtime behaviour in the sheet, it needs its own tests, and headless Chromium cannot reproduce the condition at all (the e2e suite's shrunken viewports are a documented PROXY for a keyboard, not the thing), so it needs a device check.
-- **Cons of doing it:** a viewport listener that runs on every keyboard show/hide and on every Safari toolbar collapse, on a surface that is already the most layout-sensitive thing in the app.
-- **Context:** `.sheetsurf` / `.sheetbody` / `#scale-generate` in `index.html`; the fold tests and their "what this CANNOT see" note in `tests/e2e.test.js`.
-- **Depends on:** nothing; wants a physical iOS device to verify.
+**Shipped, device check outstanding.** Both halves of the fix below are in
+`index.html`: `kbOffset()` translates the sheet surface by
+`innerHeight - visualViewport.height - visualViewport.offsetTop`, and `kbCap()`
+caps the surface to the shrunken visual viewport so the translate cannot lift
+`#scale-box` off the top of the screen. Both are pure functions and unit-tested
+in `tests/app.test.js`; the listener that feeds them is not, because headless
+Chromium cannot open a soft keyboard.
+
+- **What was wrong:** on an iPhone 14 (iOS 26.6, Safari) the soft keyboard sat
+  over the bottom of the scale sheet, so `GENERATE CARDS` - and `SAVE CHANGES`
+  on the Edit path - was behind the keyboard for as long as the caret was in
+  `#scale-box`. Owner's screenshot 2, 2026-09.
+- **Why spacing could never fix it:** iOS Safari resizes the VISUAL viewport,
+  not the layout viewport, so `dvh`, `85dvh` and every layout unit the sheet is
+  built from are unchanged while the keyboard is up.
+- **What is still open:** the owner check on hardware. The e2e suite's shrunken
+  viewports are a documented PROXY for a keyboard, not the thing, so nothing in
+  CI can close this. Tracked as queue row 67 in
+  `docs/plans/2026-09-16-remaining-work-coordination.md`: iPhone 14 / iOS 26.6,
+  BOTH the ADD and the EDIT page, keyboard up.
+- **Context:** `kbOffset` / `kbCap` and the `visualViewport` listener in
+  `index.html`; the fold tests and their "what this CANNOT see" note in
+  `tests/e2e.test.js`.
 
 ## Scale engine
 
