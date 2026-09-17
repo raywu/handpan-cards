@@ -2706,11 +2706,33 @@ function run() {
         const el = document.getElementById("scale-layout-hint");
         if (!el) return { missing: true };
         const row = document.getElementById("scale-layout-row");
+        /* Scroll it up the way a reader would before measuring: the hint sits
+         * below the fold of the sheet's own scroller at 380x780, so measuring
+         * where it happens to rest asserts a scroll position, not visibility. */
+        el.scrollIntoView({ block: "center" });
         const r = el.getBoundingClientRect();
         const cs = getComputedStyle(el);
+        /* The box the owner can actually SEE: the element's own rect clipped by
+         * every scrolling/hiding ancestor and then by the viewport. A rect with
+         * height is not enough - 'left:-9999px' and an ancestor 'max-height:0;
+         * overflow:hidden' both leave getBoundingClientRect() reporting a full
+         * box for a paragraph nobody can read. */
+        let top = r.top, left = r.left, right = r.right, bottom = r.bottom;
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const pcs = getComputedStyle(p);
+          if (pcs.overflowX !== "visible" || pcs.overflowY !== "visible") {
+            const q = p.getBoundingClientRect();
+            top = Math.max(top, q.top); left = Math.max(left, q.left);
+            right = Math.min(right, q.right); bottom = Math.min(bottom, q.bottom);
+          }
+        }
+        top = Math.max(top, 0); left = Math.max(left, 0);
+        right = Math.min(right, innerWidth); bottom = Math.min(bottom, innerHeight);
         return {
           inRow: !!(row && row.contains(el)),
           h: r.height, w: r.width,
+          vw: Math.max(0, right - left), vh: Math.max(0, bottom - top),
+          rleft: r.left, rtop: r.top,
           display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
           text: (el.textContent || "").trim(),
           describes: document.querySelector('[aria-describedby~="scale-layout-hint"]') !== null,
@@ -2723,6 +2745,10 @@ function run() {
         `the hint draws no box (${hint.w}x${hint.h}, display:${hint.display}) - nothing renders`);
       assert.notStrictEqual(hint.visibility, "hidden", "the hint is visibility:hidden");
       assert.notStrictEqual(hint.opacity, "0", "the hint is fully transparent");
+      assert.ok(hint.vw > 0 && hint.vh > 0,
+        `the hint is laid out (${hint.w}x${hint.h} at ${hint.rleft},${hint.rtop}) but none of it `
+        + `survives its clipping ancestors and the viewport (${hint.vw}x${hint.vh}) - `
+        + `pushed off-screen or clipped away, the owner never reads it`);
       const said = hint.text.toLowerCase();
       for (const word of ["tap", "rotate", "move"]) {
         assert.ok(said.includes(word),
