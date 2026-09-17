@@ -3724,7 +3724,14 @@ function labelSize(r, zone) { return r * labelRatio(zone); }
 function numSize(rNote) { return rNote * NUM_RATIO; }
 
 /* ---------------- SVG pan ---------------- */
-function pan(d, ch) {
+/* The scale page selects a note by TAPPING THE PAN, so pan() can emit an
+ * optional layer of transparent hit targets over the fields it already drew.
+ * Optional, and off by default, because the card path shares this renderer and
+ * tests/test_render_agreement.py pins its output against tools/hifi.py per
+ * field: with no third argument the bytes are the ones print agrees with. */
+function pan(d, ch, opts) {
+  const interactive = !!(opts && opts.interactive);
+  const hits = [];
   const g = d.geom, R = 100;
   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
   // uses: no chord has been chosen there, so every field draws in its
@@ -3736,7 +3743,11 @@ function pan(d, ch) {
   // the built-in geom literals have no ext key, so they keep the derivation.
   const ext = g.ext ? R * g.ext
             : hasBottom ? R * (g.bottom + g.r_bnote + g.n_out) + 14 : R * 1.06;
-  let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}" xmlns="http://www.w3.org/2000/svg">`;
+  // data-ext travels with the interactive layer because the hit radius can only
+  // be computed from the MEASURED width, and the sizer needs the viewBox scale
+  // to convert CSS pixels into it. The card path emits neither.
+  let s = `<svg viewBox="${-ext} ${-ext} ${2*ext} ${2*ext}"${
+    interactive ? ` data-ext="${ext}"` : ""} xmlns="http://www.w3.org/2000/svg">`;
 
   const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];
 
@@ -3791,8 +3802,49 @@ function pan(d, ch) {
     const [nx, ny] = P(nr, ang);
     s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
+    // The ding is skipped above and so never reaches here: it has no slot in
+    // the layout correction, so there is nothing to select it FOR.
+    if (interactive)
+      hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
+        + ` fill="transparent" tabindex="-1" role="button"`
+        + ` aria-label="${esc(name + oct)}, position ${esc(String(lab))}"/>`);
   }
+  // After every field, so a target is never painted under the pan it selects.
+  if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
   return s + "</svg>";
+}
+
+/** The hit radius in VIEWBOX units, for `minPx` CSS pixels across at a render
+ *  `widthPx` wide - capped at half the closest centre-to-centre distance.
+ *
+ *  Two things this is answering. CSS cannot do it: vector-effect holds a
+ *  STROKE against the viewBox scale and has nothing to say about a circle's hit
+ *  area, so the radius has to be computed from a width nobody knows until the
+ *  SVG is in the document. And the 44px floor is not always reachable - Pygmy
+ *  has 17 selectable fields - so where it is not, NON-OVERLAP WINS: a target
+ *  that laps its neighbour silently selects the wrong note, which is a worse
+ *  failure than a target that is merely small. */
+function panHitRadius(ext, widthPx, minPx, pts) {
+  const want = (minPx / 2) * ((2 * ext) / widthPx);
+  let closest = Infinity;
+  for (let i = 0; i < pts.length; i += 1)
+    for (let j = i + 1; j < pts.length; j += 1)
+      closest = Math.min(closest, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]));
+  return Math.min(want, closest / 2);
+}
+
+/** Size an inserted interactive pan's hit layer. Idempotent, so it can run
+ *  again on resize or orientation change without compounding. */
+function sizePanHits(svg, minPx) {
+  if (!svg || !svg.getAttribute) return;
+  const ext = Number(svg.getAttribute("data-ext"));
+  const w = svg.getBoundingClientRect ? svg.getBoundingClientRect().width : 0;
+  if (!ext || !w) return;
+  const nodes = [].slice.call(svg.querySelectorAll(".panhit"));
+  if (!nodes.length) return;
+  const pts = nodes.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy"))]);
+  const r = panHitRadius(ext, w, minPx, pts);
+  for (const n of nodes) n.setAttribute("r", String(r));
 }
 
 /* ---------------- card faces ---------------- */

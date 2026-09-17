@@ -1,0 +1,17 @@
+# kills: every built-in pan holds disjoint hit targets at the page-scale width
+# suite: node --test --test-name-pattern ^every.built-in.pan.holds.disjoint.hit.targets.at.the.page-scale.width$ tests/app.test.js
+# Drops the non-overlap cap from the hit radius, so on a crowded pan (Pygmy has
+# 17 selectable fields) neighbouring targets lap each other and a tap selects
+# the wrong note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3830,7 +3830,7 @@
+   for (let i = 0; i < pts.length; i += 1)
+     for (let j = i + 1; j < pts.length; j += 1)
+       closest = Math.min(closest, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]));
+-  return Math.min(want, closest / 2);
++  return want;
+ }
+ 
+ /** Size an inserted interactive pan's hit layer. Idempotent, so it can run

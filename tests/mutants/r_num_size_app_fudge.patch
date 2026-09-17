@@ -3,10 +3,9 @@
 # Gives the app its own fudge factor on the index number, so the two
 # renderers stop drawing the same diagram.
 diff --git a/index.html b/index.html
-index 2c421ff..b3bdefd 100644
 --- a/index.html
 +++ b/index.html
-@@ -3376,7 +3376,7 @@ function labelRatio(zone) {
+@@ -3721,7 +3721,7 @@
         : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
  }
  function labelSize(r, zone) { return r * labelRatio(zone); }
@@ -14,4 +13,4 @@ index 2c421ff..b3bdefd 100644
 +function numSize(rNote) { return rNote * NUM_RATIO * 1.1; }
  
  /* ---------------- SVG pan ---------------- */
- function pan(d, ch) {
+ /* The scale page selects a note by TAPPING THE PAN, so pan() can emit an

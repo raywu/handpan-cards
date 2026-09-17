@@ -2343,3 +2343,125 @@ test("applyKbOffset is a no-op in an environment with no visualViewport", () => 
     app.run("closeScaleSheet()");
   });
 });
+
+/* ------------------------------ 20. pan()'s optional interactive hit layer */
+
+/**
+ * Stage 1 of the scale-page plan. pan() gains a third argument so the scale
+ * page can put selection ON the pan; the CARD path must not notice. The
+ * byte-identity criterion is not an aspiration - tests/test_render_agreement.py
+ * pins this renderer's output against tools/hifi.py per field, so any drift in
+ * the two-argument form breaks print parity too.
+ */
+test("pan()'s two-argument output is unchanged by the interactive layer", () => {
+  const app = boot();
+  const D = decks(app);
+  for (let di = 0; di < D.length; di++) {
+    for (let ci = 0; ci < D[di].chords.length; ci++) {
+      const two = app.get(`pan(DECKS[${di}], DECKS[${di}].chords[${ci}])`);
+      const empty = app.get(`pan(DECKS[${di}], DECKS[${di}].chords[${ci}], {})`);
+      const where = `${D[di].id} #${ci + 1}`;
+      assert.strictEqual(empty, two, `${where}: an empty opts must change nothing`);
+      assert.ok(!two.includes("panhit"), `${where}: the card path draws no hit layer`);
+    }
+  }
+});
+
+test("interactive pan() adds one hit target per non-ding field, and none for the ding", () => {
+  const app = boot();
+  const D = decks(app);
+  for (let di = 0; di < D.length; di++) {
+    const d = D[di];
+    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const ids = Object.keys(d.fields).map(Number);
+    const selectable = ids.filter((f) => d.fields[f][F_ZONE] !== "ding");
+    const ding = ids.filter((f) => d.fields[f][F_ZONE] === "ding");
+
+    const got = [...svg.matchAll(/class="panhit"[^>]*data-field="(\d+)"/g)].map((m) => Number(m[1]));
+    assert.deepStrictEqual(got.slice().sort((a, b) => a - b),
+      selectable.slice().sort((a, b) => a - b),
+      `${d.id}: one hit target per selectable field`);
+    for (const f of ding)
+      assert.ok(!got.includes(f), `${d.id}: the ding carries no correction slot, so no hit target`);
+
+    // One tab stop for the whole pan (the chip grid's guarantee, moved): every
+    // target is programmatically focusable but none is in the tab order.
+    const stops = (svg.match(/class="panhit"[^>]*tabindex="-1"/g) || []).length;
+    assert.strictEqual(stops, selectable.length, `${d.id}: every hit target is tabindex=-1`);
+
+    // Each one names the note a screen reader would be selecting.
+    for (const f of selectable) {
+      const [name, oct, , , , lab] = d.fields[f];
+      assert.ok(svg.includes(`aria-label="${name}${oct}, position ${lab}"`),
+        `${d.id}: field ${f} names itself`);
+    }
+  }
+});
+
+/**
+ * The hit radius cannot come from CSS: vector-effect holds STROKE width against
+ * the viewBox scale and does nothing for a circle's hit area. It is computed
+ * after insertion from the measured width - and where a dense pan cannot hold
+ * disjoint 44px targets, NON-OVERLAP WINS, because a target that overlaps its
+ * neighbour selects the wrong note silently, which is worse than a small one.
+ */
+test("the hit radius reaches 44px where it fits and stops at touching where it does not", () => {
+  const app = boot();
+  const r = (ext, w, min, pts) =>
+    app.get(`panHitRadius(${ext}, ${w}, ${min}, ${JSON.stringify(pts)})`);
+
+  // Two fields 100 viewBox units apart, a 106-unit half-extent rendered 380px
+  // wide: one CSS px is 212/380 viewBox units, so 44px wants a radius of 24.5.
+  const perPx = 212 / 380;
+  assert.ok(Math.abs(r(106, 380, 44, [[-50, 0], [50, 0]]) - 22 * perPx) < 1e-9,
+    "a sparse pan gets the full 44px");
+  // Same pan, the two fields 20 apart: 44px would overlap, so they touch.
+  assert.strictEqual(r(106, 380, 44, [[-10, 0], [10, 0]]), 10,
+    "a dense pan stops at touching rather than overlapping");
+  // A single field has no neighbour to collide with.
+  assert.ok(Math.abs(r(106, 380, 44, [[0, 0]]) - 22 * perPx) < 1e-9,
+    "one field is never overlapping");
+  // A wider render needs fewer viewBox units for the same 44 CSS px.
+  assert.ok(r(106, 760, 44, [[-50, 0], [50, 0]]) < r(106, 380, 44, [[-50, 0], [50, 0]]),
+    "the radius tracks the rendered width");
+});
+
+test("every built-in pan holds disjoint hit targets at the page-scale width", () => {
+  const app = boot();
+  const D = decks(app);
+  const N = "([-+\\d.eE]+)";   // a field on the vertical axis renders cx in exponent form
+  // Stage 2 gives the page-scale pan at least 300px at a 380px viewport, where the
+  // drawer's 184px plate gave 184. NON-OVERLAP WINS over the 44px floor: a target
+  // that laps its neighbour silently selects the wrong note, which is worse than a
+  // small one. So the floor is asserted only where the geometry has room for it,
+  // and where it does not the measured size is RECORDED - a regression that shrinks
+  // Pygmy's targets further trips the pin rather than passing unnoticed.
+  const CAPPED = { pygmy: 34.8 };   // 17 fields; touching diameter at 300px
+  for (let di = 0; di < D.length; di++) {
+    const d = D[di];
+    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const ext = Number(svg.match(new RegExp(`data-ext="${N}"`))[1]);
+    const pts = [...svg.matchAll(new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}"`, "g"))]
+      .map((m) => [Number(m[1]), Number(m[2])]);
+    assert.ok(pts.length > 0, `${d.id}: hit targets carry their centres`);
+    const rad = app.get(`panHitRadius(${ext}, 300, 44, ${JSON.stringify(pts)})`);
+
+    // Disjoint: no pair of centres is closer than two radii.
+    for (let i = 0; i < pts.length; i += 1)
+      for (let j = i + 1; j < pts.length; j += 1) {
+        const gap = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+        assert.ok(gap >= 2 * rad - 1e-9,
+          `${d.id}: targets ${i} and ${j} overlap (${gap} apart, r=${rad})`);
+      }
+
+    const px = rad * 2 * (300 / (2 * ext));
+    if (CAPPED[d.id] === undefined) {
+      assert.ok(px >= 44 - 1e-9,
+        `${d.id}: ${pts.length} targets at 300px measure ${px.toFixed(1)}px, want 44`);
+    } else {
+      assert.ok(Math.abs(px - CAPPED[d.id]) < 0.05,
+        `${d.id}: geometry caps its ${pts.length} targets; measured ${px.toFixed(1)}px, pinned ${CAPPED[d.id]}`);
+      assert.ok(px < 44, `${d.id}: capped deck no longer needs its pin - assert the 44px floor instead`);
+    }
+  }
+});
