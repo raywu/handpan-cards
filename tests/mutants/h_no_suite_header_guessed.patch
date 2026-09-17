@@ -20,11 +20,14 @@
 # long as the two they replace) so bash, which reads a running script lazily by
 # byte offset, cannot be desynchronised while the patch is applied. Body
 # generated per tests/CONTRACT.md rule 4.
+# Body re-anchored after the browser skip below it moved from `case "$base"`
+# to `case "$cmd"` - the mutation itself is unchanged, only its trailing
+# context line.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
-index 56eaf18..9867647 100755
+index 2165c5b..9f7a6d9 100755
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
-@@ -188,8 +188,8 @@ for p in "${PATCHES[@]}"; do
+@@ -200,8 +200,8 @@ for p in "${PATCHES[@]}"; do
    target=$(grep -m1 '^# kills:' "$p" | sed 's/^# kills:[[:space:]]*//')
    cmd=$(suite_for "$p")
    if [ -z "$cmd" ]; then
@@ -34,4 +37,4 @@ index 56eaf18..9867647 100755
 +    [ -z "$cmd" ] && { SURVIVORS+=($p); continue; }
    fi
    # A skipped suite exits 0, which would look identical to a surviving mutant.
-   case "$base" in
+   # Keyed on the SUITE the patch names, never on the filename: the `e_` prefix
