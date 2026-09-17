@@ -4397,11 +4397,30 @@ function updateParse() {
 function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
   return Math.max(0, innerHeight - vvHeight - vvOffsetTop);
 }
+/* The translate is only half the fix. max-height:85dvh is a LAYOUT-viewport
+   unit, so the surface keeps its full ~717px on an 844pt phone no matter how
+   far the keyboard shrinks the visual viewport; lifting a 717px surface by
+   300px puts its TOP at -173px. The reserved footer rides the translate, so
+   GENERATE CARDS becomes reachable and the whole thing LOOKS fixed - while
+   #scale-box, at the top of the .sheetbody scrollport, goes off-screen. That
+   is the state the owner photographed on an iPhone 14 / iOS 26.6: the seed
+   field unreachable exactly while typing into it.
+   So the surface is also CAPPED to the shrunken viewport, and .sheetbody's
+   existing shrink does the rest - the body gives way, the footer stays put,
+   and the field stays on screen. 0 means "no override": leave 85dvh alone so
+   the no-keyboard case is untouched CSS. The 8px is breathing room against
+   subpixel viewport heights, not spacing. */
+function kbCap(innerHeight, vvHeight) {
+  if (innerHeight - vvHeight <= 0) return 0;
+  return Math.max(0, Math.round(vvHeight - 8));
+}
 function applyKbOffset() {
   const vv = window.visualViewport;
   if (!vv || !sheetSurf) return;
   const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+  const cap = kbCap(window.innerHeight, vv.height);
   sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
+  sheetSurf.style.maxHeight = cap > 0 ? `${cap}px` : "";
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", applyKbOffset);
