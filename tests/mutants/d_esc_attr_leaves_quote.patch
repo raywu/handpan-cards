@@ -1,0 +1,17 @@
+# kills: a note name cannot break out of the hit target's attributes
+# suite: node --test --test-name-pattern ^a.note.name.cannot.break.out.of.the.hit.target.s.attributes$ tests/app.test.js
+# Makes the attribute escaper an alias for the text escaper. A generated deck
+# whose note name contains a double quote then closes the aria-label attribute
+# early and the rest of the name is parsed as markup the browser honours.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3685,7 +3685,7 @@
+ // Not every attribute in this file is escaped this way - the PRINT_PDFS hrefs
+ // below are hardcoded literals - so escA marks the places carrying DECK-DERIVED
+ // text, which a generated deck controls.
+-const escA = s => esc(s).replace(/"/g, "&quot;");
++const escA = s => esc(s);
+ 
+ /* ---------------- diagram label sizing ----------------
+    ONE rule sizes every glyph the pan draws, and tools/hifi.py carries the

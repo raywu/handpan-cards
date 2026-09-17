@@ -1,0 +1,17 @@
+# kills: sizePanHits sizes an inserted layer from the measured box, idempotently
+# suite: node --test --test-name-pattern ^sizePanHits.sizes.an.inserted.layer.from.the.measured.box,.idempotently$ tests/app.test.js
+# Sizes the layer from the box WIDTH instead of the smaller dimension. A short,
+# wide container renders the square viewBox at its height under xMidYMid meet,
+# so every hit target comes out proportionally too small.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -3865,7 +3865,7 @@
+   // A square viewBox under the default xMidYMid meet renders at the SMALLER of
+   // the two dimensions: in a short wide box the pan is sized by the height, and
+   // a scale taken from the width alone would make every target too small.
+-  const size = box ? Math.min(box.width, box.height) : 0;
++  const size = box ? box.width : 0;
+   if (!ext || !size) return;
+   const nodes = [].slice.call(svg.querySelectorAll(".panhit"));
+   if (!nodes.length) return;
