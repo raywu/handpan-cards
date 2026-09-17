@@ -1363,7 +1363,8 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
   const d = makeCustom(app);
   app.select(d.id);
   app.clickChip(d.name);
-  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();   // arms
+  app.els["scale-delete"].click();   // confirms
 
   assert.strictEqual(app.sheetOpen(), false, "delete left the sheet open");
   assert.deepStrictEqual(app.registry(), {}, "the deck is still in the registry");
@@ -1401,6 +1402,55 @@ test("deleting a NON-selected custom deck leaves the selection alone", () => {
   const row = chipRow(app);
   assert.strictEqual(row.some((c) => c.label === a.name), false, "the chip is still in the row");
 });
+
+/* Owner instruction, 2026-09-17: "Delete cards should require a confirmation."
+   DELETE THIS DECK destroys a deck and its stored seed with one tap, sitting
+   44px under SAVE CHANGES in a sheet the owner drives with a thumb. The
+   confirmation is a second tap on the SAME control rather than a dialog: it
+   costs the pinned footer no height (the reason the footer is one row at all -
+   see the .sheetbody comment in index.html), and it cannot be dismissed by the
+   Escape that also closes the page. Arming is visible in the label, so a
+   half-remembered first tap is legible rather than armed-in-secret. */
+test("DELETE THIS DECK arms on the first tap and only deletes on the second", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "one tap deleted the deck - the confirmation did not gate anything");
+  assert.strictEqual(app.sheetOpen(), true, "one tap closed the Edit page");
+  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the armed button still reads DELETE THIS DECK, so nothing tells the owner " +
+    "their tap did anything or that the next one is destructive");
+  assert.ok(app.announcer().textContent.includes(d.name),
+    `the arming message must name the deck at risk: "${app.announcer().textContent}"`);
+
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(app.registry(), {}, "the second tap did not delete the deck");
+  assert.strictEqual(app.sheetOpen(), false, "the second tap left the sheet open");
+});
+
+test("leaving the Edit page disarms DELETE, so a stale tap cannot destroy a deck", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();          // armed
+  app.keydown("Escape");                    // the owner leaves without deleting
+  assert.strictEqual(app.sheetOpen(), false);
+  app.clickChip(d.name);                    // and comes back later
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the page re-opened with DELETE still armed - the next tap would delete " +
+    "a deck on a confirmation the owner gave to a different visit");
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "the re-opened page deleted the deck on one tap");
+});
+
 
 /* ------------------------------------------- 23. the LAYOUT section (5) */
 //
