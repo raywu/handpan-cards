@@ -231,14 +231,24 @@ test("an empty box shows the placeholder seed as an example", () => {
     "typing the placeholder itself should give a CURRENT pan, not a stale one");
 });
 
-test("the Edit sheet shows no mock - the deck's own card is already the preview", () => {
+test("the Edit sheet draws the mock too, and makes it the correction surface", () => {
   const app = boot();
   app.generate(PLAIN, {});
   const id = app.get("Object.keys(CUSTOM)[0]");
   app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
-  assert.ok(!previewHTML(app).includes("<svg"),
-    "from Edit the pan behind the sheet is the live preview; a second mock only " +
-    "pushes SAVE CHANGES off a 380px screen");
+  // Stage 2 hid this mock, on the reasoning that the deck's own card behind the
+  // sheet was already the preview. Stage 3 reverses that (owner, D1: "tap the
+  // note on the pan"): the card behind the sheet is not a control, and the
+  // layout buttons moved nothing the owner could see. The plate is paid for by
+  // the fold check in tests/e2e.test.js, not by hiding it.
+  const svg = previewHTML(app);
+  assert.ok(svg.includes("<svg"), "the Edit sheet draws no pan to correct");
+  assert.ok(svg.includes('class="panhit"'),
+    "the Edit mock is a picture, not the correction surface (D1)");
+  assert.strictEqual(app.els["scale-preview"].getAttribute("role"), "group",
+    "the Edit mock is still exposed as an image");
+  assert.strictEqual(app.els["scale-preview"].getAttribute("tabindex"), "0",
+    "the Edit mock is not a tab stop, so the correction is mouse-only");
 });
 
 /* ------------------------------------------------- the card path is untouched */

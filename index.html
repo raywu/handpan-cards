@@ -473,8 +473,16 @@ button.nav:active{background:#2e281e}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
-   CARDS below the fold. */
-#scale-preview{align-self:center; width:100%; max-width:184px; padding:var(--sp-2);
+   CARDS below the fold.
+   300px, not the 184px this shipped at through Stage 2 (Stage 1 prose, carried
+   as Stage 2 review nit 8). The plate stopped being a thumbnail when Stage 3
+   made it the LAYOUT control's target: every note on it is now a tap target,
+   and a target's size is the whole of whether it can be hit. 300px is what a
+   380px page has to give after the surface's own padding. It does NOT reach
+   the 44px floor on a 17-field Pygmy pan - that needs 379.45px, which no
+   380px viewport has - and per Stage 1 AC3 non-overlap wins there: the
+   targets stay disjoint and Pygmy's cap at 34.8px stands. */
+#scale-preview{align-self:center; width:100%; max-width:300px; padding:var(--sp-2);
   border-radius:12px; background:#f1ece1; border:1px solid #433b2c}
 /* Not-current: the placeholder example before anything is typed, and the last
    render held through an invalid parse. ONE treatment for both, because the
@@ -518,7 +526,7 @@ button.nav:active{background:#2e281e}
   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
   /* A 390px-tall viewport leaves the body a couple of hundred px, and the
      plate is now always in the flow rather than only after a valid parse, so
-     at 184px it would be most of the scrollport. The pan stays readable at 120px - it is a
+     at 300px it would be most of the scrollport. The pan stays readable at 120px - it is a
      where-do-the-notes-sit mock, not the card. */
   #scale-preview{max-width:120px}
 }
@@ -530,12 +538,12 @@ button.nav:active{background:#2e281e}
    comfortable and the side margins read as slack).
    The plate goes with it. Nothing else in the drawer scales with width - the
    seed is a short string and only the parse line wraps - so a wider sheet
-   around a 184px plate is a wider EMPTY band, not a better composition. 240px
+   around a 300px plate is a wider EMPTY band, not a better composition. 340px
    is as far as it goes: beyond that the mock starts competing with the card.
    Gated on both axes like the ramp, so no phone in landscape picks it up. */
 @media (min-width:640px) and (min-height:700px){
   .sheetsurf{max-width:clamp(520px, 52vw, 680px)}
-  #scale-preview{max-width:240px}
+  #scale-preview{max-width:340px}
 }
 /* No min-height here: .mode carries the 44px minimum for every .mode on the
    page, sheet buttons included. */
@@ -570,17 +578,23 @@ button.nav:active{background:#2e281e}
   background:#151310; border:1px solid #433b2c; border-radius:8px}
 #scale-name{font-family:Bitter, serif; font-weight:400; font-size:16px}
 #scale-degrees{font:400 16px/1.2 "Nunito Sans"}
-/* ---- LAYOUT correction (Phase 5). Every control here is a SECONDARY: the
-   sheet's only full-width primary stays #scale-generate. The slot list is a
-   single tab stop with a roving tabindex, so a keyboard reaches it in one Tab
-   and moves inside it with the arrow keys - there is no drag-only path. */
+/* ---- LAYOUT correction (Phase 5, moved onto the pan in Stage 3). Every
+   control here is a SECONDARY: the sheet's only full-width primary stays
+   #scale-generate. The PAN is the selection and a single tab stop; its arrow
+   keys walk the notes, so there is no drag-only path to any of this. */
 #scale-layout-row{gap:var(--sp-2)}
-#scale-layout-row .ctlrow{gap:var(--sp-2)}
-#scale-slots{display:flex; flex-wrap:wrap; gap:var(--sp-2)}
-#scale-slots .slot{min-width:44px; min-height:44px; padding:6px 8px; cursor:pointer;
-  border:1px solid #433b2c; border-radius:8px; background:#151310; color:#c4bcab;
-  font-family:Bitter, serif; font-weight:400; font-size:13px}
-#scale-slots .slot[aria-pressed="true"]{border-color:#f1ece1; color:#f1ece1}
+#scale-layout-row .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
+/* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
+   it has to sit on ONE note at the radius that note was drawn at, which is a
+   solved number no selector can reach. What CSS owns is the focus treatment of
+   the pan as a whole. */
+#scale-preview[tabindex]{cursor:pointer; border-radius:12px}
+#scale-preview[tabindex]:focus-visible{outline:2px solid #f1ece1; outline-offset:2px}
+/* iOS has no hover and this app turns the tap highlight off, so a note that is
+   already selected would otherwise answer a tap with nothing at all. The hit
+   target is transparent by design (it is smaller than the note it covers), so
+   the press flash fills it rather than restyling the note. */
+#scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
 #scale-layout-reset{background:none; border:none; color:#a79d8b; cursor:pointer;
   min-height:44px; padding:0 4px;
   font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
@@ -630,7 +644,6 @@ button.nav:active{background:#2e281e}
 #scale-swatches .dot:active::after{box-shadow:0 0 0 2px #a79d8b}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
-#scale-slots .slot:active{background:#211d16; color:#f1ece1}
 #scale-layout-reset:active, #scale-delete:active{color:#eae6df}
 </style>
 </head>
@@ -720,35 +733,40 @@ button.nav:active{background:#2e281e}
          cannot drift from what GENERATE CARDS produces. -->
     <div id="scale-preview" role="img"
          aria-label="Preview of where the notes sit on the pan" hidden></div>
+    <!-- D5: the generated layout is a guess; this corrects it. Edit path only -
+         there is nothing to correct until a pan has been solved.
+
+         The controls sit DIRECTLY under the pan they move, and the pan IS the
+         selection: Stage 3 deleted #scale-slots, the parallel list of position
+         chips that stood in for it. The owner could not tell what ROTATE and
+         MOVE did because the thing they moved was not on screen - the chips
+         reordered and the pan behind the sheet did not visibly change. One
+         target, one group, both above the fold at 380px. -->
+    <div class="editrow" id="scale-layout-row" hidden>
+      <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
+      <div class="ctlrow" role="group" aria-labelledby="scale-layout-label">
+        <div class="mirror">
+          <button class="mode" type="button" id="scale-rot-l"
+                  aria-label="Rotate the selected note's ring one position back">ROTATE &larr;</button>
+          <button class="mode" type="button" id="scale-rot-r"
+                  aria-label="Rotate the selected note's ring one position on">ROTATE &rarr;</button>
+        </div>
+        <div class="mirror">
+          <button class="mode" type="button" id="scale-move-l"
+                  aria-label="Move the selected note one position back">MOVE &larr;</button>
+          <button class="mode" type="button" id="scale-move-r"
+                  aria-label="Move the selected note one position on">MOVE &rarr;</button>
+        </div>
+        <button id="scale-layout-reset" type="button"
+                aria-label="Reset the layout to the generated one">RESET</button>
+      </div>
+    </div>
     <!-- Above the control row, so the soft keyboard never covers it. -->
     <div id="scale-msg" aria-live="polite"></div>
     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
     <div class="editrow" id="scale-degrees-row" hidden>
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
       <select id="scale-degrees"></select>
-    </div>
-    <!-- D5: the generated layout is a guess; this corrects it. Edit path only -
-         there is nothing to correct until a pan has been solved. -->
-    <div class="editrow" id="scale-layout-row" hidden>
-      <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
-      <div class="ctlrow">
-        <div class="mirror" role="group" aria-labelledby="scale-layout-label">
-          <button class="mode" type="button" id="scale-rot-l"
-                  aria-label="Rotate the rim one position back">ROTATE &larr;</button>
-          <button class="mode" type="button" id="scale-rot-r"
-                  aria-label="Rotate the rim one position on">ROTATE &rarr;</button>
-        </div>
-        <button id="scale-layout-reset" type="button"
-                aria-label="Reset the layout to the generated one">RESET</button>
-      </div>
-      <div id="scale-slots" role="group"
-           aria-label="Notes in layout order. Use the arrow keys to choose one."></div>
-      <div class="mirror">
-        <button class="mode" type="button" id="scale-move-l"
-                aria-label="Move the chosen note one position back">MOVE &larr;</button>
-        <button class="mode" type="button" id="scale-move-r"
-                aria-label="Move the chosen note one position on">MOVE &rarr;</button>
-      </div>
     </div>
    </div>
     <!-- Outside .sheetbody, with the primary. The original reason - that the
@@ -3755,6 +3773,12 @@ function numSize(rNote) { return rNote * NUM_RATIO; }
  * field: with no third argument the bytes are the ones print agrees with. */
 function pan(d, ch, opts) {
   const interactive = !!(opts && opts.interactive);
+  // The SELECTED field id, or null. Drawn, not implied: the LAYOUT controls act
+  // on one note, and a user who cannot see which one is being asked to trust
+  // that ROTATE and MOVE will do what they mean - which is the exact complaint
+  // Stage 3 exists to answer.
+  const sel = interactive && opts.selected != null ? String(opts.selected) : null;
+  const rings = [];
   const hits = [];
   const g = d.geom, R = 100;
   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
@@ -3831,13 +3855,27 @@ function pan(d, ch, opts) {
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
     // The ding is skipped above and so never reaches here: it has no slot in
     // the layout correction, so there is nothing to select it FOR.
-    if (interactive)
+    if (interactive) {
+      const on = sel !== null && String(id) === sel;
+      // The ring is its own element rather than a stroke on the hit target: the
+      // target's radius is shrunk to whatever keeps it disjoint from its
+      // neighbours (panHitRadii), which on a crowded pan is well inside the
+      // note it covers. A selection the user cannot line up with a note is not
+      // a selection, so the ring is drawn at the NOTE's radius and stays there.
+      if (on)
+        rings.push(`<circle class="pansel" cx="${x}" cy="${y}" r="${rr * 1.2}"`
+          + ` fill="none" stroke="#E27005" stroke-width="${R * 0.016}"`
+          + ` pointer-events="none"/>`);
       hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
         + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
+        + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+    }
   }
-  // After every field, so a target is never painted under the pan it selects.
-  if (interactive) s += `<g class="panhits">${hits.join("")}</g>`;
+  // After every field, so a target is never painted under the pan it selects,
+  // and the ring under the targets so it can never eat a tap.
+  if (interactive) s += `<g class="pansels">${rings.join("")}</g>`
+                      + `<g class="panhits">${hits.join("")}</g>`;
   return s + "</svg>";
 }
 
@@ -3876,6 +3914,13 @@ function panHitRadii(ext, sizePx, minPx, pts) {
  *  from the `r` a previous pass wrote, so running again on resize or an
  *  orientation change cannot compound. A layer that has not been laid out yet
  *  measures zero and is left with its rendered radii rather than zeroed. */
+/* The hit-target floor, in CSS pixels: the platform minimum for a touch target.
+ * A floor and not a promise - panHitRadii caps every target at half the
+ * distance to its nearest neighbour, so on a pan with 17 selectable fields at
+ * 380px the targets land under it. Stage 1 AC3 settled that trade: a target
+ * that laps its neighbour selects the WRONG note, which is worse than a small
+ * one. */
+const PAN_HIT_MIN_PX = 44;
 function sizePanHits(svg, minPx) {
   if (!svg || !svg.getAttribute) return;
   const ext = Number(svg.getAttribute("data-ext"));
@@ -4096,7 +4141,6 @@ const delBtn    = document.getElementById("scale-delete");
 const layoutRow = document.getElementById("scale-layout-row");
 const rotL      = document.getElementById("scale-rot-l");
 const rotR      = document.getElementById("scale-rot-r");
-const slotsBox  = document.getElementById("scale-slots");
 const moveL     = document.getElementById("scale-move-l");
 const moveR     = document.getElementById("scale-move-r");
 const resetBtn  = document.getElementById("scale-layout-reset");
@@ -4126,11 +4170,11 @@ let nameDirty = false;
 // generated layout - and never an identity permutation, so a pan that was
 // never corrected keeps exactly the share string it had (D5-1, D5-3).
 let layoutOrder = null;
-let layoutSel = 0;               // the position the slot list has chosen
-// The live preview is painted straight onto the deck behind the sheet, so
-// closing without saving has to put the generated angles back.
-let layoutPreviewOf = null;
-let layoutPreviewFields = null;
+// The chosen SLOT, not the chosen field: `order[field] = slot`, so everything
+// the controls do (zone blocks, cyclic shifts, swaps) is arithmetic on slots.
+// A tap on the pan arrives as a FIELD id and is converted once, in
+// selectPanField() - the one place the two can be got the wrong way round.
+let layoutSel = 0;
 const generated = new Set();     // deck ids generated in this page session
 
 /** The one adapter from a result/warning reason to a message tier. */
@@ -4188,11 +4232,13 @@ function buildDegrees(selected) {
   degSel.value = String(selected);
 }
 
-/* ---- the LAYOUT correction (D5) ----
+/* ---- the LAYOUT correction (D5, moved onto the pan in Stage 3) ----
  * The generated layout is a GUESS, and LAYOUT_HINT says so; this is how it is
- * corrected. Everything works from the keyboard: ROTATE and MOVE are ordinary
- * buttons, and the slot list is ONE tab stop with a roving tabindex whose arrow
- * keys choose a position - there is no drag-only path to any of it. */
+ * corrected. The pan mock IS the editor: a note is chosen by tapping it, the
+ * ring says which one is chosen, and ROTATE and MOVE redraw the mock under the
+ * finger. Everything still works from the keyboard - ROTATE, MOVE and RESET are
+ * ordinary buttons and the pan is ONE tab stop whose arrow keys walk the
+ * selection - so there is no drag-only path to any of it. */
 
 /** The non-ding field ids in the order layout.solve assigns slots. */
 function layoutIds(fields) {
@@ -4230,97 +4276,92 @@ function zoneBlock(fields, slot) {
 }
 const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
 
-/** One control per solved position, showing the note that sits in it. */
-function buildSlots() {
-  slotsBox.innerHTML = "";
-  const d = editedDeck();
-  if (!d) return;
-  const ids = layoutIds(d.fields);
-  const n = ids.length;
+/** A correction is a permutation of a FIXED length, so a seed edit that
+ *  changes the field count invalidates it. This guard used to live inside
+ *  buildSlots(); with the slot list gone it has to run wherever the correction
+ *  meets a field set, or a stale correction silently lands on a different pan.
+ *  Returns the non-ding count so callers do not re-derive it. */
+function syncLayoutOrder(fields) {
+  const n = layoutIds(fields).length;
   if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;
   if (layoutSel >= n) layoutSel = 0;
-  const at = slotOccupants(layoutOrder || identityOrder(n));
-  for (let slot = 0; slot < n; slot += 1) {
-    const f = d.fields[ids[at[slot]]];
-    const note = f[0] + f[1];
-    const b = document.createElement("button");
-    b.type = "button";
-    b.id = "scale-slot-" + slot;
-    b.className = "slot";
-    b.textContent = note;          // text position: nothing is interpolated
-    b.setAttribute("aria-pressed", String(slot === layoutSel));
-    b.setAttribute("aria-label", "Position " + (slot + 1) + " of " + n + ", " + note);
-    b.tabIndex = slot === layoutSel ? 0 : -1;
-    b.onclick = () => { layoutSel = slot; buildSlots(); };
-    slotsBox.appendChild(b);
-  }
+  return n;
 }
 
-/** Solve the pan under the sheet's current mirror and correction. */
-function solveSheetLayout(order) {
+/** The fields the LAYOUT controls act on: the seed as TYPED, which on an
+ *  untouched Edit box is the deck's own (the box is prefilled with
+ *  formatSeed(d.fields)). The TYPED seed and not the stored deck, because once
+ *  the mock repaints on every keystroke the two can differ, and the controls
+ *  must move the pan the user is looking at. */
+function layoutFields() {
   const d = editedDeck();
   if (!d) return null;
-  const res = HPE.layout.solve({ fields: d.fields, options: {} },
-                               { mirror: mirror, order: order });
-  return res.ok ? res.value : null;
+  const res = HPE.core.parseSeed(String(scaleBox.value || ""), { palette, mirror });
+  return res.ok ? res.value.fields : d.fields;
 }
 
-// The preview is the real card behind the sheet, re-rendered: the correction is
-// only about WHERE a note sits, so nothing but the angles moves.
+/** Choose the note a tap landed on. `.panhit` carries a FIELD id and layoutSel
+ *  is a SLOT, and `order[field] = slot` - so this is the conversion, and the
+ *  only one. Backwards it selects the wrong note on every deck the user has
+ *  already corrected, and exactly the right one on every deck they have not,
+ *  which is why it gets a test of its own on a corrected pan. */
+function selectPanField(id) {
+  const fields = layoutFields();
+  if (!fields) return false;
+  const n = syncLayoutOrder(fields);
+  const i = layoutIds(fields).indexOf(String(id));
+  if (i < 0) return false;
+  layoutSel = (layoutOrder || identityOrder(n))[i];
+  previewLayout();
+  return true;
+}
+
+/** The field id sitting in the selected slot - what the ring is drawn on. */
+function selectedField(fields) {
+  const ids = layoutIds(fields);
+  const at = slotOccupants(layoutOrder || identityOrder(ids.length));
+  return ids[at[layoutSel]];
+}
+
+/* The preview is the MOCK, and only the mock (D4). It used to be painted onto
+ * the real deck behind the sheet, which meant every abandoned correction had to
+ * be unpainted on the way out - a second copy of the fields, a restore path,
+ * and a deck that was briefly wrong if anything threw in between. The deck is
+ * now untouched until SAVE CHANGES commits `order` like any other seed option,
+ * so "Escape leaves the deck byte-identical" is structural rather than
+ * something a restore function has to remember to do. */
 function previewLayout() {
-  const d = editedDeck();
-  if (!d) return;
-  if (layoutPreviewOf !== editingId) {
-    layoutPreviewOf = editingId;
-    layoutPreviewFields = JSON.parse(JSON.stringify(d.fields));
-  }
-  const solved = solveSheetLayout(layoutOrder);
-  if (!solved) return;
-  for (const id of Object.keys(solved.fields)) {
-    if (d.fields[id]) d.fields[id][4] = solved.fields[id][4];
-  }
-  render();
-}
-function dropLayoutPreview() {
-  layoutPreviewOf = null;
-  layoutPreviewFields = null;
-}
-function restoreLayoutPreview() {
-  const d = layoutPreviewOf ? CUSTOM[layoutPreviewOf] : null;
-  if (d && layoutPreviewFields) {
-    for (const id of Object.keys(layoutPreviewFields)) {
-      if (d.fields[id]) d.fields[id][4] = layoutPreviewFields[id][4];
-    }
-    render();
-  }
-  dropLayoutPreview();
+  if (!editingId) return;
+  updateParse();
 }
 
-// ROTATE is a cyclic shift of the RIM (D5-1): the whole ring turns, which is
-// what a pan whose zig-zag starts somewhere else actually looks like.
+// ROTATE is a cyclic shift of the SELECTED note's ring (D2): the whole ring
+// turns, which is what a pan whose zig-zag starts somewhere else actually looks
+// like. The ring is the selection's, not always the rim's - a bottom shell is
+// built from below and can start anywhere the rim does not, and before Stage 3
+// it could not be rotated at all.
 function rotateLayout(by) {
-  const d = editedDeck();
-  if (!d) return;
-  const n = layoutIds(d.fields).length;
-  const [a, b] = zoneBlock(d.fields, 0);
+  const fields = layoutFields();
+  if (!fields) return;
+  const n = syncLayoutOrder(fields);
+  const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
   const at = slotOccupants(layoutOrder || identityOrder(n));
   const next = at.slice();
   for (let j = a; j < b; j += 1) next[wrap(j + by, a, span)] = at[j];
   setLayoutOrder(orderFromSlots(next));
-  if (layoutSel >= a && layoutSel < b) layoutSel = wrap(layoutSel + by, a, span);
-  buildSlots();
+  layoutSel = wrap(layoutSel + by, a, span);
   previewLayout();
 }
 // MOVE takes the chosen note to the next position, and whatever was there takes
 // its place - a swap, so a note is never lost and the result is always still a
 // permutation. It stays inside the note's own zone: a rim note is on the rim.
 function moveNote(by) {
-  const d = editedDeck();
-  if (!d) return;
-  const n = layoutIds(d.fields).length;
-  const [a, b] = zoneBlock(d.fields, layoutSel);
+  const fields = layoutFields();
+  if (!fields) return;
+  const n = syncLayoutOrder(fields);
+  const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
   const to = wrap(layoutSel + by, a, span);
@@ -4330,13 +4371,21 @@ function moveNote(by) {
   at[to] = held;
   setLayoutOrder(orderFromSlots(at));
   layoutSel = to;
-  buildSlots();
+  previewLayout();
+}
+/** Walk the selection one slot, wrapping across the whole pan - the keyboard
+ *  equivalent of tapping the next note round. */
+function stepLayoutSel(by) {
+  const fields = layoutFields();
+  if (!fields) return;
+  const n = syncLayoutOrder(fields);
+  if (!n) return;
+  layoutSel = (layoutSel + by + n) % n;
   previewLayout();
 }
 function resetLayout() {
   layoutOrder = null;
   layoutSel = 0;
-  buildSlots();
   previewLayout();
 }
 
@@ -4368,9 +4417,18 @@ function sheetOptions() {
  * through the same pan() the cards use, which is why the preview cannot drift
  * from the real output. */
 
-/** Solve the typed seed under the sheet's mirror. */
+/** Solve the typed seed under the sheet's mirror, and - on the Edit path - the
+ *  correction the LAYOUT controls are building. Passing `order` is what makes
+ *  ROTATE and MOVE visible: without it the mock would redraw the GENERATED
+ *  layout after every press and the controls would look like they did nothing,
+ *  which is the bug this stage exists to fix.
+ *  The guard runs first, because a seed edit can change the field count and
+ *  layout.solve refuses an order of the wrong length (BAD_NOTE) - which would
+ *  show up as a mock that silently stopped repainting. */
 function solvePreviewLayout(seed) {
-  const res = HPE.layout.solve(seed, { mirror: mirror });
+  if (editingId) syncLayoutOrder(seed.fields);
+  const res = HPE.layout.solve(seed,
+    { mirror: mirror, order: editingId ? layoutOrder : null });
   return res.ok ? res.value : null;
 }
 
@@ -4388,9 +4446,10 @@ const PAN_NAMES = {
   held: "Preview of the last seed that parsed",
 };
 
-/** Edit path only. On the create path the plate is always in the flow: it
- * entering and leaving was the biggest of the three things that made the
- * drawer resize while the owner typed. */
+/** The plate is always in the flow on both paths now: it entering and leaving
+ * was the biggest of the three things that made the drawer resize while the
+ * owner typed. Kept for the one case that still needs it - a placeholder seed
+ * that will not parse. */
 function clearPanPreview() {
   previewBox.innerHTML = "";
   previewBox.removeAttribute("aria-label");
@@ -4398,20 +4457,28 @@ function clearPanPreview() {
   previewBox.setAttribute("hidden", "");
 }
 
+// What the plate last drew. Held in a variable rather than read back off the
+// accessible name: on the Edit path the name also carries the instruction for
+// the arrow keys, so the string is no longer a key into PAN_NAMES.
+let panState = "example";
+const PAN_EDIT_HINT = " Tap a note to choose it, or use the arrow keys.";
 function markPan(state) {
+  panState = state;
   previewBox.classList.toggle("stale", state !== "current");
-  previewBox.setAttribute("aria-label", PAN_NAMES[state]);
+  previewBox.setAttribute("aria-label",
+    PAN_NAMES[state] + (editingId ? "." + PAN_EDIT_HINT : ""));
 }
 
 /** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the
  * seed has no solvable layout, which leaves whatever is on screen alone.
  *
- * CREATE PATH ONLY, for two reasons that agree. The request is about the moment
- * BEFORE committing - from Edit the deck already exists, and previewLayout()
- * repaints its real card live behind the sheet, so a mock there would be a
- * second preview of the same pan. And the Edit sheet already carries the name,
- * degrees and LAYOUT rows: at 380px a mock on top of those pushes the primary
- * button off the screen, which is the one thing a phone sheet may never do. */
+ * BOTH PATHS. Through Stage 2 this was create-only and the Edit path cleared
+ * the plate instead, on the reasoning that previewLayout() was already
+ * repainting the real card behind the sheet. That reasoning did not survive
+ * contact with the owner: the card behind a full-screen page is not visible at
+ * all, so ROTATE and MOVE moved something nobody could see. The mock is now the
+ * one place the layout is shown, on both paths, and on Edit it is interactive.
+ */
 function paintPan(seed, state) {
   const solved = solvePreviewLayout(seed);
   if (!solved) return false;
@@ -4420,14 +4487,16 @@ function paintPan(seed, state) {
   // chord it lights nothing, so the colours are only ever a fallback.
   previewBox.innerHTML = pan(
     { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
-    null);
+    null,
+    editingId ? { interactive: true, selected: selectedField(solved.fields) } : null);
   previewBox.removeAttribute("hidden");
   markPan(state);
+  if (editingId) sizePanHits(previewBox.querySelector && previewBox.querySelector("svg"),
+                             PAN_HIT_MIN_PX);
   return true;
 }
 
 function showPanPreview(seed) {
-  if (editingId) { clearPanPreview(); return; }
   if (!paintPan(seed, "current")) holdPanPreview();
 }
 
@@ -4437,7 +4506,6 @@ function showPanPreview(seed) {
  * PARSE_HINT are the only teaching of the grammar there is, and this way the
  * example drawn is provably the example shown. */
 function showPlaceholderPan() {
-  if (editingId) { clearPanPreview(); return; }
   const res = HPE.core.parseSeed(String(scaleBox.placeholder || ""), sheetOptions());
   if (!res.ok || !paintPan(res.value, "example")) clearPanPreview();
 }
@@ -4446,12 +4514,11 @@ function showPlaceholderPan() {
  * a seed is invalid on most keystrokes, so clearing here would be the resize
  * the owner asked us to remove, one character at a time. */
 function holdPanPreview() {
-  if (editingId) { clearPanPreview(); return; }
   if (previewBox.hasAttribute("hidden") || !previewBox.innerHTML) {
     showPlaceholderPan();
     return;
   }
-  markPan(previewBox.getAttribute("aria-label") === PAN_NAMES.example ? "example" : "held");
+  markPan(panState === "example" ? "example" : "held");
 }
 
 /** Re-parse on every input: the parse line, the outline and Generate follow. */
@@ -4536,6 +4603,18 @@ function setSheetMode(edit) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
+  // On the create path the plate is a picture: role="img" with a name, read as
+  // content and skipped by Tab. On the Edit path it is a control group holding
+  // one button per note, so it takes a group role, a name that says what the
+  // arrow keys do, and the single tab stop that reaches it.
+  if (edit) {
+    previewBox.setAttribute("role", "group");
+    previewBox.setAttribute("tabindex", "0");
+    previewBox.setAttribute("aria-label", PAN_NAMES[panState] + "." + PAN_EDIT_HINT);
+  } else {
+    previewBox.setAttribute("role", "img");
+    previewBox.removeAttribute("tabindex");
+  }
   // The page is named by the title it shows (#scale-title, via
   // aria-labelledby), so there is one string and a sighted user and a screen
   // reader are told the same thing.
@@ -4592,7 +4671,6 @@ function openScaleSheet(opener) {
   setMirror(false);
   layoutOrder = null;
   layoutSel = 0;
-  buildSlots();
   showSheet(opener);
 }
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the deck
@@ -4611,7 +4689,6 @@ function openEditSheet(d, opener) {
   // deck already carries and RESET is what clears it.
   layoutOrder = Array.isArray(d.options.order) ? d.options.order.slice() : null;
   layoutSel = 0;
-  buildSlots();
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -4626,9 +4703,6 @@ function hideSheet() {
   // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
   // previous session's offset for one frame.
   if (sheetSurf) sheetSurf.style.transform = "";
-  // Escape and the backdrop are "without saving", and the preview was painted
-  // on the real deck, so it has to come back off.
-  restoreLayoutPreview();
   editingId = null;
   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
   (sheetOpener || addChip).focus();
@@ -4735,10 +4809,6 @@ function runGenerate() {
   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
   if (warned.length) text += " " + warned.join(" ");
 
-  // The save REPLACED the deck the preview was painted on, so there is nothing
-  // left to put back: dropping the snapshot keeps closeScaleSheet from undoing
-  // the correction it just committed.
-  dropLayoutPreview();
   closeScaleSheet();
   if (replaced) replaceScale(wasSeed, seedOf(d)); else rememberScale(seedOf(d));
   selectDeck(d.id);
@@ -4760,20 +4830,35 @@ rotR.onclick = () => rotateLayout(1);
 moveL.onclick = () => moveNote(-1);
 moveR.onclick = () => moveNote(1);
 resetBtn.onclick = resetLayout;
-// The roving tabindex: one Tab reaches the slot list, the arrows move inside it.
-slotsBox.addEventListener("keydown", (e) => {
-  const n = slotsBox.children.length;
-  if (!n) return;
-  let to;
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (layoutSel + 1) % n;
-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (layoutSel + n - 1) % n;
-  else if (e.key === "Home") to = 0;
-  else if (e.key === "End") to = n - 1;
+// A tap anywhere on the pan chooses the note under it. Delegated to the plate
+// rather than bound per target, because the targets are rewritten on every
+// repaint and a listener per circle would be re-attached on every keystroke.
+previewBox.addEventListener("click", (e) => {
+  if (!editingId) return;
+  const t = e.target;
+  const hit = t && t.closest ? t.closest(".panhit") : null;
+  if (!hit) return;
+  selectPanField(hit.getAttribute("data-field"));
+});
+// The pan is ONE tab stop and the arrows walk the selection inside it - the
+// same contract the slot list had, on the thing the notes are actually drawn
+// on. Home and End go to the ends, so a long pan is two keys wide.
+previewBox.addEventListener("keydown", (e) => {
+  if (!editingId) return;
+  let by;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") by = 1;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") by = -1;
+  else if (e.key === "Home") by = "home";
+  else if (e.key === "End") by = "end";
   else return;
   e.preventDefault();
-  layoutSel = to;
-  buildSlots();
-  slotsBox.children[layoutSel].focus();
+  if (by === "home") { layoutSel = 0; previewLayout(); }
+  else if (by === "end") {
+    const fields = layoutFields();
+    if (!fields) return;
+    layoutSel = Math.max(0, syncLayoutOrder(fields) - 1);
+    previewLayout();
+  } else stepLayoutSel(by);
 });
 scaleBox.addEventListener("input", updateParse);
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
@@ -4786,11 +4871,12 @@ sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
   const stops = [backBtn,
                  editingId ? nameBox : null,
-                 scaleBox, editingId ? degSel : null,
+                 scaleBox,
+                 editingId ? previewBox : null,
                  editingId ? rotL : null, editingId ? rotR : null,
-                 editingId ? resetBtn : null,
-                 editingId ? slotsBox.children[layoutSel] : null,
                  editingId ? moveL : null, editingId ? moveR : null,
+                 editingId ? resetBtn : null,
+                 editingId ? degSel : null,
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(el => el && !el.disabled);

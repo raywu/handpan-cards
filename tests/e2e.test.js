@@ -2390,7 +2390,7 @@ function run() {
     try {
       // A custom deck first, so the Edit-only controls (DELETE THIS DECK, the
       // degrees row) and a custom chip are on the page too. Then the sheet,
-      // so the swatches, the mirror pair, the slot list and the primary are.
+      // so the swatches, the mirror pair, the LAYOUT group and the primary are.
       await generate(EDIT_SCALE);
       await b.eval(`document.querySelector("#decks .chip.on")
                       .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
@@ -2747,18 +2747,30 @@ function run() {
     }
   };
 
-  const slotState = () => b.eval(`
-    const slots = [...document.getElementById("scale-slots").children];
+  /** What the Edit page's pan currently shows. Stage 3 moved the correction
+   *  onto the pan itself, so every LAYOUT oracle below reads the drawn mock -
+   *  the thing the owner can actually see. `places` is note -> where it is
+   *  drawn: the index label a target announces travels with its FIELD, so the
+   *  place is the only thing on screen a correction moves. */
+  const panState = () => b.eval(`
+    const box = document.getElementById("scale-preview");
+    const hits = [...box.querySelectorAll(".panhit")];
+    const name = h => String(h.getAttribute("aria-label") || "").split(",")[0];
+    const sel = hits.filter(h => h.getAttribute("data-sel") === "true");
     const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+    const br = box.getBoundingClientRect();
+    const places = {};
+    for (const h of hits) places[name(h)] = h.getAttribute("cx") + "," + h.getAttribute("cy");
     return {
-      notes: slots.map(s => s.textContent.trim()),
-      pressed: slots.findIndex(s => s.getAttribute("aria-pressed") === "true"),
-      stops: slots.filter(s => s.tabIndex === 0).length,
-      named: slots.every(s => (s.getAttribute("aria-label") || "").length > 0),
-      inside: slots.every(s => {
-        const r = s.getBoundingClientRect();
-        return r.left >= row.left - 1 && r.right <= row.right + 1;
-      }),
+      notes: hits.map(name),
+      places,
+      selected: sel.length === 1 ? name(sel[0]) : (sel.length ? "MANY" : null),
+      stops: hits.filter(h => h.tabIndex === 0).length,
+      boxStop: box.tabIndex === 0,
+      named: hits.every(h => (h.getAttribute("aria-label") || "").length > 0),
+      // AC5: the whole LAYOUT group AND the pan, with nothing scrolled away.
+      inView: br.top >= -1 && row.bottom <= window.innerHeight + 1
+              && br.left >= -1 && row.right <= window.innerWidth + 1,
       body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
       cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
     };
@@ -2771,19 +2783,21 @@ function run() {
   test("ROTATE makes its correction from the keyboard alone at 380px", async () => {
     try {
       await editFreshDeck();
-      const before = await slotState();
-      assert.ok(before.notes.length >= 8, `the slot list is ${JSON.stringify(before.notes)}`);
-      assert.strictEqual(before.stops, 1, "the slot list is not a single tab stop");
-      assert.strictEqual(before.named, true, "a slot control has no accessible name");
-      assert.strictEqual(before.inside, true, "the slot list overflows its row");
+      const before = await panState();
+      assert.ok(before.notes.length >= 8, `the pan drew ${JSON.stringify(before.notes)}`);
+      assert.strictEqual(before.stops, 0, "a hit target is its own tab stop");
+      assert.strictEqual(before.boxStop, true, "the pan is not a tab stop");
+      assert.strictEqual(before.named, true, "a hit target has no accessible name");
+      assert.strictEqual(before.inView, true,
+        "the pan and the LAYOUT group are not both visible without scrolling");
       noOverflow(before, "the LAYOUT section");
 
       assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
       await pressActive();
-      const after = await slotState();
-      assert.notDeepStrictEqual(after.notes, before.notes, "ROTATE moved nothing");
-      assert.deepStrictEqual([...after.notes].sort(), [...before.notes].sort(),
-        "ROTATE invented or lost a note");
+      const after = await panState();
+      assert.notDeepStrictEqual(after.places, before.places, "ROTATE moved nothing on the pan");
+      assert.deepStrictEqual(Object.values(after.places).sort(),
+        Object.values(before.places).sort(), "ROTATE invented or lost a place");
       noOverflow(after, "a rotated layout");
       assert.strictEqual(after.cardW, before.cardW, "ROTATE moved --card-w");
 
@@ -2792,7 +2806,7 @@ function run() {
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
       await openEdit();
-      assert.deepStrictEqual((await slotState()).notes, after.notes,
+      assert.deepStrictEqual((await panState()).places, after.places,
         "the saved correction did not come back with the sheet");
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -2803,24 +2817,30 @@ function run() {
   test("the arrow keys choose a position and MOVE swaps it with its neighbour", async () => {
     try {
       await editFreshDeck();
-      const before = await slotState();
-      assert.ok(await tabTo("scale-slot-" + before.pressed), "Tab never reached the slot list");
+      const before = await panState();
+      assert.ok(await tabTo("scale-preview"), "Tab never reached the pan");
       await b.key("ArrowRight", "ArrowRight", 39);
-      const chosen = await slotState();
-      assert.strictEqual(chosen.pressed, before.pressed + 1,
-        "ArrowRight did not move the chosen position");
-      assert.strictEqual(await activeId(), "scale-slot-" + chosen.pressed,
-        "focus did not follow the chosen position");
+      const chosen = await panState();
+      assert.ok(chosen.selected, "ArrowRight selected nothing");
+      assert.notStrictEqual(chosen.selected, before.selected,
+        "ArrowRight did not move the selection");
+      assert.strictEqual(await activeId(), "scale-preview",
+        "the arrow keys moved focus off the pan");
 
       assert.ok(await tabTo("scale-move-r"), "Tab never reached MOVE");
       await pressActive();
-      const moved = await slotState();
-      assert.strictEqual(moved.notes[chosen.pressed], before.notes[chosen.pressed + 1],
-        "MOVE did not move the chosen note");
-      assert.strictEqual(moved.notes[chosen.pressed + 1], before.notes[chosen.pressed],
+      const moved = await panState();
+      assert.strictEqual(moved.selected, chosen.selected,
+        "the selection did not follow the note");
+      const changed = Object.keys(chosen.places)
+        .filter((n) => moved.places[n] !== chosen.places[n]).sort();
+      assert.strictEqual(changed.length, 2, `MOVE is not a swap: ${JSON.stringify(changed)}`);
+      assert.ok(changed.includes(chosen.selected), "MOVE did not move the chosen note");
+      const other = changed.find((n) => n !== chosen.selected);
+      assert.strictEqual(moved.places[chosen.selected], chosen.places[other],
+        "MOVE did not put the note where its neighbour was");
+      assert.strictEqual(moved.places[other], chosen.places[chosen.selected],
         "MOVE did not displace the note it passed");
-      assert.strictEqual(moved.pressed, chosen.pressed + 1,
-        "the chosen position did not follow the note");
       noOverflow(moved, "a moved note");
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -2831,17 +2851,17 @@ function run() {
   test("RESET puts the generated layout back in one keyboard action", async () => {
     try {
       await editFreshDeck();
-      const before = await slotState();
+      const before = await panState();
       assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
       await pressActive();
       await pressActive();
-      assert.notDeepStrictEqual((await slotState()).notes, before.notes,
+      assert.notDeepStrictEqual((await panState()).places, before.places,
         "two rotations moved nothing");
 
       assert.ok(await tabTo("scale-layout-reset"), "Tab never reached RESET");
       await pressActive();
-      const back = await slotState();
-      assert.deepStrictEqual(back.notes, before.notes,
+      const back = await panState();
+      assert.deepStrictEqual(back.places, before.places,
         "RESET did not put the generated layout back");
       noOverflow(back, "the reset layout");
     } finally {
@@ -2856,7 +2876,7 @@ function run() {
       const ids = ["scale-rot-l", "scale-rot-r", "scale-layout-reset",
                    "scale-move-l", "scale-move-r"];
       const small = await b.eval(`
-        const ids = ${JSON.stringify(ids)}.concat(["scale-slot-0"]);
+        const ids = ${JSON.stringify(ids)};
         return ids.map(id => {
           const el = document.getElementById(id);
           const r = el.getBoundingClientRect();
@@ -3204,7 +3224,7 @@ function run() {
       label: (gen.textContent || "").trim(),
       hitsSelf: hit === gen,
       hit: hit ? (hit.id || hit.className || hit.tagName) : null,
-      slots: document.querySelectorAll("#scale-slots .slot").length,
+      slots: document.querySelectorAll("#scale-preview .panhit").length,
       // The preset row used to sit directly above the box and was the tallest
       // single thing between the top of the sheet and this button (owner,
       // 2026-09: "I don't know if we need the preset options" - they went).
@@ -3332,8 +3352,8 @@ function run() {
         const m = await primaryFold();
         assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
         assert.ok(m.slots >= 17,
-          `the worst case regressed: the LAYOUT row lists only ${m.slots} slots`);
-        assertPrimaryVisible(m, `Edit sheet (${m.slots} slots) at ${w}x${h}`);
+          `the worst case regressed: the pan draws only ${m.slots} hit targets`);
+        assertPrimaryVisible(m, `Edit sheet (${m.slots} notes) at ${w}x${h}`);
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
           { label: "the Edit sheet to close" });
@@ -3713,8 +3733,10 @@ function run() {
 
   test("the sheet widens with the viewport on desktop, and the pan with it", async () => {
     // Request 4. Nothing inside the drawer scales with its width on its own -
-    // the seed is a short string and the plate was pinned at a 184px phone
-    // measurement - so widening the surface alone buys an empty band. The
+    // the seed is a short string and the plate is pinned at a phone measurement
+    // (300px since Stage 3, when the plate became the correction surface and
+    // the notes had to be tappable) - so widening the surface alone buys an
+    // empty band. The
     // plate has to grow too, which is why both are asserted together.
     const CLAMP = (vw) => Math.min(Math.max(520, vw * 0.52), 680);
     try {
@@ -3733,8 +3755,8 @@ function run() {
         assert.ok(Math.abs(m.surf - CLAMP(m.vw)) < 1,
           `at ${w}px the sheet is ${m.surf.toFixed(1)}px, expected ` +
           `${CLAMP(m.vw).toFixed(1)}px (clamp(520px, 52vw, 680px))`);
-        assert.ok(Math.abs(m.plate - 240) < 1,
-          `at ${w}px the pan plate is ${m.plate.toFixed(1)}px, expected 240px - ` +
+        assert.ok(Math.abs(m.plate - 340) < 1,
+          `at ${w}px the pan plate is ${m.plate.toFixed(1)}px, expected 340px - ` +
           `a wide sheet around a phone-sized plate is a wide empty band`);
       }
     } finally {
