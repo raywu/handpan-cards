@@ -2772,9 +2772,49 @@ test("the browser's Back button closes the page and pops nothing further", () =>
 test("a pop with no page open is not an invitation to close something", () => {
   const app = boot();
   const deckBefore = app.deckId();
+  // Where focus is BEFORE the stray pop, so the assertion below is about what
+  // the pop did rather than about where boot happens to leave focus.
+  const focusBefore = app.activeId();
   app.popstate();
   assert.strictEqual(app.sheetOpen(), false);
   assert.strictEqual(app.deckId(), deckBefore, "a stray pop moved the practice screen");
+  // The guard's real job. hideSheet() ends in (sheetOpener || addChip).focus(),
+  // so a popstate listener that ran its body with no page open would yank focus
+  // to + ADD on every back press anywhere in the app - out of whatever the user
+  // was actually on. Asserting only sheetOpen() leaves that invisible.
+  assert.strictEqual(app.activeId(), focusBefore,
+    "a stray pop stole focus - the popstate listener ran with no page open");
+});
+
+test("closing a page that is already closed changes nothing", () => {
+  // closeScaleSheet() is reachable from BACK, from Escape and from a save that
+  // finishes, so a double call is a live possibility rather than a contrived
+  // one. TWO things stop it doing damage and they stop different halves:
+  // sheetRouted (already false) is what keeps the second call from popping an
+  // entry this page never pushed, and the !sheetOpen guard is what keeps
+  // hideSheet() from running again. The second half is the one with a visible
+  // symptom - hideSheet ends in (sheetOpener || addChip).focus() - so it is the
+  // one worth asserting on, and the pop count is asserted beside it because the
+  // two guards are easy to mistake for one.
+  const app = boot();
+  app.run("openScaleSheet(document.getElementById('deck-add'))");
+  assert.strictEqual(app.sheetOpen(), true);
+  app.run("closeScaleSheet()");
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1,
+    "closing the page did not pop its own route");
+
+  // Move focus somewhere the close path would not have put it, so a second
+  // hideSheet() has something to visibly steal.
+  app.run("document.getElementById('scale-box').focus()");
+  const parked = app.activeId();
+  app.run("closeScaleSheet()");
+  app.run("closeScaleSheet()");
+
+  assert.strictEqual(app.activeId(), parked,
+    "closing an already-closed page re-ran the close path and stole focus");
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1,
+    "closing an already-closed page popped again - more back presses than the " +
+    "user made, and the last one leaves the app");
 });
 
 test("booting on a page route opens nothing and leaves a clean hash", () => {

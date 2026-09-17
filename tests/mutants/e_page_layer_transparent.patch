@@ -1,0 +1,18 @@
+# kills: the page is a modal dialog with the spec'd anatomy
+# suite: node --test --test-name-pattern ^the.page.is.a.modal.dialog.with.the.spec.d.anatomy$ tests/e2e.test.js
+# The layer goes fully transparent. The surface is capped at 520px, so on any
+# viewport wider than that the practice screen shows through the flanks beside
+# the page - the backdrop the owner asked to be removed, back in the worst
+# possible form: visible, and not tappable.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -399,7 +399,7 @@
+    its margins is still a drawer. Nothing behind it is visible, which is also
+    why the layer-tap-to-close gesture is gone: there is no backdrop to aim at,
+    and on a wide viewport the flanks beside the surface are page, not scrim. */
+-#scale-sheet{position:fixed; inset:0; z-index:30; background:#1f1b15;
++#scale-sheet{position:fixed; inset:0; z-index:30; background:transparent;
+   display:flex; align-items:flex-end; justify-content:center}
+ [hidden]{display:none !important}
+ /* The page surface. The owner called the drawer this replaced "particularly

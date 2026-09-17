@@ -840,7 +840,17 @@ function run() {
               && open.layer.h >= open.viewportH - 1,
       `the page layer does not cover the viewport: ${JSON.stringify(open.layer)}`);
     // Opaque: a translucent layer is a backdrop, and a backdrop is the drawer.
-    assert.doesNotMatch(open.layerBg, /rgba\([^)]*,\s*0?\.\d+\)/,
+    // Read the alpha rather than pattern-matching for one: `transparent`
+    // computes to `rgba(0, 0, 0, 0)`, whose alpha has no decimal point, so a
+    // regex looking for a fractional alpha waves the most transparent layer
+    // of all straight through. A bare `rgb(...)` carries no alpha and is 1.
+    const alphaOf = (css) => {
+      const m = /^rgba?\(([^)]*)\)$/.exec(css.trim());
+      assert.ok(m, `the page layer's background is not a colour: ${css}`);
+      const parts = m[1].split(/[,/]/).map((v) => v.trim());
+      return parts.length < 4 ? 1 : parseFloat(parts[3]);
+    };
+    assert.strictEqual(alphaOf(open.layerBg), 1,
       `the page layer is translucent (${open.layerBg}), so the practice screen ` +
       "still shows through it");
     assert.match(open.title, /Add a scale/i, "the page has no visible title");
@@ -904,6 +914,52 @@ function run() {
     assert.deepStrictEqual(open.wide, ["scale-generate"],
       `full-width primary buttons in the sheet: ${JSON.stringify(open.wide)}`);
   });
+
+  // AC6, the half the reachability test above cannot see. That test filters on
+  // [inert] alone, so it passes just as happily whether aria-hidden is set or
+  // not: inert already removes the background from the tab order and from hit
+  // testing. aria-hidden is what removes it from the SCREEN READER, which is a
+  // separate promise to a separate user, and it needs its own assertion or a
+  // change that drops it ships green.
+  test("the background behind the page is hidden from assistive tech, not only from the pointer",
+    async () => {
+      await freshLoad();
+      const shut = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.ok(shut.length >= 2, "the practice screen has no landmark regions to hide");
+      for (const el of shut) {
+        assert.strictEqual(el.hidden, null, `<${el.tag}> is aria-hidden with no page open`);
+        assert.strictEqual(el.inert, false, `<${el.tag}> is inert with no page open`);
+      }
+
+      await openSheet();
+      const open = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.strictEqual(open.length, shut.length, "the landmark set changed while the page was open");
+      for (const el of open) {
+        assert.strictEqual(el.hidden, "true",
+          `<${el.tag}> is still exposed to a screen reader behind the page`);
+        assert.strictEqual(el.inert, true, `<${el.tag}> is still interactive behind the page`);
+      }
+
+      // And it comes back: a page that leaves the app aria-hidden on close is
+      // worse than one that never hid it.
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the page to close" });
+      const after = await b.eval(`
+        return [...document.querySelectorAll("header, main, footer")]
+          .map(el => ({ tag: el.tagName, hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      for (const el of after) {
+        assert.strictEqual(el.hidden, null, `<${el.tag}> is still aria-hidden after the page closed`);
+        assert.strictEqual(el.inert, false, `<${el.tag}> is still inert after the page closed`);
+      }
+    });
 
   test("Escape closes the sheet and focus returns to + ADD", async () => {
     await freshLoad();
