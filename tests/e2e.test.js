@@ -3735,6 +3735,55 @@ function run() {
     }
   });
 
+  /* Queue row 54, the surviving mutant. Deleting the applyKbOffset() call from
+   * showSheet() used to pass the whole suite, because every keyboard test
+   * shrinks the viewport AFTER opening the sheet and the resize listener then
+   * does the work the direct call was supposed to do. The state the direct
+   * call exists for is the other order: the keyboard is already up when the
+   * sheet opens, which is what happens when the owner taps + ADD with the
+   * board raised by whatever they were doing before. No event fires at open
+   * time, so showSheet() is the only thing that can measure.
+   *
+   * Since applyKbOffset() is now gated on sheetOpen, faking the keyboard
+   * BEFORE the open is genuinely inert - the listener fires and returns - so
+   * anything this test sees on the surface came from showSheet() itself. */
+  test("a sheet opened with the keyboard already up lifts on the first frame", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+
+      await b.fakeKeyboard(400);
+      const closed = await surfaceState();
+      assert.strictEqual(closed.transform, "",
+        "a closed sheet answered the keyboard; the sheetOpen gate is not holding");
+
+      /* Clicked and measured inside ONE evaluation, with no turn of the event
+       * loop in between. That is the whole point: a visualViewport event does
+       * arrive shortly after the open (the sheet changes the layout enough to
+       * produce one) and would hide the missing call, so anything asserted
+       * after an await proves nothing about showSheet(). */
+      const open = await b.eval(`
+        document.getElementById("deck-add").click();
+        const surf = document.getElementById("scale-sheet").firstElementChild;
+        const vv = window.visualViewport;
+        return {
+          transform: surf.style.transform, maxHeight: surf.style.maxHeight,
+          innerHeight: window.innerHeight,
+          vvHeight: vv.height, vvOffsetTop: vv.offsetTop, vvScale: vv.scale,
+        };
+      `);
+      const off = Math.max(0, open.innerHeight - open.vvHeight - open.vvOffsetTop);
+      assert.ok(off > 0, `the fake keyboard did not shrink anything: ${JSON.stringify(open)}`);
+      assert.strictEqual(open.transform, `translateY(-${off}px)`,
+        "the sheet opened under a keyboard that was already up and did not lift");
+      assert.strictEqual(open.maxHeight, `${Math.max(0, Math.round(open.vvHeight - 8))}px`,
+        "the sheet opened under a keyboard that was already up and was not capped");
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* Queue row 88. hideSheet() cleared the translate and left the cap behind,
    * so a sheet closed while the keyboard was still up kept maxHeight pinned to
    * whatever was left of the visual viewport. Nothing renders in that window -
