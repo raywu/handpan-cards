@@ -27,8 +27,9 @@ The scale engine that generates and ranks those cards is six modules under
 `src/engine/naming.js` (chord symbols and subtitles),
 `src/engine/select.js` (which chords a pan gets and in what order),
 `src/engine/layout.js` (the tonefield solver and label sizes) and
-`src/engine/share.js` (URL encoding for generated decks). `docs/ENGINE-SPEC.md`
-is the spec; `docs/SCALE_ENGINE_PLAN.md` records the decisions behind it.
+`src/engine/share.js` (URL encoding for the seed behind a generated deck).
+`docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
+decisions behind it.
 
 ## Use it
 
@@ -37,21 +38,23 @@ is the spec; `docs/SCALE_ENGINE_PLAN.md` records the decisions behind it.
   and voicing. **Notes -> Name** reverses it (read the diagram, name the chord).
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
-- **+ ADD** (at the end of the deck row) opens the scale sheet: type your pan
-  as a ding in brackets followed by the top notes, e.g. `(D) A C D E F G A C`,
-  with any bottom notes after a `|`. The line under the box shows how the notes
-  were read as you type; pick a palette and, if your pan is mirrored,
-  LEFT-FIRST; then GENERATE CARDS. Regenerating the same scale replaces that
-  deck in place. The sheet is a real page, not an overlay: opening it pushes
-  `#add`, and EDIT pushes `#edit-<id>`, so the back gesture closes the sheet
-  instead of leaving the app. A page route pasted into the address bar opens
-  nothing - it is replaced away at boot, because a restored page with no entry
-  behind it is one back cannot leave.
-- **Your scales persist** in localStorage and come back on the next visit. EDIT
-  reopens one with its name and notes filled in; DELETE removes it and asks for
-  a second tap to confirm. **SHARE** copies a URL that carries the whole scale,
-  so a generated deck opens on someone else's phone with no account and no
-  server.
+- **+ ADD** (the first chip in the deck row) opens the scale sheet: type your
+  pan as a ding in brackets followed by the top notes, e.g.
+  `(D) A C D E F G A C`, with any bottom notes after a `|`. The line under the
+  box shows how the notes were read as you type; pick a palette and, if your
+  pan is mirrored, LEFT-FIRST; then GENERATE CARDS. Regenerating the same
+  scale replaces that deck in place. The sheet is a real page, not an overlay:
+  opening it pushes `#add`, and reopening a saved one pushes `#edit-<id>`, so
+  the back gesture closes the sheet instead of leaving the app. A page route
+  pasted into the address bar opens nothing - it is replaced away at boot,
+  because a restored page with no entry behind it is one back cannot leave.
+- **Your scales persist** in localStorage and come back on the next visit.
+  Tapping a custom deck's chip when that deck is already selected reopens the
+  sheet with its name and notes filled in - that is the one way in, and the
+  pencil on the chip marks it. DELETE removes the deck and asks for a second
+  tap to confirm. A generated deck also travels as a `#s=` link: the app opens
+  one from the address bar with no account and no server, though nothing in
+  the UI builds or copies that link yet.
 
 ## Tests
 
@@ -90,7 +93,7 @@ What is covered:
   the engine module list and the mutant corpus and fails if the counts and
   names on this page have gone stale.
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
-  and touch navigation, reload persistence, clipping at a 380px viewport, and
+  navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
 - **Mutation gate** - 312 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one

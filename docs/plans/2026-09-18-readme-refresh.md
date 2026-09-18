@@ -321,6 +321,12 @@ Outside voice (6):
     README edit.** First loosened to a bare upper bound; the PR-88 reviewer
     showed that hole let `311` ship on a 312-patch tree and survived an
     adversarial `12 mutant patches`. Now a BAND: `n * 0.9 <= said <= n`.
+    **What the band does and does not catch.** At n=312 the floor is 280, so
+    `311` still passes - the round-2 reviewer proved it. The band is a
+    gross-drift check (it kills the `59`-against-`96` class of staleness this
+    file exists to prevent, and it killed the adversarial `12`), deliberately
+    traded against equality so that every lane adding a mutant does not also
+    have to edit the README. Off-by-a-lane drift is accepted, not caught.
 11. **P3 - the plan's staleness table was itself stale:** "11 node suites"
     listing ten, and "7 python suites" which becomes 8 when this PR lands.
     Corrected, and the new file is named in Step 1.
@@ -391,5 +397,42 @@ were factual, not structural.
   `docs/plans/2026-09-16-remaining-work-coordination.md` (+1/-1), outside this
   lane's declared ownership. It closes out lane S6's status row, which is real
   bookkeeping that would be lost by reverting. Disclosed rather than undone.
+
+NO UNRESOLVED DECISIONS
+
+### PR #88 review round 2 (FAIL, fixed)
+
+A second fresh reviewer at `f564dc3` returned FAIL on three false factual
+claims in `README.md`. All three were verified against the source before
+being fixed; none touches code.
+
+- **B1** `README.md:52` promised a **SHARE** control that copies a scale URL.
+  There is none: `grep -c 'clipboard\|execCommand' index.html` is 0, and
+  `shareLink()` (`index.html:3635`) has exactly one caller in the repo,
+  `tests/app.test.js:936`. Inbound `#s=` links ARE consumed
+  (`index.html:5118-5119`), so the sentence was rewritten to describe only
+  that, and to say plainly that nothing in the UI builds or copies the link
+  yet. This lane introduced the claim; main's older text was stale but not
+  false.
+- **B2** `README.md:40` put **+ ADD** "at the end of the deck row". It is the
+  FIRST chip: `index.html:675` authors it first, and `buildChips()`
+  (`index.html:4099-4100`) clears the nav and re-prepends it on every rebuild.
+  `tests/mutants/e_add_chip_appended_last.patch` exists to keep it there, so
+  the README was asserting the state a green mutant forbids. Inherited from
+  main, in scope because this lane's job is a true README.
+- **B3** `README.md:93` claimed e2e "touch navigation". `cdp.js:234` defines
+  `swipe()` and nothing calls it; the swipe handler (`index.html:5085-5090`)
+  has no browser-level test. "and touch" dropped.
+
+Also folded in, from the same review: the EDIT gesture is a second tap on the
+already-selected custom chip (there is no EDIT button - `index.html:4129-4131`
+says so normatively), and `src/engine/share.js` encodes the SEED, never the
+generated deck (`src/engine/share.js:7-9`).
+
+Left as recorded nits, not changed: the Step 1 code sketch above still shows
+the pre-fix test and is superseded by these findings sections; `cdp.js`'s
+unused `swipe()` is dead code for another lane; the boundary exception
+`7992396` stands (the reviewer agreed reverting it would discard real
+bookkeeping).
 
 NO UNRESOLVED DECISIONS
