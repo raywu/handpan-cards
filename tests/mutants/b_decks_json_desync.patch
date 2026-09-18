@@ -12,7 +12,6 @@
 # This is the ONE mutant that calls apply_json(sync=False); every
 # other b_* moves both copies together.
 diff --git a/index.html b/index.html
-index 6fa1267..9f070dd 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

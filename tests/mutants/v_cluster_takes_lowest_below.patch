@@ -2,7 +2,6 @@
 # kills: D2 "every chord tone moves to its HIGHEST instance below the root".
 # Here a clustered chord tone takes the LOWEST instance below the root, so Pygmy Gm7b5 from G5 takes F4 instead of F5.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index 869291e..378ba43 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
 @@ -296,7 +296,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

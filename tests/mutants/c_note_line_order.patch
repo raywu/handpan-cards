@@ -2,7 +2,6 @@
 # suite: python3 -m unittest -k test_note_and_number_lines_print_in_spelling_order tests.test_print tests.test_pdf_build
 # The note line runs in chord-spelling order from the root, not pitch order.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index f81d582..d8418a8 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -152,7 +152,7 @@ def bottom_lines(c, x, y, w, fields, roots, meta, y_names, y_nums):

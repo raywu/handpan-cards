@@ -4,7 +4,6 @@
 # before the first keystroke is the text hint, and the plate enters the flow on
 # the first character.
 diff --git a/index.html b/index.html
-index 79d9295..935d7cc 100644
 --- a/index.html
 +++ b/index.html
 @@ -4506,8 +4506,7 @@ function showPanPreview(seed) {

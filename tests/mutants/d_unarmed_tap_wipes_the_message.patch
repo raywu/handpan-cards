@@ -4,7 +4,6 @@
 # the sheet - touching the seed field blanks the parse line that explains why
 # the box is red and Generate is dead.
 diff --git a/index.html b/index.html
-index 93dabcf..866adc1 100644
 --- a/index.html
 +++ b/index.html
 @@ -4875,7 +4875,6 @@ function disarmDelete() {

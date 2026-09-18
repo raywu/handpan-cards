@@ -4,7 +4,6 @@
 # count drops from 1 to 0. Both tones sit ABOVE the root, so the cluster
 # rule is satisfied and only the badge test sees it.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..0958347 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -92,7 +91,6 @@ index 1fdc9e4..0958347 100644
          "subtitle": "DIMINISHED",
          "fields": [
 diff --git a/index.html b/index.html
-index 6fa1267..5b81ad5 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

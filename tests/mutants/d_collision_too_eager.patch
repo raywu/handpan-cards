@@ -1,7 +1,6 @@
 # kills: the collision refusal never fires on an options-only edit, a new scale, a re-save or ADD
 # suite: node --test --test-name-pattern ^the.collision.refusal.never.fires.on.an.options.only.edit..a.new.scale..a.re.save.or.ADD$ tests/app.test.js
 diff --git a/index.html b/index.html
-index 3509543..cfc06ee 100644
 --- a/index.html
 +++ b/index.html
 @@ -3475,7 +3475,7 @@ function runGenerate() {

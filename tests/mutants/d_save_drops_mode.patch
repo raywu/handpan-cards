@@ -1,7 +1,6 @@
 # kills: deck and mode round-trip through localStorage (subset semantics)
 # suite: node --test --test-name-pattern ^deck.and.mode.round.trip.through.localStorage..subset.semantics.$ tests/app.test.js
 diff --git a/index.html b/index.html
-index b018e51..728ab20 100644
 --- a/index.html
 +++ b/index.html
 @@ -2401,7 +2401,6 @@ const save = () => {

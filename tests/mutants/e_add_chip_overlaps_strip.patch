@@ -6,7 +6,6 @@
 # chip returns the button, so tapping "D AMARA 9" opens the create sheet
 # instead of switching decks. That is the mis-tap normal flow prevents.
 diff --git a/index.html b/index.html
-index 574a311..dd72f52 100644
 --- a/index.html
 +++ b/index.html
 @@ -114,7 +114,8 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

@@ -24,7 +24,6 @@
 # to `case "$cmd"` - the mutation itself is unchanged, only its trailing
 # context line.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
-index 2165c5b..9f7a6d9 100755
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
 @@ -200,8 +200,8 @@ for p in "${PATCHES[@]}"; do

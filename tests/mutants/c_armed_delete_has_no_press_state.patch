@@ -4,7 +4,6 @@
 # specificity as the shared :active rule and comes later in the file. The tap
 # that destroys the deck becomes the only press on the page with no answer.
 diff --git a/index.html b/index.html
-index 3effb4a..42e774a 100644
 --- a/index.html
 +++ b/index.html
 @@ -662,7 +662,6 @@ button.nav:active{background:#2e281e}

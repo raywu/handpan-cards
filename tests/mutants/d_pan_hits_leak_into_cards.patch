@@ -8,7 +8,6 @@
 # null opts and takes boot() down with it - which kills every test in the file
 # and proves nothing about the one named above.
 diff --git a/index.html b/index.html
-index 79d9295..244b827 100644
 --- a/index.html
 +++ b/index.html
 @@ -3874,8 +3874,8 @@ function pan(d, ch, opts) {

@@ -4,7 +4,6 @@
 # <body> (DELETE) or is left on "+ ADD" (GENERATE / SAVE CHANGES) instead of
 # on the deck that is now showing.
 diff --git a/index.html b/index.html
-index 7ea4e13..8a0899a 100644
 --- a/index.html
 +++ b/index.html
 @@ -3004,10 +3004,6 @@ function selectDeck(id) {

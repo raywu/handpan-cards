@@ -6,7 +6,6 @@
 # green: the check that stood there re-declared the ratio as a literal and
 # compared it against itself, so no ratio value could falsify it.
 diff --git a/index.html b/index.html
-index c03540b..87596b1 100644
 --- a/index.html
 +++ b/index.html
 @@ -3523,7 +3523,7 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");

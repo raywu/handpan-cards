@@ -3,7 +3,6 @@
 # Multiplies a field-count density factor back on top of the radius,
 # the double-count that made Pygmy's labels smaller than main ships.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index 0433f0d..05020e7 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -126,9 +126,9 @@ def label_ratio(zone):

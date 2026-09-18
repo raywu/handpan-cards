@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^flipping.any.single.character.of.a.valid.string.is.rejected$ tests/share.test.js
 # kills: decode: the integrity check must reject a flipped character anywhere in the string
 diff --git a/src/engine/share.js b/src/engine/share.js
-index a40e4d3..ec387e2 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
 @@ -265,7 +265,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

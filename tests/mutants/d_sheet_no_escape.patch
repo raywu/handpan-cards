@@ -3,7 +3,6 @@
 # Escape inside the sheet does nothing, so the modal can only be dismissed
 # by pointer - it is a trap for the keyboard.
 diff --git a/index.html b/index.html
-index 16984c6..d72ecce 100644
 --- a/index.html
 +++ b/index.html
 @@ -2483,7 +2483,6 @@ document.addEventListener("keydown", e => {

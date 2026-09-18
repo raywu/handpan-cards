@@ -6,7 +6,6 @@
 # different test) do not see it - only the cluster rule in CLAUDE.md rule 3
 # catches it.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..f8e0d14 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -96,7 +95,6 @@ index 1fdc9e4..f8e0d14 100644
          ],
          "roots": [
 diff --git a/index.html b/index.html
-index 6fa1267..ffec7b1 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

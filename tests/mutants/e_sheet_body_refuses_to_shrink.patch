@@ -5,7 +5,6 @@
 # is pushed past the cap. Note this is the "it fits on MY phone" defect - the
 # eight-note Edit sheet clears 390x844 and only fails on a short screen.
 diff --git a/index.html b/index.html
-index 140fa68..fe8ef63 100644
 --- a/index.html
 +++ b/index.html
 @@ -417,7 +417,7 @@ button.nav:active{background:#2e281e}

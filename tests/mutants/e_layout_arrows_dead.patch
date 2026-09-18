@@ -3,7 +3,6 @@
 # The arrow keys stop moving the selection, so the only way left to pick a
 # note is a pointer - exactly the drag-only path D5 forbids.
 diff --git a/index.html b/index.html
-index 79d9295..bd53766 100644
 --- a/index.html
 +++ b/index.html
 @@ -4846,8 +4846,8 @@ previewBox.addEventListener("click", (e) => {

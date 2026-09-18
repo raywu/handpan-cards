@@ -6,7 +6,6 @@
 # the right edge at rest, off-screen at 380, 390 and 430 CSS px alike and
 # reachable only by scrolling the row.
 diff --git a/index.html b/index.html
-index 574a311..8c909d8 100644
 --- a/index.html
 +++ b/index.html
 @@ -3362,7 +3362,6 @@ function buildChips() {

@@ -2,7 +2,6 @@
 # kills: the ENGINE-SPEC section 8 cap itself. With no trim the 12-note pan
 # ships all 27 collapsed candidates instead of 25.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..087d5da 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -106,7 +106,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

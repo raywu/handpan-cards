@@ -4,7 +4,6 @@
 # chord invariant and validate.py stay green; only the note-name <-> MIDI
 # pitch-class check (and the layout table) notice.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..7280fd4 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -92,7 +91,6 @@ index 1fdc9e4..7280fd4 100644
          null,
          "Ding"
 diff --git a/index.html b/index.html
-index 6fa1267..e3f9867 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -3,7 +3,6 @@
 # The carried correction is re-attached without being held to the seed
 # parseSeed just approved, so a corrupt link is repaired instead of refused.
 diff --git a/src/engine/share.js b/src/engine/share.js
-index 935ecbd..35004c4 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
 @@ -329,7 +329,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

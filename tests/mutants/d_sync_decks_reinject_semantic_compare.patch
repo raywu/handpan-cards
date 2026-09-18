@@ -7,7 +7,6 @@
 # though the bytes on disk no longer match `want` - exactly the gap
 # CLAUDE.md's "Known pitfalls" re-injection note exists to close.
 diff --git a/tools/sync_decks.py b/tools/sync_decks.py
-index f403e5f..bc10489 100755
 --- a/tools/sync_decks.py
 +++ b/tools/sync_decks.py
 @@ -71,7 +71,7 @@ def main(argv):

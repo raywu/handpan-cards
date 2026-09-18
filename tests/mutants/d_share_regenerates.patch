@@ -3,7 +3,6 @@
 # Consuming a link builds the deck twice - the shape a rebuild-per-read would
 # have. ENGINE-SPEC section 11: generation runs ONCE per restore.
 diff --git a/index.html b/index.html
-index b018e51..5fb26ef 100644
 --- a/index.html
 +++ b/index.html
 @@ -2457,6 +2457,7 @@ function openShare(text) {

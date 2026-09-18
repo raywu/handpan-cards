@@ -4,7 +4,6 @@
 # mock claims to show a layout the box no longer describes - the exact way a
 # preview lies, now that the plate never leaves the flow.
 diff --git a/index.html b/index.html
-index 79d9295..f875565 100644
 --- a/index.html
 +++ b/index.html
 @@ -4464,9 +4464,9 @@ let panState = "example";

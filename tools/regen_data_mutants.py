@@ -241,6 +241,15 @@ for name, (header, replacements, mutator) in MUTANTS.items():
         apply_json(mutator, sync=name not in DESYNC_ONLY)
     diff = sh("git", "diff", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
+    # Drop git's `index <preimage>..<postimage>` lines. They name the blob this
+    # patch was cut from, which the next commit to the file invalidates, and
+    # nothing reads them: the sweep applies with plain `git apply` and reverts
+    # with `git apply -R`, neither of which resolves a blob by hash. Keeping
+    # them just means every regeneration ships a fresh set of claims that are
+    # false by the following commit (queue row 86, N9). Pinned by
+    # tests/mutation_harness.test.js.
+    diff = "\n".join(l for l in diff.split("\n")
+                      if not re.match(r"index [0-9a-f]{7,40}\.\.[0-9a-f]{7,40}", l))
     with open(f"{OUT}/{name}.patch", "w") as f:
         f.write("\n".join(header) + "\n" + diff)
     subprocess.run(["git", "checkout", "--"] + TRACKED, check=True)

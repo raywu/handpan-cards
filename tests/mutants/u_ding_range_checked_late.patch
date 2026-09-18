@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^the.ding.is.resolved.before.any.other.token..so.its.range.comes.first$ tests/core.test.js
 # kills: the ding is range-checked BEFORE the separator checks and the lex loop, so `(B9) Zz3` is NOTE_OUT_OF_RANGE and section 3 precedence holds
 diff --git a/src/engine/core.js b/src/engine/core.js
-index 4605b49..3227271 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
 @@ -330,7 +330,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

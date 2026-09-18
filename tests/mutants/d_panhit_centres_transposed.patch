@@ -4,7 +4,6 @@
 # number of correctly-labelled targets - they are all in the wrong places, and
 # every tap on the pan selects a note reflected across the diagonal.
 diff --git a/index.html b/index.html
-index 79d9295..e386bca 100644
 --- a/index.html
 +++ b/index.html
 @@ -3866,7 +3866,7 @@ function pan(d, ch, opts) {

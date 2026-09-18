@@ -6,7 +6,6 @@
 # what is being typed. The guard used to live in buildSlots(); it moved
 # into syncLayoutOrder when the slot list died, and nothing else checks it.
 diff --git a/index.html b/index.html
-index 79d9295..6580691 100644
 --- a/index.html
 +++ b/index.html
 @@ -4283,7 +4283,6 @@ const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;

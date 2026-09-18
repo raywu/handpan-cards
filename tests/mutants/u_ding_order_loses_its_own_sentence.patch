@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^NOTE_OUT_OF_ORDER.names.the.ding.as.the.ding..and.an.explicit.note.plainly$ tests/core.test.js
 # kills: a top note failing against the DING takes the section 2 `ding` alternate, not the generic ordering sentence
 diff --git a/src/engine/core.js b/src/engine/core.js
-index 4605b49..5fe109d 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
 @@ -171,12 +171,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

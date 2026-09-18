@@ -3,7 +3,6 @@
 # The reason is rendered in the neutral tier, so an error reads exactly like
 # a success and the three-tier colour scale carries no information.
 diff --git a/index.html b/index.html
-index f489642..2110dd9 100644
 --- a/index.html
 +++ b/index.html
 @@ -3945,7 +3945,7 @@ function updateParse() {

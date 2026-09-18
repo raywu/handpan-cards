@@ -3,7 +3,6 @@
 # The armed check goes away, so the first tap deletes - the one-tap destruction
 # the owner asked to be gated on 2026-09-17.
 diff --git a/index.html b/index.html
-index 93dabcf..2d208f1 100644
 --- a/index.html
 +++ b/index.html
 @@ -4887,7 +4887,8 @@ delBtn.onclick = () => {

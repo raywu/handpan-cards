@@ -7,7 +7,6 @@
 # right half of its left-hand neighbour and wins the hit test as the later
 # sibling. Tapping inside Palette 3 selects Palette 4.
 diff --git a/index.html b/index.html
-index 574a311..c0b96b3 100644
 --- a/index.html
 +++ b/index.html
 @@ -387,13 +387,13 @@ button.nav:active{background:#2e281e}

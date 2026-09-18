@@ -3,7 +3,6 @@
 # LEFT-FIRST lights up but the choice never reaches the engine, so a mirrored
 # pan is always laid out the wrong way round.
 diff --git a/index.html b/index.html
-index a127d86..4a807de 100644
 --- a/index.html
 +++ b/index.html
 @@ -2819,7 +2819,7 @@ function buildDegrees(selected) {

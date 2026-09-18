@@ -7,7 +7,6 @@
 # root pan (D/E/G/A each appear twice) now admits extra same-register
 # alternates and its exact card order changes.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index acf48ca..1e90fee 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -320,7 +320,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

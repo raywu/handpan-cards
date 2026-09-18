@@ -3,7 +3,6 @@
 # Amara G5 voiced G4 + C5: a fourth above the root, not a fifth. C5 sits
 # above G4, so the cluster rule is satisfied and only the fifth check fails.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..5aa33d8 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -91,7 +90,6 @@ index 1fdc9e4..5aa33d8 100644
          "roots": [
            6
 diff --git a/index.html b/index.html
-index 6fa1267..32bfa5d 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

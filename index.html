@@ -4599,9 +4599,18 @@ function updateParse() {
    CSS can react to the keyboard; the gap between the two viewports is
    exactly how far the sheet has to translate up to stay above it.
    kbOffset() is the pure half of that: given the three viewport numbers,
-   the translate distance. It is unit-tested directly (tests/app.test.js) -
-   headless Chromium cannot open a real keyboard, so that pure function is
-   the only part of this fix CI can verify (see TODOS.md and the PR body). */
+   the translate distance. It is unit-tested directly (tests/app.test.js),
+   and the WIRING around it is covered too: shadowing visualViewport.height
+   on the instance and firing a real resize drives applyKbOffset end to end
+   in e2e (b.fakeKeyboard in tests/helpers/cdp.js), so the listener, both
+   pure functions and both style writes are all under test.
+   What CI still cannot verify is the PREMISE - that a real iOS keyboard
+   shrinks visualViewport.height - because no CDP soft-keyboard emulation
+   exists. That stays an owner-device claim (TODOS.md, queue rows 51/67).
+   One more thing no test here can see: the viewport meta above carries
+   interactive-widget=resizes-content. On an engine that honours it the
+   LAYOUT viewport shrinks instead, innerHeight - vv.height is 0, and this
+   whole block correctly does nothing. */
 function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
   return Math.max(0, innerHeight - vvHeight - vvOffsetTop);
 }
@@ -4625,11 +4634,44 @@ function kbCap(innerHeight, vvHeight) {
 }
 function applyKbOffset() {
   const vv = window.visualViewport;
-  if (!vv || !sheetSurf) return;
-  const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
-  const cap = kbCap(window.innerHeight, vv.height);
-  sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
-  sheetSurf.style.maxHeight = cap > 0 ? `${cap}px` : "";
+  /* Gated on sheetOpen as well as on the two objects. The listeners below are
+   * bound for the life of the page and never removed, so without this a
+   * resize or scroll arriving AFTER hideSheet() re-applies the lift and the
+   * cap to a sheet nobody is looking at - the keyboard dismissing itself as
+   * the sheet closes is the ordinary way that happens on iOS (queue rows 55,
+   * 88). showSheet() sets sheetOpen before it calls this, and
+   * hideSheet() clears it before it resets the two styles, so the open path is
+   * unaffected and the teardown is the last word. */
+  if (!vv || !sheetSurf || !sheetOpen) return;
+  /* vv.height is the VISUAL viewport, which a pinch-zoom shrinks in exactly
+   * the way a keyboard does - so without this branch the sheet lifted and
+   * capped itself for a reader who was only zooming in (queue row 87).
+   * While the scale is up the page makes NO claim: both writes are cleared
+   * together. That is a policy, not arithmetic, because no arithmetic gets
+   * both halves right here. The surface is laid out at 100dvh, so the moment
+   * the page is zoomed it is TALLER than the screen and "keep it above the
+   * keyboard" and "leave the zoom alone" stop being simultaneously
+   * satisfiable; any formula that splits the difference ends up lifting on one
+   * measurement and capping on another, which is what the first version of
+   * this fix did (it scaled vv.offsetTop, which is already in layout px, so
+   * the lift decayed to zero as the reader panned while the cap went on
+   * insisting a keyboard was there).
+   * Clearing is safe here only because #scale-box and its siblings are pinned
+   * at 16px: iOS auto-zooms a focused input below that, and the fix must not
+   * hand itself off exactly when the keyboard opens. At 16px every zoom is two
+   * deliberate fingers, and the reader who zoomed can pan.
+   * The tolerance is for scales that do not land exactly on 1 coming back from
+   * a pinch; a sub-percent residue is not a zoom. */
+  const zoomed = vv.scale > 1.01;
+  const off = zoomed ? 0 : kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+  const cap = zoomed ? 0 : kbCap(window.innerHeight, vv.height);
+  /* Written only on change: this handler is bound to visualViewport's `scroll`
+   * as well, which fires at frame rate while a zoomed page is panned, and each
+   * unconditional style write forces a style recalc for no reason. */
+  const t = off > 0 ? `translateY(-${off}px)` : "";
+  const m = cap > 0 ? `${cap}px` : "";
+  if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
+  if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", applyKbOffset);
@@ -4739,10 +4781,16 @@ function openEditSheet(d, opener) {
 function hideSheet() {
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
-  // Undo any keyboard translate before the next open, or a sheet that opens
+  // Undo BOTH keyboard writes before the next open, or a sheet that opens
   // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
-  // previous session's offset for one frame.
-  if (sheetSurf) sheetSurf.style.transform = "";
+  // previous session's offset for one frame. The cap is the half that used to
+  // be left behind (queue row 88): applyKbOffset() writes transform and
+  // maxHeight together, so the teardown has to undo them together or the two
+  // halves drift apart the moment anything else learns to call hideSheet().
+  if (sheetSurf) {
+    sheetSurf.style.transform = "";
+    sheetSurf.style.maxHeight = "";
+  }
   editingId = null;
   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
   (sheetOpener || addChip).focus();
@@ -4883,6 +4931,22 @@ function disarmDelete() {
   say("");
 }
 delBtn.onclick = () => {
+  /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
+     Deleting this line reddens nothing, and that is correct rather than a gap:
+     no state the app can enter delivers a click here with editingId null.
+     delRow carries `hidden` whenever setSheetMode() has run for a null
+     editingId - it sets `hidden` one line after `editingId = null` on the add
+     path and clears it one line after `editingId = d.id` on the edit path -
+     and `[hidden]` above is `display:none !important`, which beats
+     `.editrow{display:flex}`. The correspondence is not exact: hideSheet()
+     sets `editingId = null` without calling setSheetMode(), so between that
+     and the next open delRow is visible markup with a null editingId. It is
+     still unclickable, because #scale-sheet itself is `hidden` for the whole
+     of that window. Either way a display:none button takes no pointer event
+     and no focus, so the only way to reach this branch is a synthetic
+     .onclick() call, and a test that made one would be testing the mutant
+     rather than the owner. Left in because the lines it depends on sit in two
+     other functions. */
   if (!editingId) return;
   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
      deck even when deleteDeck turns out to have nothing to remove, and the

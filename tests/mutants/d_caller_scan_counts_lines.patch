@@ -7,7 +7,6 @@
 # live here is a test's own oracle, and index.html can only ever hold one shape
 # at a time, so only the synthetic assertions can prove this one is caught.
 diff --git a/tests/app.test.js b/tests/app.test.js
-index ce0745a..7dc5e98 100644
 --- a/tests/app.test.js
 +++ b/tests/app.test.js
 @@ -2085,7 +2085,7 @@ function scanNames(source, name) {

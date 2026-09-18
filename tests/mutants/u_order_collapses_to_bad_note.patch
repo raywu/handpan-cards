@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^a.bottom.note.below.the.octave.inferred.for.the.note.before.it.says.so$ tests/core.test.js
 # kills: a bottom note out of order is diagnosed as such, not collapsed back into the generic "is not a note" - the exact regression the owner reported
 diff --git a/src/engine/core.js b/src/engine/core.js
-index d5690cb..455efa0 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
 @@ -382,8 +382,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

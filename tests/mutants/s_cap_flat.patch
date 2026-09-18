@@ -3,7 +3,6 @@
 # review 2026-09-08 from a flat 25. Pinned flat the cap stops growing with the
 # pan, so the 18-field Pygmy deck caps at 25 and loses Gm7b5, Bbm7 and Cm7.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..ace122c 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -106,7 +106,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

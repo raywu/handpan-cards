@@ -3,7 +3,6 @@
 # "beyond the twelfth"; at 13 the 12-field worked example is unmoved but the
 # 18-field Pygmy pan caps at 30 instead of 31 and drops a card.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..4269993 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -23,7 +23,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

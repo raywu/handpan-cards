@@ -3588,13 +3588,9 @@ function run() {
    *    reason kbCap() reads both - so the proxy never exercises the case the
    *    code exists to handle. The comment above already called it "the
    *    friendly case, not the honest one"; this is the honest one. */
-  const raiseKeyboard = (vvHeight) => b.eval(`
-    const vv = window.visualViewport;
-    Object.defineProperty(vv, "height", { value: ${vvHeight}, configurable: true });
-    Object.defineProperty(vv, "offsetTop", { value: 0, configurable: true });
-    vv.dispatchEvent(new Event("resize"));
-    return { innerHeight: window.innerHeight, vvHeight: vv.height };
-  `);
+  /* Lives in tests/helpers/cdp.js now, so the pinch-zoom lever (setPageScale)
+   * and the teardown (clearKeyboard) sit beside it and every test in the repo
+   * shares ONE keyboard stub. */
 
   /* How much of the seed box a thumb can actually read: its own rect clipped
    * by .sheetbody's scrollport and then by the VISUAL viewport, AFTER scrolling the
@@ -3658,11 +3654,11 @@ function run() {
       await openEdit();
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
-        await raiseKeyboard(745 - kb);
+        await b.fakeKeyboard(745 - kb);
         assertSeedBoxReadable(await seedBoxVisibility(),
           `the Edit page with a ${kb}px keyboard`);
       }
-      await raiseKeyboard(745);
+      await b.clearKeyboard();
       await b.key("Escape", "Escape", 27);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit page to close" });
@@ -3674,12 +3670,265 @@ function run() {
         { label: "the preview to render" });
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
-        await raiseKeyboard(745 - kb);
+        await b.fakeKeyboard(745 - kb);
         assertSeedBoxReadable(await seedBoxVisibility(),
           `the Add page with a ${kb}px keyboard`);
       }
     } finally {
-      await raiseKeyboard(900);
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Reads what applyKbOffset actually wrote onto the sheet surface, plus the
+   * two viewport numbers it computed them from. Returning the inputs beside
+   * the outputs is what lets the assertions DERIVE their expectations instead
+   * of hard-coding pixels: this file shares one browser session, and a
+   * neighbouring test that leaves a different viewport set would otherwise
+   * turn a real regression into a confusing pixel mismatch. */
+  const surfaceState = () => b.eval(`
+    const surf = document.getElementById("scale-sheet").firstElementChild;
+    const vv = window.visualViewport;
+    return {
+      transform: surf.style.transform, maxHeight: surf.style.maxHeight,
+      innerHeight: window.innerHeight,
+      vvHeight: vv.height, vvOffsetTop: vv.offsetTop, vvScale: vv.scale,
+    };
+  `);
+
+  /* The wiring row 54 called invisible to CI. It is not: a shrunken visual
+   * viewport driven through a real resize event runs applyKbOffset end to end
+   * against the shipped file, so the listener, the two pure functions and both
+   * style writes are all under test. What stays unverifiable is only the
+   * PREMISE - that a real iOS keyboard shrinks visualViewport.height - which
+   * is an owner-device claim (queue rows 51, 67) and always will be. */
+  test("the sheet answers a shrunken visual viewport by lifting and capping the surface", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.fakeKeyboard(400);
+
+      const m = await surfaceState();
+      const off = Math.max(0, m.innerHeight - m.vvHeight - m.vvOffsetTop);
+      const cap = Math.max(0, Math.round(m.vvHeight - 8));
+      assert.ok(off > 0,
+        `the fake keyboard did not shrink anything: innerHeight ${m.innerHeight} `
+        + `vs vv.height ${m.vvHeight}`);
+      assert.strictEqual(m.transform, `translateY(-${off}px)`,
+        `the surface did not lift clear of the keyboard line`);
+      assert.strictEqual(m.maxHeight, `${cap}px`,
+        `the surface was not capped to what is left of the visual viewport`);
+
+      // And the teardown is part of the contract, not an afterthought: a
+      // leaked shadowed property would follow this session into every test
+      // below it.
+      await b.clearKeyboard();
+      const back = await surfaceState();
+      assert.strictEqual(back.vvHeight, back.innerHeight,
+        "clearKeyboard did not restore the visual viewport");
+      assert.strictEqual(back.transform, "", "the lift outlived the keyboard");
+      assert.strictEqual(back.maxHeight, "", "the cap outlived the keyboard");
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Queue row 54, the surviving mutant. Deleting the applyKbOffset() call from
+   * showSheet() used to pass the whole suite, because every keyboard test
+   * shrinks the viewport AFTER opening the sheet and the resize listener then
+   * does the work the direct call was supposed to do. The state the direct
+   * call exists for is the other order: the keyboard is already up when the
+   * sheet opens, which is what happens when the owner taps + ADD with the
+   * board raised by whatever they were doing before. No event fires at open
+   * time, so showSheet() is the only thing that can measure.
+   *
+   * Since applyKbOffset() is now gated on sheetOpen, faking the keyboard
+   * BEFORE the open is genuinely inert - the listener fires and returns - so
+   * anything this test sees on the surface came from showSheet() itself. */
+  test("a sheet opened with the keyboard already up lifts on the first frame", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+
+      await b.fakeKeyboard(400);
+      const closed = await surfaceState();
+      assert.strictEqual(closed.transform, "",
+        "a closed sheet answered the keyboard; the sheetOpen gate is not holding");
+
+      /* Clicked and measured inside ONE evaluation, with no turn of the event
+       * loop in between. That is the whole point: a visualViewport event does
+       * arrive shortly after the open (the sheet changes the layout enough to
+       * produce one) and would hide the missing call, so anything asserted
+       * after an await proves nothing about showSheet(). */
+      const open = await b.eval(`
+        document.getElementById("deck-add").click();
+        const surf = document.getElementById("scale-sheet").firstElementChild;
+        const vv = window.visualViewport;
+        return {
+          transform: surf.style.transform, maxHeight: surf.style.maxHeight,
+          innerHeight: window.innerHeight,
+          vvHeight: vv.height, vvOffsetTop: vv.offsetTop, vvScale: vv.scale,
+        };
+      `);
+      const off = Math.max(0, open.innerHeight - open.vvHeight - open.vvOffsetTop);
+      assert.ok(off > 0, `the fake keyboard did not shrink anything: ${JSON.stringify(open)}`);
+      assert.strictEqual(open.transform, `translateY(-${off}px)`,
+        "the sheet opened under a keyboard that was already up and did not lift");
+      assert.strictEqual(open.maxHeight, `${Math.max(0, Math.round(open.vvHeight - 8))}px`,
+        "the sheet opened under a keyboard that was already up and was not capped");
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Queue row 88. hideSheet() cleared the translate and left the cap behind,
+   * so a sheet closed while the keyboard was still up kept maxHeight pinned to
+   * whatever was left of the visual viewport. Nothing renders in that window -
+   * the sheet is hidden, and the next showSheet() runs applyKbOffset() before
+   * a frame goes out - so this is not a visible bug today. It is a latent one:
+   * the cap is the only style the teardown does not undo, and every future
+   * caller of hideSheet() inherits that asymmetry. Measured here rather than
+   * argued: the assertion reads the style off the hidden surface with no
+   * resize in between, which is exactly the state hideSheet() leaves. */
+  test("closing the sheet with the keyboard up leaves no cap behind", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.fakeKeyboard(400);
+
+      const up = await surfaceState();
+      assert.notStrictEqual(up.maxHeight, "",
+        "precondition: the fake keyboard did not cap the surface");
+
+      await b.key("Escape");
+      await b.settle();
+      const closed = await b.eval(`
+        const sheet = document.getElementById("scale-sheet");
+        const surf = sheet.firstElementChild;
+        return { hidden: sheet.hasAttribute("hidden"),
+                 transform: surf.style.transform, maxHeight: surf.style.maxHeight };
+      `);
+      assert.strictEqual(closed.hidden, true, "Escape did not close the sheet");
+      assert.strictEqual(closed.transform, "", "the lift outlived the sheet");
+      assert.strictEqual(closed.maxHeight, "", "the cap outlived the sheet");
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Queue row 87. A pinch-zoom shrinks visualViewport.height exactly the way a
+   * keyboard does, so before this fix the sheet lifted and capped itself for a
+   * reader who was only zooming in to read the seed - measured at 390x844,
+   * scale 2: translateY(-422px) and maxHeight 414px, with no keyboard anywhere.
+   *
+   * The discriminator IS a `vv.scale > 1.01` branch, and this comment used to
+   * say the opposite. The first version of the fix was arithmetic
+   * (vv.height * vv.scale, and the same on vv.offsetTop), on the argument that
+   * a branch would disable the keyboard fix whenever iOS auto-zoom raises the
+   * scale. Both halves of that were wrong. offsetTop is already in layout px,
+   * so the lift decayed to zero as the reader panned while the cap went on
+   * insisting a keyboard was there; and iOS auto-zoom never fires here,
+   * because #scale-box and its siblings pin 16px. See the test below and
+   * index.html's applyKbOffset() for what the page actually does under zoom.
+   *
+   * The oracle is positive THEN negative on purpose. A test that only asserts
+   * both writes are empty is satisfied by `applyKbOffset() { return; }`, which
+   * is one of the mutants this lane exists to kill. */
+  test("a pinch-zoom leaves the sheet alone, but a real shrink still lifts it", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+
+      // Positive half: the lift still happens when it should.
+      await b.fakeKeyboard(400);
+      const lifted = await surfaceState();
+      assert.ok(lifted.transform.startsWith("translateY(-"),
+        `a shrunken visual viewport did not lift the surface (transform `
+        + `${JSON.stringify(lifted.transform)})`);
+      assert.ok(lifted.maxHeight !== "",
+        "a shrunken visual viewport did not cap the surface");
+      await b.clearKeyboard();
+
+      // Negative half: the same shrink, produced by zooming, must not.
+      await b.setPageScale(2);
+      await b.settle();
+      const zoomed = await surfaceState();
+      assert.ok(zoomed.vvScale > 1,
+        `setPageScale did not actually zoom: scale ${zoomed.vvScale}`);
+      assert.ok(zoomed.vvHeight < zoomed.innerHeight,
+        `the zoom did not shrink the visual viewport, so this test proves `
+        + `nothing: vv.height ${zoomed.vvHeight} vs innerHeight ${zoomed.innerHeight}`);
+      assert.strictEqual(zoomed.transform, "",
+        `pinch-zooming lifted the sheet as if a keyboard had opened`);
+      assert.strictEqual(zoomed.maxHeight, "",
+        `pinch-zooming capped the sheet as if a keyboard had opened`);
+    } finally {
+      await b.setPageScale(1);
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* The zoomed-WITH-a-keyboard state, which the first version of the row 87
+   * fix got wrong in two directions at once. It scaled `vv.offsetTop` as well
+   * as `vv.height`, but offsetTop is already in layout px - it saturates at
+   * innerHeight - vv.height - so the lift decayed as the reader panned and hit
+   * zero partway down, while the cap (which never sees offsetTop) went on
+   * saying a keyboard was there. One state, two halves of one fix, opposite
+   * answers.
+   *
+   * There is no arithmetic that makes both halves right here: a sheet laid out
+   * at 100dvh is TALLER than the screen the moment the page is zoomed, so
+   * "keep the whole surface above the keyboard" and "leave the zoom alone" are
+   * not simultaneously satisfiable. So the page makes no claim at all while
+   * the scale is up: both writes are cleared together, and panning is the
+   * reader's. That is safe here only because this page pins 16px on the seed
+   * input, so iOS never raises the scale by itself - every zoom is two
+   * deliberate fingers, and the reader who made it can pan.
+   *
+   * Swept across offsetTop because the defect was invisible at 0, which is the
+   * only value a test that never pans ever sees. */
+  test("a zoom with the keyboard up is left alone at every pan position", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.setPageScale(2);
+
+      // 390x844 at scale 2 shows 422 layout px; a 336px keyboard takes 168 of
+      // them. offsetTop is a LAYOUT-px pan offset, legal up to 844 - 222.
+      for (const ot of [0, 150, 300, 600]) {
+        await b.fakeKeyboard(222, ot);
+        const m = await surfaceState();
+        assert.ok(m.vvScale > 1,
+          `setPageScale did not zoom, so this proves nothing: scale ${m.vvScale}`);
+        assert.strictEqual(m.transform, "",
+          `at offsetTop ${ot} the zoomed sheet was lifted as if the keyboard `
+          + `were the only thing shrinking the viewport`);
+        assert.strictEqual(m.maxHeight, "",
+          `at offsetTop ${ot} the zoomed sheet was capped while the lift said `
+          + `there was no keyboard - the two halves of one fix disagreed`);
+      }
+
+      // Negative control: the SAME shrink unzoomed is a keyboard, and both
+      // halves answer it. Without this the test above is satisfied by
+      // `applyKbOffset() { return; }`.
+      await b.setPageScale(1);
+      await b.fakeKeyboard(444, 0);
+      const flat = await surfaceState();
+      assert.strictEqual(flat.transform, `translateY(-${flat.innerHeight - 444}px)`,
+        "the same viewport unzoomed did not lift the sheet");
+      assert.strictEqual(flat.maxHeight, `${444 - 8}px`,
+        "the same viewport unzoomed did not cap the sheet");
+    } finally {
+      await b.setPageScale(1);
+      await b.clearKeyboard();
       await b.setViewport(900, 900, false);
     }
   });

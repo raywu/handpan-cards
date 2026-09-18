@@ -3,7 +3,6 @@
 # The title blurb stops printing the engine's warnings, so a NO_THIRDS pan
 # prints with no sign anywhere on the sheets that the app had flagged it.
 diff --git a/tools/decks.py b/tools/decks.py
-index 69b03d1..2562620 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
 @@ -293,10 +293,6 @@ def _blurb(spec, chord_count, warnings=()):

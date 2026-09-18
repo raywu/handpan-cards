@@ -4,7 +4,6 @@
 # floor at, so on a sparse pan every target silently shrinks from the note ring
 # the user is aiming at (53.8px on Hijaz) down to the bare 44px minimum.
 diff --git a/index.html b/index.html
-index 79d9295..ec73330 100644
 --- a/index.html
 +++ b/index.html
 @@ -3867,7 +3867,7 @@ function pan(d, ch, opts) {

@@ -9,7 +9,6 @@
 # catch: it passes on both spellings, which is why it was tightened to a
 # substring check against a name long enough to be elided.
 diff --git a/index.html b/index.html
-index 77d0b3d..779c588 100644
 --- a/index.html
 +++ b/index.html
 @@ -3676,7 +3676,7 @@ function buildChips() {

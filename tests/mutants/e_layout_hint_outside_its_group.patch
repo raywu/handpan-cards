@@ -5,7 +5,6 @@
 # part of, so it is visible when the LAYOUT row is HIDDEN and it no longer
 # travels with the controls it describes. Text-matching cannot see placement.
 diff --git a/index.html b/index.html
-index 3034159..e237032 100644
 --- a/index.html
 +++ b/index.html
 @@ -748,6 +748,7 @@ button.nav:active{background:#2e281e}

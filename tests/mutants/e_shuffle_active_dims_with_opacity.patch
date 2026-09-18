@@ -8,7 +8,6 @@
 # toward the background: 6.61:1 becomes 3.21:1, i.e. the pressed moment is the
 # one moment the footer is below AA. PR #53 raised this footer to AA on purpose.
 diff --git a/index.html b/index.html
-index 77d0b3d..8f43095 100644
 --- a/index.html
 +++ b/index.html
 @@ -613,7 +613,7 @@ button.nav:active{background:#2e281e}

@@ -5,7 +5,6 @@
 # off-by-one mutant now targets 41 instead of 26. Same intent: the cap is one
 # character short of the longest real subtitle the engine can emit.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eb6e61a..f178aa3 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -77,7 +77,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

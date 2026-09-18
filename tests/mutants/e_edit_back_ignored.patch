@@ -4,10 +4,9 @@
 # is a page with no visible way out: only Escape, which a touch user has not
 # got.
 diff --git a/index.html b/index.html
-index 169aa79..2de07c8 100644
 --- a/index.html
 +++ b/index.html
-@@ -4861,7 +4861,7 @@ function runGenerate() {
+@@ -4900,7 +4900,7 @@ function runGenerate() {
  
  addChip.onclick = () => openScaleSheet(addChip);
  // The page's way out. Same handler Escape runs, so there is one close path.

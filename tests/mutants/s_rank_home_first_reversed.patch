@@ -19,7 +19,6 @@
 # HIGH both measure topShellTones=3, LOW measures 1). Keep both mutants: this
 # one kills on home-first, the other on class order (LOW-before-HIGH).
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 053dd98..cf560d5 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -399,7 +399,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

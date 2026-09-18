@@ -4,7 +4,6 @@
 # reaches the boot tail and throws on .indexOf - taking the share-link handler
 # at the end of the script with it.
 diff --git a/index.html b/index.html
-index 0ab44d6..5dd7aa3 100644
 --- a/index.html
 +++ b/index.html
 @@ -2384,7 +2384,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};

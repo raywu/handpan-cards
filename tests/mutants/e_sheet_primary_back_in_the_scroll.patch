@@ -4,10 +4,9 @@
 # GENERATE CARDS - last in the flow - goes below the fold: the reported bug
 # verbatim (queue row 211).
 diff --git a/index.html b/index.html
-index 169aa79..2866eaa 100644
 --- a/index.html
 +++ b/index.html
-@@ -830,11 +830,11 @@ button.nav:active{background:#2e281e}
+@@ -827,11 +827,11 @@ button.nav:active{background:#2e281e}
        </div>
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>

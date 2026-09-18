@@ -2,7 +2,6 @@
 # kills: distance counts PAN pitch classes outside the parent, not the reverse
 # Distance counts parent notes missing from the pan instead of the reverse.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eda20de..6d4ee55 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -179,8 +179,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

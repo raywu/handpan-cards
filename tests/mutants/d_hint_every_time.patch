@@ -3,7 +3,6 @@
 # The mirror hint is appended to every generation instead of the first per
 # deck, so it degrades into noise the user learns to ignore.
 diff --git a/index.html b/index.html
-index 79d9295..ca7be31 100644
 --- a/index.html
 +++ b/index.html
 @@ -4806,7 +4806,7 @@ function runGenerate() {

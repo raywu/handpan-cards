@@ -3,7 +3,6 @@
 # restoreScales trusts whatever is in storage, so one unusable record throws
 # and takes the whole boot down with it.
 diff --git a/index.html b/index.html
-index b018e51..5b489bd 100644
 --- a/index.html
 +++ b/index.html
 @@ -2482,8 +2482,6 @@ function rememberScale(seed) {

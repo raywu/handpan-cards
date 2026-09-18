@@ -5,7 +5,6 @@
 # mutant deleted a 44px ::after overlay; the target is now the button itself,
 # so the same defect is now spelled as its width and height.)
 diff --git a/index.html b/index.html
-index 7d08ee3..3e4316a 100644
 --- a/index.html
 +++ b/index.html
 @@ -267,7 +267,7 @@ button.nav:active{background:#2e281e}

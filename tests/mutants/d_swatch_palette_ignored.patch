@@ -3,7 +3,6 @@
 # Tapping a swatch re-renders the row but never records the choice, so every
 # generated deck comes out in palette 0.
 diff --git a/index.html b/index.html
-index 16984c6..29ee09e 100644
 --- a/index.html
 +++ b/index.html
 @@ -2340,7 +2340,7 @@ function buildSwatches() {

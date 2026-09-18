@@ -4,7 +4,6 @@
 # forever instead of being killed and reported - the second half of the port
 # defect, and what turned one stuck socket into a whole burned CI job.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index e27fdb6..b0642e2 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -164,8 +164,7 @@ def run_node_file(path):

@@ -5,7 +5,6 @@
 # app, and the one that toggles a mode the user must be able to turn off. Every
 # one still hit-tests to itself, so only a height assertion can see this.
 diff --git a/index.html b/index.html
-index 140fa68..3ee7c28 100644
 --- a/index.html
 +++ b/index.html
 @@ -199,7 +199,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

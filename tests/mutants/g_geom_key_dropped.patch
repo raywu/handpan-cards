@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^an.empty.zone.yields.zero..not.a.missing.key$ tests/layout.test.js
 # kills: geom always carries every key pan() reads - n_out is emitted as 0, never omitted
 diff --git a/src/engine/layout.js b/src/engine/layout.js
-index f5d1cd5..fa111b0 100644
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
 @@ -261,7 +261,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

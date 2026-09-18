@@ -4,7 +4,6 @@
 # the engine, which answers BAD_NOTE - a NOTE error for a FLAG typo, and
 # `--palette 6` silently builds a deck from an out-of-range palette index.
 diff --git a/tools/gen_deck.js b/tools/gen_deck.js
-index 2172a91..e98931e 100644
 --- a/tools/gen_deck.js
 +++ b/tools/gen_deck.js
 @@ -69,10 +69,6 @@ function die(message) {

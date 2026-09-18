@@ -3,7 +3,6 @@
 # encode never writes the delta section, so a correction is lost the moment
 # it is shared and the far side renders the generated layout instead.
 diff --git a/src/engine/share.js b/src/engine/share.js
-index 935ecbd..bbcb79e 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
 @@ -242,8 +242,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

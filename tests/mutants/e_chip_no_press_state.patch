@@ -10,7 +10,6 @@
 # patch carried that line as hunk CONTEXT, so it went stale. The mutation
 # itself is byte-identical to before.
 diff --git a/index.html b/index.html
-index 77d0b3d..61f3c38 100644
 --- a/index.html
 +++ b/index.html
 @@ -610,7 +610,6 @@ button.nav:active{background:#2e281e}

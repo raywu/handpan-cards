@@ -1,0 +1,16 @@
+# kills: a sheet opened with the keyboard already up lifts on the first frame
+# suite: node --test --test-name-pattern ^a.sheet.opened.with.the.keyboard.already.up.lifts.on.the.first.frame$ tests/e2e.test.js
+# showSheet() stops measuring the viewport at open. A sheet opened while the
+# keyboard is ALREADY up gets no event of its own, so it draws its first frame
+# at full height under the board - queue row 54's surviving mutant.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4722,7 +4722,6 @@ function showSheet(opener) {
+   sheetOpen = true;
+   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+   updateParse();
+-  applyKbOffset();
+   history.pushState({ scalePage: true }, "", sheetRoute());
+   sheetRouted = true;
+   // The owner's second request: do not steal focus into the box, so the whole

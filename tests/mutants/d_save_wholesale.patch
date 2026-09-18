@@ -3,7 +3,6 @@
 # save() goes back to replacing the whole hpfc object, so any sibling key
 # another feature stored there is silently dropped on the next write.
 diff --git a/index.html b/index.html
-index b018e51..4d4a07c 100644
 --- a/index.html
 +++ b/index.html
 @@ -2398,11 +2398,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0

@@ -16,8 +16,9 @@
 `innerHeight - visualViewport.height - visualViewport.offsetTop`, and `kbCap()`
 caps the surface to the shrunken visual viewport so the translate cannot lift
 `#scale-box` off the top of the screen. Both are pure functions and unit-tested
-in `tests/app.test.js`; the listener that feeds them is not, because headless
-Chromium cannot open a soft keyboard.
+in `tests/app.test.js`, and since lane S6 the listener that feeds them is
+covered too: `b.fakeKeyboard()` shadows `visualViewport.height` and fires a
+real resize, so e2e drives the whole path against the shipped file.
 
 - **What was wrong:** on an iPhone 14 (iOS 26.6, Safari) the soft keyboard sat
   over the bottom of the scale sheet, so `GENERATE CARDS` - and `SAVE CHANGES`
@@ -26,9 +27,10 @@ Chromium cannot open a soft keyboard.
 - **Why spacing could never fix it:** iOS Safari resizes the VISUAL viewport,
   not the layout viewport, so `dvh`, `85dvh` and every layout unit the sheet is
   built from are unchanged while the keyboard is up.
-- **What is still open:** the owner check on hardware. The e2e suite's shrunken
-  viewports are a documented PROXY for a keyboard, not the thing, so nothing in
-  CI can close this. Tracked as queue row 67 in
+- **What is still open:** the owner check on hardware. CI drives the wiring but
+  cannot produce a real keyboard - no CDP soft-keyboard emulation exists - so
+  the PREMISE that iOS shrinks the visual viewport is the part nothing in CI
+  can close. Tracked as queue row 67 in
   `docs/plans/2026-09-16-remaining-work-coordination.md`: iPhone 14 / iOS 26.6,
   BOTH the ADD and the EDIT page, keyboard up.
 - **Context:** `kbOffset` / `kbCap` and the `visualViewport` listener in

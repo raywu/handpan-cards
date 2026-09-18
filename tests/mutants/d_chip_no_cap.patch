@@ -3,7 +3,6 @@
 # Chip labels are no longer capped, so one long pan name can push the whole
 # deck row - and the practice card with it - off a narrow screen.
 diff --git a/index.html b/index.html
-index 16984c6..84f220e 100644
 --- a/index.html
 +++ b/index.html
 @@ -2269,7 +2269,7 @@ function setOrder() {

@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^the.Pygmy.maker.string.yields.eleven.rim.fields.from.the.grammar$ tests/core.test.js
 # kills: zone assignment: the first ELEVEN top notes are rim, so the Pygmy string yields 11 rim and 0 inner
 diff --git a/src/engine/core.js b/src/engine/core.js
-index d8d9491..c1c8e5b 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
 @@ -356,7 +356,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

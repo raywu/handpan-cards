@@ -6,7 +6,6 @@
 # opens the Edit page and still cannot tell what ROTATE and MOVE do, which is
 # the entire complaint the stage exists to answer.
 diff --git a/index.html b/index.html
-index 3034159..9dac519 100644
 --- a/index.html
 +++ b/index.html
 @@ -587,7 +587,7 @@ button.nav:active{background:#2e281e}

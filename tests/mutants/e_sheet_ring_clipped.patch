@@ -3,7 +3,6 @@
 # The sheet body stops reserving room for the ring, so the scroll container
 # clips its left and right sides and the focused box reads as a broken border.
 diff --git a/index.html b/index.html
-index 140fa68..b3a0ce3 100644
 --- a/index.html
 +++ b/index.html
 @@ -417,8 +417,7 @@ button.nav:active{background:#2e281e}

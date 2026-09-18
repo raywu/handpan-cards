@@ -1,7 +1,6 @@
 # kills: renaming from the Edit sheet relabels the chip
 # suite: node --test --test-name-pattern ^renaming.from.the.Edit.sheet.relabels.the.chip$ tests/e2e.test.js
 diff --git a/index.html b/index.html
-index 3509543..6cda065 100644
 --- a/index.html
 +++ b/index.html
 @@ -3329,7 +3329,6 @@ function sheetOptions() {

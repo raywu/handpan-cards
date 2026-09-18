@@ -2,7 +2,6 @@
 # kills: PARENTS is tests/fixtures/parents.json, in the fixed list order
 # Dorian precedes Aeolian, so D Amara's distance-0 tie is won by Dorian.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eda20de..79a61e5 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -53,8 +53,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

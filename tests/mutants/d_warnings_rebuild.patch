@@ -4,7 +4,6 @@
 # is identical, so only a call count can see it - and the cost is paid on
 # every successful generate.
 diff --git a/index.html b/index.html
-index 8a5bb64..d184465 100644
 --- a/index.html
 +++ b/index.html
 @@ -3407,7 +3407,8 @@ function runGenerate() {

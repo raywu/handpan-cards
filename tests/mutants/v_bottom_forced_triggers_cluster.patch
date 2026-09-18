@@ -3,7 +3,6 @@
 # bottom-shell-only tone forces the chord again, so Pygmy Cm7 clusters to
 # Eb3/G3 instead of reading C4 Eb4 G4 Bb3.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index 869291e..20a16a3 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
 @@ -286,7 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -3,7 +3,6 @@
 # A regenerate of a deck that already exists reports it as newly generated,
 # so the user cannot tell a replacement from an addition.
 diff --git a/index.html b/index.html
-index 8a5bb64..2aa7037 100644
 --- a/index.html
 +++ b/index.html
 @@ -3408,8 +3408,7 @@ function runGenerate() {

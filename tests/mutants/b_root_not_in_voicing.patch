@@ -2,7 +2,6 @@
 # suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data
 # Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..8af60c5 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -90,7 +89,6 @@ index 1fdc9e4..8af60c5 100644
        },
        {
 diff --git a/index.html b/index.html
-index 6fa1267..c1ecc56 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

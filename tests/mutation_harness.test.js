@@ -319,3 +319,42 @@ test("children are spawned without NODE_TEST_CONTEXT", () => {
   assert.equal(r.stdout, "undefined");
   assert.equal(r.status, 0);
 });
+
+/* Queue row 86, N9. The row reads "three mutant patches carry stale
+ * `index 169aa79..` blob headers"; a per-file check of the preimage blob
+ * against `git rev-parse HEAD:<path>` said 250 of 250 did. That is not a
+ * corpus that drifted, it is the header being inherently unmaintainable:
+ * `git diff` stamps the blob the patch was CUT from, and every commit that
+ * touches a mutated file rewrites it, so a freshly re-cut patch is stale one
+ * commit later. Re-cutting is therefore not a fix - it moves the lie forward
+ * a commit.
+ *
+ * Nothing reads the line. The sweep applies patches with plain `git apply`
+ * (tests/mutation_check.sh:242) and reverts with `git apply -R` (:265) -
+ * neither `--3way` nor `--index`, the only two modes that resolve a preimage
+ * blob by hash. The mode bits are equally inert: every mutated path already
+ * exists and no patch changes a file mode. So the line carries no information
+ * the sweep uses and one claim that is false, which is exactly the shape of
+ * comment worth deleting rather than maintaining.
+ *
+ * Asserted rather than merely done, because the generator would put it back:
+ * tools/regen_data_mutants.py writes `git diff` output verbatim, so without
+ * this test the next data-mutant regeneration silently reintroduces twelve of
+ * them. */
+test("no mutant patch carries a blob header it cannot keep true", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const offenders = [];
+  for (const name of fs.readdirSync(dir).filter((f) => f.endsWith(".patch"))) {
+    const text = fs.readFileSync(path.join(dir, name), "utf8");
+    for (const line of text.split("\n")) {
+      if (/^index [0-9a-f]{7,40}\.\.[0-9a-f]{7,40}/.test(line)) {
+        offenders.push(`${name}: ${line}`);
+        break;
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    `these patches stamp a preimage blob that goes stale on the next commit ` +
+    `to the file, and nothing in tests/mutation_check.sh reads it:\n` +
+    offenders.slice(0, 5).join("\n") + `\n(${offenders.length} total)`);
+});

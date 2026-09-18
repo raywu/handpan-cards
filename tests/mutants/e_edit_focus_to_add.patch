@@ -3,11 +3,10 @@
 # Every close hands focus to + ADD, so leaving an Edit page drops the keyboard
 # user at the end of the chip strip instead of on the chip they came from.
 diff --git a/index.html b/index.html
-index 79d9295..d3332cc 100644
 --- a/index.html
 +++ b/index.html
-@@ -4705,7 +4705,7 @@ function hideSheet() {
-   if (sheetSurf) sheetSurf.style.transform = "";
+@@ -4787,7 +4787,7 @@ function hideSheet() {
+   }
    editingId = null;
    for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
 -  (sheetOpener || addChip).focus();

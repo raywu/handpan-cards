@@ -8,7 +8,6 @@
 # rounded card with a hard rectangle, ~3.5px of square nub at each corner, for
 # as long as the finger is down.
 diff --git a/index.html b/index.html
-index 77d0b3d..1d46172 100644
 --- a/index.html
 +++ b/index.html
 @@ -293,13 +293,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100

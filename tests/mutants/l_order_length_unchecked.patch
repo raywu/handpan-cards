@@ -3,7 +3,6 @@
 # An order longer than the pan is accepted and its tail silently ignored,
 # so a permutation over the wrong field count is no longer BAD_NOTE.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
-index 51051bb..0f46ac5 100644
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
 @@ -188,7 +188,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

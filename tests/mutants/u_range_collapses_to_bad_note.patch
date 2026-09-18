@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^NOTE_OUT_OF_RANGE.names.the.note.as.the.parser.placed.it$ tests/core.test.js
 # kills: a top note pushed past MIDI 127 is reported as off the keyboard, not as text that is not a note
 diff --git a/src/engine/core.js b/src/engine/core.js
-index d5690cb..b809262 100644
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
 @@ -360,7 +360,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

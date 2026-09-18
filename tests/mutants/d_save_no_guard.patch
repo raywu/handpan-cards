@@ -1,7 +1,6 @@
 # kills: a throwing localStorage breaks neither boot nor navigation
 # suite: node --test --test-name-pattern ^a.throwing.localStorage.breaks.neither.boot.nor.navigation$ tests/app.test.js
 diff --git a/index.html b/index.html
-index b018e51..ef82dbe 100644
 --- a/index.html
 +++ b/index.html
 @@ -2397,13 +2397,11 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0

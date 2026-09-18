@@ -6,7 +6,6 @@
 # the controls are for, and nothing else in the suite can see a missing
 # explanation.
 diff --git a/index.html b/index.html
-index 3034159..b7c8569 100644
 --- a/index.html
 +++ b/index.html
 @@ -758,7 +758,6 @@ button.nav:active{background:#2e281e}

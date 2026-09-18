@@ -3,7 +3,6 @@
 # The selected deck chip goes back to signalling itself with colour alone, so
 # a screen reader cannot tell which deck is loaded.
 diff --git a/index.html b/index.html
-index 140fa68..6906363 100644
 --- a/index.html
 +++ b/index.html
 @@ -3637,7 +3637,6 @@ function buildChips() {

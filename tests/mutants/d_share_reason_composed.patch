@@ -3,7 +3,6 @@
 # The UI composes a sentence of its own instead of surfacing the engine's
 # reason verbatim (ENGINE-SPEC sections 1 and 2).
 diff --git a/index.html b/index.html
-index b018e51..82aef7b 100644
 --- a/index.html
 +++ b/index.html
 @@ -2455,7 +2455,7 @@ function shareLink(d) {

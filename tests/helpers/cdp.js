@@ -167,6 +167,52 @@ class Browser {
       screenWidth: width, screenHeight: height,
     });
   }
+  /* Shrink the VISUAL viewport the way a soft keyboard does, and only that
+   * way: innerHeight is left alone, which is the whole distinction kbCap()
+   * exists to read. Shadows the two properties as own, configurable values on
+   * the visualViewport INSTANCE (they are prototype getters, so this is the
+   * only handle) and then fires a real resize, so the page's own listener runs
+   * the production code path end to end.
+   *
+   * What this proves: the wiring - the listener, kbOffset/kbCap, and both
+   * style writes. What it does NOT prove: that a real iOS keyboard shrinks
+   * visualViewport.height at all. No CDP soft-keyboard emulation exists, so
+   * that premise stays an owner-device claim (queue rows 51, 67).
+   *
+   * The shadowing lives on the document, so it does NOT survive goto(). Fake
+   * after the last navigation, never before - a test that navigates in between
+   * silently gets an unshrunk page and passes for the wrong reason. */
+  async fakeKeyboard(vvHeight, vvOffsetTop = 0) {
+    return this.eval(`
+      const vv = window.visualViewport;
+      Object.defineProperty(vv, "height", { value: ${vvHeight}, configurable: true });
+      Object.defineProperty(vv, "offsetTop", { value: ${vvOffsetTop}, configurable: true });
+      vv.dispatchEvent(new Event("resize"));
+      return { innerHeight: window.innerHeight, vvHeight: vv.height, vvOffsetTop: vv.offsetTop };
+    `);
+  }
+  /* Put the real prototype getters back and fire one more resize, so the page
+   * sees the keyboard close. Deleting the own properties is what restores
+   * them; assigning a large height would leave the shadowing in place for
+   * every test after this one. Call it in a finally - this file shares ONE
+   * browser session, and a leaked shadow is indistinguishable from a bug in
+   * whatever runs next. */
+  async clearKeyboard() {
+    return this.eval(`
+      const vv = window.visualViewport;
+      delete vv.height;
+      delete vv.offsetTop;
+      vv.dispatchEvent(new Event("resize"));
+      return { innerHeight: window.innerHeight, vvHeight: vv.height };
+    `);
+  }
+  /* A REAL pinch-zoom, not a fake: setPageScaleFactor shrinks the visual
+   * viewport and raises visualViewport.scale exactly as two fingers do. This
+   * is global page state, not per-test - always restore it with
+   * setPageScale(1) in a finally. */
+  async setPageScale(factor) {
+    await this.send("Emulation.setPageScaleFactor", { pageScaleFactor: factor });
+  }
   async click(selector) {
     const box = await this.eval(`
       const el = document.querySelector(${JSON.stringify(selector)});

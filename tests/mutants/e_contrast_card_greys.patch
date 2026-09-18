@@ -4,7 +4,6 @@
 # Without this the hint mutant alone would prove the test live while the
 # .hdr .l .num (3.45:1 at 9px) and .sepc (2.95:1) probes could be dead code.
 diff --git a/index.html b/index.html
-index 574a311..cf60bf1 100644
 --- a/index.html
 +++ b/index.html
 @@ -221,7 +221,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100

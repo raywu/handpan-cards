@@ -3,7 +3,6 @@
 # Amara Csus4 given C major's exact field list - a duplicate card that
 # validate.py cannot see (it only rejects duplicate fields WITHIN a card).
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..bb15356 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -91,7 +90,6 @@ index 1fdc9e4..bb15356 100644
          ],
          "roots": [
 diff --git a/index.html b/index.html
-index 6fa1267..d90a98c 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

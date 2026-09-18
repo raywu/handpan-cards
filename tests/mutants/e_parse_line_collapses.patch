@@ -3,7 +3,6 @@
 # The parse line stops reserving its line, so updateParse() blanking it on an
 # invalid parse shrinks the sheet on most keystrokes.
 diff --git a/index.html b/index.html
-index f489642..e493445 100644
 --- a/index.html
 +++ b/index.html
 @@ -355,7 +355,7 @@ button.nav:active{background:#2e281e}
