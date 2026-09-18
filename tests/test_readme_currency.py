@@ -12,7 +12,8 @@ import unittest
 
 from tests.paths import ROOT, canonical_decks
 
-README = open(os.path.join(ROOT, "README.md"), encoding="utf-8").read()
+with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+    README = fh.read()
 LOWER = README.lower()
 
 # "N cards total" and not a bare "N cards": the deck line states per-deck counts
@@ -20,6 +21,7 @@ LOWER = README.lower()
 # this assertion mutually unsatisfiable.
 TOTAL_RE = re.compile(r"\b(\d{2,4}) cards total\b")
 MUTANT_RE = re.compile(r"\b(\d{2,4}) mutant")
+ENGINE_RE = re.compile(r"src/engine/([A-Za-z0-9_]+\.js)")
 
 
 class ReadmeCurrencyTest(unittest.TestCase):
@@ -36,7 +38,10 @@ class ReadmeCurrencyTest(unittest.TestCase):
             name = d["name"].lower()      # the data is UPPERCASE, the prose is not
             self.assertIn(name, LOWER, f"deck {d['id']} is not named in the README")
             at = LOWER.index(name) + len(name)
-            window = README[at:at + 40]   # after the name, so its own digits cannot match
+            # after the name, so the name's own digits cannot satisfy it, and
+            # stopped at the next clause so a neighbouring deck's count cannot
+            # either - the decks are 40 chars apart today, which is not a margin.
+            window = re.split(r"[;.]", README[at:at + 40])[0]
             self.assertIn(
                 str(len(d["chords"])), window,
                 f"deck {d['id']} has {len(d['chords'])} cards; the README does not "
@@ -51,16 +56,29 @@ class ReadmeCurrencyTest(unittest.TestCase):
         missing = [m for m in mods if f"src/engine/{m}" not in README]
         self.assertEqual(missing, [],
                          f"engine modules absent from the README: {missing}")
+        # and the other direction, or deleting a module leaves a stale mention green
+        phantom = sorted({m for m in ENGINE_RE.findall(README)} - set(mods))
+        self.assertEqual(phantom, [],
+                         f"README names engine modules that do not exist: {phantom}")
 
-    def test_the_mutant_count_is_not_overstated(self):
-        # an upper bound, not equality: the corpus grows on most test PRs, and
-        # equality would make every unrelated lane that adds a mutant edit the
-        # README - a cross-lane conflict magnet in a repo that runs swarms.
+    def test_the_mutant_count_is_stated_within_a_lane_of_the_truth(self):
+        # A BAND, not equality and not a bare upper bound. Equality would make
+        # every unrelated lane that adds a mutant edit the README, which is a
+        # cross-lane conflict magnet in a repo that runs swarms. A bare upper
+        # bound is the hole that let "311" ship on a 312-patch tree: it catches
+        # only overstatement, so any understatement at all passes. The floor is
+        # 90% of the corpus, which absorbs ordinary growth between README edits
+        # and still catches the kind of drift this file exists to prevent (the
+        # stale README said 59 cards against 96, a 39% error).
         n = len(glob.glob(os.path.join(ROOT, "tests", "mutants", "*.patch")))
         found = {int(x) for x in MUTANT_RE.findall(README)}
         self.assertTrue(found, "README no longer states a mutant count")
-        self.assertLessEqual(max(found), n,
-                             f"README claims {max(found)} mutants; there are {n}")
+        said = max(found)
+        self.assertLessEqual(said, n, f"README claims {said} mutants; there are {n}")
+        self.assertGreaterEqual(
+            said, int(n * 0.9),
+            f"README says {said} mutants against {n} on disk - more than a lane's "
+            f"worth of drift; restate it")
 
 
 if __name__ == "__main__":

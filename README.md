@@ -42,8 +42,11 @@ is the spec; `docs/SCALE_ENGINE_PLAN.md` records the decisions behind it.
   with any bottom notes after a `|`. The line under the box shows how the notes
   were read as you type; pick a palette and, if your pan is mirrored,
   LEFT-FIRST; then GENERATE CARDS. Regenerating the same scale replaces that
-  deck in place. The sheet is a real page, not an overlay: `#add` opens it and
-  `#edit/<id>` reopens a saved scale, so Back leaves it the way you expect.
+  deck in place. The sheet is a real page, not an overlay: opening it pushes
+  `#add`, and EDIT pushes `#edit-<id>`, so the back gesture closes the sheet
+  instead of leaving the app. A page route pasted into the address bar opens
+  nothing - it is replaced away at boot, because a restored page with no entry
+  behind it is one back cannot leave.
 - **Your scales persist** in localStorage and come back on the next visit. EDIT
   reopens one with its name and notes filled in; DELETE removes it and asks for
   a second tap to confirm. **SHARE** copies a URL that carries the whole scale,
@@ -52,7 +55,7 @@ is the spec; `docs/SCALE_ENGINE_PLAN.md` records the decisions behind it.
 
 ## Tests
 
-    ./tests/run.sh                       # python + node suites
+    ./tests/run.sh                       # validate, boot sim, python + node
     ./tests/run.sh python                # python suites only
     ./tests/run.sh node                  # js suites only
     python3 tests/suite_health.py        # per-file test-count floors
@@ -89,7 +92,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 311 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 312 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
