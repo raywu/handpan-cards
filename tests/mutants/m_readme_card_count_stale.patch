@@ -1,0 +1,18 @@
+# kills: test_total_card_count_matches_the_deck_data
+# suite: python3 -m unittest -k test_total_card_count_matches_the_deck_data tests.test_readme_currency
+# The README total put back to its pre-2026-09-18 value (96 -> 59). Nothing
+# else on the page changes and no code is touched, so only the currency check
+# sees it - which is the point: a README nobody asserts on is a README that
+# goes stale.
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -15,7 +15,7 @@
+ two ever drift.
+ 
+ Decks included: C# Hijaz 9, 19 cards (pink/orange); F3 Low Pygmy 18,
+-52 cards (purple/gold); D Amara 9, 25 cards (teal/amber). 96 cards total,
++52 cards (purple/gold); D Amara 9, 25 cards (teal/amber). 59 cards total,
+ with the same diagrams, voicings, pitch-class highlighting, and typography as
+ the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
+ single-colour root-frame borders, per-deck palettes) is original to this
