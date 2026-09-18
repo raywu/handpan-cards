@@ -336,7 +336,7 @@ Outside voice (6):
   data/decks.json ──┬─> total 96 ──────> "96 cards total"     [test 1] KILLED by m_readme_card_count_stale
                     └─> per deck 19/52/25 ──> deck line       [test 2]
   src/engine/*.js ─────> six paths ────────> engine para      [test 3]
-  tests/mutants/*.patch ─> count 311 ──────> "311 mutants"    [test 4] (upper bound)
+  tests/mutants/*.patch ─> count 312 ──────> "312 mutants"    [test 4] (band: 90%..100%)
 
   scale-sheet paragraph ──> PROSE ONLY, unchecked  <- accepted non-goal
   suite counts 10/8 ──────> PROSE ONLY, unchecked  <- accepted non-goal
