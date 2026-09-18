@@ -1,0 +1,17 @@
+# kills: the armed delete button still answers a press, in the pressed colour
+# suite: node --test --test-name-pattern ^the.armed.delete.button.still.answers.a.press..in.the.pressed.colour$ tests/e2e.test.js
+# The armed rule keeps its amber under the thumb, because it has the same
+# specificity as the shared :active rule and comes later in the file. The tap
+# that destroys the deck becomes the only press on the page with no answer.
+diff --git a/index.html b/index.html
+index 3effb4a..42e774a 100644
+--- a/index.html
++++ b/index.html
+@@ -662,7 +662,6 @@ button.nav:active{background:#2e281e}
+    the file - so without this the armed button is the only control on the page
+    that does not answer a press. Confirming a delete is the press that most
+    needs the acknowledgement. */
+-#scale-delete[data-armed]:active{color:#eae6df}
+ </style>
+ </head>
+ <body>

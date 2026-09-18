@@ -3,14 +3,14 @@
 # The armed check goes away, so the first tap deletes - the one-tap destruction
 # the owner asked to be gated on 2026-09-17.
 diff --git a/index.html b/index.html
-index 169aa79..00fbb08 100644
+index 93dabcf..2d208f1 100644
 --- a/index.html
 +++ b/index.html
-@@ -4881,7 +4881,8 @@ function disarmDelete() {
- }
- delBtn.onclick = () => {
-   if (!editingId) return;
--  if (delArmed) { deleteDeck(editingId); return; }
+@@ -4887,7 +4887,8 @@ delBtn.onclick = () => {
+   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
+      deck even when deleteDeck turns out to have nothing to remove, and the
+      delete's own message should be the last thing said. */
+-  if (delArmed) { disarmDelete(); deleteDeck(editingId); return; }
 +  deleteDeck(editingId);
 +  if (delArmed) return;
    delArmed = true;
