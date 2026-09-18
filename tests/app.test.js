@@ -1363,7 +1363,8 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
   const d = makeCustom(app);
   app.select(d.id);
   app.clickChip(d.name);
-  app.els["scale-delete"].click();
+  app.els["scale-delete"].click();   // arms
+  app.els["scale-delete"].click();   // confirms
 
   assert.strictEqual(app.sheetOpen(), false, "delete left the sheet open");
   assert.deepStrictEqual(app.registry(), {}, "the deck is still in the registry");
@@ -1400,6 +1401,187 @@ test("deleting a NON-selected custom deck leaves the selection alone", () => {
     "deleting a deck the user is not looking at must not announce a fallback");
   const row = chipRow(app);
   assert.strictEqual(row.some((c) => c.label === a.name), false, "the chip is still in the row");
+});
+
+/* Owner instruction, 2026-09-17: "Delete cards should require a confirmation."
+   DELETE THIS DECK destroys a deck and its stored seed with one tap, sitting
+   44px under SAVE CHANGES in a sheet the owner drives with a thumb. The
+   confirmation is a second tap on the SAME control rather than a dialog: it
+   costs the pinned footer no height (the reason the footer is one row at all -
+   see the .sheetbody comment in index.html), and it cannot be dismissed by the
+   Escape that also closes the page. Arming is visible in the label, so a
+   half-remembered first tap is legible rather than armed-in-secret. */
+test("DELETE THIS DECK arms on the first tap and only deletes on the second", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "one tap deleted the deck - the confirmation did not gate anything");
+  assert.strictEqual(app.sheetOpen(), true, "one tap closed the Edit page");
+  assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the armed button still reads DELETE THIS DECK, so nothing tells the owner " +
+    "their tap did anything or that the next one is destructive");
+  assert.ok(app.announcer().textContent.includes(d.name),
+    `the arming message must name the deck at risk: "${app.announcer().textContent}"`);
+
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(app.registry(), {}, "the second tap did not delete the deck");
+  assert.strictEqual(app.sheetOpen(), false, "the second tap left the sheet open");
+});
+
+test("leaving the Edit page disarms DELETE, so a stale tap cannot destroy a deck", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();          // armed
+  app.keydown("Escape");                    // the owner leaves without deleting
+  assert.strictEqual(app.sheetOpen(), false);
+  app.clickChip(d.name);                    // and comes back later
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the page re-opened with DELETE still armed - the next tap would delete " +
+    "a deck on a confirmation the owner gave to a different visit");
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "the re-opened page deleted the deck on one tap");
+});
+
+
+test("a tap anywhere else on the page disarms DELETE, without waiting for a blur", () => {
+  /* The owner's phone is the reason this is not covered by the blur handler.
+     iOS Safari does not give a <button> focus on tap, so `blur` never fires
+     there: the arm would sit through retyping the seed, toggling the mirror and
+     scrolling, and the only thing that would clear it is leaving the page. A
+     pointerdown that is not the button is the same decision as looking away,
+     and it is one the owner's device actually makes. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the owner touched the seed field and DELETE stayed armed - on iOS, where "
+    + "a button takes no focus, the next tap on it would destroy the deck");
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "the re-armed button deleted the deck on what was its first tap");
+});
+
+test("a pointerdown on DELETE itself does not disarm the tap that armed it", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-delete"] });
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the confirming tap's own pointerdown disarmed the button, so DELETE can "
+    + "never fire: every second tap would only re-arm it");
+
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(app.registry(), {},
+    "the confirming tap did not delete the deck");
+});
+
+test("disarming DELETE takes its warning down with it", () => {
+  /* The label and the announcer say the same thing, so they have to stop
+     saying it together. The blur path could only strand the warning when the
+     owner tabbed away; the pointerdown path runs on every tap in the sheet,
+     so a stranded "This cannot be undone." under an idle DELETE would be the
+     normal case rather than the rare one. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.match(app.els["scale-msg"].textContent, /cannot be undone/,
+    "the first tap did not warn, so this test is not measuring the warning");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-msg"].textContent, "",
+    "DELETE went back to idle but the amber line still says the deck cannot be "
+    + "recovered - the page warns about a thing it is no longer about to do");
+});
+
+test("deleting a deck that is already gone leaves no armed button behind", () => {
+  /* deleteDeck's own guard. Reaching it means the deck vanished between the
+     arming tap and the confirming one, and the button must not be left armed
+     over a deck that no longer exists: the next tap would be a confirmation
+     of nothing, wearing the label of a confirmation of something. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  app.forgetDeck(d.id);
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the deck is gone and the button still reads TAP AGAIN TO DELETE");
+});
+
+test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said", () => {
+  /* disarmDelete() runs on EVERY pointerdown in the sheet, armed or not. Its
+     say("") is the half of the disarm that takes the warning down, and without
+     the early return it fires on taps that disarmed nothing - so touching the
+     seed field would silently blank whatever the parse line had just explained.
+     The guard is what keeps the announcer the parse line's to write. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.type(scale("bad note token"));
+  const said = app.els["scale-msg"].textContent;
+  assert.ok(said.length > 0, "no parse message to strand, so this test measures nothing");
+  assert.strictEqual(app.els["scale-delete"].hasAttribute("data-armed"), false,
+    "DELETE is armed, so a disarm here would be legitimate");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-msg"].textContent, said,
+    "an ordinary tap on the seed field erased the reason the seed was rejected - "
+    + "the box is still outlined red and Generate still disabled, with nothing "
+    + "on the page saying why");
+});
+
+test("tabbing away from DELETE disarms it too", () => {
+  /* The pointerdown path covers the phone. A desktop keyboard can leave the
+     button without ever touching the page, and an arm the owner tabbed away
+     from is as stale as one they tapped away from. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  assert.strictEqual(typeof app.els["scale-delete"].onblur, "function",
+    "DELETE has no blur handler, so tabbing away leaves it armed");
+  app.els["scale-delete"].onblur();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the owner tabbed off an armed DELETE and it stayed armed");
 });
 
 /* ------------------------------------------- 23. the LAYOUT section (5) */

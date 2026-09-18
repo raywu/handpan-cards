@@ -2976,10 +2976,65 @@ function run() {
     }
   });
 
+  test("the armed delete button still answers a press, in the pressed colour", async () => {
+    /* The armed rule and the shared :active rule have the same specificity,
+       so whichever comes last in the file wins. Armed came last, which left
+       the armed button as the only control on the page that did not answer a
+       press - on the one tap that most needs an acknowledgement, because it
+       is the tap that destroys the deck. Held down rather than clicked: the
+       press state only exists between mousePressed and mouseReleased, and the
+       release here is the confirming tap, so this also proves the armed
+       button still fires while wearing its press colour. */
+    try {
+      await editFreshDeck();
+      await b.click("#scale-delete");
+      const box = await b.eval(`
+        const r = document.getElementById("scale-delete").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      await b.send("Input.dispatchMouseEvent",
+        { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
+      const held = await b.eval(`
+        const el = document.getElementById("scale-delete");
+        return { color: getComputedStyle(el).color, armed: el.hasAttribute("data-armed") };
+      `);
+      await b.send("Input.dispatchMouseEvent",
+        { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+
+      assert.strictEqual(held.armed, true,
+        "the button disarmed under its own press, so this measured the idle colour");
+      assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
+        "the armed delete button keeps its amber under the thumb - the press that "
+        + "destroys the deck is the one control on the page that does not answer");
+      assert.strictEqual(held.color, "rgb(234, 230, 223)",
+        "the armed delete button presses to something other than #eae6df, which is "
+        + "the pressed colour every other control on this page uses");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after the held press was released" });
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("deleting the selected deck falls back to a built-in with a visible message", async () => {
     try {
       await editFreshDeck();
       const gone = await b.eval(`return document.querySelector("#decks .chip.on").textContent.trim();`);
+      // Owner instruction, 2026-09-17: delete takes a confirmation. The first
+      // tap only arms it, and says so in the label and in warning amber.
+      await b.click("#scale-delete");
+      const armed = await b.eval(`
+        const el = document.getElementById("scale-delete");
+        const r = el.getBoundingClientRect();
+        return { text: el.textContent.trim(), color: getComputedStyle(el).color,
+                 h: r.height, open: !document.getElementById("scale-sheet").hasAttribute("hidden") };
+      `);
+      assert.strictEqual(armed.open, true, "the first tap on DELETE closed the page");
+      assert.strictEqual(armed.text, "TAP AGAIN TO DELETE",
+        "the armed delete button does not say what the next tap does");
+      assert.strictEqual(armed.color, "rgb(227, 178, 92)",
+        "the armed delete button is not in warning amber");
+      assert.ok(armed.h >= 44, `the armed button shrank to ${armed.h}px, under the 44px target`);
       await b.click("#scale-delete");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after DELETE" });
@@ -3516,6 +3571,157 @@ function run() {
     }
   });
 
+  /* The owner's SECOND device report, 2026-09-17, on the live site at
+   * handpan.raywu.org: the keyboard pushes the bottom drawer up over the seed
+   * field, and only the top half of what they typed is readable. The test
+   * above passes and the phone disagrees, for two reasons this test fixes.
+   *
+   * 1. IT MEASURED THE WRONG BOX. assertBothOnScreen asserts the seed box is
+   *    inside the VIEWPORT. On the device the box IS inside the viewport - it
+   *    is clipped by .sheetbody, its own scroll container, whose height the
+   *    pinned footer has eaten. A rect inside the viewport says nothing about
+   *    whether a scroller shows it: the same defect queue row 78 closed for
+   *    the LAYOUT hint.
+   * 2. IT SHRANK THE WRONG NUMBER. setViewport shrinks innerHeight AND
+   *    visualViewport.height together. A real iOS keyboard shrinks only
+   *    visualViewport.height and leaves innerHeight alone - which is the whole
+   *    reason kbCap() reads both - so the proxy never exercises the case the
+   *    code exists to handle. The comment above already called it "the
+   *    friendly case, not the honest one"; this is the honest one. */
+  const raiseKeyboard = (vvHeight) => b.eval(`
+    const vv = window.visualViewport;
+    Object.defineProperty(vv, "height", { value: ${vvHeight}, configurable: true });
+    Object.defineProperty(vv, "offsetTop", { value: 0, configurable: true });
+    vv.dispatchEvent(new Event("resize"));
+    return { innerHeight: window.innerHeight, vvHeight: vv.height };
+  `);
+
+  /* How much of the seed box a thumb can actually read: its own rect clipped
+   * by .sheetbody's scrollport and then by the VISUAL viewport, AFTER scrolling the
+   * box into view the way a reader would. Scrolling first is what makes this
+   * about visibility rather than about a scroll position - but it is no
+   * rescue: a scrollport shorter than the box cannot show all of it at any
+   * offset, which is exactly the owner's screenshot. */
+  const seedBoxVisibility = () => b.eval(`
+    const box = document.getElementById("scale-box");
+    const body = document.querySelector(".sheetbody");
+    box.scrollIntoView({ block: "center" });
+    const r = box.getBoundingClientRect();
+    const s = body.getBoundingClientRect();
+    /* The bottom bound is the VISUAL viewport, not innerHeight. Under a real
+     * keyboard innerHeight does not shrink - that is the whole premise of this
+     * test - so clipping at it lets the box sit behind the keyboard and still
+     * score as fully visible. tests/mutants/e_kb_sheet_never_translates.patch
+     * drops applyKbOffset's translateY and survives an innerHeight bound; it
+     * dies on this one. */
+    const vv = window.visualViewport;
+    const kbTop = vv.offsetTop + vv.height;
+    const top = Math.max(r.top, s.top, vv.offsetTop);
+    const bottom = Math.min(r.bottom, s.bottom, kbTop);
+    return {
+      h: r.height, visible: Math.max(0, bottom - top),
+      portH: s.height, focused: document.activeElement && document.activeElement.id,
+      innerHeight: window.innerHeight, vvHeight: vv.height, kbTop,
+      boxTop: r.top, boxBottom: r.bottom,
+    };
+  `);
+
+  function assertSeedBoxReadable(m, where) {
+    assert.strictEqual(m.focused, "scale-box",
+      `${where}: the box is not focused, so no keyboard would be up`);
+    assert.ok(m.innerHeight > m.vvHeight,
+      `${where}: innerHeight ${m.innerHeight} did not stay above the shrunken `
+      + `visual viewport ${m.vvHeight} - this is the friendly proxy again, not a keyboard`);
+    assert.ok(m.visible >= m.h - 0.5,
+      `${where}: only ${m.visible.toFixed(1)}px of the ${m.h.toFixed(1)}px seed box `
+      + `survives the sheet's own scroller (${m.portH.toFixed(1)}px tall) and the `
+      + `keyboard line at ${m.kbTop.toFixed(1)}px (box ${m.boxTop.toFixed(1)}-`
+      + `${m.boxBottom.toFixed(1)}) - the owner cannot read what they are typing`);
+  }
+
+  /* The owner's device: iPhone 14 / iOS 26.6, 390 CSS px wide, ~745 px of
+   * layout viewport under Safari's chrome. The sweep is the range of iOS
+   * portrait keyboards over that layout: 336 px is the plain QWERTY plus the
+   * form accessory bar, 395 px is the tallest (a candidate bar above it, as
+   * the CJK keyboards draw). Every point in that range is a keyboard the
+   * owner can raise, so the seed box has to survive all of them, not just the
+   * friendliest. vvHeight = 745 - keyboard. */
+  const KEYBOARDS = [336, 365, 395];
+
+  test("with a real keyboard up, the seed box is not clipped by the sheet's own scroller", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 745, true);
+      await generate(EDIT_SCALE);
+
+      // EDIT first: it carries the most pinned footer, so it fails first.
+      await openEdit();
+      await b.click("#scale-box");
+      for (const kb of KEYBOARDS) {
+        await raiseKeyboard(745 - kb);
+        assertSeedBoxReadable(await seedBoxVisibility(),
+          `the Edit page with a ${kb}px keyboard`);
+      }
+      await raiseKeyboard(745);
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit page to close" });
+
+      // Then ADD, the page in the owner's screenshot.
+      await openSheet();
+      await typeScale(BIG_SCALE);
+      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+        { label: "the preview to render" });
+      await b.click("#scale-box");
+      for (const kb of KEYBOARDS) {
+        await raiseKeyboard(745 - kb);
+        assertSeedBoxReadable(await seedBoxVisibility(),
+          `the Add page with a ${kb}px keyboard`);
+      }
+    } finally {
+      await raiseKeyboard(900);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
+   * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
+   * the rule stopped matching anything at all and the divider vanished with
+   * it, silently, because no test read it - line 510 was the only border-top
+   * in the file. The rule now belongs to the scrollport's own bottom edge,
+   * which is the boundary it was always describing, so it cannot be undone by
+   * moving a child across it again. */
+  test("a hairline divides the pinned footer from the scroll, so the footer reads as fixed", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 745, true);
+      await openSheet();
+      const m = await b.eval(`
+        const body = document.querySelector(".sheetbody");
+        const cs = getComputedStyle(body);
+        return {
+          next: body.nextElementSibling && body.nextElementSibling.id,
+          style: cs.borderBottomStyle,
+          w: cs.borderBottomStyle === "none" ? 0 : parseFloat(cs.borderBottomWidth),
+          color: cs.borderBottomColor,
+          bg: getComputedStyle(document.querySelector(".sheetsurf")).backgroundColor,
+        };
+      `);
+      assert.strictEqual(m.next, "scale-generate",
+        "the primary is no longer the first thing below the scrollport, so this "
+        + "test is measuring the wrong boundary");
+      assert.ok(m.w >= 1,
+        `the scrollport's bottom edge draws no rule (${m.style} ${m.w}px), so nothing `
+        + "says the footer below it does not scroll");
+      assert.notStrictEqual(m.color, "rgba(0, 0, 0, 0)",
+        "the rule is transparent, which is the same as not drawing it");
+      assert.notStrictEqual(m.color, m.bg,
+        `the rule is drawn in the sheet's own background ${m.bg}, so it is invisible`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("keeping the primary out of the scroll still leaves the sheet's own content reachable", async () => {
     // The failure mode of the fix: a fixed footer that eats the cap leaves a
     // scrolling area too small to use, or one that cannot reach its own end.
@@ -3888,7 +4094,8 @@ function run() {
       // DELETE is the one path where the chip holding focus is genuinely
       // detached by the rebuild, so it is the strictest case of the same bug.
       await editFreshDeck();
-      await b.click("#scale-delete");
+      await b.click("#scale-delete");   // arms
+      await b.click("#scale-delete");   // confirms
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after DELETE" });
       const afterDelete = await activeDesc();

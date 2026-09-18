@@ -1,0 +1,19 @@
+# kills: a tap anywhere else on the page disarms DELETE, without waiting for a blur
+# suite: node --test --test-name-pattern ^a.tap.anywhere.else.on.the.page.disarms.DELETE..without.waiting.for.a.blur$ tests/app.test.js
+# Only blur disarms. On iOS, where a tap gives a <button> no focus, that never
+# fires: an arm outlives retyping the seed and scrolling away, and the next tap
+# on DELETE destroys the deck without a confirmation the owner remembers giving.
+diff --git a/index.html b/index.html
+index 3effb4a..83116ce 100644
+--- a/index.html
++++ b/index.html
+@@ -4904,9 +4904,6 @@ delBtn.onclick = () => {
+    that is not the button itself is the same decision, and it is one the
+    owner's device actually makes. The pointerdown that lands ON the button is
+    not: it is the confirming tap's own first half. */
+-sheet.addEventListener("pointerdown", (e) => {
+-  if (e.target !== delBtn) disarmDelete();
+-});  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
+ delBtn.onblur = disarmDelete;
+ // The mirror is the choice the pan preview exists to make visible, so each
+ // button re-solves the preview through the same parse path a keystroke uses.

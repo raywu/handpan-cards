@@ -1,10 +1,10 @@
 # kills: deleting the selected deck falls back to a built-in with a visible message
 # suite: node --test --test-name-pattern ^deleting.the.selected.deck.falls.back.to.a.built.in.with.a.visible.message$ tests/e2e.test.js
 diff --git a/index.html b/index.html
-index a127d86..b91b830 100644
+index 93dabcf..de28531 100644
 --- a/index.html
 +++ b/index.html
-@@ -2916,7 +2916,6 @@ function deleteDeck(id) {
+@@ -4775,7 +4775,6 @@ function deleteDeck(id) {
    if (!d) return;
    const gone = d.name;
    const wasSelected = deckId === id;

@@ -1,0 +1,18 @@
+# kills: deleting a deck that is already gone leaves no armed button behind
+# suite: node --test --test-name-pattern ^deleting.a.deck.that.is.already.gone.leaves.no.armed.button.behind$ tests/app.test.js
+# deleteDeck returns on a deck that is already gone and leaves the button
+# armed over it, so the next tap is a confirmation of nothing wearing the
+# label of a confirmation of something.
+diff --git a/index.html b/index.html
+index 93dabcf..471e435 100644
+--- a/index.html
++++ b/index.html
+@@ -4887,7 +4887,7 @@ delBtn.onclick = () => {
+   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
+      deck even when deleteDeck turns out to have nothing to remove, and the
+      delete's own message should be the last thing said. */
+-  if (delArmed) { disarmDelete(); deleteDeck(editingId); return; }
++  if (delArmed) { deleteDeck(editingId); return; }
+   delArmed = true;
+   delBtn.textContent = DEL_ARMED;
+   delBtn.setAttribute("data-armed", "");

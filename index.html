@@ -502,20 +502,24 @@ button.nav:active{background:#2e281e}
 .ctlrow{display:flex; align-items:center; justify-content:space-between;
   gap:var(--sp-3); flex-wrap:wrap}
 .mirror{display:flex; gap:var(--sp-2)}
-/* The reserved footer - the mirror/palette row plus the primary - is what the
-   sheet guarantees is reachable without scrolling, so it gets a hairline of its
-   own rather than only a gap: at a scroll offset where the body still has more
-   to give, the rule is what says "this part does not move". Direct child only,
-   so the LAYOUT row's nested .ctlrow is untouched. */
-.sheetsurf > .ctlrow{border-top:1px solid #332c22; padding-top:var(--sp-4)}
+/* The reserved footer - since 2026-09-17 the primary alone, plus the Edit-only
+   delete row - is what the sheet guarantees is reachable without scrolling, so
+   it gets a hairline rather than only a gap: at a scroll offset where the body
+   still has more to give, the rule is what says "this part does not move".
+   The rule hangs off the SCROLLPORT's bottom edge, not off the first pinned
+   element. It used to be `.sheetsurf > .ctlrow`, and when the mirror/palette
+   row moved into .sheetbody that direct-child selector stopped matching
+   anything - the divider disappeared with no test to notice, since this was
+   the file's only border-top. The boundary it describes is .sheetbody's own
+   edge, so that is where it belongs: moving a child across it cannot unhook it
+   again. Pinned by "a hairline divides the pinned footer from the scroll". */
+.sheetbody{border-bottom:1px solid #332c22}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
-   comes straight off the scrolling body. The ramp is already a third smaller
-   here; this drops the footer's breathing room above its own hairline, which is
-   decoration rather than structure, and returns the primary to the 44px floor.
-   The hairline stays: it is what says the footer does not scroll, and it costs
-   one pixel. */
+   comes straight off the scrolling body. The footer's breathing room above its
+   own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+   returns the primary to the 44px floor. The hairline stays: it is what says
+   the footer does not scroll, and it costs one pixel. */
 @media (max-height:520px){
-  .sheetsurf > .ctlrow{padding-top:var(--sp-2)}
   #scale-generate{min-height:44px}
   /* Text fields go back to the 44px floor with tighter padding: on the Edit
      sheet there are two of them above the fold and the box the caret lands in
@@ -651,6 +655,14 @@ button.nav:active{background:#2e281e}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
 #scale-layout-reset:active, #scale-delete:active{color:#eae6df}
+/* Armed is a state the eye can read without the label: the same amber the
+   announcer uses for a warning. */
+#scale-delete[data-armed]{color:#e3b25c}
+/* The armed rule outranks the shared :active one - same specificity, later in
+   the file - so without this the armed button is the only control on the page
+   that does not answer a press. Confirming a delete is the press that most
+   needs the acknowledgement. */
+#scale-delete[data-armed]:active{color:#eae6df}
 </style>
 </head>
 <body>
@@ -784,20 +796,30 @@ button.nav:active{background:#2e281e}
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
       <select id="scale-degrees"></select>
     </div>
-   </div>
-    <!-- Outside .sheetbody, with the primary. The original reason - that the
-         swatches' 44px hit area was an ::after overlay a scroll container
-         would clip - is gone: the swatch button IS 44px now, so nothing
-         reaches outside its own box.
-         The row stays here for the reason that is still testable: .sheetbody
-         is the scrolling box, and everything below it is what the sheet
-         guarantees is reachable WITHOUT scrolling. Move this </div> up so the
-         row joins the scroll and GENERATE CARDS goes 245.5px below the fold at
-         844x390 - which is exactly what tests/mutants/
-         e_sheet_primary_back_in_the_scroll.patch does, and it dies on
+    <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
+         scrollport with the primary, on the argument that everything outside
+         .sheetbody is what the sheet guarantees without scrolling - so the
+         palette and the mirror toggle were guaranteed too.
+         The owner overruled that on 2026-09-17 after photographing an
+         iPhone 14 / iOS 26.6 with the keyboard up: "only generate cards
+         button should be part of the bottom drawer. As of current design the
+         keyboard pushes the bottom drawer up and covers the input field."
+         A pinned row is not free - .sheetbody SHRINKS to make room for it
+         (see the .sheetbody comment above), and under a real keyboard there
+         is almost nothing left to shrink. With this row pinned, a 336px iOS
+         keyboard leaves the Edit page a 12px scrollport for a 48px seed
+         field; with it in the scroll, 159px. Guaranteeing the swatches cost
+         the field the owner was typing into.
+         So only #scale-generate (and the Edit-only delete row) stay pinned.
+         The swatches and the mirror toggle lose their reachable-without-
+         scrolling guarantee - that is the trade the owner chose. DOM order is
+         unchanged. Moving this </div> back up is
+         tests/mutants/e_sheet_ctlrow_pinned_again.patch, which dies on "with
+         a real keyboard up, the seed box is not clipped by the sheet's own
+         scroller"; moving it DOWN past the primary is
+         tests/mutants/e_sheet_primary_back_in_the_scroll.patch, which dies on
          "GENERATE CARDS is reachable without scrolling at every phone
-         viewport". Keeping the row here also keeps the mirror toggle beside
-         the button it affects. DOM order is unchanged. -->
+         viewport". -->
     <div class="ctlrow">
       <div class="mirror">
         <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
@@ -805,6 +827,7 @@ button.nav:active{background:#2e281e}
       </div>
       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
     </div>
+   </div>
     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
     <div class="editrow" id="scale-delete-row" hidden>
       <button id="scale-delete" type="button">DELETE THIS DECK</button>
@@ -4615,6 +4638,7 @@ if (window.visualViewport) {
 
 /** Show or hide the three Edit-only rows and relabel the single primary. */
 function setSheetMode(edit) {
+  disarmDelete();
   for (const el of [nameRow, degRow, layoutRow, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
@@ -4836,7 +4860,52 @@ addChip.onclick = () => openScaleSheet(addChip);
 // The page's way out. Same handler Escape runs, so there is one close path.
 backBtn.onclick = () => closeScaleSheet();
 genBtn.onclick = runGenerate;
-delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+/* Owner instruction, 2026-09-17: "Delete cards should require a confirmation."
+   A second tap on the SAME control rather than a dialog: the pinned footer is
+   one row for the reason the .sheetbody comment gives, a dialog would cost it
+   height, and Escape - which closes this page - must not be able to dismiss a
+   confirmation. The label carries the state, so an armed button never looks
+   like an idle one. setSheetMode() disarms on every open, and touching
+   anything else on the page disarms it, so a confirmation never outlives the
+   tap that gave it. */
+const DEL_IDLE = "DELETE THIS DECK";
+const DEL_ARMED = "TAP AGAIN TO DELETE";
+let delArmed = false;
+function disarmDelete() {
+  /* Nothing to undo when nothing is armed, and saying so would be worse than
+     silent: this runs on every pointerdown in the sheet, so an unguarded
+     say("") would wipe whatever the parse line or a save had just announced. */
+  if (!delArmed) return;
+  delArmed = false;
+  delBtn.textContent = DEL_IDLE;
+  delBtn.removeAttribute("data-armed");
+  // The label and the announcer said the same thing; they stop together.
+  say("");
+}
+delBtn.onclick = () => {
+  if (!editingId) return;
+  /* Disarm BEFORE the delete, not inside it: the state must not outlive the
+     deck even when deleteDeck turns out to have nothing to remove, and the
+     delete's own message should be the last thing said. */
+  if (delArmed) { disarmDelete(); deleteDeck(editingId); return; }
+  delArmed = true;
+  delBtn.textContent = DEL_ARMED;
+  delBtn.setAttribute("data-armed", "");
+  const d = CUSTOM[editingId];
+  say("Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.",
+      "warn");
+};
+/* Looking away is a decision too, and on a phone the only way to see it is the
+   pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
+   there and the blur handler alone would let an arm survive retyping the seed,
+   flipping the mirror and scrolling away. A pointerdown anywhere in the page
+   that is not the button itself is the same decision, and it is one the
+   owner's device actually makes. The pointerdown that lands ON the button is
+   not: it is the confirming tap's own first half. */
+sheet.addEventListener("pointerdown", (e) => {
+  if (e.target !== delBtn) disarmDelete();
+});  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
+delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
 mirrorL.onclick = () => { setMirror(true); updateParse(); };

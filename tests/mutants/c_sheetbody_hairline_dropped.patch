@@ -1,0 +1,18 @@
+# kills: a hairline divides the pinned footer from the scroll, so the footer reads as fixed
+# suite: node --test --test-name-pattern ^a.hairline.divides.the.pinned.footer.from.the.scroll..so.the.footer.reads.as.fixed$ tests/e2e.test.js
+# The scrollport's bottom edge draws no rule, so the pinned footer floats with
+# nothing to say it does not move. This is the regression the `.sheetsurf >
+# .ctlrow` selector shipped once already, silently.
+diff --git a/index.html b/index.html
+index b68a14f..0b7f787 100644
+--- a/index.html
++++ b/index.html
+@@ -513,7 +513,7 @@ button.nav:active{background:#2e281e}
+    the file's only border-top. The boundary it describes is .sheetbody's own
+    edge, so that is where it belongs: moving a child across it cannot unhook it
+    again. Pinned by "a hairline divides the pinned footer from the scroll". */
+-.sheetbody{border-bottom:1px solid #332c22}
++.sheetbody{}
+ /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
+    comes straight off the scrolling body. The footer's breathing room above its
+    own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this

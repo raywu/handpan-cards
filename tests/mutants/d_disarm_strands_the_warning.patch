@@ -1,0 +1,17 @@
+# kills: disarming DELETE takes its warning down with it
+# suite: node --test --test-name-pattern ^disarming.DELETE.takes.its.warning.down.with.it$ tests/app.test.js
+# The label goes back to idle and the amber line keeps saying the deck cannot
+# be recovered, so the page warns about a thing it is no longer about to do.
+diff --git a/index.html b/index.html
+index 3effb4a..cf2b28b 100644
+--- a/index.html
++++ b/index.html
+@@ -4882,8 +4882,6 @@ function disarmDelete() {
+   delArmed = false;
+   delBtn.textContent = DEL_IDLE;
+   delBtn.removeAttribute("data-armed");
+-  // The label and the announcer said the same thing; they stop together.
+-  say("");
+ }
+ delBtn.onclick = () => {
+   if (!editingId) return;

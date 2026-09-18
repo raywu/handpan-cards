@@ -1,21 +1,18 @@
 # kills: GENERATE CARDS is reachable without scrolling at every phone viewport
 # suite: node --test --test-name-pattern GENERATE.CARDS.is.reachable.without.scrolling.at.every tests/e2e.test.js
-# .sheetbody swallows the action cluster again, so the whole sheet scrolls as
-# one and the primary - last in the flow - goes back below the fold: this is
-# the reported bug verbatim (queue row 211), 245px down at 844x390.
+# .sheetbody swallows the primary as well, so the whole sheet scrolls as one and
+# GENERATE CARDS - last in the flow - goes below the fold: the reported bug
+# verbatim (queue row 211).
 diff --git a/index.html b/index.html
-index 79d9295..f7b682e 100644
+index 169aa79..2866eaa 100644
 --- a/index.html
 +++ b/index.html
-@@ -768,7 +768,6 @@ button.nav:active{background:#2e281e}
-       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
-       <select id="scale-degrees"></select>
+@@ -830,11 +830,11 @@ button.nav:active{background:#2e281e}
+       </div>
+       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
 -   </div>
-     <!-- Outside .sheetbody, with the primary. The original reason - that the
-          swatches' 44px hit area was an ::after overlay a scroll container
-          would clip - is gone: the swatch button IS 44px now, so nothing
-@@ -793,6 +792,7 @@ button.nav:active{background:#2e281e}
+     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
      <div class="editrow" id="scale-delete-row" hidden>
        <button id="scale-delete" type="button">DELETE THIS DECK</button>
      </div>
