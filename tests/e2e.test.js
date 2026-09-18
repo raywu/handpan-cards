@@ -3872,6 +3872,64 @@ function run() {
     }
   });
 
+  /* The zoomed-WITH-a-keyboard state, which the first version of the row 87
+   * fix got wrong in two directions at once. It scaled `vv.offsetTop` as well
+   * as `vv.height`, but offsetTop is already in layout px - it saturates at
+   * innerHeight - vv.height - so the lift decayed as the reader panned and hit
+   * zero partway down, while the cap (which never sees offsetTop) went on
+   * saying a keyboard was there. One state, two halves of one fix, opposite
+   * answers.
+   *
+   * There is no arithmetic that makes both halves right here: a sheet laid out
+   * at 100dvh is TALLER than the screen the moment the page is zoomed, so
+   * "keep the whole surface above the keyboard" and "leave the zoom alone" are
+   * not simultaneously satisfiable. So the page makes no claim at all while
+   * the scale is up: both writes are cleared together, and panning is the
+   * reader's. That is safe here only because this page pins 16px on the seed
+   * input, so iOS never raises the scale by itself - every zoom is two
+   * deliberate fingers, and the reader who made it can pan.
+   *
+   * Swept across offsetTop because the defect was invisible at 0, which is the
+   * only value a test that never pans ever sees. */
+  test("a zoom with the keyboard up is left alone at every pan position", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.setPageScale(2);
+
+      // 390x844 at scale 2 shows 422 layout px; a 336px keyboard takes 168 of
+      // them. offsetTop is a LAYOUT-px pan offset, legal up to 844 - 222.
+      for (const ot of [0, 150, 300, 600]) {
+        await b.fakeKeyboard(222, ot);
+        const m = await surfaceState();
+        assert.ok(m.vvScale > 1,
+          `setPageScale did not zoom, so this proves nothing: scale ${m.vvScale}`);
+        assert.strictEqual(m.transform, "",
+          `at offsetTop ${ot} the zoomed sheet was lifted as if the keyboard `
+          + `were the only thing shrinking the viewport`);
+        assert.strictEqual(m.maxHeight, "",
+          `at offsetTop ${ot} the zoomed sheet was capped while the lift said `
+          + `there was no keyboard - the two halves of one fix disagreed`);
+      }
+
+      // Negative control: the SAME shrink unzoomed is a keyboard, and both
+      // halves answer it. Without this the test above is satisfied by
+      // `applyKbOffset() { return; }`.
+      await b.setPageScale(1);
+      await b.fakeKeyboard(444, 0);
+      const flat = await surfaceState();
+      assert.strictEqual(flat.transform, `translateY(-${flat.innerHeight - 444}px)`,
+        "the same viewport unzoomed did not lift the sheet");
+      assert.strictEqual(flat.maxHeight, `${444 - 8}px`,
+        "the same viewport unzoomed did not cap the sheet");
+    } finally {
+      await b.setPageScale(1);
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
    * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
    * the rule stopped matching anything at all and the divider vanished with

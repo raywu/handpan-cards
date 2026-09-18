@@ -1,0 +1,18 @@
+# kills: a zoom with the keyboard up is left alone at every pan position
+# suite: node --test --test-name-pattern ^a.zoom.with.the.keyboard.up.is.left.alone.at.every.pan.position$ tests/e2e.test.js
+# The zoom gate goes away, so a pinch-zoom is measured as a keyboard again
+# (queue row 87). vv.height shrinks under zoom exactly as it does under a
+# keyboard, so the sheet lifts and caps itself for a reader who was only
+# zooming in.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4661,7 +4661,7 @@ function applyKbOffset() {
+    * deliberate fingers, and the reader who zoomed can pan.
+    * The tolerance is for scales that do not land exactly on 1 coming back from
+    * a pinch; a sub-percent residue is not a zoom. */
+-  const zoomed = vv.scale > 1.01;
++  const zoomed = false;
+   const off = zoomed ? 0 : kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+   const cap = zoomed ? 0 : kbCap(window.innerHeight, vv.height);
+   /* Written only on change: this handler is bound to visualViewport's `scroll`

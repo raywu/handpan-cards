@@ -4635,30 +4635,36 @@ function kbCap(innerHeight, vvHeight) {
 function applyKbOffset() {
   const vv = window.visualViewport;
   /* Gated on sheetOpen as well as on the two objects. The listeners below are
-   * bound for the life of the page, so without this a resize arriving AFTER
-   * hideSheet() re-applies the lift and the cap to a sheet nobody is looking
-   * at - and clearing the cap in hideSheet() is itself enough to provoke one
-   * (queue rows 55, 88). showSheet() sets sheetOpen before it calls this, and
+   * bound for the life of the page and never removed, so without this a
+   * resize or scroll arriving AFTER hideSheet() re-applies the lift and the
+   * cap to a sheet nobody is looking at - the keyboard dismissing itself as
+   * the sheet closes is the ordinary way that happens on iOS (queue rows 55,
+   * 88). showSheet() sets sheetOpen before it calls this, and
    * hideSheet() clears it before it resets the two styles, so the open path is
    * unaffected and the teardown is the last word. */
   if (!vv || !sheetSurf || !sheetOpen) return;
   /* vv.height is the VISUAL viewport, which a pinch-zoom shrinks in exactly
-   * the way a keyboard does - so before this line the sheet lifted and capped
-   * itself for a reader who was only zooming in (queue row 87). Multiplying by
-   * the scale converts it back to LAYOUT px, which is the quantity both pure
-   * functions were always comparing against innerHeight. That one term covers
-   * every state: under pure zoom it equals innerHeight so there is nothing to
-   * do, under a real keyboard the scale is 1 so nothing changes, and zoomed
-   * WITH the keyboard up it still measures the keyboard. A `scale > 1` early
-   * return would instead disable the fix at the exact moment iOS auto-zoom
-   * fires, which is when the keyboard opens.
-   * Rounded because inner/scale*scale does not round-trip exactly at a scale
-   * that is not a power of two, and a leftover 0.0001px would read as a
-   * keyboard and translate the sheet by a sub-pixel. */
-  const vh = Math.round(vv.height * vv.scale);
-  const vt = Math.round(vv.offsetTop * vv.scale);
-  const off = kbOffset(window.innerHeight, vh, vt);
-  const cap = kbCap(window.innerHeight, vh);
+   * the way a keyboard does - so without this branch the sheet lifted and
+   * capped itself for a reader who was only zooming in (queue row 87).
+   * While the scale is up the page makes NO claim: both writes are cleared
+   * together. That is a policy, not arithmetic, because no arithmetic gets
+   * both halves right here. The surface is laid out at 100dvh, so the moment
+   * the page is zoomed it is TALLER than the screen and "keep it above the
+   * keyboard" and "leave the zoom alone" stop being simultaneously
+   * satisfiable; any formula that splits the difference ends up lifting on one
+   * measurement and capping on another, which is what the first version of
+   * this fix did (it scaled vv.offsetTop, which is already in layout px, so
+   * the lift decayed to zero as the reader panned while the cap went on
+   * insisting a keyboard was there).
+   * Clearing is safe here only because #scale-box and its siblings are pinned
+   * at 16px: iOS auto-zooms a focused input below that, and the fix must not
+   * hand itself off exactly when the keyboard opens. At 16px every zoom is two
+   * deliberate fingers, and the reader who zoomed can pan.
+   * The tolerance is for scales that do not land exactly on 1 coming back from
+   * a pinch; a sub-percent residue is not a zoom. */
+  const zoomed = vv.scale > 1.01;
+  const off = zoomed ? 0 : kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+  const cap = zoomed ? 0 : kbCap(window.innerHeight, vv.height);
   /* Written only on change: this handler is bound to visualViewport's `scroll`
    * as well, which fires at frame rate while a zoomed page is panned, and each
    * unconditional style write forces a style recalc for no reason. */
@@ -4928,14 +4934,19 @@ delBtn.onclick = () => {
   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
      Deleting this line reddens nothing, and that is correct rather than a gap:
      no state the app can enter delivers a click here with editingId null.
-     delRow carries `hidden` exactly when editingId is null - setSheetMode()
-     sets it one line after `editingId = null` on the add path and clears it one
-     line after `editingId = d.id` on the edit path - and `[hidden]` above is
-     `display:none !important`, which beats `.editrow{display:flex}`. A
-     display:none button takes no pointer event and no focus, so the only way to
-     reach this branch is a synthetic .onclick() call, and a test that made one
-     would be testing the mutant rather than the owner. Left in because the
-     lines it depends on sit in two other functions. */
+     delRow carries `hidden` whenever setSheetMode() has run for a null
+     editingId - it sets `hidden` one line after `editingId = null` on the add
+     path and clears it one line after `editingId = d.id` on the edit path -
+     and `[hidden]` above is `display:none !important`, which beats
+     `.editrow{display:flex}`. The correspondence is not exact: hideSheet()
+     sets `editingId = null` without calling setSheetMode(), so between that
+     and the next open delRow is visible markup with a null editingId. It is
+     still unclickable, because #scale-sheet itself is `hidden` for the whole
+     of that window. Either way a display:none button takes no pointer event
+     and no focus, so the only way to reach this branch is a synthetic
+     .onclick() call, and a test that made one would be testing the mutant
+     rather than the owner. Left in because the lines it depends on sit in two
+     other functions. */
   if (!editingId) return;
   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
      deck even when deleteDeck turns out to have nothing to remove, and the
