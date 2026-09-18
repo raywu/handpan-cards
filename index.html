@@ -4599,9 +4599,18 @@ function updateParse() {
    CSS can react to the keyboard; the gap between the two viewports is
    exactly how far the sheet has to translate up to stay above it.
    kbOffset() is the pure half of that: given the three viewport numbers,
-   the translate distance. It is unit-tested directly (tests/app.test.js) -
-   headless Chromium cannot open a real keyboard, so that pure function is
-   the only part of this fix CI can verify (see TODOS.md and the PR body). */
+   the translate distance. It is unit-tested directly (tests/app.test.js),
+   and the WIRING around it is covered too: shadowing visualViewport.height
+   on the instance and firing a real resize drives applyKbOffset end to end
+   in e2e (b.fakeKeyboard in tests/helpers/cdp.js), so the listener, both
+   pure functions and both style writes are all under test.
+   What CI still cannot verify is the PREMISE - that a real iOS keyboard
+   shrinks visualViewport.height - because no CDP soft-keyboard emulation
+   exists. That stays an owner-device claim (TODOS.md, queue rows 51/67).
+   One more thing no test here can see: the viewport meta above carries
+   interactive-widget=resizes-content. On an engine that honours it the
+   LAYOUT viewport shrinks instead, innerHeight - vv.height is 0, and this
+   whole block correctly does nothing. */
 function kbOffset(innerHeight, vvHeight, vvOffsetTop) {
   return Math.max(0, innerHeight - vvHeight - vvOffsetTop);
 }
@@ -4626,10 +4635,30 @@ function kbCap(innerHeight, vvHeight) {
 function applyKbOffset() {
   const vv = window.visualViewport;
   if (!vv || !sheetSurf) return;
-  const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
-  const cap = kbCap(window.innerHeight, vv.height);
-  sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
-  sheetSurf.style.maxHeight = cap > 0 ? `${cap}px` : "";
+  /* vv.height is the VISUAL viewport, which a pinch-zoom shrinks in exactly
+   * the way a keyboard does - so before this line the sheet lifted and capped
+   * itself for a reader who was only zooming in (queue row 87). Multiplying by
+   * the scale converts it back to LAYOUT px, which is the quantity both pure
+   * functions were always comparing against innerHeight. That one term covers
+   * every state: under pure zoom it equals innerHeight so there is nothing to
+   * do, under a real keyboard the scale is 1 so nothing changes, and zoomed
+   * WITH the keyboard up it still measures the keyboard. A `scale > 1` early
+   * return would instead disable the fix at the exact moment iOS auto-zoom
+   * fires, which is when the keyboard opens.
+   * Rounded because inner/scale*scale does not round-trip exactly at a scale
+   * that is not a power of two, and a leftover 0.0001px would read as a
+   * keyboard and translate the sheet by a sub-pixel. */
+  const vh = Math.round(vv.height * vv.scale);
+  const vt = Math.round(vv.offsetTop * vv.scale);
+  const off = kbOffset(window.innerHeight, vh, vt);
+  const cap = kbCap(window.innerHeight, vh);
+  /* Written only on change: this handler is bound to visualViewport's `scroll`
+   * as well, which fires at frame rate while a zoomed page is panned, and each
+   * unconditional style write forces a style recalc for no reason. */
+  const t = off > 0 ? `translateY(-${off}px)` : "";
+  const m = cap > 0 ? `${cap}px` : "";
+  if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
+  if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", applyKbOffset);

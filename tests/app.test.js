@@ -3215,3 +3215,24 @@ test("the page routes do not shadow a share URL", () => {
     "a share link stopped opening its deck once the page routes were added");
   assert.strictEqual(shared.sheetOpen(), false, "a share link opened the scale page");
 });
+
+/* iOS Safari auto-zooms any input whose font-size is under 16px, and zooming
+ * IS what queue row 87 is about: the visual viewport shrinks, and before the
+ * scale-aware arithmetic in applyKbOffset() the sheet read that as a keyboard.
+ * The arithmetic now handles the zoomed case, but the cheaper half of the fix
+ * is not triggering the zoom at all - so these two seed/name inputs are pinned
+ * at 16px here. Dropping either to 15px is a silent mobile regression that no
+ * headless test would otherwise see. Asserted against the CSS text because the
+ * sandbox stubs the DOM and has no layout engine. */
+test("the sheet's text inputs stay at 16px so iOS does not auto-zoom them", () => {
+  const css = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  for (const sel of ["#scale-box", "#scale-name"]) {
+    const rule = new RegExp(`\\${sel}\\{([^}]*)\\}`).exec(css);
+    assert.ok(rule, `no standalone CSS rule for ${sel}`);
+    const m = /font-size:\s*([\d.]+)px/.exec(rule[1]);
+    assert.ok(m, `${sel} has no explicit font-size; iOS will auto-zoom it`);
+    assert.ok(Number(m[1]) >= 16,
+      `${sel} is ${m[1]}px; iOS Safari auto-zooms inputs under 16px`);
+  }
+});

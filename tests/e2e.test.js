@@ -3735,6 +3735,57 @@ function run() {
     }
   });
 
+  /* Queue row 87. A pinch-zoom shrinks visualViewport.height exactly the way a
+   * keyboard does, so before this fix the sheet lifted and capped itself for a
+   * reader who was only zooming in to read the seed - measured at 390x844,
+   * scale 2: translateY(-422px) and maxHeight 414px, with no keyboard anywhere.
+   *
+   * The discriminator is NOT a scale > 1 branch. vv.height * vv.scale is the
+   * visible LAYOUT height, which is what kbOffset and kbCap were always
+   * reaching for, and it handles both states with no branch at all: under pure
+   * zoom it equals innerHeight, and under a real keyboard scale is 1 so every
+   * term is unchanged. A branch would have disabled the fix whenever iOS
+   * auto-zoom raises the scale - which is the exact moment the keyboard opens.
+   *
+   * The oracle is positive THEN negative on purpose. A test that only asserts
+   * both writes are empty is satisfied by `applyKbOffset() { return; }`, which
+   * is one of the mutants this lane exists to kill. */
+  test("a pinch-zoom leaves the sheet alone, but a real shrink still lifts it", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+
+      // Positive half: the lift still happens when it should.
+      await b.fakeKeyboard(400);
+      const lifted = await surfaceState();
+      assert.ok(lifted.transform.startsWith("translateY(-"),
+        `a shrunken visual viewport did not lift the surface (transform `
+        + `${JSON.stringify(lifted.transform)})`);
+      assert.ok(lifted.maxHeight !== "",
+        "a shrunken visual viewport did not cap the surface");
+      await b.clearKeyboard();
+
+      // Negative half: the same shrink, produced by zooming, must not.
+      await b.setPageScale(2);
+      await b.settle();
+      const zoomed = await surfaceState();
+      assert.ok(zoomed.vvScale > 1,
+        `setPageScale did not actually zoom: scale ${zoomed.vvScale}`);
+      assert.ok(zoomed.vvHeight < zoomed.innerHeight,
+        `the zoom did not shrink the visual viewport, so this test proves `
+        + `nothing: vv.height ${zoomed.vvHeight} vs innerHeight ${zoomed.innerHeight}`);
+      assert.strictEqual(zoomed.transform, "",
+        `pinch-zooming lifted the sheet as if a keyboard had opened`);
+      assert.strictEqual(zoomed.maxHeight, "",
+        `pinch-zooming capped the sheet as if a keyboard had opened`);
+    } finally {
+      await b.setPageScale(1);
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
    * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
    * the rule stopped matching anything at all and the divider vanished with
