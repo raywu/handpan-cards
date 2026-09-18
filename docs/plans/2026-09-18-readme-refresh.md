@@ -98,6 +98,13 @@ this lane: commit the README before running the gate (Task 2 Step 5).
 - [ ] **Step 1: write the failing test.** Four cases, each asserting against a
       value READ from the repo, never a literal repeated in the test:
 
+> **SUPERSEDED - do not copy this sketch.** This is the pre-review draft. It was
+> changed in review by findings 9 and 10 below and by round 1's N2/N3/N4/N6:
+> the bare `open()` became a `with` block, the deck-name window gained a
+> `re.split(r"[;.]", ...)` clause, the engine check gained a phantom-module
+> direction, and the bare upper bound on the mutant count became a band. The
+> shipped file is `tests/test_readme_currency.py`; read that, not this.
+
 ```python
 import glob, os, re, unittest
 from tests.paths import ROOT, canonical_decks
@@ -429,9 +436,10 @@ already-selected custom chip (there is no EDIT button - `index.html:4129-4131`
 says so normatively), and `src/engine/share.js` encodes the SEED, never the
 generated deck (`src/engine/share.js:7-9`).
 
-Left as recorded nits, not changed: the Step 1 code sketch above still shows
-the pre-fix test and is superseded by these findings sections; `cdp.js`'s
-unused `swipe()` is dead code for another lane; the boundary exception
+Both round-2 nits are now closed by `docs/plans/2026-09-18-swipe-coverage.md`:
+the Step 1 code sketch above carries a SUPERSEDED banner, and `cdp.js`'s
+`swipe()` is no longer dead - it drives three e2e tests and two mutants over
+the touch navigation handler. Still left as a recorded nit: the boundary exception
 `7992396` stands (the reviewer agreed reverting it would discard real
 bookkeeping).
 

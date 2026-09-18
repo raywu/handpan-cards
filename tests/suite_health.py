@@ -42,7 +42,7 @@ FLOORS = {
     "tests/test_readme_currency.py": 4,
     # node
     "tests/app.test.js": 112,
-    "tests/e2e.test.js": 68,
+    "tests/e2e.test.js": 88,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 41,
     "tests/voicing.test.js": 15,

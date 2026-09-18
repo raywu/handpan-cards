@@ -410,6 +410,53 @@ function run() {
     await expectCount(`${n} / ${n}`, "ArrowLeft from the first card wraps to the last");
   });
 
+  /* The swipe handler (index.html:5084-5090) is the primary way the app is
+     navigated on a phone and had no test of any kind until this group. A unit
+     test cannot reach it: it is real touch dispatch, not a click. */
+  test("a swipe past the threshold steps the deck in the swiped direction", async () => {
+    await freshLoad();
+    const n = (await decksMeta())[0].chords;
+
+    await b.swipe("#card", -120);
+    await expectCount(`2 / ${n}`, "swiping left did not step forward");
+
+    await b.swipe("#card", 120);
+    await expectCount(`1 / ${n}`, "swiping right did not step back");
+
+    // Just past the 55px threshold. Paired with the 50px drag in the next test
+    // this brackets the constant to within 10px, so a mutant that moves it
+    // anywhere inside (50, 60) still dies. 54/56 would be tighter and would
+    // flake: CDP rounds a touch point off a fractional getBoundingClientRect
+    // centre by up to a pixel.
+    await b.swipe("#card", -60);
+    await expectCount(`2 / ${n}`, "a 60px drag did not clear the 55px threshold");
+  });
+
+  test("a swipe shorter than the threshold does not navigate", async () => {
+    // The card is BOTH the flip target and the swipe target, so the deadzone is
+    // the whole of what keeps an ordinary tap - and the small drag a thumb makes
+    // while tapping - from also throwing the card away to the next one.
+    await freshLoad();
+    const n = (await decksMeta())[0].chords;
+
+    await b.swipe("#card", -50);
+    await expectCount(`1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
+
+    await b.swipe("#card", 50);
+    await expectCount(`1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
+  });
+
+  test("swipe wraps at both ends of the deck like the buttons do", async () => {
+    await freshLoad();
+    const n = (await decksMeta())[0].chords;
+
+    await b.swipe("#card", 120);
+    await expectCount(`${n} / ${n}`, "swiping back from the first card did not wrap to the last");
+
+    await b.swipe("#card", -120);
+    await expectCount(`1 / ${n}`, "swiping forward from the last card did not wrap to the first");
+  });
+
   /* ---------------------------------------------------------------- *
    * 5. persistence
    *
