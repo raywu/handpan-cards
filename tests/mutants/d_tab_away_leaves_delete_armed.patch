@@ -1,0 +1,16 @@
+# kills: tabbing away from DELETE disarms it too
+# suite: node --test --test-name-pattern ^tabbing.away.from.DELETE.disarms.it.too$ tests/app.test.js
+# The blur wiring goes away. A desktop owner who tabs off an armed DELETE
+# comes back to a button that still deletes on one tap.
+diff --git a/index.html b/index.html
+index 93dabcf..9b04422 100644
+--- a/index.html
++++ b/index.html
+@@ -4905,7 +4905,6 @@ delBtn.onclick = () => {
+ sheet.addEventListener("pointerdown", (e) => {
+   if (e.target !== delBtn) disarmDelete();
+ });  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
+-delBtn.onblur = disarmDelete;
+ // The mirror is the choice the pan preview exists to make visible, so each
+ // button re-solves the preview through the same parse path a keystroke uses.
+ mirrorL.onclick = () => { setMirror(true); updateParse(); };
