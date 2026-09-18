@@ -3826,12 +3826,15 @@ function run() {
    * reader who was only zooming in to read the seed - measured at 390x844,
    * scale 2: translateY(-422px) and maxHeight 414px, with no keyboard anywhere.
    *
-   * The discriminator is NOT a scale > 1 branch. vv.height * vv.scale is the
-   * visible LAYOUT height, which is what kbOffset and kbCap were always
-   * reaching for, and it handles both states with no branch at all: under pure
-   * zoom it equals innerHeight, and under a real keyboard scale is 1 so every
-   * term is unchanged. A branch would have disabled the fix whenever iOS
-   * auto-zoom raises the scale - which is the exact moment the keyboard opens.
+   * The discriminator IS a `vv.scale > 1.01` branch, and this comment used to
+   * say the opposite. The first version of the fix was arithmetic
+   * (vv.height * vv.scale, and the same on vv.offsetTop), on the argument that
+   * a branch would disable the keyboard fix whenever iOS auto-zoom raises the
+   * scale. Both halves of that were wrong. offsetTop is already in layout px,
+   * so the lift decayed to zero as the reader panned while the cap went on
+   * insisting a keyboard was there; and iOS auto-zoom never fires here,
+   * because #scale-box and its siblings pin 16px. See the test below and
+   * index.html's applyKbOffset() for what the page actually does under zoom.
    *
    * The oracle is positive THEN negative on purpose. A test that only asserts
    * both writes are empty is satisfied by `applyKbOffset() { return; }`, which

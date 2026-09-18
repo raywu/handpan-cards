@@ -3216,23 +3216,34 @@ test("the page routes do not shadow a share URL", () => {
   assert.strictEqual(shared.sheetOpen(), false, "a share link opened the scale page");
 });
 
-/* iOS Safari auto-zooms any input whose font-size is under 16px, and zooming
- * IS what queue row 87 is about: the visual viewport shrinks, and before the
- * scale-aware arithmetic in applyKbOffset() the sheet read that as a keyboard.
- * The arithmetic now handles the zoomed case, but the cheaper half of the fix
- * is not triggering the zoom at all - so these two seed/name inputs are pinned
- * at 16px here. Dropping either to 15px is a silent mobile regression that no
- * headless test would otherwise see. Asserted against the CSS text because the
- * sandbox stubs the DOM and has no layout engine. */
+/* iOS Safari auto-zooms any form control whose font-size is under 16px, and
+ * zooming IS what queue row 87 is about: the visual viewport shrinks, and
+ * applyKbOffset() cannot tell that shrink from a keyboard. The page's answer
+ * is to make NO claim while the scale is up - which is only safe if the page
+ * never raises the scale itself. That is this test: all three of the sheet's
+ * focusable controls are pinned at 16px, so every scale > 1 is two deliberate
+ * fingers. Dropping any of them to 15px hands the fix off at exactly the
+ * moment the keyboard opens, and no headless test would otherwise see it.
+ * #scale-degrees is a <select> rather than a text input, but iOS auto-zooms a
+ * focused select on the same rule, and it declares its size through the `font`
+ * shorthand - hence the two patterns. Asserted against the CSS text because
+ * the sandbox stubs the DOM and has no layout engine. */
 test("the sheet's text inputs stay at 16px so iOS does not auto-zoom them", () => {
   const css = require("node:fs").readFileSync(
     require("node:path").join(__dirname, "..", "index.html"), "utf8");
-  for (const sel of ["#scale-box", "#scale-name"]) {
-    const rule = new RegExp(`\\${sel}\\{([^}]*)\\}`).exec(css);
-    assert.ok(rule, `no standalone CSS rule for ${sel}`);
-    const m = /font-size:\s*([\d.]+)px/.exec(rule[1]);
-    assert.ok(m, `${sel} has no explicit font-size; iOS will auto-zoom it`);
+  for (const sel of ["#scale-box", "#scale-name", "#scale-degrees"]) {
+    /* Every standalone rule for the selector, not the first: each of these
+     * three is also named in the short-viewport media block at :528, which
+     * sets geometry and no font, and matching that one would report a missing
+     * size that is actually declared further down. */
+    const rules = [...css.matchAll(
+      new RegExp(`\\${sel}\\{([^}]*)\\}`, "g"))].map(r => r[1]);
+    assert.ok(rules.length, `no standalone CSS rule for ${sel}`);
+    const sizeOf = body => /font-size:\s*([\d.]+)px/.exec(body)
+      || /\bfont:[^;]*?\b([\d.]+)px\b/.exec(body);
+    const m = rules.map(sizeOf).find(Boolean);
+    assert.ok(m, `${sel} has no explicit font size; iOS will auto-zoom it`);
     assert.ok(Number(m[1]) >= 16,
-      `${sel} is ${m[1]}px; iOS Safari auto-zooms inputs under 16px`);
+      `${sel} is ${m[1]}px; iOS Safari auto-zooms controls under 16px`);
   }
 });

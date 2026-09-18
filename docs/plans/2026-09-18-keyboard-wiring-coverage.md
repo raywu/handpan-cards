@@ -1,5 +1,18 @@
 # Keyboard wiring coverage (lane S6)
 
+> **READ FIRST - one of this plan's prescriptions was overturned during
+> execution.** Everywhere below that this document argues for measuring the
+> keyboard as `vv.height * vv.scale` and `vv.offsetTop * vv.scale` rather than
+> branching on `vv.scale`, it is WRONG and was reversed in `c7098df` after the
+> independent review FAILed `a434058`. `vv.offsetTop` is already in layout px,
+> so scaling it is a unit error and the lift and the cap end up answering
+> opposite questions as the reader pans. What shipped: while `vv.scale > 1.01`
+> the page clears BOTH writes and makes no claim. The full reasoning is in the
+> Task 2 block below and in queue row 87 of
+> `docs/plans/2026-09-16-remaining-work-coordination.md`, which is the
+> authoritative record. The rest of this plan - the CDP seam, the mutants, the
+> teardown fix - executed as written.
+
 **Goal:** close the coverage gap that has kept the keyboard fix unverifiable by
 CI (queue row 54), and fix the two real defects that gap was hiding
 (rows 87, 88/55).
@@ -163,32 +176,46 @@ A pinch-zoom shrinks `visualViewport.height` the same way a keyboard does, so
 today the sheet lifts and caps for a reader who is only zooming in (measured:
 `translateY(-422px)` / `414px` at scale 2, no keyboard).
 
-**The fix is arithmetic, not a branch.** `vv.height * vv.scale` is the visible
-LAYOUT height, which is what `kbOffset` and `kbCap` were always reaching for.
-Feed them that and both states fall out of one expression:
+**SUPERSEDED IN EXECUTION - read this block for history only.** The plan
+prescribed arithmetic rather than a branch, and it shipped that way in
+`a434058`:
 
 ```js
-const vh = vv.height * vv.scale;
+const vh = vv.height * vv.scale;      // WRONG - see below
 const vt = vv.offsetTop * vv.scale;
 const off = kbOffset(window.innerHeight, vh, vt);
 const cap = kbCap(window.innerHeight, vh);
 ```
 
-- Pure zoom at scale 2: `422 * 2 = 844 = innerHeight` -> `off 0`, `cap 0`.
-  Row 87 fixed. Verified at every pan position in the probe (`max(0, ...)`
-  clamps mid- and bottom-pan to 0).
-- Real keyboard at scale 1: every term multiplies by 1. Behaviour identical to
-  today, so nothing that passes now regresses.
-- Zoom AND keyboard together: a correct lift, which an early return would have
-  abandoned - in exactly the configuration row 51 photographed.
+The independent review FAILed it, and correctly. `vv.offsetTop` is ALREADY in
+layout px and saturates at `innerHeight - vv.height`, so multiplying it by the
+scale is a unit error: measured at 390x844, scale 2, a 336px keyboard, the lift
+decayed from `translateY(-336px)` at `offsetTop 0` to nothing at `offsetTop
+168` and beyond, while the cap - which never sees `offsetTop` - went on
+reporting `500px`. Two halves of one fix, opposite answers, and at
+`offsetTop 300` a regression against the pre-lane code.
 
-**This supersedes an earlier draft of this plan**, which specified a
-`vv.scale > 1` early return. The review that produced that draft rejected the
-arithmetic partly on the grounds that it changed the signature of two
-unit-tested pure functions. It does not: `kbOffset` and `kbCap` are untouched,
-the change is at the call site, and their existing unit tests stay valid. The
-early return was also strictly worse on device - it disables the fix whenever
-iOS auto-zoom fires. Credit: outside-voice review, 2026-09-18.
+The claim above that this was "verified at every pan position in the probe" was
+false: the probe only ever measured `offsetTop 0`, the one value at which the
+defect is invisible.
+
+**What shipped instead** (`c7098df`): while `vv.scale > 1.01` the page makes no
+claim at all - both the lift and the cap are cleared together, and panning is
+the reader's. No arithmetic gets both halves right, because the surface is laid
+out at `100dvh`, so a zoomed page is taller than the screen and "stay above the
+keyboard" and "leave the zoom alone" are not simultaneously satisfiable (the
+fully geometric lift at scale 2 is ~590 layout px, which IS the
+treat-zoom-as-keyboard behaviour row 87 forbids).
+
+The block above also rejected a `vv.scale > 1` branch as "strictly worse on
+device - it disables the fix whenever iOS auto-zoom fires". That premise is
+false for this page: `#scale-box`, `#scale-name` and `#scale-degrees` pin 16px
+(`index.html:460,583,584`), and iOS only auto-zooms a focused input BELOW 16px.
+Every `scale > 1` here is two deliberate fingers.
+
+Queue row 87 of `docs/plans/2026-09-16-remaining-work-coordination.md` carries
+the authoritative resolution. Pinned by
+`tests/mutants/e_kb_zoom_reads_as_a_keyboard.patch`.
 
 - [ ] **Step 1: failing e2e test** - "pinch-zooming the page does not lift the
       sheet". The oracle is POSITIVE THEN NEGATIVE in one test, or it is
