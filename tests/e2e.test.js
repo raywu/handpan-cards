@@ -2976,6 +2976,46 @@ function run() {
     }
   });
 
+  test("the armed delete button still answers a press, in the pressed colour", async () => {
+    /* The armed rule and the shared :active rule have the same specificity,
+       so whichever comes last in the file wins. Armed came last, which left
+       the armed button as the only control on the page that did not answer a
+       press - on the one tap that most needs an acknowledgement, because it
+       is the tap that destroys the deck. Held down rather than clicked: the
+       press state only exists between mousePressed and mouseReleased, and the
+       release here is the confirming tap, so this also proves the armed
+       button still fires while wearing its press colour. */
+    try {
+      await editFreshDeck();
+      await b.click("#scale-delete");
+      const box = await b.eval(`
+        const r = document.getElementById("scale-delete").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      await b.send("Input.dispatchMouseEvent",
+        { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
+      const held = await b.eval(`
+        const el = document.getElementById("scale-delete");
+        return { color: getComputedStyle(el).color, armed: el.hasAttribute("data-armed") };
+      `);
+      await b.send("Input.dispatchMouseEvent",
+        { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+
+      assert.strictEqual(held.armed, true,
+        "the button disarmed under its own press, so this measured the idle colour");
+      assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
+        "the armed delete button keeps its amber under the thumb - the press that "
+        + "destroys the deck is the one control on the page that does not answer");
+      assert.strictEqual(held.color, "rgb(234, 230, 223)",
+        "the armed delete button presses to something other than #eae6df, which is "
+        + "the pressed colour every other control on this page uses");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after the held press was released" });
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("deleting the selected deck falls back to a built-in with a visible message", async () => {
     try {
       await editFreshDeck();

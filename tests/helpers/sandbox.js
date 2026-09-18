@@ -299,6 +299,12 @@ function boot(opts = {}) {
     deckId: () => vm.runInContext("deckId", sandbox),
     /** The generated deck registry, as plain host-realm data. */
     registry: () => plain(vm.runInContext("CUSTOM", sandbox)),
+    /* Drop a deck out of the registry WITHOUT going through deleteDeck. The
+       app has no UI for this and should not: it exists so a test can stage
+       the one state deleteDeck's own `if (!d)` guard is written for, where
+       the deck went away between the arming tap and the confirming one. */
+    forgetDeck: (id) =>
+      vm.runInContext(`delete CUSTOM[${JSON.stringify(String(id))}]`, sandbox),
     /** The deck object render() would use, as plain host-realm data. */
     currentDeck: () => plain(vm.runInContext("deck()", sandbox)),
 

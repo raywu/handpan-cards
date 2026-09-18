@@ -1497,6 +1497,48 @@ test("a pointerdown on DELETE itself does not disarm the tap that armed it", () 
     "the confirming tap did not delete the deck");
 });
 
+test("disarming DELETE takes its warning down with it", () => {
+  /* The label and the announcer say the same thing, so they have to stop
+     saying it together. The blur path could only strand the warning when the
+     owner tabbed away; the pointerdown path runs on every tap in the sheet,
+     so a stranded "This cannot be undone." under an idle DELETE would be the
+     normal case rather than the rare one. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.match(app.els["scale-msg"].textContent, /cannot be undone/,
+    "the first tap did not warn, so this test is not measuring the warning");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-msg"].textContent, "",
+    "DELETE went back to idle but the amber line still says the deck cannot be "
+    + "recovered - the page warns about a thing it is no longer about to do");
+});
+
+test("deleting a deck that is already gone leaves no armed button behind", () => {
+  /* deleteDeck's own guard. Reaching it means the deck vanished between the
+     arming tap and the confirming one, and the button must not be left armed
+     over a deck that no longer exists: the next tap would be a confirmation
+     of nothing, wearing the label of a confirmation of something. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  app.forgetDeck(d.id);
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the deck is gone and the button still reads TAP AGAIN TO DELETE");
+});
+
 /* ------------------------------------------- 23. the LAYOUT section (5) */
 //
 // Phase 5 / D5. A generated layout is a GUESS; the real pan may have the same

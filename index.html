@@ -4875,13 +4875,21 @@ const DEL_IDLE = "DELETE THIS DECK";
 const DEL_ARMED = "TAP AGAIN TO DELETE";
 let delArmed = false;
 function disarmDelete() {
+  /* Nothing to undo when nothing is armed, and saying so would be worse than
+     silent: this runs on every pointerdown in the sheet, so an unguarded
+     say("") would wipe whatever the parse line or a save had just announced. */
+  if (!delArmed) return;
   delArmed = false;
   delBtn.textContent = DEL_IDLE;
   delBtn.removeAttribute("data-armed");
+  // The label and the announcer said the same thing; they stop together.
+  say("");
 }
 delBtn.onclick = () => {
   if (!editingId) return;
-  if (delArmed) { deleteDeck(editingId); return; }
+  // Disarm BEFORE the delete, so the state does not outlive the deck and the
+  // delete's own message is the last thing said.
+  if (delArmed) { disarmDelete(); deleteDeck(editingId); return; }
   delArmed = true;
   delBtn.textContent = DEL_ARMED;
   delBtn.setAttribute("data-armed", "");
@@ -4898,7 +4906,7 @@ delBtn.onclick = () => {
    not: it is the confirming tap's own first half. */
 sheet.addEventListener("pointerdown", (e) => {
   if (e.target !== delBtn) disarmDelete();
-});
+});  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
 delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
