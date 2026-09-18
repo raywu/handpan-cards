@@ -4,15 +4,15 @@
 # laid-out box inside .sheetbody, so an oracle that clips at innerHeight scores
 # it fully visible while the owner sees the keyboard sitting on top of it.
 diff --git a/index.html b/index.html
-index b68a14f..6267ac7 100644
+index 2e7df19..cf8be9d 100644
 --- a/index.html
 +++ b/index.html
-@@ -4628,7 +4628,7 @@ function applyKbOffset() {
-   if (!vv || !sheetSurf) return;
-   const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
-   const cap = kbCap(window.innerHeight, vv.height);
--  sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
-+  sheetSurf.style.transform = "";
-   sheetSurf.style.maxHeight = cap > 0 ? `${cap}px` : "";
- }
- if (window.visualViewport) {
+@@ -4662,7 +4662,7 @@ function applyKbOffset() {
+   /* Written only on change: this handler is bound to visualViewport's `scroll`
+    * as well, which fires at frame rate while a zoomed page is panned, and each
+    * unconditional style write forces a style recalc for no reason. */
+-  const t = off > 0 ? `translateY(-${off}px)` : "";
++  const t = "";
+   const m = cap > 0 ? `${cap}px` : "";
+   if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
+   if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;

@@ -1,0 +1,21 @@
+# kills: closing the sheet with the keyboard up leaves no cap behind
+# suite: node --test --test-name-pattern ^closing.the.sheet.with.the.keyboard.up.leaves.no.cap.behind$ tests/e2e.test.js
+# The teardown goes back to clearing only the translate (queue row 88). A sheet
+# closed while the keyboard was up keeps the capped height it was given, and
+# the next open is short until something else fires applyKbOffset().
+diff --git a/index.html b/index.html
+index 2e7df19..d894f52 100644
+--- a/index.html
++++ b/index.html
+@@ -4781,10 +4781,7 @@ function hideSheet() {
+   // be left behind (queue row 88): applyKbOffset() writes transform and
+   // maxHeight together, so the teardown has to undo them together or the two
+   // halves drift apart the moment anything else learns to call hideSheet().
+-  if (sheetSurf) {
+-    sheetSurf.style.transform = "";
+-    sheetSurf.style.maxHeight = "";
+-  }
++  if (sheetSurf) sheetSurf.style.transform = "";
+   editingId = null;
+   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
+   (sheetOpener || addChip).focus();
