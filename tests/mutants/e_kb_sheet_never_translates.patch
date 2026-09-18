@@ -1,0 +1,18 @@
+# kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
+# suite: node --test --test-name-pattern ^with.a.real.keyboard.up..the.seed.box.is.not.clipped.by.the.sheet.s.own.scroller$ tests/e2e.test.js
+# The sheet never lifts out from under the keyboard. The seed box still has a
+# laid-out box inside .sheetbody, so an oracle that clips at innerHeight scores
+# it fully visible while the owner sees the keyboard sitting on top of it.
+diff --git a/index.html b/index.html
+index b68a14f..6267ac7 100644
+--- a/index.html
++++ b/index.html
+@@ -4628,7 +4628,7 @@ function applyKbOffset() {
+   if (!vv || !sheetSurf) return;
+   const off = kbOffset(window.innerHeight, vv.height, vv.offsetTop);
+   const cap = kbCap(window.innerHeight, vv.height);
+-  sheetSurf.style.transform = off > 0 ? `translateY(-${off}px)` : "";
++  sheetSurf.style.transform = "";
+   sheetSurf.style.maxHeight = cap > 0 ? `${cap}px` : "";
+ }
+ if (window.visualViewport) {
