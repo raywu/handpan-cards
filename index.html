@@ -4634,7 +4634,14 @@ function kbCap(innerHeight, vvHeight) {
 }
 function applyKbOffset() {
   const vv = window.visualViewport;
-  if (!vv || !sheetSurf) return;
+  /* Gated on sheetOpen as well as on the two objects. The listeners below are
+   * bound for the life of the page, so without this a resize arriving AFTER
+   * hideSheet() re-applies the lift and the cap to a sheet nobody is looking
+   * at - and clearing the cap in hideSheet() is itself enough to provoke one
+   * (queue rows 55, 88). showSheet() sets sheetOpen before it calls this, and
+   * hideSheet() clears it before it resets the two styles, so the open path is
+   * unaffected and the teardown is the last word. */
+  if (!vv || !sheetSurf || !sheetOpen) return;
   /* vv.height is the VISUAL viewport, which a pinch-zoom shrinks in exactly
    * the way a keyboard does - so before this line the sheet lifted and capped
    * itself for a reader who was only zooming in (queue row 87). Multiplying by
@@ -4768,10 +4775,16 @@ function openEditSheet(d, opener) {
 function hideSheet() {
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
-  // Undo any keyboard translate before the next open, or a sheet that opens
+  // Undo BOTH keyboard writes before the next open, or a sheet that opens
   // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
-  // previous session's offset for one frame.
-  if (sheetSurf) sheetSurf.style.transform = "";
+  // previous session's offset for one frame. The cap is the half that used to
+  // be left behind (queue row 88): applyKbOffset() writes transform and
+  // maxHeight together, so the teardown has to undo them together or the two
+  // halves drift apart the moment anything else learns to call hideSheet().
+  if (sheetSurf) {
+    sheetSurf.style.transform = "";
+    sheetSurf.style.maxHeight = "";
+  }
   editingId = null;
   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
   (sheetOpener || addChip).focus();

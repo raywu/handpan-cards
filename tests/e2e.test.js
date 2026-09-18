@@ -3735,6 +3735,43 @@ function run() {
     }
   });
 
+  /* Queue row 88. hideSheet() cleared the translate and left the cap behind,
+   * so a sheet closed while the keyboard was still up kept maxHeight pinned to
+   * whatever was left of the visual viewport. Nothing renders in that window -
+   * the sheet is hidden, and the next showSheet() runs applyKbOffset() before
+   * a frame goes out - so this is not a visible bug today. It is a latent one:
+   * the cap is the only style the teardown does not undo, and every future
+   * caller of hideSheet() inherits that asymmetry. Measured here rather than
+   * argued: the assertion reads the style off the hidden surface with no
+   * resize in between, which is exactly the state hideSheet() leaves. */
+  test("closing the sheet with the keyboard up leaves no cap behind", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.fakeKeyboard(400);
+
+      const up = await surfaceState();
+      assert.notStrictEqual(up.maxHeight, "",
+        "precondition: the fake keyboard did not cap the surface");
+
+      await b.key("Escape");
+      await b.settle();
+      const closed = await b.eval(`
+        const sheet = document.getElementById("scale-sheet");
+        const surf = sheet.firstElementChild;
+        return { hidden: sheet.hasAttribute("hidden"),
+                 transform: surf.style.transform, maxHeight: surf.style.maxHeight };
+      `);
+      assert.strictEqual(closed.hidden, true, "Escape did not close the sheet");
+      assert.strictEqual(closed.transform, "", "the lift outlived the sheet");
+      assert.strictEqual(closed.maxHeight, "", "the cap outlived the sheet");
+    } finally {
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   /* Queue row 87. A pinch-zoom shrinks visualViewport.height exactly the way a
    * keyboard does, so before this fix the sheet lifted and capped itself for a
    * reader who was only zooming in to read the seed - measured at 390x844,
