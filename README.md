@@ -14,11 +14,22 @@ opens straight from disk. Never hand-edit inside an engine region - change the
 module and re-run the tool. `python3 tools/validate.py` fails CI if the
 two ever drift.
 
-Decks included: C# Hijaz 9 (pink/orange), F3 Low Pygmy 18 (purple/gold),
-D Amara 9 (teal/amber). 59 cards total, with the same diagrams, voicings,
-pitch-class highlighting, and typography as the printed sets. The visual
-design (Marcellus / Bitter / Nunito Sans, single-colour root-frame borders,
-per-deck palettes) is original to this project.
+Decks included: C# Hijaz 9, 19 cards (pink/orange); F3 Low Pygmy 18,
+52 cards (purple/gold); D Amara 9, 25 cards (teal/amber). 96 cards total,
+with the same diagrams, voicings, pitch-class highlighting, and typography as
+the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
+single-colour root-frame borders, per-deck palettes) is original to this
+project.
+
+The scale engine that generates and ranks those cards is six modules under
+`src/engine/`: `src/engine/core.js` (note parsing and pitch classes),
+`src/engine/voicing.js` (the cluster and spelling rules),
+`src/engine/naming.js` (chord symbols and subtitles),
+`src/engine/select.js` (which chords a pan gets and in what order),
+`src/engine/layout.js` (the tonefield solver and label sizes) and
+`src/engine/share.js` (URL encoding for the seed behind a generated deck).
+`docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
+decisions behind it.
 
 ## Use it
 
@@ -27,20 +38,37 @@ per-deck palettes) is original to this project.
   and voicing. **Notes -> Name** reverses it (read the diagram, name the chord).
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
-- **+ ADD** (at the end of the deck row) opens the scale sheet: type your pan
-  as a ding in brackets followed by the top notes, e.g. `(D) A C D E F G A C`,
-  with any bottom notes after a `|`. The line under the box shows how the notes
-  were read as you type; pick a palette and, if your pan is mirrored,
-  LEFT-FIRST; then GENERATE CARDS. Regenerating the same scale replaces that
-  deck in place. Generated decks live for the session only - sharing them by
-  URL is a later phase.
+- **+ ADD** (the first chip in the deck row) opens the scale sheet: type your
+  pan as a ding in brackets followed by the top notes, e.g.
+  `(D) A C D E F G A C`, with any bottom notes after a `|`. The line under the
+  box shows how the notes were read as you type; pick a palette and, if your
+  pan is mirrored, LEFT-FIRST; then GENERATE CARDS. Regenerating the same
+  scale replaces that deck in place. The sheet is a real page, not an overlay:
+  opening it pushes `#add`, and reopening a saved one pushes `#edit-<id>`, so
+  the back gesture closes the sheet instead of leaving the app. A page route
+  pasted into the address bar opens nothing - it is replaced away at boot,
+  because a restored page with no entry behind it is one back cannot leave.
+- **Your scales persist** in localStorage and come back on the next visit.
+  Tapping a custom deck's chip when that deck is already selected reopens the
+  sheet with its name and notes filled in - that is the one way in, and the
+  pencil on the chip marks it. DELETE removes the deck and asks for a second
+  tap to confirm. A generated deck also travels as a `#s=` link: the app opens
+  one from the address bar with no account and no server, though nothing in
+  the UI builds or copies that link yet.
 
 ## Tests
 
-    ./tests/run.sh                       # everything
+    ./tests/run.sh                       # validate, boot sim, python + node
     ./tests/run.sh python                # python suites only
     ./tests/run.sh node                  # js suites only
-    ./tests/run.sh mutants               # the red-proof gate
+    python3 tests/suite_health.py        # per-file test-count floors
+    ./tests/run.sh mutants               # the red-proof gate (separate; slow)
+
+`./tests/run.sh` with no argument does NOT run the mutation gate or the suite
+health check - run those two yourself before pushing. The gate mutates the
+working tree in place, so nothing else may run alongside it, and it refuses to
+start if the tree already modifies a file one of its patches touches
+(`README.md` and `data/decks.json` are both such files): commit first.
 
 Needs `pip install reportlab pymupdf`. No JavaScript dependencies: the
 browser tests drive an already-installed Chrome over the DevTools Protocol, so
@@ -57,12 +85,23 @@ What is covered:
   wrap, shuffle, and the localStorage guards, booted headless from `index.html`.
 - **App vs print agreement** - the two renderers are independent
   implementations of the same conventions (and use opposite y-axis signs), so
-  all 59 cards are compared on position, highlight state, note order and badge.
+  all 96 cards are compared on position, highlight state, note order and badge.
+- **The scale engine** - each module under `src/engine/` has its own node
+  suite: chord selection and ranking, voicing, naming, the layout solver swept
+  over N=5..19 pans, and share-URL round trips.
+- **The README itself** - `tests/test_readme_currency.py` reads the deck data,
+  the engine module list and the mutant corpus and fails if the counts and
+  names on this page have gone stale.
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
-  and touch navigation, reload persistence, clipping at a 380px viewport, and
+  navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - every test group ships a patch that must make it fail. A
-  test nothing can kill does not count as coverage.
+- **Mutation gate** - 312 mutant patches under `tests/mutants/`, each one a
+  deliberate break that some test must catch. The gate is all-or-nothing: one
+  survivor fails it. A test nothing can kill does not count as coverage.
+
+That is 10 node suites (`tests/*.test.js`) and 8 python suites
+(`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
+on the number of tests collected so a suite cannot quietly stop running.
 
 `tests/CONTRACT.md` is the binding guide for adding tests, including the traps
 that have already cost a debugging cycle.
