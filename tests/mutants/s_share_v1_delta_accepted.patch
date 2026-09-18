@@ -3,7 +3,6 @@
 # The per-version reader stops being per-version: v1 reserved line 2 and
 # allowed nothing on it, and reading it anyway repairs a link nothing wrote.
 diff --git a/src/engine/share.js b/src/engine/share.js
-index 935ecbd..d9d0e65 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
 @@ -268,7 +268,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

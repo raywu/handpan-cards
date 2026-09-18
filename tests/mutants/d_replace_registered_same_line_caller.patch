@@ -5,7 +5,6 @@
 # names the function. A scan that filters lines rather than counting
 # occurrences sees no change at all and lets this through silently.
 diff --git a/index.html b/index.html
-index 7e9b7f6..e18f78a 100644
 --- a/index.html
 +++ b/index.html
 @@ -3574,7 +3574,7 @@ function runGenerate() {

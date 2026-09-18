@@ -4,7 +4,6 @@
 # Re-anchored 2026-09-16 (root-instance enumeration plan): subtitle() gained
 # a 4th (voicingClass) parameter, shifting this hunk's line numbers.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eb6e61a..84044e0 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -180,7 +180,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

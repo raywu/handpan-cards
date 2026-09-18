@@ -2,7 +2,6 @@
 # suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data
 # Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..c2f2db3 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -89,7 +88,6 @@ index 1fdc9e4..c2f2db3 100644
        "5": "bIII"
      },
 diff --git a/index.html b/index.html
-index 6fa1267..0f1f868 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

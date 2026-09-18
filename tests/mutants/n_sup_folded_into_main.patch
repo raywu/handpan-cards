@@ -2,7 +2,6 @@
 # kills: every built-in card's main and sup come from the quality table
 # The superscript is folded into main, so no card renders a sup.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index eda20de..2653ec6 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -134,7 +134,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

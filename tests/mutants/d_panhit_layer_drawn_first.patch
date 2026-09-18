@@ -4,7 +4,6 @@
 # paints in document order with no z-index, so every target ends up under an
 # opaque white field circle and no tap on a note ever reaches it.
 diff --git a/index.html b/index.html
-index 79d9295..3e4e5f0 100644
 --- a/index.html
 +++ b/index.html
 @@ -3874,8 +3874,9 @@ function pan(d, ch, opts) {

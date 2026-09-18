@@ -4,7 +4,6 @@
 # armed over it, so the next tap is a confirmation of nothing wearing the
 # label of a confirmation of something.
 diff --git a/index.html b/index.html
-index 93dabcf..471e435 100644
 --- a/index.html
 +++ b/index.html
 @@ -4887,7 +4887,7 @@ delBtn.onclick = () => {

@@ -3,7 +3,6 @@
 # The app restates the share version as a literal instead of reading the
 # engine's. Equal today; the day either side is bumped every link breaks.
 diff --git a/index.html b/index.html
-index b018e51..ba4fcd0 100644
 --- a/index.html
 +++ b/index.html
 @@ -2424,7 +2424,7 @@ function generateDeck(text, options) {

@@ -7,7 +7,6 @@
 # test measures that box (the width the chip loses when .editable comes off)
 # rather than believing the content string, which is why it notices.
 diff --git a/index.html b/index.html
-index 140fa68..731f0d1 100644
 --- a/index.html
 +++ b/index.html
 @@ -178,7 +178,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

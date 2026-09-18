@@ -8,7 +8,6 @@
 # later, positioned box, so it wins the hit test over #prev and #next and both
 # arrows go dead. Only a probe on the NEIGHBOURS sees it.
 diff --git a/index.html b/index.html
-index f489642..cd34e15 100644
 --- a/index.html
 +++ b/index.html
 @@ -271,7 +271,10 @@ button.nav:active{background:#2e281e}

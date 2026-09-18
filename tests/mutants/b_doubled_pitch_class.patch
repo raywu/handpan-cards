@@ -2,7 +2,6 @@
 # suite: python3 -m unittest -k test_no_doubled_pitch_classes tests.test_deck_data
 # Hijaz B MINOR ADD 9 doubles B (B3 + B4) in one voicing.
 diff --git a/data/decks.json b/data/decks.json
-index 1fdc9e4..a1cafbf 100644
 --- a/data/decks.json
 +++ b/data/decks.json
 @@ -13,9 +13,9 @@
@@ -91,7 +90,6 @@ index 1fdc9e4..a1cafbf 100644
          "subtitle": "DIMINISHED",
          "fields": [
 diff --git a/index.html b/index.html
-index 6fa1267..cb4ad55 100644
 --- a/index.html
 +++ b/index.html
 @@ -3419,7 +3419,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -6,7 +6,6 @@
 # baseline written only against the print figure passes it straight
 # through, which is why the baseline is now written per renderer.
 diff --git a/index.html b/index.html
-index c03540b..79e1e56 100644
 --- a/index.html
 +++ b/index.html
 @@ -3523,8 +3523,8 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");

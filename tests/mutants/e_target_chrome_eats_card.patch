@@ -10,7 +10,6 @@
 # from the very quantity that moved. Only a guard with a FIXED expectation
 # catches it.
 diff --git a/index.html b/index.html
-index 574a311..c3c313c 100644
 --- a/index.html
 +++ b/index.html
 @@ -87,9 +87,9 @@ body{

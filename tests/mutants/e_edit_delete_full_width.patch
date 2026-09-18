@@ -3,7 +3,6 @@
 # Delete goes full width, so the sheet has two full-width buttons and the
 # destructive one reads as a primary.
 diff --git a/index.html b/index.html
-index 574a311..e8419b0 100644
 --- a/index.html
 +++ b/index.html
 @@ -423,7 +423,7 @@ button.nav:active{background:#2e281e}

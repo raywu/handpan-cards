@@ -5,7 +5,6 @@
 # shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the
 # owner's 2026-09-17 screenshot verbatim.
 diff --git a/index.html b/index.html
-index e994f14..1830c97 100644
 --- a/index.html
 +++ b/index.html
 @@ -787,6 +787,7 @@ button.nav:active{background:#2e281e}

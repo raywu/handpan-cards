@@ -3,7 +3,6 @@
 # RESET is not wired up, so the only way back to the generated layout is to
 # undo every correction by hand.
 diff --git a/index.html b/index.html
-index 79d9295..aef6c69 100644
 --- a/index.html
 +++ b/index.html
 @@ -4829,7 +4829,7 @@ rotL.onclick = () => rotateLayout(-1);

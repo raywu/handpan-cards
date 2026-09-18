@@ -5,7 +5,6 @@
 # which is the worse half of the same lie: a sighted user is told nothing at
 # all while a screen reader is told the truth.
 diff --git a/index.html b/index.html
-index f489642..dfa5d41 100644
 --- a/index.html
 +++ b/index.html
 @@ -370,7 +370,6 @@ button.nav:active{background:#2e281e}

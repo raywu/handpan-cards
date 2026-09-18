@@ -1,7 +1,6 @@
 # kills: a field edit keeps the edited deck selected and renames its chip from the new fields
 # suite: node --test --test-name-pattern ^a.field.edit.keeps.the.edited.deck.selected.and.renames.its.chip.from.the.new.fields$ tests/app.test.js
 diff --git a/index.html b/index.html
-index 79d9295..2a081eb 100644
 --- a/index.html
 +++ b/index.html
 @@ -4811,7 +4811,7 @@ function runGenerate() {

@@ -5,7 +5,6 @@
 # main back to 138.3px and the card back to 100.16px wide - row 245's
 # measurements exactly, which is the state the owner asked to be fixed.
 diff --git a/index.html b/index.html
-index 140fa68..10c1e85 100644
 --- a/index.html
 +++ b/index.html
 @@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

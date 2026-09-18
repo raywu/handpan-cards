@@ -24,7 +24,6 @@
 # unreachable: it is not - only the STRICTLY-GREATER-THAN version of it
 # (an alternate scoring higher than its own home) is.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 053dd98..1f69e17 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -373,40 +373,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

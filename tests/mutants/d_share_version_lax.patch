@@ -3,7 +3,6 @@
 # The Phase 4 guard accepts one version above the running app, so a PWA-cached
 # old index.html would misread a newer link instead of rejecting it.
 diff --git a/index.html b/index.html
-index b018e51..92f1ab0 100644
 --- a/index.html
 +++ b/index.html
 @@ -2436,7 +2436,7 @@ function checkShareVersion(v) {

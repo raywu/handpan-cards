@@ -3,7 +3,6 @@
 # Every close hands focus to + ADD, so leaving an Edit page drops the keyboard
 # user at the end of the chip strip instead of on the chip they came from.
 diff --git a/index.html b/index.html
-index 2e7df19..62bb599 100644
 --- a/index.html
 +++ b/index.html
 @@ -4787,7 +4787,7 @@ function hideSheet() {

@@ -3,10 +3,9 @@
 # Opening the page no longer disarms the button, so a confirmation given in one
 # visit is still live in the next one and a single tap destroys a deck.
 diff --git a/index.html b/index.html
-index 169aa79..0098ee4 100644
 --- a/index.html
 +++ b/index.html
-@@ -4641,7 +4641,6 @@ if (window.visualViewport) {
+@@ -4674,7 +4674,6 @@ if (window.visualViewport) {
  
  /** Show or hide the three Edit-only rows and relabel the single primary. */
  function setSheetMode(edit) {

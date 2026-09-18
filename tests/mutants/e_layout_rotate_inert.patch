@@ -3,7 +3,6 @@
 # ROTATE is wired to a zero shift, so the control focuses and presses and
 # nothing on the pan moves.
 diff --git a/index.html b/index.html
-index f7b0bb9..b941e6c 100644
 --- a/index.html
 +++ b/index.html
 @@ -3661,8 +3661,8 @@ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };

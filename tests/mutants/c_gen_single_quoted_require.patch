@@ -3,7 +3,6 @@
 # A SINGLE-QUOTED network require, the exact form the old banned-substring scan
 # let through: it listed require("http and friends in double quotes only.
 diff --git a/tools/gen_deck.js b/tools/gen_deck.js
-index 2172a91..878c74b 100644
 --- a/tools/gen_deck.js
 +++ b/tools/gen_deck.js
 @@ -35,6 +35,7 @@

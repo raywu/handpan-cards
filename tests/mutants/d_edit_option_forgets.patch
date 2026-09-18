@@ -1,7 +1,6 @@
 # kills: an options-only edit still replaces in place and keeps its stored record
 # suite: node --test --test-name-pattern ^an.options.only.edit.still.replaces.in.place.and.keeps.its.stored.record$ tests/app.test.js
 diff --git a/index.html b/index.html
-index 79d9295..82f737e 100644
 --- a/index.html
 +++ b/index.html
 @@ -4810,7 +4810,7 @@ function runGenerate() {

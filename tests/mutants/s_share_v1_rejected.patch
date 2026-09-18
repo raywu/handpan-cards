@@ -3,7 +3,6 @@
 # The naked version bump: decode reads only the version it writes, so every
 # link ever shared becomes a corrupt payload the day the format grows.
 diff --git a/src/engine/share.js b/src/engine/share.js
-index 935ecbd..6d2cae6 100644
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
 @@ -349,7 +349,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

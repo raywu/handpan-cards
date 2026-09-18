@@ -14,7 +14,6 @@
 # tests/mutation_check.sh word-splits its command, so a quoted argument would
 # arrive as several words with the quote characters still in them.
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
-index 46cda75..ea083a5 100644
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
 @@ -296,7 +296,6 @@ async function launch() {

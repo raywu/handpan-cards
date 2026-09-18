@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^mirror.reflects.every.angle.about.the.vertical.axis$ tests/layout.test.js
 # kills: mirror reflects every angle about the vertical axis
 diff --git a/src/engine/layout.js b/src/engine/layout.js
-index f5d1cd5..a3118a7 100644
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
 @@ -168,7 +168,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -3,7 +3,6 @@
 # deck() hands out a fresh copy per call, which is the shape a per-call rebuild
 # would have: identity is the only thing that distinguishes them.
 diff --git a/index.html b/index.html
-index b018e51..6fb3608 100644
 --- a/index.html
 +++ b/index.html
 @@ -2391,7 +2391,7 @@ let order = [], idx = 0, flipped = false;

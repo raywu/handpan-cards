@@ -3,7 +3,6 @@
 # An empty box shows no pan again, so the plate enters the flow on the first
 # keystroke and the drawer jumps by the height of the whole plate.
 diff --git a/index.html b/index.html
-index f489642..c929549 100644
 --- a/index.html
 +++ b/index.html
 @@ -3927,7 +3927,7 @@ function updateParse() {

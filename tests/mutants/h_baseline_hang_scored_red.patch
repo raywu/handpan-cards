@@ -12,7 +12,6 @@
 # offset, cannot be desynchronised while the patch is applied. Body generated
 # per tests/CONTRACT.md rule 4.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
-index 8647a13..9607d26 100755
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
 @@ -148,7 +148,7 @@ baseline_ok() {   # $1 = command string -> 0 green, 1 not; sets BASELINE_RC

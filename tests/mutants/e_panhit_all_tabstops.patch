@@ -5,7 +5,6 @@
 # the arrows walking the selection inside it, which is a real tab order and so
 # only a browser can judge it - the DOM sandbox has no tab order to break.
 diff --git a/index.html b/index.html
-index 79d9295..16a5711 100644
 --- a/index.html
 +++ b/index.html
 @@ -3867,7 +3867,7 @@ function pan(d, ch, opts) {

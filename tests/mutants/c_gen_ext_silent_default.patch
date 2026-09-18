@@ -4,7 +4,6 @@
 # generated deck R = 74.0 instead of raising, which on a bottom-shell pan draws
 # the diagram over the header and off both edges of the card.
 diff --git a/tools/decks.py b/tools/decks.py
-index b2b956c..19f3ee2 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
 @@ -321,7 +321,7 @@ def from_generated(payload):

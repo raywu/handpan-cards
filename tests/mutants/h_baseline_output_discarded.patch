@@ -15,7 +15,6 @@
 # patch is applied to the very file the outer sweep is executing.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
-index 021c2cb..df5fdcf 100755
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
 @@ -76,7 +76,7 @@ fi

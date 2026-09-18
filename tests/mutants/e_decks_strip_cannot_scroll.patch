@@ -15,7 +15,6 @@
 # just auto without the scrollbar" is exactly the wrong intuition to have
 # about this rule.
 diff --git a/index.html b/index.html
-index 77d0b3d..8fba33b 100644
 --- a/index.html
 +++ b/index.html
 @@ -104,7 +104,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

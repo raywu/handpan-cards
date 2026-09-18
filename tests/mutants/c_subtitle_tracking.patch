@@ -3,7 +3,6 @@
 # The subtitle is measured with one tracking value and drawn with another;
 # the DRAWN width is what has to fit the header budget.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index f81d582..675a2f3 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -124,7 +124,7 @@ def card_header(c, x, y, w, h, deck, num, subtitle, main, sup):

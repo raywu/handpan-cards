@@ -4,7 +4,6 @@
 # what the old version of that test did: it hashed nothing, so pointing a build
 # at the repo root would have left it green.
 diff --git a/tests/test_gen_deck.py b/tests/test_gen_deck.py
-index f5a19a3..243e44c 100644
 --- a/tests/test_gen_deck.py
 +++ b/tests/test_gen_deck.py
 @@ -74,11 +74,7 @@ def generate(seed, *args):

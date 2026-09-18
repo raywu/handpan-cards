@@ -4925,6 +4925,17 @@ function disarmDelete() {
   say("");
 }
 delBtn.onclick = () => {
+  /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
+     Deleting this line reddens nothing, and that is correct rather than a gap:
+     no state the app can enter delivers a click here with editingId null.
+     delRow carries `hidden` exactly when editingId is null - setSheetMode()
+     sets it one line after `editingId = null` on the add path and clears it one
+     line after `editingId = d.id` on the edit path - and `[hidden]` above is
+     `display:none !important`, which beats `.editrow{display:flex}`. A
+     display:none button takes no pointer event and no focus, so the only way to
+     reach this branch is a synthetic .onclick() call, and a test that made one
+     would be testing the mutant rather than the owner. Left in because the
+     lines it depends on sit in two other functions. */
   if (!editingId) return;
   /* Disarm BEFORE the delete, not inside it: the state must not outlive the
      deck even when deleteDeck turns out to have nothing to remove, and the

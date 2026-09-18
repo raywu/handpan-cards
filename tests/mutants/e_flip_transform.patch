@@ -11,7 +11,6 @@
 # patch carried that line as hunk CONTEXT, so it went stale. The mutation
 # itself is byte-identical to before.
 diff --git a/index.html b/index.html
-index 77d0b3d..cf2004f 100644
 --- a/index.html
 +++ b/index.html
 @@ -300,7 +300,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100

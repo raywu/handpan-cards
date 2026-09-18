@@ -3,7 +3,6 @@
 # The correction is read, validated and then quietly not applied, so every
 # corrected pan solves to the generated layout.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
-index 51051bb..fdf05f1 100644
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
 @@ -324,7 +324,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -2,7 +2,6 @@
 # suite: python3 -m unittest -k test_drawn_bottom_note_badge_agrees tests.test_render_agreement
 # Prints the wrong bottom-note count on every affected card.
 diff --git a/tools/hifi.py b/tools/hifi.py
-index f81d582..2af5cec 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -360,7 +360,7 @@ def chord_card(c, x, y, deck, num, chord):

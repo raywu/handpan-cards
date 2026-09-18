@@ -3,7 +3,6 @@
 # The guard drops its type check, so undefined, null, NaN, "2" and {} all read
 # as an acceptable version: none of them is > SHARE_VERSION.
 diff --git a/index.html b/index.html
-index b018e51..ac9b9b8 100644
 --- a/index.html
 +++ b/index.html
 @@ -2432,10 +2432,6 @@ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].rea

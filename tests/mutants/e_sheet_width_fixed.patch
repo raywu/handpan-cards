@@ -3,7 +3,6 @@
 # The sheet goes back to one width at every desktop size, so a 1440px window
 # shows the same 520px column as a 640px one.
 diff --git a/index.html b/index.html
-index 79d9295..e3822c0 100644
 --- a/index.html
 +++ b/index.html
 @@ -542,7 +542,7 @@ button.nav:active{background:#2e281e}

@@ -7,7 +7,6 @@
 # green. The e2e hint test kills this too, but the cheap unit oracle is the one
 # that has to hold - it is the one whose name makes the promise.
 diff --git a/index.html b/index.html
-index 3034159..3394c75 100644
 --- a/index.html
 +++ b/index.html
 @@ -758,7 +758,7 @@ button.nav:active{background:#2e281e}

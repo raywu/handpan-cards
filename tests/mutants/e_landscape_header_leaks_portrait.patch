@@ -5,7 +5,6 @@
 # would not catch it: row 245's acceptance condition is that portrait does not
 # move AT ALL, in either direction, and this moves it.
 diff --git a/index.html b/index.html
-index 140fa68..ed05f18 100644
 --- a/index.html
 +++ b/index.html
 @@ -238,7 +238,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

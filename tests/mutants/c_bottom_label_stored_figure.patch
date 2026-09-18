@@ -3,7 +3,6 @@
 # Reads the stored f_bnote figure again instead of deriving the bottom
 # label from the rule (row 112).
 diff --git a/tools/hifi.py b/tools/hifi.py
-index 0433f0d..c66db65 100644
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -321,7 +321,9 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),

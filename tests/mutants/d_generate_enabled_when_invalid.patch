@@ -3,7 +3,6 @@
 # Generate stays live while the seed does not parse, so the primary action
 # invites a tap that can only fail.
 diff --git a/index.html b/index.html
-index f489642..74ef7fc 100644
 --- a/index.html
 +++ b/index.html
 @@ -3943,7 +3943,7 @@ function updateParse() {

@@ -2,7 +2,6 @@
 # kills: the ENGINE-SPEC section 5 collapse of Xm6 into the m7b5 built on
 # its sixth.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6ec8d54..4220031 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -30,7 +30,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -18,7 +18,6 @@
 # script lazily by byte offset, cannot be desynchronised while the patch is
 # applied. Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
-index 8647a13..ac21c81 100755
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
 @@ -244,7 +244,7 @@ fi

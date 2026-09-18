@@ -3,7 +3,6 @@
 # unforced tone takes any instance above the root (the highest one), which
 # CLAUDE.md rule 3 as worded would still permit but D11 does not.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index 869291e..81425b8 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
 @@ -294,7 +294,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

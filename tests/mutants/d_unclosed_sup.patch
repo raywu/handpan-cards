@@ -1,7 +1,6 @@
 # kills: every rendered face is well-formed markup (96 cards x 2 modes)
 # suite: node --test --test-name-pattern ^every.rendered.face.is.well.formed.markup..96.cards.x.2.modes.$ tests/app.test.js
 diff --git a/index.html b/index.html
-index 2b54068..ddd7ff5 100644
 --- a/index.html
 +++ b/index.html
 @@ -227,7 +227,7 @@ function headerHTML(d, ch, n) {

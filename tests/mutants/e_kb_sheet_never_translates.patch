@@ -4,7 +4,6 @@
 # laid-out box inside .sheetbody, so an oracle that clips at innerHeight scores
 # it fully visible while the owner sees the keyboard sitting on top of it.
 diff --git a/index.html b/index.html
-index 2e7df19..cf8be9d 100644
 --- a/index.html
 +++ b/index.html
 @@ -4662,7 +4662,7 @@ function applyKbOffset() {

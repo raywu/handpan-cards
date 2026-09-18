@@ -4,7 +4,6 @@
 # keyboard is ALREADY up gets no event of its own, so it draws its first frame
 # at full height under the board - queue row 54's surviving mutant.
 diff --git a/index.html b/index.html
-index 2e7df19..5013af3 100644
 --- a/index.html
 +++ b/index.html
 @@ -4722,7 +4722,6 @@ function showSheet(opener) {

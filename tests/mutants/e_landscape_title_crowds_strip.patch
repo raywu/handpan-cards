@@ -12,7 +12,6 @@
 # header-height and chrome-budget assertions next door do not move: the row
 # is still one 44px line, because the title sits INSIDE it.
 diff --git a/index.html b/index.html
-index 77d0b3d..8fba33b 100644
 --- a/index.html
 +++ b/index.html
 @@ -261,8 +261,7 @@

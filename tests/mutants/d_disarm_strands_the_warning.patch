@@ -3,10 +3,9 @@
 # The label goes back to idle and the amber line keeps saying the deck cannot
 # be recovered, so the page warns about a thing it is no longer about to do.
 diff --git a/index.html b/index.html
-index 3effb4a..cf2b28b 100644
 --- a/index.html
 +++ b/index.html
-@@ -4882,8 +4882,6 @@ function disarmDelete() {
+@@ -4921,8 +4921,6 @@ function disarmDelete() {
    delArmed = false;
    delBtn.textContent = DEL_IDLE;
    delBtn.removeAttribute("data-armed");
@@ -14,4 +13,4 @@ index 3effb4a..cf2b28b 100644
 -  say("");
  }
  delBtn.onclick = () => {
-   if (!editingId) return;
+   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).

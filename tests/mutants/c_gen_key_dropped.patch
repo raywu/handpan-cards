@@ -3,7 +3,6 @@
 # A print-only per-deck key vanishes from the generated deck without being
 # declared omitted; the key inventory must notice.
 diff --git a/tools/decks.py b/tools/decks.py
-index b2b956c..985a5cd 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
 @@ -334,7 +334,6 @@ def from_generated(payload):

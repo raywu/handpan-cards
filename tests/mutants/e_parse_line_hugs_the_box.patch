@@ -3,7 +3,6 @@
 # The parse line drops back to the label step, so what the box says and what
 # comments on it bind equally tight and the reading order goes flat.
 diff --git a/index.html b/index.html
-index f489642..cb42236 100644
 --- a/index.html
 +++ b/index.html
 @@ -355,7 +355,7 @@ button.nav:active{background:#2e281e}

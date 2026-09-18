@@ -3,7 +3,6 @@
 # setMode() paints the .on colour but stops updating aria-pressed, so the mode
 # bar reports whatever the markup shipped with no matter which mode is live.
 diff --git a/index.html b/index.html
-index 7ea4e13..6c18bda 100644
 --- a/index.html
 +++ b/index.html
 @@ -3857,7 +3857,6 @@ function setMode(m) {

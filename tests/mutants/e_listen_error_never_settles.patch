@@ -4,7 +4,6 @@
 # whole run instead of failing: listen() calls its callback ONLY when the bind
 # succeeds, and on EADDRINUSE it emits an event nobody here is waiting on.
 diff --git a/tests/e2e.test.js b/tests/e2e.test.js
-index 917a2f8..ae7cdc8 100644
 --- a/tests/e2e.test.js
 +++ b/tests/e2e.test.js
 @@ -80,14 +80,7 @@ function run() {

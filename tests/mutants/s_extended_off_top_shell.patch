@@ -2,7 +2,6 @@
 # kills: ENGINE-SPEC section 8, "an extended-tier quality is a candidate only
 # when every one of its tones lies on the TOP shell".
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6ec8d54..5c858d6 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -121,7 +121,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

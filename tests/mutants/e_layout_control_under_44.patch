@@ -3,7 +3,6 @@
 # RESET shrinks under the 44px minimum, so on a phone the one control that
 # undoes a wrong correction is too small to hit.
 diff --git a/index.html b/index.html
-index 79d9295..5d69cef 100644
 --- a/index.html
 +++ b/index.html
 @@ -596,7 +596,7 @@ button.nav:active{background:#2e281e}

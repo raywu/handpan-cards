@@ -4,7 +4,6 @@
 # closed while the keyboard was up keeps the capped height it was given, and
 # the next open is short until something else fires applyKbOffset().
 diff --git a/index.html b/index.html
-index 2e7df19..d894f52 100644
 --- a/index.html
 +++ b/index.html
 @@ -4781,10 +4781,7 @@ function hideSheet() {

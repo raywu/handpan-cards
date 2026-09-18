@@ -10,7 +10,6 @@
 # to be proved live is a test's own oracle. The patch body is generated, per
 # rule 4.
 diff --git a/tests/app.test.js b/tests/app.test.js
-index b6ea112..6871305 100644
 --- a/tests/app.test.js
 +++ b/tests/app.test.js
 @@ -2093,6 +2093,8 @@ test("replaceRegistered still replaces in place when there is no collision", ()

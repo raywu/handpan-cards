@@ -3,7 +3,6 @@
 # section 8's worked example goes through untrimmed, so the cap no longer
 # bites where the spec says it does.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..17e48b2 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -22,7 +22,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

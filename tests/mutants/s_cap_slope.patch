@@ -3,7 +3,6 @@
 # every field beyond the twelfth"; at +2 the 18-field Pygmy pan caps at 37
 # rather than 31 and the structural maximum drifts too.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index 6e11744..a0dba08 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -106,7 +106,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

@@ -1,7 +1,6 @@
 # suite: node --test --test-name-pattern ^solve.never.changes.a.zone$ tests/layout.test.js
 # kills: solve never changes a zone
 diff --git a/src/engine/layout.js b/src/engine/layout.js
-index f5d1cd5..c43a94d 100644
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
 @@ -274,7 +274,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

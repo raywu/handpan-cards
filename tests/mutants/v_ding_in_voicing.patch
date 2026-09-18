@@ -2,7 +2,6 @@
 # kills: the section 5 invariant that the ding never appears in a voicing.
 # playable() stops skipping the ding, so candidate sets carry ding fields.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index b25fcbf..d944dab 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
 @@ -67,7 +67,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

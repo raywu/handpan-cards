@@ -2,7 +2,6 @@
 # kills: D8: numerals are minor-relative only when the pan has a minor third
 # Numerals are always major-relative, so Pygmy's III and VII gain flats.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
-index 6a111cc..f9799db 100644
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
 @@ -254,7 +254,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

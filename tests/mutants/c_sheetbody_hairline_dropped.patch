@@ -4,7 +4,6 @@
 # nothing to say it does not move. This is the regression the `.sheetsurf >
 # .ctlrow` selector shipped once already, silently.
 diff --git a/index.html b/index.html
-index b68a14f..0b7f787 100644
 --- a/index.html
 +++ b/index.html
 @@ -513,7 +513,7 @@ button.nav:active{background:#2e281e}

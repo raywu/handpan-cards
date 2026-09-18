@@ -3,7 +3,6 @@
 # deck() stops consulting the generated-deck registry, so a custom id silently
 # renders the first built-in deck instead.
 diff --git a/index.html b/index.html
-index b018e51..fa6352a 100644
 --- a/index.html
 +++ b/index.html
 @@ -2391,7 +2391,7 @@ let order = [], idx = 0, flipped = false;

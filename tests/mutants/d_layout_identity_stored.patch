@@ -3,7 +3,6 @@
 # A correction that undoes itself is stored anyway, so rotating the rim all
 # the way round leaves a longer link than the deck started with.
 diff --git a/index.html b/index.html
-index 2a111a2..7a5a23e 100644
 --- a/index.html
 +++ b/index.html
 @@ -3088,7 +3088,7 @@ function orderFromSlots(at) {

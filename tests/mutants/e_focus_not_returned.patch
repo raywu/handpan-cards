@@ -4,7 +4,6 @@
 # the moment the page hides - so the keyboard user lands on <body> and has to
 # tab from the top of the document to get back to where they were.
 diff --git a/index.html b/index.html
-index 2e7df19..cd31692 100644
 --- a/index.html
 +++ b/index.html
 @@ -4787,7 +4787,8 @@ function hideSheet() {

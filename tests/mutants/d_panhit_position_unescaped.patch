@@ -5,7 +5,6 @@
 # attribute name, so a check on the tag's attribute NAMES alone cannot see it.
 # The label ending where it should is what catches it.
 diff --git a/index.html b/index.html
-index 79d9295..0c32376 100644
 --- a/index.html
 +++ b/index.html
 @@ -3869,7 +3869,7 @@ function pan(d, ch, opts) {

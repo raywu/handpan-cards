@@ -6,7 +6,6 @@
 # CI log then carries a verdict nobody can act on.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index 804ac21..5601b79 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -249,9 +249,6 @@ def check_node():

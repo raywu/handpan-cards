@@ -3,7 +3,6 @@
 # The card list silently doubles, so the sheet count no longer matches the
 # deck the printer was quoted.
 diff --git a/tools/decks.py b/tools/decks.py
-index b2b956c..371b68e 100644
 --- a/tools/decks.py
 +++ b/tools/decks.py
 @@ -310,6 +310,7 @@ def from_generated(payload):
