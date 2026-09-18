@@ -1539,6 +1539,51 @@ test("deleting a deck that is already gone leaves no armed button behind", () =>
     "the deck is gone and the button still reads TAP AGAIN TO DELETE");
 });
 
+test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said", () => {
+  /* disarmDelete() runs on EVERY pointerdown in the sheet, armed or not. Its
+     say("") is the half of the disarm that takes the warning down, and without
+     the early return it fires on taps that disarmed nothing - so touching the
+     seed field would silently blank whatever the parse line had just explained.
+     The guard is what keeps the announcer the parse line's to write. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.type(scale("bad note token"));
+  const said = app.els["scale-msg"].textContent;
+  assert.ok(said.length > 0, "no parse message to strand, so this test measures nothing");
+  assert.strictEqual(app.els["scale-delete"].hasAttribute("data-armed"), false,
+    "DELETE is armed, so a disarm here would be legitimate");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-msg"].textContent, said,
+    "an ordinary tap on the seed field erased the reason the seed was rejected - "
+    + "the box is still outlined red and Generate still disabled, with nothing "
+    + "on the page saying why");
+});
+
+test("tabbing away from DELETE disarms it too", () => {
+  /* The pointerdown path covers the phone. A desktop keyboard can leave the
+     button without ever touching the page, and an arm the owner tabbed away
+     from is as stale as one they tapped away from. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  assert.strictEqual(typeof app.els["scale-delete"].onblur, "function",
+    "DELETE has no blur handler, so tabbing away leaves it armed");
+  app.els["scale-delete"].onblur();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the owner tabbed off an armed DELETE and it stayed armed");
+});
+
 /* ------------------------------------------- 23. the LAYOUT section (5) */
 //
 // Phase 5 / D5. A generated layout is a GUESS; the real pan may have the same
