@@ -502,20 +502,24 @@ button.nav:active{background:#2e281e}
 .ctlrow{display:flex; align-items:center; justify-content:space-between;
   gap:var(--sp-3); flex-wrap:wrap}
 .mirror{display:flex; gap:var(--sp-2)}
-/* The reserved footer - the mirror/palette row plus the primary - is what the
-   sheet guarantees is reachable without scrolling, so it gets a hairline of its
-   own rather than only a gap: at a scroll offset where the body still has more
-   to give, the rule is what says "this part does not move". Direct child only,
-   so the LAYOUT row's nested .ctlrow is untouched. */
-.sheetsurf > .ctlrow{border-top:1px solid #332c22; padding-top:var(--sp-4)}
+/* The reserved footer - since 2026-09-17 the primary alone, plus the Edit-only
+   delete row - is what the sheet guarantees is reachable without scrolling, so
+   it gets a hairline rather than only a gap: at a scroll offset where the body
+   still has more to give, the rule is what says "this part does not move".
+   The rule hangs off the SCROLLPORT's bottom edge, not off the first pinned
+   element. It used to be `.sheetsurf > .ctlrow`, and when the mirror/palette
+   row moved into .sheetbody that direct-child selector stopped matching
+   anything - the divider disappeared with no test to notice, since this was
+   the file's only border-top. The boundary it describes is .sheetbody's own
+   edge, so that is where it belongs: moving a child across it cannot unhook it
+   again. Pinned by "a hairline divides the pinned footer from the scroll". */
+.sheetbody{border-bottom:1px solid #332c22}
 /* Landscape on a phone: 390px of height, and every pixel of chrome on the page
-   comes straight off the scrolling body. The ramp is already a third smaller
-   here; this drops the footer's breathing room above its own hairline, which is
-   decoration rather than structure, and returns the primary to the 44px floor.
-   The hairline stays: it is what says the footer does not scroll, and it costs
-   one pixel. */
+   comes straight off the scrolling body. The footer's breathing room above its
+   own hairline is .sheetsurf's gap, already dropped to --sp-3 above; this
+   returns the primary to the 44px floor. The hairline stays: it is what says
+   the footer does not scroll, and it costs one pixel. */
 @media (max-height:520px){
-  .sheetsurf > .ctlrow{padding-top:var(--sp-2)}
   #scale-generate{min-height:44px}
   /* Text fields go back to the 44px floor with tighter padding: on the Edit
      sheet there are two of them above the fold and the box the caret lands in
@@ -654,6 +658,11 @@ button.nav:active{background:#2e281e}
 /* Armed is a state the eye can read without the label: the same amber the
    announcer uses for a warning. */
 #scale-delete[data-armed]{color:#e3b25c}
+/* The armed rule outranks the shared :active one - same specificity, later in
+   the file - so without this the armed button is the only control on the page
+   that does not answer a press. Confirming a delete is the press that most
+   needs the acknowledgement. */
+#scale-delete[data-armed]:active{color:#eae6df}
 </style>
 </head>
 <body>
@@ -4763,7 +4772,10 @@ window.addEventListener("popstate", () => {
 // section 2 code enum is closed and has no code for "you deleted this".
 function deleteDeck(id) {
   const d = CUSTOM[id];
-  if (!d) return;
+  // Nothing to remove means nothing to confirm: an armed label left standing
+  // over a deck that is already gone is a second tap waiting to mean something
+  // else.
+  if (!d) { disarmDelete(); return; }
   const gone = d.name;
   const wasSelected = deckId === id;
   delete CUSTOM[id];
@@ -4856,9 +4868,9 @@ genBtn.onclick = runGenerate;
    one row for the reason the .sheetbody comment gives, a dialog would cost it
    height, and Escape - which closes this page - must not be able to dismiss a
    confirmation. The label carries the state, so an armed button never looks
-   like an idle one. setSheetMode() disarms on every open, and leaving the
-   button disarms it on blur, so a confirmation never outlives the tap that
-   gave it. */
+   like an idle one. setSheetMode() disarms on every open, and touching
+   anything else on the page disarms it, so a confirmation never outlives the
+   tap that gave it. */
 const DEL_IDLE = "DELETE THIS DECK";
 const DEL_ARMED = "TAP AGAIN TO DELETE";
 let delArmed = false;
@@ -4877,7 +4889,16 @@ delBtn.onclick = () => {
   say("Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.",
       "warn");
 };
-// Looking away is a decision too: a button the thumb has left is not armed.
+/* Looking away is a decision too, and on a phone the only way to see it is the
+   pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
+   there and the blur handler alone would let an arm survive retyping the seed,
+   flipping the mirror and scrolling away. A pointerdown anywhere in the page
+   that is not the button itself is the same decision, and it is one the
+   owner's device actually makes. The pointerdown that lands ON the button is
+   not: it is the confirming tap's own first half. */
+sheet.addEventListener("pointerdown", (e) => {
+  if (e.target !== delBtn) disarmDelete();
+});
 delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.

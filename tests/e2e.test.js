@@ -3557,7 +3557,7 @@ function run() {
   `);
 
   /* How much of the seed box a thumb can actually read: its own rect clipped
-   * by .sheetbody's scrollport and then by the viewport, AFTER scrolling the
+   * by .sheetbody's scrollport and then by the VISUAL viewport, AFTER scrolling the
    * box into view the way a reader would. Scrolling first is what makes this
    * about visibility rather than about a scroll position - but it is no
    * rescue: a scrollport shorter than the box cannot show all of it at any
@@ -3568,12 +3568,21 @@ function run() {
     box.scrollIntoView({ block: "center" });
     const r = box.getBoundingClientRect();
     const s = body.getBoundingClientRect();
-    const top = Math.max(r.top, s.top, 0);
-    const bottom = Math.min(r.bottom, s.bottom, window.innerHeight);
+    /* The bottom bound is the VISUAL viewport, not innerHeight. Under a real
+     * keyboard innerHeight does not shrink - that is the whole premise of this
+     * test - so clipping at it lets the box sit behind the keyboard and still
+     * score as fully visible. tests/mutants/e_kb_sheet_never_translates.patch
+     * drops applyKbOffset's translateY and survives an innerHeight bound; it
+     * dies on this one. */
+    const vv = window.visualViewport;
+    const kbTop = vv.offsetTop + vv.height;
+    const top = Math.max(r.top, s.top, vv.offsetTop);
+    const bottom = Math.min(r.bottom, s.bottom, kbTop);
     return {
       h: r.height, visible: Math.max(0, bottom - top),
       portH: s.height, focused: document.activeElement && document.activeElement.id,
-      innerHeight: window.innerHeight, vvHeight: window.visualViewport.height,
+      innerHeight: window.innerHeight, vvHeight: vv.height, kbTop,
+      boxTop: r.top, boxBottom: r.bottom,
     };
   `);
 
@@ -3585,8 +3594,9 @@ function run() {
       + `visual viewport ${m.vvHeight} - this is the friendly proxy again, not a keyboard`);
     assert.ok(m.visible >= m.h - 0.5,
       `${where}: only ${m.visible.toFixed(1)}px of the ${m.h.toFixed(1)}px seed box `
-      + `survives the sheet's own scroller (${m.portH.toFixed(1)}px tall) - `
-      + `the owner cannot read what they are typing`);
+      + `survives the sheet's own scroller (${m.portH.toFixed(1)}px tall) and the `
+      + `keyboard line at ${m.kbTop.toFixed(1)}px (box ${m.boxTop.toFixed(1)}-`
+      + `${m.boxBottom.toFixed(1)}) - the owner cannot read what they are typing`);
   }
 
   /* The owner's device: iPhone 14 / iOS 26.6, 390 CSS px wide, ~745 px of
@@ -3630,6 +3640,44 @@ function run() {
       }
     } finally {
       await raiseKeyboard(900);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
+   * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
+   * the rule stopped matching anything at all and the divider vanished with
+   * it, silently, because no test read it - line 510 was the only border-top
+   * in the file. The rule now belongs to the scrollport's own bottom edge,
+   * which is the boundary it was always describing, so it cannot be undone by
+   * moving a child across it again. */
+  test("a hairline divides the pinned footer from the scroll, so the footer reads as fixed", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 745, true);
+      await openSheet();
+      const m = await b.eval(`
+        const body = document.querySelector(".sheetbody");
+        const cs = getComputedStyle(body);
+        return {
+          next: body.nextElementSibling && body.nextElementSibling.id,
+          style: cs.borderBottomStyle,
+          w: cs.borderBottomStyle === "none" ? 0 : parseFloat(cs.borderBottomWidth),
+          color: cs.borderBottomColor,
+          bg: getComputedStyle(document.querySelector(".sheetsurf")).backgroundColor,
+        };
+      `);
+      assert.strictEqual(m.next, "scale-generate",
+        "the primary is no longer the first thing below the scrollport, so this "
+        + "test is measuring the wrong boundary");
+      assert.ok(m.w >= 1,
+        `the scrollport's bottom edge draws no rule (${m.style} ${m.w}px), so nothing `
+        + "says the footer below it does not scroll");
+      assert.notStrictEqual(m.color, "rgba(0, 0, 0, 0)",
+        "the rule is transparent, which is the same as not drawing it");
+      assert.notStrictEqual(m.color, m.bg,
+        `the rule is drawn in the sheet's own background ${m.bg}, so it is invisible`);
+    } finally {
       await b.setViewport(900, 900, false);
     }
   });

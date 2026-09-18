@@ -1452,6 +1452,51 @@ test("leaving the Edit page disarms DELETE, so a stale tap cannot destroy a deck
 });
 
 
+test("a tap anywhere else on the page disarms DELETE, without waiting for a blur", () => {
+  /* The owner's phone is the reason this is not covered by the blur handler.
+     iOS Safari does not give a <button> focus on tap, so `blur` never fires
+     there: the arm would sit through retyping the seed, toggling the mirror and
+     scrolling, and the only thing that would clear it is leaving the page. A
+     pointerdown that is not the button is the same decision as looking away,
+     and it is one the owner's device actually makes. */
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the first tap did not arm, so this test is not measuring a disarm");
+
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-box"] });
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
+    "the owner touched the seed field and DELETE stayed armed - on iOS, where "
+    + "a button takes no focus, the next tap on it would destroy the deck");
+
+  app.els["scale-delete"].click();
+  assert.strictEqual(app.registry()[d.id] === undefined, false,
+    "the re-armed button deleted the deck on what was its first tap");
+});
+
+test("a pointerdown on DELETE itself does not disarm the tap that armed it", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+
+  app.els["scale-delete"].click();
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "pointerdown", target: app.els["scale-delete"] });
+  assert.strictEqual(app.els["scale-delete"].textContent.trim(), "TAP AGAIN TO DELETE",
+    "the confirming tap's own pointerdown disarmed the button, so DELETE can "
+    + "never fire: every second tap would only re-arm it");
+
+  app.els["scale-delete"].click();
+  assert.deepStrictEqual(app.registry(), {},
+    "the confirming tap did not delete the deck");
+});
+
 /* ------------------------------------------- 23. the LAYOUT section (5) */
 //
 // Phase 5 / D5. A generated layout is a GUESS; the real pan may have the same
