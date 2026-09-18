@@ -4772,10 +4772,7 @@ window.addEventListener("popstate", () => {
 // section 2 code enum is closed and has no code for "you deleted this".
 function deleteDeck(id) {
   const d = CUSTOM[id];
-  // Nothing to remove means nothing to confirm: an armed label left standing
-  // over a deck that is already gone is a second tap waiting to mean something
-  // else.
-  if (!d) { disarmDelete(); return; }
+  if (!d) return;
   const gone = d.name;
   const wasSelected = deckId === id;
   delete CUSTOM[id];
@@ -4887,8 +4884,9 @@ function disarmDelete() {
 }
 delBtn.onclick = () => {
   if (!editingId) return;
-  // Disarm BEFORE the delete, so the state does not outlive the deck and the
-  // delete's own message is the last thing said.
+  /* Disarm BEFORE the delete, not inside it: the state must not outlive the
+     deck even when deleteDeck turns out to have nothing to remove, and the
+     delete's own message should be the last thing said. */
   if (delArmed) { disarmDelete(); deleteDeck(editingId); return; }
   delArmed = true;
   delBtn.textContent = DEL_ARMED;
