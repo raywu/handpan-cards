@@ -3588,13 +3588,9 @@ function run() {
    *    reason kbCap() reads both - so the proxy never exercises the case the
    *    code exists to handle. The comment above already called it "the
    *    friendly case, not the honest one"; this is the honest one. */
-  const raiseKeyboard = (vvHeight) => b.eval(`
-    const vv = window.visualViewport;
-    Object.defineProperty(vv, "height", { value: ${vvHeight}, configurable: true });
-    Object.defineProperty(vv, "offsetTop", { value: 0, configurable: true });
-    vv.dispatchEvent(new Event("resize"));
-    return { innerHeight: window.innerHeight, vvHeight: vv.height };
-  `);
+  /* Lives in tests/helpers/cdp.js now, so the pinch-zoom lever (setPageScale)
+   * and the teardown (clearKeyboard) sit beside it and every test in the repo
+   * shares ONE keyboard stub. */
 
   /* How much of the seed box a thumb can actually read: its own rect clipped
    * by .sheetbody's scrollport and then by the VISUAL viewport, AFTER scrolling the
@@ -3658,11 +3654,11 @@ function run() {
       await openEdit();
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
-        await raiseKeyboard(745 - kb);
+        await b.fakeKeyboard(745 - kb);
         assertSeedBoxReadable(await seedBoxVisibility(),
           `the Edit page with a ${kb}px keyboard`);
       }
-      await raiseKeyboard(745);
+      await b.clearKeyboard();
       await b.key("Escape", "Escape", 27);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit page to close" });
@@ -3674,12 +3670,67 @@ function run() {
         { label: "the preview to render" });
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
-        await raiseKeyboard(745 - kb);
+        await b.fakeKeyboard(745 - kb);
         assertSeedBoxReadable(await seedBoxVisibility(),
           `the Add page with a ${kb}px keyboard`);
       }
     } finally {
-      await raiseKeyboard(900);
+      await b.clearKeyboard();
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Reads what applyKbOffset actually wrote onto the sheet surface, plus the
+   * two viewport numbers it computed them from. Returning the inputs beside
+   * the outputs is what lets the assertions DERIVE their expectations instead
+   * of hard-coding pixels: this file shares one browser session, and a
+   * neighbouring test that leaves a different viewport set would otherwise
+   * turn a real regression into a confusing pixel mismatch. */
+  const surfaceState = () => b.eval(`
+    const surf = document.getElementById("scale-sheet").firstElementChild;
+    const vv = window.visualViewport;
+    return {
+      transform: surf.style.transform, maxHeight: surf.style.maxHeight,
+      innerHeight: window.innerHeight,
+      vvHeight: vv.height, vvOffsetTop: vv.offsetTop, vvScale: vv.scale,
+    };
+  `);
+
+  /* The wiring row 54 called invisible to CI. It is not: a shrunken visual
+   * viewport driven through a real resize event runs applyKbOffset end to end
+   * against the shipped file, so the listener, the two pure functions and both
+   * style writes are all under test. What stays unverifiable is only the
+   * PREMISE - that a real iOS keyboard shrinks visualViewport.height - which
+   * is an owner-device claim (queue rows 51, 67) and always will be. */
+  test("the sheet answers a shrunken visual viewport by lifting and capping the surface", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(390, 844, true);
+      await openSheet();
+      await b.fakeKeyboard(400);
+
+      const m = await surfaceState();
+      const off = Math.max(0, m.innerHeight - m.vvHeight - m.vvOffsetTop);
+      const cap = Math.max(0, Math.round(m.vvHeight - 8));
+      assert.ok(off > 0,
+        `the fake keyboard did not shrink anything: innerHeight ${m.innerHeight} `
+        + `vs vv.height ${m.vvHeight}`);
+      assert.strictEqual(m.transform, `translateY(-${off}px)`,
+        `the surface did not lift clear of the keyboard line`);
+      assert.strictEqual(m.maxHeight, `${cap}px`,
+        `the surface was not capped to what is left of the visual viewport`);
+
+      // And the teardown is part of the contract, not an afterthought: a
+      // leaked shadowed property would follow this session into every test
+      // below it.
+      await b.clearKeyboard();
+      const back = await surfaceState();
+      assert.strictEqual(back.vvHeight, back.innerHeight,
+        "clearKeyboard did not restore the visual viewport");
+      assert.strictEqual(back.transform, "", "the lift outlived the keyboard");
+      assert.strictEqual(back.maxHeight, "", "the cap outlived the keyboard");
+    } finally {
+      await b.clearKeyboard();
       await b.setViewport(900, 900, false);
     }
   });
