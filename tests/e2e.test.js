@@ -2775,12 +2775,23 @@ function run() {
         }
         top = Math.max(top, 0); left = Math.max(left, 0);
         right = Math.min(right, innerWidth); bottom = Math.min(bottom, innerHeight);
+        /* opacity does not inherit, so a fully-opaque element can still be
+         * invisible because an ANCESTOR (not necessarily the nearest one) is
+         * opacity:0 - the effective opacity is the PRODUCT of every ancestor's
+         * own opacity, own element included, all the way to <html>. Stopping
+         * at the first non-1 ancestor (or the first ancestor at all) misses
+         * every case where that ancestor is opaque but one further up isn't. */
+        let effOpacity = parseFloat(cs.opacity);
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          effOpacity *= parseFloat(getComputedStyle(p).opacity);
+        }
         return {
           inRow: !!(row && row.contains(el)),
           h: r.height, w: r.width,
           vw: Math.max(0, right - left), vh: Math.max(0, bottom - top),
           rleft: r.left, rtop: r.top,
           display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+          effOpacity,
           text: (el.textContent || "").trim(),
           describes: document.querySelector('[aria-describedby~="scale-layout-hint"]') !== null,
         };
@@ -2792,6 +2803,9 @@ function run() {
         `the hint draws no box (${hint.w}x${hint.h}, display:${hint.display}) - nothing renders`);
       assert.notStrictEqual(hint.visibility, "hidden", "the hint is visibility:hidden");
       assert.notStrictEqual(hint.opacity, "0", "the hint is fully transparent");
+      assert.ok(hint.effOpacity > 0,
+        `an ancestor of the hint is opacity:0 (effective opacity ${hint.effOpacity}) - the hint's `
+        + "own opacity is fine, but something above it in the tree hides it");
       assert.ok(hint.vw > 0 && hint.vh > 0,
         `the hint is laid out (${hint.w}x${hint.h} at ${hint.rleft},${hint.rtop}) but none of it `
         + `survives its clipping ancestors and the viewport (${hint.vw}x${hint.vh}) - `
@@ -3114,6 +3128,61 @@ function run() {
         `return [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(c => c.textContent.trim());`);
       assert.strictEqual(back.length, 3, `the deleted deck came back: ${JSON.stringify(back)}`);
     } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("cancelling an armed DELETE re-syncs the box, GENERATE and the message (queue row 91)", async () => {
+    /* Type a seed the parser rejects, arm DELETE, then tap elsewhere to
+       disarm it. disarmDelete() must leave the box's .bad class, the
+       GENERATE disabled state and the message agreeing with what is
+       currently typed - not with whatever they said before DELETE was
+       armed. */
+    try {
+      await editFreshDeck();
+      await typeScale("(D3) A3 H4");   // H is not a valid note letter
+      const badBefore = await b.eval(`
+        return {
+          bad: document.getElementById("scale-box").classList.contains("bad"),
+          disabled: document.getElementById("scale-generate").disabled,
+          msg: document.getElementById("scale-msg").textContent.trim(),
+        };
+      `);
+      assert.strictEqual(badBefore.bad, true, "the rejected seed did not mark the box bad");
+      assert.strictEqual(badBefore.disabled, true, "the rejected seed left GENERATE enabled");
+      assert.ok(badBefore.msg.length > 0, "the rejected seed showed no message");
+
+      await b.click("#scale-delete");   // arm DELETE
+      const armed = await b.eval(
+        `return document.getElementById("scale-delete").hasAttribute("data-armed");`);
+      assert.strictEqual(armed, true, "DELETE never armed");
+
+      // tap elsewhere in the sheet - not on DELETE - to disarm it
+      await clickPoint(8, 8);
+      const disarmed = await b.eval(
+        `return document.getElementById("scale-delete").hasAttribute("data-armed");`);
+      assert.strictEqual(disarmed, false, "the tap elsewhere did not disarm DELETE");
+
+      const after = await b.eval(`
+        return {
+          bad: document.getElementById("scale-box").classList.contains("bad"),
+          disabled: document.getElementById("scale-generate").disabled,
+          msg: document.getElementById("scale-msg").textContent.trim(),
+          text: document.getElementById("scale-box").value,
+        };
+      `);
+      // The seed in the box is still rejected, so .bad, disabled and msg must
+      // all still say so together - not the box red with GENERATE re-enabled
+      // and no message, and not the reverse.
+      assert.strictEqual(after.bad, after.disabled,
+        `after disarming, .bad=${after.bad} but GENERATE disabled=${after.disabled} disagree ` +
+        `for "${after.text}"`);
+      if (after.bad) {
+        assert.ok(after.msg.length > 0,
+          `after disarming, the box is still bad but #scale-msg is blank for "${after.text}"`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });

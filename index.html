@@ -4927,8 +4927,10 @@ function disarmDelete() {
   delArmed = false;
   delBtn.textContent = DEL_IDLE;
   delBtn.removeAttribute("data-armed");
-  // The label and the announcer said the same thing; they stop together.
-  say("");
+  // Re-run the existing parse path rather than restoring a cached render:
+  // this recomputes .bad, #scale-msg and GENERATE's disabled state from the
+  // field's CURRENT text, so the three cannot disagree (queue row 91).
+  updateParse();
 }
 delBtn.onclick = () => {
   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
