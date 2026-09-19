@@ -22,6 +22,7 @@ import glob
 import io
 import os
 import re
+import signal
 import subprocess
 import sys
 import unittest
@@ -196,20 +197,22 @@ def run_node_file(path):
     A suite that overruns NODE_TIMEOUT returns totals of None with the timeout
     named in the output, so the caller reports a problem instead of raising.
     """
+    proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, cwd=paths.ROOT, start_new_session=True)
     try:
-        proc = subprocess.run(["node", "--test", "--test-reporter=tap", path],
-                              capture_output=True, text=True, cwd=paths.ROOT,
-                              timeout=NODE_TIMEOUT)
-    except subprocess.TimeoutExpired as exc:
-        def text(buf):
-            if buf is None:
-                return ""
-            return buf if isinstance(buf, str) else buf.decode("utf-8", "replace")
-        tail = (text(exc.stdout) + text(exc.stderr))[-2000:]
+        stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        stdout, stderr = proc.communicate()
+        tail = (stdout + stderr)[-2000:]
         return None, None, 0, (
             f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
             f"{tail}")
-    out = proc.stdout + proc.stderr
+    out = stdout + stderr
 
     def field(name):
         m = re.search(rf"^# {name} (\d+)$", out, re.M)
