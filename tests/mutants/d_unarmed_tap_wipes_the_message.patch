@@ -1,12 +1,22 @@
-# kills: an ordinary tap in the sheet says nothing, so it cannot wipe what was said
-# suite: node --test --test-name-pattern ^an.ordinary.tap.in.the.sheet.says.nothing..so.it.cannot.wipe.what.was.said$ tests/app.test.js
-# The early return goes away, so disarmDelete says "" on every pointerdown in
-# the sheet - touching the seed field blanks the parse line that explains why
-# the box is red and Generate is dead.
+# kills: an ordinary unarmed tap does not wipe a collision refusal (queue row 91 guard)
+# suite: node --test --test-name-pattern ^an.ordinary.unarmed.tap.does.not.wipe.a.collision.refusal..queue.row.91.guard.$ tests/e2e.test.js
+# The early return goes away, so disarmDelete() re-runs updateParse() on every
+# pointerdown in the sheet, armed or not. That is harmless for a syntactically
+# bad seed (updateParse() re-derives the identical rejection), but a collision
+# refusal is bad for a reason parseSeed knows nothing about: the seed itself
+# still parses fine. An ordinary tap while DELETE was never armed would then
+# wrongly clear .bad and wipe "Another deck already uses this scale." for an
+# edit that was never fixed.
+# (Queue row 91 rewrote disarmDelete() to call updateParse() instead of a bare
+# say(""), which made the ORIGINAL kill test - tests/app.test.js's "an
+# ordinary tap in the sheet says nothing" - stop discriminating: it only ever
+# exercises a bad-seed rejection, and updateParse() reproduces that message
+# exactly, guard or no guard. This mutant now targets the scenario the guard
+# actually protects and is killed by the e2e test above instead.)
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4875,7 +4875,6 @@ function disarmDelete() {
+@@ -4923,7 +4923,6 @@ function disarmDelete() {
    /* Nothing to undo when nothing is armed, and saying so would be worse than
       silent: this runs on every pointerdown in the sheet, so an unguarded
       say("") would wipe whatever the parse line or a save had just announced. */

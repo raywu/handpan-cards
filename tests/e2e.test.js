@@ -3377,6 +3377,47 @@ function run() {
     }
   });
 
+  test("an ordinary unarmed tap does not wipe a collision refusal (queue row 91 guard)", async () => {
+    /* disarmDelete() runs on every pointerdown in the sheet, armed or not, and
+       now re-syncs the sheet through updateParse() when it DOES run. Its
+       early-return guard exists so an ordinary tap while DELETE is not armed
+       never calls updateParse() at all - because updateParse() only sees the
+       PARSE-level verdict, and a collision refusal is bad for a reason
+       parseSeed knows nothing about: the seed itself still parses fine, so
+       recomputing from it would wrongly clear .bad and the refusal message
+       for an edit that was never fixed. */
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const before = await chipReport();
+
+      // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so second-to-last.
+      await selectChipAt(before.chips.length - 2);
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const st1 = await sheetState();
+      assert.strictEqual(st1.bad, true, "the scale box was not marked bad");
+      assert.match(st1.msg, /Another deck already uses this scale/,
+        `the sheet says "${st1.msg}"`);
+
+      // an ordinary tap elsewhere in the sheet - DELETE was never armed
+      await clickPoint(8, 8);
+
+      const st2 = await sheetState();
+      assert.strictEqual(st2.bad, st1.bad,
+        "an ordinary tap while unarmed changed .bad on a collision refusal");
+      assert.strictEqual(st2.msg, st1.msg,
+        `an ordinary tap while unarmed changed the refusal message: "${st1.msg}" -> "${st2.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("an options-only edit keeps its chip position across a reload at 380px", async () => {
     try {
       await freshLoad();
