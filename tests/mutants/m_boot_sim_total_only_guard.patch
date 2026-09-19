@@ -1,0 +1,28 @@
+# kills: boot_sim's per-deck card count guard
+# suite: node tools/boot_sim.js
+# Queue row 47: boot_sim's guard used to be `if (cards !== 96)` against a
+# single accumulated total, so a compensating miscount - one deck exercising
+# one card too many while another exercises one too few - sums back to 96 and
+# slips through undetected. This mutant reproduces exactly that shape: it
+# double-counts the first Hijaz card and drops the first Amara card, so the
+# grand total is still 96 (the total-only guard this deck's boot_sim used to
+# have would see nothing wrong) while Hijaz's own count is 20 (expected 19)
+# and Amara's is 24 (expected 25). Only a PER-DECK guard - each d.id's count
+# checked against d.chords.length - can catch this; that guard is what this
+# mutant kills.
+diff --git a/tools/boot_sim.js b/tools/boot_sim.js
+--- a/tools/boot_sim.js
++++ b/tools/boot_sim.js
+@@ -23,7 +23,11 @@
+       const faces = app.faces();
+       if (german.test(faces)) throw new Error("German in render: " + d.id + " card " + i);
+       if (!faces.includes("<svg")) throw new Error("no SVG: " + d.id + " " + i);
+-      if (mode === "A") { cards++; deckCards++; }
++      if (mode === "A") {
++        if (d.id === "hijaz" && i === 0) { cards += 2; deckCards += 2; }
++        else if (d.id === "amara" && i === 0) { /* skip */ }
++        else { cards++; deckCards++; }
++      }
+       app.els.next.onclick();
+     }
+   }

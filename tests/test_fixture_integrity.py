@@ -12,6 +12,8 @@ from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "fixtures", "golden_decks_v4.json")
+V3_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "fixtures", "golden_decks_v3.json")
 
 DECK_KEYS = ("id", "name", "sub", "colors", "degrees", "geom", "fields",
              "chords", "maker_string")
@@ -29,6 +31,13 @@ TOP_ZONES = ("ding", "rim", "inner")
 # is the loud failure this fixture exists to force.
 EXPECTED_SHA256 = ("d9fe93bd3c8cbbe366498cdd4c2101af6c9d262964f72624319af346"
                    "b929861e")
+
+# The v3 corpus's canonical-serialisation digest, pinned the same way as v4's
+# above (queue row 48: v3 was unpinned - its "sha256" key existed in the
+# fixture but nothing outside the fixture read it, so a coordinated rewrite of
+# both the content and its self-reported digest would have passed silently).
+EXPECTED_SHA256_V3 = ("6377b1e0230926a5aa85be066517647ec0f7606b569429804a4420"
+                      "b540ac1787")
 
 
 def chord_counts():
@@ -51,6 +60,11 @@ def load():
         return json.load(fh)
 
 
+def load_v3():
+    with open(V3_FIXTURE, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 class TestFixtureSelfAssertion(unittest.TestCase):
     def test_sha256_matches_canonical_serialisation(self):
         doc = load()
@@ -59,8 +73,19 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
                          "fixture content and its stored sha256 disagree. " + BUMP)
 
-    def test_sha256_is_the_pinned_v3_digest(self):
+    def test_sha256_is_the_pinned_v4_digest(self):
         self.assertEqual(load()["sha256"], EXPECTED_SHA256,
+                         "the v4 corpus digest changed. " + BUMP)
+
+    def test_v3_sha256_matches_its_canonical_serialisation(self):
+        doc = load_v3()
+        canon = json.dumps({"version": doc["version"], "decks": doc["decks"]},
+                           sort_keys=True, separators=(",", ":")).encode()
+        self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
+                         "v3 fixture content and its stored sha256 disagree. " + BUMP)
+
+    def test_v3_sha256_is_the_pinned_digest(self):
+        self.assertEqual(load_v3()["sha256"], EXPECTED_SHA256_V3,
                          "the v3 corpus digest changed. " + BUMP)
 
     def test_shape_and_card_counts(self):
