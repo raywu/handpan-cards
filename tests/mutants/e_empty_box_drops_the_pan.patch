@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3927,7 +3927,7 @@ function updateParse() {
+@@ -4575,7 +4575,7 @@
      parseLine.textContent = PARSE_HINT;
      scaleBox.classList.remove("bad");
      genBtn.disabled = true;
--    showPlaceholderPan();
-+    clearPanPreview();
+-    if (paint) showPlaceholderPan();
++    if (paint) clearPanPreview();
      say("", "");
      return;
    }

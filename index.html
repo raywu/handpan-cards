@@ -4560,14 +4560,22 @@ function holdPanPreview() {
   markPan(panState === "example" ? "example" : "held");
 }
 
-/** Re-parse on every input: the parse line, the outline and Generate follow. */
-function updateParse() {
+/* A refusal the SEED cannot re-derive: the collision veto is decided by the
+   registry, not by the text in the box, so syncParseState() would clear it.
+   Cleared by the next real parse, which is the edit that could fix it. */
+let refusal = null;
+
+/** Re-derive the parse line, the box, GENERATE and the message from the seed.
+ *  `paint` is false for the one caller that runs inside a pointerdown:
+ *  repainting the pan there detaches the `.panhit` the press landed on, the
+ *  click retargets to an ancestor, and the delegated handler drops the tap. */
+function syncParseState({ paint }) {
   const text = String(scaleBox.value || "");
   if (!text.trim()) {
     parseLine.textContent = PARSE_HINT;
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
-    showPlaceholderPan();
+    if (paint) showPlaceholderPan();
     say("", "");
     return;
   }
@@ -4576,7 +4584,7 @@ function updateParse() {
     parseLine.textContent = parseLineText(res.value.fields);
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
-    showPanPreview(res.value);
+    if (paint) showPanPreview(res.value);
     say("", "");
   } else {
     // Blanked, not removed: #scale-parse reserves its line in CSS, so the
@@ -4584,9 +4592,16 @@ function updateParse() {
     parseLine.textContent = "";
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
-    holdPanPreview();
+    if (paint) holdPanPreview();
     say(res.reason, "err");
   }
+}
+
+/** Re-parse on every input: the parse line, the outline and Generate follow.
+ *  An edit is also the one event that can clear a standing refusal. */
+function updateParse() {
+  refusal = null;
+  syncParseState({ paint: true });
 }
 
 /* ---- iOS keyboard fix (TODOS.md "The iOS keyboard covers GENERATE CARDS
@@ -4874,12 +4889,14 @@ function runGenerate() {
     // section 2 code enum is closed and has no code for "that scale is taken",
     // so this composes no sentence that could pass for one and carries no code.
     scaleBox.classList.add("bad");
-    say("Another deck already uses this scale.", "err");
+    refusal = "Another deck already uses this scale.";
+    say(refusal, "err");
     return;
   }
   if (!res.ok) {
     scaleBox.classList.add("bad");
-    say(res.reason, "err");
+    refusal = res.reason;
+    say(refusal, "err");
     return;
   }
   const d = res.value;
@@ -4920,17 +4937,21 @@ const DEL_IDLE = "DELETE THIS DECK";
 const DEL_ARMED = "TAP AGAIN TO DELETE";
 let delArmed = false;
 function disarmDelete() {
-  /* Nothing to undo when nothing is armed, and saying so would be worse than
-     silent: this runs on every pointerdown in the sheet, so an unguarded
-     say("") would wipe whatever the parse line or a save had just announced. */
+  /* Nothing to undo when nothing is armed, and re-deriving anyway would be
+     worse than silent: this runs on every pointerdown in the sheet, so an
+     unguarded disarm would re-parse the seed on taps that cancelled nothing. */
   if (!delArmed) return;
   delArmed = false;
   delBtn.textContent = DEL_IDLE;
   delBtn.removeAttribute("data-armed");
-  // Re-run the existing parse path rather than restoring a cached render:
-  // this recomputes .bad, #scale-msg and GENERATE's disabled state from the
-  // field's CURRENT text, so the three cannot disagree (queue row 91).
-  updateParse();
+  // A standing refusal is not derivable from the seed, so re-deriving would
+  // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
+  // Put the refusal back over the arming warning and leave the rest alone.
+  if (refusal) { say(refusal, "err"); return; }
+  // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+  // the field's CURRENT text, so the three cannot disagree (queue row 91) -
+  // WITHOUT repainting the pan, because this runs inside a pointerdown.
+  syncParseState({ paint: false });
 }
 delBtn.onclick = () => {
   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).

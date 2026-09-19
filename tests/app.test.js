@@ -1540,11 +1540,11 @@ test("deleting a deck that is already gone leaves no armed button behind", () =>
 });
 
 test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said", () => {
-  /* disarmDelete() runs on EVERY pointerdown in the sheet, armed or not. Its
-     say("") is the half of the disarm that takes the warning down, and without
-     the early return it fires on taps that disarmed nothing - so touching the
-     seed field would silently blank whatever the parse line had just explained.
-     The guard is what keeps the announcer the parse line's to write. */
+  /* disarmDelete() would run on EVERY pointerdown in the sheet, armed or not,
+     and the half of it that takes the warning down re-derives the whole sheet
+     from the seed. The early return keeps that off taps that cancelled
+     nothing, so touching the seed field leaves the parse line's own message -
+     and the box, and GENERATE - exactly as the last keystroke left them. */
   const app = boot();
   const d = makeCustom(app);
   app.select(d.id);

@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3487,7 +3487,7 @@ function runGenerate() {
-     // section 2 code enum is closed and has no code for "that scale is taken",
+@@ -4890,7 +4890,7 @@
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
--    say("Another deck already uses this scale.", "err");
+     refusal = "Another deck already uses this scale.";
+-    say(refusal, "err");
 +    say("", "err");
      return;
    }

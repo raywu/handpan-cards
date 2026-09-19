@@ -3171,16 +3171,17 @@ function run() {
           text: document.getElementById("scale-box").value,
         };
       `);
-      // The seed in the box is still rejected, so .bad, disabled and msg must
-      // all still say so together - not the box red with GENERATE re-enabled
-      // and no message, and not the reverse.
-      assert.strictEqual(after.bad, after.disabled,
-        `after disarming, .bad=${after.bad} but GENERATE disabled=${after.disabled} disagree ` +
-        `for "${after.text}"`);
-      if (after.bad) {
-        assert.ok(after.msg.length > 0,
-          `after disarming, the box is still bad but #scale-msg is blank for "${after.text}"`);
-      }
+      // The seed in the box is still rejected, so all three must still SAY so -
+      // asserted against what the rejection itself showed, not against each
+      // other: `after.bad === after.disabled` is satisfied by both being false,
+      // which is precisely the state where the box has gone clean and GENERATE
+      // is live on a seed the parser refuses.
+      assert.strictEqual(after.bad, true,
+        `after disarming, the box is no longer bad for the rejected "${after.text}"`);
+      assert.strictEqual(after.disabled, true,
+        `after disarming, GENERATE is live on the rejected "${after.text}"`);
+      assert.strictEqual(after.msg, badBefore.msg,
+        `after disarming, the parser's refusal became "${after.msg}"`);
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -3373,6 +3374,92 @@ function run() {
         await b.eval(`return localStorage.getItem("hpfc.scales");`), storedBefore,
         "a refused save wrote to hpfc.scales");
     } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /** Tap a note on the pan the way a finger does: real pointer events at the
+   *  circle's own centre. The pointerdown lands on the `.panhit`, and the
+   *  `click` that follows it has to find that SAME node - which is the whole
+   *  hazard when something repaints the pan between the two halves. */
+  async function tapPanNote(name) {
+    const at = await b.eval(`
+      const want = ${JSON.stringify(name)};
+      const h = [...document.querySelectorAll("#scale-preview .panhit")]
+        .find(el => String(el.getAttribute("aria-label") || "").split(",")[0] === want);
+      if (!h) throw new Error("no pan note " + want);
+      const r = h.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    `);
+    await clickPoint(at.x, at.y);
+  }
+
+  test("with DELETE armed, the first tap on a pan note still chooses it (queue row 91)", async () => {
+    /* disarmDelete() runs on the pointerdown, and the pan is the thing under
+       the finger. Repainting it there replaces #scale-preview's markup, so the
+       .panhit the press landed on is detached before the click arrives; the
+       click retargets to an ancestor, the delegated handler finds no hit and
+       drops it, and the owner's first tap does nothing at all. */
+    try {
+      await editFreshDeck();
+      const before = await panState();
+      const target = before.notes.find(n => n !== before.selected);
+      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
+
+      await b.click("#scale-delete");
+      assert.strictEqual(
+        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
+        true, "DELETE never armed");
+
+      await tapPanNote(target);
+      const after = await panState();
+      assert.strictEqual(after.selected, target,
+        `with DELETE armed, tapping ${target} selected ${after.selected} - the tap was ` +
+        `swallowed by the disarm's repaint`);
+      assert.strictEqual(
+        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
+        false, "the tap on the pan did not disarm DELETE");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("disarming DELETE leaves a standing collision refusal up (queue row 91)", async () => {
+    /* The collision veto is decided by the REGISTRY, not by the seed text, so
+       updateParse() cannot re-derive it: re-running it on disarm clears the red
+       box and the refusal for a seed the app will still refuse, and the sheet
+       then presents SAVE CHANGES as if the edit were fine. */
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const before = await chipReport();
+
+      await selectChipAt(before.chips.length - 2);
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const refused = await sheetState();
+      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
+      assert.match(refused.msg, /Another deck already uses this scale/,
+        `the sheet says "${refused.msg}"`);
+
+      await b.click("#scale-delete");           // arm DELETE on the refused seed
+      assert.strictEqual(
+        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
+        true, "DELETE never armed");
+      await clickPoint(8, 8);                   // and look away again
+
+      const after = await sheetState();
+      assert.strictEqual(after.bad, true,
+        "disarming DELETE cleared the collision's red box");
+      assert.match(after.msg, /Another deck already uses this scale/,
+        `after disarming DELETE the sheet says "${after.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });

@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3945,7 +3945,7 @@ function updateParse() {
+@@ -4593,7 +4593,7 @@
      scaleBox.classList.add("bad");
      genBtn.disabled = true;
-     holdPanPreview();
+     if (paint) holdPanPreview();
 -    say(res.reason, "err");
 +    say(res.reason, "");
    }

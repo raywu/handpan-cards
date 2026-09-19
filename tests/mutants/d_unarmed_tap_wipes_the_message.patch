@@ -1,26 +1,21 @@
 # kills: an ordinary unarmed tap does not wipe a collision refusal (queue row 91 guard)
 # suite: node --test --test-name-pattern ^an.ordinary.unarmed.tap.does.not.wipe.a.collision.refusal..queue.row.91.guard.$ tests/e2e.test.js
-# The early return goes away, so disarmDelete() re-runs updateParse() on every
-# pointerdown in the sheet, armed or not. That is harmless for a syntactically
-# bad seed (updateParse() re-derives the identical rejection), but a collision
-# refusal is bad for a reason parseSeed knows nothing about: the seed itself
-# still parses fine. An ordinary tap while DELETE was never armed would then
-# wrongly clear .bad and wipe "Another deck already uses this scale." for an
-# edit that was never fixed.
-# (Queue row 91 rewrote disarmDelete() to call updateParse() instead of a bare
-# say(""), which made the ORIGINAL kill test - tests/app.test.js's "an
-# ordinary tap in the sheet says nothing" - stop discriminating: it only ever
-# exercises a bad-seed rejection, and updateParse() reproduces that message
-# exactly, guard or no guard. This mutant now targets the scenario the guard
-# actually protects and is killed by the e2e test above instead.)
+# Every pointerdown in the sheet re-runs updateParse() instead of disarming,
+# armed or not. That is harmless for a syntactically bad seed (updateParse()
+# re-derives the identical rejection), but a collision refusal is bad for a
+# reason parseSeed knows nothing about: the seed itself still parses fine, and
+# updateParse() clears the standing refusal by design. An ordinary tap while
+# DELETE was never armed then wrongly drops .bad and wipes "Another deck
+# already uses this scale." for an edit that was never fixed.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4923,7 +4923,6 @@ function disarmDelete() {
-   /* Nothing to undo when nothing is armed, and saying so would be worse than
-      silent: this runs on every pointerdown in the sheet, so an unguarded
-      say("") would wipe whatever the parse line or a save had just announced. */
--  if (!delArmed) return;
-   delArmed = false;
-   delBtn.textContent = DEL_IDLE;
-   delBtn.removeAttribute("data-armed");
+@@ -4990,7 +4990,7 @@
+    owner's device actually makes. The pointerdown that lands ON the button is
+    not: it is the confirming tap's own first half. */
+ sheet.addEventListener("pointerdown", (e) => {
+-  if (e.target !== delBtn) disarmDelete();
++  if (e.target !== delBtn) updateParse();
+ });  // disarmDelete() is a no-op unless armed, so an ordinary tap writes nothing.
+ delBtn.onblur = disarmDelete;
+ // The mirror is the choice the pan preview exists to make visible, so each

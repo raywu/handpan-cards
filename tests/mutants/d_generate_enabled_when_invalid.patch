@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3943,7 +3943,7 @@ function updateParse() {
+@@ -4591,7 +4591,7 @@
      // sheet does not jump while a half-typed seed is invalid.
      parseLine.textContent = "";
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
-     holdPanPreview();
+     if (paint) holdPanPreview();
      say(res.reason, "err");
    }

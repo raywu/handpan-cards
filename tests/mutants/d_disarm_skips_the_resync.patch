@@ -1,0 +1,16 @@
+# kills: cancelling an armed DELETE re-syncs the box, GENERATE and the message (queue row 91)
+# suite: node --test --test-name-pattern ^cancelling.an.armed.DELETE.re.syncs.the.box..GENERATE.and.the.message..queue.row.91.$ tests/e2e.test.js
+# The disarm takes the label back to idle and leaves the announcer saying the
+# deck cannot be undone, over a seed the parser had already rejected: the
+# reason the box is red is gone from the page.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4951,7 +4951,6 @@
+   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
+   // WITHOUT repainting the pan, because this runs inside a pointerdown.
+-  syncParseState({ paint: false });
+ }
+ delBtn.onclick = () => {
+   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).
