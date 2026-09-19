@@ -281,7 +281,14 @@ async function launchOnce() {
     // element. It cost a CI cycle on the swipe tests, which dispatch exactly
     // that gesture. The browser is not what we are testing - the app's own
     // touchend handler is - so the gesture is turned off here rather than
-    // worked around in the tests.
+    // worked around in the tests. This masks a headless-Chromium artifact,
+    // not the underlying app question: whether a real Android Chrome swipe on
+    // the card should be safe from back-navigation is still open - see queue
+    // row 95 of docs/plans/2026-09-16-remaining-work-coordination.md. This
+    // flag is also global to every test in this shared CDP session, not
+    // scoped to the swipe tests that need it; row 97 closed that as
+    // won't-fix rather than adding either a per-test-launch cost or a
+    // source-text assertion that would just churn on every new swipe test.
     "--disable-features=OverscrollHistoryNavigation,TouchpadOverscrollHistoryNavigation",
     `--user-data-dir=${profileDir}`, "about:blank",
     // detached: the browser leads its own process group, which is what lets

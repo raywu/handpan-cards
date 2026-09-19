@@ -420,6 +420,12 @@ Legend: `***` behavior + edge + error | `**` happy path | `*` smoke
 
 ## Failure modes
 
+> **SUPERSEDED - read for history only.** The two rows below analyze the
+> `vv.height * vv.scale` arithmetic this plan originally prescribed. That
+> arithmetic was reversed in `c7098df` (see the READ FIRST banner at the top
+> of this document); the shipped code has no such term. Left as-is rather
+> than rewritten so this table still records what was analyzed at the time.
+
 | New codepath | Realistic production failure | Test? | Error handling? | Silent? |
 |---|---|---|---|---|
 | `vv.height * vv.scale` term | An input drops below 16px, iOS auto-zooms on focus, and the lift is computed against a geometry the owner never reported | YES (A7, after T2 S5) | n/a - arithmetic | **would be silent** - this is why A7 exists |
@@ -490,7 +496,15 @@ body must say so.
 
 A second, narrower gap joins it after Task 2: **zoom and keyboard together.**
 CDP can produce a real zoom and a faked shrink, but not a real keyboard, so the
-combined state is unreachable in CI. The arithmetic handles it correctly by
+combined state is unreachable in CI.
+
+> **SUPERSEDED - read for history only.** The sentence below argued the
+> arithmetic was correct by construction. That arithmetic was reversed in
+> `c7098df` (see the READ FIRST banner at the top of this document) in favor
+> of clearing both writes while `vv.scale > 1.01`; left as-is rather than
+> rewritten so this records what was argued at the time.
+
+The arithmetic handles it correctly by
 construction - `vv.height * vv.scale` is the layout height in every state - but
 "correct by construction" is not "verified", and it should be the first thing
 checked if the owner reports the fix misbehaving after this lands.
@@ -561,6 +575,13 @@ above.
     false - it is a call-site change
   - Files: `index.html`
   - Verify: A3 + A10
+
+  > **SUPERSEDED - not adopted.** This task's arithmetic was tried in
+  > `a434058` and reversed in `c7098df` after the independent review FAILed
+  > it (see the READ FIRST banner at the top of this document). The shipped
+  > discriminator is `vv.scale > 1.01`, clearing both writes rather than
+  > scaling them. Left as-is rather than rewritten so this records what T11
+  > proposed at the time.
 - [ ] **T12 (P1, human: ~45min / CC: ~8min)** - tests - Prove rows 55/88 are
       reachable before cutting a mutant for them
   - Surfaced by: outside voice #3/#4 - the resize listener is not gated on
@@ -606,6 +627,12 @@ a cross-model read** - discount it accordingly. Findings verbatim:
 3. **Task 4's TDD step cannot fail.** The resize listener (`index.html:4634-4636`) is not gated on `sheetOpen`, so `clearKeyboard()`'s dispatched `resize` runs `applyKbOffset()` while the sheet is hidden and writes `maxHeight = ""` before the reopen. The prescribed test passes on unfixed code.
 4. **Worse, Task 4's mutant is probably unkillable, which blocks A5 at 100%.** Row 55 already states the asymmetry is unobservable on every reachable path. If no test can observe the missing reset, no test can kill "drops the new reset" - and the gate refuses a surviving patch. Same exposure in Task 5 Step 1 (`!editingId` guard on a button only rendered in edit mode).
 5. **`vv.scale > 1` is the wrong discriminator, and a simpler fix exists.** Pinch-zoom and keyboard are simultaneous states on iOS; an early return abandons the user in exactly the configuration row 51 photographed. `vv.height * vv.scale` is the visible *layout* height, so `kbOffset(inner, vv.height*vv.scale, vv.offsetTop*vv.scale)` handles both with no branch - and it reproduces your own probe exactly: 422 x 2 = 844 = innerHeight -> offset 0. `kbCap` wants the same term.
+
+   > **SUPERSEDED - kept verbatim for the record.** This finding's arithmetic
+   > was tried and reversed in `c7098df`; `vv.offsetTop` turned out to already
+   > be in layout px, so scaling it was a unit error the independent review
+   > caught (see the READ FIRST banner at the top of this document). Not
+   > rewritten so the outside voice's findings stay verbatim.
 6. **Tasks 3 and 4's oracles are negative-only and are satisfied by the very mutants Task 2 exists to kill.** "assert `transform` and `maxHeight` are both `""`" passes under `applyKbOffset(){return;}`. Each needs a positive assertion in the same test.
 7. **`interactive-widget=resizes-content` (index.html:13) is an unstated contradiction.** Where that hint is honoured, the browser shrinks the *layout* viewport on keyboard open, `innerHeight - vv.height` is 0, and the whole fix is inert.
 8. **Strategic: this lane adds ~6 e2e tests plus ~6 e2e mutants to a 308-patch corpus while declaring rows 68 and 69 out of scope.** Hard-coding `translateY(-444px)`/`392px` in a shared, order-dependent session compounds it; derive the expectations from `kbOffset`/`kbCap` inputs instead. Fixing 69 first would make everything after it cheaper.
