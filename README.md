@@ -93,9 +93,9 @@ What is covered:
   the engine module list and the mutant corpus and fails if the counts and
   names on this page have gone stale.
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
-  navigation, reload persistence, clipping at a 380px viewport, and
+  and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 312 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 314 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

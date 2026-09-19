@@ -275,6 +275,14 @@ async function launchOnce() {
     "--headless=new", "--remote-debugging-port=0", "--no-sandbox",
     "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run",
     "--autoplay-policy=no-user-gesture-required",  // roadmap: audio playback
+    // A horizontal touch drag that the page does not scroll is an overscroll,
+    // and Chrome answers an overscroll with history navigation: the document
+    // goes away mid-test and every later evaluate reads null off a missing
+    // element. It cost a CI cycle on the swipe tests, which dispatch exactly
+    // that gesture. The browser is not what we are testing - the app's own
+    // touchend handler is - so the gesture is turned off here rather than
+    // worked around in the tests.
+    "--disable-features=OverscrollHistoryNavigation,TouchpadOverscrollHistoryNavigation",
     `--user-data-dir=${profileDir}`, "about:blank",
     // detached: the browser leads its own process group, which is what lets
     // reap() take the whole tree down in one signal. See reap().

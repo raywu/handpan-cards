@@ -1,0 +1,17 @@
+# kills: a swipe shorter than the threshold does not navigate
+# suite: node --test --test-name-pattern ^a.swipe.shorter.than.the.threshold.does.not.navigate$ tests/e2e.test.js
+# The 55px deadzone collapses to any movement at all. The card is both the flip
+# target and the swipe target, so every tap whose thumb slides a pixel now flips
+# AND navigates, and the card the reader meant to turn over is gone.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5086,7 +5086,7 @@
+ card.addEventListener("touchend", e => {
+   if (tx === null) return;
+   const dx = e.changedTouches[0].clientX - tx; tx = null;
+-  if (Math.abs(dx) > 55) step(dx < 0 ? 1 : -1);
++  if (Math.abs(dx) > 0) step(dx < 0 ? 1 : -1);
+ }, { passive: true });
+ 
+ /* ---------------- go ---------------- */
