@@ -191,6 +191,41 @@ def excerpt(out):
             + out[-EXCERPT_TAIL:])
 
 
+# A timed-out suite is SIGTERMed first, and only then SIGKILLed. The suite's own
+# process group is not the whole tree: tests/helpers/cdp.js:289 spawns Chrome
+# `detached: true`, i.e. setsid(2), so the browser leads its OWN group and a
+# killpg of node's group never reaches it. What does reach it is cdp.js's
+# SIGTERM/SIGINT/SIGHUP reaper (tests/helpers/cdp.js:79-99), which kills the
+# browser group and removes its profile dir. SIGKILL is uncatchable, so killing
+# outright defeats that reaper and leaves an orphan Chrome plus an hpfc-prof
+# directory behind for every timeout - the starvation queue row 69 is about.
+# Grace is the reaper's whole budget: it only signals and rmdirs.
+GROUP_TERM_GRACE = 10
+
+# Draining after the kill is bounded too. The pipes were inherited by the whole
+# tree, so anything that escaped the group still holds the write end and an
+# unbounded communicate() blocks until THAT process exits - the hang this path
+# exists to prevent, reappearing one level down. Output from a suite that had
+# to be killed is a nicety; returning is not.
+DRAIN_TIMEOUT = 5
+
+
+def _kill_group(proc, sig):
+    """Signal the suite's process group, tolerating a tree that already died."""
+    try:
+        os.killpg(os.getpgid(proc.pid), sig)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def _drain(proc, timeout):
+    """-> (stdout, stderr) within `timeout`, or ("", "") if a survivor holds the pipes."""
+    try:
+        return proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return "", ""
+
+
 def run_node_file(path):
     """-> (total, failed, skipped, output) for one node test file.
 
@@ -203,11 +238,11 @@ def run_node_file(path):
     try:
         stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        stdout, stderr = proc.communicate()
+        _kill_group(proc, signal.SIGTERM)
+        stdout, stderr = _drain(proc, GROUP_TERM_GRACE)
+        if proc.poll() is None:
+            _kill_group(proc, signal.SIGKILL)
+            stdout, stderr = _drain(proc, DRAIN_TIMEOUT)
         tail = (stdout + stderr)[-2000:]
         return None, None, 0, (
             f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"

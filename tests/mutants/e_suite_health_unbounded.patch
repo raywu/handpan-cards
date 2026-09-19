@@ -3,15 +3,14 @@
 # The wait loses its timeout=, so a wedged node suite hangs suite_health
 # forever instead of being killed and reported - the second half of the port
 # defect, and what turned one stuck socket into a whole burned CI job.
-diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -201,7 +201,7 @@
+@@ -236,7 +236,7 @@
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              text=True, cwd=paths.ROOT, start_new_session=True)
      try:
 -        stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
 +        stdout, stderr = proc.communicate()
      except subprocess.TimeoutExpired:
-         try:
-             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+         _kill_group(proc, signal.SIGTERM)
+         stdout, stderr = _drain(proc, GROUP_TERM_GRACE)
