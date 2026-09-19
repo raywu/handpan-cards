@@ -1,0 +1,20 @@
+# kills: test_v3_sha256_matches_its_canonical_serialisation
+# suite: python3 -m unittest -k test_v3_sha256_matches_its_canonical_serialisation tests.test_fixture_integrity
+# Queue row 48: flips a single character inside golden_decks_v3.json's content
+# ("C# MAJOR" -> "D# MAJOR" in the first Hijaz chord's subtitle) without
+# touching the "sha256" key it carries about itself. Only a test that
+# recomputes the canonical serialisation's digest and compares it to that
+# stored key can catch this; the pinned-constant test alone cannot, because
+# nothing here changes the constant.
+diff --git a/tests/fixtures/golden_decks_v3.json b/tests/fixtures/golden_decks_v3.json
+--- a/tests/fixtures/golden_decks_v3.json
++++ b/tests/fixtures/golden_decks_v3.json
+@@ -12,7 +12,7 @@
+      "roots": [
+       3
+      ],
+-     "subtitle": "C# MAJOR",
++     "subtitle": "D# MAJOR",
+      "sup": ""
+     },
+     {

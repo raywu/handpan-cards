@@ -13,6 +13,7 @@ const german = /\b(MOLL|VERMINDERT|HALBVERMINDERT|LEGENDE)\b|\bDUR\b/;
 const DECKS = app.get("DECKS");
 let cards = 0;
 for (const d of DECKS) {
+  let deckCards = 0;
   app.clickChip(d.name);
   for (const mode of ["A", "B"]) {
     app.run(`setMode("${mode}")`);
@@ -22,10 +23,12 @@ for (const d of DECKS) {
       const faces = app.faces();
       if (german.test(faces)) throw new Error("German in render: " + d.id + " card " + i);
       if (!faces.includes("<svg")) throw new Error("no SVG: " + d.id + " " + i);
-      if (mode === "A") cards++;
+      if (mode === "A") { cards++; deckCards++; }
       app.els.next.onclick();
     }
   }
+  if (deckCards !== d.chords.length)
+    throw new Error(d.id + " exercised " + deckCards + " cards, expected " + d.chords.length);
   const rootVar = app.cssVar("--root");
   if (rootVar !== d.colors.root)
     throw new Error(d.id + " --root is " + rootVar + ", expected " + d.colors.root);
