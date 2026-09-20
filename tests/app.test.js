@@ -1543,25 +1543,32 @@ test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said
   /* disarmDelete() would run on EVERY pointerdown in the sheet, armed or not,
      and the half of it that takes the warning down re-derives the whole sheet
      from the seed. The early return keeps that off taps that cancelled
-     nothing, so touching the seed field leaves the parse line's own message -
-     and the box, and GENERATE - exactly as the last keystroke left them. */
+     nothing.
+
+     The message on screen here is NO_THIRDS, read off the deck at open time
+     (index.html:4790-4793) and NOT derivable from the seed - which is the
+     whole point of the fixture. A rejected seed would prove nothing: the
+     re-derive would reproduce the parser's own refusal word for word, so the
+     assertion would hold whether the guard was there or not. That is the
+     vacuous shape this lane's own row-91 oracle was just fixed for. */
   const app = boot();
-  const d = makeCustom(app);
+  const d = makeCustom(app, scale("three pitch classes"));   // a pan with no thirds
+  assert.ok(d.warnings.length > 0, "this fixture is meant to warn");
   app.select(d.id);
   app.clickChip(d.name);
 
-  app.type(scale("bad note token"));
   const said = app.els["scale-msg"].textContent;
-  assert.ok(said.length > 0, "no parse message to strand, so this test measures nothing");
+  assert.match(said, /No 3rds on this pan/,
+    "the sheet is not showing the deck's warning, so this test measures nothing");
   assert.strictEqual(app.els["scale-delete"].hasAttribute("data-armed"), false,
     "DELETE is armed, so a disarm here would be legitimate");
 
   app.els["scale-sheet"].dispatchEvent(
     { type: "pointerdown", target: app.els["scale-box"] });
   assert.strictEqual(app.els["scale-msg"].textContent, said,
-    "an ordinary tap on the seed field erased the reason the seed was rejected - "
-    + "the box is still outlined red and Generate still disabled, with nothing "
-    + "on the page saying why");
+    "an ordinary tap on the seed field erased the pan's NO_THIRDS warning - "
+    + "nothing the owner can type will bring it back, because the seed never "
+    + "carried it");
 });
 
 test("tabbing away from DELETE disarms it too", () => {

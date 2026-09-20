@@ -4,7 +4,9 @@
 # be recovered, so the page warns about a thing it is no longer about to do.
 # (Queue row 91 rewrote disarmDelete() to re-derive the sheet's state instead
 #  of a bare say(""), so this mutant now drops that re-derivation - same
-#  defect, current code.)
+#  defect, current code.) Distinct from d_disarm_skips_the_resync, which puts
+#  the bare say("") back: there the line goes quiet while .bad and GENERATE
+#  stay stale; here it keeps saying the deck cannot be recovered.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
