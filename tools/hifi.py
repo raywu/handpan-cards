@@ -115,7 +115,7 @@ def note_w(name, octv, font, size):
 # (1) ring clearance is computed from f_num alone (src/engine/layout.js
 # 288-302), so a name's size cannot reach it; and (2) fit_note auto-shrinks
 # any label that genuinely overflows its field, and it does not fire on any
-# of the 96 cards even after the growth - that is the headroom being spent.
+# card in the corpus even after the growth - that is the headroom being spent.
 LABEL_RATIO_DING = 0.70875   # name inside the ding          (0.675 x 1.05)
 LABEL_RATIO_NOTE = 0.80325   # name inside a rim/inner field (0.765 x 1.05)
 LABEL_RATIO_BNOTE = 0.8232   # name inside a bottom field    (0.784 x 1.05)

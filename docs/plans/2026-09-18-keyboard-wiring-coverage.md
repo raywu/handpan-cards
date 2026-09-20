@@ -420,11 +420,12 @@ Legend: `***` behavior + edge + error | `**` happy path | `*` smoke
 
 ## Failure modes
 
-> **SUPERSEDED - read for history only.** The two rows below analyze the
-> `vv.height * vv.scale` arithmetic this plan originally prescribed. That
-> arithmetic was reversed in `c7098df` (see the READ FIRST banner at the top
-> of this document); the shipped code has no such term. Left as-is rather
-> than rewritten so this table still records what was analyzed at the time.
+> **SUPERSEDED - read for history only.** The first two of the five rows
+> below analyze the `vv.height * vv.scale` arithmetic this plan originally
+> prescribed. That arithmetic was reversed in `c7098df` (see the READ FIRST
+> banner at the top of this document); the shipped code has no such term.
+> Left as-is rather than rewritten so this table still records what was
+> analyzed at the time.
 
 | New codepath | Realistic production failure | Test? | Error handling? | Silent? |
 |---|---|---|---|---|

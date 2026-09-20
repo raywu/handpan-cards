@@ -273,7 +273,7 @@ this by attaching per-instrument images.
   `hifi.LABEL_WIDTH_RATIO` (1.47 = 1.40 x 1.05) carries the same factor, so
   the fitter fires on exactly the labels it fired on before the growth.
   Print then applies `hifi.fit_note`, which shrinks a label further only when
-  the name would overflow its own circle - it does not fire on any of the 61
+  the name would overflow its own circle - it does not fire on any of the 96
   cards. Note that `fit_note`'s own floor is 2.5 pt, NOT the 3.6 pt of
   `hifi.fit`: **no floor in the pipeline protects a diagram label**, so the
   3.6 pt floor is asserted explicitly by
@@ -326,7 +326,7 @@ pitch classes (midi % 12), never stored.
   success. That re-parse is the reason the tool is trusted - a smoke test
   against stale data passes. Any other code that writes the DECKS line
   (e.g. `tools/regen_data_mutants.py`) owes the same two steps.
-- **Verification style:** invariant checks over all 61 cards (every voicing
+- **Verification style:** invariant checks over all 96 cards (every voicing
   field lit; every root field root-coloured; no root/tone overlap) plus a
   DOM-stubbed boot simulation caught real bugs; keep both when refactoring.
 
