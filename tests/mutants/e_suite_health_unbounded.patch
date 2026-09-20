@@ -1,18 +1,17 @@
 # kills: suite_health bounds every node suite with a wall clock
 # suite: node --test --test-name-pattern ^suite_health.bounds.every.node.suite.with.a.wall.clock$ tests/e2e.test.js
-# The subprocess loses its timeout=, so a wedged node suite hangs suite_health
+# The wait loses its timeout=, so a wedged node suite hangs suite_health
 # forever instead of being killed and reported - the second half of the port
 # defect, and what turned one stuck socket into a whole burned CI job.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -164,8 +164,7 @@ def run_node_file(path):
-     """
+@@ -262,7 +262,7 @@
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, cwd=paths.ROOT, start_new_session=True)
      try:
-         proc = subprocess.run(["node", "--test", "--test-reporter=tap", path],
--                              capture_output=True, text=True, cwd=paths.ROOT,
--                              timeout=NODE_TIMEOUT)
-+                              capture_output=True, text=True, cwd=paths.ROOT)
-     except subprocess.TimeoutExpired as exc:
-         def text(buf):
-             if buf is None:
+-        stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
++        stdout, stderr = proc.communicate()
+     except subprocess.TimeoutExpired:
+         _kill_group(proc, signal.SIGTERM)
+         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)

@@ -1,0 +1,18 @@
+# kills: a killed suite's own output reaches the timeout excerpt
+# suite: python3 -m unittest -k test_a_killed_suites_own_output_reaches_the_excerpt tests.test_suite_health
+# The drain throws away TimeoutExpired's partial output instead of carrying it,
+# so whenever a survivor holds the pipes - the defining condition for reaching
+# the drain at all - the excerpt is empty and CI reports a timeout with no text
+# to explain it. Three main-is-red incidents in one day came of exactly that.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -249,7 +249,7 @@
+         stdout, stderr = proc.communicate(timeout=timeout)
+         return stdout, stderr, True
+     except subprocess.TimeoutExpired as exc:
+-        return _text(exc.stdout), _text(exc.stderr), False
++        return "", "", False
+ 
+ 
+ def run_node_file(path):

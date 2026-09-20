@@ -1,0 +1,17 @@
+# kills: a timed-out suite is SIGTERMed so its own reaper can run
+# suite: python3 -m unittest -k test_a_grandchild_in_its_own_session_is_reaped_by_its_parent tests.test_suite_health
+# The first kill becomes SIGKILL, which is uncatchable, so tests/helpers/cdp.js's
+# SIGTERM reaper never runs and the detached Chrome group it owns is orphaned -
+# exactly the starvation queue row 69 is about, reintroduced by one constant.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -264,7 +264,7 @@
+     try:
+         stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
+     except subprocess.TimeoutExpired:
+-        _kill_group(proc, signal.SIGTERM)
++        _kill_group(proc, signal.SIGKILL)
+         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+         if not drained:
+             # Escalate on the DRAIN, not on proc.poll(): the pipes still being
