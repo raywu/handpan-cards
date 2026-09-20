@@ -73,8 +73,10 @@ and two mutants and closes the gap that forced "and touch" out of the README.
   (after the wrap test that ends near `:400`). MODIFY.
 - `tests/mutants/e_swipe_direction_inverted.patch` — CREATE.
 - `tests/mutants/e_swipe_deadzone_dropped.patch` — CREATE.
-- `tests/suite_health.py:47` — `"tests/e2e.test.js": 68` → the count the run
+- `tests/suite_health.py:47` — the row then read `"tests/e2e.test.js": 68` → the count the run
   reports (expected `88`; the file already defines 85 tests). MODIFY.
+  (As of 2026-09-20 that row sits at `:47` and reads `97`; the `68` above is
+  the value at the time of writing, not today.)
 - `README.md:95` — restore "and touch" to the e2e bullet. MODIFY.
 - `docs/plans/2026-09-18-readme-refresh.md` — banner on the Step 1 sketch. MODIFY.
 
@@ -234,7 +236,7 @@ different path, not as a new coverage claim.
 - [ ] **Step 6: Raise this lane's floor**
 
 `tests/suite_health.py:47`: raise the row to **the total the e2e run actually
-reports at this lane's head commit**, not to `68 + 3`. The floor is 68 while the
+reports at this lane's head commit**, not to `68 + 3`. The floor was 68 while the
 file defines 85 tests (`grep -c '^  test(' tests/e2e.test.js`), so 71 would leave
 14 tests of slack and the guard would not notice all three new tests being
 deleted. Expected value **88**; take the number from the `tests/e2e.test.js: ran
@@ -379,9 +381,9 @@ touch point off a fractional `getBoundingClientRect()` centre by up to a pixel,
 so an exact-boundary probe would flake.
 
 **F2 (HIGH, confidence 9/10) - plan Step 6: the floor raise 68 -> 71 was
-nearly vacuous.** `tests/suite_health.py:47` carries `"tests/e2e.test.js": 68`
+nearly vacuous.** `tests/suite_health.py:47` carried `"tests/e2e.test.js": 68`
 while the file defines 85 tests (`grep -c '^  test(' tests/e2e.test.js`), so the
-row already trails reality by 17 and 71 would still leave 14 tests of slack -
+row already trailed reality by 17 and 71 would still leave 14 tests of slack -
 all three new tests could be deleted without the guard noticing. FIXED: Step 6
 now sets the row to the total the run actually reports (expected 88), read from
 a `suite_health.py` run rather than guessed, because a floor above the real
