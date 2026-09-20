@@ -6,12 +6,12 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -262,7 +262,7 @@
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             text=True, cwd=paths.ROOT, start_new_session=True)
+@@ -297,7 +297,7 @@ def run_node_file(path):
+ 
      try:
--        stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
-+        stdout, stderr = proc.communicate()
-     except subprocess.TimeoutExpired:
-         _kill_group(proc, signal.SIGTERM)
-         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+         try:
+-            stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
++            stdout, stderr = proc.communicate()
+         except subprocess.TimeoutExpired:
+             _kill_group(proc, signal.SIGTERM)
+             stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)

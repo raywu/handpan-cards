@@ -1,0 +1,17 @@
+# kills: test_a_timed_out_suite_prints_its_excerpt_to_the_log
+# suite: python3 -m unittest tests.test_suite_health.CheckNodeTimeoutExcerptTest.test_a_timed_out_suite_prints_its_excerpt_to_the_log
+# F3. run_node_file builds the head+tail excerpt and check_node throws it
+# away, so the TAP lines naming what ran never reach a CI log. The timeout is
+# still reported and the run still goes red, which is why this survived the
+# excerpt fix: the bounded excerpt is only worth building if someone prints it.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -407,7 +407,6 @@ def check_node():
+             if "TIMED OUT" in out:
+                 print(f"  {path}: TIMED OUT after {NODE_TIMEOUT}s")
+                 print(f"--- {path}: timed out, its own output follows ---")
+-                print(out)
+                 print(f"--- end of {path} output ---")
+                 problems.append(f"{path}: timed out after {NODE_TIMEOUT}s "
+                                 f"- the suite hung (raise NODE_SUITE_TIMEOUT only "

@@ -1,0 +1,23 @@
+# kills: test_a_hanging_probe_is_killed_and_reported
+# suite: python3 -m unittest tests.test_suite_health.ProbeBrowserTimeoutTest.test_a_hanging_probe_is_killed_and_reported
+# Row 110's sibling. Signals only the direct child instead of the probe's
+# process group, so a backgrounded grandchild outlives the timeout at ppid 1,
+# still holding both pipe FDs. probe_browser still RETURNS on time, so every
+# timing assertion stays green - a bounded return is not a bounded process
+# tree, and the leak is one orphan per CI run.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -363,10 +363,10 @@ def probe_browser():
+         try:
+             stdout, stderr = proc.communicate(timeout=PROBE_TIMEOUT)
+         except subprocess.TimeoutExpired:
+-            _kill_group(proc, signal.SIGTERM)
++            proc.terminate()
+             stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+             if not drained:
+-                _kill_group(proc, signal.SIGKILL)
++                proc.kill()
+                 stdout, stderr, _ = _drain(proc, DRAIN_TIMEOUT)
+             return False, (f"node: browser probe timed out after {PROBE_TIMEOUT}s "
+                            f"- findBrowser() hung")
