@@ -1,0 +1,20 @@
+# kills: test_sigint_reaches_the_node_group
+# suite: python3 -m unittest tests.test_suite_health.SigintDuringRunTest.test_sigint_reaches_the_node_group
+# Row 107. Narrows run_node_file's `except BaseException` so KeyboardInterrupt
+# no longer matches. start_new_session=True keeps node out of the terminal's
+# foreground group, so a local Ctrl-C never reaches it on its own and cdp.js's
+# SIGINT reaper never runs: the interrupt leaves a headless Chrome and its
+# hpfc-prof dir behind. Nothing in the normal path notices - the leak only
+# happens to a developer who interrupts a run.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -313,7 +313,7 @@ def run_node_file(path):
+             return None, None, 0, (
+                 f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
+                 f"{excerpt(stdout + stderr)}")
+-    except BaseException:
++    except SystemExit:
+         # start_new_session=True above puts node in its own session so the
+         # TimeoutExpired path can killpg it reliably - but that also removes
+         # node from a local terminal's foreground process group, so a Ctrl-C

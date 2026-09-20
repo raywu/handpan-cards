@@ -1,0 +1,18 @@
+# kills: test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge
+# suite: python3 -m unittest tests.test_suite_health.RunNodeFileTimeoutTest.test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge
+# Row 109. Reverts run_node_file's both-ends excerpt to the tail-only slice it
+# shipped with. A long stderr then evicts the TAP stdout that names what ran,
+# which is the whole diagnosability loss the row is about - and it is silent:
+# the timeout is still reported, just with nothing useful in it.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -312,7 +312,7 @@ def run_node_file(path):
+             # ran (row 109).
+             return None, None, 0, (
+                 f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
+-                f"{excerpt(stdout + stderr)}")
++                f"{(stdout + stderr)[-2000:]}")
+     except BaseException:
+         # start_new_session=True above puts node in its own session so the
+         # TimeoutExpired path can killpg it reliably - but that also removes

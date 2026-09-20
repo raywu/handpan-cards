@@ -1,0 +1,19 @@
+# kills: test_a_probe_that_exits_nonzero_is_reported_as_a_problem
+# suite: python3 -m unittest tests.test_suite_health.ProbeBrowserErrorTest.test_a_probe_that_exits_nonzero_is_reported_as_a_problem
+# Drops the probe's returncode check, so a findBrowser() that THROWS is
+# indistinguishable from a machine with no browser installed. check_node then
+# prints the false diagnosis `not run, no browser installed` and picks the
+# UNIT aggregate floor instead of the FULL one - SUITE HEALTH OK over 92 e2e
+# tests that never ran. The gate exits green; that is the point.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -373,7 +373,7 @@ def probe_browser():
+     finally:
+         _reap(proc)
+ 
+-    if proc.returncode != 0:
++    if False:
+         return False, (f"node: browser probe exited {proc.returncode}: "
+                        f"{excerpt(stdout + stderr)}")
+     return stdout.strip() not in ("", "null"), None
