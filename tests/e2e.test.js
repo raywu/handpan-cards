@@ -457,6 +457,41 @@ function run() {
     await expectCount(`1 / ${n}`, "swiping forward from the last card did not wrap to the first");
   });
 
+  /* Row 95: the app sets overscroll-behavior:contain on .decks and the sheet
+     but nothing on the root for the HORIZONTAL axis, so a centre drag on the
+     card - exactly where a thumb lands - is free to fall through to the
+     browser's own overscroll gesture (Android Chrome's back-navigation; on
+     the owner's iPhone 14/iOS 26.6 that gesture is the Safari back-swipe).
+     tests/helpers/cdp.js disables Chromium's OverscrollHistoryNavigation
+     feature for the whole shared CDP session (see the comment above that
+     launch flag), so this suite can never observe the browser actually
+     navigating - a real regression here would still step the deck AND still
+     leave location.href untouched under that flag. The property that DOES
+     move is the CSS the fix installs: the root must carry a non-"auto"
+     overscroll-behavior-x, or nothing stops the browser from taking the
+     gesture on a real device once the harness's masking flag is not there to
+     save it. */
+  test("a horizontal drag across the card never hands the gesture to browser history (row 95)", async () => {
+    await freshLoad();
+    const n = (await decksMeta())[0].chords;
+    const before = await b.eval(`return location.href;`);
+
+    await b.swipe("#card", -120);
+    await expectCount(`2 / ${n}`, "the drag did not step the deck");
+
+    const after = await b.eval(`
+      return {
+        href: location.href,
+        overscrollX: getComputedStyle(document.documentElement).overscrollBehaviorX,
+      };
+    `);
+    assert.strictEqual(after.href, before, "the drag navigated the document away from the app");
+    assert.notStrictEqual(
+      after.overscrollX, "auto",
+      "the root has no overscroll-behavior-x, so a real browser is still free to hand this drag to history navigation (row 95)",
+    );
+  });
+
   /* ---------------------------------------------------------------- *
    * 5. persistence
    *
