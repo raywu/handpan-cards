@@ -3425,6 +3425,36 @@ function run() {
     }
   });
 
+  test("clearing the seed box then tapping a pan note still chooses it while DELETE is armed (queue row 117)", async () => {
+    /* Same hazard as row 91's pan-tap test, one branch over: syncParseState's
+       EMPTY-seed branch has its own `if (paint) showPlaceholderPan();` guard
+       at index.html:4578, load-bearing on its own. Clearing the box paints
+       the placeholder pan once (paint: true, from the input event); disarming
+       DELETE on the very next tap must NOT repaint it again, or the .panhit
+       the finger landed on is replaced before the click arrives. */
+    try {
+      await editFreshDeck();
+      await typeScale("");
+      const before = await panState();
+      const target = before.notes.find(n => n !== before.selected);
+      assert.ok(target, `the placeholder pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
+
+      await b.click("#scale-delete");
+      assert.strictEqual(
+        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
+        true, "DELETE never armed");
+
+      await tapPanNote(target);
+      const after = await panState();
+      assert.strictEqual(after.selected, target,
+        `with an empty seed and DELETE armed, tapping ${target} selected ${after.selected} - ` +
+        "the tap was swallowed by the disarm's placeholder repaint");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("disarming DELETE leaves a standing collision refusal up (queue row 91)", async () => {
     /* The collision veto is decided by the REGISTRY, not by the seed text, so
        updateParse() cannot re-derive it: re-running it on disarm clears the red
@@ -3499,6 +3529,129 @@ function run() {
         "an ordinary tap while unarmed changed .bad on a collision refusal");
       assert.strictEqual(st2.msg, st1.msg,
         `an ordinary tap while unarmed changed the refusal message: "${st1.msg}" -> "${st2.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("flipping the mirror does not wipe a collision refusal (queue row 115)", async () => {
+    /* Mirror is a layout OPTION, not a field: it cannot change what a seed
+       hashes to, so it cannot resolve a collision the registry vetoed.
+       updateParse() clears `refusal` unconditionally though, and the mirror
+       buttons called it directly - so flipping the mirror over a refused
+       seed silently cleared the red box and re-offered SAVE CHANGES for an
+       edit the app still refuses. */
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const before = await chipReport();
+
+      await selectChipAt(before.chips.length - 2);
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const refused = await sheetState();
+      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
+      assert.match(refused.msg, /Another deck already uses this scale/,
+        `the sheet says "${refused.msg}"`);
+
+      await b.eval(`document.getElementById("scale-mirror-l")
+        .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      await b.click("#scale-mirror-l");
+
+      const after = await sheetState();
+      assert.strictEqual(after.bad, true,
+        "flipping the mirror cleared the collision's red box");
+      assert.match(after.msg, /Another deck already uses this scale/,
+        `after flipping the mirror the sheet says "${after.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("tapping a pan note does not wipe a collision refusal (queue row 115)", async () => {
+    /* previewLayout() re-derives the sheet on every layout tap so the mock
+       pan stays in sync, but a layout tap changes `order`, never the fields
+       a seed hashes to - it cannot fix a collision either, and calling
+       updateParse() from it dropped the refusal the same way the mirror
+       buttons did. */
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const before = await chipReport();
+
+      await selectChipAt(before.chips.length - 2);
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const refused = await sheetState();
+      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
+      assert.match(refused.msg, /Another deck already uses this scale/,
+        `the sheet says "${refused.msg}"`);
+
+      const pan = await panState();
+      const target = pan.notes.find(n => n !== pan.selected);
+      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(pan.notes)}`);
+      await tapPanNote(target);
+
+      const after = await sheetState();
+      assert.strictEqual(after.bad, true,
+        "tapping a pan note cleared the collision's red box");
+      assert.match(after.msg, /Another deck already uses this scale/,
+        `after tapping a pan note the sheet says "${after.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("editing the seed after a collision clears the refusal cleanly (queue row 116)", async () => {
+    /* Row 116's repro: the seed box is the ONE re-derive that can actually
+       resolve a collision, so updateParse() keeping `refusal = null` is
+       load-bearing there even though the other seven callers must not do
+       the same thing. Arm-then-cancel DELETE afterward and the sheet must
+       show nothing stale - a live SAVE CHANGES over a clean box and an
+       empty message, never the old collision text. */
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const before = await chipReport();
+
+      await selectChipAt(before.chips.length - 2);
+      await openEdit();
+      await typeScale(COLLIDE_SCALE);
+      await b.click("#scale-generate");
+
+      const refused = await sheetState();
+      assert.strictEqual(refused.bad, true, "the collision did not mark the box bad");
+      assert.match(refused.msg, /Another deck already uses this scale/,
+        `the sheet says "${refused.msg}"`);
+
+      await typeScale(SIX_SCALES[4]);   // a free scale: the collision is over
+
+      await b.click("#scale-delete");   // arm DELETE on the now-clean seed
+      assert.strictEqual(
+        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
+        true, "DELETE never armed");
+      await clickPoint(8, 8);           // and cancel it
+
+      const after = await sheetState();
+      assert.strictEqual(after.bad, false,
+        "the box is still marked bad after the collision was fixed");
+      assert.strictEqual(after.msg, "",
+        `the sheet still says "${after.msg}" after the collision was fixed`);
+      assert.strictEqual(after.primaries, 1,
+        "SAVE CHANGES is not live after the collision was fixed");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
