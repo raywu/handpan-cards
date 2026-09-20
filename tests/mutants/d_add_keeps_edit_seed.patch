@@ -3,9 +3,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3380,7 +3380,6 @@ function showSheet(opener) {
- function openScaleSheet(opener) {
-   editingId = null;
+@@ -4776,7 +4776,6 @@ function openScaleSheet(opener) {
+   // clear it, since it is one of the seven non-seed callers.
+   refusal = null;
    setSheetMode(false);
 -  scaleBox.value = "";
    nameBox.value = "";

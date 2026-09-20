@@ -3,11 +3,12 @@
 # The page opens without taking a history entry, so the phone's back gesture
 # skips past it and leaves the app instead of closing the page.
 diff --git a/index.html b/index.html
+index c9c2ab1..0a62e89 100644
 --- a/index.html
 +++ b/index.html
-@@ -4568,8 +4568,6 @@
+@@ -4756,8 +4756,6 @@ function showSheet(opener) {
    for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
-   updateParse();
+   resyncSheet(true);
    applyKbOffset();
 -  history.pushState({ scalePage: true }, "", sheetRoute());
 -  sheetRouted = true;

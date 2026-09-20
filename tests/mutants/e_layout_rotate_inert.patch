@@ -3,12 +3,13 @@
 # ROTATE is wired to a zero shift, so the control focuses and presses and
 # nothing on the pan moves.
 diff --git a/index.html b/index.html
+index c9c2ab1..8d1d3d9 100644
 --- a/index.html
 +++ b/index.html
-@@ -3661,8 +3661,8 @@ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+@@ -5021,8 +5021,8 @@ delBtn.onblur = disarmDelete;
  // button re-solves the preview through the same parse path a keystroke uses.
- mirrorL.onclick = () => { setMirror(true); updateParse(); };
- mirrorR.onclick = () => { setMirror(false); updateParse(); };
+ mirrorL.onclick = () => { setMirror(true); resyncSheet(true); };
+ mirrorR.onclick = () => { setMirror(false); resyncSheet(true); };
 -rotL.onclick = () => rotateLayout(-1);
 -rotR.onclick = () => rotateLayout(1);
 +rotL.onclick = () => rotateLayout(0);

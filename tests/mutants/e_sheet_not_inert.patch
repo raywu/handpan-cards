@@ -4,14 +4,15 @@
 # modal: the practice screen's buttons remain clickable and focusable
 # underneath it.
 diff --git a/index.html b/index.html
+index c9c2ab1..6f6d0df 100644
 --- a/index.html
 +++ b/index.html
-@@ -4565,7 +4565,7 @@
+@@ -4753,7 +4753,7 @@ function showSheet(opener) {
    sheetOpener = opener || addChip;
    sheet.removeAttribute("hidden");
    sheetOpen = true;
 -  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
 +
-   updateParse();
+   resyncSheet(true);
    applyKbOffset();
    history.pushState({ scalePage: true }, "", sheetRoute());

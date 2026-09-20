@@ -4,14 +4,15 @@
 # stops, so every pointer and keyboard test still passes, while a screen reader
 # reads straight through the open page into the practice screen behind it.
 diff --git a/index.html b/index.html
+index c9c2ab1..d50c80d 100644
 --- a/index.html
 +++ b/index.html
-@@ -4565,7 +4565,7 @@
+@@ -4753,7 +4753,7 @@ function showSheet(opener) {
    sheetOpener = opener || addChip;
    sheet.removeAttribute("hidden");
    sheetOpen = true;
 -  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
 +  for (const el of background) { el.inert = true; }
-   updateParse();
+   resyncSheet(true);
    applyKbOffset();
    history.pushState({ scalePage: true }, "", sheetRoute());
