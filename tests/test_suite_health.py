@@ -388,6 +388,42 @@ class ProbeBrowserErrorTest(unittest.TestCase):
         self.assertIsNotNone(problem, "a missing `node` binary must be reported, not raised")
 
 
+class RunNodeFileMissingNodeTest(unittest.TestCase):
+    """probe_browser reports a missing `node` politely, but check_node then
+    calls run_node_file for every UNIT file regardless of have_browser, and
+    that Popen sits before its own try. Without a guard the whole gate dies
+    with a FileNotFoundError traceback instead of naming the problem."""
+
+    def test_a_missing_node_binary_does_not_crash_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_path = os.environ.get("PATH", "")
+            os.environ["PATH"] = tmp
+            try:
+                total, failed, skipped, out = suite_health.run_node_file(
+                    "tests/core.test.js")
+            except FileNotFoundError:
+                self.fail("a missing `node` binary must be reported, not raised")
+            finally:
+                os.environ["PATH"] = old_path
+        self.assertIsNone(total, "no suite ran, so there is no total to report")
+        self.assertIn("node", out)
+
+    def test_check_node_names_the_missing_binary_as_a_problem(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_path = os.environ.get("PATH", "")
+            os.environ["PATH"] = tmp
+            try:
+                problems = suite_health.check_node()
+            except FileNotFoundError:
+                self.fail("check_node must report a missing `node`, not raise")
+            finally:
+                os.environ["PATH"] = old_path
+        self.assertTrue(problems, "a node-less machine is a problem, not a green run")
+        self.assertTrue(
+            any("node" in p for p in problems),
+            f"no problem names the missing binary: {problems}")
+
+
 class SigintDuringRunTest(unittest.TestCase):
     """Row 107: start_new_session=True (needed so a TimeoutExpired kill can
     killpg node reliably) also removes node from a local terminal's foreground

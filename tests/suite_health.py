@@ -275,15 +275,26 @@ def _reap(proc):
             pass
 
 
+NO_NODE = "node: no `node` binary found on PATH"
+
+
 def run_node_file(path):
     """-> (total, failed, skipped, output) for one node test file.
 
     A suite that overruns NODE_TIMEOUT returns totals of None with the timeout
     named in the output, so the caller reports a problem instead of raising.
     """
-    proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            text=True, cwd=paths.ROOT, start_new_session=True)
+    try:
+        proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, cwd=paths.ROOT, start_new_session=True)
+    except FileNotFoundError:
+        # probe_browser already reports this politely, but check_node runs the
+        # UNIT files regardless of have_browser, so without this guard a
+        # node-less machine kills the gate with a traceback instead of a
+        # problem naming the cause.
+        return None, None, None, NO_NODE
+
     try:
         try:
             stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
@@ -401,6 +412,8 @@ def check_node():
                 problems.append(f"{path}: timed out after {NODE_TIMEOUT}s "
                                 f"- the suite hung (raise NODE_SUITE_TIMEOUT only "
                                 f"if it is genuinely this slow)")
+            elif out == NO_NODE:
+                problems.append(f"{path}: {NO_NODE}")
             else:
                 problems.append(f"{path}: could not parse TAP summary")
             continue
