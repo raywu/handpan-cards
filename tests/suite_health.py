@@ -41,7 +41,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 4,
-    "tests/test_suite_health.py": 7,
+    "tests/test_suite_health.py": 10,
     # node
     "tests/app.test.js": 112,
     "tests/e2e.test.js": 92,
@@ -333,15 +333,39 @@ PROBE_TIMEOUT = 10
 
 
 def probe_browser():
-    """-> (have_browser, problem). problem is None unless the probe itself hung."""
+    """-> (have_browser, problem). problem is None unless the probe itself hung,
+    exited abnormally, or `node` could not be found at all - none of which mean
+    "no browser installed", so none of them may be folded into have_browser=False
+    without a problem alongside it (a caller that trusts have_browser alone to
+    pick the aggregate floor would otherwise exit green over an e2e suite that
+    never ran).
+    """
     try:
-        probe = subprocess.run(
+        proc = subprocess.Popen(
             ["node", "-e", "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))"],
-            capture_output=True, text=True, cwd=paths.ROOT, timeout=PROBE_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        return False, (f"node: browser probe timed out after {PROBE_TIMEOUT}s "
-                       f"- findBrowser() hung")
-    return probe.stdout.strip() not in ("", "null"), None
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            cwd=paths.ROOT, start_new_session=True)
+    except FileNotFoundError:
+        return False, "node: browser probe could not run - no `node` binary found"
+
+    try:
+        try:
+            stdout, stderr = proc.communicate(timeout=PROBE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc, signal.SIGTERM)
+            stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+            if not drained:
+                _kill_group(proc, signal.SIGKILL)
+                stdout, stderr, _ = _drain(proc, DRAIN_TIMEOUT)
+            return False, (f"node: browser probe timed out after {PROBE_TIMEOUT}s "
+                           f"- findBrowser() hung")
+    finally:
+        _reap(proc)
+
+    if proc.returncode != 0:
+        return False, (f"node: browser probe exited {proc.returncode}: "
+                       f"{excerpt(stdout + stderr)}")
+    return stdout.strip() not in ("", "null"), None
 
 
 def check_node():
@@ -371,6 +395,9 @@ def check_node():
         if total is None:
             if "TIMED OUT" in out:
                 print(f"  {path}: TIMED OUT after {NODE_TIMEOUT}s")
+                print(f"--- {path}: timed out, its own output follows ---")
+                print(out)
+                print(f"--- end of {path} output ---")
                 problems.append(f"{path}: timed out after {NODE_TIMEOUT}s "
                                 f"- the suite hung (raise NODE_SUITE_TIMEOUT only "
                                 f"if it is genuinely this slow)")

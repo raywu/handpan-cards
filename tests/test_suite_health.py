@@ -41,6 +41,7 @@ bound; only shape 3 exercises that bound, and it does so by failing assert_dead
 long before 30s is in question.
 """
 import glob
+import io
 import os
 import signal
 import stat
@@ -254,8 +255,12 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         # exited by the time both drains gave up) must still be waited on and
         # its pipes closed - otherwise Popen.__del__ reports "subprocess NNNN
         # is still running" under -W error::ResourceWarning.
+        # .returncode, not .poll(): .poll() itself performs the reap it would
+        # be checking for, making the assertion pass even if run_node_file's
+        # own reap were removed. .returncode is a plain attribute - reading it
+        # cannot mask a missing wait().
         self.assertIsNotNone(
-            self.last_proc.poll(),
+            self.last_proc.returncode,
             "run_node_file returned without reaping its own Popen")
         for name, stream in (("stdout", self.last_proc.stdout),
                               ("stderr", self.last_proc.stderr)):
@@ -263,8 +268,14 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
 
     def test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge(self):
         """Row 109: 10KB of stderr must not evict a short TAP stdout."""
+        # No addCleanup here: FAKE_NODE_LOUD_STDERR never forks a grandchild -
+        # $$ in the fixture is the fake node script's OWN pid, i.e. the direct
+        # child run_node_file's own _kill_group already reaches (they share a
+        # pgid). By the time this test runs, that pid is already dead and
+        # reaped by _reap(); a killpg cleanup against it would be signaling a
+        # pid the kernel may have already handed to an unrelated process.
         result, pid = self.drive_timeout(FAKE_NODE_LOUD_STDERR)
-        self.addCleanup(self.reap, pid)
+        self.assert_dead(pid, "the fake node script itself")
         self.assert_timeout_reported(result)
         self.assert_returned_promptly()
         self.assertIn(
@@ -287,8 +298,15 @@ class ProbeBrowserTimeoutTest(unittest.TestCase):
     def test_a_hanging_probe_is_killed_and_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             fake_node_path = os.path.join(tmp, "node")
+            pid_file = os.path.join(tmp, "probe.pid")
+            # A plain foreground `sleep 100` is killed by subprocess.run's own
+            # kill()+wait() on TimeoutExpired even with no group handling at
+            # all - it has no descendant to orphan. This shape mirrors
+            # FAKE_NODE: a background grandchild that survives its parent
+            # unless the whole GROUP is signaled, which is exactly what F1
+            # says probe_browser used to fail to do.
             with open(fake_node_path, "w") as f:
-                f.write("#!/bin/bash\nsleep 100\n")
+                f.write(f"#!/bin/bash\nsleep 100 &\necho $! > {pid_file}\nsleep 100\n")
             os.chmod(fake_node_path, os.stat(fake_node_path).st_mode | stat.S_IEXEC)
 
             old_path = os.environ.get("PATH", "")
@@ -310,6 +328,64 @@ class ProbeBrowserTimeoutTest(unittest.TestCase):
             self.assertFalse(have_browser)
             self.assertIsNotNone(problem, "a hung probe must be reported, not hidden")
             self.assertIn("timed out", problem)
+
+            # AC-G4: probe_browser must not orphan the probe's own process - a
+            # descendant surviving at ppid 1, still holding the pipe FDs, is
+            # exactly the leak this test exists to catch (row 110's sibling: a
+            # bounded RETURN is not the same thing as a bounded PROCESS TREE).
+            with open(pid_file) as f:
+                probe_pid = int(f.read().strip())
+            deadline = time.time() + 15
+            while process_alive(probe_pid) and time.time() < deadline:
+                time.sleep(0.1)
+            if process_alive(probe_pid):
+                try:
+                    os.kill(probe_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                self.fail(f"probe process pid {probe_pid} survived the timeout")
+
+
+class ProbeBrowserErrorTest(unittest.TestCase):
+    """A probe that exits nonzero is not "no browser installed" - it is an
+    error that must be surfaced as a problem, or check_node silently drops
+    the aggregate floor from LEGACY_NODE_FULL to LEGACY_NODE_UNIT and exits
+    green over an e2e suite that never ran."""
+
+    def run_probe_with_fake_node(self, script):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_node_path = os.path.join(tmp, "node")
+            with open(fake_node_path, "w") as f:
+                f.write(script)
+            os.chmod(fake_node_path, os.stat(fake_node_path).st_mode | stat.S_IEXEC)
+
+            old_path = os.environ.get("PATH", "")
+            os.environ["PATH"] = tmp + os.pathsep + old_path
+            try:
+                return suite_health.probe_browser()
+            finally:
+                os.environ["PATH"] = old_path
+
+    def test_a_probe_that_exits_nonzero_is_reported_as_a_problem(self):
+        have_browser, problem = self.run_probe_with_fake_node(
+            "#!/bin/bash\necho boom 1>&2\nexit 1\n")
+        self.assertFalse(have_browser)
+        self.assertIsNotNone(
+            problem,
+            "a probe exiting nonzero is indistinguishable from a real absent "
+            "browser unless it is reported as a problem")
+        self.assertIn("boom", problem)
+
+    def test_a_missing_node_binary_is_reported_not_raised(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_path = os.environ.get("PATH", "")
+            os.environ["PATH"] = tmp
+            try:
+                have_browser, problem = suite_health.probe_browser()
+            finally:
+                os.environ["PATH"] = old_path
+        self.assertFalse(have_browser)
+        self.assertIsNotNone(problem, "a missing `node` binary must be reported, not raised")
 
 
 class SigintDuringRunTest(unittest.TestCase):
@@ -376,6 +452,50 @@ suite_health.run_node_file("tests/does_not_matter.test.js")
                 if driver_proc.poll() is None:
                     driver_proc.kill()
                     driver_proc.wait()
+
+
+class CheckNodeTimeoutExcerptTest(unittest.TestCase):
+    """Row 109's fix builds the head+tail excerpt into run_node_file's return
+    value; F3 is that check_node then discards it - the TAP lines a CI log
+    needs to say what ran never reach the log at all."""
+
+    def test_a_timed_out_suite_prints_its_excerpt_to_the_log(self):
+        import contextlib
+
+        path = "tests/app.test.js"
+        marker = "TAP_MARKER_" + ("X" * 200)
+        timeout_out = (
+            f"{path}: TIMED OUT after 5s - the suite hung and was killed.\n"
+            f"{marker}\n")
+
+        def fake_run_node_file(p):
+            self.assertEqual(p, path)
+            return None, None, 0, timeout_out
+
+        orig_run_node_file = suite_health.run_node_file
+        orig_probe_browser = suite_health.probe_browser
+        orig_glob = suite_health.glob.glob
+        orig_floors = dict(suite_health.FLOORS)
+        orig_js_files = list(suite_health.JS_FILES)
+        suite_health.run_node_file = fake_run_node_file
+        suite_health.probe_browser = lambda: (True, None)
+        suite_health.glob.glob = lambda *a, **kw: []
+        suite_health.FLOORS = {path: 1}
+        suite_health.JS_FILES = [path]
+        try:
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                suite_health.check_node()
+        finally:
+            suite_health.run_node_file = orig_run_node_file
+            suite_health.probe_browser = orig_probe_browser
+            suite_health.glob.glob = orig_glob
+            suite_health.FLOORS = orig_floors
+            suite_health.JS_FILES = orig_js_files
+
+        self.assertIn(
+            marker, buf.getvalue(),
+            "a timed-out suite's own TAP excerpt never reached the CI log")
 
 
 if __name__ == "__main__":

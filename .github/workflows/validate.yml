@@ -36,7 +36,7 @@ jobs:
           python-version: "3.12"
       - run: pip install reportlab pymupdf
       - name: Deck data, print layout, PDF build, render agreement
-        run: python -m unittest discover -s tests -t . -v
+        run: python -W error::ResourceWarning -m unittest discover -s tests -t . -v
 
   js-tests:
     name: js suites (unit + e2e)
