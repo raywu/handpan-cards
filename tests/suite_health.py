@@ -41,7 +41,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 4,
-    "tests/test_suite_health.py": 10,
+    "tests/test_suite_health.py": 12,
     # node
     "tests/app.test.js": 112,
     "tests/e2e.test.js": 92,
