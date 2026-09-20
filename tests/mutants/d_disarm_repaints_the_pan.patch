@@ -1,0 +1,18 @@
+# kills: with DELETE armed, the first tap on a pan note still chooses it (queue row 91)
+# suite: node --test --test-name-pattern ^with.DELETE.armed..the.first.tap.on.a.pan.note.still.chooses.it..queue.row.91.$ tests/e2e.test.js
+# The disarm repaints the pan again. It runs inside the pointerdown, so the
+# .panhit the press landed on is replaced before the click arrives: the click
+# retargets to an ancestor, the delegated handler finds no hit, and the
+# owner's first tap on a note does nothing at all.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4951,7 +4951,7 @@
+   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
+   // WITHOUT repainting the pan, because this runs inside a pointerdown.
+-  syncParseState({ paint: false });
++  syncParseState({ paint: true });
+ }
+ delBtn.onclick = () => {
+   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).

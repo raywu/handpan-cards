@@ -1,0 +1,19 @@
+# kills: the LAYOUT hint is visible inside the group, not merely present in the file
+# suite: node --test --test-name-pattern ^the.LAYOUT.hint.is.visible.inside.the.group..not.merely.present.in.the.file$ tests/e2e.test.js
+# The hint itself keeps opacity:1 and every existing oracle vector on the hint
+# element passes - but its ANCESTOR #scale-layout-row is opacity:0, so the
+# hint is invisible on screen. Row 81: the oracle only read the hint's own
+# computed opacity, never its ancestors', so this mutant survived until the
+# oracle was extended to check the whole ancestor chain up to <html>.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -586,7 +586,7 @@
+    control here is a SECONDARY: the sheet's only full-width primary stays
+    #scale-generate. The PAN is the selection and a single tab stop; its arrow
+    keys walk the notes, so there is no drag-only path to any of this. */
+-#scale-layout-row{gap:var(--sp-2)}
++#scale-layout-row{gap:var(--sp-2); opacity:0}
+ /* The hint reads as prose, so it takes the parse line's Bitter rather than the
+    label's letter-spaced caps - it is a sentence to read once, not a control
+    label to scan. Dimmer than #scale-parse: that line reports on what is in the

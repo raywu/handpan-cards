@@ -1,0 +1,16 @@
+# kills: disarming DELETE leaves a standing collision refusal up (queue row 91)
+# suite: node --test --test-name-pattern ^disarming.DELETE.leaves.a.standing.collision.refusal.up..queue.row.91.$ tests/e2e.test.js
+# The standing refusal stops being honoured, so a disarm re-derives the sheet
+# from the seed alone. The collision veto is the registry's, not the seed's:
+# the box goes clean and SAVE CHANGES is offered for an edit the app refuses.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4947,7 +4947,6 @@
+   // A standing refusal is not derivable from the seed, so re-deriving would
+   // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
+   // Put the refusal back over the arming warning and leave the rest alone.
+-  if (refusal) { say(refusal, "err"); return; }
+   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
+   // WITHOUT repainting the pan, because this runs inside a pointerdown.
