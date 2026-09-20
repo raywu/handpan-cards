@@ -51,6 +51,16 @@
   :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+/* Row 95: .decks (:108-ish) and the sheet (:414, :452) already set
+   overscroll-behavior:contain on themselves, but nothing stopped a HORIZONTAL
+   drag on the card - the swipe target - from falling through to the root and
+   on to the browser's own overscroll gesture (Android Chrome's back
+   navigation from a centre drag; the iPhone 14/iOS 26.6 back-swipe is the
+   same class of gesture from a screen edge). Both touch listeners are
+   `{ passive: true }` so JS cannot preventDefault() its way out of this - the
+   only fix is CSS on the root, scoped to the X axis only so vertical
+   scrolling (the sheet, .decks) is untouched. */
+html{overscroll-behavior-x:none}
 html,body{height:100%}
 body{
   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;

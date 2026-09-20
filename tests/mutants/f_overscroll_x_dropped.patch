@@ -1,0 +1,16 @@
+# kills: a horizontal drag across the card never hands the gesture to browser history (row 95)
+# suite: node --test --test-name-pattern ^a.horizontal.drag.across.the.card.never.hands.the.gesture.to.browser.history..row.95.$ tests/e2e.test.js
+# Drops the overscroll-behavior-x:none rule the fix for row 95 adds to <html>,
+# leaving the root free to hand a horizontal card drag to the browser's own
+# overscroll gesture again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -60,7 +60,6 @@
+    `{ passive: true }` so JS cannot preventDefault() its way out of this - the
+    only fix is CSS on the root, scoped to the X axis only so vertical
+    scrolling (the sheet, .decks) is untouched. */
+-html{overscroll-behavior-x:none}
+ html,body{height:100%}
+ body{
+   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
