@@ -41,6 +41,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 4,
+    "tests/test_suite_health.py": 7,
     # node
     "tests/app.test.js": 112,
     "tests/e2e.test.js": 92,
@@ -252,6 +253,28 @@ def _drain(proc, timeout):
         return _text(exc.stdout), _text(exc.stderr), False
 
 
+def _reap(proc):
+    """Wait on the Popen and close its pipes, on every exit path.
+
+    communicate() already does both when it returns normally, but a timed-out
+    read - or one cut short by a signal reaching US (see the BaseException
+    clause in run_node_file) - can leave the Popen a zombie: unwaited, with its
+    pipe file objects still open. That is exactly what Popen.__del__ warns
+    about ("subprocess NNNN is still running"), and it does so on every such
+    run, not only a killed one - row 108.
+    """
+    try:
+        proc.wait(timeout=0)
+    except Exception:
+        pass
+    for stream in (proc.stdout, proc.stderr):
+        try:
+            if stream is not None:
+                stream.close()
+        except Exception:
+            pass
+
+
 def run_node_file(path):
     """-> (total, failed, skipped, output) for one node test file.
 
@@ -262,20 +285,38 @@ def run_node_file(path):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, cwd=paths.ROOT, start_new_session=True)
     try:
-        stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
-    except subprocess.TimeoutExpired:
+        try:
+            stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc, signal.SIGTERM)
+            stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+            if not drained:
+                # Escalate on the DRAIN, not on proc.poll(): the pipes still being
+                # open is what says a group member outlived the grace, and poll()
+                # would report the tree down the moment node itself was reaped.
+                _kill_group(proc, signal.SIGKILL)
+                stdout, stderr, _ = _drain(proc, DRAIN_TIMEOUT)
+            # Both ends, via the shared excerpt() - not a tail-only slice: a
+            # long stderr must not evict the short TAP summary that says what
+            # ran (row 109).
+            return None, None, 0, (
+                f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
+                f"{excerpt(stdout + stderr)}")
+    except BaseException:
+        # start_new_session=True above puts node in its own session so the
+        # TimeoutExpired path can killpg it reliably - but that also removes
+        # node from a local terminal's foreground process group, so a Ctrl-C
+        # during THIS communicate() (KeyboardInterrupt, here as anywhere else)
+        # never reaches node: cdp.js's SIGINT reaper
+        # (tests/helpers/cdp.js:79-99) never runs, and a headless Chrome plus
+        # its hpfc-prof-* profile dir are orphaned (row 107, and row 98's local
+        # variant of the same leak). Deliver the signal ourselves before it
+        # propagates.
         _kill_group(proc, signal.SIGTERM)
-        stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
-        if not drained:
-            # Escalate on the DRAIN, not on proc.poll(): the pipes still being
-            # open is what says a group member outlived the grace, and poll()
-            # would report the tree down the moment node itself was reaped.
-            _kill_group(proc, signal.SIGKILL)
-            stdout, stderr, _ = _drain(proc, DRAIN_TIMEOUT)
-        tail = (stdout + stderr)[-2000:]
-        return None, None, 0, (
-            f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
-            f"{tail}")
+        _drain(proc, GROUP_TERM_GRACE)
+        raise
+    finally:
+        _reap(proc)
     out = stdout + stderr
 
     def field(name):
@@ -285,14 +326,29 @@ def run_node_file(path):
     return field("tests"), field("fail"), field("skipped") or 0, out
 
 
+# Every other subprocess in this file is bounded (NODE_TIMEOUT, the drains).
+# This probe used to be the exception: a wedged findBrowser() hung the whole
+# script forever with no log (row 110).
+PROBE_TIMEOUT = 10
+
+
+def probe_browser():
+    """-> (have_browser, problem). problem is None unless the probe itself hung."""
+    try:
+        probe = subprocess.run(
+            ["node", "-e", "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))"],
+            capture_output=True, text=True, cwd=paths.ROOT, timeout=PROBE_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return False, (f"node: browser probe timed out after {PROBE_TIMEOUT}s "
+                       f"- findBrowser() hung")
+    return probe.stdout.strip() not in ("", "null"), None
+
+
 def check_node():
-    probe = subprocess.run(
-        ["node", "-e", "process.stdout.write(String(require('./tests/helpers/cdp.js').findBrowser()))"],
-        capture_output=True, text=True, cwd=paths.ROOT)
-    have_browser = probe.stdout.strip() not in ("", "null")
+    have_browser, probe_problem = probe_browser()
     print(f"node: browser {'yes' if have_browser else 'no'}")
 
-    problems = []
+    problems = [probe_problem] if probe_problem else []
     total_counted = 0
     # Glob, so a new tests/*.test.js file cannot slip in with no floor at all.
     found = sorted(

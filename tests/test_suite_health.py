@@ -40,15 +40,18 @@ nothing holds the pipes during it and the clock is unmoved by the drain's own
 bound; only shape 3 exercises that bound, and it does so by failing assert_dead
 long before 30s is in question.
 """
+import glob
 import os
 import signal
 import stat
+import subprocess
 import sys
 import tempfile
 import time
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO_ROOT)
 from tests import suite_health  # noqa: E402
 
 
@@ -86,6 +89,18 @@ echo "TAP_MARKER_SHOULD_REACH_THE_TAIL"
 bash -c 'trap "" TERM; sleep 100' &
 echo $! > "$GRANDCHILD_PID_FILE"
 exit 0
+"""
+
+
+# Row 109: a suite that spews to stderr before hanging. A tail-only excerpt of
+# (stdout + stderr) evicts a short TAP stdout once stderr alone exceeds the
+# 2000-char window; the marker is written to stdout FIRST, so it sits far from
+# the end of the concatenation once 10KB of stderr follows it.
+FAKE_NODE_LOUD_STDERR = """#!/bin/bash
+echo $$ > "$GRANDCHILD_PID_FILE"
+echo "TAP_MARKER_SHOULD_REACH_THE_TAIL"
+python3 -c "print('E' * 10000)" 1>&2
+sleep 100
 """
 
 
@@ -129,11 +144,25 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             os.environ["PATH"] = tmp + os.pathsep + old_path
             os.environ["GRANDCHILD_PID_FILE"] = grandchild_pid_file
             suite_health.NODE_TIMEOUT = 2
+
+            # Captures the Popen run_node_file creates internally, so a test
+            # can assert it was reaped and its pipes closed (row 108) - the
+            # function itself only returns the parsed TAP summary.
+            orig_popen = suite_health.subprocess.Popen
+            captured = []
+
+            def capturing_popen(*a, **kw):
+                p = orig_popen(*a, **kw)
+                captured.append(p)
+                return p
+
+            suite_health.subprocess.Popen = capturing_popen
             started = time.monotonic()
             try:
                 result = suite_health.run_node_file("tests/does_not_matter.test.js")
             finally:
                 self.elapsed = time.monotonic() - started
+                suite_health.subprocess.Popen = orig_popen
                 os.environ["PATH"] = old_path
                 if old_pid_file_env is None:
                     os.environ.pop("GRANDCHILD_PID_FILE", None)
@@ -141,6 +170,7 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
                     os.environ["GRANDCHILD_PID_FILE"] = old_pid_file_env
                 suite_health.NODE_TIMEOUT = old_timeout
 
+            self.last_proc = captured[-1] if captured else None
             with open(grandchild_pid_file) as f:
                 return result, int(f.read().strip())
 
@@ -193,16 +223,53 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             "the suite's own output was dropped from the timeout excerpt - a "
             "return code with no text is unexplainable from a CI log")
 
+    @staticmethod
+    def _hpfc_profile_dirs():
+        return set(glob.glob(os.path.join(tempfile.gettempdir(), "hpfc-prof-*")))
+
     def test_a_killed_suites_own_output_reaches_the_excerpt(self):
         """Both drains run out: the partial read is the only text there will be."""
+        # AC-G5 (rows 69, 98): an indirect, deterministic proxy for "the kill
+        # path never touches a Chrome profile dir it does not own" - this run
+        # uses a fake node, never a real browser, so the only way the set
+        # could change is suite_health.py itself reaching into tmpdir (e.g. an
+        # age-based sweep, which row 98 explicitly rules out as unsafe: it can
+        # delete a concurrent run's LIVE profile).
+        before = self._hpfc_profile_dirs()
         result, pid = self.drive_timeout(FAKE_NODE_UNREACHABLE_HOLDER)
         self.addCleanup(self.reap, pid)
+        after = self._hpfc_profile_dirs()
+        self.assertEqual(
+            before, after,
+            "the kill path changed the set of hpfc-prof-* profile dirs in "
+            "tmpdir - it must never create, remove or sweep one")
         self.assert_timeout_reported(result)
         self.assert_returned_promptly()
         self.assertIn(
             "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
             "the suite's own output was dropped from the timeout excerpt - a "
             "return code with no text is unexplainable from a CI log")
+        # Row 108: even on the one shape where run_node_file can never reach
+        # the survivor, its OWN Popen (the fake node script, which already
+        # exited by the time both drains gave up) must still be waited on and
+        # its pipes closed - otherwise Popen.__del__ reports "subprocess NNNN
+        # is still running" under -W error::ResourceWarning.
+        self.assertIsNotNone(
+            self.last_proc.poll(),
+            "run_node_file returned without reaping its own Popen")
+        for name, stream in (("stdout", self.last_proc.stdout),
+                              ("stderr", self.last_proc.stderr)):
+            self.assertTrue(stream.closed, f"run_node_file left its {name} pipe open")
+
+    def test_timeout_excerpt_keeps_the_tap_output_when_stderr_is_huge(self):
+        """Row 109: 10KB of stderr must not evict a short TAP stdout."""
+        result, pid = self.drive_timeout(FAKE_NODE_LOUD_STDERR)
+        self.addCleanup(self.reap, pid)
+        self.assert_timeout_reported(result)
+        self.assert_returned_promptly()
+        self.assertIn(
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "10KB of stderr evicted the short TAP stdout from the timeout excerpt")
 
     def reap(self, pid):
         """Kill a survivor run_node_file had no way to reach."""
@@ -210,6 +277,105 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             os.killpg(pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError):
             pass
+
+
+class ProbeBrowserTimeoutTest(unittest.TestCase):
+    """Row 110: every other subprocess in suite_health.py is bounded; the
+    browser probe (check_node's `findBrowser()` call) used to be the one
+    exception, with no timeout at all."""
+
+    def test_a_hanging_probe_is_killed_and_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_node_path = os.path.join(tmp, "node")
+            with open(fake_node_path, "w") as f:
+                f.write("#!/bin/bash\nsleep 100\n")
+            os.chmod(fake_node_path, os.stat(fake_node_path).st_mode | stat.S_IEXEC)
+
+            old_path = os.environ.get("PATH", "")
+            old_timeout = suite_health.PROBE_TIMEOUT
+            os.environ["PATH"] = tmp + os.pathsep + old_path
+            suite_health.PROBE_TIMEOUT = 2
+            started = time.monotonic()
+            try:
+                have_browser, problem = suite_health.probe_browser()
+            finally:
+                elapsed = time.monotonic() - started
+                os.environ["PATH"] = old_path
+                suite_health.PROBE_TIMEOUT = old_timeout
+
+            self.assertLess(
+                elapsed, 30,
+                f"probe_browser took {elapsed:.1f}s to return after a 2s "
+                "timeout - a wedged findBrowser() must not hang the whole run")
+            self.assertFalse(have_browser)
+            self.assertIsNotNone(problem, "a hung probe must be reported, not hidden")
+            self.assertIn("timed out", problem)
+
+
+class SigintDuringRunTest(unittest.TestCase):
+    """Row 107: start_new_session=True (needed so a TimeoutExpired kill can
+    killpg node reliably) also removes node from a local terminal's foreground
+    process group, so a Ctrl-C during the NORMAL (non-timeout) wait never
+    reaches node - cdp.js's SIGINT reaper never runs, and its Chrome plus
+    hpfc-prof-* profile dir orphan."""
+
+    def test_sigint_reaches_the_node_group(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_node_path = os.path.join(tmp, "node")
+            with open(fake_node_path, "w") as f:
+                f.write(FAKE_NODE_DETACHED)
+            os.chmod(fake_node_path, os.stat(fake_node_path).st_mode | stat.S_IEXEC)
+
+            grandchild_pid_file = os.path.join(tmp, "grandchild.pid")
+
+            env = dict(os.environ)
+            env["PATH"] = tmp + os.pathsep + env.get("PATH", "")
+            env["GRANDCHILD_PID_FILE"] = grandchild_pid_file
+
+            driver = f"""
+import sys
+sys.path.insert(0, {REPO_ROOT!r})
+from tests import suite_health
+suite_health.NODE_TIMEOUT = 60
+suite_health.run_node_file("tests/does_not_matter.test.js")
+"""
+            driver_path = os.path.join(tmp, "driver.py")
+            with open(driver_path, "w") as f:
+                f.write(driver)
+
+            # This is the process under test - the stand-in for a local
+            # `python3 tests/suite_health.py` a developer Ctrl-C's.
+            driver_proc = subprocess.Popen([sys.executable, driver_path], env=env)
+            try:
+                deadline = time.time() + 10
+                while not os.path.exists(grandchild_pid_file) and time.time() < deadline:
+                    time.sleep(0.05)
+                self.assertTrue(os.path.exists(grandchild_pid_file),
+                                "fake node never started")
+                time.sleep(0.3)  # let the driver settle into communicate()
+
+                with open(grandchild_pid_file) as f:
+                    grandchild_pid = int(f.read().strip())
+
+                # CRITICAL: signal only the child this test spawned, NEVER the
+                # process group it lives in - killpg here would hit whatever
+                # is running this test suite too.
+                os.kill(driver_proc.pid, signal.SIGINT)
+                driver_proc.wait(timeout=15)
+
+                deadline = time.time() + 15
+                while process_alive(grandchild_pid) and time.time() < deadline:
+                    time.sleep(0.1)
+                if process_alive(grandchild_pid):
+                    try:
+                        os.kill(grandchild_pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    self.fail("grandchild survived a local SIGINT during run_node_file")
+            finally:
+                if driver_proc.poll() is None:
+                    driver_proc.kill()
+                    driver_proc.wait()
 
 
 if __name__ == "__main__":
