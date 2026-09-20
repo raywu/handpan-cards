@@ -162,7 +162,7 @@ deck geometry, `tests/suite_health.py` until B5's gate opens.
       `#scale-layout-row{opacity:0}`.
 - [ ] **B5. Floor raise - GATED ON LANE D MERGING FIRST.** Only after lane D's
       PR is merged to main and this branch is rebased on it, raise
-      `tests/suite_health.py:45` to the count the e2e run actually reports at
+      `tests/suite_health.py:47` to the count the e2e run actually reports at
       this lane. head commit - read the `tests/e2e.test.js: ran N` line, do not
       compute `88 + k`. If D has not merged when B is otherwise ready, merge B
       without B5 and file the floor raise as a one-line follow-up row.
@@ -218,9 +218,12 @@ no queue row left claiming a state the repo contradicts.
       itself spawns a grandchild sleeper, drive it through `run_node_file`'s
       timeout path, and assert the grandchild is dead afterwards. Expect FAIL:
       `subprocess.run(timeout=)` kills the direct child only.
-- [ ] **D2. Fix, process-group kill ONLY.** `tests/suite_health.py:199-202`:
+- [ ] **D2. Fix, process-group kill.** `tests/suite_health.py:199-202`:
       `subprocess.Popen(..., start_new_session=True)`, then on `TimeoutExpired`
-      `os.killpg(os.getpgid(proc.pid), signal.SIGKILL)` before reading the tail.
+      SIGTERM the group first, drain it for a bounded grace period, and
+      SIGKILL only if it has not exited by then - deliberately, so
+      `cdp.js`'s SIGTERM/SIGINT/SIGHUP reaper (`tests/helpers/cdp.js:79-99`)
+      gets a chance to run before the group dies uncatchably.
       **No profile-dir sweep.** `hpfc-prof-*` dirs are created at
       `tests/helpers/cdp.js:273` and `suite_health.py` never learns their paths,
       so any sweep here is age-based - and an age-based sweep can delete the
