@@ -10,7 +10,7 @@ These tests replace "node" with a fake script (first on PATH) that spawns a
 grandchild and then hangs, drive run_node_file through its timeout path with
 NODE_TIMEOUT cranked down, and assert the grandchild is dead afterward.
 
-There are two grandchild shapes, because Chrome is the second one:
+There are three shapes, because Chrome is the second one:
 
 1. IN GROUP. The plain case - killing node's process group reaches it.
 2. IN ITS OWN SESSION, with a parent that reaps it on SIGTERM. This is the
@@ -23,11 +23,22 @@ There are two grandchild shapes, because Chrome is the second one:
    is a false oracle: a bash background job inherits its parent's group (job
    control is off in a non-interactive shell), so it dies under either signal.
 
-Both tests also bound the WALL CLOCK of the timeout path, and that assertion
-is load-bearing rather than hygiene: the post-kill drain re-reads pipes that
-any escaped process still holds open, so an unbounded drain blocks until that
-process exits on its own. Without the bound, shape 2 passes for the wrong
-reason - it waits out the orphan and then finds it dead.
+3. IN GROUP, OUTLIVING NODE ITSELF, holding the pipes. node --test is a
+   supervisor, so a worker that ignores SIGTERM outlives it while the pipe it
+   inherited keeps communicate() blocking. This is the shape that separates
+   "the direct child is down" from "the tree is down": both of the above die
+   with node, so under them the SIGKILL escalation is never reached at all and
+   its gate can say anything.
+4. AS SHAPE 3, BUT IN ITS OWN SESSION, so killpg never reaches it and both
+   drains run out the clock. The only shape whose output a later read cannot
+   recover, so it is the one that asserts on the excerpt.
+
+All three bound the WALL CLOCK of the timeout path. That bound is hygiene, not
+the oracle - what kills a regression here is assert_dead, and on shape 3 the
+marker assertion. Shape 2 kills its grandchild before the drain is entered, so
+nothing holds the pipes during it and the clock is unmoved by the drain's own
+bound; only shape 3 exercises that bound, and it does so by failing assert_dead
+long before 30s is in question.
 """
 import os
 import signal
@@ -61,6 +72,35 @@ echo $gc > "$GRANDCHILD_PID_FILE"
 trap 'kill -KILL -$gc 2>/dev/null; exit 143' TERM
 sleep 100 &
 wait $!
+"""
+
+# Shape 3: node itself exits, but a group member outlives it holding the pipes.
+# `node --test` is a supervisor; a worker that ignores SIGTERM outlives it, and
+# the inherited pipe write end keeps communicate() blocking after the direct
+# child is already reaped. This is the shape that tells proc.poll() apart from
+# "the tree is down": poll() speaks only for the direct child, so gating the
+# SIGKILL escalation on it skips the escalation in exactly the case that needs
+# it. The marker goes out before the leak so the excerpt has something to carry.
+FAKE_NODE_PIPE_HOLDER = """#!/bin/bash
+echo "TAP_MARKER_SHOULD_REACH_THE_TAIL"
+bash -c 'trap "" TERM; sleep 100' &
+echo $! > "$GRANDCHILD_PID_FILE"
+exit 0
+"""
+
+
+# Shape 4: the survivor is in its OWN session, so killpg cannot reach it at all,
+# and it holds the pipes. Chrome's real topology again (cdp.js:289 spawns it
+# detached, inheriting stdio), but here nothing reaps it, so BOTH drains run out
+# the clock. That makes it the only shape where the suite's own output cannot be
+# recovered by a later read - if the drain discards TimeoutExpired's partial
+# output, CI gets a timeout with no text at all. Nothing can kill this one from
+# inside run_node_file, so the test cleans it up itself.
+FAKE_NODE_UNREACHABLE_HOLDER = """#!/bin/bash
+echo "TAP_MARKER_SHOULD_REACH_THE_TAIL"
+python3 -c 'import os, time; os.setsid(); time.sleep(100)' &
+echo $! > "$GRANDCHILD_PID_FILE"
+exit 0
 """
 
 
@@ -141,6 +181,35 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         self.assert_timeout_reported(result)
         self.assert_returned_promptly()
         self.assert_dead(pid, "detached grandchild")
+
+    def test_a_survivor_holding_the_pipes_is_escalated_to_sigkill(self):
+        """node exits, a group member does not: poll() says down, the tree is not."""
+        result, pid = self.drive_timeout(FAKE_NODE_PIPE_HOLDER)
+        self.assert_timeout_reported(result)
+        self.assert_returned_promptly()
+        self.assert_dead(pid, "pipe-holding survivor")
+        self.assertIn(
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "the suite's own output was dropped from the timeout excerpt - a "
+            "return code with no text is unexplainable from a CI log")
+
+    def test_a_killed_suites_own_output_reaches_the_excerpt(self):
+        """Both drains run out: the partial read is the only text there will be."""
+        result, pid = self.drive_timeout(FAKE_NODE_UNREACHABLE_HOLDER)
+        self.addCleanup(self.reap, pid)
+        self.assert_timeout_reported(result)
+        self.assert_returned_promptly()
+        self.assertIn(
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "the suite's own output was dropped from the timeout excerpt - a "
+            "return code with no text is unexplainable from a CI log")
+
+    def reap(self, pid):
+        """Kill a survivor run_node_file had no way to reach."""
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
 
 
 if __name__ == "__main__":

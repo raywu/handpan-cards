@@ -1,0 +1,19 @@
+# kills: a survivor holding the pipes is escalated to SIGKILL
+# suite: python3 -m unittest -k test_a_survivor_holding_the_pipes_is_escalated_to_sigkill tests.test_suite_health
+# The SIGKILL escalation goes back to asking proc.poll(), which speaks for the
+# DIRECT child only. node --test is a supervisor: it can be reaped while a
+# worker of its own is still up holding the inherited pipes, and then poll()
+# reports an exit code, the escalation is skipped, and the suite prints "the
+# suite hung and was killed" over a process tree that is still running.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -266,7 +266,7 @@
+     except subprocess.TimeoutExpired:
+         _kill_group(proc, signal.SIGTERM)
+         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+-        if not drained:
++        if proc.poll() is None:
+             # Escalate on the DRAIN, not on proc.poll(): the pipes still being
+             # open is what says a group member outlived the grace, and poll()
+             # would report the tree down the moment node itself was reaped.

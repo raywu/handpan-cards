@@ -211,19 +211,45 @@ DRAIN_TIMEOUT = 5
 
 
 def _kill_group(proc, sig):
-    """Signal the suite's process group, tolerating a tree that already died."""
+    """Signal the suite's process group, tolerating a tree that already died.
+
+    The group id is proc.pid itself - start_new_session=True makes node a
+    session leader, so its pgid IS its pid. Asking os.getpgid() instead would
+    lose the group in the exact case that needs it: once node has exited, it is
+    a zombie whose getpgid(2) raises ESRCH on macOS while its group lives on.
+    The pid cannot have been recycled underneath us either, because nothing has
+    reaped it yet - the timeout path never waited.
+    """
     try:
-        os.killpg(os.getpgid(proc.pid), sig)
+        os.killpg(proc.pid, sig)
     except (ProcessLookupError, PermissionError):
         pass
 
 
+def _text(buf):
+    """TimeoutExpired carries its partial output as BYTES even in text mode."""
+    if buf is None:
+        return ""
+    return buf if isinstance(buf, str) else buf.decode("utf-8", "replace")
+
+
 def _drain(proc, timeout):
-    """-> (stdout, stderr) within `timeout`, or ("", "") if a survivor holds the pipes."""
+    """-> (stdout, stderr, drained) within `timeout`.
+
+    `drained` is False when the deadline passed with the pipes still open, which
+    is the only direct evidence that something in the tree is still running:
+    proc.poll() speaks for the DIRECT child alone, and node can be reaped while
+    a worker of its own outlives it holding the write end.
+
+    Whatever the suite wrote before the deadline comes off the exception rather
+    than being thrown away - a killed suite's output is the only explanation a
+    CI log gets, and this is the one path where a later read cannot recover it.
+    """
     try:
-        return proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return "", ""
+        stdout, stderr = proc.communicate(timeout=timeout)
+        return stdout, stderr, True
+    except subprocess.TimeoutExpired as exc:
+        return _text(exc.stdout), _text(exc.stderr), False
 
 
 def run_node_file(path):
@@ -239,10 +265,13 @@ def run_node_file(path):
         stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
     except subprocess.TimeoutExpired:
         _kill_group(proc, signal.SIGTERM)
-        stdout, stderr = _drain(proc, GROUP_TERM_GRACE)
-        if proc.poll() is None:
+        stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+        if not drained:
+            # Escalate on the DRAIN, not on proc.poll(): the pipes still being
+            # open is what says a group member outlived the grace, and poll()
+            # would report the tree down the moment node itself was reaped.
             _kill_group(proc, signal.SIGKILL)
-            stdout, stderr = _drain(proc, DRAIN_TIMEOUT)
+            stdout, stderr, _ = _drain(proc, DRAIN_TIMEOUT)
         tail = (stdout + stderr)[-2000:]
         return None, None, 0, (
             f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
