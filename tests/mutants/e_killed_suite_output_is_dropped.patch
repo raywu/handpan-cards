@@ -7,7 +7,7 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -249,7 +249,7 @@
+@@ -250,7 +250,7 @@
          stdout, stderr = proc.communicate(timeout=timeout)
          return stdout, stderr, True
      except subprocess.TimeoutExpired as exc:
@@ -15,4 +15,4 @@ diff --git a/tests/suite_health.py b/tests/suite_health.py
 +        return "", "", False
  
  
- def run_node_file(path):
+ def _reap(proc):

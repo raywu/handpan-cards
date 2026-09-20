@@ -6,12 +6,12 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -264,7 +264,7 @@
-     try:
-         stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
-     except subprocess.TimeoutExpired:
--        _kill_group(proc, signal.SIGTERM)
-+        _kill_group(proc, signal.SIGKILL)
-         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
-         if not drained:
-             # Escalate on the DRAIN, not on proc.poll(): the pipes still being
+@@ -288,7 +288,7 @@
+         try:
+             stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
+         except subprocess.TimeoutExpired:
+-            _kill_group(proc, signal.SIGTERM)
++            _kill_group(proc, signal.SIGKILL)
+             stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+             if not drained:
+                 # Escalate on the DRAIN, not on proc.poll(): the pipes still being

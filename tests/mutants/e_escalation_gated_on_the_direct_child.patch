@@ -8,12 +8,12 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -266,7 +266,7 @@
-     except subprocess.TimeoutExpired:
-         _kill_group(proc, signal.SIGTERM)
-         stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
--        if not drained:
-+        if proc.poll() is None:
-             # Escalate on the DRAIN, not on proc.poll(): the pipes still being
-             # open is what says a group member outlived the grace, and poll()
-             # would report the tree down the moment node itself was reaped.
+@@ -290,7 +290,7 @@
+         except subprocess.TimeoutExpired:
+             _kill_group(proc, signal.SIGTERM)
+             stdout, stderr, drained = _drain(proc, GROUP_TERM_GRACE)
+-            if not drained:
++            if proc.poll() is None:
+                 # Escalate on the DRAIN, not on proc.poll(): the pipes still being
+                 # open is what says a group member outlived the grace, and poll()
+                 # would report the tree down the moment node itself was reaped.
