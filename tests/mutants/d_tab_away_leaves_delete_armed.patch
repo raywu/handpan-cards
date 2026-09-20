@@ -3,7 +3,6 @@
 # The blur wiring goes away. A desktop owner who tabs off an armed DELETE
 # comes back to a button that still deletes on one tap.
 diff --git a/index.html b/index.html
-index c9c2ab1..3318ed6 100644
 --- a/index.html
 +++ b/index.html
 @@ -5016,7 +5016,6 @@ delBtn.onclick = () => {

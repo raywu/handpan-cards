@@ -3,7 +3,6 @@
 # ROTATE is wired to a zero shift, so the control focuses and presses and
 # nothing on the pan moves.
 diff --git a/index.html b/index.html
-index c9c2ab1..8d1d3d9 100644
 --- a/index.html
 +++ b/index.html
 @@ -5021,8 +5021,8 @@ delBtn.onblur = disarmDelete;

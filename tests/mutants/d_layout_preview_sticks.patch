@@ -8,7 +8,6 @@
 # rotation on it - the named test would still fail, but on a different defect
 # than the one this mutant claims to model.
 diff --git a/index.html b/index.html
-index c9c2ab1..6feb1f2 100644
 --- a/index.html
 +++ b/index.html
 @@ -4371,6 +4371,9 @@ function selectedField(fields) {
