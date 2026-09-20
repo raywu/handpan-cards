@@ -6,8 +6,8 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -286,7 +286,7 @@
-                             text=True, cwd=paths.ROOT, start_new_session=True)
+@@ -297,7 +297,7 @@ def run_node_file(path):
+ 
      try:
          try:
 -            stdout, stderr = proc.communicate(timeout=NODE_TIMEOUT)
