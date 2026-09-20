@@ -682,6 +682,21 @@ test("Escape closes the sheet and focus returns to + ADD", () => {
   assert.strictEqual(app.activeId(), "deck-add", "focus returns to the + ADD chip");
 });
 
+test("closing the sheet clears the announcer, so no error is stranded on a closed sheet (queue row 114)", () => {
+  /* .announce is role="status"/aria-live: it keeps its last text until
+     something else writes to it, so a rejected seed's error was still there
+     for a screen reader to read out on a page that no longer shows it. */
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 H4");   // H is not a valid note letter
+  assert.notStrictEqual(app.announcer().textContent, "",
+    "the invalid seed announced nothing, so this test proves nothing");
+  app.keydown("Escape");
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.announcer().textContent, "",
+    "hideSheet() left the last error stranded on the announcer");
+});
+
 test("BACK closes the page and returns focus to the control that opened it", () => {
   const app = boot();
   openSheet(app);

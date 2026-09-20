@@ -4371,7 +4371,7 @@ function selectedField(fields) {
  * something a restore function has to remember to do. */
 function previewLayout() {
   if (!editingId) return;
-  updateParse();
+  resyncSheet(true);
 }
 
 // ROTATE is a cyclic shift of the SELECTED note's ring (D2): the whole ring
@@ -4604,6 +4604,18 @@ function updateParse() {
   syncParseState({ paint: true });
 }
 
+/** The other seven places the sheet re-derives its own state (opening,
+ *  mirror, layout taps, the name box, the degree select, boot) - none of
+ *  which can change what a seed hashes to (queue row 115). A standing
+ *  collision refusal is the registry's veto, not the parser's, so calling
+ *  updateParse() from any of them silently drops a refusal the user has not
+ *  addressed. Mirrors disarmDelete()'s own guard (`:4954`), which is why
+ *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
+function resyncSheet(paint) {
+  if (refusal) { say(refusal, "err"); return; }
+  syncParseState({ paint });
+}
+
 /* ---- iOS keyboard fix (TODOS.md "The iOS keyboard covers GENERATE CARDS
    while typing a seed") ----
    iOS Safari resizes the VISUAL viewport when the soft keyboard opens, not
@@ -4742,7 +4754,7 @@ function showSheet(opener) {
   sheet.removeAttribute("hidden");
   sheetOpen = true;
   for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
-  updateParse();
+  resyncSheet(true);
   applyKbOffset();
   history.pushState({ scalePage: true }, "", sheetRoute());
   sheetRouted = true;
@@ -4759,6 +4771,10 @@ function showSheet(opener) {
 // palette or its mirror into the next "+ ADD".
 function openScaleSheet(opener) {
   editingId = null;
+  // A fresh session: a refusal from whatever was last edited must not leak
+  // into this one (queue row 115) - showSheet() itself is not allowed to
+  // clear it, since it is one of the seven non-seed callers.
+  refusal = null;
   setSheetMode(false);
   scaleBox.value = "";
   nameBox.value = "";
@@ -4774,6 +4790,9 @@ function openScaleSheet(opener) {
 // already in the registry.
 function openEditSheet(d, opener) {
   editingId = d.id;
+  // Same reset as openScaleSheet(): a new Edit session starts with no
+  // standing refusal from whatever the sheet last showed (queue row 115).
+  refusal = null;
   setSheetMode(true);
   nameBox.value = d.name;
   nameDirty = false;                                 // prefilled, not typed
@@ -4796,6 +4815,11 @@ function openEditSheet(d, opener) {
 function hideSheet() {
   sheet.setAttribute("hidden", "");
   sheetOpen = false;
+  // Queue row 114: the announcer keeps its last text (role="status",
+  // aria-live) when the sheet closes, so a rejected seed's error is still
+  // there for a screen reader to read out on a page that no longer shows it.
+  announce.textContent = "";
+  announce.className = "announce";
   // Undo BOTH keyboard writes before the next open, or a sheet that opens
   // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
   // previous session's offset for one frame. The cap is the half that used to
@@ -4995,8 +5019,8 @@ sheet.addEventListener("pointerdown", (e) => {
 delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
-mirrorL.onclick = () => { setMirror(true); updateParse(); };
-mirrorR.onclick = () => { setMirror(false); updateParse(); };
+mirrorL.onclick = () => { setMirror(true); resyncSheet(true); };
+mirrorR.onclick = () => { setMirror(false); resyncSheet(true); };
 rotL.onclick = () => rotateLayout(-1);
 rotR.onclick = () => rotateLayout(1);
 moveL.onclick = () => moveNote(-1);
@@ -5035,8 +5059,8 @@ previewBox.addEventListener("keydown", (e) => {
 scaleBox.addEventListener("input", updateParse);
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
 // through the same parse line every other input goes through.
-nameBox.addEventListener("input", () => { nameDirty = true; updateParse(); });
-degSel.addEventListener("change", updateParse);
+nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
+degSel.addEventListener("change", () => resyncSheet(true));
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
@@ -5113,7 +5137,7 @@ card.addEventListener("touchend", e => {
 }, { passive: true });
 
 /* ---------------- go ---------------- */
-sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); updateParse();
+sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncSheet(true);
 // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
 // deck that was selected last session is in the registry by the time deck()
 // looks for it.

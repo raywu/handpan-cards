@@ -1,0 +1,17 @@
+# kills: editing the seed after a collision clears the refusal cleanly (queue row 116)
+# suite: node --test --test-name-pattern ^editing.the.seed.after.a.collision.clears.the.refusal.cleanly..queue.row.116.$ tests/e2e.test.js
+# updateParse() is the seed box's own input handler - the one caller that IS
+# allowed to clear a standing refusal, because only a re-typed seed can change
+# what the collision was over. Drop the clear and a fixed collision never lets
+# go: the box stays red and GENERATE stays dead after the user has typed a
+# free scale, which is worse than the bug this machine exists to prevent.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4600,6 +4600,5 @@
+ /** Re-parse on every input: the parse line, the outline and Generate follow.
+  *  An edit is also the one event that can clear a standing refusal. */
+ function updateParse() {
+-  refusal = null;
+   syncParseState({ paint: true });
+ }

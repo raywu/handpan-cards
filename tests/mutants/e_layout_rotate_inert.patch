@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3661,8 +3661,8 @@ delBtn.onclick = () => { if (editingId) deleteDeck(editingId); };
+@@ -5021,8 +5021,8 @@ delBtn.onblur = disarmDelete;
  // button re-solves the preview through the same parse path a keystroke uses.
- mirrorL.onclick = () => { setMirror(true); updateParse(); };
- mirrorR.onclick = () => { setMirror(false); updateParse(); };
+ mirrorL.onclick = () => { setMirror(true); resyncSheet(true); };
+ mirrorR.onclick = () => { setMirror(false); resyncSheet(true); };
 -rotL.onclick = () => rotateLayout(-1);
 -rotR.onclick = () => rotateLayout(1);
 +rotL.onclick = () => rotateLayout(0);

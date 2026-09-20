@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4722,7 +4722,6 @@ function showSheet(opener) {
+@@ -4755,7 +4755,6 @@ function showSheet(opener) {
    sheetOpen = true;
    for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
-   updateParse();
+   resyncSheet(true);
 -  applyKbOffset();
    history.pushState({ scalePage: true }, "", sheetRoute());
    sheetRouted = true;

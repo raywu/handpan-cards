@@ -10,13 +10,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4332,6 +4332,9 @@ function selectedField(fields) {
+@@ -4371,6 +4371,9 @@ function selectedField(fields) {
   * something a restore function has to remember to do. */
  function previewLayout() {
    if (!editingId) return;
 +  const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
 +  const solved = res.ok ? solvePreviewLayout(res.value) : null;
 +  if (solved && CUSTOM[editingId]) CUSTOM[editingId].fields = solved.fields;
-   updateParse();
+   resyncSheet(true);
  }
  
