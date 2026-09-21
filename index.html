@@ -4427,11 +4427,10 @@ function render() {
   // are <button> and <select>, and an unwidened selector would leave THREE
   // focusable controls inside an aria-hidden subtree - the exact defect this
   // pair of lines was written to prevent, in new element types (AC-B1b).
-  const PRINT_CTRLS = ["a", "button", "select"]
-    .map((t) => " .prints " + t).join(",");
-  const sel = (id) => id + PRINT_CTRLS.split(",").map((p) => p).join("," + id);
-  for (const a of document.querySelectorAll(sel("#" + away.id))) a.tabIndex = -1;
-  for (const a of document.querySelectorAll(sel("#" + shown.id))) a.removeAttribute("tabindex");
+  const printCtrls = (id) =>
+    ["a", "button", "select"].map((t) => `#${id} .prints ${t}`).join(",");
+  for (const el of document.querySelectorAll(printCtrls(away.id))) el.tabIndex = -1;
+  for (const el of document.querySelectorAll(printCtrls(shown.id))) el.removeAttribute("tabindex");
   cardEl.setAttribute("aria-describedby", shown.id);
 }
 
