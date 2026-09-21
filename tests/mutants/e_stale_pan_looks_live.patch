@@ -7,11 +7,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -370,7 +370,6 @@ button.nav:active{background:#2e281e}
+@@ -512,7 +512,6 @@ button.nav:active{background:#2e281e}
     #f1ece1 plate on a #1f1b15 sheet is the loudest thing in the drawer, and on
     an empty box that is an example nobody typed. .62 and not lower because the
     pan is role="img" content, so the rim ink has to keep its contrast. */
 -#scale-preview.stale{opacity:.62}
  #scale-preview svg{display:block; width:100%; height:auto}
- #scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
-   overflow-wrap:anywhere}
+ /* Geometry deliberately IDENTICAL to #scale-parse above, because since
+    2026-09-21 this sits between the scale field and the pan preview and the two

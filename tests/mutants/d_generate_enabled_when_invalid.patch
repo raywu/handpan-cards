@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4591,7 +4591,7 @@
-     // sheet does not jump while a half-typed seed is invalid.
+@@ -4646,7 +4646,7 @@ function syncParseState({ paint }) {
+     // jumps the sheet nor costs the fieldrow a second reserved line.
      parseLine.textContent = "";
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;

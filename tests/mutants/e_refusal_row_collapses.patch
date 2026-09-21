@@ -1,16 +1,22 @@
 # suite: node --test --test-name-pattern ^the.sheet.does.not.change.height.as.the.seed.is.typed$ tests/e2e.test.js
 # kills: the sheet does not change height as the seed is typed
-# The parse line stops reserving its line, so updateParse() blanking it on an
-# invalid parse shrinks the sheet on most keystrokes.
+# The invalid branch stops writing the refusal, so the parse line (blanked one
+# line above) and #scale-msg are BOTH empty, both :empty rules fire, and the
+# shared row leaves the flow entirely - the sheet shrinks by a line on every
+# invalid keystroke and #scale-parse + #scale-msg measure zero.
+# Since 2026-09-21 the row is held open by CONTENT, not by a CSS floor:
+# syncParseState() guarantees exactly one of the two carries text, so neither
+# element's min-height is ever reachable and mutating either one is inert.
+# This is the mutant the row's height rests on; a_msg_row_not_shared covers
+# the other half of the design (the two sharing ONE line rather than two).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -355,7 +355,7 @@ button.nav:active{background:#2e281e}
-    own line; this was the asymmetry. */
- #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
-   color:#c4bcab; overflow-wrap:anywhere;
--  margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
-+  margin-top:calc(var(--sp-2) - var(--sp-1))}
- /* The pan mock sits on a light plate because the pan is drawn in card ink -
-    black rim, #242424 labels - and the sheet surface is dark. Capped so the
-    whole sheet still fits a 380px phone without the preview pushing GENERATE
+@@ -4648,7 +4648,6 @@ function syncParseState({ paint }) {
+     scaleBox.classList.add("bad");
+     genBtn.disabled = true;
+     if (paint) holdPanPreview();
+-    say(res.reason, "err");
+   }
+ }
+ 

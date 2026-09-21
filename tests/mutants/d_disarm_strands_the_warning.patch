@@ -2,22 +2,25 @@
 # suite: node --test --test-name-pattern ^disarming.DELETE.takes.its.warning.down.with.it$ tests/app.test.js
 # The label goes back to idle and the amber line keeps saying the deck cannot
 # be recovered, so the page warns about a thing it is no longer about to do.
-# (Queue row 91 rewrote disarmDelete() to re-derive the sheet's state instead
-#  of a bare say(""), so this mutant now drops that re-derivation - same
-#  defect, current code.) Distinct from d_disarm_skips_the_resync, which puts
-#  the bare say("") back: there the line goes quiet while .bad and GENERATE
-#  stay stale; here it keeps saying the deck cannot be recovered.
+# (Queue row 91 rewrote disarmDelete() to re-derive the sheet's state, and
+#  2026-09-21 moved the warning out of #scale-msg into #scale-del-note beside
+#  the button, so the line this drops is the note's own clear rather than the
+#  re-derivation - same defect, current code.) Distinct from
+#  d_disarm_skips_the_resync, which puts the bare say("") back: there the line
+#  goes quiet while .bad and GENERATE stay stale; here it keeps saying the deck
+#  cannot be recovered.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4948,10 +4948,6 @@
+@@ -5023,11 +5023,6 @@ function disarmDelete() {
+   delArmed = false;
+   delBtn.textContent = DEL_IDLE;
+   delBtn.removeAttribute("data-armed");
+-  // The label and the warning say the same thing, so they stop saying it
+-  // together - ahead of the `refusal` early-return below, which leaves the
+-  // rest of the sheet alone on purpose and would otherwise strand this line
+-  // under an idle button.
+-  delNote.textContent = "";
+   // A standing refusal is not derivable from the seed, so re-deriving would
    // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
    // Put the refusal back over the arming warning and leave the rest alone.
-   if (refusal) { say(refusal, "err"); return; }
--  // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
--  // the field's CURRENT text, so the three cannot disagree (queue row 91) -
--  // WITHOUT repainting the pan, because this runs inside a pointerdown.
--  syncParseState({ paint: false });
- }
- delBtn.onclick = () => {
-   /* Belt and braces, and deliberately NOT mutant-covered (queue row 86, N6).

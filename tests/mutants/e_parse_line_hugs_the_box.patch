@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -355,7 +355,7 @@ button.nav:active{background:#2e281e}
-    own line; this was the asymmetry. */
+@@ -483,7 +483,7 @@ button.nav:active{background:#2e281e}
+    :empty rule is ever scoped differently. */
  #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
    color:#c4bcab; overflow-wrap:anywhere;
 -  margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
 +  margin-top:0; min-height:1.55em}
- /* The pan mock sits on a light plate because the pan is drawn in card ink -
-    black rim, #242424 labels - and the sheet surface is dark. Capped so the
-    whole sheet still fits a 380px phone without the preview pushing GENERATE
+ /* The parse line and the message SHARE one reserved line, and that is what
+    pays for moving #scale-msg up here (2026-09-21). They are mutually
+    exclusive on the typing path - syncParseState() blanks the parse line on
