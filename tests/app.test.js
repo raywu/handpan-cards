@@ -682,19 +682,24 @@ test("Escape closes the sheet and focus returns to + ADD", () => {
   assert.strictEqual(app.activeId(), "deck-add", "focus returns to the + ADD chip");
 });
 
-test("closing the sheet clears the announcer, so no error is stranded on a closed sheet (queue row 114)", () => {
-  /* .announce is role="status"/aria-live: it keeps its last text until
-     something else writes to it, so a rejected seed's error was still there
-     for a screen reader to read out on a page that no longer shows it. */
+test("closing the sheet clears the refusal, so no error is stranded on a closed sheet (queue row 114)", () => {
+  /* #scale-refusal is aria-live: it keeps its last text until something else
+     writes to it, so a rejected seed's error was still there for a screen
+     reader to read out on a page that no longer shows it. It is the element
+     this applies to since 2026-09-21 - a refusal no longer goes through
+     say(), so .announce (which is outside the aria-modal sheet, and therefore
+     was never reachable while the sheet was open) never sees one. */
   const app = boot();
   openSheet(app);
   app.type("(D3) A3 H4");   // H is not a valid note letter
-  assert.notStrictEqual(app.announcer().textContent, "",
-    "the invalid seed announced nothing, so this test proves nothing");
+  assert.notStrictEqual(app.els["scale-refusal"].textContent, "",
+    "the invalid seed rendered no refusal, so this test proves nothing");
   app.keydown("Escape");
   assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.els["scale-refusal"].textContent, "",
+    "hideSheet() left the last error stranded on the refusal line");
   assert.strictEqual(app.announcer().textContent, "",
-    "hideSheet() left the last error stranded on the announcer");
+    "hideSheet() left the last message stranded on the announcer");
 });
 
 test("BACK closes the page and returns focus to the control that opened it", () => {
@@ -725,7 +730,7 @@ test("an empty box shows the parse hint and Generate is disabled", () => {
   app.type("");
   assert.match(app.els["scale-parse"].textContent, /^Type your ding first/);
   assert.strictEqual(app.els["scale-generate"].disabled, true);
-  assert.strictEqual(app.els["scale-msg"].textContent, "");
+  assert.strictEqual(app.els["scale-refusal"].textContent, "");
 });
 
 test("a valid scale fills the parse line with the ding and the numbered notes", () => {
@@ -735,7 +740,7 @@ test("a valid scale fills the parse line with the ding and the numbered notes", 
   const line = app.els["scale-parse"].textContent;
   assert.match(line, /^Ding D3 \| 1 A3 2 C4 3 D4 /, `parse line was "${line}"`);
   assert.strictEqual(app.els["scale-generate"].disabled, false);
-  assert.strictEqual(app.els["scale-msg"].textContent, "", "a valid scale shows no message");
+  assert.strictEqual(app.els["scale-refusal"].textContent, "", "a valid scale shows no refusal");
 });
 
 test("bottom notes reach the parse line under their own U labels", () => {
@@ -758,7 +763,10 @@ for (const [fixture, code] of [
     const app = boot();
     openSheet(app);
     app.type(scale(fixture));
-    const msg = app.els["scale-msg"];
+    // A refusal renders in #scale-refusal, up in the .fieldrow beside the
+    // field it is about - NOT in #scale-msg, which is the sheet's general
+    // message area below the pan and carries warnings and notices.
+    const msg = app.els["scale-refusal"];
     assert.strictEqual(msg.classList.contains("err"), true, "error tier not applied");
     assert.ok(msg.textContent.length > 0, "no message rendered");
     // The reason is the engine's, with its substitutions already applied.
@@ -2231,11 +2239,15 @@ test("an edit onto another deck's scale is refused and both decks survive", () =
   assert.strictEqual(app.sheetOpen(), true, "the refusal closed the sheet");
   assert.ok(app.els["scale-box"].classList.contains("bad"),
     "the scale box was not marked bad on a refusal");
-  assert.match(app.els["scale-msg"].textContent, COLLIDE_MSG);
-  assert.match(app.announcer().textContent, COLLIDE_MSG);
+  // Beside the field, not below the pan: the seed is what the owner has to
+  // change, and #scale-refusal carries its own aria-live because .announce is
+  // outside this aria-modal sheet and cannot be read while it is open.
+  assert.match(app.els["scale-refusal"].textContent, COLLIDE_MSG);
+  // That the element is aria-live is asserted in e2e, against the real markup:
+  // this sandbox synthesises its elements, so their attributes say nothing.
   // UI copy, not an engine reason: nothing in the closed section 2 enum says this.
   const reasons = app.get("Object.keys(HPE.core.REASONS).map(k => HPE.core.REASONS[k].reason)");
-  assert.strictEqual(reasons.includes(app.els["scale-msg"].textContent), false,
+  assert.strictEqual(reasons.includes(app.els["scale-refusal"].textContent), false,
     "the refusal message masquerades as an engine reason");
 });
 

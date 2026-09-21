@@ -484,16 +484,23 @@ button.nav:active{background:#2e281e}
 #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
   color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
-/* The parse line and the message SHARE one reserved line, and that is what
-   pays for moving #scale-msg up here (2026-09-21). They are mutually
-   exclusive on the typing path - syncParseState() blanks the parse line on
-   the same branch that writes a refusal - so whichever is empty stops
-   occupying the row and the other stands in its place, at the identical box
-   (same 1.55 line-height, same 1.55em floor, same margin). The fieldrow
-   therefore costs exactly what it cost before the move, which the Edit sheet
-   needs: its slack at 380x780 was 20.9px and a second reserved line is 22px.
-   Both filled at once (the delete-confirm) legitimately takes two rows. */
-#scale-parse:empty, #scale-msg:empty{display:none}
+/* The parse line and the refusal SHARE one reserved line, and that is what
+   pays for bringing a refusal up here (2026-09-21). They are mutually
+   exclusive because showParse() and showRefusal() are the only two writers
+   and each blanks the other - so whichever is empty stops occupying the row
+   and the other stands in its place, at the identical box (same 1.55
+   line-height, same 1.55em floor, same margin). The fieldrow therefore costs
+   exactly what it cost before, which the Edit sheet needs: its slack at
+   380x780 was 20.9px and a second reserved line is 22px.
+   The exclusivity has to be STRUCTURAL, not a coincidence of call order.
+   The first cut of this shared the row with #scale-msg, the sheet's general
+   message area, and two of its other callers write while the parse line is
+   full: openEditSheet()'s pan warnings, and runGenerate()'s duplicate-scale
+   refusal on a seed that parsed fine. Both took two rows, stepped the pan
+   26.59px under the finger, and put #scale-layout-row's bottom at 785.69
+   against a 780px viewport - below the fold, the exact cost this row exists
+   to avoid. #scale-msg is back below the pan and never enters this row. */
+#scale-parse:empty, #scale-refusal:empty{display:none}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
@@ -518,21 +525,27 @@ button.nav:active{background:#2e281e}
    pan is role="img" content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
 #scale-preview svg{display:block; width:100%; height:auto}
-/* Geometry deliberately IDENTICAL to #scale-parse above, because since
-   2026-09-21 this sits between the scale field and the pan preview and the two
-   take turns in one row: the line-height and the margin drifting from the
-   parse line's values shows up as the pan stepping when a seed goes bad.
+/* Geometry deliberately IDENTICAL to #scale-parse above, because this sits
+   between the scale field and the pan preview and the two take turns in one
+   row: the line-height and the margin drifting from the parse line's values
+   shows up as the pan stepping when a seed goes bad.
    min-height is the ONE part that is inert while the :empty rule above stands
-   - a #scale-msg holding text is never shorter than a line, and an empty one
-   leaves the flow before the floor can apply. It is kept as the floor that
-   takes over if that rule is ever scoped differently, and it is deliberately
-   NOT what the pan test rests on; the mutant for that test drops
+   - a #scale-refusal holding text is never shorter than a line, and an empty
+   one leaves the flow before the floor can apply. It is kept as the floor
+   that takes over if that rule is ever scoped differently, and it is
+   deliberately NOT what the pan test rests on; the mutant for that test drops
    #scale-parse:empty instead. A refusal long enough to wrap still steps the
    pan one line; core.js:125 caps an interpolated bad token at 12 characters,
-   and that is the only input that reaches two lines at 380px. */
-#scale-msg{font-family:"Nunito Sans"; font-weight:400;
+   and that is the only input that reaches two lines at 380px.
+   No font fallback stack on purpose: system-ui renders wider here and pushed
+   a one-line refusal to 37.19px, i.e. into the wrap case, on every device
+   without Nunito Sans loaded. */
+#scale-refusal{font-family:"Nunito Sans"; font-weight:400;
   font-size:12px; line-height:1.55; color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
+#scale-refusal.err{color:#E27005}
+#scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
+  overflow-wrap:anywhere}
 #scale-msg.err, .announce.err{color:#E27005}
 #scale-msg.warn, .announce.warn{color:#e3b25c}
 #scale-msg.ok, .announce.ok{color:#a4c9a0}
@@ -790,8 +803,17 @@ button.nav:active{background:#2e281e}
       <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
            below the fold on an iPhone 14 with the keyboard up, so the user
            retypes a seed whose reason they never saw. It belongs directly
-           under the field it is about, inside the same .fieldrow group. -->
-      <div id="scale-msg" aria-live="polite"></div>
+           under the field it is about, inside the same .fieldrow group.
+           This element carries SEED REFUSALS ONLY - it is not the sheet's
+           message area. #scale-msg keeps that job, below the pan, because a
+           warning or a success notice is not about the field and must not
+           compete for this row. Refusals never go through say(): sharing one
+           reserved line with the parse line only works while exactly one of
+           the two is filled, and showRefusal()/showParse() are what make that
+           true rather than hoping every caller happens to agree. It carries
+           its own aria-live because #scale-sheet is aria-modal, which puts
+           the page-level .announce outside the dialog and out of reach. -->
+      <div id="scale-refusal" aria-live="polite"></div>
     </div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
@@ -837,6 +859,10 @@ button.nav:active{background:#2e281e}
                 aria-label="Reset the layout to the generated one">RESET</button>
       </div>
     </div>
+    <!-- Above the control row, so the soft keyboard never covers it. Warnings,
+         success notices and deck-gone messages - everything say() writes.
+         Seed refusals go to #scale-refusal up in the .fieldrow instead. -->
+    <div id="scale-msg" aria-live="polite"></div>
     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
     <div class="editrow" id="scale-degrees-row" hidden>
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
@@ -4214,6 +4240,7 @@ const scaleBox  = document.getElementById("scale-box");
 const parseLine = document.getElementById("scale-parse");
 const previewBox = document.getElementById("scale-preview");
 const msgLine   = document.getElementById("scale-msg");
+const refusalLine = document.getElementById("scale-refusal");
 const mirrorL   = document.getElementById("scale-mirror-l");
 const mirrorR   = document.getElementById("scale-mirror-r");
 const swatches  = document.getElementById("scale-swatches");
@@ -4273,7 +4300,35 @@ let layoutOrder = null;
 let layoutSel = 0;
 const generated = new Set();     // deck ids generated in this page session
 
-/** The one adapter from a result/warning reason to a message tier. */
+/* The seed row has exactly TWO writers, and each blanks the other. That is
+   what makes #scale-parse and #scale-refusal mutually exclusive - and the
+   exclusivity is the whole reason they can share ONE reserved line inside
+   .fieldrow (see the :empty rule). Leaving it to call order is what shipped
+   the 26.59px pan step: three separate call sites each looked locally right.
+   A refusal supersedes the parse summary rather than stacking under it. The
+   summary says the seed parsed; the refusal says the app will not take it,
+   which is the more recent and the more actionable of the two, and the
+   summary comes straight back on the next keystroke. */
+function showParse(text) {
+  refusalLine.textContent = "";
+  parseLine.textContent = text;
+}
+function showRefusal(text) {
+  parseLine.textContent = "";
+  // The tier is carried the same way say() carries it, and for the same
+  // reason: the colour is the only channel that separates a refusal from a
+  // neutral line at a glance, so forgetting it has to be VISIBLE (and
+  // killable) rather than silently inheriting the error colour from the
+  // element's own rule. Cleared on the empty case so a hidden line is not
+  // left holding a tier for whatever writes next.
+  refusalLine.className = text ? "err" : "";
+  refusalLine.textContent = text;
+}
+
+/** The one adapter from a result/warning reason to a message tier. Warnings,
+ *  success notices and deck-gone messages only - a SEED REFUSAL goes to
+ *  showRefusal() instead, because #scale-msg sits below the pan and a refusal
+ *  there is below the fold on an iPhone 14 with the keyboard up. */
 function say(text, tier) {
   for (const el of [msgLine, announce]) {
     el.className = (el === announce ? "announce" : "") + (tier ? " " + tier : "");
@@ -4629,7 +4684,7 @@ let refusal = null;
 function syncParseState({ paint }) {
   const text = String(scaleBox.value || "");
   if (!text.trim()) {
-    parseLine.textContent = PARSE_HINT;
+    showParse(PARSE_HINT);
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
     if (paint) showPlaceholderPan();
@@ -4638,21 +4693,20 @@ function syncParseState({ paint }) {
   }
   const res = HPE.core.parseSeed(text, sheetOptions());
   if (res.ok) {
-    parseLine.textContent = parseLineText(res.value.fields);
+    showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
     if (paint) showPanPreview(res.value);
     say("", "");
   } else {
-    // Blanked, not removed. The blank is load-bearing in CSS as well as here:
-    // #scale-parse:empty steps out of the row and #scale-msg, which the next
-    // line fills, takes the identical box - so a half-typed seed neither
+    // showRefusal() blanks the parse line rather than removing it: the CSS
+    // leans on the blank too - #scale-parse:empty steps out of the row and
+    // #scale-refusal takes the identical box - so a half-typed seed neither
     // jumps the sheet nor costs the fieldrow a second reserved line.
-    parseLine.textContent = "";
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
     if (paint) holdPanPreview();
-    say(res.reason, "err");
+    showRefusal(res.reason);
   }
 }
 
@@ -4671,7 +4725,7 @@ function updateParse() {
  *  addressed. Mirrors disarmDelete()'s own guard (`:4954`), which is why
  *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
 function resyncSheet(paint) {
-  if (refusal) { say(refusal, "err"); return; }
+  if (refusal) { showRefusal(refusal); return; }
   syncParseState({ paint });
 }
 
@@ -4879,6 +4933,11 @@ function hideSheet() {
   // there for a screen reader to read out on a page that no longer shows it.
   announce.textContent = "";
   announce.className = "announce";
+  // Same hazard, same fix, for the refusal line: #scale-refusal is aria-live
+  // and INSIDE the aria-modal dialog, which is the only reason a refusal is
+  // reachable by AT at all while the sheet is open - so it is also the thing
+  // that would carry a dead refusal into the next open.
+  showRefusal("");
   // Undo BOTH keyboard writes before the next open, or a sheet that opens
   // with no keyboard up (e.g. re-opened via keyboard nav) would inherit the
   // previous session's offset for one frame. The cap is the half that used to
@@ -4973,13 +5032,13 @@ function runGenerate() {
     // so this composes no sentence that could pass for one and carries no code.
     scaleBox.classList.add("bad");
     refusal = "Another deck already uses this scale.";
-    say(refusal, "err");
+    showRefusal(refusal);
     return;
   }
   if (!res.ok) {
     scaleBox.classList.add("bad");
     refusal = res.reason;
-    say(refusal, "err");
+    showRefusal(refusal);
     return;
   }
   const d = res.value;
@@ -5035,7 +5094,7 @@ function disarmDelete() {
   // A standing refusal is not derivable from the seed, so re-deriving would
   // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
   // Put the refusal back over the arming warning and leave the rest alone.
-  if (refusal) { say(refusal, "err"); return; }
+  if (refusal) { showRefusal(refusal); return; }
   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
   // WITHOUT repainting the pan, because this runs inside a pointerdown.

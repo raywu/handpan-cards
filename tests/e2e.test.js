@@ -905,6 +905,7 @@ function run() {
         backText: document.getElementById("scale-back").textContent.trim(),
         parseLine: document.getElementById("scale-parse").textContent.trim(),
         msgLive: document.getElementById("scale-msg").getAttribute("aria-live"),
+        refusalLive: document.getElementById("scale-refusal").getAttribute("aria-live"),
         placeholder: document.getElementById("scale-box").placeholder,
         generateDisabled: document.getElementById("scale-generate").disabled,
         swatches: document.querySelectorAll("#scale-swatches .dot").length,
@@ -940,6 +941,11 @@ function run() {
     assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
     assert.match(open.parseLine, /^Type your ding first/);
     assert.strictEqual(open.msgLive, "polite");
+    // #scale-sheet is aria-modal, so the page-level .announce is outside the
+    // dialog and unreachable while the sheet is open. A refusal is announced
+    // only if #scale-refusal is itself a live region.
+    assert.strictEqual(open.refusalLive, "polite",
+      "the seed refusal is not in a live region inside the modal sheet");
     assert.strictEqual(open.placeholder, "(D) A C D E F G A C");
     assert.strictEqual(open.generateDisabled, true);
     assert.strictEqual(open.swatches, 6);
@@ -956,7 +962,7 @@ function run() {
         return {
           disabled: document.getElementById("scale-generate").disabled,
           bad: document.getElementById("scale-box").classList.contains("bad"),
-          msg: document.getElementById("scale-msg").textContent.trim(),
+          msg: document.getElementById("scale-refusal").textContent.trim(),
         };
       `);
       assert.strictEqual(st.disabled, !valid, `"${text}": Generate disabled=${st.disabled}`);
@@ -3180,7 +3186,7 @@ function run() {
         return {
           bad: document.getElementById("scale-box").classList.contains("bad"),
           disabled: document.getElementById("scale-generate").disabled,
-          msg: document.getElementById("scale-msg").textContent.trim(),
+          msg: document.getElementById("scale-refusal").textContent.trim(),
         };
       `);
       assert.strictEqual(badBefore.bad, true, "the rejected seed did not mark the box bad");
@@ -3202,7 +3208,7 @@ function run() {
         return {
           bad: document.getElementById("scale-box").classList.contains("bad"),
           disabled: document.getElementById("scale-generate").disabled,
-          msg: document.getElementById("scale-msg").textContent.trim(),
+          msg: document.getElementById("scale-refusal").textContent.trim(),
           text: document.getElementById("scale-box").value,
         };
       `);
@@ -3337,7 +3343,10 @@ function run() {
 
   const sheetState = () => b.eval(`
     const box = document.getElementById("scale-box");
-    const msg = document.getElementById("scale-msg");
+    // The collision refusal renders in #scale-refusal, beside the field it is
+    // about - #scale-msg is the message area below the pan and never carries
+    // a refusal since 2026-09-21.
+    const msg = document.getElementById("scale-refusal");
     return {
       open: !document.getElementById("scale-sheet").hasAttribute("hidden"),
       bad: box.classList.contains("bad"),
@@ -3408,6 +3417,118 @@ function run() {
       assert.strictEqual(
         await b.eval(`return localStorage.getItem("hpfc.scales");`), storedBefore,
         "a refused save wrote to hpfc.scales");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* Both tests below are the reviewer's, 2026-09-21. The first cut of the
+     seed-refusal move shared ONE reserved row between #scale-parse and
+     #scale-msg, the sheet's general message area - and #scale-msg has callers
+     that write while the parse line is also full. Two of them are reproduced
+     here. They do not go through the typing path, so neither
+     "the sheet does not change height as the seed is typed" nor
+     "the pan does not move when the seed goes bad" could see them: the row
+     took two lines, the pan stepped 26.59px under the finger, and
+     #scale-layout-row's bottom reached 785.69 against a 780px viewport.
+     The fix is one element per role - #scale-refusal in the .fieldrow for
+     seed refusals, #scale-msg below the pan for everything else - so what
+     these assert is that a message which is NOT about the seed never enters
+     the seed's row. */
+
+  test("a pan warning on the Edit open does not move the pan", async () => {
+    // Path (a): openEditSheet() says its warnings AFTER showSheet() has already
+    // filled the parse line. "(C3) G3 D4 G4 D5" has three pitch classes, so the
+    // engine warns NO_THIRDS on every open.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate("(C3) G3 D4 G4 D5");
+      await openEdit();
+      const read = () => b.eval(`
+        const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+        return {
+          panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
+          rowBottom: row.bottom,
+          viewportH: window.innerHeight,
+          msg: document.getElementById("scale-msg").textContent.trim(),
+          msgTop: document.getElementById("scale-msg").getBoundingClientRect().top,
+          refusal: document.getElementById("scale-refusal").textContent.trim(),
+          parse: document.getElementById("scale-parse").textContent.trim(),
+        };
+      `);
+      await b.settle();
+      const warned = await read();
+      assert.ok(warned.msg.length > 0,
+        "this deck is meant to warn on open - the fixture no longer warns");
+      // The warning is not about the seed, so it must not be in the seed's row.
+      assert.strictEqual(warned.refusal, "",
+        `the pan warning was written to the seed refusal line: "${warned.refusal}"`);
+      assert.ok(warned.parse.length > 0,
+        "the parse line is empty on a valid prefilled seed");
+      assert.ok(warned.msgTop >= warned.panTop,
+        `the warning's top is ${warned.msgTop.toFixed(1)}px, above the pan at ` +
+        `${warned.panTop.toFixed(1)}px - it is sharing the seed's row`);
+      assert.ok(warned.rowBottom <= warned.viewportH,
+        `#scale-layout-row's bottom is ${warned.rowBottom.toFixed(1)}px against a ` +
+        `${warned.viewportH}px viewport - the LAYOUT row is below the fold`);
+
+      // The next keystroke re-syncs the parse line. If the warning shared that
+      // row, the row would shrink back to one line and step the pan.
+      await typeScale("(C3) G3 D4 G4 D5 ");
+      await b.settle();
+      const typed = await read();
+      assert.ok(Math.abs(typed.panTop - warned.panTop) < 0.5,
+        `the pan moved ${(typed.panTop - warned.panTop).toFixed(1)}px on the first ` +
+        `keystroke after a warned open (warned=${warned.panTop.toFixed(1)}, ` +
+        `typed=${typed.panTop.toFixed(1)})`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("a refused SAVE onto another deck's scale does not move the pan", async () => {
+    // Path (b): runGenerate() refuses a seed that PARSED FINE, so the parse
+    // line is full when the refusal arrives - the one case where a refusal and
+    // the parse summary are both live at once.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await generate(EDIT_SCALE);
+      await generate(COLLIDE_SCALE);
+      const chips = await chipReport();
+      await selectChipAt(chips.chips.length - 2);   // the FIRST custom deck
+      await openEdit();
+
+      const read = () => b.eval(`
+        const row = document.getElementById("scale-layout-row").getBoundingClientRect();
+        return {
+          panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
+          rowBottom: row.bottom,
+          viewportH: window.innerHeight,
+          refusal: document.getElementById("scale-refusal").textContent.trim(),
+          msg: document.getElementById("scale-msg").textContent.trim(),
+        };
+      `);
+      // Baseline AFTER typing, so the only thing that changes across the SAVE
+      // is the refusal itself.
+      await typeScale(COLLIDE_SCALE);
+      await b.settle();
+      const before = await read();
+
+      await b.click("#scale-generate");
+      await b.settle();
+      const after = await read();
+      assert.match(after.refusal, /Another deck already uses this scale/,
+        `the refused save says "${after.refusal}" in the seed's row`);
+      assert.strictEqual(after.msg, "",
+        `the seed refusal was written below the pan as well: "${after.msg}"`);
+      assert.ok(Math.abs(after.panTop - before.panTop) < 0.5,
+        `the pan moved ${(after.panTop - before.panTop).toFixed(1)}px on the refusal ` +
+        `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
+      assert.ok(after.rowBottom <= after.viewportH,
+        `#scale-layout-row's bottom is ${after.rowBottom.toFixed(1)}px against a ` +
+        `${after.viewportH}px viewport - the refusal pushed LAYOUT below the fold`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -4581,11 +4702,14 @@ function run() {
           const surf = document.querySelector(".sheetsurf");
           return { h: surf.getBoundingClientRect().height,
                    preview: !document.getElementById("scale-preview").hasAttribute("hidden"),
-                   // Since 2026-09-21 the parse line and #scale-msg take
+                   // Since 2026-09-21 the parse line and the refusal line take
                    // turns in ONE reserved row (whichever is empty leaves the
                    // flow), so the invariant is the ROW, not either element.
+                   // Exactly one is ever filled, because showParse() and
+                   // showRefusal() are the row's only writers and each blanks
+                   // the other - it is not a coincidence of call order.
                    row: document.getElementById("scale-parse").getBoundingClientRect().height
-                      + document.getElementById("scale-msg").getBoundingClientRect().height };
+                      + document.getElementById("scale-refusal").getBoundingClientRect().height };
         `)) };
       };
       const states = [];
@@ -4596,7 +4720,7 @@ function run() {
       await typeScale("(D) A C D E F G A C");
       states.push(await h("valid again"));
       // A seed long enough that its failure reason is a different length from
-      // the short one above: #scale-msg wraps too, and it is inside the sheet.
+      // the short one above: the refusal line wraps too, and it is in the sheet.
       await typeScale("(D) A C D E F G A C | Q# Q# Q# Q# Q# Q# Q#");
       states.push(await h("invalid, long reason"));
 
@@ -4631,12 +4755,12 @@ function run() {
       await typeScale("(D) A C D zzzz");
       await b.settle();
       const r = await b.eval(`
-        const msg = document.getElementById("scale-msg").getBoundingClientRect();
+        const msg = document.getElementById("scale-refusal").getBoundingClientRect();
         const box = document.getElementById("scale-box").getBoundingClientRect();
         const prev = document.getElementById("scale-preview").getBoundingClientRect();
         return { msgTop: msg.top, msgBottom: msg.bottom, boxBottom: box.bottom,
                  prevTop: prev.top,
-                 text: document.getElementById("scale-msg").textContent.trim() };
+                 text: document.getElementById("scale-refusal").textContent.trim() };
       `);
       assert.ok(r.text.length > 0, "no refusal was rendered for an invalid seed");
       assert.ok(r.msgBottom <= r.prevTop + 0.5,
@@ -4651,19 +4775,22 @@ function run() {
   });
 
   test("the pan does not move when the seed goes bad", async () => {
-    // #scale-msg now sits between the field and the pan, so its height is in
-    // the pan's path: drop its min-height and an appearing refusal shoves the
-    // pan down 18px under the user's finger. That is the mutant this kills:
-    // on a VALID seed #scale-msg is EMPTY, so only its min-height holds the
-    // line open, and the refusal then fills a box that was already there.
-    // The 18px is exactly one line, so the exemption below is deliberate: a
-    // refusal that WRAPS to two lines does still move the pan. Reserving the
-    // second line fixes that and costs 18px the Edit sheet does not have -
-    // measured 2026-09-21 at 380x780, #scale-layout-row's bottom goes
-    // 781.09 -> 799.09 against innerHeight 780, breaking "ROTATE makes its
-    // correction from the keyboard alone at 380px". Wrapping needs a bad
-    // token near core.js:125's 12-character slice; every reason at a short
-    // token renders in one line. See the #scale-msg comment in index.html.
+    // #scale-refusal sits between the field and the pan, so its height is in
+    // the pan's path. What holds the row still across the valid -> invalid
+    // step is that #scale-parse EMPTIES as the refusal fills: showRefusal()
+    // blanks the parse line, :empty takes it out of the flow, and the refusal
+    // stands in the identical box. Stop writing the refusal, or stop blanking
+    // the parse line, and the row changes height under the user's finger.
+    // Not a CSS floor: both elements' min-height is unreachable behind
+    // :empty{display:none}, which is why e_refusal_row_collapses mutates the
+    // CONTENT rather than the declaration.
+    // The 18px step is exactly one line, so the exemption below is deliberate:
+    // a refusal that WRAPS to two lines does still move the pan. Reserving the
+    // second line fixes that and costs 22px the Edit sheet does not have -
+    // measured 2026-09-21 at 380x780, its slack is 20.9px, breaking
+    // "ROTATE makes its correction from the keyboard alone at 380px". Wrapping
+    // needs a bad token near core.js:125's 12-character slice; every reason at
+    // a short token renders in one line. See index.html's :empty comment.
     try {
       await freshLoad();
       await b.setViewport(380, 800, true);
@@ -4678,13 +4805,13 @@ function run() {
       // changes PARSE_HINT's own wrap (see "the only height the first
       // keystroke changes is the hint's own wrap"), which is a different
       // element and a different 37px. VALID is the right baseline - its
-      // #scale-msg is EMPTY, so only min-height holds the reserved line.
+      // #scale-refusal is EMPTY and #scale-parse holds the reserved line.
       await typeScale("(D) A C D E F G A C");
       const valid = await top();
       await typeScale("(D) A C D zzzz");
       const bad = await top();
       const msg = await b.eval(`
-        const m = document.getElementById("scale-msg");
+        const m = document.getElementById("scale-refusal");
         return { h: m.getBoundingClientRect().height, t: m.textContent.trim() };
       `);
       assert.ok(msg.t.length > 0, "no refusal was rendered for an invalid seed");
