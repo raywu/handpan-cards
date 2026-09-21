@@ -604,7 +604,90 @@ class PrintStylesheetTest(unittest.TestCase):
         """B0 finding: the masked `.face::before` frame flattens to a SOLID
         block in Chrome's print export."""
         self.assertIn(".face::before", self.print_css)
-        self.assertIn("box-shadow:inset", self.print_css.replace(" 0 0 0", " 0 0 0"))
+        self.assertIn("box-shadow:inset", self.print_css)
+
+    # --- the hide list ------------------------------------------------
+    #
+    # Reviewer finding B-1: `body.printing > .mid` named a class that is a
+    # child of <footer>, not of <body>, so it matched NOTHING and <footer>
+    # printed on top of the card sheet - shearing every page across the page
+    # break and costing an extra sheet per run. A selector that matches
+    # nothing is silent, so it is not enough to list what should be hidden:
+    # both directions have to be asserted.
+
+    HIDE_ALLOWED = ("script", "#printroot", "#printgeom")
+
+    def body_children(self):
+        """The direct element children of <body>, as selector candidates."""
+        # The tag on its own line: `<body>` also appears inside the stylesheet
+        # (a `content:` string), and splitting on the bare token lands there.
+        body = self.html.split("\n<body>\n", 1)[1].split("\n</body>", 1)[0]
+        # Comments carry markup-shaped prose ("+ ADD" notes, <script src>
+        # warnings); parsing them corrupts the depth count.
+        body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
+        void = {"meta", "link", "br", "img", "input", "hr", "source"}
+        out, depth, i = [], 0, 0
+        tag = re.compile(r"<(/?)([a-zA-Z][\w-]*)([^>]*?)(/?)>", re.S)
+        while True:
+            m = tag.search(body, i)
+            if not m:
+                break
+            close, name, attrs, selfclose = m.group(1), m.group(2).lower(), m.group(3), m.group(4)
+            i = m.end()
+            if close:
+                depth -= 1
+                continue
+            if name in ("script", "style"):
+                # Skip the element's contents wholesale: `<` inside JS is not
+                # markup, and walking it would corrupt the depth count.
+                end = body.find("</%s>" % name, i)
+                if depth == 0:
+                    out.append(self.selectors(name, attrs))
+                i = len(body) if end < 0 else end + len(name) + 3
+                continue
+            if depth == 0:
+                out.append(self.selectors(name, attrs))
+            if name not in void and not selfclose:
+                depth += 1
+        return out
+
+    @staticmethod
+    def selectors(name, attrs):
+        sels = [name]
+        mid = re.search(r'id="([^"]+)"', attrs)
+        if mid:
+            sels.append("#" + mid.group(1))
+        mcl = re.search(r'class="([^"]+)"', attrs)
+        if mcl:
+            sels.extend("." + c for c in mcl.group(1).split())
+        return sels
+
+    def hide_list(self):
+        """The selectors the print block hides, as written."""
+        m = re.search(r"((?:body\.printing\s*>\s*[^,{]+,\s*)*"
+                      r"body\.printing\s*>\s*[^,{]+)\{display:none",
+                      self.print_css)
+        self.assertIsNotNone(m, "the print block no longer hides the app chrome")
+        return [s.strip().split(">", 1)[1].strip() for s in m.group(1).split(",")]
+
+    def test_every_direct_child_of_body_is_hidden_or_belongs_to_the_sheet(self):
+        """Anything left visible prints ON TOP of the card sheet."""
+        hidden = set(self.hide_list())
+        for sels in self.body_children():
+            if any(s in self.HIDE_ALLOWED for s in sels):
+                continue
+            self.assertTrue(hidden.intersection(sels),
+                            "<%s> is a direct child of <body> that the print "
+                            "block never hides; it will print over the cards"
+                            % sels[0])
+
+    def test_no_selector_in_the_hide_list_matches_nothing(self):
+        """A dead selector reads as coverage and provides none (B-1)."""
+        children = self.body_children()
+        for sel in self.hide_list():
+            self.assertTrue(any(sel in sels for sels in children),
+                            "`body.printing > %s` matches no direct child of "
+                            "<body>; it hides nothing" % sel)
 
     def test_print_css_carries_no_card_geometry_literals(self):
         """Same single-definition-site rule as the slot emitter: the grid's

@@ -3650,6 +3650,34 @@ test("print sheet is emptied even when the print dialog throws", () => {
   assert.strictEqual(app.docEl.classList.contains("printing"), false);
 });
 
+/* Reviewer finding B-2: `printPaper` is module state that survives a render,
+   but headerHTML() re-emits the <select> from scratch on EVERY render with
+   LETTER first and nothing marked selected. So a flip, an arrow press or a
+   shuffle silently reset the control to LETTER while the app still printed
+   A4 - and re-picking LETTER fired no `change` event, so the user could not
+   get back without round-tripping through A4. The control has to report the
+   state it owns (D16). */
+test("print CTA: the paper picker reports the paper that will actually print", () => {
+  const app = boot();
+  customDeck(app);
+  const picked = () => {
+    const html = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
+    const opts = html.match(/<option value="([a-z0-9]+)"( selected)?>/g) || [];
+    assert.strictEqual(opts.length, 2, "the paper picker lost an option");
+    const on = opts.filter((o) => o.includes(" selected"));
+    assert.strictEqual(on.length, 1,
+      `${on.length} options are marked selected; the picker must show exactly one`);
+    return on[0].match(/value="([a-z0-9]+)"/)[1];
+  };
+
+  assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
+  app.run('setPrintPaper("a4")');
+  assert.strictEqual(picked(), "a4",
+    "after a re-render the picker reads LETTER while the sheet still prints A4");
+  app.run('setPrintPaper("letter")');
+  assert.strictEqual(picked(), "letter");
+});
+
 test("print CTA: the paper picker changes the page box and nothing else", () => {
   const app = boot();
   customDeck(app);
