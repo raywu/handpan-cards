@@ -306,7 +306,8 @@ card spec is true physical size (62.65 x 87.21mm, printers instructed
 cards, which is worse than a second page.
 
 **Still owed on device:** a measurement of iOS's actual printable
-height, and a re-run at the D17 density confirming one page. Both land
+height, and a re-run at the reduced density decided in D16-D17 below
+(6 cards per page on a narrow viewport) confirming one page. Both land
 in B7, and AC-B6 stays OPEN until then.
 
 ### D16 - paper size (owner decision, 2026-09-21)
