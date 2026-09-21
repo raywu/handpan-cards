@@ -3560,3 +3560,105 @@ test("print sheet paper size is a control, and only the page box changes", () =>
     "paper size must not change the card grid");
   assert.notStrictEqual(letter, a4, "paper size must change the page box");
 });
+
+/* ---------------------------------------------------------------------------
+ * 23. the print CTA
+ *
+ * B5. Custom decks get the same two print options the built-ins have. A
+ * built-in's are `<a href>` to the pre-built PDFs and must not move; a custom
+ * deck's are `<button>` that fill the print container and call window.print().
+ * ------------------------------------------------------------------------ */
+
+test("print CTA: a custom deck's header carries the same two labels as a built-in's", () => {
+  const app = boot();
+  const di = deckIndex(app, "amara");
+  const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
+  customDeck(app);
+  const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
+  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+    assert.ok(builtin.includes(label), `the built-in header lost "${label}"`);
+    assert.ok(custom.includes(label), `the custom header is missing "${label}"`);
+  }
+  assert.ok(builtin.includes("<a href="),
+    "a built-in deck's print options stay plain links to the pre-built PDFs");
+  assert.ok(!builtin.includes("<button"),
+    "the built-in path must be UNCHANGED - a button there is a plan violation");
+  assert.ok(custom.includes("<button"),
+    "a custom deck has no pre-built PDF; its controls are buttons");
+  assert.ok(/<select/.test(custom), "D16: the paper picker rides with the buttons");
+});
+
+/** Run the CTA and capture the sheet while it is live: window.print() is the
+ *  one moment the container is populated, and the app empties it immediately
+ *  afterwards (AC-B5). Nothing test-only is added to the app for this. */
+function printed(app, variant) {
+  app.run(`captured = null; window.print = function(){ captured = {
+    html: document.getElementById("printroot").innerHTML,
+    cls: document.getElementById("printroot").className,
+    hidden: document.getElementById("printroot").hidden,
+    css: document.getElementById("printgeom").textContent }; };
+    openPrintSheet(${JSON.stringify(variant)});`);
+  return plain(app.get("captured"));
+}
+const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
+
+test("print sheet slot count agrees with the viewport at the moment the CTA fires", () => {
+  for (const [w, name, slots] of [[1024, "wide", 9], [380, "narrow", 6]]) {
+    const app = boot({ innerWidth: w });
+    customDeck(app);
+    const cap = printed(app, "full");
+    assert.ok(cap, "the CTA must call window.print()");
+    assert.strictEqual(cap.hidden, false, "the sheet must be showing when print() fires");
+    assert.strictEqual(cap.cls, name, `${w}px must put the ${name} class on the container`);
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    assert.strictEqual(L.cols * L.rows, slots);
+    // The emitted cells are the padded card list, so their count is a multiple
+    // of the slot count the container's own class selects. One decision, one
+    // place: the CSS never re-reads the width (AC-B5b).
+    assert.strictEqual(cellCount(cap.html) % slots, 0,
+      `${w}px: ${cellCount(cap.html)} cells is not a whole number of ${slots}-slot pages`);
+    assert.strictEqual(cellCount(cap.html),
+      Number(app.get(`printCardList(deck(), "full", ${slots}).length`)));
+    assert.ok(cap.css.includes(`repeat(${L.rows}, `),
+      "the geometry stylesheet must carry the same layout's row count");
+  }
+});
+
+test("print sheet leaves no residue", () => {
+  const app = boot();
+  customDeck(app);
+  const root = app.els.printroot;
+  assert.strictEqual(root.hidden, true, "the print container starts hidden");
+  assert.strictEqual(root.innerHTML, "", "the print container starts empty");
+  app.run('openPrintSheet("full")');
+  assert.strictEqual(root.innerHTML, "",
+    "a stray print sheet in the DOM is a regression on the practice screen");
+  assert.strictEqual(root.hidden, true, "the print container was left showing");
+  assert.strictEqual(app.els.printgeom.textContent, "",
+    "the geometry stylesheet was left behind");
+  assert.strictEqual(app.docEl.classList.contains("printing"), false,
+    "body.printing hides the whole app; leaving it on blanks the screen");
+});
+
+test("print sheet is emptied even when the print dialog throws", () => {
+  const app = boot();
+  customDeck(app);
+  app.run("window.print = function(){ throw new Error('no printer'); }");
+  assert.throws(() => app.run('openPrintSheet("full")'), /no printer/);
+  assert.strictEqual(app.els.printroot.innerHTML, "",
+    "a throwing print() must not strand the sheet in the DOM");
+  assert.strictEqual(app.docEl.classList.contains("printing"), false);
+});
+
+test("print CTA: the paper picker changes the page box and nothing else", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('setPrintPaper("a4")');
+  const a4 = printed(app, "full");
+  assert.ok(a4.css.includes("size:A4"), "the sheet must be built for the selected paper");
+  app.run('setPrintPaper("letter")');
+  const letter = printed(app, "full");
+  assert.ok(letter.css.includes("size:letter"));
+  assert.strictEqual(cellCount(a4.html), cellCount(letter.html),
+    "D16 and D17 are orthogonal: paper size must not change the card count");
+});

@@ -344,6 +344,19 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .prints a{font:600 7px/1.4 "Nunito Sans"; letter-spacing:.08em; color:var(--tone);
   text-decoration:none; white-space:nowrap}
 .prints a:hover, .prints a:focus-visible{text-decoration:underline}
+/* A custom deck's controls are <button>/<select>, not links. They read as the
+   same row: same type, same colour, same position - only the element differs,
+   because there is no PDF to point an href at. */
+.prints button, .prints select{font:600 7px/1.4 "Nunito Sans";
+  letter-spacing:.08em; color:var(--tone); background:none; border:0; padding:0;
+  margin:0; white-space:nowrap; cursor:pointer; -webkit-appearance:none;
+  appearance:none}
+.prints button:hover, .prints button:focus-visible,
+.prints select:hover, .prints select:focus-visible{text-decoration:underline}
+/* 44px is the touch target the rest of the app uses; these sit inside a card
+   face that is only 87mm tall, so the target is grown with padding on the ROW
+   rather than on each control, which would break the type rhythm above. */
+.prints button:active, .prints select:active{color:var(--ink)}
 .prompt{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:0 16px 26px}
 .bigname{font-family:Marcellus, serif; color:#545454; line-height:.95; text-align:center}
@@ -4159,7 +4172,10 @@ function printGridCSS(name, paper) {
     `#printroot .printpage{height:${p.h}pt}\n` +
     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
-    `column-gap:${g.GX}pt; row-gap:${g.GY}pt}`;
+    `column-gap:${g.GX}pt; row-gap:${g.GY}pt}\n` +
+    `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
+    `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
+    `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;
 }
 
 function printSlots(cols, rows) {
@@ -4257,6 +4273,59 @@ function printCardList(d, variant, slotsPerPage) {
   return cards;
 }
 
+/* ---------------- the print CTA (Workstream B) ----------------
+ * A custom deck has no pre-built PDF, so it prints through the browser: build
+ * the sheet into #printroot, call window.print(), and empty it again. The
+ * container is `hidden` and contributes nothing to the practice screen at any
+ * other moment (AC-B5).
+ */
+let printPaper = "letter";
+function setPrintPaper(p) { if (PRINT_PAPER[p]) printPaper = p; }
+
+/** The design width the faces are authored at. The printed card is CW points
+ *  wide, so the scale factor falls out of PRINT_GEOM and is not a literal of
+ *  its own. */
+const PRINT_DESIGN_W = 340;
+
+function printSheetHTML(d, variant, name) {
+  const L = PRINT_LAYOUTS[name], slots = L.cols * L.rows;
+  const cards = printCardList(d, variant, slots);
+  let out = "";
+  for (let i = 0; i < cards.length; i += slots) {
+    const cells = cards.slice(i, i + slots).map(c => {
+      const inner = printCardHTML(d, c);
+      // A `skip` is an EMPTY slot on the print-shop sheet: the cell holds the
+      // grid open and draws nothing.
+      return `<div class="printcell">${inner
+        ? `<div class="printscale"><div class="face">${inner}</div></div>` : ""}</div>`;
+    }).join("");
+    out += `<div class="printpage"><div class="printsheet">${cells}</div></div>`;
+  }
+  return out;
+}
+
+function openPrintSheet(variant) {
+  const root = document.getElementById("printroot");
+  try {
+    // AC-B5b: the viewport is read ONCE, here. The @media print block reads
+    // the class this sets and never re-decides the width itself.
+    const name = printLayoutName(window.innerWidth);
+    document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
+    root.className = name;
+    root.innerHTML = printSheetHTML(deck(), variant, name);
+    root.hidden = false;
+    document.body.classList.add("printing");
+    window.print();
+  } finally {
+    // Unconditional: a print dialog that throws must not strand the sheet in
+    // the DOM, where it would sit under the practice screen.
+    root.innerHTML = "";
+    root.hidden = true;
+    document.body.classList.remove("printing");
+    document.getElementById("printgeom").textContent = "";
+  }
+}
+
 const PRINT_PDFS = {
   hijaz: { cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf", printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf" },
   pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },
@@ -4270,10 +4339,22 @@ function headerHTML(d, ch, n, noPrints) {
   // A sibling row below .hdr, not a third flex child inside it: .hdr's own
   // box (and so the deck name's available width/line count) is untouched by
   // this feature - see the print-button lane's e2e test.
-  const prints = pdfs ? `<div class="prints" onclick="event.stopPropagation()">
+  // Built-ins link to the PDFs the print pipeline already built; a custom deck
+  // has none, so it prints through the browser instead. Same two labels, same
+  // position, and the built-in markup is byte-for-byte what it was (AC-B1).
+  const prints = noPrints ? "" : pdfs
+    ? `<div class="prints" onclick="event.stopPropagation()">
       <a href="${esc(pdfs.cards)}" target="_blank" rel="noopener">FULL DECK PDF</a>
       <a href="${esc(pdfs.printerOnly)}" target="_blank" rel="noopener">PRINT-ONLY PDF</a>
-    </div>` : "";
+    </div>`
+    : `<div class="prints" onclick="event.stopPropagation()">
+      <button type="button" onclick="openPrintSheet('full')">FULL DECK PDF</button>
+      <button type="button" onclick="openPrintSheet('shop')">PRINT-ONLY PDF</button>
+      <select aria-label="Paper size" onchange="setPrintPaper(this.value)">
+        <option value="letter">LETTER</option>
+        <option value="a4">A4</option>
+      </select>
+    </div>`;
   return `<div class="hdr">
     <div class="l">${esc(d.name)}<br><span class="num">#${n}</span>
       ${deg ? `&nbsp;<span class="deg">${esc(deg)}</span>` : ""}</div>
@@ -4342,8 +4423,15 @@ function render() {
   // Scoped through document, not through the face element: the face is the
   // node whose innerHTML was just replaced, and the unit suite's DOM stub
   // serves selectors from the document only.
-  for (const a of document.querySelectorAll("#" + away.id + " .prints a")) a.tabIndex = -1;
-  for (const a of document.querySelectorAll("#" + shown.id + " .prints a")) a.removeAttribute("tabindex");
+  // Widened past `.prints a` for the custom path: a generated deck's controls
+  // are <button> and <select>, and an unwidened selector would leave THREE
+  // focusable controls inside an aria-hidden subtree - the exact defect this
+  // pair of lines was written to prevent, in new element types (AC-B1b).
+  const PRINT_CTRLS = ["a", "button", "select"]
+    .map((t) => " .prints " + t).join(",");
+  const sel = (id) => id + PRINT_CTRLS.split(",").map((p) => p).join("," + id);
+  for (const a of document.querySelectorAll(sel("#" + away.id))) a.tabIndex = -1;
+  for (const a of document.querySelectorAll(sel("#" + shown.id))) a.removeAttribute("tabindex");
   cardEl.setAttribute("aria-describedby", shown.id);
 }
 

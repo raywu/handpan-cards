@@ -1143,6 +1143,36 @@ function run() {
     }
   });
 
+  /* A custom deck has no pre-built PDF to link at, so its .prints row is
+     <button>s plus the paper <select> rather than two <a href>s. The tab-order
+     rule that the built-in test pins is the same rule, but the selector that
+     enforces it has to cover all three element types - a selector that only
+     names `a` leaves three focusable controls inside the aria-hidden face
+     (AC-B1b). */
+  test("print controls on the hidden face", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const count = () => b.eval(`
+      const q = f => [...document.querySelectorAll(
+        "#" + f + " .prints a, #" + f + " .prints button, #" + f + " .prints select")]
+        .filter(el => el.tabIndex >= 0).length;
+      return { front: q("front"), back: q("back") };
+    `);
+
+    const shut = await count();
+    assert.strictEqual(shut.front, 3,
+      `the showing face carries ${shut.front} tabbable print controls, not 3`);
+    assert.strictEqual(shut.back, 0,
+      `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
+
+    await b.click("#card");
+    await b.settle();
+    const open = await count();
+    assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
+    assert.strictEqual(open.front, 0,
+      `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
+  });
+
   test("six custom decks keep the chip row on one line with the active chip in view", async () => {
     await freshLoad();
     await b.setViewport(380, 780, true);
