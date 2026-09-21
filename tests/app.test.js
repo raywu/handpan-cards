@@ -3504,3 +3504,59 @@ test("print card markup: every card a sheet emits renders", () => {
     }
   }
 });
+
+/* ---------------------------------------------------------------------------
+ * 22. the print sheet's layout selection and its grid CSS
+ *
+ * B4/AC-B5b. Slots-per-page is decided ONCE, in JS, at 640px - the app's own
+ * breakpoint (index.html:41). The `@media print` block reads the class that
+ * decision sets and never re-decides the width itself: a second breakpoint in
+ * CSS is the drift vector that ships 9 padded cards into a 6-slot grid.
+ * ------------------------------------------------------------------------ */
+
+test("print sheet slot count agrees with the layout the breakpoint picks", () => {
+  const app = boot();
+  for (const [w, name, slots] of [[640, "wide", 9], [1024, "wide", 9],
+                                  [639, "narrow", 6], [380, "narrow", 6]]) {
+    assert.strictEqual(String(app.get(`printLayoutName(${w})`)), name,
+      `${w}px must select the ${name} layout`);
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    assert.strictEqual(L.cols * L.rows, slots,
+      `the ${name} layout must be ${slots} slots per page`);
+    assert.strictEqual(L.cols, 3,
+      "both layouts are 3 columns wide - D17 reduces ROWS, not columns");
+    assert.strictEqual(
+      Number(app.get(`printSlots(PRINT_LAYOUTS.${name}.cols, PRINT_LAYOUTS.${name}.rows).length`)),
+      slots, "the slot emitter and the layout must agree on the count");
+  }
+});
+
+test("print sheet grid CSS is emitted from PRINT_GEOM, never typed", () => {
+  const app = boot();
+  const g = plain(app.get("PRINT_GEOM"));
+  for (const name of ["wide", "narrow"]) {
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
+    assert.ok(css.includes(`repeat(${L.cols}, ${g.CW}pt)`),
+      `${name}: columns must come from PRINT_GEOM.CW`);
+    assert.ok(css.includes(`repeat(${L.rows}, ${g.CH}pt)`),
+      `${name}: rows must come from PRINT_GEOM.CH`);
+    assert.ok(css.includes(`column-gap:${g.GX}pt`) && css.includes(`row-gap:${g.GY}pt`),
+      `${name}: gutters must come from PRINT_GEOM`);
+  }
+});
+
+test("print sheet paper size is a control, and only the page box changes", () => {
+  const app = boot();
+  const letter = String(app.get('printGridCSS("wide", "letter")'));
+  const a4 = String(app.get('printGridCSS("wide", "a4")'));
+  assert.ok(/@page\{size:letter;/.test(letter));
+  assert.ok(/@page\{size:A4;/.test(a4));
+  // D16 and D17 are orthogonal: A4 is 297mm against Letter's 279.4mm, nowhere
+  // near the ~97mm a third card row plus its gutter would need. The grid is
+  // byte-identical; only the page box differs.
+  const grid = (css) => css.split("\n").filter((l) => l.includes("grid-template")).join("\n");
+  assert.strictEqual(grid(letter), grid(a4),
+    "paper size must not change the card grid");
+  assert.notStrictEqual(letter, a4, "paper size must change the page box");
+});

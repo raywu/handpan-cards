@@ -553,5 +553,68 @@ class PrintSlotGeometryTest(unittest.TestCase):
                          "read every card and gutter constant from PRINT_GEOM" % strays)
 
 
+class PrintStylesheetTest(unittest.TestCase):
+    """B4/AC-B3: the `@media print` block's placement and its literals."""
+
+    def setUp(self):
+        with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+            self.html = fh.read()
+        self.style = self.html.split("<style>", 1)[1].split("</style>", 1)[0]
+        i = self.style.index("@media print")
+        self.print_css = self.style[i:]
+
+    def test_print_block_is_last_in_the_style_element(self):
+        """`tests/test_render_agreement.py:238` reads `.face::before` with a
+        whole-file regex and takes the FIRST match. The print block redefines
+        that rule for printed cards, so it has to sit BELOW the screen rule -
+        and the cheapest way to guarantee that forever is to keep it last."""
+        self.assertIn("@media print", self.style)
+        self.assertEqual(self.style.count("@media print"), 1)
+        # Nothing but the print block's own braces after it.
+        tail = self.print_css
+        self.assertTrue(tail.rstrip().endswith("}"))
+        # No further top-level rule opens after the block closes.
+        depth = 0
+        end = None
+        for i, c in enumerate(tail):
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i
+                    break
+        self.assertIsNotNone(end, "the @media print block never closes")
+        self.assertEqual(tail[end + 1:].strip(), "",
+                         "a rule was added after the print block; the "
+                         ".face::before first-match read would break")
+
+    def test_the_screen_border_rule_is_still_the_first_face_before_match(self):
+        rule = render_app_border()
+        self.assertEqual(rule["padding"], 3.2)
+        self.assertIn("var(--ga)", rule["background"])
+
+    def test_print_block_forces_colour(self):
+        """Chrome prints with background graphics OFF by default, which is what
+        flattened the frame in the B0 spike."""
+        self.assertIn("print-color-adjust:exact", self.print_css)
+        self.assertIn("-webkit-print-color-adjust:exact", self.print_css)
+
+    def test_print_block_re_expresses_the_frame_as_an_inset_ring(self):
+        """B0 finding: the masked `.face::before` frame flattens to a SOLID
+        block in Chrome's print export."""
+        self.assertIn(".face::before", self.print_css)
+        self.assertIn("box-shadow:inset", self.print_css.replace(" 0 0 0", " 0 0 0"))
+
+    def test_print_css_carries_no_card_geometry_literals(self):
+        """Same single-definition-site rule as the slot emitter: the grid's
+        card and gutter sizes are written by `printGridCSS()` from
+        `PRINT_GEOM`, never typed into the stylesheet."""
+        for lit in ("177.6", "247.2", "12.2", "9.4", "62.65", "87.21"):
+            self.assertNotIn(lit, self.print_css,
+                             "%s is a card-geometry literal; it belongs to "
+                             "PRINT_GEOM alone" % lit)
+
+
 if __name__ == "__main__":
     unittest.main()

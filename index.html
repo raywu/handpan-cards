@@ -719,6 +719,51 @@ button.nav:active{background:#2e281e}
    that does not answer a press. Confirming a delete is the press that most
    needs the acknowledgement. */
 #scale-delete[data-armed]:active{color:#eae6df}
+
+/* ---- the print sheet (Workstream B) ---------------------------------------
+   This block is deliberately LAST in the <style> element. It redefines
+   `.face::before` for printed cards, and `tests/test_render_agreement.py:238`
+   reads that rule with a whole-file regex that takes the FIRST match - so the
+   screen rule at :320 has to stay the one it finds. Nothing goes below here.
+   The grid's card and gutter sizes are NOT in this block: printGridCSS()
+   writes them from PRINT_GEOM into #printgeom, so there is one definition
+   site for them (AC-B3). ------------------------------------------------- */
+#printroot{display:none}
+#printroot .printpage{position:relative; display:flex; align-items:center;
+  justify-content:center; break-after:page; page-break-after:always}
+#printroot .printpage:last-child{break-after:auto; page-break-after:auto}
+#printroot .printsheet{display:grid}
+#printroot .printcell{position:relative; overflow:hidden}
+/* The faces are authored at a screen width and scaled down to the card's
+   physical size; the wrapper carries the transform so the grid cell keeps its
+   printed dimensions. */
+#printroot .printscale{position:absolute; top:0; left:0; transform-origin:top left}
+#printroot .printcell .face{position:absolute; inset:0; box-shadow:none;
+  backface-visibility:visible; -webkit-backface-visibility:visible}
+#printroot .printname{padding:0 13px; font-family:Marcellus, Georgia, serif;
+  font-size:26px; line-height:1.1; color:var(--name); text-align:center}
+#printroot .printblurb{padding:0 13px 10px; text-align:center;
+  font:400 9px/1.5 "Nunito Sans", sans-serif; color:var(--sep)}
+#printroot .printkeys{display:flex; justify-content:center; gap:var(--sp-2);
+  font:400 9px/1 "Nunito Sans", sans-serif; letter-spacing:.06em; color:var(--ink)}
+#printroot .printkeys .ring{display:inline-block; width:9px; height:9px;
+  margin-right:5px; border-radius:50%; border:2px solid var(--ink);
+  vertical-align:-1px}
+#printroot .blankrule{height:1px; margin:14px 18px; background:#e0e0e0}
+@media print{
+  *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  html,body{height:auto; min-height:0; overflow:visible}
+  /* The safe-area padding is an on-screen notch reservation and has no meaning
+     on paper; left in, it shifts every page by the device's insets. */
+  body{margin:0; padding:0; background:#fff; display:block}
+  body.printing > header, body.printing > main, body.printing > .announce,
+  body.printing > #scale-sheet, body.printing > .mid{display:none !important}
+  body.printing #printroot{display:block}
+  /* B0 finding: the masked `.face::before` frame flattens to a SOLID block in
+     Chrome's print export. Re-express it as an inset ring, which survives. */
+  #printroot .printcell .face::before{display:none}
+  #printroot .printcell .face{box-shadow:inset 0 0 0 3.2px var(--ga)}
+}
 </style>
 </head>
 <body>
@@ -4087,6 +4132,36 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
  *  centres on `3*CH + 2*GY`, so taking its top six would leave a 6-card page
  *  sitting high with all the slack below it.
  */
+/** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
+ *  the iOS overflow is vertical. Both are 3 columns of the same card.
+ */
+const PRINT_LAYOUTS = { wide: { cols: 3, rows: 3 }, narrow: { cols: 3, rows: 2 } };
+
+/** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
+ *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
+ *  would need, so paper size and row count are orthogonal controls.
+ */
+const PRINT_PAPER = { letter: { css: "letter", h: 792 }, a4: { css: "A4", h: 841.89 } };
+
+/** AC-B5b: slots-per-page is decided ONCE, here, at the app's own 640px
+ *  breakpoint (`index.html:41`). The `@media print` block reads the class this
+ *  picks and never re-decides the width itself.
+ */
+function printLayoutName(w) { return w >= 640 ? "wide" : "narrow"; }
+
+/** The grid declaration, written from PRINT_GEOM so the stylesheet carries no
+ *  card-geometry literal of its own (the same single-definition-site rule
+ *  AC-B3 puts on the slot emitter).
+ */
+function printGridCSS(name, paper) {
+  const g = PRINT_GEOM, L = PRINT_LAYOUTS[name], p = PRINT_PAPER[paper] || PRINT_PAPER.letter;
+  return `@page{size:${p.css}; margin:0}\n` +
+    `#printroot .printpage{height:${p.h}pt}\n` +
+    `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+    `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+    `column-gap:${g.GX}pt; row-gap:${g.GY}pt}`;
+}
+
 function printSlots(cols, rows) {
   const g = PRINT_GEOM;
   const tw = cols * g.CW + (cols - 1) * g.GX;
@@ -5423,5 +5498,11 @@ if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
 else if (location.hash.indexOf(SHARE_PREFIX) === 0)
   openShare(location.hash.slice(SHARE_PREFIX.length));
 </script>
+<!-- The print sheet lives outside <main> so `@media print` can hide the app
+     without hiding it. It is `hidden` until the CTA fills it and is emptied
+     again afterwards (AC-B5); `aria-hidden` keeps a filled sheet out of the
+     accessibility tree even in the instant it is populated. -->
+<div id="printroot" class="wide" hidden aria-hidden="true"></div>
+<style id="printgeom"></style>
 </body>
 </html>
