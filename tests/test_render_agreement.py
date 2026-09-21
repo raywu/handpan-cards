@@ -454,5 +454,104 @@ class RenderAgreement(unittest.TestCase):
                              "%s %s: badge text" % (app_c["deck"], app_c["name"]))
 
 
+def read_print_geom_source():
+    """The print sheet's page geometry, lifted out of `index.html` as SOURCE.
+
+    AC-B3. The 3x3 layout is pinned by value against `hifi.slots()`, which is
+    the print spec. The 3x2 layout of D17 has NO Python oracle - `slots()`
+    (`tools/hifi.py:354-362`) is hardwired to `range(3)` and there is nothing
+    3x2 in `hifi.py` to compare against - so it is pinned a different way:
+    the JS must derive both layouts from ONE declaration of the card and
+    gutter constants. A second, independently typed copy of
+    177.6/247.2/12.2/9.4 would pass any value check today and drift tomorrow,
+    which is exactly the failure this criterion exists to catch.
+    """
+    with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+        html = fh.read()
+    decl = re.search(r"const PRINT_GEOM = \{[^}]*\};", html)
+    assert decl, "index.html has no PRINT_GEOM declaration"
+    start = html.index("function printSlots(")
+    depth, i = 0, html.index("{", start)
+    while True:
+        if html[i] == "{":
+            depth += 1
+        elif html[i] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    return decl.group(0), html[start:i + 1], html
+
+
+def js_slots(cols, rows):
+    """Run the app's own printSlots() in node and read the answer back."""
+    decl, fn, _ = read_print_geom_source()
+    src = "%s\n%s\nconsole.log(JSON.stringify(printSlots(%d, %d)));" % (
+        decl, fn, cols, rows)
+    out = subprocess.run([os.environ.get("NODE", "node"), "-e", src],
+                         capture_output=True, text=True, check=True)
+    return [tuple(xy) for xy in json.loads(out.stdout)]
+
+
+class PrintSlotGeometryTest(unittest.TestCase):
+    """AC-B3: the browser print sheet lays cards out where hifi.py does."""
+
+    TOL_PT = 0.1
+
+    def test_constants_match_hifi(self):
+        decl, _, _ = read_print_geom_source()
+        vals = dict(re.findall(r"(\w+):\s*([\d.]+)", decl))
+        self.assertEqual(float(vals["CW"]), hifi.CW)
+        self.assertEqual(float(vals["CH"]), hifi.CH)
+        self.assertEqual(float(vals["GX"]), hifi.GX)
+        self.assertEqual(float(vals["GY"]), hifi.GY)
+        self.assertEqual(float(vals["PW"]), hifi.PAGE[0])
+        self.assertEqual(float(vals["PH"]), hifi.PAGE[1])
+
+    def test_wide_layout_matches_hifi_slots(self):
+        """All 9 slots, to within 0.1pt, against the generator that ships."""
+        want, got = hifi.slots(), js_slots(3, 3)
+        self.assertEqual(len(got), 9)
+        for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
+            self.assertAlmostEqual(gx, wx, delta=self.TOL_PT,
+                                   msg="slot %d x: %.3f vs hifi %.3f" % (i, gx, wx))
+            self.assertAlmostEqual(gy, wy, delta=self.TOL_PT,
+                                   msg="slot %d y: %.3f vs hifi %.3f" % (i, gy, wy))
+
+    def test_narrow_layout_is_recentred_not_the_top_six(self):
+        """D17. Six slots, same constants, re-centred for two rows.
+
+        `slots()` centres its block on `th_ = 3*CH + 2*GY` and emits row 0
+        first, and row 0 is the TOP row - so reusing its first 6 entries would
+        leave the cards high on the page with all the slack below them. The
+        2-row block is centred on its own height instead.
+        """
+        got = js_slots(3, 2)
+        self.assertEqual(len(got), 6)
+        th = 2 * hifi.CH + hifi.GY
+        tw = 3 * hifi.CW + 2 * hifi.GX
+        x0 = (hifi.PAGE[0] - tw) / 2
+        y0 = (hifi.PAGE[1] - th) / 2
+        want = [(x0 + col * (hifi.CW + hifi.GX),
+                 y0 + th - (row + 1) * hifi.CH - row * hifi.GY)
+                for row in range(2) for col in range(3)]
+        for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
+            self.assertAlmostEqual(gx, wx, delta=self.TOL_PT, msg="slot %d x" % i)
+            self.assertAlmostEqual(gy, wy, delta=self.TOL_PT, msg="slot %d y" % i)
+        # ...and it is NOT the top six of the 3x3 block.
+        self.assertNotAlmostEqual(got[0][1], hifi.slots()[0][1], delta=self.TOL_PT)
+
+    def test_slot_emitter_carries_no_geometry_literals_of_its_own(self):
+        """Single definition site. printSlots() may reference PRINT_GEOM and
+        its own row/column counts, and nothing else: any float literal in its
+        body is a second copy of a constant PRINT_GEOM already owns."""
+        _, fn, _ = read_print_geom_source()
+        self.assertIn("PRINT_GEOM", fn)
+        strays = re.findall(r"\d+\.\d+", fn)
+        self.assertEqual(strays, [],
+                         "printSlots() embeds its own numeric literals %s; it must "
+                         "read every card and gutter constant from PRINT_GEOM" % strays)
+
+
 if __name__ == "__main__":
     unittest.main()

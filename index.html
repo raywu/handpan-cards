@@ -4066,6 +4066,41 @@ function sizePanHits(svg, minPx) {
 // this: that file's deck keys are owned by the print-pipeline lane and are
 // regenerated, so a filename field there would be silently dropped. Only the
 // three built-in decks have committed PDFs; a generated/custom deck has none.
+/** The print sheet's page geometry, in PDF points, copied from
+ *  `tools/hifi.py:35-37` - which is the print spec, not a second opinion.
+ *  CSS `pt` is a physical unit in print, so these carry over unchanged.
+ *
+ *  ONE declaration, read by every layout. The wide sheet is 3x3 and is pinned
+ *  by value against `hifi.slots()`; the narrow sheet of D17 is 3x2 and has no
+ *  Python oracle to be pinned against, so what holds it honest is that it
+ *  derives from these same six numbers (AC-B3). A second copy would agree
+ *  today and drift later.
+ */
+const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 };
+
+/** Card origins for a `cols` x `rows` page, bottom-left corners in PDF space,
+ *  row-major from the TOP row - the order and the axis `hifi.slots()`
+ *  (`tools/hifi.py:354-362`) uses.
+ *
+ *  The block is centred on its OWN height, which is the whole reason the
+ *  narrow page is not just the first six entries of the wide one: hifi
+ *  centres on `3*CH + 2*GY`, so taking its top six would leave a 6-card page
+ *  sitting high with all the slack below it.
+ */
+function printSlots(cols, rows) {
+  const g = PRINT_GEOM;
+  const tw = cols * g.CW + (cols - 1) * g.GX;
+  const th = rows * g.CH + (rows - 1) * g.GY;
+  const x0 = (g.PW - tw) / 2, y0 = (g.PH - th) / 2;
+  const out = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      out.push([x0 + col * (g.CW + g.GX), y0 + th - (row + 1) * g.CH - row * g.GY]);
+    }
+  }
+  return out;
+}
+
 /** The card list a print sheet is built from, mirroring `tools/hifi.py`
  *  build() (:379-395), which is the print spec.
  *
