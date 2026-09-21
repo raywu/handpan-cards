@@ -476,7 +476,7 @@ button.nav:active{background:#2e281e}
    numbers at every breakpoint. The min-height: it reserved this line back when
    updateParse() blanking it on an invalid parse jumped the sheet, and since
    2026-09-21 it is INERT - the :empty rule below takes an empty parse line out
-   of the flow before any floor can apply, and #scale-msg takes the identical
+   of the flow before any floor can apply, and #scale-refusal takes the identical
    box on exactly the keystrokes this line goes blank. What holds the row open
    now is syncParseState()'s exclusivity (CONTENT, not a floor), which is what
    e_refusal_row_collapses mutates. Kept as the floor that takes over if that
@@ -904,8 +904,8 @@ button.nav:active{background:#2e281e}
     <div class="editrow" id="scale-delete-row" hidden>
       <button id="scale-delete" type="button">DELETE THIS DECK</button>
       <!-- The arming warning lives NEXT TO THE BUTTON it is about, not in
-           #scale-msg. Since 2026-09-21 #scale-msg sits above the pan preview,
-           and arming DELETE there moved the pan out from under the finger:
+           the sheet's message area. #scale-refusal sits above the pan
+           preview, and arming DELETE there moved the pan out from under it:
            disarmDelete() runs on the pointerdown, the warning cleared, the
            pan sprang back up, and the click that followed landed on a
            different note. That is the same tap-swallowing queue rows 91 and
@@ -5095,7 +5095,7 @@ function disarmDelete() {
   // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
   // Put the refusal back over the arming warning and leave the rest alone.
   if (refusal) { showRefusal(refusal); return; }
-  // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+  // Otherwise re-derive .bad, the refusal line and GENERATE's disabled from
   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
   // WITHOUT repainting the pan, because this runs inside a pointerdown.
   syncParseState({ paint: false });
