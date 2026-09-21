@@ -4066,6 +4066,32 @@ function sizePanHits(svg, minPx) {
 // this: that file's deck keys are owned by the print-pipeline lane and are
 // regenerated, so a filename field there would be silently dropped. Only the
 // three built-in decks have committed PDFs; a generated/custom deck has none.
+/** The card list a print sheet is built from, mirroring `tools/hifi.py`
+ *  build() (:379-395), which is the print spec.
+ *
+ *  The full deck opens with a title and a legend card and pads the last page
+ *  with BLANK templates; the print-shop sheet is chord cards only and pads
+ *  with EMPTY slots, so a shop never prints a blank template nobody asked
+ *  for. `blank_cards` is a print-overlay literal the built-ins carry in
+ *  tools/decks.py and generated decks do not, hence the `|| 0`.
+ *
+ *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
+ *  narrow viewport and 9 on a wide one, and one decision point for that
+ *  number is what keeps the padding here and the CSS grid from disagreeing
+ *  (AC-B5b). A function that read window.innerWidth itself would also stop
+ *  being testable without a viewport stub.
+ */
+function printCardList(d, variant, slotsPerPage) {
+  const chords = d.chords.map((ch, i) => ({ kind: "chord", n: i + 1, chord: ch }));
+  const shop = variant === "shop";
+  const cards = shop ? chords
+    : [{ kind: "title" }, { kind: "legend" }].concat(chords,
+        Array.from({ length: d.blank_cards || 0 }, () => ({ kind: "blank" })));
+  const filler = shop ? "skip" : "blank";
+  while (cards.length % slotsPerPage !== 0) cards.push({ kind: filler });
+  return cards;
+}
+
 const PRINT_PDFS = {
   hijaz: { cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf", printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf" },
   pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },

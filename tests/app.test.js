@@ -3290,3 +3290,112 @@ test("the sheet's text inputs stay at 16px so iOS does not auto-zoom them", () =
       `${sel} is ${m[1]}px; iOS Safari auto-zooms controls under 16px`);
   }
 });
+
+/* ------------------------------------------- 20. the print sheet card list */
+
+/* Workstream B, AC-B2 and AC-B4. `tools/hifi.py` build() (:379-395) is the
+ * print spec and these tests are written against IT, not against the JS: the
+ * full deck leads with a title and a legend card and pads with BLANK
+ * templates; the print-shop sheet carries chord cards only and pads with
+ * empty SKIPS, so a shop never prints a blank template it was not asked for.
+ *
+ * Slots per page is an ARGUMENT here, never a viewport read (AC-B2). D17
+ * makes it 6 on a narrow viewport and 9 on a wide one, and a function that
+ * reached for window.innerWidth itself would be neither pure nor testable
+ * without viewport mocking this suite does not otherwise do. Every case below
+ * therefore runs at both 9 and 6. */
+
+/** The generated Amara deck, selected, so deck() returns it. */
+function customDeck(app) {
+  const res = app.generate(AMARA_STRING);
+  assert.strictEqual(res.ok, true, res.reason);
+  app.select(res.value.id);
+  return res.value.id;
+}
+
+const kinds = (app, variant, slots) =>
+  arr(app.get(`printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).map(function(c){return c.kind})`));
+
+test("print sheet card list: the full variant leads with title and legend", () => {
+  const app = boot();
+  customDeck(app);
+  for (const slots of [9, 6]) {
+    const ks = kinds(app, "full", slots);
+    assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"],
+      `full sheet at ${slots}/page must open with the title and legend cards`);
+    assert.strictEqual(ks.filter((k) => k === "title").length, 1);
+    assert.strictEqual(ks.filter((k) => k === "legend").length, 1);
+  }
+});
+
+test("print sheet card list: padding fills the last page, with the right filler", () => {
+  const app = boot();
+  customDeck(app);
+  const chordCount = app.get("deck().chords.length");
+  for (const slots of [9, 6]) {
+    const full = kinds(app, "full", slots);
+    assert.strictEqual(full.length % slots, 0,
+      `full sheet at ${slots}/page left a ragged last page`);
+    // hifi.py pads the full deck with blank TEMPLATE cards.
+    assert.ok(full.every((k) => ["title", "legend", "chord", "blank"].includes(k)));
+    assert.strictEqual(full.length - chordCount - 2,
+      full.filter((k) => k === "blank").length);
+
+    const shop = kinds(app, "shop", slots);
+    assert.strictEqual(shop.length % slots, 0,
+      `print-shop sheet at ${slots}/page left a ragged last page`);
+    // ...and the print-shop sheet with EMPTY slots, never with blanks.
+    assert.ok(!shop.includes("blank"),
+      "the print-shop sheet must not ship blank template cards");
+    assert.ok(!shop.includes("title") && !shop.includes("legend"),
+      "the print-shop sheet is chord cards only");
+    assert.strictEqual(shop.filter((k) => k === "chord").length, chordCount);
+    assert.strictEqual(shop.filter((k) => k === "skip").length,
+      shop.length - chordCount);
+  }
+});
+
+test("print sheet card list: a deck that exactly fills its pages gets no padding", () => {
+  const app = boot();
+  customDeck(app);
+  const n = app.get("deck().chords.length");
+  // Amara generates 25 chords; 25 + title + legend = 27 = 3 pages of 9 exactly.
+  assert.strictEqual(n, 25, "fixture changed - pick a new exact-fit arithmetic");
+  assert.deepStrictEqual(kinds(app, "full", 9).filter((k) => k === "blank"), []);
+});
+
+test("print sheet covers every chord exactly once, numbered from 1", () => {
+  const app = boot();
+  customDeck(app);
+  for (const variant of ["full", "shop"]) {
+    for (const slots of [9, 6]) {
+      const ns = arr(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
+        `.filter(function(c){return c.kind === "chord"}).map(function(c){return c.n})`));
+      const total = app.get("deck().chords.length");
+      assert.deepStrictEqual(ns, Array.from({ length: total }, (_, i) => i + 1),
+        `${variant} at ${slots}/page must carry every chord once, numbered 1..n in deck order`);
+      const names = arr(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
+        `.filter(function(c){return c.kind === "chord"})` +
+        `.map(function(c){return c.chord.main + (c.chord.sup || "")})`));
+      const expected = arr(app.get(
+        `deck().chords.map(function(c){return c.main + (c.sup || "")})`));
+      assert.deepStrictEqual(names, expected,
+        "the printed cards must be the deck's own chords, in deck order");
+    }
+  }
+});
+
+test("print sheet card list: a built-in deck composes the same way", () => {
+  const app = boot();
+  // The built-ins carry a blank_cards overlay literal in the print pipeline;
+  // the app's data has none, so the list is title + legend + chords + padding.
+  const di = deckIndex(app, "amara");
+  const ks = arr(app.get(
+    `printCardList(DECKS[${di}], "full", 9).map(function(c){return c.kind})`));
+  assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"]);
+  assert.strictEqual(ks.length % 9, 0);
+  assert.strictEqual(ks.filter((k) => k === "chord").length,
+    app.get(`DECKS[${di}].chords.length`));
+});
