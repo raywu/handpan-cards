@@ -1,0 +1,17 @@
+# kills: print sheet leaves no residue
+# suite: node --test --test-name-pattern print.sheet.leaves.no.residue tests/app.test.js
+# The container is re-hidden but never emptied, so a whole deck's worth of
+# printed faces stays parked in the live DOM after every print - duplicate
+# ids, duplicate pan SVGs, and a second copy of the deck for any selector
+# that does not scope itself to #card. Nothing on screen changes (AC-B5).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4319,7 +4319,6 @@ function openPrintSheet(variant) {
+   } finally {
+     // Unconditional: a print dialog that throws must not strand the sheet in
+     // the DOM, where it would sit under the practice screen.
+-    root.innerHTML = "";
+     root.hidden = true;
+     document.body.classList.remove("printing");
+     document.getElementById("printgeom").textContent = "";
