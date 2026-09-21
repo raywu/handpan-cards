@@ -4558,8 +4558,8 @@ function run() {
   test("the sheet does not change height as the seed is typed", async () => {
     // Owner request 3, read literally: "the drawer doesn't need to resize
     // based on the input". Three sources fed it - the preview leaving the
-    // flow, #scale-parse collapsing to zero on an invalid parse, and text
-    // wrapping - and a test that only covers the preview would pass on two
+    // flow, the parse/message row collapsing to zero on an invalid parse, and
+    // text wrapping - and a test covering only the preview would pass on two
     // of them still live. So this measures the SHEET, across the states a
     // keystroke moves between.
     //
@@ -4581,7 +4581,11 @@ function run() {
           const surf = document.querySelector(".sheetsurf");
           return { h: surf.getBoundingClientRect().height,
                    preview: !document.getElementById("scale-preview").hasAttribute("hidden"),
-                   parse: document.getElementById("scale-parse").getBoundingClientRect().height };
+                   // Since 2026-09-21 the parse line and #scale-msg take
+                   // turns in ONE reserved row (whichever is empty leaves the
+                   // flow), so the invariant is the ROW, not either element.
+                   row: document.getElementById("scale-parse").getBoundingClientRect().height
+                      + document.getElementById("scale-msg").getBoundingClientRect().height };
         `)) };
       };
       const states = [];
@@ -4599,8 +4603,8 @@ function run() {
       for (const s of states) {
         assert.ok(s.preview,
           `${s.label}: the pan left the flow - the page resizes on input`);
-        assert.ok(s.parse > 0,
-          `${s.label}: the parse line collapsed to zero height`);
+        assert.ok(s.row > 0,
+          `${s.label}: the parse/message row collapsed to zero height`);
       }
       const base = states[0].h;
       for (const s of states) {
@@ -4609,6 +4613,87 @@ function run() {
           `${base.toFixed(1)}px valid: ` +
           states.map(x => `${x.label}=${x.h.toFixed(1)}`).join(", "));
       }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the seed refusal sits above the pan", async () => {
+    // Owner feedback, 2026-09-21: "Error message such as 'No ding. Start with
+    // the ding note, e.g. (D) or D/.' Should be directly under the scale field
+    // otherwise it's hidden below the fold". Geometric, not DOM-order: this
+    // fails on a reordering, on the preview being moved above the message, and
+    // on absolute positioning that reinstates the old stacking.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      await typeScale("(D) A C D zzzz");
+      await b.settle();
+      const r = await b.eval(`
+        const msg = document.getElementById("scale-msg").getBoundingClientRect();
+        const box = document.getElementById("scale-box").getBoundingClientRect();
+        const prev = document.getElementById("scale-preview").getBoundingClientRect();
+        return { msgTop: msg.top, msgBottom: msg.bottom, boxBottom: box.bottom,
+                 prevTop: prev.top,
+                 text: document.getElementById("scale-msg").textContent.trim() };
+      `);
+      assert.ok(r.text.length > 0, "no refusal was rendered for an invalid seed");
+      assert.ok(r.msgBottom <= r.prevTop + 0.5,
+        `the refusal's bottom is ${r.msgBottom.toFixed(1)}px but the pan's top ` +
+        `is ${r.prevTop.toFixed(1)}px - the refusal is below the pan`);
+      assert.ok(r.msgTop >= r.boxBottom - 0.5,
+        `the refusal's top is ${r.msgTop.toFixed(1)}px, above the scale field's ` +
+        `bottom at ${r.boxBottom.toFixed(1)}px`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("the pan does not move when the seed goes bad", async () => {
+    // #scale-msg now sits between the field and the pan, so its height is in
+    // the pan's path: drop its min-height and an appearing refusal shoves the
+    // pan down 18px under the user's finger. That is the mutant this kills:
+    // on a VALID seed #scale-msg is EMPTY, so only its min-height holds the
+    // line open, and the refusal then fills a box that was already there.
+    // The 18px is exactly one line, so the exemption below is deliberate: a
+    // refusal that WRAPS to two lines does still move the pan. Reserving the
+    // second line fixes that and costs 18px the Edit sheet does not have -
+    // measured 2026-09-21 at 380x780, #scale-layout-row's bottom goes
+    // 781.09 -> 799.09 against innerHeight 780, breaking "ROTATE makes its
+    // correction from the keyboard alone at 380px". Wrapping needs a bad
+    // token near core.js:125's 12-character slice; every reason at a short
+    // token renders in one line. See the #scale-msg comment in index.html.
+    try {
+      await freshLoad();
+      await b.setViewport(380, 800, true);
+      await openSheet();
+      const top = async () => {
+        await b.settle();
+        return b.eval(`
+          return document.getElementById("scale-preview").getBoundingClientRect().top;
+        `);
+      };
+      // No EMPTY-vs-typed comparison here: the first keystroke legitimately
+      // changes PARSE_HINT's own wrap (see "the only height the first
+      // keystroke changes is the hint's own wrap"), which is a different
+      // element and a different 37px. VALID is the right baseline - its
+      // #scale-msg is EMPTY, so only min-height holds the reserved line.
+      await typeScale("(D) A C D E F G A C");
+      const valid = await top();
+      await typeScale("(D) A C D zzzz");
+      const bad = await top();
+      const msg = await b.eval(`
+        const m = document.getElementById("scale-msg");
+        return { h: m.getBoundingClientRect().height, t: m.textContent.trim() };
+      `);
+      assert.ok(msg.t.length > 0, "no refusal was rendered for an invalid seed");
+      // Guards the premise: a refusal that silently grew to two lines would
+      // make the assertions below fail for a reason this test does not mean.
+      assert.ok(msg.h < 27, `the refusal wrapped (${msg.h}px) - pick a shorter token`);
+      assert.ok(Math.abs(bad - valid) < 0.5,
+        `the pan moved ${(bad - valid).toFixed(1)}px when the seed went bad ` +
+        `(valid=${valid.toFixed(1)}, bad=${bad.toFixed(1)})`);
     } finally {
       await b.setViewport(900, 900, false);
     }

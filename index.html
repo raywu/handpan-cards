@@ -480,6 +480,16 @@ button.nav:active{background:#2e281e}
 #scale-parse{font-family:Bitter, serif; font-weight:400; font-size:12px; line-height:1.55;
   color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
+/* The parse line and the message SHARE one reserved line, and that is what
+   pays for moving #scale-msg up here (2026-09-21). They are mutually
+   exclusive on the typing path - syncParseState() blanks the parse line on
+   the same branch that writes a refusal - so whichever is empty stops
+   occupying the row and the other stands in its place, at the identical box
+   (same 1.55 line-height, same 1.55em floor, same margin). The fieldrow
+   therefore costs exactly what it cost before the move, which the Edit sheet
+   needs: its slack at 380x780 was 20.9px and a second reserved line is 22px.
+   Both filled at once (the delete-confirm) legitimately takes two rows. */
+#scale-parse:empty, #scale-msg:empty{display:none}
 /* The pan mock sits on a light plate because the pan is drawn in card ink -
    black rim, #242424 labels - and the sheet surface is dark. Capped so the
    whole sheet still fits a 380px phone without the preview pushing GENERATE
@@ -504,8 +514,16 @@ button.nav:active{background:#2e281e}
    pan is role="img" content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
 #scale-preview svg{display:block; width:100%; height:auto}
-#scale-msg{font:400 12px/1.5 "Nunito Sans"; min-height:1.5em; color:#c4bcab;
-  overflow-wrap:anywhere}
+/* Geometry deliberately IDENTICAL to #scale-parse above - line-height, the
+   one-line floor and the margin - because since 2026-09-21 this sits between
+   the scale field and the pan preview and the two take turns in one row. Any
+   of the three drifting from the parse line's value shows up as the pan
+   stepping when a seed goes bad. A refusal long enough to wrap still steps it
+   one line; core.js:125 caps an interpolated bad token at 12 characters, and
+   that is the only input that reaches two lines at 380px. */
+#scale-msg{font-family:"Nunito Sans"; font-weight:400;
+  font-size:12px; line-height:1.55; color:#c4bcab; overflow-wrap:anywhere;
+  margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
 #scale-msg.err, .announce.err{color:#E27005}
 #scale-msg.warn, .announce.warn{color:#e3b25c}
 #scale-msg.ok, .announce.ok{color:#a4c9a0}
@@ -621,6 +639,12 @@ button.nav:active{background:#2e281e}
 /* Quiet, never a primary: auto width, so the sheet's only full-width button
    stays #scale-generate. */
 #scale-delete-row{align-items:center}
+/* Amber to match #scale-delete[data-armed] and #scale-msg.warn - one colour
+   for "about to do something you cannot undo". :empty leaves the flow so an
+   idle DELETE row is exactly the height it was before this line existed. */
+#scale-del-note{font-family:"Nunito Sans"; font-weight:400; font-size:12px;
+  line-height:1.55; color:#e3b25c; overflow-wrap:anywhere}
+#scale-del-note:empty{display:none}
 #scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
   color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
   text-transform:uppercase; cursor:pointer}
@@ -754,6 +778,11 @@ button.nav:active{background:#2e281e}
              autocomplete="off" spellcheck="false" enterkeyhint="go"
              placeholder="(D) A C D E F G A C">
       <div id="scale-parse"></div>
+      <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
+           below the fold on an iPhone 14 with the keyboard up, so the user
+           retypes a seed whose reason they never saw. It belongs directly
+           under the field it is about, inside the same .fieldrow group. -->
+      <div id="scale-msg" aria-live="polite"></div>
     </div>
     <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
@@ -799,8 +828,6 @@ button.nav:active{background:#2e281e}
                 aria-label="Reset the layout to the generated one">RESET</button>
       </div>
     </div>
-    <!-- Above the control row, so the soft keyboard never covers it. -->
-    <div id="scale-msg" aria-live="polite"></div>
     <!-- D10: the parent-scale override. Edit path only - the create path infers. -->
     <div class="editrow" id="scale-degrees-row" hidden>
       <label class="sheetlabel" for="scale-degrees">DEGREES</label>
@@ -841,6 +868,16 @@ button.nav:active{background:#2e281e}
     <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
     <div class="editrow" id="scale-delete-row" hidden>
       <button id="scale-delete" type="button">DELETE THIS DECK</button>
+      <!-- The arming warning lives NEXT TO THE BUTTON it is about, not in
+           #scale-msg. Since 2026-09-21 #scale-msg sits above the pan preview,
+           and arming DELETE there moved the pan out from under the finger:
+           disarmDelete() runs on the pointerdown, the warning cleared, the
+           pan sprang back up, and the click that followed landed on a
+           different note. That is the same tap-swallowing queue rows 91 and
+           117 are about, by a new route. The seed field's refusals and this
+           button's confirmation were only ever sharing one line by accident;
+           below the button is also where the owner is already looking. -->
+      <div id="scale-del-note" aria-live="polite"></div>
     </div>
   </div>
 </div>
@@ -4184,6 +4221,7 @@ const nameBox   = document.getElementById("scale-name");
 const degRow    = document.getElementById("scale-degrees-row");
 const degSel    = document.getElementById("scale-degrees");
 const delRow    = document.getElementById("scale-delete-row");
+const delNote   = document.getElementById("scale-del-note");
 const delBtn    = document.getElementById("scale-delete");
 // The Phase 5 LAYOUT section. Secondaries only: the sheet's single primary is
 // still #scale-generate, relabelled SAVE CHANGES on the Edit path.
@@ -4597,8 +4635,10 @@ function syncParseState({ paint }) {
     if (paint) showPanPreview(res.value);
     say("", "");
   } else {
-    // Blanked, not removed: #scale-parse reserves its line in CSS, so the
-    // sheet does not jump while a half-typed seed is invalid.
+    // Blanked, not removed. The blank is load-bearing in CSS as well as here:
+    // #scale-parse:empty steps out of the row and #scale-msg, which the next
+    // line fills, takes the identical box - so a half-typed seed neither
+    // jumps the sheet nor costs the fieldrow a second reserved line.
     parseLine.textContent = "";
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
@@ -4978,6 +5018,11 @@ function disarmDelete() {
   delArmed = false;
   delBtn.textContent = DEL_IDLE;
   delBtn.removeAttribute("data-armed");
+  // The label and the warning say the same thing, so they stop saying it
+  // together - ahead of the `refusal` early-return below, which leaves the
+  // rest of the sheet alone on purpose and would otherwise strand this line
+  // under an idle button.
+  delNote.textContent = "";
   // A standing refusal is not derivable from the seed, so re-deriving would
   // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
   // Put the refusal back over the arming warning and leave the rest alone.
@@ -5013,8 +5058,8 @@ delBtn.onclick = () => {
   delBtn.textContent = DEL_ARMED;
   delBtn.setAttribute("data-armed", "");
   const d = CUSTOM[editingId];
-  say("Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.",
-      "warn");
+  delNote.textContent =
+    "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
 };
 /* Looking away is a decision too, and on a phone the only way to see it is the
    pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires

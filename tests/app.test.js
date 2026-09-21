@@ -1439,8 +1439,14 @@ test("DELETE THIS DECK arms on the first tap and only deletes on the second", ()
   assert.notStrictEqual(app.els["scale-delete"].textContent.trim(), "DELETE THIS DECK",
     "the armed button still reads DELETE THIS DECK, so nothing tells the owner " +
     "their tap did anything or that the next one is destructive");
-  assert.ok(app.announcer().textContent.includes(d.name),
-    `the arming message must name the deck at risk: "${app.announcer().textContent}"`);
+  // The warning is read from #scale-del-note, not the practice-screen
+  // announcer: since 2026-09-21 it lives beside the button rather than going
+  // through say(). That is also the only one of the two a screen reader can
+  // reach here - #scale-sheet is aria-modal, so .announce is outside the
+  // dialog and hidden from AT while the Edit page is open. #scale-del-note is
+  // inside it and carries its own aria-live.
+  assert.ok(app.els["scale-del-note"].textContent.includes(d.name),
+    `the arming message must name the deck at risk: "${app.els["scale-del-note"].textContent}"`);
 
   app.els["scale-delete"].click();
   assert.deepStrictEqual(app.registry(), {}, "the second tap did not delete the deck");
@@ -1517,19 +1523,22 @@ test("disarming DELETE takes its warning down with it", () => {
      saying it together. The blur path could only strand the warning when the
      owner tabbed away; the pointerdown path runs on every tap in the sheet,
      so a stranded "This cannot be undone." under an idle DELETE would be the
-     normal case rather than the rare one. */
+     normal case rather than the rare one. The warning lives in
+     #scale-del-note, beside the button, NOT in #scale-msg: since 2026-09-21
+     #scale-msg sits above the pan preview and writing an arming warning
+     there moved the pan mid-tap. */
   const app = boot();
   const d = makeCustom(app);
   app.select(d.id);
   app.clickChip(d.name);
 
   app.els["scale-delete"].click();
-  assert.match(app.els["scale-msg"].textContent, /cannot be undone/,
+  assert.match(app.els["scale-del-note"].textContent, /cannot be undone/,
     "the first tap did not warn, so this test is not measuring the warning");
 
   app.els["scale-sheet"].dispatchEvent(
     { type: "pointerdown", target: app.els["scale-box"] });
-  assert.strictEqual(app.els["scale-msg"].textContent, "",
+  assert.strictEqual(app.els["scale-del-note"].textContent, "",
     "DELETE went back to idle but the amber line still says the deck cannot be "
     + "recovered - the page warns about a thing it is no longer about to do");
 });
