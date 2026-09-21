@@ -338,6 +338,14 @@ change is the ONLY lever this decision pulls. A deck simply takes more
 pages on a phone. The owner was offered "ship it and accept 2 pages on
 iOS" and "hide print on mobile entirely", and chose reduced density.
 
+**D16 and D17 are orthogonal controls.** Paper size does not change the
+row count. A4 is 297mm against Letter's 279.4mm, nowhere near the ~97mm
+a third card row plus its gutter would need, and the strip that caused
+D17 is OS-imposed print furniture rather than anything paper size
+affects. So 6-per-page applies under both papers, and the choice stays
+driven purely by viewport width. B7 measures iOS + A4 + narrow on device
+rather than assuming it, or AC-B6 closes on an untested combination.
+
 Consequence for **AC-B3**: the geometry pin against `hifi.slots()` is
 now conditional. The CARD constants (62.65 x 87.21mm) and the gutters
 stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
@@ -380,22 +388,42 @@ deck.
   `<a>`, so an unwidened selector leaves two focusable buttons inside an
   `aria-hidden` subtree - the exact defect that selector was written to
   prevent. Assert it for a CUSTOM deck, which is the case no existing
-  test covers.
+  test covers. **This covers EVERY control the custom branch adds to the
+  hidden face, not just the two print buttons** - D16's Letter/A4 picker
+  included. A `<select>` or radio group added under B4/B5 and left out of
+  the widened selector is the same defect in a new element type, and it
+  exists on the custom path only, so nothing in the built-in tests would
+  catch it.
   Verify: `node --test --test-name-pattern 'print controls on the hidden face' tests/e2e.test.js`
 - **AC-B2** The control offers both variants (D14) and each builds the
   right card list: full = title + legend + chords + blank padding to a
-  multiple of 9; print-shop = chords only, padded to a multiple of 9.
+  multiple of the page's slot count; print-shop = chords only, padded the
+  same way. **The function takes slots-per-page as an ARGUMENT** and
+  never reads the viewport itself - a function that reads
+  `window.innerWidth` internally is not pure and is not testable without
+  viewport mocking this repo does not otherwise use. The test calls it
+  once with 9 and once with 6 against the same fixture deck. Hardcoding
+  `% 9` inside the function is a plan violation: it forces either a
+  second function or an untested conditional for the 6 case.
   Asserted as a pure function over a fixture deck, not through a print
   dialog.
   Verify: `node --test --test-name-pattern 'print sheet card list' tests/app.test.js`
 - **AC-B3** Print geometry matches `hifi.slots()` to within 0.1pt for all
   9 slots, computed from the same page and card constants. **Carve-out
   (D17):** that 9-slot pin covers the wide-viewport layout. The narrow
-  layout emits 6 slots per page and is pinned separately - same card
-  constants, same gutters, re-centred for 2 rows rather than the top 6
-  of the 3x3 block - so the test asserts the 3x2 case derives from those
-  constants rather than carrying a second set of literals. Card mm size
-  is invariant across both. A unit test
+  layout emits 6 slots per page - same card constants, same gutters,
+  re-centred for 2 rows rather than the top 6 of the 3x3 block. **There
+  is no Python oracle for it:** `hifi.slots()` (`tools/hifi.py:354-362`)
+  is hardwired to `3*CW+2*GX` / `3*CH+2*GY` and `for row in range(3)`,
+  so there is nothing 3x2 in `hifi.py` to compare against, and the
+  carve-out CANNOT be a value-equality check against Python. What the
+  test asserts instead is SINGLE DEFINITION SITE: extract the CW/CH/GX/GY
+  declaration the JS slot code uses (already pinned against `hifi.py` by
+  the 9-slot half of this criterion) and assert the 3x2 emitter
+  references that same declaration rather than embedding numeric
+  literals of its own. Numeric equality alone is insufficient - two
+  independently typed copies of 177.6/247.2/12.2/9.4 pass a value check
+  today and drift apart tomorrow. Card mm size is invariant across both. A unit test
   over the JS that emits the CSS, compared against the numbers read out
   of `tools/hifi.py` at test time so the two cannot silently diverge.
   This is a PYTHON test, not a JS one. No JS test in this repo reads a
@@ -421,6 +449,16 @@ deck.
   viewport, 6 on a narrow one - see D17) is a real regression risk for
   the practice screen.
   Verify: `node --test --test-name-pattern 'print sheet leaves no residue' tests/app.test.js`
+- **AC-B5b (D17 source of truth)** Slots-per-page is decided ONCE, in JS,
+  when the CTA fires: `window.innerWidth >= 640` (the app's own existing
+  breakpoint, `index.html:41`), and that one value both parameterizes the
+  card list (AC-B2) and selects the grid by toggling a class on the print
+  container. The `@media print` block READS that class and never
+  re-decides the width itself - a second breakpoint in CSS is the drift
+  vector that ships 9 padded cards into a 6-slot grid. The test stubs
+  `innerWidth`, runs the CTA path, and asserts the emitted list length is
+  a multiple of the slot count the container's class selects.
+  Verify: `node --test --test-name-pattern 'print sheet slot count agrees' tests/app.test.js`
 - **AC-B6 - OWNER DEVICE CHECK, covered_by: neither.** *Partially run
   2026-09-21 on the owner's iPhone 14 - see "AC-B6 iOS Safari half"
   above for what passed, what failed, and what is still owed.*
@@ -446,10 +484,15 @@ deck.
   Safari half" above. It passes on the frame and colour findings and
   fails on `@page` margins, which is what produced D17. B1-B5 carry
   D17's 6-per-page narrow layout as well as the three B0 fixes.
-- **B1** Extract the print-sheet card list into a pure function and write
-  its tests first (AC-B2, AC-B4). No DOM, no CSS yet.
-- **B2** Slot/geometry emitter + its test against `tools/hifi.py`'s own
-  constants (AC-B3).
+- **B1** Extract the print-sheet card list into a pure function, WIDE AND
+  NARROW IN ONE PASS, and write its tests first (AC-B2, AC-B4). It takes
+  slots-per-page as an argument; test it at both 9 and 6. No DOM, no CSS
+  yet. Shipping a 9-only signature here forces a rework in B3-B5, which
+  would already have been built against it.
+- **B2** Slot/geometry emitters, 3x3 AND 3x2 in one pass, + their tests:
+  the 3x3 against `tools/hifi.py`'s own constants, the 3x2 against the
+  single-definition-site assertion (AC-B3). Same reasoning as B1 - the
+  narrow branch is not a follow-on patch.
 - **B3** Print card markup: chord card from the existing renderers, then
   title, legend and blank mirroring `hifi.py:474-523`.
 - **B4** The `@media print` stylesheet: the inset-ring frame,
@@ -462,7 +505,9 @@ deck.
   `render()`'s tab-order selector to cover both element types (AC-B1b).
 - **B6** Mutants (AC-B7), then push and the two-push floor protocol.
 - **B7** Hand AC-B6 to the owner with exact steps, the way the 2026-09-21
-  device pass was run. Do not close B until it comes back.
+  device pass was run. It must cover iOS + A4 + narrow as well as
+  iOS + Letter + narrow - see D16/D17 orthogonality. Do not close B until
+  it comes back.
 
 ## What could sink this
 
