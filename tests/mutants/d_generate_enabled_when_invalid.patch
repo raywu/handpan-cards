@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4646,7 +4646,7 @@ function syncParseState({ paint }) {
+@@ -4704,7 +4704,7 @@ function syncParseState({ paint }) {
+     // #scale-refusal takes the identical box - so a half-typed seed neither
      // jumps the sheet nor costs the fieldrow a second reserved line.
-     parseLine.textContent = "";
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      if (paint) holdPanPreview();
-     say(res.reason, "err");
+     showRefusal(res.reason);
    }

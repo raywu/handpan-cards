@@ -1,22 +1,23 @@
 # suite: node --test --test-name-pattern ^the.sheet.does.not.change.height.as.the.seed.is.typed$ tests/e2e.test.js
 # kills: the sheet does not change height as the seed is typed
-# The invalid branch stops writing the refusal, so the parse line (blanked one
-# line above) and #scale-msg are BOTH empty, both :empty rules fire, and the
-# shared row leaves the flow entirely - the sheet shrinks by a line on every
-# invalid keystroke and #scale-parse + #scale-msg measure zero.
-# Since 2026-09-21 the row is held open by CONTENT, not by a CSS floor:
-# syncParseState() guarantees exactly one of the two carries text, so neither
-# element's min-height is ever reachable and mutating either one is inert.
-# This is the mutant the row's height rests on; a_msg_row_not_shared covers
-# the other half of the design (the two sharing ONE line rather than two).
+# showRefusal() blanks the parse line but never writes the refusal, so BOTH
+# elements are empty, both :empty rules fire, and the shared row leaves the
+# flow entirely - the sheet shrinks by a line on every invalid keystroke and
+# #scale-parse + #scale-refusal measure zero together.
+# The row is held open by CONTENT, not by a CSS floor: neither element's
+# min-height is reachable behind :empty{display:none}, so mutating either
+# declaration is inert and only the content can be mutated to prove the row
+# is alive. Its sibling e_refusal_stacks_on_the_parse_line mutates the other
+# direction (both filled at once), and a_msg_row_not_shared mutates the CSS
+# that lets the two share ONE line rather than two.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4648,7 +4648,6 @@ function syncParseState({ paint }) {
-     scaleBox.classList.add("bad");
-     genBtn.disabled = true;
-     if (paint) holdPanPreview();
--    say(res.reason, "err");
-   }
+@@ -4322,7 +4322,6 @@ function showRefusal(text) {
+   // element's own rule. Cleared on the empty case so a hidden line is not
+   // left holding a tier for whatever writes next.
+   refusalLine.className = text ? "err" : "";
+-  refusalLine.textContent = text;
  }
  
+ /** The one adapter from a result/warning reason to a message tier. Warnings,

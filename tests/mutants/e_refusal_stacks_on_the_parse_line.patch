@@ -1,0 +1,23 @@
+# suite: node --test --test-name-pattern ^the.pan.does.not.move.when.the.seed.goes.bad$ tests/e2e.test.js
+# kills: the pan does not move when the seed goes bad
+# showRefusal() stops blanking the parse line, so on an invalid seed the parse
+# summary and the refusal are BOTH filled and the fieldrow takes two reserved
+# lines instead of one - the pan steps a line down under the finger.
+# This is the STRUCTURAL half of the design under test: the two elements share
+# one row only because each writer blanks the other, and the reviewer's FAIL of
+# 2026-09-21 was precisely a case where that exclusivity was assumed rather
+# than enforced. a_msg_row_not_shared mutates the CSS that lets them share the
+# row; this mutates the JS that makes sharing safe. Note the SHEET's own
+# height cannot see either one - .sheetsurf is capped at 100dvh and scrolls
+# internally - so the pan's top edge is the only witness.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4314,7 +4314,6 @@ function showParse(text) {
+   parseLine.textContent = text;
+ }
+ function showRefusal(text) {
+-  parseLine.textContent = "";
+   // The tier is carried the same way say() carries it, and for the same
+   // reason: the colour is the only channel that separates a refusal from a
+   // neutral line at a glance, so forgetting it has to be VISIBLE (and

@@ -7,8 +7,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4951,7 +4951,7 @@
-   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+@@ -5098,7 +5098,7 @@ function disarmDelete() {
+   // Otherwise re-derive .bad, the refusal line and GENERATE's disabled from
    // the field's CURRENT text, so the three cannot disagree (queue row 91) -
    // WITHOUT repainting the pan, because this runs inside a pointerdown.
 -  syncParseState({ paint: false });

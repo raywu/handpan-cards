@@ -1,20 +1,20 @@
 # kills: the pan does not move when the seed goes bad
 # suite: node --test --test-name-pattern ^the.pan.does.not.move.when.the.seed.goes.bad$ tests/e2e.test.js
 # The parse line stops leaving the flow when it is blank, so on an invalid seed
-# it holds its reserved row AND #scale-msg adds a second one below it - the
-# two-line reservation the Edit sheet cannot afford. The pan steps down 18px
+# it holds its reserved row AND #scale-refusal adds a second one below it - the
+# two-line reservation the Edit sheet cannot afford. The pan steps down a line
 # under the finger at 380px, exactly where the owner is looking. Every text,
 # tier and aria-live assertion still passes; only the preview's top edge sees
 # it. This is the rule that pays for the move, so this is the mutant.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -489,7 +489,7 @@ button.nav:active{background:#2e281e}
-    therefore costs exactly what it cost before the move, which the Edit sheet
-    needs: its slack at 380x780 was 20.9px and a second reserved line is 22px.
-    Both filled at once (the delete-confirm) legitimately takes two rows. */
--#scale-parse:empty, #scale-msg:empty{display:none}
-+#scale-msg:empty{display:none}
+@@ -500,7 +500,7 @@ button.nav:active{background:#2e281e}
+    26.59px under the finger, and put #scale-layout-row's bottom at 785.69
+    against a 780px viewport - below the fold, the exact cost this row exists
+    to avoid. #scale-msg is back below the pan and never enters this row. */
+-#scale-parse:empty, #scale-refusal:empty{display:none}
++#scale-refusal:empty{display:none}
  /* The pan mock sits on a light plate because the pan is drawn in card ink -
     black rim, #242424 labels - and the sheet surface is dark. Capped so the
     whole sheet still fits a 380px phone without the preview pushing GENERATE

@@ -1,26 +1,26 @@
 # kills: the seed refusal sits above the pan
 # suite: node --test --test-name-pattern ^the.seed.refusal.sits.above.the.pan$ tests/e2e.test.js
-# #scale-msg put back where it was before 2026-09-21: out of .fieldrow and
-# below the preview. The text, the tier classes and aria-live are untouched, so
-# every other assertion on this element still passes - which is the point. Only
-# a geometric test sees it, and what the owner saw on the device was exactly
-# this: the refusal below the fold with the keyboard up.
+# #scale-refusal put where #scale-msg used to be before 2026-09-21: out of
+# .fieldrow and below the preview. The text, the tier classes and aria-live are
+# untouched, so every other assertion on this element still passes - which is
+# the point. Only a geometric test sees it, and what the owner saw on the
+# device was exactly this: the refusal below the fold with the keyboard up.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -782,7 +782,6 @@ button.nav:active{background:#2e281e}
-            below the fold on an iPhone 14 with the keyboard up, so the user
-            retypes a seed whose reason they never saw. It belongs directly
-            under the field it is about, inside the same .fieldrow group. -->
--      <div id="scale-msg" aria-live="polite"></div>
+@@ -813,7 +813,6 @@ button.nav:active{background:#2e281e}
+            true rather than hoping every caller happens to agree. It carries
+            its own aria-live because #scale-sheet is aria-modal, which puts
+            the page-level .announce outside the dialog and out of reach. -->
+-      <div id="scale-refusal" aria-live="polite"></div>
      </div>
      <!-- The pan mock: where the notes actually land - ding, rim zig-zag, inner
           pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
-@@ -790,6 +789,7 @@ button.nav:active{background:#2e281e}
+@@ -821,6 +820,7 @@ button.nav:active{background:#2e281e}
           cannot drift from what GENERATE CARDS produces. -->
      <div id="scale-preview" role="img"
           aria-label="Preview of where the notes sit on the pan" hidden></div>
-+    <div id="scale-msg" aria-live="polite"></div>
++    <div id="scale-refusal" aria-live="polite"></div>
      <!-- D5: the generated layout is a guess; this corrects it. Edit path only -
           there is nothing to correct until a pan has been solved.
  

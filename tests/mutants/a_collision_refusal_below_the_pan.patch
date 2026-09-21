@@ -1,0 +1,21 @@
+# kills: a refused SAVE onto another deck's scale does not move the pan
+# suite: node --test --test-name-pattern ^a.refused.SAVE.onto.another.deck.s.scale.does.not.move.the.pan$ tests/e2e.test.js
+# The duplicate-scale refusal goes back through say(), which writes below the
+# pan. Second half of the reviewer's FAIL, 2026-09-21: this refusal fires on a
+# seed that PARSED FINE, so the parse line is full and the message area adds a
+# second row - the pan steps 26.59px and the seed's own refusal lands below the
+# fold on an iPhone 14 with the keyboard up, which is the failure the owner
+# reported in the first place. showRefusal() is what puts a refusal beside the
+# field it is about; say() is for messages that are not about the seed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5032,7 +5032,7 @@ function runGenerate() {
+     // so this composes no sentence that could pass for one and carries no code.
+     scaleBox.classList.add("bad");
+     refusal = "Another deck already uses this scale.";
+-    showRefusal(refusal);
++    say(refusal, "err");
+     return;
+   }
+   if (!res.ok) {
