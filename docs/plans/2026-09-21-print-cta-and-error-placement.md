@@ -305,30 +305,9 @@ card spec is true physical size (62.65 x 87.21mm, printers instructed
 "100% / Actual Size"). Scaling to fit would silently ship wrong-sized
 cards, which is worse than a second page.
 
-### D17 - mobile print page density (owner decision, 2026-09-21)
-
-**On a narrow viewport the print sheet emits 3 columns x 2 rows = 6
-cards per page instead of 3x3 = 9.** Cards keep their true size on every
-platform and print scaling stays at 100% on every platform - the density
-change is the ONLY lever this decision pulls. A deck simply takes more
-pages on a phone. The owner was
-offered "ship it and accept 2 pages on iOS" and "hide print on mobile
-entirely" and chose reduced density.
-
-Consequence for **AC-B3**: the geometry pin against `hifi.slots()` is
-now conditional. The CARD constants (62.65 x 87.21mm) and the gutters
-stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
-narrow-viewport layout is 3x2 built from the same card and gutter
-constants, not a new geometry. It is NOT simply `slots()`'s first 6
-entries: `slots()` centres its block on `th_ = 3*CH + 2*GY`, so reusing
-the top 6 verbatim would leave a 6-card page bottom-heavy. Re-deriving
-the vertical centring for 2 rows is expected and allowed.
-The test must pin the 3x3 case against `hifi.slots()` exactly as drafted
-AND assert the 3x2 case reuses the same card and gutter constants -
-never a second set of literals.
-
 **Still owed on device:** a measurement of iOS's actual printable
-height, and a re-run at 3x2 confirming one page. Both land in B7.
+height, and a re-run at the D17 density confirming one page. Both land
+in B7, and AC-B6 stays OPEN until then.
 
 ### D16 - paper size (owner decision, 2026-09-21)
 
@@ -347,6 +326,27 @@ ruler check, and its label keeps saying 100% / Actual Size.
   selecting Letter emits `size:letter` and 279.4mm. Card geometry in mm
   is identical under both.
   Verify: `node --test --test-name-pattern 'print sheet paper size' tests/app.test.js`
+
+### D17 - mobile print page density (owner decision, 2026-09-21)
+
+**On a narrow viewport the print sheet emits 3 columns x 2 rows = 6
+cards per page instead of 3x3 = 9.** Cards keep their true size on every
+platform and print scaling stays at 100% on every platform - the density
+change is the ONLY lever this decision pulls. A deck simply takes more
+pages on a phone. The owner was offered "ship it and accept 2 pages on
+iOS" and "hide print on mobile entirely", and chose reduced density.
+
+Consequence for **AC-B3**: the geometry pin against `hifi.slots()` is
+now conditional. The CARD constants (62.65 x 87.21mm) and the gutters
+stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
+narrow-viewport layout is 3x2 built from the same card and gutter
+constants, not a new geometry. It is NOT simply `slots()`'s first 6
+entries: `slots()` centres its block on `th_ = 3*CH + 2*GY`, so reusing
+the top 6 verbatim would leave a 6-card page bottom-heavy. Re-deriving
+the vertical centring for 2 rows is expected and allowed.
+The test must pin the 3x3 case against `hifi.slots()` exactly as drafted
+AND assert the 3x2 case reuses the same card and gutter constants -
+never a second set of literals.
 
 ### The copy a custom deck does not have
 
@@ -412,8 +412,9 @@ deck.
   Verify: `node --test --test-name-pattern 'print sheet covers every chord' tests/app.test.js`
 - **AC-B5** The print container is `hidden` and contributes nothing to
   screen layout or the accessibility tree until the CTA fills it, and is
-  emptied afterwards. A stray 9-card sheet in the DOM is a real
-  regression risk for the practice screen.
+  emptied afterwards. A stray print sheet in the DOM (9 cards on a wide
+  viewport, 6 on a narrow one - see D17) is a real regression risk for
+  the practice screen.
   Verify: `node --test --test-name-pattern 'print sheet leaves no residue' tests/app.test.js`
 - **AC-B6 - OWNER DEVICE CHECK, covered_by: neither.** *Partially run
   2026-09-21 on the owner's iPhone 14 - see "AC-B6 iOS Safari half"
