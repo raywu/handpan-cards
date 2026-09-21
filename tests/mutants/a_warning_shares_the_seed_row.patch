@@ -9,7 +9,7 @@
 # the split itself: #scale-refusal carries SEED REFUSALS ONLY, and say() never
 # writes into the .fieldrow.
 #
-# Where the kill actually lands: the ROUTING assertion at tests/e2e.test.js:3482
+# Where the kill actually lands: the ROUTING assertion at tests/e2e.test.js:3483
 # (the refusal must stay empty), not the geometry. It is the second assertion
 # in the group, ahead of the parse-line check and both geometric checks, so
 # under this mutant none of those three execute - the prose here used to claim

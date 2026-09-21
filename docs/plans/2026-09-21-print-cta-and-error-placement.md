@@ -309,7 +309,9 @@ cards, which is worse than a second page.
 
 **On a narrow viewport the print sheet emits 3 columns x 2 rows = 6
 cards per page instead of 3x3 = 9.** Cards keep their true size on every
-platform; a deck simply takes more pages on a phone. The owner was
+platform and print scaling stays at 100% on every platform - the density
+change is the ONLY lever this decision pulls. A deck simply takes more
+pages on a phone. The owner was
 offered "ship it and accept 2 pages on iOS" and "hide print on mobile
 entirely" and chose reduced density.
 
@@ -427,7 +429,10 @@ deck.
 - **B0** DONE 2026-09-21. Throwaway print spike, desktop Chrome half
   passed; see "B0 spike result" above. B1-B5 are unblocked on desktop
   and carry its three fixes (inset ring, `print-color-adjust:exact`,
-  body reset). The iOS Safari half is still owed and lands in AC-B6.
+  body reset). The iOS Safari half HAS now been run - see "AC-B6 iOS
+  Safari half" above. It passes on the frame and colour findings and
+  fails on `@page` margins, which is what produced D17. B1-B5 carry
+  D17's 6-per-page narrow layout as well as the three B0 fixes.
 - **B1** Extract the print-sheet card list into a pure function and write
   its tests first (AC-B2, AC-B4). No DOM, no CSS yet.
 - **B2** Slot/geometry emitter + its test against `tools/hifi.py`'s own
