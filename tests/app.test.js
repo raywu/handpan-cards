@@ -3399,3 +3399,108 @@ test("print sheet card list: a built-in deck composes the same way", () => {
   assert.strictEqual(ks.filter((k) => k === "chord").length,
     app.get(`DECKS[${di}].chords.length`));
 });
+
+/* ---------------------------------------------------------------------------
+ * 21. the print card markup
+ *
+ * B3. One function turns a printCardList() entry into the inner markup of a
+ * `.face`, so the print sheet draws through the app's own renderers rather
+ * than a second set. The non-chord kinds mirror tools/hifi.py's title_card
+ * (:474), legend_card (:490) and blank_card (:514) - the print spec - with
+ * the copy substitutions D17's "The copy a custom deck does not have"
+ * settled: the canonical seed string in place of the print overlay's `sub`,
+ * the engine's own warning reasons in place of the blurb, and no credit line.
+ * ------------------------------------------------------------------------ */
+
+const cardHTML = (app, variant, slots, i) =>
+  String(app.get(
+    `printCardHTML(deck(), printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}])`));
+
+test("print card markup: a chord card is the app's own answer face, minus the print row", () => {
+  const app = boot();
+  customDeck(app);
+  const html = cardHTML(app, "shop", 9, 0);
+  const main = String(app.get("deck().chords[0].main"));
+  assert.ok(html.includes(main), "the chord card must carry its chord name");
+  assert.ok(html.includes("<svg"), "the chord card must carry the pan diagram");
+  assert.ok(html.includes("notesline") && html.includes("numline"),
+    "the chord card must carry the note line and the number line");
+  assert.ok(html.includes("#1"), "the chord card must carry its index number");
+  assert.ok(!html.includes('class="prints"'),
+    "a printed card must not carry the .prints row - it is screen furniture");
+});
+
+test("print card markup: the title card names the deck and carries its seed and blurb", () => {
+  const app = boot();
+  customDeck(app);
+  const html = cardHTML(app, "full", 9, 0);
+  const name = String(app.get("deck().name"));
+  const seed = String(app.get("HPE.core.formatSeed(deck().fields)"));
+  assert.ok(html.includes(name), "the title card must name the deck");
+  assert.ok(html.includes(seed),
+    "a custom deck has no print-overlay `sub`; the canonical seed string stands in");
+  assert.ok(html.includes("CHORD CARDS"), "mirrors hifi.title_card:479");
+  assert.ok(html.includes("<svg"), "the title card carries an unhighlighted pan");
+  assert.ok(!html.includes("notesline"),
+    "the title card is not a chord card and has no note line");
+  const warnings = arr(app.get("(deck().warnings || []).map(function(w){return w.reason})"));
+  for (const w of warnings) {
+    assert.ok(html.includes(String(app.get(`esc(${JSON.stringify(w)})`))),
+      "the engine's own reason strings are the custom deck's blurb");
+  }
+});
+
+test("print card markup: the legend card is the same static anatomy lesson for every deck", () => {
+  const app = boot();
+  customDeck(app);
+  const custom = cardHTML(app, "full", 9, 1);
+  const di = deckIndex(app, "hijaz");
+  const builtin = String(app.get(
+    `printCardHTML(DECKS[${di}], printCardList(DECKS[${di}], "full", 9)[1])`));
+  for (const s of ["LEGEND", "How to read", "ROOT NOTE", "CHORD NOTE"]) {
+    assert.ok(custom.includes(s), `the legend card must carry "${s}"`);
+    assert.ok(builtin.includes(s), `the built-in legend card must carry "${s}" too`);
+  }
+  assert.ok(custom.includes("<svg"), "the legend card demonstrates on a pan");
+  assert.ok(!custom.includes("notesline"),
+    "the legend card teaches the anatomy; it is not a chord card");
+});
+
+test("print card markup: a blank card is a deck-branded template with no chord on it", () => {
+  const app = boot();
+  customDeck(app);
+  const html = String(app.get('printCardHTML(deck(), {kind: "blank"})'));
+  assert.ok(html.includes(String(app.get("deck().name"))),
+    "the blank card is deck-branded - hifi.blank_card:516");
+  assert.ok(html.includes("<svg"), "the blank card carries an unhighlighted pan");
+  assert.ok(!html.includes("notesline") && !html.includes("numline"),
+    "the blank card's note and number rows are RULES to write on, not rendered lines");
+  assert.ok(html.includes("blankrule"),
+    "the two write-on rules mirror hifi.blank_card:520-521");
+});
+
+test("print card markup: an empty print-shop slot renders nothing at all", () => {
+  const app = boot();
+  customDeck(app);
+  assert.strictEqual(String(app.get('printCardHTML(deck(), {kind: "skip"})')), "",
+    "a `skip` is an EMPTY slot on the print-shop sheet, not a card");
+});
+
+test("print card markup: every card a sheet emits renders", () => {
+  const app = boot();
+  customDeck(app);
+  for (const variant of ["full", "shop"]) {
+    for (const slots of [9, 6]) {
+      const n = Number(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).length`));
+      for (let i = 0; i < n; i++) {
+        const kind = String(app.get(
+          `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}].kind`));
+        const html = cardHTML(app, variant, slots, i);
+        if (kind === "skip") assert.strictEqual(html, "");
+        else assert.ok(html.length > 0,
+          `${variant} at ${slots}/page: card ${i} (${kind}) rendered nothing`);
+      }
+    }
+  }
+});

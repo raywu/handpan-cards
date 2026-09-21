@@ -4116,6 +4116,61 @@ function printSlots(cols, rows) {
  *  (AC-B5b). A function that read window.innerWidth itself would also stop
  *  being testable without a viewport stub.
  */
+/** The static legend copy. It teaches the CARD ANATOMY, not the deck, so it
+ *  is the same on every sheet - the decision recorded under "The copy a custom
+ *  deck does not have". Mirrors tools/hifi.py legend_card (:490-511).
+ */
+const PRINT_LEGEND_LINES = [
+  "The diagram lights every field whose note is in the chord.",
+  "Notes read from the root, in the chord's own spelling order.",
+  "The number line is the same notes by their pan index."
+];
+
+/** One printCardList() entry as the inner markup of a `.face`.
+ *  Chord cards draw through the app's own renderers; the other three kinds
+ *  mirror tools/hifi.py title_card (:474), legend_card (:490) and blank_card
+ *  (:514). A custom deck has no print-overlay copy, so the canonical seed
+ *  string stands in for `sub`, the engine's own warning reasons stand in for
+ *  the blurb, and there is no credit line.
+ */
+function printCardHTML(d, card) {
+  if (card.kind === "skip") return "";
+  const seed = HPE.core.formatSeed(d.fields);
+  if (card.kind === "chord") {
+    // Full card anatomy, per CLAUDE.md "Card anatomy": header, chord name,
+    // diagram, then the note and number lines. `nameHTML(ch, false)` leaves the
+    // size to the print stylesheet - the screen's `big` size is in `vw`, which
+    // means nothing on paper.
+    return headerHTML(d, card.chord, card.n, true) +
+      `<div class="printname">${nameHTML(card.chord, false)}</div>` +
+      `<div class="diagwrap">${pan(d, card.chord)}</div>` + linesHTML(d, card.chord);
+  }
+  if (card.kind === "title") {
+    const blurb = (d.warnings || []).map(w => `<div>${esc(w.reason)}</div>`).join("");
+    return `<div class="hdr">
+      <div class="l">${esc(d.name)}<br><span class="num">${esc(d.sub || seed)}</span></div>
+      <div class="r">CHORD CARDS</div></div>
+      <div class="diagwrap">${pan(d, null)}</div>
+      <div class="printblurb">${blurb}</div>`;
+  }
+  if (card.kind === "legend") {
+    const demo = d.chords[0];
+    return `<div class="hdr">
+      <div class="l">${esc(d.name)}</div><div class="r">LEGEND</div></div>
+      <div class="prompt"><div class="bigname" style="font-size:28px">How to read</div></div>
+      <div class="diagwrap">${pan(d, demo)}</div>
+      <div class="printkeys">
+        <span class="key"><span class="ring" style="border-color:${d.colors.root}"></span>ROOT NOTE</span>
+        <span class="key"><span class="ring" style="border-color:${d.colors.tone}"></span>CHORD NOTE</span>
+      </div>
+      <div class="printblurb">${PRINT_LEGEND_LINES.map(l => `<div>${esc(l)}</div>`).join("")}</div>`;
+  }
+  // blank: a deck-branded template with two rules to write on.
+  return `<div class="hdr"><div class="l">${esc(d.name)}</div></div>
+    <div class="diagwrap">${pan(d, null)}</div>
+    <div class="lines"><div class="blankrule"></div><div class="blankrule"></div></div>`;
+}
+
 function printCardList(d, variant, slotsPerPage) {
   const chords = d.chords.map((ch, i) => ({ kind: "chord", n: i + 1, chord: ch }));
   const shop = variant === "shop";
@@ -4132,9 +4187,11 @@ const PRINT_PDFS = {
   pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },
   amara: { cards: "D_Amara_9_Cards_Letter.pdf", printerOnly: "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf" },
 };
-function headerHTML(d, ch, n) {
+function headerHTML(d, ch, n, noPrints) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
-  const pdfs = PRINT_PDFS[d.id];
+  // A printed card carries no print row: the buttons are screen furniture and
+  // `.prints` is the one part of the header a sheet must drop (B3/AC-B1).
+  const pdfs = noPrints ? null : PRINT_PDFS[d.id];
   // A sibling row below .hdr, not a third flex child inside it: .hdr's own
   // box (and so the deck name's available width/line count) is untouched by
   // this feature - see the print-button lane's e2e test.
