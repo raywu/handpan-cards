@@ -1,0 +1,32 @@
+# kills: a pan warning on the Edit open does not move the pan
+# suite: node --test --test-name-pattern ^a.pan.warning.on.the.Edit.open.does.not.move.the.pan$ tests/e2e.test.js
+# openEditSheet()'s pan warning is ALSO routed into the SEED's reserved row.
+# This is the first half of the reviewer's FAIL, 2026-09-21, reproduced
+# exactly: the warning fires after showSheet() has already filled the parse
+# line, so the row carries a line it should never carry, the pan steps down
+# under the finger and #scale-layout-row's bottom leaves the 780px viewport -
+# below the fold, the cost the move exists to avoid. Nothing about the
+# warning's text or tier changes, which is why only a geometric test sees it.
+# The rule this mutates is the split itself: #scale-refusal carries SEED
+# REFUSALS ONLY, and say() never writes into the .fieldrow.
+#
+# It writes to BOTH elements deliberately, keeping #scale-msg filled. Routing
+# the warning to #scale-refusal ALONE would empty #scale-msg and kill the test
+# at its fixture premise guard ("this deck is meant to warn on open"), so the
+# placement assertions would never run and the red would point a maintainer at
+# the fixture instead of at the regression.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4922,7 +4922,10 @@ function openEditSheet(d, opener) {
+   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
+   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+   const warned = (d.warnings || []).map(w => w.reason);
+-  if (warned.length) say(warned.join(" "), "warn");
++  if (warned.length) {
++    say(warned.join(" "), "warn");
++    showRefusal(warned.join(" "));
++  }
+ }
+ /** Take the page down. The DOM half only - the route is the caller's. */
+ function hideSheet() {

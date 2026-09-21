@@ -1,16 +1,18 @@
 # kills: BAD_NOTE shows the engine's own sentence and keeps Generate disabled
 # suite: node --test --test-name-pattern ^BAD_NOTE.shows.the.engine.s.own.sentence.and.keeps.Generate.disabled$ tests/app.test.js
 # The reason is rendered in the neutral tier, so an error reads exactly like
-# a success and the three-tier colour scale carries no information.
+# a success and the three-tier colour scale carries no information. The tier
+# lives on showRefusal() rather than on #scale-refusal's own rule precisely so
+# that forgetting it is visible here instead of being inherited silently.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4593,7 +4593,7 @@
-     scaleBox.classList.add("bad");
-     genBtn.disabled = true;
-     if (paint) holdPanPreview();
--    say(res.reason, "err");
-+    say(res.reason, "");
-   }
+@@ -4321,7 +4321,7 @@ function showRefusal(text) {
+   // killable) rather than silently inheriting the error colour from the
+   // element's own rule. Cleared on the empty case so a hidden line is not
+   // left holding a tier for whatever writes next.
+-  refusalLine.className = text ? "err" : "";
++  refusalLine.className = "";
+   refusalLine.textContent = text;
  }
  

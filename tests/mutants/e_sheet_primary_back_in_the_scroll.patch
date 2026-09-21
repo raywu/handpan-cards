@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -827,11 +827,11 @@ button.nav:active{background:#2e281e}
+@@ -869,7 +869,6 @@ button.nav:active{background:#2e281e}
        </div>
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
@@ -14,6 +14,9 @@ diff --git a/index.html b/index.html
      <button id="scale-generate" type="button" disabled>GENERATE CARDS</button>
      <div class="editrow" id="scale-delete-row" hidden>
        <button id="scale-delete" type="button">DELETE THIS DECK</button>
+@@ -884,6 +883,7 @@ button.nav:active{background:#2e281e}
+            below the button is also where the owner is already looking. -->
+       <div id="scale-del-note" aria-live="polite"></div>
      </div>
 +   </div>
    </div>

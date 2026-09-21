@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4947,7 +4947,6 @@
+@@ -5094,7 +5094,6 @@ function disarmDelete() {
    // A standing refusal is not derivable from the seed, so re-deriving would
    // clear a red box and offer SAVE CHANGES for an edit the app still refuses.
    // Put the refusal back over the arming warning and leave the rest alone.
--  if (refusal) { say(refusal, "err"); return; }
-   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
+-  if (refusal) { showRefusal(refusal); return; }
+   // Otherwise re-derive .bad, the refusal line and GENERATE's disabled from
    // the field's CURRENT text, so the three cannot disagree (queue row 91) -
    // WITHOUT repainting the pan, because this runs inside a pointerdown.

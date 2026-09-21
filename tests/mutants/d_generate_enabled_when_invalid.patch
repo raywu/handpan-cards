@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4591,7 +4591,7 @@
-     // sheet does not jump while a half-typed seed is invalid.
-     parseLine.textContent = "";
+@@ -4704,7 +4704,7 @@ function syncParseState({ paint }) {
+     // #scale-refusal takes the identical box - so a half-typed seed neither
+     // jumps the sheet nor costs the fieldrow a second reserved line.
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      if (paint) holdPanPreview();
-     say(res.reason, "err");
+     showRefusal(res.reason);
    }

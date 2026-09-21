@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -423,7 +423,7 @@ button.nav:active{background:#2e281e}
- /* Quiet, never a primary: auto width, so the sheet's only full-width button
-    stays #scale-generate. */
- #scale-delete-row{align-items:center}
+@@ -650,7 +650,7 @@ button.nav:active{background:#2e281e}
+ #scale-del-note{font-family:"Nunito Sans"; font-weight:400; font-size:12px;
+   line-height:1.55; color:#e3b25c; overflow-wrap:anywhere}
+ #scale-del-note:empty{display:none}
 -#scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
 +#scale-delete{width:100%; min-height:44px; padding:12px 14px; background:none; border:none;
    color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;

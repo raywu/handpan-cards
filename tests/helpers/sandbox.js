@@ -23,11 +23,11 @@ const APP = path.join(__dirname, "..", "..", "index.html");
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
-  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-mirror-l",
+  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror-l",
   "scale-mirror-r", "scale-swatches", "scale-generate", "deck-add",
   // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
-  "scale-delete-row", "scale-delete",
+  "scale-delete-row", "scale-delete", "scale-del-note",
   // Phase 5 LAYOUT section, additive like the two before it.
   "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
   "scale-move-l", "scale-move-r", "scale-layout-reset",

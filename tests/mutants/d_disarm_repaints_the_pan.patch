@@ -7,10 +7,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4951,7 +4951,7 @@
-   // Otherwise re-derive .bad, #scale-msg and GENERATE's disabled state from
-   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
-   // WITHOUT repainting the pan, because this runs inside a pointerdown.
+@@ -5115,7 +5115,7 @@ function disarmDelete() {
+   // used to protect is asserted from the other side, while DELETE is armed,
+   // by d_arming_warning_takes_the_seed_row - the mutant that puts row 91's
+   // cause back.
 -  syncParseState({ paint: false });
 +  syncParseState({ paint: true });
  }

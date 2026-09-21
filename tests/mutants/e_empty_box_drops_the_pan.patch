@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4575,7 +4575,7 @@
-     parseLine.textContent = PARSE_HINT;
+@@ -4687,7 +4687,7 @@ function syncParseState({ paint }) {
+     showParse(PARSE_HINT);
      scaleBox.classList.remove("bad");
      genBtn.disabled = true;
 -    if (paint) showPlaceholderPan();

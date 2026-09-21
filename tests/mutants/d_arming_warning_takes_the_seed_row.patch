@@ -1,0 +1,25 @@
+# kills: cancelling an armed DELETE re-syncs the box, GENERATE and the message (queue row 91)
+# suite: node --test --test-name-pattern ^cancelling.an.armed.DELETE.re.syncs.the.box..GENERATE.and.the.message..queue.row.91.$ tests/e2e.test.js
+# Arming DELETE writes its confirmation into the seed's own row instead of
+# #scale-del-note, which is exactly the shape of queue row 91: the parser's
+# refusal is overwritten by a message about a different control, and the box
+# stays red for a reason the page no longer gives.
+# This is the mutant that replaced d_disarm_skips_the_resync. That one mutated
+# the disarm's re-derive, and the split made it unobservable - nothing damages
+# the seed row any more, so there is nothing for the re-derive to repair. The
+# damage has to be reintroduced to be seen, and it has to be READ while DELETE
+# is still armed, because the disarm re-derives and would repair it first.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5138,8 +5138,8 @@ delBtn.onclick = () => {
+   delBtn.textContent = DEL_ARMED;
+   delBtn.setAttribute("data-armed", "");
+   const d = CUSTOM[editingId];
+-  delNote.textContent =
+-    "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.";
++  showRefusal(
++    "Tap again to remove " + (d ? d.name : "this deck") + ". This cannot be undone.");
+ };
+ /* Looking away is a decision too, and on a phone the only way to see it is the
+    pointer: iOS Safari gives a <button> no focus on tap, so `blur` never fires
