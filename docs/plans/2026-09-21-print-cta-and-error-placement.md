@@ -1,0 +1,456 @@
+# Custom-deck print CTA + seed-error placement
+
+Two independent pieces of owner feedback from the 2026-09-21 iPhone 14 /
+iOS 26.6 device pass. Serial, not parallel: both touch `index.html`, so
+there is no ownership boundary to split on. A lands and merges first
+because it is small and its e2e assertions are in the same file B will
+grow.
+
+**Owner decisions carried in (2026-09-21):**
+
+- **D12 - seed refusals render directly under the seed field.** Owner's
+  words: "Error message such as 'No ding. Start with the ding note, e.g.
+  (D) or D/.' Should be directly under the scale field otherwise it's
+  hidden below the fold."
+- **D13 - custom decks get a PDF via the BROWSER's print path, not
+  reportlab.** Owner was offered a hosted `decks.py` service and GitHub
+  Actions and chose browser print after being told, explicitly, that the
+  output cannot be byte-identical and that glyph positions will drift.
+  Owner's words: "I don't need byte size exact but I want to make sure
+  the output pdf has two versions - full deck vs print shop. The
+  variability is acceptable as long as the main handpan, chords, notes
+  are legible and does not deviate much from the app's design. Browser
+  print is a better and less complex option if the output's quality
+  matches my expectations."
+- **D14 - two variants, matching the committed PDFs.** "Full deck" =
+  title card, legend card, chord cards, blank padding. "Print shop" =
+  chord cards only, padded to a multiple of 9. Same split
+  `tools/hifi.py:379 build(..., chords_only=)` already makes.
+- **D15 - no separate CTA (owner, 2026-09-21).** "If browser print is
+  programmatic, we do not need a separate CTA to generate PDF and can
+  directly show the two print options like the seed scales." A custom
+  deck shows the SAME `.prints` row in the SAME place with the SAME two
+  labels as a built-in deck (`index.html:4008-4010`). The only
+  difference is what the control does: a built-in navigates to its
+  committed file, a custom one builds the sheet and calls
+  `window.print()`. No new affordance, no new vocabulary for the user to
+  learn, and the print story stops being two different things.
+
+**Device pass that produced this (closed rows 51, 67, 93):** ADD and EDIT
+sheets both hold the seed field, the primary button and the sheet's top
+edge on screen with the keyboard up; hands-off-under-zoom accepted.
+
+## Non-goals
+
+- Changing `tools/hifi.py`, `tools/decks.py`, or any committed PDF. The
+  three built-in decks keep their reportlab files and their existing
+  FULL DECK PDF / PRINT-ONLY PDF links untouched.
+- Byte-identical or glyph-identical output against reportlab. Ruled out
+  by D13 and stated to the owner before the decision.
+- Deck data or diagram geometry changes (CLAUDE.md hard constraint).
+- A second renderer for the PAN. Print reuses `pan()`, the same function
+  the cards use, so the instrument cannot drift.
+- Any backend, serverless function, or new network dependency.
+
+---
+
+# Workstream A - seed refusals under the field
+
+## The defect
+
+`syncParseState()` (`index.html:4583`) routes an invalid parse two ways:
+it BLANKS `#scale-parse` (`:4602`), the reserved line directly under the
+seed box, and sends `res.reason` to `say()` (`:4230`), which paints
+`#scale-msg` at markup `:803`. `#scale-msg` sits below `#scale-preview`
+(up to 300px, CSS `:496`) and the layout row, so on a phone with the
+keyboard up the refusal is below the fold while the one line that IS
+under the field is deliberately empty.
+
+The comment at `:802` claims `#scale-msg` is "Above the control row, so
+the soft keyboard never covers it". The device pass shows that reasoning
+does not survive the preview being in the flow.
+
+## Approach
+
+Move the `<div id="scale-msg">` in the DOM from `:803` to immediately
+after `.fieldrow` (after `:757`). Markup-only: no JS change, no CSS
+change, no new element, and every existing test that queries `#scale-msg`
+by id keeps passing. `say()` stays the one adapter and keeps its
+`aria-live`, which also moves nearer the control it describes.
+
+Rejected alternative - render the refusal INTO `#scale-parse` and leave
+`#scale-msg` where it is. It reads well (that line already "comments on
+what was typed") but it splits seed refusals from deck-level warnings
+across two visible surfaces, and `say()` would need a quiet-mode option
+so the `.announce` region still speaks exactly once. More code for a
+worse invariant.
+
+Accepted cost: `#scale-parse` still blanks on an invalid parse, so the
+refusal sits one reserved blank line below the field rather than flush
+against it. That blank line is what keeps the sheet from jumping on every
+keystroke (`tests/e2e.test.js:4558`), so it stays.
+
+## Acceptance criteria
+
+- **AC-A1** With an invalid seed at a 380px viewport, `#scale-msg`'s
+  bottom edge is ABOVE `#scale-preview`'s top edge. A geometric
+  assertion, not a DOM-order one: it fails on any reordering, on the
+  preview being moved above the message, and on absolute positioning
+  that reinstates the old stacking.
+  Verify: `node --test --test-name-pattern 'refusal sits above the pan' tests/e2e.test.js`
+- **AC-A2** Every existing assertion on `#scale-msg` text, tier class and
+  `aria-live` still passes - the element is moved, not changed.
+  Verify: `node --test tests/app.test.js && node --test tests/e2e.test.js`
+- **AC-A3** The sheet does not change height as the seed is typed, and
+  the first keystroke still moves only the parse line's own wrap. Both
+  existing tests must stay green unmodified; if either needs editing,
+  stop and re-plan.
+  Verify: `node --test --test-name-pattern 'does not change height|first keystroke changes' tests/e2e.test.js`
+- **AC-A5** `#scale-preview`'s TOP edge does not move between a valid
+  seed and an invalid one at 380px. Today a wrapping refusal grows BELOW
+  the preview and `.sheetbody`'s scroll absorbs it; after the move it
+  grows ABOVE, so the pan slides down a line as the user types, right
+  where they are looking. `#scale-msg` reserves one line only
+  (`index.html:507` `min-height:1.5em`) and the long-reason case at
+  `tests/e2e.test.js:4594` exists precisely because reasons wrap.
+  Implementation, AS BUILT (2026-09-21, supersedes "reserve two lines
+  in the sheet context"): a SECOND reserved line is not affordable. The
+  Edit sheet's slack at 380x780 was measured at 20.9px
+  (`#scale-layout-row`'s bottom 759.09 against `innerHeight` 780) and a
+  second reserved line costs 22px (18px box + a 4px `--sp-1` gap); it
+  broke "ROTATE makes its correction from the keyboard alone at 380px".
+  What shipped FIRST was a shared reserved row: `syncParseState()`
+  blanked `#scale-parse` on the same branch that wrote a refusal into
+  `#scale-msg`, which had been moved into the `.fieldrow`. The reviewer
+  FAILED that (2026-09-21, PR #101): the exclusivity was a property of
+  one function's call order, not of the design, so every OTHER writer of
+  `#scale-msg` - the pan warning on Edit open, the SAVE collision, the
+  DELETE disarm - could land in the seed's row on top of a full parse
+  line and push the pan down. One element was carrying two roles.
+
+  What ships now is a SECOND element. `#scale-refusal` lives in the
+  `.fieldrow` and holds refusals only; `#scale-msg` goes back above the
+  D10 degrees row and holds pan-level messages only. Two writers,
+  `showParse()` and `showRefusal()` (`index.html:4312-4326`), each blank
+  the other, so exclusivity is STRUCTURAL - no caller can stack them.
+  `#scale-refusal` carries its own `aria-live="polite"` because
+  `#scale-sheet` is `aria-modal="true"` and `say()`'s page-level
+  `.announce` div sits outside it, hidden from AT while the sheet is
+  open. Both elements keep `:empty{display:none}`, so neither reserves
+  a line it is not using and the fieldrow still costs one line.
+  Accepted exemption, unchanged: a refusal long enough to WRAP still
+  steps the pan one line. It needs a bad token near `core.js:125`'s
+  12-character slice; every reason at a short token renders in one line.
+
+  Second-order fix, same task: the DELETE arming confirmation moved out
+  of `#scale-msg` into its own `#scale-del-note` beside the button.
+  `disarmDelete()` fires on `pointerdown`, and clearing the warning in
+  the old shared element sprang the pan up under the finger - the
+  tap-swallowing of queue rows 91 and 117 by a new route.
+  `tests/app.test.js`'s two DELETE assertions and
+  `tests/helpers/sandbox.js`'s id registry were repointed with it.
+  This AC was ADDED by the eng review; no AC in the original draft
+  caught it, and neither existing height test can - both compare states
+  in which the refusal element is empty. Note the SHEET's own height
+  cannot witness a second line either: `.sheetsurf` is capped at 100dvh
+  and scrolls internally, which is why AC-A5 measures the pan's top edge
+  and not the sheet.
+  Verify: `node --test --test-name-pattern 'the pan does not move when the seed goes bad' tests/e2e.test.js`
+- **AC-A4** Every direction of the two-element contract has a killing
+  mutant. CONTRACT.md rule 3 - AC-A5 is its own test group and needs its
+  own. Shipped as, all verified killed:
+  `a_seed_refusal_below_the_pan` (moves `#scale-refusal` below the
+  preview), `a_msg_row_not_shared` (drops `#scale-parse` from the shared
+  `:empty` rule), `e_refusal_row_collapses` (`showRefusal()` stops
+  writing), `e_refusal_stacks_on_the_parse_line` (`showRefusal()` stops
+  blanking the parse line - the structural half the reviewer FAILED on),
+  `d_msg_no_error_tier` (`showRefusal()` drops the tier), and the two
+  that prove the OTHER writers stayed out of the seed's row:
+  `a_warning_shares_the_seed_row` and
+  `a_collision_refusal_below_the_pan`.
+  Verify: `bash tests/mutation_check.sh`
+
+## Tasks
+
+- **A1** Write the failing e2e test for AC-A1 first: open the ADD sheet
+  at 380px, type an invalid seed, read both rects, assert
+  `msg.bottom <= preview.top`. Run it, watch it fail on the current tree.
+- **A2** Move the markup. Replace the stale `:802` comment with what the
+  device actually showed.
+- **A3** Re-run A1's test (passes) and the full JS suites (AC-A2, AC-A3).
+- **A3b** Reserve the second line and write AC-A5's test alongside it.
+- **A4** Generate `tests/mutants/a_seed_refusal_below_the_pan.patch` per
+  CONTRACT.md rule 4 - edit a committed tree, `git diff`, strip the
+  `index ` blob header (`tests/mutation_harness.test.js:344`), keep the
+  `# kills:` / `# suite:` header. Confirm `git apply --check` passes.
+- **A5** Push, let CI run, read `ran N` from CI's own suite-health line,
+  raise the `tests/e2e.test.js` floor at `tests/suite_health.py:47` in a
+  second commit. Two-push protocol - never compute the floor locally.
+
+---
+
+# Workstream B - the print row on custom decks
+
+## The gap
+
+`PRINT_PDFS` (`index.html:3997`) maps the three built-in deck ids to
+committed files, and `headerHTML()` renders the two links only when that
+lookup hits (`:4004`). A custom deck has no entry, so it shows nothing.
+Custom scales are made on the phone; that is exactly where no print path
+exists.
+
+Per D15 the fix is not a new control - it is making the row that already
+exists unconditional, and giving the custom branch a different handler
+behind the same two labels.
+
+## Approach
+
+A `@media print` stylesheet plus a hidden print-sheet container the CTA
+fills on demand, then `window.print()`. The user saves as PDF from the OS
+dialog.
+
+Geometry is copied from `tools/hifi.py`, which is the spec: `PAGE`
+612x792pt (`:35`), 3x3 slots centred by `slots()` (`:356`), card
+177.6x247.2pt, gutters 12.2/9.4pt, crop marks 8pt at 6pt from each edge
+(`crop_marks()` `:365`), and the 144pt (2.00in) calibration bar at
+x=12 y=220 on page 1 only (`build.calibration()` `:396`). Expressed in
+CSS `pt`, which is a physical unit in print.
+
+Card content reuses the app's own renderers - `headerHTML()` minus the
+`.prints` row, `nameHTML()`, `pan()`, `linesHTML()` (which already
+carries the bottom-note badge, `:4036`). Title, legend and blank cards
+are new HTML mirroring `hifi.title_card` (`:474`), `legend_card` (`:490`)
+and `blank_card` (`:514`).
+
+### The two failure modes that decide whether this ships
+
+1. **Background graphics.** `.face` paints the paper as a CSS
+   `background` (`:316`) and `.face::before` draws the root-coloured
+   frame as a padding-plus-background trick (`:320`). Chrome's print
+   dialog defaults "Background graphics" OFF, which prints white cards
+   with no frame. Mitigation: `print-color-adjust: exact` on the print
+   card, AND the frame re-expressed as a real `border` rather than the
+   `::before` trick in print context, so the frame survives even when the
+   toggle is honoured badly. The pan is inline SVG with `fill`
+   attributes, which is content and is NOT suppressed by that toggle -
+   verified by reading the markup, to be confirmed on a real print
+   preview in B6.
+2. **User scale.** "Fit to page" silently rescales and the calibration
+   bar stops reading 2.00in. Mitigation is the same one the committed
+   PDFs use: print the instruction on the sheet. `@page{margin:0}` plus
+   the bar's own label.
+
+### B0 spike result - RUN 2026-09-21, desktop Chrome half PASSES
+
+Built in the scratchpad (throwaway, nothing committed): the app's own
+captured card markup laid out 3x3 at 62.65x87.21mm with the spec gutters
+and the vertical 2.00in bar placed the way `hifi.calibration()` places
+it, printed through CDP `Page.printToPDF` and measured out of the
+resulting PDF.
+
+1. **The masked frame does NOT survive print, and this sinks B4 as
+   drafted.** Chrome's print export drops `-webkit-mask-composite:xor`
+   and flattens `.face::before` to a SOLID block of root colour over the
+   whole card. Confirmed in two renderers (pymupdf and Quartz), so it is
+   the PDF, not one viewer. Every card printed as a filled rectangle.
+   **Fix, verified in the spike:** in print context
+   `.face::before{display:none}` plus
+   `box-shadow: inset 0 0 0 3.2px var(--ga)` on `.face`. A real `border`
+   also works but shrinks the content box by 3.2px a side; the inset ring
+   does not, so the ring is what B4 ships. The draft's mitigation ("a
+   real `border`") was right about the cause and wrong about the remedy.
+2. **`print-color-adjust: exact` is load-bearing and now measured.**
+   Background graphics OFF without it: 0 frame paths in the PDF. With
+   it: 18, two per card across all nine. Failure mode 1 is closed.
+3. **Geometry is exact.** Letter: one page 612x792pt, cards 177.8pt wide
+   (62.7mm), bar 1.9896in measured to the stroke centre = 2.00in true.
+   A4 with `@page{size:A4}`: one page 595x842pt, cards still 177.8pt, bar
+   still 2.00in. Card size in mm is paper-independent.
+4. **`body`'s safe-area padding must be reset.** `index.html:65` sets
+   `padding:max(10px, env(safe-area-inset-top)) ...`, which pushed the
+   sheet 2.6mm down and spilled a tenth card onto page 2 until the print
+   stylesheet zeroed it. B4 must reset `body` padding, `min-height`,
+   `display:flex` and `height:100%` (`index.html:64-65`).
+5. **The back face alone is not a print card.** It carries header,
+   diagram, note line and number line, but the Marcellus chord name
+   lives on the FRONT face. `hifi.chord_card` draws both. B3 must
+   compose the two faces, not print `#back`.
+
+The iOS Safari half of AC-B6 has NOT been run. It stays open.
+
+### D16 - paper size (owner decision, 2026-09-21)
+
+The browser never tells the page which paper the user picked: no media
+query, no API. Measured consequence of guessing wrong - CSS declaring
+`size:letter` printed onto A4 paper is silently scaled to 97.4%, cards
+come out 61.0mm instead of 62.65 and the bar reads 1.9376in. Nothing
+warns the user except the bar.
+
+So the print path carries an explicit Letter/A4 control that sets BOTH
+the `@page size` and the sheet height (279.4mm / 297mm), defaulting to
+Letter to match the six committed PDFs. The calibration bar stays the
+ruler check, and its label keeps saying 100% / Actual Size.
+
+- **AC-B8** Selecting A4 emits `@page{size:A4}` and a 297mm sheet;
+  selecting Letter emits `size:letter` and 279.4mm. Card geometry in mm
+  is identical under both.
+  Verify: `node --test --test-name-pattern 'print sheet paper size' tests/app.test.js`
+
+### The copy a custom deck does not have
+
+`hifi.title_card`, `legend_card` and `blank_card` read title, credit,
+blurb, legend copy and `blank_cards` out of a deck dict that a
+user-generated deck has none of - `tools/decks.py` carries those as
+print-overlay literals per built-in deck. B3 and AC-B2 do not say where
+that copy comes from for a custom deck, and an implementer would invent
+it. Decision: the full-deck variant's title card uses the seed string as
+the title, the engine's own reason string as the blurb (the app already
+holds it), no credit line, and `blank_cards: 0`. The legend card is the
+same static legend for every deck - it teaches the card anatomy, not the
+deck.
+
+## Acceptance criteria
+
+- **AC-B1** A custom deck's card header renders the `.prints` row with
+  the same two labels, in the same position, as a built-in deck's; a
+  built-in deck's header markup is UNCHANGED from today's. The existing
+  print-button e2e test must stay green unmodified - if it needs
+  editing, the built-in path was touched and that is a plan violation.
+  Verify: `node --test --test-name-pattern 'print' tests/e2e.test.js`
+- **AC-B1b** The hidden card face's print controls are out of the tab
+  order. `render()` (`index.html:4080-4081`) manages this with the
+  selector `.prints a`; a custom deck's controls are `<button>`, not
+  `<a>`, so an unwidened selector leaves two focusable buttons inside an
+  `aria-hidden` subtree - the exact defect that selector was written to
+  prevent. Assert it for a CUSTOM deck, which is the case no existing
+  test covers.
+  Verify: `node --test --test-name-pattern 'print controls on the hidden face' tests/e2e.test.js`
+- **AC-B2** The control offers both variants (D14) and each builds the
+  right card list: full = title + legend + chords + blank padding to a
+  multiple of 9; print-shop = chords only, padded to a multiple of 9.
+  Asserted as a pure function over a fixture deck, not through a print
+  dialog.
+  Verify: `node --test --test-name-pattern 'print sheet card list' tests/app.test.js`
+- **AC-B3** Print geometry matches `hifi.slots()` to within 0.1pt for all
+  9 slots, computed from the same page and card constants. A unit test
+  over the JS that emits the CSS, compared against the numbers read out
+  of `tools/hifi.py` at test time so the two cannot silently diverge.
+  This is a PYTHON test, not a JS one. No JS test in this repo reads a
+  `.py` file; the established cross-renderer pin is
+  `tests/test_render_agreement.py`, which imports `hifi` and regex-reads
+  `index.html` (`:236-241`). Follow that pattern, and raise the
+  `"tests/test_render_agreement.py": 11` floor in `tests/suite_health.py`
+  as well as the e2e one. Corrected by the eng review; the draft said
+  `node --test tests/app.test.js`, which cannot read `tools/hifi.py`.
+  Also: `tests/test_render_agreement.py:238` does a whole-file
+  `re.search(r"\.face::before\{([^}]*)\}", html)` and takes the FIRST
+  match, so the print stylesheet MUST go at the END of the `<style>`
+  block and must not define a second `.face::before` rule above
+  `index.html:320`.
+  Verify: `python3 -m unittest tests.test_render_agreement -v`
+- **AC-B4** Every chord in a custom deck appears exactly once across the
+  emitted sheet, with its own index number, and every voicing field is
+  lit on its card - the same invariant the app's 96-card check makes.
+  Verify: `node --test --test-name-pattern 'print sheet covers every chord' tests/app.test.js`
+- **AC-B5** The print container is `hidden` and contributes nothing to
+  screen layout or the accessibility tree until the CTA fills it, and is
+  emptied afterwards. A stray 9-card sheet in the DOM is a real
+  regression risk for the practice screen.
+  Verify: `node --test --test-name-pattern 'print sheet leaves no residue' tests/app.test.js`
+- **AC-B6 - OWNER DEVICE CHECK, covered_by: neither.** Headless Chromium
+  cannot open a print dialog, so no automated oracle exists for the thing
+  that actually matters. The owner prints one custom deck to PDF from
+  desktop Chrome AND from iOS Safari and confirms: cards are
+  poker-sized against a ruler, the calibration bar reads 2.00in, the
+  root-coloured frame is present, pan labels and the note/number lines
+  are legible, and the chord name is not clipped. This is the D13
+  quality bar and it CANNOT be recorded as met by CI.
+- **AC-B7** A mutant per test group. At minimum: the slot arithmetic
+  off by a gutter (kills B3), the blank padding dropped (kills B2), the
+  print container left populated (kills B5).
+  Verify: `bash tests/mutation_check.sh`
+
+## Tasks
+
+- **B0** DONE 2026-09-21. Throwaway print spike, desktop Chrome half
+  passed; see "B0 spike result" above. B1-B5 are unblocked on desktop
+  and carry its three fixes (inset ring, `print-color-adjust:exact`,
+  body reset). The iOS Safari half is still owed and lands in AC-B6.
+- **B1** Extract the print-sheet card list into a pure function and write
+  its tests first (AC-B2, AC-B4). No DOM, no CSS yet.
+- **B2** Slot/geometry emitter + its test against `tools/hifi.py`'s own
+  constants (AC-B3).
+- **B3** Print card markup: chord card from the existing renderers, then
+  title, legend and blank mirroring `hifi.py:474-523`.
+- **B4** The `@media print` stylesheet: the inset-ring frame,
+  `print-color-adjust:exact`, the `body` reset, and the D16 paper
+  control. Place the block at the END of the `<style>` element and
+  define no second `.face::before` rule - see AC-B3.
+- **B5** Make `.prints` unconditional in `headerHTML()`: built-ins keep
+  their `<a href>` exactly as-is, custom decks get `<button>` controls
+  carrying the same labels and calling the print path (AC-B1). Widen
+  `render()`'s tab-order selector to cover both element types (AC-B1b).
+- **B6** Mutants (AC-B7), then push and the two-push floor protocol.
+- **B7** Hand AC-B6 to the owner with exact steps, the way the 2026-09-21
+  device pass was run. Do not close B until it comes back.
+
+## What could sink this
+
+If AC-B6 comes back "the frame is missing" or "the pan labels are
+unreadable" on either browser, the mitigations in B4 have failed and the
+honest move is to stop and revisit D13 - the hosted `decks.py` option is
+still on the table and was rejected on complexity, not on capability.
+Plan for that outcome rather than patching around it.
+
+---
+
+## GSTACK REVIEW REPORT
+
+Skill: `/plan-eng-review`. Target: this file. Branch: `main`.
+Date: 2026-09-21.
+
+| Run | Status | Findings |
+|---|---|---|
+| Step 0 scope challenge | complete | 4 |
+| Architecture + code quality | complete | 1 (report placement of the print stylesheet) |
+| Tests | complete | 2 (AC-B3 runner, uncovered A regression) |
+| Performance | complete | 0 |
+| Empirical B0 spike | complete, desktop PASS | 5 measured results |
+
+**Findings, all folded into the plan above:**
+
+1. `[HIGH] (confidence: 9/10)` `index.html:507`, `tests/e2e.test.js:4594`
+   - moving `#scale-msg` above `#scale-preview` makes a wrapping refusal
+   push the pan down a line. No AC caught it; neither height test can,
+   because both compare states where `#scale-msg` is empty. Added as
+   **AC-A5** plus task A3b.
+2. `[HIGH] (confidence: 10/10)` AC-B3's verify command named
+   `node --test tests/app.test.js`, but no JS test in this repo reads a
+   `.py` file. Rewritten as a Python test in the
+   `tests/test_render_agreement.py` style, with its floor row named.
+3. `[MEDIUM] (confidence: 9/10)` `tests/test_render_agreement.py:238`
+   takes the FIRST whole-file match for `.face::before`, so a print
+   block redefining it above `index.html:320` silently poisons that
+   test. Constrained in AC-B3 and task B4.
+4. `[MEDIUM] (confidence: 9/10)` `tools/decks.py`'s print overlay (title,
+   credit, blurb, legend copy, `blank_cards`) does not exist for a
+   user-generated deck. Resolved under "The copy a custom deck does not
+   have".
+5. `[HIGH] (confidence: 10/10, measured)` the `.face::before`
+   mask-composite frame flattens to a solid block in Chrome's print
+   export. The draft's mitigation named the wrong remedy. Corrected to
+   the inset ring, verified in the spike.
+
+**Complexity gate:** fired, owner chose spike-first. The spike ran and
+retired the two failure modes that decided whether B ships on desktop.
+
+**Decisions taken under the standing AFK authorization** (owner grant:
+follow recommendations): D16 paper size, the custom-deck title/legend
+copy, and the inset-ring remedy. Each is recorded above with its
+measurement, so any of them is cheap to reverse.
+
+**VERDICT: PROCEED.** Workstream A is unblocked. Workstream B is
+unblocked on desktop Chrome and carries one open device check (AC-B6,
+iOS Safari), which by its own terms cannot be closed by CI.
+
+NO UNRESOLVED DECISIONS
