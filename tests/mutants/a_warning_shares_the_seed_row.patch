@@ -5,10 +5,15 @@
 # exactly: the warning fires after showSheet() has already filled the parse
 # line, so the row carries a line it should never carry, the pan steps down
 # under the finger and #scale-layout-row's bottom leaves the 780px viewport -
-# below the fold, the cost the move exists to avoid. Nothing about the
-# warning's text or tier changes, which is why only a geometric test sees it.
-# The rule this mutates is the split itself: #scale-refusal carries SEED
-# REFUSALS ONLY, and say() never writes into the .fieldrow.
+# below the fold, the cost the move exists to avoid. The rule this mutates is
+# the split itself: #scale-refusal carries SEED REFUSALS ONLY, and say() never
+# writes into the .fieldrow.
+#
+# Where the kill actually lands: the ROUTING assertion at tests/e2e.test.js:3482
+# (the refusal must stay empty), not the geometry. It is the second assertion
+# in the group, ahead of the parse-line check and both geometric checks, so
+# under this mutant none of those three execute - the prose here used to claim
+# only a geometric test could see the change, which is false.
 #
 # It writes to BOTH elements deliberately, keeping #scale-msg filled. Routing
 # the warning to #scale-refusal ALONE would empty #scale-msg and kill the test

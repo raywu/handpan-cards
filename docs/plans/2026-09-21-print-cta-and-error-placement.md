@@ -277,7 +277,52 @@ resulting PDF.
    lives on the FRONT face. `hifi.chord_card` draws both. B3 must
    compose the two faces, not print `#back`.
 
-The iOS Safari half of AC-B6 has NOT been run. It stays open.
+### AC-B6 iOS Safari half - RUN 2026-09-21, owner device, PARTIAL PASS
+
+iPhone 14 / iOS 26.6, Safari, the same spike page over LAN, printed via
+the share sheet at Paper Size US Letter, Scaling 100%.
+
+1. **The inset-ring frame SURVIVES iOS.** Card frames render as thin
+   coloured rings, not the solid blocks desktop Chrome produced before
+   the `.face::before` fix. The B0 remedy holds on a second engine.
+2. **`print-color-adjust: exact` is honoured.** Frames, pan diagrams and
+   the coloured note/number rings are all present in the iOS preview.
+3. **`@page { margin: 0 }` is IGNORED, and this is the finding.** iOS
+   Safari imposes its own page margins and prints furniture along the
+   bottom - source URL, date, "Page 1 of 2". No CSS or JS suppresses it;
+   unlike desktop Safari, the iOS print sheet exposes no headers-and-
+   footers toggle. The reserved strip drops printable height below the
+   ~268mm that three card rows plus gutters need (3 x 87.21mm + 2 x
+   9.4pt), so the third ROW spills and a 9-card sheet becomes Pages 1-2.
+   Width is unaffected: all three columns fit.
+
+Note the axis. The overflow is VERTICAL. Reducing columns would not fix
+it - a first draft of decision D17 proposed 2 columns and was corrected
+before implementation.
+
+Scaling is not an escape. It sits at 100% and must stay there: the whole
+card spec is true physical size (62.65 x 87.21mm, printers instructed
+"100% / Actual Size"). Scaling to fit would silently ship wrong-sized
+cards, which is worse than a second page.
+
+### D17 - mobile print page density (owner decision, 2026-09-21)
+
+**On a narrow viewport the print sheet emits 3 columns x 2 rows = 6
+cards per page instead of 3x3 = 9.** Cards keep their true size on every
+platform; a deck simply takes more pages on a phone. The owner was
+offered "ship it and accept 2 pages on iOS" and "hide print on mobile
+entirely" and chose reduced density.
+
+Consequence for **AC-B3**: the geometry pin against `hifi.slots()` is
+now conditional. The CARD constants (62.65 x 87.21mm) and the gutters
+stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
+narrow-viewport layout is 3x2 of the same slot grid, not a new geometry.
+The test must pin the 3x3 case against `hifi.slots()` exactly as drafted
+AND assert the 3x2 case reuses the same card and gutter constants -
+never a second set of literals.
+
+**Still owed on device:** a measurement of iOS's actual printable
+height, and a re-run at 3x2 confirming one page. Both land in B7.
 
 ### D16 - paper size (owner decision, 2026-09-21)
 
@@ -333,7 +378,13 @@ deck.
   dialog.
   Verify: `node --test --test-name-pattern 'print sheet card list' tests/app.test.js`
 - **AC-B3** Print geometry matches `hifi.slots()` to within 0.1pt for all
-  9 slots, computed from the same page and card constants. A unit test
+  9 slots, computed from the same page and card constants. **Carve-out
+  (D17):** that 9-slot pin covers the wide-viewport layout. The narrow
+  layout emits 6 slots per page and is pinned separately - same card
+  constants, same gutters, the first 6 of the same slot grid - so the
+  test asserts the 3x2 case derives from those constants rather than
+  carrying a second set of literals. Card mm size is invariant across
+  both. A unit test
   over the JS that emits the CSS, compared against the numbers read out
   of `tools/hifi.py` at test time so the two cannot silently diverge.
   This is a PYTHON test, not a JS one. No JS test in this repo reads a
