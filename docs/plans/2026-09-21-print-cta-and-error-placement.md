@@ -292,8 +292,9 @@ the share sheet at Paper Size US Letter, Scaling 100%.
    bottom - source URL, date, "Page 1 of 2". No CSS or JS suppresses it;
    unlike desktop Safari, the iOS print sheet exposes no headers-and-
    footers toggle. The reserved strip drops printable height below the
-   ~268mm that three card rows plus gutters need (3 x 87.21mm + 2 x
-   9.4pt), so the third ROW spills and a 9-card sheet becomes Pages 1-2.
+   ~268mm that three card rows plus gutters need (3 x 247.2pt + 2 x
+   9.4pt = 760.4pt = 268.26mm; the card's 247.2pt is its 87.21mm height),
+   so the third ROW spills and a 9-card sheet becomes Pages 1-2.
    Width is unaffected: all three columns fit.
 
 Note the axis. The overflow is VERTICAL. Reducing columns would not fix
@@ -306,7 +307,7 @@ card spec is true physical size (62.65 x 87.21mm, printers instructed
 cards, which is worse than a second page.
 
 **Still owed on device:** a measurement of iOS's actual printable
-height, and a re-run at the reduced density decided in D16-D17 below
+height, and a re-run at the reduced density decided in D17 below
 (6 cards per page on a narrow viewport) confirming one page. Both land
 in B7, and AC-B6 stays OPEN until then.
 
@@ -343,7 +344,10 @@ stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
 narrow-viewport layout is 3x2 built from the same card and gutter
 constants, not a new geometry. It is NOT simply `slots()`'s first 6
 entries: `slots()` centres its block on `th_ = 3*CH + 2*GY`, so reusing
-the top 6 verbatim would leave a 6-card page bottom-heavy. Re-deriving
+the top 6 verbatim would leave a 6-card page top-heavy - `slots()`
+emits row 0 first and row 0 is the TOP row at `y0 + th_ - CH`, so the
+cards sit high in a block centred for three rows and all the slack
+falls below them. Re-deriving
 the vertical centring for 2 rows is expected and allowed.
 The test must pin the 3x3 case against `hifi.slots()` exactly as drafted
 AND assert the 3x2 case reuses the same card and gutter constants -
