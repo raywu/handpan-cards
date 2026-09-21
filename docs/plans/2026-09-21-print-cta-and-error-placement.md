@@ -158,7 +158,8 @@ keystroke (`tests/e2e.test.js:4558`), so it stays.
   Verify: `node --test --test-name-pattern 'the pan does not move when the seed goes bad' tests/e2e.test.js`
 - **AC-A4** Every direction of the two-element contract has a killing
   mutant. CONTRACT.md rule 3 - AC-A5 is its own test group and needs its
-  own. Shipped as, all verified killed:
+  own. Shipped as, all verified killed at c48d396 (CI's mutation gate at
+  the branch head is the standing oracle - read it, not this list):
   `a_seed_refusal_below_the_pan` (moves `#scale-refusal` below the
   preview), `a_msg_row_not_shared` (drops `#scale-parse` from the shared
   `:empty` rule), `e_refusal_row_collapses` (`showRefusal()` stops
