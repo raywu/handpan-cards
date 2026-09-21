@@ -318,7 +318,11 @@ entirely" and chose reduced density.
 Consequence for **AC-B3**: the geometry pin against `hifi.slots()` is
 now conditional. The CARD constants (62.65 x 87.21mm) and the gutters
 stay invariant and stay pinned; only SLOTS-PER-PAGE differs, and the
-narrow-viewport layout is 3x2 of the same slot grid, not a new geometry.
+narrow-viewport layout is 3x2 built from the same card and gutter
+constants, not a new geometry. It is NOT simply `slots()`'s first 6
+entries: `slots()` centres its block on `th_ = 3*CH + 2*GY`, so reusing
+the top 6 verbatim would leave a 6-card page bottom-heavy. Re-deriving
+the vertical centring for 2 rows is expected and allowed.
 The test must pin the 3x3 case against `hifi.slots()` exactly as drafted
 AND assert the 3x2 case reuses the same card and gutter constants -
 never a second set of literals.
@@ -383,10 +387,10 @@ deck.
   9 slots, computed from the same page and card constants. **Carve-out
   (D17):** that 9-slot pin covers the wide-viewport layout. The narrow
   layout emits 6 slots per page and is pinned separately - same card
-  constants, same gutters, the first 6 of the same slot grid - so the
-  test asserts the 3x2 case derives from those constants rather than
-  carrying a second set of literals. Card mm size is invariant across
-  both. A unit test
+  constants, same gutters, re-centred for 2 rows rather than the top 6
+  of the 3x3 block - so the test asserts the 3x2 case derives from those
+  constants rather than carrying a second set of literals. Card mm size
+  is invariant across both. A unit test
   over the JS that emits the CSS, compared against the numbers read out
   of `tools/hifi.py` at test time so the two cannot silently diverge.
   This is a PYTHON test, not a JS one. No JS test in this repo reads a
@@ -411,7 +415,10 @@ deck.
   emptied afterwards. A stray 9-card sheet in the DOM is a real
   regression risk for the practice screen.
   Verify: `node --test --test-name-pattern 'print sheet leaves no residue' tests/app.test.js`
-- **AC-B6 - OWNER DEVICE CHECK, covered_by: neither.** Headless Chromium
+- **AC-B6 - OWNER DEVICE CHECK, covered_by: neither.** *Partially run
+  2026-09-21 on the owner's iPhone 14 - see "AC-B6 iOS Safari half"
+  above for what passed, what failed, and what is still owed.*
+  Headless Chromium
   cannot open a print dialog, so no automated oracle exists for the thing
   that actually matters. The owner prints one custom deck to PDF from
   desktop Chrome AND from iOS Safari and confirms: cards are
@@ -508,6 +515,8 @@ measurement, so any of them is cheap to reverse.
 
 **VERDICT: PROCEED.** Workstream A is unblocked. Workstream B is
 unblocked on desktop Chrome and carries one open device check (AC-B6,
-iOS Safari), which by its own terms cannot be closed by CI.
+iOS Safari), which by its own terms cannot be closed by CI. That check
+has since been run once and produced D17; it stays OPEN pending a re-run
+at the new 6-per-page density.
 
 NO UNRESOLVED DECISIONS
