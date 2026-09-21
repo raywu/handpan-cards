@@ -514,13 +514,18 @@ button.nav:active{background:#2e281e}
    pan is role="img" content, so the rim ink has to keep its contrast. */
 #scale-preview.stale{opacity:.62}
 #scale-preview svg{display:block; width:100%; height:auto}
-/* Geometry deliberately IDENTICAL to #scale-parse above - line-height, the
-   one-line floor and the margin - because since 2026-09-21 this sits between
-   the scale field and the pan preview and the two take turns in one row. Any
-   of the three drifting from the parse line's value shows up as the pan
-   stepping when a seed goes bad. A refusal long enough to wrap still steps it
-   one line; core.js:125 caps an interpolated bad token at 12 characters, and
-   that is the only input that reaches two lines at 380px. */
+/* Geometry deliberately IDENTICAL to #scale-parse above, because since
+   2026-09-21 this sits between the scale field and the pan preview and the two
+   take turns in one row: the line-height and the margin drifting from the
+   parse line's values shows up as the pan stepping when a seed goes bad.
+   min-height is the ONE part that is inert while the :empty rule above stands
+   - a #scale-msg holding text is never shorter than a line, and an empty one
+   leaves the flow before the floor can apply. It is kept as the floor that
+   takes over if that rule is ever scoped differently, and it is deliberately
+   NOT what the pan test rests on; the mutant for that test drops
+   #scale-parse:empty instead. A refusal long enough to wrap still steps the
+   pan one line; core.js:125 caps an interpolated bad token at 12 characters,
+   and that is the only input that reaches two lines at 380px. */
 #scale-msg{font-family:"Nunito Sans"; font-weight:400;
   font-size:12px; line-height:1.55; color:#c4bcab; overflow-wrap:anywhere;
   margin-top:calc(var(--sp-2) - var(--sp-1)); min-height:1.55em}
