@@ -3194,9 +3194,27 @@ function run() {
       assert.ok(badBefore.msg.length > 0, "the rejected seed showed no message");
 
       await b.click("#scale-delete");   // arm DELETE
-      const armed = await b.eval(
-        `return document.getElementById("scale-delete").hasAttribute("data-armed");`);
-      assert.strictEqual(armed, true, "DELETE never armed");
+      const armed = await b.eval(`
+        return {
+          armed: document.getElementById("scale-delete").hasAttribute("data-armed"),
+          note: document.getElementById("scale-del-note").textContent.trim(),
+          bad: document.getElementById("scale-box").classList.contains("bad"),
+          disabled: document.getElementById("scale-generate").disabled,
+          msg: document.getElementById("scale-refusal").textContent.trim(),
+        };
+      `);
+      assert.strictEqual(armed.armed, true, "DELETE never armed");
+      /* Read the seed row WHILE armed, not only after the disarm. This is the
+         half that stays observable: the disarm re-derives, so damage done by
+         arming would be repaired before the after-read and the repair would
+         hide its own cause. Queue row 91 WAS that cause - the arming warning
+         and the parser's refusal sharing one element - so assert the warning
+         went to its own line and left the seed's three-way agreement alone. */
+      assert.ok(armed.note.length > 0, "arming DELETE wrote no confirmation");
+      assert.strictEqual(armed.msg, badBefore.msg,
+        `arming DELETE took the seed's row: the refusal became "${armed.msg}"`);
+      assert.strictEqual(armed.bad, true, "arming DELETE cleaned the rejected box");
+      assert.strictEqual(armed.disabled, true, "arming DELETE made GENERATE live");
 
       // tap elsewhere in the sheet - not on DELETE - to disarm it
       await clickPoint(8, 8);

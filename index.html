@@ -5098,6 +5098,18 @@ function disarmDelete() {
   // Otherwise re-derive .bad, the refusal line and GENERATE's disabled from
   // the field's CURRENT text, so the three cannot disagree (queue row 91) -
   // WITHOUT repainting the pan, because this runs inside a pointerdown.
+  //
+  // The RE-DERIVE half is belt and braces now, and deliberately carries no
+  // state mutant. Queue row 91 was possible because arming wrote its warning
+  // into the same element the parser's refusal used; since the refusal moved
+  // to #scale-refusal and the warning to #scale-del-note, arming disturbs
+  // nothing this call could repair, so no single-point mutation of it is
+  // observable - replacing it with say("") passes every test. What IS still
+  // live and still covered: `paint: false` (d_disarm_repaints_the_pan, queue
+  // row 91's tap test) and the refusal guard above (d_disarm_clears_the_
+  // refusal). The property the re-derive protects is instead asserted from
+  // the other side, while DELETE is armed, by d_arming_warning_takes_the_
+  // seed_row - the mutant that puts row 91's cause back.
   syncParseState({ paint: false });
 }
 delBtn.onclick = () => {

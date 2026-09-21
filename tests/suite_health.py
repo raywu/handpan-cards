@@ -44,7 +44,7 @@ FLOORS = {
     "tests/test_suite_health.py": 12,
     # node
     "tests/app.test.js": 112,
-    "tests/e2e.test.js": 99,
+    "tests/e2e.test.js": 101,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 41,
     "tests/voicing.test.js": 15,
