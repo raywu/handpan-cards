@@ -4184,7 +4184,10 @@ const PRINT_SAFE = { margin: 45 };
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
  */
-const PRINT_PAPER = { letter: { css: "letter", h: 792 }, a4: { css: "A4", h: 841.89 } };
+/* No page-box height here. iOS Safari ignores @page entirely, so the paper
+   height is a number we cannot know; asserting it made every sheet paginate
+   across two physical pages. Only the size keyword survives. */
+const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
 
 /** True for every iOS/iPadOS Safari, which ignores the `@page` at-rule
  *  outright - size, orientation and `margin:0` alike - and enforces a page
@@ -4220,8 +4223,15 @@ function printLayoutName(w, ua) {
  */
 function printGridCSS(name, paper) {
   const g = PRINT_GEOM, L = PRINT_LAYOUTS[name], p = PRINT_PAPER[paper] || PRINT_PAPER.letter;
+  // Reserve the SHEET's own footprint, never the paper's. A platform that
+  // ignores @page owns the page box; a block taller than that box does not
+  // clip, it paginates - every sheet becomes two pages, the second carrying
+  // the sliced remainder. min-height lets the platform's box supply the rest.
+  const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+  const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+  const footprint = L.rotate ? sw : sh;
   return `@page{size:${p.css}; margin:0}\n` +
-    `#printroot .printpage{height:${p.h}pt}\n` +
+    `#printroot .printpage{min-height:${footprint}pt}\n` +
     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
     `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +

@@ -1,0 +1,17 @@
+# kills: the print stylesheet never declares a page-box height
+# suite: node --test --test-name-pattern ^the.print.stylesheet.never.declares.a.page.box.height$ tests/app.test.js
+# The reservation must be the sheet's height AFTER rotation. Swapping the arms
+# reserves 494.4pt for a sheet that paints 532.8pt tall, so the bottom row is
+# sliced again - the exact defect the owner photographed, at a smaller margin.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4229,7 +4229,7 @@ function printGridCSS(name, paper) {
+   // the sliced remainder. min-height lets the platform's box supply the rest.
+   const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+   const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+-  const footprint = L.rotate ? sw : sh;
++  const footprint = L.rotate ? sh : sw;
+   return `@page{size:${p.css}; margin:0}\n` +
+     `#printroot .printpage{min-height:${footprint}pt}\n` +
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +

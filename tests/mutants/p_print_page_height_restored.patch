@@ -1,0 +1,19 @@
+# kills: the print stylesheet never declares a page-box height
+# suite: node --test --test-name-pattern ^the.print.stylesheet.never.declares.a.page.box.height$ tests/app.test.js
+# Attempt 2 shipped `.printpage{height:792pt}` - the PAPER height asserted as
+# the PRINTABLE height. iOS ignores @page, so its page box is ~711.6pt less an
+# OS header/footer band; a 792pt block paginates rather than clips, turning
+# every sheet into two physical pages with the bottom row sliced onto the
+# second. Measured in Chrome: 8 pages for 4 sheets. This mutant restores it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4231,7 +4231,7 @@ function printGridCSS(name, paper) {
+   const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+   const footprint = L.rotate ? sw : sh;
+   return `@page{size:${p.css}; margin:0}\n` +
+-    `#printroot .printpage{min-height:${footprint}pt}\n` +
++    `#printroot .printpage{height:792pt}\n` +
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+     `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +

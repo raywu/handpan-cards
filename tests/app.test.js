@@ -3559,6 +3559,14 @@ test("every print layout fits inside the platform-enforced printable area", () =
   const g = plain(app.get("PRINT_GEOM"));
   const S = plain(app.get("PRINT_SAFE"));
   const layouts = plain(app.get("PRINT_LAYOUTS"));
+  // Reviewer R1: `constrained` selects WHICH layouts this loop checks, so it
+  // is load-bearing for the whole test. Dropping it from PRINT_LAYOUTS.narrow
+  // left the suite at 163/163 green - `if (!L.constrained) continue` then
+  // skipped every layout and the fit assertions below ran zero times. Pin the
+  // flag by value AND count the iterations, so an empty loop cannot pass.
+  assert.strictEqual(layouts.narrow.constrained, true,
+    "the narrow layout must stay marked constrained or the fit loop checks nothing");
+  let checked = 0;
   // iOS Safari ignores `@page` entirely - size, orientation AND margin:0 - so
   // the page box is wholly platform-chosen and the margin is whatever the
   // platform grants. Measured on iPhone 14 / iOS 26.6, US Letter: the drawn
@@ -3570,6 +3578,7 @@ test("every print layout fits inside the platform-enforced printable area", () =
   const safeW = g.PW - 2 * S.margin, safeH = g.PH - 2 * S.margin;
   for (const [name, L] of Object.entries(layouts)) {
     if (!L.constrained) continue;   // only layouts a margin-enforcing platform can select
+    checked++;
     const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
     const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
     // A rotated sheet presents its height horizontally and vice versa.
@@ -3579,6 +3588,7 @@ test("every print layout fits inside the platform-enforced printable area", () =
     assert.ok(h <= safeH,
       `the ${name} sheet presents ${h}pt of height, over the ${safeH}pt safe area`);
   }
+  assert.ok(checked > 0, "the fit loop asserted nothing - no layout was marked constrained");
   // The fit must come from the layout, never from the card: 62.65 x 87.21 mm
   // is the print spec both renderers share.
   assert.strictEqual(g.CW, 177.6, "the card keeps its printed width");
@@ -3611,6 +3621,84 @@ test("iOS selects the narrow layout at every viewport width", () => {
   }
   assert.strictEqual(String(app.get(`printLayoutName(380, ${JSON.stringify(DESKTOP)})`)), "narrow",
     "the width rule still applies off iOS");
+});
+
+/* Reviewer R2: iPadOS defaults to "Request Desktop Website", so a real iPad
+   sends a Macintosh UA and is caught only by the maxTouchPoints clause. That
+   branch had no test: collapsing isIOS() to /iPad|iPhone|iPod/ left the suite
+   at 163/163 green, while a real iPad fell through to the width rule and got
+   the 557.2 x 760.4pt wide sheet that misses on both axes. */
+test("iPadOS in desktop mode is still treated as iOS", () => {
+  const MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
+  const ipad = boot({ userAgent: MAC, maxTouchPoints: 5 });
+  assert.strictEqual(Boolean(ipad.get(`isIOS(${JSON.stringify(MAC)})`)), true,
+    "a Macintosh UA with a touchscreen is an iPad, not a Mac");
+  for (const w of [1024, 1366]) {
+    assert.strictEqual(String(ipad.get(`printLayoutName(${w}, ${JSON.stringify(MAC)})`)), "narrow",
+      `an iPad in desktop mode at ${w}px must not select the wide sheet`);
+  }
+  // A real Mac sends the same UA with no touchscreen and must keep 3x3.
+  const mac = boot({ userAgent: MAC, maxTouchPoints: 0 });
+  assert.strictEqual(Boolean(mac.get(`isIOS(${JSON.stringify(MAC)})`)), false,
+    "a trackpad Mac is not an iPad");
+  assert.strictEqual(String(mac.get(`printLayoutName(1366, ${JSON.stringify(MAC)})`)), "wide",
+    "a real desktop Safari keeps the 3x3 sheet");
+});
+
+/* THE ATTEMPT-3 ORACLE. printGridCSS() asserted the PAPER height as the
+   PRINTABLE height (`.printpage{height:792pt}`), the same error class as
+   assuming @page{margin:0} is honoured. On iOS the printable box is about
+   711.6pt, less an OS header/footer band of roughly 50pt, so a 792pt block
+   does not merely clip - it PAGINATES: every sheet becomes two physical
+   pages. Measured in Chrome at the parent commit: 8 pages for 4 sheets,
+   every odd page blank. On the device it is the owner's "Page 1 of 10" for a
+   5-sheet deck, with the sliced bottom row landing at the top of page 2.
+   The fix is to stop declaring a page-box dimension at all and reserve only
+   the sheet's own footprint, which the platform's box then contains. */
+test("the print stylesheet never declares a page-box height", () => {
+  const app = boot();
+  const g = plain(app.get("PRINT_GEOM"));
+  const layouts = plain(app.get("PRINT_LAYOUTS"));
+  const papers = plain(app.get("PRINT_PAPER"));
+  for (const paper of Object.keys(papers)) {
+    for (const [name, L] of Object.entries(layouts)) {
+      const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, ${JSON.stringify(paper)})`));
+      assert.ok(!/\.printpage\s*\{[^}]*(?<!min-)height\s*:/.test(css),
+        `${name}/${paper} still fixes .printpage's height to a page-box number`);
+      // Every paper-height literal must be gone from the emitted CSS: it is a
+      // number we cannot know on a platform that owns the page box.
+      for (const h of [792, 841.89]) {
+        assert.ok(!css.includes(`${h}pt`),
+          `${name}/${paper} still emits the ${h}pt paper height`);
+      }
+      // What it DOES reserve is the sheet's own footprint after rotation.
+      const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+      const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+      const footprint = L.rotate ? sw : sh;
+      assert.ok(css.includes(`min-height:${footprint}pt`),
+        `${name}/${paper} must reserve ${footprint}pt, the sheet's own height`);
+    }
+  }
+  // The reservation has to be smaller than the smallest printable box we have
+  // measured, or the block paginates again on the next platform.
+  const N = layouts.narrow;
+  const footprint = N.rotate
+    ? N.cols * g.CW + (N.cols - 1) * N.gx
+    : N.rows * g.CH + (N.rows - 1) * N.gy;
+  assert.ok(footprint <= 661.6,
+    `the narrow sheet reserves ${footprint}pt, over the ~661.6pt iOS leaves above its footer band`);
+});
+
+/* PRINT_PAPER.h was the only source of the page-box literal above. Keeping
+   the key invites the next edit to read it again, so the fix deletes it and
+   this test is the guard. `css` (the @page size keyword) is what survives. */
+test("PRINT_PAPER carries no page-box height", () => {
+  const papers = plain(boot().get("PRINT_PAPER"));
+  for (const [name, p] of Object.entries(papers)) {
+    assert.ok(!("h" in p), `PRINT_PAPER.${name} still carries a page-box height`);
+    assert.ok(typeof p.css === "string" && p.css.length > 0,
+      `PRINT_PAPER.${name} must keep its @page size keyword`);
+  }
 });
 
 test("the narrow print stylesheet actually emits the rotation", () => {
