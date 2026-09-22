@@ -669,10 +669,13 @@ class PrintSlotGeometryTest(unittest.TestCase):
 
         There is deliberately no absolute-position assertion here. `narrow` is
         selected only where the platform ignores `@page` and owns the page box,
-        so no derivation can say where these cards land; the evidence for that
-        is the rendered printToPDF oracle in `tests/e2e.test.js:1287-1317`,
-        which measures the real margins on a real page. What IS checkable from
-        the declaration is the shape, and the shape is where the old
+        so no derivation can say where these cards land. Nor is there a
+        rendered oracle standing in for one: the printToPDF test at
+        `tests/e2e.test.js:1217` boots without a viewport override, so it
+        measures the WIDE sheet, and narrow's real margins are unmeasured in
+        CI because narrow is iOS-only and CI drives Chrome (queue row 148).
+        What IS checkable from the declaration is the shape, and the shape is
+        where the old
         `printSlots()` test was wrong: it computed a 557.2pt block, charging
         two gutters the narrow layout does not have, and pinned that number.
         """
