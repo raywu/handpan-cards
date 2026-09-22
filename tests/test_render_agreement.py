@@ -539,6 +539,65 @@ def grid_css(name, paper="letter"):
     return out.stdout
 
 
+def read_layout(name, html=None):
+    """One `PRINT_LAYOUTS` entry as Python numbers, read out of the source.
+
+    `PRINT_GEOM.GX` resolves to `hifi.GX`, which is the point: the expected
+    stylesheet below is composed from the PRINT SPEC, not from whatever the
+    app happens to say today.
+    """
+    body = re.search(r"\b%s: \{([^}]*)\}" % name,
+                     read_js_const("PRINT_LAYOUTS", html)).group(1)
+    out = {}
+    for key, raw in re.findall(r"(\w+): ([^,}]+)", body):
+        raw = raw.strip()
+        if raw.startswith("PRINT_GEOM."):
+            out[key] = float(getattr(hifi, raw.split(".", 1)[1]))
+        elif raw in ("true", "false"):
+            out[key] = raw == "true"
+        else:
+            out[key] = float(raw)
+    return out
+
+
+def js_num(x):
+    """A float the way `${x}` writes it in a template literal."""
+    x = float(x)
+    return str(int(x)) if x.is_integer() else repr(x)
+
+
+def expected_grid_css(name, paper):
+    """The stylesheet `printGridCSS(name, paper)` MUST emit, composed here.
+
+    Not a scan and not a parser: one string, built from `hifi.CW`/`hifi.CH`,
+    the layout, and the paper keyword. A scan of the output cannot see
+    provenance - `${g.CW}` and a typed `177.6` are byte-identical - so the
+    check that means something is agreement with the spec, character for
+    character, including the parts a regex was never looking at (the `margin:0`,
+    the `.printscale` transform, the rotate line's presence or absence).
+    """
+    L = read_layout(name)
+    cols, rows = int(L["cols"]), int(L["rows"])
+    cw, ch, gx, gy = float(hifi.CW), float(hifi.CH), L["gx"], L["gy"]
+    sw = cols * cw + (cols - 1) * gx
+    sh = rows * ch + (rows - 1) * gy
+    footprint = round((sw if L.get("rotate") else sh) * 100) / 100
+    size = {"letter": "letter", "a4": "A4"}[paper]
+    dw = float(re.search(r"=\s*([\d.]+);", read_js_const("PRINT_DESIGN_W")).group(1))
+    return (
+        "@page{size:%s; margin:0}\n" % size +
+        "#printroot .printpage{min-height:%spt}\n" % js_num(footprint) +
+        "#printroot .printsheet{grid-template-columns:repeat(%d, %spt);"
+        % (cols, js_num(cw)) +
+        "grid-template-rows:repeat(%d, %spt);" % (rows, js_num(ch)) +
+        "column-gap:%spt; row-gap:%spt}\n" % (js_num(gx), js_num(gy)) +
+        ("#printroot .printsheet{transform:rotate(-90deg)}\n"
+         if L.get("rotate") else "") +
+        "#printroot .printscale{width:%spx;" % js_num(dw) +
+        "height:%spx;" % js_num(dw * ch / cw) +
+        "transform:scale(%s)}" % js_num(cw / 72 * 96 / dw))
+
+
 def css_slots(name):
     """Card origins the SHIPPED grid puts on the page, from the emitted CSS.
 
@@ -629,6 +688,22 @@ class PrintSlotGeometryTest(unittest.TestCase):
         self.assertNotIn("min-height:%gpt" % (2 * hifi.CH), css)
         with self.assertRaises(AssertionError):
             css_slots("narrow")
+
+    def test_emitted_grid_css_is_exactly_what_the_spec_implies(self):
+        """Every byte of both layouts, on both papers, against the print spec.
+
+        The literal scan in `PrintStylesheetTest` guards the STATIC print
+        block; it cannot reach this stylesheet, which is built at runtime and
+        injected into `#printgeom`. And no scan of emitted text could judge it
+        anyway - provenance is invisible in the output. One `assertEqual`
+        against a string composed from `hifi` covers the whole declaration.
+        """
+        for name in ("wide", "narrow"):
+            for paper in ("letter", "a4"):
+                with self.subTest(layout=name, paper=paper):
+                    self.assertEqual(grid_css(name, paper).rstrip("\n"),
+                                     expected_grid_css(name, paper))
+
 
     def test_grid_emitter_carries_no_geometry_literals_of_its_own(self):
         """Single definition site, now on the function that ships.
@@ -785,7 +860,15 @@ class PrintStylesheetTest(unittest.TestCase):
     def test_print_css_carries_no_card_geometry_literals(self):
         """Same single-definition-site rule as the slot emitter: the grid's
         card and gutter sizes are written by `printGridCSS()` from
-        `PRINT_GEOM`, never typed into the stylesheet."""
+        `PRINT_GEOM`, never typed into the stylesheet.
+
+        This guards the STATIC block only. The runtime half - the declaration
+        `printGridCSS()` injects into `#printgeom` - is covered by the source
+        scan in `PrintSlotGeometryTest` (provenance) and by
+        `test_emitted_grid_css_is_exactly_what_the_spec_implies` (value). A
+        literal scan of that half would be undecidable in the direction it
+        cares about: `${g.CW}` and a typed `177.6` emit the same bytes.
+        """
         for lit in ("177.6", "247.2", "12.2", "9.4", "62.65", "87.21"):
             self.assertNotIn(lit, self.print_css,
                              "%s is a card-geometry literal; it belongs to "
