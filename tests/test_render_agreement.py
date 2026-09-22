@@ -670,17 +670,16 @@ class PrintSlotGeometryTest(unittest.TestCase):
         There is deliberately no absolute-position assertion here. `narrow`
         exists for platforms that ignore `@page` and own the page box (a
         viewport under 640px picks it anywhere, but the page box is only out
-        of our hands on iOS), so no derivation can say where these cards
-        land. Nor is there a
-        rendered oracle standing in for one: the printToPDF test at
+        of our hands on iOS), so no derivation can say where these cards land.
+        Nor is there a rendered oracle standing in for one: the printToPDF at
         `tests/e2e.test.js:1217` runs at the suite's ambient 900x900, so it
         measures the WIDE sheet, and no test renders a print sheet below the
         640px breakpoint at all. Chrome would not settle it even if one did -
         it honours `@page`, so it cannot reproduce the page box narrow exists
         for. That is queue row 148.
+
         What IS checkable from the declaration is the shape, and the shape is
-        where the old
-        `printSlots()` test was wrong: it computed a 557.2pt block, charging
+        where the old `printSlots()` test was wrong: it computed a 557.2pt block, charging
         two gutters the narrow layout does not have, and pinned that number.
         """
         css = grid_css("narrow")
