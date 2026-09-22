@@ -35,6 +35,8 @@ print pipeline uses).
 `src/engine/pdf.js` (the PDF writer the browser emitter draws through, so a
 phone can produce the print sheet itself instead of asking a print dialog for
 a paper size it will not honour).
+`src/engine/pdfdeck.js` (a port of `decks.from_generated`: the engine's deck
+plus the two dozen card-copy and geometry keys the print builders read).
 `docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
 decisions behind it.
 

@@ -1,0 +1,16 @@
+# kills: test_R_uses_bankers_rounding_like_python
+# suite: python3 -m unittest tests.test_pdf_deck_adapter
+# R = round(BAND_HALF / ext, 1) is Python banker rounding. Math.round is
+# half-up, so a tie moves the diagram radius by 0.1 pt on every field.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -37,7 +37,7 @@ HPE.pdfdeck = (function () {
+   // input here carries, so the tie test is made on the same digits Python sees.
+   function bankers(x, digits) {
+     var d = digits || 0;
+-    if (!isFinite(x)) return x;
++    return Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+     var neg = x < 0;
+     var s = Math.abs(x).toFixed(20);
+     var dot = s.indexOf(".");

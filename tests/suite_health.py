@@ -44,6 +44,7 @@ FLOORS = {
     "tests/test_suite_health.py": 12,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
+    "tests/test_pdf_deck_adapter.py": 4,
     # node
     "tests/app.test.js": 169,
     "tests/e2e.test.js": 104,
