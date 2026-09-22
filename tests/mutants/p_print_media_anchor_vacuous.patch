@@ -1,0 +1,26 @@
+# kills: the print stylesheet gives the page box something to fill
+# suite: node --test tests/app.test.js
+# Vacuity mutant. printBlock() anchors on the FIRST textual "@media print", so
+# a CSS comment merely mentioning the phrase points the brace matcher at an
+# unrelated block; the rule scan then finds no #printroot rule and asserts
+# nothing, silently. Paired here with the page-box literal the scan exists to
+# catch - without the anchor assertion this pair passes all 167 tests.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -47,6 +47,7 @@
+    the box the user is typing into out of sight. The ramp keeps its proportions
+    and gives back roughly a third; the rhythm still reads because it is the
+    RATIOS that group things, not the absolute values. */
++/* compact heights; see @media print at the foot for the sheet rules */
+ @media (max-height:520px){
+   :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
+ }
+@@ -778,6 +779,7 @@ button.nav:active{background:#2e281e}
+      together - neither alone is correct. */
+   html,body{height:100%; min-height:0; overflow:visible}
+   body.printing #printroot, body.printing #printroot .printpage{height:100%}
++  body.printing #printroot .printpage{height:840pt}
+   /* The safe-area padding is an on-screen notch reservation and has no meaning
+      on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}

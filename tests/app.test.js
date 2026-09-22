@@ -3755,13 +3755,35 @@ test("the print stylesheet gives the page box something to fill", () => {
      at all rather than a list of five - `em`, `vh` and `calc()` all resolve
      to a fixed length just as well as `pt` does. `min-height` is deliberately
      untouched: that IS the floor, and it is the one length that belongs. */
-  for (const [, sel, body] of printBlock(html).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (!sel.includes("#printroot")) continue;
-    const h = body.match(/(?:^|[;\s])height\s*:\s*([^;]+)/);
-    if (!h) continue;
-    assert.match(h[1].trim(), /^100%$/,
-      `${sel.trim()} sets height:${h[1].trim()} - the fill must be a percentage, ` +
-      "or it resolves against a page box we are never allowed to assume");
+  const block = printBlock(html);
+  /* The reviewer's N1: without this line the whole loop below can go VACUOUS
+     and stay green. `indexOf` takes the FIRST textual "@media print" in the
+     file, so a CSS comment mentioning the phrase - in a stylesheet this
+     comment-dense, an ordinary thing to write - redirects the brace matcher
+     to an unrelated block, the scan finds no #printroot rule, and every
+     assertion silently checks nothing. Demonstrated: with such a comment
+     above the max-height rule, `.printpage{height:840pt}` passed 167/167.
+     Anchoring on a string the real block must contain also catches the
+     matcher being truncated early by a brace inside a CSS string. */
+  assert.ok(block.includes("body.printing #printroot"),
+    "printBlock did not find the real print stylesheet - the scan below would assert nothing");
+  for (const [, sel, body] of block.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    /* html and body carry the top of the same percentage chain, so a literal
+       lands there just as well (reviewer N3: `html,body{height:760pt}` inside
+       the block passed 167/167 - later rule, same specificity, it wins). */
+    if (!/#printroot|(^|[,\s])(html|body)([,\s{]|$)/.test(sel)) continue;
+    /* matchAll, not match: CSS gives the LAST declaration the win, so reading
+       only the first height let `{height:100%; min-height:0; height:760pt}`
+       through (reviewer N2), and the shipped html,body rule shows
+       multi-declaration blocks are house style here. `i` because CSS property
+       names are case-insensitive; `!important` is a legitimate, non-
+       regressing suffix and must not read as a literal. */
+    for (const h of body.matchAll(/(?:^|[;\s])height\s*:\s*([^;]+)/gi)) {
+      const v = h[1].trim().replace(/\s*!important$/i, "").trim();
+      assert.match(v, /^100%$/,
+        `${sel.trim()} sets height:${v} - the fill must be a percentage, ` +
+        "or it resolves against a page box we are never allowed to assume");
+    }
   }
 });
 
