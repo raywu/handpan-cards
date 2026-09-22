@@ -3290,3 +3290,403 @@ test("the sheet's text inputs stay at 16px so iOS does not auto-zoom them", () =
       `${sel} is ${m[1]}px; iOS Safari auto-zooms controls under 16px`);
   }
 });
+
+/* ------------------------------------------- 20. the print sheet card list */
+
+/* Workstream B, AC-B2 and AC-B4. `tools/hifi.py` build() (:379-395) is the
+ * print spec and these tests are written against IT, not against the JS: the
+ * full deck leads with a title and a legend card and pads with BLANK
+ * templates; the print-shop sheet carries chord cards only and pads with
+ * empty SKIPS, so a shop never prints a blank template it was not asked for.
+ *
+ * Slots per page is an ARGUMENT here, never a viewport read (AC-B2). D17
+ * makes it 6 on a narrow viewport and 9 on a wide one, and a function that
+ * reached for window.innerWidth itself would be neither pure nor testable
+ * without viewport mocking this suite does not otherwise do. Every case below
+ * therefore runs at both 9 and 6. */
+
+/** The generated Amara deck, selected, so deck() returns it. */
+function customDeck(app) {
+  const res = app.generate(AMARA_STRING);
+  assert.strictEqual(res.ok, true, res.reason);
+  app.select(res.value.id);
+  return res.value.id;
+}
+
+const kinds = (app, variant, slots) =>
+  arr(app.get(`printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).map(function(c){return c.kind})`));
+
+test("print sheet card list: the full variant leads with title and legend", () => {
+  const app = boot();
+  customDeck(app);
+  for (const slots of [9, 6]) {
+    const ks = kinds(app, "full", slots);
+    assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"],
+      `full sheet at ${slots}/page must open with the title and legend cards`);
+    assert.strictEqual(ks.filter((k) => k === "title").length, 1);
+    assert.strictEqual(ks.filter((k) => k === "legend").length, 1);
+  }
+});
+
+test("print sheet card list: padding fills the last page, with the right filler", () => {
+  const app = boot();
+  customDeck(app);
+  const chordCount = app.get("deck().chords.length");
+  for (const slots of [9, 6]) {
+    const full = kinds(app, "full", slots);
+    assert.strictEqual(full.length % slots, 0,
+      `full sheet at ${slots}/page left a ragged last page`);
+    // hifi.py pads the full deck with blank TEMPLATE cards.
+    assert.ok(full.every((k) => ["title", "legend", "chord", "blank"].includes(k)));
+    assert.strictEqual(full.length - chordCount - 2,
+      full.filter((k) => k === "blank").length);
+
+    const shop = kinds(app, "shop", slots);
+    assert.strictEqual(shop.length % slots, 0,
+      `print-shop sheet at ${slots}/page left a ragged last page`);
+    // ...and the print-shop sheet with EMPTY slots, never with blanks.
+    assert.ok(!shop.includes("blank"),
+      "the print-shop sheet must not ship blank template cards");
+    assert.ok(!shop.includes("title") && !shop.includes("legend"),
+      "the print-shop sheet is chord cards only");
+    assert.strictEqual(shop.filter((k) => k === "chord").length, chordCount);
+    assert.strictEqual(shop.filter((k) => k === "skip").length,
+      shop.length - chordCount);
+  }
+});
+
+test("print sheet card list: a deck that exactly fills its pages gets no padding", () => {
+  const app = boot();
+  customDeck(app);
+  const n = app.get("deck().chords.length");
+  // Amara generates 25 chords; 25 + title + legend = 27 = 3 pages of 9 exactly.
+  assert.strictEqual(n, 25, "fixture changed - pick a new exact-fit arithmetic");
+  assert.deepStrictEqual(kinds(app, "full", 9).filter((k) => k === "blank"), []);
+});
+
+test("print sheet covers every chord exactly once, numbered from 1", () => {
+  const app = boot();
+  customDeck(app);
+  for (const variant of ["full", "shop"]) {
+    for (const slots of [9, 6]) {
+      const ns = arr(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
+        `.filter(function(c){return c.kind === "chord"}).map(function(c){return c.n})`));
+      const total = app.get("deck().chords.length");
+      assert.deepStrictEqual(ns, Array.from({ length: total }, (_, i) => i + 1),
+        `${variant} at ${slots}/page must carry every chord once, numbered 1..n in deck order`);
+      const names = arr(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
+        `.filter(function(c){return c.kind === "chord"})` +
+        `.map(function(c){return c.chord.main + (c.chord.sup || "")})`));
+      const expected = arr(app.get(
+        `deck().chords.map(function(c){return c.main + (c.sup || "")})`));
+      assert.deepStrictEqual(names, expected,
+        "the printed cards must be the deck's own chords, in deck order");
+    }
+  }
+});
+
+test("print sheet card list: a built-in deck composes the same way", () => {
+  const app = boot();
+  // The built-ins carry a blank_cards overlay literal in the print pipeline;
+  // the app's data has none, so the list is title + legend + chords + padding.
+  const di = deckIndex(app, "amara");
+  const ks = arr(app.get(
+    `printCardList(DECKS[${di}], "full", 9).map(function(c){return c.kind})`));
+  assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"]);
+  assert.strictEqual(ks.length % 9, 0);
+  assert.strictEqual(ks.filter((k) => k === "chord").length,
+    app.get(`DECKS[${di}].chords.length`));
+});
+
+/* ---------------------------------------------------------------------------
+ * 21. the print card markup
+ *
+ * B3. One function turns a printCardList() entry into the inner markup of a
+ * `.face`, so the print sheet draws through the app's own renderers rather
+ * than a second set. The non-chord kinds mirror tools/hifi.py's title_card
+ * (:474), legend_card (:490) and blank_card (:514) - the print spec - with
+ * the copy substitutions D17's "The copy a custom deck does not have"
+ * settled: the canonical seed string in place of the print overlay's `sub`,
+ * the engine's own warning reasons in place of the blurb, and no credit line.
+ * ------------------------------------------------------------------------ */
+
+const cardHTML = (app, variant, slots, i) =>
+  String(app.get(
+    `printCardHTML(deck(), printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}])`));
+
+test("print card markup: a chord card is the app's own answer face, minus the print row", () => {
+  const app = boot();
+  customDeck(app);
+  const html = cardHTML(app, "shop", 9, 0);
+  const main = String(app.get("deck().chords[0].main"));
+  assert.ok(html.includes(main), "the chord card must carry its chord name");
+  assert.ok(html.includes("<svg"), "the chord card must carry the pan diagram");
+  assert.ok(html.includes("notesline") && html.includes("numline"),
+    "the chord card must carry the note line and the number line");
+  assert.ok(html.includes("#1"), "the chord card must carry its index number");
+  assert.ok(!html.includes('class="prints"'),
+    "a printed card must not carry the .prints row - it is screen furniture");
+});
+
+test("print card markup: the title card names the deck and carries its seed and blurb", () => {
+  const app = boot();
+  customDeck(app);
+  const html = cardHTML(app, "full", 9, 0);
+  const name = String(app.get("deck().name"));
+  const seed = String(app.get("HPE.core.formatSeed(deck().fields)"));
+  assert.ok(html.includes(name), "the title card must name the deck");
+  assert.ok(html.includes(seed),
+    "a custom deck has no print-overlay `sub`; the canonical seed string stands in");
+  assert.ok(html.includes("CHORD CARDS"), "mirrors hifi.title_card:479");
+  assert.ok(html.includes("<svg"), "the title card carries an unhighlighted pan");
+  assert.ok(!html.includes("notesline"),
+    "the title card is not a chord card and has no note line");
+  const warnings = arr(app.get("(deck().warnings || []).map(function(w){return w.reason})"));
+  for (const w of warnings) {
+    assert.ok(html.includes(String(app.get(`esc(${JSON.stringify(w)})`))),
+      "the engine's own reason strings are the custom deck's blurb");
+  }
+});
+
+test("print card markup: the legend card is the same static anatomy lesson for every deck", () => {
+  const app = boot();
+  customDeck(app);
+  const custom = cardHTML(app, "full", 9, 1);
+  const di = deckIndex(app, "hijaz");
+  const builtin = String(app.get(
+    `printCardHTML(DECKS[${di}], printCardList(DECKS[${di}], "full", 9)[1])`));
+  for (const s of ["LEGEND", "How to read", "ROOT NOTE", "CHORD NOTE"]) {
+    assert.ok(custom.includes(s), `the legend card must carry "${s}"`);
+    assert.ok(builtin.includes(s), `the built-in legend card must carry "${s}" too`);
+  }
+  assert.ok(custom.includes("<svg"), "the legend card demonstrates on a pan");
+  assert.ok(!custom.includes("notesline"),
+    "the legend card teaches the anatomy; it is not a chord card");
+});
+
+test("print card markup: a blank card is a deck-branded template with no chord on it", () => {
+  const app = boot();
+  customDeck(app);
+  const html = String(app.get('printCardHTML(deck(), {kind: "blank"})'));
+  assert.ok(html.includes(String(app.get("deck().name"))),
+    "the blank card is deck-branded - hifi.blank_card:516");
+  assert.ok(html.includes("<svg"), "the blank card carries an unhighlighted pan");
+  assert.ok(!html.includes("notesline") && !html.includes("numline"),
+    "the blank card's note and number rows are RULES to write on, not rendered lines");
+  assert.ok(html.includes("blankrule"),
+    "the two write-on rules mirror hifi.blank_card:520-521");
+});
+
+test("print card markup: an empty print-shop slot renders nothing at all", () => {
+  const app = boot();
+  customDeck(app);
+  assert.strictEqual(String(app.get('printCardHTML(deck(), {kind: "skip"})')), "",
+    "a `skip` is an EMPTY slot on the print-shop sheet, not a card");
+});
+
+test("print card markup: every card a sheet emits renders", () => {
+  const app = boot();
+  customDeck(app);
+  for (const variant of ["full", "shop"]) {
+    for (const slots of [9, 6]) {
+      const n = Number(app.get(
+        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).length`));
+      for (let i = 0; i < n; i++) {
+        const kind = String(app.get(
+          `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}].kind`));
+        const html = cardHTML(app, variant, slots, i);
+        if (kind === "skip") assert.strictEqual(html, "");
+        else assert.ok(html.length > 0,
+          `${variant} at ${slots}/page: card ${i} (${kind}) rendered nothing`);
+      }
+    }
+  }
+});
+
+/* ---------------------------------------------------------------------------
+ * 22. the print sheet's layout selection and its grid CSS
+ *
+ * B4/AC-B5b. Slots-per-page is decided ONCE, in JS, at 640px - the app's own
+ * breakpoint (index.html:41). The `@media print` block reads the class that
+ * decision sets and never re-decides the width itself: a second breakpoint in
+ * CSS is the drift vector that ships 9 padded cards into a 6-slot grid.
+ * ------------------------------------------------------------------------ */
+
+test("print sheet slot count agrees with the layout the breakpoint picks", () => {
+  const app = boot();
+  for (const [w, name, slots] of [[640, "wide", 9], [1024, "wide", 9],
+                                  [639, "narrow", 6], [380, "narrow", 6]]) {
+    assert.strictEqual(String(app.get(`printLayoutName(${w})`)), name,
+      `${w}px must select the ${name} layout`);
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    assert.strictEqual(L.cols * L.rows, slots,
+      `the ${name} layout must be ${slots} slots per page`);
+    assert.strictEqual(L.cols, 3,
+      "both layouts are 3 columns wide - D17 reduces ROWS, not columns");
+    assert.strictEqual(
+      Number(app.get(`printSlots(PRINT_LAYOUTS.${name}.cols, PRINT_LAYOUTS.${name}.rows).length`)),
+      slots, "the slot emitter and the layout must agree on the count");
+  }
+});
+
+test("print sheet grid CSS is emitted from PRINT_GEOM, never typed", () => {
+  const app = boot();
+  const g = plain(app.get("PRINT_GEOM"));
+  for (const name of ["wide", "narrow"]) {
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
+    assert.ok(css.includes(`repeat(${L.cols}, ${g.CW}pt)`),
+      `${name}: columns must come from PRINT_GEOM.CW`);
+    assert.ok(css.includes(`repeat(${L.rows}, ${g.CH}pt)`),
+      `${name}: rows must come from PRINT_GEOM.CH`);
+    assert.ok(css.includes(`column-gap:${g.GX}pt`) && css.includes(`row-gap:${g.GY}pt`),
+      `${name}: gutters must come from PRINT_GEOM`);
+  }
+});
+
+test("print sheet paper size is a control, and only the page box changes", () => {
+  const app = boot();
+  const letter = String(app.get('printGridCSS("wide", "letter")'));
+  const a4 = String(app.get('printGridCSS("wide", "a4")'));
+  assert.ok(/@page\{size:letter;/.test(letter));
+  assert.ok(/@page\{size:A4;/.test(a4));
+  // D16 and D17 are orthogonal: A4 is 297mm against Letter's 279.4mm, nowhere
+  // near the ~97mm a third card row plus its gutter would need. The grid is
+  // byte-identical; only the page box differs.
+  const grid = (css) => css.split("\n").filter((l) => l.includes("grid-template")).join("\n");
+  assert.strictEqual(grid(letter), grid(a4),
+    "paper size must not change the card grid");
+  assert.notStrictEqual(letter, a4, "paper size must change the page box");
+});
+
+/* ---------------------------------------------------------------------------
+ * 23. the print CTA
+ *
+ * B5. Custom decks get the same two print options the built-ins have. A
+ * built-in's are `<a href>` to the pre-built PDFs and must not move; a custom
+ * deck's are `<button>` that fill the print container and call window.print().
+ * ------------------------------------------------------------------------ */
+
+test("print CTA: a custom deck's header carries the same two labels as a built-in's", () => {
+  const app = boot();
+  const di = deckIndex(app, "amara");
+  const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
+  customDeck(app);
+  const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
+  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+    assert.ok(builtin.includes(label), `the built-in header lost "${label}"`);
+    assert.ok(custom.includes(label), `the custom header is missing "${label}"`);
+  }
+  assert.ok(builtin.includes("<a href="),
+    "a built-in deck's print options stay plain links to the pre-built PDFs");
+  assert.ok(!builtin.includes("<button"),
+    "the built-in path must be UNCHANGED - a button there is a plan violation");
+  assert.ok(custom.includes("<button"),
+    "a custom deck has no pre-built PDF; its controls are buttons");
+  assert.ok(/<select/.test(custom), "D16: the paper picker rides with the buttons");
+});
+
+/** Run the CTA and capture the sheet while it is live: window.print() is the
+ *  one moment the container is populated, and the app empties it immediately
+ *  afterwards (AC-B5). Nothing test-only is added to the app for this. */
+function printed(app, variant) {
+  app.run(`captured = null; window.print = function(){ captured = {
+    html: document.getElementById("printroot").innerHTML,
+    cls: document.getElementById("printroot").className,
+    hidden: document.getElementById("printroot").hidden,
+    css: document.getElementById("printgeom").textContent }; };
+    openPrintSheet(${JSON.stringify(variant)});`);
+  return plain(app.get("captured"));
+}
+const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
+
+test("print sheet slot count agrees with the viewport at the moment the CTA fires", () => {
+  for (const [w, name, slots] of [[1024, "wide", 9], [380, "narrow", 6]]) {
+    const app = boot({ innerWidth: w });
+    customDeck(app);
+    const cap = printed(app, "full");
+    assert.ok(cap, "the CTA must call window.print()");
+    assert.strictEqual(cap.hidden, false, "the sheet must be showing when print() fires");
+    assert.strictEqual(cap.cls, name, `${w}px must put the ${name} class on the container`);
+    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    assert.strictEqual(L.cols * L.rows, slots);
+    // The emitted cells are the padded card list, so their count is a multiple
+    // of the slot count the container's own class selects. One decision, one
+    // place: the CSS never re-reads the width (AC-B5b).
+    assert.strictEqual(cellCount(cap.html) % slots, 0,
+      `${w}px: ${cellCount(cap.html)} cells is not a whole number of ${slots}-slot pages`);
+    assert.strictEqual(cellCount(cap.html),
+      Number(app.get(`printCardList(deck(), "full", ${slots}).length`)));
+    assert.ok(cap.css.includes(`repeat(${L.rows}, `),
+      "the geometry stylesheet must carry the same layout's row count");
+  }
+});
+
+test("print sheet leaves no residue", () => {
+  const app = boot();
+  customDeck(app);
+  const root = app.els.printroot;
+  assert.strictEqual(root.hidden, true, "the print container starts hidden");
+  assert.strictEqual(root.innerHTML, "", "the print container starts empty");
+  app.run('openPrintSheet("full")');
+  assert.strictEqual(root.innerHTML, "",
+    "a stray print sheet in the DOM is a regression on the practice screen");
+  assert.strictEqual(root.hidden, true, "the print container was left showing");
+  assert.strictEqual(app.els.printgeom.textContent, "",
+    "the geometry stylesheet was left behind");
+  assert.strictEqual(app.docEl.classList.contains("printing"), false,
+    "body.printing hides the whole app; leaving it on blanks the screen");
+});
+
+test("print sheet is emptied even when the print dialog throws", () => {
+  const app = boot();
+  customDeck(app);
+  app.run("window.print = function(){ throw new Error('no printer'); }");
+  assert.throws(() => app.run('openPrintSheet("full")'), /no printer/);
+  assert.strictEqual(app.els.printroot.innerHTML, "",
+    "a throwing print() must not strand the sheet in the DOM");
+  assert.strictEqual(app.docEl.classList.contains("printing"), false);
+});
+
+/* Reviewer finding B-2: `printPaper` is module state that survives a render,
+   but headerHTML() re-emits the <select> from scratch on EVERY render with
+   LETTER first and nothing marked selected. So a flip, an arrow press or a
+   shuffle silently reset the control to LETTER while the app still printed
+   A4 - and re-picking LETTER fired no `change` event, so the user could not
+   get back without round-tripping through A4. The control has to report the
+   state it owns (D16). */
+test("print CTA: the paper picker reports the paper that will actually print", () => {
+  const app = boot();
+  customDeck(app);
+  const picked = () => {
+    const html = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
+    const opts = html.match(/<option value="([a-z0-9]+)"( selected)?>/g) || [];
+    assert.strictEqual(opts.length, 2, "the paper picker lost an option");
+    const on = opts.filter((o) => o.includes(" selected"));
+    assert.strictEqual(on.length, 1,
+      `${on.length} options are marked selected; the picker must show exactly one`);
+    return on[0].match(/value="([a-z0-9]+)"/)[1];
+  };
+
+  assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
+  app.run('setPrintPaper("a4")');
+  assert.strictEqual(picked(), "a4",
+    "after a re-render the picker reads LETTER while the sheet still prints A4");
+  app.run('setPrintPaper("letter")');
+  assert.strictEqual(picked(), "letter");
+});
+
+test("print CTA: the paper picker changes the page box and nothing else", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('setPrintPaper("a4")');
+  const a4 = printed(app, "full");
+  assert.ok(a4.css.includes("size:A4"), "the sheet must be built for the selected paper");
+  app.run('setPrintPaper("letter")');
+  const letter = printed(app, "full");
+  assert.ok(letter.css.includes("size:letter"));
+  assert.strictEqual(cellCount(a4.html), cellCount(letter.html),
+    "D16 and D17 are orthogonal: paper size must not change the card count");
+});

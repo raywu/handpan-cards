@@ -35,7 +35,11 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a
   // BACK control and a visible title where the drawer had neither.
-  "scale-back", "scale-title"];
+  "scale-back", "scale-title",
+  // Workstream B: the print sheet's container and the geometry <style> the
+  // CTA writes into. Both live outside <main> so @media print can hide the
+  // app without hiding the sheet.
+  "printroot", "printgeom"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -156,6 +160,12 @@ function boot(opts = {}) {
       .matchAll(/<input[^>]*\bid="([^"]+)"[^>]*\bplaceholder="([^"]*)"/g)) {
     if (els[id]) els[id].placeholder = ph;
   }
+  // `hidden` is real initial state in the shipped markup (the scale page and
+  // the print container both ship hidden), and a test that asserts a container
+  // STARTS hidden has to see what the browser sees rather than `undefined`.
+  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
+    if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
+  }
   const created = [];
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
@@ -240,7 +250,13 @@ function boot(opts = {}) {
     // Object, Error and friends: a context has its own, and importing the host
     // ones would make `x instanceof Array` false for values the code built.
     console, Math: mathStub,
+    // The print sheet reads the viewport ONCE, at the CTA (AC-B5b), and then
+    // calls window.print(). Both are window-level in the browser, so the stub
+    // serves them here; printCalls records the invocations a test asserts on.
+    innerWidth: opts.innerWidth === undefined ? 1024 : opts.innerWidth,
   };
+  const printCalls = [];
+  sandbox.print = () => { printCalls.push(sandbox.innerWidth); };
   // Window-level listeners. The app registers `popstate` on the window (the
   // scale page is a history entry, and the browser's Back button is the only
   // way a user ever pops it), so the stub has to serve the same registration
@@ -282,6 +298,8 @@ function boot(opts = {}) {
       chip.onclick();
     },
     flip: () => els.card.listeners.click[0](),
+    /** The window.print() calls this boot has seen, newest last. */
+    printCalls: () => [...printCalls],
     cssVar: (name) => docEl.style._props[name],
 
     /* -------- generated decks (Phase 3) --------

@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -662,7 +662,6 @@ button.nav:active{background:#2e281e}
+@@ -731,7 +731,6 @@ button.nav:active{background:#2e281e}
     the file - so without this the armed button is the only control on the page
     that does not answer a press. Confirming a delete is the press that most
     needs the acknowledgement. */
 -#scale-delete[data-armed]:active{color:#eae6df}
- </style>
- </head>
- <body>
+ 
+ /* ---- the print sheet (Workstream B) ---------------------------------------
+    This block is deliberately LAST in the <style> element. It redefines

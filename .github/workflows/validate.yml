@@ -46,6 +46,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The print regression test prints a real PDF over CDP and measures the
+      # card frames with pymupdf; nothing else in this job needs python.
+      - run: pip install pymupdf
       # No npm install: the e2e harness drives the Chrome already present on the
       # runner over CDP, so this repo stays dependency-free.
       - name: Show browser in use

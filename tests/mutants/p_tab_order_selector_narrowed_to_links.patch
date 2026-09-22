@@ -1,0 +1,18 @@
+# kills: print controls on the hidden face
+# suite: node --test --test-name-pattern print.controls.on.the.hidden.face tests/e2e.test.js
+# The selector narrows back to `.prints a`, which is all a built-in deck needs
+# and all this code used to say. Every built-in assertion stays green - the
+# links are still handled - while a custom deck leaves three focusable
+# controls inside the aria-hidden face (AC-B1b).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4428,7 +4428,7 @@ function render() {
+   // focusable controls inside an aria-hidden subtree - the exact defect this
+   // pair of lines was written to prevent, in new element types (AC-B1b).
+   const printCtrls = (id) =>
+-    ["a", "button", "select"].map((t) => `#${id} .prints ${t}`).join(",");
++    ["a"].map((t) => `#${id} .prints ${t}`).join(",");
+   for (const el of document.querySelectorAll(printCtrls(away.id))) el.tabIndex = -1;
+   for (const el of document.querySelectorAll(printCtrls(shown.id))) el.removeAttribute("tabindex");
+   cardEl.setAttribute("aria-describedby", shown.id);

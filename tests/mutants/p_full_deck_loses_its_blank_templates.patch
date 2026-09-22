@@ -1,0 +1,18 @@
+# kills: print sheet card list: padding fills the last page, with the right filler
+# suite: node --test --test-name-pattern padding.fills.the.last.page tests/app.test.js
+# `filler` is still computed and still correct - the push ignores it, so the
+# full deck pads with EMPTY slots instead of the blank write-on templates
+# hifi.build() (:379-395) pads it with. Page count, card count and the
+# print-shop sheet are all unchanged; only the full deck loses its blanks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4269,7 +4269,7 @@ function printCardList(d, variant, slotsPerPage) {
+     : [{ kind: "title" }, { kind: "legend" }].concat(chords,
+         Array.from({ length: d.blank_cards || 0 }, () => ({ kind: "blank" })));
+   const filler = shop ? "skip" : "blank";
+-  while (cards.length % slotsPerPage !== 0) cards.push({ kind: filler });
++  while (cards.length % slotsPerPage !== 0) cards.push({ kind: "skip" });
+   return cards;
+ }
+ 

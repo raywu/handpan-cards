@@ -454,5 +454,250 @@ class RenderAgreement(unittest.TestCase):
                              "%s %s: badge text" % (app_c["deck"], app_c["name"]))
 
 
+def read_print_geom_source():
+    """The print sheet's page geometry, lifted out of `index.html` as SOURCE.
+
+    AC-B3. The 3x3 layout is pinned by value against `hifi.slots()`, which is
+    the print spec. The 3x2 layout of D17 has NO Python oracle - `slots()`
+    (`tools/hifi.py:354-362`) is hardwired to `range(3)` and there is nothing
+    3x2 in `hifi.py` to compare against - so it is pinned a different way:
+    the JS must derive both layouts from ONE declaration of the card and
+    gutter constants. A second, independently typed copy of
+    177.6/247.2/12.2/9.4 would pass any value check today and drift tomorrow,
+    which is exactly the failure this criterion exists to catch.
+    """
+    with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+        html = fh.read()
+    decl = re.search(r"const PRINT_GEOM = \{[^}]*\};", html)
+    assert decl, "index.html has no PRINT_GEOM declaration"
+    start = html.index("function printSlots(")
+    depth, i = 0, html.index("{", start)
+    while True:
+        if html[i] == "{":
+            depth += 1
+        elif html[i] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    return decl.group(0), html[start:i + 1], html
+
+
+def js_slots(cols, rows):
+    """Run the app's own printSlots() in node and read the answer back."""
+    decl, fn, _ = read_print_geom_source()
+    src = "%s\n%s\nconsole.log(JSON.stringify(printSlots(%d, %d)));" % (
+        decl, fn, cols, rows)
+    out = subprocess.run([os.environ.get("NODE", "node"), "-e", src],
+                         capture_output=True, text=True, check=True)
+    return [tuple(xy) for xy in json.loads(out.stdout)]
+
+
+class PrintSlotGeometryTest(unittest.TestCase):
+    """AC-B3: the browser print sheet lays cards out where hifi.py does."""
+
+    TOL_PT = 0.1
+
+    def test_constants_match_hifi(self):
+        decl, _, _ = read_print_geom_source()
+        vals = dict(re.findall(r"(\w+):\s*([\d.]+)", decl))
+        self.assertEqual(float(vals["CW"]), hifi.CW)
+        self.assertEqual(float(vals["CH"]), hifi.CH)
+        self.assertEqual(float(vals["GX"]), hifi.GX)
+        self.assertEqual(float(vals["GY"]), hifi.GY)
+        self.assertEqual(float(vals["PW"]), hifi.PAGE[0])
+        self.assertEqual(float(vals["PH"]), hifi.PAGE[1])
+
+    def test_wide_layout_matches_hifi_slots(self):
+        """All 9 slots, to within 0.1pt, against the generator that ships."""
+        want, got = hifi.slots(), js_slots(3, 3)
+        self.assertEqual(len(got), 9)
+        for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
+            self.assertAlmostEqual(gx, wx, delta=self.TOL_PT,
+                                   msg="slot %d x: %.3f vs hifi %.3f" % (i, gx, wx))
+            self.assertAlmostEqual(gy, wy, delta=self.TOL_PT,
+                                   msg="slot %d y: %.3f vs hifi %.3f" % (i, gy, wy))
+
+    def test_narrow_layout_is_recentred_not_the_top_six(self):
+        """D17. Six slots, same constants, re-centred for two rows.
+
+        `slots()` centres its block on `th_ = 3*CH + 2*GY` and emits row 0
+        first, and row 0 is the TOP row - so reusing its first 6 entries would
+        leave the cards high on the page with all the slack below them. The
+        2-row block is centred on its own height instead.
+        """
+        got = js_slots(3, 2)
+        self.assertEqual(len(got), 6)
+        th = 2 * hifi.CH + hifi.GY
+        tw = 3 * hifi.CW + 2 * hifi.GX
+        x0 = (hifi.PAGE[0] - tw) / 2
+        y0 = (hifi.PAGE[1] - th) / 2
+        want = [(x0 + col * (hifi.CW + hifi.GX),
+                 y0 + th - (row + 1) * hifi.CH - row * hifi.GY)
+                for row in range(2) for col in range(3)]
+        for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
+            self.assertAlmostEqual(gx, wx, delta=self.TOL_PT, msg="slot %d x" % i)
+            self.assertAlmostEqual(gy, wy, delta=self.TOL_PT, msg="slot %d y" % i)
+        # ...and it is NOT the top six of the 3x3 block.
+        self.assertNotAlmostEqual(got[0][1], hifi.slots()[0][1], delta=self.TOL_PT)
+
+    def test_slot_emitter_carries_no_geometry_literals_of_its_own(self):
+        """Single definition site. printSlots() may reference PRINT_GEOM and
+        its own row/column counts, and nothing else: any float literal in its
+        body is a second copy of a constant PRINT_GEOM already owns."""
+        _, fn, _ = read_print_geom_source()
+        self.assertIn("PRINT_GEOM", fn)
+        strays = re.findall(r"\d+\.\d+", fn)
+        self.assertEqual(strays, [],
+                         "printSlots() embeds its own numeric literals %s; it must "
+                         "read every card and gutter constant from PRINT_GEOM" % strays)
+
+
+class PrintStylesheetTest(unittest.TestCase):
+    """B4/AC-B3: the `@media print` block's placement and its literals."""
+
+    def setUp(self):
+        with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+            self.html = fh.read()
+        self.style = self.html.split("<style>", 1)[1].split("</style>", 1)[0]
+        i = self.style.index("@media print")
+        self.print_css = self.style[i:]
+
+    def test_print_block_is_last_in_the_style_element(self):
+        """`tests/test_render_agreement.py:238` reads `.face::before` with a
+        whole-file regex and takes the FIRST match. The print block redefines
+        that rule for printed cards, so it has to sit BELOW the screen rule -
+        and the cheapest way to guarantee that forever is to keep it last."""
+        self.assertIn("@media print", self.style)
+        self.assertEqual(self.style.count("@media print"), 1)
+        # Nothing but the print block's own braces after it.
+        tail = self.print_css
+        self.assertTrue(tail.rstrip().endswith("}"))
+        # No further top-level rule opens after the block closes.
+        depth = 0
+        end = None
+        for i, c in enumerate(tail):
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i
+                    break
+        self.assertIsNotNone(end, "the @media print block never closes")
+        self.assertEqual(tail[end + 1:].strip(), "",
+                         "a rule was added after the print block; the "
+                         ".face::before first-match read would break")
+
+    def test_the_screen_border_rule_is_still_the_first_face_before_match(self):
+        rule = render_app_border()
+        self.assertEqual(rule["padding"], 3.2)
+        self.assertIn("var(--ga)", rule["background"])
+
+    def test_print_block_forces_colour(self):
+        """Chrome prints with background graphics OFF by default, which is what
+        flattened the frame in the B0 spike."""
+        self.assertIn("print-color-adjust:exact", self.print_css)
+        self.assertIn("-webkit-print-color-adjust:exact", self.print_css)
+
+    def test_print_block_re_expresses_the_frame_as_an_inset_ring(self):
+        """B0 finding: the masked `.face::before` frame flattens to a SOLID
+        block in Chrome's print export."""
+        self.assertIn(".face::before", self.print_css)
+        self.assertIn("box-shadow:inset", self.print_css)
+
+    # --- the hide list ------------------------------------------------
+    #
+    # Reviewer finding B-1: `body.printing > .mid` named a class that is a
+    # child of <footer>, not of <body>, so it matched NOTHING and <footer>
+    # printed on top of the card sheet - shearing every page across the page
+    # break and costing an extra sheet per run. A selector that matches
+    # nothing is silent, so it is not enough to list what should be hidden:
+    # both directions have to be asserted.
+
+    HIDE_ALLOWED = ("script", "#printroot", "#printgeom")
+
+    def body_children(self):
+        """The direct element children of <body>, as selector candidates."""
+        # The tag on its own line: `<body>` also appears inside the stylesheet
+        # (a `content:` string), and splitting on the bare token lands there.
+        body = self.html.split("\n<body>\n", 1)[1].split("\n</body>", 1)[0]
+        # Comments carry markup-shaped prose ("+ ADD" notes, <script src>
+        # warnings); parsing them corrupts the depth count.
+        body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
+        void = {"meta", "link", "br", "img", "input", "hr", "source"}
+        out, depth, i = [], 0, 0
+        tag = re.compile(r"<(/?)([a-zA-Z][\w-]*)([^>]*?)(/?)>", re.S)
+        while True:
+            m = tag.search(body, i)
+            if not m:
+                break
+            close, name, attrs, selfclose = m.group(1), m.group(2).lower(), m.group(3), m.group(4)
+            i = m.end()
+            if close:
+                depth -= 1
+                continue
+            if name in ("script", "style"):
+                # Skip the element's contents wholesale: `<` inside JS is not
+                # markup, and walking it would corrupt the depth count.
+                end = body.find("</%s>" % name, i)
+                if depth == 0:
+                    out.append(self.selectors(name, attrs))
+                i = len(body) if end < 0 else end + len(name) + 3
+                continue
+            if depth == 0:
+                out.append(self.selectors(name, attrs))
+            if name not in void and not selfclose:
+                depth += 1
+        return out
+
+    @staticmethod
+    def selectors(name, attrs):
+        sels = [name]
+        mid = re.search(r'id="([^"]+)"', attrs)
+        if mid:
+            sels.append("#" + mid.group(1))
+        mcl = re.search(r'class="([^"]+)"', attrs)
+        if mcl:
+            sels.extend("." + c for c in mcl.group(1).split())
+        return sels
+
+    def hide_list(self):
+        """The selectors the print block hides, as written."""
+        m = re.search(r"((?:body\.printing\s*>\s*[^,{]+,\s*)*"
+                      r"body\.printing\s*>\s*[^,{]+)\{display:none",
+                      self.print_css)
+        self.assertIsNotNone(m, "the print block no longer hides the app chrome")
+        return [s.strip().split(">", 1)[1].strip() for s in m.group(1).split(",")]
+
+    def test_every_direct_child_of_body_is_hidden_or_belongs_to_the_sheet(self):
+        """Anything left visible prints ON TOP of the card sheet."""
+        hidden = set(self.hide_list())
+        for sels in self.body_children():
+            if any(s in self.HIDE_ALLOWED for s in sels):
+                continue
+            self.assertTrue(hidden.intersection(sels),
+                            "<%s> is a direct child of <body> that the print "
+                            "block never hides; it will print over the cards"
+                            % sels[0])
+
+    def test_no_selector_in_the_hide_list_matches_nothing(self):
+        """A dead selector reads as coverage and provides none (B-1)."""
+        children = self.body_children()
+        for sel in self.hide_list():
+            self.assertTrue(any(sel in sels for sels in children),
+                            "`body.printing > %s` matches no direct child of "
+                            "<body>; it hides nothing" % sel)
+
+    def test_print_css_carries_no_card_geometry_literals(self):
+        """Same single-definition-site rule as the slot emitter: the grid's
+        card and gutter sizes are written by `printGridCSS()` from
+        `PRINT_GEOM`, never typed into the stylesheet."""
+        for lit in ("177.6", "247.2", "12.2", "9.4", "62.65", "87.21"):
+            self.assertNotIn(lit, self.print_css,
+                             "%s is a card-geometry literal; it belongs to "
+                             "PRINT_GEOM alone" % lit)
+
+
 if __name__ == "__main__":
     unittest.main()

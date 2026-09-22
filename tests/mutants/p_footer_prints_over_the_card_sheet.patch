@@ -1,0 +1,14 @@
+# kills: no selector in the hide list matches nothing
+# suite: python3 -m unittest -q tests.test_render_agreement.PrintStylesheetTest
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -770,7 +770,7 @@ button.nav:active{background:#2e281e}
+      on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}
+   body.printing > header, body.printing > main, body.printing > .announce,
+-  body.printing > #scale-sheet, body.printing > footer{display:none !important}
++  body.printing > #scale-sheet, body.printing > .mid{display:none !important}
+   body.printing #printroot{display:block}
+   /* B0 finding: the masked `.face::before` frame flattens to a SOLID block in
+      Chrome's print export. Re-express it as an inset ring, which survives. */
