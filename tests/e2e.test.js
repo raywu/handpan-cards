@@ -1267,7 +1267,9 @@ function run() {
       "    hs = sorted(set(round(r.height, 1) for r in fr))",
       "    top = round(min((r.y0 for r in fr), default=-1), 1)",
       "    bot = round(p.rect.height - max((r.y1 for r in fr), default=-1), 1)",
-      "    out.append({'h': hs, 'top': top, 'bottom': bot})",
+      "    lf = round(min((r.x0 for r in fr), default=-1), 1)",
+      "    rt = round(p.rect.width - max((r.x1 for r in fr), default=-1), 1)",
+      "    out.append({'h': hs, 'top': top, 'bottom': bot, 'left': lf, 'right': rt})",
       "print(json.dumps(out))",
     ].join("\n");
 
@@ -1304,6 +1306,16 @@ function run() {
         `page ${i + 1} is not centred vertically: ${page.top}pt above the sheet, ` +
         `${page.bottom}pt below. The slack must fall on BOTH ends - a platform ` +
         "that draws its own header band eats the end that has none");
+      /* Reviewer N2: the horizontal twin of the same defect. Dropping
+         `justify-content:center` survived all 271 tests - desktop wide is a
+         557.2pt sheet in a 612pt page, so left-aligning puts the left column's
+         border at x~0, in the same non-printable band. */
+      assert.ok(page.left >= 8,
+        `page ${i + 1} printed its left card frame ${page.left}pt from the paper edge; ` +
+        "under ~8pt it lands in a consumer printer's non-printable band");
+      assert.ok(Math.abs(page.left - page.right) <= 2,
+        `page ${i + 1} is not centred horizontally: ${page.left}pt left of the sheet, ` +
+        `${page.right}pt right`);
     }
   });
 

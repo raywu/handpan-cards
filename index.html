@@ -4186,6 +4186,10 @@ const PRINT_LAYOUTS = {
  *  carries that measurement with ~12% headroom, because it came from one
  *  device at one scale factor.
  */
+/*  Reviewer R3: nothing in the app READS this - layout selection is by UA and
+ *  viewport, never by arithmetic against a margin. It is an executable spec
+ *  anchor for a device measurement, exported so tests/app.test.js can assert
+ *  every constrained layout still fits what the platform actually grants. */
 const PRINT_SAFE = { margin: 45 };
 
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against

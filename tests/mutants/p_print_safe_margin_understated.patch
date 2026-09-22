@@ -8,10 +8,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4178,7 +4178,7 @@ const PRINT_LAYOUTS = {
-  *  carries that measurement with ~12% headroom, because it came from one
-  *  device at one scale factor.
-  */
+@@ -4190,7 +4190,7 @@ const PRINT_LAYOUTS = {
+  *  viewport, never by arithmetic against a margin. It is an executable spec
+  *  anchor for a device measurement, exported so tests/app.test.js can assert
+  *  every constrained layout still fits what the platform actually grants. */
 -const PRINT_SAFE = { margin: 45 };
 +const PRINT_SAFE = { margin: 36 };
  

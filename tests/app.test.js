@@ -3575,18 +3575,29 @@ test("every print layout fits inside the platform-enforced printable area", () =
   // (0.5in/side) and passed a sheet that clipped on the device.
   assert.ok(S.margin >= 42,
     `PRINT_SAFE.margin is ${S.margin}pt, under the ~40.2pt iOS actually enforces`);
-  const safeW = g.PW - 2 * S.margin, safeH = g.PH - 2 * S.margin;
-  for (const [name, L] of Object.entries(layouts)) {
-    if (!L.constrained) continue;   // only layouts a margin-enforcing platform can select
-    checked++;
-    const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
-    const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-    // A rotated sheet presents its height horizontally and vice versa.
-    const w = L.rotate ? sh : sw, h = L.rotate ? sw : sh;
-    assert.ok(w <= safeW,
-      `the ${name} sheet presents ${w}pt of width, over the ${safeW}pt safe area`);
-    assert.ok(h <= safeH,
-      `the ${name} sheet presents ${h}pt of height, over the ${safeH}pt safe area`);
+  /* Reviewer R4: the old loop measured ONE paper. g.PW/g.PH are Letter, and
+     the app deliberately carries no paper dimensions at all (asserting one is
+     what paginated every sheet), so the papers live here, in the test, as the
+     measurement they are. A4 is the tight axis - 595.28pt wide leaves 510.9pt
+     of safe width against Letter's 531.6 - and it fit by luck until now. */
+  const PAPERS = { letter: [g.PW, g.PH], a4: [595.28, 841.89] };
+  assert.deepStrictEqual(Object.keys(PAPERS).sort(),
+    Object.keys(plain(app.get("PRINT_PAPER"))).sort(),
+    "every paper the app offers must be measured by this fit loop");
+  for (const [paper, [pw, ph]] of Object.entries(PAPERS)) {
+    const safeW = pw - 2 * S.margin, safeH = ph - 2 * S.margin;
+    for (const [name, L] of Object.entries(layouts)) {
+      if (!L.constrained) continue;   // only layouts a margin-enforcing platform can select
+      checked++;
+      const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+      const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+      // A rotated sheet presents its height horizontally and vice versa.
+      const w = L.rotate ? sh : sw, h = L.rotate ? sw : sh;
+      assert.ok(w <= safeW,
+        `the ${name} sheet presents ${w}pt of width on ${paper}, over the ${safeW}pt safe area`);
+      assert.ok(h <= safeH,
+        `the ${name} sheet presents ${h}pt of height on ${paper}, over the ${safeH}pt safe area`);
+    }
   }
   assert.ok(checked > 0, "the fit loop asserted nothing - no layout was marked constrained");
   // The fit must come from the layout, never from the card: 62.65 x 87.21 mm
@@ -3675,8 +3686,14 @@ test("the print stylesheet never declares a page-box height", () => {
       const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
       const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
       const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
-      assert.ok(css.includes(`min-height:${footprint}pt`),
-        `${name}/${paper} must reserve ${footprint}pt, the sheet's own height`);
+      /* Reviewer N3: constrain the SELECTOR, not just the value. A bare
+         substring let the floor move from .printpage to .printsheet and still
+         pass - and the floor is precisely the half of "floor and fill" that
+         Chrome can never exercise, because Chrome shrink-to-fits where iOS
+         paginates. Nothing downstream would have caught the move. */
+      assert.match(css,
+        new RegExp(`#printroot \\.printpage\\{[^}]*min-height:${String(footprint).replace(".", "\\.")}pt`),
+        `${name}/${paper} must reserve ${footprint}pt on .printpage itself`);
       // Reviewer N1: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary
       // float. A stylesheet is text a human reads in devtools; round it.
       assert.ok(!/min-height:[0-9.]*[0-9]{8}/.test(css),

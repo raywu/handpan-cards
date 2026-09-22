@@ -337,3 +337,58 @@ over every layout marked `constrained` rather than naming `narrow`.
 - **D4** - add the position assertions to the EXISTING rendered print test
   rather than a new test. The probe already renders the PDF; a second render
   would double the slowest test in the suite for the same oracle.
+
+## Fresh reviewer at dd5faa2: PASS_WITH_NITS, and what was closed
+
+The reviewer measured rather than reasoned: `height:100%` cannot by itself
+exceed the page box (in paged media the ICB IS the page area, and every visible
+child of body is `display:none` under `body.printing`), so `.printpage`'s used
+height is exactly `max(page area, min-height)`. Pagination returns only if the
+floor exceeds the page area, which is the pre-existing condition. Rendered at
+emulated iOS margins: 4 pages for 4 sheets, ink y 129.0-662.1, 88.8pt above and
+89.7pt below - against a ~50pt band at each end, ~39pt of margin. Desktop wide
+back to card_y0 15.7.
+
+Three of the reviewer's own mutants survived all 271 tests. Closed here:
+- **N2** `justify-content:center` -> `flex-start` survived. Desktop wide is a
+  557.2pt sheet in a 612pt page, so left-aligning puts the left column's border
+  at x~0 - the horizontal twin of the vertical defect. The e2e probe now emits
+  `left`/`right` and asserts `left >= 8` and `|left - right| <= 2`; new mutant
+  `p_print_justify_dropped`.
+- **N3** the `min-height` floor moved from `.printpage` to `.printsheet` and
+  survived, because the assertion was a bare substring with no selector. It is
+  precisely the half of "floor and fill" that Chrome can never exercise -
+  Chrome shrink-to-fits where iOS paginates. The assertion now constrains the
+  selector; new mutant `p_print_floor_on_wrong_selector`.
+- **R4** the fit loop measured Letter only, so A4 fit by luck. It now iterates a
+  papers table (the papers live in the TEST, since the app deliberately carries
+  no paper dimensions) and asserts the table covers every paper the app offers.
+  A4 is the tight axis: 510.9pt of safe width against Letter's 531.6.
+- **R3** PRINT_SAFE is confirmed test-only. Kept as an executable spec anchor
+  for the device measurement, with a comment that now says so.
+
+### Carried, not closed
+
+- **N1** the e2e oracle structurally cannot see a footprint-exceeds-page-box
+  regression: the reviewer probed page boxes 1.2pt and 21.2pt short of the
+  532.8pt floor and Chrome produced 4 pages every time. Chrome shrink-to-fits
+  where iOS paginates. The only guard for that half is the unit arithmetic.
+- **N5** `break-after:page` is now redundant (every `.printpage` is exactly one
+  page area) and its mutant survives. Load-bearing again if the fill weakens.
+- **N6** "every print layout fits inside the platform-enforced printable area"
+  is misnamed: its fit inequalities carry ~170pt of slack and kill none of the
+  five mutants naming it; the value pins in the same block do the killing.
+- **N7** two assertions are near-tautological (the footprint recomputation, and
+  `!("h" in p)` on a key name). The reviewer verified the second is harmless -
+  restoring the defect through a renamed key is still killed behaviourally.
+- **iOS LANDSCAPE is unmodelled and, by arithmetic, would paginate**: the
+  532.8pt footprint against a landscape page-box height of 612 - 2*40.2 =
+  531.6pt, 1.2pt short. Not a regression (main is worse in every orientation)
+  and portrait is the stated target, but it needs the device. Queue row.
+
+### Auto-decision D5
+
+Closed N2, N3, R4 and R3 in this branch rather than filing them as queue rows.
+N2 and N3 are live holes the reviewer demonstrated with surviving mutants
+against the exact code path this PR exists to fix; deferring them would ship
+the fix with the tests that cannot see it breaking again.
