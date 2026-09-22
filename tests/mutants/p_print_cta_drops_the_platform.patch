@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4375,7 +4375,7 @@ function openPrintSheet(variant) {
-   try {
-     // AC-B5b: the viewport is read ONCE, here. The @media print block reads
-     // the class this sets and never re-decides the width itself.
+@@ -4388,7 +4388,7 @@ function openPrintSheet(variant) {
+     // stylesheet below. The container carries no layout class: nothing in
+     // @media print selects on one, so a class would only be a second decision
+     // point free to drift from this one.
 -    const name = printLayoutName(window.innerWidth, navigator.userAgent);
 +    const name = printLayoutName(window.innerWidth);
      document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
-     root.className = name;
      root.innerHTML = printSheetHTML(deck(), variant, name);
+     root.hidden = false;
