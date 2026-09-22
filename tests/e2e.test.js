@@ -1233,14 +1233,12 @@ function run() {
       window.print = function () {
         window.__cap = {
           html: document.getElementById("printroot").innerHTML,
-          cls: document.getElementById("printroot").className,
           css: document.getElementById("printgeom").textContent };
       };
       try { openPrintSheet("full"); } finally { window.print = real; }
       const c = window.__cap;
       if (!c) return 0;
       const root = document.getElementById("printroot");
-      root.className = c.cls;
       root.innerHTML = c.html;
       root.hidden = false;
       document.getElementById("printgeom").textContent = c.css;

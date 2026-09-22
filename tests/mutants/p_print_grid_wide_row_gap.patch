@@ -1,0 +1,19 @@
+# kills: the wide layout matches hifi's own slots
+# suite: python3 -m unittest -q tests.test_render_agreement.PrintSlotGeometryTest.test_wide_layout_matches_hifi_slots
+# The wide sheet charges a double row gutter. The grid still emits three clean
+# rows, so nothing about the CSS looks wrong - only deriving the card origins
+# from it and comparing against hifi.slots(), the print generator's own
+# geometry, catches the app and the PDF drifting apart. This replaces the kill
+# that p_slot_gutter_charged_twice held against the deleted printSlots().
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4239,7 +4239,7 @@ function printGridCSS(name, paper) {
+     `#printroot .printpage{min-height:${footprint}pt}\n` +
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+-    `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +
++    `column-gap:${L.gx}pt; row-gap:${L.gy * 2}pt}\n` +
+     (L.rotate ? `#printroot .printsheet{transform:rotate(-90deg)}\n` : "") +
+     `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
+     `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +

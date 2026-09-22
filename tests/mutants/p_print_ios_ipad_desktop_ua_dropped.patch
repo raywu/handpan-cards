@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4196,9 +4196,7 @@ const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
+@@ -4199,9 +4199,7 @@ const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
   */
  function isIOS(ua) {
    const s = String(ua || "");
@@ -17,4 +17,4 @@ diff --git a/index.html b/index.html
 +  return /iPad|iPhone|iPod/.test(s);
  }
  
- /** AC-B5b: slots-per-page is decided ONCE, here. The `@media print` block
+ /** AC-B5b: slots-per-page is decided ONCE, here. The name this returns picks

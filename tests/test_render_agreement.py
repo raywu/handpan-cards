@@ -470,7 +470,14 @@ def read_print_geom_source():
         html = fh.read()
     decl = re.search(r"const PRINT_GEOM = \{[^}]*\};", html)
     assert decl, "index.html has no PRINT_GEOM declaration"
-    start = html.index("function printSlots(")
+    return decl.group(0), html
+
+
+def read_js_function(name, html=None):
+    """One brace-matched function body out of `index.html`, as source text."""
+    if html is None:
+        _, html = read_print_geom_source()
+    start = html.index("function %s(" % name)
     depth, i = 0, html.index("{", start)
     while True:
         if html[i] == "{":
@@ -480,17 +487,151 @@ def read_print_geom_source():
             if depth == 0:
                 break
         i += 1
-    return decl.group(0), html[start:i + 1], html
+    return html[start:i + 1]
 
 
-def js_slots(cols, rows):
-    """Run the app's own printSlots() in node and read the answer back."""
-    decl, fn, _ = read_print_geom_source()
-    src = "%s\n%s\nconsole.log(JSON.stringify(printSlots(%d, %d)));" % (
-        decl, fn, cols, rows)
+def read_js_const(name, html=None):
+    """One `const <name> = ...;` declaration, brace-matched, as source text.
+
+    A regex stopping at the first `\n};` is not enough: `PRINT_PAPER` is a
+    one-liner and the search runs on to the next multi-line object, dragging a
+    thousand lines of unrelated app source into the node snippet with it.
+    """
+    if html is None:
+        _, html = read_print_geom_source()
+    start = html.index("const %s = " % name)
+    depth, i = 0, start
+    while True:
+        c = html[i]
+        if c in "{[":
+            depth += 1
+        elif c in "}]":
+            depth -= 1
+        elif c == ";" and depth == 0:
+            return html[start:i + 1]
+        i += 1
+
+
+def strip_js_comments(src):
+    """Comments are not code. The literal scan below reads a function BODY for
+    a second copy of a constant, and `printGridCSS`'s own comment quotes the
+    numbers it is explaining - 247.2, 9.4, and the 760.3999999999999 that
+    motivates the rounding. Scanning the raw text reports those as drift."""
+    return re.sub(r"/\*[\s\S]*?\*/|//[^\n]*", " ", src)
+
+
+def grid_css(name, paper="letter"):
+    """Run the app's own `printGridCSS()` in node and read the CSS back.
+
+    This is the function that SHIPS - the browser sheet is a CSS grid, and
+    nothing in the app computes slot coordinates. Pulling the declaration it
+    emits and deriving positions from that is the only way a Python oracle can
+    speak about the geometry the app actually renders.
+    """
+    _, html = read_print_geom_source()
+    src = "\n".join([read_js_const(n, html) for n in
+                     ("PRINT_GEOM", "PRINT_PAPER", "PRINT_LAYOUTS",
+                      "PRINT_DESIGN_W")] +
+                    [read_js_function("printGridCSS", html),
+                     "console.log(printGridCSS(%r, %r));" % (name, paper)])
     out = subprocess.run([os.environ.get("NODE", "node"), "-e", src],
                          capture_output=True, text=True, check=True)
-    return [tuple(xy) for xy in json.loads(out.stdout)]
+    return out.stdout
+
+
+def read_layout(name, html=None):
+    """One `PRINT_LAYOUTS` entry as Python numbers, read out of the source.
+
+    `PRINT_GEOM.GX` resolves to `hifi.GX`, which is the point: the expected
+    stylesheet below is composed from the PRINT SPEC, not from whatever the
+    app happens to say today.
+    """
+    body = re.search(r"\b%s: \{([^}]*)\}" % name,
+                     read_js_const("PRINT_LAYOUTS", html)).group(1)
+    out = {}
+    for key, raw in re.findall(r"(\w+): ([^,}]+)", body):
+        raw = raw.strip()
+        if raw.startswith("PRINT_GEOM."):
+            out[key] = float(getattr(hifi, raw.split(".", 1)[1]))
+        elif raw in ("true", "false"):
+            out[key] = raw == "true"
+        else:
+            out[key] = float(raw)
+    return out
+
+
+def js_num(x):
+    """A float the way `${x}` writes it in a template literal."""
+    x = float(x)
+    return str(int(x)) if x.is_integer() else repr(x)
+
+
+def expected_grid_css(name, paper):
+    """The stylesheet `printGridCSS(name, paper)` MUST emit, composed here.
+
+    Not a scan and not a parser: one string, built from `hifi.CW`/`hifi.CH`,
+    the layout, and the paper keyword. A scan of the output cannot see
+    provenance - `${g.CW}` and a typed `177.6` are byte-identical - so the
+    check that means something is agreement with the spec, character for
+    character, including the parts a regex was never looking at (the `margin:0`,
+    the `.printscale` transform, the rotate line's presence or absence).
+    """
+    L = read_layout(name)
+    cols, rows = int(L["cols"]), int(L["rows"])
+    cw, ch, gx, gy = float(hifi.CW), float(hifi.CH), L["gx"], L["gy"]
+    sw = cols * cw + (cols - 1) * gx
+    sh = rows * ch + (rows - 1) * gy
+    footprint = round((sw if L.get("rotate") else sh) * 100) / 100
+    size = {"letter": "letter", "a4": "A4"}[paper]
+    dw = float(re.search(r"=\s*([\d.]+);", read_js_const("PRINT_DESIGN_W")).group(1))
+    return (
+        "@page{size:%s; margin:0}\n" % size +
+        "#printroot .printpage{min-height:%spt}\n" % js_num(footprint) +
+        "#printroot .printsheet{grid-template-columns:repeat(%d, %spt);"
+        % (cols, js_num(cw)) +
+        "grid-template-rows:repeat(%d, %spt);" % (rows, js_num(ch)) +
+        "column-gap:%spt; row-gap:%spt}\n" % (js_num(gx), js_num(gy)) +
+        ("#printroot .printsheet{transform:rotate(-90deg)}\n"
+         if L.get("rotate") else "") +
+        "#printroot .printscale{width:%spx;" % js_num(dw) +
+        "height:%spx;" % js_num(dw * ch / cw) +
+        "transform:scale(%s)}" % js_num(cw / 72 * 96 / dw))
+
+
+def css_slots(name):
+    """Card origins the SHIPPED grid puts on the page, from the emitted CSS.
+
+    Bottom-left corners in PDF space, row-major from the TOP row - the order
+    and the axis `hifi.slots()` uses.
+
+    Derivable only for an UNROTATED layout on the Letter page box, and the
+    restriction is the whole point. `.printsheet`'s layout box is
+    `cols*CW + (cols-1)*gx` by `rows*CH + (rows-1)*gy`; `display:flex;
+    align-items:center; justify-content:center` on `.printpage` centres that
+    box, so substituting the 612x792 page box gives absolute coordinates. A
+    rotated layout is selected ONLY on a platform that ignores `@page`, where
+    the page box is the one number `index.html` says we are never allowed to
+    assume - so there is no page box to substitute and this raises rather than
+    inventing one. See `test_narrow_grid_is_rotated_and_gutterless`.
+    """
+    css = grid_css(name)
+    if "rotate(-90deg)" in css:
+        raise AssertionError(
+            "css_slots(%r) is not defined: the layout is rotated, which means "
+            "it is only ever selected where the page box is unknown, so its "
+            "absolute position on paper is not derivable from this CSS" % name)
+    cols, cw = re.search(r"grid-template-columns:repeat\((\d+), ([\d.]+)pt\)", css).groups()
+    rows, ch = re.search(r"grid-template-rows:repeat\((\d+), ([\d.]+)pt\)", css).groups()
+    gx = float(re.search(r"column-gap:([\d.]+)pt", css).group(1))
+    gy = float(re.search(r"row-gap:([\d.]+)pt", css).group(1))
+    cols, rows, cw, ch = int(cols), int(rows), float(cw), float(ch)
+    geom = dict(re.findall(r"(\w+):\s*([\d.]+)", read_print_geom_source()[0]))
+    pw, ph = float(geom["PW"]), float(geom["PH"])
+    tw = cols * cw + (cols - 1) * gx
+    th = rows * ch + (rows - 1) * gy
+    x0, y0 = (pw - tw) / 2, (ph - th) / 2
+    return [(x0 + col * (cw + gx), y0 + th - (row + 1) * ch - row * gy)
+            for row in range(rows) for col in range(cols)]
 
 
 class PrintSlotGeometryTest(unittest.TestCase):
@@ -499,7 +640,7 @@ class PrintSlotGeometryTest(unittest.TestCase):
     TOL_PT = 0.1
 
     def test_constants_match_hifi(self):
-        decl, _, _ = read_print_geom_source()
+        decl, _ = read_print_geom_source()
         vals = dict(re.findall(r"(\w+):\s*([\d.]+)", decl))
         self.assertEqual(float(vals["CW"]), hifi.CW)
         self.assertEqual(float(vals["CH"]), hifi.CH)
@@ -509,8 +650,13 @@ class PrintSlotGeometryTest(unittest.TestCase):
         self.assertEqual(float(vals["PH"]), hifi.PAGE[1])
 
     def test_wide_layout_matches_hifi_slots(self):
-        """All 9 slots, to within 0.1pt, against the generator that ships."""
-        want, got = hifi.slots(), js_slots(3, 3)
+        """All 9 slots, to within 0.1pt, against the generator that ships.
+
+        Derived from the CSS the app emits, not from a helper only tests call:
+        a slot emitter with no production caller can agree with `hifi` all day
+        while the shipped grid disagrees.
+        """
+        want, got = hifi.slots(), css_slots("wide")
         self.assertEqual(len(got), 9)
         for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
             self.assertAlmostEqual(gx, wx, delta=self.TOL_PT,
@@ -518,39 +664,61 @@ class PrintSlotGeometryTest(unittest.TestCase):
             self.assertAlmostEqual(gy, wy, delta=self.TOL_PT,
                                    msg="slot %d y: %.3f vs hifi %.3f" % (i, gy, wy))
 
-    def test_narrow_layout_is_recentred_not_the_top_six(self):
-        """D17. Six slots, same constants, re-centred for two rows.
+    def test_narrow_grid_is_rotated_and_gutterless(self):
+        """D17's 3x2, asserted on the emitted text - and NOT on paper.
 
-        `slots()` centres its block on `th_ = 3*CH + 2*GY` and emits row 0
-        first, and row 0 is the TOP row - so reusing its first 6 entries would
-        leave the cards high on the page with all the slack below them. The
-        2-row block is centred on its own height instead.
+        There is deliberately no absolute-position assertion here. `narrow` is
+        selected only where the platform ignores `@page` and owns the page box,
+        so no derivation can say where these cards land; the evidence for that
+        is the rendered printToPDF oracle in `tests/e2e.test.js:1287-1317`,
+        which measures the real margins on a real page. What IS checkable from
+        the declaration is the shape, and the shape is where the old
+        `printSlots()` test was wrong: it computed a 557.2pt block, charging
+        two gutters the narrow layout does not have, and pinned that number.
         """
-        got = js_slots(3, 2)
-        self.assertEqual(len(got), 6)
-        th = 2 * hifi.CH + hifi.GY
-        tw = 3 * hifi.CW + 2 * hifi.GX
-        x0 = (hifi.PAGE[0] - tw) / 2
-        y0 = (hifi.PAGE[1] - th) / 2
-        want = [(x0 + col * (hifi.CW + hifi.GX),
-                 y0 + th - (row + 1) * hifi.CH - row * hifi.GY)
-                for row in range(2) for col in range(3)]
-        for i, ((wx, wy), (gx, gy)) in enumerate(zip(want, got)):
-            self.assertAlmostEqual(gx, wx, delta=self.TOL_PT, msg="slot %d x" % i)
-            self.assertAlmostEqual(gy, wy, delta=self.TOL_PT, msg="slot %d y" % i)
-        # ...and it is NOT the top six of the 3x3 block.
-        self.assertNotAlmostEqual(got[0][1], hifi.slots()[0][1], delta=self.TOL_PT)
+        css = grid_css("narrow")
+        self.assertIn("grid-template-columns:repeat(3, %gpt)" % hifi.CW, css)
+        self.assertIn("grid-template-rows:repeat(2, %gpt)" % hifi.CH, css)
+        self.assertIn("column-gap:0pt", css)
+        self.assertIn("row-gap:0pt", css)
+        self.assertIn("transform:rotate(-90deg)", css)
+        # The floor reserves the ROTATED extent: the sheet's own width becomes
+        # its height on the page, so 3*CW, not 2*CH.
+        self.assertIn("min-height:%gpt" % (3 * hifi.CW), css)
+        self.assertNotIn("min-height:%gpt" % (2 * hifi.CH), css)
+        with self.assertRaises(AssertionError):
+            css_slots("narrow")
 
-    def test_slot_emitter_carries_no_geometry_literals_of_its_own(self):
-        """Single definition site. printSlots() may reference PRINT_GEOM and
-        its own row/column counts, and nothing else: any float literal in its
-        body is a second copy of a constant PRINT_GEOM already owns."""
-        _, fn, _ = read_print_geom_source()
+    def test_emitted_grid_css_is_exactly_what_the_spec_implies(self):
+        """Every byte of both layouts, on both papers, against the print spec.
+
+        The literal scan in `PrintStylesheetTest` guards the STATIC print
+        block; it cannot reach this stylesheet, which is built at runtime and
+        injected into `#printgeom`. And no scan of emitted text could judge it
+        anyway - provenance is invisible in the output. One `assertEqual`
+        against a string composed from `hifi` covers the whole declaration.
+        """
+        for name in ("wide", "narrow"):
+            for paper in ("letter", "a4"):
+                with self.subTest(layout=name, paper=paper):
+                    self.assertEqual(grid_css(name, paper).rstrip("\n"),
+                                     expected_grid_css(name, paper))
+
+
+    def test_grid_emitter_carries_no_geometry_literals_of_its_own(self):
+        """Single definition site, now on the function that ships.
+
+        `printGridCSS()` may reference PRINT_GEOM, the layout and the paper,
+        and nothing else: any float literal in its body is a second copy of a
+        constant PRINT_GEOM already owns.
+        """
+        fn = strip_js_comments(read_js_function("printGridCSS"))
         self.assertIn("PRINT_GEOM", fn)
         strays = re.findall(r"\d+\.\d+", fn)
         self.assertEqual(strays, [],
-                         "printSlots() embeds its own numeric literals %s; it must "
-                         "read every card and gutter constant from PRINT_GEOM" % strays)
+                         "printGridCSS() embeds its own numeric literals %s; it "
+                         "must read every card and gutter constant from "
+                         "PRINT_GEOM" % strays)
 
 
 class PrintStylesheetTest(unittest.TestCase):
@@ -692,7 +860,15 @@ class PrintStylesheetTest(unittest.TestCase):
     def test_print_css_carries_no_card_geometry_literals(self):
         """Same single-definition-site rule as the slot emitter: the grid's
         card and gutter sizes are written by `printGridCSS()` from
-        `PRINT_GEOM`, never typed into the stylesheet."""
+        `PRINT_GEOM`, never typed into the stylesheet.
+
+        This guards the STATIC block only. The runtime half - the declaration
+        `printGridCSS()` injects into `#printgeom` - is covered by the source
+        scan in `PrintSlotGeometryTest` (provenance) and by
+        `test_emitted_grid_css_is_exactly_what_the_spec_implies` (value). A
+        literal scan of that half would be undecidable in the direction it
+        cares about: `${g.CW}` and a typed `177.6` emit the same bytes.
+        """
         for lit in ("177.6", "247.2", "12.2", "9.4", "62.65", "87.21"):
             self.assertNotIn(lit, self.print_css,
                              "%s is a card-geometry literal; it belongs to "

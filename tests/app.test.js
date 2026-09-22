@@ -3509,9 +3509,10 @@ test("print card markup: every card a sheet emits renders", () => {
  * 22. the print sheet's layout selection and its grid CSS
  *
  * B4/AC-B5b. Slots-per-page is decided ONCE, in JS, at 640px - the app's own
- * breakpoint (index.html:41). The `@media print` block reads the class that
- * decision sets and never re-decides the width itself: a second breakpoint in
- * CSS is the drift vector that ships 9 padded cards into a 6-slot grid.
+ * breakpoint (index.html:41). That decision reaches print as the grid
+ * `printGridCSS()` writes into `#printgeom`, and the `@media print` block
+ * never re-decides the width itself: a second breakpoint in CSS is the drift
+ * vector that ships 9 padded cards into a 6-slot grid.
  * ------------------------------------------------------------------------ */
 
 test("print sheet slot count agrees with the layout the breakpoint picks", () => {
@@ -3525,9 +3526,15 @@ test("print sheet slot count agrees with the layout the breakpoint picks", () =>
       `the ${name} layout must be ${slots} slots per page`);
     assert.strictEqual(L.cols, 3,
       "both layouts are 3 columns wide - D17 reduces ROWS, not columns");
-    assert.strictEqual(
-      Number(app.get(`printSlots(PRINT_LAYOUTS.${name}.cols, PRINT_LAYOUTS.${name}.rows).length`)),
-      slots, "the slot emitter and the layout must agree on the count");
+    // The grid the app actually renders, not a slot emitter nothing calls:
+    // `printGridCSS` is what `#printgeom` receives, so its repeat() counts are
+    // the page's real capacity. A slots-per-page decision that disagreed with
+    // them would pad a 6-slot grid with 9 cards.
+    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
+    assert.match(css, new RegExp(`grid-template-columns:repeat\\(${L.cols},`),
+      `${name}: the emitted grid must be ${L.cols} columns`);
+    assert.match(css, new RegExp(`grid-template-rows:repeat\\(${L.rows},`),
+      `${name}: the emitted grid must be ${L.rows} rows`);
   }
 });
 
@@ -3886,6 +3893,46 @@ function printed(app, variant) {
 }
 const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
 
+test("blank_cards is honoured when present, and no shipped deck carries it", () => {
+  const app = boot();
+  // slotsPerPage = 1 so the padding loop never fires: with it, deck-authored
+  // blanks and padding blanks are the identical descriptor and the padding
+  // moves with the total, so the count says nothing about the branch.
+  const kinds = (js) => plain(app.get(js)).map(c => c.kind);
+  const with7 = kinds('printCardList(Object.assign({}, deck(), {blank_cards: 7}), "full", 1)');
+  assert.strictEqual(with7.filter(k => k === "blank").length, 7,
+    "a deck carrying blank_cards: 7 must contribute exactly 7 blank templates");
+  assert.deepStrictEqual(with7.slice(-7), Array(7).fill("blank"),
+    "and they come after the chords, not among them");
+  assert.strictEqual(
+    kinds('printCardList(deck(), "full", 1)').filter(k => k === "blank").length, 0,
+    "a deck without the key contributes none");
+  // The gap the branch exists to close: `blank_cards` is a print-overlay
+  // literal in tools/decks.py, and data/decks.json - which IS the DECKS line -
+  // does not carry it. The branch is dead in the browser today and correct the
+  // moment the key moves into the canonical file.
+  const carriers = plain(app.get('DECKS.filter(d => "blank_cards" in d).map(d => d.id)'));
+  assert.deepStrictEqual(carriers, [],
+    "no shipped deck carries blank_cards - if one does, this test's premise changed");
+});
+
+test("the print container carries no layout class", () => {
+  // The only thing that decides slots-per-page is the stylesheet `openPrintSheet`
+  // writes into `#printgeom`. Nothing in `@media print` selects on `.wide` or
+  // `.narrow` - grep the block and there is no such selector - so a class on
+  // the container is a second decision point that can only ever drift from the
+  // first one. `#printroot` must come out of a print with the class it had
+  // before: none.
+  const app = boot({ innerWidth: 380 });
+  customDeck(app);
+  const cap = printed(app, "full");
+  assert.ok(cap, "the CTA must call window.print()");
+  assert.strictEqual(cap.cls, "",
+    "#printroot must carry no layout class - the stylesheet is the decision point");
+  assert.ok(cap.css.length > 0,
+    "and that stylesheet must actually be there");
+});
+
 test("the CTA passes the real platform through, not just the viewport", () => {
   // Wiring test: printLayoutName is only as good as the argument the call site
   // hands it. A wide-viewport iPad that still gets the 3x3 sheet is exactly
@@ -3897,7 +3944,8 @@ test("the CTA passes the real platform through, not just the viewport", () => {
   customDeck(app);
   const cap = printed(app, "full");
   assert.ok(cap, "the CTA must call window.print()");
-  assert.strictEqual(cap.cls, "narrow",
+  const narrow = plain(app.get('PRINT_LAYOUTS["narrow"]'));
+  assert.ok(cap.css.includes(`grid-template-rows:repeat(${narrow.rows}, `),
     "an 820px iPad must still get the narrow sheet - it ignores @page like every iOS Safari");
   assert.ok(/transform:rotate\(-90deg\)/.test(cap.css),
     "and the stylesheet the CTA emits must carry the rotation");
@@ -3910,12 +3958,14 @@ test("print sheet slot count agrees with the viewport at the moment the CTA fire
     const cap = printed(app, "full");
     assert.ok(cap, "the CTA must call window.print()");
     assert.strictEqual(cap.hidden, false, "the sheet must be showing when print() fires");
-    assert.strictEqual(cap.cls, name, `${w}px must put the ${name} class on the container`);
     const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
+    assert.ok(cap.css.includes(`grid-template-columns:repeat(${L.cols}, `) &&
+              cap.css.includes(`grid-template-rows:repeat(${L.rows}, `),
+      `${w}px must emit the ${name} grid - the stylesheet is what selects it`);
     assert.strictEqual(L.cols * L.rows, slots);
     // The emitted cells are the padded card list, so their count is a multiple
-    // of the slot count the container's own class selects. One decision, one
-    // place: the CSS never re-reads the width (AC-B5b).
+    // of the slot count the emitted grid provides. One decision, one place:
+    // the CSS never re-reads the width (AC-B5b).
     assert.strictEqual(cellCount(cap.html) % slots, 0,
       `${w}px: ${cellCount(cap.html)} cells is not a whole number of ${slots}-slot pages`);
     assert.strictEqual(cellCount(cap.html),

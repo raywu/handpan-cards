@@ -4148,15 +4148,6 @@ function sizePanHits(svg, minPx) {
  */
 const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 };
 
-/** Card origins for a `cols` x `rows` page, bottom-left corners in PDF space,
- *  row-major from the TOP row - the order and the axis `hifi.slots()`
- *  (`tools/hifi.py:354-362`) uses.
- *
- *  The block is centred on its OWN height, which is the whole reason the
- *  narrow page is not just the first six entries of the wide one: hifi
- *  centres on `3*CH + 2*GY`, so taking its top six would leave a 6-card page
- *  sitting high with all the slack below it.
- */
 /** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
  *  the iOS overflow is vertical. Both are 3 columns of the same card.
  *
@@ -4213,8 +4204,10 @@ function isIOS(ua) {
     (/Macintosh/.test(s) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
 }
 
-/** AC-B5b: slots-per-page is decided ONCE, here. The `@media print` block
- *  reads the class this picks and never re-decides the width itself.
+/** AC-B5b: slots-per-page is decided ONCE, here. The name this returns picks
+ *  a `PRINT_LAYOUTS` entry, `printGridCSS()` turns that into the stylesheet
+ *  `#printgeom` carries, and the `@media print` block never re-decides the
+ *  width itself - it has no width query and no layout selector at all.
  *  The iOS clause comes FIRST and ignores width: keyed on width alone, an
  *  iPad in portrait (744/768/810/820/834 CSS px) and an iPhone 14 in
  *  landscape (844) both selected the 557.2 x 760.4pt wide sheet on a platform
@@ -4255,28 +4248,22 @@ function printGridCSS(name, paper) {
     `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;
 }
 
-function printSlots(cols, rows) {
-  const g = PRINT_GEOM;
-  const tw = cols * g.CW + (cols - 1) * g.GX;
-  const th = rows * g.CH + (rows - 1) * g.GY;
-  const x0 = (g.PW - tw) / 2, y0 = (g.PH - th) / 2;
-  const out = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      out.push([x0 + col * (g.CW + g.GX), y0 + th - (row + 1) * g.CH - row * g.GY]);
-    }
-  }
-  return out;
-}
-
 /** The card list a print sheet is built from, mirroring `tools/hifi.py`
  *  build() (:379-395), which is the print spec.
  *
  *  The full deck opens with a title and a legend card and pads the last page
  *  with BLANK templates; the print-shop sheet is chord cards only and pads
  *  with EMPTY slots, so a shop never prints a blank template nobody asked
- *  for. `blank_cards` is a print-overlay literal the built-ins carry in
- *  tools/decks.py and generated decks do not, hence the `|| 0`.
+ *  for.
+ *
+ *  `blank_cards` asks for blanks BEYOND that padding. It is a print-overlay
+ *  literal, and the overlay lives in tools/decks.py alone: data/decks.json is
+ *  what the DECKS line is generated from, and it carries no such key, so no
+ *  deck in the browser sets it today and the page padding below is what
+ *  actually fills a short last page. The branch stands because the overlay
+ *  could move into the canonical file - it is honoured the moment the key
+ *  appears, which is what keeps this renderer and the PDF from disagreeing.
+ *  Pinned by "blank_cards is honoured when present" in tests/app.test.js.
  *
  *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
  *  narrow viewport and 9 on a wide one, and one decision point for that
@@ -4397,11 +4384,12 @@ function teardownPrintSheet() {
 function openPrintSheet(variant) {
   const root = document.getElementById("printroot");
   try {
-    // AC-B5b: the viewport is read ONCE, here. The @media print block reads
-    // the class this sets and never re-decides the width itself.
+    // AC-B5b: the viewport is read ONCE, here, and feeds ONE thing - the
+    // stylesheet below. The container carries no layout class: nothing in
+    // @media print selects on one, so a class would only be a second decision
+    // point free to drift from this one.
     const name = printLayoutName(window.innerWidth, navigator.userAgent);
     document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
-    root.className = name;
     root.innerHTML = printSheetHTML(deck(), variant, name);
     root.hidden = false;
     document.body.classList.add("printing");
@@ -5686,7 +5674,7 @@ else if (location.hash.indexOf(SHARE_PREFIX) === 0)
      without hiding it. It is `hidden` until the CTA fills it and is emptied
      again afterwards (AC-B5); `aria-hidden` keeps a filled sheet out of the
      accessibility tree even in the instant it is populated. -->
-<div id="printroot" class="wide" hidden aria-hidden="true"></div>
+<div id="printroot" hidden aria-hidden="true"></div>
 <style id="printgeom"></style>
 </body>
 </html>
