@@ -100,6 +100,11 @@ def face_entry(path):
     os2 = font["OS/2"]
     scale = UPEM / head.unitsPerEm
     return {
+        # The PostScript name the /BaseFont entry has to carry: a reader that
+        # finds a /BaseFont disagreeing with the embedded name table may fall
+        # back to a substitute face, which is exactly the print drift the
+        # emitter exists to remove.
+        "psname": font["name"].getDebugName(6),
         "ttf": base64.b64encode(data).decode("ascii"),
         "widths": widths,
         "upem": int(UPEM),
@@ -128,7 +133,7 @@ def generate():
         "// Five print faces from tools/fonts/, subset to CHARSET, with every",
         "// advance normalised to 1000 units per em so the JS emitter and",
         "// reportlab read one set of numbers.",
-        "var HPE = HPE || {};",
+        'var HPE = (typeof HPE !== "undefined") ? HPE : {};',
         "HPE.fontdata = (function () {",
         '  "use strict";',
         "  var CHARSET = %s;" % json.dumps(CHARSET),

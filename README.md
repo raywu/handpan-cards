@@ -32,6 +32,9 @@ The scale engine that generates and ranks those cards is six modules under
 faces subset to printable ASCII plus the degree sign, with their advances
 normalised to 1000 units per em, so the browser can embed the same type the
 print pipeline uses).
+`src/engine/pdf.js` (the PDF writer the browser emitter draws through, so a
+phone can produce the print sheet itself instead of asking a print dialog for
+a paper size it will not honour).
 `docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
 decisions behind it.
 

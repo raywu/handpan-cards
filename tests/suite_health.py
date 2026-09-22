@@ -43,6 +43,7 @@ FLOORS = {
     "tests/test_readme_currency.py": 4,
     "tests/test_suite_health.py": 12,
     "tests/test_font_subset.py": 7,
+    "tests/test_pdf_emitter.py": 7,
     # node
     "tests/app.test.js": 169,
     "tests/e2e.test.js": 104,
@@ -54,6 +55,7 @@ FLOORS = {
     "tests/select.test.js": 35,
     "tests/share.test.js": 44,
     "tests/preview.test.js": 14,
+    "tests/pdf.test.js": 11,
     "tests/mutation_harness.test.js": 17,
 }
 
