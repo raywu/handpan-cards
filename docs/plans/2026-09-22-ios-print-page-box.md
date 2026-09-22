@@ -414,3 +414,28 @@ N4 stays open and carried: two print mutants put prose in `# kills:` rather
 than a test name. 65 of 367 existing mutants already do this and the verdict
 rests on `# suite:`, so it is a consistency item for the whole corpus, not for
 these two patches.
+
+## The second and third follow-ups, and where the hardening stops
+
+**Auto-decision D8 (AFK grant).** The PR #108 re-review returned
+PASS_WITH_NITS with four nits that were not cosmetic: three were live vacuous-
+assertion holes in the scan #108 had just added, and a fourth said the mutant
+#108 shipped was inert. Same reasoning as D7 - a demonstrated hole on this
+exact code path is not a queue row - so they were closed on a third follow-up
+branch, `claude/print-scan-comments` (PR #109, merged at `40f0d81`), rather
+than filed. The stopping rule was stated before that branch was cut: close
+these four and stop. Further nits from the #109 review go to the queue, and
+they did.
+
+**What the third round settled.** A prior reviewer had raised whether the unit
+scan is redundant with the rendered e2e oracle. The #109 reviewer answered it
+by construction: `body.printing #printroot{display:block; height:100vh}` is
+killed by the unit scan and SURVIVES the full 104-test e2e suite, because
+Chrome resolves `vh` against the page box in print and renders identically.
+The unit scan is load-bearing. It is also not sufficient on its own - the
+survivors in the queue rows below are all caught by e2e - so the two oracles
+are complements, and neither may be dropped.
+
+**Carried open, now filed as queue rows 149-153.** The landscape footprint,
+`afterprint` on iOS, the redundant `break-after:page`, the fit test's name,
+and N4's `# kills:` prose across the mutant corpus.

@@ -4148,15 +4148,6 @@ function sizePanHits(svg, minPx) {
  */
 const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 };
 
-/** Card origins for a `cols` x `rows` page, bottom-left corners in PDF space,
- *  row-major from the TOP row - the order and the axis `hifi.slots()`
- *  (`tools/hifi.py:354-362`) uses.
- *
- *  The block is centred on its OWN height, which is the whole reason the
- *  narrow page is not just the first six entries of the wide one: hifi
- *  centres on `3*CH + 2*GY`, so taking its top six would leave a 6-card page
- *  sitting high with all the slack below it.
- */
 /** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
  *  the iOS overflow is vertical. Both are 3 columns of the same card.
  *
@@ -4253,20 +4244,6 @@ function printGridCSS(name, paper) {
     `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
     `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
     `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;
-}
-
-function printSlots(cols, rows) {
-  const g = PRINT_GEOM;
-  const tw = cols * g.CW + (cols - 1) * g.GX;
-  const th = rows * g.CH + (rows - 1) * g.GY;
-  const x0 = (g.PW - tw) / 2, y0 = (g.PH - th) / 2;
-  const out = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      out.push([x0 + col * (g.CW + g.GX), y0 + th - (row + 1) * g.CH - row * g.GY]);
-    }
-  }
-  return out;
 }
 
 /** The card list a print sheet is built from, mirroring `tools/hifi.py`

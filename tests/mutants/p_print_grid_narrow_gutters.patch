@@ -1,0 +1,19 @@
+# kills: D17's narrow grid is rotated and gutterless
+# suite: python3 -m unittest -q tests.test_render_agreement.PrintSlotGeometryTest.test_narrow_grid_is_rotated_and_gutterless
+# The narrow layout charges the wide gutters again, which is the 557.2pt block
+# the deleted printSlots() computed and its test pinned. On a platform that
+# ignores @page the printable width measured 531.6pt, so 557.2 is over the
+# edge on both sides - the exact clipping workstream C fixed. Nothing about
+# the emitted grid LOOKS wrong; only the gutter assertions see it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4167,7 +4167,7 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
+  */
+ const PRINT_LAYOUTS = {
+   wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+-  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
++  narrow: { cols: 3, rows: 2, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY, rotate: true, constrained: true },
+ };
+ 
+ /** The printable area a platform that ignores `@page` leaves us, per side.

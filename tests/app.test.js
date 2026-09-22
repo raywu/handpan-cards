@@ -3525,9 +3525,15 @@ test("print sheet slot count agrees with the layout the breakpoint picks", () =>
       `the ${name} layout must be ${slots} slots per page`);
     assert.strictEqual(L.cols, 3,
       "both layouts are 3 columns wide - D17 reduces ROWS, not columns");
-    assert.strictEqual(
-      Number(app.get(`printSlots(PRINT_LAYOUTS.${name}.cols, PRINT_LAYOUTS.${name}.rows).length`)),
-      slots, "the slot emitter and the layout must agree on the count");
+    // The grid the app actually renders, not a slot emitter nothing calls:
+    // `printGridCSS` is what `#printgeom` receives, so its repeat() counts are
+    // the page's real capacity. A slots-per-page decision that disagreed with
+    // them would pad a 6-slot grid with 9 cards.
+    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
+    assert.match(css, new RegExp(`grid-template-columns:repeat\\(${L.cols},`),
+      `${name}: the emitted grid must be ${L.cols} columns`);
+    assert.match(css, new RegExp(`grid-template-rows:repeat\\(${L.rows},`),
+      `${name}: the emitted grid must be ${L.rows} rows`);
   }
 });
 
