@@ -671,9 +671,11 @@ class PrintSlotGeometryTest(unittest.TestCase):
         selected only where the platform ignores `@page` and owns the page box,
         so no derivation can say where these cards land. Nor is there a
         rendered oracle standing in for one: the printToPDF test at
-        `tests/e2e.test.js:1217` boots without a viewport override, so it
-        measures the WIDE sheet, and narrow's real margins are unmeasured in
-        CI because narrow is iOS-only and CI drives Chrome (queue row 148).
+        `tests/e2e.test.js:1217` runs at the suite's ambient 900x900, so it
+        measures the WIDE sheet, and no test renders a print sheet below the
+        640pt breakpoint at all. Chrome would not settle it even if one did -
+        it honours `@page`, so it cannot reproduce the page box narrow exists
+        for. That is queue row 148.
         What IS checkable from the declaration is the shape, and the shape is
         where the old
         `printSlots()` test was wrong: it computed a 557.2pt block, charging
