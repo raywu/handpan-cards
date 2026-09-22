@@ -104,3 +104,12 @@ real resize, so e2e drives the whole path against the shipped file.
 **Effort:** S
 **Priority:** P2
 **Depends on:** None (independent of the trigger-aware rule; can land before or after)
+
+## The page-level print oracle reconstructs the sheet instead of letting the app produce it
+
+- **What:** Rework `tests/e2e.test.js:1189` ("every printed card keeps its full height on every page") so it drives the real CTA and rasterizes whatever the app's own sequence leaves in the DOM, instead of stubbing `window.print()`, capturing `#printroot.innerHTML`, and re-injecting that HTML plus the `printing` class before `Page.printToPDF`.
+- **Why:** This is the test that let the iOS teardown race ship. A test that reconstructs the state it wants to measure is structurally blind to defects in how that state is produced - it validated the print CSS perfectly while the app was printing the wrong document on iOS. `tests/app.test.js`'s `printed()` helper has the same shape for the same reason.
+- **Pros:** Closes the only category of print defect the suite cannot currently see; the 346-mutant gate would gain real teeth on the print lifecycle rather than just the print CSS.
+- **Cons:** Non-trivial. CDP's `Page.printToPDF` does not go through `window.print()`, so "let the app's own sequence deliver it" needs a different mechanism than the current test uses - probably emulating print media and rasterizing after the CTA rather than calling printToPDF on injected HTML. The owner explicitly chose "add a sequencing test, keep the oracle" on 2026-09-22 to keep the fix small, so this is deliberate debt, not an oversight.
+- **Context:** Recorded as AC-C4 in `docs/plans/2026-09-22-ios-print-teardown-race.md`, which also carries the full root-cause writeup and the reason the existing oracle is blind. The sequencing tests added by that plan (AC-C1/C2/C3) cover the teardown lifecycle at unit level; this TODO is about the remaining gap where nothing rasterizes a sheet the app itself produced.
+- **Depends on:** the iOS teardown fix landing first (that plan's C1-C7), so the oracle is reworked against corrected behaviour rather than the buggy one.
