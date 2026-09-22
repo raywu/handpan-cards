@@ -392,3 +392,25 @@ Closed N2, N3, R4 and R3 in this branch rather than filing them as queue rows.
 N2 and N3 are live holes the reviewer demonstrated with surviving mutants
 against the exact code path this PR exists to fix; deferring them would ship
 the fix with the tests that cannot see it breaking again.
+
+## Merge of PR #106, and the follow-up that closes N1
+
+**Auto-decision D6 (AFK grant).** Merged PR #106 at `8111088` with the second
+reviewer's N1 still open. Policy is that PASS_WITH_NITS merges and nits become
+queue rows; here merging was also the precondition for the owner's only
+remotely-runnable device check, since the LAN server at 192.168.68.90:8732 is
+unreachable and GitHub Pages serves `main`, which still carried the clipping
+code. Pages built `80e46c7` and is live.
+
+**Auto-decision D7.** N1 is not an ordinary nit - the reviewer demonstrated a
+live hole by mutation, and it survived all 167 unit tests on the exact code
+path this workstream exists to fix. Rather than filing it as a queue row it was
+closed immediately on a follow-up lane branch, `claude/print-test-nits`
+(PR #107), together with the two cosmetic nits from the same review (N2's
+underived A4 figures, N3's stale empty-guard message). No source change; the
+fix is in the test and a new mutant, `p_print_fill_parent_dropped.patch`.
+
+N4 stays open and carried: two print mutants put prose in `# kills:` rather
+than a test name. 65 of 367 existing mutants already do this and the verdict
+rests on `# suite:`, so it is a consistency item for the whole corpus, not for
+these two patches.

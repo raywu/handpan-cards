@@ -176,12 +176,18 @@ therefore promises a control the platform does not give it. Either hide it on
 iOS or label it as a hint. Note `printLayoutName` already detects iOS via
 `isIOS()`, so the predicate exists.
 
-### `.printpage` emits a 792pt block into a ~711.6pt printable box
+### RESOLVED - `.printpage` emitted a 792pt block into a ~711.6pt printable box
 
-`#printroot .printpage{height:${p.h}pt}` (`index.html:4189`) hard-sets the
-full paper height. On a platform enforcing its own margins that is ~80pt
-taller than the printable area, so under fragmentation it yields a remainder
-fragment and, with `break-after:page`, potentially one blank sheet per page;
-under clipping it offsets content from true centre. Pre-existing, surfaced by
-the PR #106 reviewer, and survivable today because the rotated narrow sheet's
-532.8pt clears either behaviour. Unverified on iOS.
+`#printroot .printpage{height:${p.h}pt}` hard-set the full PAPER height as if
+it were the PRINTABLE height. It did not clip and it did not yield the odd
+blank sheet: a block taller than the page box PAGINATES, deterministically,
+so every sheet became two physical pages - measured at 8 PDF pages for 4
+sheets, which is the owner's "Page 1 of 10" for a 5-sheet deck.
+
+Fixed in PR #106 (merged 2026-09-22) by reserving only the SHEET's own
+footprint as a `min-height` floor and pairing it with a percentage fill
+(`html,body{height:100%}` plus `body.printing #printroot, body.printing
+#printroot .printpage{height:100%}`), so the platform resolves the page area
+it chose and the flex centring still has free space. Floor and fill; neither
+alone is correct. `PRINT_PAPER` no longer carries a height at all.
+Owner device confirmation on iOS is workstream B's B7 and is still open.
