@@ -3578,8 +3578,9 @@ test("every print layout fits inside the platform-enforced printable area", () =
   /* Reviewer R4: the old loop measured ONE paper. g.PW/g.PH are Letter, and
      the app deliberately carries no paper dimensions at all (asserting one is
      what paginated every sheet), so the papers live here, in the test, as the
-     measurement they are. A4 is the tight axis - 595.28pt wide leaves 510.9pt
-     of safe width against Letter's 531.6 - and it fit by luck until now. */
+     measurement they are. A4 is the tight axis: at PRINT_SAFE.margin
+     its 595.28pt width leaves 505.28pt of safe width against Letter's 522 -
+     and it fit by luck until now. */
   const PAPERS = { letter: [g.PW, g.PH], a4: [595.28, 841.89] };
   assert.deepStrictEqual(Object.keys(PAPERS).sort(),
     Object.keys(plain(app.get("PRINT_PAPER"))).sort(),
@@ -3599,7 +3600,8 @@ test("every print layout fits inside the platform-enforced printable area", () =
         `the ${name} sheet presents ${h}pt of height on ${paper}, over the ${safeH}pt safe area`);
     }
   }
-  assert.ok(checked > 0, "the fit loop asserted nothing - no layout was marked constrained");
+  assert.ok(checked > 0,
+    "the fit loop asserted nothing - no paper/constrained-layout pair was measured");
   // The fit must come from the layout, never from the card: 62.65 x 87.21 mm
   // is the print spec both renderers share.
   assert.strictEqual(g.CW, 177.6, "the card keeps its printed width");
@@ -3732,8 +3734,16 @@ test("the print stylesheet gives the page box something to fill", () => {
   const css = html.slice(html.indexOf("@media print"));
   assert.match(css, /html,\s*body\{[^}]*height:100%/,
     "html/body must fill the page box or a percentage height cannot resolve");
-  assert.match(css, /body\.printing #printroot \.printpage\{height:100%\}/,
-    ".printpage must fill the page box, or min-height collapses it and the sheet top-aligns");
+  /* Reviewer N1: pin BOTH selectors, not just the second. #printroot is the
+     parent the .printpage percentage resolves against, so deleting
+     `body.printing #printroot,` leaves this rule matching while the fill
+     silently stops resolving - .printpage collapses to the min-height floor
+     and the sheet top-aligns, the exact 43b2851 regression. Mutated, that
+     deletion survived all 167 unit tests; only e2e caught it, and e2e is the
+     oracle the plan says cannot carry the floor half. */
+  assert.match(css,
+    /body\.printing #printroot,\s*body\.printing #printroot \.printpage\{height:100%\}/,
+    "#printroot AND .printpage must both fill, or the percentage has no resolved parent");
   assert.ok(!/\.printpage\{height:\s*[\d.]+(pt|px|in|mm|cm)/.test(css),
     "the fill must stay a percentage - a length here is a page-box literal again");
 });
