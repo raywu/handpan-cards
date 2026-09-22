@@ -3674,19 +3674,51 @@ test("the print stylesheet never declares a page-box height", () => {
       // What it DOES reserve is the sheet's own footprint after rotation.
       const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
       const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-      const footprint = L.rotate ? sw : sh;
+      const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
       assert.ok(css.includes(`min-height:${footprint}pt`),
         `${name}/${paper} must reserve ${footprint}pt, the sheet's own height`);
+      // Reviewer N1: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary
+      // float. A stylesheet is text a human reads in devtools; round it.
+      assert.ok(!/min-height:[0-9.]*[0-9]{8}/.test(css),
+        `${name}/${paper} emits an unrounded float into the stylesheet`);
     }
   }
   // The reservation has to be smaller than the smallest printable box we have
   // measured, or the block paginates again on the next platform.
-  const N = layouts.narrow;
-  const footprint = N.rotate
-    ? N.cols * g.CW + (N.cols - 1) * N.gx
-    : N.rows * g.CH + (N.rows - 1) * N.gy;
-  assert.ok(footprint <= 661.6,
-    `the narrow sheet reserves ${footprint}pt, over the ~661.6pt iOS leaves above its footer band`);
+  /* Reviewer N2: bound EVERY constrained layout, not `narrow` by name. The
+     guard exists for whichever layout a margin-enforcing platform selects;
+     naming one lets a second such layout reintroduce the pagination unseen. */
+  let bounded = 0;
+  for (const [name, L] of Object.entries(layouts)) {
+    if (!L.constrained) continue;
+    bounded++;
+    const f = L.rotate
+      ? L.cols * g.CW + (L.cols - 1) * L.gx
+      : L.rows * g.CH + (L.rows - 1) * L.gy;
+    assert.ok(f <= 661.6,
+      `the ${name} sheet reserves ${f}pt, over the ~661.6pt iOS leaves inside its own bands`);
+  }
+  assert.ok(bounded > 0, "no layout was bounded against a printable box");
+});
+
+/* The regression a fresh reviewer caught at 43b2851: min-height alone
+   collapses .printpage to its own content, so `align-items:center` has no
+   free space to distribute and the sheet TOP-ALIGNS. Rendered, desktop wide
+   put its top card border at y=0.0 - flush with the paper edge, inside every
+   consumer printer's non-printable band - and on iOS it would sit under the
+   OS header band. The fill is a PERCENTAGE so the platform resolves it
+   against the page area it chose, the one number we may never assume; paired
+   with the min-height floor it holds the pagination fix AND the centring.
+   tests/e2e.test.js measures the rendered position; this pins the rule. */
+test("the print stylesheet gives the page box something to fill", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const css = html.slice(html.indexOf("@media print"));
+  assert.match(css, /html,\s*body\{[^}]*height:100%/,
+    "html/body must fill the page box or a percentage height cannot resolve");
+  assert.match(css, /body\.printing #printroot \.printpage\{height:100%\}/,
+    ".printpage must fill the page box, or min-height collapses it and the sheet top-aligns");
+  assert.ok(!/\.printpage\{height:\s*[\d.]+(pt|px|in|mm|cm)/.test(css),
+    "the fill must stay a percentage - a length here is a page-box literal again");
 });
 
 /* PRINT_PAPER.h was the only source of the page-box literal above. Keeping

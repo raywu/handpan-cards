@@ -1262,9 +1262,12 @@ function run() {
       "d = fitz.open(sys.argv[1])",
       "out = []",
       "for p in d:",
-      "    hs = [round(dr['rect'].height, 1) for dr in p.get_drawings()",
+      "    fr = [dr['rect'] for dr in p.get_drawings()",
       "          if 170 <= dr['rect'].width <= 185 and dr['rect'].height > 120]",
-      "    out.append(sorted(set(hs)))",
+      "    hs = sorted(set(round(r.height, 1) for r in fr))",
+      "    top = round(min((r.y0 for r in fr), default=-1), 1)",
+      "    bot = round(p.rect.height - max((r.y1 for r in fr), default=-1), 1)",
+      "    out.append({'h': hs, 'top': top, 'bottom': bot})",
       "print(json.dumps(out))",
     ].join("\n");
 
@@ -1280,13 +1283,27 @@ function run() {
     assert.ok(pages.length > 1, `the deck printed on ${pages.length} page(s), not several`);
 
     // 247.2pt is the card height in tools/hifi.py, the print spec.
-    for (const [i, heights] of pages.entries()) {
-      assert.ok(heights.length > 0, `page ${i + 1} printed no card frames at all`);
-      for (const h of heights) {
+    for (const [i, page] of pages.entries()) {
+      assert.ok(page.h.length > 0, `page ${i + 1} printed no card frames at all`);
+      for (const h of page.h) {
         assert.ok(Math.abs(h - 247.2) <= 1,
           `page ${i + 1} printed a card frame ${h}pt tall, not 247.2pt: ` +
           "the row is clipped by the page break and its diagram never painted");
       }
+      /* WHERE the sheet lands, not just how tall its cards are. This suite
+         measured heights alone and stayed green through a regression that put
+         the top row's border at y=0.0, flush with the paper edge - every
+         consumer printer has a 3-5mm non-printable band and would have sheared
+         it. The cause was `.printpage` carrying a min-height with nothing to
+         fill the page box, so the flex centring had no free space to
+         distribute and the sheet top-aligned. */
+      assert.ok(page.top >= 8,
+        `page ${i + 1} printed its top card frame ${page.top}pt from the paper edge; ` +
+        "under ~8pt it lands in a consumer printer's non-printable band");
+      assert.ok(Math.abs(page.top - page.bottom) <= 2,
+        `page ${i + 1} is not centred vertically: ${page.top}pt above the sheet, ` +
+        `${page.bottom}pt below. The slack must fall on BOTH ends - a platform ` +
+        "that draws its own header band eats the end that has none");
     }
   });
 

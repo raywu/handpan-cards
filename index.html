@@ -769,7 +769,15 @@ button.nav:active{background:#2e281e}
 #printroot .blankrule{height:1px; margin:14px 18px; background:#e0e0e0}
 @media print{
   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-  html,body{height:auto; min-height:0; overflow:visible}
+  /* height:100% is a PERCENTAGE, not a page-box literal: the platform
+     resolves it against whatever page area it actually chose, which is the
+     one number we are never allowed to assume. It gives .printpage free
+     space to centre the sheet in; min-height (emitted by printGridCSS) is
+     the floor that stops the block ever being shorter than the sheet, which
+     is what made every sheet paginate onto two pages. Floor and fill
+     together - neither alone is correct. */
+  html,body{height:100%; min-height:0; overflow:visible}
+  body.printing #printroot, body.printing #printroot .printpage{height:100%}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
@@ -4229,7 +4237,9 @@ function printGridCSS(name, paper) {
   // the sliced remainder. min-height lets the platform's box supply the rest.
   const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
   const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-  const footprint = L.rotate ? sw : sh;
+  // Rounded: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary float,
+  // and a stylesheet is text a human reads in devtools.
+  const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
   return `@page{size:${p.css}; margin:0}\n` +
     `#printroot .printpage{min-height:${footprint}pt}\n` +
     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
