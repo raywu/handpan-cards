@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.modules.setdefault("hifi", types.ModuleType("hifi"))  # skip font registration
 import decks as D  # noqa: E402
 import inline_engine  # noqa: E402
+import inline_fonts  # noqa: E402
 import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
 
 PY = {"hijaz": D.HIJAZ, "pygmy": D.PYGMY, "amara": D.AMARA}
@@ -102,6 +103,14 @@ def main():
     assert not problems, problems
     print("4. inlined engine regions == src/engine/ (%s): OK"
           % ", ".join(inline_engine.MODULES))
+
+    # 5. the generated font module == what tools/inline_fonts.py writes from
+    # tools/fonts/. src/engine/fontdata.js is GENERATED, and check 4 above only
+    # proves index.html carries a copy of whatever the file says - not that the
+    # file still matches the TTFs the print pipeline prints with.
+    assert inline_fonts.main(["inline_fonts.py", "--check"]) == 0, \
+        "src/engine/fontdata.js is stale - run `python3 tools/inline_fonts.py`"
+    print("5. src/engine/fontdata.js == tools/fonts/ subsets: OK")
 
 
 if __name__ == "__main__":
