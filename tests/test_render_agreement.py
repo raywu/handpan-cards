@@ -667,13 +667,15 @@ class PrintSlotGeometryTest(unittest.TestCase):
     def test_narrow_grid_is_rotated_and_gutterless(self):
         """D17's 3x2, asserted on the emitted text - and NOT on paper.
 
-        There is deliberately no absolute-position assertion here. `narrow` is
-        selected only where the platform ignores `@page` and owns the page box,
-        so no derivation can say where these cards land. Nor is there a
+        There is deliberately no absolute-position assertion here. `narrow`
+        exists for platforms that ignore `@page` and own the page box (a
+        viewport under 640px picks it anywhere, but the page box is only out
+        of our hands on iOS), so no derivation can say where these cards
+        land. Nor is there a
         rendered oracle standing in for one: the printToPDF test at
         `tests/e2e.test.js:1217` runs at the suite's ambient 900x900, so it
         measures the WIDE sheet, and no test renders a print sheet below the
-        640pt breakpoint at all. Chrome would not settle it even if one did -
+        640px breakpoint at all. Chrome would not settle it even if one did -
         it honours `@page`, so it cannot reproduce the page box narrow exists
         for. That is queue row 148.
         What IS checkable from the declaration is the shape, and the shape is
