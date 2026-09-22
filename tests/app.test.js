@@ -3744,9 +3744,61 @@ test("the print stylesheet gives the page box something to fill", () => {
   assert.match(css,
     /body\.printing #printroot,\s*body\.printing #printroot \.printpage\{height:100%\}/,
     "#printroot AND .printpage must both fill, or the percentage has no resolved parent");
-  assert.ok(!/\.printpage\{height:\s*[\d.]+(pt|px|in|mm|cm)/.test(css),
-    "the fill must stay a percentage - a length here is a page-box literal again");
+  /* Reviewer N-a: anchoring the guard on `.printpage{height:` never inspects
+     the PARENT. `body.printing #printroot{display:block; height:840pt}`
+     survived all 167 tests: .printpage's percentage then resolves against a
+     hard page-box literal laundered through the very parent the assertion
+     above pins, and 840pt over iOS's ~711.6pt printable box paginates - the
+     43b2851 class again, and the class the plan says e2e structurally cannot
+     catch because Chrome shrink-to-fits where iOS paginates. So scan every
+     rule in the block instead of one hand-picked selector, and take any unit
+     at all rather than a list of five - `em`, `vh` and `calc()` all resolve
+     to a fixed length just as well as `pt` does. `min-height` is deliberately
+     untouched: that IS the floor, and it is the one length that belongs. */
+  const block = printBlock(html);
+  /* The reviewer's N1: without this line the whole loop below can go VACUOUS
+     and stay green. `indexOf` takes the FIRST textual "@media print" in the
+     file, so a CSS comment mentioning the phrase - in a stylesheet this
+     comment-dense, an ordinary thing to write - redirects the brace matcher
+     to an unrelated block, the scan finds no #printroot rule, and every
+     assertion silently checks nothing. Demonstrated: with such a comment
+     above the max-height rule, `.printpage{height:840pt}` passed 167/167.
+     Anchoring on a string the real block must contain also catches the
+     matcher being truncated early by a brace inside a CSS string. */
+  assert.ok(block.includes("body.printing #printroot"),
+    "printBlock did not find the real print stylesheet - the scan below would assert nothing");
+  for (const [, sel, body] of block.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    /* html and body carry the top of the same percentage chain, so a literal
+       lands there just as well (reviewer N3: `html,body{height:760pt}` inside
+       the block passed 167/167 - later rule, same specificity, it wins). */
+    if (!/#printroot|(^|[,\s])(html|body)([,\s{]|$)/.test(sel)) continue;
+    /* matchAll, not match: CSS gives the LAST declaration the win, so reading
+       only the first height let `{height:100%; min-height:0; height:760pt}`
+       through (reviewer N2), and the shipped html,body rule shows
+       multi-declaration blocks are house style here. `i` because CSS property
+       names are case-insensitive; `!important` is a legitimate, non-
+       regressing suffix and must not read as a literal. */
+    for (const h of body.matchAll(/(?:^|[;\s])height\s*:\s*([^;]+)/gi)) {
+      const v = h[1].trim().replace(/\s*!important$/i, "").trim();
+      assert.match(v, /^100%$/,
+        `${sel.trim()} sets height:${v} - the fill must be a percentage, ` +
+        "or it resolves against a page box we are never allowed to assume");
+    }
+  }
 });
+
+/** The `@media print` block alone, brace-matched. Slicing to end-of-file
+ *  sweeps the app's JS in with the CSS, and a rule scan cannot tell a
+ *  declaration from a function body. */
+function printBlock(html) {
+  const start = html.indexOf("@media print");
+  let depth = 0;
+  for (let i = html.indexOf("{", start); i < html.length; i++) {
+    if (html[i] === "{") depth++;
+    else if (html[i] === "}" && --depth === 0) return html.slice(start, i);
+  }
+  throw new Error("unterminated @media print block");
+}
 
 /* PRINT_PAPER.h was the only source of the page-box literal above. Keeping
    the key invites the next edit to read it again, so the fix deletes it and

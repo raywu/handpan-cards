@@ -1,0 +1,18 @@
+# kills: the print stylesheet gives the page box something to fill
+# suite: node --test tests/app.test.js
+# Launders a hard page-box literal through #printroot, the parent .printpage's
+# percentage resolves against. Placed AFTER the fill rule: identical
+# specificity, so the later rule wins and the 840pt genuinely applies (a
+# reviewer caught the first cut sitting above it, where it was inert). 840pt
+# over iOS's ~711.6pt printable box paginates - the 43b2851 class.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -778,6 +778,7 @@ button.nav:active{background:#2e281e}
+      together - neither alone is correct. */
+   html,body{height:100%; min-height:0; overflow:visible}
+   body.printing #printroot, body.printing #printroot .printpage{height:100%}
++  body.printing #printroot{display:block; height:840pt}
+   /* The safe-area padding is an on-screen notch reservation and has no meaning
+      on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}
