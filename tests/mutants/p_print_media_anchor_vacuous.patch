@@ -1,10 +1,12 @@
 # kills: the print stylesheet gives the page box something to fill
 # suite: node --test tests/app.test.js
-# Vacuity mutant. printBlock() anchors on the FIRST textual "@media print", so
-# a CSS comment merely mentioning the phrase points the brace matcher at an
-# unrelated block; the rule scan then finds no #printroot rule and asserts
-# nothing, silently. Paired here with the page-box literal the scan exists to
-# catch - without the anchor assertion this pair passes all 167 tests.
+# Vacuity mutant, strong form. printBlock() anchors on the FIRST textual
+# "@media print", so a comment mentioning it aims the brace matcher at an
+# unrelated block and the rule scan asserts nothing. This decoy also carries
+# the anchor string itself, so an anchor assertion alone does not save it -
+# the slice starts inside the comment and the comment satisfies the anchor.
+# Only stripping comments before the scan closes it. Paired with the page-box
+# literal the scan exists to catch.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -12,7 +14,7 @@ diff --git a/index.html b/index.html
     the box the user is typing into out of sight. The ramp keeps its proportions
     and gives back roughly a third; the rhythm still reads because it is the
     RATIOS that group things, not the absolute values. */
-+/* compact heights; see @media print at the foot for the sheet rules */
++/* @media print rules for body.printing #printroot live at the foot */
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
  }
@@ -20,7 +22,7 @@ diff --git a/index.html b/index.html
       together - neither alone is correct. */
    html,body{height:100%; min-height:0; overflow:visible}
    body.printing #printroot, body.printing #printroot .printpage{height:100%}
-+  body.printing #printroot .printpage{height:840pt}
++  body.printing #printroot{display:block; height:840pt}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
    body{margin:0; padding:0; background:#fff; display:block}

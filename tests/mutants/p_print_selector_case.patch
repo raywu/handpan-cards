@@ -1,0 +1,17 @@
+# kills: the print stylesheet gives the page box something to fill
+# suite: node --test tests/app.test.js
+# HTML element selectors are case-insensitive, so an uppercased html/body rule
+# is live CSS. It carries the top of the same percentage chain, and a later
+# rule at equal specificity wins: 760pt under Chrome's 792pt box renders
+# identically while replacing the platform-resolved fill with a literal.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -777,6 +777,7 @@ button.nav:active{background:#2e281e}
+      is what made every sheet paginate onto two pages. Floor and fill
+      together - neither alone is correct. */
+   html,body{height:100%; min-height:0; overflow:visible}
++  HTML,BODY{height:760pt}
+   body.printing #printroot, body.printing #printroot .printpage{height:100%}
+   /* The safe-area padding is an on-screen notch reservation and has no meaning
+      on paper; left in, it shifts every page by the device's insets. */
