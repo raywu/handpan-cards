@@ -11,13 +11,13 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -5264,11 +5264,6 @@ function closeScaleSheet() {
  }
- // The browser's way out: the back gesture, or a swipe. The entry is already
- // gone, so this only takes the page down.
 -/* The print sheet's only teardown on the success path. Registered ONCE here,
 -   not inside openPrintSheet(), so pressing the CTA N times leaves one
 -   listener rather than N. */
 -window.addEventListener("afterprint", teardownPrintSheet);
 -
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
  window.addEventListener("popstate", () => {
    if (!sheetOpen) return;
    sheetRouted = false;
