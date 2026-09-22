@@ -3755,32 +3755,39 @@ test("the print stylesheet gives the page box something to fill", () => {
      at all rather than a list of five - `em`, `vh` and `calc()` all resolve
      to a fixed length just as well as `pt` does. `min-height` is deliberately
      untouched: that IS the floor, and it is the one length that belongs. */
-  const block = printBlock(html);
-  /* The reviewer's N1: without this line the whole loop below can go VACUOUS
-     and stay green. `indexOf` takes the FIRST textual "@media print" in the
-     file, so a CSS comment mentioning the phrase - in a stylesheet this
-     comment-dense, an ordinary thing to write - redirects the brace matcher
-     to an unrelated block, the scan finds no #printroot rule, and every
-     assertion silently checks nothing. Demonstrated: with such a comment
-     above the max-height rule, `.printpage{height:840pt}` passed 167/167.
-     Anchoring on a string the real block must contain also catches the
-     matcher being truncated early by a brace inside a CSS string. */
+  /* Strip CSS comments BEFORE anything reads the stylesheet. Two separate
+     defects share this one cause. The scan can go VACUOUS and stay green:
+     `indexOf` takes the FIRST textual "@media print", so a comment merely
+     mentioning the phrase - in a file this comment-dense, an ordinary thing
+     to write - aims the brace matcher at an unrelated block and every
+     assertion below silently checks nothing. An anchor assertion alone did
+     not close it, because the slice then STARTS inside the decoy comment and
+     the comment's own text satisfies the anchor. And it can go the other way:
+     the `([^{}]+)` selector capture swallows any comment in front of a rule,
+     so `/* clear of the body edge *\/ .cropmark{height:6pt}` failed the test
+     and printed the comment as the selector. Comments are not CSS; remove
+     them and both cases disappear. The anchor stays as cheap insurance
+     against the matcher being truncated early by a brace inside a string. */
+  const block = printBlock(html.replace(/\/\*[\s\S]*?\*\//g, " "));
   assert.ok(block.includes("body.printing #printroot"),
     "printBlock did not find the real print stylesheet - the scan below would assert nothing");
   for (const [, sel, body] of block.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     /* html and body carry the top of the same percentage chain, so a literal
        lands there just as well (reviewer N3: `html,body{height:760pt}` inside
        the block passed 167/167 - later rule, same specificity, it wins). */
-    if (!/#printroot|(^|[,\s])(html|body)([,\s{]|$)/.test(sel)) continue;
+    if (!/#printroot|(^|[,\s])(html|body)([,\s{]|$)/i.test(sel)) continue;
     /* matchAll, not match: CSS gives the LAST declaration the win, so reading
        only the first height let `{height:100%; min-height:0; height:760pt}`
        through (reviewer N2), and the shipped html,body rule shows
        multi-declaration blocks are house style here. `i` because CSS property
-       names are case-insensitive; `!important` is a legitimate, non-
-       regressing suffix and must not read as a literal. */
+       names are case-insensitive - and so are HTML element selectors, which
+       is why the filter above carries `i` too. `!important` is a legitimate,
+       non-regressing suffix here and must not read as a literal; note it
+       still fails the stricter literal-text pin above, which matches the
+       shipped rule verbatim and is meant to. */
     for (const h of body.matchAll(/(?:^|[;\s])height\s*:\s*([^;]+)/gi)) {
       const v = h[1].trim().replace(/\s*!important$/i, "").trim();
-      assert.match(v, /^100%$/,
+      assert.match(v, /^100(\.0+)?%$/,
         `${sel.trim()} sets height:${v} - the fill must be a percentage, ` +
         "or it resolves against a page box we are never allowed to assume");
     }
