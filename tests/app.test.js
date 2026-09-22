@@ -3893,6 +3893,29 @@ function printed(app, variant) {
 }
 const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
 
+test("blank_cards is honoured when present, and no shipped deck carries it", () => {
+  const app = boot();
+  // slotsPerPage = 1 so the padding loop never fires: with it, deck-authored
+  // blanks and padding blanks are the identical descriptor and the padding
+  // moves with the total, so the count says nothing about the branch.
+  const kinds = (js) => plain(app.get(js)).map(c => c.kind);
+  const with7 = kinds('printCardList(Object.assign({}, deck(), {blank_cards: 7}), "full", 1)');
+  assert.strictEqual(with7.filter(k => k === "blank").length, 7,
+    "a deck carrying blank_cards: 7 must contribute exactly 7 blank templates");
+  assert.deepStrictEqual(with7.slice(-7), Array(7).fill("blank"),
+    "and they come after the chords, not among them");
+  assert.strictEqual(
+    kinds('printCardList(deck(), "full", 1)').filter(k => k === "blank").length, 0,
+    "a deck without the key contributes none");
+  // The gap the branch exists to close: `blank_cards` is a print-overlay
+  // literal in tools/decks.py, and data/decks.json - which IS the DECKS line -
+  // does not carry it. The branch is dead in the browser today and correct the
+  // moment the key moves into the canonical file.
+  const carriers = plain(app.get('DECKS.filter(d => "blank_cards" in d).map(d => d.id)'));
+  assert.deepStrictEqual(carriers, [],
+    "no shipped deck carries blank_cards - if one does, this test's premise changed");
+});
+
 test("the print container carries no layout class", () => {
   // The only thing that decides slots-per-page is the stylesheet `openPrintSheet`
   // writes into `#printgeom`. Nothing in `@media print` selects on `.wide` or

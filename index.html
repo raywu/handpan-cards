@@ -4254,8 +4254,16 @@ function printGridCSS(name, paper) {
  *  The full deck opens with a title and a legend card and pads the last page
  *  with BLANK templates; the print-shop sheet is chord cards only and pads
  *  with EMPTY slots, so a shop never prints a blank template nobody asked
- *  for. `blank_cards` is a print-overlay literal the built-ins carry in
- *  tools/decks.py and generated decks do not, hence the `|| 0`.
+ *  for.
+ *
+ *  `blank_cards` asks for blanks BEYOND that padding. It is a print-overlay
+ *  literal, and the overlay lives in tools/decks.py alone: data/decks.json is
+ *  what the DECKS line is generated from, and it carries no such key, so no
+ *  deck in the browser sets it today and the page padding below is what
+ *  actually fills a short last page. The branch stands because the overlay
+ *  could move into the canonical file - it is honoured the moment the key
+ *  appears, which is what keeps this renderer and the PDF from disagreeing.
+ *  Pinned by "blank_cards is honoured when present" in tests/app.test.js.
  *
  *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
  *  narrow viewport and 9 on a wide one, and one decision point for that
