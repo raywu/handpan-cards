@@ -113,3 +113,40 @@ real resize, so e2e drives the whole path against the shipped file.
 - **Cons:** Non-trivial. CDP's `Page.printToPDF` does not go through `window.print()`, so "let the app's own sequence deliver it" needs a different mechanism than the current test uses - probably emulating print media and rasterizing after the CTA rather than calling printToPDF on injected HTML. The owner explicitly chose "add a sequencing test, keep the oracle" on 2026-09-22 to keep the fix small, so this is deliberate debt, not an oversight.
 - **Context:** Recorded as AC-C4 in `docs/plans/2026-09-22-ios-print-teardown-race.md`, which also carries the full root-cause writeup and the reason the existing oracle is blind. The sequencing tests added by that plan (AC-C1/C2/C3) cover the teardown lifecycle at unit level; this TODO is about the remaining gap where nothing rasterizes a sheet the app itself produced.
 - **Depends on:** the iOS teardown fix landing first (that plan's C1-C7), so the oracle is reworked against corrected behaviour rather than the buggy one.
+
+## Print teardown: coverage and residue gaps the PR #106 review surfaced
+
+Six nits from the independent review of PR #106 at `b943483` (verdict
+PASS_WITH_NITS). None blocks the iOS teardown fix; all are follow-up.
+
+- **Two surviving mutants on the NEW logic.** `{once:true}` on the
+  `afterprint` registration (`index.html:5268`) survives, because
+  `tests/helpers/sandbox.js:265` is `(t, fn) => ...` and drops the options
+  argument entirely - so a second print in a session would never tear down and
+  no test would notice. `setTimeout(teardownPrintSheet, 2000)` after
+  `print()` also survives: nothing distinguishes "torn down on `afterprint`"
+  from "torn down on a timer slower than the test". Fix: have the sandbox
+  carry the options argument, add a second CTA press with an `afterprint`
+  between, and assert across an async turn.
+- **`#printroot { display: none }` (`index.html:744`) is now load-bearing and
+  untested.** Plan D20 rests its whole accepted failure mode on that one line.
+  Assert `getComputedStyle(root).display === "none"` in the new e2e test.
+- **`@page { size: letter; margin: 0 }` is residue D20 does not price.**
+  `printGridCSS()` emits it unscoped to `#printroot` and ungated by
+  `body.printing`. If `afterprint` never fires, every later user-initiated
+  print is forced to that paper size with zero margins - D20's risk row only
+  reasons about `#printroot` contents and `body.printing`. The owner should
+  know the accepted risk is broader than written.
+- **`root.className = name` is dead** - no `#printroot.wide` / `.narrow`
+  selector exists - and teardown does not reset it. (Overlaps the existing
+  AC-B5b queue row.)
+- **Two stale comments** still narrate the old synchronous teardown:
+  `index.html:5613` and the section banner at `index.html:4282`.
+- **`teardownPrintSheet()` has no null guard** and can mask the original
+  exception on the catch path. Unreachable today: both ids are static markup
+  and `openPrintSheet()` already dereferenced `#printroot` before its `catch`
+  can run.
+
+**Effort:** S each
+**Priority:** P2
+**Depends on:** PR #106 landing (so the follow-ups build on the shipped shape)
