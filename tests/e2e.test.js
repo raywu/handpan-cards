@@ -1173,6 +1173,93 @@ function run() {
       `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
   });
 
+  /* Nothing in this repo rendered `@media print` until now: three print defects
+     shipped past 345 mutants because every print test read the stylesheet text
+     instead of the printed page. This one prints the real thing and measures
+     it. The defect it was written for: `#printroot .printscale` taking itself
+     out of flow inside a paginated grid cell makes Chrome clip every row but
+     the last on each page - the card frame paints 183pt of its 247.2pt and the
+     pan diagram, note line and number line do not paint at all, so 6 of the
+     Amara deck's 25 chord cards come out unusable on the default layout.
+
+     The oracle is pymupdf (already a documented test requirement - see
+     CLAUDE.md "Print pipeline"), shelled out to because the js suite is
+     node-only. A card frame is a rounded-rect PATH under a `cm` transform, so
+     a byte-level scan for `re` operators cannot see one; get_drawings() can. */
+  test("every printed card keeps its full height on every page", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+    const { spawnSync } = require("node:child_process");
+    const os = require("node:os");
+
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+
+    // openPrintSheet() empties #printroot in its own finally as soon as
+    // print() returns, so capture the sheet inside a stubbed print() and put
+    // it back before asking Chrome to paginate it.
+    const cells = await b.eval(`
+      window.__cap = null;
+      const real = window.print;
+      window.print = function () {
+        window.__cap = {
+          html: document.getElementById("printroot").innerHTML,
+          cls: document.getElementById("printroot").className,
+          css: document.getElementById("printgeom").textContent };
+      };
+      try { openPrintSheet("full"); } finally { window.print = real; }
+      const c = window.__cap;
+      if (!c) return 0;
+      const root = document.getElementById("printroot");
+      root.className = c.cls;
+      root.innerHTML = c.html;
+      root.hidden = false;
+      document.getElementById("printgeom").textContent = c.css;
+      document.body.classList.add("printing");
+      return (c.html.match(/printcell/g) || []).length;`);
+    assert.ok(cells > 9,
+      `the captured sheet holds ${cells} cells - it must span more than one page`);
+
+    const res = await b.send("Page.printToPDF",
+      { printBackground: true, preferCSSPageSize: true });
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "print-height-"));
+    const pdf = path.join(dir, "deck.pdf");
+    fs.writeFileSync(pdf, Buffer.from(res.data, "base64"));
+
+    // Card frames are the only drawings this wide; anything shorter than half a
+    // card is a rule or a badge, not a frame.
+    const probe = [
+      "import sys, json, fitz",
+      "d = fitz.open(sys.argv[1])",
+      "out = []",
+      "for p in d:",
+      "    hs = [round(dr['rect'].height, 1) for dr in p.get_drawings()",
+      "          if 170 <= dr['rect'].width <= 185 and dr['rect'].height > 120]",
+      "    out.append(sorted(set(hs)))",
+      "print(json.dumps(out))",
+    ].join("\n");
+
+    let r;
+    try {
+      r = spawnSync("python3", ["-c", probe, pdf], { encoding: "utf8", timeout: 120000 });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    assert.strictEqual(r.status, 0,
+      `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
+    const pages = JSON.parse(r.stdout.trim().split("\n").pop());
+    assert.ok(pages.length > 1, `the deck printed on ${pages.length} page(s), not several`);
+
+    // 247.2pt is the card height in tools/hifi.py, the print spec.
+    for (const [i, heights] of pages.entries()) {
+      assert.ok(heights.length > 0, `page ${i + 1} printed no card frames at all`);
+      for (const h of heights) {
+        assert.ok(Math.abs(h - 247.2) <= 1,
+          `page ${i + 1} printed a card frame ${h}pt tall, not 247.2pt: ` +
+          "the row is clipped by the page break and its diagram never painted");
+      }
+    }
+  });
+
   test("six custom decks keep the chip row on one line with the active chip in view", async () => {
     await freshLoad();
     await b.setViewport(380, 780, true);

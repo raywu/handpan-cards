@@ -749,8 +749,12 @@ button.nav:active{background:#2e281e}
 #printroot .printcell{position:relative; overflow:hidden}
 /* The faces are authored at a screen width and scaled down to the card's
    physical size; the wrapper carries the transform so the grid cell keeps its
-   printed dimensions. */
-#printroot .printscale{position:absolute; top:0; left:0; transform-origin:top left}
+   printed dimensions. It must stay IN FLOW: out of flow (position:absolute)
+   Chrome clips it at every page break, so each page but the last loses its
+   bottom row's diagram. `relative` and not `static` because .printcell .face
+   is absolutely positioned and needs this element as its containing block -
+   under static the face would resolve against .printcell and shrink twice. */
+#printroot .printscale{position:relative; top:0; left:0; transform-origin:top left}
 #printroot .printcell .face{position:absolute; inset:0; box-shadow:none;
   backface-visibility:visible; -webkit-backface-visibility:visible}
 #printroot .printname{padding:0 13px; font-family:Marcellus, Georgia, serif;
