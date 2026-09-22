@@ -150,3 +150,38 @@ PASS_WITH_NITS). None blocks the iOS teardown fix; all are follow-up.
 **Effort:** S each
 **Priority:** P2
 **Depends on:** PR #106 landing (so the follow-ups build on the shipped shape)
+
+### The card may render 2-3% over spec on iOS
+
+Pixel forensics on the owner's 2026-09-21 iPhone 14 screenshot (1170x2532,
+paper white region 1073px wide = 612pt, so 1.7533 px/pt): column pitch
+measured 321.5px = 183.4pt against a 177.6pt spec (ratio 1.033), row pitch
+444px = 253.2pt against 247.2 (1.024). If real, a printed card is ~64.7 x
+89.3 mm instead of 62.65 x 87.21 and will not sit right in a poker sleeve.
+
+Candidate root cause: `.printscale`'s `transform:scale(g.CW / 72 * 96 /
+PRINT_DESIGN_W)` (`index.html:4194`) assumes 96 CSS px per inch in print
+context. WebKit's print px/pt basis may differ.
+
+Confirmed or refuted by the B7 ruler check (expect 62.65 x 87.21 mm).
+Deliberately NOT fixed alongside the page-fit work: two failures at once
+makes the device check unreadable.
+
+### The A4/Letter paper control is inert on iOS
+
+`PRINT_PAPER` (`index.html:4174`) and the `@page{size:...}` half of
+`printGridCSS()` do nothing on iOS Safari, which ignores the `@page` at-rule
+outright (MDN bcd #28626; Apple Developer Forums 695544, 114327). The picker
+therefore promises a control the platform does not give it. Either hide it on
+iOS or label it as a hint. Note `printLayoutName` already detects iOS via
+`isIOS()`, so the predicate exists.
+
+### `.printpage` emits a 792pt block into a ~711.6pt printable box
+
+`#printroot .printpage{height:${p.h}pt}` (`index.html:4189`) hard-sets the
+full paper height. On a platform enforcing its own margins that is ~80pt
+taller than the printable area, so under fragmentation it yields a remainder
+fragment and, with `break-after:page`, potentially one blank sheet per page;
+under clipping it offsets content from true centre. Pre-existing, surfaced by
+the PR #106 reviewer, and survivable today because the rotated narrow sheet's
+532.8pt clears either behaviour. Unverified on iOS.

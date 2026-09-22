@@ -1,0 +1,17 @@
+# kills: the narrow print stylesheet actually emits the rotation
+# suite: node --test --test-name-pattern narrow.print.stylesheet.actually.emits tests/app.test.js
+# The layout still DECLARES rotate:true but printGridCSS never emits the rule.
+# Arithmetic over PRINT_LAYOUTS passes, the sheet clips on paper. This is the
+# gap the plan's self-review names: the fit test reads the layout table, not
+# the stylesheet, so only this mutant proves the emission is load-bearing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4225,7 +4225,6 @@ function printGridCSS(name, paper) {
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+     `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +
+-    (L.rotate ? `#printroot .printsheet{transform:rotate(-90deg)}\n` : "") +
+     `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
+     `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
+     `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;

@@ -1,0 +1,18 @@
+# kills: iOS selects the narrow layout at every viewport width
+# suite: node --test --test-name-pattern iOS.selects.the.narrow.layout tests/app.test.js
+# The platform clause is removed and printLayoutName is keyed on width alone
+# again. An iPad in portrait (744 to 834 CSS px) and an iPhone 14 in landscape
+# (844) then select the 557.2 x 760.4pt wide sheet on a platform whose
+# printable box is about 531.6 x 711.6pt - short on BOTH axes, and too tall
+# for rotation to rescue. Reviewer finding N3 from the PR #106 review.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4210,7 +4210,6 @@ function isIOS(ua) {
+  *  deliberately disagree on a landscape phone.
+  */
+ function printLayoutName(w, ua) {
+-  if (isIOS(ua)) return "narrow";
+   return w >= 640 ? "wide" : "narrow";
+ }
+ 

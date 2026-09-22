@@ -1,0 +1,18 @@
+# kills: the narrow print stylesheet actually emits the rotation
+# suite: node --test --test-name-pattern narrow.print.stylesheet.actually.emits tests/app.test.js
+# The narrow sheet stops rotating. Unrotated it is 532.8pt wide against the
+# 531.6pt iOS actually grants: over by 1.2pt, which costs exactly the outer
+# hairline borders and a sliver of the leading glyph. That is the defect the
+# owner reported as "D AEOLIAN 9" reading as ") AEOLIAN 9".
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4168,7 +4168,7 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
+  */
+ const PRINT_LAYOUTS = {
+   wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+-  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
++  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, constrained: true },
+ };
+ 
+ /** The printable area a platform that ignores `@page` leaves us, per side.

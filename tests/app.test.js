@@ -3554,20 +3554,72 @@ test("print sheet grid CSS is emitted from PRINT_GEOM, never typed", () => {
    0.5in. Dropping the narrow layout's gutters brings the block to 532.8pt,
    which fits with room to spare and keeps the card at its printed size -
    the owner's choice on 2026-09-22 over scaling the sheet down. */
-test("the narrow print sheet fits inside a platform-enforced page margin", () => {
+test("every print layout fits inside the platform-enforced printable area", () => {
   const app = boot();
   const g = plain(app.get("PRINT_GEOM"));
-  const L = plain(app.get("PRINT_LAYOUTS.narrow"));
-  const w = L.cols * g.CW + (L.cols - 1) * L.gx;
-  const h = L.rows * g.CH + (L.rows - 1) * L.gy;
-  assert.ok(w <= g.PW - 72,
-    `the narrow sheet is ${w}pt wide, over the 540pt a 0.5in margin leaves`);
-  assert.ok(h <= g.PH - 72,
-    `the narrow sheet is ${h}pt tall, over the 720pt a 0.5in margin leaves`);
-  // The fit must come from the gutters, never from the card: 62.65 x 87.21 mm
+  const S = plain(app.get("PRINT_SAFE"));
+  const layouts = plain(app.get("PRINT_LAYOUTS"));
+  // iOS Safari ignores `@page` entirely - size, orientation AND margin:0 - so
+  // the page box is wholly platform-chosen and the margin is whatever the
+  // platform grants. Measured on iPhone 14 / iOS 26.6, US Letter: the drawn
+  // area is 531.6pt of 612, i.e. 40.2pt per side. PRINT_SAFE.margin carries
+  // that measurement with headroom. The old oracle asserted a bare 72
+  // (0.5in/side) and passed a sheet that clipped on the device.
+  assert.ok(S.margin >= 42,
+    `PRINT_SAFE.margin is ${S.margin}pt, under the ~40.2pt iOS actually enforces`);
+  const safeW = g.PW - 2 * S.margin, safeH = g.PH - 2 * S.margin;
+  for (const [name, L] of Object.entries(layouts)) {
+    if (!L.constrained) continue;   // only layouts a margin-enforcing platform can select
+    const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+    const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+    // A rotated sheet presents its height horizontally and vice versa.
+    const w = L.rotate ? sh : sw, h = L.rotate ? sw : sh;
+    assert.ok(w <= safeW,
+      `the ${name} sheet presents ${w}pt of width, over the ${safeW}pt safe area`);
+    assert.ok(h <= safeH,
+      `the ${name} sheet presents ${h}pt of height, over the ${safeH}pt safe area`);
+  }
+  // The fit must come from the layout, never from the card: 62.65 x 87.21 mm
   // is the print spec both renderers share.
   assert.strictEqual(g.CW, 177.6, "the card keeps its printed width");
   assert.strictEqual(g.CH, 247.2, "the card keeps its printed height");
+  // Reviewer N1/N2: pin both gutter pairs by value, not merely by arithmetic.
+  assert.strictEqual(layouts.wide.gx, g.GX, "the wide sheet keeps hifi's column gutter");
+  assert.strictEqual(layouts.wide.gy, g.GY, "the wide sheet keeps hifi's row gutter");
+  assert.strictEqual(layouts.narrow.gx, 0, "the narrow sheet drops its column gutter");
+  assert.strictEqual(layouts.narrow.gy, 0, "the narrow sheet drops its row gutter");
+});
+
+test("iOS selects the narrow layout at every viewport width", () => {
+  const app = boot();
+  const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
+  const IPAD = "Mozilla/5.0 (iPad; CPU OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
+  const DESKTOP = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
+  // Reviewer N3: printLayoutName keyed on width alone, so an iPad in portrait
+  // (744/768/810/820/834) and an iPhone 14 in landscape (844) both selected
+  // "wide" on the same iOS Safari - a 557.2 x 760.4pt sheet that misses the
+  // printable box on BOTH axes, where rotation cannot save it either.
+  for (const w of [744, 768, 810, 820, 834, 844, 1024, 1366]) {
+    for (const ua of [IOS, IPAD]) {
+      assert.strictEqual(
+        String(app.get(`printLayoutName(${w}, ${JSON.stringify(ua)})`)), "narrow",
+        `iOS at ${w}px must not select a layout that overflows its printable area`);
+    }
+    assert.strictEqual(
+      String(app.get(`printLayoutName(${w}, ${JSON.stringify(DESKTOP)})`)), "wide",
+      `a real desktop at ${w}px honours margin:0 and keeps the 3x3 sheet`);
+  }
+  assert.strictEqual(String(app.get(`printLayoutName(380, ${JSON.stringify(DESKTOP)})`)), "narrow",
+    "the width rule still applies off iOS");
+});
+
+test("the narrow print stylesheet actually emits the rotation", () => {
+  const app = boot();
+  const css = String(app.get('printGridCSS("narrow", "letter")'));
+  assert.ok(/#printroot \.printsheet\{transform:rotate\(-90deg\)\}/.test(css),
+    "the narrow sheet must be rotated by the emitted stylesheet, not just flagged");
+  const wide = String(app.get('printGridCSS("wide", "letter")'));
+  assert.ok(!/rotate\(-90deg\)/.test(wide), "the wide sheet must not rotate");
 });
 
 test("print sheet paper size is a control, and only the page box changes", () => {
@@ -3627,6 +3679,23 @@ function printed(app, variant) {
   return plain(app.get("captured"));
 }
 const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
+
+test("the CTA passes the real platform through, not just the viewport", () => {
+  // Wiring test: printLayoutName is only as good as the argument the call site
+  // hands it. A wide-viewport iPad that still gets the 3x3 sheet is exactly
+  // the B7 clipping the platform clause exists to stop.
+  const app = boot({
+    innerWidth: 820,
+    userAgent: "Mozilla/5.0 (iPad; CPU OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+  });
+  customDeck(app);
+  const cap = printed(app, "full");
+  assert.ok(cap, "the CTA must call window.print()");
+  assert.strictEqual(cap.cls, "narrow",
+    "an 820px iPad must still get the narrow sheet - it ignores @page like every iOS Safari");
+  assert.ok(/transform:rotate\(-90deg\)/.test(cap.css),
+    "and the stylesheet the CTA emits must carry the rotation");
+});
 
 test("print sheet slot count agrees with the viewport at the moment the CTA fires", () => {
   for (const [w, name, slots] of [[1024, "wide", 9], [380, "narrow", 6]]) {

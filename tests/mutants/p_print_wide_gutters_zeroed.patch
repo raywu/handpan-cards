@@ -1,0 +1,19 @@
+# kills: every print layout fits inside the platform-enforced printable area
+# suite: node --test --test-name-pattern every.print.layout.fits tests/app.test.js
+# Reviewer finding N1: PRINT_LAYOUTS.wide lost its only value pin to
+# PRINT_GEOM when the fit assertion stopped reading the emitted CSS. The 3x3
+# desktop sheet is the one layout tied to tools/hifi.py's print spec, and
+# zeroing its gutters silently removes the 12.2/9.4pt cutting alleys the print
+# shop needs - the cards would butt edge to edge with no room for a blade.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4167,7 +4167,7 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
+  *  gutters for the platforms that honour `margin:0`.
+  */
+ const PRINT_LAYOUTS = {
+-  wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
++  wide: { cols: 3, rows: 3, gx: 0, gy: 0 },
+   narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
+ };
+ 

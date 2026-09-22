@@ -1,11 +1,10 @@
 # kills: every print layout fits inside the platform-enforced printable area
 # suite: node --test --test-name-pattern every.print.layout.fits tests/app.test.js
-# The narrow sheet goes back to hifi's 12.2/9.4pt gutters. Three columns then
-# span 557.2pt, and rotated they present 513.2pt of height - but 557.2pt of
-# width unrotated, and the row pitch pushes the rotated width to 513.2pt
-# against a 522pt safe box only by luck. The horizontal axis fails outright.
-# Symptom: the outer cards are sheared at both edges on any platform that
-# enforces its own margin, which is the B7 clipping the owner reported twice.
+# Reviewer finding N2 from the PR #106 review: the narrow row gutter was free
+# on its own axis, bounded only by arithmetic that left it anywhere from 0 to
+# 225.6pt. Restoring gy alone (gx left at 0) must fail on the value pin, not
+# on the fit sum - the rotated sheet's 532.8pt of height would still clear
+# 702pt with a 9.4pt gutter, so arithmetic alone never catches this.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -14,7 +13,7 @@ diff --git a/index.html b/index.html
  const PRINT_LAYOUTS = {
    wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
 -  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
-+  narrow: { cols: 3, rows: 2, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY, rotate: true, constrained: true },
++  narrow: { cols: 3, rows: 2, gx: 0, gy: PRINT_GEOM.GY, rotate: true, constrained: true },
  };
  
  /** The printable area a platform that ignores `@page` leaves us, per side.

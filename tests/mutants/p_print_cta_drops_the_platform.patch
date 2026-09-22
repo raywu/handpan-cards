@@ -1,0 +1,18 @@
+# kills: the CTA passes the real platform through, not just the viewport
+# suite: node --test --test-name-pattern CTA.passes.the.real.platform tests/app.test.js
+# printLayoutName keeps its platform clause but the CTA stops handing it the
+# user agent, so isIOS(undefined) is always false and every iOS device above
+# 640px falls back to the wide sheet. The clause is only as good as its
+# argument; a unit test on the function alone would never see this.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4375,7 +4375,7 @@ function openPrintSheet(variant) {
+   try {
+     // AC-B5b: the viewport is read ONCE, here. The @media print block reads
+     // the class this sets and never re-decides the width itself.
+-    const name = printLayoutName(window.innerWidth, navigator.userAgent);
++    const name = printLayoutName(window.innerWidth);
+     document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
+     root.className = name;
+     root.innerHTML = printSheetHTML(deck(), variant, name);
