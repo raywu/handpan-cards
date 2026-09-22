@@ -1,0 +1,15 @@
+# kills: the sheet centres vertically instead of hugging the top paper edge
+# suite: node --test --test-name-pattern full.height.on.every.page tests/e2e.test.js
+# The vertical twin of p_print_justify_dropped. Without align-items:center the fill's free space is not distributed, the sheet top-aligns at y~0 - inside the printer's non-printable band, and under iOS's own header band - which is exactly the 43b2851 regression the height:100% fill exists to prevent.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -742,7 +742,7 @@ button.nav:active{background:#2e281e}
+    writes them from PRINT_GEOM into #printgeom, so there is one definition
+    site for them (AC-B3). ------------------------------------------------- */
+ #printroot{display:none}
+-#printroot .printpage{position:relative; display:flex; align-items:center;
++#printroot .printpage{position:relative; display:flex; align-items:flex-start;
+   justify-content:center; break-after:page; page-break-after:always}
+ #printroot .printpage:last-child{break-after:auto; page-break-after:auto}
+ #printroot .printsheet{display:grid}

@@ -3744,9 +3744,39 @@ test("the print stylesheet gives the page box something to fill", () => {
   assert.match(css,
     /body\.printing #printroot,\s*body\.printing #printroot \.printpage\{height:100%\}/,
     "#printroot AND .printpage must both fill, or the percentage has no resolved parent");
-  assert.ok(!/\.printpage\{height:\s*[\d.]+(pt|px|in|mm|cm)/.test(css),
-    "the fill must stay a percentage - a length here is a page-box literal again");
+  /* Reviewer N-a: anchoring the guard on `.printpage{height:` never inspects
+     the PARENT. `body.printing #printroot{display:block; height:840pt}`
+     survived all 167 tests: .printpage's percentage then resolves against a
+     hard page-box literal laundered through the very parent the assertion
+     above pins, and 840pt over iOS's ~711.6pt printable box paginates - the
+     43b2851 class again, and the class the plan says e2e structurally cannot
+     catch because Chrome shrink-to-fits where iOS paginates. So scan every
+     rule in the block instead of one hand-picked selector, and take any unit
+     at all rather than a list of five - `em`, `vh` and `calc()` all resolve
+     to a fixed length just as well as `pt` does. `min-height` is deliberately
+     untouched: that IS the floor, and it is the one length that belongs. */
+  for (const [, sel, body] of printBlock(html).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!sel.includes("#printroot")) continue;
+    const h = body.match(/(?:^|[;\s])height\s*:\s*([^;]+)/);
+    if (!h) continue;
+    assert.match(h[1].trim(), /^100%$/,
+      `${sel.trim()} sets height:${h[1].trim()} - the fill must be a percentage, ` +
+      "or it resolves against a page box we are never allowed to assume");
+  }
 });
+
+/** The `@media print` block alone, brace-matched. Slicing to end-of-file
+ *  sweeps the app's JS in with the CSS, and a rule scan cannot tell a
+ *  declaration from a function body. */
+function printBlock(html) {
+  const start = html.indexOf("@media print");
+  let depth = 0;
+  for (let i = html.indexOf("{", start); i < html.length; i++) {
+    if (html[i] === "{") depth++;
+    else if (html[i] === "}" && --depth === 0) return html.slice(start, i);
+  }
+  throw new Error("unterminated @media print block");
+}
 
 /* PRINT_PAPER.h was the only source of the page-box literal above. Keeping
    the key invites the next edit to read it again, so the fix deletes it and
