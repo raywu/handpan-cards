@@ -4151,8 +4151,21 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
  */
 /** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
  *  the iOS overflow is vertical. Both are 3 columns of the same card.
+ *
+ *  The gutters live here rather than being read straight from PRINT_GEOM
+ *  because they are the only slack the sheet has. B7 on an iPhone 14 (iOS
+ *  26.6) printed the narrow sheet sheared at both edges: iOS Safari ignores
+ *  `@page{margin:0}` and enforces its own printable area, and 3 columns plus
+ *  two 12.2pt gutters is 557.2pt, which fits only a 13.7pt margin. At zero
+ *  gutters the same three cards are 532.8pt and clear a 0.5in margin with
+ *  room to spare, at the card's exact printed size - the owner chose that
+ *  over scaling the sheet down (2026-09-22). The wide layout keeps hifi's
+ *  gutters: it is the desktop path, where `margin:0` is honoured.
  */
-const PRINT_LAYOUTS = { wide: { cols: 3, rows: 3 }, narrow: { cols: 3, rows: 2 } };
+const PRINT_LAYOUTS = {
+  wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+  narrow: { cols: 3, rows: 2, gx: 0, gy: 0 },
+};
 
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
@@ -4176,7 +4189,7 @@ function printGridCSS(name, paper) {
     `#printroot .printpage{height:${p.h}pt}\n` +
     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
-    `column-gap:${g.GX}pt; row-gap:${g.GY}pt}\n` +
+    `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +
     `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
     `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
     `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;

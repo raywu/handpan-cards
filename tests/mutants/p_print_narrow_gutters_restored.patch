@@ -1,0 +1,19 @@
+# kills: the narrow print sheet fits inside a platform-enforced page margin
+# suite: node --test --test-name-pattern narrow.print.sheet.fits tests/app.test.js
+# The narrow sheet goes back to hifi's 12.2pt gutters, so three columns span
+# 557.2pt on a 612pt page - it fits only if the platform grants a 13.7pt
+# margin. iOS Safari ignores @page{margin:0} and grants about 0.5in, so the
+# outer cards are sheared at both edges: no border, and the corner of the
+# header copy gone. Invisible on desktop Chrome, which honours margin:0.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4164,7 +4164,7 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
+  */
+ const PRINT_LAYOUTS = {
+   wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+-  narrow: { cols: 3, rows: 2, gx: 0, gy: 0 },
++  narrow: { cols: 3, rows: 2, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+ };
+ 
+ /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against

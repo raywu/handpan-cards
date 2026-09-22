@@ -3541,9 +3541,33 @@ test("print sheet grid CSS is emitted from PRINT_GEOM, never typed", () => {
       `${name}: columns must come from PRINT_GEOM.CW`);
     assert.ok(css.includes(`repeat(${L.rows}, ${g.CH}pt)`),
       `${name}: rows must come from PRINT_GEOM.CH`);
-    assert.ok(css.includes(`column-gap:${g.GX}pt`) && css.includes(`row-gap:${g.GY}pt`),
-      `${name}: gutters must come from PRINT_GEOM`);
+    assert.ok(css.includes(`column-gap:${L.gx}pt`) && css.includes(`row-gap:${L.gy}pt`),
+      `${name}: gutters must come from the layout`);
   }
+});
+
+/* B7 on an iPhone 14 (iOS 26.6): iOS Safari ignores `@page{margin:0}` and
+   enforces its own printable area, so a sheet sized against the full 612pt
+   page is sheared at BOTH edges - the outer cards lose their borders and the
+   corner of their header copy. 3 columns plus 12.2pt gutters is 557.2pt,
+   which only fits if the platform grants a 13.7pt margin; iOS grants about
+   0.5in. Dropping the narrow layout's gutters brings the block to 532.8pt,
+   which fits with room to spare and keeps the card at its printed size -
+   the owner's choice on 2026-09-22 over scaling the sheet down. */
+test("the narrow print sheet fits inside a platform-enforced page margin", () => {
+  const app = boot();
+  const g = plain(app.get("PRINT_GEOM"));
+  const L = plain(app.get("PRINT_LAYOUTS.narrow"));
+  const w = L.cols * g.CW + (L.cols - 1) * L.gx;
+  const h = L.rows * g.CH + (L.rows - 1) * L.gy;
+  assert.ok(w <= g.PW - 72,
+    `the narrow sheet is ${w}pt wide, over the 540pt a 0.5in margin leaves`);
+  assert.ok(h <= g.PH - 72,
+    `the narrow sheet is ${h}pt tall, over the 720pt a 0.5in margin leaves`);
+  // The fit must come from the gutters, never from the card: 62.65 x 87.21 mm
+  // is the print spec both renderers share.
+  assert.strictEqual(g.CW, 177.6, "the card keeps its printed width");
+  assert.strictEqual(g.CH, 247.2, "the card keeps its printed height");
 });
 
 test("print sheet paper size is a control, and only the page box changes", () => {
