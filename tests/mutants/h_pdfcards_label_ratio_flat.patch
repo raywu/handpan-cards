@@ -1,0 +1,18 @@
+# kills: the label rule is r x ratio per zone, and the number takes no 1.05
+# suite: node --test tests/pdfcards.test.js
+#
+# every zone takes the rim ratio, dropping the ding and bottom-shell rows of
+# the diagram label rule. The pan still draws; the ding name is 13% larger
+# than the rule allows and the bottom names 2.4% smaller.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -144,8 +144,6 @@ HPE.pdfcards = (function () {
+   var LABEL_WIDTH_RATIO = 1.47;
+ 
+   function labelRatio(zone) {
+-    if (zone === "ding") return LABEL_RATIO_DING;
+-    if (zone === "bottom") return LABEL_RATIO_BNOTE;
+     return LABEL_RATIO_NOTE;
+   }
+ 

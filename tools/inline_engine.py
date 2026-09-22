@@ -32,7 +32,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE_DIR = os.path.join(ROOT, "src", "engine")
 INDEX = os.path.join(ROOT, "index.html")
 
-MODULES = ["fontdata", "pdf", "pdfdeck", "core", "voicing", "layout", "naming", "select", "share"]
+MODULES = ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "voicing", "layout", "naming", "select", "share"]
 
 BEGIN = ("<!-- engine:%s begin - synced from src/engine/%s.js by "
          "tools/inline_engine.py; edit the module, not this copy -->")

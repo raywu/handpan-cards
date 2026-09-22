@@ -438,16 +438,17 @@ test("index.html carries the whole engine inline, with no external script", () =
 
   const app = boot();
   const HPE = app.get("HPE");
-  for (const mod of ["fontdata", "pdf", "pdfdeck", "core", "voicing", "layout", "naming",
-                     "select", "share"]) {
+  for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "voicing",
+                     "layout", "naming", "select", "share"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
   // fontdata and pdf sit ahead of the whole engine: they read nothing from it,
   // and the print emitter that draws through them loads later still.
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
-  assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "core", "voicing",
-                                 "layout", "naming", "select", "share"]);
+  assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
+                                 "voicing", "layout", "naming", "select",
+                                 "share"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {

@@ -751,6 +751,28 @@ same pass; nothing is left as a recommendation.
 - **D5 paper size:** parameterize the page box and keep A4, rather than dropping the
   shipped control. Conservative branch: it preserves existing user-visible behaviour.
 - D4 (vector, hand-rolled) is NOT an auto-decision - the owner answered it directly.
+- **Task 3, AC 5 (where the six geometry numbers live).** The AC asked `pdfcards.js`
+  to carry no page or card literals and to read `PRINT_GEOM`/`PRINT_PAPER` instead.
+  That is not buildable as written: `PRINT_GEOM` is APP js, and the engine regions
+  are inlined AHEAD of the app, so an engine module cannot read it. Rewiring
+  `PRINT_GEOM` to derive from `HPE.pdfcards.GEOM` was the other option and was NOT
+  taken: `tests/test_render_agreement.py:471` parses the `const PRINT_GEOM = {...};`
+  literal as source, and three more tests hang off that parse. Taken instead:
+  `src/engine/pdfcards.js` declares `GEOM` and `PAPER`, and the new
+  `PdfEmitterGeometryTest` in `tests/test_render_agreement.py` pins them against
+  `hifi.CW/CH/GX/GY/PAGE`, against `hifi.slots()` point for point, and against the
+  app's `PRINT_GEOM` key for key. The copies are real; what the AC actually wanted -
+  that they cannot drift apart unnoticed - is asserted rather than structural.
+- **Task 3, AC 8 (the render-agreement third arm).** The AC asked for per-field
+  diagram label sizes pinned across app, print and emitter.
+  `tests/test_pdf_parity.py` already holds every glyph of the emitter's output
+  against print's - position AND size, over a full deck on two seeds, including the
+  bottom shell - which is strictly stronger than a per-field size pin and is the
+  same oracle a per-field arm would consult. Building the arm as specified would
+  restate it. Taken instead: the constants that DRIVE the sizes
+  (`LABEL_RATIO_DING/NOTE/BNOTE`, `NUM_RATIO`, `LABEL_WIDTH_RATIO`) are pinned to
+  `hifi`'s in `PdfEmitterGeometryTest`, so a changed ratio reports as one failing
+  line rather than as a wall of moved glyphs.
 
 **VERDICT: PASS WITH CHANGES APPLIED.** The plan was blocked on finding 1 (no deck
 adapter, so Task 3 could not run) and is not any more. Tasks now run 1, 2, 3a, 3, 4, 5.

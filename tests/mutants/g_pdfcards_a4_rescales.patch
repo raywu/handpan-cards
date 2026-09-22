@@ -1,0 +1,21 @@
+# kills: test_a4_is_letter_shifted_on_the_page
+# suite: python3 -m unittest tests.test_pdf_parity
+#
+# slots() scales the card grid to the paper instead of re-centring it. The
+# A4 sheet still looks like a sheet of cards; the cards are just no longer
+# 62.65 x 87.21 mm, which is the one figure the print spec fixes.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -381,8 +381,9 @@ HPE.pdfcards = (function () {
+   // ---- page assembly (tools/hifi.py:356-377) -----------------------------
+   function slots(paper) {
+     var page = pageSize(paper);
+-    var tw_ = 3 * CW + 2 * GX;
+-    var th_ = 3 * CH + 2 * GY;
++    var k = page[0] / 612;
++    var tw_ = (3 * CW + 2 * GX) * k;
++    var th_ = (3 * CH + 2 * GY) * k;
+     var x0 = (page[0] - tw_) / 2;
+     var y0 = (page[1] - th_) / 2;
+     var out = [];

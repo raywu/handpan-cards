@@ -37,6 +37,9 @@ phone can produce the print sheet itself instead of asking a print dialog for
 a paper size it will not honour).
 `src/engine/pdfdeck.js` (a port of `decks.from_generated`: the engine's deck
 plus the two dozen card-copy and geometry keys the print builders read).
+`src/engine/pdfcards.js` (a port of `tools/hifi.py`: the cards, the pan
+diagram, the crop marks and the calibration bar, held glyph for glyph against
+the print pipeline by `tests/test_pdf_parity.py`).
 `docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
 decisions behind it.
 
