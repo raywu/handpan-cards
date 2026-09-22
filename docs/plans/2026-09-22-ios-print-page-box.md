@@ -293,3 +293,47 @@ than a fourth iteration.
 VERDICT: APPROVED FOR EXECUTION
 
 NO UNRESOLVED DECISIONS
+
+## Post-review: the regression the fix introduced, and its fix
+
+A fresh reviewer FAILed `43b2851`. Blocking finding, confirmed by rendering:
+`min-height` alone collapses `.printpage` to exactly its content height, so
+`display:flex; align-items:center` has no free space to distribute and the
+sheet TOP-ALIGNS. Desktop wide `card_y0` went 15.7/272.2/528.8 (base) to
+0.0/256.5/513.0 (head) - the top row's border flush with the paper edge,
+inside every consumer printer's 3-5mm non-printable band. A second symptom:
+`printSlots()` (index.html:4248) computes `y0 = (g.PH - th)/2` = 15.8pt, so
+the app's two shipped models of the same layout disagreed by 15.8pt.
+
+Fix at `6b010675`: `html,body{height:100%}` plus
+`body.printing #printroot, body.printing #printroot .printpage{height:100%}`
+inside `@media print`. A percentage is the only construct that references the
+page box without naming it - the platform resolves it against the page area it
+chose. The JS-emitted `min-height` remains the floor against pagination.
+Floor and fill together; neither alone is correct.
+
+Verified by rendering both paths with the reviewer's scratchpad harness:
+- desktop wide: `card_y0=[15.7, 272.2, 528.8]`, exactly the base values
+- iOS-emulated narrow: 4 pages (not 8), sheet at y 129.0-662.1, ~89pt slack at
+  each end, which also clears the iOS header band the reviewer flagged
+
+Why no suite caught it: `tests/app.test.js` pinned the `min-height` VALUE (the
+thing that causes the flush), and the only rendered print test measured frame
+heights, never positions. `tests/e2e.test.js` now emits per-page top/bottom
+clearance and asserts `top >= 8` and `|top - bottom| <= 2`; reverting just the
+fill makes it fail with "printed its top card frame 0pt from the paper edge".
+New mutant `p_print_page_fill_dropped.patch` covers the declaration.
+
+Nits N1 and N2 are closed in the same commit: the emitted footprint is rounded
+to 2dp (no more `760.3999999999999pt`), and the printable-box bound now runs
+over every layout marked `constrained` rather than naming `narrow`.
+
+### Auto-decisions (AFK)
+
+- **D3** - close N1 and N2 in the regression-fix commit rather than filing them
+  as queue rows. Both are one-line changes inside code the fix already touches,
+  and N2 is a real hole: with the guard naming `narrow`, a second constrained
+  layout would reintroduce the pagination silently.
+- **D4** - add the position assertions to the EXISTING rendered print test
+  rather than a new test. The probe already renders the PDF; a second render
+  would double the slowest test in the suite for the same oracle.
