@@ -3588,9 +3588,11 @@ test("print CTA: a custom deck's header carries the same two labels as a built-i
   assert.ok(/<select/.test(custom), "D16: the paper picker rides with the buttons");
 });
 
-/** Run the CTA and capture the sheet while it is live: window.print() is the
- *  one moment the container is populated, and the app empties it immediately
- *  afterwards (AC-B5). Nothing test-only is added to the app for this. */
+/** Run the CTA and capture the sheet while it is live. window.print() is a
+ *  moment the container is guaranteed populated; the app now holds the sheet
+ *  up until `afterprint` (it has to - print() returns before iOS rasterizes),
+ *  so capturing here is convenience, not necessity. Nothing test-only is
+ *  added to the app for this. */
 function printed(app, variant) {
   app.run(`captured = null; window.print = function(){ captured = {
     html: document.getElementById("printroot").innerHTML,
@@ -3624,13 +3626,36 @@ test("print sheet slot count agrees with the viewport at the moment the CTA fire
   }
 });
 
+/* The defect B7 caught on an iPhone 14 (iOS 26.6): window.print() BLOCKS on
+   desktop Chrome until the dialog is dismissed, but RETURNS IMMEDIATELY on
+   iOS Safari, which schedules the print UI asynchronously. A synchronous
+   teardown therefore runs before iOS rasterizes, and iOS prints the live app
+   page instead of the card sheet. This test stubs the iOS shape - print()
+   returns without firing afterprint - and asserts the sheet is STILL up. */
+test("print sheet survives a print() that returns before the printer has read it", () => {
+  const app = boot();
+  customDeck(app);
+  const root = app.els.printroot;
+  app.run("window.print = function(){};");
+  app.run('openPrintSheet("full")');
+  assert.notStrictEqual(root.innerHTML, "",
+    "iOS Safari rasterizes AFTER print() returns; an emptied container prints the app");
+  assert.strictEqual(root.hidden, false, "the sheet must still be showing");
+  assert.strictEqual(app.docEl.classList.contains("printing"), true,
+    "body.printing is what the @media print block keys off");
+  assert.notStrictEqual(app.els.printgeom.textContent, "",
+    "the geometry stylesheet has to outlive print() too");
+});
+
 test("print sheet leaves no residue", () => {
   const app = boot();
   customDeck(app);
   const root = app.els.printroot;
   assert.strictEqual(root.hidden, true, "the print container starts hidden");
   assert.strictEqual(root.innerHTML, "", "the print container starts empty");
+  app.run("window.print = function(){};");
   app.run('openPrintSheet("full")');
+  app.fireWindow("afterprint");
   assert.strictEqual(root.innerHTML, "",
     "a stray print sheet in the DOM is a regression on the practice screen");
   assert.strictEqual(root.hidden, true, "the print container was left showing");
@@ -3638,6 +3663,11 @@ test("print sheet leaves no residue", () => {
     "the geometry stylesheet was left behind");
   assert.strictEqual(app.docEl.classList.contains("printing"), false,
     "body.printing hides the whole app; leaving it on blanks the screen");
+  // Idempotent: the listener is registered once at boot, so it also fires on
+  // a print the app never started (the user's own Cmd+P / Share -> Print).
+  app.fireWindow("afterprint");
+  assert.strictEqual(root.innerHTML, "", "a second afterprint must be a no-op");
+  assert.strictEqual(app.docEl.classList.contains("printing"), false);
 });
 
 test("print sheet is emptied even when the print dialog throws", () => {

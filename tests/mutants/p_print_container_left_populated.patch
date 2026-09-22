@@ -7,11 +7,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4319,7 +4319,6 @@ function openPrintSheet(variant) {
-   } finally {
-     // Unconditional: a print dialog that throws must not strand the sheet in
-     // the DOM, where it would sit under the practice screen.
--    root.innerHTML = "";
-     root.hidden = true;
-     document.body.classList.remove("printing");
-     document.getElementById("printgeom").textContent = "";
+@@ -4315,7 +4315,6 @@ function printSheetHTML(d, variant, name) {
+    and a print the user started themselves (Cmd+P, iOS Share -> Print). */
+ function teardownPrintSheet() {
+   const root = document.getElementById("printroot");
+-  root.innerHTML = "";
+   root.hidden = true;
+   document.body.classList.remove("printing");
+   document.getElementById("printgeom").textContent = "";

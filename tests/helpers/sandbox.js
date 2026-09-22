@@ -354,6 +354,14 @@ function boot(opts = {}) {
     popstate: () => {
       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
     },
+    /** Fire a window-level event the app listens for. `afterprint` is the one
+     *  that matters: window.print() returns immediately on iOS Safari, so the
+     *  print sheet is torn down on the event rather than in a finally, and a
+     *  test has no other way to reach the listener - winListeners is closed
+     *  over and not exposed. */
+    fireWindow: (type) => {
+      for (const fn of winListeners[type] || []) fn({ type });
+    },
   };
 }
 

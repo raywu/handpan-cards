@@ -1,0 +1,22 @@
+# kills: afterprint tears the print sheet down in a real browser
+# suite: node --test --test-name-pattern afterprint.tears tests/e2e.test.js
+# teardown() closes over a getElementById() evaluated when the module runs,
+# instead of re-querying inside its own body. In the unit suite's DOM stub
+# every id resolves from the first line, so this looks fine. In a real browser
+# #printroot (index.html:5616) has not been parsed when the app's <script>
+# (index.html:3643) runs, so the reference is null and the first afterprint
+# throws - the sheet is never torn down. Only the e2e run can see it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4313,8 +4313,9 @@ function printSheetHTML(d, variant, name) {
+    captured reference would be null. Clearing an already-empty container is a
+    no-op, which is what lets one boot-scope listener serve both the app's CTA
+    and a print the user started themselves (Cmd+P, iOS Share -> Print). */
++const printRootRef = document.getElementById("printroot");
+ function teardownPrintSheet() {
+-  const root = document.getElementById("printroot");
++  const root = printRootRef;
+   root.innerHTML = "";
+   root.hidden = true;
+   document.body.classList.remove("printing");

@@ -1,0 +1,27 @@
+# kills: print sheet survives a print() that returns before the printer has read it
+# suite: node --test --test-name-pattern survives.a.print tests/app.test.js
+# Teardown goes back to running on the success path. window.print() BLOCKS on
+# desktop Chrome, so this looks correct there - and RETURNS IMMEDIATELY on iOS
+# Safari, which schedules the print UI asynchronously. The sheet is gone before
+# iOS rasterizes and the printout is the live app page. This is the exact
+# defect B7 caught on an iPhone 14; one keyword is the whole of it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4333,15 +4333,8 @@ function openPrintSheet(variant) {
+     root.hidden = false;
+     document.body.classList.add("printing");
+     window.print();
+-  } catch (e) {
+-    // Only the throw path tears down synchronously: if print() threw, no print
+-    // is happening and no afterprint will arrive. The SUCCESS path must NOT
+-    // clean up here - window.print() blocks on desktop Chrome but returns
+-    // immediately on iOS Safari, which schedules the print UI asynchronously,
+-    // so a finally would empty the sheet before iOS rasterized it and print
+-    // the live app page instead. Teardown belongs to afterprint (boot scope).
++  } finally {
+     teardownPrintSheet();
+-    throw e;
+   }
+ }
+ 

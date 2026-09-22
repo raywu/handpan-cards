@@ -1173,6 +1173,34 @@ function run() {
       `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
   });
 
+  /* The unit suite asserts this against a DOM stub, where every element id
+     resolves from the first line of the app. In a real browser #printroot is
+     parsed AFTER the app's <script> (index.html:5616 vs 3643), so a teardown
+     that captured its element at listener-registration time would hold null
+     and throw on the first afterprint - invisible to the stub, fatal here. */
+  test("afterprint tears the print sheet down in a real browser", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const state = await b.eval(`
+      const real = window.print;
+      window.print = function () {};
+      try { openPrintSheet("full"); } finally { window.print = real; }
+      const root = document.getElementById("printroot");
+      const during = { cells: root.innerHTML.length, hidden: root.hidden,
+                       printing: document.body.classList.contains("printing") };
+      window.dispatchEvent(new Event("afterprint"));
+      return { during, after: { cells: root.innerHTML.length, hidden: root.hidden,
+               printing: document.body.classList.contains("printing"),
+               css: document.getElementById("printgeom").textContent.length } };`);
+    assert.ok(state.during.cells > 0, "the sheet must survive a print() that returns");
+    assert.strictEqual(state.during.hidden, false);
+    assert.strictEqual(state.during.printing, true);
+    assert.strictEqual(state.after.cells, 0, "afterprint did not empty #printroot");
+    assert.strictEqual(state.after.hidden, true);
+    assert.strictEqual(state.after.printing, false);
+    assert.strictEqual(state.after.css, 0, "afterprint did not clear #printgeom");
+  });
+
   /* Nothing in this repo rendered `@media print` until now: three print defects
      shipped past 345 mutants because every print test read the stylesheet text
      instead of the printed page. This one prints the real thing and measures
@@ -1194,9 +1222,11 @@ function run() {
     await freshLoad();
     await generate(SIX_SCALES[1]);
 
-    // openPrintSheet() empties #printroot in its own finally as soon as
-    // print() returns, so capture the sheet inside a stubbed print() and put
-    // it back before asking Chrome to paginate it.
+    // The sheet now survives print() and is torn down on `afterprint`, which
+    // a stubbed print() never fires - so it would still be up here. This
+    // capture-and-reinject predates that and is kept deliberately (TODOS.md):
+    // it is reconstruction-blind, so it cannot catch a defect in how the app
+    // produces the sheet, only in how the sheet paginates.
     const cells = await b.eval(`
       window.__cap = null;
       const real = window.print;

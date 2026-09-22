@@ -4308,6 +4308,19 @@ function printSheetHTML(d, variant, name) {
   return out;
 }
 
+/* Idempotent, and it re-queries its own elements every time: this runs from a
+   listener registered at boot, when #printroot has not been parsed yet, so a
+   captured reference would be null. Clearing an already-empty container is a
+   no-op, which is what lets one boot-scope listener serve both the app's CTA
+   and a print the user started themselves (Cmd+P, iOS Share -> Print). */
+function teardownPrintSheet() {
+  const root = document.getElementById("printroot");
+  root.innerHTML = "";
+  root.hidden = true;
+  document.body.classList.remove("printing");
+  document.getElementById("printgeom").textContent = "";
+}
+
 function openPrintSheet(variant) {
   const root = document.getElementById("printroot");
   try {
@@ -4320,13 +4333,15 @@ function openPrintSheet(variant) {
     root.hidden = false;
     document.body.classList.add("printing");
     window.print();
-  } finally {
-    // Unconditional: a print dialog that throws must not strand the sheet in
-    // the DOM, where it would sit under the practice screen.
-    root.innerHTML = "";
-    root.hidden = true;
-    document.body.classList.remove("printing");
-    document.getElementById("printgeom").textContent = "";
+  } catch (e) {
+    // Only the throw path tears down synchronously: if print() threw, no print
+    // is happening and no afterprint will arrive. The SUCCESS path must NOT
+    // clean up here - window.print() blocks on desktop Chrome but returns
+    // immediately on iOS Safari, which schedules the print UI asynchronously,
+    // so a finally would empty the sheet before iOS rasterized it and print
+    // the live app page instead. Teardown belongs to afterprint (boot scope).
+    teardownPrintSheet();
+    throw e;
   }
 }
 
@@ -5249,6 +5264,11 @@ function closeScaleSheet() {
 }
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
+/* The print sheet's only teardown on the success path. Registered ONCE here,
+   not inside openPrintSheet(), so pressing the CTA N times leaves one
+   listener rather than N. */
+window.addEventListener("afterprint", teardownPrintSheet);
+
 window.addEventListener("popstate", () => {
   if (!sheetOpen) return;
   sheetRouted = false;
