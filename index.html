@@ -769,7 +769,15 @@ button.nav:active{background:#2e281e}
 #printroot .blankrule{height:1px; margin:14px 18px; background:#e0e0e0}
 @media print{
   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-  html,body{height:auto; min-height:0; overflow:visible}
+  /* height:100% is a PERCENTAGE, not a page-box literal: the platform
+     resolves it against whatever page area it actually chose, which is the
+     one number we are never allowed to assume. It gives .printpage free
+     space to centre the sheet in; min-height (emitted by printGridCSS) is
+     the floor that stops the block ever being shorter than the sheet, which
+     is what made every sheet paginate onto two pages. Floor and fill
+     together - neither alone is correct. */
+  html,body{height:100%; min-height:0; overflow:visible}
+  body.printing #printroot, body.printing #printroot .printpage{height:100%}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
@@ -4151,20 +4159,75 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
  */
 /** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
  *  the iOS overflow is vertical. Both are 3 columns of the same card.
+ *
+ *  The gutters live here rather than being read straight from PRINT_GEOM
+ *  because they are the only slack the sheet has. B7 on an iPhone 14 (iOS
+ *  26.6) printed the narrow sheet sheared at both edges: iOS Safari ignores
+ *  `@page{margin:0}` and enforces its own printable area, and 3 columns plus
+ *  two 12.2pt gutters is 557.2pt, which fits only a 13.7pt margin. At zero
+ *  gutters the same three cards are 532.8pt - still 1.2pt over the 531.6pt
+ *  iOS actually grants, which is why the zero-gutter sheet ALSO clipped. The
+ *  narrow sheet therefore ROTATES: 494.4pt across and 532.8pt down clears
+ *  PRINT_SAFE on both axes, at the card's exact printed size. The owner chose
+ *  exact size over scaling the sheet down (2026-09-22).
+ *  `constrained` marks the layouts a margin-enforcing platform can select;
+ *  `wide` is not one of them (see printLayoutName), so it keeps hifi's
+ *  gutters for the platforms that honour `margin:0`.
  */
-const PRINT_LAYOUTS = { wide: { cols: 3, rows: 3 }, narrow: { cols: 3, rows: 2 } };
+const PRINT_LAYOUTS = {
+  wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
+};
+
+/** The printable area a platform that ignores `@page` leaves us, per side.
+ *  Measured on iPhone 14 / iOS 26.6, US Letter (2026-09-21): the paper is
+ *  612pt wide and the drawn content spanned 531.6pt, so the enforced margin
+ *  is 40.2pt (0.558in) - NOT the 0.5in the previous oracle assumed. 45pt
+ *  carries that measurement with ~12% headroom, because it came from one
+ *  device at one scale factor.
+ */
+/*  Reviewer R3: nothing in the app READS this - layout selection is by UA and
+ *  viewport, never by arithmetic against a margin. It is an executable spec
+ *  anchor for a device measurement, exported so tests/app.test.js can assert
+ *  every constrained layout still fits what the platform actually grants. */
+const PRINT_SAFE = { margin: 45 };
 
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
  */
-const PRINT_PAPER = { letter: { css: "letter", h: 792 }, a4: { css: "A4", h: 841.89 } };
+/* No page-box height here. iOS Safari ignores @page entirely, so the paper
+   height is a number we cannot know; asserting it made every sheet paginate
+   across two physical pages. Only the size keyword survives. */
+const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
 
-/** AC-B5b: slots-per-page is decided ONCE, here, at the app's own 640px
- *  breakpoint (`index.html:41`). The `@media print` block reads the class this
- *  picks and never re-decides the width itself.
+/** True for every iOS/iPadOS Safari, which ignores the `@page` at-rule
+ *  outright - size, orientation and `margin:0` alike - and enforces a page
+ *  box of its own. A UA sniff is the wrong tool and is used anyway: no
+ *  feature detection for "does this honour @page" exists.
  */
-function printLayoutName(w) { return w >= 640 ? "wide" : "narrow"; }
+function isIOS(ua) {
+  const s = String(ua || "");
+  return /iPad|iPhone|iPod/.test(s) ||
+    // iPadOS 13+ reports a desktop Macintosh UA but still has touch points.
+    (/Macintosh/.test(s) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
+}
+
+/** AC-B5b: slots-per-page is decided ONCE, here. The `@media print` block
+ *  reads the class this picks and never re-decides the width itself.
+ *  The iOS clause comes FIRST and ignores width: keyed on width alone, an
+ *  iPad in portrait (744/768/810/820/834 CSS px) and an iPhone 14 in
+ *  landscape (844) both selected the 557.2 x 760.4pt wide sheet on a platform
+ *  whose printable box is ~531.6 x 711.6pt - short on both axes, and too tall
+ *  for rotation to rescue. Off iOS the app's own 640px breakpoint still
+ *  applies; note that `index.html:41` is a TWO-condition query
+ *  (`min-width:640px and min-height:700px`), so it and this function
+ *  deliberately disagree on a landscape phone.
+ */
+function printLayoutName(w, ua) {
+  if (isIOS(ua)) return "narrow";
+  return w >= 640 ? "wide" : "narrow";
+}
 
 /** The grid declaration, written from PRINT_GEOM so the stylesheet carries no
  *  card-geometry literal of its own (the same single-definition-site rule
@@ -4172,11 +4235,21 @@ function printLayoutName(w) { return w >= 640 ? "wide" : "narrow"; }
  */
 function printGridCSS(name, paper) {
   const g = PRINT_GEOM, L = PRINT_LAYOUTS[name], p = PRINT_PAPER[paper] || PRINT_PAPER.letter;
+  // Reserve the SHEET's own footprint, never the paper's. A platform that
+  // ignores @page owns the page box; a block taller than that box does not
+  // clip, it paginates - every sheet becomes two pages, the second carrying
+  // the sliced remainder. min-height lets the platform's box supply the rest.
+  const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
+  const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
+  // Rounded: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary float,
+  // and a stylesheet is text a human reads in devtools.
+  const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
   return `@page{size:${p.css}; margin:0}\n` +
-    `#printroot .printpage{height:${p.h}pt}\n` +
+    `#printroot .printpage{min-height:${footprint}pt}\n` +
     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
-    `column-gap:${g.GX}pt; row-gap:${g.GY}pt}\n` +
+    `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +
+    (L.rotate ? `#printroot .printsheet{transform:rotate(-90deg)}\n` : "") +
     `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
     `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
     `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;
@@ -4308,25 +4381,40 @@ function printSheetHTML(d, variant, name) {
   return out;
 }
 
+/* Idempotent, and it re-queries its own elements every time: this runs from a
+   listener registered at boot, when #printroot has not been parsed yet, so a
+   captured reference would be null. Clearing an already-empty container is a
+   no-op, which is what lets one boot-scope listener serve both the app's CTA
+   and a print the user started themselves (Cmd+P, iOS Share -> Print). */
+function teardownPrintSheet() {
+  const root = document.getElementById("printroot");
+  root.innerHTML = "";
+  root.hidden = true;
+  document.body.classList.remove("printing");
+  document.getElementById("printgeom").textContent = "";
+}
+
 function openPrintSheet(variant) {
   const root = document.getElementById("printroot");
   try {
     // AC-B5b: the viewport is read ONCE, here. The @media print block reads
     // the class this sets and never re-decides the width itself.
-    const name = printLayoutName(window.innerWidth);
+    const name = printLayoutName(window.innerWidth, navigator.userAgent);
     document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
     root.className = name;
     root.innerHTML = printSheetHTML(deck(), variant, name);
     root.hidden = false;
     document.body.classList.add("printing");
     window.print();
-  } finally {
-    // Unconditional: a print dialog that throws must not strand the sheet in
-    // the DOM, where it would sit under the practice screen.
-    root.innerHTML = "";
-    root.hidden = true;
-    document.body.classList.remove("printing");
-    document.getElementById("printgeom").textContent = "";
+  } catch (e) {
+    // Only the throw path tears down synchronously: if print() threw, no print
+    // is happening and no afterprint will arrive. The SUCCESS path must NOT
+    // clean up here - window.print() blocks on desktop Chrome but returns
+    // immediately on iOS Safari, which schedules the print UI asynchronously,
+    // so a finally would empty the sheet before iOS rasterized it and print
+    // the live app page instead. Teardown belongs to afterprint (boot scope).
+    teardownPrintSheet();
+    throw e;
   }
 }
 
@@ -5247,6 +5335,11 @@ function closeScaleSheet() {
   hideSheet();
   if (routed) history.back();
 }
+/* The print sheet's only teardown on the success path. Registered ONCE here,
+   not inside openPrintSheet(), so pressing the CTA N times leaves one
+   listener rather than N. */
+window.addEventListener("afterprint", teardownPrintSheet);
+
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {

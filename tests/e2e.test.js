@@ -1173,6 +1173,34 @@ function run() {
       `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
   });
 
+  /* The unit suite asserts this against a DOM stub, where every element id
+     resolves from the first line of the app. In a real browser #printroot is
+     parsed AFTER the app's <script> (index.html:5616 vs 3643), so a teardown
+     that captured its element at listener-registration time would hold null
+     and throw on the first afterprint - invisible to the stub, fatal here. */
+  test("afterprint tears the print sheet down in a real browser", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const state = await b.eval(`
+      const real = window.print;
+      window.print = function () {};
+      try { openPrintSheet("full"); } finally { window.print = real; }
+      const root = document.getElementById("printroot");
+      const during = { cells: root.innerHTML.length, hidden: root.hidden,
+                       printing: document.body.classList.contains("printing") };
+      window.dispatchEvent(new Event("afterprint"));
+      return { during, after: { cells: root.innerHTML.length, hidden: root.hidden,
+               printing: document.body.classList.contains("printing"),
+               css: document.getElementById("printgeom").textContent.length } };`);
+    assert.ok(state.during.cells > 0, "the sheet must survive a print() that returns");
+    assert.strictEqual(state.during.hidden, false);
+    assert.strictEqual(state.during.printing, true);
+    assert.strictEqual(state.after.cells, 0, "afterprint did not empty #printroot");
+    assert.strictEqual(state.after.hidden, true);
+    assert.strictEqual(state.after.printing, false);
+    assert.strictEqual(state.after.css, 0, "afterprint did not clear #printgeom");
+  });
+
   /* Nothing in this repo rendered `@media print` until now: three print defects
      shipped past 345 mutants because every print test read the stylesheet text
      instead of the printed page. This one prints the real thing and measures
@@ -1194,9 +1222,11 @@ function run() {
     await freshLoad();
     await generate(SIX_SCALES[1]);
 
-    // openPrintSheet() empties #printroot in its own finally as soon as
-    // print() returns, so capture the sheet inside a stubbed print() and put
-    // it back before asking Chrome to paginate it.
+    // The sheet now survives print() and is torn down on `afterprint`, which
+    // a stubbed print() never fires - so it would still be up here. This
+    // capture-and-reinject predates that and is kept deliberately (TODOS.md):
+    // it is reconstruction-blind, so it cannot catch a defect in how the app
+    // produces the sheet, only in how the sheet paginates.
     const cells = await b.eval(`
       window.__cap = null;
       const real = window.print;
@@ -1232,9 +1262,14 @@ function run() {
       "d = fitz.open(sys.argv[1])",
       "out = []",
       "for p in d:",
-      "    hs = [round(dr['rect'].height, 1) for dr in p.get_drawings()",
+      "    fr = [dr['rect'] for dr in p.get_drawings()",
       "          if 170 <= dr['rect'].width <= 185 and dr['rect'].height > 120]",
-      "    out.append(sorted(set(hs)))",
+      "    hs = sorted(set(round(r.height, 1) for r in fr))",
+      "    top = round(min((r.y0 for r in fr), default=-1), 1)",
+      "    bot = round(p.rect.height - max((r.y1 for r in fr), default=-1), 1)",
+      "    lf = round(min((r.x0 for r in fr), default=-1), 1)",
+      "    rt = round(p.rect.width - max((r.x1 for r in fr), default=-1), 1)",
+      "    out.append({'h': hs, 'top': top, 'bottom': bot, 'left': lf, 'right': rt})",
       "print(json.dumps(out))",
     ].join("\n");
 
@@ -1250,13 +1285,37 @@ function run() {
     assert.ok(pages.length > 1, `the deck printed on ${pages.length} page(s), not several`);
 
     // 247.2pt is the card height in tools/hifi.py, the print spec.
-    for (const [i, heights] of pages.entries()) {
-      assert.ok(heights.length > 0, `page ${i + 1} printed no card frames at all`);
-      for (const h of heights) {
+    for (const [i, page] of pages.entries()) {
+      assert.ok(page.h.length > 0, `page ${i + 1} printed no card frames at all`);
+      for (const h of page.h) {
         assert.ok(Math.abs(h - 247.2) <= 1,
           `page ${i + 1} printed a card frame ${h}pt tall, not 247.2pt: ` +
           "the row is clipped by the page break and its diagram never painted");
       }
+      /* WHERE the sheet lands, not just how tall its cards are. This suite
+         measured heights alone and stayed green through a regression that put
+         the top row's border at y=0.0, flush with the paper edge - every
+         consumer printer has a 3-5mm non-printable band and would have sheared
+         it. The cause was `.printpage` carrying a min-height with nothing to
+         fill the page box, so the flex centring had no free space to
+         distribute and the sheet top-aligned. */
+      assert.ok(page.top >= 8,
+        `page ${i + 1} printed its top card frame ${page.top}pt from the paper edge; ` +
+        "under ~8pt it lands in a consumer printer's non-printable band");
+      assert.ok(Math.abs(page.top - page.bottom) <= 2,
+        `page ${i + 1} is not centred vertically: ${page.top}pt above the sheet, ` +
+        `${page.bottom}pt below. The slack must fall on BOTH ends - a platform ` +
+        "that draws its own header band eats the end that has none");
+      /* Reviewer N2: the horizontal twin of the same defect. Dropping
+         `justify-content:center` survived all 271 tests - desktop wide is a
+         557.2pt sheet in a 612pt page, so left-aligning puts the left column's
+         border at x~0, in the same non-printable band. */
+      assert.ok(page.left >= 8,
+        `page ${i + 1} printed its left card frame ${page.left}pt from the paper edge; ` +
+        "under ~8pt it lands in a consumer printer's non-printable band");
+      assert.ok(Math.abs(page.left - page.right) <= 2,
+        `page ${i + 1} is not centred horizontally: ${page.left}pt left of the sheet, ` +
+        `${page.right}pt right`);
     }
   });
 

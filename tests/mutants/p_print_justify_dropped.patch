@@ -1,0 +1,15 @@
+# kills: the sheet centres horizontally instead of hugging the left paper edge
+# suite: node --test --test-name-pattern full.height.on.every.page tests/e2e.test.js
+# Desktop wide is a 557.2pt sheet in a 612pt page; left-aligned puts the left column's border at x~0, inside every consumer printer's non-printable band - the horizontal twin of the top-align regression.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -743,7 +743,7 @@ button.nav:active{background:#2e281e}
+    site for them (AC-B3). ------------------------------------------------- */
+ #printroot{display:none}
+ #printroot .printpage{position:relative; display:flex; align-items:center;
+-  justify-content:center; break-after:page; page-break-after:always}
++  justify-content:flex-start; break-after:page; page-break-after:always}
+ #printroot .printpage:last-child{break-after:auto; page-break-after:auto}
+ #printroot .printsheet{display:grid}
+ #printroot .printcell{position:relative; overflow:hidden}

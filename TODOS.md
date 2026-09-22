@@ -104,3 +104,84 @@ real resize, so e2e drives the whole path against the shipped file.
 **Effort:** S
 **Priority:** P2
 **Depends on:** None (independent of the trigger-aware rule; can land before or after)
+
+## The page-level print oracle reconstructs the sheet instead of letting the app produce it
+
+- **What:** Rework `tests/e2e.test.js:1189` ("every printed card keeps its full height on every page") so it drives the real CTA and rasterizes whatever the app's own sequence leaves in the DOM, instead of stubbing `window.print()`, capturing `#printroot.innerHTML`, and re-injecting that HTML plus the `printing` class before `Page.printToPDF`.
+- **Why:** This is the test that let the iOS teardown race ship. A test that reconstructs the state it wants to measure is structurally blind to defects in how that state is produced - it validated the print CSS perfectly while the app was printing the wrong document on iOS. `tests/app.test.js`'s `printed()` helper has the same shape for the same reason.
+- **Pros:** Closes the only category of print defect the suite cannot currently see; the 346-mutant gate would gain real teeth on the print lifecycle rather than just the print CSS.
+- **Cons:** Non-trivial. CDP's `Page.printToPDF` does not go through `window.print()`, so "let the app's own sequence deliver it" needs a different mechanism than the current test uses - probably emulating print media and rasterizing after the CTA rather than calling printToPDF on injected HTML. The owner explicitly chose "add a sequencing test, keep the oracle" on 2026-09-22 to keep the fix small, so this is deliberate debt, not an oversight.
+- **Context:** Recorded as AC-C4 in `docs/plans/2026-09-22-ios-print-teardown-race.md`, which also carries the full root-cause writeup and the reason the existing oracle is blind. The sequencing tests added by that plan (AC-C1/C2/C3) cover the teardown lifecycle at unit level; this TODO is about the remaining gap where nothing rasterizes a sheet the app itself produced.
+- **Depends on:** the iOS teardown fix landing first (that plan's C1-C7), so the oracle is reworked against corrected behaviour rather than the buggy one.
+
+## Print teardown: coverage and residue gaps the PR #106 review surfaced
+
+Six nits from the independent review of PR #106 at `b943483` (verdict
+PASS_WITH_NITS). None blocks the iOS teardown fix; all are follow-up.
+
+- **Two surviving mutants on the NEW logic.** `{once:true}` on the
+  `afterprint` registration (`index.html:5268`) survives, because
+  `tests/helpers/sandbox.js:265` is `(t, fn) => ...` and drops the options
+  argument entirely - so a second print in a session would never tear down and
+  no test would notice. `setTimeout(teardownPrintSheet, 2000)` after
+  `print()` also survives: nothing distinguishes "torn down on `afterprint`"
+  from "torn down on a timer slower than the test". Fix: have the sandbox
+  carry the options argument, add a second CTA press with an `afterprint`
+  between, and assert across an async turn.
+- **`#printroot { display: none }` (`index.html:744`) is now load-bearing and
+  untested.** Plan D20 rests its whole accepted failure mode on that one line.
+  Assert `getComputedStyle(root).display === "none"` in the new e2e test.
+- **`@page { size: letter; margin: 0 }` is residue D20 does not price.**
+  `printGridCSS()` emits it unscoped to `#printroot` and ungated by
+  `body.printing`. If `afterprint` never fires, every later user-initiated
+  print is forced to that paper size with zero margins - D20's risk row only
+  reasons about `#printroot` contents and `body.printing`. The owner should
+  know the accepted risk is broader than written.
+- **`root.className = name` is dead** - no `#printroot.wide` / `.narrow`
+  selector exists - and teardown does not reset it. (Overlaps the existing
+  AC-B5b queue row.)
+- **Two stale comments** still narrate the old synchronous teardown:
+  `index.html:5613` and the section banner at `index.html:4282`.
+- **`teardownPrintSheet()` has no null guard** and can mask the original
+  exception on the catch path. Unreachable today: both ids are static markup
+  and `openPrintSheet()` already dereferenced `#printroot` before its `catch`
+  can run.
+
+**Effort:** S each
+**Priority:** P2
+**Depends on:** PR #106 landing (so the follow-ups build on the shipped shape)
+
+### The card may render 2-3% over spec on iOS
+
+Pixel forensics on the owner's 2026-09-21 iPhone 14 screenshot (1170x2532,
+paper white region 1073px wide = 612pt, so 1.7533 px/pt): column pitch
+measured 321.5px = 183.4pt against a 177.6pt spec (ratio 1.033), row pitch
+444px = 253.2pt against 247.2 (1.024). If real, a printed card is ~64.7 x
+89.3 mm instead of 62.65 x 87.21 and will not sit right in a poker sleeve.
+
+Candidate root cause: `.printscale`'s `transform:scale(g.CW / 72 * 96 /
+PRINT_DESIGN_W)` (`index.html:4194`) assumes 96 CSS px per inch in print
+context. WebKit's print px/pt basis may differ.
+
+Confirmed or refuted by the B7 ruler check (expect 62.65 x 87.21 mm).
+Deliberately NOT fixed alongside the page-fit work: two failures at once
+makes the device check unreadable.
+
+### The A4/Letter paper control is inert on iOS
+
+`PRINT_PAPER` (`index.html:4174`) and the `@page{size:...}` half of
+`printGridCSS()` do nothing on iOS Safari, which ignores the `@page` at-rule
+outright (MDN bcd #28626; Apple Developer Forums 695544, 114327). The picker
+therefore promises a control the platform does not give it. Either hide it on
+iOS or label it as a hint. Note `printLayoutName` already detects iOS via
+`isIOS()`, so the predicate exists.
+
+### `.printpage` emits a 792pt block into a ~711.6pt printable box
+
+`#printroot .printpage{height:${p.h}pt}` (`index.html:4189`) hard-sets the
+full paper height. On a platform enforcing its own margins that is ~80pt
+taller than the printable area, so under fragmentation it yields a remainder
+fragment and, with `break-after:page`, potentially one blank sheet per page;
+under clipping it offsets content from true centre. Pre-existing, surfaced by
+the PR #106 reviewer, and survivable today because the rotated narrow sheet's
+532.8pt clears either behaviour. Unverified on iOS.

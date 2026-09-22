@@ -132,6 +132,8 @@ function makeLocation(href) {
  *   href           - initial location (default "https://example.test/index.html")
  *   extraIds       - extra element ids served by getElementById, this boot only
  *   syncTimers     - run setTimeout callbacks immediately instead of queueing
+ *   userAgent      - navigator.userAgent (default a desktop Chrome string)
+ *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  */
 function boot(opts = {}) {
   const html = fs.readFileSync(APP, "utf8");
@@ -254,6 +256,15 @@ function boot(opts = {}) {
     // calls window.print(). Both are window-level in the browser, so the stub
     // serves them here; printCalls records the invocations a test asserts on.
     innerWidth: opts.innerWidth === undefined ? 1024 : opts.innerWidth,
+    // The print sheet also reads the platform, because iOS Safari ignores
+    // `@page` and enforces a page box of its own. Default to a desktop UA so
+    // existing tests keep the width-driven layout; `userAgent` overrides it.
+    navigator: {
+      userAgent: opts.userAgent === undefined
+        ? "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
+        : opts.userAgent,
+      maxTouchPoints: opts.maxTouchPoints === undefined ? 0 : opts.maxTouchPoints,
+    },
   };
   const printCalls = [];
   sandbox.print = () => { printCalls.push(sandbox.innerWidth); };
@@ -353,6 +364,14 @@ function boot(opts = {}) {
      *  in response - it must take the page down and NOT pop anything itself. */
     popstate: () => {
       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
+    },
+    /** Fire a window-level event the app listens for. `afterprint` is the one
+     *  that matters: window.print() returns immediately on iOS Safari, so the
+     *  print sheet is torn down on the event rather than in a finally, and a
+     *  test has no other way to reach the listener - winListeners is closed
+     *  over and not exposed. */
+    fireWindow: (type) => {
+      for (const fn of winListeners[type] || []) fn({ type });
     },
   };
 }

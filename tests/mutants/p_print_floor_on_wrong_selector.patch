@@ -1,0 +1,15 @@
+# kills: the print stylesheet never declares a page-box height
+# suite: node --test --test-name-pattern ^the.print.stylesheet.never.declares.a.page.box.height$ tests/app.test.js
+# The floor belongs on .printpage, the block the page box contains. On .printsheet it reserves nothing: .printpage collapses again and every sheet paginates. Chrome shrink-to-fits and can never show this, so only the unit selector assertion can.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4245,7 +4245,7 @@ function printGridCSS(name, paper) {
+   // and a stylesheet is text a human reads in devtools.
+   const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
+   return `@page{size:${p.css}; margin:0}\n` +
+-    `#printroot .printpage{min-height:${footprint}pt}\n` +
++    `#printroot .printsheet{min-height:${footprint}pt}\n` +
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+     `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +

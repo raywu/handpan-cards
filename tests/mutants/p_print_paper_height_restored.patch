@@ -1,0 +1,16 @@
+# kills: PRINT_PAPER carries no page-box height
+# suite: node --test --test-name-pattern ^PRINT_PAPER.carries.no.page.box.height$ tests/app.test.js
+# PRINT_PAPER.h was the only source of the page-box literal. Keeping the key
+# invites the next edit to read it again; the deletion is the guard.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4187,7 +4187,7 @@ const PRINT_SAFE = { margin: 45 };
+ /* No page-box height here. iOS Safari ignores @page entirely, so the paper
+    height is a number we cannot know; asserting it made every sheet paginate
+    across two physical pages. Only the size keyword survives. */
+-const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
++const PRINT_PAPER = { letter: { css: "letter", h: 792 }, a4: { css: "A4", h: 841.89 } };
+ 
+ /** True for every iOS/iPadOS Safari, which ignores the `@page` at-rule
+  *  outright - size, orientation and `margin:0` alike - and enforces a page

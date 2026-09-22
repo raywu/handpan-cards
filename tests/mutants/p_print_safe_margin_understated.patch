@@ -1,0 +1,19 @@
+# kills: every print layout fits inside the platform-enforced printable area
+# suite: node --test --test-name-pattern every.print.layout.fits tests/app.test.js
+# PRINT_SAFE.margin goes back to the 36pt (0.5in per side) the old oracle
+# assumed. That is the exact mistake that shipped a clipping sheet twice: the
+# margin iOS actually enforces was MEASURED at 40.2pt on a 612pt page, so a
+# 36pt constant declares 540pt of safe width where only 531.6pt exists and
+# waves through a sheet that clips on the device.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4190,7 +4190,7 @@ const PRINT_LAYOUTS = {
+  *  viewport, never by arithmetic against a margin. It is an executable spec
+  *  anchor for a device measurement, exported so tests/app.test.js can assert
+  *  every constrained layout still fits what the platform actually grants. */
+-const PRINT_SAFE = { margin: 45 };
++const PRINT_SAFE = { margin: 36 };
+ 
+ /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
+  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter

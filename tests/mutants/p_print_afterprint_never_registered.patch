@@ -1,0 +1,23 @@
+# kills: print sheet leaves no residue
+# suite: node --test --test-name-pattern print.sheet.leaves.no.residue tests/app.test.js
+# The success path has no teardown at all: the sheet is built, printed, and
+# left in the DOM for the rest of the session. body.printing stays set and
+# #printroot stays populated, so the user's NEXT system-initiated print -
+# Cmd+P, iOS Share -> Print, no CTA involved - prints the stale card sheet
+# instead of the app. Invisible on screen (#printroot is display:none there),
+# which is exactly why it needs a test rather than a look.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5264,11 +5264,6 @@ function closeScaleSheet() {
+ }
+-/* The print sheet's only teardown on the success path. Registered ONCE here,
+-   not inside openPrintSheet(), so pressing the CTA N times leaves one
+-   listener rather than N. */
+-window.addEventListener("afterprint", teardownPrintSheet);
+-
+ // The browser's way out: the back gesture, or a swipe. The entry is already
+ // gone, so this only takes the page down.
+ window.addEventListener("popstate", () => {
+   if (!sheetOpen) return;
+   sheetRouted = false;

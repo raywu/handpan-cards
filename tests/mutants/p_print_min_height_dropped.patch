@@ -1,0 +1,17 @@
+# kills: the print stylesheet never declares a page-box height
+# suite: node --test --test-name-pattern ^the.print.stylesheet.never.declares.a.page.box.height$ tests/app.test.js
+# Reserving nothing is not the same as reserving the sheet's footprint. The
+# rotated sheet overflows its own layout box by 19.2pt top and bottom because
+# transform never reflows, so without the reservation the page box is 494.4pt
+# and the painted 532.8pt sheet bleeds past it on both ends.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4241,7 +4241,6 @@ function printGridCSS(name, paper) {
+   // and a stylesheet is text a human reads in devtools.
+   const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
+   return `@page{size:${p.css}; margin:0}\n` +
+-    `#printroot .printpage{min-height:${footprint}pt}\n` +
+     `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
+     `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
+     `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +

@@ -1,0 +1,18 @@
+# kills: every print layout fits inside the platform-enforced printable area
+# suite: node --test --test-name-pattern ^every.print.layout.fits.inside.the.platform.enforced.printable.area$ tests/app.test.js
+# Reviewer R1: `constrained` selects which layouts the fit loop checks, so it
+# is load-bearing for the whole oracle. Before the pin, dropping it left the
+# suite green - `if (!L.constrained) continue` skipped every layout and the
+# fit assertions ran zero times while the test reported pass.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -4168,7 +4168,7 @@ const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 }
+  */
+ const PRINT_LAYOUTS = {
+   wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
+-  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
++  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true },
+ };
+ 
+ /** The printable area a platform that ignores `@page` leaves us, per side.
