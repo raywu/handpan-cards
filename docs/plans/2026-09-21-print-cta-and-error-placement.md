@@ -504,10 +504,73 @@ deck.
   carrying the same labels and calling the print path (AC-B1). Widen
   `render()`'s tab-order selector to cover both element types (AC-B1b).
 - **B6** Mutants (AC-B7), then push and the two-push floor protocol.
+- **B1-B6 DONE 2026-09-22**, shipped on PR #104, merged as `782d4d3`.
+  All five checks green at `c5804d8`; a third, fresh reviewer returned
+  PASS_WITH_NITS at that SHA after two earlier reviewers returned FAIL.
+  Its nits are queue rows 140-148.
+
+  **Three defects escaped B1-B6 and were caught only by review**, all of
+  the same family: nothing in this repo rendered `@media print`, so every
+  print test read the stylesheet TEXT instead of the printed PAGE, and
+  345 mutants passed over all three.
+  1. `body.printing > .mid` matched nothing (`.mid` is a GRANDCHILD of
+     `<body>`), so `<footer>` printed on top of the card sheet.
+  2. The paper `<select>` desynced from `printPaper` on every `render()`:
+     the sheet printed A4 while the picker read LETTER.
+  3. `#printroot .printscale{position:absolute}` took the scale wrapper
+     out of flow inside a paginated grid cell, so Chrome clipped every
+     row but the last on every page - card frames printed 183.3pt of
+     their 247.2pt and the pan diagram, note line and number line never
+     painted. 6 of the Amara deck's 25 chord cards were unusable on the
+     default `wide` 3x3 layout, and the same held on A4 and `shop`.
+
+  The structural remedy is `tests/e2e.test.js:1189`, "every printed card
+  keeps its full height on every page": it prints the real sheet over CDP
+  with `Page.printToPDF` and measures the card frames with pymupdf. That
+  is the first page-level oracle in the suite, and it needed
+  `actions/setup-python` + `pip install pymupdf` in the `js-tests` job -
+  the one file PR #104 touched outside lane B's ownership. The reviewer
+  probed it with 10 throwaway print mutations and three of them
+  (an oversized face transform, a dropped `.printcell{overflow:hidden}`,
+  and a 24px dead strip at the card foot) died at that oracle and at
+  NOTHING else. Only `wide` + `letter` + `full` reaches it - see row 148.
 - **B7** Hand AC-B6 to the owner with exact steps, the way the 2026-09-21
   device pass was run. It must cover iOS + A4 + narrow as well as
   iOS + Letter + narrow - see D16/D17 orthogonality. Do not close B until
   it comes back.
+
+  **B7 steps, handed over 2026-09-22.** Served from the lane worktree at
+  `http://192.168.68.90:8732/index.html` (same LAN, the Mac must stay
+  awake); the 2026-09-21 spike page is still on `:8731`. Those bytes are
+  the merged `782d4d3`. On the iPhone 14 / iOS 26.6, Safari, portrait:
+
+  0. Open the URL, tap `+ ADD`, type `(D3) A3 C4 D4 E4 F4 G4 A4 C5` (the
+     Amara seed, 25 chords) and tap GENERATE CARDS. The print row on the
+     card reads FULL DECK PDF | PRINT-ONLY PDF | LETTER.
+  - **Run A - iOS + Letter + narrow.** Leave the picker on LETTER, tap
+    FULL DECK PDF, and in the iOS print sheet set Paper Size = US Letter,
+    Scaling = 100%. NOT "Scale to Fit" - the card spec is true physical
+    size. Report five things: (a) cards per page, which must be 6 in a
+    3-across by 2-down grid, never a 7th spilling; (b) the page count;
+    (c) whether every card's coloured frame is a thin RING, not a block;
+    (d) whether the pan labels are readable; (e) the bottom furniture
+    strip (URL / date / Page N) - is any part of a card under it?
+  - **Run B - iOS + A4 + narrow.** Set the picker to A4, tap FULL DECK
+    PDF again, set Paper Size = A4, Scaling = 100%. Report the same five.
+    This is the combination D17 assumed rather than measured, so a
+    difference here IS the finding.
+  - **Run C - the print-shop sheet.** Tap PRINT-ONLY PDF with LETTER
+    selected. It must show chord cards only - no title card, no legend
+    card, no blank write-on templates - and the last page may be short
+    rather than padded.
+  - **Measurement.** With a ruler on a printed page (or from the PDF at
+    Actual Size), a card must be 62.65 x 87.21 mm. Anything else means
+    scaling crept in.
+  - **If the iOS preview comes back BLANK, that is queue row 147, not a
+    layout bug:** `openPrintSheet()`'s `finally` tears the sheet down the
+    instant `window.print()` returns, and iOS Safari does not reliably
+    block there. Report it as a blank preview rather than as a missing
+    frame - the fix is different.
 
 ## What could sink this
 
