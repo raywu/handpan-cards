@@ -78,7 +78,7 @@ badges and index numbers all reproduce. The engine is not the problem.
 | D-2 | **Deck name.** Committed card-header `name`s are `C# HIJAZ 9`, `F3 LOW PYGMY 18`, `D AMARA 9` (the `/ ORION` half is not the name - it is the separate vertical `credit` string `C# HIJAZ / ORION`); emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. The `/ ORION` half is lost from the vertical credit strip (`decks.py:264` `"C# HIJAZ / ORION"`); the card header `name` is identical on both sides for hijaz. Pygmy and Amara lose the instrument name in both places. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
 | D-3 | **Scale-degree labels, Amara only.** Committed `bIII` (5 cards), `bVII` (4), `IV` (3); emitter `III`, `VII`, `iv`. | 12 of 25 Amara cards | **NO.** Wrong degree spelling is wrong data. `data/decks.json` `degrees` is authoritative and the generated path does not read it. |
 | D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + `blank_cards: 7` + fill); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
-| D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes different title-card copy **[CORRECTED: the two strings quoted here previously - "ONE CARD PER CHORD" and "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME" - were wrong. The second exists nowhere in the repo; the first is BLURB text (`src/engine/pdfdeck.js:109`), not a legend line, and Amara's committed blurb already carries it (`tools/decks.py:319`). `legendLines()` (`pdfdeck.js:116-130`) emits "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", byte-identical to the committed Hijaz (`tools/decks.py:271-272`) and Amara (`:301-302`) literals, so only PYGMY actually loses a legend line.]** and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
+| D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes different title-card copy **[CORRECTED: the two strings quoted here previously - "ONE CARD PER CHORD" and "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME" - were wrong. The second exists nowhere in the repo; the first is BLURB text (`src/engine/pdfdeck.js:109`), not a legend line, and Amara's committed blurb already carries it (`tools/decks.py:300`; `:319` is the GENERATED-blurb helper, not the committed literal). `legendLines()` (`pdfdeck.js:116-130`) emits "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", byte-identical to the committed Hijaz (`tools/decks.py:271-272`) and Amara (`:301-302`) literals, so only PYGMY actually loses a legend line.]** and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
 | D-6 | **[CORRECTED after independent review. This row previously read "Token extraction order on one Pygmy card (card #6): same token multiset, different order - YES, coordinate-level, no content change." That was wrong: the multiset is NOT the same.] Different voicing on one Pygmy card** (card 6, `Fm9`). Committed is `F4 Ab4 C5 Eb5 G5` (`fields [5,7,8,9,11]`, field 11 = `G` 5 midi 79 inner); the engine derives `fields [5,7,8,9,6]`, field 6 = `G` 4 midi 67 rim. Different note line (`G5` vs `G4`), different number line (`11` vs `6`). The DIAGRAM matches only because pitch-class-complete highlighting lights the same fields for G4 and G5, which is how this was first misread as cosmetic. Reproduce: run `tools/gen_deck.js` on the Pygmy seed and diff `chords[5]` against `data/decks.json`. | 1 card | **NO.** A voicing is content. `CLAUDE.md` names this exact card as ground truth: "a spread 9th above the 7th, like Fm9's G5, is fine." |
 | D-7 | Colour literals: committed three-decimal values vs re-derived floats (`tools/decks.py:227-230`). Not separately measured here; the docstring states re-deriving moves every printed colour by a fraction. | all cards | **YES** if the literals are carried; a fraction of a colour step. |
 
@@ -113,7 +113,7 @@ disagrees with canonical data. None of the six is a rendering disagreement.
 | **1. Adopt generated geometry** - built-ins become ordinary generated decks | yes | **no** (D-1 .. D-5) | free in code, expensive in output; also needs an explicit owner instruction under CLAUDE.md's geometry rule |
 | **2. Overlay becomes data; JS emitter consumes it** (recommended) | yes, after stage C | yes | a `fromBuiltin` path in `pdfdeck`, an overlay file, an equivalence harness |
 | **3. Keep both emitters, widen `test_pdf_parity.py`** | no | n/a | cheapest; pays the duplication forever |
-| **4. Delete `tools/decks.py` + `tools/hifi.py`** (reachable only from 1 or 2) | yes | depends on 1 vs 2 | loses `hifi.fit_note`, the 3.6 pt print-floor assertions, `tests/test_render_agreement.py`'s per-field pinning, and `validate.py` check 1b - these must be ported, not dropped |
+| **4. Delete `tools/decks.py` + `tools/hifi.py`** (reachable only from 1 or 2) | yes | depends on 1 vs 2 | loses the 3.6 pt print-floor ASSERTIONS, `tests/test_render_agreement.py`'s per-field pinning, and `validate.py` check 1b - these must be ported, not dropped. **[CORRECTED after independent review: `hifi.fit_note` was in this list and should not have been. E-4 (section 8) already ruled it a NO-OP port - `fitNote` exists in JS at `src/engine/pdfcards.js:156-157` and the 3.6 pt floor at `:124`. Only the assertions need a new home. Section 3 was not updated when E-4 landed.]** |
 
 Option 2 is the only one that both removes the second implementation and keeps
 the printed artifact the owner already approved.
@@ -133,40 +133,98 @@ the printed artifact the owner already approved.
 Goal: `tools/decks.py`'s per-deck literals stop being Python and become a data
 file both emitters can read. Nothing about the PDFs changes.
 
-- **A1. Write the equivalence harness first. [AMENDED by O-1 and O-2 - the
-  original text is struck below.]**
+- **A1. Fix the committed-bytes oracle first. [AMENDED by O-1 and O-2, then
+  AMENDED AGAIN after independent review - the original text is struck below.]**
   ~~New `tests/test_seed_pdf_equivalence.py`, comparing page box, page count,
   card-rect count and size, per-card extracted token list and the largest
   drawn circle radius per card.~~ That harness is strictly weaker than
   `tests/test_pdf_parity.py:104-118`, which already compares **every glyph -
-  x, y, size and character, page by page**. **Do instead (T9):**
-  parameterize `tests/test_pdf_parity.py` over the three BUILT-IN decks -
-  `SEEDS` becomes seeds + built-ins, `_pair` gains a built-in branch calling
-  `fromBuiltin`, the glyph-exact assertions apply unchanged. No new test file
-  is created. **And (T10):** the reference PDF comes from
-  `git show HEAD:<pdf>` into a tmpdir, never from the working tree -
-  `tools/decks.py:409` writes into the repo root, so building first and
-  comparing after compares a build against itself.
-  Verify: `python3 -m unittest tests.test_pdf_parity -v`, with no
-  `python3 tools/decks.py` prefix.
+  x, y, size and character, page by page**. **Do instead (T10):** point the
+  repo's committed-PDF staleness gate at `git show HEAD:<pdf>` instead of the
+  working tree. That gate is
+  `tests/test_pdf_build.py:254` (`test_committed_pdfs_match_a_fresh_build`),
+  which today opens `os.path.join(paths.ROOT, paths.PDFS[key])` - a WORKING-TREE
+  path that `tools/decks.py:409` overwrites - so an acceptance command prefixed
+  with `python3 tools/decks.py &&` compares a build against itself and passes
+  vacuously. No new test file is created.
+  Verify: `python3 -m unittest tests.test_pdf_build -v`.
+  **[BLOCKER FIX, independent review: T9 - parameterizing
+  `tests/test_pdf_parity.py` over the three BUILT-IN decks - has MOVED OUT OF
+  STAGE A into Stage B (B0, below). It cannot run here. `_pair`'s built-in
+  branch calls `HPE.pdfdeck.fromBuiltin`, which B2 creates; executing A1 as
+  previously written lands a Stage A commit whose own acceptance command errors,
+  and `.github/workflows` runs `unittest discover -s tests` as the REQUIRED
+  `python suites` check, so that commit would merge red and block Lane B - which
+  8.9 schedules to start only after Lane A merges.]**
+  **[SECOND BLOCKER FIX, same review: `tests/test_pdf_parity.py` has no
+  committed-bytes oracle to re-point and never had one.** `_pair`
+  (`tests/test_pdf_parity.py:90-98`) builds BOTH sides fresh into a
+  `tempfile.mkdtemp()` - `hifi.build(py_path, ...)` and `_js_pdf(payload,
+  js_path, ...)` - and opens no committed PDF anywhere. It is a CROSS-EMITTER
+  check (fresh Python vs fresh JS) and is sound as such; `git show HEAD:<pdf>`
+  is meaningless to it. The two oracles are distinct and this plan previously
+  conflated them:
+  **(i) cross-emitter parity** = `test_pdf_parity.py`, fresh vs fresh, no
+  committed bytes involved; **(ii) committed-bytes staleness** =
+  `test_pdf_build.py`, which is the only file that reads the six checked-in
+  PDFs and therefore the only file `git show HEAD:<pdf>` belongs in.**
 - **A2.** Create `data/print_overlay.json`: per deck id, the exact literals now
   in `tools/decks.py` - `R`, `cy`, `y_note`, `y_num`, `title`, `credit`,
   `blurb`, `legend_lines`, `legend_demo`, `blank_cards`, and the committed
   three-decimal colour values. Copied verbatim, not re-derived.
 - **A3.** `tools/decks.py` reads `data/print_overlay.json` instead of carrying
   the literals inline. The clash guard against `data/decks.json` stays.
-- **A4.** Extend `tools/validate.py` check 1b to assert the overlay file and
-  the built PDFs agree.
-- **Acceptance [AMENDED by O-2]:** `python3 -m unittest tests.test_pdf_parity`
-  green against `git show HEAD:<pdf>` references, and `git diff --stat` on the
-  six PDFs shows only reportlab's creation-date churn. The
-  `python3 tools/decks.py &&` prefix is REMOVED from every acceptance command
-  in this section - it overwrites the committed bytes the check compares
-  against.
+- **A4. [AMENDED after independent review - SPLIT IN TWO.]** ~~Extend
+  `tools/validate.py` check 1b to assert the overlay file and the built PDFs
+  agree.~~ Check 1b cannot read a PDF and is built so that it cannot:
+  `tools/validate.py:26` is
+  `sys.modules.setdefault("hifi", types.ModuleType("hifi"))`, stubbing the
+  build module out before `decks.py` is imported, and its docstring
+  (`tools/validate.py:13-15`) says the tool deliberately needs neither the
+  `tools/fonts` TTFs nor a build. Check 1b (`tools/validate.py:48-71`) is a
+  pure dict-vs-JSON comparison and the file imports no PDF reader at all.
+  `tests/CONTRACT.md:128-130` makes the stub a standing contract
+  ("**Never `import validate`** from a test"). Extending it as written forces
+  either un-stubbing `hifi` or adding `pymupdf` to the `data integrity` CI job,
+  which today runs in 13 s with neither - a dependency change this plan does
+  not schedule and CLAUDE.md scopes pymupdf to the test suite. So:
+  - **A4a (stays in check 1b):** assert the overlay file and `data/decks.json`
+    do not clash - an overlay key must never shadow a canonical one. Pure data,
+    no PDF, no new dependency.
+  - **A4b (moves to `tests/test_pdf_build.py`):** assert the overlay and the
+    BUILT PDFs agree. That file already opens PDFs with pymupdf and already
+    owns the staleness gate at `:254`.
+- **Acceptance [AMENDED by O-2, then CORRECTED after independent review]:**
+  `python3 -m unittest tests.test_pdf_parity` green **unchanged** - the two
+  generated seeds only, no built-in decks, because `fromBuiltin` does not exist
+  until Stage B - AND `python3 -m unittest tests.test_pdf_build` green with its
+  references now read from `git show HEAD:<pdf>` (A1/T10), AND
+  `python3 tools/validate.py` green with A4a's clash guard.
+  **The previous wording was self-contradicting:** it asked for
+  `git diff --stat` on the six PDFs to show "only reportlab's creation-date
+  churn" while REMOVING the `python3 tools/decks.py &&` prefix that produces
+  that churn. With no rebuild the diff is empty and that half of the acceptance
+  passes vacuously, including for a Stage A change that mis-transcribed an
+  overlay literal. The prefix removal is still correct for the
+  committed-bytes check, and it is now unnecessary there as well: once T10 reads
+  the reference from `git show HEAD:<pdf>`, a rebuild into the working tree can
+  no longer launder a real difference. The rebuild-and-diff step is therefore a
+  SEPARATE, explicitly manual acceptance item: run `python3 tools/decks.py`,
+  confirm `git diff --stat` shows all six PDFs touched and
+  `python3 -m unittest tests.test_pdf_build` still green, then
+  `git checkout -- '*.pdf'`.
 - **Rollback:** revert the commit; the literals come back.
 
 ### Stage B - the JS emitter can build a built-in deck
 
+- **B0. [NEW - moved out of Stage A by independent review.]** Parameterize
+  `tests/test_pdf_parity.py` over the three BUILT-IN decks (T9): `SEEDS`
+  becomes seeds + built-ins, `_pair` gains a built-in branch calling
+  `fromBuiltin`, the glyph-exact assertions apply unchanged. This lands AFTER
+  B2 in execution order even though it is numbered before it, exactly as B1
+  does - it is the failing test for B2, and it is red until B2 exists. Ordering
+  it inside Stage B is the whole point: Stage A must not ship a commit that
+  references a function Stage B creates.
 - **B1. [AMENDED by E-2 and O-1.]** `tests/pdf_builtin.test.js`: feed a
   built-in deck plus its overlay to a new
   `HPE.pdfdeck.fromBuiltin(deck, overlay)` and assert the returned object
@@ -176,7 +234,9 @@ file both emitters can read. Nothing about the PDFs changes.
   `spec`+`_geom` conversion** (E-2): `pdfcards.js:318` reads `spec._geom` and a
   built-in deck has no `spec` at all, so the conversion is the real work and
   nothing else pins it. Also assert `sub` comes from `data/decks.json` (D-8 -
-  `ORION` is otherwise lost). Run it; it fails. **This file SURVIVES the O-1
+  `ORION` is otherwise lost), **and T15's 96-of-96 `fields`/`roots` loop, which
+  lands in this same file. This bullet's list is NOT exhaustive** - section 9.1
+  is the authoritative task list. Run it; it fails. **This file SURVIVES the O-1
   amendment** - what O-1 retired was A1/T7's proposed
   `tests/test_seed_pdf_equivalence.py`, a cross-emitter equivalence harness.
   `tests/pdf_builtin.test.js` is a different thing: a JS unit test of
@@ -191,8 +251,13 @@ file both emitters can read. Nothing about the PDFs changes.
   `data/decks.json` + `data/print_overlay.json` and routes through
   `fromBuiltin`.
 - **B4. [AMENDED by O-1 and O-2.]** The gate is the PARAMETERIZED
-  `tests/test_pdf_parity.py` from A1, run for all three decks and both
-  variants, JS emitter output vs the `git show HEAD:<pdf>` reference.
+  `tests/test_pdf_parity.py` from **B0** (moved there from A1), run for all
+  three decks and both variants. **[CORRECTED after independent review: this
+  said "JS emitter output vs the `git show HEAD:<pdf>` reference". That is the
+  wrong oracle for this file - `_pair` builds both sides fresh into a tmpdir
+  and reads no committed PDF. The gate here is FRESH PYTHON vs FRESH JS, glyph
+  for glyph. The committed-bytes comparison lives in `tests/test_pdf_build.py`
+  (A1/T10) and is a separate gate.]**
   **This is the gate.**
   Expect D-6-class ordering differences and sub-0.1 pt coordinate drift; expect
   D-1 .. D-5 to be GONE. Any survivor is a bug in `fromBuiltin`, not an
@@ -440,8 +505,13 @@ No issues found. The six-PDF build is a developer/CI step, not a user-facing
 path; the only measurable cost is suite runtime. **[AMENDED: this rationale
 originally rested on E-7's shared build helper, which O-1 superseded - with
 no new test file there is nothing to share a helper with. The cost is bounded
-instead by T9 reusing `test_pdf_parity.py`'s existing `_pair` fixture rather
-than adding a second build set.]** Nothing here touches an N+1, a cache or a hot loop.
+instead by measurement, not by sharing: `_pair`
+(`tests/test_pdf_parity.py:90-98`) is a plain helper, not a fixture - it
+`mkdtemp()`s and builds two PDFs on EVERY call, and the file has no
+`setUpClass` - so T9's six subTests add 12 PDF builds, not zero. Measured, the
+whole file still runs in 1.7 s. **[CORRECTED after independent review: this
+previously claimed `_pair` was a reused fixture. The conclusion holds; the
+stated reason was wrong.]**]** Nothing here touches an N+1, a cache or a hot loop.
 
 ### 8.5 Test coverage of the planned work
 
@@ -468,7 +538,10 @@ CODE PATHS                                             USER FLOWS
   |   +- [GAP] overlay id not in decks.json -> clash guard
   +- [** ] existing clash guard - test_pdf_parity.py
 [+] tools/validate.py check 1b           <- EXTENDED
-      +- [GAP] overlay drift vs built PDFs (A4)
+      +- [GAP] overlay-vs-decks.json clash (A4a)
+[+] tests/test_pdf_build.py              <- EXTENDED
+      +- [GAP] overlay drift vs built PDFs (A4b)
+      +- [GAP] reference read from git show HEAD (T10)
 
 COVERAGE: 3/19 paths tested (16%)   |   GAPS: 16, all inside this plan's own stages
 QUALITY: ***:1  **:2  *:0
@@ -487,13 +560,20 @@ direction of the error; see the comment at `pdfdeck.js:156-159`]**), so each get
 **Decision (auto): adopt** - the four throws land in A3, A3, B3 and B2
 respectively.
 
+**[AMENDED after independent review: the tree above now splits A4 into A4a
+(`tools/validate.py` check 1b, overlay vs `data/decks.json` - pure data) and
+A4b (`tests/test_pdf_build.py`, overlay vs the built PDFs). Check 1b stubs
+`hifi` out at `tools/validate.py:26` and imports no PDF reader, so the
+PDF-reading half was never implementable where it was scheduled.]**
+
 ### 8.6 Failure modes
 
 | new codepath | realistic production failure | test? | handled? | silent? |
 |---|---|---|---|---|
 | `fromBuiltin` spec conversion | a field's angle lands at the wrong tuple index; the pan draws rotated | after E-2 | no throw possible - values are all valid | **yes, until B4** |
 | overlay file missing | `tools/decks.py` KeyErrors, or worse defaults `R` to a falsy 0 | after 8.5 | after 8.5 | was yes |
-| overlay drifts from `data/decks.json` | colours or degrees disagree between app and print | A4 | A4 | was yes |
+| built PDFs drift from the overlay | a hand-edited PDF ships | A4b | A4b | was yes |
+| overlay drifts from `data/decks.json` | colours or degrees disagree between app and print | A4a | A4a | was yes |
 | `--builtin` unknown id | builds an empty PDF | after 8.5 | after 8.5 | was yes |
 | `test_render_agreement` deleted (C3) | a sign error in `pdfcards.js` ships | E-6 re-point | n/a | **yes if C3 runs as written** |
 
@@ -807,11 +887,13 @@ out of the corrected D-6).
 - [ ] **T9 (P1, human: ~3h / CC: ~25min)** - parameterize `tests/test_pdf_parity.py` over the three built-in decks
   - Surfaced by: O-1 - `:104-118` already asserts every glyph, page by page
   - Files: `tests/test_pdf_parity.py`
-  - Verify: `python3 -m unittest tests.test_pdf_parity -v` shows six new subTests
-- [ ] **T10 (P1, human: ~1h / CC: ~10min)** - every reference PDF comes from `git show HEAD:<pdf>`, never the working tree
+  - Verify: `python3 -m unittest tests.test_pdf_parity -v` shows six new subTests. Note this also requires adding a `subTest` to the shop-variant test (`tests/test_pdf_parity.py:114-118`), which uses none today - as written the count would come up short
+  - **Lands in Stage B0, not Stage A** (independent review): it calls `fromBuiltin`, which B2 creates
+- [ ] **T10 (P1, human: ~1h / CC: ~10min)** - every COMMITTED-BYTES reference comes from `git show HEAD:<pdf>`, never the working tree
   - Surfaced by: O-2 - `tools/decks.py:409` writes into the repo root
-  - Files: `tests/test_pdf_parity.py`, the Stage A/B/C acceptance commands in this plan
-  - Verify: the check goes RED after `touch`-editing a committed PDF and rebuilding
+  - Files: **`tests/test_pdf_build.py`** (`test_committed_pdfs_match_a_fresh_build`, `:254`, which opens `os.path.join(paths.ROOT, paths.PDFS[key])`), and the Stage A/B/C acceptance commands in this plan
+  - **[CORRECTED after independent review: this named `tests/test_pdf_parity.py`. That file has no committed-bytes reference to re-point - `_pair` (`:90-98`) builds both sides fresh into a tmpdir. `tests/test_pdf_build.py` is the only file in the repo that opens the six checked-in PDFs.]**
+  - Verify: `python3 tools/decks.py && python3 -m unittest tests.test_pdf_build` goes RED on a deck-data change that was not re-committed. **The old verify step - "RED after `touch`-editing a committed PDF and rebuilding" - was unachievable by its own remedy:** a reference read from `git show HEAD:<pdf>` is by construction immune to a working-tree edit, so that check can never go red and an engineer following it would see green whether or not the task was done
 - [ ] **T11a (P1, human: ~3h / CC: ~30min)** - C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
   - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:245-302`; `test_pdf_build.py:83-98`, `:151-190`) but are written against `hifi.py`
   - Files: `tests/test_print.py`, `tests/test_render_agreement.py`, `tests/test_pdf_build.py`
