@@ -13,12 +13,12 @@
 > before the shift - line 50 is the `// ---- the reportlab slice ----`
 > separator, and `mode()` began at 51 - so read that one as a correction
 > rather than as the uniform +5. The enumeration is now complete: the one
-> remaining `pdfcards.js` range, `:283-330` at `:120` (the setDash/stroke
+> remaining `pdfcards.js` range, `:283-330` at `:123` (the setDash/stroke
 > surface), reads as today's **288-335** - the uniform +5 again, but a reader
 > could take the list above as exhaustive and stop looking. Note also that
-> `:124` and `:184` at `:327` are `src/engine/pdf.js`, NOT `pdfcards.js`:
+> `:124` and `:184` at `:330` are `src/engine/pdf.js`, NOT `pdfcards.js`:
 > both still point at `return this.op("S")` and neither shifted (#123
-> review, nits 1-2). Inserting this note pushed both rows down six
+> review, nits 1-2). Inserting this note pushed both rows down nine
 > lines, so the two locators above are stated at their POST-insertion values -
 > the note's own self-reference is the same defect class it exists to fix, and
 > was caught by the #125 review, not by writing it carefully. Row 324 in
