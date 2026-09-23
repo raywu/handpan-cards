@@ -24,7 +24,14 @@ MUTANT_RE = re.compile(r"\b(\d{2,4}) mutant")
 ENGINE_RE = re.compile(r"src/engine/([A-Za-z0-9_]+\.js)")
 NODE_SUITE_RE = re.compile(r"\b(\d{1,3}) node suites\b")
 PY_SUITE_RE = re.compile(r"\b(\d{1,3}) python suites\b")
-MODULE_COUNT_RE = re.compile(r"\b([a-z]+) modules under\b")
+# Anchored to the engine path, and the alternation only admits number words:
+# the README's prose also says "readable modules\nunder `src/engine/`", which a
+# bare `([a-z]+) modules under` would match the moment a rewrap joined those
+# two lines - reddening CI on a pure prose edit with "unreadable count
+# 'readable'". The count word is the only capture either way.
+MODULE_COUNT_RE = re.compile(
+    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen)\s+modules\s+under\s+`src/engine/`")
 WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
          "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11,
          "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15}
@@ -85,8 +92,9 @@ class ReadmeCurrencyTest(unittest.TestCase):
     def test_the_suite_counts_match_the_files_on_disk(self):
         # Equality, not the mutant rule's band: a suite file is added rarely and
         # deliberately, so the cross-lane conflict the band exists to avoid does
-        # not arise here, and a band wide enough to matter at n=12 would have
-        # passed the "8 python suites" that shipped against 13.
+        # not arise here. At n=12 the mutant rule's 90% floor is int(12*0.9)=10,
+        # so a band would license a two-suite lie while reading as a check - and
+        # it buys nothing, because nobody adds a suite without noticing.
         for pattern, regex, label in (
             (os.path.join(ROOT, "tests", "*.test.js"), NODE_SUITE_RE, "node"),
             (os.path.join(ROOT, "tests", "test_*.py"), PY_SUITE_RE, "python"),

@@ -62,7 +62,9 @@ should survive the rewrite largely untouched.
 
 `tests/CONTRACT.md` rules 1-2 forbid deriving an assertion from the
 implementation, with a data-only carve-out for `data/decks.json`. This check
-reads `src/engine/*.js` basenames and counts `tests/mutants/*.patch`, which is
+reads `src/engine/*.js` basenames, globs `tests/*.test.js` and
+`tests/test_*.py` for the suite counts, and counts `tests/mutants/*.patch`,
+which is
 tree SHAPE, not behaviour. That is deliberate and is the point of the check:
 its subject is the README's description of the tree, so the tree is its spec.
 Stated here so a reviewer reads it as a declared exception rather than a rule-2
