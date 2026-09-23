@@ -44,9 +44,12 @@ precondition, not a minute difference.
 
 Built with `node tools/gen_deck.js "<seed>" > /tmp/d.json` then
 `node tools/pdf_build.js --out /tmp/out.pdf --variant {full,shop} --paper letter < /tmp/d.json`,
-on the canonical seeds **[CORRECTED: the pipe form written here exits 2 with
-`usage: pdf_build.js --out FILE [--variant f] < deck.json`; `--out` is
-required. Section 7's form was already correct.]**:
+on the canonical seeds (the `--out` form above is the working one; a pipe
+form without `--out` exits 2 with `usage: pdf_build.js --out FILE [--variant
+f] < deck.json`) **[NOTE TRIMMED after independent review: the command line
+above was already corrected to carry `--out`, so the note no longer describes
+a defect in the text it annotates - it is kept only as the reason `--out` is
+written there.]**:
 
 | deck | seed |
 |---|---|
@@ -282,7 +285,13 @@ section 5.
   10, `tests/test_print.py` 35, `tests/test_render_agreement.py` 46,
   `tests/test_gen_deck.py` 7, `tests/test_pdf_parity.py` 3,
   `tests/test_pdf_build.py` 2, `tests/test_font_subset.py` 1 - **104 `hifi.`
-  lines**, 81 of them in the two biggest); several JS and doc files
+  lines**, 81 of them in the two biggest). **`tests/test_pdf_parity.py` is
+  pre-classified DELETE** (not PORT, not RE-POINT): it is the cross-emitter
+  harness, so it has no meaning with one emitter, and `:26`'s module-level
+  `import hifi` makes leaving it in place a collection error on the required
+  `python suites` check. Its incidental exercise of `decks.py:245`'s clash
+  guard survives in `tests/test_pdf_deck_adapter.py`, which also calls
+  `from_generated` and does not import `hifi`. several JS and doc files
   (`src/engine/pdfcards.js`, `pdf.js`, `pdfdeck.js`) cite `tools/hifi.py`
   only in comments that go stale - but `tests/CONTRACT.md:131` and `:133` are
   NOT comments-that-go-stale: they state behavioural contracts (`hifi.build()`
@@ -339,7 +348,21 @@ section 5.
   acceptance on a clean clone gets `ModuleNotFoundError: No module named
   'reportlab'` from `tools/decks.py:7` before a single PDF is built.
   **The acceptance is therefore:** a clean clone builds all six PDFs with
-  `tools/hifi.py` deleted, and the cross-emitter harness passes.
+  `tools/hifi.py` deleted, and `tests/test_pdf_build.py`'s committed-bytes
+  gate (T10, reading its reference with `git show HEAD:<pdf>`) passes.
+  **[CORRECTED AGAIN after independent review - the previous wording, "and
+  the cross-emitter harness passes", was itself unachievable.]** The
+  cross-emitter harness is `tests/test_pdf_parity.py` (section 6's oracle
+  (i)), and it CANNOT survive C3: `:26` is a module-level `import hifi` and
+  `:96` calls `hifi.build`, so with `tools/hifi.py` deleted the required
+  `python suites` check fails at COLLECTION, not on an assertion. Glyph
+  parity is an oracle Stage C **spends**, not one it keeps - it is the gate
+  for Stage B (B4), and Stage C's whole premise is that there is no longer a
+  second emitter to be parity with. C0 therefore pre-classifies
+  `tests/test_pdf_parity.py` as **DELETE**, not RE-POINT, and C-1a's port of
+  the Python-side spec assertions (T11a) is what carries the value forward.
+  T11b, which extends `test_pdf_parity.py`, is explicitly NOT a precondition
+  and dies with it if it has not landed by C3.
   Dropping reportlab entirely is a SEPARATE, UNSCHEDULED piece of work
   (re-point `decks.py`'s `Color`, `test_print.py`'s and
   `test_font_subset.py`'s `pdfmetrics`, and `validate.py`'s `hexc()` path);
@@ -492,7 +515,12 @@ already sweeps the JS adapter against the Python one, and `:124-130`
 `test_blank_cards_is_absent_on_both_sides` asserts `blank_cards` appears on
 NEITHER side, quoting `decks.GENERATED_OMITTED`. Stage B introduces a second
 JS adapter for which `blank_cards` is legitimately present (Pygmy's 7), so
-that test needs an explicit `fromBuiltin` carve-out or it goes red on B2.
+that test should gain a mirror assertion for `fromBuiltin`. **[CORRECTED
+after independent review: this previously read "or it goes red on B2", which
+it cannot - `_js_adapt` (`tests/test_pdf_deck_adapter.py:57`) shells out to
+`tools/pdf_adapt.js`, whose `:12` calls `fromGenerated` ONLY, and B2 does not
+touch `fromGenerated`. The sub-step below is still worth doing; the forcing
+reason was wrong.]**
 **Decision (auto): adopt.** B2 gains a sub-step: narrow
 `test_blank_cards_is_absent_on_both_sides` to `fromGenerated`, and add the
 mirror assertion that `fromBuiltin` DOES carry `blank_cards`, so
@@ -549,7 +577,7 @@ CODE PATHS                                             USER FLOWS
 [+] src/engine/pdfdeck.js                              [+] Owner rebuilds the six PDFs
   +- fromBuiltin(deck, overlay)          <- NEW          +- [GAP] `python3 tools/decks.py`
   |   +- [GAP] overlay passthrough (B1)                  |    still emits all six (C2)
-  |   +- [GAP] spec/_geom conversion (E-2)               +- [GAP] clean clone, no reportlab (C)
+  |   +- [GAP] spec/_geom conversion (E-2)               +- [GAP] clean clone, no hifi.py (C3)
   |   +- [GAP] sub from decks.json (E-3)               [+] Print shop receives PRINTER_ONLY
   |   +- [GAP] blank_cards carried (E-5)                 +- [*** ] crop marks + calib bar
   |   +- [GAP] missing overlay -> throw                  |     - tests/test_pdf_build.py
@@ -581,8 +609,10 @@ not and that are added here as **CRITICAL - error paths with no handling and
 no test**: overlay file absent, overlay id unknown to `data/decks.json`,
 `--builtin` given an unknown deck id, and `fromBuiltin` called without an
 overlay. All four are silent-wrong-output risks rather than crashes (a
-missing `ext` used to fall back to 1.0, giving every deck R = 74.0 and
-drawing the diagram over the header and off both card edges - the failure
+missing `ext` used to fall back to 1.0, giving every deck R = 74.0 - and,
+**on a bottom-shell pan**, drawing the diagram over the header and off both
+card edges (the R = 74.0 half is universal, the overdraw half is not; see the
+comment at `pdfdeck.js:156-159`) - the failure
 `pdfdeck.js:160-162` exists to prevent **[CORRECTED: previously "a missing
 `R` draws a 1.0-radius pan", which inverts both the missing key and the
 direction of the error; see the comment at `pdfdeck.js:156-159`]**), so each gets an explicit throw plus a test in its own stage.
@@ -698,8 +728,9 @@ Synthesized from the findings above. Each derives from a specific finding.
 Codex was unusable this run (`CODEX_MODE: model_unusable` - the stale CLI
 rejects the effort argument with `unknown variant 'max'`; `npm install -g
 @openai/codex` fixes it), so the outside voice is a fresh Claude subagent
-given the plan and the repo and told to challenge it. Eight findings. Two
-of them is labelled NEW - a thing the in-context review missed **[CORRECTED from "Two of them are labelled NEW": only O-6 carries `[P2, NEW]`]** - and two
+given the plan and the repo and told to challenge it. Eight findings. One
+of them is labelled NEW - a thing the in-context review missed **[CORRECTED
+from "Two of them are labelled NEW": only O-6 carries `[P2, NEW]`]** - and two
 are hard blockers. One of the eight (O-5) turned out to be FALSE and was
 corrected after an independent review; it is kept below with the correction
 in place rather than deleted, because the correction is the finding.
@@ -897,7 +928,7 @@ once `fromBuiltin` synthesizes the same wrong string. **D-8 stands.**
 |---|---|---|---|
 | 1. adopt generated geometry | low | **changes `R`, moves every card** | glyph parity only |
 | 2a. A+B only (overlay + `fromBuiltin`) | **~40 lines JS + overlay file + parameterizing one test** | none - fully reversible | glyph parity, **plus `hifi.py` retained as a differential oracle** |
-| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines ported across ten files (108 `hifi.` references), including 19 mutant patches** | **permanent: every Python-side spec assertion must be re-pointed first (C-1a) or it is lost** | glyph parity + the re-pointed spec assertions |
+| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines ported across ten files (108 `hifi.` references), including 19 mutant patches** | **permanent: every Python-side spec assertion must be re-pointed first (C-1a) or it is lost** | **the re-pointed spec assertions + the committed-bytes gate. NOT glyph parity** - `tests/test_pdf_parity.py` imports `hifi` and dies with it (see Stage C acceptance) |
 | 3. keep both, document | zero | none | unchanged |
 | 4. generated-only, drop seeds | low | **loses the print overlay entirely** | n/a |
 
