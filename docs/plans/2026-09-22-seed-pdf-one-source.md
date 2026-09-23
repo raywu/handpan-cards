@@ -166,8 +166,10 @@ file both emitters can read. Nothing about the PDFs changes.
   conflated them:
   **(i) cross-emitter parity** = `test_pdf_parity.py`, fresh vs fresh, no
   committed bytes involved; **(ii) committed-bytes staleness** =
-  `test_pdf_build.py`, which is the only file that reads the six checked-in
-  PDFs and therefore the only file `git show HEAD:<pdf>` belongs in.**
+  `test_pdf_build.py`, the only file that uses the six checked-in PDFs as a
+  COMPARISON REFERENCE, and therefore the only file `git show HEAD:<pdf>`
+  belongs in. (`tests/test_gen_deck.py:85` also opens them, as a before/after
+  sha256 guard that needs no change.)**
 - **A2.** Create `data/print_overlay.json`: per deck id, the exact literals now
   in `tools/decks.py` - `R`, `cy`, `y_note`, `y_num`, `title`, `credit`,
   `blurb`, `legend_lines`, `legend_demo`, `blank_cards`, and the committed
@@ -177,7 +179,7 @@ file both emitters can read. Nothing about the PDFs changes.
 - **A4. [AMENDED after independent review - SPLIT IN TWO.]** ~~Extend
   `tools/validate.py` check 1b to assert the overlay file and the built PDFs
   agree.~~ Check 1b cannot read a PDF and is built so that it cannot:
-  `tools/validate.py:26` is
+  `tools/validate.py:25` is
   `sys.modules.setdefault("hifi", types.ModuleType("hifi"))`, stubbing the
   build module out before `decks.py` is imported, and its docstring
   (`tools/validate.py:13-15`) says the tool deliberately needs neither the
@@ -318,9 +320,30 @@ section 5.
   `hifi.py`, and re-pointing them (**C-1a / T11a**) is a hard precondition on
   this step.
 - **C4.** Update `CLAUDE.md`'s "Print pipeline" section and `README.md`.
-  Drop the `reportlab` requirement if nothing else uses it.
-- **Acceptance:** a clean clone with no `reportlab` builds all six PDFs and the
-  equivalence harness passes against the committed bytes.
+  Drop the `reportlab` requirement if nothing else uses it. **Something else
+  does** - see the acceptance note below - so as scheduled, C4 updates the docs
+  and the requirement STAYS.
+- **Acceptance [CORRECTED after independent review - the previous text was
+  unachievable]:** ~~a clean clone with no `reportlab` builds all six PDFs and
+  the equivalence harness passes against the committed bytes.~~ Deleting
+  `tools/hifi.py` does not drop the `reportlab` dependency, because
+  `hifi.py` is not its only importer. Four survive C3:
+  `tools/decks.py:7` (`from reportlab.lib.colors import Color`) -
+  and C2 explicitly KEEPS `tools/decks.py` as the entry point -
+  `tests/test_print.py:18` and `tests/test_font_subset.py:22`
+  (`from reportlab.pdfbase import pdfmetrics`), and transitively
+  `tools/validate.py`, whose `import decks as D` pulls `decks.py` in and whose
+  own docstring at `:13` says "Needs reportlab (for the Color class in
+  decks.py)". So the REQUIRED `data integrity` CI check still needs reportlab
+  after Stage C. An engineer who completes C0-C4 and then runs the old
+  acceptance on a clean clone gets `ModuleNotFoundError: No module named
+  'reportlab'` from `tools/decks.py:7` before a single PDF is built.
+  **The acceptance is therefore:** a clean clone builds all six PDFs with
+  `tools/hifi.py` deleted, and the cross-emitter harness passes.
+  Dropping reportlab entirely is a SEPARATE, UNSCHEDULED piece of work
+  (re-point `decks.py`'s `Color`, `test_print.py`'s and
+  `test_font_subset.py`'s `pdfmetrics`, and `validate.py`'s `hexc()` path);
+  it is not in C0-C4 or T1-T15 and must not be claimed as a Stage C benefit.
 - **Rollback:** revert C; A and B are independently useful and stay.
 
 ### Lanes
@@ -345,7 +368,7 @@ flagged rather than auto-decided.
 | Q2 | Deck name on every card: keep `F3 LOW PYGMY 18` / `D AMARA 9` / `C# HIJAZ 9` plus hijaz's `C# HIJAZ / ORION` credit, or accept `F AEOLIAN 12` / `D AEOLIAN 9`? | **Keep the hand-written names.** The auto-name describes the scale, not the instrument. |
 | Q3 | Amara scale degrees: keep `bIII` / `bVII` / `IV` from `data/decks.json`, or accept the engine's `III` / `VII` / `iv`? | **Keep `data/decks.json`.** CLAUDE.md fixes Amara's degrees as `{D:i, A:v, G:IV, C:bVII, F:bIII}`; the engine's derivation disagrees with the documented ground truth and that disagreement is worth a separate queue row. |
 | Q4 | Pygmy's 7 blank cards (the 7th page): keep or drop? | **Keep.** It is a stated owner preference and costs one sheet. |
-| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **[AMENDED by O-7 - the original recommendation is struck.]** ~~Delete, after C1's port. Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today.~~ Stopping after B is NOT worse than today: it converts today's duplication into a differential oracle, which is exactly what `tests/test_pdf_parity.py` already exploits. **Score both sides.** DELETE costs T11a (re-point the Python-side non-text assertions) + T14 (19 mutant patches) + O-3's ~1900-line port, and buys one implementation and no `reportlab` dependency. KEEP costs carrying ~1900 lines of Python nobody edits, and buys a second implementation that catches what no single-emitter assertion can. Owner call, one-way door. |
+| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **[AMENDED by O-7 - the original recommendation is struck.]** ~~Delete, after C1's port. Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today.~~ Stopping after B is NOT worse than today: it converts today's duplication into a differential oracle, which is exactly what `tests/test_pdf_parity.py` already exploits. **Score both sides.** DELETE costs T11a (re-point the Python-side non-text assertions) + T14 (19 mutant patches) + O-3's ~1900-line port, and buys one PDF EMITTER. **[CORRECTED after independent review: this said DELETE "buys one implementation and no `reportlab` dependency". The reportlab half is false - `tools/decks.py:7`, `tests/test_print.py:18`, `tests/test_font_subset.py:22` and (transitively) `tools/validate.py` all import reportlab and all survive C3, and C2 keeps `decks.py` as the entry point. reportlab REMAINS a dependency unless separate, currently unscheduled work re-points those four. Q5 is the plan's one-way door, so it must not be scored on a benefit it does not buy.]** KEEP costs carrying ~1900 lines of Python nobody edits, and buys a second implementation that catches what no single-emitter assertion can. Owner call, one-way door. |
 
 An answer of "accept the generated value" to Q1, Q2 or Q3 collapses this plan
 to option 1 and makes Stages A and B unnecessary.
@@ -377,8 +400,14 @@ draft are throwaway. **[AMENDED by O-1: the original sentence, ~~"Stage A1
 replaces them with `tests/test_seed_pdf_equivalence.py`, which is the durable
 form"~~, is superseded. That file is never created.]** The durable form is the
 PARAMETERIZED `tests/test_pdf_parity.py` (T9), which already compares every
-glyph across both emitters and only needs the three built-in decks added to
-its `SEEDS` list.
+glyph across both emitters. **[CORRECTED after independent review: this said
+it "only needs the three built-in decks added to its `SEEDS` list". Three more
+edits are required, all specified elsewhere in this plan or verified against
+the file: `_pair` gains a built-in branch calling `fromBuiltin` (B0); the
+shop-variant test at `tests/test_pdf_parity.py:114-118` gains a `subTest`,
+having none today (T9's verify); and `_pair`'s PYTHON side must stop calling
+`decks.from_generated(payload)` (`tests/test_pdf_parity.py:92`) for a built-in
+and take `decks.HIJAZ`/`PYGMY`/`AMARA` instead, or it carries no overlay.]**
 
 ---
 
@@ -543,7 +572,7 @@ CODE PATHS                                             USER FLOWS
       +- [GAP] overlay drift vs built PDFs (A4b)
       +- [GAP] reference read from git show HEAD (T10)
 
-COVERAGE: 3/19 paths tested (16%)   |   GAPS: 16, all inside this plan's own stages
+COVERAGE: 3/21 paths tested (14%)   |   GAPS: 18, all inside this plan's own stages
 QUALITY: ***:1  **:2  *:0
 ```
 
@@ -563,7 +592,7 @@ respectively.
 **[AMENDED after independent review: the tree above now splits A4 into A4a
 (`tools/validate.py` check 1b, overlay vs `data/decks.json` - pure data) and
 A4b (`tests/test_pdf_build.py`, overlay vs the built PDFs). Check 1b stubs
-`hifi` out at `tools/validate.py:26` and imports no PDF reader, so the
+`hifi` out at `tools/validate.py:25` and imports no PDF reader, so the
 PDF-reading half was never implementable where it was scheduled.]**
 
 ### 8.6 Failure modes
@@ -610,14 +639,15 @@ why B4 is the gate) and the C3 deletion (closed by E-6).
 |---|---|---|
 | A1 | `tests/` | - |
 | A2, A3, A4 | `data/`, `tools/` | A1 |
-| B1, B4 | `tests/` | A2 |
+| B0, B1, B4 | `tests/` | A2 |
 | B2, B3 | `src/engine/`, `tools/` | A2 |
 | C0 | `docs/` (inventory only) | B4 |
 | C1..C4 | `tests/`, `tools/`, `src/engine/`, docs | C0 |
 
 Lane A: A1 -> A2 -> A3 -> A4 (sequential, shared `tools/`).
 Lane B1: B2 -> B3 (sequential, shared `tools/` + `src/engine/`).
-Lane B2: B1 -> B4 (`tests/` only, written against the not-yet-existing flag).
+Lane B2: B0 -> B1 -> B4 (`tests/` only, written against the not-yet-existing
+flag; B0 and B1 are both RED until B2 lands).
 Lanes B1 and B2 run in parallel after A merges; both land before C.
 **Conflict flag:** Lane A and Lane B1 both touch `tools/` - A must merge first,
 which the ordering already enforces. Stage C is single-lane by construction
@@ -631,7 +661,7 @@ Synthesized from the findings above. Each derives from a specific finding.
   - Surfaced by: E-1 - ten files reference `hifi.`, C3 names one; corrected O-5 - an attribute-only grep also misses the mutant patches
   - Scope: BOTH `grep -rn 'hifi\.'` (104 lines across the 7 Python importers, plus stale `tools/hifi.py` citations in JS comments and `tests/CONTRACT.md`) AND `grep -l 'tools/hifi.py' tests/mutants/*.patch` (19 files, zero attribute references)
   - Files: `docs/plans/2026-09-22-seed-pdf-one-source.md`
-  - Verify: the C0 table lists all ten source files plus all 19 patches, each classified PORT/RE-POINT/DELETE
+  - Verify: the C0 table lists all ten source files plus all 19 patches, each classified PORT/RE-POINT/DELETE, plus `tests/CONTRACT.md:131` and `:133` (behavioural contracts that DIE with `hifi.py`, not comments that go stale) and the stale `tools/hifi.py` citations in the JS comments - C0 requires all three and this verify line previously omitted them
 - [ ] **T2 (P1, human: ~2h / CC: ~20min)** - `pdfdeck.js` - B1 asserts the spec/_geom conversion
   - Surfaced by: E-2 - `pdfcards.js:318` reads `spec._geom`, built-ins have none
   - Files: `tests/pdf_builtin.test.js`
@@ -705,10 +735,16 @@ Stage C's "passes against the committed bytes" has the same hole. The plan
 never says where a frozen reference comes from.
 **Decision (auto): adopt.** Every equivalence check takes its reference from
 `git show HEAD:<pdf>` into a tmpdir, never from the working tree, and the
-acceptance commands drop the `python3 tools/decks.py &&` prefix. Note that
-`tests/test_pdf_build.py:254 test_committed_pdfs_match_a_fresh_build` is not
-affected - it builds into a tmpdir and compares extracted text against the
-working-tree file, which is the correct direction for a staleness gate.
+acceptance commands drop the `python3 tools/decks.py &&` prefix. **[CORRECTED after independent review - this block previously said
+`tests/test_pdf_build.py:254 test_committed_pdfs_match_a_fresh_build` "is not
+affected". It is the ONLY file affected.]** That test builds into a tmpdir but
+takes its REFERENCE from `os.path.join(paths.ROOT, paths.PDFS[key])`
+(`tests/test_pdf_build.py:262`) - a working-tree path that
+`tools/decks.py:409` overwrites - so it is exactly the gate T10 re-points at
+`git show HEAD:<pdf>`. Reading the old exemption and skipping T10 leaves Stage
+A's own manual acceptance vacuous: `python3 tools/decks.py` overwrites the six
+reference files, the test compares a fresh build against itself, and a
+mis-transcribed overlay literal in `data/print_overlay.json` passes green.
 
 **O-3 [P1, verified] - C1/C3 are one bullet each and are most of the work.**
 `tests/test_print.py` is 913 lines with 35 `hifi.` references and
@@ -811,7 +847,7 @@ actually yields one emitter that can produce ANY deck, plus a Python
 implementation **retained as a differential oracle** - which is exactly what
 `test_pdf_parity.py` already treats it as. That is not worse than today; it
 converts today's duplication into a test asset while meeting the stated goal.
-C buys the deletion of **541 lines of Python** (`tools/hifi.py`) and the `reportlab` dependency, **[CORRECTED from "~950 lines", which was `hifi.py` 541 + `decks.py` 418; C2 explicitly KEEPS `tools/decks.py` as the entry point, so only `hifi.py` is deleted]**,
+C buys the deletion of **541 lines of Python** (`tools/hifi.py`), **[CORRECTED TWICE: from "~950 lines", which was `hifi.py` 541 + `decks.py` 418, since C2 explicitly KEEPS `tools/decks.py` as the entry point; and again after independent review, which struck "and the `reportlab` dependency" - four other importers survive C3, so the dependency stays. See Stage C's amended acceptance.]**,
 paid for with O-3's port, which includes re-pointing the non-text
 assertions of O-5.
 **Decision (auto): adopt the reframing, do NOT pre-empt the decision.** Q5's
@@ -892,7 +928,7 @@ out of the corrected D-6).
 - [ ] **T10 (P1, human: ~1h / CC: ~10min)** - every COMMITTED-BYTES reference comes from `git show HEAD:<pdf>`, never the working tree
   - Surfaced by: O-2 - `tools/decks.py:409` writes into the repo root
   - Files: **`tests/test_pdf_build.py`** (`test_committed_pdfs_match_a_fresh_build`, `:254`, which opens `os.path.join(paths.ROOT, paths.PDFS[key])`), and the Stage A/B/C acceptance commands in this plan
-  - **[CORRECTED after independent review: this named `tests/test_pdf_parity.py`. That file has no committed-bytes reference to re-point - `_pair` (`:90-98`) builds both sides fresh into a tmpdir. `tests/test_pdf_build.py` is the only file in the repo that opens the six checked-in PDFs.]**
+  - **[CORRECTED after independent review: this named `tests/test_pdf_parity.py`. That file has no committed-bytes reference to re-point - `_pair` (`:90-98`) builds both sides fresh into a tmpdir. `tests/test_pdf_build.py` is the only file in the repo that uses the six checked-in PDFs as a comparison reference; `tests/test_gen_deck.py:85` opens them too, but as a before/after sha256 guard needing no change.]**
   - Verify: `python3 tools/decks.py && python3 -m unittest tests.test_pdf_build` goes RED on a deck-data change that was not re-committed. **The old verify step - "RED after `touch`-editing a committed PDF and rebuilding" - was unachievable by its own remedy:** a reference read from `git show HEAD:<pdf>` is by construction immune to a working-tree edit, so that check can never go red and an engineer following it would see green whether or not the task was done
 - [ ] **T11a (P1, human: ~3h / CC: ~30min)** - C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
   - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:245-302`; `test_pdf_build.py:83-98`, `:151-190`) but are written against `hifi.py`
