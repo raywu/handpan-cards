@@ -21,7 +21,7 @@ the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
 single-colour root-frame borders, per-deck palettes) is original to this
 project.
 
-The scale engine that generates and ranks those cards is six modules under
+The scale engine that generates and ranks those cards is ten modules under
 `src/engine/`: `src/engine/core.js` (note parsing and pitch classes),
 `src/engine/voicing.js` (the cluster and spelling rules),
 `src/engine/naming.js` (chord symbols and subtitles),
@@ -109,11 +109,11 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 372 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 383 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
-That is 10 node suites (`tests/*.test.js`) and 8 python suites
+That is 12 node suites (`tests/*.test.js`) and 13 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
 
