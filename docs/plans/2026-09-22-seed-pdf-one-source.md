@@ -80,7 +80,7 @@ badges and index numbers all reproduce. The engine is not the problem.
 | D-1 | **Diagram radius.** Committed `R` 73.0 (Hijaz, Amara) and 60.0 (Pygmy); emitter draws 69.8 and **50.6**. Measured off the PDFs, matching the derivation already recorded at `tools/decks.py:56-58`. | every card | **NO.** -4.4% and **-15.7%**. A sixth off Pygmy's diagram is visible at arm's length. |
 | D-2 | **Deck name.** Committed card-header `name`s are `C# HIJAZ 9`, `F3 LOW PYGMY 18`, `D AMARA 9` (the `/ ORION` half is not the name - it is the separate vertical `credit` string `C# HIJAZ / ORION`); emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. The `/ ORION` half is lost from the vertical credit strip (`decks.py:264` `"C# HIJAZ / ORION"`); the card header `name` is identical on both sides for hijaz. Pygmy and Amara lose the instrument name in both places. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
 | D-3 | **Scale-degree labels, Amara only.** Committed `bIII` (5 cards), `bVII` (4), `IV` (3); emitter `III`, `VII`, `iv`. | 12 of 25 Amara cards | **NO.** Wrong degree spelling is wrong data. `data/decks.json` `degrees` is authoritative and the generated path does not read it. |
-| D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + **legend** + `blank_cards: 7` + fill - `tools/hifi.py:389-391` prepends BOTH a title and a legend card; the 63 total is right, the enumeration was missing one); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
+| D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + **legend** + `blank_cards: 7` + fill - `tools/hifi.py:391-392` prepends BOTH a title and a legend card; the 63 total is right, the enumeration was missing one); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
 | D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes different title-card copy **[CORRECTED: the two strings quoted here previously - "ONE CARD PER CHORD" and "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME" - were wrong. The second exists nowhere in the repo; the first is BLURB text (`src/engine/pdfdeck.js:109`), not a legend line, and Amara's committed blurb already carries it (`tools/decks.py:300`; `:319` is the GENERATED-blurb helper, not the committed literal). `legendLines()` (`pdfdeck.js:116-130`) emits "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", byte-identical to the committed Hijaz (`tools/decks.py:271-272`) and Amara (`:301-302`) literals, so only PYGMY actually loses a legend line.]** and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
 | D-6 | **[CORRECTED after independent review. This row previously read "Token extraction order on one Pygmy card (card #6): same token multiset, different order - YES, coordinate-level, no content change." That was wrong: the multiset is NOT the same.] Different voicing on one Pygmy card** (card 6, `Fm9`). Committed is `F4 Ab4 C5 Eb5 G5` (`fields [5,7,8,9,11]`, field 11 = `G` 5 midi 79 inner); the engine derives `fields [5,7,8,9,6]`, field 6 = `G` 4 midi 67 rim. Different note line (`G5` vs `G4`), different number line (`11` vs `6`). The DIAGRAM matches only because pitch-class-complete highlighting lights the same fields for G4 and G5, which is how this was first misread as cosmetic. Reproduce: run `tools/gen_deck.js` on the Pygmy seed and diff `chords[5]` against `data/decks.json`. | 1 card | **NO.** A voicing is content. `CLAUDE.md` names this exact card as ground truth: "a spread 9th above the 7th, like Fm9's G5, is fine." |
 | D-7 | Colour literals: committed three-decimal values vs re-derived floats (`tools/decks.py:227-230`). Not separately measured here; the docstring states re-deriving moves every printed colour by a fraction. | all cards | **YES** if the literals are carried; a fraction of a colour step. |
@@ -129,7 +129,8 @@ the printed artifact the owner already approved.
 > original draft with the review's corrections applied INLINE and marked
 > **[AMENDED]**. Where a step is superseded, the amendment is binding and the
 > original wording is kept only so the change is legible. Section 9.1
-> (T1-T15) is authoritative **where it conflicts with** the bullets here.
+> (T1-T15) is authoritative **where it conflicts with** the bullets here -
+> except where **section 5.1** cancels a task outright, which overrides both.
 > **[CORRECTED after independent review: this read "The authoritative task
 > list is section 9.1, not the bullets here", which read in full drops the
 > plan's core work - 9.1 is SYNTHESIZED FROM THE FINDINGS (see 8.10) and so
@@ -163,7 +164,7 @@ file both emitters can read. Nothing about the PDFs changes.
   STAGE A into Stage B (B0, below). It cannot run here. `_pair`'s built-in
   branch calls `HPE.pdfdeck.fromBuiltin`, which B2 creates; executing A1 as
   previously written lands a Stage A commit whose own acceptance command errors,
-  and `.github/workflows` runs `unittest discover -s tests` as the REQUIRED
+  and `.github/workflows/validate.yml:39` runs `unittest discover -s tests -t .` as the REQUIRED
   `python suites` check, so that commit would merge red and block Lane B - which
   8.9 schedules to start only after Lane A merges.]**
   **[SECOND BLOCKER FIX, same review: `tests/test_pdf_parity.py` has no
@@ -300,7 +301,7 @@ file both emitters can read. Nothing about the PDFs changes.
   B4 are directly contradictory: B4 compares fresh Python
   (`hifi.build(decks.PYGMY)` -> `52 CHORDS`) against fresh JS
   (`fromBuiltin` -> `25 CHORDS`) glyph for glyph and calls any survivor a bug
-  in `fromBuiltin`. `tests/test_print.py:876-912`
+  in `fromBuiltin`. `tests/test_print.py:876-913`
   (`TitleBlurbChordCountTest`) is the pin for this behaviour.
   **[CORRECTED after independent review - this sentence also cited mutant
   `c_gen_chord_count_off_by_one`. That mutant does NOT pin the substitution:
@@ -371,6 +372,12 @@ file both emitters can read. Nothing about the PDFs changes.
 - **Rollback:** revert; `tools/decks.py` is still the producer.
 
 ### Stage C - retire the Python emitter (OWNER GATE)
+
+> **CANCELLED 2026-09-23 by the owner's answer to Q5 - see section 5.1.**
+> `tools/hifi.py` stays. Everything from here to the end of Stage C (C0-C4)
+> is kept for the record only and must NOT be executed; the cross-emitter
+> parity oracle the deletion would have spent becomes a permanent CI check
+> instead.
 
 Only after B4 is green and the owner has eyeballed the side-by-side from
 section 5.
@@ -800,6 +807,10 @@ stated reason was wrong.]**]** Nothing here touches an N+1, a cache or a hot loo
 
 ### 8.5 Test coverage of the planned work
 
+> Map drawn before Q5 was answered. The three gaps labelled **(C1)**, **(C2)**
+> and **(C3)** belong to Stage C, which is CANCELLED as of 2026-09-23
+> (section 5.1) - they are no longer work. Every other gap stands.
+
 ```
 CODE PATHS                                             USER FLOWS
 [+] src/engine/pdfdeck.js                              [+] Owner rebuilds the six PDFs
@@ -915,11 +926,13 @@ flag; B1 is RED until B2 lands, and **B0 is RED until B3 lands** - `_pair`
 is Python and reaches `fromBuiltin` only through `tools/pdf_build.js
 --builtin`, which is B3. [CORRECTED after independent review - this said
 both were red until B2.]).
-Lanes B1 and B2 run in parallel after A merges; both land before C.
+Lanes B1 and B2 run in parallel after A merges. (They were scheduled to land
+before Stage C; Stage C is CANCELLED as of 2026-09-23 - section 5.1 - so B4 is
+the last gate rather than a precondition for a deletion.)
 **Merge order between them is NOT free: lane B1 (which implements
 `fromBuiltin`) must merge BEFORE lane B2 (the tests).** B0, B1 and B4 are all
-red until B2/B3 exist, and `.github/workflows` runs `unittest discover -s
-tests` plus `node --test` as required checks - merging the tests lane first
+red until B2/B3 exist, and `.github/workflows/validate.yml:39` runs `unittest discover -s tests -t .`
+plus `node --test` as required checks - merging the tests lane first
 reds `python suites` and `js suites` on main and blocks everything behind it.
 **[ADDED after independent review - 8.9 previously fixed no order between the
 two parallel lanes.]**
@@ -931,7 +944,7 @@ which the ordering already enforces. Stage C is single-lane by construction
 
 Synthesized from the findings above. Each derives from a specific finding.
 
-- [ ] **T1 (P1, human: ~1h / CC: ~10min)** - Stage C - add step C0, the `hifi.py` dependent inventory
+- [~] **T1 - CANCELLED 2026-09-23 (Q5 = keep `hifi.py`; section 5.1)** - was: Stage C - add step C0, the `hifi.py` dependent inventory
   - Surfaced by: E-1 - ten files reference `hifi.`, C3 names one; corrected O-5 - an attribute-only grep also misses the mutant patches
   - Scope: BOTH `grep -rn 'hifi\.'` (104 lines across the 7 Python importers, plus stale `tools/hifi.py` citations in JS comments and `tests/CONTRACT.md`) AND `grep -l '^diff --git a/tools/hifi.py' tests/mutants/*.patch` (**16** files, zero attribute references) AND the `# suite:` header inventory (**2** patches today). **[CORRECTED after independent review - this line previously said `grep -l 'tools/hifi.py' tests/mutants/*.patch` (19 files). A bare path grep returns 19 because three patches match on CONTEXT only and patch files Stage C never touches (`g_pdfcards_a4_rescales` -> `src/engine/pdfcards.js`; `d_esc_attr_leaves_quote` and `p_print_wide_gutters_zeroed` -> `index.html`). Executing T1 against 19 hands those three a PORT/RE-POINT/DELETE disposition and destroys live coverage that section 8.7 never restores. Anchor the grep at the diff header. See C0.]**
   - Files: `docs/plans/2026-09-22-seed-pdf-one-source.md`
@@ -1214,7 +1227,7 @@ out of the corrected D-6).
   - Files: **`tests/test_pdf_build.py`** (`test_committed_pdfs_match_a_fresh_build`, `:254`, which opens `os.path.join(paths.ROOT, paths.PDFS[key])`), and the Stage A/B/C acceptance commands in this plan
   - **[CORRECTED after independent review: this named `tests/test_pdf_parity.py`. That file has no committed-bytes reference to re-point - `_pair` (`:90-98`) builds both sides fresh into a tmpdir. `tests/test_pdf_build.py` is the only file in the repo that uses the six checked-in PDFs as a comparison reference; `tests/test_gen_deck.py:85` opens them too, but as a before/after sha256 guard needing no change.]**
   - Verify: `python3 tools/decks.py && python3 -m unittest tests.test_pdf_build` goes RED on a deck-data change that was not re-committed. **The old verify step - "RED after `touch`-editing a committed PDF and rebuilding" - was unachievable by its own remedy:** a reference read from `git show HEAD:<pdf>` is by construction immune to a working-tree edit, so that check can never go red and an engineer following it would see green whether or not the task was done
-- [ ] **T11a (P1, human: ~3h / CC: ~30min)** - C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
+- [~] **T11a - CANCELLED 2026-09-23 (section 5.1; C-1a only existed to precede the deletion)** - was: C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
   - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:245-302`; `test_pdf_build.py:83-98`, `:151-190`) but are written against `hifi.py`
   - Files: `tests/test_print.py`, `tests/test_render_agreement.py`, `tests/test_pdf_build.py`
   - Verify: the four named tests pass with `hifi.py` absent
@@ -1232,7 +1245,7 @@ out of the corrected D-6).
   - **[CORRECTED after independent review - T13 previously said "A3 re-runs the data mutants", naming `tools/regen_data_mutants.py` as the mechanism. That tool regenerates ONLY `b_*.patch` (its own docstring, `:2`), and all 22 `b_*` hunks target `data/decks.json` (10) and `index.html` (12) - ZERO target `tools/decks.py`. Re-running it after a `tools/decks.py` change is a NO-OP, so the task as written verifies nothing. Meanwhile SEVEN `c_*` patches DO carry `tools/decks.py` hunks - `c_blurb_spurious_line`, `c_gen_omitted_vacuous`, `c_gen_chord_count_off_by_one`, `c_gen_ext_silent_default`, `c_gen_key_dropped`, `c_gen_page_count`, `c_gen_warning_off_the_sheet` - and no task in 9.1 covers them. They are hand-maintained; there is no regenerator.]**
   - Files: those seven `c_*.patch` files, `tools/regen_data_mutants.py` output, `CLAUDE.md`, `README.md`
   - Verify: `python3 tools/validate.py` clean on a clean tree, AND `bash tests/mutation_check.sh` green with no `stale` entry among the seven `c_*` patches after A2/A3 move the print overlay out of `tools/decks.py`
-- [ ] **T14 (P1, human: ~2h / CC: ~30min)** - retire or re-target the **16** `tests/mutants/*.patch` files that patch `tools/hifi.py`, and re-point the **1** that names a deleted suite
+- [~] **T14 - CANCELLED 2026-09-23 (section 5.1; nothing patches a file that is being kept)** - was: retire or re-target the **16** `tests/mutants/*.patch` files that patch `tools/hifi.py`, and re-point the **1** that names a deleted suite
   - Surfaced by: corrected O-5, then **corrected twice more by independent review**. `grep -l 'tools/hifi.py' tests/mutants/*.patch` returns 19, but only **16** carry `^diff --git a/tools/hifi.py`; the other three (`g_pdfcards_a4_rescales`, `d_esc_attr_leaves_quote`, `p_print_wide_gutters_zeroed`) match only on a `tools/hifi.py:NNN-NNN` provenance comment in their diff CONTEXT and actually patch `src/engine/pdfcards.js` and `index.html`, all of which SURVIVE Stage C. Retiring those three destroys live coverage, two files of it in `index.html`, which section 8.7 leaves alone
   - **Separate and not covered by either grep:** `grep -l '^# suite:.*test_pdf_parity' tests/mutants/*.patch` returns `g_pdfcards_a4_rescales.patch`, whose `# kills:` header names `test_a4_is_letter_shifted_on_the_page`. C0's PARTIAL-DELETE relocates that test into `tests/test_pdf_js.py`; this patch's `# suite:` header must be re-pointed there IN THE SAME COMMIT. Left alone it does not merely fail the gate, it HARD-ABORTS it: `git apply --check` passes (it targets a surviving file, so it is never `stale`), then `baseline_ok` raises `ModuleNotFoundError` on the clean tree and `tests/mutation_check.sh:224-238` exits 4 with every later mutant unevaluated
   - Files: the 16 `tools/hifi.py` patches (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), plus `g_pdfcards_a4_rescales.patch`'s header only, `tests/mutation_check.sh`
@@ -1290,7 +1303,7 @@ assertions is written against `tools/hifi.py`, so C3 must **re-point** them at
 requires for `test_render_agreement.py` - and the 16 `tests/mutants/*.patch`
 files that actually patch `tools/hifi.py` must be retired or re-targeted, and
 the one patch whose `# suite:` header names a deleted test file re-pointed
-(**T14**), or the required mutation-gate check turns red - and in the
+(**T14**, CANCELLED - section 5.1), or the required mutation-gate check turns red - and in the
 `# suite:` case hard-aborts at exit 4 rather than reporting one failure. Separately, nothing
 compares non-text drawing ACROSS the two emitters; closing that
 (**C-1b / T11b**) is worth doing while both exist but is not a precondition.
