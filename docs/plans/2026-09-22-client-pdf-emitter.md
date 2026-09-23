@@ -667,6 +667,18 @@ check the page count and that no card edge is sheared. Ruler-measure one card at
 to A4 (D5). Time the FULL DECK PDF tap on a 52-card deck against the 2 s budget. This is the same gate B7 already
 owes; the emitter's whole claim is that it passes where the browser sheet did not.
 
+**Also check the FILENAME the Share sheet offers** (PR #114 reviewer, queue row 316).
+`pdfFileName()` is computed only on the non-iOS branch of `downloadDeckPDF`
+(`index.html:6153-6182`; the call is at `:6175`, the iOS branch at `:6171`), and a
+blob URL carries no name of its own, so on iOS the save may be suggested as a UUID
+rather than a real name. The deck under test is necessarily a CUSTOM one - built-ins
+link straight to the committed PDFs at `index.html:6200-6203` and never reach this
+function - so the name to expect from the Pygmy maker string is
+`F_AEOLIAN_12_Cards_Letter.pdf`, the custom deck being auto-named `F AEOLIAN 12`.
+Recorded as an observation to make on the device rather than a blind fix: what iOS
+actually offers depends on the viewer, and guessing at it from here is how the
+browser-print path went wrong twice.
+
 Only after this passes does D2's cutover become a follow-up task.
 
 ---
