@@ -60,7 +60,7 @@ badges and index numbers all reproduce. The engine is not the problem.
 | # | difference | scope | minute? |
 |---|---|---|---|
 | D-1 | **Diagram radius.** Committed `R` 73.0 (Hijaz, Amara) and 60.0 (Pygmy); emitter draws 69.8 and **50.6**. Measured off the PDFs, matching the derivation already recorded at `tools/decks.py:56-58`. | every card | **NO.** -4.4% and **-15.7%**. A sixth off Pygmy's diagram is visible at arm's length. |
-| D-2 | **Deck name.** Committed `C# HIJAZ 9 / ORION`, `F3 LOW PYGMY 18`, `D AMARA 9`; emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. Appears in the card header AND the vertical credit strip. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
+| D-2 | **Deck name.** Committed `C# HIJAZ 9 / ORION`, `F3 LOW PYGMY 18`, `D AMARA 9`; emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. The `/ ORION` half is lost from the vertical credit strip (`decks.py:264` `"C# HIJAZ / ORION"`); the card header `name` is identical on both sides for hijaz. Pygmy and Amara lose the instrument name in both places. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
 | D-3 | **Scale-degree labels, Amara only.** Committed `bIII` (5 cards), `bVII` (4), `IV` (3); emitter `III`, `VII`, `iv`. | 12 of 25 Amara cards | **NO.** Wrong degree spelling is wrong data. `data/decks.json` `degrees` is authoritative and the generated path does not read it. |
 | D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + `blank_cards: 7` + fill); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
 | D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes generic legend text ("ONE CARD PER CHORD", "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME") and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
@@ -97,20 +97,33 @@ the printed artifact the owner already approved.
 
 ## 4. Execution plan (TDD, three stages, each independently revertible)
 
+> **AMENDED 2026-09-22 by sections 8 and 9.** The stage bodies below are the
+> original draft with the review's corrections applied INLINE and marked
+> **[AMENDED]**. Where a step is superseded, the amendment is binding and the
+> original wording is kept only so the change is legible. The authoritative
+> task list is section 9.1 (T1-T14), not the bullets here.
+
 ### Stage A - the overlay becomes canonical data (no output change)
 
 Goal: `tools/decks.py`'s per-deck literals stop being Python and become a data
 file both emitters can read. Nothing about the PDFs changes.
 
-- **A1. Write the equivalence harness first.**
-  New `tests/test_seed_pdf_equivalence.py`. Given a deck id, it compares two
-  PDFs on: page box, page count, card-rect count and size, per-card extracted
-  token list, and the largest drawn circle radius per card. Tolerance: token
-  lists must be equal as ordered lists after a documented normalisation for
-  D-6-class extraction order; radii must match to 0.1 pt.
-  Verify: `python3 -m unittest tests.test_seed_pdf_equivalence -v` passes
-  comparing each committed PDF against a fresh `python3 tools/decks.py` build.
-  It must PASS at this point - that is what makes it a baseline.
+- **A1. Write the equivalence harness first. [AMENDED by O-1 and O-2 - the
+  original text is struck below.]**
+  ~~New `tests/test_seed_pdf_equivalence.py`, comparing page box, page count,
+  card-rect count and size, per-card extracted token list and the largest
+  drawn circle radius per card.~~ That harness is strictly weaker than
+  `tests/test_pdf_parity.py:104-118`, which already compares **every glyph -
+  x, y, size and character, page by page**. **Do instead (T9):**
+  parameterize `tests/test_pdf_parity.py` over the three BUILT-IN decks -
+  `SEEDS` becomes seeds + built-ins, `_pair` gains a built-in branch calling
+  `fromBuiltin`, the glyph-exact assertions apply unchanged. No new test file
+  is created. **And (T10):** the reference PDF comes from
+  `git show HEAD:<pdf>` into a tmpdir, never from the working tree -
+  `tools/decks.py:409` writes into the repo root, so building first and
+  comparing after compares a build against itself.
+  Verify: `python3 -m unittest tests.test_pdf_parity -v`, with no
+  `python3 tools/decks.py` prefix.
 - **A2.** Create `data/print_overlay.json`: per deck id, the exact literals now
   in `tools/decks.py` - `R`, `cy`, `y_note`, `y_num`, `title`, `credit`,
   `blurb`, `legend_lines`, `legend_demo`, `blank_cards`, and the committed
@@ -119,17 +132,28 @@ file both emitters can read. Nothing about the PDFs changes.
   the literals inline. The clash guard against `data/decks.json` stays.
 - **A4.** Extend `tools/validate.py` check 1b to assert the overlay file and
   the built PDFs agree.
-- **Acceptance:** `python3 tools/decks.py && python3 -m unittest tests.test_seed_pdf_equivalence`
-  green, and `git diff --stat` on the six PDFs shows only reportlab's creation-date churn.
+- **Acceptance [AMENDED by O-2]:** `python3 -m unittest tests.test_pdf_parity`
+  green against `git show HEAD:<pdf>` references, and `git diff --stat` on the
+  six PDFs shows only reportlab's creation-date churn. The
+  `python3 tools/decks.py &&` prefix is REMOVED from every acceptance command
+  in this section - it overwrites the committed bytes the check compares
+  against.
 - **Rollback:** revert the commit; the literals come back.
 
 ### Stage B - the JS emitter can build a built-in deck
 
-- **B1.** `tests/pdf_builtin.test.js`: feed a built-in deck plus its overlay to
-  a new `HPE.pdfdeck.fromBuiltin(deck, overlay)` and assert the returned object
+- **B1. [AMENDED by E-2 and O-1.]** `tests/pdf_builtin.test.js`: feed a
+  built-in deck plus its overlay to a new
+  `HPE.pdfdeck.fromBuiltin(deck, overlay)` and assert the returned object
   carries the overlay's `R`, `cy`, `title`, `credit`, `blurb`, `legend_lines`
   and `blank_cards` unchanged - explicitly NOT the synthesized title, and NOT a
-  value derived from `geom.ext`. Run it; it fails.
+  value derived from `geom.ext`. **It must also assert the `fields`+`geom` ->
+  `spec`+`_geom` conversion** (E-2): `pdfcards.js:318` reads `spec._geom` and a
+  built-in deck has no `spec` at all, so the conversion is the real work and
+  nothing else pins it. Also assert `sub` comes from `data/decks.json` (D-8 -
+  `ORION` is otherwise lost). Run it; it fails. This file SURVIVES the O-1
+  amendment - only the equivalence-harness half of the original T2 was
+  retired, not the unit test.
 - **B2.** Implement `fromBuiltin` beside `fromGenerated` in
   `src/engine/pdfdeck.js`. It does not touch `fromGenerated`, so the
   `geom.ext` throw at `:161` stays exactly as it is - that throw is a
@@ -137,15 +161,17 @@ file both emitters can read. Nothing about the PDFs changes.
 - **B3.** `tools/pdf_build.js` gains a `--builtin <deck-id>` mode that reads
   `data/decks.json` + `data/print_overlay.json` and routes through
   `fromBuiltin`.
-- **B4.** Point the Stage A harness at the JS output as well: for all three
-  decks, both variants, emitter output vs committed PDF. **This is the gate.**
+- **B4. [AMENDED by O-1 and O-2.]** The gate is the PARAMETERIZED
+  `tests/test_pdf_parity.py` from A1, run for all three decks and both
+  variants, JS emitter output vs the `git show HEAD:<pdf>` reference.
+  **This is the gate.**
   Expect D-6-class ordering differences and sub-0.1 pt coordinate drift; expect
   D-1 .. D-5 to be GONE. Any survivor is a bug in `fromBuiltin`, not an
   acceptable delta.
 - **B5.** Re-run `python3 tools/inline_engine.py` and commit what it writes.
-- **Acceptance:** `node --test tests/pdf_builtin.test.js`,
-  `python3 -m unittest tests.test_seed_pdf_equivalence`,
-  `python3 tools/validate.py` all green.
+- **Acceptance [AMENDED]:** `node --test tests/pdf_builtin.test.js`,
+  `python3 -m unittest tests.test_pdf_parity`, `python3 tools/validate.py`
+  all green.
 - **Rollback:** revert; `tools/decks.py` is still the producer.
 
 ### Stage C - retire the Python emitter (OWNER GATE)
@@ -153,16 +179,40 @@ file both emitters can read. Nothing about the PDFs changes.
 Only after B4 is green and the owner has eyeballed the side-by-side from
 section 5.
 
-- **C1.** Port the assertions that die with `hifi.py` - the 3.6 pt print floor
+- **C0. [ADDED by E-1 and the corrected O-5.]** Inventory everything that
+  references `tools/hifi.py` before deleting anything, and classify each
+  PORT / RE-POINT / DELETE. The inventory is NOT just `grep -r 'hifi\.'`:
+  Measured at `224af5d`: **7 Python modules import `hifi`** (`tools/decks.py`
+  10, `tests/test_print.py` 35, `tests/test_render_agreement.py` 46,
+  `tests/test_gen_deck.py` 7, `tests/test_pdf_parity.py` 3,
+  `tests/test_pdf_build.py` 2, `tests/test_font_subset.py` 1 - **104 `hifi.`
+  lines**, 81 of them in the two biggest); several JS and doc files
+  (`src/engine/pdfcards.js`, `pdf.js`, `pdfdeck.js`, `tests/CONTRACT.md`)
+  cite `tools/hifi.py` only in comments that go stale; three more
+  (`tools/inline_fonts.py`, `tools/validate.py`, `tests/test_deck_data.py`)
+  reference it by path, which is E-1's ten-file / 108-reference count; AND
+  **19 patch files under
+  `tests/mutants/` target `tools/hifi.py` by PATH** (`grep -l 'tools/hifi.py'
+  tests/mutants/*.patch`) with no `hifi.` attribute access in them at all, so
+  an attribute-only grep misses every one. The mutation gate is a required CI
+  check; 19 dead patches turn it red. See T1 and T14.
+- **C1. [AMENDED by the corrected O-5 - see C-1a below.]** Port the assertions
+  that die with `hifi.py` - the 3.6 pt print floor
   over every drawn glyph (`test_no_label_falls_below_the_print_floor`), and
   `hifi.fit_note`'s overflow shrink - into the JS suite. **Port before delete.**
 - **C2.** Replace `tools/decks.py`'s build path with a call into
   `tools/pdf_build.js --builtin`. Keep the entry point
   (`python3 tools/decks.py` still builds all six) so no documentation or
   muscle memory breaks.
-- **C3.** Delete `tools/hifi.py` and the now-tautological halves of
-  `tests/test_render_agreement.py` (it pinned two renderers; there is one).
-  Keep every assertion that pins a renderer to the SPEC.
+- **C3. [AMENDED by E-6 and the corrected O-5.]** Delete `tools/hifi.py`.
+  **`tests/test_render_agreement.py` is RE-POINTED at `pdfcards.js`, never
+  deleted** - its premise is app-SVG vs print-PDF with opposite y axes, which
+  survives `hifi.py`'s removal (E-6). Keep every assertion that pins a
+  renderer to the SPEC, and note that includes the **non-text** ones
+  (`test_print.py:574`, `:611-632`; `test_render_agreement.py:244-258`;
+  `test_pdf_build.py:83-96`, `:151-190`): they exist, they are written against
+  `hifi.py`, and re-pointing them (**C-1a / T11a**) is a hard precondition on
+  this step.
 - **C4.** Update `CLAUDE.md`'s "Print pipeline" section and `README.md`.
   Drop the `reportlab` requirement if nothing else uses it.
 - **Acceptance:** a clean clone with no `reportlab` builds all six PDFs and the
@@ -245,7 +295,7 @@ tools/inline_fonts.py             2 refs      tests/test_deck_data.py   1 ref
 tests/test_font_subset.py         1 ref       tools/validate.py         1 ref
 ```
 
-`tests/test_pdf_build.py:115` is `cls.returned[key] = hifi.build(path, deck,
+`tests/test_pdf_build.py:111` is `cls.returned[key] = hifi.build(path, deck,
 chords_only=chords_only)` - the base class every test in that file inherits.
 C3 as written deletes `hifi.py` and reds three suites it never mentions.
 **Decision (auto): adopt.** Stage C gains a **C0** step before C1: enumerate
@@ -270,7 +320,7 @@ zone and angle at indices 3 and 4, and (c) `fieldOrder(spec)` excludes
 **E-3 [P2] (confidence 8/10) - D-8: the deck subtitle, missed by the
 measurement.** `src/engine/pdfcards.js:477` draws `deck.sub` on the title
 card. `data/decks.json` hijaz carries `sub: "ORION  -  8 + 1"`;
-`pdfdeck.js:176-178` computes `sub` from zone counts instead, giving
+`pdfdeck.js:177-179` computes `sub` from zone counts instead, giving
 `"8 + 1"` - Orion disappears, same class of loss as D-2. The measurement in
 section 2 did not catch it because 2a's per-card table is the PRINTER_ONLY
 chord cards: **the full variant's title and legend cards were never
@@ -283,7 +333,7 @@ coverage caveat is recorded here rather than left implied.
 
 | # | difference | scope | minute? |
 |---|---|---|---|
-| D-8 | **Deck subtitle on the title card.** Committed hijaz `ORION  -  8 + 1` (`data/decks.json`); emitter computes `8 + 1` (`pdfdeck.js:176-178`), drawn at `pdfcards.js:477`. | title card, full variant | **NO.** Same loss as D-2. Fixed by reading `sub` from canonical data. |
+| D-8 | **Deck subtitle on the title card.** Committed hijaz `ORION  -  8 + 1` (`data/decks.json`); emitter computes `8 + 1` (`pdfdeck.js:177-179`), drawn at `pdfcards.js:477`. | title card, full variant | **NO.** Same loss as D-2. Fixed by reading `sub` from canonical data. |
 
 ### 8.2 Code quality
 
@@ -382,7 +432,7 @@ not and that are added here as **CRITICAL - error paths with no handling and
 no test**: overlay file absent, overlay id unknown to `data/decks.json`,
 `--builtin` given an unknown deck id, and `fromBuiltin` called without an
 overlay. All four are silent-wrong-output risks rather than crashes (a
-missing `R` draws a 1.0-radius pan, the failure `pdfdeck.js:155-160` exists
+missing `R` draws a 1.0-radius pan, the failure `pdfdeck.js:160-162` exists
 to prevent), so each gets an explicit throw plus a test in its own stage.
 **Decision (auto): adopt** - the four throws land in A3, A3, B3 and B2
 respectively.
@@ -447,10 +497,11 @@ which the ordering already enforces. Stage C is single-lane by construction
 
 Synthesized from the findings above. Each derives from a specific finding.
 
-- [ ] **T1 (P1, human: ~1h / CC: ~10min)** - Stage C - add step C0, the `hifi.` reference inventory
-  - Surfaced by: E-1 - ten files reference `hifi.`, C3 names one
+- [ ] **T1 (P1, human: ~1h / CC: ~10min)** - Stage C - add step C0, the `hifi.py` dependent inventory
+  - Surfaced by: E-1 - ten files reference `hifi.`, C3 names one; corrected O-5 - an attribute-only grep also misses the mutant patches
+  - Scope: BOTH `grep -rn 'hifi\.'` (104 lines across the 7 Python importers, plus stale `tools/hifi.py` citations in JS comments and `tests/CONTRACT.md`) AND `grep -l 'tools/hifi.py' tests/mutants/*.patch` (19 files, zero attribute references)
   - Files: `docs/plans/2026-09-22-seed-pdf-one-source.md`
-  - Verify: the C0 table lists all ten with PORT/RE-POINT/DELETE
+  - Verify: the C0 table lists all ten source files plus all 19 patches, each classified PORT/RE-POINT/DELETE
 - [ ] **T2 (P1, human: ~2h / CC: ~20min)** - `pdfdeck.js` - B1 asserts the spec/_geom conversion
   - Surfaced by: E-2 - `pdfcards.js:318` reads `spec._geom`, built-ins have none
   - Files: `tests/pdf_builtin.test.js`
@@ -487,15 +538,21 @@ Synthesized from the findings above. Each derives from a specific finding.
 Codex was unusable this run (`CODEX_MODE: model_unusable` - the stale CLI
 rejects the effort argument with `unknown variant 'max'`; `npm install -g
 @openai/codex` fixes it), so the outside voice is a fresh Claude subagent
-given the plan and the repo and told to challenge it. Eight findings. Three
-of them are things the in-context review missed, and two are hard blockers.
+given the plan and the repo and told to challenge it. Eight findings. Two
+of them are labelled NEW - things the in-context review missed - and two
+are hard blockers. One of the eight (O-5) turned out to be FALSE and was
+corrected after an independent review; it is kept below with the correction
+in place rather than deleted, because the correction is the finding.
 
 **O-1 [BLOCKER, verified] - the plan proposes a weaker duplicate of an oracle
 the repo already has.** `tests/test_pdf_parity.py:104-121` already renders one
 deck through BOTH `hifi.build` and `tools/pdf_build.js` and asserts **every
-glyph - x, y, size and character, page by page** - for the `full` and `shop`
-variants, over two seeds including a bottom-shell pan
-(`test_every_glyph_lands_where_print_puts_it`). Section 2 re-derived at token
+glyph - x, y, size and character, page by page**
+(`test_every_glyph_lands_where_print_puts_it`, `:104-112`). Scope, precisely:
+the `full` variant runs over both entries of `SEEDS` (`:39-43`), one of them
+a bottom-shell pan; the `shop` variant
+(`test_the_shop_variant_matches_too`, `:114-118`) runs `SEEDS[0]` only - the
+Amara string, no bottom shell. Section 2 re-derived at token
 granularity something already pinned glyph-exactly, and A1 then proposes
 token lists plus "largest drawn circle radius per card" and B4 calls that
 "the gate". Confirmed by reading the file.
@@ -542,25 +599,62 @@ and skip the `ext` throw. On the order of 40 lines.
 reversible - it is C, which is expensive and one-way. Section 3's cost column
 is corrected accordingly.
 
-**O-5 [P1, NEW - the review missed it] - nothing compares non-text drawing,
-and Stage C removes the only thing that could.** Both harnesses compare
-glyphs. Colours (D-7), stroke widths, the coloured band at 0.87r with stroke
-0.24r, the inner hairline at 0.74r, the four-sided root-colour frame, the
-crop marks and the calibration bar's actual drawn length are compared by
-nothing, anywhere. They survive today only because two independent
-implementations happen to agree and a human looked at the output. Delete
-`hifi.py` and no test can ever catch a regression in any of them - and the
-plan's rule "keep every assertion that pins a renderer to the SPEC" does not
-save them, because for most of them there IS no spec assertion, only the
-second implementation.
-**Decision (auto): adopt, and it becomes a hard precondition on C.** Add
-**C-1 (before C0)**: extend the parity comparison from glyphs to **drawing
-operators** - fill and stroke colours, line widths, and the path bounding
-boxes of the band, the hairline, the frame, the crop marks and the
-calibration bar - so the non-text half of the render is pinned by assertion
-before the second implementation that currently pins it by agreement is
-deleted. If C-1 is not affordable, the honest answer to Q5 is "stop after B",
-because the deletion trades a real oracle for line count.
+**O-5 [P1, CORRECTED after independent review] - the non-text drawing
+assertions exist, they all live on the Python side, and Stage C kills them.**
+
+The outside voice claimed nothing anywhere compares non-text drawing, and this
+review adopted that claim. **It is false, and an independent reviewer caught
+it.** The assertions exist:
+
+- `tests/test_print.py:611-632`
+  `test_highlight_band_sits_between_the_outline_and_the_hairline` pins the
+  band radius between the outline and the hairline AND checks
+  `band["r"] +/- band["line_width"]/2` against both - the band, the hairline
+  and the band's stroke width, all three.
+- `tests/test_print.py:574`
+  `test_state_selects_root_or_tone_colour_but_never_both` pins the ring
+  colours.
+- `tests/test_render_agreement.py:244-258` `BorderAgreementTest` asserts the
+  print frame draws exactly one fill colour across its full width, that it is
+  the root colour, and that its weight is 2.8 pt. Its docstring says it was
+  written for exactly this gap: "Nothing pinned this before ... so the
+  two-tone split could (and did) ship unnoticed".
+- `tests/test_pdf_build.py:83-96` and `:151-190` measure the crop-mark tick
+  length (`SPEC_CROP_MARK` 8.0), the inset, the count and spacing, and the
+  calibration bar's ACTUAL drawn length off the path segments against
+  `SPEC_CALIBRATION` 144.0.
+- The **mutation gate**, a required CI check, kills
+  `tests/mutants/c_draw_ring_band.patch` (0.87 -> 0.80) and
+  `c_draw_ring_swap_colours.patch` today.
+
+Section 8.5's own coverage tree already credited `[***] crop marks + calib bar
+- tests/test_pdf_build.py`, so this document contradicted itself six pages
+apart. Recorded as a defect of this review, not of the plan.
+
+**The true and narrower claim.** Every one of those assertions is written
+against `tools/hifi.py`, and `test_print.py` alone carries 35 `hifi.`
+references. They do not die because nothing pins the drawing - they die
+because C3 deletes the implementation they are written against. And
+separately, nothing compares non-text drawing **across the two emitters**:
+`test_pdf_parity.py` compares glyphs only, so a colour or stroke-width
+divergence between `hifi.py` and `pdfcards.js` is invisible to it today.
+
+**Decision (auto, revised): two separate items, and only the first gates C.**
+
+- **C-1a (hard precondition on C, and it is the E-6 treatment, not new
+  work):** re-point the existing non-text assertions above at
+  `src/engine/pdfcards.js`. They are spec assertions with concrete numbers -
+  0.87r, 0.74r, 2.8 pt, 8.0 pt, 144.0 pt - so re-pointing is mechanical and
+  costs far less than writing a drawing-operator differ. This is the same
+  move C3 already needs for `test_render_agreement.py`.
+- **C-1b (NOT a precondition; worth doing, schedule separately):** extend
+  `test_pdf_parity.py` from glyphs to drawing operators, which closes the
+  cross-emitter gap that is genuinely open today. Valuable while both
+  emitters exist; strictly optional once only one does.
+
+The original framing - "C-1 or stop after B" - overstated the risk and
+mispriced the fix. Stage C's real non-text cost is re-pointing a known list
+of assertions, not building a new differ.
 
 **O-6 [P2, NEW] - font embedding was never assessed.** reportlab embeds the
 checked-in TTFs; the JS side uses `fontdata.js` plus its own subsetting
@@ -582,7 +676,8 @@ implementation **retained as a differential oracle** - which is exactly what
 `test_pdf_parity.py` already treats it as. That is not worse than today; it
 converts today's duplication into a test asset while meeting the stated goal.
 C buys the deletion of ~950 lines of Python and the `reportlab` dependency,
-paid for with O-3's port and O-5's permanent loss of the drawing oracle.
+paid for with O-3's port, which includes re-pointing the non-text
+assertions of O-5.
 **Decision (auto): adopt the reframing, do NOT pre-empt the decision.** Q5's
 text is corrected to score both sides rather than assert the answer. Q5 stays
 an owner question - it is the one-way door in this plan and AFK auto-decision
@@ -614,8 +709,7 @@ staged, with C behind an owner gate. The outside voice recommends rescoping
 to A+B and re-deciding C on its own merits. These are closer than they look:
 both put C behind a decision. The genuine disagreement is about what that
 decision costs, and the outside voice priced it better - O-3's 1900 lines and
-O-5's loss of the only non-text oracle are both absent from section 3's cost
-column. **Resolution: the recommendation in section 1 stands (staged, C
+O-5's re-pointing work are both absent from section 3's cost column. **Resolution: the recommendation in section 1 stands (staged, C
 gated), with section 3's cost column corrected and C-1 added as a hard
 precondition.** Q5 remains the owner's.
 
@@ -631,7 +725,7 @@ once `fromBuiltin` synthesizes the same wrong string. **D-8 stands.**
 |---|---|---|---|
 | 1. adopt generated geometry | low | **changes `R`, moves every card** | glyph parity only |
 | 2a. A+B only (overlay + `fromBuiltin`) | **~40 lines JS + overlay file + parameterizing one test** | none - fully reversible | glyph parity, **plus `hifi.py` retained as a differential oracle** |
-| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines / 81 call sites ported** | **permanent: the only non-text drawing oracle is gone unless C-1 lands first** | glyph parity + whatever C-1 pins |
+| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines ported across ten files (108 `hifi.` references), including 19 mutant patches** | **permanent: every Python-side spec assertion must be re-pointed first (C-1a) or it is lost** | glyph parity + the re-pointed spec assertions |
 | 3. keep both, document | zero | none | unchanged |
 | 4. generated-only, drop seeds | low | **loses the print overlay entirely** | n/a |
 
@@ -650,11 +744,15 @@ T1..T8 in section 8.10 stand except where noted; T9..T13 are new.
   - Surfaced by: O-2 - `tools/decks.py:409` writes into the repo root
   - Files: `tests/test_pdf_parity.py`, the Stage A/B/C acceptance commands in this plan
   - Verify: the check goes RED after `touch`-editing a committed PDF and rebuilding
-- [ ] **T11 (P1, human: ~1d / CC: ~1h)** - C-1: extend parity from glyphs to drawing operators
-  - Surfaced by: O-5 - colours, stroke widths, band/hairline/frame/crop-mark/calibration geometry are pinned by nothing
+- [ ] **T11a (P1, human: ~3h / CC: ~30min)** - C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
+  - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:244-258`; `test_pdf_build.py:83-96`, `:151-190`) but are written against `hifi.py`
+  - Files: `tests/test_print.py`, `tests/test_render_agreement.py`, `tests/test_pdf_build.py`
+  - Verify: the four named tests pass with `hifi.py` absent
+  - Hard precondition on C3
+- [ ] **T11b (P2, human: ~1d / CC: ~1h)** - C-1b: extend `test_pdf_parity.py` from glyphs to drawing operators
+  - Surfaced by: O-5 (corrected) - nothing compares non-text drawing ACROSS the two emitters; not a precondition on C
   - Files: `tests/test_pdf_parity.py`
   - Verify: flipping one colour literal in `tools/hifi.py` turns it red
-  - **Hard precondition on Stage C. If this does not land, the answer to Q5 is "stop after B".**
 - [ ] **T12 (P2, human: ~2h / CC: ~20min)** - D-9: compare embedded font programs across the two emitters
   - Surfaced by: O-6 - subsetting is untested across the boundary and the artifact goes to a print shop
   - Files: a one-off measurement, recorded in section 2b as D-9
@@ -663,6 +761,12 @@ T1..T8 in section 8.10 stand except where noted; T9..T13 are new.
   - Surfaced by: O-8
   - Files: `tools/regen_data_mutants.py` output, `CLAUDE.md`, `README.md`
   - Verify: `python3 tools/validate.py` clean on a clean tree
+- [ ] **T14 (P1, human: ~2h / CC: ~20min)** - retire or re-target the 19 `tests/mutants/*.patch` files that patch `tools/hifi.py`
+  - Surfaced by: corrected O-5 - `grep -l 'tools/hifi.py' tests/mutants/*.patch` returns 19; the mutation gate is a required CI check, so 19 patches that no longer apply turn CI red at C3
+  - Files: `tests/mutants/*.patch` (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), `tools/mutation_check.sh`
+  - Verify: `bash tools/mutation_check.sh` green with `tools/hifi.py` absent, and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
+  - Hard precondition on C3, same as T11a
+
 
 ---
 
@@ -675,7 +779,8 @@ T1..T8 in section 8.10 stand except where noted; T9..T13 are new.
 | Why | the plan proposes deleting one of two independent PDF implementations; the cost of that deletion is the whole question |
 | Runs | 4 sections (architecture, code quality, tests, performance) + outside voice (fresh Claude subagent; codex `model_unusable`) |
 | Status | **REVISE BEFORE EXECUTING** - Stage A cannot run as written |
-| Findings | 15 (E-1..E-7 in-context, O-1..O-8 outside voice). 2 blockers, 5 P1, 6 P2, 2 P3. |
+| Findings | 15 (E-1..E-7 in-context, O-1..O-8 outside voice). 2 blockers, 5 P1, 7 P2, 1 P3. |
+| Correction | O-5 was WRONG as first written and was rewritten after an independent review of this document. See the O-5 block and the paragraph below. |
 
 **VERDICT: REVISE.** The recommendation in section 1 survives - Option 2,
 staged, Stage C behind an owner gate - but Stage A cannot execute as written.
@@ -688,19 +793,34 @@ the fresh build against the committed file it just overwrote, because
 A1 becomes "parameterize the existing parity test over the three built-in
 decks", and every reference comes from `git show HEAD:<pdf>`.
 
-The one finding that changes the shape of the plan is O-5. Colours, stroke
-widths, the 0.87r band, the 0.74r hairline, the four-sided frame, the crop
-marks and the calibration bar are pinned by **nothing** - not by either
-harness, not by a spec assertion. They are correct today only because two
-independent implementations agree. Deleting `tools/hifi.py` ends that, and no
-test replaces it. Stage C is therefore gated on **C-1**: extend the parity
-comparison from glyphs to drawing operators, first. If C-1 is not affordable,
-the honest answer to Q5 is "stop after B" - and A+B alone already meets the
-stated goal, with `hifi.py` retained as a differential oracle rather than as
-duplicate work (O-7).
+**O-5, corrected.** As first written this review claimed the non-text drawing
+- colours, stroke widths, the 0.87r band, the 0.74r hairline, the four-sided
+frame, the crop marks and the calibration bar - was pinned by nothing. **That
+was false**, and an independent review of this document caught it. Those
+assertions exist: `tests/test_print.py:611-632` pins the band between the
+outline and the hairline including its stroke width, `:574` pins the ring
+colours, `tests/test_render_agreement.py:244-258` pins the frame as a single
+root-coloured 2.8 pt band, `tests/test_pdf_build.py:83-96` and `:151-190`
+measure the crop-mark ticks and the calibration bar's drawn length against
+`SPEC_CROP_MARK` and `SPEC_CALIBRATION`, and the mutation gate kills
+`c_draw_ring_band` and `c_draw_ring_swap_colours`. Section 8.5's coverage tree
+said so six pages earlier; the review contradicted itself.
 
-Also corrected: Stage C is ~1900 lines and 81 `hifi.` call sites across ten
-files, not the one file C3 names (E-1, O-3); Stage B is ~40 lines, much
+The true claim is narrower and still gates Stage C: every one of those
+assertions is written against `tools/hifi.py`, so C3 must **re-point** them at
+`pdfcards.js` (**C-1a / T11a**) before deleting it - the same move E-6 already
+requires for `test_render_agreement.py` - and the 19 `tests/mutants/*.patch`
+files that patch `tools/hifi.py` by path must be retired or re-targeted
+(**T14**), or the required mutation-gate check turns red. Separately, nothing
+compares non-text drawing ACROSS the two emitters; closing that
+(**C-1b / T11b**) is worth doing while both exist but is not a precondition.
+Q5 remains an owner call, now priced against re-pointing a known list rather
+than against building a new differ.
+
+Also corrected: Stage C is ~1900 lines and **104 `hifi.` lines across the 7
+Python modules that import it** (81 of them in `test_print.py` and
+`test_render_agreement.py` alone), plus stale `tools/hifi.py` citations in the
+JS comments and 19 mutant patches - not the one file C3 names (E-1, O-3); Stage B is ~40 lines, much
 cheaper than the plan implies (O-4); `test_render_agreement.py` must be
 re-pointed, never deleted - its premise "two independent renderers with
 opposite y axes" survives `hifi.py`'s removal (E-6); D-8 (`ORION` lost from
@@ -708,14 +828,16 @@ the hijaz title card) and D-9 (embedded font programs, unmeasured) join the
 difference table (E-3, O-6).
 
 Artifacts: `~/.gstack/projects/raywu-handpan-cards/tasks-eng-review-20260922-214140.jsonl`
-(13 tasks), and the test plan at
+(12 tasks as recorded at review time; T11 has since split into T11a/T11b and
+T14 was added by the O-5 correction, so section 9.1 is authoritative), and the
+test plan at
 `~/.gstack/projects/raywu-handpan-cards/raywu-claude-seed-pdf-plan-eng-review-test-plan-20260922-214158.md`.
 
 **UNRESOLVED DECISIONS:**
 
 - **Q5 - does Stage C happen at all?** One-way door. Outside the AFK
   auto-decide grant, so it was not auto-picked. Decide it with O-3's port
-  cost and O-5's oracle loss in view, and only after C-1 has landed or been
-  priced. Q1-Q4 in section 5 also remain owner questions; they touch deck
+  cost and the corrected O-5's re-pointing cost (T11a + T14) in view, and only
+  after C-1a has landed or been priced. Q1-Q4 in section 5 also remain owner questions; they touch deck
   data and diagram geometry, which CLAUDE.md puts behind explicit owner
   instruction.
