@@ -669,8 +669,12 @@ owes; the emitter's whole claim is that it passes where the browser sheet did no
 
 **Also check the FILENAME the Share sheet offers** (PR #114 reviewer, queue row 316).
 `pdfFileName()` is computed only on the non-iOS branch of `downloadDeckPDF`
-(`index.html:6159-6180`), and a blob URL carries no name of its own, so on iOS the
-save may be suggested as a UUID rather than `F3_Low_Pygmy_18_Cards_Letter.pdf`.
+(`index.html:6153-6182`; the call is at `:6175`, the iOS branch at `:6171`), and a
+blob URL carries no name of its own, so on iOS the save may be suggested as a UUID
+rather than a real name. The deck under test is necessarily a CUSTOM one - built-ins
+link straight to the committed PDFs at `index.html:6200-6203` and never reach this
+function - so the name to expect from the Pygmy maker string is
+`F_AEOLIAN_12_Cards_Letter.pdf`, the custom deck being auto-named `F AEOLIAN 12`.
 Recorded as an observation to make on the device rather than a blind fix: what iOS
 actually offers depends on the viewer, and guessing at it from here is how the
 browser-print path went wrong twice.
