@@ -202,7 +202,7 @@ def excerpt(out):
 # process group is not the whole tree: tests/helpers/cdp.js:289 spawns Chrome
 # `detached: true`, i.e. setsid(2), so the browser leads its OWN group and a
 # killpg of node's group never reaches it. What does reach it is cdp.js's
-# SIGTERM/SIGINT/SIGHUP reaper (tests/helpers/cdp.js:79-99), which kills the
+# SIGTERM/SIGINT/SIGHUP reaper (tests/helpers/cdp.js:79-100), which kills the
 # browser group and removes its profile dir. SIGKILL is uncatchable, so killing
 # outright defeats that reaper and leaves an orphan Chrome plus an hpfc-prof
 # directory behind for every timeout - the starvation queue row 69 is about.
@@ -325,7 +325,7 @@ def run_node_file(path):
         # node from a local terminal's foreground process group, so a Ctrl-C
         # during THIS communicate() (KeyboardInterrupt, here as anywhere else)
         # never reaches node: cdp.js's SIGINT reaper
-        # (tests/helpers/cdp.js:79-99) never runs, and a headless Chrome plus
+        # (tests/helpers/cdp.js:79-100) never runs, and a headless Chrome plus
         # its hpfc-prof-* profile dir are orphaned (row 107, and row 98's local
         # variant of the same leak). Deliver the signal ourselves before it
         # propagates.

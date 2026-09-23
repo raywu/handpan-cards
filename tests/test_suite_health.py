@@ -17,7 +17,7 @@ There are three shapes, because Chrome is the second one:
    real topology: tests/helpers/cdp.js:289 spawns Chrome `detached: true`,
    which is setsid(2), so the browser leads its OWN group and a kill of
    node's group never reaches it. What does reach it is cdp.js's own SIGTERM
-   reaper (tests/helpers/cdp.js:79-99), which kills the browser group and
+   reaper (tests/helpers/cdp.js:79-100), which kills the browser group and
    re-raises. SIGKILL is uncatchable, so a SIGKILL-first timeout DEFEATS that
    reaper and leaves the orphan Chrome the queue row is about. Shape 1 alone
    is a false oracle: a bash background job inherits its parent's group (job

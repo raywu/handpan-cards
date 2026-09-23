@@ -80,7 +80,7 @@ badges and index numbers all reproduce. The engine is not the problem.
 | D-1 | **Diagram radius.** Committed `R` 73.0 (Hijaz, Amara) and 60.0 (Pygmy); emitter draws 69.8 and **50.6**. Measured off the PDFs, matching the derivation already recorded at `tools/decks.py:56-58`. | every card | **NO.** -4.4% and **-15.7%**. A sixth off Pygmy's diagram is visible at arm's length. |
 | D-2 | **Deck name.** Committed card-header `name`s are `C# HIJAZ 9`, `F3 LOW PYGMY 18`, `D AMARA 9` (the `/ ORION` half is not the name - it is the separate vertical `credit` string `C# HIJAZ / ORION`); emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. The `/ ORION` half is lost from the vertical credit strip (`decks.py:264` `"C# HIJAZ / ORION"`); the card header `name` is identical on both sides for hijaz. Pygmy and Amara lose the instrument name in both places. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
 | D-3 | **Scale-degree labels, Amara only.** Committed `bIII` (5 cards), `bVII` (4), `IV` (3); emitter `III`, `VII`, `iv`. | 12 of 25 Amara cards | **NO.** Wrong degree spelling is wrong data. `data/decks.json` `degrees` is authoritative and the generated path does not read it. |
-| D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + `blank_cards: 7` + fill); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
+| D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + **legend** + `blank_cards: 7` + fill - `tools/hifi.py:389-391` prepends BOTH a title and a legend card; the 63 total is right, the enumeration was missing one); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
 | D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes different title-card copy **[CORRECTED: the two strings quoted here previously - "ONE CARD PER CHORD" and "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME" - were wrong. The second exists nowhere in the repo; the first is BLURB text (`src/engine/pdfdeck.js:109`), not a legend line, and Amara's committed blurb already carries it (`tools/decks.py:300`; `:319` is the GENERATED-blurb helper, not the committed literal). `legendLines()` (`pdfdeck.js:116-130`) emits "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", byte-identical to the committed Hijaz (`tools/decks.py:271-272`) and Amara (`:301-302`) literals, so only PYGMY actually loses a legend line.]** and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
 | D-6 | **[CORRECTED after independent review. This row previously read "Token extraction order on one Pygmy card (card #6): same token multiset, different order - YES, coordinate-level, no content change." That was wrong: the multiset is NOT the same.] Different voicing on one Pygmy card** (card 6, `Fm9`). Committed is `F4 Ab4 C5 Eb5 G5` (`fields [5,7,8,9,11]`, field 11 = `G` 5 midi 79 inner); the engine derives `fields [5,7,8,9,6]`, field 6 = `G` 4 midi 67 rim. Different note line (`G5` vs `G4`), different number line (`11` vs `6`). The DIAGRAM matches only because pitch-class-complete highlighting lights the same fields for G4 and G5, which is how this was first misread as cosmetic. Reproduce: run `tools/gen_deck.js` on the Pygmy seed and diff `chords[5]` against `data/decks.json`. | 1 card | **NO.** A voicing is content. `CLAUDE.md` names this exact card as ground truth: "a spread 9th above the 7th, like Fm9's G5, is fine." |
 | D-7 | Colour literals: committed three-decimal values vs re-derived floats (`tools/decks.py:227-230`). Not separately measured here; the docstring states re-deriving moves every printed colour by a fraction. | all cards | **YES** if the literals are carried; a fraction of a colour step. |
@@ -219,6 +219,11 @@ file both emitters can read. Nothing about the PDFs changes.
   - **A4b (moves to `tests/test_pdf_build.py`):** assert the overlay and the
     BUILT PDFs agree. That file already opens PDFs with pymupdf and already
     owns the staleness gate at `:254`.
+    **Exempt the blurb's last line from the literal comparison** - or compare
+    it after applying the same `\d+(?=\s*CHORDS)` substitution. The overlay
+    carries the STALE count by design (see A2 and B1) and the built PDF prints
+    the derived one, so a naive "overlay text appears in the PDF" assertion
+    fails on all three decks, not as a caught defect but as a false positive.
 - **Acceptance [AMENDED by O-2, then CORRECTED after independent review]:**
   `python3 -m unittest tests.test_pdf_parity` green **unchanged** - the two
   generated seeds only, no built-in decks, because `fromBuiltin` does not exist
@@ -282,7 +287,7 @@ file both emitters can read. Nothing about the PDFs changes.
 
   | deck | overlay literal (`tools/decks.py`) | what `decks.<DECK>["blurb"][-1]` is |
   |---|---|---|
-  | hijaz (`:268`) | `... NO b6   -   18 CHORDS` | `... NO b6   -   19 CHORDS` |
+  | hijaz (`:270`) | `... NO b6   -   18 CHORDS` | `... NO b6   -   19 CHORDS` |
   | pygmy (`:285`) | `... F NATURAL MINOR   -   25 CHORDS` | `... F NATURAL MINOR   -   52 CHORDS` |
   | amara (`:300`) | `16 CHORDS - ONE CARD PER CHORD` | `25 CHORDS - ONE CARD PER CHORD` |
 
@@ -295,8 +300,18 @@ file both emitters can read. Nothing about the PDFs changes.
   B4 are directly contradictory: B4 compares fresh Python
   (`hifi.build(decks.PYGMY)` -> `52 CHORDS`) against fresh JS
   (`fromBuiltin` -> `25 CHORDS`) glyph for glyph and calls any survivor a bug
-  in `fromBuiltin`. `tests/test_print.py:875-912` and mutant
-  `c_gen_chord_count_off_by_one` both exist to pin this behaviour.
+  in `fromBuiltin`. `tests/test_print.py:876-912`
+  (`TitleBlurbChordCountTest`) is the pin for this behaviour.
+  **[CORRECTED after independent review - this sentence also cited mutant
+  `c_gen_chord_count_off_by_one`. That mutant does NOT pin the substitution:
+  its hunk patches `from_generated` (`tools/decks.py:415`, the GENERATED
+  path), and its `# kills:` header names
+  `test_a_warning_survives_the_adapter_and_reaches_the_title_blurb`. The
+  built-in substitution in `_from_canonical` (`:249-258`) has no mutant.]**
+  **Port note for B2:** Python's `re.sub` replaces every match by default;
+  JS `String.replace` with a bare regex replaces only the FIRST. The JS side
+  must be `/\d+(?=\s*CHORDS)/g` (or `replaceAll`), or a last line carrying
+  two numbers substitutes only one of them.
   **Also assert the colour literals** (`col_root`, `col_tone`, `grad`) come
   through at their committed three-decimal values: D-7 is the only difference
   the plan accepts as YES, and B4's oracle is `_glyphs` -> `(x, y, size,
@@ -322,6 +337,13 @@ file both emitters can read. Nothing about the PDFs changes.
 - **B3.** `tools/pdf_build.js` gains a `--builtin <deck-id>` mode that reads
   `data/decks.json` + `data/print_overlay.json` and routes through
   `fromBuiltin`.
+  **The `--builtin` branch must run OUTSIDE `process.stdin.on("end")`.** Today
+  the whole tool does its work inside that handler (`tools/pdf_build.js:24-26`,
+  reading a generated-deck payload from stdin). A `--builtin` mode reads its
+  input from `data/`, has nothing to pipe in, and if it stays inside the
+  handler it never fires - the process just hangs waiting on a stdin that never
+  closes. B0's `_pair` invokes it with no pipe, so this hangs the parity suite
+  rather than failing it. Branch on the flag before wiring the stdin listener.
 - **B4. [AMENDED by O-1 and O-2.]** The gate is the PARAMETERIZED
   `tests/test_pdf_parity.py` from **B0** (moved there from A1), run for all
   three decks and both variants. **[CORRECTED after independent review: this
@@ -555,6 +577,50 @@ flagged rather than auto-decided.
 
 An answer of "accept the generated value" to Q1, Q2 or Q3 collapses this plan
 to option 1 and makes Stages A and B unnecessary.
+
+### 5.1 ANSWERED, 2026-09-23 (owner, direct instruction)
+
+All five are now closed. They were put to the owner as a single interview and
+answered in one pass; none of these is an AFK auto-decision.
+
+| # | answer |
+|---|---|
+| Q1 | **Keep the measured literals** (73.0 / 60.0). As recommended. |
+| Q2 | **Keep the hand-written deck names** and hijaz's `C# HIJAZ / ORION` credit. As recommended. |
+| Q3 | **Keep `data/decks.json`'s `bIII` / `bVII` / `IV`.** As recommended. This also closes coordination row 161: the engine's Amara degrees (`III` / `VII` / `iv`, plus an engine-only `4:ii°`) are simply not used for a built-in deck, and nothing further is owed. |
+| Q4 | **Keep Pygmy's 7 blank cards.** As recommended. |
+| Q5 | **KEEP `tools/hifi.py` - stop after Stage B. Stage C does not happen.** |
+
+**What this settles.** Q1..Q4 all came back "keep", so nothing collapses this
+plan to option 1: **Option 2 stands and Stages A and B are both live.** Q5
+came back KEEP, so **Stage C is CANCELLED** - `tools/hifi.py` survives, the
+six committed seed PDFs keep their Python emitter, and
+`tests/test_pdf_parity.py` keeps its cross-emitter oracle permanently rather
+than spending it. The owner's stated reason is the one O-7 identified: two
+emitters compared glyph-for-glyph is a differential oracle no single-emitter
+assertion can replace.
+
+**Consequences for the task list in 9.1 - read this before executing it.**
+
+- **C0..C4 are CANCELLED.** So are the tasks that exist only to serve them:
+  **T1** (the `hifi.py` dependent inventory), **T11a** (re-point the
+  Python-side non-text assertions) and **T14** (16 mutant patches + the
+  orphaned `# suite:` header). The `tests/test_pdf_parity.py` PARTIAL-DELETE
+  and the relocation into a new `tests/test_pdf_js.py` are cancelled with
+  them: that file stays whole, `_pair` stays, and both cross-emitter tests
+  stay.
+- **T13's seven `c_*` patches with `tools/decks.py` hunks still matter** -
+  they are Stage A's problem, not Stage C's, because A3 moves the literals out
+  of `tools/decks.py`.
+- **B4 remains the gate** and gets stronger, not weaker: with `hifi.py`
+  surviving, fresh-Python-vs-fresh-JS is a standing CI check rather than a
+  one-time migration check.
+- **Coordination row 162 (drop reportlab entirely) is now moot as scheduled
+  work** - it was only ever a correction to Q5's DELETE scorecard, and DELETE
+  did not happen.
+- **D-1 .. D-5 are still to be fixed by Stages A and B.** KEEP answers to
+  Q1..Q4 mean the JS emitter must be taught the committed values; they do not
+  mean the differences are accepted.
 
 ---
 
@@ -850,6 +916,13 @@ is Python and reaches `fromBuiltin` only through `tools/pdf_build.js
 --builtin`, which is B3. [CORRECTED after independent review - this said
 both were red until B2.]).
 Lanes B1 and B2 run in parallel after A merges; both land before C.
+**Merge order between them is NOT free: lane B1 (which implements
+`fromBuiltin`) must merge BEFORE lane B2 (the tests).** B0, B1 and B4 are all
+red until B2/B3 exist, and `.github/workflows` runs `unittest discover -s
+tests` plus `node --test` as required checks - merging the tests lane first
+reds `python suites` and `js suites` on main and blocks everything behind it.
+**[ADDED after independent review - 8.9 previously fixed no order between the
+two parallel lanes.]**
 **Conflict flag:** Lane A and Lane B1 both touch `tools/` - A must merge first,
 which the ordering already enforces. Stage C is single-lane by construction
 (it deletes across every boundary at once).
@@ -862,7 +935,7 @@ Synthesized from the findings above. Each derives from a specific finding.
   - Surfaced by: E-1 - ten files reference `hifi.`, C3 names one; corrected O-5 - an attribute-only grep also misses the mutant patches
   - Scope: BOTH `grep -rn 'hifi\.'` (104 lines across the 7 Python importers, plus stale `tools/hifi.py` citations in JS comments and `tests/CONTRACT.md`) AND `grep -l '^diff --git a/tools/hifi.py' tests/mutants/*.patch` (**16** files, zero attribute references) AND the `# suite:` header inventory (**2** patches today). **[CORRECTED after independent review - this line previously said `grep -l 'tools/hifi.py' tests/mutants/*.patch` (19 files). A bare path grep returns 19 because three patches match on CONTEXT only and patch files Stage C never touches (`g_pdfcards_a4_rescales` -> `src/engine/pdfcards.js`; `d_esc_attr_leaves_quote` and `p_print_wide_gutters_zeroed` -> `index.html`). Executing T1 against 19 hands those three a PORT/RE-POINT/DELETE disposition and destroys live coverage that section 8.7 never restores. Anchor the grep at the diff header. See C0.]**
   - Files: `docs/plans/2026-09-22-seed-pdf-one-source.md`
-  - Verify: the C0 table lists all ten source files plus the **16** patches and **both** `# suite:`-orphaned patches, each classified PORT/RE-POINT/DELETE, plus `tests/CONTRACT.md:131` and `:133` (behavioural contracts that DIE with `hifi.py`, not comments that go stale) and the stale `tools/hifi.py` citations in the JS comments - C0 requires all three and this verify line previously omitted them
+  - Verify: the C0 table lists all ten source files plus the **16** patches and **both** `# suite:`-orphaned patches, each classified PORT/RE-POINT/DELETE, plus `tests/CONTRACT.md:128-130`, `:131` and `:133` (behavioural contracts that DIE with `hifi.py`, not comments that go stale - `:128-130` is the **Never `import validate`** stub contract, which A4a leans on and C0 must inventory alongside the other two) and the stale `tools/hifi.py` citations in the JS comments - C0 requires all three and this verify line previously omitted them
 - [ ] **T2 (P1, human: ~2h / CC: ~20min)** - `pdfdeck.js` - B1 asserts the spec/_geom conversion
   - Surfaced by: E-2 - `pdfcards.js:318` reads `spec._geom`, built-ins have none
   - Files: `tests/pdf_builtin.test.js`
