@@ -12,7 +12,13 @@
 > two `mode()` call sites). One of them, `:50-54`, was already off by one
 > before the shift - line 50 is the `// ---- the reportlab slice ----`
 > separator, and `mode()` began at 51 - so read that one as a correction
-> rather than as the uniform +5. Row 324 in
+> rather than as the uniform +5. The enumeration is now complete: the one
+> remaining `pdfcards.js` range, `:283-330` at `:114` (the setDash/stroke
+> surface), reads as today's **288-335** - the uniform +5 again, but a reader
+> could take the list above as exhaustive and stop looking. Note also that
+> `:124` and `:184` at `:321` are `src/engine/pdf.js`, NOT `pdfcards.js`:
+> both still point at `return this.op("S")` and neither shifted (#123
+> review, nits 1-2). Row 324 in
 > `docs/plans/scale-engine-coordination.md` is the live record; this one is
 > frozen (#122 review, nit 2).
 
