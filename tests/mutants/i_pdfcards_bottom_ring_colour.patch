@@ -5,7 +5,6 @@
 # percent darker: invisible on screen, and no glyph moves, so the text-side
 # parity oracle and every unit test still pass.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
-index c08796c..9a62925 100644
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
 @@ -324,7 +324,7 @@ HPE.pdfcards = (function () {

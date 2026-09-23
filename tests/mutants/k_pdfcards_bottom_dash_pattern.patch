@@ -4,7 +4,6 @@
 # the bottom-shell ring dashes 2.4/2.4 instead of 2.2/2.2. Still dashed,
 # still the same circle, a different rhythm from the one hifi.py:309 draws.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
-index c08796c..c7d5f24 100644
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
 @@ -325,7 +325,7 @@ HPE.pdfcards = (function () {

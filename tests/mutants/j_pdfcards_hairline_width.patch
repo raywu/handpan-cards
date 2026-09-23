@@ -5,7 +5,6 @@
 # is still drawn, still black, still in the right place - only thinner than
 # the reportlab side draws it.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
-index c08796c..69d8b5e 100644
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
 @@ -298,7 +298,7 @@ HPE.pdfcards = (function () {

@@ -5,7 +5,6 @@
 # channel is the only thing that sees it: no glyph moves and no stroke
 # changes, so every other test in the repo still passes.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
-index c08796c..617cac3 100644
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
 @@ -281,7 +281,7 @@ HPE.pdfcards = (function () {
