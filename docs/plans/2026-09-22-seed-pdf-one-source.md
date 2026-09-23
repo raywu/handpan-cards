@@ -193,8 +193,11 @@ section 5.
   reference it by path, which is E-1's ten-file / 108-reference count; AND
   **19 patch files under
   `tests/mutants/` target `tools/hifi.py` by PATH** (`grep -l 'tools/hifi.py'
-  tests/mutants/*.patch`) with no `hifi.` attribute access in them at all, so
-  an attribute-only grep misses every one. The mutation gate is a required CI
+  tests/mutants/*.patch`). Across all 19 there are exactly three incidental
+  `hifi.` attribute mentions, all inside patched comment text
+  (`hifi.build` twice, `hifi.slots` once), so an attribute-oriented grep
+  misses essentially every one and a path grep is the only reliable
+  inventory. The mutation gate is a required CI
   check; 19 dead patches turn it red. See T1 and T14.
 - **C1. [AMENDED by the corrected O-5 - see C-1a below.]** Port the assertions
   that die with `hifi.py` - the 3.6 pt print floor
@@ -209,7 +212,7 @@ section 5.
   deleted** - its premise is app-SVG vs print-PDF with opposite y axes, which
   survives `hifi.py`'s removal (E-6). Keep every assertion that pins a
   renderer to the SPEC, and note that includes the **non-text** ones
-  (`test_print.py:574`, `:611-632`; `test_render_agreement.py:244-258`;
+  (`test_print.py:574`, `:611-632`; `test_render_agreement.py:245-302`;
   `test_pdf_build.py:83-96`, `:151-190`): they exist, they are written against
   `hifi.py`, and re-pointing them (**C-1a / T11a**) is a hard precondition on
   this step.
@@ -241,7 +244,7 @@ flagged rather than auto-decided.
 | Q2 | Deck name on every card: keep `F3 LOW PYGMY 18` / `D AMARA 9` / `C# HIJAZ 9 / ORION`, or accept `F AEOLIAN 12` / `D AEOLIAN 9`? | **Keep the hand-written names.** The auto-name describes the scale, not the instrument. |
 | Q3 | Amara scale degrees: keep `bIII` / `bVII` / `IV` from `data/decks.json`, or accept the engine's `III` / `VII` / `iv`? | **Keep `data/decks.json`.** CLAUDE.md fixes Amara's degrees as `{D:i, A:v, G:IV, C:bVII, F:bIII}`; the engine's derivation disagrees with the documented ground truth and that disagreement is worth a separate queue row. |
 | Q4 | Pygmy's 7 blank cards (the 7th page): keep or drop? | **Keep.** It is a stated owner preference and costs one sheet. |
-| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **Delete, after C1's port.** Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today. |
+| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **[AMENDED by O-7 - the original recommendation is struck.]** ~~Delete, after C1's port. Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today.~~ Stopping after B is NOT worse than today: it converts today's duplication into a differential oracle, which is exactly what `tests/test_pdf_parity.py` already exploits. **Score both sides.** DELETE costs T11a (re-point the Python-side non-text assertions) + T14 (19 mutant patches) + O-3's ~1900-line port, and buys one implementation and no `reportlab` dependency. KEEP costs carrying ~1900 lines of Python nobody edits, and buys a second implementation that catches what no single-emitter assertion can. Owner call, one-way door. |
 
 An answer of "accept the generated value" to Q1, Q2 or Q3 collapses this plan
 to option 1 and makes Stages A and B unnecessary.
@@ -269,8 +272,12 @@ node tools/pdf_build.js --out /tmp/out.pdf --variant shop --paper letter < /tmp/
 ```
 
 then compare against the committed PDF. The comparison scripts used for this
-draft are throwaway; Stage A1 replaces them with
-`tests/test_seed_pdf_equivalence.py`, which is the durable form.
+draft are throwaway. **[AMENDED by O-1: the original sentence, ~~"Stage A1
+replaces them with `tests/test_seed_pdf_equivalence.py`, which is the durable
+form"~~, is superseded. That file is never created.]** The durable form is the
+PARAMETERIZED `tests/test_pdf_parity.py` (T9), which already compares every
+glyph across both emitters and only needs the three built-in decks added to
+its `SEEDS` list.
 
 ---
 
@@ -549,7 +556,7 @@ the repo already has.** `tests/test_pdf_parity.py:104-121` already renders one
 deck through BOTH `hifi.build` and `tools/pdf_build.js` and asserts **every
 glyph - x, y, size and character, page by page**
 (`test_every_glyph_lands_where_print_puts_it`, `:104-112`). Scope, precisely:
-the `full` variant runs over both entries of `SEEDS` (`:39-43`), one of them
+the `full` variant runs over both entries of `SEEDS` (`:40-43`), one of them
 a bottom-shell pan; the `shop` variant
 (`test_the_shop_variant_matches_too`, `:114-118`) runs `SEEDS[0]` only - the
 Amara string, no bottom shell. Section 2 re-derived at token
@@ -614,9 +621,11 @@ it.** The assertions exist:
 - `tests/test_print.py:574`
   `test_state_selects_root_or_tone_colour_but_never_both` pins the ring
   colours.
-- `tests/test_render_agreement.py:244-258` `BorderAgreementTest` asserts the
-  print frame draws exactly one fill colour across its full width, that it is
-  the root colour, and that its weight is 2.8 pt. Its docstring says it was
+- `tests/test_render_agreement.py:245-302` `BorderAgreementTest`. At `:252`
+  `test_print_frame_is_a_single_root_coloured_band` asserts the print frame
+  draws exactly one fill colour across its full width and that it is the root
+  colour; at `:283` the border weight is pinned at 2.8 pt in both renderers.
+  Its docstring says it was
   written for exactly this gap: "Nothing pinned this before ... so the
   two-tone split could (and did) ship unnoticed".
 - `tests/test_pdf_build.py:83-96` and `:151-190` measure the crop-mark tick
@@ -745,7 +754,7 @@ T1..T8 in section 8.10 stand except where noted; T9..T13 are new.
   - Files: `tests/test_pdf_parity.py`, the Stage A/B/C acceptance commands in this plan
   - Verify: the check goes RED after `touch`-editing a committed PDF and rebuilding
 - [ ] **T11a (P1, human: ~3h / CC: ~30min)** - C-1a: re-point the Python-side non-text assertions at `pdfcards.js`
-  - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:244-258`; `test_pdf_build.py:83-96`, `:151-190`) but are written against `hifi.py`
+  - Surfaced by: O-5 (corrected) - those assertions EXIST (`test_print.py:574`, `:611-632`; `test_render_agreement.py:245-302`; `test_pdf_build.py:83-96`, `:151-190`) but are written against `hifi.py`
   - Files: `tests/test_print.py`, `tests/test_render_agreement.py`, `tests/test_pdf_build.py`
   - Verify: the four named tests pass with `hifi.py` absent
   - Hard precondition on C3
@@ -763,8 +772,8 @@ T1..T8 in section 8.10 stand except where noted; T9..T13 are new.
   - Verify: `python3 tools/validate.py` clean on a clean tree
 - [ ] **T14 (P1, human: ~2h / CC: ~20min)** - retire or re-target the 19 `tests/mutants/*.patch` files that patch `tools/hifi.py`
   - Surfaced by: corrected O-5 - `grep -l 'tools/hifi.py' tests/mutants/*.patch` returns 19; the mutation gate is a required CI check, so 19 patches that no longer apply turn CI red at C3
-  - Files: `tests/mutants/*.patch` (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), `tools/mutation_check.sh`
-  - Verify: `bash tools/mutation_check.sh` green with `tools/hifi.py` absent, and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
+  - Files: `tests/mutants/*.patch` (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), `tests/mutation_check.sh`
+  - Verify: `bash tests/mutation_check.sh` green with `tools/hifi.py` absent, and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
   - Hard precondition on C3, same as T11a
 
 
@@ -799,8 +808,8 @@ frame, the crop marks and the calibration bar - was pinned by nothing. **That
 was false**, and an independent review of this document caught it. Those
 assertions exist: `tests/test_print.py:611-632` pins the band between the
 outline and the hairline including its stroke width, `:574` pins the ring
-colours, `tests/test_render_agreement.py:244-258` pins the frame as a single
-root-coloured 2.8 pt band, `tests/test_pdf_build.py:83-96` and `:151-190`
+colours, `tests/test_render_agreement.py:252` pins the frame as a single
+root-coloured band and `:283` pins its 2.8 pt weight, `tests/test_pdf_build.py:83-96` and `:151-190`
 measure the crop-mark ticks and the calibration bar's drawn length against
 `SPEC_CROP_MARK` and `SPEC_CALIBRATION`, and the mutation gate kills
 `c_draw_ring_band` and `c_draw_ring_swap_colours`. Section 8.5's coverage tree
