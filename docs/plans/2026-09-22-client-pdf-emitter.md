@@ -679,6 +679,35 @@ Recorded as an observation to make on the device rather than a blind fix: what i
 actually offers depends on the viewer, and guessing at it from here is how the
 browser-print path went wrong twice.
 
+**GATE RESULT, 2026-09-22 (owner, iPhone 14 / iOS 26.6, Safari).** Six of the seven
+checks PASS. Deck under test: the Pygmy maker string, generating the 52-chord,
+18-field custom deck auto-named `F AEOLIAN 12` (`custom:6f9ffc33`).
+
+- FULL DECK PDF opens in the system viewer with **no perceptible lag** (budget was
+  2 s on a 52-card deck). PRINT-ONLY PDF likewise.
+- Letter and A4 both render correctly, and **no card edge is sheared** - the failure
+  that killed the browser-print path through two iterations.
+- A4 genuinely changes the page box. This is the check the browser sheet could never
+  pass, because iOS Safari ignores `@page`; D5's parameterisation is what earns it.
+- **The filename check FAILS, exactly as row 316 predicted.** The Share sheet is
+  headed `blob:` and offers **`Unknown.pdf`** (1 MB, matching a local build of the
+  same deck at 1020 KB, so the bytes are right and only the name is lost).
+- Still outstanding: the ruler measurement at 62.65 x 87.21 mm, which needs a
+  physical print at 100% and a printer, not the phone.
+
+**Owner decision on the filename, 2026-09-22: WONTFIX - keep the viewer, accept
+`Unknown.pdf`.** The fix was offered and declined. It would have been
+`navigator.share()` with a named `File` (Web Share Level 2, supported on both iOS
+Safari and Android Chrome, so it would also have unified the two mobile paths onto
+one mechanism). The cost is that `navigator.share()` opens the Share sheet INSTEAD of
+the system PDF viewer, and the owner prefers tapping straight into the viewer. A
+floating "Share" control drawn on top of that viewer was considered and is **not
+buildable**: `window.location.href = blobURL` (`index.html:6171`) hands the file to
+native Quick Look, which is a system app and not our DOM, so there is nothing to
+overlay. Keeping our own viewer would mean bundling a PDF renderer into a single-file
+app with no `<script src>` - far too much for a missing name. Renaming by hand on
+save is the accepted cost.
+
 Only after this passes does D2's cutover become a follow-up task.
 
 ---
