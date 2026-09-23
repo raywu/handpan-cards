@@ -1317,6 +1317,105 @@ function run() {
     }
   });
 
+  /* The rendered download oracle (queue row 148 named this gap). The emitter's
+     bytes are already held against tools/hifi.py glyph for glyph by
+     tests/test_pdf_parity.py - but that runs the emitter in node, from a deck
+     a test built. This runs it where it actually ships: a real browser, the
+     real CTA, a real click, a real Blob, and a deck the app itself generated
+     from a typed scale. The file is then opened by a PDF reader, because
+     "some bytes came back" is not the same claim as "a reader can open it".
+
+     Read off the blob rather than off the disk: Chrome's download machinery is
+     not under test and writing into the harness's working directory is a side
+     effect nobody wants in a repo. */
+  test("the custom-deck CTA downloads a PDF a reader can open", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+    const { spawnSync } = require("node:child_process");
+    const os = require("node:os");
+
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    // The anchor click is real, so the transfer is real unless it is refused.
+    await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+
+    const cap = await b.eval(`
+      return (async () => {
+        const real = URL.createObjectURL;
+        const seen = [];
+        URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
+        const btn = [...document.querySelectorAll("#front .prints button")]
+          .find(el => el.textContent.trim() === "FULL DECK PDF");
+        if (!btn) return { err: "no FULL DECK PDF button on the showing face" };
+        try { btn.click(); } finally { URL.createObjectURL = real; }
+        if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
+        const u8 = new Uint8Array(await seen[0].arrayBuffer());
+        // Chunked: spreading 200k bytes into one call blows the stack.
+        let s = "";
+        for (let i = 0; i < u8.length; i += 4096) {
+          s += String.fromCharCode.apply(null, u8.subarray(i, i + 4096));
+        }
+        return { type: seen[0].type, n: u8.length, b64: btoa(s) };
+      })();`);
+
+    assert.ok(!cap.err, cap.err);
+    assert.strictEqual(cap.type, "application/pdf");
+    assert.ok(cap.n > 10000, `the CTA produced ${cap.n} bytes; that is not a card sheet`);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "emitted-pdf-"));
+    const pdf = path.join(dir, "deck.pdf");
+    fs.writeFileSync(pdf, Buffer.from(cap.b64, "base64"));
+
+    // Same oracle the printed-sheet test above uses, and the same reason:
+    // pymupdf is already a documented test requirement and the js suite is
+    // node-only. A card frame is a drawn path, invisible to a byte scan.
+    //
+    // The frame is matched on the print spec's own measurement - 177.6 x 247.2
+    // pt, the poker-size card - and not on a range. Every card also draws an
+    // inset 172 x 241.6 rect, so a loose "about that big" filter counts each
+    // slot twice and the number stops meaning anything.
+    const probe = [
+      "import sys, json, fitz",
+      "CARD = (177.6, 247.2)",
+      "d = fitz.open(sys.argv[1])",
+      "out = {'pages': d.page_count, 'box': [round(v, 2) for v in d[0].rect],",
+      "       'frames': [], 'glyphs': 0}",
+      "for p in d:",
+      "    fr = [dr for dr in p.get_drawings()",
+      "          if abs(dr['rect'].width - CARD[0]) < 0.1",
+      "          and abs(dr['rect'].height - CARD[1]) < 0.1]",
+      "    out['frames'].append(len(fr))",
+      "    out['glyphs'] += len(p.get_text('text'))",
+      "print(json.dumps(out))",
+    ].join("\n");
+
+    let r;
+    try {
+      r = spawnSync("python3", ["-c", probe, pdf], { encoding: "utf8", timeout: 120000 });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    assert.strictEqual(r.status, 0,
+      `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
+    const got = JSON.parse(r.stdout.trim().split("\n").pop());
+
+    // The deck the app just generated, counted the app's own way: the full
+    // variant is the chords plus a title card and a legend card, padded to
+    // whole 3x3 pages. Nothing here is a literal the emitter could drift from.
+    const want = await b.eval(`
+      const n = deck().chords.length + 2;
+      return { pages: Math.ceil(n / 9), cards: n };`);
+
+    assert.strictEqual(got.pages, want.pages,
+      `the emitted PDF has ${got.pages} pages; ${want.cards} cards at 9 a page is ${want.pages}`);
+    assert.deepStrictEqual(got.box, [0, 0, 612, 792],
+      "the page box must be US Letter - the print spec the cards are measured for");
+    const frames = got.frames.reduce((a, n) => a + n, 0);
+    assert.strictEqual(frames, want.pages * 9,
+      `${frames} card frames drawn; every slot on every page carries one, so ${want.pages * 9}`);
+    assert.ok(got.glyphs > 500,
+      `only ${got.glyphs} characters of text - the fonts did not draw`);
+  });
+
   test("six custom decks keep the chip row on one line with the active chip in view", async () => {
     await freshLoad();
     await b.setViewport(380, 780, true);

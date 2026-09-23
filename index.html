@@ -6136,6 +6136,51 @@ function openPrintSheet(variant) {
   }
 }
 
+/* The custom-deck print CTA, as of the client-pdf-emitter plan: the browser is
+   no longer asked to print, the page writes the PDF itself and hands it over.
+   iOS Safari is the reason - it ignores `@page` entirely (no paper size, no
+   orientation, no margins), so the browser-print sheet could never produce the
+   62.65 x 87.21 mm card the print spec measures, on the one platform this app
+   is used on most.
+
+   `openPrintSheet` below is deliberately left in place and unreferenced by the
+   CTA (plan D2): until the owner's device gate says the emitter prints
+   correctly on the phone, the old path is the way back.
+
+   The bytes are HPE.pdfcards', a port of tools/hifi.py held glyph for glyph
+   against it by tests/test_pdf_parity.py. Nothing about the page layout is
+   decided here - only delivery. */
+function pdfFileName(d, variant, paper) {
+  // tools/decks.py:409-416 names the six shipped files. A custom deck's
+  // download joins that shelf rather than inventing a second shape, so a
+  // person with both on their desktop can see they are the same kind of thing.
+  const stem = d.name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const tail = paper === "a4" ? "A4" : "Letter";
+  return stem + (variant === "shop" ? "_PRINTER_ONLY_Chords_" : "_Cards_") + tail + ".pdf";
+}
+
+function downloadDeckPDF(variant) {
+  const d = deck();
+  const bytes = HPE.pdfcards.build(HPE.pdfdeck.fromGenerated(d),
+                                   { variant, paper: printPaper });
+  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  if (isIOS(navigator.userAgent)) {
+    // `<a download>` is not honoured by iOS Safari: the tap does nothing at
+    // all, no file and no error. Opening the blob hands the PDF to the system
+    // viewer, whose Share sheet is how a file gets saved on that platform.
+    window.location.href = url;
+  } else {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pdfFileName(d, variant, printPaper);
+    a.click();
+  }
+  // Revoked on a timer, never in this turn of the event loop: the viewer (and
+  // Chrome's own download machinery) reads the URL after this function
+  // returns, and revoking early cancels the download with no diagnostic.
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 const PRINT_PDFS = {
   hijaz: { cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf", printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf" },
   pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },
@@ -6158,8 +6203,8 @@ function headerHTML(d, ch, n, noPrints) {
       <a href="${esc(pdfs.printerOnly)}" target="_blank" rel="noopener">PRINT-ONLY PDF</a>
     </div>`
     : `<div class="prints" onclick="event.stopPropagation()">
-      <button type="button" onclick="openPrintSheet('full')">FULL DECK PDF</button>
-      <button type="button" onclick="openPrintSheet('shop')">PRINT-ONLY PDF</button>
+      <button type="button" onclick="downloadDeckPDF('full')">FULL DECK PDF</button>
+      <button type="button" onclick="downloadDeckPDF('shop')">PRINT-ONLY PDF</button>
       <select aria-label="Paper size" onchange="setPrintPaper(this.value)">
         <option value="letter"${printPaper === "letter" ? " selected" : ""}>LETTER</option>
         <option value="a4"${printPaper === "a4" ? " selected" : ""}>A4</option>

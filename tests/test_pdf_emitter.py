@@ -15,15 +15,15 @@ import unittest
 
 import fitz
 
-from paths import ROOT, TOOLS
+from tests import paths
 
-SMOKE = os.path.join(TOOLS, "pdf_smoke.js")
+SMOKE = os.path.join(paths.TOOLS, "pdf_smoke.js")
 
 
 def build(tmp, *size):
     out = os.path.join(tmp, "smoke.pdf")
     subprocess.run(["node", SMOKE, out] + [str(s) for s in size],
-                   cwd=ROOT, check=True, capture_output=True)
+                   cwd=paths.ROOT, check=True, capture_output=True)
     return out
 
 

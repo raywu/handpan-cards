@@ -265,7 +265,7 @@ test("stringWidth is the only metric source and it scales linearly", () => {
 });
 ```
 
-- [ ] **Step 2: Run it, watch it fail**
+- [x] **Step 2: Run it, watch it fail**
 
 Run: `node --test tests/pdf.test.js`
 Expected: FAIL, `HPE.pdf` is undefined.
@@ -367,7 +367,7 @@ class AdapterParityTest(unittest.TestCase):
                     self.assertEqual(got[k], want[k], msg=k)
 ```
 
-- [ ] **Step 2: Run it, watch it fail** - `python3 -m unittest tests.test_pdf_deck_adapter -v`
+- [x] **Step 2: Run it, watch it fail** - `python3 -m unittest tests.test_pdf_deck_adapter -v`
 
 - [ ] **Step 3: Port `from_generated` into `src/engine/pdfdeck.js`**
 
@@ -485,7 +485,7 @@ class GeometryParityTest(unittest.TestCase):
                               if abs(d["rect"].height - 144.0) < 0.5 and d["rect"].width < 8], [])
 ```
 
-- [ ] **Step 2: Run it, watch it fail**
+- [x] **Step 2: Run it, watch it fail**
 
 Run: `python3 -m unittest tests.test_pdf_parity -v`
 Expected: FAIL, `tools/pdf_build.js` does not exist.
@@ -541,7 +541,7 @@ the banker's-rounding helper for `Math.round`. Each with `# kills:` and `# suite
 - Produces: `downloadDeckPDF(variant)` - builds the bytes, wraps them in a
   `Blob([bytes], {type: "application/pdf"})`, and delivers.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 ```js
 test("the CTA emits a PDF blob and never calls window.print", () => {
@@ -556,12 +556,12 @@ test("the CTA emits a PDF blob and never calls window.print", () => {
 });
 ```
 
-- [ ] **Step 2: Run it, watch it fail**
+- [x] **Step 2: Run it, watch it fail**
 
 Run: `node --test tests/app.test.js`
 Expected: FAIL, `downloadDeckPDF is not a function`.
 
-- [ ] **Step 3: Implement delivery, branching on iOS**
+- [x] **Step 3: Implement delivery, branching on iOS**
 
 ```js
 function downloadDeckPDF(variant) {
@@ -583,7 +583,7 @@ function downloadDeckPDF(variant) {
 }
 ```
 
-- [ ] **Step 4: Add the e2e oracle**
+- [x] **Step 4: Add the e2e oracle**
 
 An e2e test that clicks the CTA in headless Chrome, captures the blob through a
 `page.on("download")` / CDP `Page.setDownloadBehavior` hook, writes it to disk, and
@@ -597,7 +597,7 @@ and reports the identical line for a pattern matching NOTHING (learning
 mutant first (`tests/mutants/d_disarm_repaints_the_pan.patch`) and confirm the
 targeted run goes red before accepting a green one as evidence.
 
-- [ ] **Step 5: Run everything, ratchet, commit**
+- [x] **Step 5: Run everything, ratchet, commit**
 
 Run: `CHROME_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ./tests/run.sh`
 
@@ -615,6 +615,45 @@ Run: `CHROME_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" 
    emits a 595.28 x 841.89 MediaBox (D5).
 
 **Verify:** `CHROME_BIN=... ./tests/run.sh`
+
+**Execution notes (2026-09-22):**
+
+- **AC 0 needed no code.** `src/engine/pdf.js` already assembles chunk-wise:
+  `Page.prototype.op` pushes to `this.ops` (`src/engine/pdf.js:95`), the page
+  stream is `p.ops.join("\n")` (`:273`), and the file body is a `chunks` array
+  joined once (`:297-309`). Nothing in the emitter concatenates a growing
+  string. The 2 s budget itself still belongs to the Task 5 device gate.
+- **The deck needs no adapter.** `CUSTOM[id]` (`index.html:5408-5410`) holds the
+  engine's generated deck verbatim, and `HPE.pdfdeck.fromGenerated` accepts
+  either `{seed, deck}` or the generated deck itself
+  (`src/engine/pdfdeck.js:144`), so the CTA passes `deck()` straight through.
+- **D2 read as: repoint now, delete later.** The two CTAs call
+  `downloadDeckPDF`; `openPrintSheet`, `PRINT_LAYOUTS`, `printGridCSS` and
+  `teardownPrintSheet` stay in place and unreferenced by the CTA, which is what
+  AC 4 asks for. Deleting them is the follow-up Task 5 unblocks. Pinned by
+  `tests/app.test.js` "openPrintSheet survives the cutover, unreferenced by the
+  CTA".
+- **The e2e oracle reads the blob, not the disk** (`tests/e2e.test.js:1331`). It
+  wraps `URL.createObjectURL` in-page, clicks the real FULL DECK PDF button, and
+  returns the bytes base64. Chrome's download machinery is not under test and
+  writing into the harness's working directory is a side effect nobody wants.
+  Two traps hit while writing it, both now recorded in the test:
+  - `b.eval` wraps its body in a NON-async arrow (`tests/helpers/cdp.js:131`),
+    so top-level `await` will not parse. The body returns a Promise instead and
+    lets `awaitPromise` resolve it.
+  - Matching the card frame on a size RANGE double-counts every slot: each card
+    draws its 177.6 x 247.2 pt frame AND an inset 172 x 241.6 rect. The probe
+    matches the print spec's exact measurement to 0.1 pt.
+  The targeted run was proved to be a real oracle before being trusted (the
+  plan's warning above): with `glyphs > 500` raised to `> 50000` the same
+  invocation goes red with the real count, 3621.
+- **AFK auto-decision:** the e2e assertions are a page count, the Letter media
+  box, one card frame per slot on every page, and a text-glyph floor - not the
+  first card's rectangle in page coordinates. Frame-per-slot is the stronger
+  claim (it covers every page, not page 1) and does not re-assert what
+  `tests/test_pdf_parity.py` already holds glyph for glyph against `hifi.py`.
+- Floors ratcheted in `tests/suite_health.py`: `tests/app.test.js` 169 -> 177,
+  `tests/e2e.test.js` 104 -> 105.
 
 ---
 
