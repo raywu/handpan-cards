@@ -1,8 +1,11 @@
 """The README's factual claims, checked against the files that know them.
 
 Tree SHAPE, not behaviour: this check's subject IS the README's description of
-the repo, so reading `src/engine/*.js` names and counting `tests/mutants/*.patch`
-is a declared carve-out from CONTRACT rules 1-2, not a violation of them. See
+the repo, so reading `src/engine/*.js` names, globbing `tests/*.test.js` and
+`tests/test_*.py`, and counting `tests/mutants/*.patch` are a declared
+carve-out from CONTRACT rules 1-2, not a violation of them. All four globs,
+not the two this docstring used to list - the plan doc and this file state the
+same carve-out and had drifted apart on its scope. See
 docs/plans/2026-09-18-readme-refresh.md, "CONTRACT carve-out".
 """
 import glob
