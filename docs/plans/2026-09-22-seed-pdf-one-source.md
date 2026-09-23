@@ -578,6 +578,50 @@ flagged rather than auto-decided.
 An answer of "accept the generated value" to Q1, Q2 or Q3 collapses this plan
 to option 1 and makes Stages A and B unnecessary.
 
+### 5.1 ANSWERED, 2026-09-23 (owner, direct instruction)
+
+All five are now closed. They were put to the owner as a single interview and
+answered in one pass; none of these is an AFK auto-decision.
+
+| # | answer |
+|---|---|
+| Q1 | **Keep the measured literals** (73.0 / 60.0). As recommended. |
+| Q2 | **Keep the hand-written deck names** and hijaz's `C# HIJAZ / ORION` credit. As recommended. |
+| Q3 | **Keep `data/decks.json`'s `bIII` / `bVII` / `IV`.** As recommended. This also closes coordination row 161: the engine's Amara degrees (`III` / `VII` / `iv`, plus an engine-only `4:ii°`) are simply not used for a built-in deck, and nothing further is owed. |
+| Q4 | **Keep Pygmy's 7 blank cards.** As recommended. |
+| Q5 | **KEEP `tools/hifi.py` - stop after Stage B. Stage C does not happen.** |
+
+**What this settles.** Q1..Q4 all came back "keep", so nothing collapses this
+plan to option 1: **Option 2 stands and Stages A and B are both live.** Q5
+came back KEEP, so **Stage C is CANCELLED** - `tools/hifi.py` survives, the
+six committed seed PDFs keep their Python emitter, and
+`tests/test_pdf_parity.py` keeps its cross-emitter oracle permanently rather
+than spending it. The owner's stated reason is the one O-7 identified: two
+emitters compared glyph-for-glyph is a differential oracle no single-emitter
+assertion can replace.
+
+**Consequences for the task list in 9.1 - read this before executing it.**
+
+- **C0..C4 are CANCELLED.** So are the tasks that exist only to serve them:
+  **T1** (the `hifi.py` dependent inventory), **T11a** (re-point the
+  Python-side non-text assertions) and **T14** (16 mutant patches + the
+  orphaned `# suite:` header). The `tests/test_pdf_parity.py` PARTIAL-DELETE
+  and the relocation into a new `tests/test_pdf_js.py` are cancelled with
+  them: that file stays whole, `_pair` stays, and both cross-emitter tests
+  stay.
+- **T13's seven `c_*` patches with `tools/decks.py` hunks still matter** -
+  they are Stage A's problem, not Stage C's, because A3 moves the literals out
+  of `tools/decks.py`.
+- **B4 remains the gate** and gets stronger, not weaker: with `hifi.py`
+  surviving, fresh-Python-vs-fresh-JS is a standing CI check rather than a
+  one-time migration check.
+- **Coordination row 162 (drop reportlab entirely) is now moot as scheduled
+  work** - it was only ever a correction to Q5's DELETE scorecard, and DELETE
+  did not happen.
+- **D-1 .. D-5 are still to be fixed by Stages A and B.** KEEP answers to
+  Q1..Q4 mean the JS emitter must be taught the committed values; they do not
+  mean the differences are accepted.
+
 ---
 
 ## 6. Non-goals
