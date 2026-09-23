@@ -128,8 +128,15 @@ the printed artifact the owner already approved.
 > **AMENDED 2026-09-22 by sections 8 and 9.** The stage bodies below are the
 > original draft with the review's corrections applied INLINE and marked
 > **[AMENDED]**. Where a step is superseded, the amendment is binding and the
-> original wording is kept only so the change is legible. The authoritative
-> task list is section 9.1 (T1-T15), not the bullets here.
+> original wording is kept only so the change is legible. Section 9.1
+> (T1-T15) is authoritative **where it conflicts with** the bullets here.
+> **[CORRECTED after independent review: this read "The authoritative task
+> list is section 9.1, not the bullets here", which read in full drops the
+> plan's core work - 9.1 is SYNTHESIZED FROM THE FINDINGS (see 8.10) and so
+> carries no task for A2 (create the overlay file), B2 (implement
+> `fromBuiltin`), B3 (`--builtin` mode) or C2 (route `decks.py` through
+> node). The stage bullets are the work; 9.1 is the review's amendments to
+> it.]**
 
 ### Stage A - the overlay becomes canonical data (no output change)
 
@@ -286,10 +293,23 @@ section 5.
   `tests/test_gen_deck.py` 7, `tests/test_pdf_parity.py` 3,
   `tests/test_pdf_build.py` 2, `tests/test_font_subset.py` 1 - **104 `hifi.`
   lines**, 81 of them in the two biggest). **`tests/test_pdf_parity.py` is
-  pre-classified DELETE** (not PORT, not RE-POINT): it is the cross-emitter
-  harness, so it has no meaning with one emitter, and `:26`'s module-level
-  `import hifi` makes leaving it in place a collection error on the required
-  `python suites` check. Its incidental exercise of `decks.py:245`'s clash
+  pre-classified PARTIAL-DELETE** (not whole-file DELETE, and not RE-POINT)
+  **[CORRECTED AGAIN after independent review - the previous text said
+  DELETE, whole file, justified as "it is the cross-emitter harness, so it
+  has no meaning with one emitter". That justification is FALSE for part of
+  the file.]**. Three of its four tests are cross-emitter and die with the
+  second emitter; **exactly one method, `_pair` (`:90-98`), touches `hifi` at
+  all** (`:96`). `test_a4_is_letter_shifted_on_the_page` (`:120-148`) is
+  JS-ONLY - it calls `_js_pdf(payload, a, paper="letter")` and
+  `_js_pdf(payload, b, paper="a4")` and never calls `hifi.build`. It asserts
+  a property of the SURVIVING emitter (A4 output is Letter re-centred, not
+  rescaled, so the 62.65 x 87.21 mm card is preserved), and it lives in this
+  file only because the `_js_pdf`/`_glyphs`/`_generate` helpers (`:46-87`) do.
+  `test_the_sweep_actually_ran` (`:100-102`) is likewise a bare assertion on
+  `SEEDS`. **C3 must therefore relocate the JS-only tests and those three
+  helpers into a surviving Python file that does not import `hifi`** - a new
+  `tests/test_pdf_js.py` - and delete only the cross-emitter remainder.
+  Its incidental exercise of `decks.py:245`'s clash
   guard survives in `tests/test_pdf_deck_adapter.py`, which also calls
   `from_generated` and does not import `hifi`. several JS and doc files
   (`src/engine/pdfcards.js`, `pdf.js`, `pdfdeck.js`) cite `tools/hifi.py`
@@ -301,16 +321,41 @@ section 5.
   inventory task covers this]**; three more
   (`tools/inline_fonts.py`, `tools/validate.py`, `tests/test_deck_data.py`)
   reference it by path, which is E-1's ten-file / 108-reference count; AND
-  **19 patch files under
-  `tests/mutants/` target `tools/hifi.py` by PATH** (`grep -l 'tools/hifi.py'
-  tests/mutants/*.patch`). **None of those 19 contains a single `hifi.`
+  **16 patch files under `tests/mutants/` actually patch `tools/hifi.py`**.
+  **[CORRECTED after independent review: this said 19, the raw count from
+  `grep -l 'tools/hifi.py' tests/mutants/*.patch`. That grep OVER-matches by
+  three, because it also hits patches whose diff CONTEXT lines carry a
+  `tools/hifi.py:NNN-NNN` provenance comment inside the file they really
+  patch. The three context-only matches are
+  `g_pdfcards_a4_rescales.patch` (patches `src/engine/pdfcards.js`),
+  `d_esc_attr_leaves_quote.patch` and `p_print_wide_gutters_zeroed.patch`
+  (both patch `index.html`). All three target files that SURVIVE Stage C -
+  and section 8.7 leaves `index.html` alone entirely - so retiring them
+  because they matched the path grep destroys live coverage. The reliable
+  test is `grep -q '^diff --git a/tools/hifi.py'`, not a bare path grep.]**
+  **None of those 16 contains a single `hifi.`
   attribute access** - only `tools/hifi.py` in the diff headers - so an
-  attribute grep misses every one of them and a path grep is the only
-  reliable inventory. (Three OTHER patches do mention `hifi.build` /
+  attribute grep misses every one of them and a path grep alone, uncorrected,
+  is not the inventory either. (Three OTHER patches do mention `hifi.build` /
   `hifi.slots` in patched comment text - `c_gen_omitted_vacuous`,
   `p_full_deck_loses_its_blank_templates`, `p_print_grid_wide_row_gap` - and
-  none of those three is among the 19.) The mutation gate is a required CI
-  check; 19 dead patches turn it red. See T1 and T14.
+  none of those three is among the 19.) **A third inventory is required, and neither grep above
+  produces it: which mutants name a test file Stage C DELETES in their
+  `# suite:` header.** Run `grep -l '^# suite:.*test_pdf_parity'
+  tests/mutants/*.patch` - exactly one today,
+  `g_pdfcards_a4_rescales.patch`, whose `# kills:` header names
+  `test_a4_is_letter_shifted_on_the_page`. That patch is the reason
+  `tests/test_pdf_parity.py` is PARTIAL-DELETE above, and its `# suite:`
+  header must be re-pointed at the relocated test's new home in the same
+  commit. Left alone it HARD-ABORTS the gate rather than merely failing it:
+  `git apply --check` PASSES (the patch targets `src/engine/pdfcards.js`,
+  which Stage C does not touch, so it is never reported `stale`), and then
+  `baseline_ok "python3 -m unittest tests.test_pdf_parity"` raises
+  `ModuleNotFoundError` on the CLEAN tree, which
+  `tests/mutation_check.sh:224-238` turns into `ABORTING - BASELINE NOT
+  GREEN ... exit 4` - so every mutant after it is never evaluated and the
+  check reports nothing at all. The mutation gate is a required CI
+  check; dead or orphaned patches turn it red. See T1 and T14.
 - **C1. [AMENDED by the corrected O-5 - see C-1a below.]** Port the assertions
   that die with `hifi.py` - the 3.6 pt print floor
   over every drawn glyph (`test_no_label_falls_below_the_print_floor`), and
@@ -391,7 +436,7 @@ flagged rather than auto-decided.
 | Q2 | Deck name on every card: keep `F3 LOW PYGMY 18` / `D AMARA 9` / `C# HIJAZ 9` plus hijaz's `C# HIJAZ / ORION` credit, or accept `F AEOLIAN 12` / `D AEOLIAN 9`? | **Keep the hand-written names.** The auto-name describes the scale, not the instrument. |
 | Q3 | Amara scale degrees: keep `bIII` / `bVII` / `IV` from `data/decks.json`, or accept the engine's `III` / `VII` / `iv`? | **Keep `data/decks.json`.** CLAUDE.md fixes Amara's degrees as `{D:i, A:v, G:IV, C:bVII, F:bIII}`; the engine's derivation disagrees with the documented ground truth and that disagreement is worth a separate queue row. |
 | Q4 | Pygmy's 7 blank cards (the 7th page): keep or drop? | **Keep.** It is a stated owner preference and costs one sheet. |
-| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **[AMENDED by O-7 - the original recommendation is struck.]** ~~Delete, after C1's port. Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today.~~ Stopping after B is NOT worse than today: it converts today's duplication into a differential oracle, which is exactly what `tests/test_pdf_parity.py` already exploits. **Score both sides.** DELETE costs T11a (re-point the Python-side non-text assertions) + T14 (19 mutant patches) + O-3's ~1900-line port, and buys one PDF EMITTER. **[CORRECTED after independent review: this said DELETE "buys one implementation and no `reportlab` dependency". The reportlab half is false - `tools/decks.py:7`, `tests/test_print.py:18`, `tests/test_font_subset.py:22` and (transitively) `tools/validate.py` all import reportlab and all survive C3, and C2 keeps `decks.py` as the entry point. reportlab REMAINS a dependency unless separate, currently unscheduled work re-points those four. Q5 is the plan's one-way door, so it must not be scored on a benefit it does not buy.]** KEEP costs carrying ~1900 lines of Python nobody edits, and buys a second implementation that catches what no single-emitter assertion can. Owner call, one-way door. |
+| Q5 | Does the Python emitter get deleted (Stage C) or kept as a second opinion (stop after B)? | **[AMENDED by O-7 - the original recommendation is struck.]** ~~Delete, after C1's port. Stopping after B leaves two emitters plus a third artifact (the overlay), which is worse than today.~~ Stopping after B is NOT worse than today: it converts today's duplication into a differential oracle, which is exactly what `tests/test_pdf_parity.py` already exploits. **Score both sides.** DELETE costs T11a (re-point the Python-side non-text assertions) + T14 (16 mutant patches + 1 orphaned suite header) + O-3's ~1900-line port, and buys one PDF EMITTER. **[CORRECTED after independent review: this said DELETE "buys one implementation and no `reportlab` dependency". The reportlab half is false - `tools/decks.py:7`, `tests/test_print.py:18`, `tests/test_font_subset.py:22` and (transitively) `tools/validate.py` all import reportlab and all survive C3, and C2 keeps `decks.py` as the entry point. reportlab REMAINS a dependency unless separate, currently unscheduled work re-points those four. Q5 is the plan's one-way door, so it must not be scored on a benefit it does not buy.]** KEEP costs carrying ~1900 lines of Python nobody edits, and buys a second implementation that catches what no single-emitter assertion can. Owner call, one-way door. |
 
 An answer of "accept the generated value" to Q1, Q2 or Q3 collapses this plan
 to option 1 and makes Stages A and B unnecessary.
@@ -656,7 +701,7 @@ why B4 is the gate) and the C3 deletion (closed by E-6).
 
 | existing | does the plan reuse it? |
 |---|---|
-| `tests/test_pdf_build.py:254` committed-vs-fresh staleness gate | Not as drafted. **[AMENDED: this cell credited E-7's shared build helper, superseded by O-1 - there is no new file to share one with. T9 reuses `test_pdf_parity.py`'s `_pair` fixture instead.]** |
+| `tests/test_pdf_build.py:254` committed-vs-fresh staleness gate | Not as drafted. **[AMENDED: this cell credited E-7's shared build helper, superseded by O-1 - there is no new file to share one with. T9 reuses `test_pdf_parity.py`'s `_pair` helper instead (**not a fixture** - see 8.4).]** |
 | `tests/test_pdf_deck_adapter.py:99` JS-vs-Python adapter parity sweep | Not named in the plan. E-5 folds it in. |
 | `src/engine/pdfcards.js:156` `fitNote`, `:124` 3.6 pt floor | C1 asked to port them; they exist. E-4 corrects. |
 | `src/engine/pdfcards.js:516,552` blank-card rendering and `deck.blank_cards` | Yes, implicitly - the renderer already honours the key, so D-4 dissolves with the overlay and needs no renderer change. |
@@ -668,14 +713,18 @@ why B4 is the gate) and the C3 deletion (closed by E-6).
 | step | modules touched | depends on |
 |---|---|---|
 | A1 | `tests/` | - |
-| A2, A3, A4 | `data/`, `tools/` | A1 |
+| A2, A3, A4a | `data/`, `tools/` | A1 |
+| A4b | `tests/` | A2 |
 | B0, B1, B4 | `tests/` | A2 |
 | B2, B3 | `src/engine/`, `tools/` | A2 |
+| B5 | `index.html` (generated region) | B2 |
 | C0 | `docs/` (inventory only) | B4 |
 | C1..C4 | `tests/`, `tools/`, `src/engine/`, docs | C0 |
 
 Lane A: A1 -> A2 -> A3 -> A4 (sequential, shared `tools/`).
-Lane B1: B2 -> B3 (sequential, shared `tools/` + `src/engine/`).
+Lane B1: B2 -> B3 -> B5 (sequential, shared `tools/` + `src/engine/`; B5
+re-runs `python3 tools/inline_engine.py`, without which `tools/validate.py`
+check 4 reds on the inlined `<!-- engine:pdfdeck -->` region).
 Lane B2: B0 -> B1 -> B4 (`tests/` only, written against the not-yet-existing
 flag; B0 and B1 are both RED until B2 lands).
 Lanes B1 and B2 run in parallel after A merges; both land before C.
@@ -928,7 +977,7 @@ once `fromBuiltin` synthesizes the same wrong string. **D-8 stands.**
 |---|---|---|---|
 | 1. adopt generated geometry | low | **changes `R`, moves every card** | glyph parity only |
 | 2a. A+B only (overlay + `fromBuiltin`) | **~40 lines JS + overlay file + parameterizing one test** | none - fully reversible | glyph parity, **plus `hifi.py` retained as a differential oracle** |
-| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines ported across ten files (108 `hifi.` references), including 19 mutant patches** | **permanent: every Python-side spec assertion must be re-pointed first (C-1a) or it is lost** | **the re-pointed spec assertions + the committed-bytes gate. NOT glyph parity** - `tests/test_pdf_parity.py` imports `hifi` and dies with it (see Stage C acceptance) |
+| 2b. A+B+C (retire Python) | 2a **plus ~1900 lines ported across ten files (108 `hifi.` references), including 16 mutant patches + 1 orphaned suite header** | **permanent: every Python-side spec assertion must be re-pointed first (C-1a) or it is lost** | **the re-pointed spec assertions + the committed-bytes gate. NOT glyph parity** - `tests/test_pdf_parity.py` imports `hifi` and dies with it (see Stage C acceptance) |
 | 3. keep both, document | zero | none | unchanged |
 | 4. generated-only, drop seeds | low | **loses the print overlay entirely** | n/a |
 
@@ -978,10 +1027,11 @@ out of the corrected D-6).
   - Surfaced by: O-8
   - Files: `tools/regen_data_mutants.py` output, `CLAUDE.md`, `README.md`
   - Verify: `python3 tools/validate.py` clean on a clean tree
-- [ ] **T14 (P1, human: ~2h / CC: ~20min)** - retire or re-target the 19 `tests/mutants/*.patch` files that patch `tools/hifi.py`
-  - Surfaced by: corrected O-5 - `grep -l 'tools/hifi.py' tests/mutants/*.patch` returns 19; the mutation gate is a required CI check, so 19 patches that no longer apply turn CI red at C3
-  - Files: `tests/mutants/*.patch` (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), `tests/mutation_check.sh`
-  - Verify: `bash tests/mutation_check.sh` green with `tools/hifi.py` absent, and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
+- [ ] **T14 (P1, human: ~2h / CC: ~30min)** - retire or re-target the **16** `tests/mutants/*.patch` files that patch `tools/hifi.py`, and re-point the **1** that names a deleted suite
+  - Surfaced by: corrected O-5, then **corrected twice more by independent review**. `grep -l 'tools/hifi.py' tests/mutants/*.patch` returns 19, but only **16** carry `^diff --git a/tools/hifi.py`; the other three (`g_pdfcards_a4_rescales`, `d_esc_attr_leaves_quote`, `p_print_wide_gutters_zeroed`) match only on a `tools/hifi.py:NNN-NNN` provenance comment in their diff CONTEXT and actually patch `src/engine/pdfcards.js` and `index.html`, all of which SURVIVE Stage C. Retiring those three destroys live coverage, two files of it in `index.html`, which section 8.7 leaves alone
+  - **Separate and not covered by either grep:** `grep -l '^# suite:.*test_pdf_parity' tests/mutants/*.patch` returns `g_pdfcards_a4_rescales.patch`, whose `# kills:` header names `test_a4_is_letter_shifted_on_the_page`. C0's PARTIAL-DELETE relocates that test into `tests/test_pdf_js.py`; this patch's `# suite:` header must be re-pointed there IN THE SAME COMMIT. Left alone it does not merely fail the gate, it HARD-ABORTS it: `git apply --check` passes (it targets a surviving file, so it is never `stale`), then `baseline_ok` raises `ModuleNotFoundError` on the clean tree and `tests/mutation_check.sh:224-238` exits 4 with every later mutant unevaluated
+  - Files: the 16 `tools/hifi.py` patches (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), plus `g_pdfcards_a4_rescales.patch`'s header only, `tests/mutation_check.sh`
+  - Verify: `bash tests/mutation_check.sh` green (**not exit 4**) with `tools/hifi.py` absent; `d_esc_attr_leaves_quote` and `p_print_wide_gutters_zeroed` still present and still killed; and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
   - Hard precondition on C3, same as T11a
 - [ ] **T15 (P1, human: ~3h / CC: ~30min)** - the built-in path must READ `chords[].fields` from `data/decks.json`, never re-derive the voicing
   - Surfaced by: the corrected D-6 - the engine's register tie-break derives Pygmy `Fm9` as `fields [5,7,8,9,6]` (`G4`) where the committed deck has `[5,7,8,9,11]` (`G5`). One card of 96, but it changes the printed note line and number line, and `CLAUDE.md` names that card as ground truth.
@@ -1032,9 +1082,11 @@ said so six pages earlier; the review contradicted itself.
 The true claim is narrower and still gates Stage C: every one of those
 assertions is written against `tools/hifi.py`, so C3 must **re-point** them at
 `pdfcards.js` (**C-1a / T11a**) before deleting it - the same move E-6 already
-requires for `test_render_agreement.py` - and the 19 `tests/mutants/*.patch`
-files that patch `tools/hifi.py` by path must be retired or re-targeted
-(**T14**), or the required mutation-gate check turns red. Separately, nothing
+requires for `test_render_agreement.py` - and the 16 `tests/mutants/*.patch`
+files that actually patch `tools/hifi.py` must be retired or re-targeted, and
+the one patch whose `# suite:` header names a deleted test file re-pointed
+(**T14**), or the required mutation-gate check turns red - and in the
+`# suite:` case hard-aborts at exit 4 rather than reporting one failure. Separately, nothing
 compares non-text drawing ACROSS the two emitters; closing that
 (**C-1b / T11b**) is worth doing while both exist but is not a precondition.
 Q5 remains an owner call, now priced against re-pointing a known list rather
