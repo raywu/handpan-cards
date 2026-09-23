@@ -184,6 +184,15 @@ file both emitters can read. Nothing about the PDFs changes.
   in `tools/decks.py` - `R`, `cy`, `y_note`, `y_num`, `title`, `credit`,
   `blurb`, `legend_lines`, `legend_demo`, `blank_cards`, and the committed
   three-decimal colour values. Copied verbatim, not re-derived.
+  **`blurb` carries the literal, INCLUDING its stale chord count** (hijaz
+  `18`, pygmy `25`, amara `16`) - the count is derived downstream by
+  `_from_canonical` (`tools/decks.py:249-258`) and A3 must keep that
+  substitution when it moves the literals out. Do not "fix" the numbers in
+  the JSON: a corrected literal is indistinguishable from a correct one after
+  the substitution, and the test that pins the derivation
+  (`tests/test_print.py:875-912`, which asserts `52 CHORDS` and NOT
+  `27 CHORDS`) would then pass whether or not the substitution still runs.
+  See B1 for the JS side.
 - **A3.** `tools/decks.py` reads `data/print_overlay.json` instead of carrying
   the literals inline. The clash guard against `data/decks.json` stays.
 - **A4. [AMENDED after independent review - SPLIT IN TWO.]** ~~Extend
@@ -202,7 +211,11 @@ file both emitters can read. Nothing about the PDFs changes.
   not schedule and CLAUDE.md scopes pymupdf to the test suite. So:
   - **A4a (stays in check 1b):** assert the overlay file and `data/decks.json`
     do not clash - an overlay key must never shadow a canonical one. Pure data,
-    no PDF, no new dependency.
+    no PDF, no new dependency. Note this largely re-states the guard already
+    at `tools/decks.py:244-248`, which raises at import and which
+    `tools/validate.py` reaches by importing `decks` - A4a is a cheap
+    belt-and-braces, not new coverage, and should not be costed as though it
+    were.
   - **A4b (moves to `tests/test_pdf_build.py`):** assert the overlay and the
     BUILT PDFs agree. That file already opens PDFs with pymupdf and already
     owns the staleness gate at `:254`.
@@ -224,7 +237,15 @@ file both emitters can read. Nothing about the PDFs changes.
   SEPARATE, explicitly manual acceptance item: run `python3 tools/decks.py`,
   confirm `git diff --stat` shows all six PDFs touched and
   `python3 -m unittest tests.test_pdf_build` still green, then
-  `git checkout -- '*.pdf'`.
+  `git checkout -- '*.pdf'`. **[AMENDED after independent review - this item
+  is a smoke test, not acceptance, and the plan should say so. Once T10 reads
+  its reference from `git show HEAD:<pdf>`, the rebuild is invisible to
+  `test_pdf_build`, and `git diff --stat` shows all six touched
+  unconditionally because reportlab stamps a creation date (CLAUDE.md, "Print
+  pipeline"). Both halves pass whatever Stage A did to the literals. It is
+  worth running - it proves the build does not CRASH on the externalized
+  overlay - and it is worth nothing beyond that. The acceptance that bites is
+  the three automated commands above.]**
 - **Rollback:** revert the commit; the literals come back.
 
 ### Stage B - the JS emitter can build a built-in deck
@@ -232,17 +253,55 @@ file both emitters can read. Nothing about the PDFs changes.
 - **B0. [NEW - moved out of Stage A by independent review.]** Parameterize
   `tests/test_pdf_parity.py` over the three BUILT-IN decks (T9): `SEEDS`
   becomes seeds + built-ins, `_pair` gains a built-in branch calling
-  `fromBuiltin`, the glyph-exact assertions apply unchanged. This lands AFTER
-  B2 in execution order even though it is numbered before it, exactly as B1
-  does - it is the failing test for B2, and it is red until B2 exists. Ordering
+  `fromBuiltin`, the glyph-exact assertions apply unchanged. `_pair` is
+  Python and cannot call `fromBuiltin` directly: it reaches it the same way
+  it reaches `fromGenerated` today, by shelling out to `tools/pdf_build.js`,
+  so the branch is really `--builtin <deck-id>` and **B0 is red until B3
+  lands, not merely until B2 does** **[CORRECTED after independent review -
+  this bullet and 8.9's lane note both said B2.]** This lands AFTER
+  B3 in execution order even though it is numbered before it, exactly as B1
+  does - it is the failing test for B2/B3, and it is red until they exist. Ordering
   it inside Stage B is the whole point: Stage A must not ship a commit that
   references a function Stage B creates.
 - **B1. [AMENDED by E-2 and O-1.]** `tests/pdf_builtin.test.js`: feed a
   built-in deck plus its overlay to a new
   `HPE.pdfdeck.fromBuiltin(deck, overlay)` and assert the returned object
-  carries the overlay's `R`, `cy`, `title`, `credit`, `blurb`, `legend_lines`
+  carries the overlay's `R`, `cy`, `title`, `credit`, `legend_lines`
   and `blank_cards` unchanged - explicitly NOT the synthesized title, and NOT a
-  value derived from `geom.ext`. **It must also assert the `fields`+`geom` ->
+  value derived from `geom.ext`.
+  **`blurb` is the exception and must NOT be asserted unchanged**
+  **[CORRECTED after independent review - this bullet listed `blurb` among the
+  carried-unchanged keys. It is not carried unchanged by the pipeline this
+  plan is replacing, and writing that assertion as B1's failing test leads
+  B2 to copy the stale literal straight through.]**: `_from_canonical`
+  (`tools/decks.py:249-258`) rewrites the LAST line of `blurb`, substituting
+  `re.sub(r"\d+(?=\s*CHORDS)", str(len(chords)), ...)` - the count is derived
+  from the deck's own chord list because, in its own comment, "a hand-typed
+  literal goes stale the moment a chord is added or removed". It is a no-op on
+  ZERO of the three decks:
+
+  | deck | overlay literal (`tools/decks.py`) | what `decks.<DECK>["blurb"][-1]` is |
+  |---|---|---|
+  | hijaz (`:268`) | `... NO b6   -   18 CHORDS` | `... NO b6   -   19 CHORDS` |
+  | pygmy (`:285`) | `... F NATURAL MINOR   -   25 CHORDS` | `... F NATURAL MINOR   -   52 CHORDS` |
+  | amara (`:300`) | `16 CHORDS - ONE CARD PER CHORD` | `25 CHORDS - ONE CARD PER CHORD` |
+
+  So B1 asserts that `fromBuiltin` reproduces the SUBSTITUTION: the overlay's
+  blurb with the last line's `\d+(?=\s*CHORDS)` replaced by
+  `deck.chords.length`. Neither extreme is right - copying the literal prints
+  `18` where the committed Hijaz PDF prints `19`, and calling
+  `pdfdeck.js`'s generated `blurb()` (`:96-114`) throws away the hand-written
+  scale line entirely. `fromBuiltin` needs the hybrid. Without this, B1 and
+  B4 are directly contradictory: B4 compares fresh Python
+  (`hifi.build(decks.PYGMY)` -> `52 CHORDS`) against fresh JS
+  (`fromBuiltin` -> `25 CHORDS`) glyph for glyph and calls any survivor a bug
+  in `fromBuiltin`. `tests/test_print.py:875-912` and mutant
+  `c_gen_chord_count_off_by_one` both exist to pin this behaviour.
+  **Also assert the colour literals** (`col_root`, `col_tone`, `grad`) come
+  through at their committed three-decimal values: D-7 is the only difference
+  the plan accepts as YES, and B4's oracle is `_glyphs` -> `(x, y, size,
+  char)`, which cannot see a colour at all - so if B1 does not pin them,
+  nothing in Stage B does. **It must also assert the `fields`+`geom` ->
   `spec`+`_geom` conversion** (E-2): `pdfcards.js:318` reads `spec._geom` and a
   built-in deck has no `spec` at all, so the conversion is the real work and
   nothing else pins it. Also assert `sub` comes from `data/decks.json` (D-8 -
@@ -256,7 +315,8 @@ file both emitters can read. Nothing about the PDFs changes.
   glyphs and structurally cannot assert that `spec._geom` exists, so the E-2
   conversion has no other home.
 - **B2.** Implement `fromBuiltin` beside `fromGenerated` in
-  `src/engine/pdfdeck.js`. It does not touch `fromGenerated`, so the
+  `src/engine/pdfdeck.js`, including B1's blurb chord-count substitution and
+  the committed colour literals. It does not touch `fromGenerated`, so the
   `geom.ext` throw at `:161` stays exactly as it is - that throw is a
   deliberate guard and this plan does not weaken it.
 - **B3.** `tools/pdf_build.js` gains a `--builtin <deck-id>` mode that reads
@@ -309,7 +369,7 @@ section 5.
   second emitter (`test_every_glyph_lands_where_print_puts_it` `:104-113`
   and `test_the_shop_variant_matches_too` `:114-119`, both routed through
   `_pair`); the other two survive. **Exactly one method, `_pair` (`:90-98`), touches `hifi` at
-  all** (`:96`). `test_a4_is_letter_shifted_on_the_page` (`:120-148`) is
+  all** (`:96`). `test_a4_is_letter_shifted_on_the_page` (`:120-149`) is
   JS-ONLY - it calls `_js_pdf(payload, a, paper="letter")` and
   `_js_pdf(payload, b, paper="a4")` and never calls `hifi.build`. It asserts
   a property of the SURVIVING emitter (A4 output is Letter re-centred, not
@@ -319,7 +379,7 @@ section 5.
   `SEEDS`. **C3 must therefore relocate the JS-only tests and those three
   helpers into a surviving Python file that does not import `hifi`** - a new
   `tests/test_pdf_js.py`, together with the module constants those helpers
-  read (`SEEDS` `:39-43`, `GEN_DECK`, `BUILD`, `NODE`) - and delete only the
+  read (`SEEDS` `:40-43`, `GEN_DECK`, `BUILD`, `NODE`) - and delete only the
   cross-emitter remainder.
   Its incidental exercise of `decks.py:245`'s clash
   guard survives in `tests/test_pdf_deck_adapter.py`, which also calls
@@ -355,8 +415,17 @@ section 5.
   `p_full_deck_loses_its_blank_templates`, `p_print_grid_wide_row_gap` - and
   none of those three is among the 16.) **A third inventory is required, and neither grep above
   produces it: which mutants name, in their `# suite:` header, a test MODULE
-  Stage C deletes or relocates OR a fully-qualified test METHOD Stage C
-  rewrites.** **[GENERALIZED after independent review - this inventory was
+  Stage C deletes or relocates OR a test METHOD Stage C rewrites, renames or
+  ports out of Python - including a BARE `-k <name>` header naming a method
+  in a module that itself survives.** The bare-`-k` case fails quietly rather
+  than loudly: `python3 -m unittest -k <name> <module>` with no matching
+  method exits **0**, so the mutant is simply not killed and lands in
+  SURVIVORS (exit 1) instead of hard-aborting. C1 ports
+  `test_no_label_falls_below_the_print_floor` and `hifi.fit_note`'s overflow
+  shrink OUT of `tests/test_print.py`, and at least one mutant pins the first
+  by bare `-k`; check every `-k` name in
+  `grep -h '^# suite:' tests/mutants/*.patch | sort -u` against C1's port
+  list, not just the module names. **[GENERALIZED after independent review - this inventory was
   scoped to `test_pdf_parity` and missed the method-name case below.]** Run
   `grep -h '^# suite:' tests/mutants/*.patch | sort -u` and check every
   header against C0's own disposition table, not just against one filename.
@@ -395,10 +464,10 @@ section 5.
   independent review.]** Delete `tools/hifi.py`.
   **`tests/test_pdf_parity.py` is PARTIAL-DELETE, never whole-file DELETE.**
   In the same commit: create `tests/test_pdf_js.py`, move
-  `test_a4_is_letter_shifted_on_the_page` (`:120-148`) and
+  `test_a4_is_letter_shifted_on_the_page` (`:120-149`) and
   `test_the_sweep_actually_ran` (`:100-102`) into it along with the helpers
   `_generate` (`:46`), `_js_pdf` (`:54`), `_glyphs` (`:63`) and the module
-  constants `SEEDS` (`:39-43`), `GEN_DECK`, `BUILD` and `NODE` that they
+  constants `SEEDS` (`:40-43`), `GEN_DECK`, `BUILD` and `NODE` that they
   read; delete only the two cross-emitter tests and `_pair` (`:90-98`); and
   re-point `g_pdfcards_a4_rescales.patch`'s `# suite:` header at the new
   module. Deleting the file whole leaves that patch naming a module that no
@@ -776,7 +845,10 @@ Lane B1: B2 -> B3 -> B5 (sequential, shared `tools/` + `src/engine/`; B5
 re-runs `python3 tools/inline_engine.py`, without which `tools/validate.py`
 check 4 reds on the inlined `<!-- engine:pdfdeck -->` region).
 Lane B2: B0 -> B1 -> B4 (`tests/` only, written against the not-yet-existing
-flag; B0 and B1 are both RED until B2 lands).
+flag; B1 is RED until B2 lands, and **B0 is RED until B3 lands** - `_pair`
+is Python and reaches `fromBuiltin` only through `tools/pdf_build.js
+--builtin`, which is B3. [CORRECTED after independent review - this said
+both were red until B2.]).
 Lanes B1 and B2 run in parallel after A merges; both land before C.
 **Conflict flag:** Lane A and Lane B1 both touch `tools/` - A must merge first,
 which the ordering already enforces. Stage C is single-lane by construction
@@ -794,11 +866,19 @@ Synthesized from the findings above. Each derives from a specific finding.
 - [ ] **T2 (P1, human: ~2h / CC: ~20min)** - `pdfdeck.js` - B1 asserts the spec/_geom conversion
   - Surfaced by: E-2 - `pdfcards.js:318` reads `spec._geom`, built-ins have none
   - Files: `tests/pdf_builtin.test.js`
-  - Verify: `node --test tests/pdf_builtin.test.js`
+  - Verify: `node --test tests/pdf_builtin.test.js`, and specifically that it
+    goes RED against a `fromBuiltin` that copies the overlay's `blurb`
+    unchanged - the derived chord count (B1) is the assertion most likely to
+    be written the wrong way round, and it is wrong on all three decks
 - [ ] **T3 (P2, human: ~30min / CC: ~5min)** - `pdfdeck.js` - `fromBuiltin` takes `sub` from `data/decks.json`
   - Surfaced by: E-3 / D-8 - `ORION  -  8 + 1` vs computed `8 + 1`
   - Files: `src/engine/pdfdeck.js`, `tests/pdf_builtin.test.js`
-  - Verify: the title card of the hijaz full build contains `ORION`
+  - Verify: the hijaz full build's title card draws `ORION  -  8 + 1` as the
+    SUBTITLE (`pdfcards.js:477`). **Not** "the title card contains `ORION`" -
+    that passes on the overlay's `credit` literal `"C# HIJAZ / ORION"`
+    (`tools/decks.py:264`) whether or not `sub` is read from
+    `data/decks.json` at all, which is the whole of D-8. B1's `sub`
+    assertion is the real pin.
 - [ ] **T4 (P1, human: ~4h / CC: ~40min)** - tests - re-point `test_render_agreement.py` at `pdfcards.js`
   - Surfaced by: E-6 - deleting `hifi.py` leaves app-SVG vs JS-PDF, still two renderers
   - Files: `tests/test_render_agreement.py`
