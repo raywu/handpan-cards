@@ -1469,3 +1469,53 @@ green at the merged head `90a14d6`; mutation gate zero survivors.
 | 308 | #63 review | `tools/hifi.py`'s warning-badge loop stacks at `y + 6.0 - i * 5.5`, so a SECOND badge lands at `y + 0.5` - inside the trim, under `MIN_TEXT_MARGIN` (2.0). Unreachable today (one code in `CARD_WARNINGS`) and the bounds test only ever renders a one-warning deck, so the loop is written for N and proven at N=1 | open - LOW |
 | 309 | #63 review | `card_warnings()` silently drops a warning code that is not in `CARD_WARNINGS`, so a future `NO_FIFTHS` would warn on the title card and not on the chord cards - row 113 recurring. Close it with a test asserting `set(CARD_WARNINGS)` equals the code table in `docs/ENGINE-SPEC.md:150` | open - MED |
 | 310 | #63 review | Fixed in-lane before merge (`90a14d6`): `tests/suite_health.py`'s `test_deck_data.py` floor stayed at 14 while the file grew to 16, leaving this lane's own two new tests deletable without tripping the gate | closed |
+
+## Client PDF emitter lane closed - PR #114 (merge `0786fe2`, 2026-09-22)
+
+Tasks 1-4 of `docs/plans/2026-09-22-client-pdf-emitter.md`: a hand-rolled vector PDF
+writer in `src/engine/pdf.js` / `pdfcards.js` / `pdfdeck.js`, wired to FULL DECK PDF
+and PRINT-ONLY PDF buttons on the custom-deck face (`index.html:6153-6206`), held
+against `tools/hifi.py` glyph for glyph by `tests/test_pdf_parity.py` and end to end
+in a real browser by `tests/e2e.test.js`. Commits `0d48e3c`, `749796b`, `3c39b52`.
+CI green at `3c39b52` (run 35802775162, all five jobs, headSha verified equal to the
+local tip). Local gate at the same SHA: 564 node tests, 165 python tests,
+`tools/validate.py` 6/6, `tests/suite_health.py` OK, **376/376 mutants killed**.
+Reviewer verdict **PASS_WITH_NITS**; merged `gh pr merge 114 --merge` under the
+standing AFK grant. **Task 5, the owner's iPhone 14 / iOS 26.6 device gate, is still
+open** - merging is what deploys to Pages and therefore what makes that gate
+performable.
+
+Two CI-invisible-to-nobody defects were found and fixed inside the lane and are worth
+keeping: `fonttools` was missing from four of the five CI jobs (`tools/validate.py:28`
+-> `tools/inline_fonts.py:32`) while being present on the local machine, so the suite
+was green here and red there; and `tests/mutants/p_paper_picker_forgets_its_state.patch`
+was anchored on the two CTA buttons Task 4 repointed, surviving `(stale)` rather than
+failing loudly.
+
+The reviewer's own framing of what follows: "No finding rises to a FAIL. Every survivor
+I found traces to correct shipped code - I proved that independently. The survivors are
+missing guards, not defects." Its independent vector cross-check is the evidence for
+that: normalised `get_drawings()` compared between the JS emitter and reportlab over
+Amara full (728 drawings), a Pygmy-shaped full (2,297) and a Pygmy-shaped shop (2,219),
+on path type, fill colour, stroke colour, line width, dash pattern and every point -
+**0 differing** in all three, the only divergence anywhere being a line width at the
+third decimal (1.429 vs 1.428) from `num()`'s 4-decimal quantisation at
+`src/engine/pdf.js:38`.
+
+| Row | Source | Finding | Status |
+| --- | --- | --- | --- |
+| 311 | #114 review | **The whole vector and colour surface of the emitter is unasserted, and it is the largest gap by far.** `_glyphs()` in `tests/test_pdf_parity.py` captures only `(x, y, size, char)`; `recorder()` in `tests/pdfcards.test.js` noops `setFill`, `setStroke`, `setLineWidth` and `setDash`; `tests/pdf.test.js` asserts only that ` rg`, ` RG`, ` w` and ` d` appear somewhere in the stream. So every colour, stroke width and dash pattern the cards draw is correct today (proved above, by hand) and guarded by nothing. Fix: extend the parity oracle to compare a normalised `get_drawings()` trace with line width rounded to 2 dp - ONE test kills five of the reviewer's survivors | open - HIGH, the one that matters |
+| 312 | #114 review | Task 4's AC 0 ("no string concatenation in the byte path") is satisfied by reading, not by a gate. A refactor back to `+=` passes every test green; the 2 s budget that would catch it is deferred to the Task 5 device gate, so nothing in CI notices. Wants either a source assertion over `src/engine/pdf.js` or a 52-card build benchmark with a wall-clock ceiling | open |
+| 313 | #114 review | **`/Length` is structurally unassertable by the current suite.** pymupdf recovers a content stream by scanning for `endstream` and never reads the declared `/Length`, so a mutant that writes `len - 400` survives every parity and e2e test. All 7 shipped values are correct. This is not academic: Ghostscript and print-shop RIPs DO trust `/Length`, and PRINTER_ONLY's entire audience is a print shop. One `assert declared == actual` loop over the emitted bytes closes it | open - the one with a real-world consumer |
+| 314 | #114 review | `pdfFileName()`'s stem transform is checked only by the shape regex `/^[A-Za-z0-9_]+_Cards_Letter\.pdf$/`, which happily accepts `C__Hijaz___Orion_9_Cards_Letter.pdf`; dropping the `+` from `replace(/[^A-Za-z0-9]+/g, "_")` survives. One `assert.strictEqual` against a known deck's expected name fixes it | open - cheap |
+| 315 | #114 review | Task 3's AC 5 ("no geometry literal appears in `src/engine/pdfcards.js`") is **not literally met**: `src/engine/pdfcards.js:42-43` carries all six of the numbers the criterion named. Recorded as a deviation, not a defect - it was an AFK auto-decision whose reasoning the reviewer checked and accepted, and the replacement guard is stronger than the criterion it replaced (`PdfEmitterGeometryTest` pins `GEOM`/`PAPER` against `hifi` and against `index.html`'s `PRINT_GEOM`, and `slots("letter")` against `hifi.slots()` to 9 dp) | closed as a recorded deviation |
+| 316 | #114 review | **On iOS the downloaded file may arrive with NO NAME.** `pdfFileName()` is computed only in the non-iOS branch of `downloadDeckPDF` (`index.html:6159-6180`); the iOS branch hands a blob URL to the system viewer, and a blob URL carries no filename, so Share -> Save to Files can suggest a UUID instead of `F3_Low_Pygmy_18_Cards_Letter.pdf`. Deliberately NOT fixed blind - what iOS offers depends on the viewer, and the browser-print path already went wrong twice from guessing. Added to the Task 5 device-gate checklist instead | open - observe at the Task 5 gate |
+| 317 | #114 review | Parity compares glyph SETS, not draw ORDER: `_glyphs()` sorts each page's rows before comparing. An ordering-only divergence - exactly what `fieldOrder()` exists to prevent - slips through wherever it does not also move a coordinate | open |
+| 318 | #114 review | No `/Info` dictionary: `hifi.build` calls `c.setTitle(...)`, the JS writer emits no `/Title`. Cosmetic, outside every acceptance criterion, but it is a difference between the two emitters and belongs on the list rather than in nobody's head | open - LOW |
+| 319 | #114 review (suggested tightening) | Switch the new e2e download test from `Page.setDownloadBehavior: deny` to `Browser.setDownloadBehavior: allow` and assert `Page.downloadWillBegin`'s `suggestedFilename`. That covers AC 2's real delivery path on desktop - today the test reads the blob and the anchor click's actual transfer is refused - and closes row 314 in the same assertion | open - cheap, fold in with 314 |
+
+### Review log addendum - PR #114
+
+| PR | Lane | Reviewer verdict | Findings | Outcome |
+| --- | --- | --- | --- | --- |
+| #114 | client PDF emitter (single serial lane, `claude/pdf-emitter`) | **PASS_WITH_NITS** at `3c39b52`, CI run 35802775162 all five jobs success with headSha verified equal to the local tip | Fresh reviewer in its own worktree. It did not take the parity suite's green as evidence that the vectors are right - it built an independent `get_drawings()` differ and ran the JS emitter against reportlab on three decks (figures above), which is both how it established that every survivor traces to correct shipped code and how it found row 311. Eight nits, zero blockers, filed as rows 311-318 plus the row 319 tightening | **MERGED `0786fe2`** under the standing AFK grant (CI green at the reviewed SHA + PASS_WITH_NITS). Task 5 device gate still open |
