@@ -48,9 +48,14 @@ HPE.pdfcards = (function () {
   }
 
   // ---- the reportlab slice hifi draws through ----------------------------
+  // The starred operators are deliberate, not typos: reportlab's Canvas
+  // defaults to FILL_EVEN_ODD, so hifi paints every fill even-odd and this
+  // emitter must too or the two PDFs differ on every filled path.
+  // tests/mutants/n_pdfcards_fill_only.patch and o_pdfcards_stroke_fill.patch
+  // revert one branch each and must stay killed.
   function mode(stroke, fill) {
-    if (stroke && fill) return "B";
-    if (fill) return "f";
+    if (stroke && fill) return "B*";
+    if (fill) return "f*";
     return "S";
   }
 
