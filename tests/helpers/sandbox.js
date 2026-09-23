@@ -97,7 +97,11 @@ function makeElement(id, tag = "div") {
     remove() {},
     // focus() is rebound per boot (see bindFocus) so document.activeElement
     // tracks it; the standalone default keeps makeElement usable on its own.
-    focus() {}, blur() {}, click() { if (this.onclick) this.onclick.call(this); },
+    focus() {}, blur() {},
+    // clicks is counted so a test can tell a created-and-abandoned <a> from
+    // one the app actually activated; a real anchor click is the whole of the
+    // download on every platform but iOS.
+    clicks: 0, click() { this.clicks++; if (this.onclick) this.onclick.call(this); },
     onclick: null, oninput: null, onchange: null,
   };
 }
@@ -215,6 +219,33 @@ function boot(opts = {}) {
     forward() {}, go() {},
   };
 
+  // Blob and the object-URL registry. The PDF emitter hands the browser its
+  // bytes this way, and a unit test has to be able to read back both what went
+  // into the blob and whether the URL it minted was ever revoked - a leaked
+  // object URL pins the whole PDF in memory for the life of the tab.
+  const blobs = [];
+  class SandboxBlob {
+    constructor(parts, opts) {
+      this.parts = parts;
+      this.type = (opts && opts.type) || "";
+      blobs.push(this);
+    }
+  }
+  const objectUrls = [];
+  // Subclassed rather than patched: the app calls `new URL(...)` all over the
+  // share code, and hanging createObjectURL off the HOST URL would leak the
+  // stub into every other suite in the process.
+  class SandboxURL extends URL {}
+  SandboxURL.createObjectURL = (blob) => {
+    const url = "blob:https://example.test/" + objectUrls.length;
+    objectUrls.push({ url, blob, revoked: false });
+    return url;
+  };
+  SandboxURL.revokeObjectURL = (url) => {
+    const rec = objectUrls.find((o) => o.url === url);
+    if (rec) rec.revoked = true;
+  };
+
   const sandbox = {
     localStorage: {
       getItem(k) { if (opts.throwOnStorage) throw new Error("denied"); return k in store ? store[k] : null; },
@@ -237,7 +268,8 @@ function boot(opts = {}) {
     // Event, so app code can fire the real thing (`new Event("input")`) rather
     // than reaching past its own listeners - the stub's dispatchEvent already
     // dispatches by `type`.
-    URL, URLSearchParams, Event, TextEncoder, TextDecoder, structuredClone, btoa, atob,
+    URL: SandboxURL, Blob: SandboxBlob,
+    URLSearchParams, Event, TextEncoder, TextDecoder, structuredClone, btoa, atob,
     setTimeout(fn, ms, ...args) {
       if (opts.syncTimers) { fn(...args); return 0; }
       const id = nextTimer++;
@@ -311,6 +343,10 @@ function boot(opts = {}) {
     flip: () => els.card.listeners.click[0](),
     /** The window.print() calls this boot has seen, newest last. */
     printCalls: () => [...printCalls],
+    /** Every Blob the app constructed this boot, oldest first. */
+    blobs: () => [...blobs],
+    /** Every object URL minted this boot, with whether it was revoked. */
+    objectUrls: () => objectUrls.map((o) => ({ ...o })),
     cssVar: (name) => docEl.style._props[name],
 
     /* -------- generated decks (Phase 3) --------

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab
+      - run: pip install reportlab fonttools
       - name: App JSON vs decks.py, card invariants, English-only copy
         run: python tools/validate.py
       - name: App boot simulation
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf
+      - run: pip install reportlab pymupdf fonttools
       - name: Deck data, print layout, PDF build, render agreement
         run: python -W error::ResourceWarning -m unittest discover -s tests -t . -v
 
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf
+      - run: pip install reportlab pymupdf fonttools
       # Both runners exit 0 when they collect nothing, and a decorated skip is
       # easy to miss in a log. This asserts a floor and forbids silent skips.
       - run: python tests/suite_health.py
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf
+      - run: pip install reportlab pymupdf fonttools
       # Every test group must have a mutant that kills it; a test nothing can
       # kill is not a test.
       - run: ./tests/mutation_check.sh

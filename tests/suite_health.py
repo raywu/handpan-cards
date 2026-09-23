@@ -37,14 +37,18 @@ FLOORS = {
     "tests/test_pdf_build.py": 7,
     "tests/test_gen_deck.py": 17,
     "tests/test_print.py": 29,
-    "tests/test_render_agreement.py": 26,
+    "tests/test_render_agreement.py": 32,
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 4,
     "tests/test_suite_health.py": 12,
+    "tests/test_font_subset.py": 7,
+    "tests/test_pdf_emitter.py": 7,
+    "tests/test_pdf_deck_adapter.py": 4,
+    "tests/test_pdf_parity.py": 4,
     # node
-    "tests/app.test.js": 169,
-    "tests/e2e.test.js": 104,
+    "tests/app.test.js": 177,
+    "tests/e2e.test.js": 105,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 41,
     "tests/voicing.test.js": 15,
@@ -53,6 +57,8 @@ FLOORS = {
     "tests/select.test.js": 35,
     "tests/share.test.js": 44,
     "tests/preview.test.js": 14,
+    "tests/pdf.test.js": 11,
+    "tests/pdfcards.test.js": 10,
     "tests/mutation_harness.test.js": 17,
 }
 

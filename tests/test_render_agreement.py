@@ -882,5 +882,89 @@ class PrintStylesheetTest(unittest.TestCase):
                              "PRINT_GEOM alone" % lit)
 
 
+class PdfEmitterGeometryTest(unittest.TestCase):
+    """The THIRD renderer's geometry, against the two that were already pinned.
+
+    `src/engine/pdfcards.js` draws the same pan and the same 3x3 sheet as
+    `tools/hifi.py`, in a different language, from its own constants - and it
+    is the renderer a phone actually ships, so a drift here reaches a user
+    before it reaches anyone's test. `tests/test_pdf_parity.py` holds the
+    whole drawing against print glyph for glyph, which is the strong check;
+    this class holds the CONSTANTS, because a drawing comparison tells you
+    that something moved and not which number moved it.
+
+    The app's `PRINT_GEOM` is in here too: the card and gutter figures now
+    exist in three places (hifi, the engine module, the app's print
+    stylesheet), and three copies that agree by luck are the failure the
+    single-definition rule above exists to prevent. An engine module cannot
+    read app JS - it is inlined ahead of it - so the copies are real; what
+    keeps them honest is this assertion.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        out = subprocess.run(
+            ["node", "-e",
+             "const {loadEngine}=require('./tools/engine_loader.js');"
+             "const H=loadEngine(['fontdata','pdf','pdfdeck','pdfcards']);"
+             "process.stdout.write(JSON.stringify({geom:H.pdfcards.GEOM,"
+             "paper:H.pdfcards.PAPER,slots:H.pdfcards.slots('letter'),"
+             "warn:H.pdfcards.CARD_WARNINGS}));"],
+            capture_output=True, text=True, cwd=paths.ROOT, timeout=120)
+        if out.returncode != 0:
+            raise AssertionError(out.stderr)
+        cls.js = json.loads(out.stdout)
+
+    def test_the_card_and_the_gutters_are_the_print_spec(self):
+        g = self.js["geom"]
+        self.assertEqual((g["CW"], g["CH"]), (hifi.CW, hifi.CH))
+        self.assertEqual((g["GX"], g["GY"]), (hifi.GX, hifi.GY))
+        self.assertEqual((g["PW"], g["PH"]), hifi.PAGE)
+
+    def test_letter_is_the_page_hifi_prints_on(self):
+        self.assertEqual(tuple(self.js["paper"]["letter"]), hifi.PAGE)
+        self.assertEqual(self.js["paper"]["a4"], [595.28, 841.89])
+
+    def test_the_slots_are_hifi_slots(self):
+        want = [list(s) for s in hifi.slots()]
+        got = self.js["slots"]
+        self.assertEqual(len(got), len(want))
+        for a, b in zip(got, want):
+            self.assertAlmostEqual(a[0], b[0], places=9)
+            self.assertAlmostEqual(a[1], b[1], places=9)
+
+    def test_the_app_stylesheet_agrees_with_the_emitter(self):
+        decl, _ = read_print_geom_source()
+        nums = dict(re.findall(r"(\w+): ([\d.]+)", decl))
+        g = self.js["geom"]
+        for key in ("PW", "PH", "CW", "CH", "GX", "GY"):
+            self.assertIn(key, nums, "PRINT_GEOM lost %s" % key)
+            self.assertEqual(float(nums[key]), g[key],
+                             "PRINT_GEOM.%s and HPE.pdfcards.GEOM.%s disagree"
+                             % (key, key))
+
+    def test_the_warning_badges_are_the_same_copy(self):
+        self.assertEqual(self.js["warn"], hifi.CARD_WARNINGS)
+
+    def test_the_diagram_label_rule_carries_the_same_constants(self):
+        """The no-shrink rule, third copy.
+
+        These five are the whole of the label rule, and CLAUDE.md fixes the
+        baseline they are measured against. The parity test would catch a
+        changed ratio as a wall of moved glyphs; this catches it as one line.
+        """
+        with open(os.path.join(paths.ROOT, "src", "engine", "pdfcards.js"),
+                  encoding="utf-8") as fh:
+            src = fh.read()
+        for name, want in (("LABEL_RATIO_DING", hifi.LABEL_RATIO_DING),
+                           ("LABEL_RATIO_NOTE", hifi.LABEL_RATIO_NOTE),
+                           ("LABEL_RATIO_BNOTE", hifi.LABEL_RATIO_BNOTE),
+                           ("NUM_RATIO", hifi.NUM_RATIO),
+                           ("LABEL_WIDTH_RATIO", hifi.LABEL_WIDTH_RATIO)):
+            m = re.search(r"var %s = ([\d.]+);" % name, src)
+            self.assertIsNotNone(m, "%s is gone from pdfcards.js" % name)
+            self.assertEqual(float(m.group(1)), want, name)
+
+
 if __name__ == "__main__":
     unittest.main()

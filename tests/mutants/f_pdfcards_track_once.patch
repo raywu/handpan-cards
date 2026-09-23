@@ -1,0 +1,22 @@
+# kills: tracking advances per character, not once for the whole run
+# suite: node --test tests/pdfcards.test.js
+#
+# tracked() lays the run out in one drawString and pads the total instead of
+# advancing per character. The run occupies the same width, so every width
+# assertion still passes - only the interior glyph positions move, and only
+# on a pair the face would kern.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -113,8 +113,9 @@ HPE.pdfcards = (function () {
+     if (align === "c") x -= w / 2;
+     else if (align === "r") x -= w;
+     for (var i = 0; i < text.length; i++) {
+-      c.drawString(x, y, text[i]);
+-      x += stringWidth(text[i], font, size) + track;
++      c.drawString(x, y, text.slice(i));
++      i = text.length;
++      x += w;
+     }
+     return w;
+   }

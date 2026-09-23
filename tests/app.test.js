@@ -438,12 +438,17 @@ test("index.html carries the whole engine inline, with no external script", () =
 
   const app = boot();
   const HPE = app.get("HPE");
-  for (const mod of ["core", "voicing", "layout", "naming", "select", "share"]) {
+  for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "voicing",
+                     "layout", "naming", "select", "share"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
-  // core must be visible to the modules that read it, so it loads first.
+  // core must be visible to the modules that read it, so it loads before them.
+  // fontdata and pdf sit ahead of the whole engine: they read nothing from it,
+  // and the print emitter that draws through them loads later still.
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
-  assert.deepStrictEqual(order, ["core", "voicing", "layout", "naming", "select", "share"]);
+  assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
+                                 "voicing", "layout", "naming", "select",
+                                 "share"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -4068,4 +4073,143 @@ test("print CTA: the paper picker changes the page box and nothing else", () => 
   assert.ok(letter.css.includes("size:letter"));
   assert.strictEqual(cellCount(a4.html), cellCount(letter.html),
     "D16 and D17 are orthogonal: paper size must not change the card count");
+});
+
+/* ---------------------------------------------------------------------------
+ * 24. the PDF emitter behind the CTA
+ *
+ * The two custom-deck CTAs stopped asking the browser to print and started
+ * writing the PDF themselves (Task 4 of the client-pdf-emitter plan). The
+ * bytes are `tests/test_pdf_parity.py`'s business - held glyph for glyph
+ * against tools/hifi.py. What is asserted HERE is the delivery: that a blob of
+ * the right type carries them, that the file lands with the name the print
+ * pipeline would have given it, that iOS takes the one route that works on
+ * iOS, and that the object URL is let go afterwards.
+ * ------------------------------------------------------------------------ */
+
+const IOS_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) " +
+  "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+
+/** The <a> the app created to deliver a download, or null if it took the iOS
+ *  route instead. `created` is every element createElement() ever made this
+ *  boot, so the anchor is found by tag rather than by position. */
+const anchor = (app) => app.created.filter((e) => e.tagName === "A").pop() || null;
+
+test("the CTA emits a PDF blob and never calls window.print", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('downloadDeckPDF("shop")');
+
+  assert.deepStrictEqual(app.printCalls(), [],
+    "the emitter path must not reach the browser's print dialog");
+  const blobs = app.blobs();
+  assert.strictEqual(blobs.length, 1, `${blobs.length} blobs were built, not 1`);
+  assert.strictEqual(blobs[0].type, "application/pdf");
+  assert.strictEqual(blobs[0].parts.length, 1);
+  // Realm boundary: the bytes were built inside the vm, so `instanceof
+  // Uint8Array` is false against the host's constructor.
+  assert.strictEqual(blobs[0].parts[0].constructor.name, "Uint8Array");
+  assert.ok(blobs[0].parts[0].length > 10000,
+    "a chord-card sheet is tens of kilobytes; a near-empty blob is a silent failure");
+});
+
+test("the emitted bytes are a PDF, and the two variants differ in length", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('downloadDeckPDF("full")');
+  app.run('downloadDeckPDF("shop")');
+  const [full, shop] = app.blobs().map((b) => b.parts[0]);
+  const head = (u8) => String.fromCharCode(...Array.from(u8.slice(0, 5)));
+  assert.strictEqual(head(full), "%PDF-");
+  assert.strictEqual(head(shop), "%PDF-");
+  assert.ok(full.length > shop.length,
+    "the full variant carries a title card and a legend card the shop variant drops");
+});
+
+test("the download is named the way the print pipeline names its files", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('downloadDeckPDF("full")');
+  const full = anchor(app);
+  assert.ok(full, "a desktop download is delivered through an <a download>");
+  assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
+  // tools/decks.py:409-416 names the six shipped files: `<Name>_Cards_Letter.pdf`
+  // and `<Name>_PRINTER_ONLY_Chords_Letter.pdf`, with punctuation folded out of
+  // the deck name. A custom deck's download joins that shelf, so it takes the
+  // same shape rather than inventing a second one.
+  assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
+  app.run('downloadDeckPDF("shop")');
+  assert.match(anchor(app).download, /^[A-Za-z0-9_]+_PRINTER_ONLY_Chords_Letter\.pdf$/);
+  app.run('setPrintPaper("a4"); downloadDeckPDF("full")');
+  assert.match(anchor(app).download, /_Cards_A4\.pdf$/,
+    "the paper the user picked has to reach the filename, or two downloads collide");
+});
+
+test("iOS gets the blob as a navigation, not as a download attribute", () => {
+  const app = boot({ userAgent: IOS_UA });
+  customDeck(app);
+  app.run('downloadDeckPDF("full")');
+  // `<a download>` does nothing at all on iOS Safari - the tap is swallowed and
+  // the user gets no file and no error. Navigating to the blob hands the PDF to
+  // the system viewer, whose Share sheet is how a file is saved on that
+  // platform (learning: ios-safari-ignores-at-page is the same family of
+  // platform divergence).
+  assert.strictEqual(anchor(app), null, "iOS must not be handed an <a download>");
+  const urls = app.objectUrls();
+  assert.strictEqual(urls.length, 1);
+  assert.strictEqual(app.location.href, urls[0].url,
+    "iOS delivery is a navigation to the object URL");
+});
+
+test("the object URL is revoked, and not before the viewer has read it", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('downloadDeckPDF("full")');
+  const before = app.objectUrls();
+  assert.strictEqual(before.length, 1);
+  assert.strictEqual(before[0].revoked, false,
+    "revoking in the same turn of the event loop kills the download on Safari");
+  assert.strictEqual(app.flushTimers(), 0);
+  assert.strictEqual(app.objectUrls()[0].revoked, true,
+    "an object URL that is never revoked pins the whole PDF for the life of the tab");
+});
+
+test("the paper control drives the page box, not just the filename", () => {
+  const app = boot();
+  customDeck(app);
+  app.run('setPrintPaper("a4"); downloadDeckPDF("shop")');
+  app.run('setPrintPaper("letter"); downloadDeckPDF("shop")');
+  // Buffer, not String.fromCharCode(...bytes): a sheet is tens of thousands of
+  // bytes and spreading them into a call blows the stack.
+  const [a4, letter] = app.blobs().map((b) =>
+    Buffer.from(b.parts[0]).toString("latin1"));
+  assert.ok(/\/MediaBox \[0 0 595\.28 841\.89\]/.test(a4),
+    "choosing A4 and getting a Letter page box is the exact failure the picker exists to prevent");
+  assert.ok(/\/MediaBox \[0 0 612 792\]/.test(letter));
+});
+
+test("the CTA buttons call the emitter, and the built-in links still do not", () => {
+  const app = boot();
+  const di = deckIndex(app, "amara");
+  const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
+  customDeck(app);
+  const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
+  assert.match(custom, /onclick="downloadDeckPDF\('full'\)"/);
+  assert.match(custom, /onclick="downloadDeckPDF\('shop'\)"/);
+  assert.ok(!/downloadDeckPDF/.test(builtin),
+    "a built-in deck ships pre-built PDFs; its header must be unchanged");
+});
+
+test("openPrintSheet survives the cutover, unreferenced by the CTA", () => {
+  // D2 of the plan: the browser-print path stays in the file until the owner's
+  // device gate says the emitter replaces it. Deleting it here would leave no
+  // way back if the iPhone says no.
+  const app = boot();
+  customDeck(app);
+  assert.strictEqual(typeof app.get("openPrintSheet"), "function");
+  assert.strictEqual(typeof app.get("PRINT_LAYOUTS"), "object");
+  printed(app, "full");
+  assert.strictEqual(app.printCalls().length, 0,
+    "printed() stubs print(); this only proves the old path still runs end to end");
+  assert.ok(String(app.get('document.getElementById("printroot").innerHTML')).length > 0);
 });
