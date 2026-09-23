@@ -21,17 +21,32 @@ harness.** Do NOT adopt generated geometry (option 1): it shrinks Pygmy's
 diagram by 15.7%, which is not a minute difference.
 
 The measurement below is the reason. Once the deck NAME is set aside, the
-emitter already reproduces the committed chord data exactly on 96 of 96 cards
-for two of the three decks. What does not survive is not the chord engine - it
-is the hand-authored print overlay, and an overlay is data, so it can be moved
-rather than reimplemented.
+emitter reproduces the committed chord data exactly on **95 of 96 cards**
+(Hijaz 19 of 19, Amara 25 of 25, Pygmy 51 of 52). Almost everything that does
+not survive is the hand-authored print overlay, and an overlay is data, so it
+can be moved rather than reimplemented.
+
+**[AMENDED after independent review - this paragraph previously read "96 of 96
+cards for two of the three decks", which was both wrong and internally
+contradictory (96 of 96 qualified to two decks is 44 cards). One card really
+does differ: see D-6.]** The single exception, Pygmy card 6 (`Fm9`), is NOT
+overlay data - it is a voicing the engine derives differently from the
+committed deck. That makes a third code blocker (section 2c), and it is
+answered the same way as D-2/D-3/D-5: the built-in path must READ
+`chords[].fields` from `data/decks.json`, never re-derive it. The direction of
+the recommendation is unchanged - it is one more "read canonical data instead
+of deriving it" item, not a new kind of problem - but it is a hard
+precondition, not a minute difference.
 
 ---
 
 ## 2. Measured evidence (2026-09-22, this repo, at `224af5d`)
 
-Built with `node tools/gen_deck.js "<seed>" | node tools/pdf_build.js --variant
-{full,shop} --paper letter`, on the canonical seeds:
+Built with `node tools/gen_deck.js "<seed>" > /tmp/d.json` then
+`node tools/pdf_build.js --out /tmp/out.pdf --variant {full,shop} --paper letter < /tmp/d.json`,
+on the canonical seeds **[CORRECTED: the pipe form written here exits 2 with
+`usage: pdf_build.js --out FILE [--variant f] < deck.json`; `--out` is
+required. Section 7's form was already correct.]**:
 
 | deck | seed |
 |---|---|
@@ -50,7 +65,7 @@ circle radii.
 | page box (Letter) | 612 x 792, identical | identical | identical |
 | chord-card count (PRINTER_ONLY) | 19 = 19 | 52 = 52 | 25 = 25 |
 | card rect size | identical | identical | identical |
-| **per-card content, deck name removed** | **19 of 19 identical** | **51 of 52 identical, 1 identical as a set with a different extraction order** | **13 of 25 identical** |
+| **per-card content, deck name removed** | **19 of 19 identical** | **51 of 52 identical, 1 DIFFERENT VOICING (card 6, see D-6)** | **13 of 25 identical** |
 
 Chord names, superscripts, subtitles, note lines, number lines, bottom-note
 badges and index numbers all reproduce. The engine is not the problem.
@@ -63,21 +78,31 @@ badges and index numbers all reproduce. The engine is not the problem.
 | D-2 | **Deck name.** Committed card-header `name`s are `C# HIJAZ 9`, `F3 LOW PYGMY 18`, `D AMARA 9` (the `/ ORION` half is not the name - it is the separate vertical `credit` string `C# HIJAZ / ORION`); emitter auto-names `C# HIJAZ 9`, **`F AEOLIAN 12`**, **`D AEOLIAN 9`**. The `/ ORION` half is lost from the vertical credit strip (`decks.py:264` `"C# HIJAZ / ORION"`); the card header `name` is identical on both sides for hijaz. Pygmy and Amara lose the instrument name in both places. | all 96 cards | **NO.** The instrument's name is data. Pygmy stops saying Pygmy. |
 | D-3 | **Scale-degree labels, Amara only.** Committed `bIII` (5 cards), `bVII` (4), `IV` (3); emitter `III`, `VII`, `iv`. | 12 of 25 Amara cards | **NO.** Wrong degree spelling is wrong data. `data/decks.json` `degrees` is authoritative and the generated path does not read it. |
 | D-4 | **Pygmy blank-card padding.** Committed full deck is 7 pages / 63 card slots (52 chords + title + `blank_cards: 7` + fill); emitter is 6 pages / 54. | Pygmy full only | **NO**, but it is a preference, not a defect - `tools/decks.py` calls it "Pygmy's blank-card padding preference". |
-| D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes generic legend text ("ONE CARD PER CHORD", "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME") and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
-| D-6 | **Token extraction order on one Pygmy card** (card #6): same token multiset, different order. | 1 card | **YES.** Coordinate-level, no content change. |
+| D-5 | **Title-card copy.** Committed carries the hand-written `title`, `credit`, `blurb` and `legend_lines` (Pygmy: "Bb AND Db EXIST ..."); the emitter substitutes different title-card copy **[CORRECTED: the two strings quoted here previously - "ONE CARD PER CHORD" and "OCTAVE NUMBERS INSIDE EACH TONEFIELD NAME" - were wrong. The second exists nowhere in the repo; the first is BLURB text (`src/engine/pdfdeck.js:109`), not a legend line, and Amara's committed blurb already carries it (`tools/decks.py:319`). `legendLines()` (`pdfdeck.js:116-130`) emits "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD", byte-identical to the committed Hijaz (`tools/decks.py:271-272`) and Amara (`:301-302`) literals, so only PYGMY actually loses a legend line.]** and synthesizes `title` as `name + " - Chord Cards"` at `src/engine/pdfdeck.js`. | title card, full variant only | **NO.** Hand-written copy is content. |
+| D-6 | **[CORRECTED after independent review. This row previously read "Token extraction order on one Pygmy card (card #6): same token multiset, different order - YES, coordinate-level, no content change." That was wrong: the multiset is NOT the same.] Different voicing on one Pygmy card** (card 6, `Fm9`). Committed is `F4 Ab4 C5 Eb5 G5` (`fields [5,7,8,9,11]`, field 11 = `G` 5 midi 79 inner); the engine derives `fields [5,7,8,9,6]`, field 6 = `G` 4 midi 67 rim. Different note line (`G5` vs `G4`), different number line (`11` vs `6`). The DIAGRAM matches only because pitch-class-complete highlighting lights the same fields for G4 and G5, which is how this was first misread as cosmetic. Reproduce: run `tools/gen_deck.js` on the Pygmy seed and diff `chords[5]` against `data/decks.json`. | 1 card | **NO.** A voicing is content. `CLAUDE.md` names this exact card as ground truth: "a spread 9th above the 7th, like Fm9's G5, is fine." |
 | D-7 | Colour literals: committed three-decimal values vs re-derived floats (`tools/decks.py:227-230`). Not separately measured here; the docstring states re-deriving moves every printed colour by a fraction. | all cards | **YES** if the literals are carried; a fraction of a colour step. |
 
-**Verdict against the bar:** the chord DATA passes. D-1 through D-5 are not
-minute, and every one of them is the print overlay or a data field the
-generated path cannot see - not a rendering disagreement.
+**Verdict against the bar:** the chord data passes on **95 of 96 cards**.
+**[AMENDED: this read "the chord DATA passes" unqualified, and grouped D-6
+with the acceptable differences. D-6 is a content difference and is now a
+NO.]** D-1 through D-6 are not minute. D-1 through D-5 are the print overlay
+or a data field the generated path cannot see; D-6 is a derived voicing that
+disagrees with canonical data. None of the six is a rendering disagreement.
 
-### 2c. The two code blockers
+### 2c. The three code blockers
 
 - `src/engine/pdfdeck.js:161` throws `"generated deck has no geom.ext"`. None
   of the three shipped geoms in `data/decks.json` carries `ext` (verified).
   So `fromGenerated` cannot consume a built-in deck at all today.
 - The same function synthesizes the title rather than accepting one, so
   `"C# Hijaz / Orion 9 - Chord Cards"` is unreachable through it.
+- **[ADDED after independent review.]** The built-in path must take
+  `chords[].fields` from `data/decks.json` rather than letting the engine
+  re-derive them. The engine's register tie-break puts Pygmy `Fm9`'s 9th at
+  `G4` where the committed deck has `G5` (D-6). Deriving voicings for a
+  BUILT-IN deck is the defect; the tie-break itself is an owner decision
+  (`docs/SCALE_ENGINE_PLAN.md` D11) governing GENERATED decks and is not in
+  scope to change here.
 
 ---
 
@@ -101,7 +126,7 @@ the printed artifact the owner already approved.
 > original draft with the review's corrections applied INLINE and marked
 > **[AMENDED]**. Where a step is superseded, the amendment is binding and the
 > original wording is kept only so the change is legible. The authoritative
-> task list is section 9.1 (T1-T14), not the bullets here.
+> task list is section 9.1 (T1-T15), not the bullets here.
 
 ### Stage A - the overlay becomes canonical data (no output change)
 
@@ -191,8 +216,13 @@ section 5.
   `tests/test_gen_deck.py` 7, `tests/test_pdf_parity.py` 3,
   `tests/test_pdf_build.py` 2, `tests/test_font_subset.py` 1 - **104 `hifi.`
   lines**, 81 of them in the two biggest); several JS and doc files
-  (`src/engine/pdfcards.js`, `pdf.js`, `pdfdeck.js`, `tests/CONTRACT.md`)
-  cite `tools/hifi.py` only in comments that go stale; three more
+  (`src/engine/pdfcards.js`, `pdf.js`, `pdfdeck.js`) cite `tools/hifi.py`
+  only in comments that go stale - but `tests/CONTRACT.md:131` and `:133` are
+  NOT comments-that-go-stale: they state behavioural contracts (`hifi.build()`
+  rebinds `BLUE`/`GREEN`; `hifi.tracked()` draws one `drawString` per glyph)
+  that DIE with `hifi.py` rather than merely going out of date, so C3 must
+  retire them, not reword them **[ADDED after independent review; C0's
+  inventory task covers this]**; three more
   (`tools/inline_fonts.py`, `tools/validate.py`, `tests/test_deck_data.py`)
   reference it by path, which is E-1's ten-file / 108-reference count; AND
   **19 patch files under
@@ -440,8 +470,8 @@ CODE PATHS                                             USER FLOWS
 [+] tools/validate.py check 1b           <- EXTENDED
       +- [GAP] overlay drift vs built PDFs (A4)
 
-COVERAGE: 4/17 paths tested (24%)   |   GAPS: 13, all inside this plan's own stages
-QUALITY: ***:2  **:2  *:0
+COVERAGE: 3/19 paths tested (16%)   |   GAPS: 16, all inside this plan's own stages
+QUALITY: ***:1  **:2  *:0
 ```
 
 Every gap above is work this plan already schedules, except four that it does
@@ -449,8 +479,11 @@ not and that are added here as **CRITICAL - error paths with no handling and
 no test**: overlay file absent, overlay id unknown to `data/decks.json`,
 `--builtin` given an unknown deck id, and `fromBuiltin` called without an
 overlay. All four are silent-wrong-output risks rather than crashes (a
-missing `R` draws a 1.0-radius pan, the failure `pdfdeck.js:160-162` exists
-to prevent), so each gets an explicit throw plus a test in its own stage.
+missing `ext` used to fall back to 1.0, giving every deck R = 74.0 and
+drawing the diagram over the header and off both card edges - the failure
+`pdfdeck.js:160-162` exists to prevent **[CORRECTED: previously "a missing
+`R` draws a 1.0-radius pan", which inverts both the missing key and the
+direction of the error; see the comment at `pdfdeck.js:156-159`]**), so each gets an explicit throw plus a test in its own stage.
 **Decision (auto): adopt** - the four throws land in A3, A3, B3 and B2
 respectively.
 
@@ -484,7 +517,7 @@ why B4 is the gate) and the C3 deletion (closed by E-6).
 
 | existing | does the plan reuse it? |
 |---|---|
-| `tests/test_pdf_build.py:254` committed-vs-fresh staleness gate | Not as drafted. E-7 makes A1 own one build helper both consume. |
+| `tests/test_pdf_build.py:254` committed-vs-fresh staleness gate | Not as drafted. **[AMENDED: this cell credited E-7's shared build helper, superseded by O-1 - there is no new file to share one with. T9 reuses `test_pdf_parity.py`'s `_pair` fixture instead.]** |
 | `tests/test_pdf_deck_adapter.py:99` JS-vs-Python adapter parity sweep | Not named in the plan. E-5 folds it in. |
 | `src/engine/pdfcards.js:156` `fitNote`, `:124` 3.6 pt floor | C1 asked to port them; they exist. E-4 corrects. |
 | `src/engine/pdfcards.js:516,552` blank-card rendering and `deck.blank_cards` | Yes, implicitly - the renderer already honours the key, so D-4 dissolves with the overlay and needs no renderer change. |
@@ -556,7 +589,7 @@ Codex was unusable this run (`CODEX_MODE: model_unusable` - the stale CLI
 rejects the effort argument with `unknown variant 'max'`; `npm install -g
 @openai/codex` fixes it), so the outside voice is a fresh Claude subagent
 given the plan and the repo and told to challenge it. Eight findings. Two
-of them are labelled NEW - things the in-context review missed - and two
+of them is labelled NEW - a thing the in-context review missed **[CORRECTED from "Two of them are labelled NEW": only O-6 carries `[P2, NEW]`]** - and two
 are hard blockers. One of the eight (O-5) turned out to be FALSE and was
 corrected after an independent review; it is kept below with the correction
 in place rather than deleted, because the correction is the finding.
@@ -579,7 +612,8 @@ creating `tests/test_seed_pdf_equivalence.py`. Its `SEEDS` list becomes
 seeds + built-ins, `_pair` gains a built-in branch calling `fromBuiltin`, and
 the glyph-exact assertions apply unchanged. This supersedes E-7 above (which
 proposed a shared build helper for a new file that now does not exist) and
-retires the new-file half of T2. The token-list harness is dropped entirely -
+retires the new-file half of **T7** **[CORRECTED from "T2": T2's
+`tests/pdf_builtin.test.js` stands; see section 9.1]**. The token-list harness is dropped entirely -
 it is strictly weaker than what it would have sat beside.
 
 **O-2 [BLOCKER, verified] - Stage A's acceptance command compares a build
@@ -697,7 +731,7 @@ actually yields one emitter that can produce ANY deck, plus a Python
 implementation **retained as a differential oracle** - which is exactly what
 `test_pdf_parity.py` already treats it as. That is not worse than today; it
 converts today's duplication into a test asset while meeting the stated goal.
-C buys the deletion of ~950 lines of Python and the `reportlab` dependency,
+C buys the deletion of **541 lines of Python** (`tools/hifi.py`) and the `reportlab` dependency, **[CORRECTED from "~950 lines", which was `hifi.py` 541 + `decks.py` 418; C2 explicitly KEEPS `tools/decks.py` as the entry point, so only `hifi.py` is deleted]**,
 paid for with O-3's port, which includes re-pointing the non-text
 assertions of O-5.
 **Decision (auto): adopt the reframing, do NOT pre-empt the decision.** Q5's
@@ -753,8 +787,9 @@ once `fromBuiltin` synthesizes the same wrong string. **D-8 stands.**
 
 ### 9.1 Implementation tasks, amended after the outside voice
 
-T1..T8 in section 8.10 stand except where noted; T9..T14 are new (T11 was
-later split into T11a and T11b; T14 came out of the O-5 correction).
+T1..T8 in section 8.10 stand except where noted; T9..T15 are new (T11 was
+later split into T11a and T11b; T14 came out of the O-5 correction, and T15
+out of the corrected D-6).
 
 - **T2 stands as written. [CORRECTED - this bullet previously said the
   spec/_geom assertions move into `tests/test_pdf_parity.py` and that
@@ -799,6 +834,12 @@ later split into T11a and T11b; T14 came out of the O-5 correction).
   - Files: `tests/mutants/*.patch` (incl. `c_draw_ring_band`, `c_draw_ring_swap_colours`, `c_fit_floor`, `c_card_width`, `c_note_line_order`, `c_tracked_advance`, ...), `tests/mutation_check.sh`
   - Verify: `bash tests/mutation_check.sh` green with `tools/hifi.py` absent, and every patch that encoded a live spec rule has an equivalent patch against `src/engine/pdfcards.js`
   - Hard precondition on C3, same as T11a
+- [ ] **T15 (P1, human: ~3h / CC: ~30min)** - the built-in path must READ `chords[].fields` from `data/decks.json`, never re-derive the voicing
+  - Surfaced by: the corrected D-6 - the engine's register tie-break derives Pygmy `Fm9` as `fields [5,7,8,9,6]` (`G4`) where the committed deck has `[5,7,8,9,11]` (`G5`). One card of 96, but it changes the printed note line and number line, and `CLAUDE.md` names that card as ground truth.
+  - Files: `src/engine/pdfdeck.js` (`fromBuiltin`), `tests/pdf_builtin.test.js`
+  - Verify: for all three built-in decks, every card's `fields` and `roots` from the built-in path equal `data/decks.json` byte for byte - 96 of 96, not 95. Assert it as a loop over all three decks, not a spot check on `Fm9`, so the next tie-break change is caught too.
+  - **Hard precondition on Stage B.** Stage A's goal is "nothing about the PDFs changes"; without T15, Stage B ships a Pygmy card that prints `G4 / 6` where the committed PDF prints `G5 / 11`.
+  - Explicitly NOT in scope: changing the engine's register tie-break itself. That is owner decision D11 in `docs/SCALE_ENGINE_PLAN.md` and governs GENERATED decks, which have no committed data to disagree with.
 
 
 ---
