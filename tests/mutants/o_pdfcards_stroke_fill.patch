@@ -1,0 +1,19 @@
+# kills: test_every_vector_matches_print - a stroked-and-filled path paints nonzero
+# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+#
+# mode() returns the nonzero "B" for a stroked-and-filled path where
+# reportlab emits "B*". A separate mutant from n_pdfcards_fill_only because
+# one compound revert would prove only that AT LEAST ONE of the two branches
+# is watched; each branch needs its own witness.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -54,7 +54,7 @@ HPE.pdfcards = (function () {
+   // tests/mutants/n_pdfcards_fill_only.patch and o_pdfcards_stroke_fill.patch
+   // revert one branch each and must stay killed.
+   function mode(stroke, fill) {
+-    if (stroke && fill) return "B*";
++    if (stroke && fill) return "B";
+     if (fill) return "f*";
+     return "S";
+   }

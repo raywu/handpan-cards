@@ -110,10 +110,17 @@ def _drawings(path, nd=1):
     `recorder()` in tests/pdfcards.test.js:22-23 noops setFill, setStroke,
     setLineWidth and setDash.
 
-    The trace is `(type, color, fill, width, dashes, items)` per drawing:
-    colours to 3 dp, width to 2 dp (None stays None - pymupdf omits it on a
-    fill-only path), dashes as the raw string, and every item's points
-    rounded to `nd`, the same tenth of a point `_glyphs` rounds to.
+    The trace is `(type, color, fill, width, dashes, even_odd, items)` per
+    drawing: colours to 3 dp, width to 2 dp (None stays None - pymupdf omits
+    it on a fill-only path), dashes as the raw string, the fill rule, and
+    every item's points rounded to `nd`, the same tenth of a point `_glyphs`
+    rounds to.
+
+    `even_odd` is in the trace because the two emitters once disagreed on it:
+    reportlab's Canvas defaults to FILL_EVEN_ODD and so `hifi` emitted `f*`
+    and `B*`, while `mode()` in src/engine/pdfcards.js hardcoded the nonzero
+    `f` and `B`. Every other channel matched, so 297 filled paths per Amara
+    sheet differed in their paint operator and nothing here noticed.
 
     Sorted with `key=repr`, not bare `sorted()`: these tuples hold None
     against float and nested point tuples, neither of which is orderable.
@@ -130,6 +137,7 @@ def _drawings(path, nd=1):
                     tuple(round(c, 3) for c in (d["fill"] or ())),
                     None if d.get("width") is None else round(d["width"], 2),
                     tuple(d.get("dashes") or ()),
+                    d.get("even_odd"),
                     tuple((i[0],) + tuple(_round(x, nd) for x in i[1:])
                           for i in d["items"]),
                 ))
@@ -173,6 +181,12 @@ class PrintParityTest(unittest.TestCase):
     def test_the_sweep_actually_ran(self):
         # An empty seed list is a passing parity test that proves nothing.
         self.assertGreaterEqual(len(SEEDS), 2)
+        # Row 321: three of the pdfcards mutants (i, k, l) are all
+        # bottom-ring and fire on a bottom-shell seed only, so the
+        # oracle's kill power depends on one being present. A count of
+        # two does not say that; a bar separator does.
+        self.assertTrue(any("|" in s for s in SEEDS),
+                        "one seed must carry a bottom shell")
 
     def test_every_glyph_lands_where_print_puts_it(self):
         for seed in SEEDS:
