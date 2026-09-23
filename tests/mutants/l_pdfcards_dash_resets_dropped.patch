@@ -1,0 +1,26 @@
+# kills: test_every_vector_matches_print - the dash is reset before anything solid is drawn
+# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+#
+# both dash resets go: the one on entry to drawRing and the one after the
+# bottom-shell ring in drawPan. Either alone is survivable because the other
+# covers it; together the 2.2/2.2 dash leaks onto the solid rings that follow.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+index c08796c..e4a34ad 100644
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -280,7 +280,6 @@ HPE.pdfcards = (function () {
+ 
+   // ---- diagram (tools/hifi.py:270-354) -----------------------------------
+   function drawRing(c, x, y, r, state) {
+-    c.setDash();
+     c.setFillColor(WHITE);
+     c.setStrokeColor(BLACK);
+     c.setLineWidth(0.65);
+@@ -327,7 +326,6 @@ HPE.pdfcards = (function () {
+       c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
+       c.setDash(2.2, 2.2);
+       c.circle(cx, cy, R * g.bottom, 1, 0);
+-      c.setDash();
+     }
+ 
+     function state(i, bottom) {
