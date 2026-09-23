@@ -8,7 +8,11 @@
 > comment above `mode()`, shifting everything after it in
 > `src/engine/pdfcards.js` down by five. Read `:50-54` / `:51-55` / `:51` as
 > today's **56-60** (`mode()`) and `:181-185` as today's **186-190**
-> (`duoFrame`'s `roundRect` pair). Row 324 in
+> (`duoFrame`'s `roundRect` pair), and `:84` / `:87` as **89** / **92** (the
+> two `mode()` call sites). One of them, `:50-54`, was already off by one
+> before the shift - line 50 is the `// ---- the reportlab slice ----`
+> separator, and `mode()` began at 51 - so read that one as a correction
+> rather than as the uniform +5. Row 324 in
 > `docs/plans/scale-engine-coordination.md` is the live record; this one is
 > frozen (#122 review, nit 2).
 
