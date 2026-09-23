@@ -82,9 +82,11 @@ working tree in place, so nothing else may run alongside it, and it refuses to
 start if the tree already modifies a file one of its patches touches
 (`README.md` and `data/decks.json` are both such files): commit first.
 
-Needs `pip install reportlab pymupdf`. No JavaScript dependencies: the
-browser tests drive an already-installed Chrome over the DevTools Protocol, so
-there is still no `package.json`, no lockfile and no build step.
+Needs `pip install reportlab pymupdf fonttools` - fonttools rebuilds the font
+subsets that `tools/validate.py` check 5 holds `src/engine/fontdata.js`
+against. No JavaScript dependencies: the browser tests drive an
+already-installed Chrome over the DevTools Protocol, so there is still no
+`package.json`, no lockfile and no build step.
 
 What is covered:
 

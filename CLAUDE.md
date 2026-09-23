@@ -334,7 +334,8 @@ pitch classes (midi % 12), never stored.
 
 `python3 decks.py` builds all six PDFs into the repo root (three decks x
 full "Cards" + PRINTER_ONLY variants). Requirements: `pip install reportlab`
-(the test suite additionally needs `pymupdf`). The required TTFs
+(the test suite additionally needs `pymupdf`, and `fonttools` for
+`tools/validate.py` check 5). The required TTFs
 (Marcellus-Regular, Bitter-Regular/-Bold, NunitoSans-Regular/-SemiBold) are
 checked into `tools/fonts/` together with each family's OFL license text, so a
 fresh clone builds with no extra downloads.

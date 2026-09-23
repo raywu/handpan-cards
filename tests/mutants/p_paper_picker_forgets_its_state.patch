@@ -3,9 +3,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4351,8 +4351,8 @@ function headerHTML(d, ch, n, noPrints) {
-       <button type="button" onclick="openPrintSheet('full')">FULL DECK PDF</button>
-       <button type="button" onclick="openPrintSheet('shop')">PRINT-ONLY PDF</button>
+@@ -6205,8 +6205,8 @@ function headerHTML(d, ch, n, noPrints) {
+       <button type="button" onclick="downloadDeckPDF('full')">FULL DECK PDF</button>
+       <button type="button" onclick="downloadDeckPDF('shop')">PRINT-ONLY PDF</button>
        <select aria-label="Paper size" onchange="setPrintPaper(this.value)">
 -        <option value="letter"${printPaper === "letter" ? " selected" : ""}>LETTER</option>
 -        <option value="a4"${printPaper === "a4" ? " selected" : ""}>A4</option>
