@@ -1,0 +1,18 @@
+# kills: test_every_vector_matches_print - a field circle fills pure white
+# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+#
+# the field circle fills 0.98 grey instead of white. The trace's fill
+# channel is the only thing that sees it: no glyph moves and no stroke
+# changes, so every other test in the repo still passes.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -281,7 +281,7 @@ HPE.pdfcards = (function () {
+   // ---- diagram (tools/hifi.py:270-354) -----------------------------------
+   function drawRing(c, x, y, r, state) {
+     c.setDash();
+-    c.setFillColor(WHITE);
++    c.setFillColor([0.98, 0.98, 0.98]);
+     c.setStrokeColor(BLACK);
+     c.setLineWidth(0.65);
+     if (state === "off-bottom") {

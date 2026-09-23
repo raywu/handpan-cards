@@ -1,0 +1,18 @@
+# kills: test_every_vector_matches_print - the bottom ring strokes hifi grey
+# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+#
+# the dashed bottom-shell ring strokes 0.88 grey instead of 0.90. Two
+# percent darker: invisible on screen, and no glyph moves, so the text-side
+# parity oracle and every unit test still pass.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -324,7 +324,7 @@ HPE.pdfcards = (function () {
+       c.circle(cx, cy, R * g.inner_ring, 1, 0);
+     }
+     if (g.bottom) {
+-      c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
++      c.setStrokeColor([0.88, 0.88, 0.88]); c.setLineWidth(0.7);
+       c.setDash(2.2, 2.2);
+       c.circle(cx, cy, R * g.bottom, 1, 0);
+       c.setDash();

@@ -85,6 +85,58 @@ def _glyphs(path, nd=1):
     return out
 
 
+def _round(obj, nd):
+    """A drawing item's geometry, rounded. Points, rects and quads only."""
+    if isinstance(obj, fitz.Point):
+        return (round(obj.x, nd), round(obj.y, nd))
+    if isinstance(obj, fitz.Rect):
+        return (round(obj.x0, nd), round(obj.y0, nd),
+                round(obj.x1, nd), round(obj.y1, nd))
+    if isinstance(obj, fitz.Quad):
+        return tuple(_round(getattr(obj, k), nd)
+                     for k in ("ul", "ur", "ll", "lr"))
+    return obj
+
+
+def _drawings(path, nd=1):
+    """Every vector a reader finds, page by page - the non-text half.
+
+    `_glyphs` above compares the TEXT surface. Everything else the card is
+    made of - the frame, the pan circles, the dashed bottom ring, the crop
+    marks, the calibration bar - is a path, and until this helper nothing
+    compared those across the two emitters. A stroke colour, a fill, a line
+    width or a dash pattern could differ between reportlab and the JS
+    emitter on every card and every test in this repo still passed, because
+    `recorder()` in tests/pdfcards.test.js:22-23 noops setFill, setStroke,
+    setLineWidth and setDash.
+
+    The trace is `(type, color, fill, width, dashes, items)` per drawing:
+    colours to 3 dp, width to 2 dp (None stays None - pymupdf omits it on a
+    fill-only path), dashes as the raw string, and every item's points
+    rounded to `nd`, the same tenth of a point `_glyphs` rounds to.
+
+    Sorted with `key=repr`, not bare `sorted()`: these tuples hold None
+    against float and nested point tuples, neither of which is orderable.
+    `repr` is a total order and is stable across the two emitters because
+    every value in the tuple has already been rounded."""
+    out = []
+    with fitz.open(path) as doc:
+        for page in doc:
+            rows = []
+            for d in page.get_drawings():
+                rows.append((
+                    d["type"],
+                    tuple(round(c, 3) for c in (d["color"] or ())),
+                    tuple(round(c, 3) for c in (d["fill"] or ())),
+                    None if d.get("width") is None else round(d["width"], 2),
+                    tuple(d.get("dashes") or ()),
+                    tuple((i[0],) + tuple(_round(x, nd) for x in i[1:])
+                          for i in d["items"]),
+                ))
+            out.append(sorted(rows, key=repr))
+    return out
+
+
 @unittest.skipIf(fitz is None, "pymupdf is required")
 class PrintParityTest(unittest.TestCase):
     def _pair(self, seed, variant):
@@ -96,6 +148,27 @@ class PrintParityTest(unittest.TestCase):
         hifi.build(py_path, deck, chords_only=(variant == "shop"))
         _js_pdf(payload, js_path, variant=variant)
         return _glyphs(py_path), _glyphs(js_path)
+
+    def _pair_drawings(self, seed, variant):
+        payload = _generate(seed)
+        deck = decks.from_generated(payload)
+        tmp = tempfile.mkdtemp()
+        py_path = os.path.join(tmp, "py.pdf")
+        js_path = os.path.join(tmp, "js.pdf")
+        hifi.build(py_path, deck, chords_only=(variant == "shop"))
+        _js_pdf(payload, js_path, variant=variant)
+        return _drawings(py_path), _drawings(js_path)
+
+    def _assert_vectors_match(self, seed, variant):
+        py, js = self._pair_drawings(seed, variant)
+        self.assertEqual(len(py), len(js), "page count")
+        # An empty trace is a passing test that proves nothing, the same
+        # reason test_every_glyph_lands_where_print_puts_it holds a floor.
+        # The smallest case measured is the Amara shop sheet at 676.
+        self.assertGreater(sum(len(p) for p in py), 500,
+                           "a deck with no vectors is not a parity check")
+        for i, (a, b) in enumerate(zip(py, js)):
+            self.assertEqual(a, b, "%s page %d of %s" % (variant, i + 1, seed))
 
     def test_the_sweep_actually_ran(self):
         # An empty seed list is a passing parity test that proves nothing.
@@ -110,6 +183,18 @@ class PrintParityTest(unittest.TestCase):
                                    "a deck with no text is not a parity check")
                 for i, (a, b) in enumerate(zip(py, js)):
                     self.assertEqual(a, b, "page %d of %s" % (i + 1, seed))
+
+    def test_every_vector_matches_print(self):
+        for seed in SEEDS:
+            with self.subTest(seed=seed):
+                self._assert_vectors_match(seed, "full")
+
+    def test_every_vector_matches_print_in_the_shop_variant(self):
+        # PRINTER_ONLY drops the title and legend cards, so it draws a
+        # different set of vectors - and on a different page break.
+        for seed in SEEDS:
+            with self.subTest(seed=seed):
+                self._assert_vectors_match(seed, "shop")
 
     def test_the_shop_variant_matches_too(self):
         py, js = self._pair(SEEDS[0], "shop")
