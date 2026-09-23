@@ -679,8 +679,14 @@ Recorded as an observation to make on the device rather than a blind fix: what i
 actually offers depends on the viewer, and guessing at it from here is how the
 browser-print path went wrong twice.
 
-**GATE RESULT, 2026-09-22 (owner, iPhone 14 / iOS 26.6, Safari).** Six of the seven
-checks PASS. Deck under test: the Pygmy maker string, generating the 52-chord,
+**GATE RESULT, 2026-09-22 (owner, iPhone 14 / iOS 26.6, Safari).** Every check in the Task 5
+checklist PASSES except two: the FILENAME check FAILS (now WONTFIX, below) and the
+RULER measurement is OUTSTANDING - it needs a physical print at 100%, not a phone.
+**[CORRECTED after independent review - this read "Six of the seven checks PASS".
+The Task 5 checklist above is prose and never enumerates seven items, so the
+denominator was unrecoverable and the numerator could not be checked against it.
+Stated as pass-except-these, which is verifiable against the bullets below.]**
+Deck under test: the Pygmy maker string, generating the 52-chord,
 18-field custom deck auto-named `F AEOLIAN 12` (`custom:6f9ffc33`).
 
 - FULL DECK PDF opens in the system viewer with **no perceptible lag** (budget was
@@ -702,13 +708,17 @@ Safari and Android Chrome, so it would also have unified the two mobile paths on
 one mechanism). The cost is that `navigator.share()` opens the Share sheet INSTEAD of
 the system PDF viewer, and the owner prefers tapping straight into the viewer. A
 floating "Share" control drawn on top of that viewer was considered and is **not
-buildable**: `window.location.href = blobURL` (`index.html:6171`) hands the file to
+buildable**: `window.location.href = url` (`index.html:6171`, where `url` is the `URL.createObjectURL` blob URL assigned at `:6166`) hands the file to
 native Quick Look, which is a system app and not our DOM, so there is nothing to
 overlay. Keeping our own viewer would mean bundling a PDF renderer into a single-file
 app with no `<script src>` - far too much for a missing name. Renaming by hand on
 save is the accepted cost.
 
-Only after this passes does D2's cutover become a follow-up task.
+**Can D2 proceed?** Yes. Task 5 counts as PASSED for the purpose of the D2 gate:
+the filename check is closed WONTFIX by owner decision, and the ruler measurement is
+an owner action against the PRINT SPEC, not against the client emitter - it would
+fail or pass identically for the Python emitter, so it gates nothing D2 changes. D2's
+cutover is therefore an open follow-up task, not a blocked one.
 
 ---
 

@@ -89,7 +89,7 @@ Rows 91 and 114 are the visible surface of the same machine: a cancelled DELETE 
 
 Six rows, one file family, all of them costing wall-clock today - row 119 records that a full local `node --test tests/e2e.test.js` is not a usable oracle on this machine, and leaked browsers are why.
 
-- AC-G1 (107): `tests/suite_health.py:263`'s `start_new_session=True` removes node from the foreground process group, so a local Ctrl-C never reaches it and `cdp.js`'s SIGINT reaper (`tests/helpers/cdp.js:79-99`) never runs. Wrap `communicate()` in `try/except BaseException: _kill_group(proc, SIGTERM); _drain(...); raise`. Test: send SIGINT to the health run, assert no surviving node child.
+- AC-G1 (107): `tests/suite_health.py:263`'s `start_new_session=True` removes node from the foreground process group, so a local Ctrl-C never reaches it and `cdp.js`'s SIGINT reaper (`tests/helpers/cdp.js:79-100`) never runs. Wrap `communicate()` in `try/except BaseException: _kill_group(proc, SIGTERM); _drain(...); raise`. Test: send SIGINT to the health run, assert no surviving node child.
 - AC-G2 (108): when both drains time out, `run_node_file` returns with the `Popen` unreaped and its pipes open (`ResourceWarning: subprocess NNNNN is still running`). Reap and close on every exit path. Test: the existing `test_a_killed_suites_own_output_reaches_the_excerpt` runs with `-W error::ResourceWarning` and stays green.
 - AC-G3 (109): the excerpt is `(stdout + stderr)[-2000:]`, so a long stderr evicts the TAP output naming what ran. Give each stream its own budget, or take head-and-tail. Test: a suite emitting 10KB of stderr and a short TAP stdout still shows the TAP lines.
 - AC-G4 (110): `tests/suite_health.py:289-291`'s browser probe has no timeout while every other subprocess in the file is bounded. Bound it. Test: a `findBrowser()` that sleeps is killed and reported, not hung.
@@ -154,7 +154,7 @@ Named so a lane does not drift into them:
 
 - **Per-deck boot assertion** - `tools/boot_sim.js:30-31` already throws on `deckCards !== d.chords.length`. Row 47 is satisfied; only the aggregate `96` literal at `:39` is work.
 - **Title-card chord count** - `tools/decks.py:254-256` rewrites it by regex from `len(chords)`. `TODOS.md`'s "Pygmy title-card blurb says 25 CHORDS" is a stale TODO, not a bug; lane H deletes the item.
-- **SIGINT reaper** - `tests/helpers/cdp.js:79-99` exists. AC-G1 is about letting the signal reach it, not writing one.
+- **SIGINT reaper** - `tests/helpers/cdp.js:79-100` exists. AC-G1 is about letting the signal reach it, not writing one.
 - **Profile cleanup machinery** - `tests/helpers/cdp.js:42`. AC-G5 closes a leak into existing machinery.
 - **Mutation harness self-tests** - `tests/mutation_harness.test.js`. Lanes add patches, not harness.
 

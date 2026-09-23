@@ -222,7 +222,7 @@ no queue row left claiming a state the repo contradicts.
       `subprocess.Popen(..., start_new_session=True)`, then on `TimeoutExpired`
       SIGTERM the group first, drain it for a bounded grace period, and
       SIGKILL only if it has not exited by then - deliberately, so
-      `cdp.js`'s SIGTERM/SIGINT/SIGHUP reaper (`tests/helpers/cdp.js:79-99`)
+      `cdp.js`'s SIGTERM/SIGINT/SIGHUP reaper (`tests/helpers/cdp.js:79-100`)
       gets a chance to run before the group dies uncatchably.
       **No profile-dir sweep.** `hpfc-prof-*` dirs are created at
       `tests/helpers/cdp.js:273` and `suite_health.py` never learns their paths,
