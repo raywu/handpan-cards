@@ -1,5 +1,5 @@
 # kills: printPaper boot guard: stored ["a4"] falls back to letter
-# suite: node --test --test-name-pattern "^printPaper boot guard: stored \[\"a4\"\] falls back to letter$" tests/app.test.js
+# suite: node --test --test-name-pattern ^printPaper.boot.guard..stored...a4...falls.back.to.letter$ tests/app.test.js
 # Drops the `typeof p === "string"` check from isPaper. hasOwnProperty
 # coerces its key argument through ToPropertyKey, so
 # Object.prototype.hasOwnProperty.call(PRINT_PAPER, ["a4"]) answers truthy -

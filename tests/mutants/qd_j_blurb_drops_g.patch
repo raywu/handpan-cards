@@ -1,5 +1,5 @@
 # kills: blurb substitution replaces every chord count in the last line, not just the first
-# suite: node --test --test-name-pattern "^blurb substitution replaces every chord count in the last line, not just the first$" tests/pdf_builtin.test.js
+# suite: node --test --test-name-pattern ^blurb.substitution.replaces.every.chord.count.in.the.last.line..not.just.the.first$ tests/pdf_builtin.test.js
 # Drops the /g flag from the blurb's chord-count substitution in
 # HPE.pdfdeck.fromBuiltin. String.replace with a bare regex (no /g) only
 # replaces the FIRST match, so a last line carrying two counts before

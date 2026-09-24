@@ -1,5 +1,5 @@
 # kills: printPaper boot guard: stored "toString" falls back to letter
-# suite: node --test --test-name-pattern "^printPaper boot guard: stored \"toString\" falls back to letter$" tests/app.test.js
+# suite: node --test --test-name-pattern ^printPaper.boot.guard..stored..toString..falls.back.to.letter$ tests/app.test.js
 # Drops the hasOwnProperty check from isPaper, reverting to a plain
 # PRINT_PAPER[p] bracket lookup. That lookup answers truthy for an
 # INHERITED key too ("toString" resolves through the prototype chain the
