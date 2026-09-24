@@ -67,6 +67,14 @@ decisions behind it.
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
+- **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
+  PRINT-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
+  not open a pre-built file; the PDF is built in the browser, on the spot, by
+  the same scale-engine code (`HPE.pdfdeck`) that drives the flip cards, so a
+  built-in deck's cards and a custom deck's cards go through one path with one
+  set of controls. The paper choice persists between visits. Off iOS the file
+  downloads directly; on iOS it opens in a new tab where the platform allows
+  it, falling back to replacing the current page where it does not.
 
 ## Tests
 
@@ -140,9 +148,12 @@ Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
 ## Regenerating deck data
 
 `data/decks.json` is the one canonical copy of the deck data. The app's
-embedded `const DECKS` line and the print generator both derive from it.
-Edit that file, then run `python3 tools/sync_decks.py` (re-injects it into
-`index.html`) and `python3 tools/decks.py` (rebuilds the PDFs).
+embedded `const DECKS` line, the browser's own PDF builder, and the print
+generator all derive from it. Edit that file, then run
+`python3 tools/sync_decks.py` (re-injects it into `index.html`) and
+`python3 tools/decks.py` (rebuilds the six committed PDFs - the print-shop
+artifacts under `tests/test_pdf_build.py`'s staleness gate, not what the app's
+print buttons open).
 
 Layout notes (intentional, verified against the physical instruments -
 do not "correct"):
