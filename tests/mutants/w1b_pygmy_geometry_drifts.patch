@@ -1,0 +1,18 @@
+# kills: test_pygmy_geometry_is_pinned
+# suite: python3 -m unittest -k test_pygmy_geometry_is_pinned tests.test_print
+# Moves Pygmy's R to match Hijaz/Amara's 73.0, exactly the kind of "just use
+# the solver" drift the pin exists to catch (Pygmy's R is deliberately
+# smaller - CLAUDE.md's Design system section: 73.0 here would grow Pygmy's
+# diagram 21.7% and desync it from the shipped geometry).
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -276,7 +276,7 @@ PYGMY = _from_canonical(
+     "pygmy",
+     title="F3 Low Pygmy 18 - Chord Cards",
+     credit="F3 LOW PYGMY / F AEOLIAN",
+-    R=60.0, cy=121.0, y_note=30.0, y_num=14.0,
++    R=73.0, cy=121.0, y_note=30.0, y_num=14.0,
+     legend_demo=(3, 0), blank_cards=7,
+     grad=(Color(0.427, 0.251, 0.639), Color(0.788, 0.592, 0.118)),
+     col_root=Color(0.427, 0.251, 0.639), col_tone=Color(0.788, 0.592, 0.118),

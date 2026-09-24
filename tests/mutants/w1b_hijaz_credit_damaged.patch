@@ -1,0 +1,17 @@
+# kills: test_credit_strings_are_pinned
+# suite: python3 -m unittest -k test_credit_strings_are_pinned tests.test_print
+# Damages the hand-written Hijaz credit string (Q2) - a one-word swap that
+# a byte-diff of the six committed PDFs would not necessarily catch if a
+# future refactor re-derived credits instead of carrying them verbatim.
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -261,7 +261,7 @@ def _from_canonical(deck_id, **overlay):
+ HIJAZ = _from_canonical(
+     "hijaz",
+     title="C# Hijaz / Orion 9 - Chord Cards",
+-    credit="C# HIJAZ / ORION",
++    credit="C# HIJAZ / ORIGIN",
+     R=73.0, cy=126.0, y_note=30.0, y_num=14.0,
+     legend_demo=(5, 3),
+     grad=(Color(0.878, 0.333, 0.604), Color(0.886, 0.463, 0.106)),
