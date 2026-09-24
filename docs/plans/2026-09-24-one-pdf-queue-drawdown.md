@@ -142,8 +142,8 @@ merge serially; rebase only on a real conflict.
 
 | Lane | Branch | PR | Head | State | Verdict |
 |---|---|---|---|---|---|
-| J | claude/qd-js | - | - | not spawned | - |
-| P | claude/qd-py | - | - | not spawned | - |
+| J | claude/qd-js | - | - | spawned (wt-qd-js @ 90a5aed) | - |
+| P | claude/qd-py | - | - | spawned (wt-qd-py @ 90a5aed) | - |
 
 ## 7. Review log
 
