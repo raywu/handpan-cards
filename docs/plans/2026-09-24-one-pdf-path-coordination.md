@@ -163,7 +163,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
 | W3 | claude/w3-one-print-ux | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
-| W3d | claude/w3d-docs | PR 133 rebasing onto f78ed0b, re-deriving citations (AD-8 released) | - | 2026-09-24 |
+| W3d | claude/w3d-docs | PR 133 in review at a4640eb (rebased on f78ed0b, citations re-derived) | - | 2026-09-24 |
 
 ## Review log
 
@@ -189,7 +189,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
 | W3 | - | removed | deleted | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284) | PASS_WITH_NITS (fresh reviewer, attempt 2) | 1 | f78ed0b | - | no |
-| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8c9d4bb | all 5 green at 8c9d4bb; head == remote tip; files = README.md + scale-engine-coordination.md (rows 331-354) | review held (AD-8) | 0 | no | W3 merge | yes |
+| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | a4640eb | all 5 green at a4640eb (run 36039174602); head == remote tip; diff = README.md + scale-engine-coordination.md only | reviewer spawned | 0 | no | - | yes |
 
 ## Resume here (written for a fresh session)
 
