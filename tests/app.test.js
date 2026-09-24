@@ -3394,8 +3394,10 @@ test("print sheet covers every chord exactly once, numbered from 1", () => {
 
 test("print sheet card list: a built-in deck composes the same way", () => {
   const app = boot();
-  // The built-ins carry a blank_cards overlay literal in the print pipeline;
-  // the app's data has none, so the list is title + legend + chords + padding.
+  // Only Pygmy's print overlay carries a blank_cards literal (nested, at
+  // DECKS[i].print.blank_cards - see "blank_cards is honoured when present"
+  // below for why the browser never reads that nested copy). Amara's overlay
+  // has none, so its list is title + legend + chords + padding, no blanks.
   const di = deckIndex(app, "amara");
   const ks = arr(app.get(
     `printCardList(DECKS[${di}], "full", 9).map(function(c){return c.kind})`));
@@ -3919,9 +3921,10 @@ test("blank_cards is honoured when present, and no shipped deck carries it", () 
   // The gap the branch exists to close: `blank_cards` now lives in
   // data/decks.json as `print.blank_cards` (Pygmy: 7), but NESTED under the
   // print overlay - printCardList reads the top-level `d.blank_cards`, which
-  // no shipped deck sets. `HPE.pdfdeck.fromBuiltin` lifts the nested value for
-  // the PDF emitter; this branch stays dead in the browser until some deck
-  // sets the top-level key directly.
+  // no shipped deck sets. `HPE.pdfdeck.fromBuiltin`'s generic overlay flatten
+  // carries the nested value to the top level for the PDF emitter; this
+  // branch stays dead in the browser until some deck sets the top-level key
+  // directly.
   const carriers = plain(app.get('DECKS.filter(d => "blank_cards" in d).map(d => d.id)'));
   assert.deepStrictEqual(carriers, [],
     "no shipped deck carries top-level blank_cards - if one does, this test's premise changed");
@@ -4044,14 +4047,33 @@ test("print sheet is emptied even when the print dialog throws", () => {
    value, not just a falsy one - `store.printPaper || "letter"` also survives
    `null`, so a mutant reducing the guard to that passes every test that only
    tries falsy/valid inputs. "tabloid" is a truthy string that is not a
-   PRINT_PAPER key; 42 is truthy and not even a string. */
-for (const bad of ["tabloid", 42, null]) {
+   PRINT_PAPER key; 42 is truthy and not even a string. "toString" and
+   ["a4"] are rows 23/25: a plain `PRINT_PAPER[p]` bracket lookup answers
+   truthy for "toString" (an INHERITED key, resolved through the prototype
+   chain same as an own key) and, given an array whose lone element IS a
+   valid key, for `PRINT_PAPER[["a4"]]` too (the bracket access coerces the
+   array to the string "a4" before indexing) - `isPaper` must refuse both. */
+for (const bad of ["tabloid", 42, null, "toString", ["a4"]]) {
   test(`printPaper boot guard: stored ${JSON.stringify(bad)} falls back to letter`, () => {
     const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: bad }) } });
     assert.strictEqual(app.get("printPaper"), "letter",
       `stored printPaper ${JSON.stringify(bad)} booted to "${app.get("printPaper")}", not "letter"`);
   });
 }
+
+test("setPrintPaper refuses an inherited key (\"toString\") rather than accepting it as a paper", () => {
+  const app = boot();
+  app.run('setPrintPaper("toString")');
+  assert.strictEqual(app.get("printPaper"), "letter",
+    "setPrintPaper(\"toString\") must be refused, not accepted as a PRINT_PAPER key");
+});
+
+test("setPrintPaper refuses a non-string value even when it stringifies to a valid key", () => {
+  const app = boot();
+  app.run('setPrintPaper(["a4"])');
+  assert.strictEqual(app.get("printPaper"), "letter",
+    "setPrintPaper([\"a4\"]) must be refused - only a string paper key is accepted");
+});
 
 /* Reviewer finding B-2: `printPaper` is module state that survives a render,
    but headerHTML() re-emits the <select> from scratch on EVERY render with

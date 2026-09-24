@@ -1,0 +1,20 @@
+# kills: printPaper boot guard: stored "toString" falls back to letter
+# suite: node --test --test-name-pattern ^printPaper.boot.guard..stored..toString..falls.back.to.letter$ tests/app.test.js
+# Drops the hasOwnProperty check from isPaper, reverting to a plain
+# PRINT_PAPER[p] bracket lookup. That lookup answers truthy for an
+# INHERITED key too ("toString" resolves through the prototype chain the
+# same as an own key), so a stored printPaper of "toString" would boot as
+# "toString" instead of falling back to "letter" - the row 23/25 bug.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6180,8 +6180,7 @@ function printCardList(d, variant, slotsPerPage) {
+ // runs at boot, so throwing here would kill the app on that browser rather
+ // than just falling back to "letter".
+ function isPaper(p) {
+-  return typeof p === "string" &&
+-    Object.prototype.hasOwnProperty.call(PRINT_PAPER, p);
++  return typeof p === "string" && PRINT_PAPER[p];
+ }
+ let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
+ function setPrintPaper(p) { if (isPaper(p)) { printPaper = p; save(); } }

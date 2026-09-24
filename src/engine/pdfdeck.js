@@ -205,7 +205,11 @@ HPE.pdfdeck = (function () {
   // statement-for-statement port of tools/decks.py:_from_canonical, for the
   // reason fromGenerated ports from_generated: a browser deck that drew from
   // a second, independently written adapter would diverge from the print
-  // pipeline in exactly the places nobody looks.
+  // pipeline in exactly the places nobody looks. The one deliberate departure
+  // from that port is `shared.warnings: []` below - _from_canonical carries
+  // no such key, since a built-in is never warned - added only so a caller
+  // reading `.warnings` off either adapter's output never has to branch on
+  // which one produced it.
   //
   // NOT fromGenerated(): a built-in geom carries no `ext`, and R/cy/y_note/
   // y_num are the measured literals in `overlay`, not derived from a solver
@@ -235,7 +239,13 @@ HPE.pdfdeck = (function () {
       spec: spec,
       chords: chords,
       degrees: degrees,
-      has_bottom: hasBottom
+      has_bottom: hasBottom,
+      // A built-in is hand-authored and never warned - tools/decks.py's
+      // _from_canonical has no such key at all - but pdfcards.js's
+      // CARD_WARNINGS badge reads `deck.warnings` off either adapter's
+      // output, and fromGenerated always carries one. This key exists so a
+      // caller never has to branch on which adapter produced the deck.
+      warnings: []
     };
 
     var clash = Object.keys(overlay).filter(function (k) {
@@ -265,11 +275,11 @@ HPE.pdfdeck = (function () {
     }
 
     // Reviewer nit from W1a: `print.blank_cards` is nested, but
-    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. Lift it
-    // so Pygmy's 7 blank cards are not silently dropped from the full PDF.
-    if (Object.prototype.hasOwnProperty.call(overlay, "blank_cards")) {
-      out.blank_cards = overlay.blank_cards;
-    }
+    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. No
+    // dedicated lift is needed - the generic overlay flatten above
+    // (`Object.keys(overlay).forEach(...)`) already copies `blank_cards`
+    // (and every other overlay key) onto `out`, so Pygmy's 7 blank cards
+    // reach the top level without a special case.
 
     return out;
   }
