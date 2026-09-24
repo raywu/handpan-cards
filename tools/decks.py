@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import copy
 import json
 import os
 import re
@@ -218,8 +219,15 @@ def _overlay_from_print(print_data):
     legend_lines pass through unchanged; the three colour fields are
     [r, g, b] lists in data/decks.json (JSON has no Color type) and are
     turned into reportlab Colors here, at the one point that needs them.
+
+    Row 9: `dict(print_data)` is a SHALLOW copy - a plain `dict()` call
+    copies the top-level keys but not the list/dict values underneath, so
+    `decks.PYGMY['legend_lines']` used to alias
+    `_CANONICAL['pygmy']['print']['legend_lines']` and a caller mutating one
+    silently mutated the other. `copy.deepcopy` makes the returned overlay
+    fully independent of `print_data`.
     """
-    overlay = dict(print_data)
+    overlay = copy.deepcopy(print_data)
     overlay["legend_demo"] = tuple(overlay["legend_demo"])
     overlay["col_root"] = Color(*overlay["col_root"])
     overlay["col_tone"] = Color(*overlay["col_tone"])

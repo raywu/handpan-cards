@@ -70,6 +70,89 @@ def doc_text(doc):
     return "".join(page.get_text() for page in doc)
 
 
+def _committed_pdf_bytes(rel, root):
+    """The bytes of `rel` as committed at HEAD in the git checkout `root`.
+
+    Row 7: raises AssertionError with a diagnostic that distinguishes two
+    different failures a caller must not conflate: `root` is not a git
+    checkout at all (no git binary on PATH, or `root` sits outside any
+    repository - e.g. a source tarball) versus `root` IS a checkout but
+    `rel` simply is not committed at HEAD (edited deck data whose rebuilt
+    PDF was never committed). The old single message ("not committed at
+    HEAD") was wrong for the first case.
+    """
+    try:
+        is_repo = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=root, capture_output=True)
+    except FileNotFoundError as exc:
+        raise AssertionError("no git or not a checkout: %s (%s)" % (root, exc))
+    if is_repo.returncode != 0:
+        raise AssertionError("no git or not a checkout: %s" % root)
+    proc = subprocess.run(
+        ["git", "show", "HEAD:%s" % rel], cwd=root, capture_output=True)
+    if proc.returncode != 0:
+        raise AssertionError(
+            "%s is not committed at HEAD in the repo root: %s"
+            % (rel, proc.stderr.decode(errors="replace")))
+    return proc.stdout
+
+
+def _committed_pdf_dest(tmp_dir, rel):
+    """Where `_committed_pdf_bytes(rel, ...)`'s bytes are written to compare.
+
+    N1 (PR 136 review): every `paths.PDFS` value is a bare basename, so
+    `os.path.join(tmp_dir, os.path.basename(rel))` lands on the SAME path
+    the gate already rebuilt into (`BuiltDecksTest.built[key]`, which
+    `cls.docs` still holds open via pymupdf). Writing the committed HEAD
+    bytes there overwrites the freshly built PDF out from under the open
+    document mid-comparison. The "head-" prefix keeps the two paths
+    distinct while still avoiding `os.path.join`-ing a path with
+    separators (`rel` itself) onto `tmp_dir`.
+    """
+    return os.path.join(tmp_dir, "head-" + os.path.basename(rel))
+
+
+def _stale_reason(rel, root, tmp_dir, built_doc, built_text):
+    """One committed-vs-rebuilt check, isolated so the gate and a test can
+    both drive it (row N2, PR 136 review: the gate's own accumulation loop
+    - `stale.append(...); continue` - was untested; only the test's own
+    hand-rolled loop was covered, so a mutant reverting the gate's
+    ``continue`` to a bare ``raise`` survived). Returns a reason string, or
+    None when `rel` matches the rebuild.
+    """
+    try:
+        data = _committed_pdf_bytes(rel, root)
+    except AssertionError as exc:
+        return str(exc)
+    dest = _committed_pdf_dest(tmp_dir, rel)
+    with open(dest, "wb") as fh:
+        fh.write(data)
+    with pymupdf.open(dest) as doc:
+        if doc.page_count != built_doc.page_count:
+            return ("%s: %d committed pages vs %d rebuilt"
+                    % (rel, doc.page_count, built_doc.page_count))
+        if squeeze(doc_text(doc)) != squeeze(built_text):
+            return "%s: committed text differs from a rebuild" % rel
+    return None
+
+
+def _stale_reasons(pdfs, root, tmp_dir, docs, texts):
+    """The gate's own accumulation over `pdfs` (key -> relative path).
+
+    Extracted so a test can drive the SAME wrapper the gate calls, rather
+    than a parallel loop of its own (row N2, PR 136 review): a mutant that
+    stopped the gate short - dropping a failure instead of collecting it -
+    is only caught by exercising this function directly.
+    """
+    stale = []
+    for key, rel in pdfs.items():
+        reason = _stale_reason(rel, root, tmp_dir, docs.get(key), texts.get(key))
+        if reason is not None:
+            stale.append(reason)
+    return stale
+
+
 def segments(page):
     """Straight line segments on a page, in PDF points (y measured from top)."""
     out = []
@@ -97,6 +180,55 @@ def crop_marks(page):
                     max(x1, x2) >= w - SPEC_CROP_INSET - SPEC_CROP_MARK - TOL:
                 ys.append(y1)
     return xs, ys
+
+
+class CommittedPdfBytesTest(unittest.TestCase):
+    """Row 7: `_committed_pdf_bytes` diagnostics and `_committed_pdf_dest`
+    naming, exercised directly - none of this needs a built PDF."""
+
+    def test_diagnoses_a_non_checkout_directory(self):
+        not_a_checkout = tempfile.mkdtemp()
+        try:
+            with self.assertRaises(AssertionError) as ctx:
+                _committed_pdf_bytes("whatever.pdf", not_a_checkout)
+            self.assertIn("no git or not a checkout", str(ctx.exception))
+        finally:
+            shutil.rmtree(not_a_checkout)
+
+    def test_two_missing_pdfs_are_both_reported_not_just_the_first(self):
+        """Drives `_stale_reasons` - the gate's OWN accumulation wrapper -
+        directly, not a loop of the test's own, so a mutant that stops the
+        gate short (e.g. dropping a failure instead of collecting it, or
+        turning the collection into a raise) is caught here (row N2, PR
+        136 review)."""
+        pdfs = {"a": "does-not-exist-1.pdf", "b": "does-not-exist-2.pdf"}
+        stale = _stale_reasons(pdfs, paths.ROOT, tempfile.gettempdir(),
+                               docs={}, texts={})
+        self.assertEqual(len(stale), 2,
+                         "both missing PDFs must be reported, not just the "
+                         "first: %r" % (stale,))
+        self.assertIn("does-not-exist-1.pdf", stale[0])
+        self.assertIn("is not committed at HEAD", stale[0])
+        self.assertIn("does-not-exist-2.pdf", stale[1])
+        self.assertIn("is not committed at HEAD", stale[1])
+
+    def test_dest_uses_the_basename_not_the_whole_relative_path(self):
+        self.assertEqual(
+            _committed_pdf_dest("/tmp/x", "sub/dir/whatever.pdf"),
+            os.path.join("/tmp/x", "head-whatever.pdf"))
+
+    def test_dest_never_collides_with_the_freshly_built_path(self):
+        """N1 (PR 136 review): the dest must never equal the path the gate
+        already built into, or writing HEAD's bytes there clobbers the
+        rebuilt PDF that ``cls.docs`` still holds open."""
+        for key, rel in paths.PDFS.items():
+            with self.subTest(pdf=key):
+                built_path = os.path.join("/tmp/x", rel)
+                self.assertNotEqual(_committed_pdf_dest("/tmp/x", rel),
+                                    built_path)
+                self.assertNotEqual(
+                    _committed_pdf_dest("/tmp/x", rel),
+                    os.path.join("/tmp/x", os.path.basename(rel)))
 
 
 class BuiltDecksTest(unittest.TestCase):
@@ -261,28 +393,8 @@ class BuildTest(BuiltDecksTest):
         and commit it without rerunning tools/decks.py and this goes red -
         app and print would otherwise silently diverge.
         """
-        stale = []
-        for key, _deck, _chords_only, _pages in JOBS:
-            rel = paths.PDFS[key]
-            proc = subprocess.run(
-                ["git", "show", "HEAD:%s" % rel],
-                cwd=paths.ROOT, capture_output=True)
-            self.assertEqual(
-                proc.returncode, 0,
-                "%s is not committed at HEAD in the repo root: %s"
-                % (rel, proc.stderr.decode(errors="replace")))
-            committed = os.path.join(self.tmp, "head-" + rel)
-            with open(committed, "wb") as fh:
-                fh.write(proc.stdout)
-            with pymupdf.open(committed) as doc:
-                if doc.page_count != self.docs[key].page_count:
-                    stale.append("%s: %d committed pages vs %d rebuilt"
-                                 % (rel, doc.page_count,
-                                    self.docs[key].page_count))
-                    continue
-                if squeeze(doc_text(doc)) != squeeze(self.text[key]):
-                    stale.append("%s: committed text differs from a rebuild"
-                                 % rel)
+        stale = _stale_reasons(paths.PDFS, paths.ROOT, self.tmp,
+                               self.docs, self.text)
         self.assertEqual(
             stale, [],
             "committed PDFs are out of date - rerun `python3 tools/decks.py` "
