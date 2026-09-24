@@ -94,6 +94,7 @@ force-pushing main or any shared branch, anything destructive or irreversible.
 | AD-4 | Merge order in wave 2 is W1a before W1b | yes | W1b's two mutants must patch the literals in `tools/decks.py` at base; W1a deletes those lines. Merging W1b first would leave W1a's CI red on stale mutants it does not own. After W1a merges, W1b is re-briefed to rebase and re-target its mutants at `data/decks.json`, then re-reviewed. |
 | AD-5 | W1b's review is held until its post-W1a re-target, not run now | yes | Reviewing 1a73f65 now and again after the re-target spends two reviewers and one of W1b's two attempts on a rebase re-review. One review of the final head costs one. W1b's lane context stays live for the re-brief. |
 | AD-6 | W2 may edit `tests/suite_health.py` to add one FLOORS row for its new suite | yes | The suite-health gate fails any new test file with no floor row, so the row is a mandated consequence of W2's owned `tests/pdf_builtin.test.js` (same class as row 10). Floor set to the collected count, not 0. The README suite-count bump in PR 132 is the same class. |
+| AD-7 | W3 may raise the e2e/app FLOORS rows in `tests/suite_health.py`; the memory file `print-button-opens-existing-pdf.md` is updated by the integrator, not W3d | yes | Plan §8 names the floor raise as a W3 obligation, so it is a mandated consequence (as AD-6). The memory file lives under ~/.claude, outside any worktree, so no lane PR can carry it; and it only becomes false once W3 merges. |
 
 ## Projected cost
 
@@ -159,9 +160,9 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
-| W2 | claude/w2-pdfdeck-builtin | PR 132 in review at 44cdf07 | bounced (CI) | 2026-09-24 |
-| W3 | - | blocked on W2 | - | 2026-09-24 |
-| W3d | - | blocked on W2 | - | 2026-09-24 |
+| W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
+| W3 | claude/w3-one-print-ux | IN FLIGHT | - | 2026-09-24 |
+| W3d | claude/w3d-docs | IN FLIGHT | - | 2026-09-24 |
 
 ## Review log
 
@@ -169,12 +170,13 @@ NEXT: plan section 4, "W3d - docs and queue".
 |---|---|---|---|---|
 | 130 | W1a | PASS_WITH_NITS | 3 nits: (1) `print.blank_cards` is nested but app/pdfcards read top-level `blank_cards`, and index.html ~5994 / tests/app.test.js:3397 comments say decks.json carries no such key; (2) `_overlay_from_print` shallow-copies, so `legend_lines` aliases `_CANONICAL`; (3) 12 `tests/mutants/` files touched outside the row - judged a necessary consequence (regen reproduces b_* byte for byte; c_deck_data_drift keeps intent and is killed). All literals re-derived byte for byte; 5/5 reviewer mutants killed. | Merged 4d9d372; nits filed as rows 8-10; nit 1 briefed into W2 and carried to W3. |
 | 131 | W1b | PASS_WITH_NITS | 5 nits (rows 11-15). Reviewer re-derived every pin, confirmed each mutant is killed by its own `# suite:` header, and ran 10 hand mutations across all decks/field classes, each caught. CI run 35969288841 success at 47e99e9. | Merged 7d1edb9; nits filed as rows 11-15; nit 5 carried to W2 review and W3 parity. |
+| 132 | W2 | PASS_WITH_NITS | 5 nits (rows 16-20). Parity re-derived: 3 built-ins x full/shop, glyph counts equal per case; `--builtin` exits in <0.1s with no stdin; R from print.R (solver-R mutant killed on 3 decks). Hand mutants 3/5 killed; the 2 survivors are nits 16-17. Attempt 1 was a CI bounce (no suite_health floor row). | Merged 866bb4e; nits filed as rows 16-20. |
 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
 ## Cycle state
 
-Cycle: 1   Wave: 3 (W2) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131)
+Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131), 866bb4e (PR 132)
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -182,19 +184,19 @@ Cycle: 1   Wave: 3 (W2) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c
 | W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
-| W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | 132 | 44cdf07 | all 5 green at 44cdf07 (run 35970894532); head == remote tip; MERGEABLE; files = owned + suite_health row (AD-6) + README count | reviewer spawned | 1 | no | - | yes |
-| W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
-| W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
+| W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
+| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | - | base 866bb4e | - | - | 0 | no | - | yes |
+| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | - | base 866bb4e | - | - | 0 | no | - | yes |
 
 ## Resume here (written for a fresh session)
 
-State as of 2026-09-24: W0, W1a, W1b merged (last: 7d1edb9, PR 131). W2 is live
-in `/private/tmp/claude-501/wt-w2`, PR 132. Its first CI run at ac65d21 failed
-suite health (no FLOORS row for the new `tests/pdf_builtin.test.js`); the lane was
-bounced with `tests/suite_health.py` authorised (AD-6), attempt 1 of 2. If this
-session died: check PR 132's head == remote tip and all 5 checks green, then spawn
-a reviewer with the W2 re-derive items from plan §5 plus rows 8 and 15. After W2
-merges, spawn W3 and W3d together from fresh origin/main (read plan §4 first).
+State as of 2026-09-24: W0, W1a, W1b, W2 merged (last: 866bb4e, PR 132). Wave 4:
+W3 and W3d spawned from 866bb4e into `/private/tmp/claude-501/wt-w3` and `wt-w3d`
+(branches `claude/w3-one-print-ux`, `claude/w3d-docs`). W3 may raise its own
+suite_health.py floor rows (AD-7). The memory-file update of W3d is done by the
+integrator after W3 merges (AD-7). If this session died: check each branch for a
+PR, verify head == remote tip and 5 checks green, review with the plan §5 rows.
+Cycle close: merge this coord branch via PR (AD-2).
 
 ## Handoff queue (append-only)
 
@@ -215,6 +217,11 @@ merges, spawn W3 and W3d together from fresh origin/main (read plan §4 first).
 | 13 | PR 131 review | `PinnedPrintValuesTest` overlaps `PrintDeckSnapshotTest`; the docstring should say why the pins are kept anyway (they name the owner-approved literals; the snapshot only freezes whatever is there). | OPEN |
 | 14 | PR 131 review | Only 2 of the 5 new pin tests have a mutant; add one for `blank_cards` (pygmy 7) at minimum. | OPEN |
 | 15 | PR 131 review | The Python pins cannot see the JS path: W2/W3 must take R from `print.R`, not the layout solver. Carried into the W2 reviewer brief and W3 parity. | OPEN |
+| 16 | PR 132 review | `src/engine/pdfdeck.js` fromBuiltin's explicit blank_cards lift is dead code: the overlay flatten above it already copies `print.blank_cards` to top level. Removing the lift kills nothing. Drop it or fix the comment and the "LIFTED" test's story. | OPEN |
+| 17 | PR 132 review | No test proves the `/g` on fromBuiltin's blurb substitution (drop-/g mutant survived). Add a synthetic two-count last line. | OPEN |
+| 18 | PR 132 review | `tests/test_pdf_parity.py` coverage floor checks only the constants, not that the sweep loops iterate CASES; VARIANTS is used by no loop. Reverting a loop to SEEDS stays green. | OPEN |
+| 19 | PR 132 review | fromBuiltin returns no `warnings` key (matches Python; pdfcards guards with `|| []`). A future unguarded read would throw for built-ins only. | OPEN |
+| 20 | PR 132 review | `tools/pdf_build.js --builtin` with no value falls through to stdin mode and waits on a TTY instead of printing usage. | OPEN |
 
 ## Lane reports
 
