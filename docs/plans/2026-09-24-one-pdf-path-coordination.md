@@ -195,13 +195,12 @@ Cycle: 1   Wave: 4 complete; all lanes merged - cycle close pending (coord PR, A
 
 ## Resume here (written for a fresh session)
 
-State as of 2026-09-24: W0, W1a, W1b, W2 merged (last: 866bb4e, PR 132). Wave 4:
-W3 and W3d spawned from 866bb4e into `/private/tmp/claude-501/wt-w3` and `wt-w3d`
-(branches `claude/w3-one-print-ux`, `claude/w3d-docs`). W3 may raise its own
-suite_health.py floor rows (AD-7). The memory-file update of W3d is done by the
-integrator after W3 merges (AD-7). If this session died: check each branch for a
-PR, verify head == remote tip and 5 checks green, review with the plan §5 rows.
-Cycle close: merge this coord branch via PR (AD-2).
+State as of 2026-09-24: every lane merged - W0, W1a, W1b, W2, W3 (f78ed0b, PR 134),
+W3d (560bf9a, PR 133). All lane worktrees and branches released. The plan's goal is
+met on main. Remaining: cycle close - this coord branch merges via its own PR (AD-2)
+behind CI and a fresh reviewer. Queue rows 1-29 stay OPEN for follow-up work; row 24
+needs an owner call. Device-only checks (plan section 6: iOS window.open/blob delivery)
+cannot run in CI and are the owner's.
 
 ## Handoff queue (append-only)
 
