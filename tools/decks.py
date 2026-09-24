@@ -227,7 +227,7 @@ def _overlay_from_print(print_data):
     return overlay
 
 
-def _from_canonical(deck_id):
+def _from_canonical(deck_id, **extra_overlay):
     """A canonical deck (including its `print` key) -> a hifi deck dict.
 
     The `print` key carries only what the shared data does not and CANNOT:
@@ -235,6 +235,9 @@ def _from_canonical(deck_id):
     hand-written title-card copy, and Pygmy's blank-card padding preference.
     It may not name a key the canonical data already owns - the clash guard
     below raises, and validate.py check 1b asserts the result end to end.
+    `**extra_overlay` exists only so callers (tests included) can layer an
+    override on top of `print` for a single call; none of HIJAZ/PYGMY/AMARA
+    below pass any.
 
     NOT from_generated(): that one derives R from geom["ext"], which no
     built-in geom carries, and which would redraw every diagram (see the
@@ -259,6 +262,7 @@ def _from_canonical(deck_id):
                        for k, v in spec.items() if k != "_geom"),
     )
     overlay = _overlay_from_print(deck["print"])
+    overlay.update(extra_overlay)
     clash = sorted(set(shared) & set(overlay))
     if clash:
         raise ValueError("%s: print overlay shadows canonical data: %s"
