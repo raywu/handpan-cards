@@ -152,7 +152,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| plan #128 | `claude/one-pdf-path-plan` | CI green, in review | - | 2026-09-24 |
+| plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W0 | `claude/w0-pdf-build-oracle` | CI green, in review | - | 2026-09-24 |
 | W1a | - | blocked on W0 | - | 2026-09-24 |
 | W1b | - | blocked on W0 | - | 2026-09-24 |
@@ -164,7 +164,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
-| - | - | - | - | - |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
 ## Cycle state
 
@@ -172,19 +172,21 @@ Cycle: 1   Wave: 1   Merged this batch: -
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| plan | a8cd58f | wt-plan | one-pdf-path-plan | 128 | c37a7f9 | all 5 green at c37a7f9 | in review | 0 | no | reviewer | yes |
+| plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
 | W0 | ad4eeed | wt-w0 | w0-pdf-build-oracle | 129 | db59b2c | all 5 green at db59b2c | in review | 0 | no | reviewer | yes |
-| W1a | - | - | - | - | - | - | - | 0 | no | W0 | no |
-| W1b | - | - | - | - | - | - | - | 0 | no | W0 | no |
-| W2 | - | - | - | - | - | - | - | 0 | no | W1a | no |
-| W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
-| W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
+| W1a | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
+| W1b | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
+| W2 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W1a | no |
+| W3 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
+| W3d | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
 
 ## Handoff queue (append-only)
 
 | # | From | Ask | Status |
 |---|---|---|---|
 | 1 | bootstrap | Owner device pass, plan section 6 - CI cannot check D-2's iOS branch | OPEN |
+| 2 | PR 128 review | Plan §9.5 D1 quotes a seed missing its `/` inner separator and calls it "the Pygmy-shaped seed". Restate it with the separator, or say plainly it is a 52-chord Pygmy-SIZED seed and not Pygmy's geometry. Nothing D1 concludes changes. | OPEN |
+| 3 | PR 128 review | Plan §3 lane table: add `tests/mutants/p_paper_picker_forgets_its_state.patch`, `d_esc_attr_leaves_quote`, `p_print_cta_drops_the_platform` to W3's Owns cell, the reciprocal of C3. **Already correct in this doc's Ownership table**, which is what the W3 spawn prompt and reviewer brief are built from, so the risk is contained to the plan's own prose. | OPEN |
 
 ## Lane reports
 
