@@ -2,8 +2,9 @@
 # suite: python3 -m unittest -k test_pygmy_geometry_is_pinned tests.test_print
 # Moves Pygmy's print.R off its pinned value by one unit - the kind of
 # "just use the solver" drift the pin exists to catch (Pygmy's R is
-# deliberately smaller than Hijaz/Amara's 73.0 - CLAUDE.md's Design system
-# section - so any unreviewed move here is wrong). Targets data/decks.json's
+# deliberately smaller than Hijaz/Amara's 73.0 - Q1 of
+# docs/plans/2026-09-22-seed-pdf-one-source.md, "keep the measured literals" -
+# so any unreviewed move here is wrong). Targets data/decks.json's
 # print overlay (post-W1a), not tools/decks.py or the index.html DECKS line.
 diff --git a/data/decks.json b/data/decks.json
 --- a/data/decks.json
