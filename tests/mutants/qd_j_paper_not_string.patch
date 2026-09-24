@@ -1,0 +1,24 @@
+# kills: printPaper boot guard: stored ["a4"] falls back to letter
+# suite: node --test --test-name-pattern "^printPaper boot guard: stored \[\"a4\"\] falls back to letter$" tests/app.test.js
+# Drops the `typeof p === "string"` check from isPaper. hasOwnProperty
+# coerces its key argument through ToPropertyKey, so
+# Object.prototype.hasOwnProperty.call(PRINT_PAPER, ["a4"]) answers truthy -
+# the array stringifies to "a4", a real PRINT_PAPER key - and a stored
+# printPaper of ["a4"] (or a setPrintPaper(["a4"]) call) would be accepted
+# as-is, module state becoming the array rather than the string "letter" or
+# "a4". Also killed by "setPrintPaper refuses a non-string value even when
+# it stringifies to a valid key".
+diff --git a/index.html b/index.html
+index fe29d83..270f805 100644
+--- a/index.html
++++ b/index.html
+@@ -6180,8 +6180,7 @@ function printCardList(d, variant, slotsPerPage) {
+ // runs at boot, so throwing here would kill the app on that browser rather
+ // than just falling back to "letter".
+ function isPaper(p) {
+-  return typeof p === "string" &&
+-    Object.prototype.hasOwnProperty.call(PRINT_PAPER, p);
++  return Object.prototype.hasOwnProperty.call(PRINT_PAPER, p);
+ }
+ let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
+ function setPrintPaper(p) { if (isPaper(p)) { printPaper = p; save(); } }

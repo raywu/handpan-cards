@@ -1,0 +1,20 @@
+# kills: blurb substitution replaces every chord count in the last line, not just the first
+# suite: node --test --test-name-pattern "^blurb substitution replaces every chord count in the last line, not just the first$" tests/pdf_builtin.test.js
+# Drops the /g flag from the blurb's chord-count substitution in
+# HPE.pdfdeck.fromBuiltin. String.replace with a bare regex (no /g) only
+# replaces the FIRST match, so a last line carrying two counts before
+# "CHORDS" would leave the second one stale - exactly the gap the row 17
+# queue item exists to close.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+index 681dc8a..0be84f5 100644
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -270,7 +270,7 @@ HPE.pdfdeck = (function () {
+     if (out.blurb) {
+       var lines = out.blurb.slice();
+       lines[lines.length - 1] = lines[lines.length - 1]
+-        .replace(/\d+(?=\s*CHORDS)/g, String(chords.length));
++        .replace(/\d+(?=\s*CHORDS)/, String(chords.length));
+       out.blurb = lines;
+     }
+ 
