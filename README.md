@@ -36,7 +36,9 @@ print pipeline uses).
 phone can produce the print sheet itself instead of asking a print dialog for
 a paper size it will not honour).
 `src/engine/pdfdeck.js` (a port of `decks.from_generated`: the engine's deck
-plus the two dozen card-copy and geometry keys the print builders read).
+plus the two dozen card-copy and geometry keys the print builders read; it
+also adapts built-in decks via `fromBuiltin`, so both deck kinds reach the
+same print builders through this one module).
 `src/engine/pdfcards.js` (a port of `tools/hifi.py`: the cards, the pan
 diagram, the crop marks and the calibration bar, held glyph for glyph against
 the print pipeline by `tests/test_pdf_parity.py`).
@@ -70,7 +72,8 @@ decisions behind it.
 - **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
   PRINT-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
-  the same scale-engine code (`HPE.pdfdeck`) that drives the flip cards, so a
+  the scale engine's PDF modules (`HPE.pdfdeck` adapts the deck, `HPE.pdfcards`
+  draws it - a separate renderer from the one the flip cards use), so a
   built-in deck's cards and a custom deck's cards go through one path with one
   set of controls. The paper choice persists between visits, and both buttons
   disable while a PDF is being built so a second tap can't start a duplicate
