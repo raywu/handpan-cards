@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2396,15 +2396,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
+@@ -5493,16 +5493,7 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
  // from its saved seed, so restoring one is no longer a dangling reference.
  // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
  // settings there, so writing our two keys must not drop a sibling's.
@@ -13,6 +13,7 @@ diff --git a/index.html b/index.html
 -    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
 -    next.deck = storedDeck;
 -    next.mode = mode;
+-    next.printPaper = printPaper;
 -    localStorage.setItem(STORE_KEY, JSON.stringify(next));
 -  } catch (e) {}
 -};

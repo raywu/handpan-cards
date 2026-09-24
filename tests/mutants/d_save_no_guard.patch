@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2397,13 +2397,11 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
+@@ -5495,13 +5495,11 @@ const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0
  // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
  // settings there, so writing our two keys must not drop a sibling's.
  const save = () => {
@@ -12,13 +12,15 @@ diff --git a/index.html b/index.html
 -    const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
 -    next.deck = storedDeck;
 -    next.mode = mode;
+-    next.printPaper = printPaper;
 -    localStorage.setItem(STORE_KEY, JSON.stringify(next));
 -  } catch (e) {}
 +  const base = readStore(STORE_KEY);
 +  const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
 +  next.deck = storedDeck;
 +  next.mode = mode;
++  next.printPaper = printPaper;
 +  localStorage.setItem(STORE_KEY, JSON.stringify(next));
  };
- 
+
  /* ---------------- generated decks ---------------- */

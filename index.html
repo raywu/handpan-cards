@@ -338,15 +338,11 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
   text-align:right; max-width:55%; text-transform:uppercase}
-/* Sits below .hdr, not inside it - .hdr's height is unaffected. Opens the
-   deck's committed PDFs as-is (D9): no generation, no build step. */
+/* Sits below .hdr, not inside it - .hdr's height is unaffected. Every deck,
+   built-in and generated, builds its PDF client-side through HPE.pdfdeck /
+   HPE.pdfcards (one-pdf-path plan) - there is no pre-built file to link, so
+   the row is always <button>/<select>, never an <a href>. */
 .prints{display:flex; justify-content:flex-end; gap:var(--sp-2); padding:2px 13px 0}
-.prints a{font:600 7px/1.4 "Nunito Sans"; letter-spacing:.08em; color:var(--tone);
-  text-decoration:none; white-space:nowrap}
-.prints a:hover, .prints a:focus-visible{text-decoration:underline}
-/* A custom deck's controls are <button>/<select>, not links. They read as the
-   same row: same type, same colour, same position - only the element differs,
-   because there is no PDF to point an href at. */
 .prints button, .prints select{font:600 7px/1.4 "Nunito Sans";
   letter-spacing:.08em; color:var(--tone); background:none; border:0; padding:0;
   margin:0; white-space:nowrap; cursor:pointer; -webkit-appearance:none;
@@ -5502,6 +5498,7 @@ const save = () => {
     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
     next.deck = storedDeck;
     next.mode = mode;
+    next.printPaper = printPaper;
     localStorage.setItem(STORE_KEY, JSON.stringify(next));
   } catch (e) {}
 };
@@ -5720,9 +5717,10 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 // after it is markup, so attribute position needs the extra escape. Kept
 // separate rather than folded into esc() because the card path's bytes are
 // pinned against tools/hifi.py per field by tests/test_render_agreement.py.
-// Not every attribute in this file is escaped this way - the PRINT_PDFS hrefs
-// below are hardcoded literals - so escA marks the places carrying DECK-DERIVED
-// text, which a generated deck controls.
+// Not every attribute in this file needs this treatment - most of the app's
+// other quoted attributes are hardcoded literals, not deck-derived text - so
+// escA marks the places carrying DECK-DERIVED text, which a generated deck
+// controls.
 const escA = s => esc(s).replace(/"/g, "&quot;");
 
 /* ---------------- diagram label sizing ----------------
@@ -6070,13 +6068,15 @@ function printGridCSS(name, paper) {
  *  with EMPTY slots, so a shop never prints a blank template nobody asked
  *  for.
  *
- *  `blank_cards` asks for blanks BEYOND that padding. It is a print-overlay
- *  literal, and the overlay lives in tools/decks.py alone: data/decks.json is
- *  what the DECKS line is generated from, and it carries no such key, so no
- *  deck in the browser sets it today and the page padding below is what
- *  actually fills a short last page. The branch stands because the overlay
- *  could move into the canonical file - it is honoured the moment the key
- *  appears, which is what keeps this renderer and the PDF from disagreeing.
+ *  `blank_cards` asks for blanks BEYOND that padding. `data/decks.json` (what
+ *  the DECKS line is generated from) now carries it as `print.blank_cards`
+ *  (Pygmy: 7) - NESTED under the per-deck print overlay, not as a top-level
+ *  `d.blank_cards` key. `HPE.pdfdeck.fromBuiltin` lifts it to the top level of
+ *  the deck object it builds for the PDF emitter, but this function reads the
+ *  browser deck object directly (`deck().blank_cards`), which no shipped deck
+ *  sets - so the branch below is still the thing that actually fills a short
+ *  last page for every built-in today, and stays live the moment a shipped
+ *  deck's top-level `blank_cards` is set.
  *  Pinned by "blank_cards is honoured when present" in tests/app.test.js.
  *
  *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
@@ -6157,8 +6157,11 @@ function printCardList(d, variant, slotsPerPage) {
  * container is `hidden` and contributes nothing to the practice screen at any
  * other moment (AC-B5).
  */
-let printPaper = "letter";
-function setPrintPaper(p) { if (PRINT_PAPER[p]) printPaper = p; }
+// Type-guarded like store.deck / store.mode above (D-3): "hpfc" is shared, so
+// a non-string or unrecognised value here must not survive into printPaper.
+let printPaper = typeof store.printPaper === "string" && PRINT_PAPER[store.printPaper]
+  ? store.printPaper : "letter";
+function setPrintPaper(p) { if (PRINT_PAPER[p]) { printPaper = p; save(); } }
 
 /** The design width the faces are authored at. The printed card is CW points
  *  wide, so the scale factor falls out of PRINT_GEOM and is not a literal of
@@ -6243,52 +6246,61 @@ function pdfFileName(d, variant, paper) {
   return stem + (variant === "shop" ? "_PRINTER_ONLY_Chords_" : "_Cards_") + tail + ".pdf";
 }
 
-function downloadDeckPDF(variant) {
+function downloadDeckPDF(variant, btn) {
   const d = deck();
-  const bytes = HPE.pdfcards.build(HPE.pdfdeck.fromGenerated(d),
-                                   { variant, paper: printPaper });
-  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-  if (isIOS(navigator.userAgent)) {
-    // `<a download>` is not honoured by iOS Safari: the tap does nothing at
-    // all, no file and no error. Opening the blob hands the PDF to the system
-    // viewer, whose Share sheet is how a file gets saved on that platform.
-    window.location.href = url;
-  } else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = pdfFileName(d, variant, printPaper);
-    a.click();
+  // One function, one decision: a built-in deck's print overlay lives under
+  // `print` in data/decks.json (carried into `const DECKS` above); a
+  // generated deck has no such overlay and is adapted from its solver output
+  // instead. Both converge on the same HPE.pdfcards.build/pymupdf-verified
+  // renderer below - there is no third path.
+  const pdfDeck = isBuiltIn(d.id)
+    ? HPE.pdfdeck.fromBuiltin(d, d.print)
+    : HPE.pdfdeck.fromGenerated(d);
+  // Disabled for the duration of the build (~0.14s for the 52-card deck): a
+  // double tap on a fast finger builds the PDF twice and opens/downloads it
+  // twice. Both buttons in the row are disabled, not just the one tapped,
+  // since either could still be mid-build when the other is hit.
+  const row = btn && btn.closest(".prints");
+  const rowButtons = row ? [...row.querySelectorAll("button")] : [];
+  rowButtons.forEach(b => { b.disabled = true; });
+  try {
+    const bytes = HPE.pdfcards.build(pdfDeck, { variant, paper: printPaper });
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    if (isIOS(navigator.userAgent)) {
+      // `<a download>` is not honoured by iOS Safari: the tap does nothing at
+      // all, no file and no error. window.open() hands the PDF to the system
+      // viewer, whose Share sheet is how a file gets saved on that platform;
+      // when a popup blocker returns null, location.href is the fallback that
+      // still delivers the file (D-2(B)).
+      if (!window.open(url)) window.location.href = url;
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFileName(d, variant, printPaper);
+      a.click();
+    }
+    // Revoked on a timer, never in this turn of the event loop: the viewer
+    // (and Chrome's own download machinery) reads the URL after this function
+    // returns, and revoking early cancels the download with no diagnostic.
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } finally {
+    rowButtons.forEach(b => { b.disabled = false; });
   }
-  // Revoked on a timer, never in this turn of the event loop: the viewer (and
-  // Chrome's own download machinery) reads the URL after this function
-  // returns, and revoking early cancels the download with no diagnostic.
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-const PRINT_PDFS = {
-  hijaz: { cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf", printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf" },
-  pygmy: { cards: "F3_Low_Pygmy_18_Cards_Letter.pdf", printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf" },
-  amara: { cards: "D_Amara_9_Cards_Letter.pdf", printerOnly: "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf" },
-};
 function headerHTML(d, ch, n, noPrints) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
   // A printed card carries no print row: the buttons are screen furniture and
   // `.prints` is the one part of the header a sheet must drop (B3/AC-B1).
-  const pdfs = noPrints ? null : PRINT_PDFS[d.id];
   // A sibling row below .hdr, not a third flex child inside it: .hdr's own
   // box (and so the deck name's available width/line count) is untouched by
   // this feature - see the print-button lane's e2e test.
-  // Built-ins link to the PDFs the print pipeline already built; a custom deck
-  // has none, so it prints through the browser instead. Same two labels, same
-  // position, and the built-in markup is byte-for-byte what it was (AC-B1).
-  const prints = noPrints ? "" : pdfs
-    ? `<div class="prints" onclick="event.stopPropagation()">
-      <a href="${esc(pdfs.cards)}" target="_blank" rel="noopener">FULL DECK PDF</a>
-      <a href="${esc(pdfs.printerOnly)}" target="_blank" rel="noopener">PRINT-ONLY PDF</a>
-    </div>`
-    : `<div class="prints" onclick="event.stopPropagation()">
-      <button type="button" onclick="downloadDeckPDF('full')">FULL DECK PDF</button>
-      <button type="button" onclick="downloadDeckPDF('shop')">PRINT-ONLY PDF</button>
+  // One branch for every deck (one-pdf-path plan): built-in and generated
+  // decks both print through HPE.pdfdeck/HPE.pdfcards client-side, so there
+  // is no pre-built file to link and no reason for a second markup shape.
+  const prints = noPrints ? "" : `<div class="prints" onclick="event.stopPropagation()">
+      <button type="button" onclick="downloadDeckPDF('full', this)">FULL DECK PDF</button>
+      <button type="button" onclick="downloadDeckPDF('shop', this)">PRINT-ONLY PDF</button>
       <select aria-label="Paper size" onchange="setPrintPaper(this.value)">
         <option value="letter"${printPaper === "letter" ? " selected" : ""}>LETTER</option>
         <option value="a4"${printPaper === "a4" ? " selected" : ""}>A4</option>
@@ -6355,19 +6367,18 @@ function render() {
   const away  = document.getElementById(flipped ? "front" : "back");
   away.setAttribute("aria-hidden", "true");
   shown.removeAttribute("aria-hidden");
-  // aria-hidden alone does not remove a link from the tab order, and
+  // aria-hidden alone does not remove a control from the tab order, and
   // headerHTML() renders .prints into BOTH faces - so a keyboard user would
-  // tab into two invisible links, and a screen reader would meet focusable
-  // content inside an aria-hidden subtree.
+  // tab into three invisible controls, and a screen reader would meet
+  // focusable content inside an aria-hidden subtree.
   // Scoped through document, not through the face element: the face is the
   // node whose innerHTML was just replaced, and the unit suite's DOM stub
   // serves selectors from the document only.
-  // Widened past `.prints a` for the custom path: a generated deck's controls
-  // are <button> and <select>, and an unwidened selector would leave THREE
-  // focusable controls inside an aria-hidden subtree - the exact defect this
-  // pair of lines was written to prevent, in new element types (AC-B1b).
+  // No "a" in this list (one-pdf-path plan, review item 7): every deck's
+  // .prints row is now <button>/<select> only, so an anchor selector would be
+  // dead weight, not a widening this code still needs.
   const printCtrls = (id) =>
-    ["a", "button", "select"].map((t) => `#${id} .prints ${t}`).join(",");
+    ["button", "select"].map((t) => `#${id} .prints ${t}`).join(",");
   for (const el of document.querySelectorAll(printCtrls(away.id))) el.tabIndex = -1;
   for (const el of document.querySelectorAll(printCtrls(shown.id))) el.removeAttribute("tabindex");
   cardEl.setAttribute("aria-describedby", shown.id);
