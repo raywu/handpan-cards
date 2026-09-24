@@ -2116,7 +2116,86 @@ HPE.pdfdeck = (function () {
     };
   }
 
-  return { fromGenerated: fromGenerated, bankers: bankers, hexColor: hexColor };
+  // A built-in deck (data/decks.json, embedded in index.html as `const
+  // DECKS`) plus its `print` key -> a hifi.build-shaped deck dict. A
+  // statement-for-statement port of tools/decks.py:_from_canonical, for the
+  // reason fromGenerated ports from_generated: a browser deck that drew from
+  // a second, independently written adapter would diverge from the print
+  // pipeline in exactly the places nobody looks.
+  //
+  // NOT fromGenerated(): a built-in geom carries no `ext`, and R/cy/y_note/
+  // y_num are the measured literals in `overlay`, not derived from a solver
+  // reach. The colours are already the committed three-decimal [r, g, b]
+  // arrays JSON carries them as - no hexColor() conversion, unlike
+  // fromGenerated, which starts from a "#RRGGBB" string.
+  function fromBuiltin(deck, overlay) {
+    var spec = { _geom: {} };
+    Object.keys(deck.geom).forEach(function (k) { spec._geom[k] = deck.geom[k]; });
+    Object.keys(deck.fields).forEach(function (fid) {
+      spec[String(parseInt(fid, 10))] = deck.fields[fid].slice();
+    });
+
+    var chords = deck.chords.map(function (c) {
+      return [c.main, c.sup, c.subtitle, c.fields.slice(), c.roots.slice()];
+    });
+    var hasBottom = zoneIds(spec, ["bottom"]).length > 0;
+
+    var degrees = {};
+    Object.keys(deck.degrees).forEach(function (pc) {
+      degrees[String(parseInt(pc, 10))] = deck.degrees[pc];
+    });
+
+    var shared = {
+      name: deck.name,
+      sub: deck.sub,
+      spec: spec,
+      chords: chords,
+      degrees: degrees,
+      has_bottom: hasBottom
+    };
+
+    var clash = Object.keys(overlay).filter(function (k) {
+      return Object.prototype.hasOwnProperty.call(shared, k);
+    });
+    if (clash.length) {
+      throw new Error((deck.id || deck.name) +
+                      ": print overlay shadows canonical data: " +
+                      clash.sort().join(", "));
+    }
+
+    var out = {};
+    Object.keys(shared).forEach(function (k) { out[k] = shared[k]; });
+    Object.keys(overlay).forEach(function (k) { out[k] = overlay[k]; });
+
+    // The chord count in the blurb's last line is DERIVED from the deck's
+    // own chord list, not hand-typed - a hand-typed literal goes stale the
+    // moment a chord is added or removed (Pygmy shipped "25 CHORDS" after it
+    // grew to 52). String.replace with a bare regex replaces only the FIRST
+    // match; Python's re.sub replaces every one, so this needs the /g flag
+    // or a last line carrying two numbers substitutes only one of them.
+    if (out.blurb) {
+      var lines = out.blurb.slice();
+      lines[lines.length - 1] = lines[lines.length - 1]
+        .replace(/\d+(?=\s*CHORDS)/g, String(chords.length));
+      out.blurb = lines;
+    }
+
+    // Reviewer nit from W1a: `print.blank_cards` is nested, but
+    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. Lift it
+    // so Pygmy's 7 blank cards are not silently dropped from the full PDF.
+    if (Object.prototype.hasOwnProperty.call(overlay, "blank_cards")) {
+      out.blank_cards = overlay.blank_cards;
+    }
+
+    return out;
+  }
+
+  return {
+    fromGenerated: fromGenerated,
+    fromBuiltin: fromBuiltin,
+    bankers: bankers,
+    hexColor: hexColor
+  };
 }());
 </script>
 <!-- engine:pdfdeck end -->

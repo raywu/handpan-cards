@@ -113,7 +113,7 @@ What is covered:
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
-That is 12 node suites (`tests/*.test.js`) and 13 python suites
+That is 13 node suites (`tests/*.test.js`) and 13 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
 

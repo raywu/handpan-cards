@@ -42,6 +42,18 @@ SEEDS = [
     "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
 ]
 
+# The three shipped decks, built through HPE.pdfdeck.fromBuiltin on the JS
+# side and decks.HIJAZ/PYGMY/AMARA (tools/decks.py:_from_canonical) on the
+# Python side - a SECOND kind of case alongside the generated SEEDS above.
+# `_pair`/`_pair_drawings` dispatch on membership in this list.
+BUILTINS = ["hijaz", "pygmy", "amara"]
+
+# Every case the glyph/vector sweeps below iterate: generated seeds first
+# (unchanged), then the three built-ins.
+CASES = SEEDS + BUILTINS
+
+VARIANTS = ("full", "shop")
+
 
 def _generate(seed):
     proc = subprocess.run([NODE, GEN_DECK, seed], capture_output=True,
@@ -58,6 +70,17 @@ def _js_pdf(payload, out, variant="full", paper="letter"):
         cwd=paths.ROOT, timeout=180)
     if proc.returncode != 0:
         raise AssertionError("pdf_build failed: %s" % proc.stderr)
+
+
+def _js_pdf_builtin(deck_id, out, variant="full", paper="letter"):
+    proc = subprocess.run(
+        [NODE, BUILD, "--out", out, "--builtin", deck_id,
+         "--variant", variant, "--paper", paper],
+        input="", text=True, capture_output=True,
+        cwd=paths.ROOT, timeout=180)
+    if proc.returncode != 0:
+        raise AssertionError("pdf_build --builtin %s failed: %s"
+                             % (deck_id, proc.stderr))
 
 
 def _glyphs(path, nd=1):
@@ -147,28 +170,38 @@ def _drawings(path, nd=1):
 
 @unittest.skipIf(fitz is None, "pymupdf is required")
 class PrintParityTest(unittest.TestCase):
-    def _pair(self, seed, variant):
-        payload = _generate(seed)
-        deck = decks.from_generated(payload)
+    def _pair(self, case, variant):
         tmp = tempfile.mkdtemp()
         py_path = os.path.join(tmp, "py.pdf")
         js_path = os.path.join(tmp, "js.pdf")
-        hifi.build(py_path, deck, chords_only=(variant == "shop"))
-        _js_pdf(payload, js_path, variant=variant)
+        if case in BUILTINS:
+            deck = getattr(decks, case.upper())
+            hifi.build(py_path, deck, chords_only=(variant == "shop"))
+            _js_pdf_builtin(case, js_path, variant=variant)
+        else:
+            payload = _generate(case)
+            deck = decks.from_generated(payload)
+            hifi.build(py_path, deck, chords_only=(variant == "shop"))
+            _js_pdf(payload, js_path, variant=variant)
         return _glyphs(py_path), _glyphs(js_path)
 
-    def _pair_drawings(self, seed, variant):
-        payload = _generate(seed)
-        deck = decks.from_generated(payload)
+    def _pair_drawings(self, case, variant):
         tmp = tempfile.mkdtemp()
         py_path = os.path.join(tmp, "py.pdf")
         js_path = os.path.join(tmp, "js.pdf")
-        hifi.build(py_path, deck, chords_only=(variant == "shop"))
-        _js_pdf(payload, js_path, variant=variant)
+        if case in BUILTINS:
+            deck = getattr(decks, case.upper())
+            hifi.build(py_path, deck, chords_only=(variant == "shop"))
+            _js_pdf_builtin(case, js_path, variant=variant)
+        else:
+            payload = _generate(case)
+            deck = decks.from_generated(payload)
+            hifi.build(py_path, deck, chords_only=(variant == "shop"))
+            _js_pdf(payload, js_path, variant=variant)
         return _drawings(py_path), _drawings(js_path)
 
-    def _assert_vectors_match(self, seed, variant):
-        py, js = self._pair_drawings(seed, variant)
+    def _assert_vectors_match(self, case, variant):
+        py, js = self._pair_drawings(case, variant)
         self.assertEqual(len(py), len(js), "page count")
         # An empty trace is a passing test that proves nothing, the same
         # reason test_every_glyph_lands_where_print_puts_it holds a floor.
@@ -176,7 +209,7 @@ class PrintParityTest(unittest.TestCase):
         self.assertGreater(sum(len(p) for p in py), 500,
                            "a deck with no vectors is not a parity check")
         for i, (a, b) in enumerate(zip(py, js)):
-            self.assertEqual(a, b, "%s page %d of %s" % (variant, i + 1, seed))
+            self.assertEqual(a, b, "%s page %d of %s" % (variant, i + 1, case))
 
     def test_the_sweep_actually_ran(self):
         # An empty seed list is a passing parity test that proves nothing.
@@ -188,33 +221,48 @@ class PrintParityTest(unittest.TestCase):
         self.assertTrue(any("|" in s for s in SEEDS),
                         "one seed must carry a bottom shell")
 
+    def test_the_sweep_covers_every_builtin_and_both_variants(self):
+        # Review C1's coverage floor: a parameterization that silently
+        # dropped a built-in, or dropped a variant from the loops below,
+        # must fail here instead of greening a sweep that never ran it.
+        # Demonstrated red in the PR body by temporarily removing one
+        # built-in id from BUILTINS.
+        self.assertEqual(set(BUILTINS), {"hijaz", "pygmy", "amara"})
+        self.assertTrue(set(BUILTINS).issubset(set(CASES)),
+                        "every built-in must be one of the swept cases")
+        self.assertEqual(set(VARIANTS), {"full", "shop"})
+
     def test_every_glyph_lands_where_print_puts_it(self):
-        for seed in SEEDS:
-            with self.subTest(seed=seed):
-                py, js = self._pair(seed, "full")
+        for case in CASES:
+            with self.subTest(case=case):
+                py, js = self._pair(case, "full")
                 self.assertEqual(len(py), len(js), "page count")
                 self.assertGreater(sum(len(p) for p in py), 500,
                                    "a deck with no text is not a parity check")
                 for i, (a, b) in enumerate(zip(py, js)):
-                    self.assertEqual(a, b, "page %d of %s" % (i + 1, seed))
+                    self.assertEqual(a, b, "page %d of %s" % (i + 1, case))
 
     def test_every_vector_matches_print(self):
-        for seed in SEEDS:
-            with self.subTest(seed=seed):
-                self._assert_vectors_match(seed, "full")
+        for case in CASES:
+            with self.subTest(case=case):
+                self._assert_vectors_match(case, "full")
 
     def test_every_vector_matches_print_in_the_shop_variant(self):
         # PRINTER_ONLY drops the title and legend cards, so it draws a
         # different set of vectors - and on a different page break.
-        for seed in SEEDS:
-            with self.subTest(seed=seed):
-                self._assert_vectors_match(seed, "shop")
+        for case in CASES:
+            with self.subTest(case=case):
+                self._assert_vectors_match(case, "shop")
 
     def test_the_shop_variant_matches_too(self):
-        py, js = self._pair(SEEDS[0], "shop")
-        self.assertEqual(len(py), len(js))
-        for i, (a, b) in enumerate(zip(py, js)):
-            self.assertEqual(a, b, "shop page %d" % (i + 1))
+        # Glyph parity (not just vector parity) in the shop variant, for
+        # every case - generated seeds and all three built-ins alike.
+        for case in CASES:
+            with self.subTest(case=case):
+                py, js = self._pair(case, "shop")
+                self.assertEqual(len(py), len(js))
+                for i, (a, b) in enumerate(zip(py, js)):
+                    self.assertEqual(a, b, "shop page %d of %s" % (i + 1, case))
 
     def test_a4_is_letter_shifted_on_the_page(self):
         # Same drawing, re-centred. Every card glyph moves by exactly the same
