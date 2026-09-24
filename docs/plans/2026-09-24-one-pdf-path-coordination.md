@@ -163,7 +163,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
 | W3 | claude/w3-one-print-ux | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
-| W3d | claude/w3d-docs | PR 133 bounced (review FAIL 1 at a4640eb) | FAIL+1 | 2026-09-24 |
+| W3d | claude/w3d-docs | PR 133 in re-review at 8f63ce6 (attempt 2 of 2) | FAIL+1 | 2026-09-24 |
 
 ## Review log
 
@@ -190,7 +190,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
 | W3 | - | removed | deleted | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284) | PASS_WITH_NITS (fresh reviewer, attempt 2) | 1 | f78ed0b | - | no |
-| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | a4640eb | all 5 green at a4640eb (run 36039174602); head == remote tip; diff = README.md + scale-engine-coordination.md only | FAIL at a4640eb; bounced to lane | 1 | no | - | yes |
+| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8f63ce6 | all 5 green at 8f63ce6 (run 36041426757); head == remote tip; MERGEABLE; diff = README.md + scale-engine-coordination.md only | FAIL at a4640eb; fresh reviewer running at 8f63ce6 | 2 | no | - | yes |
 
 ## Resume here (written for a fresh session)
 
