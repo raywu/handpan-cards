@@ -2,9 +2,12 @@
 # suite: python3 -m unittest -k test_pygmy_blank_cards_is_pinned tests.test_print
 # Row 14: only 2 of the 5 new pin tests (PinnedPrintValuesTest) had a mutant.
 # This one bumps Pygmy's print.blank_cards pin from 7 to 8 - the padding
-# preference (CLAUDE.md, GENERATED_OMITTED in tools/decks.py) that makes
-# Pygmy's last printer-shop sheet come out full. Targets data/decks.json's
-# print overlay (post-W1a), not tools/decks.py or the index.html DECKS line.
+# preference recorded as row D-4 in
+# docs/plans/2026-09-22-seed-pdf-one-source.md ("Pygmy blank-card
+# padding... blank_cards: 7... a preference, not a defect"), which makes
+# Pygmy's committed full deck come out at 7 pages / 63 card slots. Targets
+# data/decks.json's print overlay (post-W1a), not tools/decks.py or the
+# index.html DECKS line.
 diff --git a/data/decks.json b/data/decks.json
 --- a/data/decks.json
 +++ b/data/decks.json

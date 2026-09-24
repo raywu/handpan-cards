@@ -34,7 +34,7 @@ from tests import paths  # noqa: E402
 FLOORS = {
     # python
     "tests/test_deck_data.py": 16,
-    "tests/test_pdf_build.py": 10,
+    "tests/test_pdf_build.py": 11,
     "tests/test_gen_deck.py": 17,
     "tests/test_print.py": 40,
     "tests/test_render_agreement.py": 32,

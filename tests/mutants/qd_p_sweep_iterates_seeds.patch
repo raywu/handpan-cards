@@ -4,11 +4,14 @@
 # never that the sweep loops actually iterate them. This reverts one loop
 # (test_every_glyph_lands_where_print_puts_it) from `for case in CASES:`
 # back to `for case in SEEDS:`, dropping the three built-ins from that
-# sweep - the exact regression row 18 describes. The real PrintParityTest
-# sweep (which needs node + a browser-shaped build) stays green because it
-# is skipped when pymupdf is unavailable and slow when it is not; the
+# sweep - the exact regression row 18 describes. The mutated sweep itself
+# stays green because SEEDS is a subset of CASES: every case it still
+# iterates continues to pass parity, so nothing in that loop's own
+# assertions goes red - the loss is silent, not a failure. The
 # SweepCoverageTest added alongside this mutant catches it instantly by
-# stubbing _pair/_pair_drawings and recording what they were called with.
+# stubbing _pair/_pair_drawings and recording what they were called with,
+# so the coverage gap itself is asserted rather than inferred from a
+# passing sweep.
 diff --git a/tests/test_pdf_parity.py b/tests/test_pdf_parity.py
 --- a/tests/test_pdf_parity.py
 +++ b/tests/test_pdf_parity.py
