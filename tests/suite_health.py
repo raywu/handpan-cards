@@ -60,6 +60,7 @@ FLOORS = {
     "tests/pdf.test.js": 11,
     "tests/pdfcards.test.js": 10,
     "tests/mutation_harness.test.js": 17,
+    "tests/pdf_builtin.test.js": 9,
 }
 
 # The e2e suite is the only one allowed to vanish: it skips itself when no
