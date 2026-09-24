@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3685,7 +3685,7 @@
- // Not every attribute in this file is escaped this way - the PRINT_PDFS hrefs
- // below are hardcoded literals - so escA marks the places carrying DECK-DERIVED
- // text, which a generated deck controls.
+@@ -5721,7 +5721,7 @@
+ // other quoted attributes are hardcoded literals, not deck-derived text - so
+ // escA marks the places carrying DECK-DERIVED text, which a generated deck
+ // controls.
 -const escA = s => esc(s).replace(/"/g, "&quot;");
 +const escA = s => esc(s);
- 
+
  /* ---------------- diagram label sizing ----------------
     ONE rule sizes every glyph the pan draws, and tools/hifi.py carries the

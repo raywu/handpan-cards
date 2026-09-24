@@ -656,61 +656,52 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
-   * print links (D9): the deck header opens the already-committed PDFs
-   * as-is, two relative links per built-in deck - no generation, no
-   * client-side PDF library, no server. Basenames are the real files
-   * committed at the repo root (`ls *.pdf`), hardcoded here rather than
-   * derived from deck name/id so a rename on either side cannot silently
-   * agree with itself.
+   * print controls (one-pdf-path plan): every deck - built-in and
+   * generated - builds its PDF client-side through HPE.pdfdeck, so the
+   * header's print row is the same markup everywhere: two <button>s and
+   * one paper <select>, never an <a href> to a pre-built file. The six
+   * committed PDFs still ship (print-shop artifact) but nothing in the
+   * app links them any more.
    * ---------------------------------------------------------------- */
-  const EXPECTED_PDFS = {
-    hijaz: {
-      cards: "CSharp_Hijaz_Orion_9_Cards_Letter.pdf",
-      printerOnly: "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf",
-    },
-    pygmy: {
-      cards: "F3_Low_Pygmy_18_Cards_Letter.pdf",
-      printerOnly: "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf",
-    },
-    amara: {
-      cards: "D_Amara_9_Cards_Letter.pdf",
-      printerOnly: "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf",
-    },
-  };
 
-  test("the deck header links to both committed PDFs for every deck, with relative hrefs", async () => {
+  test("every deck's print row is two buttons and one paper select, and never an <a>", async () => {
     await freshLoad();
     const meta = await decksMeta();
 
     for (let i = 0; i < meta.length; i++) {
       await selectDeck(i, meta);
       const id = meta[i].id;
-      const expected = EXPECTED_PDFS[id];
-      assert.ok(expected, `no expected PDF pair recorded for deck ${id} - update EXPECTED_PDFS`);
-
-      const links = await b.eval(`
-        return [...document.querySelectorAll("#front .prints a")]
-          .map(a => ({ href: a.getAttribute("href"), text: a.textContent.trim() }));
+      const m = await b.eval(`
+        const root = document.querySelector("#front .prints");
+        return {
+          buttons: root.querySelectorAll("button").length,
+          selects: root.querySelectorAll("select").length,
+          anchors: root.querySelectorAll("a").length,
+          labels: [...root.querySelectorAll("button")].map(b => b.textContent.trim()),
+        };
       `);
-
-      assert.strictEqual(links.length, 2,
-        `deck ${id}: expected exactly 2 print links in the header, found ${links.length}`);
-
-      for (const l of links) {
-        assert.ok(!l.href.startsWith("/"),
-          `deck ${id}: href "${l.href}" is root-absolute - GitHub Pages serves under /<repo>/`);
-        assert.ok(!/^[a-z]+:/i.test(l.href),
-          `deck ${id}: href "${l.href}" looks absolute/schemed, expected a relative path`);
-      }
-
-      const hrefs = links.map(l => l.href).sort();
-      const wanted = [expected.cards, expected.printerOnly].sort();
-      assert.deepStrictEqual(hrefs, wanted,
-        `deck ${id}: print link hrefs ${JSON.stringify(hrefs)} != committed PDFs ${JSON.stringify(wanted)}`);
+      assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
+      assert.strictEqual(m.buttons, 2, `deck ${id}: expected exactly 2 buttons, found ${m.buttons}`);
+      assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
+      assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "PRINT-ONLY PDF"], `deck ${id}`);
     }
+
+    // And a generated deck gets the identical row.
+    await generate(SIX_SCALES[1]);
+    const g = await b.eval(`
+      const root = document.querySelector("#front .prints");
+      return {
+        buttons: root.querySelectorAll("button").length,
+        selects: root.querySelectorAll("select").length,
+        anchors: root.querySelectorAll("a").length,
+      };
+    `);
+    assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
+    assert.strictEqual(g.buttons, 2, "generated deck: expected exactly 2 buttons");
+    assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
   });
 
-  test("the print links sit outside .hdr and do not grow the deck-name box", async () => {
+  test("the print controls sit outside .hdr and do not grow the deck-name box", async () => {
     await freshLoad();
     const meta = await decksMeta();
     await b.setViewport(380, 800, true);
@@ -723,15 +714,17 @@ function run() {
           const hdr = document.querySelector("#front .hdr");
           const l = hdr.querySelector(".l");
           const prints = document.querySelector("#front .prints");
+          const pr = prints.getBoundingClientRect();
           return {
             hdrChildren: hdr.children.length,
             nameLines: l.getBoundingClientRect().height,
             lineHeight: parseFloat(getComputedStyle(l).lineHeight),
             printsInsideHdr: hdr.contains(prints),
+            printsHeight: pr.height,
           };
         `);
         assert.strictEqual(m.hdrChildren, 2,
-          `${meta[i].id}: .hdr gained a child - the print links must not join its flex row`);
+          `${meta[i].id}: .hdr gained a child - the print controls must not join its flex row`);
         assert.strictEqual(m.printsInsideHdr, false,
           `${meta[i].id}: .prints is nested inside .hdr`);
         // The deck name + "#n deg" is authored as one two-line block (a <br>
@@ -741,70 +734,204 @@ function run() {
           `${meta[i].id}: .hdr .l is ${m.nameLines}px tall (line-height ${m.lineHeight}px) - ` +
             `the deck name wrapped past its normal two lines`,
         );
+        // Two buttons + a select must not wrap to a second row at 380px - a
+        // wrapped row is roughly double a single line's height.
+        assert.ok(m.printsHeight < 24,
+          `${meta[i].id}: .prints is ${m.printsHeight}px tall at 380px - the print row wrapped`);
       }
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
+  /* HPE.pdfcards.build runs synchronously, so downloadDeckPDF's whole
+     disable -> build -> deliver -> re-enable sequence used to complete
+     within ONE task with no yield to the browser's event loop in between.
+     A second real tap dispatched while that task is still on the call stack
+     (the reviewer's repro: two mousePressed/mouseReleased pairs sent
+     together over CDP, on Pygmy in real Chrome) is queued by the browser and
+     only processed once this task finishes - by which point the old
+     `finally` had already re-enabled the buttons in the SAME task, so the
+     queued tap landed on an enabled button and ran the build again.
+     `btn.click()` called a second time from JS, before yielding, models the
+     same "second activation queued while the guard is still up" scenario
+     deterministically: a disabled button's `.click()` is a documented no-op,
+     and whether that button is still disabled at this point is exactly what
+     the setTimeout(0)-deferred re-enable controls (browsers suppress the
+     click on a disabled element the same way whether the click call
+     originates from a second dispatched input event or from script). */
+  test("two taps on FULL DECK PDF queued together build the PDF once", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    const i = meta.findIndex((m) => m.id === "pygmy");
+    assert.notStrictEqual(i, -1, "pygmy deck not found in DECKS");
+    await selectDeck(i, meta);
+    const count = await b.eval(`
+      window.__buildCount = 0;
+      const realBuild = HPE.pdfcards.build;
+      HPE.pdfcards.build = function (...args) {
+        window.__buildCount++;
+        return realBuild.apply(this, args);
+      };
+      // Real Chrome opens a native "Save As" dialog for a.click() on some
+      // profiles; suppress activation so the test cannot hang on a modal
+      // that has nothing to do with the guard under test.
+      HTMLAnchorElement.prototype.click = function () {};
+      const btn = document.querySelector("#front .prints button"); // FULL DECK PDF
+      btn.click();
+      btn.click(); // the "second tap queued while the first is still running"
+      return window.__buildCount;
+    `);
+    assert.strictEqual(count, 1,
+      `two taps on FULL DECK PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
+  });
+
+  /* The `finally` in downloadDeckPDF must re-enable the buttons on BOTH the
+     success and the error path - a mutant that only re-enables after the
+     `try` block leaves the row permanently disabled the first time the build
+     throws. */
+  test("print buttons are re-enabled after a build error", async () => {
+    await freshLoad();
+    await b.eval(`
+      HPE.pdfcards.build = function () { throw new Error("boom (test)"); };
+      // A real uncaught exception from an inline onclick handler is otherwise
+      // just a console error; nothing to swallow here, but make sure it
+      // cannot pop a dialog on this profile either.
+      window.onerror = () => true;
+      return true;
+    `);
+    const sel = "#front .prints button";
+    await b.click(sel);
+    await b.settle();
+    const disabledRightAfter = await b.eval(`return document.querySelector(${JSON.stringify(sel)}).disabled;`);
+    // The build threw synchronously, so by the time the click handler
+    // returns (and settle()'s 500ms has long since elapsed) the deferred
+    // re-enable has already run - the row must not still read disabled.
+    assert.strictEqual(disabledRightAfter, false,
+      "a print button stayed disabled after HPE.pdfcards.build threw");
+  });
+
   /* The card's own keydown handler treats Space and Enter as "flip", and it
      is bound to #card, so it fires for a key event that BUBBLES from any
      descendant. The wrapper's onclick="event.stopPropagation()" guards the
      mouse path only - keydown is a separate listener on a separate phase.
-     Without a target guard, Enter on a focused print link is swallowed by
-     preventDefault() before the browser activates the anchor: no PDF opens
-     AND the card flips, which in NAME->NOTES mode silently reveals the very
-     answer the user was studying. A wrong action, not a no-op. */
-  test("Enter on a print link opens the PDF and does not flip the card", async () => {
+     A <button> converts a focused Enter into its own click natively (no
+     preventDefault trick is needed the way an <a> needed one), but the
+     card's keydown handler could still flip the card first if it does not
+     ignore an event that bubbled from inside .prints - which in
+     NAME->NOTES mode would silently reveal the very answer being studied. */
+  test("Enter on a print button activates it and does not flip the card", async () => {
     await freshLoad();
     await b.eval(`
-      window.__printLinkActivated = false;
-      document.addEventListener("click", e => {
-        const a = e.target && e.target.closest && e.target.closest(".prints a");
-        if (a) { window.__printLinkActivated = true; e.preventDefault(); }
-      }, true);
-      document.querySelector("#front .prints a").focus();
+      window.__printBtnActivated = false;
+      const btn = document.querySelector("#front .prints button");
+      btn.addEventListener("click", () => { window.__printBtnActivated = true; });
+      btn.focus();
       return true;
     `);
-    await b.key("Enter", "Enter", 13);
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.settle();
     const m = await b.eval(`
       return {
-        activated: window.__printLinkActivated,
+        activated: window.__printBtnActivated,
         flipped: document.getElementById("card").classList.contains("flip"),
       };
     `);
     assert.strictEqual(m.flipped, false,
-      "Enter on a print link flipped the card - the card's keydown handler is " +
-      "swallowing events that bubble up from the link");
+      "Enter on a print button flipped the card - the card's keydown handler is " +
+      "swallowing events that bubble up from the button");
     assert.strictEqual(m.activated, true,
-      "Enter on a print link never activated the anchor - preventDefault() ran first");
+      "Enter on a focused print button never activated it");
+  });
+
+  /* The paper <select> lives in the same .prints row as the print buttons and
+     bubbles keydown to #card exactly the same way. Before the guard covered
+     `select`, focusing it and pressing Space/Enter both flipped the card AND
+     (via preventDefault) blocked the browser's own native open-the-picker
+     behaviour for that key - the worst of both. */
+  test("Enter on the paper select does not flip the card, on a built-in deck", async () => {
+    await freshLoad();
+    await b.eval(`
+      const sel = document.querySelector("#front .prints select");
+      sel.focus();
+      return true;
+    `);
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.settle();
+    const flipped = await b.eval(`return document.getElementById("card").classList.contains("flip");`);
+    assert.strictEqual(flipped, false, "Enter on the focused paper select flipped the card");
+  });
+
+  // A separate test (rather than Enter then Space in one) because Space's
+  // native default action on a focused <select> is to open its OS dropdown -
+  // stacking it after Enter's own default action risks compounding native
+  // popup state across dispatches. Each test starts from a freshly loaded,
+  // unopened select.
+  test("Space on the paper select does not flip the card, on a built-in deck", async () => {
+    await freshLoad();
+    await b.eval(`
+      const sel = document.querySelector("#front .prints select");
+      sel.focus();
+      return true;
+    `);
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: " ", code: "Space", text: " ", unmodifiedText: " ", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.settle();
+    const flipped = await b.eval(`return document.getElementById("card").classList.contains("flip");`);
+    assert.strictEqual(flipped, false, "Space on the focused paper select flipped the card");
   });
 
   /* headerHTML() feeds all four faces, so .prints renders into #front AND
      #back. The flip is a CSS transform: both faces stay in the DOM, and the
      hidden one carries aria-hidden="true". Focusable content inside an
      aria-hidden subtree is a standard axe violation, and a keyboard user
-     tabs into two invisible links. The base had zero focusable elements in
-     either face, so this is the feature's own regression. */
-  test("only the showing face's print links are in the tab order", async () => {
+     tabs into three invisible controls. */
+  test("only the showing face's print controls are in the tab order", async () => {
     await freshLoad();
     const count = () => b.eval(`
-      const q = f => [...document.querySelectorAll("#" + f + " .prints a")]
-        .filter(a => a.tabIndex >= 0).length;
+      const q = f => [...document.querySelectorAll(
+        "#" + f + " .prints button, #" + f + " .prints select")]
+        .filter(el => el.tabIndex >= 0).length;
       return { front: q("front"), back: q("back") };
     `);
 
     const shut = await count();
-    assert.strictEqual(shut.front, 2, "the showing face lost its print links from the tab order");
+    assert.strictEqual(shut.front, 3, "the showing face lost its print controls from the tab order");
     assert.strictEqual(shut.back, 0,
-      `${shut.back} print link(s) inside the aria-hidden #back face are still focusable`);
+      `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
 
     await b.click("#card");
     await b.settle();
     const open = await count();
-    assert.strictEqual(open.back, 2, "after the flip the showing face's links are not tabbable");
+    assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
     assert.strictEqual(open.front, 0,
-      `${open.front} print link(s) inside the now-hidden #front face are still focusable`);
+      `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
+  });
+
+  test("the paper choice survives a reload", async () => {
+    await freshLoad();
+    await b.eval(`
+      const sel = document.querySelector("#front .prints select");
+      sel.value = "a4";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    `);
+    const before = await stored();
+    assert.strictEqual(before.printPaper, "a4", "the paper choice was not saved under \"hpfc\"");
+
+    await navigate(); // reload
+    await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
+      label: "chips after reload",
+    });
+    const after = await b.eval(`
+      return document.querySelector("#front .prints select").value;
+    `);
+    assert.strictEqual(after, "a4", "the paper selector did not come back on A4 after a reload");
   });
 
   /* ---------------------------------------------------------------- *
@@ -1143,12 +1270,12 @@ function run() {
     }
   });
 
-  /* A custom deck has no pre-built PDF to link at, so its .prints row is
-     <button>s plus the paper <select> rather than two <a href>s. The tab-order
-     rule that the built-in test pins is the same rule, but the selector that
-     enforces it has to cover all three element types - a selector that only
-     names `a` leaves three focusable controls inside the aria-hidden face
-     (AC-B1b). */
+  /* Every deck - built-in or generated - prints through the same client-side
+     PDF path (one-pdf-path plan), so .prints is <button>s plus the paper
+     <select> on both; there is no <a href> anywhere in .prints any more. The
+     tab-order rule that the built-in test pins is the same rule here; the
+     selector still names `a` so this test would also catch a regression that
+     reintroduced a print link, and it currently matches zero anchors. */
   test("print controls on the hidden face", async () => {
     await freshLoad();
     await generate(SIX_SCALES[1]);
@@ -1414,6 +1541,67 @@ function run() {
       `${frames} card frames drawn; every slot on every page carries one, so ${want.pages * 9}`);
     assert.ok(got.glyphs > 500,
       `only ${got.glyphs} characters of text - the fonts did not draw`);
+  });
+
+  /* The generated-deck test above is the full pymupdf oracle (page count,
+     page box, card-frame count, glyph count). This is the same claim - "a
+     reader can open it" - run over a BUILT-IN deck, which as of the
+     one-pdf-path plan goes through HPE.pdfdeck.fromBuiltin rather than
+     fromGenerated. A lighter probe is enough here: the two code paths
+     converge on the same pdfcards.build/pymupdf-verified renderer, and this
+     test exists to catch fromBuiltin wiring - a missing/garbled overlay
+     field, a bad geom.ext fallback - not to re-prove the renderer itself. */
+  test("a built-in deck's FULL DECK PDF tap produces bytes that open as a PDF", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+    const { spawnSync } = require("node:child_process");
+    const os = require("node:os");
+
+    await freshLoad();
+    await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+
+    const cap = await b.eval(`
+      return (async () => {
+        const real = URL.createObjectURL;
+        const seen = [];
+        URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
+        const btn = [...document.querySelectorAll("#front .prints button")]
+          .find(el => el.textContent.trim() === "FULL DECK PDF");
+        if (!btn) return { err: "no FULL DECK PDF button on the showing face" };
+        try { btn.click(); } finally { URL.createObjectURL = real; }
+        if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
+        const u8 = new Uint8Array(await seen[0].arrayBuffer());
+        let s = "";
+        for (let i = 0; i < u8.length; i += 4096) {
+          s += String.fromCharCode.apply(null, u8.subarray(i, i + 4096));
+        }
+        return { type: seen[0].type, n: u8.length, b64: btoa(s) };
+      })();`);
+
+    assert.ok(!cap.err, cap.err);
+    assert.strictEqual(cap.type, "application/pdf");
+    assert.ok(cap.n > 10000, `the CTA produced ${cap.n} bytes; that is not a card sheet`);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "builtin-pdf-"));
+    const pdf = path.join(dir, "deck.pdf");
+    fs.writeFileSync(pdf, Buffer.from(cap.b64, "base64"));
+
+    const probe = [
+      "import sys, fitz",
+      "d = fitz.open(sys.argv[1])",
+      "assert d.page_count > 0, 'no pages'",
+      "text = ''.join(p.get_text('text') for p in d)",
+      "assert len(text) > 500, 'no text drawn: %d chars' % len(text)",
+      "print('ok')",
+    ].join("\n");
+
+    let r;
+    try {
+      r = spawnSync("python3", ["-c", probe, pdf], { encoding: "utf8", timeout: 120000 });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    assert.strictEqual(r.status, 0,
+      `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
   });
 
   test("six custom decks keep the chip row on one line with the active chip in view", async () => {

@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2401,7 +2401,6 @@ const save = () => {
+@@ -5497,7 +5497,6 @@ const save = () => {
      const base = readStore(STORE_KEY);
      const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
      next.deck = storedDeck;
 -    next.mode = mode;
+     next.printPaper = printPaper;
      localStorage.setItem(STORE_KEY, JSON.stringify(next));
    } catch (e) {}
- };

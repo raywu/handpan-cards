@@ -548,7 +548,7 @@ test("selecting a deck persists its id, custom decks included", () => {
 
   // and a mode change while a custom deck is showing keeps that deck.
   app.run('setMode("B")');
-  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B" });
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B", printPaper: "letter" });
 });
 
 /* --------------------------------------------- 14. pan() honours geom.ext */
@@ -3863,7 +3863,7 @@ test("print sheet paper size is a control, and only the page box changes", () =>
  * deck's are `<button>` that fill the print container and call window.print().
  * ------------------------------------------------------------------------ */
 
-test("print CTA: a custom deck's header carries the same two labels as a built-in's", () => {
+test("print CTA: a built-in deck's header carries the same markup as a custom deck's", () => {
   const app = boot();
   const di = deckIndex(app, "amara");
   const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
@@ -3873,10 +3873,14 @@ test("print CTA: a custom deck's header carries the same two labels as a built-i
     assert.ok(builtin.includes(label), `the built-in header lost "${label}"`);
     assert.ok(custom.includes(label), `the custom header is missing "${label}"`);
   }
-  assert.ok(builtin.includes("<a href="),
-    "a built-in deck's print options stay plain links to the pre-built PDFs");
-  assert.ok(!builtin.includes("<button"),
-    "the built-in path must be UNCHANGED - a button there is a plan violation");
+  // One-pdf-path plan: every deck builds its PDF client-side, so there is no
+  // pre-built file to link and the built-in path is buttons + select too -
+  // the same markup shape as a custom deck, not the reverse.
+  assert.ok(!builtin.includes("<a href="),
+    "a built-in deck's print row must not link a pre-built PDF any more");
+  assert.ok(builtin.includes("<button"),
+    "a built-in deck's controls are buttons, same as a custom deck's");
+  assert.ok(/<select/.test(builtin), "D16: the paper picker rides with the buttons");
   assert.ok(custom.includes("<button"),
     "a custom deck has no pre-built PDF; its controls are buttons");
   assert.ok(/<select/.test(custom), "D16: the paper picker rides with the buttons");
@@ -3912,13 +3916,15 @@ test("blank_cards is honoured when present, and no shipped deck carries it", () 
   assert.strictEqual(
     kinds('printCardList(deck(), "full", 1)').filter(k => k === "blank").length, 0,
     "a deck without the key contributes none");
-  // The gap the branch exists to close: `blank_cards` is a print-overlay
-  // literal in tools/decks.py, and data/decks.json - which IS the DECKS line -
-  // does not carry it. The branch is dead in the browser today and correct the
-  // moment the key moves into the canonical file.
+  // The gap the branch exists to close: `blank_cards` now lives in
+  // data/decks.json as `print.blank_cards` (Pygmy: 7), but NESTED under the
+  // print overlay - printCardList reads the top-level `d.blank_cards`, which
+  // no shipped deck sets. `HPE.pdfdeck.fromBuiltin` lifts the nested value for
+  // the PDF emitter; this branch stays dead in the browser until some deck
+  // sets the top-level key directly.
   const carriers = plain(app.get('DECKS.filter(d => "blank_cards" in d).map(d => d.id)'));
   assert.deepStrictEqual(carriers, [],
-    "no shipped deck carries blank_cards - if one does, this test's premise changed");
+    "no shipped deck carries top-level blank_cards - if one does, this test's premise changed");
 });
 
 test("the print container carries no layout class", () => {
@@ -4034,6 +4040,19 @@ test("print sheet is emptied even when the print dialog throws", () => {
   assert.strictEqual(app.docEl.classList.contains("printing"), false);
 });
 
+/* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
+   value, not just a falsy one - `store.printPaper || "letter"` also survives
+   `null`, so a mutant reducing the guard to that passes every test that only
+   tries falsy/valid inputs. "tabloid" is a truthy string that is not a
+   PRINT_PAPER key; 42 is truthy and not even a string. */
+for (const bad of ["tabloid", 42, null]) {
+  test(`printPaper boot guard: stored ${JSON.stringify(bad)} falls back to letter`, () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: bad }) } });
+    assert.strictEqual(app.get("printPaper"), "letter",
+      `stored printPaper ${JSON.stringify(bad)} booted to "${app.get("printPaper")}", not "letter"`);
+  });
+}
+
 /* Reviewer finding B-2: `printPaper` is module state that survives a render,
    but headerHTML() re-emits the <select> from scratch on EVERY render with
    LETTER first and nothing marked selected. So a flip, an arrow press or a
@@ -4148,6 +4167,11 @@ test("the download is named the way the print pipeline names its files", () => {
 test("iOS gets the blob as a navigation, not as a download attribute", () => {
   const app = boot({ userAgent: IOS_UA });
   customDeck(app);
+  // The sandbox has no window.open (jsdom-free, and the app is the only thing
+  // that calls it) - stub it as a blocked popup, same as Safari does when the
+  // call is not in direct response to the tap, to exercise the location.href
+  // fallback the D-2(B) delivery code depends on.
+  app.run('window.open = function() { return null; };');
   app.run('downloadDeckPDF("full")');
   // `<a download>` does nothing at all on iOS Safari - the tap is swallowed and
   // the user gets no file and no error. Navigating to the blob hands the PDF to
@@ -4159,6 +4183,23 @@ test("iOS gets the blob as a navigation, not as a download attribute", () => {
   assert.strictEqual(urls.length, 1);
   assert.strictEqual(app.location.href, urls[0].url,
     "iOS delivery is a navigation to the object URL");
+});
+
+/* D-2(B)'s primary path on iOS is window.open(url), with location.href only
+   as the fallback for a blocked popup. A mutant that always navigates
+   location.href regardless of window.open's return value delivers the same
+   file either way and so is easy to miss - it only shows up as a stray
+   navigation on the happy path, which is what this asserts against. */
+test("iOS: when window.open succeeds, location.href is left alone", () => {
+  const app = boot({ userAgent: IOS_UA });
+  customDeck(app);
+  const before = app.location.href;
+  app.run('window.open = function() { return { closed: false }; };');
+  app.run('downloadDeckPDF("full")');
+  assert.strictEqual(anchor(app), null, "iOS must not be handed an <a download>");
+  assert.strictEqual(app.objectUrls().length, 1);
+  assert.strictEqual(app.location.href, before,
+    "window.open succeeded, so the D-2(B) fallback must not also navigate the tab");
 });
 
 test("the object URL is revoked, and not before the viewer has read it", () => {
@@ -4188,16 +4229,16 @@ test("the paper control drives the page box, not just the filename", () => {
   assert.ok(/\/MediaBox \[0 0 612 792\]/.test(letter));
 });
 
-test("the CTA buttons call the emitter, and the built-in links still do not", () => {
+test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const app = boot();
   const di = deckIndex(app, "amara");
   const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
   customDeck(app);
   const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
-  assert.match(custom, /onclick="downloadDeckPDF\('full'\)"/);
-  assert.match(custom, /onclick="downloadDeckPDF\('shop'\)"/);
-  assert.ok(!/downloadDeckPDF/.test(builtin),
-    "a built-in deck ships pre-built PDFs; its header must be unchanged");
+  for (const html of [builtin, custom]) {
+    assert.match(html, /onclick="downloadDeckPDF\('full', this\)"/);
+    assert.match(html, /onclick="downloadDeckPDF\('shop', this\)"/);
+  }
 });
 
 test("openPrintSheet survives the cutover, unreferenced by the CTA", () => {
