@@ -34,9 +34,9 @@ from tests import paths  # noqa: E402
 FLOORS = {
     # python
     "tests/test_deck_data.py": 16,
-    "tests/test_pdf_build.py": 7,
+    "tests/test_pdf_build.py": 10,
     "tests/test_gen_deck.py": 17,
-    "tests/test_print.py": 29,
+    "tests/test_print.py": 40,
     "tests/test_render_agreement.py": 32,
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
@@ -45,7 +45,7 @@ FLOORS = {
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
-    "tests/test_pdf_parity.py": 4,
+    "tests/test_pdf_parity.py": 11,
     # node
     "tests/app.test.js": 181,
     "tests/e2e.test.js": 111,

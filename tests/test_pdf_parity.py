@@ -296,5 +296,63 @@ class PrintParityTest(unittest.TestCase):
                 self.assertEqual((gb[2], gb[3]), (ga[2], ga[3]))
 
 
+class SweepCoverageTest(unittest.TestCase):
+    """Row 18: the C1 coverage floor (`test_the_sweep_covers_every_builtin_
+    and_both_variants`) only checks the CASES/VARIANTS *constants* - it never
+    proves the sweep loops actually iterate them. A loop reverted to
+    `for case in SEEDS:` (dropping the three built-ins) stays green there.
+
+    This stubs `_pair`/`_pair_drawings` on a throwaway instance to RECORD
+    every (case, variant) they are called with, runs each sweep method
+    directly (never through the real PDF pipeline, so this needs neither
+    node nor a browser), and asserts the recorded set is exactly
+    CASES x its variant - not SEEDS x its variant. Self-contained: it must
+    pass under `-k` single-test selection, which is how the mutation
+    harness runs it.
+    """
+
+    @staticmethod
+    def _fake_pair(calls):
+        # >500 items so `_assert_vectors_match`'s "not a parity check" floor
+        # and `test_every_glyph_lands_where_print_puts_it`'s floor both
+        # pass; the same list object for both sides so every equality
+        # assertion in the sweep methods trivially holds.
+        page = list(range(600))
+
+        def fake(case, variant):
+            calls.append((case, variant))
+            return [page], [page]
+        return fake
+
+    def _recorded_calls(self, method_name):
+        # A properly constructed TestCase (not bare __new__), so subTest()
+        # and friends have the machinery they expect - constructed against
+        # an arbitrary real test method name, never run.
+        instance = PrintParityTest("test_the_sweep_actually_ran")
+        calls = []
+        fake = self._fake_pair(calls)
+        instance._pair = fake
+        instance._pair_drawings = fake
+        getattr(instance, method_name)()
+        return calls
+
+    def test_glyph_sweep_iterates_every_case_not_just_the_seeds(self):
+        calls = self._recorded_calls("test_every_glyph_lands_where_print_puts_it")
+        self.assertEqual(set(calls), {(c, "full") for c in CASES})
+
+    def test_full_vector_sweep_iterates_every_case_not_just_the_seeds(self):
+        calls = self._recorded_calls("test_every_vector_matches_print")
+        self.assertEqual(set(calls), {(c, "full") for c in CASES})
+
+    def test_shop_vector_sweep_iterates_every_case_not_just_the_seeds(self):
+        calls = self._recorded_calls(
+            "test_every_vector_matches_print_in_the_shop_variant")
+        self.assertEqual(set(calls), {(c, "shop") for c in CASES})
+
+    def test_shop_glyph_sweep_iterates_every_case_not_just_the_seeds(self):
+        calls = self._recorded_calls("test_the_shop_variant_matches_too")
+        self.assertEqual(set(calls), {(c, "shop") for c in CASES})
+
+
 if __name__ == "__main__":
     unittest.main()

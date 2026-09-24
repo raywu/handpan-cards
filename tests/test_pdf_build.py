@@ -70,6 +70,45 @@ def doc_text(doc):
     return "".join(page.get_text() for page in doc)
 
 
+def _committed_pdf_bytes(rel, root):
+    """The bytes of `rel` as committed at HEAD in the git checkout `root`.
+
+    Row 7: raises AssertionError with a diagnostic that distinguishes two
+    different failures a caller must not conflate: `root` is not a git
+    checkout at all (no git binary on PATH, or `root` sits outside any
+    repository - e.g. a source tarball) versus `root` IS a checkout but
+    `rel` simply is not committed at HEAD (edited deck data whose rebuilt
+    PDF was never committed). The old single message ("not committed at
+    HEAD") was wrong for the first case.
+    """
+    try:
+        is_repo = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=root, capture_output=True)
+    except FileNotFoundError as exc:
+        raise AssertionError("no git or not a checkout: %s (%s)" % (root, exc))
+    if is_repo.returncode != 0:
+        raise AssertionError("no git or not a checkout: %s" % root)
+    proc = subprocess.run(
+        ["git", "show", "HEAD:%s" % rel], cwd=root, capture_output=True)
+    if proc.returncode != 0:
+        raise AssertionError(
+            "%s is not committed at HEAD in the repo root: %s"
+            % (rel, proc.stderr.decode(errors="replace")))
+    return proc.stdout
+
+
+def _committed_pdf_dest(tmp_dir, rel):
+    """Where `_committed_pdf_bytes(rel, ...)`'s bytes are written to compare.
+
+    `os.path.basename(rel)`, not `rel` itself: `paths.PDFS` values are bare
+    basenames today, but nothing enforces that, and joining a path with
+    separators onto `tmp_dir` (the old `'head-' + rel` did exactly this)
+    assumes what it should check.
+    """
+    return os.path.join(tmp_dir, os.path.basename(rel))
+
+
 def segments(page):
     """Straight line segments on a page, in PDF points (y measured from top)."""
     out = []
@@ -97,6 +136,40 @@ def crop_marks(page):
                     max(x1, x2) >= w - SPEC_CROP_INSET - SPEC_CROP_MARK - TOL:
                 ys.append(y1)
     return xs, ys
+
+
+class CommittedPdfBytesTest(unittest.TestCase):
+    """Row 7: `_committed_pdf_bytes` diagnostics and `_committed_pdf_dest`
+    naming, exercised directly - none of this needs a built PDF."""
+
+    def test_diagnoses_a_non_checkout_directory(self):
+        not_a_checkout = tempfile.mkdtemp()
+        try:
+            with self.assertRaises(AssertionError) as ctx:
+                _committed_pdf_bytes("whatever.pdf", not_a_checkout)
+            self.assertIn("no git or not a checkout", str(ctx.exception))
+        finally:
+            shutil.rmtree(not_a_checkout)
+
+    def test_two_missing_pdfs_are_both_reported_not_just_the_first(self):
+        stale = []
+        for rel in ("does-not-exist-1.pdf", "does-not-exist-2.pdf"):
+            try:
+                _committed_pdf_bytes(rel, paths.ROOT)
+            except AssertionError as exc:
+                stale.append(str(exc))
+        self.assertEqual(len(stale), 2,
+                         "both missing PDFs must be reported, not just the "
+                         "first: %r" % (stale,))
+        self.assertIn("does-not-exist-1.pdf", stale[0])
+        self.assertIn("is not committed at HEAD", stale[0])
+        self.assertIn("does-not-exist-2.pdf", stale[1])
+        self.assertIn("is not committed at HEAD", stale[1])
+
+    def test_dest_uses_the_basename_not_the_whole_relative_path(self):
+        self.assertEqual(
+            _committed_pdf_dest("/tmp/x", "sub/dir/whatever.pdf"),
+            os.path.join("/tmp/x", "whatever.pdf"))
 
 
 class BuiltDecksTest(unittest.TestCase):
@@ -264,16 +337,14 @@ class BuildTest(BuiltDecksTest):
         stale = []
         for key, _deck, _chords_only, _pages in JOBS:
             rel = paths.PDFS[key]
-            proc = subprocess.run(
-                ["git", "show", "HEAD:%s" % rel],
-                cwd=paths.ROOT, capture_output=True)
-            self.assertEqual(
-                proc.returncode, 0,
-                "%s is not committed at HEAD in the repo root: %s"
-                % (rel, proc.stderr.decode(errors="replace")))
-            committed = os.path.join(self.tmp, "head-" + rel)
+            try:
+                data = _committed_pdf_bytes(rel, paths.ROOT)
+            except AssertionError as exc:
+                stale.append(str(exc))
+                continue
+            committed = _committed_pdf_dest(self.tmp, rel)
             with open(committed, "wb") as fh:
-                fh.write(proc.stdout)
+                fh.write(data)
             with pymupdf.open(committed) as doc:
                 if doc.page_count != self.docs[key].page_count:
                     stale.append("%s: %d committed pages vs %d rebuilt"

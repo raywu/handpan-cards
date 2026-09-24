@@ -1,0 +1,23 @@
+# kills: test_glyph_sweep_iterates_every_case_not_just_the_seeds
+# suite: python3 -m unittest -k test_glyph_sweep_iterates_every_case_not_just_the_seeds tests.test_pdf_parity
+# Row 18: the C1 coverage floor checks only the CASES/VARIANTS constants,
+# never that the sweep loops actually iterate them. This reverts one loop
+# (test_every_glyph_lands_where_print_puts_it) from `for case in CASES:`
+# back to `for case in SEEDS:`, dropping the three built-ins from that
+# sweep - the exact regression row 18 describes. The real PrintParityTest
+# sweep (which needs node + a browser-shaped build) stays green because it
+# is skipped when pymupdf is unavailable and slow when it is not; the
+# SweepCoverageTest added alongside this mutant catches it instantly by
+# stubbing _pair/_pair_drawings and recording what they were called with.
+diff --git a/tests/test_pdf_parity.py b/tests/test_pdf_parity.py
+--- a/tests/test_pdf_parity.py
++++ b/tests/test_pdf_parity.py
+@@ -233,7 +233,7 @@
+         self.assertEqual(set(VARIANTS), {"full", "shop"})
+
+     def test_every_glyph_lands_where_print_puts_it(self):
+-        for case in CASES:
++        for case in SEEDS:
+             with self.subTest(case=case):
+                 py, js = self._pair(case, "full")
+                 self.assertEqual(len(py), len(js), "page count")

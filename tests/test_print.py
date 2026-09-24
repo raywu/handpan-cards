@@ -915,10 +915,18 @@ class TitleBlurbChordCountTest(unittest.TestCase):
 
 class PinnedPrintValuesTest(unittest.TestCase):
     """Values a later 'just use the solver' refactor must not move (Q1, Q2,
-    Q4). Read off the CONSTRUCTED deck objects, never the module source - W1a
-    runs concurrently and is moving these literals out of tools/decks.py into
-    data/decks.json's overlay, and an object-shaped assertion holds under
-    either merge order."""
+    Q4). Read off the CONSTRUCTED deck objects, never the module source, so
+    the assertion holds however the values are plumbed through
+    tools/decks.py and data/decks.json's overlay.
+
+    This overlaps `PrintDeckSnapshotTest` in tests/test_deck_data.py, which
+    pins the whole deck dict against a frozen fixture - and would itself
+    catch any of the drifts below. The pins here are kept anyway because
+    they name the SPECIFIC owner-approved literal (with the Q1/Q2/Q4
+    decision it comes from) and fail with a readable diff on just that
+    field; the snapshot only proves "something in this deck changed", not
+    which value or why it must not.
+    """
 
     def test_hijaz_geometry_is_pinned(self):
         self.assertEqual(
@@ -947,3 +955,39 @@ class PinnedPrintValuesTest(unittest.TestCase):
 
     def test_pygmy_blank_cards_is_pinned(self):
         self.assertEqual(decks.PYGMY["blank_cards"], 7)
+
+
+class OverlayFromPrintTest(unittest.TestCase):
+    """Row 9: `_overlay_from_print` must not alias its input - a caller
+    mutating the returned overlay's nested list/dict values must never reach
+    back into the `print_data` it was built from (in practice, a canonical
+    deck's `_CANONICAL[...]["print"]`).
+
+    Uses a synthetic `print_data`, never `decks.PYGMY`/`decks._CANONICAL`
+    directly: those are module-level singletons other tests in this process
+    read, and mutating them here would leak into whichever test happens to
+    run after this one.
+    """
+
+    def _synthetic_print_data(self):
+        return dict(
+            R=1.0, cy=1.0, y_note=1.0, y_num=1.0,
+            legend_demo=(0, 1),
+            blank_cards=0,
+            title="T", credit="C", blurb=["a", "b"],
+            legend_lines=["one", "two"],
+            col_root=[1, 0, 0], col_tone=[0, 1, 0],
+            grad=[[0, 0, 0], [1, 1, 1]],
+        )
+
+    def test_mutating_the_overlays_legend_lines_leaves_the_input_untouched(self):
+        source = self._synthetic_print_data()
+        overlay = decks._overlay_from_print(source)
+        overlay["legend_lines"].append("MUTATED")
+        self.assertEqual(source["legend_lines"], ["one", "two"])
+
+    def test_mutating_the_overlays_blurb_leaves_the_input_untouched(self):
+        source = self._synthetic_print_data()
+        overlay = decks._overlay_from_print(source)
+        overlay["blurb"].append("MUTATED")
+        self.assertEqual(source["blurb"], ["a", "b"])
