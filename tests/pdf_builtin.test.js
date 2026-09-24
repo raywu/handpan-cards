@@ -51,11 +51,14 @@ test("R, cy, title, credit, legend_lines and colours carry through unchanged", (
   assert.deepEqual(built.grad, deck.print.grad);
 });
 
-test("blank_cards is LIFTED from print.blank_cards to the top level", () => {
+test("blank_cards reaches the top level through the overlay flatten", () => {
   // Reviewer nit from W1a: print.blank_cards is nested, but
-  // src/engine/pdfcards.js:557 reads the top-level `deck.blank_cards`. A
-  // fromBuiltin that forgot to lift it would silently drop Pygmy's 7 blank
-  // cards from the full PDF.
+  // src/engine/pdfcards.js:557 reads the top-level `deck.blank_cards`.
+  // fromBuiltin has no dedicated lift for this key - the generic
+  // `Object.keys(overlay).forEach(k => out[k] = overlay[k])` flatten already
+  // copies every overlay key, `blank_cards` included, onto `out`. A flatten
+  // that stopped copying unrecognised overlay keys would silently drop
+  // Pygmy's 7 blank cards from the full PDF.
   const pygmy = deckById("pygmy");
   assert.equal(pygmy.print.blank_cards, 7, "fixture assumption");
   const built = HPE.pdfdeck.fromBuiltin(pygmy, pygmy.print);
@@ -92,6 +95,23 @@ test("blurb carries the overlay text with the LAST line's chord count substitute
                     id + ": overlay chord count is no longer stale - " +
                     "update the fixture assumption note");
   }
+});
+
+test("blurb substitution replaces every chord count in the last line, not just the first", () => {
+  // Row 17: a `String.replace` without the `/g` flag replaces only the FIRST
+  // match. A last line with two counts before "CHORDS" (a shape no shipped
+  // deck happens to carry, but nothing in the overlay format forbids it)
+  // would substitute only the first and leave the second stale - a mutant
+  // dropping the flag must turn this red.
+  const deck = deckById("amara");
+  const n = deck.chords.length;
+  const overlay = Object.assign({}, deck.print, {
+    blurb: deck.print.blurb.slice(0, -1).concat(
+      ["3 CHORDS TODAY, WAS 3 CHORDS YESTERDAY"]),
+  });
+  const built = HPE.pdfdeck.fromBuiltin(deck, overlay);
+  assert.equal(built.blurb[built.blurb.length - 1],
+    n + " CHORDS TODAY, WAS " + n + " CHORDS YESTERDAY");
 });
 
 test("fields + geom convert into spec + _geom the way pdfcards.js reads them", () => {
@@ -152,4 +172,42 @@ test("a canonical/overlay key clash throws rather than silently shadowing", () =
   const deck = deckById("hijaz");
   const badOverlay = Object.assign({}, deck.print, { name: "nope" });
   assert.throws(() => HPE.pdfdeck.fromBuiltin(deck, badOverlay));
+});
+
+test("fromBuiltin returns warnings: [] - a built-in never carries one, but pdfcards.js's CARD_WARNINGS badge and fromGenerated's own `warnings` key both read the same shape", () => {
+  // tools/decks.py's _from_canonical has no warnings key at all - built-ins
+  // are hand-authored and never warned. This is a deliberate extra key on the
+  // JS side only, not part of the statement-for-statement port, so a caller
+  // that reads `.warnings` off either adapter's output never has to branch on
+  // which one produced it.
+  for (const id of ["hijaz", "pygmy", "amara"]) {
+    const deck = deckById(id);
+    const built = HPE.pdfdeck.fromBuiltin(deck, deck.print);
+    assert.deepEqual(built.warnings, [], id);
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * row 20: tools/pdf_build.js --builtin with a missing or malformed value
+ * ------------------------------------------------------------------ */
+test("pdf_build.js --builtin with no value prints usage and exits 2", () => {
+  const { spawnSync } = require("node:child_process");
+  const os = require("node:os");
+  const outFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pdf-build-")), "x.pdf");
+  const r = spawnSync(process.execPath,
+    [path.join(ROOT, "tools", "pdf_build.js"), "--out", outFile, "--builtin"],
+    { encoding: "utf8", input: "", timeout: 10000 });
+  assert.strictEqual(r.status, 2, "stdout:\n" + r.stdout + "\nstderr:\n" + r.stderr);
+  assert.match(r.stderr, /usage/i);
+});
+
+test("pdf_build.js --builtin --out swallows the next flag as its value and must still exit 2 with usage", () => {
+  const { spawnSync } = require("node:child_process");
+  const os = require("node:os");
+  const outFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pdf-build-")), "x.pdf");
+  const r = spawnSync(process.execPath,
+    [path.join(ROOT, "tools", "pdf_build.js"), "--builtin", "--out", outFile],
+    { encoding: "utf8", input: "", timeout: 10000 });
+  assert.strictEqual(r.status, 2, "stdout:\n" + r.stdout + "\nstderr:\n" + r.stderr);
+  assert.match(r.stderr, /usage/i);
 });

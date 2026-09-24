@@ -47,7 +47,7 @@ FLOORS = {
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 4,
     # node
-    "tests/app.test.js": 181,
+    "tests/app.test.js": 185,
     "tests/e2e.test.js": 111,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 41,
@@ -60,7 +60,7 @@ FLOORS = {
     "tests/pdf.test.js": 11,
     "tests/pdfcards.test.js": 10,
     "tests/mutation_harness.test.js": 17,
-    "tests/pdf_builtin.test.js": 9,
+    "tests/pdf_builtin.test.js": 13,
 }
 
 # The e2e suite is the only one allowed to vanish: it skips itself when no

@@ -2117,7 +2117,11 @@ HPE.pdfdeck = (function () {
   // statement-for-statement port of tools/decks.py:_from_canonical, for the
   // reason fromGenerated ports from_generated: a browser deck that drew from
   // a second, independently written adapter would diverge from the print
-  // pipeline in exactly the places nobody looks.
+  // pipeline in exactly the places nobody looks. The one deliberate departure
+  // from that port is `shared.warnings: []` below - _from_canonical carries
+  // no such key, since a built-in is never warned - added only so a caller
+  // reading `.warnings` off either adapter's output never has to branch on
+  // which one produced it.
   //
   // NOT fromGenerated(): a built-in geom carries no `ext`, and R/cy/y_note/
   // y_num are the measured literals in `overlay`, not derived from a solver
@@ -2147,7 +2151,13 @@ HPE.pdfdeck = (function () {
       spec: spec,
       chords: chords,
       degrees: degrees,
-      has_bottom: hasBottom
+      has_bottom: hasBottom,
+      // A built-in is hand-authored and never warned - tools/decks.py's
+      // _from_canonical has no such key at all - but pdfcards.js's
+      // CARD_WARNINGS badge reads `deck.warnings` off either adapter's
+      // output, and fromGenerated always carries one. This key exists so a
+      // caller never has to branch on which adapter produced the deck.
+      warnings: []
     };
 
     var clash = Object.keys(overlay).filter(function (k) {
@@ -2177,11 +2187,11 @@ HPE.pdfdeck = (function () {
     }
 
     // Reviewer nit from W1a: `print.blank_cards` is nested, but
-    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. Lift it
-    // so Pygmy's 7 blank cards are not silently dropped from the full PDF.
-    if (Object.prototype.hasOwnProperty.call(overlay, "blank_cards")) {
-      out.blank_cards = overlay.blank_cards;
-    }
+    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. No
+    // dedicated lift is needed - the generic overlay flatten above
+    // (`Object.keys(overlay).forEach(...)`) already copies `blank_cards`
+    // (and every other overlay key) onto `out`, so Pygmy's 7 blank cards
+    // reach the top level without a special case.
 
     return out;
   }
@@ -6071,12 +6081,13 @@ function printGridCSS(name, paper) {
  *  `blank_cards` asks for blanks BEYOND that padding. `data/decks.json` (what
  *  the DECKS line is generated from) now carries it as `print.blank_cards`
  *  (Pygmy: 7) - NESTED under the per-deck print overlay, not as a top-level
- *  `d.blank_cards` key. `HPE.pdfdeck.fromBuiltin` lifts it to the top level of
- *  the deck object it builds for the PDF emitter, but this function reads the
- *  browser deck object directly (`deck().blank_cards`), which no shipped deck
- *  sets - so the branch below is still the thing that actually fills a short
- *  last page for every built-in today, and stays live the moment a shipped
- *  deck's top-level `blank_cards` is set.
+ *  `d.blank_cards` key. `HPE.pdfdeck.fromBuiltin`'s generic overlay flatten
+ *  copies it to the top level of the deck object it builds for the PDF
+ *  emitter (no dedicated lift needed), but this function reads the browser
+ *  deck object directly (`deck().blank_cards`), which no shipped deck sets -
+ *  so the branch below is still the thing that actually fills a short last
+ *  page for every built-in today, and stays live the moment a shipped deck's
+ *  top-level `blank_cards` is set.
  *  Pinned by "blank_cards is honoured when present" in tests/app.test.js.
  *
  *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
@@ -6162,9 +6173,18 @@ function printCardList(d, variant, slotsPerPage) {
  */
 // Type-guarded like store.deck / store.mode above (D-3): "hpfc" is shared, so
 // a non-string or unrecognised value here must not survive into printPaper.
-let printPaper = typeof store.printPaper === "string" && PRINT_PAPER[store.printPaper]
-  ? store.printPaper : "letter";
-function setPrintPaper(p) { if (PRINT_PAPER[p]) { printPaper = p; save(); } }
+// A plain `PRINT_PAPER[p]` bracket lookup answers truthy for an INHERITED
+// key too ("toString", "constructor", ...), since those resolve through the
+// prototype chain same as an own key - so `hasOwnProperty` is required, not
+// optional. NOT `Object.hasOwn`: Safari < 15.4 has no such method, and this
+// runs at boot, so throwing here would kill the app on that browser rather
+// than just falling back to "letter".
+function isPaper(p) {
+  return typeof p === "string" &&
+    Object.prototype.hasOwnProperty.call(PRINT_PAPER, p);
+}
+let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
+function setPrintPaper(p) { if (isPaper(p)) { printPaper = p; save(); } }
 
 /** The design width the faces are authored at. The printed card is CW points
  *  wide, so the scale factor falls out of PRINT_GEOM and is not a literal of
@@ -6226,15 +6246,16 @@ function openPrintSheet(variant) {
   }
 }
 
-/* The custom-deck print CTA, as of the client-pdf-emitter plan: the browser is
-   no longer asked to print, the page writes the PDF itself and hands it over.
-   iOS Safari is the reason - it ignores `@page` entirely (no paper size, no
-   orientation, no margins), so the browser-print sheet could never produce the
-   62.65 x 87.21 mm card the print spec measures, on the one platform this app
-   is used on most.
+/* The print CTA for every deck - built-in and generated alike (one-pdf-path
+   plan; see the comment above openPrintSheet) - as of the client-pdf-emitter
+   plan: the browser is no longer asked to print, the page writes the PDF
+   itself and hands it over. iOS Safari is the reason - it ignores `@page`
+   entirely (no paper size, no orientation, no margins), so the browser-print
+   sheet could never produce the 62.65 x 87.21 mm card the print spec
+   measures, on the one platform this app is used on most.
 
-   `openPrintSheet` below is deliberately left in place and unreferenced by the
-   CTA (plan D2): until the owner's device gate says the emitter prints
+   `openPrintSheet` above is deliberately left in place and unreferenced by
+   the CTA (plan D2): until the owner's device gate says the emitter prints
    correctly on the phone, the old path is the way back.
 
    The bytes are HPE.pdfcards', a port of tools/hifi.py held glyph for glyph

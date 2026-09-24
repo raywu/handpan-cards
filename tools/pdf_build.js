@@ -23,14 +23,28 @@ function opt(name, dflt) {
   const i = argv.indexOf("--" + name);
   return i >= 0 ? argv[i + 1] : dflt;
 }
-const out = opt("out");
-if (!out) {
+function usage() {
   process.stderr.write("usage: pdf_build.js --out FILE [--variant f] < deck.json\n");
   process.stderr.write("   or: pdf_build.js --out FILE --builtin <deck-id>\n");
   process.exit(2);
 }
 
-const builtinId = opt("builtin");
+const out = opt("out");
+if (!out) usage();
+
+// opt("builtin") alone cannot tell "no --builtin flag" apart from "--builtin
+// with no value" - both read argv[i + 1] past the end of the array and get
+// undefined back. Look the flag up by position instead, and treat a value
+// that is missing or itself looks like another flag (e.g.
+// `--builtin --out x`, where argv[i + 1] is "--out") as a usage error rather
+// than a deck id to look up - without this, `--builtin --out x` reads
+// "--out" as the id, fails to find it in data/decks.json, and prints a
+// confusing "no built-in deck" error instead of a usage line.
+const builtinFlag = argv.indexOf("--builtin");
+const builtinId = builtinFlag >= 0 ? argv[builtinFlag + 1] : undefined;
+if (builtinFlag >= 0 && (builtinId === undefined || builtinId.slice(0, 2) === "--")) {
+  usage();
+}
 if (builtinId) {
   const canonicalPath = path.join(__dirname, "..", "data", "decks.json");
   const canonical = JSON.parse(fs.readFileSync(canonicalPath, "utf8"));
