@@ -142,10 +142,13 @@ merge serially; rebase only on a real conflict.
 
 | Lane | Branch | PR | Head | State | Verdict |
 |---|---|---|---|---|---|
-| J | claude/qd-js | - | - | spawned (wt-qd-js @ 90a5aed) | - |
-| P | claude/qd-py | - | - | spawned (wt-qd-py @ 90a5aed) | - |
+| J | claude/qd-js | 137 | e586930 | MERGED 457e08f | PASS_WITH_NITS |
+| P | claude/qd-py | 136 | 6f811a5 | MERGED 9fb1abc | PASS_WITH_NITS |
 
 ## 7. Review log
 
 | PR | Lane | Verdict | Findings | Outcome |
 |---|---|---|---|---|
+| 136 | P | PASS_WITH_NITS (at 0c5bab0) | N1 regression: `_committed_pdf_dest` dropped the `head-` prefix, so the gate overwrites the rebuilt PDFs `cls.docs` holds open (reproduced; no current test affected). N2: the two-missing test drives its own loop; a fail-fast revert of the gate survived. N3: two mutant-header rationales/citations. CI 5/5 green at the SHA | bounced to lane to fix N1-N3 before merge (integrator call: N1 is a regression this PR introduces) |
+| 137 | J | PASS_WITH_NITS (at e586930) | Rows 8/16/17/19/20/23/25/26 all covered; call sites of PRINT_PAPER enumerated (all app paths via `isPaper`); `fromBuiltin` output identical to base bar `warnings`, `--builtin` PDFs byte-identical 12/12; CI mutation gate 388/388 killed incl. the 3 new. 3 nits filed as one-pdf-path queue rows 30-32 | merged 457e08f |
+| 136 | P | PASS_WITH_NITS (at 6f811a5, fresh reviewer) | N1-N3 verified fixed; 5/5 reviewer mutants killed (incl. N1 revert, fail-fast revert, shallow-copy revert); 3 committed mutants killed with `# suite:` selecting 1 test each. 3 nits filed as one-pdf-path queue rows 33-35 | merged 9fb1abc |
