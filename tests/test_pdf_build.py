@@ -14,6 +14,7 @@ sheets being regenerated.
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -252,25 +253,36 @@ class BuildTest(BuiltDecksTest):
                                  % (key, hits))
 
     def test_committed_pdfs_match_a_fresh_build(self):
-        """Staleness gate: the checked-in PDFs must be current.
+        """Staleness gate: the PDFs committed at HEAD must be current.
 
-        Edit deck data without rerunning tools/decks.py and this goes red -
+        The reference bytes come from ``git show HEAD:<pdf>`` into a temp
+        file, not the worktree copy at ``paths.ROOT`` - so a rebuild that
+        was never committed cannot feed its own comparison. Edit deck data
+        and commit it without rerunning tools/decks.py and this goes red -
         app and print would otherwise silently diverge.
         """
         stale = []
         for key, _deck, _chords_only, _pages in JOBS:
-            committed = os.path.join(paths.ROOT, paths.PDFS[key])
-            self.assertTrue(os.path.isfile(committed),
-                            "%s is not committed in the repo root" % key)
+            rel = paths.PDFS[key]
+            proc = subprocess.run(
+                ["git", "show", "HEAD:%s" % rel],
+                cwd=paths.ROOT, capture_output=True)
+            self.assertEqual(
+                proc.returncode, 0,
+                "%s is not committed at HEAD in the repo root: %s"
+                % (rel, proc.stderr.decode(errors="replace")))
+            committed = os.path.join(self.tmp, "head-" + rel)
+            with open(committed, "wb") as fh:
+                fh.write(proc.stdout)
             with pymupdf.open(committed) as doc:
                 if doc.page_count != self.docs[key].page_count:
                     stale.append("%s: %d committed pages vs %d rebuilt"
-                                 % (paths.PDFS[key], doc.page_count,
+                                 % (rel, doc.page_count,
                                     self.docs[key].page_count))
                     continue
                 if squeeze(doc_text(doc)) != squeeze(self.text[key]):
                     stale.append("%s: committed text differs from a rebuild"
-                                 % paths.PDFS[key])
+                                 % rel)
         self.assertEqual(
             stale, [],
             "committed PDFs are out of date - rerun `python3 tools/decks.py` "
