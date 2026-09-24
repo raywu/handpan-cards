@@ -180,6 +180,28 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | W3 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
 | W3d | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
 
+## Resume here (written for a fresh session)
+
+State as of 2026-09-24, after PR 128 merged:
+
+- **PR 129 (W0) is the only thing in flight.** CI: all five checks green at
+  `db59b2c664f0476d20f94164bfd5dc528d443dfd`, head verified equal to the branch
+  tip. A reviewer subagent was spawned against that SHA and had **not returned a
+  verdict** when this note was written. If no verdict is recorded in the Review
+  log below, **spawn a fresh reviewer** with the same brief - a killed reviewer
+  is not a FAIL and consumes no lane attempt. Do not merge 129 on the lane's own
+  report.
+- Clean up any orphaned review worktree first:
+  `git worktree list` then `git worktree remove --force /private/tmp/claude-501/wt-review-129`
+  if it is present.
+- Live worktrees to keep: `/private/tmp/claude-501/wt-w0` (W0, PR 129) and
+  `/private/tmp/claude-501/wt-coord` (this doc, branch
+  `claude/one-pdf-path-coordination`, never merged mid-cycle - see AD-2).
+- **Next after 129 merges:** wave 2, `W1a || W1b` spawned together. Nothing else
+  is spawnable before then; the sequencing is a chain.
+- Every row above is a hint with a timestamp, not truth. Re-verify head SHAs and
+  PR state with `gh` before acting on them.
+
 ## Handoff queue (append-only)
 
 | # | From | Ask | Status |
