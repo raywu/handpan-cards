@@ -162,8 +162,8 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
-| W3 | claude/w3-one-print-ux | PR 134 fix 70ea8ad green, fresh re-review (attempt 2 of 2) | FAIL+1 | 2026-09-24 |
-| W3d | claude/w3d-docs | PR 133 green, review held (AD-8) | - | 2026-09-24 |
+| W3 | claude/w3-one-print-ux | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
+| W3d | claude/w3d-docs | PR 133 rebasing onto f78ed0b, re-deriving citations (AD-8 released) | - | 2026-09-24 |
 
 ## Review log
 
@@ -173,12 +173,13 @@ NEXT: plan section 4, "W3d - docs and queue".
 | 131 | W1b | PASS_WITH_NITS | 5 nits (rows 11-15). Reviewer re-derived every pin, confirmed each mutant is killed by its own `# suite:` header, and ran 10 hand mutations across all decks/field classes, each caught. CI run 35969288841 success at 47e99e9. | Merged 7d1edb9; nits filed as rows 11-15; nit 5 carried to W2 review and W3 parity. |
 | 132 | W2 | PASS_WITH_NITS | 5 nits (rows 16-20). Parity re-derived: 3 built-ins x full/shop, glyph counts equal per case; `--builtin` exits in <0.1s with no stdin; R from print.R (solver-R mutant killed on 3 decks). Hand mutants 3/5 killed; the 2 survivors are nits 16-17. Attempt 1 was a CI bounce (no suite_health floor row). | Merged 866bb4e; nits filed as rows 16-20. |
 | 134 | W3 | FAIL | 2 majors, both reproduced in real Chrome over CDP: (1) the review-D1 double-tap guard re-enables in the same task, so two queued taps on Pygmy's FULL DECK PDF ran 2 builds; (2) the card keydown guard `closest("a, button")` misses the paper `<select>`, which is now on built-ins, so Space/Enter on it flips the Hijaz card. 3 nits: stale print-CTA and e2e comments; no test for the window.open success path (mutant survived); no test for the printPaper boot type guard (mutant survived). Six collateral mutant repairs were judged justified and not weakened. Hand mutants: 7/10 killed. | Bounced to the authoring lane with the majors and nits (attempt 1 of 2); a fresh reviewer re-reviews. |
+| 134 | W3 | PASS_WITH_NITS (fresh reviewer, at 70ea8ad) | Both majors re-verified with real CDP mouse and touch events: two taps together, 50 ms apart and with a 300 ms slowed build all build once; Enter/Space on the paper select no longer flip any built-in card, while on #card they still do; every focusable element inside #card enumerated (no anchors), so dropping `a` from the guard is safe. New tests red at ec39760, green at 70ea8ad. CI run 36036245284 all 5 green, 385/385 mutants killed. Hand mutants 4/5 killed; the survivor (boot guard without typeof) is row 25. Nits -> rows 23-26. | MERGED f78ed0b. AD-7 memory update done by the integrator. |
 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
 ## Cycle state
 
-Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131), 866bb4e (PR 132)
+Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131), 866bb4e (PR 132), f78ed0b (PR 134)
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -187,7 +188,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
-| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284); head == remote tip; fast-forward on ec39760 | FAIL at ec39760; fresh reviewer spawned at 70ea8ad | 1 | no | - | yes |
+| W3 | - | removed | deleted | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284) | PASS_WITH_NITS (fresh reviewer, attempt 2) | 1 | f78ed0b | - | no |
 | W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8c9d4bb | all 5 green at 8c9d4bb; head == remote tip; files = README.md + scale-engine-coordination.md (rows 331-354) | review held (AD-8) | 0 | no | W3 merge | yes |
 
 ## Resume here (written for a fresh session)
@@ -226,6 +227,10 @@ Cycle close: merge this coord branch via PR (AD-2).
 | 20 | PR 132 review | `tools/pdf_build.js --builtin` with no value falls through to stdin mode and waits on a TTY instead of printing usage. | OPEN |
 | 21 | W3 lane report | During local mutant verification W3 `cp -r`'d its linked worktree; the copy shared the real per-worktree git dir, so a scratch commit landed on `claude/w3-one-print-ux`. The lane undid it with `git reset --mixed 866bb4e` (not --hard; working tree kept). Pushed history is one clean commit (ec39760), and the copy is gone. Lesson for briefs: never copy a linked worktree to run tools. | OPEN |
 | 22 | integrator | W3's fix lane committed 70ea8ad at 02:22 and then sat ~8 h without pushing, waiting on `until ! pgrep -f "tests/mutation_check.sh"`, which matched the polling shell's OWN command line and so never ended. The sweep itself had aborted at 02:26 on the known local macOS SigintDuringRunTest timeout and tested nothing. The integrator killed the two loops and re-briefed the lane to push; CI was the oracle. Lesson for briefs: never poll a process with `pgrep -f` on a pattern that appears in your own command; do not run a full local mutation sweep at all - CI's mutation gate is the evidence. | OPEN |
+| 23 | PR 134 review | `index.html:6165` (and 6167): the printPaper boot guard indexes the plain object `PRINT_PAPER`, so an inherited key passes. Stored `{"printPaper":"toString"}` boots printPaper as "toString", the select shows LETTER, and both PDF buttons throw `non-finite coordinate: NaN` until the user picks A4. Only reachable by hand-editing localStorage. Fix: `Object.hasOwn(PRINT_PAPER, ...)`. | OPEN |
+| 24 | PR 134 review | `index.html:6296`: the double-tap guard covers taps that arrive DURING the build (plan D1), but the build takes ~20 ms on desktop, so a human double-click 100-300 ms apart still builds and downloads twice. It would also stop working if `HPE.pdfcards.build` became async. Owner call whether to add a short cooldown. | OPEN |
+| 25 | PR 134 review | Hand mutant M5 SURVIVED: dropping the `typeof ... === "string"` check from the printPaper boot guard is not caught. Under it a stored `["a4"]` boots an array: the select shows LETTER and the filename says Letter while pdfcards draws A4. Add a test with a stored array value, and a mutant for it. | OPEN |
+| 26 | PR 134 review | Stale comment at `index.html:6227`: still says "The custom-deck print CTA" and "`openPrintSheet` below"; the CTA now serves every deck and `openPrintSheet` sits above it. | OPEN |
 
 ## Lane reports
 
