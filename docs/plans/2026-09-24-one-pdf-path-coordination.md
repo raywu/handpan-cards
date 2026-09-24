@@ -163,7 +163,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
 | W3 | claude/w3-one-print-ux | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
-| W3d | claude/w3d-docs | PR 133 in review at a4640eb (rebased on f78ed0b, citations re-derived) | - | 2026-09-24 |
+| W3d | claude/w3d-docs | PR 133 bounced (review FAIL 1 at a4640eb) | FAIL+1 | 2026-09-24 |
 
 ## Review log
 
@@ -174,6 +174,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | 132 | W2 | PASS_WITH_NITS | 5 nits (rows 16-20). Parity re-derived: 3 built-ins x full/shop, glyph counts equal per case; `--builtin` exits in <0.1s with no stdin; R from print.R (solver-R mutant killed on 3 decks). Hand mutants 3/5 killed; the 2 survivors are nits 16-17. Attempt 1 was a CI bounce (no suite_health floor row). | Merged 866bb4e; nits filed as rows 16-20. |
 | 134 | W3 | FAIL | 2 majors, both reproduced in real Chrome over CDP: (1) the review-D1 double-tap guard re-enables in the same task, so two queued taps on Pygmy's FULL DECK PDF ran 2 builds; (2) the card keydown guard `closest("a, button")` misses the paper `<select>`, which is now on built-ins, so Space/Enter on it flips the Hijaz card. 3 nits: stale print-CTA and e2e comments; no test for the window.open success path (mutant survived); no test for the printPaper boot type guard (mutant survived). Six collateral mutant repairs were judged justified and not weakened. Hand mutants: 7/10 killed. | Bounced to the authoring lane with the majors and nits (attempt 1 of 2); a fresh reviewer re-reviews. |
 | 134 | W3 | PASS_WITH_NITS (fresh reviewer, at 70ea8ad) | Both majors re-verified with real CDP mouse and touch events: two taps together, 50 ms apart and with a 300 ms slowed build all build once; Enter/Space on the paper select no longer flip any built-in card, while on #card they still do; every focusable element inside #card enumerated (no anchors), so dropping `a` from the guard is safe. New tests red at ec39760, green at 70ea8ad. CI run 36036245284 all 5 green, 385/385 mutants killed. Hand mutants 4/5 killed; the survivor (boot guard without typeof) is row 25. Nits -> rows 23-26. | MERGED f78ed0b. AD-7 memory update done by the integrator. |
+| 133 | W3d | FAIL (at a4640eb) | Blocker F1: README.md:72-73 says the PDF is built by the same scale-engine code (HPE.pdfdeck) that drives the flip cards; false - pdfdeck is called only by downloadDeckPDF, the flip cards are drawn by pan(), the PDF by HPE.pdfcards, and README.md:110-111 itself says the renderers are independent. Failure scenario: a contributor changes pan() label sizes expecting the PDF to follow. Nits N1-N7: row 334 should be resolved (memory already superseded), status casing, row 344 names the wrong doc, row 352 VARIANTS wording, 'this worktree' in the intro, row 342 blank_cards deck, README:38-39 omits fromBuiltin. All 30+ citations re-derived correct; CI green; ownership clean. | Bounced to the authoring lane (attempt 1 of 2); a fresh reviewer re-reviews. |
 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
@@ -189,7 +190,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
 | W3 | - | removed | deleted | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284) | PASS_WITH_NITS (fresh reviewer, attempt 2) | 1 | f78ed0b | - | no |
-| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | a4640eb | all 5 green at a4640eb (run 36039174602); head == remote tip; diff = README.md + scale-engine-coordination.md only | reviewer spawned | 0 | no | - | yes |
+| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | a4640eb | all 5 green at a4640eb (run 36039174602); head == remote tip; diff = README.md + scale-engine-coordination.md only | FAIL at a4640eb; bounced to lane | 1 | no | - | yes |
 
 ## Resume here (written for a fresh session)
 
