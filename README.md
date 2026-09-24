@@ -72,9 +72,11 @@ decisions behind it.
   not open a pre-built file; the PDF is built in the browser, on the spot, by
   the same scale-engine code (`HPE.pdfdeck`) that drives the flip cards, so a
   built-in deck's cards and a custom deck's cards go through one path with one
-  set of controls. The paper choice persists between visits. Off iOS the file
-  downloads directly; on iOS it opens in a new tab where the platform allows
-  it, falling back to replacing the current page where it does not.
+  set of controls. The paper choice persists between visits, and both buttons
+  disable while a PDF is being built so a second tap can't start a duplicate
+  one. Off iOS the file downloads directly; on iOS it opens in a new tab where
+  the platform allows it, falling back to replacing the current page where it
+  does not.
 
 ## Tests
 
@@ -117,7 +119,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 383 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 385 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
