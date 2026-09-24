@@ -153,7 +153,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | plan #128 | `claude/one-pdf-path-plan` | CI green, in review | - | 2026-09-24 |
-| W0 | `claude/w0-pdf-build-oracle` | PR 129 open, CI running | - | 2026-09-24 |
+| W0 | `claude/w0-pdf-build-oracle` | CI green, in review | - | 2026-09-24 |
 | W1a | - | blocked on W0 | - | 2026-09-24 |
 | W1b | - | blocked on W0 | - | 2026-09-24 |
 | W2 | - | blocked on W1a | - | 2026-09-24 |
@@ -173,7 +173,7 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | plan | a8cd58f | wt-plan | one-pdf-path-plan | 128 | c37a7f9 | all 5 green at c37a7f9 | in review | 0 | no | reviewer | yes |
-| W0 | ad4eeed | wt-w0 | w0-pdf-build-oracle | 129 | db59b2c | tip==PR head, diff is tests/test_pdf_build.py only | - | 0 | no | CI | yes |
+| W0 | ad4eeed | wt-w0 | w0-pdf-build-oracle | 129 | db59b2c | all 5 green at db59b2c | in review | 0 | no | reviewer | yes |
 | W1a | - | - | - | - | - | - | - | 0 | no | W0 | no |
 | W1b | - | - | - | - | - | - | - | 0 | no | W0 | no |
 | W2 | - | - | - | - | - | - | - | 0 | no | W1a | no |
