@@ -92,6 +92,7 @@ force-pushing main or any shared branch, anything destructive or irreversible.
 | AD-2 | This doc lives on `claude/one-pdf-path-coordination`, not main | yes | Swarm's own advice: Cycle-state commits on main would advance main after every transition. A branch that never merges mid-cycle costs nothing and keeps lanes from looking stale. Merged by PR at cycle close. |
 | AD-3 | Plan PR #128 is merged under the same two gates as a lane | yes | It is an ordinary docs PR; the reviewer and CI gates still apply. |
 | AD-4 | Merge order in wave 2 is W1a before W1b | yes | W1b's two mutants must patch the literals in `tools/decks.py` at base; W1a deletes those lines. Merging W1b first would leave W1a's CI red on stale mutants it does not own. After W1a merges, W1b is re-briefed to rebase and re-target its mutants at `data/decks.json`, then re-reviewed. |
+| AD-5 | W1b's review is held until its post-W1a re-target, not run now | yes | Reviewing 1a73f65 now and again after the re-target spends two reviewers and one of W1b's two attempts on a rebase re-review. One review of the final head costs one. W1b's lane context stays live for the re-brief. |
 
 ## Projected cost
 
@@ -156,7 +157,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1a | claude/w1a-print-overlay | IN FLIGHT | - | 2026-09-23 |
-| W1b | claude/w1b-print-pins | IN FLIGHT | - | 2026-09-23 |
+| W1b | claude/w1b-print-pins | PR 131 CI green, review held for AD-4 re-target | - | 2026-09-23 |
 | W2 | - | blocked on W1a | - | 2026-09-24 |
 | W3 | - | blocked on W2 | - | 2026-09-24 |
 | W3d | - | blocked on W2 | - | 2026-09-24 |
@@ -176,8 +177,8 @@ Cycle: 1   Wave: 2 in flight (W1a, W1b spawned 2026-09-23)   Merged this batch: 
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
 | W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
-| W1a | (live, see transcript) | /private/tmp/claude-501/wt-w1a | claude/w1a-print-overlay | - | base 2865044 | - | - | 0 | no | - | yes |
-| W1b | (live, see transcript) | /private/tmp/claude-501/wt-w1b | claude/w1b-print-pins | - | base 2865044 | - | - | 0 | no | - | yes |
+| W1a | (live, see transcript) | /private/tmp/claude-501/wt-w1a | claude/w1a-print-overlay | 130 | base 2865044 | - | - | 0 | no | - | yes |
+| W1b | (live, see transcript) | /private/tmp/claude-501/wt-w1b | claude/w1b-print-pins | 131 | 1a73f65 | all 5 green at 1a73f65; head == remote tip; diff = 3 owned files | review HELD (AD-5) | 0 | no | W1a merge + mutant re-target | yes |
 | W2 | - | - | - | - | - | - | - | 0 | no | W1a | no |
 | W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
 | W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
@@ -190,6 +191,9 @@ spawned from `origin/main` 2865044 into `/private/tmp/claude-501/wt-w1a` and
 for a PR (`gh pr list --head <b>`), verify head == remote tip, and either
 review it or re-spawn the lane from its Briefing. Merge order is AD-4
 (W1a first, then re-brief W1b to rebase and re-target its mutants).
+W1b returned done: PR 131 at 1a73f65, CI green, review held (AD-5).
+Lane claims: red demos for R, blank_cards and credit; both w1b mutants
+killed in an isolated local run; CI mutation gate green over all 385.
 
 ## Handoff queue (append-only)
 
