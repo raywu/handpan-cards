@@ -211,20 +211,39 @@ def _canonical():
 _CANONICAL = _canonical()
 
 
-def _from_canonical(deck_id, **overlay):
-    """A canonical deck + its hand-authored PRINT OVERLAY -> a hifi deck dict.
+def _overlay_from_print(print_data):
+    """The `print` key of a canonical deck -> the hifi overlay kwargs.
 
-    The overlay carries only what the shared data does not and CANNOT: the
-    measured R/cy baselines, the rounded colour literals, the hand-written
-    title-card copy, and Pygmy's blank-card padding preference. Nothing in the
-    overlay may name a key the canonical data already owns - the clash guard
+    R/cy/y_note/y_num/legend_demo/blank_cards/title/credit/blurb/
+    legend_lines pass through unchanged; the three colour fields are
+    [r, g, b] lists in data/decks.json (JSON has no Color type) and are
+    turned into reportlab Colors here, at the one point that needs them.
+    """
+    overlay = dict(print_data)
+    overlay["legend_demo"] = tuple(overlay["legend_demo"])
+    overlay["col_root"] = Color(*overlay["col_root"])
+    overlay["col_tone"] = Color(*overlay["col_tone"])
+    overlay["grad"] = tuple(Color(*rgb) for rgb in overlay["grad"])
+    return overlay
+
+
+def _from_canonical(deck_id, **extra_overlay):
+    """A canonical deck (including its `print` key) -> a hifi deck dict.
+
+    The `print` key carries only what the shared data does not and CANNOT:
+    the measured R/cy baselines, the rounded colour literals, the
+    hand-written title-card copy, and Pygmy's blank-card padding preference.
+    It may not name a key the canonical data already owns - the clash guard
     below raises, and validate.py check 1b asserts the result end to end.
+    `**extra_overlay` exists only so callers (tests included) can layer an
+    override on top of `print` for a single call; none of HIJAZ/PYGMY/AMARA
+    below pass any.
 
     NOT from_generated(): that one derives R from geom["ext"], which no
     built-in geom carries, and which would redraw every diagram (see the
     measured deltas below - Hijaz 73.0 -> 69.8).
 
-    The COLOURS come from the overlay too, as the committed three-decimal
+    The COLOURS come from `print` too, as the committed three-decimal
     literals. _hex_color("#E0559A") returns 0.878431..., not 0.878; the two
     representations agree only one way, through validate.py's hexc() rounding,
     so re-deriving them here would move every printed colour by a fraction.
@@ -242,6 +261,8 @@ def _from_canonical(deck_id, **overlay):
         has_bottom=any(v[3] == "bottom"
                        for k, v in spec.items() if k != "_geom"),
     )
+    overlay = _overlay_from_print(deck["print"])
+    overlay.update(extra_overlay)
     clash = sorted(set(shared) & set(overlay))
     if clash:
         raise ValueError("%s: print overlay shadows canonical data: %s"
@@ -258,49 +279,9 @@ def _from_canonical(deck_id, **overlay):
     return shared
 
 
-HIJAZ = _from_canonical(
-    "hijaz",
-    title="C# Hijaz / Orion 9 - Chord Cards",
-    credit="C# HIJAZ / ORION",
-    R=73.0, cy=126.0, y_note=30.0, y_num=14.0,
-    legend_demo=(5, 3),
-    grad=(Color(0.878, 0.333, 0.604), Color(0.886, 0.463, 0.106)),
-    col_root=Color(0.878, 0.333, 0.604), col_tone=Color(0.886, 0.463, 0.106),
-    blurb=["C#3  |  G#3  B3  C#4  D4  F4  F#4  G#4  B4",
-           "PHRYGIAN DOMINANT, NO b6   -   18 CHORDS"],
-    legend_lines=["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
-                  "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"],
-)
-
-PYGMY = _from_canonical(
-    "pygmy",
-    title="F3 Low Pygmy 18 - Chord Cards",
-    credit="F3 LOW PYGMY / F AEOLIAN",
-    R=60.0, cy=121.0, y_note=30.0, y_num=14.0,
-    legend_demo=(3, 0), blank_cards=7,
-    grad=(Color(0.427, 0.251, 0.639), Color(0.788, 0.592, 0.118)),
-    col_root=Color(0.427, 0.251, 0.639), col_tone=Color(0.788, 0.592, 0.118),
-    blurb=["F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5",
-           "BOTTOM:  C3  Db3  Eb3  Bb3  Db4  Ab5",
-           "COMPLETE F NATURAL MINOR   -   25 CHORDS"],
-    legend_lines=["U1 - U6: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)",
-                  "Bb AND Db EXIST ONLY ON THE BOTTOM SHELL",
-                  "TONEFIELDS 1 - 11 RUN FROM THE LOWEST TOP NOTE"],
-)
-
-AMARA = _from_canonical(
-    "amara",
-    title="D Amara 9 - Chord Cards",
-    credit="D AMARA / D MINOR",
-    R=73.0, cy=126.0, y_note=30.0, y_num=14.0,
-    legend_demo=(5, 3),
-    grad=(Color(0.043, 0.482, 0.459), Color(0.867, 0.561, 0.000)),
-    col_root=Color(0.043, 0.482, 0.459), col_tone=Color(0.867, 0.561, 0.000),
-    blurb=["D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
-           "16 CHORDS - ONE CARD PER CHORD"],
-    legend_lines=["NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",
-                  "TONEFIELD NUMBERS RUN 1 - 8 FROM THE LOWEST NOTE"],
-)
+HIJAZ = _from_canonical("hijaz")
+PYGMY = _from_canonical("pygmy")
+AMARA = _from_canonical("amara")
 
 
 def _blurb(spec, chord_count, warnings=()):
