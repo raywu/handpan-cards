@@ -4040,6 +4040,19 @@ test("print sheet is emptied even when the print dialog throws", () => {
   assert.strictEqual(app.docEl.classList.contains("printing"), false);
 });
 
+/* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
+   value, not just a falsy one - `store.printPaper || "letter"` also survives
+   `null`, so a mutant reducing the guard to that passes every test that only
+   tries falsy/valid inputs. "tabloid" is a truthy string that is not a
+   PRINT_PAPER key; 42 is truthy and not even a string. */
+for (const bad of ["tabloid", 42, null]) {
+  test(`printPaper boot guard: stored ${JSON.stringify(bad)} falls back to letter`, () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: bad }) } });
+    assert.strictEqual(app.get("printPaper"), "letter",
+      `stored printPaper ${JSON.stringify(bad)} booted to "${app.get("printPaper")}", not "letter"`);
+  });
+}
+
 /* Reviewer finding B-2: `printPaper` is module state that survives a render,
    but headerHTML() re-emits the <select> from scratch on EVERY render with
    LETTER first and nothing marked selected. So a flip, an arrow press or a
@@ -4170,6 +4183,23 @@ test("iOS gets the blob as a navigation, not as a download attribute", () => {
   assert.strictEqual(urls.length, 1);
   assert.strictEqual(app.location.href, urls[0].url,
     "iOS delivery is a navigation to the object URL");
+});
+
+/* D-2(B)'s primary path on iOS is window.open(url), with location.href only
+   as the fallback for a blocked popup. A mutant that always navigates
+   location.href regardless of window.open's return value delivers the same
+   file either way and so is easy to miss - it only shows up as a stray
+   navigation on the happy path, which is what this asserts against. */
+test("iOS: when window.open succeeds, location.href is left alone", () => {
+  const app = boot({ userAgent: IOS_UA });
+  customDeck(app);
+  const before = app.location.href;
+  app.run('window.open = function() { return { closed: false }; };');
+  app.run('downloadDeckPDF("full")');
+  assert.strictEqual(anchor(app), null, "iOS must not be handed an <a download>");
+  assert.strictEqual(app.objectUrls().length, 1);
+  assert.strictEqual(app.location.href, before,
+    "window.open succeeded, so the D-2(B) fallback must not also navigate the tab");
 });
 
 test("the object URL is revoked, and not before the viewer has read it", () => {

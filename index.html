@@ -6152,10 +6152,13 @@ function printCardList(d, variant, slotsPerPage) {
 }
 
 /* ---------------- the print CTA (Workstream B) ----------------
- * A custom deck has no pre-built PDF, so it prints through the browser: build
- * the sheet into #printroot, call window.print(), and empty it again. The
- * container is `hidden` and contributes nothing to the practice screen at any
- * other moment (AC-B5).
+ * As of the one-pdf-path plan, every deck - built-in or generated - prints
+ * the same way: downloadDeckPDF below builds the PDF client-side and hands
+ * it to the platform (download link on desktop, window.open/location.href
+ * on iOS). window.print()/openPrintSheet is legacy, kept only until the
+ * owner's device gate retires it (see the comment above downloadDeckPDF).
+ * The container is `hidden` and contributes nothing to the practice screen
+ * at any other moment (AC-B5).
  */
 // Type-guarded like store.deck / store.mode above (D-3): "hpfc" is shared, so
 // a non-string or unrecognised value here must not survive into printPaper.
@@ -6256,10 +6259,17 @@ function downloadDeckPDF(variant, btn) {
   const pdfDeck = isBuiltIn(d.id)
     ? HPE.pdfdeck.fromBuiltin(d, d.print)
     : HPE.pdfdeck.fromGenerated(d);
-  // Disabled for the duration of the build (~0.14s for the 52-card deck): a
-  // double tap on a fast finger builds the PDF twice and opens/downloads it
-  // twice. Both buttons in the row are disabled, not just the one tapped,
-  // since either could still be mid-build when the other is hit.
+  // Disabled synchronously so a SECOND tap dispatched while this handler is
+  // still on the call stack (same event, or a queued input event the browser
+  // delivers before this one returns) hits a disabled button. Re-enabling
+  // must NOT happen in this same task: HPE.pdfcards.build runs synchronously,
+  // so a `finally` that re-enables immediately re-opens the window before the
+  // handler even returns, and a second tap queued as a genuinely separate
+  // browser task (two real mousePressed/mouseReleased pairs) still lands
+  // after re-enable and runs the build a second time. Deferring the re-enable
+  // to setTimeout(0) - a later task - closes that gap: any tap dispatched
+  // while THIS task is running still finds the buttons disabled, on both the
+  // success and the error path.
   const row = btn && btn.closest(".prints");
   const rowButtons = row ? [...row.querySelectorAll("button")] : [];
   rowButtons.forEach(b => { b.disabled = true; });
@@ -6284,7 +6294,7 @@ function downloadDeckPDF(variant, btn) {
     // returns, and revoking early cancels the download with no diagnostic.
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   } finally {
-    rowButtons.forEach(b => { b.disabled = false; });
+    setTimeout(() => { rowButtons.forEach(b => { b.disabled = false; }); }, 0);
   }
 }
 
@@ -7467,11 +7477,13 @@ function step(dir) {
 card.addEventListener("click", flip);
 // Bound to #card, so it fires for keys that BUBBLE from any descendant.
 // .prints' onclick="event.stopPropagation()" guards the mouse path only:
-// without this target check, Enter on a focused print link is swallowed by
-// preventDefault() before the anchor activates - no PDF, and the card flips
-// instead, revealing the answer in NAME->NOTES mode.
+// without this target check, Enter/Space on a focused print button or the
+// paper <select> is swallowed by preventDefault() before it activates - no
+// PDF (or no paper change), and the card flips instead, revealing the answer
+// in NAME->NOTES mode. There is no <a> in .prints any more (one-pdf-path
+// plan dropped the print link), so this guards button/select only.
 card.addEventListener("keydown", e => {
-  if (e.target && e.target.closest && e.target.closest("a, button")) return;
+  if (e.target && e.target.closest && e.target.closest("button, select")) return;
   if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
 });
 document.getElementById("prev").onclick = () => step(-1);

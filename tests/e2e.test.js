@@ -744,6 +744,73 @@ function run() {
     }
   });
 
+  /* HPE.pdfcards.build runs synchronously, so downloadDeckPDF's whole
+     disable -> build -> deliver -> re-enable sequence used to complete
+     within ONE task with no yield to the browser's event loop in between.
+     A second real tap dispatched while that task is still on the call stack
+     (the reviewer's repro: two mousePressed/mouseReleased pairs sent
+     together over CDP, on Pygmy in real Chrome) is queued by the browser and
+     only processed once this task finishes - by which point the old
+     `finally` had already re-enabled the buttons in the SAME task, so the
+     queued tap landed on an enabled button and ran the build again.
+     `btn.click()` called a second time from JS, before yielding, models the
+     same "second activation queued while the guard is still up" scenario
+     deterministically: a disabled button's `.click()` is a documented no-op,
+     and whether that button is still disabled at this point is exactly what
+     the setTimeout(0)-deferred re-enable controls (browsers suppress the
+     click on a disabled element the same way whether the click call
+     originates from a second dispatched input event or from script). */
+  test("two taps on FULL DECK PDF queued together build the PDF once", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    const i = meta.findIndex((m) => m.id === "pygmy");
+    assert.notStrictEqual(i, -1, "pygmy deck not found in DECKS");
+    await selectDeck(i, meta);
+    const count = await b.eval(`
+      window.__buildCount = 0;
+      const realBuild = HPE.pdfcards.build;
+      HPE.pdfcards.build = function (...args) {
+        window.__buildCount++;
+        return realBuild.apply(this, args);
+      };
+      // Real Chrome opens a native "Save As" dialog for a.click() on some
+      // profiles; suppress activation so the test cannot hang on a modal
+      // that has nothing to do with the guard under test.
+      HTMLAnchorElement.prototype.click = function () {};
+      const btn = document.querySelector("#front .prints button"); // FULL DECK PDF
+      btn.click();
+      btn.click(); // the "second tap queued while the first is still running"
+      return window.__buildCount;
+    `);
+    assert.strictEqual(count, 1,
+      `two taps on FULL DECK PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
+  });
+
+  /* The `finally` in downloadDeckPDF must re-enable the buttons on BOTH the
+     success and the error path - a mutant that only re-enables after the
+     `try` block leaves the row permanently disabled the first time the build
+     throws. */
+  test("print buttons are re-enabled after a build error", async () => {
+    await freshLoad();
+    await b.eval(`
+      HPE.pdfcards.build = function () { throw new Error("boom (test)"); };
+      // A real uncaught exception from an inline onclick handler is otherwise
+      // just a console error; nothing to swallow here, but make sure it
+      // cannot pop a dialog on this profile either.
+      window.onerror = () => true;
+      return true;
+    `);
+    const sel = "#front .prints button";
+    await b.click(sel);
+    await b.settle();
+    const disabledRightAfter = await b.eval(`return document.querySelector(${JSON.stringify(sel)}).disabled;`);
+    // The build threw synchronously, so by the time the click handler
+    // returns (and settle()'s 500ms has long since elapsed) the deferred
+    // re-enable has already run - the row must not still read disabled.
+    assert.strictEqual(disabledRightAfter, false,
+      "a print button stayed disabled after HPE.pdfcards.build threw");
+  });
+
   /* The card's own keydown handler treats Space and Enter as "flip", and it
      is bound to #card, so it fires for a key event that BUBBLES from any
      descendant. The wrapper's onclick="event.stopPropagation()" guards the
@@ -777,6 +844,46 @@ function run() {
       "swallowing events that bubble up from the button");
     assert.strictEqual(m.activated, true,
       "Enter on a focused print button never activated it");
+  });
+
+  /* The paper <select> lives in the same .prints row as the print buttons and
+     bubbles keydown to #card exactly the same way. Before the guard covered
+     `select`, focusing it and pressing Space/Enter both flipped the card AND
+     (via preventDefault) blocked the browser's own native open-the-picker
+     behaviour for that key - the worst of both. */
+  test("Enter on the paper select does not flip the card, on a built-in deck", async () => {
+    await freshLoad();
+    await b.eval(`
+      const sel = document.querySelector("#front .prints select");
+      sel.focus();
+      return true;
+    `);
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.settle();
+    const flipped = await b.eval(`return document.getElementById("card").classList.contains("flip");`);
+    assert.strictEqual(flipped, false, "Enter on the focused paper select flipped the card");
+  });
+
+  // A separate test (rather than Enter then Space in one) because Space's
+  // native default action on a focused <select> is to open its OS dropdown -
+  // stacking it after Enter's own default action risks compounding native
+  // popup state across dispatches. Each test starts from a freshly loaded,
+  // unopened select.
+  test("Space on the paper select does not flip the card, on a built-in deck", async () => {
+    await freshLoad();
+    await b.eval(`
+      const sel = document.querySelector("#front .prints select");
+      sel.focus();
+      return true;
+    `);
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: " ", code: "Space", text: " ", unmodifiedText: " ", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.settle();
+    const flipped = await b.eval(`return document.getElementById("card").classList.contains("flip");`);
+    assert.strictEqual(flipped, false, "Space on the focused paper select flipped the card");
   });
 
   /* headerHTML() feeds all four faces, so .prints renders into #front AND
@@ -1163,12 +1270,12 @@ function run() {
     }
   });
 
-  /* A custom deck has no pre-built PDF to link at, so its .prints row is
-     <button>s plus the paper <select> rather than two <a href>s. The tab-order
-     rule that the built-in test pins is the same rule, but the selector that
-     enforces it has to cover all three element types - a selector that only
-     names `a` leaves three focusable controls inside the aria-hidden face
-     (AC-B1b). */
+  /* Every deck - built-in or generated - prints through the same client-side
+     PDF path (one-pdf-path plan), so .prints is <button>s plus the paper
+     <select> on both; there is no <a href> anywhere in .prints any more. The
+     tab-order rule that the built-in test pins is the same rule here; the
+     selector still names `a` so this test would also catch a regression that
+     reintroduced a print link, and it currently matches zero anchors. */
   test("print controls on the hidden face", async () => {
     await freshLoad();
     await generate(SIX_SCALES[1]);
