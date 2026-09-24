@@ -6,7 +6,6 @@
 # "CHORDS" would leave the second one stale - exactly the gap the row 17
 # queue item exists to close.
 diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
-index 681dc8a..0be84f5 100644
 --- a/src/engine/pdfdeck.js
 +++ b/src/engine/pdfdeck.js
 @@ -270,7 +270,7 @@ HPE.pdfdeck = (function () {

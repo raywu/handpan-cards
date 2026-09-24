@@ -9,7 +9,6 @@
 # "a4". Also killed by "setPrintPaper refuses a non-string value even when
 # it stringifies to a valid key".
 diff --git a/index.html b/index.html
-index fe29d83..270f805 100644
 --- a/index.html
 +++ b/index.html
 @@ -6180,8 +6180,7 @@ function printCardList(d, variant, slotsPerPage) {

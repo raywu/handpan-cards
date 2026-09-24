@@ -6,7 +6,6 @@
 # same as an own key), so a stored printPaper of "toString" would boot as
 # "toString" instead of falling back to "letter" - the row 23/25 bug.
 diff --git a/index.html b/index.html
-index fe29d83..1690d84 100644
 --- a/index.html
 +++ b/index.html
 @@ -6180,8 +6180,7 @@ function printCardList(d, variant, slotsPerPage) {
