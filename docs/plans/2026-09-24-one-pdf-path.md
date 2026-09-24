@@ -197,7 +197,7 @@ W1b touches.
 | 1 | **W1a overlay** | `data/decks.json` (the new `print` key), `tools/decks.py`, `CLAUDE.md` repo-layout paragraph, the regenerated `const DECKS` line via `tools/sync_decks.py` | `index.html` by hand, `src/engine/`, `tests/`, `tools/validate.py` | W0 |
 | 1 | **W1b print tests** | `tests/test_print.py`, `tests/mutants/w1b_*.patch` (new) | `tools/`, `data/`, `index.html` | W0 |
 | 2 | **W2 emitter** | `src/engine/pdfdeck.js`, `tools/pdf_build.js`, `tests/pdf_builtin.test.js` (new), `tests/test_pdf_parity.py`, the `engine:pdfdeck` region of `index.html` via `tools/inline_engine.py` | app JS/markup/CSS in `index.html`, `tools/decks.py`, `tools/hifi.py` | W1a |
-| 3 | **W3 UX** | app JS, markup and CSS in `index.html` (OUTSIDE every engine region), `tests/e2e.test.js`, `tests/app.test.js` | `src/engine/`, `tools/`, `data/`, any engine region | W2 |
+| 3 | **W3 UX** | app JS, markup and CSS in `index.html` (OUTSIDE every engine region), `tests/e2e.test.js`, `tests/app.test.js`, `tests/mutants/p_paper_picker_forgets_its_state.patch`, `d_esc_attr_leaves_quote.patch`, `p_print_cta_drops_the_platform.patch` | `src/engine/`, `tools/`, `data/`, any engine region | W2 |
 | 3 | **W3d docs** | `README.md`, `docs/plans/scale-engine-coordination.md`, the memory file | code, tests | W2 |
 
 W2 and W3 both write `index.html` and **must not overlap**: W2 only ever
@@ -665,8 +665,10 @@ not file it as a gap.
 **D1 [LOW] (confidence: 9/10, measured during this review) - no blocker, and the
 plan is right not to budget for one.** Built-in taps move from a static `href`
 to a synchronous main-thread emitter run, which is a real change in kind. Timed
-on the Pygmy-shaped seed (`(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3
-Eb3 Bb3 Db4 Ab5`, 52 chords - the largest deck):
+on a Pygmy-SIZED seed (`(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3
+Eb3 Bb3 Db4 Ab5`, 52 chords - the largest deck). It has no `/` inner separator,
+so it solves 11 rim / 0 inner, not Pygmy's 9 rim / 2 inner geometry; it matches
+Pygmy's card count, which is what the timing depends on:
 
 ```
 node tools/gen_deck.js "<seed>" > /tmp/pyg.json

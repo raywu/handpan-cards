@@ -122,7 +122,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 385 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 390 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -156,9 +156,9 @@ Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
 embedded `const DECKS` line, the browser's own PDF builder, and the print
 generator all derive from it. Edit that file, then run
 `python3 tools/sync_decks.py` (re-injects it into `index.html`) and
-`python3 tools/decks.py` (rebuilds the six committed PDFs - the print-shop
-artifacts under `tests/test_pdf_build.py`'s staleness gate, not what the app's
-print buttons open).
+`python3 tools/decks.py` (rebuilds the six committed PDFs through
+`tools/hifi.py` - the print-shop artifacts under `tests/test_pdf_build.py`'s
+staleness gate, not what the app's print buttons open).
 
 Layout notes (intentional, verified against the physical instruments -
 do not "correct"):
