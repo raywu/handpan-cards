@@ -157,7 +157,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W1b | claude/w1b-print-pins | rebasing + re-targeting mutants (AD-4) | - | 2026-09-24 |
+| W1b | claude/w1b-print-pins | PR 131 in review | - | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | IN FLIGHT | - | 2026-09-24 |
 | W3 | - | blocked on W2 | - | 2026-09-24 |
 | W3d | - | blocked on W2 | - | 2026-09-24 |
@@ -179,7 +179,7 @@ Cycle: 1   Wave: 2 (W1b re-target) + 3 (W2) in flight   Merged this batch: c37a7
 | plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
 | W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
-| W1b | (live, see transcript) | /private/tmp/claude-501/wt-w1b | claude/w1b-print-pins | 131 | 1a73f65 (pre-rebase) | - | re-briefed: rebase on 4d9d372 + re-target mutants | 0 | no | - | yes |
+| W1b | (live, see transcript) | /private/tmp/claude-501/wt-w1b | claude/w1b-print-pins | 131 | 47e99e9 | all 5 green at 47e99e9; head == remote tip; diff = 3 owned files | reviewer spawned | 0 | no | - | yes |
 | W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | - | base 4d9d372 | - | - | 0 | no | - | yes |
 | W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
 | W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
