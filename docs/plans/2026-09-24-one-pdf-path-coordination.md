@@ -13,7 +13,7 @@ remembered paper size.
 **NON-goals** (adjacent work a blocked lane drifts into - do not):
 
 - Retiring `tools/hifi.py`. Owner decision D-0(a) keeps it.
-- The D2 browser-print cutover. `openPrintSheet` (`index.html:6119`) and
+- The D2 browser-print cutover. `openPrintSheet` (`index.html:6119` at bootstrap base 1185886; `:6204` on main after W3) and
   `PRINT_LAYOUTS` stay in place, unreferenced.
 - Changing chord data, voicings, ranking, card copy, or the print layout.
 - Adopting generated geometry (it shrinks Pygmy's diagram 15.7%).
@@ -157,13 +157,13 @@ NEXT: plan section 4, "W3d - docs and queue".
 
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
-| plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
-| W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
-| W3 | claude/w3-one-print-ux | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
-| W3d | claude/w3d-docs | MERGED 560bf9a | PASS_WITH_NITS (attempt 2) | 2026-09-24 |
+| plan #128 | merged | MERGED 0d727f5 | PASS_WITH_NITS | 2026-09-24 |
+| W0 | merged | MERGED 2865044 | PASS_WITH_NITS | 2026-09-24 |
+| W1a | merged | MERGED 4d9d372 | PASS_WITH_NITS | 2026-09-24 |
+| W1b | merged | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
+| W2 | merged | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
+| W3 | merged | MERGED f78ed0b | PASS_WITH_NITS | 2026-09-24 |
+| W3d | merged | MERGED 560bf9a | PASS_WITH_NITS (attempt 2) | 2026-09-24 |
 
 ## Review log
 
@@ -174,6 +174,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | 132 | W2 | PASS_WITH_NITS | 5 nits (rows 16-20). Parity re-derived: 3 built-ins x full/shop, glyph counts equal per case; `--builtin` exits in <0.1s with no stdin; R from print.R (solver-R mutant killed on 3 decks). Hand mutants 3/5 killed; the 2 survivors are nits 16-17. Attempt 1 was a CI bounce (no suite_health floor row). | Merged 866bb4e; nits filed as rows 16-20. |
 | 134 | W3 | FAIL | 2 majors, both reproduced in real Chrome over CDP: (1) the review-D1 double-tap guard re-enables in the same task, so two queued taps on Pygmy's FULL DECK PDF ran 2 builds; (2) the card keydown guard `closest("a, button")` misses the paper `<select>`, which is now on built-ins, so Space/Enter on it flips the Hijaz card. 3 nits: stale print-CTA and e2e comments; no test for the window.open success path (mutant survived); no test for the printPaper boot type guard (mutant survived). Six collateral mutant repairs were judged justified and not weakened. Hand mutants: 7/10 killed. | Bounced to the authoring lane with the majors and nits (attempt 1 of 2); a fresh reviewer re-reviews. |
 | 134 | W3 | PASS_WITH_NITS (fresh reviewer, at 70ea8ad) | Both majors re-verified with real CDP mouse and touch events: two taps together, 50 ms apart and with a 300 ms slowed build all build once; Enter/Space on the paper select no longer flip any built-in card, while on #card they still do; every focusable element inside #card enumerated (no anchors), so dropping `a` from the guard is safe. New tests red at ec39760, green at 70ea8ad. CI run 36036245284 all 5 green, 385/385 mutants killed. Hand mutants 4/5 killed; the survivor (boot guard without typeof) is row 25. Nits -> rows 23-26. | MERGED f78ed0b. AD-7 memory update done by the integrator. |
+| 135 | coord (integrator) | FAIL (at de1a631) | Major F1: the Cycle state 'Merged this batch' listed PR head SHAs c37a7f9/db59b2c/6d530ab as the merges of PRs 128-130 (real merge commits 0d727f5/2865044/4d9d372); a resumer reverting PR 130 by that SHA would revert only its last commit. Nits: Status 'Current branch' named deleted branches; row 26 cited :6227 (comment at :6229); non-goal cited :6119 without its base. All other SHAs, runs, queue numbering and citations verified. | Integrator fixed all four (it authored the doc); a fresh reviewer re-reviews. Stray local branch review-w0-129 (merged, in main) deleted. |
 | 133 | W3d | PASS_WITH_NITS (fresh reviewer, at 8f63ce6) | F1 and N1-N7 all fixed; 24 citations and counts re-derived, all match; code identical to f78ed0b; CI run 36041426757 green at the reviewed SHA. 3 nits -> queue rows 27-29. | Merged as 560bf9a. |
 | 133 | W3d | FAIL (at a4640eb) | Blocker F1: README.md:72-73 says the PDF is built by the same scale-engine code (HPE.pdfdeck) that drives the flip cards; false - pdfdeck is called only by downloadDeckPDF, the flip cards are drawn by pan(), the PDF by HPE.pdfcards, and README.md:110-111 itself says the renderers are independent. Failure scenario: a contributor changes pan() label sizes expecting the PDF to follow. Nits N1-N7: row 334 should be resolved (memory already superseded), status casing, row 344 names the wrong doc, row 352 VARIANTS wording, 'this worktree' in the intro, row 342 blank_cards deck, README:38-39 omits fromBuiltin. All 30+ citations re-derived correct; CI green; ownership clean. | Bounced to the authoring lane (attempt 1 of 2); a fresh reviewer re-reviews. |
 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
@@ -181,13 +182,13 @@ NEXT: plan section 4, "W3d - docs and queue".
 
 ## Cycle state
 
-Cycle: 1   Wave: 4 complete; all lanes merged - cycle close pending (coord PR, AD-2)   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131), 866bb4e (PR 132), f78ed0b (PR 134), 560bf9a (PR 133)
+Cycle: 1   Wave: 4 complete; all lanes merged - cycle close pending (coord PR, AD-2)   Merged this batch (merge commits): 0d727f5 (PR 128), 2865044 (PR 129), 4d9d372 (PR 130), 7d1edb9 (PR 131), 866bb4e (PR 132), f78ed0b (PR 134), 560bf9a (PR 133)
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
-| W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
-| W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
+| plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | 0d727f5 | - | no |
+| W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | 2865044 | - | no |
+| W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | 4d9d372 | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
 | W3 | - | removed | deleted | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284) | PASS_WITH_NITS (fresh reviewer, attempt 2) | 1 | f78ed0b | - | no |
@@ -231,7 +232,7 @@ cannot run in CI and are the owner's.
 | 23 | PR 134 review | `index.html:6165` (and 6167): the printPaper boot guard indexes the plain object `PRINT_PAPER`, so an inherited key passes. Stored `{"printPaper":"toString"}` boots printPaper as "toString", the select shows LETTER, and both PDF buttons throw `non-finite coordinate: NaN` until the user picks A4. Only reachable by hand-editing localStorage. Fix: `Object.hasOwn(PRINT_PAPER, ...)`. | OPEN |
 | 24 | PR 134 review | `index.html:6296`: the double-tap guard covers taps that arrive DURING the build (plan D1), but the build takes ~20 ms on desktop, so a human double-click 100-300 ms apart still builds and downloads twice. It would also stop working if `HPE.pdfcards.build` became async. Owner call whether to add a short cooldown. | OPEN |
 | 25 | PR 134 review | Hand mutant M5 SURVIVED: dropping the `typeof ... === "string"` check from the printPaper boot guard is not caught. Under it a stored `["a4"]` boots an array: the select shows LETTER and the filename says Letter while pdfcards draws A4. Add a test with a stored array value, and a mutant for it. | OPEN |
-| 26 | PR 134 review | Stale comment at `index.html:6227`: still says "The custom-deck print CTA" and "`openPrintSheet` below"; the CTA now serves every deck and `openPrintSheet` sits above it. | OPEN |
+| 26 | PR 134 review | Stale comment at `index.html:6229` (the "`openPrintSheet` below" sentence at `:6236`; first filed as :6227, corrected by the PR 135 review): still says "The custom-deck print CTA" and "`openPrintSheet` below"; the CTA now serves every deck and `openPrintSheet` sits above it. | OPEN |
 | 27 | PR 133 review | `docs/plans/scale-engine-coordination.md` row 352 overstates: "every other test method ... hard-codes its own \"full\"/\"shop\" literal" - `test_the_sweep_actually_ran` (`tests/test_pdf_parity.py:214`) and `test_a4_is_letter_shifted_on_the_page` (`:267`) pass no variant literal. The finding itself (the floor guards the constants, not the loops) holds. | OPEN |
 | 28 | PR 133 review | Row 333 of `scale-engine-coordination.md`: "unreferenced by any caller" is exact for `openPrintSheet` but loose for `PRINT_LAYOUTS`, which `printGridCSS` (`index.html:6042`) and `printSheetHTML` (`:6175`) read - both reachable only via `openPrintSheet`. | OPEN |
 | 29 | PR 133 review | `README.md:159` names `tools/decks.py` as the PDF rebuild step without naming `tools/hifi.py` there (it is at `README.md:42`; decks.py drives hifi.py). Not false; cosmetic. | OPEN |
