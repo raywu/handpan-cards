@@ -1,0 +1,19 @@
+# kills: test_credit_strings_are_pinned
+# suite: python3 -m unittest -k test_credit_strings_are_pinned tests.test_print
+# Damages the hand-written Hijaz credit string (Q2) - a one-word swap that
+# a byte-diff of the six committed PDFs would not necessarily catch if a
+# future refactor re-derived credits instead of carrying them verbatim.
+# Targets data/decks.json's print overlay (post-W1a), not tools/decks.py or
+# the index.html DECKS line.
+diff --git a/data/decks.json b/data/decks.json
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -362,7 +362,7 @@
+     ],
+     "print": {
+       "title": "C# Hijaz / Orion 9 - Chord Cards",
+-      "credit": "C# HIJAZ / ORION",
++      "credit": "C# HIJAZ / ORIGIN",
+       "R": 73.0,
+       "cy": 126.0,
+       "y_note": 30.0,

@@ -1,0 +1,19 @@
+# kills: test_pygmy_geometry_is_pinned
+# suite: python3 -m unittest -k test_pygmy_geometry_is_pinned tests.test_print
+# Moves Pygmy's print.R off its pinned value by one unit - the kind of
+# "just use the solver" drift the pin exists to catch (Pygmy's R is
+# deliberately smaller than Hijaz/Amara's 73.0 - CLAUDE.md's Design system
+# section - so any unreviewed move here is wrong). Targets data/decks.json's
+# print overlay (post-W1a), not tools/decks.py or the index.html DECKS line.
+diff --git a/data/decks.json b/data/decks.json
+--- a/data/decks.json
++++ b/data/decks.json
+@@ -1276,7 +1276,7 @@
+     "print": {
+       "title": "F3 Low Pygmy 18 - Chord Cards",
+       "credit": "F3 LOW PYGMY / F AEOLIAN",
+-      "R": 60.0,
++      "R": 61.0,
+       "cy": 121.0,
+       "y_note": 30.0,
+       "y_num": 14.0,

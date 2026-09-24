@@ -911,3 +911,39 @@ class TitleBlurbChordCountTest(unittest.TestCase):
             self.assertIn("%d CHORDS" % n, last_line,
                          "%s: blurb does not say %d CHORDS (%r)"
                          % (deck["name"], n, last_line))
+
+
+class PinnedPrintValuesTest(unittest.TestCase):
+    """Values a later 'just use the solver' refactor must not move (Q1, Q2,
+    Q4). Read off the CONSTRUCTED deck objects, never the module source - W1a
+    runs concurrently and is moving these literals out of tools/decks.py into
+    data/decks.json's overlay, and an object-shaped assertion holds under
+    either merge order."""
+
+    def test_hijaz_geometry_is_pinned(self):
+        self.assertEqual(
+            (decks.HIJAZ["R"], decks.HIJAZ["cy"],
+             decks.HIJAZ["y_note"], decks.HIJAZ["y_num"]),
+            (73.0, 126.0, 30.0, 14.0))
+
+    def test_amara_geometry_is_pinned(self):
+        self.assertEqual(
+            (decks.AMARA["R"], decks.AMARA["cy"],
+             decks.AMARA["y_note"], decks.AMARA["y_num"]),
+            (73.0, 126.0, 30.0, 14.0))
+
+    def test_pygmy_geometry_is_pinned(self):
+        # Pygmy's R is 60.0, not 73.0 like the other two decks - a "just use
+        # the solver" refactor would quietly move this by -15.7%.
+        self.assertEqual(
+            (decks.PYGMY["R"], decks.PYGMY["cy"],
+             decks.PYGMY["y_note"], decks.PYGMY["y_num"]),
+            (60.0, 121.0, 30.0, 14.0))
+
+    def test_credit_strings_are_pinned(self):
+        self.assertEqual(decks.HIJAZ["credit"], "C# HIJAZ / ORION")
+        self.assertEqual(decks.PYGMY["credit"], "F3 LOW PYGMY / F AEOLIAN")
+        self.assertEqual(decks.AMARA["credit"], "D AMARA / D MINOR")
+
+    def test_pygmy_blank_cards_is_pinned(self):
+        self.assertEqual(decks.PYGMY["blank_cards"], 7)
