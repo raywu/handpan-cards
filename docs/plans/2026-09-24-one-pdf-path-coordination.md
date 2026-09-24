@@ -185,3 +185,15 @@ Cycle: 1   Wave: 1   Merged this batch: -
 | # | From | Ask | Status |
 |---|---|---|---|
 | 1 | bootstrap | Owner device pass, plan section 6 - CI cannot check D-2's iOS branch | OPEN |
+
+## Lane reports
+
+**W0, returned `done` at `db59b2c`.** Both acceptance commands met. The lane
+reports it constructed the vacuous case itself: after `python3 tools/decks.py`
+rewrote the six PDFs uncommitted the suite stayed green, and clobbering the
+worktree copy of `CSharp_Hijaz_Orion_9_Cards_Letter.pdf` with garbage left
+`test_committed_pdfs_match_a_fresh_build` still passing (it reads
+`git show HEAD:<pdf>`); a scratch commit editing `data/decks.json` without
+rebuilding turned it red. Scratch commits discarded, `git status` clean of
+rebuilt PDFs before push. **These are the lane's own claims** - the reviewer is
+reproducing them independently rather than confirming them.
