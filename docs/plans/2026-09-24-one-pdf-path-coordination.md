@@ -153,9 +153,9 @@ NEXT: plan section 4, "W3d - docs and queue".
 | Lane | Current branch | State | Last verdict | Last update (UTC) |
 |---|---|---|---|---|
 | plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W0 | `claude/w0-pdf-build-oracle` | CI green, in review | - | 2026-09-24 |
-| W1a | - | blocked on W0 | - | 2026-09-24 |
-| W1b | - | blocked on W0 | - | 2026-09-24 |
+| W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
+| W1a | - | READY - spawn next | - | 2026-09-24 |
+| W1b | - | READY - spawn next | - | 2026-09-24 |
 | W2 | - | blocked on W1a | - | 2026-09-24 |
 | W3 | - | blocked on W2 | - | 2026-09-24 |
 | W3d | - | blocked on W2 | - | 2026-09-24 |
@@ -164,41 +164,44 @@ NEXT: plan section 4, "W3d - docs and queue".
 
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
+| 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
 ## Cycle state
 
-Cycle: 1   Wave: 1   Merged this batch: -
+Cycle: 1   Wave: 1 closed, wave 2 ready   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129)
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
-| W0 | ad4eeed | wt-w0 | w0-pdf-build-oracle | 129 | db59b2c | all 5 green at db59b2c | in review | 0 | no | reviewer | yes |
-| W1a | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
-| W1b | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
-| W2 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W1a | no |
-| W3 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
-| W3d | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
+| W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
+| W1a | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
+| W1b | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W0 | no |
+| W2 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W1a | no |
+| W3 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
+| W3d | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
+| 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. | - | - | 0 | no | W2 | no |
 
 ## Resume here (written for a fresh session)
 
-State as of 2026-09-24, after PR 128 merged:
+State as of 2026-09-24, at the wave-1 / wave-2 boundary. **Nothing is in
+flight**: no lane subagent, no reviewer, no background poll.
 
-- **PR 129 (W0) is the only thing in flight.** CI: all five checks green at
-  `db59b2c664f0476d20f94164bfd5dc528d443dfd`, head verified equal to the branch
-  tip. A reviewer subagent was spawned against that SHA and had **not returned a
-  verdict** when this note was written. If no verdict is recorded in the Review
-  log below, **spawn a fresh reviewer** with the same brief - a killed reviewer
-  is not a FAIL and consumes no lane attempt. Do not merge 129 on the lane's own
-  report.
-- Clean up any orphaned review worktree first:
-  `git worktree list` then `git worktree remove --force /private/tmp/claude-501/wt-review-129`
-  if it is present.
-- Live worktrees to keep: `/private/tmp/claude-501/wt-w0` (W0, PR 129) and
-  `/private/tmp/claude-501/wt-coord` (this doc, branch
+- PRs 128 (plan) and 129 (W0) are both MERGED. Their worktrees are removed and
+  their branches deleted locally and on the remote.
+- The only live worktree is `/private/tmp/claude-501/wt-coord` (this doc, branch
   `claude/one-pdf-path-coordination`, never merged mid-cycle - see AD-2).
-- **Next after 129 merges:** wave 2, `W1a || W1b` spawned together. Nothing else
-  is spawnable before then; the sequencing is a chain.
+- **Next action: spawn wave 2, `W1a || W1b`, together.** Both are unblocked by
+  129 merging and they share no file. Create their worktrees from a freshly
+  fetched `origin/main` (which now contains W0), per the Ownership table. Build
+  each spawn prompt from its Briefing above plus the plan's section 4.
+- **Note for the W3 spawn prompt when its turn comes:** use THIS doc's Ownership
+  table, not the plan's section 3 table - queue row 3 records that the plan's
+  W3 row is missing `tests/mutants/`, which W3 step 6 requires it to edit.
 - Every row above is a hint with a timestamp, not truth. Re-verify head SHAs and
   PR state with `gh` before acting on them.
 
@@ -208,6 +211,10 @@ State as of 2026-09-24, after PR 128 merged:
 |---|---|---|---|
 | 1 | bootstrap | Owner device pass, plan section 6 - CI cannot check D-2's iOS branch | OPEN |
 | 2 | PR 128 review | Plan §9.5 D1 quotes a seed missing its `/` inner separator and calls it "the Pygmy-shaped seed". Restate it with the separator, or say plainly it is a 52-chord Pygmy-SIZED seed and not Pygmy's geometry. Nothing D1 concludes changes. | OPEN |
+| 4 | PR 129 review | **F1 (major, non-blocking).** The oracle is half-HEAD: the reference PDFs come from `git show HEAD:<pdf>` but the BUILD side still reads `data/decks.json` off the working tree, so the test answers "do HEAD's PDFs match a build of the WORKTREE's data", not "is HEAD self-consistent". Reproduced: commit stale data, then an uncommitted `git checkout HEAD~1 -- data/decks.json index.html` makes a genuinely inconsistent HEAD go green. Also a deterministic FALSE RED in the correct pre-commit state (edit, sync, rebuild, nothing committed -> red), so the local loop is now edit -> rebuild -> red -> commit -> green. Fails safe in CI, whose tree is always clean. Fix direction: source BOTH sides from the same revision, e.g. `git show HEAD:data/decks.json` into the tmpdir and build against that. Needs its own lane. | OPEN |
+| 5 | PR 129 review | **F2.** No mutant distinguishes the old implementation from the new one, so this change ships unproven by the repo's own red-proof gate: `c_deck_data_drift.patch` mutates the WORKING TREE and is killed under both. A future revert to `os.path.join(paths.ROOT, rel)` would go green on all five CI jobs - verified. `tests/mutants/` is outside W0's ownership row, so this is the integrator's row, not a lane defect. | OPEN |
+| 6 | PR 129 review | **F6 (pre-existing, not introduced by W0).** The comparison is page_count + squeezed extracted TEXT, so anything that changes ink but not characters is ungated: geom fractions, `LABEL_RATIO_*`/`NUM_RATIO`, colours set in `tools/hifi.py`, fonts, frame and badge geometry. Changing `hifi.FAINT` and committing without rebuilding leaves the gate, the full Python suite and `tools/validate.py` all green. A colour changed in `data/decks.json` IS caught (validate check 1b); a `hifi.py`-side one is caught by nothing. The new docstring at `:256` restates the overclaim. Later lanes lean on this gate - do not read it as stronger than it is. | OPEN |
+| 7 | PR 129 review | Three minor nits in `tests/test_pdf_build.py`, all fail-red-never-green: fail-fast `assertEqual` on `proc.returncode` (`:270`) aborts the loop at the first missing PDF instead of accumulating all six into `stale`; the `:271` diagnostic says "not committed at HEAD" when the real cause is no git / not a checkout (a source tarball now fails); `:274`'s `'head-' + rel` assumes every `paths.PDFS` value is a bare basename (true for all six today). | OPEN |
 | 3 | PR 128 review | Plan §3 lane table: add `tests/mutants/p_paper_picker_forgets_its_state.patch`, `d_esc_attr_leaves_quote`, `p_print_cta_drops_the_platform` to W3's Owns cell, the reciprocal of C3. **Already correct in this doc's Ownership table**, which is what the W3 spawn prompt and reviewer brief are built from, so the risk is contained to the plan's own prose. | OPEN |
 
 ## Lane reports
