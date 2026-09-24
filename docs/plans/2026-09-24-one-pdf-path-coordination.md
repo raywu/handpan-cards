@@ -162,7 +162,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
-| W3 | claude/w3-one-print-ux | IN FLIGHT | - | 2026-09-24 |
+| W3 | claude/w3-one-print-ux | PR 134 in review at ec39760 | - | 2026-09-24 |
 | W3d | claude/w3d-docs | PR 133 green, review held (AD-8) | - | 2026-09-24 |
 
 ## Review log
@@ -186,7 +186,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
-| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | - | base 866bb4e | - | - | 0 | no | - | yes |
+| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | 134 | ec39760 | all 5 green at ec39760; head == remote tip; 1 commit on 866bb4e; 6 extra mutants touched (reviewer to judge) | reviewer spawned | 0 | no | - | yes |
 | W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8c9d4bb | all 5 green at 8c9d4bb; head == remote tip; files = README.md + scale-engine-coordination.md (rows 331-354) | review held (AD-8) | 0 | no | W3 merge | yes |
 
 ## Resume here (written for a fresh session)
@@ -223,6 +223,7 @@ Cycle close: merge this coord branch via PR (AD-2).
 | 18 | PR 132 review | `tests/test_pdf_parity.py` coverage floor checks only the constants, not that the sweep loops iterate CASES; VARIANTS is used by no loop. Reverting a loop to SEEDS stays green. | OPEN |
 | 19 | PR 132 review | fromBuiltin returns no `warnings` key (matches Python; pdfcards guards with `|| []`). A future unguarded read would throw for built-ins only. | OPEN |
 | 20 | PR 132 review | `tools/pdf_build.js --builtin` with no value falls through to stdin mode and waits on a TTY instead of printing usage. | OPEN |
+| 21 | W3 lane report | During local mutant verification W3 `cp -r`'d its linked worktree; the copy shared the real per-worktree git dir, so a scratch commit landed on `claude/w3-one-print-ux`. The lane undid it with `git reset --mixed 866bb4e` (not --hard; working tree kept). Pushed history is one clean commit (ec39760), and the copy is gone. Lesson for briefs: never copy a linked worktree to run tools. | OPEN |
 
 ## Lane reports
 
