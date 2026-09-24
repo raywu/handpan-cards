@@ -159,7 +159,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
-| W2 | claude/w2-pdfdeck-builtin | PR 132, CI bounce 1 (suite health) | bounced | 2026-09-24 |
+| W2 | claude/w2-pdfdeck-builtin | PR 132 in review at 44cdf07 | bounced (CI) | 2026-09-24 |
 | W3 | - | blocked on W2 | - | 2026-09-24 |
 | W3d | - | blocked on W2 | - | 2026-09-24 |
 
@@ -182,7 +182,7 @@ Cycle: 1   Wave: 3 (W2) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c
 | W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
-| W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | 132 | ac65d21 | suite health FAIL at ac65d21 (no FLOORS row for tests/pdf_builtin.test.js); bounced to lane with suite_health.py authorised (AD-6) | - | 1 | no | - | yes |
+| W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | 132 | 44cdf07 | all 5 green at 44cdf07 (run 35970894532); head == remote tip; MERGEABLE; files = owned + suite_health row (AD-6) + README count | reviewer spawned | 1 | no | - | yes |
 | W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
 | W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
 
