@@ -95,6 +95,7 @@ force-pushing main or any shared branch, anything destructive or irreversible.
 | AD-5 | W1b's review is held until its post-W1a re-target, not run now | yes | Reviewing 1a73f65 now and again after the re-target spends two reviewers and one of W1b's two attempts on a rebase re-review. One review of the final head costs one. W1b's lane context stays live for the re-brief. |
 | AD-6 | W2 may edit `tests/suite_health.py` to add one FLOORS row for its new suite | yes | The suite-health gate fails any new test file with no floor row, so the row is a mandated consequence of W2's owned `tests/pdf_builtin.test.js` (same class as row 10). Floor set to the collected count, not 0. The README suite-count bump in PR 132 is the same class. |
 | AD-7 | W3 may raise the e2e/app FLOORS rows in `tests/suite_health.py`; the memory file `print-button-opens-existing-pdf.md` is updated by the integrator, not W3d | yes | Plan §8 names the floor raise as a W3 obligation, so it is a mandated consequence (as AD-6). The memory file lives under ~/.claude, outside any worktree, so no lane PR can carry it; and it only becomes false once W3 merges. |
+| AD-8 | W3d's review and merge are held until W3 merges; then W3d rebases onto post-W3 main and re-derives its 5 `index.html:N` citations | yes | PR 133's README prose describes W3's end state, which would be false on main if W3d merged first, and its rows cite index.html:2183-2187, :2760, :5982, :6198, :6268 measured at 866bb4e - W3 edits index.html, so those move. One review of the final head costs one reviewer; reviewing now and again after the rebase costs two and an attempt. Same reasoning as AD-5. |
 
 ## Projected cost
 
@@ -162,7 +163,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
 | W3 | claude/w3-one-print-ux | IN FLIGHT | - | 2026-09-24 |
-| W3d | claude/w3d-docs | IN FLIGHT | - | 2026-09-24 |
+| W3d | claude/w3d-docs | PR 133 green, review held (AD-8) | - | 2026-09-24 |
 
 ## Review log
 
@@ -186,7 +187,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
 | W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | - | base 866bb4e | - | - | 0 | no | - | yes |
-| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | - | base 866bb4e | - | - | 0 | no | - | yes |
+| W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8c9d4bb | all 5 green at 8c9d4bb; head == remote tip; files = README.md + scale-engine-coordination.md (rows 331-354) | review held (AD-8) | 0 | no | W3 merge | yes |
 
 ## Resume here (written for a fresh session)
 
