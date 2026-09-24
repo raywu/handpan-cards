@@ -162,7 +162,7 @@ NEXT: plan section 4, "W3d - docs and queue".
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
 | W2 | claude/w2-pdfdeck-builtin | MERGED 866bb4e | PASS_WITH_NITS | 2026-09-24 |
-| W3 | claude/w3-one-print-ux | PR 134 bounced (review FAIL 1) | FAIL+1 | 2026-09-24 |
+| W3 | claude/w3-one-print-ux | PR 134 fix 70ea8ad green, fresh re-review (attempt 2 of 2) | FAIL+1 | 2026-09-24 |
 | W3d | claude/w3d-docs | PR 133 green, review held (AD-8) | - | 2026-09-24 |
 
 ## Review log
@@ -187,7 +187,7 @@ Cycle: 1   Wave: 4 (W3 + W3d) in flight   Merged this batch: c37a7f9 (PR 128), d
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
 | W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
 | W2 | - | removed | deleted | 132 | 44cdf07 | all 5 green | PASS_WITH_NITS | 1 | 866bb4e | - | no |
-| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | 134 | ec39760 | all 5 green at ec39760; head == remote tip; 1 commit on 866bb4e; 6 extra mutants touched (judged justified) | FAIL at ec39760; bounced to lane | 1 | no | - | yes |
+| W3 | (live, see transcript) | /private/tmp/claude-501/wt-w3 | claude/w3-one-print-ux | 134 | 70ea8ad | all 5 green at 70ea8ad (run 36036245284); head == remote tip; fast-forward on ec39760 | FAIL at ec39760; fresh reviewer spawned at 70ea8ad | 1 | no | - | yes |
 | W3d | (live, see transcript) | /private/tmp/claude-501/wt-w3d | claude/w3d-docs | 133 | 8c9d4bb | all 5 green at 8c9d4bb; head == remote tip; files = README.md + scale-engine-coordination.md (rows 331-354) | review held (AD-8) | 0 | no | W3 merge | yes |
 
 ## Resume here (written for a fresh session)
@@ -225,6 +225,7 @@ Cycle close: merge this coord branch via PR (AD-2).
 | 19 | PR 132 review | fromBuiltin returns no `warnings` key (matches Python; pdfcards guards with `|| []`). A future unguarded read would throw for built-ins only. | OPEN |
 | 20 | PR 132 review | `tools/pdf_build.js --builtin` with no value falls through to stdin mode and waits on a TTY instead of printing usage. | OPEN |
 | 21 | W3 lane report | During local mutant verification W3 `cp -r`'d its linked worktree; the copy shared the real per-worktree git dir, so a scratch commit landed on `claude/w3-one-print-ux`. The lane undid it with `git reset --mixed 866bb4e` (not --hard; working tree kept). Pushed history is one clean commit (ec39760), and the copy is gone. Lesson for briefs: never copy a linked worktree to run tools. | OPEN |
+| 22 | integrator | W3's fix lane committed 70ea8ad at 02:22 and then sat ~8 h without pushing, waiting on `until ! pgrep -f "tests/mutation_check.sh"`, which matched the polling shell's OWN command line and so never ended. The sweep itself had aborted at 02:26 on the known local macOS SigintDuringRunTest timeout and tested nothing. The integrator killed the two loops and re-briefed the lane to push; CI was the oracle. Lesson for briefs: never poll a process with `pgrep -f` on a pattern that appears in your own command; do not run a full local mutation sweep at all - CI's mutation gate is the evidence. | OPEN |
 
 ## Lane reports
 
