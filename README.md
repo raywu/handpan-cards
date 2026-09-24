@@ -36,7 +36,9 @@ print pipeline uses).
 phone can produce the print sheet itself instead of asking a print dialog for
 a paper size it will not honour).
 `src/engine/pdfdeck.js` (a port of `decks.from_generated`: the engine's deck
-plus the two dozen card-copy and geometry keys the print builders read).
+plus the two dozen card-copy and geometry keys the print builders read; it
+also adapts built-in decks via `fromBuiltin`, so both deck kinds reach the
+same print builders through this one module).
 `src/engine/pdfcards.js` (a port of `tools/hifi.py`: the cards, the pan
 diagram, the crop marks and the calibration bar, held glyph for glyph against
 the print pipeline by `tests/test_pdf_parity.py`).
@@ -67,6 +69,17 @@ decisions behind it.
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
+- **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
+  PRINT-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
+  not open a pre-built file; the PDF is built in the browser, on the spot, by
+  the scale engine's PDF modules (`HPE.pdfdeck` adapts the deck, `HPE.pdfcards`
+  draws it - a separate renderer from the one the flip cards use), so a
+  built-in deck's cards and a custom deck's cards go through one path with one
+  set of controls. The paper choice persists between visits, and both buttons
+  disable while a PDF is being built so a second tap can't start a duplicate
+  one. Off iOS the file downloads directly; on iOS it opens in a new tab where
+  the platform allows it, falling back to replacing the current page where it
+  does not.
 
 ## Tests
 
@@ -109,7 +122,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 383 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 385 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -140,9 +153,12 @@ Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
 ## Regenerating deck data
 
 `data/decks.json` is the one canonical copy of the deck data. The app's
-embedded `const DECKS` line and the print generator both derive from it.
-Edit that file, then run `python3 tools/sync_decks.py` (re-injects it into
-`index.html`) and `python3 tools/decks.py` (rebuilds the PDFs).
+embedded `const DECKS` line, the browser's own PDF builder, and the print
+generator all derive from it. Edit that file, then run
+`python3 tools/sync_decks.py` (re-injects it into `index.html`) and
+`python3 tools/decks.py` (rebuilds the six committed PDFs - the print-shop
+artifacts under `tests/test_pdf_build.py`'s staleness gate, not what the app's
+print buttons open).
 
 Layout notes (intentional, verified against the physical instruments -
 do not "correct"):
