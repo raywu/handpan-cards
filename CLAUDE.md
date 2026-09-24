@@ -36,8 +36,10 @@ holds).
 - `*.pdf` - print outputs ("Cards" = full deck with title/legend/blank
   templates; "PRINTER_ONLY" = chord cards only, for the print shop).
 - `tools/decks.py`, `tools/hifi.py` - print generator (see "Print pipeline").
-  `decks.py` reads `data/decks.json` and carries only the PRINT OVERLAY
-  (R, cy, title, credit, blurb, legend copy, blank-card padding) as literals.
+  `decks.py` reads `data/decks.json`, PRINT OVERLAY included: the overlay
+  (R, cy, title, credit, blurb, legend copy, blank-card padding, colours) now
+  lives under each built-in deck's `print` key in the canonical file itself,
+  not as literals in `decks.py`.
 - `tools/sync_decks.py` - re-injects `data/decks.json` into `index.html`.
   A SYNC STEP, NOT A BUILD STEP, same as `inline_engine.py`. `--check`
   reports drift without writing.
