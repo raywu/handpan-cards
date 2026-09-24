@@ -93,6 +93,7 @@ force-pushing main or any shared branch, anything destructive or irreversible.
 | AD-3 | Plan PR #128 is merged under the same two gates as a lane | yes | It is an ordinary docs PR; the reviewer and CI gates still apply. |
 | AD-4 | Merge order in wave 2 is W1a before W1b | yes | W1b's two mutants must patch the literals in `tools/decks.py` at base; W1a deletes those lines. Merging W1b first would leave W1a's CI red on stale mutants it does not own. After W1a merges, W1b is re-briefed to rebase and re-target its mutants at `data/decks.json`, then re-reviewed. |
 | AD-5 | W1b's review is held until its post-W1a re-target, not run now | yes | Reviewing 1a73f65 now and again after the re-target spends two reviewers and one of W1b's two attempts on a rebase re-review. One review of the final head costs one. W1b's lane context stays live for the re-brief. |
+| AD-6 | W2 may edit `tests/suite_health.py` to add one FLOORS row for its new suite | yes | The suite-health gate fails any new test file with no floor row, so the row is a mandated consequence of W2's owned `tests/pdf_builtin.test.js` (same class as row 10). Floor set to the collected count, not 0. The README suite-count bump in PR 132 is the same class. |
 
 ## Projected cost
 
@@ -157,8 +158,8 @@ NEXT: plan section 4, "W3d - docs and queue".
 | plan #128 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W0 | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
 | W1a | merged | MERGED | PASS_WITH_NITS | 2026-09-24 |
-| W1b | claude/w1b-print-pins | PR 131 in review | - | 2026-09-24 |
-| W2 | claude/w2-pdfdeck-builtin | IN FLIGHT | - | 2026-09-24 |
+| W1b | claude/w1b-print-pins | MERGED 7d1edb9 | PASS_WITH_NITS | 2026-09-24 |
+| W2 | claude/w2-pdfdeck-builtin | PR 132, CI bounce 1 (suite health) | bounced | 2026-09-24 |
 | W3 | - | blocked on W2 | - | 2026-09-24 |
 | W3d | - | blocked on W2 | - | 2026-09-24 |
 
@@ -167,38 +168,33 @@ NEXT: plan section 4, "W3d - docs and queue".
 | PR | Lane | Reviewer verdict | Findings | Outcome |
 |---|---|---|---|---|
 | 130 | W1a | PASS_WITH_NITS | 3 nits: (1) `print.blank_cards` is nested but app/pdfcards read top-level `blank_cards`, and index.html ~5994 / tests/app.test.js:3397 comments say decks.json carries no such key; (2) `_overlay_from_print` shallow-copies, so `legend_lines` aliases `_CANONICAL`; (3) 12 `tests/mutants/` files touched outside the row - judged a necessary consequence (regen reproduces b_* byte for byte; c_deck_data_drift keeps intent and is killed). All literals re-derived byte for byte; 5/5 reviewer mutants killed. | Merged 4d9d372; nits filed as rows 8-10; nit 1 briefed into W2 and carried to W3. |
+| 131 | W1b | PASS_WITH_NITS | 5 nits (rows 11-15). Reviewer re-derived every pin, confirmed each mutant is killed by its own `# suite:` header, and ran 10 hand mutations across all decks/field classes, each caught. CI run 35969288841 success at 47e99e9. | Merged 7d1edb9; nits filed as rows 11-15; nit 5 carried to W2 review and W3 parity. |
 | 129 | W0 | PASS_WITH_NITS | 1 major + 5 nits. Major F1: the oracle is half-HEAD - reference from `git show HEAD:`, build side still worktree-sourced. Plus no mutant guards the new path (F2), and a pre-existing text-only-comparison overclaim (F6). | Merged; all filed as queue rows 4-7. Ownership respected, no out-of-scope files, CI success at the reviewed SHA. |
 | 128 | plan doc | PASS_WITH_NITS | 2 nits: (1) §9.5 D1's quoted "Pygmy-shaped seed" omits the `/` inner separator, so it solves 11 rim / 0 inner (ext 1.4767, R 50.1, -16.5%) not Pygmy's 9 rim / 2 inner (-15.7%); the -15.7% used elsewhere is correct. (2) the §3 lane table's W3 Owns cell omits `tests/mutants/`, which W3 step 6 requires it to edit - C3 reached the W1b row only. | Merged; both filed as queue rows 2 and 3. Ownership respected, CI success at the reviewed SHA, no out-of-scope files. |
 
 ## Cycle state
 
-Cycle: 1   Wave: 2 (W1b re-target) + 3 (W2) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130)
+Cycle: 1   Wave: 3 (W2) in flight   Merged this batch: c37a7f9 (PR 128), db59b2c (PR 129), 6d530ab (PR 130), 7d1edb9 (PR 131)
 
 | Lane | Agent ID | Worktree | Branch | PR | Head SHA | Verified@ | Verdict | Attempts | Merged | Blocked on | Retained |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | plan | - | removed | deleted | 128 | c37a7f9 | all 5 green at c37a7f9 | PASS_WITH_NITS | 0 | yes | - | no |
 | W0 | - | removed | deleted | 129 | db59b2c | all 5 green at db59b2c | PASS_WITH_NITS | 0 | yes | - | no |
 | W1a | - | removed | deleted | 130 | 6d530ab | all 5 green at 6d530ab | PASS_WITH_NITS | 0 | yes (4d9d372) | - | no |
-| W1b | (live, see transcript) | /private/tmp/claude-501/wt-w1b | claude/w1b-print-pins | 131 | 47e99e9 | all 5 green at 47e99e9; head == remote tip; diff = 3 owned files | reviewer spawned | 0 | no | - | yes |
-| W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | - | base 4d9d372 | - | - | 0 | no | - | yes |
+| W1b | - | removed | deleted | 131 | 47e99e9 | all 5 green | PASS_WITH_NITS | 0 | 7d1edb9 | - | no |
+| W2 | (live, see transcript) | /private/tmp/claude-501/wt-w2 | claude/w2-pdfdeck-builtin | 132 | ac65d21 | suite health FAIL at ac65d21 (no FLOORS row for tests/pdf_builtin.test.js); bounced to lane with suite_health.py authorised (AD-6) | - | 1 | no | - | yes |
 | W3 | - | - | - | - | - | - | - | 0 | no | W2 | no |
 | W3d | - | - | - | - | - | - | - | 0 | no | W2 | no |
 
 ## Resume here (written for a fresh session)
 
-State as of 2026-09-23: wave 2 in flight. W1a and W1b lane subagents were
-spawned from `origin/main` 2865044 into `/private/tmp/claude-501/wt-w1a` and
-`wt-w1b`. If this session died, their agent IDs are gone: check each branch
-for a PR (`gh pr list --head <b>`), verify head == remote tip, and either
-review it or re-spawn the lane from its Briefing. Merge order is AD-4
-(W1a first, then re-brief W1b to rebase and re-target its mutants).
-W1a MERGED 4d9d372 (PASS_WITH_NITS). W2 spawned from 4d9d372. W1b re-briefed
-to rebase and re-target (its review still held, AD-5). Previously: W1a returned done: PR 130 at 6d530ab, CI green, reviewer spawned. Lane
-also regenerated 11 `b_*` data mutants (regen_data_mutants.py) and hand-rebuilt
-`c_deck_data_drift.patch` - outside its tests/ boundary; reviewer asked to judge.
-W1b returned done: PR 131 at 1a73f65, CI green, review held (AD-5).
-Lane claims: red demos for R, blank_cards and credit; both w1b mutants
-killed in an isolated local run; CI mutation gate green over all 385.
+State as of 2026-09-24: W0, W1a, W1b merged (last: 7d1edb9, PR 131). W2 is live
+in `/private/tmp/claude-501/wt-w2`, PR 132. Its first CI run at ac65d21 failed
+suite health (no FLOORS row for the new `tests/pdf_builtin.test.js`); the lane was
+bounced with `tests/suite_health.py` authorised (AD-6), attempt 1 of 2. If this
+session died: check PR 132's head == remote tip and all 5 checks green, then spawn
+a reviewer with the W2 re-derive items from plan §5 plus rows 8 and 15. After W2
+merges, spawn W3 and W3d together from fresh origin/main (read plan §4 first).
 
 ## Handoff queue (append-only)
 
@@ -214,6 +210,11 @@ killed in an isolated local run; CI mutation gate green over all 385.
 | 8 | PR 130 review | `print.blank_cards` is nested under `print`, but index.html ~6069 and src/engine/pdfcards.js ~557 read top-level `d.blank_cards`; stale comments at index.html ~5994-6001 and tests/app.test.js:3397 say decks.json has no such key. W2 briefed to lift it in fromBuiltin; W3 to fix the comments. | OPEN |
 | 9 | PR 130 review | `tools/decks.py` `_overlay_from_print` shallow-copies, so `decks.<DECK>['legend_lines']` aliases `_CANONICAL[...]['print']['legend_lines']`. No mutator today. | OPEN |
 | 10 | PR 130 review | Ownership rows for data lanes should name `tests/mutants/` (b_* via regen_data_mutants.py, plus c_deck_data_drift.patch by hand - the tool does not cover it) as a mandated consequence of any data/decks.json change. | OPEN |
+| 11 | PR 131 review | Mutant headers in `tests/mutants/w1b_*.patch` cite CLAUDE.md as the source of the pinned values; the real source is Q1 of `docs/plans/2026-09-22-seed-pdf-one-source.md`. | OPEN |
+| 12 | PR 131 review | Stale docstring at `tests/test_print.py:918` says "W1a runs concurrently" - no longer true after the rebase. | OPEN |
+| 13 | PR 131 review | `PinnedPrintValuesTest` overlaps `PrintDeckSnapshotTest`; the docstring should say why the pins are kept anyway (they name the owner-approved literals; the snapshot only freezes whatever is there). | OPEN |
+| 14 | PR 131 review | Only 2 of the 5 new pin tests have a mutant; add one for `blank_cards` (pygmy 7) at minimum. | OPEN |
+| 15 | PR 131 review | The Python pins cannot see the JS path: W2/W3 must take R from `print.R`, not the layout solver. Carried into the W2 reviewer brief and W3 parity. | OPEN |
 
 ## Lane reports
 
