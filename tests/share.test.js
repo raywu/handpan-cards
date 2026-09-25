@@ -383,6 +383,27 @@ test("the reference UTF-8/alphabet/checksum re-implementation matches the two Q1
   }
 });
 
+// [PR 144 review round 1, F2] The reference re-implementation above mirrors
+// share.js's own surrogate-pair-combining logic, so if encode's real
+// utf8Bytes ever regressed to CESU-8 (each surrogate half encoded as its own
+// 3-byte sequence, instead of the combined 4-byte form) the reference decoder
+// would make the same mistake decoding it back and the round trip would
+// still read as correct - a bug and its own detector cancel out. containedBytes
+// checks the RAW byte stream extracted from encode's real output against the
+// host realm's own `Buffer.from(name, "utf8")`, which has no share.js code in
+// it at all, so it cannot share share.js's bug.
+function containsSubsequence(haystack, needle) {
+  if (needle.length === 0) return true;
+  for (let i = 0; i + needle.length <= haystack.length; i += 1) {
+    let match = true;
+    for (let j = 0; j < needle.length; j += 1) {
+      if (haystack[i + j] !== needle[j]) { match = false; break; }
+    }
+    if (match) return true;
+  }
+  return false;
+}
+
 test("a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte pipeline (Q4)", () => {
   const base = parsed("(C3) G3");
   for (const [label, name] of [
@@ -399,16 +420,37 @@ test("a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte 
     assert.ok(text !== null, `${label}: reference decode failed`);
     const recoveredName = text.split("\n")[1].split("\t")[3];
     assert.equal(recoveredName, name, `${label}: name did not survive the byte pipeline`);
+
+    // Host-realm ground truth, independent of both share.js and the
+    // reference re-implementation above (Q4 / F2).
+    const expected = Array.from(Buffer.from(name, "utf8"));
+    assert.ok(containsSubsequence(bytes, expected),
+      `${label}: encode's real byte stream does not contain the host's own UTF-8 encoding of the name`);
   }
 });
 
 test("a truncated or malformed multi-byte sequence in the payload is refused, never repaired (Q4)", () => {
   const asciiBytes = s => s.split("").map(c => c.charCodeAt(0));
+  // [PR 144 review round 1, F1] Each case MUST end with the line-3 separator
+  // (0x0a) so the payload still has exactly LINES=3 lines once the malformed
+  // tail is appended - otherwise decode rejects it on the line count
+  // (share.js LINES check) before the bad bytes are ever looked at, and the
+  // case can never fail regardless of how utf8String handles bad bytes.
   const prefix = asciiBytes("(C3) G3\n0\t\t0\tA");
+  const NEWLINE = 0x0a;
   const cases = [
-    ["truncated 3-byte lead", [0xe2]],
-    ["bad continuation after a 2-byte lead", [0xc2, 0x41]],
-    ["truncated 4-byte lead", [0xf0, 0x9f]]
+    ["truncated 3-byte lead", [0xe2, NEWLINE]],
+    ["bad continuation after a 2-byte lead", [0xc2, 0x41, NEWLINE]],
+    ["truncated 4-byte lead", [0xf0, 0x9f, NEWLINE]],
+    // A skipped-check bug that just accepts the bad continuation byte and
+    // merges its low 6 bits anyway (rather than rejecting) can still land on
+    // a code point that happens to be printable ASCII, which would then
+    // sail through core.parseSeed's name validation too and make the whole
+    // link decode ok. 0xc0 is a (already-known-accepted, filed separately)
+    // overlong 2-byte lead whose 5 payload bits are all zero, so the merged
+    // code is just the continuation byte's low 6 bits, 0x3e here - '>',
+    // printable - which is exactly the failure mode a check-skip produces.
+    ["bad continuation whose bits alone spell a printable character", [0xc0, 0x3e, NEWLINE]]
   ];
   for (const [label, tail] of cases) {
     const bytes = prefix.concat(tail);
@@ -419,6 +461,22 @@ test("a truncated or malformed multi-byte sequence in the payload is refused, ne
     assert.equal(r.ok, false, `${label}: malformed UTF-8 was accepted`);
     assert.ok(CODES.includes(r.code), `${label}: invented code ${r.code}`);
   }
+});
+
+// [PR 144 review round 1, F1 part 2] Positive control: the identical prefix,
+// terminated the same way but with no bad bytes at all, must decode ok - this
+// is what proves the cases above are rejected FOR their malformed UTF-8, not
+// incidentally for some other reason (line count, options shape, etc) that a
+// broken tail would trip anyway.
+test("the malformed-UTF-8 test's shared prefix decodes ok with no bad bytes appended (Q4 control)", () => {
+  const asciiBytes = s => s.split("").map(c => c.charCodeAt(0));
+  const prefix = asciiBytes("(C3) G3\n0\t\t0\tA");
+  const bytes = prefix.concat([0x0a]);
+  const body = refToAlphabet(bytes);
+  const head = "2" + body;
+  const full = head + refChecksum(head);
+  const r = share.decode(full);
+  assert.equal(r.ok, true, `control payload was rejected: ${r.ok ? "" : r.code}`);
 });
 
 /* ---------------------------------------------------------------------- */
