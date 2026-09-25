@@ -45,6 +45,7 @@ class RecordingCanvas:
         self._dashed = False
         self._font = None
         self._size = 0.0
+        self._lw = None
 
     # --- state the renderer sets -----------------------------------------
     def setStrokeColor(self, c):
@@ -56,8 +57,11 @@ class RecordingCanvas:
     def setDash(self, *a):
         self._dashed = bool(a)
 
+    def setLineWidth(self, w):
+        self._lw = w
+
     def circle(self, x, y, r, stroke=1, fill=0):
-        self.circles.append({"x": x, "y": y, "r": r,
+        self.circles.append({"x": x, "y": y, "r": r, "lw": self._lw,
                              "stroke": self._stroke, "dashed": self._dashed})
 
     def roundRect(self, x, y, w, h, r, stroke=1, fill=0):
@@ -76,11 +80,11 @@ class RecordingCanvas:
 
     def drawString(self, x, y, text, *a, **k):
         self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
-                           "size": self._size, "anchor": "l"})
+                           "size": self._size, "anchor": "l", "fill": self._fill})
 
     def drawCentredString(self, x, y, text, *a, **k):
         self.texts.append({"x": x, "y": y, "text": text, "font": self._font,
-                           "size": self._size, "anchor": "c"})
+                           "size": self._size, "anchor": "c", "fill": self._fill})
 
     # --- everything else is ignored --------------------------------------
     def __getattr__(self, _name):
@@ -131,9 +135,20 @@ def render_print(deck):
                     state = "off-bottom"
                 else:
                     state = "off"
-                fields.append({"x": x, "y": y,
-                               "r": round(max(g["r"] for g in group) / R * 100, 3),
-                               "state": state})
+                # A lit field is three stacked circles - the outer ring, the
+                # coloured band, the black hairline - drawn largest to
+                # smallest (draw_ring). Sorting by radius recovers that
+                # order without depending on draw call sequence.
+                ordered = sorted(group, key=lambda g: -g["r"])
+                entry = {"x": x, "y": y,
+                         "r": round(ordered[0]["r"] / R * 100, 3),
+                         "state": state}
+                if state in ("root", "tone") and len(ordered) == 3:
+                    band, hairline = ordered[1], ordered[2]
+                    entry["bandR"] = round(band["r"] / R * 100, 3)
+                    entry["bandWidth"] = round(band["lw"] / R * 100, 3)
+                    entry["hairlineR"] = round(hairline["r"] / R * 100, 3)
+                fields.append(entry)
             fields.sort(key=lambda f: (f["x"], f["y"]))
 
             # The note line, number line and badge as the PDF actually draws
@@ -186,10 +201,26 @@ def render_print(deck):
                 t["text"]: round(t["size"] / R * 100, 3) for t in rec.texts
                 if t["font"] in ("Label", "LabelSB") and t["anchor"] == "c"
                 and t["text"] in numbering}
+            # Bottom-shell numbers alone use LabelSB/ORANGE (draw_pan); every
+            # other number is Label/INK. Keyed the same way as number_sizes.
+            number_fills = {
+                t["text"]: t["fill"] for t in rec.texts
+                if t["font"] in ("Label", "LabelSB") and t["anchor"] == "c"
+                and t["text"] in numbering}
+            # The badge is `tracked()`'d one glyph at a time (drawString,
+            # anchor "l") at y_note + 13; card_warnings share the font but sit
+            # at a different y and are centred, so the y+anchor filter keeps
+            # them out.
+            badge_glyphs = [t for t in rec.texts if t["font"] == "LabelSB"
+                            and t["anchor"] == "l"
+                            and abs(t["y"] - (deck["y_note"] + 13)) <= 3.5]
+            badge_fill = badge_glyphs[0]["fill"] if badge_glyphs else None
 
             out.append({"name": chord[0] + chord[1], "fields": fields,
                         "labelSizes": label_sizes,
                         "numberSizes": number_sizes,
+                        "numberFills": number_fills,
+                        "badgeFill": badge_fill,
                         "noteLine": [t.strip() for t in note_line.split("-") if t.strip()],
                         "numLine": [t.strip() for t in num_line.split("-") if t.strip()],
                         "badgeText": badge.strip()})
@@ -240,6 +271,16 @@ def render_app_border():
     bg = re.search(r"background:([^;]+);", rule).group(1).strip()
     pad = float(re.search(r"padding:([\d.]+)px", rule).group(1))
     return {"background": bg, "padding": pad}
+
+
+def render_app_badge_fill():
+    """The `.badge` colour rule, read straight out of index.html - like
+    `render_app_border`, the app's badge colour is a CSS rule, not something
+    an SVG dump would carry."""
+    with open(os.path.join(paths.ROOT, "index.html"), encoding="utf-8") as fh:
+        html = fh.read()
+    m = re.search(r"\.badge\{([^}]*)\}", html)
+    return re.search(r"[^-]color:([^;]+);", m.group(1)).group(1).strip()
 
 
 class BorderAgreementTest(unittest.TestCase):
@@ -452,6 +493,61 @@ class RenderAgreement(unittest.TestCase):
         for app_c, print_c in self.each_card():
             self.assertEqual(app_c["badgeText"], print_c["badgeText"],
                              "%s %s: badge text" % (app_c["deck"], app_c["name"]))
+
+    def test_band_and_hairline_agree(self):
+        """Q24: the RING drawn inside a lit field - the coloured band and its
+        hairline - is pinned only by the app's own digest. Position, outer
+        radius, highlight state and label sizes above all agree while the
+        band width or the hairline radius drifts silently in print alone;
+        this compares the ring geometry itself between the two renderers."""
+        for app_c, print_c in self.each_card():
+            where = "%s %s" % (app_c["deck"], app_c["name"])
+            for a, p in zip(app_c["fields"], print_c["fields"]):
+                if a["state"] not in ("root", "tone"):
+                    continue
+                self.assertIn("bandR", a, where + ": app lit field has no "
+                              "band/hairline geometry")
+                self.assertIn("bandR", p, where + ": print lit field has no "
+                              "band/hairline geometry")
+                for axis in ("bandR", "bandWidth", "hairlineR"):
+                    self.assertAlmostEqual(
+                        a[axis], p[axis], delta=TOL,
+                        msg="%s: %s %.3f (app) vs %.3f (print)"
+                            % (where, axis, a[axis], p[axis]))
+
+    def test_bottom_shell_accents_are_hifi_orange(self):
+        """Q24: the bottom-shell number colour and the BOTTOM NOTES badge are
+        both meant to draw in hifi.ORANGE, in every renderer. Nothing pinned
+        that before - `test_highlighting_agrees` sees root/tone/off states
+        only, and this suite's app CSS check (`BorderAgreementTest`) never
+        looked at `.badge`."""
+        orange_hex = _hex(hifi.ORANGE)
+        app_badge_css = render_app_badge_fill()
+        self.assertEqual(
+            app_badge_css, orange_hex,
+            "app .badge colour is %s, not hifi.ORANGE %s"
+            % (app_badge_css, orange_hex))
+        for app_c, print_c in self.each_card():
+            where = "%s %s" % (app_c["deck"], app_c["name"])
+            deck = DECK_BY_ID[app_c["deck"]]
+            bottom_labels = {v[5] for k, v in deck["spec"].items()
+                             if k != "_geom" and v[3] == "bottom"}
+            for lab in bottom_labels:
+                if lab in app_c["numberFills"]:
+                    self.assertEqual(
+                        app_c["numberFills"][lab], orange_hex,
+                        "%s: app bottom number %s fill %s != hifi.ORANGE"
+                        % (where, lab, app_c["numberFills"][lab]))
+                if lab in print_c["numberFills"]:
+                    self.assertEqual(
+                        print_c["numberFills"][lab], orange_hex,
+                        "%s: print bottom number %s fill %s != hifi.ORANGE"
+                        % (where, lab, print_c["numberFills"][lab]))
+            if print_c["badgeText"]:
+                self.assertEqual(
+                    print_c["badgeFill"], orange_hex,
+                    "%s: print badge fill %s != hifi.ORANGE"
+                    % (where, print_c["badgeFill"]))
 
 
 def read_print_geom_source():
