@@ -353,6 +353,38 @@ test("a throwing localStorage breaks neither boot nor navigation", () => {
   assert.ok(app.els.back.innerHTML.length);
 });
 
+// Q19: writeScales() (index.html ~5638) is the only catch between
+// rememberScale/replaceScale/forgetScale and a throwing setItem. Dropping it
+// leaves an uncaught exception mid-handler on generate, share and delete
+// alike - the sheet stays open (or the deck registry write mid-flight is
+// abandoned), the new deck is never selected, and Generate never gets its
+// disabled flag cleared again this session.
+test("writeScales swallows a storage error so generate, share and delete all stay usable", () => {
+  const app = boot({ throwOnStorage: true });
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.sheetOpen(), false,
+    "generate did not complete under a storage error");
+  const id = app.deckId();
+  assert.ok(app.registry()[id], "the generated deck was not selected");
+  assert.strictEqual(app.els["scale-generate"].disabled, false,
+    "Generate stayed disabled after a storage error");
+
+  const url = link(app, id);
+  assert.strictEqual(url.ok, true, url.reason);
+  const shared = openShare(app, payload(url.value));
+  assert.strictEqual(shared.ok, true, shared.reason);
+
+  app.clickChip(app.registry()[id].name);
+  app.els["scale-delete"].click();   // arms
+  app.els["scale-delete"].click();   // confirms
+  assert.strictEqual(app.sheetOpen(), false,
+    "delete did not complete under a storage error");
+  assert.match(app.faces(), /<svg /, "the app stopped rendering after a storage error");
+});
+
 test("an unknown stored deck id falls back to the first deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "nope", mode: "A" }) } });
   const first = decks(app)[0];
@@ -499,6 +531,24 @@ test("generation runs once at submit, never inside deck() or render()", () => {
   assert.strictEqual(identity, true, "render() or step() replaced the registry object");
 });
 
+// Q17: CLAUDE.md "Known pitfalls" says render()'s empty-order guard
+// (index.html ~6378-6379) must stay, because the boot order must not render
+// before the card-order array exists. Driven directly through the sandbox,
+// with an empty `order` never reached through GENERATE or a stored scale
+// (once Q23's zero-chord refusal lands, no zero-chord deck can reach render()
+// that way, and this mutant would otherwise pass even with the guard gone).
+test("render() with an emptied order does not throw and leaves the last card on screen", () => {
+  const app = boot();
+  const before = app.els.count.textContent;
+  const beforeFaces = app.faces();
+  assert.doesNotThrow(() => app.run("order = []; render();"),
+    "render() threw with an empty order");
+  assert.strictEqual(app.els.count.textContent, before,
+    "render() with an empty order overwrote the counter");
+  assert.strictEqual(app.faces(), beforeFaces,
+    "render() with an empty order overwrote the last good card");
+});
+
 test("an unknown deck id still falls back to a built-in deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
   assert.strictEqual(app.deckId(), decks(app)[0].id);
@@ -517,6 +567,44 @@ test("a rejected scale leaves the selected deck and the registry alone", () => {
   assert.strictEqual(res.value, undefined, "an err result must carry no value");
   assert.strictEqual(app.deckId(), before);
   assert.deepStrictEqual(app.registry(), {});
+});
+
+// Q23 / D7: a pan whose only fifth involves the ding builds `ok` with
+// `chords: []` (the ding never voices) - select.build's own NO_FIFTH guard
+// does not see this because a fifth DOES exist, just not one that reaches a
+// voicing. generateDeck refuses this before registerDeck with a UI-only
+// reason (no engine code: the section 2 enum is closed and has no code for
+// "no chords"), and openShare surfaces the identical reason for a zero-chord
+// share link, since openShare's build path is generateDeck itself.
+test("GENERATE on a zero-chord pan refuses with a message, keeps the selection, saves nothing, and openShare shows the same reason", () => {
+  const app = boot();
+  const before = app.deckId();
+  const beforeRegistry = app.registry();
+  const ZERO_CHORD_SEED = "(F3) C4 Ab4 Bb4";
+
+  const res = app.generate(ZERO_CHORD_SEED);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.code, undefined,
+    "a UI-only refusal carries no engine code");
+  assert.strictEqual(typeof res.reason, "string");
+  assert.ok(res.reason.length > 0);
+  assert.strictEqual(res.value, undefined, "an err result must carry no value");
+  assert.strictEqual(app.deckId(), before, "the zero-chord refusal moved the selection");
+  assert.deepStrictEqual(app.registry(), beforeRegistry,
+    "the zero-chord refusal saved something to the registry");
+
+  // The same seed reaches openShare as an encoded link, since nothing was
+  // ever registered to hang a shareLink() off of.
+  const seed = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(ZERO_CHORD_SEED)}, {})`));
+  assert.strictEqual(seed.ok, true, "the zero-chord seed itself must parse");
+  const encoded = plain(app.get(
+    `HPE.share.encode(${JSON.stringify({ fields: seed.value.fields, options: seed.value.options })})`));
+  assert.strictEqual(encoded.ok, true, "the zero-chord seed itself must encode");
+
+  const shared = openShare(app, encoded.value);
+  assert.strictEqual(shared.ok, false);
+  assert.strictEqual(shared.reason, res.reason,
+    "openShare composed a different sentence than GENERATE did for the same zero-chord pan");
 });
 
 test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", () => {
@@ -1385,6 +1473,32 @@ test("renaming keeps the id, relabels the chip and survives a reload", () => {
     "the new name was not stored with the seed");
 });
 
+// Q29: core.js's NAME_RE is ASCII-only (`/^[\x20-\x7E]*$/`), so a name typed
+// with iOS Smart Punctuation - which turns a plain ' into a curly U+2019 -
+// would otherwise be refused by the engine on submit. sheetOptions()
+// normalises curly quotes back to ASCII before the name ever reaches
+// generateDeck, so a name containing U+2019 must save exactly as if it had
+// been typed with a straight apostrophe.
+test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.els["scale-name"].value = "RAY’S PAN";
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.deckId(), d.id, "the curly-quote rename moved the id");
+  const row = chipRow(app);
+  assert.ok(row.some((c) => c.label === "RAY'S PAN" && c.on),
+    `the chip row still reads ${JSON.stringify(row.map((c) => c.label))}`);
+
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.strictEqual(again.registry()[d.id].name, "RAY'S PAN",
+    "the curly-quote name was not stored, or was stored un-normalised");
+});
+
 test("deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone", () => {
   const app = boot();
   const first = decks(app)[0];
@@ -1992,6 +2106,50 @@ test("the layout controls are tab stops inside the sheet and never a second prim
     "the single primary was relabelled by the layout section");
   assert.strictEqual(app.els["scale-generate"].disabled, false,
     "the layout section disabled the sheet's only primary");
+});
+
+// Q15: Home/End on the pan (index.html ~7448-7463), the sheet's Shift+Tab
+// wrap (~7472-7490, the only prior Tab test at :1984 always sends
+// shiftKey:false) and Enter in the scale box (~7470) had no test.
+
+test("Home and End on the pan jump to the first and last slot, not to each other's opposite", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const notes = Object.keys(mockPlaces(app));
+  assert.ok(notes.length >= 3, "need at least 3 notes to tell Home/End from a swap");
+  panTap(app, notes[1]);
+  assert.strictEqual(mockSelected(app), notes[1]);
+
+  assert.strictEqual(panKey(app, "Home"), true, "Home was not handled by the pan");
+  assert.strictEqual(mockSelected(app), notes[0], "Home did not select the first slot");
+
+  assert.strictEqual(panKey(app, "End"), true, "End was not handled by the pan");
+  assert.strictEqual(mockSelected(app), notes[notes.length - 1],
+    "End did not select the last slot");
+});
+
+test("Shift+Tab from the sheet's first stop wraps to the last, not off the front", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  app.els["scale-back"].focus();
+  app.els["scale-sheet"].dispatchEvent(
+    { type: "keydown", key: "Tab", shiftKey: true, preventDefault() {} });
+  assert.strictEqual(app.activeId(), "scale-delete",
+    "Shift+Tab from the first stop did not wrap to the last stop");
+});
+
+test("Enter in the scale box submits, the same as clicking Generate", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-box"].dispatchEvent({ type: "keydown", key: "Enter", preventDefault() {} });
+  assert.strictEqual(app.sheetOpen(), false, "Enter in the scale box did not submit");
+  assert.strictEqual(Object.keys(app.registry()).length, 1,
+    "Enter in the scale box did not generate a deck");
 });
 
 test("the LAYOUT group explains itself on the page, not only in a comment", () => {
@@ -2789,9 +2947,11 @@ test("applyKbOffset is a no-op in an environment with no visualViewport", () => 
 /**
  * Stage 1 of the scale-page plan. pan() gains a third argument so the scale
  * page can put selection ON the pan; the CARD path must not notice. The
- * byte-identity criterion is not an aspiration - tests/test_render_agreement.py
- * pins this renderer's output against tools/hifi.py per field, so any drift in
- * the two-argument form breaks print parity too.
+ * byte-identity criterion is not an aspiration -
+ * tests/test_render_agreement.py::test_band_and_hairline_agree (Q24) pins
+ * this renderer's own ring geometry - the coloured band's width and radius,
+ * and the inner hairline's radius - against tools/hifi.py per lit field, so
+ * any drift in the two-argument form breaks print parity too.
  */
 test("pan()'s two-argument output is unchanged by the interactive layer", () => {
   const app = boot();
@@ -3275,24 +3435,73 @@ test("the page routes do not shadow a share URL", () => {
  * #scale-degrees is a <select> rather than a text input, but iOS auto-zooms a
  * focused select on the same rule, and it declares its size through the `font`
  * shorthand - hence the two patterns. Asserted against the CSS text because
- * the sandbox stubs the DOM and has no layout engine. */
-test("the sheet's text inputs stay at 16px so iOS does not auto-zoom them", () => {
+ * the sandbox stubs the DOM and has no layout engine.
+ *
+ * Q16: this used to take only the FIRST rule with a font size and only a
+ * STANDALONE `#sel{...}` rule at that, so an override buried in a
+ * comma-separated selector list inside a @media block (e.g. the short-viewport
+ * block at :581, which already lists all three selectors together for their
+ * min-height) was invisible to it twice over. Every rule whose selector LIST
+ * includes the target, everywhere in the file, is checked here instead, and
+ * every font size any of them sets must clear 16px. */
+test("the sheet's text inputs stay at 16px in every rule that sets their size, media blocks included", () => {
   const css = require("node:fs").readFileSync(
     require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ selectors: m[1].split(",").map((s) => s.trim()), body: m[2] }));
+  const sizeOf = (body) => {
+    const m = /font-size:\s*([\d.]+)px/.exec(body) || /\bfont:[^;]*?\b([\d.]+)px\b/.exec(body);
+    return m ? Number(m[1]) : null;
+  };
   for (const sel of ["#scale-box", "#scale-name", "#scale-degrees"]) {
-    /* Every standalone rule for the selector, not the first: each of these
-     * three is also named in the short-viewport media block at :528, which
-     * sets geometry and no font, and matching that one would report a missing
-     * size that is actually declared further down. */
-    const rules = [...css.matchAll(
-      new RegExp(`\\${sel}\\{([^}]*)\\}`, "g"))].map(r => r[1]);
-    assert.ok(rules.length, `no standalone CSS rule for ${sel}`);
-    const sizeOf = body => /font-size:\s*([\d.]+)px/.exec(body)
-      || /\bfont:[^;]*?\b([\d.]+)px\b/.exec(body);
-    const m = rules.map(sizeOf).find(Boolean);
-    assert.ok(m, `${sel} has no explicit font size; iOS will auto-zoom it`);
-    assert.ok(Number(m[1]) >= 16,
-      `${sel} is ${m[1]}px; iOS Safari auto-zooms controls under 16px`);
+    const hits = rules.filter((r) => r.selectors.includes(sel));
+    assert.ok(hits.length, `no CSS rule for ${sel}`);
+    const sizes = hits.map((r) => sizeOf(r.body)).filter((s) => s !== null);
+    assert.ok(sizes.length, `${sel} has no explicit font size; iOS will auto-zoom it`);
+    for (const s of sizes) {
+      assert.ok(s >= 16,
+        `${sel} sets font-size ${s}px in some rule; iOS Safari auto-zooms controls under 16px`);
+    }
+  }
+});
+
+/* Q26: CLAUDE.md "Design system" names the three fonts of the visual system -
+ * Marcellus for the chord name, Bitter for the note/number lines, Nunito Sans
+ * everywhere else (labels/UI, and the page's own body font). Parsed straight
+ * out of the CSS text rather than restated as a DOM check, since the sandbox
+ * has no layout engine to read computed styles from. */
+test("the visual system's three fonts land on the elements CLAUDE.md names them for", () => {
+  const css = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ selectors: m[1].split(",").map((s) => s.trim()), body: m[2] }));
+  const familyOf = (body) => {
+    const m = /font-family:\s*([^;]+);/.exec(body + ";");
+    return m ? m[1].trim() : null;
+  };
+  const rulesFor = (sel) => rules.filter((r) => r.selectors.includes(sel));
+
+  for (const sel of [".bigname", "body"]) {
+    assert.ok(rulesFor(sel).length, `no CSS rule for ${sel}`);
+  }
+  const bignameFamilies = rulesFor(".bigname").map((r) => familyOf(r.body)).filter(Boolean);
+  assert.ok(bignameFamilies.length, ".bigname has no font-family");
+  for (const f of bignameFamilies) {
+    assert.match(f, /^Marcellus\b/, ".bigname (the chord name) must lead with Marcellus");
+  }
+
+  for (const sel of [".notesline", ".numline"]) {
+    const families = rulesFor(sel).map((r) => familyOf(r.body)).filter(Boolean);
+    assert.ok(families.length, `${sel} has no font-family`);
+    for (const f of families) {
+      assert.match(f, /^Bitter\b/, `${sel} (note/number line) must lead with Bitter`);
+    }
+  }
+
+  const bodyFamilies = rulesFor("body").map((r) => familyOf(r.body)).filter(Boolean);
+  assert.ok(bodyFamilies.length, "body has no font-family");
+  for (const f of bodyFamilies) {
+    assert.match(f, /^"Nunito Sans"/, "body must lead with Nunito Sans");
   }
 });
 

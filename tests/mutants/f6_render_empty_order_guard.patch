@@ -1,0 +1,17 @@
+# kills: render() with an emptied order does not throw and leaves the last card on screen
+# suite: node --test --test-name-pattern ^render\(\).with.an.emptied.order.does.not.throw.and.leaves.the.last.card.on.screen$ tests/app.test.js
+# Drops the empty-order guard CLAUDE.md's "Known pitfalls" says to keep.
+# With no guard, order[idx] is undefined on an empty order and d.chords[undefined]
+# is undefined too, so ch.fields inside linesHTML/pan throws a TypeError instead
+# of render() quietly doing nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6376,7 +6376,6 @@
+     <div class="numline">${nums}</div></div>`;
+ }
+ function render() {
+-  if (!order.length) return;
+   const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
+   document.documentElement.style.setProperty("--root", d.colors.root);
+   document.documentElement.style.setProperty("--tone", d.colors.tone);
