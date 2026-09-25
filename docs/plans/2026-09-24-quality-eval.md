@@ -149,10 +149,20 @@ ranked by severity, then cost.
 **Q3 - S2, C2. `pdfdeck.js` has 62% branch coverage and 2 mutants.**
 - Evidence: `src/engine/pdfdeck.js:48`, `52-57`, `121-125`, `139-140`,
   `161-162` and `178` are uncovered. Only 2 of 12 functions carry a mutant.
-- Failure it permits: the built-in adapter (`fromBuiltin`, reached from
-  `index.html:6281`) mis-maps a print overlay key, and no unit test sees it.
-- Fix: branch tests for the uncovered adapter paths, plus 1 mutant per
-  untested branch.
+- All of these lines are in the GENERATED-deck adapter, `fromGenerated`
+  (`:143`), and its helpers. `fromBuiltin` (`:219-286`) is fully covered by
+  `tests/pdf_builtin.test.js` (PR 139 review B1). The uncovered branches:
+  - `bankers` rounding: the tie branch and the round-down branch (48, 52-57);
+  - `legendLines` on a pan with a bottom shell (121-125);
+  - `legendDemo` with no chords (139-140);
+  - the missing-`geom.ext` throw (161-162);
+  - the bottom-shell `sub` (178).
+- Failure it permits: a generated deck with a bottom shell prints a wrong
+  legend or subtitle. Or a rounding tie shifts a printed value by one unit.
+  Or a missing `ext` fails silently instead of throwing. In each case no unit
+  test sees it.
+- Fix: branch tests in `tests/pdfcards.test.js`, beside the existing
+  `fromGenerated` harness (`:139`), plus 1 mutant per untested branch.
 - Verify: `node --test tests/pdf_builtin.test.js tests/pdfcards.test.js`
 
 **Q4 - S2, C1. `share.js` multi-byte UTF-8 paths are untested.**
@@ -187,7 +197,7 @@ exit-code-only kills.**
   sandbox)` with no `filename`.
 - Failure it permits: no escape path, but every app-coverage measurement
   needs the scratch V8 mapper.
-- Fix: pass `{filename: 'index.html', lineOffset}` per block. Test-only
+- Fix: pass `{filename: <absolute path of index.html>, lineOffset}` (as `tools/engine_loader.js:61` does) per block. Test-only
   change.
 - Verify: `node --test --experimental-test-coverage --test-coverage-include=index.html tests/app.test.js`
   reports index.html.
@@ -195,7 +205,7 @@ exit-code-only kills.**
 **Q7 - S3, C1-C2. 60 Python test methods assert inside a loop without
 `subTest`.**
 - Evidence: e.g. `tests/test_deck_data.py:212`, `233`, `248`, `286`, `405`
-  and `627`; `tests/test_fixture_integrity.py:91`;
+  and `405`; `tests/test_fixture_integrity.py:91`;
   `tests/test_font_subset.py:47`.
 - Failure it permits: the first failing card hides the rest, which slows
   diagnosis. No escape.
@@ -204,16 +214,22 @@ exit-code-only kills.**
 - Verify: `python3 -m unittest tests.test_deck_data tests.test_fixture_integrity tests.test_font_subset`
   and CI's `suite health` job (not local, review R2)
 
-**Q8 - S3, C1. 8 fixed sleeps in e2e, plus `settle()` used 29 times.**
-- Evidence: fixed sleeps at `tests/e2e.test.js:126`, `161`, `760`, `5699`,
-  `5800`, `5849`, `5913` and `6002`. `settle()` (`tests/helpers/cdp.js:161`)
-  is a fixed 500ms timer, against 56 uses of `waitFor`.
+**Q8 - S3, C1. `settle()` is a fixed timer used 29 times in e2e.**
+- Evidence: `settle()` (`tests/helpers/cdp.js:161`) is a fixed 500ms timer,
+  against 56 uses of `waitFor`. The "8 fixed sleeps" once listed here are
+  not bare sleeps (PR 139 review nit):
+  - `tests/e2e.test.js:126` and `5800` are condition-polling loops;
+  - `161` and `5849` are timeout guards;
+  - `5913` and `6002` are SIGKILL watchdogs;
+  - `760` is a comment;
+  - `5699` is a string inside a child script.
+
+  Leave them alone.
 - Failure it permits: a timing flake class (scale-engine rows 250, 255 and
   271), and wall-clock pressure toward the hang rows (162, 166, 167, 175 and
   196).
-- Fix: replace each sleep whose post-condition is observable with `waitFor`.
-  Keep the harness self-test sleeps at `:5699-6002` if they test timing
-  itself.
+- Fix: replace each `settle()` call whose post-condition is observable
+  with `waitFor`.
 - Verify: each touched test by `--test-name-pattern`, then CI.
 
 **Q9 - S3, C1. An unexplained CI failure in data integrity.**
@@ -309,12 +325,12 @@ Every E lane:
 
 | Lane | Owns | Never touches | Seeds | Acceptance | Verify |
 |---|---|---|---|---|---|
-| F1 engine mutants and tests | `tests/pdf.test.js`, `tests/share.test.js`, `tests/pdf_builtin.test.js`, new `tests/mutants/f1_*.patch`, the F1 rows of `tests/suite_health.py` FLOORS | `src/engine/*` (test-only unless a real bug is found; a bug gets its own row and an owner ask), `index.html` | Q2, Q3, Q4 | Every new mutant is killed at CI's head SHA, and its header selects exactly 1 test. `suite_health` floors are raised to the new counts. Each Q3 branch test names the mis-mapping it catches (no coverage-% gate, N6; review R7) | `node --test tests/pdf.test.js tests/share.test.js tests/pdf_builtin.test.js`; `suite_health` is read from CI (locally it runs the full e2e file when a browser is found, `tests/suite_health.py:409`; N9, review R2). For each new mutant: `git apply tests/mutants/<m>.patch && <header cmd>; git apply -R ...` |
+| F1 engine mutants and tests | `tests/pdf.test.js`, `tests/share.test.js`, `tests/pdf_builtin.test.js`, `tests/pdfcards.test.js` (Q3's `fromGenerated` tests), new `tests/mutants/f1_*.patch`, the F1 rows of `tests/suite_health.py` FLOORS | `src/engine/*` (test-only unless a real bug is found; a bug gets its own row and an owner ask), `index.html` | Q2, Q3, Q4 | Every new mutant is killed at CI's head SHA, and its header selects exactly 1 test. `suite_health` floors are raised to the new counts. Each Q3 branch test names the mis-mapping it catches (no coverage-% gate, N6; review R7) | `node --test tests/pdf.test.js tests/share.test.js tests/pdf_builtin.test.js tests/pdfcards.test.js`; `suite_health` is read from CI (locally it runs the full e2e file when a browser is found, `tests/suite_health.py:409`; N9, review R2). For each new mutant: `git apply tests/mutants/<m>.patch && <header cmd>; git apply -R ...` |
 | F2 e2e share flow and waits | `tests/e2e.test.js`, `tests/helpers/cdp.js`, 1 new `tests/mutants/f2_share_boot_*.patch`, the e2e row of `tests/suite_health.py` FLOORS | `index.html`, the other test files | Q1, Q8 | The share-URL test passes at 380px. The boot-drop mutant is killed. Each converted sleep has an observable condition | `CHROME_BIN=... node --test --test-name-pattern='<each touched name>' tests/e2e.test.js`. The full suite runs in CI only (N9) |
 | F3 harness diagnosability | `tests/helpers/sandbox.js`, `.gitignore` (the `.quality-eval/` line) | the tests themselves | Q6 | `--test-coverage-include=index.html` reports app lines. All 185 app tests pass, unchanged | `node --test tests/app.test.js tests/preview.test.js tests/pdf_builtin.test.js` |
 | F4 Python test hygiene | `tests/test_pdf_build.py`, `tests/test_gen_deck.py`, `tests/test_deck_data.py`, `tests/test_fixture_integrity.py`, `tests/test_font_subset.py`, the headers of the 11 `c_gen_*`/`c_blurb_*` mutants | `tools/*`, `data/*`, the committed PDFs | Q7, Q10 | The bridge is gone. The 11 headers name `tests.test_gen_deck` and each selects at least 1 test. The loop-asserts use `subTest`. Test counts are unchanged | `python3 -m unittest discover -s tests -t .`, plus the per-header count from Q10. `suite_health` from CI (review R2) |
-| F5 mutant header narrowing | the headers of `p_print_*` (4), `f_pdfcards_track_once` and `h_pdfcards_label_ratio_flat` | patch bodies, the tests | Q5 | Each header selects exactly 1 test and the mutant is still killed | Per header, `node --test --test-reporter=tap <args> \| grep -c '^ok'` equals 1. CI mutation gate green |
-| F6 app code quality (gated on §7) | `index.html` app block (outside every generated region), its tests in `tests/app.test.js` | engine regions, the `const DECKS` line, CSS and markup | Q11, Q12, E5 rows | Only owner-approved items. `tools/validate.py` stays clean | `python3 tools/validate.py`, `python3 tools/inline_engine.py --check`, `python3 tools/sync_decks.py --check`, `node --test tests/app.test.js` |
+| F5 mutant header narrowing | the headers of `p_print_selector_case`, `p_print_fill_parent_dropped`, `p_print_media_anchor_vacuous`, `p_print_parent_height_literal`, `f_pdfcards_track_once` and `h_pdfcards_label_ratio_flat` | patch bodies, the tests | Q5 | Each header selects exactly 1 test and the mutant is still killed | Per header, `node --test --test-reporter=tap <args> \| grep -c '^ok'` equals 1. CI mutation gate green |
+| F6 app code quality (gated on §7) | `index.html` app block (outside every generated region), its tests in `tests/app.test.js`, the `tests/app.test.js` FLOORS row | engine regions, the `const DECKS` line, CSS and markup | Q11, Q12, E5 rows | Only owner-approved items. `tools/validate.py` stays clean | `python3 tools/validate.py`, `python3 tools/inline_engine.py --check`, `python3 tools/sync_decks.py --check`, `node --test tests/app.test.js` |
 
 Every F lane has these non-goals:
 
@@ -435,6 +451,7 @@ already found).
 | R5 | Q4's proposed hostile-input tests exist (`tests/share.test.js:201-255`); the uncovered lines are UTF-8 | Reframe Q4 as UTF-8 round-trip and invalid-byte tests, C1 | auto-decided (AFK) |
 | R6 | E3 counts a per-test missing mutant as a finding, beyond CONTRACT rule 3 and D2's default | Only a missing group-level mutant or a shown escape counts as a finding | auto-decided (AFK) |
 | R7 | F1's "85% branch" acceptance contradicts N6 | Replace with named-regression tests | auto-decided (AFK) |
+| R9 | PR 139 review B1: Q3 blamed `fromBuiltin`; the uncovered lines are `fromGenerated` | Rewrite Q3; F1 owns `tests/pdfcards.test.js`. Nits: Q8 restated around `settle()`, Q7 citation, Q6 absolute path, F5 names its 4 patches, F6 owns its FLOORS row | fresh reviewer, applied |
 | R8 | F1 `*_share_*` overlaps F2 `*_share_boot_*`; no lane owned FLOORS | `f1_*` / `f2_share_boot_*` prefixes; each lane owns its FLOORS rows | auto-decided (AFK) |
 
 **Approval readiness:** ready. D1-D5 stay owner decisions; each has a
@@ -473,7 +490,7 @@ then F1, F2, F4 and F5, then F6 (§5).
 
 | Review | Trigger | Runs | Status | Findings |
 |---|---|---|---|---|
-| Eng Review | /plan-eng-review | 1 | CLEAR (8 auto-decided under the AFK grant) | 8 found, 8 applied |
+| Eng Review | /plan-eng-review | 1 | CLEAR (8 auto-decided under the AFK grant; R9 from the PR reviewer) | 9 found, 9 applied |
 | Outside Voice | codex exec | 1 | issues_found, all accepted | 7 |
 
 NO UNRESOLVED DECISIONS
