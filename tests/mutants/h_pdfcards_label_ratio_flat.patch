@@ -1,5 +1,5 @@
 # kills: the label rule is r x ratio per zone, and the number takes no 1.05
-# suite: node --test tests/pdfcards.test.js
+# suite: node --test --test-name-pattern ^the.label.rule.is.r.x.ratio.per.zone,.and.the.number.takes.no.1.05$ tests/pdfcards.test.js
 #
 # every zone takes the rim ratio, dropping the ding and bottom-shell rows of
 # the diagram label rule. The pan still draws; the ding name is 13% larger

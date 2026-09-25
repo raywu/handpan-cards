@@ -17,12 +17,12 @@
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
-@@ -76,7 +76,7 @@ fi
- SUITE_LOG=$(mktemp -t mutation_suite_log.XXXXXX)
- trap 'rm -f "$SUITE_LOG"' EXIT
- run_suite() {   # $* = command string, deliberately word-split
+@@ -81,7 +81,7 @@ run_suite() {   # $* = command string, deliberately word-split
+   # drop or expand a header word containing '*', '?' or '[' that matches no
+   # file. Restored immediately after so nothing else in the script is affected.
+   set -f
 -  ${TMO[@]+"${TMO[@]}"} $* >"$SUITE_LOG" 2>&1
 +  ${TMO[@]+"${TMO[@]}"} $* >/dev/null    2>&1
- }
-
- # Both ends of a long stream: the first failure says what broke, the tail says
+   local rc=$?
+   set +f
+   return $rc

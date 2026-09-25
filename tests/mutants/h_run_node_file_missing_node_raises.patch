@@ -1,5 +1,5 @@
-# kills: RunNodeFileMissingNodeTest
-# suite: python3 -m unittest tests.test_suite_health.RunNodeFileMissingNodeTest
+# kills: test_a_missing_node_binary_does_not_crash_the_run
+# suite: python3 -m unittest tests.test_suite_health.RunNodeFileMissingNodeTest.test_a_missing_node_binary_does_not_crash_the_run
 # Removes run_node_file's FileNotFoundError guard. probe_browser reports an
 # absent `node` politely, but check_node runs every UNIT file regardless of
 # have_browser, so without this guard the polite report is immediately

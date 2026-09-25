@@ -1,5 +1,5 @@
 # kills: the print stylesheet gives the page box something to fill
-# suite: node --test tests/app.test.js
+# suite: node --test --test-name-pattern ^the.print.stylesheet.gives.the.page.box.something.to.fill$ tests/app.test.js
 # Launders a hard page-box literal through #printroot, the parent .printpage's
 # percentage resolves against. Placed AFTER the fill rule: identical
 # specificity, so the later rule wins and the 840pt genuinely applies (a

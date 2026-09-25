@@ -1,5 +1,5 @@
 # kills: tracking advances per character, not once for the whole run
-# suite: node --test tests/pdfcards.test.js
+# suite: node --test --test-name-pattern ^tracking.advances.per.character,.not.once.for.the.whole.run$ tests/pdfcards.test.js
 #
 # tracked() lays the run out in one drawString and pads the total instead of
 # advancing per character. The run occupies the same width, so every width

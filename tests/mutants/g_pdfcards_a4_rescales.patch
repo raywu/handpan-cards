@@ -1,5 +1,5 @@
 # kills: test_a4_is_letter_shifted_on_the_page
-# suite: python3 -m unittest tests.test_pdf_parity
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_a4_is_letter_shifted_on_the_page
 #
 # slots() scales the card grid to the paper instead of re-centring it. The
 # A4 sheet still looks like a sheet of cards; the cards are just no longer
