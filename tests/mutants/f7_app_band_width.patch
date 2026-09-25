@@ -1,0 +1,18 @@
+# kills: test_band_and_hairline_agree
+# suite: python3 -m unittest -k test_band_and_hairline_agree tests.test_render_agreement
+# The app's lit-field band stroke width (index.html's `pan()`, outside every
+# generated region) narrows from r*0.24 to r*0.20. tools/hifi.py keeps
+# drawing the band at r*0.24, so the app and print renderers disagree on the
+# ring geometry inside every lit field - exactly the Q24 gap this test closes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5826,7 +5826,7 @@ function pan(d, ch, opts) {
+     else
+       out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#000" stroke-width="1.1"/>`;
+     if (st === "root" || st === "tone") {
+-      out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.24}"/>`;
++      out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.20}"/>`;
+       out += `<circle cx="${x}" cy="${y}" r="${r*0.74}" fill="none" stroke="#000" stroke-width="0.9"/>`;
+     }
+     return out;

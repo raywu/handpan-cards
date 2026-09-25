@@ -37,7 +37,7 @@ FLOORS = {
     "tests/test_pdf_build.py": 11,
     "tests/test_gen_deck.py": 17,
     "tests/test_print.py": 40,
-    "tests/test_render_agreement.py": 32,
+    "tests/test_render_agreement.py": 34,
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 6,

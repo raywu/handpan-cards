@@ -39,8 +39,19 @@ for (const d of DECKS) {
       if (all.includes(`stroke="${d.colors.root}"`)) state = "root";
       else if (all.includes(`stroke="${d.colors.tone}"`)) state = "tone";
       else if (all.includes('stroke-dasharray')) state = "off-bottom";
-      // Outer circle radius identifies the field; band/hairline are smaller.
-      fields.push({ x, y, r: r3(Math.max(...group.map((g) => g.r))), state });
+      // A lit field is three stacked circles (outer, band, hairline),
+      // largest to smallest, per `field()` in index.html; an unlit field
+      // draws only the outer one.
+      const ordered = [...group].sort((a, b) => b.r - a.r);
+      const entry = { x, y, r: r3(ordered[0].r), state };
+      if ((state === "root" || state === "tone") && ordered.length === 3) {
+        const band = ordered[1], hairline = ordered[2];
+        const bandSW = band.attrs.match(/stroke-width="([\d.eE+-]+)"/);
+        entry.bandR = r3(band.r);
+        entry.bandWidth = r3(+bandSW[1]);
+        entry.hairlineR = r3(hairline.r);
+      }
+      fields.push(entry);
     }
     fields.sort((a, b) => a.x - b.x || a.y - b.y);
 
@@ -59,12 +70,20 @@ for (const d of DECKS) {
     }
 
     // The index numbers: the diagram's other <text> runs, the ones with no
-    // <tspan>, keyed by what each one says ("1".."9", "U1"..). They come out
-    // of the same rule and must agree per field too.
+    // <tspan>, keyed by what each one says ("1".."9", "U1"..). A name label's
+    // content is broken by its nested <tspan>, so this pattern - which
+    // requires plain text straight up to </text> - never matches one.
+    // Captures fill too: bottom-shell numbers draw in orange (Q24), every
+    // other number in the app's ink colour.
     const numberSizes = {};
-    for (const m of svg.matchAll(
-      /<text[^>]*font-size="([\d.eE+-]+)"[^>]*>([^<]*)<\/text>/g)) {
-      numberSizes[m[2]] = r3(+m[1]);
+    const numberFills = {};
+    for (const m of svg.matchAll(/<text([^>]*)>([^<]*)<\/text>/g)) {
+      const attrs = m[1], text = m[2];
+      const sizeM = attrs.match(/font-size="([\d.eE+-]+)"/);
+      if (!sizeM) continue;
+      numberSizes[text] = r3(+sizeM[1]);
+      const fillM = attrs.match(/fill="([^"]+)"/);
+      if (fillM) numberFills[text] = fillM[1];
     }
 
     // The note line, number line and badge as the app actually RENDERS them,
@@ -86,6 +105,7 @@ for (const d of DECKS) {
       badgeText: badgeMatch ? badgeMatch[1].trim() : "",
       labelSizes,
       numberSizes,
+      numberFills,
       fields,
     });
   }
