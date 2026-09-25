@@ -1,5 +1,5 @@
 # kills: with a real keyboard up, the seed box is not clipped by the sheet's own scroller
-# suite: node --test --test-name-pattern seed.box.is.not.clipped.by.the.sheet tests/e2e.test.js
+# suite: node --test --test-name-pattern ^with.a.real.keyboard.up,.the.seed.box.is.not.clipped.by.the.sheet's.own.scroller$ tests/e2e.test.js
 # The mirror/palette row goes back into the pinned footer, so .sheetbody shrinks
 # again to make room for it. Under a real iOS keyboard there is nothing left to
 # shrink: the Edit page gives a 48px seed field a 12px scrollport, which is the

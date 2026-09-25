@@ -1,5 +1,5 @@
 # kills: the print stylesheet gives the page box something to fill
-# suite: node --test tests/app.test.js
+# suite: node --test --test-name-pattern ^the.print.stylesheet.gives.the.page.box.something.to.fill$ tests/app.test.js
 # Drops `body.printing #printroot,` from the fill rule. .printpage's height:100%
 # then has no resolved parent height, collapses to the min-height floor, and the
 # sheet top-aligns flush with the paper edge - the 43b2851 regression.

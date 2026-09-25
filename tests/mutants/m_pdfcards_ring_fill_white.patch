@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - a field circle fills pure white
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # the field circle fills 0.98 grey instead of white. The trace's fill
 # channel is the only thing that sees it: no glyph moves and no stroke

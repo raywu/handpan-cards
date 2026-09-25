@@ -1,5 +1,5 @@
 # kills: the print stylesheet gives the page box something to fill
-# suite: node --test tests/app.test.js
+# suite: node --test --test-name-pattern ^the.print.stylesheet.gives.the.page.box.something.to.fill$ tests/app.test.js
 # HTML element selectors are case-insensitive, so an uppercased html/body rule
 # is live CSS. It carries the top of the same percentage chain, and a later
 # rule at equal specificity wins: 760pt under Chrome's 792pt box renders

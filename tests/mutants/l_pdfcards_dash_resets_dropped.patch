@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - the dash is reset before anything solid is drawn
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # both dash resets go: the one on entry to drawRing and the one after the
 # bottom-shell ring in drawPan. Either alone is survivable because the other

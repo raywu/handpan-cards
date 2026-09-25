@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - a fill-only path paints nonzero
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # mode() returns the nonzero "f" for a fill-only path where reportlab's
 # Canvas, defaulting to FILL_EVEN_ODD, emits "f*". Only the trace's even_odd

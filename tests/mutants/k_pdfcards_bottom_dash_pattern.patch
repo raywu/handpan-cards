@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - the bottom ring dashes 2.2 on 2.2 off
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # the bottom-shell ring dashes 2.4/2.4 instead of 2.2/2.2. Still dashed,
 # still the same circle, a different rhythm from the one hifi.py:309 draws.

@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - the bottom ring strokes hifi grey
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # the dashed bottom-shell ring strokes 0.88 grey instead of 0.90. Two
 # percent darker: invisible on screen, and no glyph moves, so the text-side

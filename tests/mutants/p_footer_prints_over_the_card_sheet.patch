@@ -1,5 +1,5 @@
 # kills: no selector in the hide list matches nothing
-# suite: python3 -m unittest -q tests.test_render_agreement.PrintStylesheetTest
+# suite: python3 -m unittest tests.test_render_agreement.PrintStylesheetTest.test_no_selector_in_the_hide_list_matches_nothing
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

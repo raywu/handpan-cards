@@ -1,5 +1,5 @@
 # kills: the print stylesheet gives the page box something to fill
-# suite: node --test tests/app.test.js
+# suite: node --test --test-name-pattern ^the.print.stylesheet.gives.the.page.box.something.to.fill$ tests/app.test.js
 # Vacuity mutant, strong form. printBlock() anchors on the FIRST textual
 # "@media print", so a comment mentioning it aims the brace matcher at an
 # unrelated block and the rule scan asserts nothing. This decoy also carries

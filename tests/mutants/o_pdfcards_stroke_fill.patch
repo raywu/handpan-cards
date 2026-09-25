@@ -1,5 +1,5 @@
 # kills: test_every_vector_matches_print - a stroked-and-filled path paints nonzero
-# suite: python3 -m unittest tests.test_pdf_parity -k test_every_vector_matches_print
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
 #
 # mode() returns the nonzero "B" for a stroked-and-filled path where
 # reportlab emits "B*". A separate mutant from n_pdfcards_fill_only because
