@@ -96,7 +96,8 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(counts, chord_counts())
         self.assertEqual(sum(counts.values()), 96)
         for d in doc["decks"]:
-            self.assertEqual(tuple(sorted(d)), tuple(sorted(DECK_KEYS)), d["id"])
+            with self.subTest(deck=d["id"]):
+                self.assertEqual(tuple(sorted(d)), tuple(sorted(DECK_KEYS)), d["id"])
 
 
 class TestFixtureMatchesApp(unittest.TestCase):

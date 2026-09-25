@@ -212,17 +212,18 @@ class LayoutTest(unittest.TestCase):
     def test_layouts_match_spec(self):
         seen = set()
         for deck in decks():
-            seen.add(deck["id"])
-            expect = LAYOUTS[deck["id"]]
-            got = {}
-            for val in deck["fields"].values():
-                name, octave, midi, zone, angle, label = val
-                self.assertNotIn(label, got, (deck["id"], "duplicate label"))
-                got[label] = (label, name, octave, midi, zone, angle)
-            self.assertEqual(sorted(got), sorted(row[0] for row in expect),
-                             deck["id"] + ": field labels")
-            for row in expect:
-                self.assertEqual(got[row[0]], row, (deck["id"], row[0]))
+            with self.subTest(deck=deck["id"]):
+                seen.add(deck["id"])
+                expect = LAYOUTS[deck["id"]]
+                got = {}
+                for val in deck["fields"].values():
+                    name, octave, midi, zone, angle, label = val
+                    self.assertNotIn(label, got, (deck["id"], "duplicate label"))
+                    got[label] = (label, name, octave, midi, zone, angle)
+                self.assertEqual(sorted(got), sorted(row[0] for row in expect),
+                                 deck["id"] + ": field labels")
+                for row in expect:
+                    self.assertEqual(got[row[0]], row, (deck["id"], row[0]))
         self.assertEqual(seen, set(LAYOUTS), "deck ids")
 
     def test_deck_inventory(self):
@@ -234,12 +235,13 @@ class LayoutTest(unittest.TestCase):
         for deck in decks():
             for fid, (name, octave, midi, zone, angle, label) in \
                     deck["fields"].items():
-                where = (deck["id"], fid, name, octave, midi)
-                self.assertIn(name, NAME_PC, where)
-                self.assertEqual(midi % 12, NAME_PC[name],
-                                 str(where) + ": pitch class")
-                self.assertEqual(midi // 12 - 1, octave,
-                                 str(where) + ": octave")
+                with self.subTest(deck=deck["id"], field=fid):
+                    where = (deck["id"], fid, name, octave, midi)
+                    self.assertIn(name, NAME_PC, where)
+                    self.assertEqual(midi % 12, NAME_PC[name],
+                                     str(where) + ": pitch class")
+                    self.assertEqual(midi // 12 - 1, octave,
+                                     str(where) + ": octave")
 
 
 class VoicingTest(unittest.TestCase):
@@ -249,38 +251,41 @@ class VoicingTest(unittest.TestCase):
         for deck in decks():
             self.assertEqual(field_of(deck, 0)[3], "ding", deck["id"])
             for ch in deck["chords"]:
-                self.assertNotIn(0, ch["fields"],
-                                 (deck["id"], ch["main"], ch["subtitle"]))
+                with self.subTest(deck=deck["id"], chord=ch["main"] + ch["sup"]):
+                    self.assertNotIn(0, ch["fields"],
+                                     (deck["id"], ch["main"], ch["subtitle"]))
 
     def test_no_doubled_pitch_classes(self):
         for deck in decks():
             for ch in deck["chords"]:
-                pcs = [pc(deck, f) for f in ch["fields"]]
-                self.assertEqual(len(set(pcs)), len(pcs),
-                                 (deck["id"], ch["main"], ch["fields"]))
+                with self.subTest(deck=deck["id"], chord=ch["main"] + ch["sup"]):
+                    pcs = [pc(deck, f) for f in ch["fields"]]
+                    self.assertEqual(len(set(pcs)), len(pcs),
+                                     (deck["id"], ch["main"], ch["fields"]))
 
     def test_power_chords_are_root_and_fifth(self):
         """Two notes, root plus a fifth - Amara G5 is a -5 inverted fifth."""
         found = 0
         for deck in decks():
             for ch in deck["chords"]:
-                two = len(ch["fields"]) == 2
-                named = ch["main"].endswith("5") and not ch["sup"]
-                self.assertEqual(two, named,
-                                 (deck["id"], ch["main"], ch["fields"],
-                                  "2-note voicings and *5 names must coincide"))
-                if not named:
-                    continue
-                found += 1
-                root = ch["roots"][0]
-                self.assertEqual(root, ch["fields"][0],
-                                 (deck["id"], ch["main"], "root first"))
-                other = [f for f in ch["fields"] if f != root]
-                self.assertEqual(len(other), 1, (deck["id"], ch["main"]))
-                interval = (field_of(deck, other[0])[2]
-                            - field_of(deck, root)[2]) % 12
-                self.assertEqual(interval, 7,
-                                 (deck["id"], ch["main"], "fifth above root"))
+                with self.subTest(deck=deck["id"], chord=ch["main"] + ch["sup"]):
+                    two = len(ch["fields"]) == 2
+                    named = ch["main"].endswith("5") and not ch["sup"]
+                    self.assertEqual(two, named,
+                                     (deck["id"], ch["main"], ch["fields"],
+                                      "2-note voicings and *5 names must coincide"))
+                    if not named:
+                        continue
+                    found += 1
+                    root = ch["roots"][0]
+                    self.assertEqual(root, ch["fields"][0],
+                                     (deck["id"], ch["main"], "root first"))
+                    other = [f for f in ch["fields"] if f != root]
+                    self.assertEqual(len(other), 1, (deck["id"], ch["main"]))
+                    interval = (field_of(deck, other[0])[2]
+                                - field_of(deck, root)[2]) % 12
+                    self.assertEqual(interval, 7,
+                                     (deck["id"], ch["main"], "fifth above root"))
         self.assertEqual(found, 19, "power chords across the three decks")
 
     def test_voicings_unique_within_deck(self):
@@ -289,20 +294,22 @@ class VoicingTest(unittest.TestCase):
         for deck in decks():
             seen = {}
             for ch in deck["chords"]:
-                key = tuple(ch["fields"])
-                self.assertNotIn(key, seen,
-                                 (deck["id"], ch["main"], ch["subtitle"],
-                                  "duplicates " + str(seen.get(key))))
-                seen[key] = ch["main"] + " " + ch["subtitle"]
+                with self.subTest(deck=deck["id"], chord=ch["main"] + ch["sup"]):
+                    key = tuple(ch["fields"])
+                    self.assertNotIn(key, seen,
+                                     (deck["id"], ch["main"], ch["subtitle"],
+                                      "duplicates " + str(seen.get(key))))
+                    seen[key] = ch["main"] + " " + ch["subtitle"]
             self.assertEqual(len(seen), len(deck["chords"]), deck["id"])
 
     def test_roots_appear_in_voicing(self):
         for deck in decks():
             for ch in deck["chords"]:
-                self.assertTrue(ch["roots"], (deck["id"], ch["main"]))
-                for r in ch["roots"]:
-                    self.assertIn(r, ch["fields"],
-                                  (deck["id"], ch["main"], "root", r))
+                with self.subTest(deck=deck["id"], chord=ch["main"] + ch["sup"]):
+                    self.assertTrue(ch["roots"], (deck["id"], ch["main"]))
+                    for r in ch["roots"]:
+                        self.assertIn(r, ch["fields"],
+                                      (deck["id"], ch["main"], "root", r))
 
 
     def test_forced_tones_cluster_below_root(self):
@@ -404,14 +411,15 @@ class DegreeTest(unittest.TestCase):
 
     def test_degrees_cover_chord_roots(self):
         for deck in decks():
-            expect = {NAME_PC[n]: lab
-                      for n, lab in DEGREES[deck["id"]].items()}
-            got = {int(k): v for k, v in deck["degrees"].items()}
-            self.assertEqual(got, expect, deck["id"] + ": scale degrees")
-            roots = {pc(deck, r) for ch in deck["chords"] for r in ch["roots"]}
-            self.assertEqual(roots, set(expect),
-                             deck["id"] + ": every chord root has a degree "
-                                          "and every degree is used")
+            with self.subTest(deck=deck["id"]):
+                expect = {NAME_PC[n]: lab
+                          for n, lab in DEGREES[deck["id"]].items()}
+                got = {int(k): v for k, v in deck["degrees"].items()}
+                self.assertEqual(got, expect, deck["id"] + ": scale degrees")
+                roots = {pc(deck, r) for ch in deck["chords"] for r in ch["roots"]}
+                self.assertEqual(roots, set(expect),
+                                 deck["id"] + ": every chord root has a degree "
+                                              "and every degree is used")
 
 
 class PygmyBottomShellTest(unittest.TestCase):
@@ -423,25 +431,28 @@ class PygmyBottomShellTest(unittest.TestCase):
     def test_bb_and_db_only_on_the_bottom_shell(self):
         for fid, val in self.deck["fields"].items():
             if val[0] in ("Bb", "Db"):
-                self.assertEqual(val[3], "bottom", (fid, val))
+                with self.subTest(field=fid):
+                    self.assertEqual(val[3], "bottom", (fid, val))
         for other in (d for d in decks() if d["id"] != "pygmy"):
-            zones = {v[3] for v in other["fields"].values()}
-            self.assertNotIn("bottom", zones,
-                             other["id"] + ": single-shell instrument")
+            with self.subTest(deck=other["id"]):
+                zones = {v[3] for v in other["fields"].values()}
+                self.assertNotIn("bottom", zones,
+                                 other["id"] + ": single-shell instrument")
 
     def test_badge_counts_bottom_notes_in_the_voicing(self):
         deck = self.deck
         self.assertEqual(len(deck["chords"]), len(PYGMY_BADGE))
         for ch, expect in zip(deck["chords"], PYGMY_BADGE):
-            got = [f for f in ch["fields"]
-                   if field_of(deck, f)[3] == "bottom"]
-            self.assertEqual(len(got), expect,
-                             (ch["main"], ch["subtitle"], ch["fields"],
-                              "bottom notes"))
-            uses_bb_db = [f for f in ch["fields"]
-                          if field_of(deck, f)[0] in ("Bb", "Db")]
-            self.assertLessEqual(len(uses_bb_db), len(got),
-                                 (ch["main"], "Bb/Db imply bottom notes"))
+            with self.subTest(chord=ch["main"] + ch["sup"]):
+                got = [f for f in ch["fields"]
+                       if field_of(deck, f)[3] == "bottom"]
+                self.assertEqual(len(got), expect,
+                                 (ch["main"], ch["subtitle"], ch["fields"],
+                                  "bottom notes"))
+                uses_bb_db = [f for f in ch["fields"]
+                              if field_of(deck, f)[0] in ("Bb", "Db")]
+                self.assertLessEqual(len(uses_bb_db), len(got),
+                                     (ch["main"], "Bb/Db imply bottom notes"))
 
     def test_both_sevenths_ship_in_both_registers(self):
         """The four cards of SEVENTH_REGISTERS, by name and by field list.
@@ -492,11 +503,12 @@ class PygmyBottomShellTest(unittest.TestCase):
         self.assertEqual(set(dupes), allowed,
                          "unexpected subtitle collision(s)")
         for sub in dupes:
-            cards = [ch for ch in self.deck["chords"] if ch["subtitle"] == sub]
-            field_lists = {tuple(ch["fields"]) for ch in cards}
-            self.assertEqual(len(field_lists), len(cards),
-                             (sub, "duplicate subtitle must still be a "
-                                    "distinct voicing"))
+            with self.subTest(subtitle=sub):
+                cards = [ch for ch in self.deck["chords"] if ch["subtitle"] == sub]
+                field_lists = {tuple(ch["fields"]) for ch in cards}
+                self.assertEqual(len(field_lists), len(cards),
+                                 (sub, "duplicate subtitle must still be a "
+                                        "distinct voicing"))
 
     def test_pitch_class_set_is_complete_f_natural_minor(self):
         names = {v[0] for v in self.deck["fields"].values()}
