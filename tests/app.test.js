@@ -1919,6 +1919,34 @@ test("a correction is reachable with the keyboard alone: arrows select, MOVE swa
   assert.strictEqual(now[other], was[second], "MOVE did not displace the note it passed");
 });
 
+// Q15: the previewBox keydown handler (index.html near :7466) maps
+// ArrowRight/ArrowDown to +1 and ArrowLeft/ArrowUp to -1, but nothing
+// asserted ArrowUp/ArrowDown specifically - every other pan-keyboard test
+// here only ever presses ArrowRight/ArrowLeft, so swapping the Up/Down half
+// of that mapping (vertical arrows move backwards) passed every test.
+test("ArrowDown and ArrowUp move the pan selection the same way ArrowRight and ArrowLeft do", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openEdit(app, d);
+
+  const first = mockSelected(app);
+  assert.ok(first, "the pan opens with no note selected, so ArrowDown has no subject");
+  assert.strictEqual(panKey(app, "ArrowDown"), true,
+    "the arrow key was not handled by the pan");
+  const second = mockSelected(app);
+  assert.notStrictEqual(second, first, "ArrowDown did not move the selection");
+
+  panKey(app, "ArrowUp");
+  assert.strictEqual(mockSelected(app), first, "ArrowUp did not move the selection back to where ArrowDown started");
+
+  panKey(app, "ArrowRight");
+  assert.strictEqual(mockSelected(app), second,
+    "ArrowRight landed somewhere other than where ArrowDown just did");
+  panKey(app, "ArrowUp");
+  assert.strictEqual(mockSelected(app), first,
+    "ArrowUp did not undo the move the same way ArrowLeft does");
+});
+
 test("ROTATE turns the ring the selection is on, bottom shell included", () => {
   const app = boot();
   const d = makeCustom(app, BOTTOM_STRING);
@@ -3443,10 +3471,20 @@ test("the page routes do not shadow a share URL", () => {
  * block at :581, which already lists all three selectors together for their
  * min-height) was invisible to it twice over. Every rule whose selector LIST
  * includes the target, everywhere in the file, is checked here instead, and
- * every font size any of them sets must clear 16px. */
+ * every font size any of them sets must clear 16px.
+ *
+ * Comments are stripped before parsing (fix, second pass): a CSS comment
+ * immediately above a rule glues onto that rule's FIRST selector after the
+ * comma split (e.g. "/* ... *\/\n  #scale-box" is not the string "#scale-box"),
+ * so #scale-box - whose every real rule in this file happens to sit right
+ * after a comment - was silently falling out of `hits` for those rules and
+ * only ever being checked against its one comment-free declaration. Without
+ * stripping, a 14px override on #scale-box inside the @media block at :581
+ * passes this test while iOS still auto-zooms it. */
 test("the sheet's text inputs stay at 16px in every rule that sets their size, media blocks included", () => {
   const css = require("node:fs").readFileSync(
-    require("node:path").join(__dirname, "..", "index.html"), "utf8");
+    require("node:path").join(__dirname, "..", "index.html"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
     .map((m) => ({ selectors: m[1].split(",").map((s) => s.trim()), body: m[2] }));
   const sizeOf = (body) => {
@@ -3472,7 +3510,8 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
  * has no layout engine to read computed styles from. */
 test("the visual system's three fonts land on the elements CLAUDE.md names them for", () => {
   const css = require("node:fs").readFileSync(
-    require("node:path").join(__dirname, "..", "index.html"), "utf8");
+    require("node:path").join(__dirname, "..", "index.html"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
     .map((m) => ({ selectors: m[1].split(",").map((s) => s.trim()), body: m[2] }));
   const familyOf = (body) => {

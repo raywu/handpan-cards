@@ -47,7 +47,7 @@ FLOORS = {
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 11,
     # node
-    "tests/app.test.js": 193,
+    "tests/app.test.js": 194,
     "tests/e2e.test.js": 113,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 42,

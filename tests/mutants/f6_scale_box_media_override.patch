@@ -1,0 +1,22 @@
+# kills: the sheet's text inputs stay at 16px in every rule that sets their size, media blocks included
+# suite: node --test --test-name-pattern ^the.sheet.s.text.inputs.stay.at.16px.in.every.rule.that.sets.their.size,.media.blocks.included$ tests/app.test.js
+# Adds a short-viewport-only #scale-box{font-size:14px} right after the
+# comment inside @media (max-height:520px), immediately before the existing
+# comma-listed min-height rule. Before the Q16 fix stripped comments first,
+# the comment glued onto the FIRST selector of every comma-separated rule
+# that follows one - so #scale-box was silently only ever checked against
+# its single comment-free declaration up top and this override was invisible.
+# iOS still auto-zooms the box the moment the keyboard opens on a short or
+# landscape phone.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -583,6 +583,7 @@
+   /* Text fields go back to the 44px floor with tighter padding: on the Edit
+      sheet there are two of them above the fold and the box the caret lands in
+      is the lower one, so four pixels each is the difference between opening at
+      rest and opening already scrolled. */
++  #scale-box{font-size:14px}
+   #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
+   .sheetbody{gap:var(--sp-2)}
+   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
