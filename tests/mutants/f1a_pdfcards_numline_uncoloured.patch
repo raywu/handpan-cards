@@ -1,0 +1,20 @@
+# kills: the number line colours each digit label root or tone, per note - not one flat colour
+# suite: node --test --test-name-pattern ^the.number.line.colours.each.digit.label.root.or.tone,.per.note.-.not.one.flat.colour$ tests/pdfcards.test.js
+#
+# The number line's fill drops the root/tone branch and always draws GREEN
+# (tone colour), so every root's index number - which should draw in the
+# deck's root colour, matching convention 2 - draws in tone colour instead.
+# No glyph moves and no shape changes, so only a colour-aware assertion sees
+# it.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -271,7 +271,7 @@ HPE.pdfcards = (function () {
+     for (i = 0; i < fields.length; i++) {
+       f = fields[i];
+       var lab = meta[f][5];
+-      c.setFillColor(roots.indexOf(f) >= 0 ? BLUE : GREEN);
++      c.setFillColor(GREEN);
+       c.setFont("Notes", s2);
+       c.drawString(px, yNums, lab);
+       px += tw(lab, "Notes", s2);

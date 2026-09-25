@@ -1,0 +1,21 @@
+# kills: a no-thirds pan draws the NO 3RDS warning badge, in orange, on every chord card
+# suite: node --test --test-name-pattern ^a.no-thirds.pan.draws.the.NO.3RDS.warning.badge,.in.orange,.on.every.chord.card$ tests/pdfcards.test.js
+#
+# cardWarnings drops every warning. PRINTER_ONLY ships chord cards only, so
+# the badge at the foot of each chord card is the ONLY place a pan-wide
+# warning (e.g. NO_THIRDS) survives the split - this mutant prints a
+# no-thirds deck with no sign anywhere on the sheets that the pan was warned.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -427,9 +427,7 @@ HPE.pdfcards = (function () {
+   var CARD_WARNINGS = { NO_THIRDS: "NO 3RDS ON THIS PAN" };
+
+   function cardWarnings(deck) {
+-    return (deck.warnings || []).filter(function (w) {
+-      return Object.prototype.hasOwnProperty.call(CARD_WARNINGS, w.code);
+-    }).map(function (w) { return CARD_WARNINGS[w.code]; });
++    return [];
+   }
+
+   function chordCard(c, x, y, deck, num, chord) {
