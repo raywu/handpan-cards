@@ -481,6 +481,15 @@ function run() {
 
     await b.swipe("#card", 50);
     await expectCount(`1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
+
+    // N1 (review nit, PR 143 attempt 1): a swipe PAST the threshold, run
+    // last, closes the touchend race the negative checks above can't -
+    // b.swipe()'s events are dispatched synchronously, so a handler that
+    // silently stopped reacting to touchend at all would let every negative
+    // check above pass vacuously. A swipe big enough to navigate must still
+    // move the deck here, on the same card, right after them.
+    await b.swipe("#card", -120);
+    await expectCount(`2 / ${n}`, "a swipe past the threshold did not navigate at all");
   });
 
   test("swipe wraps at both ends of the deck like the buttons do", async () => {
@@ -1320,55 +1329,60 @@ function run() {
      The link is built through the app's own shareLink(), never hand-encoded
      here, so the wire format is exercised exactly as a real share does it. */
   test("a fresh navigation to a share link shows the deck, count and a lit field", async () => {
-    await freshLoad();
-    await generate(SIX_SCALES[1]);
-    const shared = await b.eval(`
-      const d = CUSTOM[deckId];
-      const res = shareLink(d);
-      return {
-        ok: res.ok, reason: res.ok ? null : res.reason, url: res.ok ? res.value : null,
-        name: d.name, chords: d.chords.length, colors: d.colors,
-      };
-    `);
-    assert.strictEqual(shared.ok, true, `the app could not build its own share link: ${shared.reason}`);
-    const hash = shared.url.slice(shared.url.indexOf("#s="));
-    assert.strictEqual(hash.indexOf("#s="), 0, `no #s= payload in "${shared.url}"`);
+    await b.setViewport(380, 800, true);
+    try {
+      await freshLoad();
+      await generate(SIX_SCALES[1]);
+      const shared = await b.eval(`
+        const d = CUSTOM[deckId];
+        const res = shareLink(d);
+        return {
+          ok: res.ok, reason: res.ok ? null : res.reason, url: res.ok ? res.value : null,
+          name: d.name, chords: d.chords.length, colors: d.colors,
+        };
+      `);
+      assert.strictEqual(shared.ok, true, `the app could not build its own share link: ${shared.reason}`);
+      const hash = shared.url.slice(shared.url.indexOf("#s="));
+      assert.strictEqual(hash.indexOf("#s="), 0, `no #s= payload in "${shared.url}"`);
 
-    await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
-    // A hash-only change from the SAME document is an in-page fragment
-    // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
-    // busting query forces a REAL navigation, which is the only case (Q30:
-    // there is no hashchange listener) openShare() ever runs for.
-    await navigate(`${URL}?share=${Date.now()}${hash}`);
-    await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
-      label: "deck chips to be built after the share link boots",
-    });
-
-    const after = await b.eval(`
-      const l = document.querySelector("#front .hdr .l");
-      const clone = l ? l.cloneNode(true) : null;
-      if (clone) clone.querySelectorAll(".num, .deg").forEach((el) => el.remove());
-      const root = ${JSON.stringify(shared.colors.root.toLowerCase())};
-      const tone = ${JSON.stringify(shared.colors.tone.toLowerCase())};
-      // The diagram lives on whichever face is the ANSWER (mode-dependent -
-      // #front in NOTES->NAME, #back in the default NAME->NOTES), so both
-      // faces are checked rather than assuming which one currently shows it.
-      const lit = [...document.querySelectorAll("#front .diagwrap circle, #back .diagwrap circle")].some((c) => {
-        const s = (c.getAttribute("stroke") || "").toLowerCase();
-        return s === root || s === tone;
+      await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+      // A hash-only change from the SAME document is an in-page fragment
+      // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
+      // busting query forces a REAL navigation, which is the only case (Q30:
+      // there is no hashchange listener) openShare() ever runs for.
+      await navigate(`${URL}?share=${Date.now()}${hash}`);
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
+        label: "deck chips to be built after the share link boots",
       });
-      return {
-        name: clone ? clone.textContent.trim() : null,
-        count: (document.getElementById("count").textContent || "").trim(),
-        lit,
-      };
-    `);
-    assert.strictEqual(after.name, shared.name,
-      `the shared deck's name never reached the header ("${after.name}" vs "${shared.name}")`);
-    assert.strictEqual(after.count, `1 / ${shared.chords}`,
-      `the shared deck's chord count is wrong: "${after.count}"`);
-    assert.strictEqual(after.lit, true,
-      "no field in the diagram is lit after a fresh navigation to the share link");
+
+      const after = await b.eval(`
+        const l = document.querySelector("#front .hdr .l");
+        const clone = l ? l.cloneNode(true) : null;
+        if (clone) clone.querySelectorAll(".num, .deg").forEach((el) => el.remove());
+        const root = ${JSON.stringify(shared.colors.root.toLowerCase())};
+        const tone = ${JSON.stringify(shared.colors.tone.toLowerCase())};
+        // The diagram lives on whichever face is the ANSWER (mode-dependent -
+        // #front in NOTES->NAME, #back in the default NAME->NOTES), so both
+        // faces are checked rather than assuming which one currently shows it.
+        const lit = [...document.querySelectorAll("#front .diagwrap circle, #back .diagwrap circle")].some((c) => {
+          const s = (c.getAttribute("stroke") || "").toLowerCase();
+          return s === root || s === tone;
+        });
+        return {
+          name: clone ? clone.textContent.trim() : null,
+          count: (document.getElementById("count").textContent || "").trim(),
+          lit,
+        };
+      `);
+      assert.strictEqual(after.name, shared.name,
+        `the shared deck's name never reached the header ("${after.name}" vs "${shared.name}")`);
+      assert.strictEqual(after.count, `1 / ${shared.chords}`,
+        `the shared deck's chord count is wrong: "${after.count}"`);
+      assert.strictEqual(after.lit, true,
+        "no field in the diagram is lit after a fresh navigation to the share link");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
   });
 
   /* Every deck - built-in or generated - prints through the same client-side
@@ -4993,10 +5007,13 @@ function run() {
       await b.clearKeyboard();
 
       // Negative half: the same shrink, produced by zooming, must not.
+      // vv.scale updates as soon as setPageScaleFactor returns, but the
+      // resize handler (applyKbOffset) that this test's negative asserts
+      // depend on runs on the NEXT rendering step - a scale-only waitFor()
+      // reads the surface before that handler has run and makes the negative
+      // asserts vacuous (review B1, PR 143 attempt 1). Keep this one timed.
       await b.setPageScale(2);
-      await b.waitFor(`window.visualViewport && window.visualViewport.scale > 1`, {
-        label: "the pinch-zoom to actually propagate to visualViewport",
-      });
+      await b.settle();
       const zoomed = await surfaceState();
       assert.ok(zoomed.vvScale > 1,
         `setPageScale did not actually zoom: scale ${zoomed.vvScale}`);
