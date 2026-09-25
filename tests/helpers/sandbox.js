@@ -142,19 +142,24 @@ function makeLocation(href) {
 function boot(opts = {}) {
   const html = fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
-  // is single-file by contract, so there should never be one). Each block also
-  // carries the real line/column its source starts at in index.html, so
-  // vm.runInContext can report accurate stacks and node's coverage mapper can
-  // attribute lines back to the shipped file (see the runInContext call below).
+  // is single-file by contract, so there should never be one).
   const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
   const blocks = blockMatches.map((m) => m[1]);
-  const blockOffsets = blockMatches.map((m) => {
-    const start = m.index + m[0].indexOf(m[1]);
-    const before = html.slice(0, start);
-    const lastNl = before.lastIndexOf("\n");
-    return { lineOffset: (before.match(/\n/g) || []).length, columnOffset: start - lastNl - 1 };
-  });
   if (!blocks.length) throw new Error("no inline <script> found in index.html");
+  // Run the blocks as ONE script whose character offsets equal index.html's own:
+  // every character outside a kept block is blanked to a space (newlines kept),
+  // so line/column in stack traces and in node's coverage mapper (which lays V8's
+  // reported character offsets over the file starting at 0) land on the real
+  // index.html position. lineOffset/columnOffset on runInContext do not affect
+  // coverage - it recomputes offsets straight from the file - so this is the
+  // only way to make coverage (and stacks) agree with the shipped file.
+  const chars = new Array(html.length);
+  for (let i = 0; i < html.length; i++) chars[i] = html[i] === "\n" ? "\n" : " ";
+  for (const m of blockMatches) {
+    const bodyStart = m.index + m[0].length - "</script>".length - m[1].length;
+    for (let i = 0; i < m[1].length; i++) chars[bodyStart + i] = m[1][i];
+  }
+  const combinedSrc = chars.join("");
 
   const els = {};
   // Focus is real state in a browser and the sheet's a11y rules turn on it, so
@@ -324,8 +329,7 @@ function boot(opts = {}) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  blocks.forEach((src, i) =>
-    vm.runInContext(src, sandbox, { filename: APP, ...blockOffsets[i] }));
+  vm.runInContext(combinedSrc, sandbox, { filename: APP });
 
   /** Run queued setTimeout callbacks in due order until the queue is empty. */
   function flushTimers(maxRounds = 100) {
