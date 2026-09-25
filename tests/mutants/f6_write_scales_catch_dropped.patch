@@ -1,0 +1,17 @@
+# kills: writeScales swallows a storage error so generate, share and delete all stay usable
+# suite: node --test --test-name-pattern ^writeScales.swallows.a.storage.error.so.generate,.share.and.delete.all.stay.usable$ tests/app.test.js
+# Drops writeScales' try/catch. With storage denied (private mode, quota),
+# setItem throws uncaught out of rememberScale/replaceScale/forgetScale, so
+# generate, share and delete each abandon mid-handler: the new deck is never
+# selected and Generate's disabled flag is never cleared again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5644,6 +5644,6 @@
+   const raw = readStore(SCALES_KEY);
+   return Array.isArray(raw) ? raw : [];
+ }
+ function writeScales(list) {
+-  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
++  localStorage.setItem(SCALES_KEY, JSON.stringify(list));
+ }

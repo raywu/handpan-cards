@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2819,7 +2819,7 @@ function buildDegrees(selected) {
- 
+@@ -6813,7 +6813,7 @@
+
  /** The seed options the sheet currently describes. */
  function sheetOptions() {
 -  const o = { palette, mirror };
 +  const o = { palette, mirror: false };
    if (editingId) {
      o.parent = Number(degSel.value);
-     const n = String(nameBox.value || "").trim();
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/

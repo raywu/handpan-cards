@@ -1,0 +1,23 @@
+# kills: Home and End on the pan jump to the first and last slot, not to each other's opposite
+# suite: node --test --test-name-pattern ^Home.and.End.on.the.pan.jump.to.the.first.and.last.slot,.not.to.each.other.s.opposite$ tests/app.test.js
+# Home and End are wired to the opposite ends of the pan: pressing Home sends
+# the selection to the LAST slot and End to the FIRST. A keyboard user reaching
+# for the start or end of a long pan lands on the wrong note every time.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7469,12 +7469,12 @@
+   else if (e.key === "End") by = "end";
+   else return;
+   e.preventDefault();
+-  if (by === "home") { layoutSel = 0; previewLayout(); }
+-  else if (by === "end") {
++  if (by === "end") { layoutSel = 0; previewLayout(); }
++  else if (by === "home") {
+     const fields = layoutFields();
+     if (!fields) return;
+     layoutSel = Math.max(0, syncLayoutOrder(fields) - 1);
+     previewLayout();
+   } else stepLayoutSel(by);
+ });
+ scaleBox.addEventListener("input", updateParse);

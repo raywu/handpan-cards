@@ -1,0 +1,24 @@
+# kills: GENERATE on a zero-chord pan refuses with a message, keeps the selection, saves nothing, and openShare shows the same reason
+# suite: node --test --test-name-pattern ^GENERATE.on.a.zero-chord.pan.refuses.with.a.message,.keeps.the.selection,.saves.nothing,.and.openShare.shows.the.same.reason$ tests/app.test.js
+# Drops the D7/Q23 zero-chord guard. select.build can return `ok:true` with
+# `chords: []` when the pan's only fifth involves the ding (the ding never
+# voices), so without this guard a zero-chord pan is silently registerDeck'd
+# and selected instead of refused - both GENERATE and openShare would "succeed"
+# onto a deck with nothing to show.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -5557,13 +5557,3 @@
+   const built = HPE.select.build(seed.value);
+   if (!built.ok) return built;
+-  // D7 (Q23): a pan whose only fifth involves the ding builds `ok` with
+-  // `chords: []` (the ding never voices). Refusing here - before registerDeck
+-  // - is app-side UI copy, not an engine reason: the section 2 code enum is
+-  // closed and has no code for "no chords", so this carries none, the same
+-  // choice runGenerate already makes for "that scale is taken". Refusing
+-  // before registerDeck means nothing is saved and the current selection is
+-  // untouched; openShare shows this same `reason` on a zero-chord share link.
+-  if (!built.value.chords.length) {
+-    return { ok: false, reason: "This pan has no playable chords - try a different scale." };
+-  }
+   // select.build resolves the palette, mirror and parent onto deck.options but

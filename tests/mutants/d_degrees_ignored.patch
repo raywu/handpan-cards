@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3318,7 +3318,6 @@ function resetLayout() {
+@@ -6815,7 +6815,6 @@
  function sheetOptions() {
    const o = { palette, mirror };
    if (editingId) {
 -    o.parent = Number(degSel.value);
-     const n = String(nameBox.value || "").trim();
-     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
-     // treated as ABSENT: otherwise a field edit would pin the old fields' name
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
+     // U+201C/U+201D, which core.js's NAME_RE (ASCII-only) then refuses - so a
+     // name is normalised back to ASCII before it ever reaches the engine.

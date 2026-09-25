@@ -1,0 +1,19 @@
+# kills: ArrowDown and ArrowUp move the pan selection the same way ArrowRight and ArrowLeft do
+# suite: node --test --test-name-pattern ^ArrowDown.and.ArrowUp.move.the.pan.selection.the.same.way.ArrowRight.and.ArrowLeft.do$ tests/app.test.js
+# Swaps which of ArrowUp/ArrowDown maps to +1 vs -1 in the previewBox keydown
+# handler, while leaving ArrowRight/ArrowLeft alone. Every other pan-keyboard
+# test presses only ArrowRight/ArrowLeft, so this shipped a pan whose vertical
+# arrows move the selection backwards with nothing noticing (Q15).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7464,7 +7464,7 @@
+   if (!editingId) return;
+   let by;
+-  if (e.key === "ArrowRight" || e.key === "ArrowDown") by = 1;
+-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") by = -1;
++  if (e.key === "ArrowRight" || e.key === "ArrowUp") by = 1;
++  else if (e.key === "ArrowLeft" || e.key === "ArrowDown") by = -1;
+   else if (e.key === "Home") by = "home";
+   else if (e.key === "End") by = "end";
+   else return;

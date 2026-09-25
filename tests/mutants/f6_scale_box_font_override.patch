@@ -1,0 +1,18 @@
+# kills: the sheet's text inputs stay at 16px in every rule that sets their size, media blocks included
+# suite: node --test --test-name-pattern ^the.sheet.s.text.inputs.stay.at.16px.in.every.rule.that.sets.their.size,.media.blocks.included$ tests/app.test.js
+# A short-viewport override drops #scale-box to 14px inside the
+# @media (max-height:520px) block, buried in the same comma-separated
+# selector list that already sets min-height there. iOS auto-zooms the box
+# the moment the keyboard opens on a short or landscape phone.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -583,7 +583,7 @@
+   /* Text fields go back to the 44px floor with tighter padding: on the Edit
+      sheet there are two of them above the fold and the box the caret lands in
+      is the lower one, so four pixels each is the difference between opening at
+      rest and opening already scrolled. */
+-  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
++  #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3); font-size:14px}
+   .sheetbody{gap:var(--sp-2)}
+   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
