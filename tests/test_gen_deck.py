@@ -115,8 +115,9 @@ class GenDeckCliTest(unittest.TestCase):
         self.assertTrue(deck["id"].startswith("custom:"))
         self.assertTrue(deck["chords"], "a nine-note pan yields chords")
         for chord in deck["chords"]:
-            self.assertEqual(set(chord),
-                             {"main", "sup", "subtitle", "fields", "roots"})
+            with self.subTest(chord=chord.get("main")):
+                self.assertEqual(set(chord),
+                                 {"main", "sup", "subtitle", "fields", "roots"})
 
     def test_the_canonical_seed_round_trips_through_the_cli(self):
         payload = generate(SEED_TOP_ONLY)
@@ -231,10 +232,11 @@ class GenDeckCliTest(unittest.TestCase):
                        r"\bnode:https?\b", r"\bnode:net\b",
                        r"\bchild_process\b", r"\bworker_threads\b",
                        r"globalThis\s*\[\s*['\"]fetch"):
-            self.assertIsNone(
-                re.search(banned, source),
-                "presets are INLINED; the tool stays offline (matched %r)"
-                % banned)
+            with self.subTest(banned=banned):
+                self.assertIsNone(
+                    re.search(banned, source),
+                    "presets are INLINED; the tool stays offline (matched %r)"
+                    % banned)
 
 
 def engine_reason(code, seed):
@@ -299,10 +301,12 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         self.assertTrue(d["blurb"] and d["legend_lines"])
         self.assertEqual(len(d["legend_demo"]), 2)
         for field in d["legend_demo"]:
-            self.assertIn(field, d["spec"])
+            with self.subTest(legend_demo_field=field):
+                self.assertIn(field, d["spec"])
         self.assertGreater(d["R"], 0)
         for key in ("cy", "y_note", "y_num"):
-            self.assertIsInstance(d[key], float)
+            with self.subTest(float_key=key):
+                self.assertIsInstance(d[key], float)
         self.assertFalse(d["has_bottom"])
         self.assertTrue(self.bottom["has_bottom"])
         self.assertEqual(d["grad"], (d["col_root"], d["col_tone"]))
@@ -311,8 +315,9 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         for key, value in d["spec"].items():
             if key == "_geom":
                 continue
-            self.assertIsInstance(key, int)
-            self.assertEqual(len(value), 6)
+            with self.subTest(spec_key=key):
+                self.assertIsInstance(key, int)
+                self.assertEqual(len(value), 6)
         # `ext` and `rim_num_out` are the two keys that are NOT radii feeding
         # pan(): `ext` sets R in the adapter (a missing one used to default to
         # 1.0 and blow the diagram off the card) and `rim_num_out` is a branch
@@ -320,23 +325,26 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         for key in ("rim", "inner", "bottom", "r_ding", "ding_dy", "r_note",
                     "r_bnote", "inner_ring", "f_ding", "f_note", "f_bnote",
                     "f_num", "n_in", "n_out", "ext", "rim_num_out"):
-            self.assertIn(key, d["spec"]["_geom"],
-                          "pan() yields NaN for a missing geom key")
-            self.assertIn(key, self.bottom["spec"]["_geom"])
+            with self.subTest(geom_key=key):
+                self.assertIn(key, d["spec"]["_geom"],
+                              "pan() yields NaN for a missing geom key")
+                self.assertIn(key, self.bottom["spec"]["_geom"])
         self.assertIsInstance(d["degrees"], dict)
         for pc in d["degrees"]:
-            self.assertIsInstance(pc, int)
-            self.assertIn(pc, range(12))
+            with self.subTest(degree_pc=pc):
+                self.assertIsInstance(pc, int)
+                self.assertIn(pc, range(12))
         for chord in d["chords"]:
             main, sup, subtitle, fields, roots = chord
-            self.assertIsInstance(main, str)
-            self.assertIsInstance(sup, str)
-            self.assertIsInstance(subtitle, str)
-            self.assertTrue(fields)
-            self.assertTrue(roots)
-            self.assertTrue(set(roots) <= set(fields))
-            for f in fields:
-                self.assertIn(f, d["spec"])
+            with self.subTest(chord=main + sup):
+                self.assertIsInstance(main, str)
+                self.assertIsInstance(sup, str)
+                self.assertIsInstance(subtitle, str)
+                self.assertTrue(fields)
+                self.assertTrue(roots)
+                self.assertTrue(set(roots) <= set(fields))
+                for f in fields:
+                    self.assertIn(f, d["spec"])
 
     def test_a_missing_ext_raises_instead_of_defaulting_the_radius(self):
         """`geom.ext` is load-bearing OUTSIDE the engine: no silent default.
@@ -403,8 +411,9 @@ class GeneratedDeckKeyTest(unittest.TestCase):
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
         for deck in (decks.HIJAZ, decks.PYGMY, decks.AMARA):
-            self.assertNotIn("options", deck)
-            self.assertNotIn("warnings", deck)
+            with self.subTest(deck=deck["name"]):
+                self.assertNotIn("options", deck)
+                self.assertNotIn("warnings", deck)
         self.assertEqual(decks.HIJAZ["name"], "C# HIJAZ 9")
         # 2026-09-16 (engine adoption): 18->19, 27->52, 16->25.
         self.assertEqual(len(decks.HIJAZ["chords"]), 19)

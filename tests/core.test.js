@@ -199,6 +199,16 @@ test("options default to palette 0, no parent, no name, no mirror", () => {
     { palette: 4, parent: 2, name: "My Pan", mirror: true });
 });
 
+test("a name option is trimmed of leading and trailing whitespace (Q25)", () => {
+  // readOptions (core.js:294 area) is not itself exported; the trim is
+  // observed through parseSeed's own options readback, which is its only
+  // caller. Untrimmed, " My Pan " would be stored padded and could name a
+  // second, distinct pan.
+  assert.equal(
+    parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { name: "  A  " }).options.name,
+    "A");
+});
+
 /* ---------------- section 3: grammar details ------------------------------ */
 
 test("an omitted ding octave is octave 3 and reseeds the inference", () => {

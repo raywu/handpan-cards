@@ -1,0 +1,17 @@
+# kills: a name option is trimmed of leading and trailing whitespace (Q25)
+# suite: node --test --test-name-pattern ^a.name.option.is.trimmed.of.leading.and.trailing.whitespace..Q25.$ tests/core.test.js
+# readOptions (core.js:294 area) drops the whitespace trim on a name option.
+# " My Pan " is then stored padded, so the same logical name round-trips as
+# two distinct strings depending on stray whitespace.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -291,7 +291,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (options.name !== undefined && options.name !== "") {
+       var name = options.name;
+       if (typeof name !== "string") return badNote(name);
+-      name = name.replace(/^\s+/, "").replace(/\s+$/, "");
++      name = name;
+       if (!NAME_RE.test(name) || name.length < 1 || name.length > 40) {
+         return badNote(name);
+       }

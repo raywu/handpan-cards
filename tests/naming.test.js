@@ -462,6 +462,15 @@ test("NO_THIRDS makes every numeral uppercase and drops D10", () => {
     host(naming.degrees(amaraPcs, amaraTonic, parent)));
 });
 
+test("numeral: offset 6 sits between two reference degrees, and minorRelative picks the branch (Q21)", () => {
+  // Section 10's "between two degrees" branch (naming.js:144 area): offset 6
+  // is a semitone above MINOR_REF's degree IV (5) and a semitone below
+  // MAJOR_REF's degree V (7) alike, so minorRelative alone decides which
+  // degree and which accidental sign the numeral takes.
+  assert.deepEqual(host(naming.numeral(6, true)), {accidental: "#", roman: "IV"});
+  assert.deepEqual(host(naming.numeral(6, false)), {accidental: "b", roman: "V"});
+});
+
 /* ---- D8 as amended (coordination row 28): an IN-PARENT pitch class is
  * numbered by its PARENT-DEGREE INDEX, with the accidental read against the
  * D8 reference scale degree of that same index. A pitch class OUTSIDE the

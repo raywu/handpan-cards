@@ -1,0 +1,19 @@
+# kills: collapse's symmetric-root tie-break applies to a 2-member group, not just 3+ (Q22)
+# suite: node --test --test-name-pattern ^collapse.s.symmetric.root.tie.break.applies.to.a.2.member.group..not.just.3...Q22.$ tests/select.test.js
+# The symmetric-root tie-break in collapse (select.js:226) is untested for
+# 2-member groups. Raising the threshold from `> 1` to `> 2` skips the
+# tie-break for exactly this case: an aug/dim7-shaped card with 2 same-quality
+# survivors takes its root from rank order instead of section 8's tie-break,
+# giving the wrong root name and root highlighting.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -223,7 +223,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         if (group[j].suffix !== best.suffix) sameQuality = false;
+         if (group[j].suffix === best.suffix) symmetricRoots.push(group[j].root);
+       }
+-      if (sameQuality && symmetricRoots.length > 1) {
++      if (sameQuality && symmetricRoots.length > 2) {
+         var chosen = naming().symmetricRoot(symmetricRoots, tonicPc, degreeOrder);
+         for (j = 0; j < group.length; j += 1) {
+           if (group[j].root === chosen) best = group[j];

@@ -209,7 +209,8 @@ class PrintParityTest(unittest.TestCase):
         self.assertGreater(sum(len(p) for p in py), 500,
                            "a deck with no vectors is not a parity check")
         for i, (a, b) in enumerate(zip(py, js)):
-            self.assertEqual(a, b, "%s page %d of %s" % (variant, i + 1, case))
+            with self.subTest(case=case, variant=variant, page=i + 1):
+                self.assertEqual(a, b, "%s page %d of %s" % (variant, i + 1, case))
 
     def test_the_sweep_actually_ran(self):
         # An empty seed list is a passing parity test that proves nothing.

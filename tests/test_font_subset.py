@@ -47,9 +47,10 @@ class FontSubsetTest(unittest.TestCase):
     def test_every_advance_matches_reportlab_at_1000_upem(self):
         for name, face in faces().items():
             for ch, adv in face["widths"].items():
-                expect = pdfmetrics.stringWidth(ch, name, 1000.0)
-                self.assertAlmostEqual(adv, expect, places=3,
-                                       msg="%s %r" % (name, ch))
+                with self.subTest(face=name, char=ch):
+                    expect = pdfmetrics.stringWidth(ch, name, 1000.0)
+                    self.assertAlmostEqual(adv, expect, places=3,
+                                           msg="%s %r" % (name, ch))
 
     def test_the_five_faces_are_hifis_registration_names(self):
         self.assertEqual(sorted(faces()),
@@ -58,7 +59,8 @@ class FontSubsetTest(unittest.TestCase):
     def test_every_face_carries_a_width_for_every_charset_glyph(self):
         cs = charset()
         for name, face in faces().items():
-            self.assertEqual(sorted(face["widths"]), sorted(cs), name)
+            with self.subTest(face=name):
+                self.assertEqual(sorted(face["widths"]), sorted(cs), name)
 
     def test_the_charset_covers_every_glyph_the_decks_draw(self):
         used = set()
