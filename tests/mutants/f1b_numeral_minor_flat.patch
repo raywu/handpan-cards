@@ -1,0 +1,18 @@
+# kills: numeral: offset 6 sits between two reference degrees, and minorRelative picks the branch (Q21)
+# suite: node --test --test-name-pattern ^numeral..offset.6.sits.between.two.reference.degrees..and.minorRelative.picks.the.branch..Q21.$ tests/naming.test.js
+# The minor-relative "between two degrees" branch of numeral (naming.js:144
+# area) is folded into the major-relative branch. Generated minor-key decks
+# then label offsets 1/4/6/9/11 flat-of-above (e.g. offset 6 reads bV, not
+# #iv) on card headers and in the app.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -141,7 +141,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (exact >= 0) return {accidental: "", roman: ROMAN[exact]};
+     if (below >= 0 && above >= 0) {
+       return minorRelative
+-        ? {accidental: "#", roman: ROMAN[below]}
++        ? {accidental: "b", roman: ROMAN[above]}
+         : {accidental: "b", roman: ROMAN[above]};
+     }
+     if (above >= 0) return {accidental: "b", roman: ROMAN[above]};

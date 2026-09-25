@@ -37,6 +37,15 @@ const OK_ROWS = synthetic.filter(r => r.expect && r.expect.ok === true);
 const NOT_OK_ROWS = synthetic.filter(r => r.expect && r.expect.code);
 const MAKER_STRINGS = golden.decks.map(d => d.maker_string);
 
+// Q35: every table-driven test below that iterates NOT_OK_ROWS (e.g. "decode
+// propagates parseSeed's own code for an invalid seed") is a for-loop with no
+// per-row assertion count, so an empty table would silently make that test a
+// no-op pass rather than fail. This guard fails loudly if the fixture ever
+// loses its error rows.
+test("the synthetic fixture has at least one error-expecting row (Q35)", () => {
+  assert.ok(NOT_OK_ROWS.length > 0, "fixture lost its NOT_OK_ROWS rows");
+});
+
 // Engine values live in a node:vm realm; deepStrictEqual compares prototypes.
 function host(value) {
   return JSON.parse(JSON.stringify(value));
@@ -101,6 +110,27 @@ test("the three golden maker strings round-trip through encode/decode", () => {
     assert.deepStrictEqual(decoded(encoded(seed)), seed,
       `round trip changed the seed for ${maker}`);
   }
+});
+
+// Q18: the CHECK suffix is a checksum over VERSION_CHAR + BODY, and a round
+// trip alone cannot catch a broken checksum - encode and decode share the
+// same (possibly broken) implementation, so a shifted checksum still
+// round-trips against itself. These two literals were captured from
+// share.encode's real output at commit 23c4962 (git show
+// 23c4962:src/engine/share.js, run through tools/engine_loader.js in a
+// scratch directory; not computed here), so any future change to the
+// checksum mixing - including the one this file's f1b_share_checksum_shift
+// mutant makes - changes the tail of these strings and fails the pin.
+test("encode's checksum is pinned against a captured minimal payload (Q18)", () => {
+  const seed = parsed("(C3) G3");
+  assert.equal(encoded(seed), "2A4CpAI17Cmem2Gam2GeOUlLJ0");
+});
+
+test("encode's checksum is pinned against a captured payload with every option set (Q18)", () => {
+  const seed = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    { palette: 2, parent: 3, mirror: true, name: "Test Deck" });
+  assert.equal(encoded(seed),
+    "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0");
 });
 
 /* ---------------------------------------------------------------------- */
@@ -227,6 +257,167 @@ test("decode never throws on hostile input", () => {
     assert.doesNotThrow(() => { r = share.decode(bad); },
       `decode threw on ${JSON.stringify(bad)}`);
     assert.equal(r.ok, false);
+  }
+});
+
+/* ---------------------------------------------------------------------- */
+/* (d2) the UTF-8 byte pipeline (Q4)                                       */
+/*                                                                          */
+/* share.js:108-157 hand-rolls UTF-8 encode/decode because a vm realm has  */
+/* no TextEncoder (see the file's own top comment). Nothing above the byte */
+/* layer ever carries a multi-byte character through a FULL              */
+/* encode/decode/parseSeed round trip - scale tokens are ASCII, and       */
+/* section 13 restricts a validated `name` to printable ASCII - so the    */
+/* only way to exercise the byte pipeline itself is a standalone          */
+/* reference re-implementation of the same public wire contract (this     */
+/* file's own header comment: the URL-safe alphabet, unpadded 6-bit       */
+/* packing, the FNV-1a check), cross-checked against the two Q18 golden   */
+/* literals above before being trusted for anything.                      */
+/* ---------------------------------------------------------------------- */
+
+const REF_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                     "abcdefghijklmnopqrstuvwxyz-_";
+const REF_INDEX = {};
+for (let ri = 0; ri < REF_ALPHABET.length; ri += 1) {
+  REF_INDEX[REF_ALPHABET.charAt(ri)] = ri;
+}
+
+function refUtf8Bytes(str) {
+  const bytes = [];
+  for (let i = 0; i < str.length; i += 1) {
+    let code = str.charCodeAt(i);
+    if (code >= 0xd800 && code <= 0xdbff && i + 1 < str.length) {
+      const low = str.charCodeAt(i + 1);
+      if (low >= 0xdc00 && low <= 0xdfff) {
+        code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+        i += 1;
+      }
+    }
+    if (code < 0x80) bytes.push(code);
+    else if (code < 0x800) bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    else if (code < 0x10000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f),
+                 0x80 | (code & 0x3f));
+    } else {
+      bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f),
+                 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    }
+  }
+  return bytes;
+}
+
+function refUtf8String(bytes) {
+  let out = "";
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i];
+    let code, extra;
+    if (b < 0x80) { code = b; extra = 0; }
+    else if ((b & 0xe0) === 0xc0) { code = b & 0x1f; extra = 1; }
+    else if ((b & 0xf0) === 0xe0) { code = b & 0x0f; extra = 2; }
+    else if ((b & 0xf8) === 0xf0) { code = b & 0x07; extra = 3; }
+    else return null;
+    if (i + extra >= bytes.length) return null;
+    for (let k = 1; k <= extra; k += 1) {
+      const next = bytes[i + k];
+      if ((next & 0xc0) !== 0x80) return null;
+      code = (code << 6) | (next & 0x3f);
+    }
+    i += extra + 1;
+    if (code > 0x10ffff) return null;
+    if (code > 0xffff) {
+      code -= 0x10000;
+      out += String.fromCharCode(0xd800 + (code >> 10), 0xdc00 + (code & 0x3ff));
+    } else {
+      out += String.fromCharCode(code);
+    }
+  }
+  return out;
+}
+
+function refToAlphabet(bytes) {
+  let out = "", bits = 0, acc = 0;
+  for (let i = 0; i < bytes.length; i += 1) {
+    acc = (acc << 8) | bytes[i];
+    bits += 8;
+    while (bits >= 6) { bits -= 6; out += REF_ALPHABET.charAt((acc >> bits) & 0x3f); }
+  }
+  if (bits > 0) out += REF_ALPHABET.charAt((acc << (6 - bits)) & 0x3f);
+  return out;
+}
+
+function refFromAlphabet(str) {
+  const bytes = [];
+  let bits = 0, acc = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    const v = REF_INDEX[str.charAt(i)];
+    if (v === undefined) return null;
+    acc = (acc << 6) | v;
+    bits += 6;
+    if (bits >= 8) { bits -= 8; bytes.push((acc >> bits) & 0xff); }
+  }
+  return bytes;
+}
+
+function refChecksum(text) {
+  let hash = 0x811c9dc5;
+  const bytes = refUtf8Bytes(text);
+  for (let i = 0; i < bytes.length; i += 1) {
+    hash = (hash ^ bytes[i]) >>> 0;
+    hash = (((hash & 0xffff) * 0x01000193) +
+            ((((hash >>> 16) * 0x01000193) & 0xffff) << 16)) >>> 0;
+  }
+  return refToAlphabet([(hash >>> 24) & 0xff, (hash >>> 16) & 0xff,
+                        (hash >>> 8) & 0xff, hash & 0xff]);
+}
+
+test("the reference UTF-8/alphabet/checksum re-implementation matches the two Q18 golden literals (Q4 setup)", () => {
+  for (const golden of [
+    "2A4CpAI17Cmem2Gam2GeOUlLJ0",
+    "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0"
+  ]) {
+    const head = golden.slice(0, golden.length - 6);
+    const check = golden.slice(golden.length - 6);
+    assert.equal(refChecksum(head), check,
+      "the reference checksum must reproduce a known-good CHECK before it can be trusted below");
+  }
+});
+
+test("a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte pipeline (Q4)", () => {
+  const base = parsed("(C3) G3");
+  for (const [label, name] of [
+    ["2-byte", "caf\u00e9"],
+    ["3-byte", "\u20ac100"],
+    ["4-byte", "\ud83d\ude00hi"]
+  ]) {
+    const seed = JSON.parse(JSON.stringify(base));
+    seed.options = seed.options || {};
+    seed.options.name = name;
+    const str = encoded(seed);
+    const bytes = refFromAlphabet(str.slice(1, str.length - 6));
+    const text = refUtf8String(bytes);
+    assert.ok(text !== null, `${label}: reference decode failed`);
+    const recoveredName = text.split("\n")[1].split("\t")[3];
+    assert.equal(recoveredName, name, `${label}: name did not survive the byte pipeline`);
+  }
+});
+
+test("a truncated or malformed multi-byte sequence in the payload is refused, never repaired (Q4)", () => {
+  const asciiBytes = s => s.split("").map(c => c.charCodeAt(0));
+  const prefix = asciiBytes("(C3) G3\n0\t\t0\tA");
+  const cases = [
+    ["truncated 3-byte lead", [0xe2]],
+    ["bad continuation after a 2-byte lead", [0xc2, 0x41]],
+    ["truncated 4-byte lead", [0xf0, 0x9f]]
+  ];
+  for (const [label, tail] of cases) {
+    const bytes = prefix.concat(tail);
+    const body = refToAlphabet(bytes);
+    const head = "2" + body;
+    const full = head + refChecksum(head);
+    const r = share.decode(full);
+    assert.equal(r.ok, false, `${label}: malformed UTF-8 was accepted`);
+    assert.ok(CODES.includes(r.code), `${label}: invented code ${r.code}`);
   }
 });
 
