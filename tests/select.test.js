@@ -283,6 +283,27 @@ test("the pitch-set collapse takes the 12-note pan from 29 to 27", () => {
   }
 });
 
+test("collapse's symmetric-root tie-break applies to a 2-member group, not just 3+ (Q22)", () => {
+  // A hand-built pitch-set collision: two candidates share the pitch set
+  // {0,6} under the SAME suffix but different roots, so collapse's symmetric
+  // branch (select.js:226) is eligible with exactly 2 survivors. Ranking
+  // alone (tier, then rank) prefers the root-6 candidate; section 8's
+  // tie-break (symmetricRoot) prefers the tonic, root 0, whenever the tonic
+  // is itself a candidate root. The two disagree, so this pins which one
+  // wins.
+  const fields = {
+    "0": ["C", 3, 60, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", 0, "1"],
+    "2": ["Gb", 4, 66, "rim", 180, "2"]
+  };
+  const a = {root: 0, suffix: "tritone", tier: "seventh", rank: 8, intervals: [0, 6]};
+  const b = {root: 6, suffix: "tritone", tier: "triad", rank: 0, intervals: [0, 6]};
+  const winners = host(select.collapse(fields, [a, b], 0));
+  assert.equal(winners.length, 1, "the two candidates share one pitch set");
+  assert.equal(winners[0].root, 0,
+    "the tie-break must run for a 2-member symmetric group and prefer the tonic");
+});
+
 test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
   // Section 8, as amended 2026-09-08: the cap is `25 + max(0, fieldCount - 12)`.
   // The worked example's pan has exactly 12 fields, so the size-scaled cap
