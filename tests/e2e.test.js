@@ -186,14 +186,14 @@ function run() {
   // killed mutant as a survivor. Once navigation is gone it is gone for the
   // run: hand the first failure straight to every later test.
   let navDead = null;
-  async function navigate() {
+  async function navigate(target) {
     if (navDead) throw navDead;
     let last = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await b.eval(`window.__stale = true; return true;`);
         const loaded = onceEvent("Page.loadEventFired", 20000);
-        await b.send("Page.navigate", { url: URL });
+        await b.send("Page.navigate", { url: target || URL });
         await loaded;
         await b.waitFor(
           `document.readyState === "complete" && !window.__stale
@@ -378,6 +378,33 @@ function run() {
     );
   });
 
+  /* Q14: #card's own keydown handler (index.html:7506-7509) treats a focused
+     Enter or Space as "flip", same as a click - untested anywhere else, since
+     every other keydown test in this file exists to prove a DESCENDANT
+     control's Enter/Space does NOT bubble into a flip. This is the positive
+     case: the card itself, focused directly, must still flip on both keys. */
+  test("Enter and Space on a focused card flip it", async () => {
+    await freshLoad();
+    await b.eval(`document.getElementById("card").focus(); return true;`);
+    assert.strictEqual(await cardFlipped(), false, "card starts unflipped");
+
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+    await b.waitFor(`document.getElementById("card").classList.contains("flip")`, {
+      label: "Enter on the focused card to flip it",
+    });
+    assert.strictEqual(await cardFlipped(), true, "Enter on the focused card did not flip it");
+
+    await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "char", key: " ", code: "Space", text: " ", unmodifiedText: " ", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+    await b.waitFor(`!document.getElementById("card").classList.contains("flip")`, {
+      label: "Space on the focused card to flip it back",
+    });
+    assert.strictEqual(await cardFlipped(), false, "Space on the focused card did not flip it back");
+  });
+
   /* ---------------------------------------------------------------- *
    * 4. navigation
    * ---------------------------------------------------------------- */
@@ -438,6 +465,16 @@ function run() {
     // while tapping - from also throwing the card away to the next one.
     await freshLoad();
     const n = (await decksMeta())[0].chords;
+
+    // Q27 positive sentinel: touch listeners are passive, so b.swipe()'s
+    // synthetic touch events resolve before the app's own handler has run -
+    // the negative checks below poll expectCount and pass on their FIRST
+    // poll regardless of whether the harness can drive a swipe at all. Prove
+    // the harness is live first, with a control that must navigate.
+    await b.click("#next");
+    await expectCount(`2 / ${n}`, "#next did not step forward - the harness itself is broken");
+    await b.click("#prev");
+    await expectCount(`1 / ${n}`, "#prev did not step back to the starting card");
 
     await b.swipe("#card", -50);
     await expectCount(`1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
@@ -802,11 +839,13 @@ function run() {
     `);
     const sel = "#front .prints button";
     await b.click(sel);
-    await b.settle();
+    // The build threw synchronously, but the row's re-enable is deferred via
+    // setTimeout(0) - a genuine macrotask gap, not a CSS transition - so poll
+    // for the real post-condition instead of a fixed wait.
+    await b.waitFor(`document.querySelector(${JSON.stringify(sel)}).disabled === false`, {
+      label: "the print button to be re-enabled after HPE.pdfcards.build threw",
+    });
     const disabledRightAfter = await b.eval(`return document.querySelector(${JSON.stringify(sel)}).disabled;`);
-    // The build threw synchronously, so by the time the click handler
-    // returns (and settle()'s 500ms has long since elapsed) the deferred
-    // re-enable has already run - the row must not still read disabled.
     assert.strictEqual(disabledRightAfter, false,
       "a print button stayed disabled after HPE.pdfcards.build threw");
   });
@@ -906,7 +945,9 @@ function run() {
       `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
 
     await b.click("#card");
-    await b.settle();
+    await b.waitFor(`document.getElementById("card").classList.contains("flip")`, {
+      label: "card to take the flip class",
+    });
     const open = await count();
     assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
     assert.strictEqual(open.front, 0,
@@ -1270,6 +1311,66 @@ function run() {
     }
   });
 
+  /* Q1: the share-URL inbound flow (index.html:7573-7574) had no e2e test -
+     openShare() itself is unit-tested against the sandbox (app.test.js), but
+     the sandbox never navigates, so a boot-order regression on a real
+     `location.hash` would stay green everywhere else. There is no
+     `hashchange` path (Q30), so a FRESH navigation is the only reachable
+     case; an in-tab hash paste is a behaviour gap, not a test gap.
+     The link is built through the app's own shareLink(), never hand-encoded
+     here, so the wire format is exercised exactly as a real share does it. */
+  test("a fresh navigation to a share link shows the deck, count and a lit field", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const shared = await b.eval(`
+      const d = CUSTOM[deckId];
+      const res = shareLink(d);
+      return {
+        ok: res.ok, reason: res.ok ? null : res.reason, url: res.ok ? res.value : null,
+        name: d.name, chords: d.chords.length, colors: d.colors,
+      };
+    `);
+    assert.strictEqual(shared.ok, true, `the app could not build its own share link: ${shared.reason}`);
+    const hash = shared.url.slice(shared.url.indexOf("#s="));
+    assert.strictEqual(hash.indexOf("#s="), 0, `no #s= payload in "${shared.url}"`);
+
+    await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
+    // A hash-only change from the SAME document is an in-page fragment
+    // navigation in Chrome - no Page.loadEventFired, no fresh boot. A cache-
+    // busting query forces a REAL navigation, which is the only case (Q30:
+    // there is no hashchange listener) openShare() ever runs for.
+    await navigate(`${URL}?share=${Date.now()}${hash}`);
+    await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
+      label: "deck chips to be built after the share link boots",
+    });
+
+    const after = await b.eval(`
+      const l = document.querySelector("#front .hdr .l");
+      const clone = l ? l.cloneNode(true) : null;
+      if (clone) clone.querySelectorAll(".num, .deg").forEach((el) => el.remove());
+      const root = ${JSON.stringify(shared.colors.root.toLowerCase())};
+      const tone = ${JSON.stringify(shared.colors.tone.toLowerCase())};
+      // The diagram lives on whichever face is the ANSWER (mode-dependent -
+      // #front in NOTES->NAME, #back in the default NAME->NOTES), so both
+      // faces are checked rather than assuming which one currently shows it.
+      const lit = [...document.querySelectorAll("#front .diagwrap circle, #back .diagwrap circle")].some((c) => {
+        const s = (c.getAttribute("stroke") || "").toLowerCase();
+        return s === root || s === tone;
+      });
+      return {
+        name: clone ? clone.textContent.trim() : null,
+        count: (document.getElementById("count").textContent || "").trim(),
+        lit,
+      };
+    `);
+    assert.strictEqual(after.name, shared.name,
+      `the shared deck's name never reached the header ("${after.name}" vs "${shared.name}")`);
+    assert.strictEqual(after.count, `1 / ${shared.chords}`,
+      `the shared deck's chord count is wrong: "${after.count}"`);
+    assert.strictEqual(after.lit, true,
+      "no field in the diagram is lit after a fresh navigation to the share link");
+  });
+
   /* Every deck - built-in or generated - prints through the same client-side
      PDF path (one-pdf-path plan), so .prints is <button>s plus the paper
      <select> on both; there is no <a href> anywhere in .prints any more. The
@@ -1293,7 +1394,9 @@ function run() {
       `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
 
     await b.click("#card");
-    await b.settle();
+    await b.waitFor(`document.getElementById("card").classList.contains("flip")`, {
+      label: "card to take the flip class",
+    });
     const open = await count();
     assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
     assert.strictEqual(open.front, 0,
@@ -4837,7 +4940,9 @@ function run() {
         "precondition: the fake keyboard did not cap the surface");
 
       await b.key("Escape");
-      await b.settle();
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, {
+        label: "Escape to close the sheet",
+      });
       const closed = await b.eval(`
         const sheet = document.getElementById("scale-sheet");
         const surf = sheet.firstElementChild;
@@ -4889,7 +4994,9 @@ function run() {
 
       // Negative half: the same shrink, produced by zooming, must not.
       await b.setPageScale(2);
-      await b.settle();
+      await b.waitFor(`window.visualViewport && window.visualViewport.scale > 1`, {
+        label: "the pinch-zoom to actually propagate to visualViewport",
+      });
       const zoomed = await surfaceState();
       assert.ok(zoomed.vvScale > 1,
         `setPageScale did not actually zoom: scale ${zoomed.vvScale}`);

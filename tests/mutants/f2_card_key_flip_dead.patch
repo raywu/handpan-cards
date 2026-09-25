@@ -1,0 +1,15 @@
+# kills: Enter and Space on a focused card flip it
+# suite: node --test --test-name-pattern ^Enter.and.Space.on.a.focused.card.flip.it$ tests/e2e.test.js
+# Drops the card's own keydown handler's key check, so neither Enter nor
+# Space ever flips a focused card - only a mouse click still works. Every
+# OTHER keydown test in this file focuses a DESCENDANT control and asserts
+# the card does NOT flip, so none of them notice the handler going dead.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7506,4 +7506,4 @@
+ card.addEventListener("keydown", e => {
+   if (e.target && e.target.closest && e.target.closest("button, select")) return;
+-  if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
++  if (false) { e.preventDefault(); flip(); }
+ });

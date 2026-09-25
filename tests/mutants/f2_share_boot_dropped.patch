@@ -1,0 +1,15 @@
+# kills: a fresh navigation to a share link shows the deck, count and a lit field
+# suite: node --test --test-name-pattern ^a.fresh.navigation.to.a.share.link.shows.the.deck,.count.and.a.lit.field$ tests/e2e.test.js
+# Drops the boot-time call that consumes a "#s=" share link. openShare() is
+# unit-tested against the sandbox (never navigates), and every other e2e test
+# navigates through a plain URL with no hash - none of them touch this line -
+# so only a real, fresh navigation to a share link sees the app never boot it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7571,4 +7571,4 @@
+ // never see each other's hash.
+ else if (location.hash.indexOf(SHARE_PREFIX) === 0)
+-  openShare(location.hash.slice(SHARE_PREFIX.length));
++  void 0;
+ </script>
