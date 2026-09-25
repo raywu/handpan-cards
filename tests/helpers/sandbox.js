@@ -142,8 +142,18 @@ function makeLocation(href) {
 function boot(opts = {}) {
   const html = fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
-  // is single-file by contract, so there should never be one).
-  const blocks = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  // is single-file by contract, so there should never be one). Each block also
+  // carries the real line/column its source starts at in index.html, so
+  // vm.runInContext can report accurate stacks and node's coverage mapper can
+  // attribute lines back to the shipped file (see the runInContext call below).
+  const blockMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+  const blocks = blockMatches.map((m) => m[1]);
+  const blockOffsets = blockMatches.map((m) => {
+    const start = m.index + m[0].indexOf(m[1]);
+    const before = html.slice(0, start);
+    const lastNl = before.lastIndexOf("\n");
+    return { lineOffset: (before.match(/\n/g) || []).length, columnOffset: start - lastNl - 1 };
+  });
   if (!blocks.length) throw new Error("no inline <script> found in index.html");
 
   const els = {};
@@ -314,7 +324,8 @@ function boot(opts = {}) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  for (const src of blocks) vm.runInContext(src, sandbox);
+  blocks.forEach((src, i) =>
+    vm.runInContext(src, sandbox, { filename: APP, ...blockOffsets[i] }));
 
   /** Run queued setTimeout callbacks in due order until the queue is empty. */
   function flushTimers(maxRounds = 100) {
