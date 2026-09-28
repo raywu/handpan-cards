@@ -1499,6 +1499,32 @@ test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII",
     "the curly-quote name was not stored, or was stored un-normalised");
 });
 
+// Q29b: iOS Smart Punctuation also turns a typed -- into an em dash (U+2014)
+// and ... into a single ellipsis glyph (U+2026), and a pasted name can carry
+// a straight en dash (U+2013) - all of which core.js's ASCII-only NAME_RE
+// would otherwise refuse. sheetOptions() normalises these back to ASCII the
+// same way it does curly quotes, so a name carrying them must save exactly
+// as if it had been typed with plain "-" and "...".
+test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  app.select(d.id);
+  app.clickChip(d.name);
+  app.els["scale-name"].value = "A – B — C…";
+  app.els["scale-name"].dispatchEvent({ type: "input" });
+  app.els["scale-generate"].click();
+
+  assert.strictEqual(app.deckId(), d.id, "the dash/ellipsis rename moved the id");
+  const row = chipRow(app);
+  assert.ok(row.some((c) => c.label === "A - B - C..." && c.on),
+    `the chip row still reads ${JSON.stringify(row.map((c) => c.label))}`);
+
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.strictEqual(again.registry()[d.id].name, "A - B - C...",
+    "the dash/ellipsis name was not stored, or was stored un-normalised");
+});
+
 test("deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone", () => {
   const app = boot();
   const first = decks(app)[0];
