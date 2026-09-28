@@ -467,29 +467,47 @@ function run() {
     const n = (await decksMeta())[0].chords;
 
     // Q27 positive sentinel: touch listeners are passive, so b.swipe()'s
-    // synthetic touch events resolve before the app's own handler has run -
-    // the negative checks below poll expectCount and pass on their FIRST
-    // poll regardless of whether the harness can drive a swipe at all. Prove
-    // the harness is live first, with a control that must navigate.
+    // synthetic touch events can resolve before the app's own handler has
+    // run. Prove the harness is live first, with a control that must
+    // navigate.
     await b.click("#next");
     await expectCount(`2 / ${n}`, "#next did not step forward - the harness itself is broken");
     await b.click("#prev");
     await expectCount(`1 / ${n}`, "#prev did not step back to the starting card");
 
+    // b.swipe() resolves once CDP has accepted the synthetic touch events, and
+    // with passive listeners that can be BEFORE the page has handled them - so
+    // a poll of #count right after can read stale. A second touchend listener
+    // on the same element acks that touchend reached #card - it does NOT prove
+    // the app acted on it (a dropped touchstart still fires touchend and still
+    // acks), so the final -120 swipe below, which must still navigate, is the
+    // real guard against a handler that stopped reacting to touchend
+    // altogether. Waiting on the ack only pins each exact-count read past the
+    // CDP-vs-handler race; the read itself depends on step() rendering
+    // synchronously (index.html ~:7509), not on listener registration order.
+    await b.eval(`
+      window.__swipeAck = 0;
+      document.getElementById("card").addEventListener(
+        "touchend", () => { window.__swipeAck++; }, { passive: true },
+      );
+      return true;
+    `);
+
     await b.swipe("#card", -50);
-    await expectCount(`1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
+    await b.waitFor(`window.__swipeAck === 1`, { timeout: 5000, label: "swipe 1 to be acknowledged" });
+    assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
 
     await b.swipe("#card", 50);
-    await expectCount(`1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
+    await b.waitFor(`window.__swipeAck === 2`, { timeout: 5000, label: "swipe 2 to be acknowledged" });
+    assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
 
     // N1 (review nit, PR 143 attempt 1): a swipe PAST the threshold, run
-    // last, closes the touchend race the negative checks above can't -
-    // b.swipe()'s events are dispatched synchronously, so a handler that
-    // silently stopped reacting to touchend at all would let every negative
-    // check above pass vacuously. A swipe big enough to navigate must still
-    // move the deck here, on the same card, right after them.
+    // last, is what actually guards against a handler that silently stopped
+    // reacting to touchend at all - the ack above proves touchend reached
+    // #card, not that the app acted on it (see the comment above).
     await b.swipe("#card", -120);
-    await expectCount(`2 / ${n}`, "a swipe past the threshold did not navigate at all");
+    await b.waitFor(`window.__swipeAck === 3`, { timeout: 5000, label: "swipe 3 to be acknowledged" });
+    assert.strictEqual(await countText(), `2 / ${n}`, "a swipe past the threshold did not navigate at all");
   });
 
   test("swipe wraps at both ends of the deck like the buttons do", async () => {
