@@ -1,0 +1,18 @@
+# kills: a name typed with iOS dashes and ellipsis saves, normalised to ASCII
+# suite: node --test --test-name-pattern ^a.name.typed.with.iOS.dashes.and.ellipsis.saves,.normalised.to.ASCII$ tests/app.test.js
+# Drops the em/en-dash normalisation from sheetOptions(), leaving the
+# ellipsis replace in place. A name typed on iOS with -- (which Smart
+# Punctuation turns into an em dash, U+2014) or pasted with an en dash
+# (U+2013) is then refused by core.js's ASCII-only NAME_RE instead of saving.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6823,7 +6823,7 @@
+     // normalised back to ASCII before it ever reaches the engine.
+     const n = String(nameBox.value || "")
+       .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+-      .replace(/[–—]/g, "-").replace(/…/g, "...")
++      .replace(/…/g, "...")
+       .trim();
+     // The box is PREFILLED, so an UNTOUCHED box on an auto-named deck is
+     // treated as ABSENT: otherwise a field edit would pin the old fields' name

@@ -9,5 +9,5 @@ diff --git a/index.html b/index.html
    if (editingId) {
 -    o.parent = Number(degSel.value);
      // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
-     // U+201C/U+201D, which core.js's NAME_RE (ASCII-only) then refuses - so a
-     // name is normalised back to ASCII before it ever reaches the engine.
+     // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
+     // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show
