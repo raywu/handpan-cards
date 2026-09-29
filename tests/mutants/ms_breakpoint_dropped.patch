@@ -1,0 +1,22 @@
+# kills: at 1280x800 and 1024x768 the panel is a static, non-modal sidebar
+# suite: node --test --test-name-pattern ^at.1280x800.and.1024x768.the.panel.is.a.static..non.modal.sidebar$ tests/e2e.test.js
+# Drops the one declaration that actually beats the repo's global
+# [hidden]{display:none !important} rule (index.html:456) for the desktop
+# sidebar. Without it, #settings-panel stays display:none at >=1024x700 -
+# the sidebar never shows at all, even though the trigger/scrim are still
+# correctly hidden and the rest of the media block still applies. This is
+# the smallest mutation that reproduces "the breakpoint got wired up but the
+# panel forgot to actually become visible".
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -252,9 +252,6 @@
+     border-radius:0; border:none; border-left:1px solid #433b2c;
+     box-shadow:none; padding:var(--sp-4) var(--sp-3);
+   }
+-  /* [hidden]{display:none !important} (line 456) otherwise wins over the
+-     rule above at equal !important weight (it has none, so this needs its
+-     own) - this is the one declaration that actually has to beat it. */
+-  #settings-panel[hidden]{display:flex !important}
+ }
+ /* ---- landscape: the header is ONE row ---------------------------------

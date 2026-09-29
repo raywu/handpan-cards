@@ -6548,4 +6548,270 @@ function run() {
     });
   });
 
+  /* ---------------------------------------------------------------- *
+   * desktop sidebar (M3, 2026-09-28 follow-up plan: docs/plans/
+   * 2026-09-28-android-bg-and-menu.md, S2 Part B / S3 M3 row / S6 O6 /
+   * the "Addendum: M3 desktop sidebar")
+   *
+   * At >=1024x700 the same #settings-panel markup M1 built presents as a
+   * static, always-visible, non-modal sidebar column instead of a modal
+   * drawer: the trigger and scrim disappear, and openPanel()/closePanel()'s
+   * role=dialog/aria-modal/inert/aria-hidden/Tab-trap wiring is never
+   * reached because the only thing that calls openPanel() - a click on
+   * #settings-trigger - cannot happen on a display:none element. Below the
+   * breakpoint the M1/M2 hamburger + modal panel is unchanged; that is
+   * covered above, this block only adds the desktop-only behaviour.
+   * ---------------------------------------------------------------- */
+  describe("desktop sidebar", () => {
+    // .scene rect measured against the base this lane built on (ed38ff5,
+    // PR #155 merge, the tip main pointed to when this lane started) with a
+    // throwaway script driving tests/helpers/cdp.js against that commit's
+    // index.html. The sidebar CSS is position:fixed, which removes it from
+    // flow, so these numbers are the acceptance oracle for "the sidebar
+    // must not shrink main or the card" - a regression that put the panel
+    // back in flow would move them.
+    const BASE_SCENE = {
+      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 153.0625, bottom: 661.25 },
+      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 147.234375, bottom: 635.09375 },
+    };
+
+    async function sceneRect() {
+      return b.eval(`
+        const r = document.querySelector(".scene").getBoundingClientRect();
+        return { width: r.width, height: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      `);
+    }
+
+    test("at 1280x800 and 1024x768 the panel is a static, non-modal sidebar", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h] of [[1280, 800], [1024, 768]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const st = await b.eval(`return {
+            trigger: getComputedStyle(document.getElementById("settings-trigger")).display,
+            scrim: getComputedStyle(document.getElementById("settings-scrim")).display,
+            panelDisplay: getComputedStyle(document.getElementById("settings-panel")).display,
+            role: document.getElementById("settings-panel").getAttribute("role"),
+            ariaModal: document.getElementById("settings-panel").getAttribute("aria-modal"),
+            headerInert: document.querySelector("header").inert,
+            mainInert: document.querySelector("main").inert,
+            footerInert: document.querySelector("footer").inert,
+            decksInert: document.getElementById("decks").inert,
+            headerAH: document.querySelector("header").getAttribute("aria-hidden"),
+            mainAH: document.querySelector("main").getAttribute("aria-hidden"),
+            footerAH: document.querySelector("footer").getAttribute("aria-hidden"),
+            decksAH: document.getElementById("decks").getAttribute("aria-hidden"),
+          };`);
+          assert.strictEqual(st.trigger, "none", `${w}x${h}: #settings-trigger should be display:none`);
+          assert.strictEqual(st.scrim, "none", `${w}x${h}: #settings-scrim should be display:none`);
+          assert.notStrictEqual(st.panelDisplay, "none", `${w}x${h}: the sidebar should be visible`);
+          assert.strictEqual(st.role, null, `${w}x${h}: the sidebar must not carry role=dialog`);
+          assert.strictEqual(st.ariaModal, null, `${w}x${h}: the sidebar must not carry aria-modal`);
+          const bg = { header: [st.headerInert, st.headerAH], main: [st.mainInert, st.mainAH],
+                       footer: [st.footerInert, st.footerAH], decks: [st.decksInert, st.decksAH] };
+          for (const [k, [inert, ah]] of Object.entries(bg)) {
+            assert.strictEqual(inert, false, `${w}x${h}: ${k} must not be inert`);
+            assert.strictEqual(ah, null, `${w}x${h}: ${k} must not be aria-hidden`);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("the card rect at 1280x800 and 1024x768 matches the pre-sidebar base measurement", async () => {
+      await freshLoad();
+      try {
+        for (const [key, [w, h]] of Object.entries({ "1280x800": [1280, 800], "1024x768": [1024, 768] })) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const got = await sceneRect();
+          const base = BASE_SCENE[key];
+          for (const prop of ["width", "height", "left", "right", "top", "bottom"]) {
+            assert.ok(Math.abs(got[prop] - base[prop]) <= 0.5,
+              `${key} .scene ${prop}: got ${got[prop]}, base (ed38ff5) ${base[prop]}`);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("at 1280x800, ArrowRight steps the counter and Enter flips the card", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const meta = await decksMeta();
+        const n = meta[0].chords;
+        await expectCount(`1 / ${n}`, "starts on the first card at desktop");
+
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await expectCount(`2 / ${n}`, "ArrowRight steps the counter at desktop");
+
+        const flippedBefore = await cardFlipped();
+        await b.eval(`document.getElementById("card").focus(); return true;`);
+        await b.key("Enter", "Enter", 13);
+        await b.settle();
+        const flippedAfter = await cardFlipped();
+        assert.notStrictEqual(flippedAfter, flippedBefore, "Enter did not flip the card at desktop");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("the sidebar's FULL DECK and PRINT-ONLY buttons produce a PDF blob", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+          const cap = await b.eval(`
+            return (async () => {
+              const real = URL.createObjectURL;
+              const seen = [];
+              URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
+              const btn = [...document.querySelectorAll("#settings-panel .prints button")]
+                .find(el => el.textContent.trim() === ${JSON.stringify(label)});
+              if (!btn) return { err: "no " + ${JSON.stringify(label)} + " button in the sidebar" };
+              try { btn.click(); } finally { URL.createObjectURL = real; }
+              if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
+              return { type: seen[0].type, n: seen[0].size };
+            })();`);
+          assert.ok(!cap.err, cap.err);
+          assert.strictEqual(cap.type, "application/pdf", `${label}: wrong blob type`);
+          assert.ok(cap.n > 10000, `${label}: produced ${cap.n} bytes; that is not a card sheet`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("below the breakpoint the hamburger behaviour is unchanged", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h, mobile] of [[1023, 800, false], [844, 390, true], [390, 844, true]]) {
+          await b.setViewport(w, h, mobile);
+          await b.settle();
+          const st = await b.eval(`return {
+            trigger: getComputedStyle(document.getElementById("settings-trigger")).display,
+            panelDisplay: getComputedStyle(document.getElementById("settings-panel")).display,
+            panelHidden: document.getElementById("settings-panel").hidden,
+          };`);
+          assert.strictEqual(st.trigger, "flex", `${w}x${h}: the hamburger trigger should be visible`);
+          assert.strictEqual(st.panelHidden, true, `${w}x${h}: the panel should start hidden`);
+          assert.strictEqual(st.panelDisplay, "none", `${w}x${h}: the panel should not render`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("resizing across the breakpoint with the panel open sheds modal state, and resizing back shows the closed hamburger", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(900, 800, false);
+        await openSettingsPanel();
+        let st = await b.eval(`return {
+          role: document.getElementById("settings-panel").getAttribute("role"),
+          mainInert: document.querySelector("main").inert,
+        };`);
+        assert.strictEqual(st.role, "dialog", "sanity: the panel should be modal below the breakpoint");
+        assert.strictEqual(st.mainInert, true, "sanity: main should be inert while the modal panel is open");
+
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        st = await b.eval(`return {
+          role: document.getElementById("settings-panel").getAttribute("role"),
+          ariaModal: document.getElementById("settings-panel").getAttribute("aria-modal"),
+          headerInert: document.querySelector("header").inert,
+          mainInert: document.querySelector("main").inert,
+          footerInert: document.querySelector("footer").inert,
+          decksInert: document.getElementById("decks").inert,
+          headerAH: document.querySelector("header").getAttribute("aria-hidden"),
+          mainAH: document.querySelector("main").getAttribute("aria-hidden"),
+          footerAH: document.querySelector("footer").getAttribute("aria-hidden"),
+          decksAH: document.getElementById("decks").getAttribute("aria-hidden"),
+          scrimDisplay: getComputedStyle(document.getElementById("settings-scrim")).display,
+          expanded: document.getElementById("settings-trigger").getAttribute("aria-expanded"),
+          active: document.activeElement ? {
+            id: document.activeElement.id, tag: document.activeElement.tagName,
+            connected: document.activeElement.isConnected, inert: document.activeElement.inert,
+            visible: getComputedStyle(document.activeElement).display !== "none",
+          } : null,
+        };`);
+        assert.strictEqual(st.role, null, "role=dialog must be shed on resize to desktop");
+        assert.strictEqual(st.ariaModal, null, "aria-modal must be shed on resize to desktop");
+        const bg = { header: [st.headerInert, st.headerAH], main: [st.mainInert, st.mainAH],
+                     footer: [st.footerInert, st.footerAH], decks: [st.decksInert, st.decksAH] };
+        for (const [k, [inert, ah]] of Object.entries(bg)) {
+          assert.strictEqual(inert, false, `${k} must not be inert after resizing to desktop`);
+          assert.strictEqual(ah, null, `${k} must not be aria-hidden after resizing to desktop`);
+        }
+        assert.strictEqual(st.scrimDisplay, "none", "the scrim must not be visible at desktop");
+        assert.strictEqual(st.expanded, "false", "the trigger's aria-expanded must come back to false");
+        assert.ok(st.active, "focus must land somewhere");
+        assert.strictEqual(st.active.connected, true, "focus must be on a connected element");
+        assert.strictEqual(st.active.inert, false, "focus must not be on an inert element");
+        assert.strictEqual(st.active.visible, true, "focus must be on a visible element");
+
+        await b.setViewport(900, 800, false);
+        await b.settle();
+        st = await b.eval(`return {
+          panelHidden: document.getElementById("settings-panel").hidden,
+          panelDisplay: getComputedStyle(document.getElementById("settings-panel")).display,
+          expanded: document.getElementById("settings-trigger").getAttribute("aria-expanded"),
+        };`);
+        assert.strictEqual(st.panelHidden, true, "resizing back down should show the closed hamburger state");
+        assert.strictEqual(st.panelDisplay, "none", "resizing back down should show the closed hamburger state");
+        assert.strictEqual(st.expanded, "false", "resizing back down should show the closed hamburger state");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("the sidebar never overlaps the card or the footer controls", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h] of [[1024, 700], [1920, 1080]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const rects = await b.eval(`
+            const rr = (sel) => document.querySelector(sel).getBoundingClientRect();
+            const r = (x) => ({ left: x.left, right: x.right, top: x.top, bottom: x.bottom });
+            return { scene: r(rr(".scene")), footer: r(rr("footer")), panel: r(rr("#settings-panel")) };
+          `);
+          const disjoint = (a, c) => a.right <= c.left || c.right <= a.left || a.bottom <= c.top || c.bottom <= a.top;
+          assert.ok(disjoint(rects.scene, rects.panel),
+            `${w}x${h}: the sidebar overlaps the card: ${JSON.stringify(rects)}`);
+          assert.ok(disjoint(rects.footer, rects.panel),
+            `${w}x${h}: the sidebar overlaps the footer: ${JSON.stringify(rects)}`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("every panel control is 44px tall in the sidebar presentation too", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const probe = await probeTargets(
+          ["#modeA", "#modeB", "#deck-add",
+           "#settings-panel .prints button", "#settings-panel .prints select"]);
+        const short = probe.filter((p) => !p.missing && p.h < 44);
+        const stolen = probe.filter((p) => !p.missing && p.bad.length);
+        assert.deepStrictEqual(probe.filter((p) => p.missing), []);
+        assert.deepStrictEqual(short.map((p) => `${p.sel} ${p.w}x${p.h}`), [],
+          "interactive controls under the 44px minimum in the desktop sidebar");
+        assert.deepStrictEqual(stolen.map((p) => `${p.sel}: ${p.bad.join(", ")}`), [],
+          "a control's own box hit-tests to something else in the desktop sidebar");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+  });
+
 }

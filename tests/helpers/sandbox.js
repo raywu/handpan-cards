@@ -316,6 +316,17 @@ function boot(opts = {}) {
         : opts.userAgent,
       maxTouchPoints: opts.maxTouchPoints === undefined ? 0 : opts.maxTouchPoints,
     },
+    // M3 (desktop sidebar, 2026-09-28): the app reads window.matchMedia once,
+    // at boot, to gate the settings panel's modal wiring to below the
+    // desktop-sidebar breakpoint. `matches` is always false here - this stub
+    // never simulates a resize - so boot in this DOM-stubbed sandbox always
+    // sees the below-breakpoint (mobile/hamburger) state; the breakpoint
+    // itself is only meaningfully exercised in the e2e suite, which drives a
+    // real browser and a real viewport.
+    matchMedia: (query) => ({
+      matches: false, media: query,
+      addEventListener() {}, removeEventListener() {},
+    }),
   };
   const printCalls = [];
   sandbox.print = () => { printCalls.push(sandbox.innerWidth); };

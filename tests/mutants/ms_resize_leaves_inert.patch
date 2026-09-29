@@ -1,0 +1,26 @@
+# kills: resizing across the breakpoint with the panel open sheds modal state, and resizing back shows the closed hamburger
+# suite: node --test --test-name-pattern ^resizing.across.the.breakpoint.with.the.panel.open.sheds.modal.state..and.resizing.back.shows.the.closed.hamburger$ tests/e2e.test.js
+# Drops the desktopMQ change listener that closes the modal panel when the
+# viewport crosses the breakpoint while it is open. Without it, opening the
+# panel at mobile width and then resizing past 1024x700 leaves role=dialog,
+# aria-modal, the inert background and the visible-scrim state all in place
+# on top of the now-visible sidebar - exactly the "modal sidebar" bug this
+# lane exists to prevent - and resizing back down leaves the panel stuck
+# open instead of returning to the closed hamburger state.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1,10 +1,6 @@
+ settingsTrigger.focus();
+ }
+-// If the viewport crosses the breakpoint while the panel is open in its
+-// modal, below-breakpoint presentation, shed the modal state so the page
+-// underneath is never left inert on desktop (and the reverse: if it then
+-// crosses back down, the panel is the closed hamburger state, not a
+-// borderless leftover). The panel itself stays in the DOM either way; only
+-// its modal wiring and `hidden` (irrelevant at desktop - see the CSS
+-// override above) change.
+-desktopMQ.addEventListener("change", (e) => {
+-  if (e.matches && panelOpen) closePanel();
+-});
+ settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });

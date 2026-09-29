@@ -1,0 +1,21 @@
+# kills: at 1280x800 and 1024x768 the panel is a static, non-modal sidebar
+# suite: node --test --test-name-pattern ^at.1280x800.and.1024x768.the.panel.is.a.static..non.modal.sidebar$ tests/e2e.test.js
+# Reverts #settings-panel's markup to the pre-M3 static role="dialog"
+# aria-modal="true" attributes. Those are only correct while the M1 modal
+# drawer is open below the breakpoint; hard-coding them back means the
+# desktop sidebar is ALSO "a dialog" as far as assistive tech is concerned,
+# even though it is always visible, non-modal chrome. openPanel()/
+# closePanel() still toggle role/aria-modal on top of this at runtime below
+# the breakpoint, so the mutant is invisible there - it only shows up at
+# >=1024x700, where nothing ever clears the two static attributes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1072,7 +1072,7 @@
+      the static sidebar is correctly plain, non-modal markup. -->
+ <div id="settings-scrim" hidden></div>
+-<div id="settings-panel" aria-labelledby="settings-title" hidden>
++<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+   <h2 id="settings-title" class="sr-only">Settings</h2>
+   <div class="panel-group">
+     <h3 class="panel-heading">Practice</h3>

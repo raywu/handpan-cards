@@ -231,6 +231,32 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    Controls keep their ALL-CAPS Nunito voice (N15). */
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
+/* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
+   owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum).
+   Same markup as the mobile panel - this is presentation only. The trigger
+   and scrim disappear; the panel's role="dialog"/aria-modal, its inert
+   background loop and its Tab-stop trap are only ever applied by
+   openPanel()/closePanel() (mode-wiring script, below), which the
+   now-invisible trigger can no longer reach at this width, so the panel
+   naturally stays a plain, non-modal region here. No new colour, surface or
+   radius: reuses #1f1b15 and the #433b2c hairline (N15), on one edge only,
+   full height. `#settings-panel[hidden]` is needed because `[hidden]` (line
+   456) is `display:none !important`; an id+attribute selector outranks a
+   bare attribute one at equal !important weight, so this wins and the panel
+   shows without JS ever clearing `hidden`. */
+@media (min-width:1024px) and (min-height:700px){
+  #settings-trigger, #settings-scrim{display:none}
+  #settings-panel{
+    display:flex; position:fixed; top:0; right:0; bottom:0;
+    width:240px; max-width:240px; height:auto; max-height:none;
+    border-radius:0; border:none; border-left:1px solid #433b2c;
+    box-shadow:none; padding:var(--sp-4) var(--sp-3);
+  }
+  /* [hidden]{display:none !important} (line 456) otherwise wins over the
+     rule above at equal !important weight (it has none, so this needs its
+     own) - this is the one declaration that actually has to beat it. */
+  #settings-panel[hidden]{display:flex !important}
+}
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
    and the STACKED header spent 134 of them - the title, the deck strip and
@@ -1038,9 +1064,15 @@ button.nav:active{background:#2e281e}
      "+ Add a scale" hand-off. Both start hidden; openPanel()/closePanel()
      (below, in the mode-wiring script) toggle `hidden` and drive the same
      inert-background + explicit-Tab-stops containment the sheet uses, with
-     the panel's own data. -->
+     the panel's own data.
+     role="dialog"/aria-modal are NOT static here (M3, desktop sidebar,
+     2026-09-28): they are set by openPanel() and cleared by closePanel(),
+     so the panel is only ever "a dialog" while it is open in its
+     below-breakpoint, modal presentation. At >=1024x700 the trigger that
+     calls openPanel() is display:none, so the panel never gains them and
+     the static sidebar is correctly plain, non-modal markup. -->
 <div id="settings-scrim" hidden></div>
-<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+<div id="settings-panel" aria-labelledby="settings-title" hidden>
   <h2 id="settings-title" class="sr-only">Settings</h2>
   <div class="panel-group">
     <h3 class="panel-heading">Practice</h3>
@@ -7644,6 +7676,13 @@ const settingsScrim   = document.getElementById("settings-scrim");
 const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
                           document.getElementById("decks")].filter(Boolean);
 let panelOpen = false;
+// M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
+// above uses. Below it the panel is the modal drawer M1 built - role="dialog",
+// aria-modal, an inert background and a Tab-stop trap, all applied here, never
+// in markup. At/above it the trigger is display:none, so openPanel() is never
+// reached by a click and the modal state above is never applied; the panel is
+// simply always visible as a static sidebar (CSS only).
+const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
           document.getElementById("deck-add"),
@@ -7651,21 +7690,36 @@ function panelStops() {
     .filter(el => el && !el.disabled);
 }
 function openPanel() {
-  settingsScrim.removeAttribute("hidden");
   settingsPanel.removeAttribute("hidden");
   panelOpen = true;
   settingsTrigger.setAttribute("aria-expanded", "true");
+  if (desktopMQ.matches) return;
+  settingsScrim.removeAttribute("hidden");
+  settingsPanel.setAttribute("role", "dialog");
+  settingsPanel.setAttribute("aria-modal", "true");
   for (const el of panelBackground) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
 }
 function closePanel() {
   if (!panelOpen) return;
-  settingsScrim.setAttribute("hidden", "");
   settingsPanel.setAttribute("hidden", "");
+  settingsScrim.setAttribute("hidden", "");
   panelOpen = false;
   settingsTrigger.setAttribute("aria-expanded", "false");
+  settingsPanel.removeAttribute("role");
+  settingsPanel.removeAttribute("aria-modal");
   for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
   settingsTrigger.focus();
 }
+// If the viewport crosses the breakpoint while the panel is open in its
+// modal, below-breakpoint presentation, shed the modal state so the page
+// underneath is never left inert on desktop (and the reverse: if it then
+// crosses back down, the panel is the closed hamburger state, not a
+// borderless leftover). The panel itself stays in the DOM either way; only
+// its modal wiring and `hidden` (irrelevant at desktop - see the CSS
+// override above) change.
+desktopMQ.addEventListener("change", (e) => {
+  if (e.matches && panelOpen) closePanel();
+});
 settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
 settingsScrim.addEventListener("click", closePanel);
 document.getElementById("print-paper-select").value = printPaper;
