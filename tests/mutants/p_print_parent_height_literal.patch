@@ -5,12 +5,15 @@
 # specificity, so the later rule wins and the 840pt genuinely applies (a
 # reviewer caught the first cut sitting above it, where it was inert). 840pt
 # over iOS's ~711.6pt printable box paginates - the 43b2851 class.
+# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated
+# line is unchanged; only the line above it moved (lane A added
+# `background:#fff` to the html,body fill rule).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -778,6 +778,7 @@ button.nav:active{background:#2e281e}
+@@ -789,6 +789,7 @@
       together - neither alone is correct. */
-   html,body{height:100%; min-height:0; overflow:visible}
+   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
    body.printing #printroot, body.printing #printroot .printpage{height:100%}
 +  body.printing #printroot{display:block; height:840pt}
    /* The safe-area padding is an on-screen notch reservation and has no meaning

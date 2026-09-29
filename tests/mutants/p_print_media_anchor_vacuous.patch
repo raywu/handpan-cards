@@ -7,10 +7,13 @@
 # the slice starts inside the comment and the comment satisfies the anchor.
 # Only stripping comments before the scan closes it. Paired with the page-box
 # literal the scan exists to catch.
+# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated
+# lines are unchanged; the surrounding context moved (meta tags and an html
+# background-color rule were added earlier in the file).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -47,6 +47,7 @@
+@@ -55,6 +55,7 @@
     the box the user is typing into out of sight. The ramp keeps its proportions
     and gives back roughly a third; the rhythm still reads because it is the
     RATIOS that group things, not the absolute values. */
@@ -18,9 +21,9 @@ diff --git a/index.html b/index.html
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
  }
-@@ -778,6 +779,7 @@ button.nav:active{background:#2e281e}
+@@ -789,6 +790,7 @@
       together - neither alone is correct. */
-   html,body{height:100%; min-height:0; overflow:visible}
+   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
    body.printing #printroot, body.printing #printroot .printpage{height:100%}
 +  body.printing #printroot{display:block; height:840pt}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
