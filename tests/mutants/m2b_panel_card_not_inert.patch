@@ -1,0 +1,22 @@
+# kills: arrow keys and Enter/Space do not reach the card while the settings panel is open
+# suite: node --test --test-name-pattern ^arrow.keys.and.Enter.Space.do.not.reach.the.card.while.the.settings.panel.is.open$ tests/e2e.test.js
+# Drops `el.inert = true` from openPanel()'s background-disabling loop,
+# leaving only the aria-hidden attribute. #card keeps tabindex="0" and is no
+# longer inert, so it can take focus while the settings panel is open -
+# there is no document-level guard behind Enter/Space (only Escape and Tab
+# get one), so `inert` is the ONLY thing stopping #card from receiving them.
+# The mutant reds the "#card sits inside <main> ... it must refuse focus"
+# assertion directly: with inert gone, document.getElementById("card").focus()
+# succeeds and activeElement === #card.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7655,7 +7655,7 @@ function openPanel() {
+   settingsPanel.removeAttribute("hidden");
+   panelOpen = true;
+   settingsTrigger.setAttribute("aria-expanded", "true");
+-  for (const el of panelBackground) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
++  for (const el of panelBackground) { el.setAttribute("aria-hidden", "true"); }
+ }
+ function closePanel() {
+   if (!panelOpen) return;

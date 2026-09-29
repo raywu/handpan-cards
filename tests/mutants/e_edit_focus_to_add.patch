@@ -1,7 +1,12 @@
 # kills: Escape closes the Edit sheet and focus returns to the chip that opened it
 # suite: node --test --test-name-pattern ^Escape.closes.the.Edit.sheet.and.focus.returns.to.the.chip.that.opened.it$ tests/e2e.test.js
-# Every close hands focus to + ADD, so leaving an Edit page drops the keyboard
-# user at the end of the chip strip instead of on the chip they came from.
+# Every close hands focus to + ADD - but addChip (#deck-add) now lives inside
+# the settings panel (M2, 2026-09-28), which is `hidden` whenever the Edit
+# sheet is open, and a hidden element refuses focus. So addChip.focus() is a
+# no-op: it does not land the keyboard user on "+ Add a scale", it drops them
+# on document.body with no visible focus ring at all - worse than the stated
+# defect, not merely a wrong destination. Either way, focus is not returned
+# to the chip that opened the Edit sheet, which is what the test asserts.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

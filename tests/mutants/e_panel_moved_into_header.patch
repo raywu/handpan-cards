@@ -35,7 +35,7 @@ diff --git a/index.html b/index.html
 +       and it still names what the control does. -->
 +  <div class="panel-group" id="panel-scales-group">
 +    <h3 class="panel-heading">Scales</h3>
-+    <button class="mode" type="button" id="deck-add">+ ADD A SCALE</button>
++    <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 +  </div>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Print this deck</h3>
@@ -74,7 +74,7 @@ diff --git a/index.html b/index.html
 -       and it still names what the control does. -->
 -  <div class="panel-group" id="panel-scales-group">
 -    <h3 class="panel-heading">Scales</h3>
--    <button class="mode" type="button" id="deck-add">+ ADD A SCALE</button>
+-    <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 -  </div>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Print this deck</h3>

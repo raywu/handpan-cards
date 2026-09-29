@@ -1,0 +1,25 @@
+# kills: six custom decks keep the chip row on one line with the active chip in view
+# suite: node --test --test-name-pattern ^six.custom.decks.keep.the.chip.row.on.one.line.with.the.active.chip.in.view$ tests/e2e.test.js
+# justify-content:center in place of the auto-margin end chips centres an
+# overflowing row exactly as it centres a fitting one, stranding the first
+# chip off the scrollable origin's left edge at scrollLeft 0.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -151,6 +151,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    chips keep it centred while it fits, without making either end unreachable
+    once it overflows. The right edge fades so a cut-off chip reads as "more". */
+ .decks{display:flex; gap:var(--sp-2); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;
++  justify-content:center;
+   -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+   -webkit-mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%);
+   mask-image:linear-gradient(90deg,#000 0 calc(100% - 22px), transparent 100%)}
+@@ -163,8 +164,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ @media (min-width:640px){
+   header{max-width:min(92vw, 900px)}
+ }
+-.decks > :first-child{margin-left:auto}
+-.decks > :last-child{margin-right:auto}
+ .chip{
+   flex:0 0 auto; min-height:44px; display:inline-flex; align-items:center;
+   border:1.5px solid transparent; border-radius:999px; padding:7px 13px 6px;
