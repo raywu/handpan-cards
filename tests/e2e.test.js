@@ -6771,6 +6771,17 @@ function run() {
         // at this width) and nobody re-homed focus onto a live control.
         assert.notStrictEqual(st.active.tag, "BODY",
           "focus must not be stranded on <body> after resizing to desktop with the panel open");
+        // Reviewer finding Q20 (round-2, 2026-09-29): stillLive's own
+        // getComputedStyle(a).display !== "none" clause is what tells apart
+        // an element that is *connected but no longer rendered* (the trigger,
+        // mid-transition to display:none) from one that is actually still a
+        // usable focus target - "not <body>" and "isConnected" alone both
+        // stay true for a display:none element right up until the browser
+        // gets around to blurring it. Pin the concrete, positive outcome the
+        // display check exists to guarantee: re-homed focus lands
+        // specifically on the card, not merely "somewhere that isn't body".
+        assert.strictEqual(st.active.id, "card",
+          "focus must be re-homed onto the card after resizing to desktop with the panel open");
 
         await b.setViewport(900, 800, false);
         await b.settle();
@@ -6782,6 +6793,51 @@ function run() {
         assert.strictEqual(st.panelHidden, true, "resizing back down should show the closed hamburger state");
         assert.strictEqual(st.panelDisplay, "none", "resizing back down should show the closed hamburger state");
         assert.strictEqual(st.expanded, "false", "resizing back down should show the closed hamburger state");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding Q20 (round-2, 2026-09-29): the desktopMQ change
+    // handler's own comment explains that document.activeElement is STILL
+    // the (about-to-be-hidden) trigger at the moment the listener runs, and
+    // only becomes <body> on a LATER, separate tick - stillLive's
+    // `getComputedStyle(a).display !== "none"` clause exists to catch
+    // exactly that tick. A real CDP viewport resize does not reproduce it
+    // reliably (this harness's own resize already lands on <body> by the
+    // time any script can observe it, a timing quirk of headless Chrome
+    // under CDP's Emulation domain, not the real-window-resize path the
+    // comment describes) - so simulate the tick directly instead of racing
+    // it: shadow `document.activeElement` for exactly one read (the
+    // listener's own) to return the still-focused, now-hidden trigger, then
+    // fall back to the real accessor immediately after. This is
+    // deterministic and exercises the exact branch the display check
+    // guards, independent of how fast or slow any given browser actually
+    // performs the native blur-to-body step.
+    test("stillLive's display check re-homes focus when the trigger is still active but already hidden", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(900, 800, false);
+        await openSettingsPanel();
+        await b.eval(`
+          const trigger = document.getElementById("settings-trigger");
+          let armed = true;
+          Object.defineProperty(document, "activeElement", {
+            configurable: true,
+            get() {
+              if (armed) { armed = false; delete document.activeElement; return trigger; }
+              return document.body;
+            }
+          });
+          return true;
+        `);
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const active = await b.eval(`return {
+          id: document.activeElement.id, tag: document.activeElement.tagName,
+        };`);
+        assert.strictEqual(active.id, "card",
+          "focus must be re-homed onto the card when the change listener still observes the (now-hidden) trigger as active");
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -6804,6 +6860,23 @@ function run() {
           assert.ok(disjoint(rects.footer, rects.panel),
             `${w}x${h}: the sidebar overlaps the footer: ${JSON.stringify(rects)}`);
         }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding Q19 (round-2, 2026-09-29): the desktop-only header
+    // max-width rule (line ~265) REPLACES the base rule's min(92vw,900px)
+    // ceiling with a calc() that has no upper bound of its own, so at wide
+    // viewports (1920x1080: calc gives 1400px) the header runs far past the
+    // 900px cap the base rule exists to enforce.
+    test("at 1920x1080 the header stays within its 900px ceiling", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1920, 1080, false);
+        await b.settle();
+        const width = await b.eval(`return document.querySelector("header").getBoundingClientRect().width;`);
+        assert.ok(width <= 900.5, `header width at 1920x1080 should be <= 900px, got ${width}`);
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -6950,6 +7023,29 @@ function run() {
         await b.settle();
         await expectCount(`1 / ${n}`,
           "ArrowRight typed into the sidebar's paper select must not also step the card");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding Q18 (round-2, 2026-09-29): the guard above used to
+    // return early for ANY target inside #settings-panel, not just form
+    // controls, so at desktop, after a mouse click on a plain sidebar
+    // button (#modeB), the *next* ArrowRight was silently swallowed even
+    // though a <button> has no native arrow-key behaviour to protect
+    // against doubling.
+    test("at 1280x800, ArrowRight steps the card after a click on a sidebar button", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const meta = await decksMeta();
+        const n = meta[0].chords;
+        await expectCount(`1 / ${n}`, "starts on the first card at desktop");
+        await b.click("#modeB");
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await expectCount(`2 / ${n}`,
+          "ArrowRight after clicking a sidebar button (#modeB) must still step the card");
       } finally {
         await b.setViewport(900, 900, false);
       }

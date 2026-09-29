@@ -7,24 +7,20 @@
 # sidebar - the deck-chip strip's selected chip is hidden behind the
 # sidebar and elementFromPoint at its centre returns a sidebar control
 # instead.
+# Context refreshed 2026-09-29 (M3b, round-2 follow-up, Q19): the rule this
+# mutant drops now reads `min(900px, calc(100vw - 480px - 2 * var(--sp-3)))`
+# instead of the bare calc() - a second reviewer finding (Q19) wrapped it in
+# min() so it also respects the base rule's 900px ceiling at very wide
+# viewports. The mutation is unchanged in kind: it still removes the whole
+# header max-width override, which is what this test actually exercises.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -252,17 +252,6 @@
-      under the fixed 240px sidebar. Cap header to the room actually left of
-      the sidebar; the card is unaffected (it is sized from --card-w, not
-      from header's width). */
--  /* header is centred by body's align-items:center (flex column), so
--     capping its max-width to (100vw - sidebar) is not enough: shrinking a
--     CENTRED box moves both edges inward by half the saved width, so the
--     right edge only retreats HALF as far as the sidebar needs. Solving for
--     the max-width that puts the header's right edge exactly `gutter` clear
--     of the 240px sidebar (header_right = padding + (bodyContentWidth +
--     headerWidth)/2, set equal to 100vw - 240px - gutter) cancels the body
--     padding term entirely and leaves headerWidth = 100vw - 480px - 2*gutter.
--     Verified at 1024x768: decks right lands at 764px, exactly gutter (20px)
--     clear of the sidebar's left edge at 784px. */
--  header{max-width:calc(100vw - 480px - 2 * var(--sp-3))}
+@@ -265,7 +265,6 @@
+      900px cap the base rule exists to enforce. Keep both limits - the
+      900px ceiling and the sidebar clearance - by taking the smaller of the
+      two, the same min() shape the base rule already uses. */
+-  header{max-width:min(900px, calc(100vw - 480px - 2 * var(--sp-3)))}
    #settings-panel{
      /* top/bottom inset var(--sp-1), not 0: the page-background test's outer
         frame (tests/e2e.test.js "page background covers every viewport")
