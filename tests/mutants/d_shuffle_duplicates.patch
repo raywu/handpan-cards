@@ -1,9 +1,12 @@
 # kills: shuffle yields a valid permutation and shuffle-off restores card order
 # suite: node --test --test-name-pattern ^shuffle.yields.a.valid.permutation.and.shuffle.off.restores.card.order$ tests/app.test.js
+# Refreshed 2026-09-29 (lane S2): setOrder() gained an early return for
+# mode === "S" above this A/B block; the A/B shuffle loop itself is
+# byte-identical, only the line number moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -277,7 +277,7 @@ function setOrder() {
+@@ -6983,7 +6983,7 @@ function setOrder() {
    const n = deck().chords.length;
    order = [...Array(n).keys()];
    if (shuffled) for (let i = n - 1; i > 0; i--) {

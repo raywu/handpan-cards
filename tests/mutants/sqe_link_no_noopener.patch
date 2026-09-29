@@ -1,0 +1,17 @@
+# kills: the sequence source link: rel=noopener, target=_blank, the exact href, and it joins the Tab cycle only while visible
+# suite: node --test --test-name-pattern ^the.sequence.source.link..rel.noopener..target._blank..the.exact.href..and.it.joins.the.Tab.cycle.only.while.visible$ tests/app.test.js
+# Lane S2. Drops rel="noopener" from the outbound YouTube credit link, so the
+# opened tab keeps a `window.opener` handle back into this app (reverse
+# tabnabbing) whenever a visitor follows the Moritz.handpan credit.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1160,7 +1160,7 @@ button.nav:active{background:#2e281e}
+       Playing styles adapted from &ldquo;7 ways to play chords on the
+       handpan&rdquo; by Moritz.handpan.
+       <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
+-         target="_blank" rel="noopener">Watch on YouTube</a>
++         target="_blank">Watch on YouTube</a>
+     </p>
+   </div>
+   <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its

@@ -1,0 +1,18 @@
+# kills: the rail's chord labels are set via textContent, never innerHTML
+# suite: node --test --test-name-pattern ^the.rail.s.chord.labels.are.set.via.textContent..never.innerHTML$ tests/app.test.js
+# Lane S2, E6. renderSeqRail() builds its footer chord rail out of chord-name
+# data; every node must be filled with textContent, never innerHTML, so a
+# future chord/deck name containing markup characters can never be parsed as
+# HTML. This mutant swaps one label assignment to innerHTML.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6897,7 +6897,7 @@ function renderSeqRail(d) {
+     }
+     const c = d.chords[ci];
+     const node = document.createElement(i === idx ? "b" : "span");
+-    node.textContent = c.main + (c.sup || "");
++    node.innerHTML = c.main + (c.sup || "");
+     if (i === idx) node.style.setProperty("color", "var(--root)");
+     rail.appendChild(node);
+   });

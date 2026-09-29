@@ -7,6 +7,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 const { loadEngine } = require("./helpers/engine.js");
 
 const ROOT = path.join(__dirname, "..");
@@ -187,13 +188,22 @@ test("pick is deterministic for a seed and uses only the rng it is given", () =>
   const b = E.sequence.pick(HIJAZ, rng2, null);
   assert.deepStrictEqual(a, b);
 
-  const originalRandom = Math.random;
-  Math.random = () => { throw new Error("pick must not call Math.random"); };
+  // pick() runs inside the engine's OWN node:vm realm, which brings its own
+  // Math - stubbing the host's Math.random here would stub a Math object
+  // pick() never sees, and the assertion below would pass even if pick()
+  // called Math.random freely. E._context's own properties don't include
+  // Math (a vm context's standard built-ins aren't own properties of the
+  // sandbox object the host holds), so fetch the live binding by running
+  // "Math" in that context - vm.runInContext returns the real, mutable
+  // object the context's code shares, not a copy.
+  const vmMath = vm.runInContext("Math", E._context);
+  const originalRandom = vmMath.random;
+  vmMath.random = () => { throw new Error("pick must not call Math.random"); };
   try {
     const rng3 = E.sequence.mulberry32(7);
     assert.doesNotThrow(() => E.sequence.pick(PYGMY, rng3, null));
   } finally {
-    Math.random = originalRandom;
+    vmMath.random = originalRandom;
   }
 });
 

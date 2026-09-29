@@ -4683,6 +4683,21 @@ test("the live region names the current chord and its position: \"<name>, chord 
   assert.strictEqual(rail.getAttribute("aria-hidden"), "true");
 });
 
+test("the rail's chord labels are set via textContent, never innerHTML", () => {
+  // E6: renderSeqRail() must never innerHTML chord data into the DOM.
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const d = app.currentDeck();
+  const seq = app.get("seq");
+  const rail = app.els.count.children[0];
+  const labelNodes = rail.children.filter((_, i) => i % 2 === 0);
+  assert.strictEqual(labelNodes.length, seq.chords.length);
+  seq.chords.forEach((ci, i) => {
+    const ch = d.chords[ci];
+    assert.strictEqual(labelNodes[i].textContent, `${ch.main}${ch.sup || ""}`);
+  });
+});
+
 test("an unsupported deck clears the card and disables stepping, with no crash", () => {
   const app = boot({ random: () => 0 });
   app.run('setMode("S")');

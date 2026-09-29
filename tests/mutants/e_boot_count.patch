@@ -1,14 +1,18 @@
 # kills: boots with the first deck loaded
 # suite: node --test --test-name-pattern ^boots.with.the.first.deck.loaded$ tests/e2e.test.js
+# Refreshed 2026-09-29 (lane S2): render() now branches on mode === "S" for a
+# separate rail/back-face path; the A/B counter line moved into the "else"
+# branch and gained a sibling classList.remove("seq") line right above it,
+# but the mutation (dropping "+ 1" from the counter) is identical.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3148,7 +3148,7 @@ function render() {
- 
-   document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
-   document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
--  document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
-+  document.getElementById("count").textContent = `${idx} / ${order.length}`;
+@@ -6945,7 +6945,7 @@ function render() {
+     document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
+     document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+     document.getElementById("count").classList.remove("seq");
+-    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
++    document.getElementById("count").textContent = `${idx} / ${order.length}`;
+   }
    const cardEl = document.getElementById("card");
    cardEl.classList.toggle("flip", flipped);
-   // The flip is a CSS transform, so BOTH faces stay in the DOM and in the

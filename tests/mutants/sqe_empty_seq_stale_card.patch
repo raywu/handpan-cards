@@ -1,0 +1,20 @@
+# kills: an unsupported deck clears the card and disables stepping, with no crash
+# suite: node --test --test-name-pattern ^an.unsupported.deck.clears.the.card.and.disables.stepping..with.no.crash$ tests/app.test.js
+# Lane S2, E3. render()'s empty-sequence guard drops the `|| !seq.chords`
+# half of its condition, so a deck with too few simple chords (seq set to
+# {chords: null, ...} by setOrder()) no longer routes to renderSeqEmpty() -
+# it falls through to the plain `if (!order.length) return;` guard instead,
+# which quietly leaves the PREVIOUS deck's card on screen rather than
+# showing the "doesn't have enough simple chords" message.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6908,7 +6908,7 @@ function renderSeqRail(d) {
+   countEl.appendChild(live);
+ }
+ function render() {
+-  if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
++  if (mode === "S" && !seq) { renderSeqEmpty(); return; }
+   if (!order.length) return;
+   const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
+   document.documentElement.style.setProperty("--root", d.colors.root);
