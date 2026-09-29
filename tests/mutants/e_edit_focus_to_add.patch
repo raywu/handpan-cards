@@ -1,7 +1,9 @@
 # kills: Escape closes the Edit sheet and focus returns to the chip that opened it
 # suite: node --test --test-name-pattern ^Escape.closes.the.Edit.sheet.and.focus.returns.to.the.chip.that.opened.it$ tests/e2e.test.js
 # Every close hands focus to + ADD, so leaving an Edit page drops the keyboard
-# user at the end of the chip strip instead of on the chip they came from.
+# user on "+ Add a scale" inside the (closed) settings panel (M2, 2026-09-28:
+# addChip now lives there, not in the chip strip) instead of on the chip they
+# came from.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

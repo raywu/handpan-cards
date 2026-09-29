@@ -1,6 +1,9 @@
 # kills: every interactive control has a press state
 # suite: node --test --test-name-pattern ^every.interactive.control.has.a.press.state$ tests/e2e.test.js
-# ONE control loses its :active rule - the deck chip, which is also "+ ADD".
+# ONE control loses its :active rule - the deck chip (M2, 2026-09-28: "+ Add
+# a scale" moved out of the deck strip into the settings panel, where it is
+# .mode-styled and covered by the separate .mode:active rule below, not this
+# one - the deck chip is a distinct, ordinary chip now).
 # With -webkit-tap-highlight-color:transparent set globally and no hover on a
 # phone, that control gives a finger nothing back for the whole time it is
 # down (row 223f). The mutant is deliberately a single line: the test has to

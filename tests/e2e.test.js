@@ -1031,11 +1031,24 @@ function run() {
       "the settings panel must not be a descendant of header, main, footer or #card");
   });
 
-  /* Lane M1: the document keydown handler's panelOpen branch is the only
-     thing standing between the settings panel and the card underneath it -
-     without its own `return`, an ArrowRight/ArrowLeft or Enter/Space typed
-     while the panel is open falls through to step()/flip() on the card the
-     panel is supposed to be modal over. */
+  /* Lane M1/M2b: the document keydown handler's panelOpen branch is the
+     only thing standing between the settings panel and the card underneath
+     it for ArrowRight/ArrowLeft - without its own `return`, either arrow key
+     typed while the panel is open falls through to step() on the card the
+     panel is supposed to be modal over.
+     Enter/Space are a DIFFERENT path: the document handler never acts on
+     them at all (only Escape and Tab do, inside the panelOpen branch) -
+     flip() is wired to #card's OWN keydown listener (row 7621), which only
+     ever fires for a keydown targeting #card or a descendant. With the
+     panel open, #card sits inside <main>, which openPanel() makes `inert`,
+     so #card cannot hold focus and cannot receive the event in the first
+     place. The earlier version of this test left focus on #settings-trigger,
+     so Enter/Space there activated the TRIGGER's own native click (closing
+     the panel) before ever reaching a point where the guard could matter -
+     it could not fail no matter what the guard did. To test the guard (and
+     the inert boundary) rather than the trigger's own click handler, focus
+     is moved off every panel stop (blur to document.body) first, and the
+     panel's open/closed state is asserted alongside the flip/step state. */
   test("arrow keys and Enter/Space do not reach the card while the settings panel is open", async () => {
     await freshLoad();
     const meta = await decksMeta();
@@ -1048,21 +1061,33 @@ function run() {
     await b.key("ArrowLeft", "ArrowLeft", 37);
     await expectCount(`1 / ${n}`, "ArrowLeft must not step the card while the panel is open");
 
-    // Enter and Space are the card's own flip keys (row 396) - pressed while
-    // the panel is open, they must land on whatever panel control has focus
-    // (activating it, if anything) and never fall through to flip() on the
-    // card underneath. Focus is on #settings-trigger right after opening.
+    await b.eval(`document.activeElement.blur()`);
+    const blurred = await b.eval(`return document.activeElement === document.body`);
+    assert.strictEqual(blurred, true, "focus did not move to <body> for the Enter/Space probes");
+
+    const readState = () => b.eval(`return {
+      panelOpen: document.getElementById("settings-panel").hidden === false,
+      flip: document.getElementById("card").classList.contains("flip"),
+      count: (document.getElementById("count").textContent || "").trim(),
+    }`);
+
     await b.key("Enter", "Enter", 13);
-    let flippedWhileOpen = await b.eval(
-      `return document.getElementById("card").classList.contains("flip")`);
-    assert.strictEqual(flippedWhileOpen, false,
+    let state = await readState();
+    assert.strictEqual(state.panelOpen, true,
+      "Enter with no panel control focused must not close the panel");
+    assert.strictEqual(state.flip, false,
       "the card must not have flipped from Enter while the panel is open");
+    assert.strictEqual(state.count, `1 / ${n}`,
+      "Enter must not step the card while the panel is open");
 
     await b.key(" ", " ", 32);
-    flippedWhileOpen = await b.eval(
-      `return document.getElementById("card").classList.contains("flip")`);
-    assert.strictEqual(flippedWhileOpen, false,
+    state = await readState();
+    assert.strictEqual(state.panelOpen, true,
+      "Space with no panel control focused must not close the panel");
+    assert.strictEqual(state.flip, false,
       "the card must not have flipped from Space while the panel is open");
+    assert.strictEqual(state.count, `1 / ${n}`,
+      "Space must not step the card while the panel is open");
   });
 
   test("the settings trigger opens and closes the panel three ways, and reports its own state", async () => {
@@ -1117,13 +1142,18 @@ function run() {
     async () => {
       await freshLoad();
       await openSettingsPanel();
-      // Some panel stops (the print buttons) carry no id, so track focus by a
-      // stable index into panelStops()-equivalent DOM order, not by id alone.
+      // Some panel stops (the print buttons) carry no id, so tag each stop
+      // with its own index into the app's OWN panelStops() list (the exact
+      // array the keydown handler cycles through) and track focus by that
+      // index, not by id alone - two different id-less print buttons would
+      // otherwise be indistinguishable.
+      await b.eval(`window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));`);
       const describe = () => b.eval(`
         const panel = document.getElementById("settings-panel");
         const a = document.activeElement;
         return {
           id: a && a.id || null,
+          stopIdx: a && a.hasAttribute("data-stop-idx") ? a.getAttribute("data-stop-idx") : null,
           isTrigger: a && a.id === "settings-trigger",
           inPanel: !!a && panel.contains(a),
         };
@@ -1145,13 +1175,29 @@ function run() {
       assert.ok(ids.includes("modeB"), `Tab never reached #modeB: ${JSON.stringify(seen)}`);
       assert.ok(ids.includes("deck-add"),
         `Tab never reached + ADD A SCALE: ${JSON.stringify(seen)}`);
+      // #deck-add opens the scale sheet dialog, exactly what the old strip
+      // chip advertised (review gap on PR #155: the move into the panel
+      // dropped this attribute).
+      const deckAddHaspopup = await b.eval(
+        `return document.getElementById("deck-add").getAttribute("aria-haspopup")`);
+      assert.strictEqual(deckAddHaspopup, "dialog",
+        "+ ADD A SCALE must advertise the dialog it opens");
       // Everything seen must actually be inside the panel (or be the trigger
       // that opened it) - Tab must never escape to the inert background.
       const outside = seen.filter((s) => !s.isTrigger && !s.inPanel);
       assert.deepStrictEqual(outside, [], `Tab escaped the panel: ${JSON.stringify(outside)}`);
 
-      // Shift+Tab from the trigger (the first stop) wraps to the LAST stop,
-      // which is inside the panel and is not the trigger itself.
+      // Tab from the LAST real stop (the entry right before the walk wrapped
+      // back to the trigger above) must land on the trigger - i.e. Tab from
+      // last wraps to first. seen[seen.length - 1] is that trigger landing;
+      // seen[seen.length - 2] is the last real stop that produced it.
+      const lastStop = seen[seen.length - 2];
+      assert.ok(lastStop && !lastStop.isTrigger,
+        `no real stop preceded the wrap back to the trigger: ${JSON.stringify(seen)}`);
+
+      // Shift+Tab from the trigger (the first stop) must land on that SAME
+      // last stop - not merely "inside the panel, not the trigger" (which a
+      // wrap to the wrong index, or to any other stop, would also satisfy).
       await b.send("Input.dispatchKeyEvent", {
         type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9,
         nativeVirtualKeyCode: 9, modifiers: 8,
@@ -1165,6 +1211,9 @@ function run() {
         "Shift+Tab from the first stop did not move focus off the trigger");
       assert.strictEqual(last.inPanel, true,
         `Shift+Tab from the first stop landed outside the panel: ${JSON.stringify(last)}`);
+      assert.strictEqual(last.stopIdx, lastStop.stopIdx,
+        `Shift+Tab from the first stop must land on the LAST stop (idx ${lastStop.stopIdx}), ` +
+        `landed on idx ${last.stopIdx} instead: ${JSON.stringify({ lastStop, last })}`);
     });
 
   // M2, 2026-09-28 (same review gap as above). panelBackground is
@@ -2072,6 +2121,19 @@ function run() {
         const chips = [...nav.children];
         const navR = nav.getBoundingClientRect();
         const on = nav.querySelector(".chip.on").getBoundingClientRect();
+        // Both scroll ends, reachable or not: a justify-content:center strip
+        // (in place of the auto-margin end chips) centres a row that DOESN'T
+        // fit exactly as one that does, stranding the first chip off the
+        // left edge at scrollLeft 0 - the auto margins are what keep it
+        // reachable once the row overflows.
+        nav.scrollLeft = 0;
+        const first = nav.firstElementChild.getBoundingClientRect();
+        const atStart = first.left - navR.left;
+        nav.scrollLeft = nav.scrollWidth;
+        const last = nav.lastElementChild.getBoundingClientRect();
+        const atEnd = navR.right - last.right;
+        const maxScroll = nav.scrollLeft;
+        nav.scrollLeft = 0;
         return {
           chips: chips.length,
           tops: [...new Set(chips.map(c => Math.round(c.getBoundingClientRect().top)))],
@@ -2079,6 +2141,7 @@ function run() {
           wraps: nav.scrollHeight > nav.clientHeight + 1,
           activeInView: on.left >= navR.left - 1 && on.right <= navR.right + 1,
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
+          atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2), maxScroll,
         };
       `);
       // #decks holds deck chips only now (M2, 2026-09-28: "+ Add a scale"
@@ -2089,6 +2152,12 @@ function run() {
       assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
       assert.strictEqual(row.activeInView, true, "the active chip is not scrolled into view");
       assert.ok(row.body.sw <= row.body.cw + 1, "the chip row blew the page out horizontally");
+      assert.ok(row.atStart >= -1,
+        `at scrollLeft 0 the first chip starts ${-row.atStart}px left of .decks - it is ` +
+        `unreachable: ${JSON.stringify(row)}`);
+      assert.ok(row.atEnd >= -1,
+        `fully scrolled, the last chip still ends ${-row.atEnd}px past .decks' right edge: ` +
+        `${JSON.stringify(row)}`);
     } finally {
       await b.setViewport(900, 900, false);
     }
