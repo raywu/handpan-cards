@@ -262,7 +262,13 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
      padding term entirely and leaves headerWidth = 100vw - 480px - 2*gutter.
      Verified at 1024x768: decks right lands at 764px, exactly gutter (20px)
      clear of the sidebar's left edge at 784px. */
-  header{max-width:calc(100vw - 480px - 2 * var(--sp-3))}
+  /* Reviewer finding Q19 (round-2, 2026-09-29): the calc() above REPLACES
+     the base rule's min(92vw,900px) ceiling instead of tightening it, so at
+     wide viewports (1920px: calc gives 1400px) the header overruns the
+     900px cap the base rule exists to enforce. Keep both limits - the
+     900px ceiling and the sidebar clearance - by taking the smaller of the
+     two, the same min() shape the base rule already uses. */
+  header{max-width:min(900px, calc(100vw - 480px - 2 * var(--sp-3)))}
   #settings-panel{
     /* top/bottom inset var(--sp-1), not 0: the page-background test's outer
        frame (tests/e2e.test.js "page background covers every viewport")
@@ -7819,11 +7825,19 @@ document.addEventListener("keydown", e => {
   // (panelOpen never goes true there), so a native form control inside it -
   // #print-paper-select - had its own ArrowLeft/ArrowRight behaviour
   // doubled by this handler stepping the card underneath. Ignore arrow keys
-  // that land on a form control, or anywhere inside the sidebar itself.
+  // that land on a form control.
+  // Reviewer finding Q18 (round-2, 2026-09-29): the guard above used to also
+  // cover ANY target inside #settings-panel, not just form controls. On
+  // desktop that sidebar is always present (M3), so the broad clause made
+  // ArrowRight/ArrowLeft a dead shortcut after any mouse interaction inside
+  // it - a click on #modeB, a PDF button, or focus returning to #deck-add
+  // after the add-scale sheet closes all leave the *next* keypress silently
+  // swallowed even though none of those targets have their own arrow-key
+  // behaviour to protect against doubling. Narrow the guard to the actual
+  // form controls that do.
   const kt = e.target;
   const ktag = kt && kt.tagName;
-  if (ktag === "SELECT" || ktag === "INPUT" || ktag === "TEXTAREA" ||
-      (kt && kt.closest && kt.closest("#settings-panel"))) return;
+  if (ktag === "SELECT" || ktag === "INPUT" || ktag === "TEXTAREA") return;
   if (e.key === "ArrowRight") step(1);
   else if (e.key === "ArrowLeft") step(-1);
 });

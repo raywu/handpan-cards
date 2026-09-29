@@ -1,0 +1,24 @@
+# kills: at 1280x800, ArrowRight steps the card after a click on a sidebar button
+# suite: node --test --test-name-pattern at.1280x800..ArrowRight.steps.the.card.after.a.click.on.a.sidebar.button tests/e2e.test.js
+# Reviewer finding Q18 (round-2, 2026-09-29): restores the broad
+# `kt.closest("#settings-panel")` clause the document keydown handler's arrow
+# guard used to carry. On desktop the sidebar (#settings-panel) is always
+# present, so this clause swallows ArrowRight/ArrowLeft after ANY mouse
+# interaction inside it - not just the form controls (SELECT/INPUT/TEXTAREA)
+# that actually double their own native arrow-key behaviour. Clicking a plain
+# sidebar button (#modeB) has no such native behaviour to protect against,
+# so the next ArrowRight should still step the card; with this clause back,
+# it silently does not.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7837,7 +7837,8 @@
+   // form controls that do.
+   const kt = e.target;
+   const ktag = kt && kt.tagName;
+-  if (ktag === "SELECT" || ktag === "INPUT" || ktag === "TEXTAREA") return;
++  if (ktag === "SELECT" || ktag === "INPUT" || ktag === "TEXTAREA" ||
++      (kt && kt.closest && kt.closest("#settings-panel"))) return;
+   if (e.key === "ArrowRight") step(1);
+   else if (e.key === "ArrowLeft") step(-1);
+ });

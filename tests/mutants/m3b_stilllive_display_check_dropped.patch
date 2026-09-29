@@ -1,0 +1,29 @@
+# kills: stillLive's display check re-homes focus when the trigger is still active but already hidden
+# suite: node --test --test-name-pattern stillLive.s.display.check.re.homes.focus.when.the.trigger.is.still.active.but.already.hidden tests/e2e.test.js
+# Reviewer finding Q20 (round-2, 2026-09-29): drops the
+# `getComputedStyle(a).display !== "none"` clause from stillLive in the
+# desktopMQ change handler, leaving only `a !== document.body &&
+# a.isConnected`. The handler's own comment explains why the clause exists:
+# at the moment this listener runs, document.activeElement can still be the
+# (about-to-be-hidden) trigger - the browser's own blur-to-<body> step for a
+# focused element that just became display:none is a separate, LATER tick,
+# not synchronous with the media-query change. Without the display check, a
+# connected-but-now-invisible trigger reads as "still live" and nobody
+# re-homes focus onto the card; it is later blurred to <body> with nothing
+# left to catch it. The killing test simulates that exact tick
+# deterministically (a real CDP viewport resize in this harness does not
+# reproduce it reliably - see the test's own comment) by shadowing
+# document.activeElement for exactly one read.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7774,8 +7774,7 @@
+     // nothing needs fixing. Check whether the CURRENT active element is
+     // still connected, live and actually rendered instead of naming it.
+     const a = document.activeElement;
+-    const stillLive = a && a !== document.body && a.isConnected &&
+-      getComputedStyle(a).display !== "none";
++    const stillLive = a && a !== document.body && a.isConnected;
+     if (!stillLive) card.focus();
+   }
+ });

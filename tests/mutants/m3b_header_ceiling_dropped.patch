@@ -1,0 +1,20 @@
+# kills: at 1920x1080 the header stays within its 900px ceiling
+# suite: node --test --test-name-pattern at.1920x1080.the.header.stays.within.its.900px.ceiling tests/e2e.test.js
+# Reviewer finding Q19 (round-2, 2026-09-29): drops the min(900px, ...) wrap
+# around the desktop-only header max-width calc(), reverting to the bare
+# calc() that REPLACES the base rule's min(92vw,900px) ceiling instead of
+# tightening it. At 1920x1080 the bare calc() evaluates to 1400px, so the
+# header (and the deck-chip strip inside it) runs well past the 900px cap
+# the base rule exists to enforce.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -265,7 +265,7 @@
+      900px cap the base rule exists to enforce. Keep both limits - the
+      900px ceiling and the sidebar clearance - by taking the smaller of the
+      two, the same min() shape the base rule already uses. */
+-  header{max-width:min(900px, calc(100vw - 480px - 2 * var(--sp-3)))}
++  header{max-width:calc(100vw - 480px - 2 * var(--sp-3))}
+   #settings-panel{
+     /* top/bottom inset var(--sp-1), not 0: the page-background test's outer
+        frame (tests/e2e.test.js "page background covers every viewport")
