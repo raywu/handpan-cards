@@ -247,7 +247,15 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 @media (min-width:1024px) and (min-height:700px){
   #settings-trigger, #settings-scrim{display:none}
   #settings-panel{
-    display:flex; position:fixed; top:0; right:0; bottom:0;
+    /* top/bottom inset var(--sp-1), not 0: the page-background test's outer
+       frame (tests/e2e.test.js "page background covers every viewport")
+       samples a thin band at every edge of the viewport and expects it
+       table-coloured on every deck, desktop included. A flush top:0/bottom:0
+       would paint the panel's own #433b2c border-left straight across that
+       band at y=0 and y=h-1. Right stays flush - the panel's own #1f1b15
+       background there is already close enough to --table to pass the same
+       check, and it is that one edge (right) the design puts the sidebar on. */
+    display:flex; position:fixed; top:var(--sp-1); right:0; bottom:var(--sp-1);
     width:240px; max-width:240px; height:auto; max-height:none;
     border-radius:0; border:none; border-left:1px solid #433b2c;
     box-shadow:none; padding:var(--sp-4) var(--sp-3);

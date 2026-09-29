@@ -224,11 +224,20 @@ function run() {
   // header's settings trigger now. Real interaction opens the panel first,
   // the same way a real user would, rather than reaching into a `hidden`
   // subtree - a click on a `hidden` element's descendant is not what ships.
+  // M3 (desktop sidebar, 2026-09-28): at >=1024x700 the trigger is
+  // display:none and the panel is already showing (CSS forces it visible
+  // regardless of the `hidden` attribute), so a real user never clicks
+  // anything here - the click is skipped when the trigger itself is not
+  // visible, and the wait checks computed style rather than the `hidden`
+  // attribute so it is satisfied either way.
   async function openSettingsPanel() {
-    await b.click("#settings-trigger");
-    await b.waitFor(`document.getElementById("settings-panel").hidden === false`, {
-      label: "settings panel to open",
-    });
+    const triggerHidden = await b.eval(
+      `return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
+    if (!triggerHidden) await b.click("#settings-trigger");
+    await b.waitFor(
+      `getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+      { label: "settings panel to open" },
+    );
   }
 
   // Polls, so it is immune to render timing; reports what it actually saw.
