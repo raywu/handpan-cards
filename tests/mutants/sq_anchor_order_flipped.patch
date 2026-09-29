@@ -1,0 +1,14 @@
+# kills: anchor tier preference flipped, so a power chord out-ranks a major/minor triad
+# suite: node --test --test-name-pattern ^anchors.pick.one.simple.chord.per.root.on.every.built.in.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -104,7 +104,7 @@
+       var shape = chordShape(deck, i);
+       if (!shape) continue;
+       var existing = byRoot[shape.rootPc];
+-      if (!existing || shape.tier < existing.tier ||
++      if (!existing || shape.tier > existing.tier ||
+           (shape.tier === existing.tier && shape.bottomCount < existing.bottomCount)) {
+         byRoot[shape.rootPc] = shape;
+       }

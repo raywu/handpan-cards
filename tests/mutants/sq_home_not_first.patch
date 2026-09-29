@@ -1,0 +1,14 @@
+# kills: a 2-chord sequence is emitted with the non-home chord first
+# suite: node --test --test-name-pattern ^every.sequence.starts.on.the.home.chord.and.every.step.connects..including.back.home$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -160,7 +160,7 @@
+     var out = [];
+     if (length === 2) {
+       others.forEach(function (idx) {
+-        if (connects(deck, home, idx)) out.push([home, idx]);
++        if (connects(deck, home, idx)) out.push([idx, home]);
+       });
+       return out;
+     }

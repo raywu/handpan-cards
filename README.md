@@ -21,7 +21,7 @@ the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
 single-colour root-frame borders, per-deck palettes) is original to this
 project.
 
-The scale engine that generates and ranks those cards is ten modules under
+The scale engine that generates and ranks those cards is eleven modules under
 `src/engine/`: `src/engine/core.js` (note parsing and pitch classes),
 `src/engine/voicing.js` (the cluster and spelling rules),
 `src/engine/naming.js` (chord symbols and subtitles),
@@ -42,6 +42,8 @@ same print builders through this one module).
 `src/engine/pdfcards.js` (a port of `tools/hifi.py`: the cards, the pan
 diagram, the crop marks and the calibration bar, held glyph for glyph against
 the print pipeline by `tests/test_pdf_parity.py`).
+`src/engine/sequence.js` (chord-sequence mode: anchor selection and the
+connect rule that picks a home-rooted 2- or 3-chord loop).
 `docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
 decisions behind it.
 
@@ -126,7 +128,7 @@ What is covered:
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
-That is 13 node suites (`tests/*.test.js`) and 13 python suites
+That is 14 node suites (`tests/*.test.js`) and 13 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
 

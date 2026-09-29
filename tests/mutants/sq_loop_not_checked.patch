@@ -1,0 +1,14 @@
+# kills: a 3-chord sequence no longer requires its last chord to connect back to home
+# suite: node --test --test-name-pattern ^every.sequence.starts.on.the.home.chord.and.every.step.connects..including.back.home$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -168,7 +168,7 @@
+       if (!connects(deck, home, b)) return;
+       others.forEach(function (c) {
+         if (c === b) return;
+-        if (connects(deck, b, c) && connects(deck, c, home)) out.push([home, b, c]);
++        if (connects(deck, b, c)) out.push([home, b, c]);
+       });
+     });
+     return out;

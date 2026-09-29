@@ -1,0 +1,14 @@
+# kills: draw() ignores the given rng and calls Math.random directly
+# suite: node --test --test-name-pattern ^pick.is.deterministic.for.a.seed.and.uses.only.the.rng.it.is.given$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -194,7 +194,7 @@
+   }
+
+   function draw(rng, n) {
+-    var i = Math.floor(rng() * n);
++    var i = Math.floor(Math.random() * n);
+     return i >= n ? n - 1 : i;
+   }
+
