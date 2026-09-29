@@ -11,12 +11,20 @@
      relying on this token alone. -->
 <meta name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<!-- Android Chrome, Samsung Internet and most Chromium browsers tint the
+     status bar and URL bar from theme-color; without it they paint them
+     light, which is what an owner report called "a white bar". color-scheme
+     covers the canvas and UA widgets (the paper <select> popup, scrollbars,
+     autofill) before the app's own CSS has painted anything. -->
+<meta name="theme-color" content="#1a1815">
+<meta name="color-scheme" content="dark">
 <title>Handpan Chord Flashcards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
+  color-scheme:dark;
   --ink:#242424; --sep:#8a8a8a; --paper:#ffffff;
   --table:#1a1815; --table2:#26221c;
   --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;
@@ -61,6 +69,13 @@
    only fix is CSS on the root, scoped to the X axis only so vertical
    scrolling (the sheet, .decks) is untouched. */
 html{overscroll-behavior-x:none}
+/* Propagation from body's radial-gradient covers the canvas today, but that
+   rests on a gradient IMAGE with no colour under it - any frame where the
+   image is not yet painted, or where the root box is resized mid-resize,
+   shows the canvas's default white. This gives html its own solid colour so
+   nothing shows through. body keeps its gradient; that box is at least
+   100dvh (below), so nothing visible moves. */
+html{background-color:var(--table)}
 html,body{height:100%}
 body{
   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
@@ -772,7 +787,7 @@ button.nav:active{background:#2e281e}
      the floor that stops the block ever being shorter than the sheet, which
      is what made every sheet paginate onto two pages. Floor and fill
      together - neither alone is correct. */
-  html,body{height:100%; min-height:0; overflow:visible}
+  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
   body.printing #printroot, body.printing #printroot .printpage{height:100%}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */

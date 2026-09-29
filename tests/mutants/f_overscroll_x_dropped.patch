@@ -3,14 +3,18 @@
 # Drops the overscroll-behavior-x:none rule the fix for row 95 adds to <html>,
 # leaving the root free to hand a horizontal card drag to the browser's own
 # overscroll gesture again.
+# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the line this
+# mutates is byte-identical; only the surrounding context moved when the
+# theme-color/color-scheme meta and the html background-color rule were
+# added just below it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -60,7 +60,6 @@
+@@ -68,7 +68,6 @@
     `{ passive: true }` so JS cannot preventDefault() its way out of this - the
     only fix is CSS on the root, scoped to the X axis only so vertical
     scrolling (the sheet, .decks) is untouched. */
 -html{overscroll-behavior-x:none}
- html,body{height:100%}
- body{
-   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
+ /* Propagation from body's radial-gradient covers the canvas today, but that
+    rests on a gradient IMAGE with no colour under it - any frame where the
+    image is not yet painted, or where the root box is resized mid-resize,

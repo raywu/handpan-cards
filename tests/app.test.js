@@ -4550,3 +4550,18 @@ test("openPrintSheet survives the cutover, unreferenced by the CTA", () => {
     "printed() stubs print(); this only proves the old path still runs end to end");
   assert.ok(String(app.get('document.getElementById("printroot").innerHTML')).length > 0);
 });
+
+test("the head carries theme-color and color-scheme meta tags matching --table", () => {
+  // The sandbox stubs the DOM and never parses <head>, so this has to read the
+  // raw file - same pattern as the scale-slots and layout-hint checks above.
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const themeColor = /<meta\s+name="theme-color"\s+content="(#[0-9a-fA-F]{6})">/.exec(html);
+  assert.ok(themeColor, "no <meta name=\"theme-color\"> in the head");
+  const tableToken = /--table:(#[0-9a-fA-F]{6});/.exec(html);
+  assert.ok(tableToken, "the --table token itself is missing");
+  assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
+    "theme-color does not equal the --table token");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
+    "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
+});

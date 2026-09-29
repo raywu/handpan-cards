@@ -1,0 +1,20 @@
+# kills: with body's gradient image removed, the outer frame still stays table-coloured
+# suite: node --test --test-name-pattern ^with.body.s.gradient.image.removed..the.outer.frame.still.stays.table.coloured$ tests/e2e.test.js
+# Drops the html{background-color:var(--table)} rule (plan candidate A3).
+# Propagation from body's radial-gradient still covers the canvas in the
+# common case, but any frame where that gradient image has not painted (or
+# the root box resizes mid-resize) falls through to the canvas's default
+# background, which is white under Chromium's light default and only near
+# table-coloured when color-scheme:dark supplies its own dark default -
+# neither is the actual --table colour this rule pins.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -75,7 +75,6 @@
+    shows the canvas's default white. This gives html its own solid colour so
+    nothing shows through. body keeps its gradient; that box is at least
+    100dvh (below), so nothing visible moves. */
+-html{background-color:var(--table)}
+ html,body{height:100%}
+ body{
+   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
