@@ -1,8 +1,14 @@
-# kills: Escape closes the sheet and focus returns to + ADD
-# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to...ADD$ tests/e2e.test.js
+# kills: Escape closes the sheet and focus returns to the settings trigger
+# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to.the.settings.trigger$ tests/e2e.test.js
 # Closing the page leaves focus on whatever was inside it, which is detached
 # the moment the page hides - so the keyboard user lands on <body> and has to
 # tab from the top of the document to get back to where they were.
+#
+# Refreshed 2026-09-29 (M2, menu-add-scale): the target test was renamed
+# from "...focus returns to + ADD" to "...focus returns to the settings
+# trigger" (#deck-add now lives inside the closed settings panel and cannot
+# receive focus back - see addChip.onclick). Same rename in the suite
+# header; the defect and the fix (the missing .focus() call) are unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

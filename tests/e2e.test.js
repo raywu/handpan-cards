@@ -2770,7 +2770,9 @@ function run() {
     await freshLoad();
     await b.setViewport(380, 780, true);
     try {
-      await generate(EDIT_SCALE);           // four chips + "+ ADD", the owner's case
+      await generate(EDIT_SCALE);           // four chips, the owner's case (M2,
+      // 2026-09-28: "+ Add a scale" moved out of the strip into the settings
+      // panel, so it no longer contributes to the strip's measured width)
       const bad = [];
       const seen = {};
       for (const [vw, vh] of LANDSCAPE_BUDGET) {
@@ -2836,42 +2838,27 @@ function run() {
       }
       assert.deepStrictEqual(bad, [], JSON.stringify(seen, null, 2));
 
-      // And the positive claim, stated as a RELATIONSHIP rather than as a
-      // pixel count: the strip is wider than the viewport gives it at the
-      // shortest landscape a phone offers. Re-measured 2026-09-28 (lane M1,
-      // menu-shell): moving the mode toggle out of the header row freed the
-      // width the modebar used to share with the strip, so .decks now gets
-      // most of that row to itself - .decks scrollWidth / clientWidth is
-      // 767/767 at 844x390, 849/849 at 926x428, 611/590 at 667x375 and
-      // 1203/1203 at 1280x500. Only the narrowest row still overflows, and
-      // by a much smaller margin (21px, down from 218px pre-menu-shell).
+      // The positive claim, stated as a RELATIONSHIP rather than as a pixel
+      // count: with "+ Add a scale" out of the strip (M2, 2026-09-28), a
+      // custom deck's four chips now fit every landscape row in the budget
+      // table, including the narrowest one that used to overflow by 21px
+      // pre-M2 (611/590 at 667x375). Measured 2026-09-29: .decks
+      // scrollWidth/clientWidth is 767/767 at 844x390, 849/849 at 926x428,
+      // 590/590 at 667x375 and 1203/1203 at 1280x500 - every row fits with
+      // room to spare, so the strip's overflow-x:auto scroll path is no
+      // longer exercised by this configuration at all.
       //
       // Those pixel counts are font-metric dependent - a CI box without the
       // webfont measures different chips - so what is ASSERTED is the sign,
-      // on the one row that still overflows. That is precisely the claim the
-      // stylesheet used to get wrong, and the whole reason this test exists.
-      const narrow = seen["667x375"];
-      assert.ok(narrow.sw > narrow.cw,
-        "at 667x375 with a custom deck the strip now FITS " +
-        `(${narrow.sw} <= ${narrow.cw}): ${JSON.stringify(seen, null, 2)}. If a ` +
-        "layout change really did buy that, index.html's landscape comment - " +
-        "which states the strip scrolls and by how much - is now the stale one.");
-
-      // The other half of that comment's claim, which nothing used to cover:
-      // "with the title out the strip gets the whole width, and on the two
-      // WIDER rows it then fits". Stated, like the line above, as a SIGN and
-      // not as the measured 652/652 and 1006/1006 - scrollWidth reports
-      // max(content, clientWidth), so a row that fits reads sw == cw whatever
-      // the chips actually measure, and a row that does not reads strictly
-      // wider. That makes it font-metric independent in the direction that
-      // matters: only a real overflow can fail it.
-      for (const row of ["926x428", "1280x500"]) {
-        const wide = seen[row];
-        assert.ok(wide.sw <= wide.cw + 1,
-          `at ${row} the deck strip no longer fits (${wide.sw} > ${wide.cw}), ` +
-          "so a chip is reachable only by scrolling. index.html's landscape " +
-          "comment claims both wider rows fit with a custom deck on the strip; " +
-          `one of the two is now wrong: ${JSON.stringify(seen, null, 2)}`);
+      // on every row: the strip fits. That is the claim this test now pins,
+      // in place of the pre-M2 claim that the narrowest row still overflows.
+      for (const row of ["844x390", "926x428", "667x375", "1280x500"]) {
+        const m = seen[row];
+        assert.ok(m.sw <= m.cw + 1,
+          `at ${row} the deck strip no longer fits (${m.sw} > ${m.cw}), so a ` +
+          "chip is reachable only by scrolling. With \"+ Add a scale\" out of " +
+          "the strip (M2), every landscape row in the budget table should fit " +
+          `a custom deck's four chips: ${JSON.stringify(seen, null, 2)}`);
       }
     } finally {
       await b.setViewport(900, 900, false);

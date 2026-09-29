@@ -257,18 +257,23 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    With the title out the strip gets the whole width, and on the two WIDER
    rows it then fits: measured 2026-09-15, .decks scrollWidth/clientWidth is
    652/652 at 926x428 and 1006/1006 at 1280x500, custom deck included. The
-   two narrow rows still overflow and SCROLL - .decks is overflow-x:auto, so
-   an over-wide strip is a scroll and never a clip. With one custom deck on
-   the strip that is 611/570 at 844x390 (41px) and 611/393 at 667x375
-   (218px); with the three built-ins alone 667x375 is 463/393 (70px), which
-   is just the arithmetic three lines up. The title was never what stood
-   between this row and a strip that fits, and chasing those 41px with a
-   layout change is not worth what it would cost the card (owner, 2026-09).
-   Both ends stay reachable, which is the thing that actually has to hold
-   here: the auto margins on the end chips centre the row while it fits and
-   collapse once it does not. tests/e2e.test.js "the landscape deck strip
-   scrolls rather than clips, at both ends" pins that, and pins the sign of
-   the overflow so this paragraph cannot quietly go stale again.
+   two narrow rows used to still overflow and SCROLL - .decks is
+   overflow-x:auto, so an over-wide strip is a scroll and never a clip - at
+   611/570 at 844x390 (41px) and 611/393 at 667x375 (218px) with one custom
+   deck on the strip.
+   2026-09-28 (M2, menu-add-scale): "+ Add a scale" moved out of the strip
+   into the settings panel, so a custom deck's strip is now four chips, not
+   five - and that is enough to close the gap on every row, including the
+   narrowest: .decks scrollWidth/clientWidth is 767/767 at 844x390, 849/849
+   at 926x428, 590/590 at 667x375 and 1203/1203 at 1280x500. All four rows
+   fit; the overflow-x:auto scroll path exists for a wider custom name or a
+   future chip but nothing in the budget table currently exercises it.
+   Both ends stay reachable regardless, which is the thing that actually has
+   to hold here: the auto margins on the end chips centre the row while it
+   fits and collapse once it does not. tests/e2e.test.js "the landscape deck
+   strip scrolls rather than clips, at both ends" pins that, and pins the
+   sign of the fit/overflow on every row so this paragraph cannot quietly go
+   stale again.
 
    The 44px floor on .chip and .mode is untouched - the row is as tall as the
    targets in it, which is the whole 44px and not a pixel more. The header

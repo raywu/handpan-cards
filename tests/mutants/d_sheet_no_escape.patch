@@ -1,11 +1,16 @@
-# kills: Escape closes the sheet and focus returns to + ADD
-# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to...ADD$ tests/app.test.js
+# kills: Escape closes the sheet and focus returns to the settings trigger
+# suite: node --test --test-name-pattern ^Escape.closes.the.sheet.and.focus.returns.to.the.settings.trigger$ tests/app.test.js
 # Escape inside the sheet does nothing, so the modal can only be dismissed
 # by pointer - it is a trap for the keyboard.
 #
 # Refreshed 2026-09-28 (lane M1, menu-shell): line numbers shifted (the
 # settings panel's own code was added above and below this handler across
 # the file); the defect and the fix are unchanged.
+# Refreshed 2026-09-29 (M2, menu-add-scale): the target test was renamed
+# from "...focus returns to + ADD" to "...focus returns to the settings
+# trigger" (#deck-add now lives inside the closed settings panel and cannot
+# receive focus back - see addChip.onclick). Same rename in the suite
+# header; the defect and the fix are unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
