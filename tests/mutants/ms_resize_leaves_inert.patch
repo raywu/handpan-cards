@@ -1,0 +1,59 @@
+# kills: resizing across the breakpoint with the panel open sheds modal state, and resizing back shows the closed hamburger
+# suite: node --test --test-name-pattern resizing.across.the.breakpoint.with.the.panel.open.sheds.modal.state..and.resizing.back.shows.the.closed.hamburger tests/e2e.test.js
+# Context refreshed 2026-09-29 (M3, desktop sidebar, N4 - round 2, review-FAIL
+# follow-up): the change handler's re-home check was rewritten again. The
+# original N4 fix checked `document.activeElement === document.body`, but
+# that missed the actual tick where this listener runs: the trigger is
+# already display:none by then, yet the browser has not YET auto-blurred it
+# to <body> - that happens later, asynchronously. So the old check saw
+# activeElement still pointing at the (already-hidden) trigger, decided
+# nothing needed fixing, and focus only fell to <body> afterward with
+# nobody left to catch it - reproduced deterministically in CI (not a local
+# flake) when this test runs after "below the breakpoint the hamburger
+# behaviour is unchanged" in the same file. Fixed by checking whether the
+# CURRENT active element is still connected, non-body and actually
+# rendered, rather than naming <body> specifically. The mutation itself is
+# unchanged: removing the desktopMQ.addEventListener("change", ...) block
+# entirely. Without it, opening the panel below the breakpoint and then
+# resizing past 1024x700 leaves role="dialog"/aria-modal/inert/aria-hidden
+# all still applied even though the trigger and scrim have gone
+# display:none - the background is stuck inert with no way for the user to
+# reach it, and no way to close the panel either (the trigger that would
+# call closePanel() is no longer clickable).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7749,33 +7749,6 @@
+   for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
+   settingsTrigger.focus();
+ }
+-// If the viewport crosses the breakpoint while the panel is open in its
+-// modal, below-breakpoint presentation, shed the modal state so the page
+-// underneath is never left inert on desktop (and the reverse: if it then
+-// crosses back down, the panel is the closed hamburger state, not a
+-// borderless leftover). The panel itself stays in the DOM either way; only
+-// its modal wiring and `hidden` (irrelevant at desktop - see the CSS
+-// override above) change.
+-desktopMQ.addEventListener("change", (e) => {
+-  if (e.matches && panelOpen) {
+-    closePanel();
+-    // Reviewer finding N4: closePanel()'s own settingsTrigger.focus() call is
+-    // a silent no-op here - the trigger is display:none at this width once
+-    // the CSS has already flipped - but at the moment this listener runs,
+-    // document.activeElement is STILL the (now-hidden) trigger, not <body>:
+-    // the browser's own "focused element became display:none -> blur to
+-    // <body>" step has not happened yet, it is a later, separate step. A
+-    // check for `=== document.body` alone therefore misses this tick
+-    // entirely and nobody re-homes focus - it only lands on <body>
+-    // asynchronously, after this handler has already decided (wrongly) that
+-    // nothing needs fixing. Check whether the CURRENT active element is
+-    // still connected, live and actually rendered instead of naming it.
+-    const a = document.activeElement;
+-    const stillLive = a && a !== document.body && a.isConnected &&
+-      getComputedStyle(a).display !== "none";
+-    if (!stillLive) card.focus();
+-  }
+-});
+ settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
+ settingsScrim.addEventListener("click", closePanel);
+ document.getElementById("print-paper-select").value = printPaper;

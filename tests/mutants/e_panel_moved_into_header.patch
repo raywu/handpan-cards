@@ -12,15 +12,22 @@
 # inert whenever something else marks <header> inert, and it would be
 # exposed to any header-scoped CSS or landscape layout rule that was never
 # written with a modal dialog in mind. Only the ancestry assertion sees it.
+# Context refreshed again 2026-09-29 (M3, desktop sidebar): role="dialog"
+# aria-modal="true" are no longer static attributes on #settings-panel (they
+# are applied/cleared by openPanel()/closePanel() so the desktop sidebar
+# presentation is never "a dialog"), so the moved markup this mutant carries
+# dropped the same two attributes to stay byte-identical to the real
+# element. The mutation itself - moving the block into <header> - is
+# unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -843,6 +843,38 @@
+@@ -874,6 +874,38 @@ button.nav:active{background:#2e281e}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
 +<div id="settings-scrim" hidden></div>
-+<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
++<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Practice</h3>
@@ -54,12 +61,12 @@ diff --git a/index.html b/index.html
  </header>
 
  <main>
-@@ -1034,38 +1066,6 @@
-      (below, in the mode-wiring script) toggle `hidden` and drive the same
-      inert-background + explicit-Tab-stops containment the sheet uses, with
-      the panel's own data. -->
+@@ -1071,39 +1103,6 @@ button.nav:active{background:#2e281e}
+      below-breakpoint, modal presentation. At >=1024x700 the trigger that
+      calls openPanel() is display:none, so the panel never gains them and
+      the static sidebar is correctly plain, non-modal markup. -->
 -<div id="settings-scrim" hidden></div>
--<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+-<div id="settings-panel" aria-labelledby="settings-title" hidden>
 -  <h2 id="settings-title" class="sr-only">Settings</h2>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Practice</h3>
@@ -90,6 +97,7 @@ diff --git a/index.html b/index.html
 -    </div>
 -  </div>
 -</div>
-
+-
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
       single-file by contract, so these are copies rather than external script
+      references: index.html ships with the engine already in it and needs no

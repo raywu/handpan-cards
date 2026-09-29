@@ -1,0 +1,22 @@
+# kills: the CSS breakpoint and desktopMQ agree at 1050x800 and 1023x800
+# suite: node --test --test-name-pattern ^the.CSS.breakpoint.and.desktopMQ.agree.at.1050x800.and.1023x800$ tests/e2e.test.js
+# Reviewer finding N1: the breakpoint is written twice - once in the CSS
+# @media (min-width:1024px) rule, once in desktopMQ's own matchMedia()
+# string. Drifting the JS side to 1100px (while the CSS stays at 1024px)
+# means the CSS already presents the sidebar and hides the trigger at
+# 1050x800, but desktopMQ.matches is still false there, so openPanel()/
+# closePanel() keep treating the panel as the below-breakpoint modal -
+# role="dialog" and an inert main are never shed even though the trigger
+# that would let a user reach them has already gone display:none.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7721,7 +7721,7 @@
+ // in markup. At/above it the trigger is display:none, so openPanel() is never
+ // reached by a click and the modal state above is never applied; the panel is
+ // simply always visible as a static sidebar (CSS only).
+-const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
++const desktopMQ = window.matchMedia("(min-width:1100px) and (min-height:700px)");
+ function panelStops() {
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+           document.getElementById("deck-add"),

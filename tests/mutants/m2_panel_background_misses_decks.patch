@@ -5,15 +5,19 @@
 # target for "+ Add a scale" into the panel) a sighted mouse user could still
 # reach a deck chip behind the open panel and switch decks without closing
 # it first.
+# Context refreshed 2026-09-29 (M3, desktop sidebar): the line count above
+# this mutation shifted (a new CSS media block and its comment). The
+# mutation itself - dropping #decks from panelBackground - is byte-identical.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7637,7 +7637,6 @@
+@@ -7673,8 +7673,7 @@ const settingsScrim   = document.getElementById("settings-scrim");
+ // tap, OR the trigger) lives inside the header. Inerting the header would
  // inert the trigger along with it and the panel could never be closed by a
  // second tap on it.
 -const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
 -                          document.getElementById("decks")].filter(Boolean);
 +const panelBackground = [document.querySelector("main"), document.querySelector("footer")].filter(Boolean);
  let panelOpen = false;
- function panelStops() {
-   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+ // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query
+ // above uses. Below it the panel is the modal drawer M1 built - role="dialog",
