@@ -10,13 +10,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -252,9 +252,6 @@
-     border-radius:0; border:none; border-left:1px solid #433b2c;
-     box-shadow:none; padding:var(--sp-4) var(--sp-3);
-   }
--  /* [hidden]{display:none !important} (line 456) otherwise wins over the
--     rule above at equal !important weight (it has none, so this needs its
--     own) - this is the one declaration that actually has to beat it. */
+@@ -263,7 +263,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+   /* [hidden]{display:none !important} (line 456) otherwise wins over the
+      rule above at equal !important weight (it has none, so this needs its
+      own) - this is the one declaration that actually has to beat it. */
 -  #settings-panel[hidden]{display:flex !important}
  }
  /* ---- landscape: the header is ONE row ---------------------------------
+    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall

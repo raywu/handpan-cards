@@ -1,17 +1,18 @@
 # kills: resizing across the breakpoint with the panel open sheds modal state, and resizing back shows the closed hamburger
-# suite: node --test --test-name-pattern ^resizing.across.the.breakpoint.with.the.panel.open.sheds.modal.state..and.resizing.back.shows.the.closed.hamburger$ tests/e2e.test.js
-# Drops the desktopMQ change listener that closes the modal panel when the
-# viewport crosses the breakpoint while it is open. Without it, opening the
-# panel at mobile width and then resizing past 1024x700 leaves role=dialog,
-# aria-modal, the inert background and the visible-scrim state all in place
-# on top of the now-visible sidebar - exactly the "modal sidebar" bug this
-# lane exists to prevent - and resizing back down leaves the panel stuck
-# open instead of returning to the closed hamburger state.
+# suite: node --test --test-name-pattern resizing.across.the.breakpoint.with.the.panel.open.sheds.modal.state..and.resizing.back.shows.the.closed.hamburger tests/e2e.test.js
+# Removes the desktopMQ.addEventListener("change", ...) block entirely.
+# Without it, opening the panel below the breakpoint and then resizing past
+# 1024x700 leaves role="dialog"/aria-modal/inert/aria-hidden all still
+# applied even though the trigger and scrim have gone display:none - the
+# background is stuck inert with no way for the user to reach it, and no
+# way to close the panel either (the trigger that would call closePanel()
+# is no longer clickable).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1,10 +1,6 @@
- settingsTrigger.focus();
+@@ -7718,16 +7718,6 @@ function closePanel() {
+   for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
+   settingsTrigger.focus();
  }
 -// If the viewport crosses the breakpoint while the panel is open in its
 -// modal, below-breakpoint presentation, shed the modal state so the page
@@ -24,3 +25,5 @@ diff --git a/index.html b/index.html
 -  if (e.matches && panelOpen) closePanel();
 -});
  settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
+ settingsScrim.addEventListener("click", closePanel);
+ document.getElementById("print-paper-select").value = printPaper;

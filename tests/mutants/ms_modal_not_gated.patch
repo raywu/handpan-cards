@@ -11,7 +11,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1072,7 +1072,7 @@
+@@ -1080,7 +1080,7 @@ button.nav:active{background:#2e281e}
+      calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
  <div id="settings-scrim" hidden></div>
 -<div id="settings-panel" aria-labelledby="settings-title" hidden>
