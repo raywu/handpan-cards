@@ -1,0 +1,16 @@
+# kills: the head carries theme-color and color-scheme meta tags matching --table
+# suite: node --test --test-name-pattern ^the.head.carries.theme.color.and.color.scheme.meta.tags.matching...table$ tests/app.test.js
+# Drops the theme-color meta tag lane A adds to fix the Android status/URL bar
+# tint. Without it, Chromium browsers paint those bars light again - the
+# "white bar" the owner reported.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16,7 +16,6 @@
+      light, which is what an owner report called "a white bar". color-scheme
+      covers the canvas and UA widgets (the paper <select> popup, scrollbars,
+      autofill) before the app's own CSS has painted anything. -->
+-<meta name="theme-color" content="#1a1815">
+ <meta name="color-scheme" content="dark">
+ <title>Handpan Chord Flashcards</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -3,13 +3,16 @@
 # Drops `body.printing #printroot,` from the fill rule. .printpage's height:100%
 # then has no resolved parent height, collapses to the min-height floor, and the
 # sheet top-aligns flush with the paper edge - the 43b2851 regression.
+# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated line
+# is unchanged; only the line above it moved (lane A added `background:#fff`
+# to the html,body fill rule just above this one).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -777,7 +777,7 @@ button.nav:active{background:#2e281e}
+@@ -788,7 +788,7 @@
       is what made every sheet paginate onto two pages. Floor and fill
       together - neither alone is correct. */
-   html,body{height:100%; min-height:0; overflow:visible}
+   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 -  body.printing #printroot, body.printing #printroot .printpage{height:100%}
 +  body.printing #printroot .printpage{height:100%}
    /* The safe-area padding is an on-screen notch reservation and has no meaning

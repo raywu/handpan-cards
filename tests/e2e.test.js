@@ -12,7 +12,7 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, before, after } = require("node:test");
+const { test, describe, before, after } = require("node:test");
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
@@ -6215,6 +6215,159 @@ function run() {
       killUnder(tmp);
       fs.rmSync(tmp, { recursive: true, force: true });
     }
+  });
+
+  /* ---------------------------------------------------------------- *
+   * page background covers every viewport (lane A, android-bg-and-menu
+   * plan 2026-09-28)
+   *
+   * Nothing the page controls may paint anything but the table colour at
+   * any viewport size. The candidates that CDP can see: theme-color/
+   * color-scheme meta (app.test.js sandbox test owns those, since they are
+   * <head> text, not layout), html's own background-color, and the print
+   * hardening. The URL-bar-collapse band and the gesture-bar area are
+   * DEVICE-GATE (plan §2 A4/A5, §7) - CDP's setViewport relays the page out
+   * before any capture, so no unpainted band ever exists to photograph.
+   * ---------------------------------------------------------------- */
+  describe("page background covers every viewport", () => {
+    const MATRIX = [
+      [360, 800, "portrait"],
+      [412, 915, "portrait"],
+      [390, 844, "portrait"],
+      [320, 568, "portrait"],
+      [915, 412, "landscape"],
+      [844, 390, "landscape"],
+      [673, 841, "foldable unfolded"],
+      [800, 1280, "tablet"],
+      [1280, 800, "desktop"],
+    ];
+
+    const TABLE = [26, 24, 21];   // #1a1815
+    const TABLE2 = [38, 34, 28];  // #26221c
+    const FRAME = 4;              // outer pixel frame width to sample
+
+    // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
+    // pixels entirely in-browser (an <img> onto a <canvas>) so no PNG decoder
+    // needs writing on the Node side - the browser already has one.
+    async function edgeCheck() {
+      const shot = await b.send("Page.captureScreenshot", { format: "png" });
+      return b.eval(`
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const w = img.width, h = img.height;
+            const canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            const data = ctx.getImageData(0, 0, w, h).data;
+            const table = ${JSON.stringify(TABLE)};
+            const table2 = ${JSON.stringify(TABLE2)};
+            const dist = (r, g, bch, t) =>
+              Math.sqrt((r - t[0]) ** 2 + (g - t[1]) ** 2 + (bch - t[2]) ** 2);
+            let bad = null;
+            const check = (x, y) => {
+              if (bad || x < 0 || y < 0 || x >= w || y >= h) return;
+              const i = (y * w + x) * 4;
+              const r = data[i], g = data[i + 1], bch = data[i + 2];
+              // Tolerance is deliberately tight: the legit body-gradient blend
+              // measures a stable max of ~8.4 at every size in this matrix,
+              // while Chromium's OWN color-scheme:dark canvas default
+              // (rgb(18,18,18), used when nothing paints a background at all)
+              // sits at ~10.4 from --table - a real gap this threshold must
+              // keep on the far side of so a dropped html background-color
+              // still reads as a failure and not a lucky near-miss.
+              if (Math.min(dist(r, g, bch, table), dist(r, g, bch, table2)) > 9) {
+                bad = { x, y, r, g, b: bch };
+              }
+            };
+            for (let x = 0; x < w; x++) {
+              for (let f = 0; f < ${FRAME}; f++) { check(x, f); check(x, h - 1 - f); }
+            }
+            for (let y = 0; y < h; y++) {
+              for (let f = 0; f < ${FRAME}; f++) { check(f, y); check(w - 1 - f, y); }
+            }
+            resolve({ w, h, bad });
+          };
+          img.onerror = () => reject(new Error("screenshot PNG failed to decode"));
+          img.src = "data:image/png;base64,${shot.data}";
+        });
+      `);
+    }
+
+    for (const [vw, vh, label] of MATRIX) {
+      test(`${label} ${vw}x${vh}: outer 4px frame is table-coloured, never white`, async () => {
+        await freshLoad();
+        try {
+          await b.setViewport(vw, vh, true);
+          await b.settle();
+          const r = await edgeCheck();
+          assert.strictEqual(r.bad, null,
+            `edge pixel not table-coloured at ${vw}x${vh}: ${JSON.stringify(r.bad)}`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    }
+
+    test("with the scale sheet open, the outer frame stays table-coloured", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(390, 844, true);
+        await openSheet();
+        await b.settle();
+        const r = await edgeCheck();
+        assert.strictEqual(r.bad, null,
+          `edge pixel not table-coloured with the sheet open: ${JSON.stringify(r.bad)}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Simulates an unpainted body gradient (a real frame before the image has
+    // painted, or mid-resize). This is the one row that MUST fail at
+    // 879499d, because that base has no colour under the gradient - only
+    // A3's html{background-color:var(--table)} rescues it. This is what
+    // kills ab_root_bg_dropped.
+    test("with body's gradient image removed, the outer frame still stays table-coloured", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(390, 844, true);
+        await b.eval(`document.body.style.backgroundImage = "none"; return true;`);
+        await b.settle();
+        const r = await edgeCheck();
+        assert.strictEqual(r.bad, null,
+          `edge pixel not table-coloured with body's gradient removed: ${JSON.stringify(r.bad)}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("documentElement computes color-scheme: dark", async () => {
+      await freshLoad();
+      const scheme = await b.eval(
+        `return getComputedStyle(document.documentElement).colorScheme;`);
+      assert.strictEqual(scheme, "dark");
+    });
+
+    test("html's computed background-color is the table colour", async () => {
+      await freshLoad();
+      const bg = await b.eval(
+        `return getComputedStyle(document.documentElement).backgroundColor;`);
+      assert.strictEqual(bg, "rgb(26, 24, 21)");
+    });
+
+    test("under print media, html computes to a white background", async () => {
+      await freshLoad();
+      try {
+        await b.send("Emulation.setEmulatedMedia", { media: "print" });
+        const bg = await b.eval(
+          `return getComputedStyle(document.documentElement).backgroundColor;`);
+        assert.strictEqual(bg, "rgb(255, 255, 255)");
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { media: "" });
+      }
+    });
   });
 
 }

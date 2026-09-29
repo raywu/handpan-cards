@@ -1,0 +1,16 @@
+# kills: documentElement computes color-scheme: dark
+# suite: node --test --test-name-pattern ^documentElement.computes.color.scheme..dark$ tests/e2e.test.js
+# Drops the `color-scheme:dark` declaration lane A adds to :root. Without it
+# the canvas, before first paint, and UA widgets (the paper <select> popup,
+# scrollbars, autofill) default back to light.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -21,7 +21,6 @@
+ <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+ <style>
+ :root{
+-  color-scheme:dark;
+   --ink:#242424; --sep:#8a8a8a; --paper:#ffffff;
+   --table:#1a1815; --table2:#26221c;
+   --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;

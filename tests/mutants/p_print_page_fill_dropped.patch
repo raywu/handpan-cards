@@ -1,13 +1,17 @@
 # kills: the sheet centres in the page box instead of top-aligning at the paper edge
 # suite: node --test --test-name-pattern page.box.something.to.fill tests/app.test.js
+# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated
+# lines are unchanged in substance; lane A added `background:#fff` to the
+# html,body fill rule this mutant replaces, so the old context no longer
+# matched byte for byte.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -776,8 +776,7 @@ button.nav:active{background:#2e281e}
+@@ -787,8 +787,7 @@
       the floor that stops the block ever being shorter than the sheet, which
       is what made every sheet paginate onto two pages. Floor and fill
       together - neither alone is correct. */
--  html,body{height:100%; min-height:0; overflow:visible}
+-  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 -  body.printing #printroot, body.printing #printroot .printpage{height:100%}
 +  html,body{height:auto; min-height:0; overflow:visible}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
