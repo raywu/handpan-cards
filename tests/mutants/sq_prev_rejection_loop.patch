@@ -1,0 +1,16 @@
+# kills: E4 - prev is excluded from the 3-chord pool only, so a repeated
+# 2-chord sequence survives the exclusion step instead of being filtered
+# before the length draw
+# suite: node --test --test-name-pattern ^pick.never.returns.the.previous.sequence.when.another.exists$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -224,7 +224,7 @@
+     var filtered = { 2: pools[2], 3: pools[3] };
+     if (prevValid) {
+       filtered = {
+-        2: pools[2].filter(function (seq) { return !sameSequence(seq, prev); }),
++        2: pools[2],
+         3: pools[3].filter(function (seq) { return !sameSequence(seq, prev); })
+       };
+       if (!filtered[2].length && !filtered[3].length) filtered = pools;
