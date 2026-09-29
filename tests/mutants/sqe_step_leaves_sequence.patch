@@ -1,0 +1,20 @@
+# kills: sequence mode: prev/next/arrows stay within the sequence and wrap, answer face shows first
+# suite: node --test --test-name-pattern ^sequence.mode..prev.next.arrows.stay.within.the.sequence.and.wrap..answer.face.shows.first$ tests/app.test.js
+# Drops the modulo wrap from step(), so prev/next/arrows walk idx straight off
+# the end of the sequence instead of cycling (S1/S2 acceptance 4: "In S the
+# card index stays within the sequence under prev/next/arrows, 3 -> 1 wraps").
+# Only a test that actually drives prev/next/arrows past both ends and checks
+# the resulting idx can see this - a test that only checks rail-list stability
+# or a loose "chord N of M" regex without bounding N<=M does not.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8102,7 +8102,7 @@
+ function flip() { if (!order.length) return; flipped = !flipped; render(); }
+ function step(dir) {
+   if (!order.length) return;
+-  idx = (idx + dir + order.length) % order.length;
++  idx = idx + dir;
+   flipped = false; render();
+ }
+ card.addEventListener("click", flip);

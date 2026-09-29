@@ -1,0 +1,22 @@
+# kills: the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible
+# suite: node --test --test-name-pattern ^the.sequence.source.link.opens.in.a.new.tab..is.a.real.44px.target..and.joins.the.real.Tab.cycle.only.while.visible$ tests/e2e.test.js
+# Refreshed 2026-09-29 (lane S2, ordered by review, item 10) for a title/body
+# change only: the killing test now drives real forward and backward Tab
+# key cycles through the panel instead of only checking panelStops()
+# membership; the guard this mutant removes is unchanged and still caught.
+# Lane S2, E8. panelStops()'s seqLink drops the `!seqNote.hidden` half of its
+# guard, so #seq-source-link stays a Tab stop even in modes A/B where the
+# credit paragraph (and the link inside it) is hidden - a keyboard user can
+# Tab onto an invisible, unreachable-by-sight link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8132,7 +8132,7 @@ let panelOpen = false;
+ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
+ function panelStops() {
+   const seqNote = document.getElementById("panel-seq-note");
+-  const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
++  const seqLink = seqNote ? [document.getElementById("seq-source-link")] : [];
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+           document.getElementById("modeS"), ...seqLink,
+           document.getElementById("deck-add"),

@@ -482,6 +482,11 @@ S1 and S2 are serialised: S2 calls the API that S1 adds, and both append to `app
 | R4 | Outside voice | Run (codex) | Recommended. It found 8 issues | AFK auto |
 | R5 | E1-E9 resolutions | As in §8 | Each is the recommended, non-destructive fix | AFK auto |
 | R6 | Golden table (O2) | Approve all (C2), all 75 rows (2026-09-29) | Musical judgement | Owner |
+| R7 | S1 review nit | Folded into S2 | It was too small for its own lane | AFK auto |
+| R8 | S2 panel-fit bounce past the two-attempt cap | Integrator took the lane over | This is the swarm cap rule | AFK auto |
+| R9 | Mode name and placement | "CHORD PROGRESSION", in its own row under PRACTICE. The re-roll button reads "New progression" (2026-09-29) | Owner wording. Modes A and B gain the row as well | Owner |
+| R10 | Mobile menu | A full-screen takeover below the desktop breakpoint, not a popover. The hamburger stays on top and becomes an X to close it; Escape also closes it (2026-09-29) | Owner request. It replaces the per-mode panel shrink rules, and the scrim is now covered on mobile | Owner |
+| R11 | Landscape menu layout | Groups sit side by side in a grid under `max-height:520px` | One column overflows at 667x375. The grid fits with no scroll at every LANDSCAPE_BUDGET size | AFK auto |
 
 ## GSTACK REVIEW REPORT
 

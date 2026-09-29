@@ -1,0 +1,17 @@
+# kills: the live region names the current chord and its position: "<name>, chord N of M"
+# suite: node --test --test-name-pattern ^the.live.region.names.the.current.chord.and.its.position....name...chord.N.of.M.$ tests/app.test.js
+# Lane S2. renderSeqRail()'s sr-only live region drops the +1 off `idx`, so a
+# screen reader announces the current chord's position as 0-based ("chord 0
+# of 3" on the first chord) instead of the 1-based count shown in the rail.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6903,7 +6903,7 @@ function renderSeqRail(d) {
+   });
+   const live = document.createElement("span");
+   live.className = "sr-only";
+-  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
++  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx} of ${seq.chords.length}`;
+   countEl.appendChild(rail);
+   countEl.appendChild(live);
+ }

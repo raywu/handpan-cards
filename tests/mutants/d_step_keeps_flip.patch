@@ -1,11 +1,15 @@
 # kills: step() wraps forward and backward and clears the flip
 # suite: node --test --test-name-pattern ^step...wraps.forward.and.backward.and.clears.the.flip$ tests/app.test.js
+# Refreshed 2026-09-29 (lane S2): step() and flip() both gained an
+# `if (!order.length) return;` guard (E3, unsupported-deck empty sequence) -
+# the guarded line the mutation targets is otherwise unchanged, only the
+# line number and one added guard line above moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4593,7 +4593,7 @@
- function flip() { flipped = !flipped; render(); }
+@@ -8086,7 +8086,7 @@ function flip() { if (!order.length) return; flipped = !flipped; render(); }
  function step(dir) {
+   if (!order.length) return;
    idx = (idx + dir + order.length) % order.length;
 -  flipped = false; render();
 +  render();

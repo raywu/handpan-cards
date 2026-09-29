@@ -19,10 +19,25 @@
 # dropped the same two attributes to stay byte-identical to the real
 # element. The mutation itself - moving the block into <header> - is
 # unchanged.
-diff --git a/index.html b/index.html
+# Refreshed 2026-09-29 (lane S2): the panel's Practice group now ships a
+# third #modeS button and a conditional #panel-seq-note credit/link
+# paragraph inside the same panel-group; this mutant's moved copy carries
+# both so it stays byte-identical to the real element, exactly as it
+# already did for #panel-scales-group in the M2 refresh above. The
+# mutation itself is unchanged.
+# Refreshed again 2026-09-29 (lane S2, review fix round): the panel block
+# shifted from line 947/1144 to line 965/1165 as part of this round's
+# panel-fit CSS work (item 3), and the #panel-seq-note credit copy was
+# shortened to a single line ("Styles adapted from Moritz.handpan."). Both
+# are pure line/content drift - the mutant's moved copy is regenerated here
+# byte-identical to the current real element, and the mutation (moving the
+# scrim+panel block into <header>) is unchanged.
+# Refreshed 2026-09-29 (S2 takeover): the #modeS label is now "CHORD
+# PROGRESSION" (owner rename); the moved copy follows it. The mutation is
+# unchanged.
 --- a/index.html
 +++ b/index.html
-@@ -874,6 +874,38 @@ button.nav:active{background:#2e281e}
+@@ -965,6 +965,46 @@
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -34,7 +49,15 @@ diff --git a/index.html b/index.html
 +    <div class="modebar">
 +      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 +      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
++      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
 +    </div>
++    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
++         wording plus one outbound link, credited to Moritz.handpan. -->
++    <p class="panel-note" id="panel-seq-note" hidden>
++      Styles adapted from Moritz.handpan.
++      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
++         target="_blank" rel="noopener">Watch on YouTube</a>
++    </p>
 +  </div>
 +  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
 +       own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -59,9 +82,9 @@ diff --git a/index.html b/index.html
 +  </div>
 +</div>
  </header>
-
+ 
  <main>
-@@ -1071,39 +1103,6 @@ button.nav:active{background:#2e281e}
+@@ -1162,46 +1202,6 @@
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -73,7 +96,15 @@ diff --git a/index.html b/index.html
 -    <div class="modebar">
 -      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 -      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+-      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
 -    </div>
+-    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
+-         wording plus one outbound link, credited to Moritz.handpan. -->
+-    <p class="panel-note" id="panel-seq-note" hidden>
+-      Styles adapted from Moritz.handpan.
+-      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
+-         target="_blank" rel="noopener">Watch on YouTube</a>
+-    </p>
 -  </div>
 -  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
 -       own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -97,7 +128,6 @@ diff --git a/index.html b/index.html
 -    </div>
 -  </div>
 -</div>
--
+ 
  <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
       single-file by contract, so these are copies rather than external script
-      references: index.html ships with the engine already in it and needs no

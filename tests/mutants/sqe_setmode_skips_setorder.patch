@@ -1,0 +1,18 @@
+# kills: sequence mode: prev/next/arrows stay within the sequence and wrap, answer face shows first
+# suite: node --test --test-name-pattern ^sequence.mode..prev.next.arrows.stay.within.the.sequence.and.wrap..answer.face.shows.first$ tests/app.test.js
+# Lane S2, E2. setMode()'s `if (wasS !== (m === "S")) setOrder();` guard,
+# which is what draws a fresh sequence on entering or leaving mode S, is
+# disabled. Selecting PLAY A SEQUENCE from mode A then leaves `seq` at its
+# earlier (undefined, on first boot) value instead of calling pick().
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8213,7 +8213,7 @@ function setMode(m) {
+     shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+     shuffleBtn.classList.toggle("on", shuffled);
+   }
+-  if (wasS !== (m === "S")) setOrder();
++  if (false) setOrder();
+   render();
+ }
+ document.addEventListener("keydown", e => {

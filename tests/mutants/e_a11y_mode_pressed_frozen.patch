@@ -5,14 +5,17 @@
 # Refreshed 2026-09-28 (lane M1, menu-shell): setMode() moved from the top of
 # index.html's script into the settings-panel JS block (the mode buttons now
 # live in the panel, not the header), but its body is unchanged.
+# Refreshed 2026-09-29 (lane S2): setMode() grew a third ["modeS", m === "S"]
+# entry in the same loop and several statements after it - only the line
+# number and surrounding context moved, the mutation is identical.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7660,7 +7660,6 @@ function setMode(m) {
-   for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
+@@ -8201,7 +8201,6 @@ function setMode(m) {
+   for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"], ["modeS", m === "S"]]) {
      const el = document.getElementById(id);
      el.classList.toggle("on", on);
 -    el.setAttribute("aria-pressed", on ? "true" : "false");
    }
-   render();
- }
+   const seqNote = document.getElementById("panel-seq-note");
+   seqNote.hidden = m !== "S";

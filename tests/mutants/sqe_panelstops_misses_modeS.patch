@@ -1,0 +1,22 @@
+# kills: the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible
+# suite: node --test --test-name-pattern ^the.sequence.source.link.opens.in.a.new.tab..is.a.real.44px.target..and.joins.the.real.Tab.cycle.only.while.visible$ tests/e2e.test.js
+# Refreshed 2026-09-29 (lane S2, ordered by review, item 10) for a title/body
+# change only: the killing test now drives real forward and backward Tab
+# key cycles through the panel instead of only checking panelStops()
+# membership; the guard this mutant removes is unchanged and still caught.
+# Lane S2, E8. panelStops() drops #modeS from its returned list entirely, so
+# the third Practice-group button never joins the settings panel's Tab/
+# Shift+Tab cycle no matter which mode is active - a keyboard user tabbing
+# through the panel skips over PLAY A SEQUENCE.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8134,7 +8134,7 @@ function panelStops() {
+   const seqNote = document.getElementById("panel-seq-note");
+   const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+-          document.getElementById("modeS"), ...seqLink,
++          ...seqLink,
+           document.getElementById("deck-add"),
+           ...settingsPanel.querySelectorAll(".prints button, .prints select")]
+     .filter(el => el && !el.disabled);

@@ -4,13 +4,17 @@
 # With no guard, order[idx] is undefined on an empty order and d.chords[undefined]
 # is undefined too, so ch.fields inside linesHTML/pan throws a TypeError instead
 # of render() quietly doing nothing.
+# Refreshed 2026-09-29 (lane S2): render() gained a new mode==="S"-empty-sequence
+# guard ABOVE this line (renders renderSeqEmpty() instead, E3); the targeted
+# `if (!order.length) return;` line for modes A/B is otherwise unchanged, only
+# the line number moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6376,7 +6376,6 @@
-     <div class="numline">${nums}</div></div>`;
+@@ -6909,7 +6909,6 @@ function renderSeqRail(d) {
  }
  function render() {
+   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
 -  if (!order.length) return;
    const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
    document.documentElement.style.setProperty("--root", d.colors.root);

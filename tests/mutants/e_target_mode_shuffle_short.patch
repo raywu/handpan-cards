@@ -6,10 +6,13 @@
 # one still hit-tests to itself, so only a height assertion can see this.
 # Refreshed 2026-09-28 (lane M1, menu-shell) for line drift only - #modeA/
 # #modeB moved into the settings panel but .mode/.shuffle CSS is unchanged.
+# Refreshed 2026-09-29 (lane S2) for line drift only - a new #modeS button
+# and .panel-note credit paragraph were added elsewhere; .mode/.shuffle CSS
+# itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -230,7 +230,7 @@
+@@ -224,7 +224,7 @@
     min-height is ever removed. */
  .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
@@ -18,7 +21,7 @@ diff --git a/index.html b/index.html
  .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
  #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
  .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
-@@ -446,7 +446,7 @@
+@@ -529,7 +529,7 @@
     "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */

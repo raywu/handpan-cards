@@ -5,10 +5,13 @@
 # so Shift+Tab from the FIRST stop no longer wraps to the last one - it
 # computes stops[-1], which is undefined, and .focus() on it throws, leaving
 # focus stuck instead of cycling backward through the panel.
+# Refreshed 2026-09-29 (lane S2): only the line number moved; the settings
+# panel's Tab-wrap logic itself is unchanged (panelStops() grew #modeS/
+# #seq-source-link as conditional entries elsewhere, not on this line).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7694,7 +7694,7 @@
+@@ -8233,7 +8233,7 @@ document.addEventListener("keydown", e => {
      if (e.key === "Tab") {
        const stops = panelStops();
        const i = stops.indexOf(document.activeElement);

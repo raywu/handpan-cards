@@ -43,7 +43,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel", "settings-title",
-  "print-paper-select"];
+  "print-paper-select",
+  // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
+  "modeS", "panel-seq-note", "seq-source-link"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -188,7 +190,7 @@ function boot(opts = {}) {
   // `hidden` is real initial state in the shipped markup (the scale page and
   // the print container both ship hidden), and a test that asserts a container
   // STARTS hidden has to see what the browser sees rather than `undefined`.
-  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
+  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
     if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
   }
   const created = [];
