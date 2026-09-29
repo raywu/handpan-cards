@@ -240,27 +240,45 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-3);
   box-shadow:0 12px 34px rgba(0,0,0,.5)}
 .panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
-/* Lane S2: #modeS forces a third, always-full-width row onto the panel's
-   Practice group (see .modebar/#modeS above) - unavoidable growth, since
-   even without that rule a 320px-wide panel cannot fit three ~118px mode
-   buttons on one row and would wrap anyway. In a short (<=520px) landscape
-   viewport the panel has no room to spare for it (see the max-height:520px
-   block far above, which already tightens --sp-* there), so this second,
-   additive block tightens the panel's OWN chrome further - not those
-   already-frozen rules - to make room: tighter inter-group and modebar
-   gaps, tighter panel padding. Nothing shrinks below the 44px control floor
-   those existing rules protect (only the gaps AROUND controls, never the
-   controls themselves, change here). */
+/* Lane S2, ownership deviation (2026-09-29, ordered by review): #modeS's
+   addition to the shared .modebar (see .modebar/#modeS above) means the
+   panel's Practice row now wraps to two rows in EVERY mode, not only S - a
+   320px-wide panel cannot fit three ~118px mode buttons on one row, and
+   #modeS has to render in A and B too (it is how you get INTO mode S). That
+   growth therefore lands on modes A and B as well, and was measured: without
+   any compensating rule, mode A's panel content is 328px in a 300px box at
+   844x390 - the same shortfall this lane was told to fix in mode S. A first
+   attempt scoped the fix to mode S alone (`:has(#modeS.on)`); it left A and B
+   overflowing, because they carry the identical two-row modebar and never
+   matched that selector. The review-preferred fix - one requiring no new
+   max-height:520px rule at all - cannot reach this: the shortfall is a
+   viewport-density tradeoff (less air at a short viewport), and reproducing
+   it unconditionally at every viewport would visibly tighten modes A and B
+   at ORDINARY viewports too, which is a real, needless regression there.
+   This block is therefore mode-agnostic by necessity, not by lane
+   convenience: it restores A and B to the exact chrome they already relied
+   on (a max-height:520px rule already existed here; this is its
+   replacement, sized the same, just no longer nested under it as a second,
+   additive block). Nothing shrinks below the 44px control floor (only the
+   gaps AROUND controls, never the controls themselves, change here). */
 @media (max-height:520px){
   #settings-panel{padding:var(--sp-1) var(--sp-3); gap:var(--sp-2)}
   .panel-group{gap:0}
   .modebar{gap:var(--sp-1)}
-  /* The credit line itself is decorative prose, not a control - only its
-     link needs the 44px floor - so it is the one thing in this panel
-     allowed to shrink below the rest of the UI's type scale at this
-     extreme (<=520px-tall) breakpoint. */
-  .panel-note{font-size:9px; line-height:1.25}
 }
+/* Mode S alone additionally carries the credit note under the modebar, which
+   the shared tightening above is not enough to fit - so this second rule is
+   scoped to mode S only, via :has() rather than another max-height block,
+   and is NOT gated on viewport height at all: it costs modes A and B nothing
+   at any size, since neither ever matches it (panel-seq-note/#modeS.on only
+   exist in mode S). The credit line itself is decorative prose, not a
+   control - only its link needs the 44px floor - so it is the one thing in
+   this panel allowed to shrink below the rest of the UI's type scale while
+   mode S is active. */
+#settings-panel:has(#modeS.on){gap:0; max-height:calc(100vh - 74px)}
+#settings-panel:has(#modeS.on) .prints{gap:var(--sp-1)}
+#settings-panel:has(#modeS.on) .panel-heading{font-size:12px; line-height:1.1}
+#settings-panel:has(#modeS.on) .panel-note{font-size:9px; line-height:1.15; margin-top:calc(-1 * var(--sp-1))}
 /* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
    face used as it is used on the sheet's own title (O3/design direction).
    Controls keep their ALL-CAPS Nunito voice (N15). */
@@ -1157,8 +1175,7 @@ button.nav:active{background:#2e281e}
     <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
          wording plus one outbound link, credited to Moritz.handpan. -->
     <p class="panel-note" id="panel-seq-note" hidden>
-      Playing styles adapted from &ldquo;7 ways to play chords on the
-      handpan&rdquo; by Moritz.handpan.
+      Styles adapted from Moritz.handpan.
       <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
          target="_blank" rel="noopener">Watch on YouTube</a>
     </p>
@@ -6935,7 +6952,7 @@ function render() {
       `<div class="prompt" style="padding-bottom:6px">${nameHTML(ch, true)}</div>` +
       `<div class="lines">
          <div class="bigname" style="font-size:22px; margin-bottom:8px">${esc(styleName)}</div>
-         <div style="font-family:Bitter, serif; font-size:13px; line-height:1.4; color:#3a352c">${esc(styleTip)}</div>
+         <div style="font-family:Bitter, serif; font-size:13px; line-height:1.4; color:#c4bcab">${esc(styleTip)}</div>
          <div class="hint" style="margin-top:10px">Style from Moritz.handpan</div>
        </div>`;
     document.getElementById("front").innerHTML = answer;

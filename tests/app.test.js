@@ -4641,6 +4641,13 @@ test("switching deck, generating a deck and deleting a deck each draw a new sequ
   assert.strictEqual(app.get("mode"), "S");
   assert.ok(app.get("seq").chords, "a freshly generated deck must draw a sequence in mode S");
   void hijazSeq;
+
+  // Deleting the currently-selected deck falls back to another deck; that
+  // fallback must also draw a fresh sequence while mode S is active.
+  app.run(`deleteDeck(${JSON.stringify(gen.value.id)})`);
+  assert.strictEqual(app.get("mode"), "S");
+  assert.notStrictEqual(app.deckId(), gen.value.id, "the deleted deck must no longer be selected");
+  assert.ok(app.get("seq").chords, "the deck deleteDeck() falls back to must draw a sequence in mode S");
 });
 
 test("the sequence source link: rel=noopener, target=_blank, the exact href, and it joins the Tab cycle only while visible", () => {
@@ -4708,6 +4715,8 @@ test("an unsupported deck clears the card and disables stepping, with no crash",
   assert.match(app.els.front.innerHTML, /doesn&rsquo;t have enough simple chords/);
   assert.strictEqual(app.els.front.innerHTML, app.els.back.innerHTML, "both faces show the same message");
   assert.strictEqual(app.els.count.children.length, 0);
+  assert.strictEqual(app.els.count.textContent, "", "#count must carry no stale text on an unsupported deck");
+  assert.doesNotMatch(app.els.count.textContent, /chord \d+ of \d+/);
   assert.doesNotThrow(() => { app.els.next.onclick(); app.els.prev.onclick(); app.flip(); app.keydown("ArrowRight"); });
   assert.strictEqual(app.get("idx"), 0, "stepping must not move while unsupported");
 
@@ -4718,12 +4727,19 @@ test("an unsupported deck clears the card and disables stepping, with no crash",
   assert.ok(!app.els.front.innerHTML.includes("doesn"), "no residue of the unsupported-deck message");
 });
 
-test("modes A and B render byte-identical DOM to the pre-lane base, for the same deck and index", () => {
-  const app = boot();
-  for (const mode of ["A", "B"]) {
-    app.run(`setMode("${mode}")`);
-    assert.strictEqual(app.els.front.innerHTML, SEQ_BASE[mode].front, `mode ${mode} front changed`);
-    assert.strictEqual(app.els.back.innerHTML, SEQ_BASE[mode].back, `mode ${mode} back changed`);
-    assert.strictEqual(app.els.count.textContent, SEQ_BASE[mode].count, `mode ${mode} count changed`);
+test("modes A and B render byte-identical DOM to the pre-lane base, for all three decks at idx 0 and 1", () => {
+  for (const deckId of ["hijaz", "pygmy", "amara"]) {
+    for (const idx of [0, 1]) {
+      const app = boot();
+      app.select(deckId);
+      if (idx === 1) app.els.next.onclick();
+      for (const mode of ["A", "B"]) {
+        app.run(`setMode("${mode}")`);
+        const want = SEQ_BASE[deckId][idx][mode];
+        assert.strictEqual(app.els.front.innerHTML, want.front, `${deckId} idx ${idx} mode ${mode} front changed`);
+        assert.strictEqual(app.els.back.innerHTML, want.back, `${deckId} idx ${idx} mode ${mode} back changed`);
+        assert.strictEqual(app.els.count.textContent, want.count, `${deckId} idx ${idx} mode ${mode} count changed`);
+      }
+    }
   }
 });

@@ -2667,7 +2667,7 @@ function run() {
         // so it is measured here, with the panel open, alongside the other
         // panel-only controls.
         const inPanel = await probeTargets(
-          ["#settings-trigger", "#modeA", "#modeB", "#deck-add",
+          ["#settings-trigger", "#modeA", "#modeB", "#modeS", "#deck-add",
            "#settings-panel .prints button", "#settings-panel .prints select"]);
         const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
@@ -7196,7 +7196,102 @@ function run() {
       assert.strictEqual(btn.on, false);
     });
 
-    test("the sequence source link opens in a new tab, is a real 44px target, and joins the Tab cycle only while visible",
+    // §8 E2, S2 test 12. Modes A and B each carry Shuffle's own on/off state
+    // declaratively (label + .on class); entering and leaving S must never
+    // disturb it, and New sequence in S must never touch it either.
+    test("sequence mode: entering and leaving rebuilds the order, with shuffle on and off", async () => {
+      const shuffleState = () => b.eval(`return {
+        text: document.getElementById("shuffle").textContent,
+        on: document.getElementById("shuffle").classList.contains("on"),
+      };`);
+      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
+
+      for (const [baseMode, turnShuffleOn] of [["A", false], ["B", true]]) {
+        await freshLoad();
+        await openSettingsPanel();
+        await b.click(`#mode${baseMode}`);
+        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+          { label: `mode ${baseMode} to take effect` });
+        if (turnShuffleOn) {
+          await b.click("#shuffle");
+          await b.settle();
+        }
+        const before = await shuffleState();
+        assert.strictEqual(before.on, turnShuffleOn, `mode ${baseMode} Shuffle .on before entering S`);
+
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        const seqRail = await railText();
+        assert.ok(seqRail, "entering S must draw a sequence and render the rail");
+        const chordCount = seqRail.split(" → ").length;
+        assert.ok(chordCount === 2 || chordCount === 3, `entering S must give an order of length 2 or 3, got ${chordCount}`);
+
+        // New sequence in S must never touch `shuffled` - re-roll a few times.
+        const seen = new Set([seqRail]);
+        for (let i = 0; i < 4; i++) {
+          await b.click("#shuffle");
+          await b.settle();
+          seen.add(await railText());
+        }
+        assert.ok(seen.size > 1, "New sequence in S must redraw a different sequence at least once");
+
+        await openSettingsPanel();
+        await b.click(`#mode${baseMode}`);
+        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+          { label: `mode ${baseMode} to take effect again` });
+        const after = await shuffleState();
+        assert.deepStrictEqual(after, before,
+          `mode ${baseMode} Shuffle state must be restored exactly after a round trip through S`);
+      }
+    });
+
+    test("a persisted mode \"S\" boots straight into a sequence, not the empty-sequence message", async () => {
+      await enterSeqMode();
+      await navigate(); // reload
+      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to survive a reload" });
+      const m = await b.eval(`return {
+        rail: document.querySelector("#count .seq-rail")?.textContent ?? null,
+        frontHasMessage: document.getElementById("front").innerHTML.includes("doesn"),
+      };`);
+      assert.ok(m.rail, "a reload into a persisted mode S must draw a sequence, not show the empty state");
+      assert.ok(!m.frontHasMessage, "a reload into mode S must not show the unsupported-deck message");
+    });
+
+    // A real reverse Tab: Input.dispatchKeyEvent's modifiers bitmask (8 = Shift),
+    // sent directly since tests/helpers/cdp.js's key() has no modifier param and
+    // this lane does not touch that shared helper for one local need.
+    async function shiftTab() {
+      for (const type of ["keyDown", "keyUp"]) {
+        await b.send("Input.dispatchKeyEvent", {
+          type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9, modifiers: 8,
+        });
+      }
+    }
+    // Drives a real forward or backward Tab cycle through the currently-open
+    // panel (native focus, exactly like a keyboard user), tagging every stop
+    // with its index into the app's own panelStops() first (two print buttons
+    // carry no id, same technique as the M2 Tab-trap test at e2e:1170), and
+    // returns the ids visited, stopping once focus wraps back to the trigger
+    // or after `max` presses.
+    async function driveTabCycle(reverse, max = 14) {
+      await b.eval(`window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));`);
+      const describe = () => b.eval(`
+        const a = document.activeElement;
+        return { id: a && a.id || null, isTrigger: a && a.id === "settings-trigger" };
+      `);
+      const seen = [await describe()];
+      for (let i = 0; i < max; i++) {
+        if (reverse) await shiftTab(); else await b.key("Tab", "Tab", 9);
+        seen.push(await describe());
+        if (seen[seen.length - 1].isTrigger) break;
+      }
+      return seen;
+    }
+
+    test("the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible",
       async () => {
         await enterSeqMode();
         // Selecting a mode closes the panel (closePanel() in #modeS's own
@@ -7208,28 +7303,69 @@ function run() {
           return {
             rel: a.getAttribute("rel"), target: a.getAttribute("target"),
             href: a.getAttribute("href"), h: r.height, w: r.width,
-            inStops: window.panelStops().includes(a),
           };
         `);
         assert.match(link.rel, /\bnoopener\b/);
         assert.strictEqual(link.target, "_blank");
         assert.strictEqual(link.href, "https://www.youtube.com/shorts/YcmgdgZTpHc");
         assert.ok(link.h >= 44, `link hit target height ${link.h} < 44px`);
-        assert.strictEqual(link.inStops, true, "#seq-source-link must be a Tab stop while visible");
 
-        // Switch back to A: the note (and the link) hide, and it must drop
-        // out of the Tab cycle, while #modeS itself always remains a stop.
-        await b.click("#modeA");
-        await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
-          { label: "mode A to take effect" });
-        const after = await b.eval(`return {
-          noteHidden: document.getElementById("panel-seq-note").hidden,
-          linkInStops: window.panelStops().includes(document.getElementById("seq-source-link")),
-          modeSInStops: window.panelStops().includes(document.getElementById("modeS")),
-        };`);
-        assert.strictEqual(after.noteHidden, true);
-        assert.strictEqual(after.linkInStops, false, "#seq-source-link must leave the Tab cycle once hidden");
-        assert.strictEqual(after.modeSInStops, true, "#modeS is always a stop");
+        // Mode S, forward: a real keyboard Tab cycle must actually land on
+        // the link, and wrap back to the trigger.
+        const fwdS = await driveTabCycle(false);
+        assert.strictEqual(fwdS[fwdS.length - 1].isTrigger, true,
+          `forward Tab never wrapped back to the trigger in mode S: ${JSON.stringify(fwdS)}`);
+        assert.ok(fwdS.some((s) => s.id === "seq-source-link"),
+          `forward Tab never reached #seq-source-link in mode S: ${JSON.stringify(fwdS)}`);
+
+        // Mode S, backward: same cycle, walked the other way from the
+        // trigger, must also reach it (Shift+Tab is a real, separate path
+        // through the panel's own keydown handler, not just the reverse of
+        // the array checked above).
+        await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+        const backS = await driveTabCycle(true);
+        assert.strictEqual(backS[backS.length - 1].isTrigger, true,
+          `backward Tab never wrapped back to the trigger in mode S: ${JSON.stringify(backS)}`);
+        assert.ok(backS.some((s) => s.id === "seq-source-link"),
+          `backward Tab never reached #seq-source-link in mode S: ${JSON.stringify(backS)}`);
+
+        // Switch back to A: the note (and the link) hide. #modeS itself
+        // always remains a stop, but the now-hidden link must never be
+        // landed on by a real Tab cycle in either direction, in modes A
+        // or B. The panel is still open from backS above; close it first so
+        // each iteration can reopen it cleanly before its mode click
+        // (openSettingsPanel() unconditionally taps the trigger, so calling
+        // it while already open would toggle the panel shut instead).
+        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+          { label: "panel to close before the A/B loop" });
+        for (const mode of ["A", "B"]) {
+          await openSettingsPanel();
+          await b.click(`#mode${mode}`);
+          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+            { label: `mode ${mode} to take effect` });
+          if (mode === "A") {
+            const noteHidden = await b.eval(
+              `return document.getElementById("panel-seq-note").hidden;`);
+            assert.strictEqual(noteHidden, true);
+          }
+          await openSettingsPanel();
+          const fwd = await driveTabCycle(false);
+          assert.strictEqual(fwd[fwd.length - 1].isTrigger, true,
+            `forward Tab never wrapped back to the trigger in mode ${mode}: ${JSON.stringify(fwd)}`);
+          assert.ok(!fwd.some((s) => s.id === "seq-source-link"),
+            `forward Tab landed on hidden #seq-source-link in mode ${mode}: ${JSON.stringify(fwd)}`);
+          assert.ok(fwd.some((s) => s.id === "modeS"), `#modeS is always a stop in mode ${mode}`);
+          await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+          const back = await driveTabCycle(true);
+          assert.strictEqual(back[back.length - 1].isTrigger, true,
+            `backward Tab never wrapped back to the trigger in mode ${mode}: ${JSON.stringify(back)}`);
+          assert.ok(!back.some((s) => s.id === "seq-source-link"),
+            `backward Tab landed on hidden #seq-source-link in mode ${mode}: ${JSON.stringify(back)}`);
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: `panel to close after mode ${mode}` });
+        }
       });
 
     test("the settings panel still fits with #modeS and the credit note visible, at 320x568 and 844x390",
@@ -7261,19 +7397,125 @@ function run() {
             assert.ok(m.top >= 0, `${label}: panel top edge (${m.top}) is off-screen`);
             assert.ok(m.right <= vw + 0.5, `${label}: panel right edge (${m.right}) exceeds viewport width ${vw}`);
             assert.ok(m.bottom <= vh + 0.5, `${label}: panel bottom edge (${m.bottom}) exceeds viewport height ${vh}`);
-            // Unlike the base "settings panel fits" test above (mode A, no
-            // note), a third mode button plus the credit paragraph do not
-            // fit inside the panel's own box at 844x390 without exceeding
-            // the 44px control floor this app keeps everywhere else - the
-            // panel already ships overflow-y:auto for exactly this case, so
-            // here only the horizontal axis (which has no such affordance
-            // and would mean real clipping) is held to zero overflow.
+            // Same vertical no-scroll assertion as the base panel-fit test
+            // (e2e:1315) - #modeS and the credit note must fit inside the
+            // panel's own box, not merely scroll within it.
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
             assert.ok(m.scrollW <= m.clientW + 1,
               `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
             await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
               { label: `panel to close at ${label}` });
           }
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+    // Ownership-deviation proof (2026-09-29, ordered by review): the fix for
+    // #modeS's panel overflow above needed a NEW rule under the shared
+    // max-height:520px breakpoint that is NOT scoped to mode S alone - see
+    // the comment on that rule in index.html for the measured reason
+    // (#modeS's addition to .modebar wraps it to two rows in EVERY mode, so
+    // modes A and B need the same relief S does). This test is the promised
+    // proof that modes A and B still render byte-for-byte the same panel
+    // geometry at 844x390 as they did before this lane's fix existed.
+    test("modes A and B render the identical settings-panel rect at 844x390 that they always have",
+      async () => {
+        await freshLoad();
+        try {
+          await b.setViewport(844, 390, true);
+          await b.settle();
+          const rectFor = async (mode) => {
+            await openSettingsPanel();
+            if (mode !== "A") {
+              await b.click(`#mode${mode}`);
+              await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+                { label: `panel to close after selecting mode ${mode}` });
+              await openSettingsPanel();
+            }
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const r = p.getBoundingClientRect();
+              return { top: r.top, left: r.left, width: r.width,
+                scrollH: p.scrollHeight, clientH: p.clientHeight };
+            `);
+            await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+              { label: `panel to close after mode ${mode}` });
+            return m;
+          };
+          const a = await rectFor("A");
+          const bRect = await rectFor("B");
+          assert.deepStrictEqual(bRect, a,
+            `mode B's panel rect ${JSON.stringify(bRect)} must match mode A's ${JSON.stringify(a)}`);
+          assert.ok(a.scrollH <= a.clientH + 1,
+            `mode A must still fit without scroll at 844x390 (${a.scrollH} vs ${a.clientH})`);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+    // Acceptance 7: "#count is one line at 320x568 for the longest built-in
+    // rail". Anchors are triad, sus4, dim or 5 only, so re-rolling repeatedly
+    // exercises every rail width the built-in decks can produce, 3-chord
+    // sequences included (the worst case for width); asserting the fit on
+    // every draw is a stronger guarantee than asserting it on one sequence
+    // whose identity would have to be pinned by re-implementing the engine's
+    // own pick() here.
+    test("sequence mode: the rail is one line at 320x568 for every drawn sequence, including the longest",
+      async () => {
+        await freshLoad();
+        await b.setViewport(320, 568, true);
+        await b.settle();
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        try {
+          let sawThreeChord = false;
+          for (let i = 0; i < 24; i++) {
+            const m = await b.eval(`
+              const rail = document.querySelector("#count .seq-rail");
+              const count = document.getElementById("count");
+              const mid = document.querySelector(".mid");
+              const prev = document.getElementById("prev");
+              const next = document.getElementById("next");
+              const cr = count.getBoundingClientRect(), mr = mid.getBoundingClientRect();
+              const pr = prev.getBoundingClientRect(), nr = next.getBoundingClientRect();
+              const insideMid = cr.left >= mr.left - 0.5 && cr.right <= mr.right + 0.5
+                && cr.top >= mr.top - 0.5 && cr.bottom <= mr.bottom + 0.5;
+              const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+              // A single line means every child sits on the same baseline row:
+              // compare the top of the first and last child rather than a
+              // height/line-height ratio, which drifts a couple of px with
+              // the bold current-chord node's own font metrics.
+              const kids = Array.from(rail.children);
+              const firstTop = kids[0].getBoundingClientRect().top;
+              const lastTop = kids[kids.length - 1].getBoundingClientRect().top;
+              return {
+                text: rail.textContent, segments: rail.children.length,
+                oneLine: Math.abs(firstTop - lastTop) <= 1,
+                // "one line at 320x568" means the rail fits fully - no ellipsis
+                // truncation needed - not merely that #count's own box (which
+                // clips with text-overflow:ellipsis as a safety net) stays put.
+                fitsWithoutEllipsis: count.scrollWidth <= count.clientWidth + 1,
+                insideMid,
+                overlapsPrev: overlaps(cr, pr), overlapsNext: overlaps(cr, nr),
+              };
+            `);
+            const chordCount = Math.ceil((m.segments + 1) / 2);
+            if (chordCount === 3) sawThreeChord = true;
+            assert.ok(m.oneLine, `rail "${m.text}" wrapped to more than one line at 320x568`);
+            assert.ok(m.fitsWithoutEllipsis, `rail "${m.text}" overflows #count and needs the ellipsis fallback at 320x568`);
+            assert.ok(m.insideMid, `#count is not contained within .mid at 320x568`);
+            assert.strictEqual(m.overlapsPrev, false, `#count overlaps #prev at 320x568`);
+            assert.strictEqual(m.overlapsNext, false, `#count overlaps #next at 320x568`);
+            await b.click("#shuffle");
+            await b.settle();
+          }
+          assert.ok(sawThreeChord, "24 re-rolls never produced a 3-chord sequence - the worst case for width was not exercised");
         } finally {
           await b.setViewport(900, 900, false);
         }
@@ -7358,17 +7600,31 @@ function run() {
 
     test("the printed sheet carries no sequence rail, tip or source link", async () => {
       await enterSeqMode();
-      const printMarkup = await b.eval(`
-        // The print pipeline reads the same deck/chord data the app does but
-        // renders its own markup; this asserts the CURRENT document (the
-        // live app DOM in mode S) carries none of the print-only absence
-        // requirements' inverse - i.e. that nothing sequence-specific has
-        // leaked into anything the print path could pick up from #app.
-        const app = document.getElementById("app");
-        return app ? app.outerHTML.includes("seq-rail") || app.outerHTML.includes("seq-source-link")
-          ? "leaked" : "clean" : "no-app";
+      const result = await b.eval(`
+        // Prove the rail actually exists somewhere in the live DOM first, so
+        // a selector that always reports "clean" (e.g. one that finds
+        // nothing) cannot pass this test vacuously.
+        const railPresentInApp = !!document.querySelector("#count .seq-rail");
+        const linkPresentInApp = !!document.getElementById("seq-source-link");
+
+        const real = window.print;
+        window.print = function () {};
+        try { openPrintSheet("full"); } finally { window.print = real; }
+        const root = document.getElementById("printroot");
+        const printHTML = root.innerHTML;
+        window.dispatchEvent(new Event("afterprint"));
+        return {
+          railPresentInApp, linkPresentInApp,
+          printHasCells: (printHTML.match(/printcell/g) || []).length,
+          printLeaked: printHTML.includes("seq-rail") || printHTML.includes("seq-source-link")
+            || printHTML.includes("Style from Moritz.handpan"),
+        };
       `);
-      assert.notStrictEqual(printMarkup, "leaked");
+      assert.strictEqual(result.railPresentInApp, true, "the sanity check itself must find the live rail");
+      assert.strictEqual(result.linkPresentInApp, true, "the sanity check itself must find the live source link");
+      assert.ok(result.printHasCells > 0, "the print sheet must actually have been built");
+      assert.strictEqual(result.printLeaked, false,
+        "the printed sheet must carry no sequence rail, style tip or source link");
     });
   });
 
