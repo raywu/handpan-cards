@@ -4139,27 +4139,37 @@ test("print sheet paper size is a control, and only the page box changes", () =>
  * deck's are `<button>` that fill the print container and call window.print().
  * ------------------------------------------------------------------------ */
 
-test("print CTA: a built-in deck's header carries the same markup as a custom deck's", () => {
+/* Lane M1 (menu-shell, 2026-09-28): the print controls moved off the card
+ * face and into the one settings panel (`#settings-panel`), shared by every
+ * deck, built-in or custom. headerHTML() no longer renders them at all - that
+ * IS acceptance (1), "no controls on any card face" - so this test now
+ * asserts the negative on headerHTML and the positive on the static panel
+ * markup in index.html, instead of diffing two headerHTML calls against
+ * each other. */
+test("print CTA: the header carries no print controls; the settings panel carries one set for every deck", () => {
   const app = boot();
   const di = deckIndex(app, "amara");
   const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
   customDeck(app);
   const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
-  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
-    assert.ok(builtin.includes(label), `the built-in header lost "${label}"`);
-    assert.ok(custom.includes(label), `the custom header is missing "${label}"`);
+  for (const html of [builtin, custom]) {
+    for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+      assert.ok(!html.includes(label), `the card header must not carry "${label}" any more`);
+    }
+    assert.ok(!html.includes("<button"), "the card header must carry no buttons");
+    assert.ok(!/<select/.test(html), "the card header must carry no select");
   }
-  // One-pdf-path plan: every deck builds its PDF client-side, so there is no
-  // pre-built file to link and the built-in path is buttons + select too -
-  // the same markup shape as a custom deck, not the reverse.
-  assert.ok(!builtin.includes("<a href="),
-    "a built-in deck's print row must not link a pre-built PDF any more");
-  assert.ok(builtin.includes("<button"),
-    "a built-in deck's controls are buttons, same as a custom deck's");
-  assert.ok(/<select/.test(builtin), "D16: the paper picker rides with the buttons");
-  assert.ok(custom.includes("<button"),
-    "a custom deck has no pre-built PDF; its controls are buttons");
-  assert.ok(/<select/.test(custom), "D16: the paper picker rides with the buttons");
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+    assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
+  }
+  // One-pdf-path plan: every deck builds its PDF client-side - one panel, one
+  // set of buttons, used for built-in and custom decks alike.
+  assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
+  assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
+  assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
+  assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
 });
 
 /** Run the CTA and capture the sheet while it is live. window.print() is a
@@ -4356,23 +4366,20 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
    A4 - and re-picking LETTER fired no `change` event, so the user could not
    get back without round-tripping through A4. The control has to report the
    state it owns (D16). */
+/* Lane M1: the picker is now a static control (`#print-paper-select` inside
+ * `#settings-panel`), not re-rendered per card - so there is no "selected"
+ * attribute to drift, and setPrintPaper() pushes into the live element's
+ * `.value` itself (index.html's setPrintPaper). Same bug class (D16: the
+ * control must report the state it owns), narrower fix surface. */
 test("print CTA: the paper picker reports the paper that will actually print", () => {
   const app = boot();
   customDeck(app);
-  const picked = () => {
-    const html = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
-    const opts = html.match(/<option value="([a-z0-9]+)"( selected)?>/g) || [];
-    assert.strictEqual(opts.length, 2, "the paper picker lost an option");
-    const on = opts.filter((o) => o.includes(" selected"));
-    assert.strictEqual(on.length, 1,
-      `${on.length} options are marked selected; the picker must show exactly one`);
-    return on[0].match(/value="([a-z0-9]+)"/)[1];
-  };
+  const picked = () => String(app.get('document.getElementById("print-paper-select").value'));
 
   assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
   app.run('setPrintPaper("a4")');
   assert.strictEqual(picked(), "a4",
-    "after a re-render the picker reads LETTER while the sheet still prints A4");
+    "setPrintPaper must push the new paper into the picker's own value");
   app.run('setPrintPaper("letter")');
   assert.strictEqual(picked(), "letter");
 });
@@ -4525,16 +4532,17 @@ test("the paper control drives the page box, not just the filename", () => {
   assert.ok(/\/MediaBox \[0 0 612 792\]/.test(letter));
 });
 
+/* Lane M1: one shared panel now carries the CTA buttons for every deck, so
+ * "built-in and custom alike" is proven by there being exactly one panel in
+ * the file (not two headerHTML calls), wired to the emitter and to
+ * closePanel() ("After an action": a PDF build closes the panel). */
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
-  const app = boot();
-  const di = deckIndex(app, "amara");
-  const builtin = String(app.get(`headerHTML(DECKS[${di}], DECKS[${di}].chords[0], 1)`));
-  customDeck(app);
-  const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
-  for (const html of [builtin, custom]) {
-    assert.match(html, /onclick="downloadDeckPDF\('full', this\)"/);
-    assert.match(html, /onclick="downloadDeckPDF\('shop', this\)"/);
-  }
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
+  assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
+  assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
+    "exactly one settings panel serves every deck");
 });
 
 test("openPrintSheet survives the cutover, unreferenced by the CTA", () => {

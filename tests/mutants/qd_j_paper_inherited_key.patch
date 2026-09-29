@@ -5,10 +5,11 @@
 # INHERITED key too ("toString" resolves through the prototype chain the
 # same as an own key), so a stored printPaper of "toString" would boot as
 # "toString" instead of falling back to "letter" - the row 23/25 bug.
+# Refreshed 2026-09-28 (lane M1, menu-shell) for line drift only.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6180,8 +6180,7 @@ function printCardList(d, variant, slotsPerPage) {
+@@ -6280,8 +6280,7 @@
  // runs at boot, so throwing here would kill the app on that browser rather
  // than just falling back to "letter".
  function isPaper(p) {
@@ -17,4 +18,4 @@ diff --git a/index.html b/index.html
 +  return typeof p === "string" && PRINT_PAPER[p];
  }
  let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
- function setPrintPaper(p) { if (isPaper(p)) { printPaper = p; save(); } }
+ function setPrintPaper(p) {

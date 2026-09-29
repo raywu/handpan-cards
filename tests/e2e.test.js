@@ -220,6 +220,17 @@ function run() {
     });
   }
 
+  // Lane M1: the print controls and the mode toggle both live behind the
+  // header's settings trigger now. Real interaction opens the panel first,
+  // the same way a real user would, rather than reaching into a `hidden`
+  // subtree - a click on a `hidden` element's descendant is not what ships.
+  async function openSettingsPanel() {
+    await b.click("#settings-trigger");
+    await b.waitFor(`document.getElementById("settings-panel").hidden === false`, {
+      label: "settings panel to open",
+    });
+  }
+
   // Polls, so it is immune to render timing; reports what it actually saw.
   async function expectCount(text, label) {
     try {
@@ -569,6 +580,7 @@ function run() {
     assert.ok(target > 0, "need a non-default deck");
 
     await selectDeck(target, meta);
+    await openSettingsPanel();
     await b.click("#modeB");
     await b.waitFor(`document.getElementById("modeB").classList.contains("on")`, {
       label: "mode B to become active",
@@ -728,43 +740,51 @@ function run() {
    * app links them any more.
    * ---------------------------------------------------------------- */
 
+  /* Lane M1 (menu-shell, 2026-09-28): the print row moved into the one
+     settings panel shared by every deck, so it is no longer re-rendered per
+     deck - checking it once per built-in deck would just check the same
+     static markup N times. What still varies per deck is whether selecting
+     one leaves the row intact; the shape claim itself (2 buttons, 1 select,
+     never an <a>) is checked once, then re-checked after a couple of deck
+     switches and after generating a deck, to prove nothing about switching
+     decks touches the panel's markup. */
   test("every deck's print row is two buttons and one paper select, and never an <a>", async () => {
     await freshLoad();
     const meta = await decksMeta();
+    const shape = () => b.eval(`
+      const root = document.querySelector("#settings-panel .prints");
+      return {
+        buttons: root.querySelectorAll("button").length,
+        selects: root.querySelectorAll("select").length,
+        anchors: root.querySelectorAll("a").length,
+        labels: [...root.querySelectorAll("button")].map(b => b.textContent.trim()),
+      };
+    `);
 
-    for (let i = 0; i < meta.length; i++) {
+    for (const i of [0, meta.length - 1]) {
       await selectDeck(i, meta);
       const id = meta[i].id;
-      const m = await b.eval(`
-        const root = document.querySelector("#front .prints");
-        return {
-          buttons: root.querySelectorAll("button").length,
-          selects: root.querySelectorAll("select").length,
-          anchors: root.querySelectorAll("a").length,
-          labels: [...root.querySelectorAll("button")].map(b => b.textContent.trim()),
-        };
-      `);
+      const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
       assert.strictEqual(m.buttons, 2, `deck ${id}: expected exactly 2 buttons, found ${m.buttons}`);
       assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
       assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "PRINT-ONLY PDF"], `deck ${id}`);
     }
 
-    // And a generated deck gets the identical row.
+    // And a generated deck gets the identical row - it is the same element.
     await generate(SIX_SCALES[1]);
-    const g = await b.eval(`
-      const root = document.querySelector("#front .prints");
-      return {
-        buttons: root.querySelectorAll("button").length,
-        selects: root.querySelectorAll("select").length,
-        anchors: root.querySelectorAll("a").length,
-      };
-    `);
+    const g = await shape();
     assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
     assert.strictEqual(g.buttons, 2, "generated deck: expected exactly 2 buttons");
     assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
   });
 
+  /* Lane M1: .prints no longer lives anywhere near .hdr - it moved into the
+     settings panel. What's left to prove here is acceptance (1): the card
+     face (.hdr included) carries no print controls at all, on every deck,
+     and the deck-name box is unaffected (still its normal two lines). The
+     panel's own layout budget (no wrap at 380px/320px) is covered separately
+     by the settings-panel fit tests below. */
   test("the print controls sit outside .hdr and do not grow the deck-name box", async () => {
     await freshLoad();
     const meta = await decksMeta();
@@ -772,25 +792,22 @@ function run() {
     await b.settle();
 
     try {
-      for (let i = 0; i < meta.length; i++) {
+      for (const i of [0, meta.length - 1]) {
         await selectDeck(i, meta);
         const m = await b.eval(`
           const hdr = document.querySelector("#front .hdr");
           const l = hdr.querySelector(".l");
-          const prints = document.querySelector("#front .prints");
-          const pr = prints.getBoundingClientRect();
           return {
             hdrChildren: hdr.children.length,
             nameLines: l.getBoundingClientRect().height,
             lineHeight: parseFloat(getComputedStyle(l).lineHeight),
-            printsInsideHdr: hdr.contains(prints),
-            printsHeight: pr.height,
+            printsInFront: !!document.querySelector("#front .prints"),
           };
         `);
         assert.strictEqual(m.hdrChildren, 2,
           `${meta[i].id}: .hdr gained a child - the print controls must not join its flex row`);
-        assert.strictEqual(m.printsInsideHdr, false,
-          `${meta[i].id}: .prints is nested inside .hdr`);
+        assert.strictEqual(m.printsInFront, false,
+          `${meta[i].id}: .prints is still on the card face`);
         // The deck name + "#n deg" is authored as one two-line block (a <br>
         // between them); it must stay exactly two lines, not wrap to three.
         assert.ok(
@@ -798,10 +815,6 @@ function run() {
           `${meta[i].id}: .hdr .l is ${m.nameLines}px tall (line-height ${m.lineHeight}px) - ` +
             `the deck name wrapped past its normal two lines`,
         );
-        // Two buttons + a select must not wrap to a second row at 380px - a
-        // wrapped row is roughly double a single line's height.
-        assert.ok(m.printsHeight < 24,
-          `${meta[i].id}: .prints is ${m.printsHeight}px tall at 380px - the print row wrapped`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -830,6 +843,7 @@ function run() {
     const i = meta.findIndex((m) => m.id === "pygmy");
     assert.notStrictEqual(i, -1, "pygmy deck not found in DECKS");
     await selectDeck(i, meta);
+    await openSettingsPanel();
     const count = await b.eval(`
       window.__buildCount = 0;
       const realBuild = HPE.pdfcards.build;
@@ -841,7 +855,7 @@ function run() {
       // profiles; suppress activation so the test cannot hang on a modal
       // that has nothing to do with the guard under test.
       HTMLAnchorElement.prototype.click = function () {};
-      const btn = document.querySelector("#front .prints button"); // FULL DECK PDF
+      const btn = document.querySelector("#settings-panel .prints button"); // FULL DECK PDF
       btn.click();
       btn.click(); // the "second tap queued while the first is still running"
       return window.__buildCount;
@@ -856,6 +870,7 @@ function run() {
      throws. */
   test("print buttons are re-enabled after a build error", async () => {
     await freshLoad();
+    await openSettingsPanel();
     await b.eval(`
       HPE.pdfcards.build = function () { throw new Error("boom (test)"); };
       // A real uncaught exception from an inline onclick handler is otherwise
@@ -864,7 +879,7 @@ function run() {
       window.onerror = () => true;
       return true;
     `);
-    const sel = "#front .prints button";
+    const sel = "#settings-panel .prints button";
     await b.click(sel);
     // The build threw synchronously, but the row's re-enable is deferred via
     // setTimeout(0) - a genuine macrotask gap, not a CSS transition - so poll
@@ -888,9 +903,10 @@ function run() {
      NAME->NOTES mode would silently reveal the very answer being studied. */
   test("Enter on a print button activates it and does not flip the card", async () => {
     await freshLoad();
+    await openSettingsPanel();
     await b.eval(`
       window.__printBtnActivated = false;
-      const btn = document.querySelector("#front .prints button");
+      const btn = document.querySelector("#settings-panel .prints button");
       btn.addEventListener("click", () => { window.__printBtnActivated = true; });
       btn.focus();
       return true;
@@ -919,8 +935,9 @@ function run() {
      behaviour for that key - the worst of both. */
   test("Enter on the paper select does not flip the card, on a built-in deck", async () => {
     await freshLoad();
+    await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#front .prints select");
+      const sel = document.querySelector("#settings-panel .prints select");
       sel.focus();
       return true;
     `);
@@ -939,8 +956,9 @@ function run() {
   // unopened select.
   test("Space on the paper select does not flip the card, on a built-in deck", async () => {
     await freshLoad();
+    await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#front .prints select");
+      const sel = document.querySelector("#settings-panel .prints select");
       sel.focus();
       return true;
     `);
@@ -952,39 +970,151 @@ function run() {
     assert.strictEqual(flipped, false, "Space on the focused paper select flipped the card");
   });
 
-  /* headerHTML() feeds all four faces, so .prints renders into #front AND
-     #back. The flip is a CSS transform: both faces stay in the DOM, and the
-     hidden one carries aria-hidden="true". Focusable content inside an
-     aria-hidden subtree is a standard axe violation, and a keyboard user
-     tabs into three invisible controls. */
-  test("only the showing face's print controls are in the tab order", async () => {
+  /* Lane M1 (menu-shell): headerHTML() no longer renders .prints into either
+     face - it moved into the one #settings-panel, a body-level sibling of
+     header/main/footer (eng review F4: never nested under any of them, so it
+     cannot go inert when something else inerts its background, and it is
+     never duplicated across #front/#back in the first place). This replaces
+     the old front/back tab-order duplication test with acceptance (1) - no
+     controls on any card face, flipped or not - and acceptance (11) - the
+     panel's own ancestry. */
+  test("print controls are never on a card face, and the panel is not inside header/main/footer/card", async () => {
     await freshLoad();
-    const count = () => b.eval(`
-      const q = f => [...document.querySelectorAll(
-        "#" + f + " .prints button, #" + f + " .prints select")]
-        .filter(el => el.tabIndex >= 0).length;
-      return { front: q("front"), back: q("back") };
+    const faces = () => b.eval(`
+      return {
+        front: !!document.querySelector("#front .prints, #front button, #front select"),
+        back: !!document.querySelector("#back .prints, #back button, #back select"),
+      };
     `);
-
-    const shut = await count();
-    assert.strictEqual(shut.front, 3, "the showing face lost its print controls from the tab order");
-    assert.strictEqual(shut.back, 0,
-      `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
+    const shut = await faces();
+    assert.strictEqual(shut.front, false, "the showing face carries an interactive control");
+    assert.strictEqual(shut.back, false, "the hidden face carries an interactive control");
 
     await b.click("#card");
     await b.waitFor(`document.getElementById("card").classList.contains("flip")`, {
       label: "card to take the flip class",
     });
-    const open = await count();
-    assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
-    assert.strictEqual(open.front, 0,
-      `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
+    const open = await faces();
+    assert.strictEqual(open.front, false, "after the flip the now-hidden face carries a control");
+    assert.strictEqual(open.back, false, "after the flip the now-showing face carries a control");
+
+    const ancestry = await b.eval(`
+      const p = document.getElementById("settings-panel");
+      return {
+        inHeader: !!p.closest("header"),
+        inMain: !!p.closest("main"),
+        inFooter: !!p.closest("footer"),
+        inCard: !!p.closest("#card"),
+      };
+    `);
+    assert.deepStrictEqual(ancestry, { inHeader: false, inMain: false, inFooter: false, inCard: false },
+      "the settings panel must not be a descendant of header, main, footer or #card");
   });
+
+  /* Lane M1: the document keydown handler's panelOpen branch is the only
+     thing standing between the settings panel and the card underneath it -
+     without its own `return`, an ArrowRight/ArrowLeft or Enter/Space typed
+     while the panel is open falls through to step()/flip() on the card the
+     panel is supposed to be modal over. */
+  test("arrow keys and Enter/Space do not reach the card while the settings panel is open", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    const n = meta[0].chords;
+    await expectCount(`1 / ${n}`, "starts on the first card");
+
+    await openSettingsPanel();
+    await b.key("ArrowRight", "ArrowRight", 39);
+    await expectCount(`1 / ${n}`, "ArrowRight must not step the card while the panel is open");
+    await b.key("ArrowLeft", "ArrowLeft", 37);
+    await expectCount(`1 / ${n}`, "ArrowLeft must not step the card while the panel is open");
+
+    const flippedWhileOpen = await b.eval(
+      `return document.getElementById("card").classList.contains("flip")`);
+    assert.strictEqual(flippedWhileOpen, false,
+      "the card must not have flipped from a keypress while the panel is open");
+  });
+
+  test("the settings trigger opens and closes the panel three ways, and reports its own state", async () => {
+    await freshLoad();
+    const haspopup = await b.eval(
+      `return document.getElementById("settings-trigger").getAttribute("aria-haspopup")`);
+    assert.strictEqual(haspopup, "dialog", "the trigger must advertise the dialog it opens");
+    const closedExpanded = await b.eval(
+      `return document.getElementById("settings-trigger").getAttribute("aria-expanded")`);
+    assert.strictEqual(closedExpanded, "false", "aria-expanded must start false");
+
+    // 1. Escape closes it and returns focus to the trigger.
+    await openSettingsPanel();
+    let expanded = await b.eval(
+      `return document.getElementById("settings-trigger").getAttribute("aria-expanded")`);
+    assert.strictEqual(expanded, "true", "aria-expanded must flip true once the panel is open");
+    await b.key("Escape", "Escape", 27);
+    await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+      { label: "panel to close on Escape" });
+    let focused = await b.eval(`return document.activeElement.id`);
+    assert.strictEqual(focused, "settings-trigger", "Escape must return focus to the trigger");
+    expanded = await b.eval(
+      `return document.getElementById("settings-trigger").getAttribute("aria-expanded")`);
+    assert.strictEqual(expanded, "false", "aria-expanded must flip back false on close");
+
+    // 2. A tap on the scrim closes it too.
+    await openSettingsPanel();
+    await b.click("#settings-scrim");
+    await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+      { label: "panel to close on a scrim tap" });
+    focused = await b.eval(`return document.activeElement.id`);
+    assert.strictEqual(focused, "settings-trigger", "a scrim tap must return focus to the trigger");
+
+    // 3. A second tap on the trigger itself closes it.
+    await openSettingsPanel();
+    await b.click("#settings-trigger");
+    await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+      { label: "panel to close on a second trigger tap" });
+    focused = await b.eval(`return document.activeElement.id`);
+    assert.strictEqual(focused, "settings-trigger",
+      "a second trigger tap must leave focus on the trigger");
+  });
+
+  test("the settings panel fits entirely on screen, with no clipping or scroll, at 320x568 and 844x390",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, isLandscape] of [[320, 568, false], [844, 390, true]]) {
+          await b.setViewport(vw, vh, !isLandscape);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            const r = p.getBoundingClientRect();
+            return {
+              left: r.left, top: r.top, right: r.right, bottom: r.bottom,
+              scrollH: p.scrollHeight, clientH: p.clientHeight,
+              scrollW: p.scrollWidth, clientW: p.clientWidth,
+            };
+          `);
+          const label = `${vw}x${vh}`;
+          assert.ok(m.left >= 0, `${label}: panel left edge (${m.left}) is off-screen`);
+          assert.ok(m.top >= 0, `${label}: panel top edge (${m.top}) is off-screen`);
+          assert.ok(m.right <= vw + 0.5, `${label}: panel right edge (${m.right}) exceeds the viewport width ${vw}`);
+          assert.ok(m.bottom <= vh + 0.5, `${label}: panel bottom edge (${m.bottom}) exceeds the viewport height ${vh}`);
+          assert.ok(m.scrollH <= m.clientH + 1,
+            `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+          assert.ok(m.scrollW <= m.clientW + 1,
+            `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
+          await b.eval(`document.getElementById("settings-scrim").click(); return true;`);
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: `panel to close at ${label}` });
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
 
   test("the paper choice survives a reload", async () => {
     await freshLoad();
+    await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#front .prints select");
+      const sel = document.querySelector("#settings-panel .prints select");
       sel.value = "a4";
       sel.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
@@ -997,7 +1127,7 @@ function run() {
       label: "chips after reload",
     });
     const after = await b.eval(`
-      return document.querySelector("#front .prints select").value;
+      return document.getElementById("print-paper-select").value;
     `);
     assert.strictEqual(after, "a4", "the paper selector did not come back on A4 after a reload");
   });
@@ -1404,35 +1534,20 @@ function run() {
   });
 
   /* Every deck - built-in or generated - prints through the same client-side
-     PDF path (one-pdf-path plan), so .prints is <button>s plus the paper
-     <select> on both; there is no <a href> anywhere in .prints any more. The
-     tab-order rule that the built-in test pins is the same rule here; the
-     selector still names `a` so this test would also catch a regression that
-     reintroduced a print link, and it currently matches zero anchors. */
-  test("print controls on the hidden face", async () => {
+     PDF path and the same shared panel (one-pdf-path plan, lane M1's
+     menu-shell move): there is no per-deck .prints any more, so a generated
+     deck's card faces carry no print controls either. */
+  test("print controls are never on a card face for a generated deck", async () => {
     await freshLoad();
     await generate(SIX_SCALES[1]);
-    const count = () => b.eval(`
-      const q = f => [...document.querySelectorAll(
-        "#" + f + " .prints a, #" + f + " .prints button, #" + f + " .prints select")]
-        .filter(el => el.tabIndex >= 0).length;
-      return { front: q("front"), back: q("back") };
+    const faces = await b.eval(`
+      return {
+        front: !!document.querySelector("#front .prints, #front button, #front select"),
+        back: !!document.querySelector("#back .prints, #back button, #back select"),
+      };
     `);
-
-    const shut = await count();
-    assert.strictEqual(shut.front, 3,
-      `the showing face carries ${shut.front} tabbable print controls, not 3`);
-    assert.strictEqual(shut.back, 0,
-      `${shut.back} print control(s) inside the aria-hidden #back face are still focusable`);
-
-    await b.click("#card");
-    await b.waitFor(`document.getElementById("card").classList.contains("flip")`, {
-      label: "card to take the flip class",
-    });
-    const open = await count();
-    assert.strictEqual(open.back, 3, "after the flip the showing face's controls are not tabbable");
-    assert.strictEqual(open.front, 0,
-      `${open.front} print control(s) inside the now-hidden #front face are still focusable`);
+    assert.strictEqual(faces.front, false, "the showing face carries a print control");
+    assert.strictEqual(faces.back, false, "the hidden face carries a print control");
   });
 
   /* The unit suite asserts this against a DOM stub, where every element id
@@ -1597,6 +1712,7 @@ function run() {
 
     await freshLoad();
     await generate(SIX_SCALES[1]);
+    await openSettingsPanel();
     // The anchor click is real, so the transfer is real unless it is refused.
     await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
 
@@ -1605,9 +1721,9 @@ function run() {
         const real = URL.createObjectURL;
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
-        const btn = [...document.querySelectorAll("#front .prints button")]
+        const btn = [...document.querySelectorAll("#settings-panel .prints button")]
           .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button on the showing face" };
+        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -1692,6 +1808,7 @@ function run() {
     const os = require("node:os");
 
     await freshLoad();
+    await openSettingsPanel();
     await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
 
     const cap = await b.eval(`
@@ -1699,9 +1816,9 @@ function run() {
         const real = URL.createObjectURL;
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
-        const btn = [...document.querySelectorAll("#front .prints button")]
+        const btn = [...document.querySelectorAll("#settings-panel .prints button")]
           .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button on the showing face" };
+        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -2112,7 +2229,11 @@ function run() {
   // measured as still reachable (they sit outside the card's x-range, so
   // they are the negative control: a fix that moves the card sideways
   // instead of shrinking it would show up here).
-  const LANDSCAPE_CONTROLS = ["#modeA", "#modeB", ".shuffle", ".count", "#deck-add", "#prev", "#next"];
+  // Lane M1: NAME<->NOTES moved behind the settings panel, so the reachable
+  // header control in the collapsed landscape row is #settings-trigger, not
+  // #modeA/#modeB directly - the mode buttons are covered by the settings
+  // panel's own landscape-fit tests below.
+  const LANDSCAPE_CONTROLS = ["#settings-trigger", ".shuffle", ".count", "#deck-add", "#prev", "#next"];
 
   // One reading of the whole page: where every control's centre actually
   // hit-tests, where the card sits relative to its container, and how big
@@ -2419,43 +2540,58 @@ function run() {
     }
   });
 
+  /* Lane M1: #modeA/#modeB and the panel's print buttons/select are now
+     behind the settings trigger. The panel's own scrim covers the rest of
+     the page while it is open (by design - it is a modal), so the sweep
+     runs in two passes: the panel's own stops with it OPEN (the same real
+     interaction acceptance (12) requires), and everything else - Shuffle,
+     prev/next, the deck strip - with it CLOSED, its normal resting state.
+     #settings-trigger itself joins the sweep as the new persistent 44px
+     header control. */
+  const probeTargets = (sels) => b.eval(`
+    const name = (el) => !el ? "null"
+      : el === document.documentElement ? "html"
+      : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
+        (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
+    const rows = [];
+    const sels = ${JSON.stringify(sels)};
+    for (const sel of sels) {
+      const el = document.querySelector(sel);
+      if (!el) { rows.push({ sel, missing: true }); continue; }
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      // Its OWN extremes, inset 1px so the probe is inside the box. The
+      // horizontal pair is taken on the vertical midline, where even a
+      // 999px-radius pill spans its full width - corners would not be
+      // inside a chip at all.
+      const pts = { top: [cx, r.top + 1], bottom: [cx, r.bottom - 1],
+                    centre: [cx, cy],
+                    left: [r.left + r.width / 4, cy],
+                    right: [r.right - r.width / 4, cy] };
+      const bad = [];
+      for (const [where, [x, y]] of Object.entries(pts)) {
+        const hit = document.elementFromPoint(x, y);
+        if (!(hit === el || el.contains(hit))) bad.push(where + " -> " + name(hit));
+      }
+      rows.push({ sel, h: +r.height.toFixed(1), w: +r.width.toFixed(1), bad });
+    }
+    return rows;
+  `);
+
   test("the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours",
     async () => {
       await freshLoad();
       await b.setViewport(390, 844, true);
       try {
-        const probe = await b.eval(`
-          const name = (el) => !el ? "null"
-            : el === document.documentElement ? "html"
-            : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
-              (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
-          const rows = [];
-          // The three under-sized controls, plus the ones that already pass:
-          // a min-height that swallows a neighbour is the row-214 bug again.
-          const sels = ["#modeA", "#modeB", "#shuffle", "#prev", "#next",
-                        "#deck-add", "#decks .chip:not(#deck-add)"];
-          for (const sel of sels) {
-            const el = document.querySelector(sel);
-            if (!el) { rows.push({ sel, missing: true }); continue; }
-            const r = el.getBoundingClientRect();
-            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-            // Its OWN extremes, inset 1px so the probe is inside the box. The
-            // horizontal pair is taken on the vertical midline, where even a
-            // 999px-radius pill spans its full width - corners would not be
-            // inside a chip at all.
-            const pts = { top: [cx, r.top + 1], bottom: [cx, r.bottom - 1],
-                          centre: [cx, cy],
-                          left: [r.left + r.width / 4, cy],
-                          right: [r.right - r.width / 4, cy] };
-            const bad = [];
-            for (const [where, [x, y]] of Object.entries(pts)) {
-              const hit = document.elementFromPoint(x, y);
-              if (!(hit === el || el.contains(hit))) bad.push(where + " -> " + name(hit));
-            }
-            rows.push({ sel, h: +r.height.toFixed(1), w: +r.width.toFixed(1), bad });
-          }
-          return rows;
-        `);
+        // The three under-sized controls, plus the ones that already pass:
+        // a min-height that swallows a neighbour is the row-214 bug again.
+        const resting = await probeTargets(
+          ["#shuffle", "#prev", "#next", "#deck-add", "#decks .chip:not(#deck-add)"]);
+        await openSettingsPanel();
+        const inPanel = await probeTargets(
+          ["#settings-trigger", "#modeA", "#modeB",
+           "#settings-panel .prints button", "#settings-panel .prints select"]);
+        const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
         const stolen = probe.filter((p) => !p.missing && p.bad.length);
         assert.deepStrictEqual(probe.filter((p) => p.missing), []);
@@ -2498,19 +2634,19 @@ function run() {
    * ---------------------------------------------------------------- */
   const CHROME_BUDGET = [
     // vw,  vh,   minCardW, maxChrome   (chrome = vh - main.height)
-    // Re-measured 2026-09 after "+ ADD" moved into the deck strip. That retired
-    // a whole 50px row of chrome and the spacing ramp spent part of it back, so
-    // every row here moved the RIGHT way and the table was tightened onto the
-    // new numbers - which is what makes the gain a floor rather than a windfall
-    // some later change can quietly spend. Portrait chrome 269.17 -> 263.67;
-    // landscape 276.17 -> 251.67, and the card at 844x390 is 82.42 -> 100.16px
-    // wide, +21.5%.
-    [390, 844, 343.19, 263.67],
-    [390, 745, 342.69, 263.67],
-    [375, 667, 292.78, 262.67],
-    [320, 568, 221.09, 262.67],
-    [844, 390, 100.16, 251.67],
-    [926, 428, 127.67, 251.67],
+    // Re-measured 2026-09-28 (lane M1, menu-shell): the modebar row came out
+    // of the header entirely (NAME<->NOTES moved into the settings panel),
+    // so every row's chrome dropped again and the table was tightened onto
+    // the new numbers. Portrait chrome 263.67 -> 225.67 (320x568: 262.67 ->
+    // 227.67, the print row's own floor still applies there); landscape
+    // chrome 251.67 -> 158.67, and the card at 844x390 is 100.16 -> 167.5px
+    // wide, +67.3%.
+    [390, 844, 343.19, 225.67],
+    [390, 745, 342.69, 225.67],
+    [375, 667, 306.81, 225.67],
+    [320, 568, 246.44, 227.67],
+    [844, 390, 167.50, 158.67],
+    [926, 428, 195.02, 158.67],
   ];
 
   test("the header and footer stay inside their pixel budget, so the card keeps its size",
@@ -2713,19 +2849,20 @@ function run() {
 
       // And the positive claim, stated as a RELATIONSHIP rather than as a
       // pixel count: the strip is wider than the viewport gives it at the
-      // shortest landscape a phone offers. Measured 2026-09-15 on a Mac with
-      // Nunito Sans resolved: .decks scrollWidth / clientWidth is 611/570 at
-      // 844x390, 652/652 at 926x428, 611/393 at 667x375 and 1006/1006 at
-      // 1280x500, i.e. 41px and 218px of overflow on the two narrow rows.
-      // Built-ins alone already overflow 667x375 by 70px (463 vs 393).
+      // shortest landscape a phone offers. Re-measured 2026-09-28 (lane M1,
+      // menu-shell): moving the mode toggle out of the header row freed the
+      // width the modebar used to share with the strip, so .decks now gets
+      // most of that row to itself - .decks scrollWidth / clientWidth is
+      // 767/767 at 844x390, 849/849 at 926x428, 611/590 at 667x375 and
+      // 1203/1203 at 1280x500. Only the narrowest row still overflows, and
+      // by a much smaller margin (21px, down from 218px pre-menu-shell).
       //
       // Those pixel counts are font-metric dependent - a CI box without the
       // webfont measures different chips - so what is ASSERTED is the sign,
-      // on the row where the margin is 200px and no font substitution can
-      // flip it. That is precisely the claim the stylesheet used to get
-      // wrong, and the whole reason this test exists.
+      // on the one row that still overflows. That is precisely the claim the
+      // stylesheet used to get wrong, and the whole reason this test exists.
       const narrow = seen["667x375"];
-      assert.ok(narrow.sw > narrow.cw + 100,
+      assert.ok(narrow.sw > narrow.cw,
         "at 667x375 with a custom deck the strip now FITS " +
         `(${narrow.sw} <= ${narrow.cw}): ${JSON.stringify(seen, null, 2)}. If a ` +
         "layout change really did buy that, index.html's landscape comment - " +
@@ -2789,7 +2926,7 @@ function run() {
               card: +q(".scene").width.toFixed(2),
               h1: +q("h1").height.toFixed(2),
               display: getComputedStyle(document.querySelector("header")).display,
-              modeTop: getComputedStyle(document.querySelector(".modebar")).marginTop,
+              triggerOrder: getComputedStyle(document.getElementById("settings-trigger")).order,
               h1Pos: getComputedStyle(document.querySelector("h1")).position,
             };
           };
@@ -5679,6 +5816,7 @@ function run() {
 
     check(await readState(), "on load");
 
+    await openSettingsPanel();
     await b.click("#modeB");
     await b.waitFor(`document.getElementById("modeB").classList.contains("on")`,
       { label: "mode B to become active" });
@@ -5756,6 +5894,7 @@ function run() {
     check(await readCard(), "after stepping to the next card");
 
     // Mode B swaps which face holds the diagram; the exposure rule does not care.
+    await openSettingsPanel();
     await b.click("#modeB");
     await b.waitFor(`document.getElementById("modeB").classList.contains("on")`,
       { label: "mode B to become active" });
