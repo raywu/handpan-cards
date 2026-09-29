@@ -1,13 +1,18 @@
 # kills: selecting a deck persists its id, custom decks included
 # suite: node --test --test-name-pattern ^selecting.a.deck.persists.its.id..custom.decks.included$ tests/app.test.js
-# selectDeck reinstates the Phase 3 built-ins-only guard, so a custom deck the
-# user selected is not restored on the next boot.
+# Context refreshed 2026-09-29 (M2, "add scale into the settings panel"):
+# selectDeck's rehome guard now checks "settings-trigger" instead of
+# "deck-add" (the opener hideSheet() focuses on Cancel is the trigger, since
+# #deck-add lives inside a closed settings panel and cannot receive focus -
+# see PR body). The mutation itself is unchanged: selectDeck reinstates the
+# Phase 3 built-ins-only guard, so a custom deck the user selected is not
+# restored on the next boot.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3002,7 +3002,7 @@ function selectDeck(id) {
+@@ -5797,7 +5797,7 @@ function selectDeck(id) {
    const rehome = !!a && a !== document.body &&
-     (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
+     (a.id === "settings-trigger" || !!(a.closest && a.closest("#decks")));
    deckId = id;
 -  storedDeck = id;
 +  if (isBuiltIn(id)) storedDeck = id;

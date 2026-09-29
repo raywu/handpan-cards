@@ -748,10 +748,10 @@ test("the deck row opens with a + ADD chip that opens the page, focusing BACK", 
   const app = boot();
   const row = chipRow(app);
   assert.strictEqual(row.length, decks(app).length, "one chip per deck");
-  // + ADD is the strip's FIRST child, in normal flow with the deck chips -
-  // see the .chip.add comment in index.html for why first, and why in flow.
-  assert.strictEqual(stripRow(app)[0].id, "deck-add",
-    "+ ADD is not the first chip in the strip");
+  // + ADD moved out of the strip into the settings panel's Scales group
+  // (M2, 2026-09-28); #decks holds deck chips only now.
+  assert.strictEqual(stripRow(app).some((c) => c.id === "deck-add"), false,
+    "+ ADD is still a chip in the strip");
 
   assert.strictEqual(app.sheetOpen(), false, "the sheet starts closed");
   openSheet(app);
@@ -767,12 +767,15 @@ test("the deck row opens with a + ADD chip that opens the page, focusing BACK", 
   // role="dialog" / aria-labelledby live in the markup, so e2e asserts those.
 });
 
-test("Escape closes the sheet and focus returns to + ADD", () => {
+test("Escape closes the sheet and focus returns to the settings trigger", () => {
   const app = boot();
   openSheet(app);
   app.keydown("Escape");
   assert.strictEqual(app.sheetOpen(), false);
-  assert.strictEqual(app.activeId(), "deck-add", "focus returns to the + ADD chip");
+  // "+ Add a scale" lives inside the settings panel, which closePanel()
+  // already hid before the sheet opened (M2, 2026-09-28) - #deck-add cannot
+  // receive focus while hidden, so cancelling returns focus to the trigger.
+  assert.strictEqual(app.activeId(), "settings-trigger", "focus returns to the settings trigger");
 });
 
 test("closing the sheet clears the refusal, so no error is stranded on a closed sheet (queue row 114)", () => {
@@ -800,7 +803,7 @@ test("BACK closes the page and returns focus to the control that opened it", () 
   openSheet(app);
   app.els["scale-back"].click();
   assert.strictEqual(app.sheetOpen(), false, "BACK did not close the page");
-  assert.strictEqual(app.activeId(), "deck-add", "focus did not return to + ADD");
+  assert.strictEqual(app.activeId(), "settings-trigger", "focus did not return to the settings trigger");
 });
 
 test("the page fills the viewport, so there is no backdrop left to tap", () => {
@@ -898,8 +901,6 @@ test("Generate builds the deck, closes the sheet, selects it and announces the c
   const mine = row.find((c) => c.label === d.name);
   assert.ok(mine, `no chip for ${d.name} in ${JSON.stringify(row)}`);
   assert.strictEqual(mine.on, true, "the new chip is not selected");
-  assert.strictEqual(stripRow(app)[0].id, "deck-add",
-    "a generate left + ADD somewhere other than the head of the strip");
 });
 
 test("the one-time layout hint is appended on the first generation of a deck, not the second", () => {
@@ -2581,33 +2582,13 @@ test("an untouched Edit box still leaves an auto-named deck free to re-derive it
 
 /* ---------------- 28. the deck strip, and the drawer without presets ----
  * The owner moved "+ ADD" inline as the strip's first chip and had the preset
- * row deleted outright (2026-09). Both are asserted here as facts about the
- * shipped app, not as preferences: the first because a rebuild that loses it,
- * or appends it last, puts the only entry point to the create sheet off-screen
- * on a phone; the second because "removed" has to mean the seeds are gone from
- * the file, not merely hidden. */
-
-test("+ ADD leads the strip through every rebuild, as the same node", () => {
-  const app = boot();
-  const add = app.els["deck-add"];
-  assert.strictEqual(app.els.decks.children[0], add,
-    "+ ADD is not the strip's first child on boot");
-
-  // A rebuild throws the strip away (innerHTML = "") and builds it again. The
-  // node must be MOVED, not recreated: closeScaleSheet() and selectDeck() both
-  // hold this exact element, and its onclick is a property on it.
-  const d = makeCustom(app);
-  app.select(d.id);
-  assert.strictEqual(app.els.decks.children[0], add,
-    "a rebuild replaced or displaced the + ADD node");
-  assert.strictEqual(app.els.decks.children.length, app.get("allDecks().length") + 1,
-    "the strip is not one + ADD plus one chip per deck");
-
-  // Still live after the rebuild: the click still opens the sheet.
-  assert.strictEqual(app.sheetOpen(), false);
-  add.click();
-  assert.strictEqual(app.sheetOpen(), true, "+ ADD stopped opening the sheet after a rebuild");
-});
+ * row deleted outright (2026-09). The second is asserted here as a fact about
+ * the shipped app, not a preference: "removed" has to mean the seeds are gone
+ * from the file, not merely hidden. The first ("+ ADD leads the strip through
+ * every rebuild, as the same node") is retired (M2, 2026-09-28): "+ Add a
+ * scale" no longer lives in the strip at all, so there is no strip-position
+ * or strip-rebuild invariant left to hold on it - see
+ * tests/mutants/e_add_chip_appended_last.patch, retired alongside it. */
 
 /** The app's own <style> block, with comments stripped. */
 function appCss() {
@@ -3398,7 +3379,7 @@ test("the browser's Back button closes the page and pops nothing further", () =>
   const before = backs();
   app.popstate();
   assert.strictEqual(app.sheetOpen(), false, "Back did not close the page");
-  assert.strictEqual(app.activeId(), "deck-add", "Back did not return focus to + ADD");
+  assert.strictEqual(app.activeId(), "settings-trigger", "Back did not return focus to the settings trigger");
   // The entry is already gone - the browser popped it. Calling back() again
   // here would walk PAST the app's own entry and leave the site.
   assert.strictEqual(backs(), before,

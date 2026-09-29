@@ -244,16 +244,15 @@ function run() {
   }
 
   // Click the i-th deck chip and wait for the deck to actually change over.
-  // + ADD is the strip's first child, so deck i is the (i + 2)-th chip, and
-  // with + ADD leading, the last built-in starts past the right edge at 380px.
-  // So the chip IS scrolled into view - but the hit test below is what keeps
-  // this helper honest about the bug class the old "never scroll" rule was
-  // protecting (row 214: something coming to rest ON TOP of a chip). Scrolling
-  // moves a chip into the port; it cannot move an overlay off it, so the
-  // assertion still fails on exactly the regression it was written for, and
-  // "+ ADD is on screen at rest" is proved by its own tests further down.
+  // #decks holds deck chips only (M2, 2026-09-28: "+ Add a scale" moved into
+  // the settings panel), so deck i is the (i + 1)-th chip. The hit test below
+  // is what keeps this helper honest about the bug class the old "never
+  // scroll" rule was protecting (row 214: something coming to rest ON TOP of
+  // a chip). Scrolling moves a chip into the port; it cannot move an overlay
+  // off it, so the assertion still fails on exactly the regression it was
+  // written for.
   async function selectDeck(i, meta) {
-    const sel = `#decks .chip:nth-child(${i + 2})`;
+    const sel = `#decks .chip:nth-child(${i + 1})`;
     const hit = await b.eval(`
       const el = document.querySelector(${JSON.stringify(sel)});
       el.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -323,6 +322,27 @@ function run() {
       back: document.getElementById("back").innerHTML.length,
     };`);
     assert.ok(faces.front > 0 && faces.back > 0, `card faces are empty: ${JSON.stringify(faces)}`);
+  });
+
+  // M2, 2026-09-28: "+ Add a scale" moved out of the strip into the settings
+  // panel, so #decks must hold deck chips and nothing else.
+  test("#decks contains only deck chips - + ADD is not one of them", async () => {
+    await freshLoad();
+    const info = await b.eval(`
+      const nav = document.getElementById("decks");
+      return {
+        addInStrip: !!document.getElementById("deck-add") &&
+          nav.contains(document.getElementById("deck-add")),
+        childCount: nav.children.length,
+        chipCount: nav.querySelectorAll(".chip").length,
+        addInPanel: !!document.querySelector("#settings-panel #deck-add"),
+      };
+    `);
+    assert.strictEqual(info.addInStrip, false, "#deck-add is still inside #decks");
+    assert.strictEqual(info.childCount, info.chipCount,
+      "#decks has a child that is not a .chip");
+    assert.strictEqual(info.addInPanel, true,
+      "#deck-add did not move into the settings panel");
   });
 
   /* ---------------------------------------------------------------- *
@@ -1028,10 +1048,21 @@ function run() {
     await b.key("ArrowLeft", "ArrowLeft", 37);
     await expectCount(`1 / ${n}`, "ArrowLeft must not step the card while the panel is open");
 
-    const flippedWhileOpen = await b.eval(
+    // Enter and Space are the card's own flip keys (row 396) - pressed while
+    // the panel is open, they must land on whatever panel control has focus
+    // (activating it, if anything) and never fall through to flip() on the
+    // card underneath. Focus is on #settings-trigger right after opening.
+    await b.key("Enter", "Enter", 13);
+    let flippedWhileOpen = await b.eval(
       `return document.getElementById("card").classList.contains("flip")`);
     assert.strictEqual(flippedWhileOpen, false,
-      "the card must not have flipped from a keypress while the panel is open");
+      "the card must not have flipped from Enter while the panel is open");
+
+    await b.key(" ", " ", 32);
+    flippedWhileOpen = await b.eval(
+      `return document.getElementById("card").classList.contains("flip")`);
+    assert.strictEqual(flippedWhileOpen, false,
+      "the card must not have flipped from Space while the panel is open");
   });
 
   test("the settings trigger opens and closes the panel three ways, and reports its own state", async () => {
@@ -1073,6 +1104,143 @@ function run() {
     focused = await b.eval(`return document.activeElement.id`);
     assert.strictEqual(focused, "settings-trigger",
       "a second trigger tap must leave focus on the trigger");
+  });
+
+  // M2, 2026-09-28 (review gap on M1, PR #153: "Tab trap and background inert
+  // untested (2 hand mutants survived)"). The panel's own keydown handler
+  // (index.html panelOpen branch) computes panelStops() and moves focus among
+  // them itself, with e.preventDefault() - so native Tab order is irrelevant
+  // and only this list matters. "+ ADD A SCALE" (#deck-add) sits between the
+  // mode buttons and the print controls in DOM order and must be one of the
+  // stops.
+  test("Tab is trapped inside the settings panel and cycles every stop, wrapping both ways",
+    async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      // Some panel stops (the print buttons) carry no id, so track focus by a
+      // stable index into panelStops()-equivalent DOM order, not by id alone.
+      const describe = () => b.eval(`
+        const panel = document.getElementById("settings-panel");
+        const a = document.activeElement;
+        return {
+          id: a && a.id || null,
+          isTrigger: a && a.id === "settings-trigger",
+          inPanel: !!a && panel.contains(a),
+        };
+      `);
+      const first = await describe();
+      assert.strictEqual(first.isTrigger, true,
+        "focus is not on the trigger right after opening");
+
+      const seen = [first];
+      for (let i = 0; i < 12; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await describe());
+        if (seen[seen.length - 1].isTrigger) break;
+      }
+      assert.strictEqual(seen[seen.length - 1].isTrigger, true,
+        `Tab never wrapped back to the trigger: ${JSON.stringify(seen)}`);
+      const ids = seen.map((s) => s.id);
+      assert.ok(ids.includes("modeA"), `Tab never reached #modeA: ${JSON.stringify(seen)}`);
+      assert.ok(ids.includes("modeB"), `Tab never reached #modeB: ${JSON.stringify(seen)}`);
+      assert.ok(ids.includes("deck-add"),
+        `Tab never reached + ADD A SCALE: ${JSON.stringify(seen)}`);
+      // Everything seen must actually be inside the panel (or be the trigger
+      // that opened it) - Tab must never escape to the inert background.
+      const outside = seen.filter((s) => !s.isTrigger && !s.inPanel);
+      assert.deepStrictEqual(outside, [], `Tab escaped the panel: ${JSON.stringify(outside)}`);
+
+      // Shift+Tab from the trigger (the first stop) wraps to the LAST stop,
+      // which is inside the panel and is not the trigger itself.
+      await b.send("Input.dispatchKeyEvent", {
+        type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9,
+        nativeVirtualKeyCode: 9, modifiers: 8,
+      });
+      await b.send("Input.dispatchKeyEvent", {
+        type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9,
+        nativeVirtualKeyCode: 9, modifiers: 8,
+      });
+      const last = await describe();
+      assert.strictEqual(last.isTrigger, false,
+        "Shift+Tab from the first stop did not move focus off the trigger");
+      assert.strictEqual(last.inPanel, true,
+        `Shift+Tab from the first stop landed outside the panel: ${JSON.stringify(last)}`);
+    });
+
+  // M2, 2026-09-28 (same review gap as above). panelBackground is
+  // [main, footer, #decks] - NOT header, because #settings-trigger itself
+  // must stay reachable to close the panel it opened.
+  test("main, footer and the deck strip are inert and aria-hidden while the settings panel is open, and restored on close",
+    async () => {
+      await freshLoad();
+      const shut = await b.eval(`
+        return [...document.querySelectorAll("main, footer, #decks")]
+          .map(el => ({ sel: el.tagName + (el.id ? "#" + el.id : ""),
+                        hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.ok(shut.length >= 3, "main, footer or #decks is missing from the page");
+      for (const el of shut) {
+        assert.strictEqual(el.hidden, null, `${el.sel} is aria-hidden before the panel opens`);
+        assert.strictEqual(el.inert, false, `${el.sel} is inert before the panel opens`);
+      }
+
+      await openSettingsPanel();
+      const headerLive = await b.eval(
+        `return { inert: !!document.querySelector("header").inert, ` +
+        `hidden: document.querySelector("header").getAttribute("aria-hidden") };`);
+      assert.strictEqual(headerLive.inert, false,
+        "header went inert while the panel is open - the trigger could not close it");
+      assert.strictEqual(headerLive.hidden, null,
+        "header is aria-hidden while the panel is open");
+
+      const open = await b.eval(`
+        return [...document.querySelectorAll("main, footer, #decks")]
+          .map(el => ({ sel: el.tagName + (el.id ? "#" + el.id : ""),
+                        hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      assert.strictEqual(open.length, shut.length, "the background set changed while the panel was open");
+      for (const el of open) {
+        assert.strictEqual(el.hidden, "true",
+          `${el.sel} is still exposed to a screen reader behind the panel`);
+        assert.strictEqual(el.inert, true, `${el.sel} is still interactive behind the panel`);
+      }
+
+      await b.key("Escape", "Escape", 27);
+      await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+        { label: "the panel to close" });
+      const back = await b.eval(`
+        return [...document.querySelectorAll("main, footer, #decks")]
+          .map(el => ({ sel: el.tagName + (el.id ? "#" + el.id : ""),
+                        hidden: el.getAttribute("aria-hidden"), inert: !!el.inert }));
+      `);
+      for (const el of back) {
+        assert.strictEqual(el.hidden, null, `${el.sel} is still aria-hidden after the panel closed`);
+        assert.strictEqual(el.inert, false, `${el.sel} is still inert after the panel closed`);
+      }
+    });
+
+  // M2, 2026-09-28 (review gap on M1, PR #153: "320 h1/trigger overlap
+  // untested"). At the narrowest supported phone width the header title and
+  // the settings trigger must not overlap - two hit targets sharing a pixel
+  // is the same mis-tap class the deck-strip overlay bug was.
+  test("the header title and the settings trigger do not overlap at 320x568", async () => {
+    await freshLoad();
+    await b.setViewport(320, 568, true);
+    try {
+      const m = await b.eval(`
+        const h = document.querySelector("h1").getBoundingClientRect();
+        const t = document.getElementById("settings-trigger").getBoundingClientRect();
+        return {
+          h: { l: h.left, r: h.right, t: h.top, b: h.bottom },
+          trig: { l: t.left, r: t.right, t: t.top, b: t.bottom },
+        };
+      `);
+      const overlaps = m.h.l < m.trig.r && m.h.r > m.trig.l && m.h.t < m.trig.b && m.h.b > m.trig.t;
+      assert.strictEqual(overlaps, false,
+        `h1 ${JSON.stringify(m.h)} overlaps #settings-trigger ${JSON.stringify(m.trig)} at 320x568`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
   });
 
   test("the settings panel fits entirely on screen, with no clipping or scroll, at 320x568 and 844x390",
@@ -1158,10 +1326,9 @@ function run() {
   const activeId = () => b.eval(`return (document.activeElement || {}).id || null;`);
 
   const openSheet = async () => {
-    // At 380px the chip row scrolls, so + ADD can start outside the viewport
-    // and a click at its centre would land on nothing.
-    await b.eval(`document.getElementById("deck-add")
-                    .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+    // "+ Add a scale" lives in the settings panel now (M2, 2026-09-28), so a
+    // real tap opens the panel first, the same way a real user would.
+    await openSettingsPanel();
     await b.click("#deck-add");
     await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "the scale sheet to open" });
@@ -1374,7 +1541,7 @@ function run() {
       }
     });
 
-  test("Escape closes the sheet and focus returns to + ADD", async () => {
+  test("Escape closes the sheet and focus returns to the settings trigger", async () => {
     await freshLoad();
     await openSheet();
     // AC2: the page does not steal focus into the box - no soft keyboard until
@@ -1384,13 +1551,51 @@ function run() {
     await b.key("Escape", "Escape", 27);
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "Escape to close the sheet" });
-    assert.strictEqual(await activeId(), "deck-add", "focus did not return to + ADD");
+    // "+ Add a scale" lives inside the settings panel, which closePanel()
+    // already hid before the sheet opened (M2, 2026-09-28) - #deck-add cannot
+    // receive focus while hidden, so cancelling returns focus to the trigger
+    // that is actually still on screen.
+    assert.strictEqual(await activeId(), "settings-trigger",
+      "focus did not return to the settings trigger");
+  });
+
+  // Task item 2's own acceptance criterion: opening "+ Add a scale" from the
+  // panel closes the panel FIRST (see addChip.onclick), so cancelling the
+  // sheet must not leave the panel's inert/hidden bookkeeping stuck. Nothing
+  // in header/main/footer/#settings-panel may still be inert or aria-hidden,
+  // the panel itself must be closed (hidden, aria-expanded=false on the
+  // trigger) and the scrim must be hidden.
+  test("open-from-panel then cancel leaves no residual panel or background state", async () => {
+    await freshLoad();
+    await openSheet();
+    await b.key("Escape", "Escape", 27);
+    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+      { label: "Escape to close the sheet" });
+    const state = await b.eval(`
+      const rects = ["header", "main", "footer", "#settings-panel"].map(sel => {
+        const el = document.querySelector(sel);
+        return { sel, inert: !!el && el.inert, ariaHidden: el && el.getAttribute("aria-hidden") };
+      });
+      return {
+        rects,
+        panelHidden: document.getElementById("settings-panel").hidden,
+        scrimHidden: document.getElementById("settings-scrim").hidden,
+        expanded: document.getElementById("settings-trigger").getAttribute("aria-expanded"),
+      };
+    `);
+    for (const r of state.rects) {
+      assert.strictEqual(r.inert, false, `${r.sel} is still inert after cancel`);
+      assert.strictEqual(r.ariaHidden, null, `${r.sel} is still aria-hidden after cancel`);
+    }
+    assert.strictEqual(state.panelHidden, true, "the settings panel did not stay closed");
+    assert.strictEqual(state.scrimHidden, true, "the settings scrim did not stay hidden");
+    assert.strictEqual(state.expanded, "false", "the trigger did not report aria-expanded=false");
   });
 
   // AC3. The drawer closed on a backdrop tap; the page has no backdrop, and a
   // stray tap on a full-viewport page would silently discard an unsaved edit.
   // BACK is the gesture now, and the old one has to be gone, not just unused.
-  test("BACK closes the page and focus returns to + ADD; a stray tap does not",
+  test("BACK closes the page and focus returns to the settings trigger; a stray tap does not",
     async () => {
       await freshLoad();
       await openSheet();
@@ -1404,7 +1609,7 @@ function run() {
       await b.click("#scale-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "BACK to close the page" });
-      assert.strictEqual(await activeId(), "deck-add",
+      assert.strictEqual(await activeId(), "settings-trigger",
         "BACK did not return focus to the control that opened the page");
     });
 
@@ -1873,130 +2078,40 @@ function run() {
           rowScrolls: nav.scrollWidth > nav.clientWidth + 1,
           wraps: nav.scrollHeight > nav.clientHeight + 1,
           activeInView: on.left >= navR.left - 1 && on.right <= navR.right + 1,
-          // + ADD IS one of these chips now (owner, 2026-09: "'Add' call to
-          // action can be inline as first option with the different scale
-          // selections to save vertical space"), and it leads the row. It is in
-          // normal flow, so it overlays nothing; see the row-214 test below.
-          addFirst: nav.children[0] === document.getElementById("deck-add"),
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.strictEqual(row.chips, 1 + 3 + 6, "+ ADD, three built-ins and six customs");
+      // #decks holds deck chips only now (M2, 2026-09-28: "+ Add a scale"
+      // moved into the settings panel) - three built-ins and six customs.
+      assert.strictEqual(row.chips, 3 + 6, "three built-ins and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
       assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
       assert.strictEqual(row.activeInView, true, "the active chip is not scrolled into view");
-      assert.strictEqual(row.addFirst, true, "+ ADD is no longer the strip's first chip");
       assert.ok(row.body.sw <= row.body.cw + 1, "the chip row blew the page out horizontally");
     } finally {
       await b.setViewport(900, 900, false);
     }
   });
 
-  /* ---------------------------------------------------------------- *
-   * + ADD reachability at phone widths
-   *
-   * Owner-reported: "I do not see the pan visual before generating the chord
-   * cards." The preview was fine - its ONLY entry point was not. With the
-   * three built-in decks the chip row already overflows a phone viewport
-   * (scrollWidth 469 vs clientWidth 356 at 380px) and + ADD, being last, started
-   * at x=416 - entirely past the right edge at 380, 390 and 430 CSS px alike.
-   * It is on-screen at 768px and above, which is why review never caught it.
-   *
-   * 390x844 is the owner's own device (iPhone 14, iOS 26.6, Safari) and comes
-   * first; 380x800 is the repo's stated test width (CLAUDE.md); 430x930 is the
-   * widest phone that still overflows.
-   *
-   * These tests deliberately do NOT scrollIntoView the button - the owner
-   * cannot do that, and neither may the test that guards them.
-   *
-   * 2026-09: + ADD moved INTO the strip as its first chip, at the owner's
-   * request. That trades one cost for another and the trade is deliberate: it
-   * can no longer be pushed off the right edge by decks (it is ahead of all of
-   * them), but it CAN be scrolled off the left, because buildChips scrolls the
-   * SELECTED chip into view. So the guarantee this test now pins is "on screen
-   * at rest", where rest is the strip's own origin: scrollLeft 0, which is where
-   * every load starts and where a swipe back always lands. The strip is reset to
-   * 0 below for exactly that reason, and for no other - no scrollIntoView on the
-   * button itself, and the click that follows is a real click at its centre.
-   * ---------------------------------------------------------------- */
-  test("+ ADD is fully on-screen and hit-testable at phone widths", async () => {
-    await freshLoad();
-    try {
-      // Every width twice: once with the three built-ins (103px of overflow)
-      // and once with three more custom decks on top, because the overflow
-      // grows with every deck generated and buildChips only ever scrolls the
-      // SELECTED chip into view - never + ADD.
-      const widths = [[390, 844], [380, 800], [430, 930]];
-      let overflowed = 0;
-      for (const [vw, vh] of [...widths, ...widths]) {
-        await b.setViewport(vw, vh, true);
-        const m = await b.eval(`
-          const add = document.getElementById("deck-add");
-          const nav = document.getElementById("decks");
-          nav.scrollLeft = 0;                        // the strip at rest
-          const restedAtZero = nav.scrollLeft === 0;
-          const r = add.getBoundingClientRect();
-          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-          return {
-            r: { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height },
-            vw: document.documentElement.clientWidth,
-            vh: document.documentElement.clientHeight,
-            overflows: nav.scrollWidth > nav.clientWidth + 1,
-            decks: nav.querySelectorAll(".chip:not(#deck-add)").length,
-            hitIsAdd: !!hit && (hit === add || add.contains(hit)),
-            first: nav.children[0] === add,
-            restedAtZero,
-            body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
-          };
-        `);
-        const at = `at ${vw}x${vh} with ${m.decks} decks`;
-        assert.strictEqual(m.first, true, `+ ADD is not the first chip ${at}`);
-        assert.strictEqual(m.restedAtZero, true, `the strip would not rest at scrollLeft 0 ${at}`);
-        // The strip spans the full width now, so a three-deck row happens to
-        // fit at 430. Count the states that DO overflow instead of demanding it
-        // everywhere, and assert the count after the loop so the matrix can
-        // never go vacuous.
-        if (m.overflows) overflowed++;
-        assert.ok(m.r.l >= -1 && m.r.r <= m.vw + 1,
-          `+ ADD is not inside the viewport ${at}: ${JSON.stringify(m.r)}`);
-        assert.ok(m.r.t >= -1 && m.r.b <= m.vh + 1,
-          `+ ADD is cut off vertically ${at}: ${JSON.stringify(m.r)}`);
-        assert.ok(m.r.h >= 43.5 && m.r.w > 20,
-          `+ ADD lost its 44px touch target ${at}: ${JSON.stringify(m.r)}`);
-        assert.strictEqual(m.hitIsAdd, true,
-          `nothing hit-tests to + ADD at its own centre ${at}: ${JSON.stringify(m.r)}`);
-        assert.ok(m.body.sw <= m.body.cw + 1,
-          `the page scrolls horizontally ${at} (${m.body.sw} > ${m.body.cw})`);
+  // "+ ADD is fully on-screen and hit-testable at phone widths" (row 1926,
+  // pre-M2) retired 2026-09-28: it guarded + ADD's reachability as the
+  // strip's own first chip, which could be scrolled off-screen at phone
+  // widths. "+ Add a scale" now lives in the settings panel (M2), a fixed
+  // dialog that is never subject to the deck strip's scroll/overflow at
+  // all - the behaviour under test is gone, not merely relocated. Panel
+  // reachability and on-screen fit are covered by "the settings panel fits
+  // entirely on screen, with no clipping or scroll, at 320x568 and 844x390"
+  // and by the 44px-target sweep below.
 
-        // A real click at that centre point, with no scrolling first.
-        await b.click("#deck-add");
-        await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: `the sheet to open from a plain tap on + ADD ${at}` });
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: `the sheet to close again ${at}` });
-
-        // Halfway through, lengthen the strip and go round again.
-        if (m.decks === 3 && vw === 430) {
-          for (const s of SIX_SCALES.slice(0, 3)) await generate(s);
-        }
-      }
-      assert.ok(overflowed >= 4,
-        `only ${overflowed} of the probed states overflowed the chip row; ` +
-        `this test proves nothing unless + ADD is reachable while the strip scrolls`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("the owner's journey at 380px: tap + ADD, type a scale, see the pan", async () => {
+  test("the owner's journey at 380px: tap the settings trigger, add a scale, see the pan", async () => {
     await freshLoad();
     await b.setViewport(380, 800, true);
     try {
+      await openSettingsPanel();
       await b.click("#deck-add");
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the scale sheet to open from a plain tap on + ADD at 380px" });
+        { label: "the scale sheet to open from + ADD A SCALE at 380px" });
       await typeScale("(D) A C D E F G A C");
       await b.waitFor(
         `(() => { const p = document.getElementById("scale-preview");
@@ -2031,144 +2146,13 @@ function run() {
     }
   });
 
-  /* No deck chip may ever come to rest UNDER + ADD.
-   *
-   * This is the test the first attempt at this fix did not have, and the
-   * regression it let through: with + ADD pinned over the strip as a sticky
-   * overlay, D AMARA 9 sat at x 296.1-407.9 under a pin at 290.8-356 on a plain
-   * fresh load at 390x844. The chip was fully visible, its centre hit-tested to
-   * deck-add, and tapping it opened the create sheet instead of switching decks
-   * - a wrong-action mis-tap on a built-in deck, worse than the unreachable
-   * + ADD it was meant to fix.
-   *
-   * The overlay is gone: + ADD is the strip's first chip, in normal flow, and
-   * nothing in its CSS may ever reintroduce position:sticky, a negative margin
-   * or a z-index. This test is what says so, and it now sweeps + ADD itself as
-   * one of the chips.
-   *
-   * A rect check cannot see that; only elementFromPoint can, which is why every
-   * assertion below is a hit test. Three points per chip - the centre and both
-   * inner thirds - because an overlay can leave a sliver of a chip exposed and
-   * still steal the tap anyone would actually aim. Points outside the strip's
-   * scrollport are simply scrolled out of view and are not the subject here;
-   * points inside it must belong to whatever is drawn there.
-   */
-  test("no deck chip ever rests under + ADD, at any width, state or scroll", async () => {
-    await freshLoad();
-    const meta = await decksMeta();
-    try {
-      // Hit-test every visible point of every chip, plus + ADD, in one pass.
-      const sweep = (state) => b.eval(`
-        const nav = document.getElementById("decks");
-        const add = document.getElementById("deck-add");
-        const nr = nav.getBoundingClientRect();
-        const owns = (el, hit) => !!hit && (hit === el || el.contains(hit));
-        const pts = (r) => [
-          { name: "left third", x: r.left + r.width / 3 },
-          { name: "centre", x: r.left + r.width / 2 },
-          { name: "right third", x: r.left + (r.width * 2) / 3 },
-        ];
-        const bad = [];
-        let probed = 0;
-        for (const c of nav.querySelectorAll(".chip")) {
-          const r = c.getBoundingClientRect();
-          const y = r.top + r.height / 2;
-          for (const p of pts(r)) {
-            // Only points actually inside the scrollport can be tapped at all.
-            if (p.x < nr.left || p.x > nr.right) continue;
-            probed++;
-            const hit = document.elementFromPoint(p.x, y);
-            if (!owns(c, hit)) bad.push({
-              chip: c.textContent.trim(), point: p.name, x: Math.round(p.x),
-              got: hit ? (hit.id || hit.className || hit.tagName) : null,
-              chipRect: [Math.round(r.left), Math.round(r.right)],
-              addRect: [Math.round(add.getBoundingClientRect().left),
-                        Math.round(add.getBoundingClientRect().right)],
-            });
-          }
-        }
-        // + ADD must answer for itself at all three of its own points. It is
-        // one of the .chip nodes above now, so this is belt and braces - and it
-        // takes the same scrollport guard, because as the strip's FIRST child
-        // it is the one thing that can be scrolled off the LEFT edge.
-        const ar = add.getBoundingClientRect();
-        const ay = ar.top + ar.height / 2;
-        for (const p of pts(ar)) {
-          if (p.x < nr.left || p.x > nr.right) continue;
-          probed++;
-          if (!owns(add, document.elementFromPoint(p.x, ay)))
-            bad.push({ chip: "+ ADD", point: p.name, x: Math.round(p.x), got: "not itself" });
-        }
-        return { bad, probed, chips: nav.querySelectorAll(".chip").length };
-      `);
+  // "no deck chip ever rests under + ADD..." (pre-M2) retired 2026-09-28:
+  // it guarded a sticky-overlay regression specific to + ADD living in the
+  // deck strip. "+ Add a scale" now lives in the settings panel (M2) and is
+  // never drawn over the strip at all, so the regression class this test
+  // hunted cannot recur; mutant e_add_chip_overlaps_strip is retired with it
+  // (see PR body).
 
-      const expectClean = async (state) => {
-        const m = await sweep(state);
-        assert.ok(m.probed > 0, `${state}: nothing was probed at all`);
-        assert.deepStrictEqual(m.bad, [],
-          `${state}: a visible point does not hit-test to what is drawn there ` +
-          `(${JSON.stringify(m.bad)})`);
-      };
-
-      // Fresh load, then selecting each deck in turn, then flicked to each end
-      // - buildChips scrolls the SELECTED chip into view, so selecting one deck
-      // is what parks a different one wherever it lands.
-      const flick = (to) => b.eval(
-        `const n = document.getElementById("decks");
-         n.scrollLeft = ${to === "end" ? "n.scrollWidth" : "0"};
-         return n.scrollLeft;`);
-
-      // Scrolling belongs inside the test that needs it, never in the shared
-      // selectDeck helper - a scroll there hides the very bug this test hunts.
-      // i indexes DECKS; + ADD is the strip's first chip, so it is one along.
-      const selectChip = async (i) => {
-        const n = i + 1;
-        await b.eval(`document.querySelectorAll("#decks .chip")[${n}]
-                        .scrollIntoView({ block: "nearest", inline: "nearest" });
-                      return true;`);
-        await b.click(`#decks .chip:nth-child(${n + 1})`);
-        await b.waitFor(
-          `document.querySelectorAll("#decks .chip")[${n}].classList.contains("on")`,
-          { label: `deck chip ${i} to become the active deck` });
-      };
-
-      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
-        await b.setViewport(vw, vh, true);
-        const size = () => b.eval(
-          `return document.querySelectorAll("#decks .chip").length;`);
-        const at = `${vw}x${vh}, ${await size()} decks`;
-
-        await expectClean(`${at}, fresh load`);
-        for (let i = 0; i < meta.length; i++) {
-          await selectChip(i);
-          await expectClean(`${at}, after selecting ${meta[i].id}`);
-        }
-        await flick("start");
-        await expectClean(`${at}, flicked to the start`);
-        await flick("end");
-        await expectClean(`${at}, flicked to the end`);
-      }
-
-      // And again with nine decks, where the strip is three times its width.
-      await b.setViewport(380, 800, true);
-      for (const s of SIX_SCALES) await generate(s);
-      for (const [vw, vh] of [[390, 844], [380, 800], [430, 930]]) {
-        await b.setViewport(vw, vh, true);
-        const at = `${vw}x${vh}, nine decks`;
-        await expectClean(`${at}, fresh from a generate`);
-        for (let i = 0; i < meta.length; i++) {
-          await selectChip(i);
-          await expectClean(`${at}, after selecting ${meta[i].id}`);
-        }
-        await flick("start");
-        await expectClean(`${at}, flicked to the start`);
-        await flick("end");
-        await expectClean(`${at}, flicked to the end`);
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("the card fits a 380px viewport on load, with no horizontal overflow", async () => {
     await freshLoad();
@@ -2232,8 +2216,10 @@ function run() {
   // Lane M1: NAME<->NOTES moved behind the settings panel, so the reachable
   // header control in the collapsed landscape row is #settings-trigger, not
   // #modeA/#modeB directly - the mode buttons are covered by the settings
-  // panel's own landscape-fit tests below.
-  const LANDSCAPE_CONTROLS = ["#settings-trigger", ".shuffle", ".count", "#deck-add", "#prev", "#next"];
+  // panel's own landscape-fit tests below. Lane M2, 2026-09-28: "+ Add a
+  // scale" (#deck-add) moved into that same panel and is covered there too -
+  // it is not part of the always-on chrome this matrix is about.
+  const LANDSCAPE_CONTROLS = ["#settings-trigger", ".shuffle", ".count", "#prev", "#next"];
 
   // One reading of the whole page: where every control's centre actually
   // hit-tests, where the card sits relative to its container, and how big
@@ -2586,10 +2572,13 @@ function run() {
         // The three under-sized controls, plus the ones that already pass:
         // a min-height that swallows a neighbour is the row-214 bug again.
         const resting = await probeTargets(
-          ["#shuffle", "#prev", "#next", "#deck-add", "#decks .chip:not(#deck-add)"]);
+          ["#shuffle", "#prev", "#next", "#decks .chip"]);
         await openSettingsPanel();
+        // #deck-add ("+ Add a scale", M2, 2026-09-28) lives in the panel now,
+        // so it is measured here, with the panel open, alongside the other
+        // panel-only controls.
         const inPanel = await probeTargets(
-          ["#settings-trigger", "#modeA", "#modeB",
+          ["#settings-trigger", "#modeA", "#modeB", "#deck-add",
            "#settings-panel .prints button", "#settings-panel .prints select"]);
         const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
@@ -2781,7 +2770,9 @@ function run() {
     await freshLoad();
     await b.setViewport(380, 780, true);
     try {
-      await generate(EDIT_SCALE);           // four chips + "+ ADD", the owner's case
+      await generate(EDIT_SCALE);           // four chips, the owner's case (M2,
+      // 2026-09-28: "+ Add a scale" moved out of the strip into the settings
+      // panel, so it no longer contributes to the strip's measured width)
       const bad = [];
       const seen = {};
       for (const [vw, vh] of LANDSCAPE_BUDGET) {
@@ -2847,42 +2838,27 @@ function run() {
       }
       assert.deepStrictEqual(bad, [], JSON.stringify(seen, null, 2));
 
-      // And the positive claim, stated as a RELATIONSHIP rather than as a
-      // pixel count: the strip is wider than the viewport gives it at the
-      // shortest landscape a phone offers. Re-measured 2026-09-28 (lane M1,
-      // menu-shell): moving the mode toggle out of the header row freed the
-      // width the modebar used to share with the strip, so .decks now gets
-      // most of that row to itself - .decks scrollWidth / clientWidth is
-      // 767/767 at 844x390, 849/849 at 926x428, 611/590 at 667x375 and
-      // 1203/1203 at 1280x500. Only the narrowest row still overflows, and
-      // by a much smaller margin (21px, down from 218px pre-menu-shell).
+      // The positive claim, stated as a RELATIONSHIP rather than as a pixel
+      // count: with "+ Add a scale" out of the strip (M2, 2026-09-28), a
+      // custom deck's four chips now fit every landscape row in the budget
+      // table, including the narrowest one that used to overflow by 21px
+      // pre-M2 (611/590 at 667x375). Measured 2026-09-29: .decks
+      // scrollWidth/clientWidth is 767/767 at 844x390, 849/849 at 926x428,
+      // 590/590 at 667x375 and 1203/1203 at 1280x500 - every row fits with
+      // room to spare, so the strip's overflow-x:auto scroll path is no
+      // longer exercised by this configuration at all.
       //
       // Those pixel counts are font-metric dependent - a CI box without the
       // webfont measures different chips - so what is ASSERTED is the sign,
-      // on the one row that still overflows. That is precisely the claim the
-      // stylesheet used to get wrong, and the whole reason this test exists.
-      const narrow = seen["667x375"];
-      assert.ok(narrow.sw > narrow.cw,
-        "at 667x375 with a custom deck the strip now FITS " +
-        `(${narrow.sw} <= ${narrow.cw}): ${JSON.stringify(seen, null, 2)}. If a ` +
-        "layout change really did buy that, index.html's landscape comment - " +
-        "which states the strip scrolls and by how much - is now the stale one.");
-
-      // The other half of that comment's claim, which nothing used to cover:
-      // "with the title out the strip gets the whole width, and on the two
-      // WIDER rows it then fits". Stated, like the line above, as a SIGN and
-      // not as the measured 652/652 and 1006/1006 - scrollWidth reports
-      // max(content, clientWidth), so a row that fits reads sw == cw whatever
-      // the chips actually measure, and a row that does not reads strictly
-      // wider. That makes it font-metric independent in the direction that
-      // matters: only a real overflow can fail it.
-      for (const row of ["926x428", "1280x500"]) {
-        const wide = seen[row];
-        assert.ok(wide.sw <= wide.cw + 1,
-          `at ${row} the deck strip no longer fits (${wide.sw} > ${wide.cw}), ` +
-          "so a chip is reachable only by scrolling. index.html's landscape " +
-          "comment claims both wider rows fit with a custom deck on the strip; " +
-          `one of the two is now wrong: ${JSON.stringify(seen, null, 2)}`);
+      // on every row: the strip fits. That is the claim this test now pins,
+      // in place of the pre-M2 claim that the narrowest row still overflows.
+      for (const row of ["844x390", "926x428", "667x375", "1280x500"]) {
+        const m = seen[row];
+        assert.ok(m.sw <= m.cw + 1,
+          `at ${row} the deck strip no longer fits (${m.sw} > ${m.cw}), so a ` +
+          "chip is reachable only by scrolling. With \"+ Add a scale\" out of " +
+          "the strip (M2), every landscape row in the budget table should fit " +
+          `a custom deck's four chips: ${JSON.stringify(seen, null, 2)}`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -4694,37 +4670,14 @@ function run() {
   }
 
   // Opening the sheet is SETUP for these tests, not the thing under test - the
-  // assertion is always about #scale-generate. That matters at 844x390, where
-  // the tap path cannot be used at all: + ADD wraps onto a second line which
-  // #decks (overflow:auto) clips, so a tap at its centre lands on #hdr and the
-  // sheet never opens. That is deck-nav geometry owned by another lane, and it
-  // reproduces unchanged on origin/main, so it is not this lane's to fix or to
-  // hide. Tap where a finger can reach the chip; where it cannot, PROVE that
-  // clipping is the reason before falling back to a scripted click, so a
-  // different breakage still fails here instead of being papered over.
+  // assertion is always about #scale-generate. This used to need a fallback
+  // scripted click at 844x390, where + ADD wrapped onto a second line that
+  // #decks (overflow:auto) clipped. "+ Add a scale" now lives in the settings
+  // panel (M2, 2026-09-28), a fixed dialog never subject to that clipping, so
+  // opening it is a plain real tap through the panel at every fold viewport.
   const openSheetForFold = async (w, h) => {
-    const reach = await b.eval(`
-      const el = document.getElementById("deck-add");
-      el.scrollIntoView({ block: "nearest", inline: "nearest" });
-      const r = el.getBoundingClientRect();
-      const box = document.getElementById("decks").getBoundingClientRect();
-      const hit = document.elementFromPoint(
-        Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
-      return {
-        tappable: hit === el,
-        clippedByDecks: r.bottom > box.bottom + 0.5 || r.top < box.top - 0.5,
-        hit: hit ? (hit.id || hit.className || hit.tagName) : null,
-      };
-    `);
-    if (reach.tappable) {
-      await b.click("#deck-add");
-    } else {
-      assert.ok(reach.clippedByDecks,
-        `at ${w}x${h}: + ADD is not tappable (a tap at its centre lands on ` +
-        `"${reach.hit}") for some reason other than the known deck-nav clipping - ` +
-        `these tests' setup needs re-checking before their result means anything`);
-      await b.eval(`document.getElementById("deck-add").click(); return true;`);
-    }
+    await openSettingsPanel();
+    await b.click("#deck-add");
     await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: `the scale sheet to open at ${w}x${h}` });
   };
@@ -5771,15 +5724,15 @@ function run() {
     await b.key("Escape", "Escape", 27);
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "Escape to close the sheet" });
-    assert.strictEqual(await activeId(), "deck-add",
-      "Escape no longer returns focus to + ADD");
+    assert.strictEqual(await activeId(), "settings-trigger",
+      "Escape no longer returns focus to the settings trigger");
 
     await openSheet();
     await b.click("#scale-back");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "BACK to close the sheet" });
-    assert.strictEqual(await activeId(), "deck-add",
-      "BACK no longer returns focus to + ADD");
+    assert.strictEqual(await activeId(), "settings-trigger",
+      "BACK no longer returns focus to the settings trigger");
   });
 
   // Row 217. The `.on` class is a colour, and colour is not state.

@@ -1,13 +1,17 @@
 # kills: the page fills the viewport, so there is no backdrop left to tap
 # suite: node --test --test-name-pattern ^the.page.fills.the.viewport..so.there.is.no.backdrop.left.to.tap$ tests/app.test.js
-# The drawer's tap-the-backdrop-to-close gesture is wired back onto the page
-# layer. The page covers the viewport, so the only way to hit the layer is a
-# stray tap on a desktop margin - which silently discards an unsaved edit.
+# Context refreshed 2026-09-29 (M2, "add scale into the settings panel"):
+# addChip.onclick now closes the settings panel and opens the sheet with
+# settingsTrigger as its opener (the panel item that triggers it, #deck-add,
+# lives inside a closed panel and cannot receive focus back). The mutation
+# itself is unchanged: rewiring the drawer's tap-the-backdrop-to-close
+# gesture back onto the page layer, which the page fills, so the only way to
+# hit the layer is a stray tap on a desktop margin - which silently discards
+# an unsaved edit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4901,6 +4901,7 @@ function runGenerate() {
- addChip.onclick = () => openScaleSheet(addChip);
+@@ -7443,5 +7443,6 @@
  // The page's way out. Same handler Escape runs, so there is one close path.
  backBtn.onclick = () => closeScaleSheet();
 +sheet.addEventListener("click", e => { if (e.target === sheet) closeScaleSheet(); });

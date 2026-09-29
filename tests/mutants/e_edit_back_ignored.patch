@@ -1,14 +1,17 @@
 # kills: BACK closes the Edit page, and a tap at its edge does not
 # suite: node --test --test-name-pattern ^BACK.closes.the.Edit.page..and.a.tap.at.its.edge.does.not$ tests/e2e.test.js
-# BACK works on the Add page and does nothing on the Edit page, so an edit
-# is a page with no visible way out: only Escape, which a touch user has not
-# got.
+# Context refreshed 2026-09-29 (M2, "add scale into the settings panel"):
+# addChip.onclick now closes the settings panel and opens the sheet with
+# settingsTrigger as its opener - unrelated to backBtn, which this mutant
+# still targets unchanged. BACK works on the Add page and does nothing on
+# the Edit page, so an edit is a page with no visible way out: only Escape,
+# which a touch user has not got.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4900,7 +4900,7 @@ function runGenerate() {
- 
- addChip.onclick = () => openScaleSheet(addChip);
+@@ -7441,7 +7441,7 @@ addChip.onclick = () => { closePanel(); openScaleSheet(settingsTrigger); };
+ // deck's chip instead.
+ addChip.onclick = () => { closePanel(); openScaleSheet(settingsTrigger); };
  // The page's way out. Same handler Escape runs, so there is one close path.
 -backBtn.onclick = () => closeScaleSheet();
 +backBtn.onclick = () => { if (!editingId) closeScaleSheet(); };

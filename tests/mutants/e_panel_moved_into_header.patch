@@ -1,21 +1,24 @@
 # kills: print controls are never on a card face, and the panel is not inside header/main/footer/card
 # suite: node --test --test-name-pattern print.controls.are.never.on.a.card.face..and.the.panel.is.not.inside.header.main.footer.card tests/e2e.test.js
-# Moves the settings scrim + panel markup back inside <header>, before its
-# closing tag, instead of leaving it as a header sibling. Every control the
-# panel carries still works exactly the same way (openPanel/closePanel don't
-# care where the nodes live in the DOM), so nothing about clicking the
-# trigger, tabbing through the panel or downloading a PDF regresses - but the
-# panel would go inert whenever something else marks <header> inert, and it
-# would be exposed to any header-scoped CSS or landscape layout rule that was
-# never written with a modal dialog in mind. Only the ancestry assertion sees
-# it.
+# Context refreshed 2026-09-29 (M2, "add scale into the settings panel"):
+# #decks no longer carries the "+ ADD" chip (it moved into the panel's Scales
+# group, see #panel-scales-group below). Neither that nor anything else about
+# the panel's own content changes what this mutant demonstrates: moving the
+# scrim + panel markup back inside <header>, before its closing tag, instead
+# of leaving it as a header sibling. Every control the panel carries still
+# works exactly the same way (openPanel/closePanel don't care where the
+# nodes live in the DOM), so nothing about clicking the trigger, tabbing
+# through the panel or downloading a PDF regresses - but the panel would go
+# inert whenever something else marks <header> inert, and it would be
+# exposed to any header-scoped CSS or landscape layout rule that was never
+# written with a modal dialog in mind. Only the ancestry assertion sees it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -852,6 +852,35 @@
-   <nav class="decks" id="decks">
-     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
-   </nav>
+@@ -843,6 +843,38 @@
+   <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
+        2026-09-28); #decks holds deck chips only. -->
+   <nav class="decks" id="decks"></nav>
 +<div id="settings-scrim" hidden></div>
 +<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
@@ -26,10 +29,13 @@ diff --git a/index.html b/index.html
 +      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
 +    </div>
 +  </div>
-+  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
-+       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
++  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
++       own "Scales" group, .mode-styled like the panel's other buttons. The id
++       (deck-add) is kept: hideSheet()/selectDeck()/the tests all anchor on it,
++       and it still names what the control does. -->
 +  <div class="panel-group" id="panel-scales-group">
 +    <h3 class="panel-heading">Scales</h3>
++    <button class="mode" type="button" id="deck-add">+ ADD A SCALE</button>
 +  </div>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Print this deck</h3>
@@ -48,7 +54,7 @@ diff --git a/index.html b/index.html
  </header>
 
  <main>
-@@ -1043,35 +1072,6 @@
+@@ -1034,38 +1066,6 @@
       (below, in the mode-wiring script) toggle `hidden` and drive the same
       inert-background + explicit-Tab-stops containment the sheet uses, with
       the panel's own data. -->
@@ -62,10 +68,13 @@ diff --git a/index.html b/index.html
 -      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
 -    </div>
 -  </div>
--  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
--       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
+-  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
+-       own "Scales" group, .mode-styled like the panel's other buttons. The id
+-       (deck-add) is kept: hideSheet()/selectDeck()/the tests all anchor on it,
+-       and it still names what the control does. -->
 -  <div class="panel-group" id="panel-scales-group">
 -    <h3 class="panel-heading">Scales</h3>
+-    <button class="mode" type="button" id="deck-add">+ ADD A SCALE</button>
 -  </div>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Print this deck</h3>
