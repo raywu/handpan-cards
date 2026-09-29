@@ -1,10 +1,16 @@
 # kills: deck chips switch the deck
 # suite: node --test --test-name-pattern ^deck.chips.switch.the.deck$ tests/e2e.test.js
+# Context refreshed 2026-09-29 (M2, "add scale into the settings panel"):
+# selectDeck's rehome guard now checks "settings-trigger" instead of
+# "deck-add" (the opener hideSheet() focuses on Cancel is the trigger, since
+# #deck-add lives inside a closed settings panel and cannot receive focus -
+# see PR body). The mutation itself is unchanged: dropping setOrder() from
+# the save/rebuild line.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3003,7 +3003,7 @@ function selectDeck(id) {
-     (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
+@@ -5798,7 +5798,7 @@
+     (a.id === "settings-trigger" || !!(a.closest && a.closest("#decks")));
    deckId = id;
    storedDeck = id;
 -  save(); setOrder(); buildChips(); render();

@@ -1,0 +1,19 @@
+# kills: Tab is trapped inside the settings panel and cycles every stop, wrapping both ways
+# suite: node --test --test-name-pattern Tab.is.trapped.inside.the.settings.panel.and.cycles.every.stop..wrapping.both.ways tests/e2e.test.js
+# Off-by-one on the settings panel's OWN Shift+Tab wrap (not the scale
+# sheet's copy of this logic at a different line): `i <= 0` becomes `i < 0`,
+# so Shift+Tab from the FIRST stop no longer wraps to the last one - it
+# computes stops[-1], which is undefined, and .focus() on it throws, leaving
+# focus stuck instead of cycling backward through the panel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7694,7 +7694,7 @@
+     if (e.key === "Tab") {
+       const stops = panelStops();
+       const i = stops.indexOf(document.activeElement);
+-      const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
++      const next = e.shiftKey ? (i < 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+       e.preventDefault();
+       stops[next].focus();
+     }

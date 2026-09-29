@@ -108,7 +108,8 @@ body{
    enough spacing between each ui component"), on the phone and on the desktop.
 
    The room to undo that came from MOVING "+ ADD" into the deck strip as its
-   first chip (see .chip.add below). That retired a whole second row - a 44px
+   first chip (since moved again, into the settings panel's Scales group -
+   M2, 2026-09-28). That retired a whole second row - a 44px
    chip plus a 6px gap, 50px of header - and the ramp above spends 45.5px of it
    putting real gaps back: h1 2 -> 8, .modebar 1.5 -> 14, header 1 -> 14,
    footer 1 -> 14. The net is 4.5px OFF the chrome, so the card gets very
@@ -170,43 +171,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   font:600 11px/1 "Nunito Sans"; letter-spacing:.09em; color:#d5cec2; background:#272219;
   cursor:pointer; position:relative; white-space:nowrap;
 }
-.chip.add{background:none; border:1.5px dashed #5a5142; color:#a79d8b}
-/* "+ ADD" is the FIRST chip in the strip, in normal flow with the deck chips
-   (owner, 2026-09: "'Add' call to action can be inline as first option with the
-   different scale selections to save vertical space"). Being first, it is on
-   screen at rest at every width; being in flow, it costs no second row - and
-   the ~50px of header that row used to take is what pays for the spacing ramp
-   at the top of this stylesheet.
-
-   The cost this arrangement DOES carry, named so nobody has to rediscover it:
-   past three or four decks the strip overflows, and buildChips scrolls the
-   SELECTED chip into view - so after generating a deck "+ ADD" is parked off
-   the left edge until the user flicks back. That is a scroll away, not a dead
-   end, which is the trade the owner asked for.
-
-   Row 214 - the history, kept because the lesson is still live. An earlier fix
-   for an unreachable "+ ADD" pinned it OVER the strip with position:sticky.
-   An overlay is only ever on TOP of the chips, never beside them, so a deck
-   chip could come to rest underneath it - fully visible and no longer tappable:
-   elementFromPoint at the centre of "D AMARA 9" returned the pinned button, and
-   tapping the deck opened the create sheet instead of switching decks. The
-   defect was the OVERLAP, not the position: a chip in normal flow INSIDE the
-   strip overlaps nothing, so no chip can rest beneath it, and nothing here may
-   ever reintroduce position:sticky, a negative margin or a z-index that lifts
-   this button off the line. tests/e2e.test.js "no deck chip ever rests under
-   + ADD, at any width, state or scroll" hit-tests every chip at three points
-   and is what holds that.
-
-   The other arrangement rejected at the time - a fixed column BESIDE the strip
-   - was rejected on WIDTH: at 380-390px a reserved column narrows the
-   scrollport enough to push the last built-in deck out of it. A chip that
-   scrolls WITH the others reserves nothing, so that objection does not reach
-   this one either.
-
-   In normal flow "+ ADD" also cannot lag behind iOS momentum scrolling, needs
-   no safe-area inset of its own (the strip is centred and capped at 520px, far
-   inside any notch), and takes no touch-action override, so a swipe that starts
-   on it still scrolls the strip. */
 /* The pencil on a SELECTED CUSTOM chip (queue row 218). A second tap on that
    one chip is the only way into the Edit sheet, and until now a selected
    custom chip looked exactly like a selected built-in, which does nothing
@@ -876,12 +840,9 @@ button.nav:active{background:#2e281e}
       <span class="glyph" aria-hidden="true"></span>
     </button>
   </div>
-  <!-- "+ ADD" is authored as the strip's first child and buildChips keeps it
-       there on every rebuild - see the .chip.add comment for why it is inside
-       the strip and why it must stay in normal flow. -->
-  <nav class="decks" id="decks">
-    <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
-  </nav>
+  <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
+       2026-09-28); #decks holds deck chips only. -->
+  <nav class="decks" id="decks"></nav>
 </header>
 
 <main>
@@ -1083,10 +1044,13 @@ button.nav:active{background:#2e281e}
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
     </div>
   </div>
-  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
-       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
+  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
+       own "Scales" group, .mode-styled like the panel's other buttons. The id
+       (deck-add) is kept: hideSheet()/selectDeck()/the tests all anchor on it,
+       and it still names what the control does. -->
   <div class="panel-group" id="panel-scales-group">
     <h3 class="panel-heading">Scales</h3>
+    <button class="mode" type="button" id="deck-add">+ ADD A SCALE</button>
   </div>
   <div class="panel-group">
     <h3 class="panel-heading">Print this deck</h3>
@@ -5820,15 +5784,18 @@ function restoreScales() {
 function selectDeck(id) {
   // buildChips() below throws the whole strip away and builds it again, so any
   // focus resting ON the strip is about to be invalidated: the chip that was
-  // clicked is detached outright, and "+ ADD" - where closeScaleSheet() has
-  // just put focus after GENERATE / SAVE CHANGES / DELETE - is now pointing at
-  // "make another deck" rather than the deck that was just made. Either way
-  // the caret must be re-homed onto the chip for the deck now showing, and it
-  // has to happen AFTER the rebuild. Focus that was never on the strip (boot,
-  // a share link) is left exactly where it was.
+  // clicked is detached outright. Either way the caret must be re-homed onto
+  // the chip for the deck now showing, and it has to happen AFTER the
+  // rebuild. Focus that was never on the strip (boot, a share link) is left
+  // exactly where it was.
+  // "settings-trigger" covers GENERATE/SAVE CHANGES from the "+ Add a scale"
+  // flow (M2, 2026-09-28): hideSheet() puts focus there - the panel item that
+  // opened it (#deck-add) is hidden inside a closed panel by then, so it can
+  // never be the activeElement here - and this is what re-homes it onto the
+  // new deck's chip instead of leaving it stranded on the trigger.
   const a = document.activeElement;
   const rehome = !!a && a !== document.body &&
-    (a.id === "deck-add" || !!(a.closest && a.closest("#decks")));
+    (a.id === "settings-trigger" || !!(a.closest && a.closest("#decks")));
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
@@ -6556,15 +6523,9 @@ const chipLabel = n => (n.length > CHIP_CAP ? n.slice(0, CHIP_CAP - 1) + "…" :
 
 function buildChips() {
   const nav = document.getElementById("decks");
-  // "+ ADD" is the strip's FIRST chip. It is MOVED, not rebuilt: innerHTML=""
-  // detaches it, and every reference the app holds - its onclick, the element
-  // closeScaleSheet() returns focus to - is to THAT node, so it is read out
-  // first and put back at the head of the new row. Appending it LAST instead
-  // would leave it off-screen at rest on a phone, which is the whole point of
-  // it being first (tests/mutants/e_add_chip_appended_last.patch).
-  const add = document.getElementById("deck-add");
+  // #decks holds deck chips only (M2, 2026-09-28): "+ Add a scale" lives in
+  // the settings panel now, so a full rebuild is nothing but the deck chips.
   nav.innerHTML = "";
-  nav.appendChild(add);
   let active = null;
   for (const d of allDecks()) {
     const b = document.createElement("button");
@@ -7465,7 +7426,20 @@ function runGenerate() {
   genBtn.disabled = false;
 }
 
-addChip.onclick = () => openScaleSheet(addChip);
+// "+ Add a scale" now lives in the settings panel (M2, 2026-09-28): closing
+// the panel FIRST matters, not just for tidiness. hideSheet() un-inerts
+// header/main/footer unconditionally (reviewer finding on M1), so a sheet
+// opened while the panel is still open would leave the panel's OWN inert
+// background (main, footer, #decks) stuck live-but-hidden once the sheet
+// later closes it out from under the panel. Closing the panel before
+// showSheet() runs means its inert/hidden state is torn down through its own
+// closePanel(), never through the sheet's teardown. settingsTrigger is the
+// opener, not addChip itself: #deck-add is inside the panel closePanel() just
+// hid, so it cannot receive focus, and settingsTrigger is what hideSheet()
+// must focus back on cancel (Back/Escape/popstate). selectDeck()'s rehome
+// check recognises "settings-trigger" so Generate/Save still land on the new
+// deck's chip instead.
+addChip.onclick = () => { closePanel(); openScaleSheet(settingsTrigger); };
 // The page's way out. Same handler Escape runs, so there is one close path.
 backBtn.onclick = () => closeScaleSheet();
 genBtn.onclick = runGenerate;
@@ -7667,6 +7641,7 @@ const panelBackground = [document.querySelector("main"), document.querySelector(
 let panelOpen = false;
 function panelStops() {
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+          document.getElementById("deck-add"),
           ...settingsPanel.querySelectorAll(".prints button, .prints select")]
     .filter(el => el && !el.disabled);
 }

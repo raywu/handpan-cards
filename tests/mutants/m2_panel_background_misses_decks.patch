@@ -1,0 +1,19 @@
+# kills: main, footer and the deck strip are inert and aria-hidden while the settings panel is open, and restored on close
+# suite: node --test --test-name-pattern main..footer.and.the.deck.strip.are.inert.and.aria.hidden.while.the.settings.panel.is.open..and.restored.on.close tests/e2e.test.js
+# Drops #decks from panelBackground, so opening the settings panel leaves the
+# deck strip live: not inert, not aria-hidden, and (since M2 moved the tap
+# target for "+ Add a scale" into the panel) a sighted mouse user could still
+# reach a deck chip behind the open panel and switch decks without closing
+# it first.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7637,7 +7637,6 @@
+ // inert the trigger along with it and the panel could never be closed by a
+ // second tap on it.
+-const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
+-                          document.getElementById("decks")].filter(Boolean);
++const panelBackground = [document.querySelector("main"), document.querySelector("footer")].filter(Boolean);
+ let panelOpen = false;
+ function panelStops() {
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
