@@ -199,7 +199,21 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    group, so this rule only ever lays out that panel group now. Kept under the
    same class/selector because #modeA/#modeB and their tests are anchored on
    it and moved with the controls (IDs are kept). */
-.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:0}
+.modebar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center; margin-top:0}
+/* #modeS ("PLAY A SEQUENCE") takes the full second row: three buttons don't
+   fit one row of the 320px panel (each existing one is ~118px wide). Plan
+   §2 Part B, S2 lane. */
+#modeS{flex:1 0 100%}
+/* The sequence-mode source credit and link, shown only while mode is S
+   (toggled via the .hidden property in setMode(), reflected by the global
+   [hidden]{display:none !important} rule). Reuses Nunito Sans and the
+   panel's own secondary-text/heading colours - no new typeface or colour
+   (N20). */
+.panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
+.panel-note a{color:#c4bcab}
+/* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+   oversized overlay): the link is the one Tab stop in .panel-note. */
+#seq-source-link{display:inline-flex; align-items:center; min-height:44px}
 /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge. Making
    the box itself 44px cannot steal from a neighbour: normal flow gives it the
@@ -226,6 +240,27 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-3);
   box-shadow:0 12px 34px rgba(0,0,0,.5)}
 .panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
+/* Lane S2: #modeS forces a third, always-full-width row onto the panel's
+   Practice group (see .modebar/#modeS above) - unavoidable growth, since
+   even without that rule a 320px-wide panel cannot fit three ~118px mode
+   buttons on one row and would wrap anyway. In a short (<=520px) landscape
+   viewport the panel has no room to spare for it (see the max-height:520px
+   block far above, which already tightens --sp-* there), so this second,
+   additive block tightens the panel's OWN chrome further - not those
+   already-frozen rules - to make room: tighter inter-group and modebar
+   gaps, tighter panel padding. Nothing shrinks below the 44px control floor
+   those existing rules protect (only the gaps AROUND controls, never the
+   controls themselves, change here). */
+@media (max-height:520px){
+  #settings-panel{padding:var(--sp-1) var(--sp-3); gap:var(--sp-2)}
+  .panel-group{gap:0}
+  .modebar{gap:var(--sp-1)}
+  /* The credit line itself is decorative prose, not a control - only its
+     link needs the 44px floor - so it is the one thing in this panel
+     allowed to shrink below the rest of the UI's type scale at this
+     extreme (<=520px-tall) breakpoint. */
+  .panel-note{font-size:9px; line-height:1.25}
+}
 /* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
    face used as it is used on the sheet's own title (O3/design direction).
    Controls keep their ALL-CAPS Nunito voice (N15). */
@@ -480,8 +515,9 @@ footer{width:100%; max-width:520px; display:flex; align-items:center;
 button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
 button.nav:active{background:#2e281e}
-.mid{flex:1; text-align:center}
+.mid{flex:1; text-align:center; min-width:0}
 .count{font:600 11px/1 "Nunito Sans"; letter-spacing:.12em; color:#c4bcab}
+.count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; display:block}
 /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
    that toggles a mode the user must be able to turn OFF. Same reasoning as
    .mode: the box grows, nothing is overlaid. The 7px top margin is folded into
@@ -1116,7 +1152,16 @@ button.nav:active{background:#2e281e}
     <div class="modebar">
       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+      <button class="mode" id="modeS" aria-pressed="false">PLAY A SEQUENCE</button>
     </div>
+    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
+         wording plus one outbound link, credited to Moritz.handpan. -->
+    <p class="panel-note" id="panel-seq-note" hidden>
+      Playing styles adapted from &ldquo;7 ways to play chords on the
+      handpan&rdquo; by Moritz.handpan.
+      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
+         target="_blank" rel="noopener">Watch on YouTube</a>
+    </p>
   </div>
   <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
        own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -5901,9 +5946,26 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
 // take the share-link handler at the end of the script down with it.
 let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
 let storedDeck = deckId;              // built-in or custom:; see save()
-let mode   = typeof store.mode === "string" ? store.mode : "A";  // A: name->notes, B: notes->name
+// S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
+// (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
+let mode   = ["A", "B", "S"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
+// The current sequence in mode S: {chords:[chordIndex,...], style:"<id>"} or
+// {chords:null, reason:"NO_HOME_CHORD"|"TOO_FEW_CHORDS"} (§8 E3). null before
+// setOrder() has run once in mode S.
+let seq = null;
+// The seven playing styles, in the app's own words (plan §2 Part B). Keyed by
+// HPE.sequence.STYLES ids.
+const SEQ_STYLE_COPY = {
+  "together": ["All at once", "Strike every note of the chord together, then let it ring before the next one"],
+  "arpeggio": ["Arpeggio", "Play the notes one at a time, low to high, then come back down"],
+  "three-over-two": ["3 over 2", "One hand plays three even strokes while the other plays two, in the same span"],
+  "three-three-two": ["3-3-2", "Group your strokes 3 + 3 + 2 and keep the cycle going through each chord"],
+  "paradiddle": ["Paradiddle", "Right-left-right-right, left-right-left-left, moving the strokes across the chord's notes"],
+  "groove": ["Groove", "Keep one chord shape and add slaps, soft ghost notes, or move the accent around"],
+  "freestyle": ["Freestyle", "Mix the patterns, bring a different top note forward each time, and follow your ear"]
+};
 
 // Generated decks live here, keyed by deck id, so the DECKS literal above stays
 // the three built-ins on one line (tools/validate.py and tests/paths.py both
@@ -6792,7 +6854,61 @@ function linesHTML(d, ch) {
     <div class="notesline">${notes}</div>
     <div class="numline">${nums}</div></div>`;
 }
+// Sequence mode (S2, §8 E3): an unsupported deck (pick() returned no chords)
+// clears BOTH faces to the same message, with no residue of a previous card,
+// and clears the live count region. Checked BEFORE the `!order.length` guard
+// below, which stays unchanged (f6_render_empty_order_guard) and still
+// covers A/B on a genuinely empty deck.
+function renderSeqEmpty() {
+  const msg = `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
+    + `This scale doesn&rsquo;t have enough simple chords to make a sequence. `
+    + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
+  document.getElementById("front").innerHTML = msg;
+  document.getElementById("back").innerHTML = msg;
+  const countEmpty = document.getElementById("count");
+  while (countEmpty.children.length) countEmpty.removeChild(countEmpty.children[0]);
+  countEmpty.textContent = "";
+  countEmpty.classList.remove("seq");
+  document.getElementById("card").classList.remove("flip");
+  const shown = document.getElementById("front");
+  const away = document.getElementById("back");
+  away.setAttribute("aria-hidden", "true");
+  shown.removeAttribute("aria-hidden");
+  document.getElementById("card").setAttribute("aria-describedby", shown.id);
+}
+// Builds the footer's sequence rail with DOM nodes and textContent only,
+// never innerHTML (§8 E6): a chord `main`/`sup` containing markup must render
+// as literal text, not be parsed. The rail's visible text is aria-hidden; a
+// visually-hidden sibling carries the accessible "<name>, chord N of M".
+function renderSeqRail(d) {
+  const countEl = document.getElementById("count");
+  countEl.classList.add("seq");
+  countEl.textContent = "";
+  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
+  const rail = document.createElement("span");
+  rail.className = "seq-rail";
+  rail.setAttribute("aria-hidden", "true");
+  const curCh = d.chords[seq.chords[idx]];
+  seq.chords.forEach((ci, i) => {
+    if (i > 0) {
+      const sep = document.createElement("span");
+      sep.textContent = " → ";
+      rail.appendChild(sep);
+    }
+    const c = d.chords[ci];
+    const node = document.createElement(i === idx ? "b" : "span");
+    node.textContent = c.main + (c.sup || "");
+    if (i === idx) node.style.setProperty("color", "var(--root)");
+    rail.appendChild(node);
+  });
+  const live = document.createElement("span");
+  live.className = "sr-only";
+  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
+  countEl.appendChild(rail);
+  countEl.appendChild(live);
+}
 function render() {
+  if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
   if (!order.length) return;
   const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
   document.documentElement.style.setProperty("--root", d.colors.root);
@@ -6811,9 +6927,26 @@ function render() {
   const answerB = headerHTML(d, ch, n) +
     `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
 
-  document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
-  document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
-  document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
+  if (mode === "S") {
+    // §8 E5: the front face is mode A's `answer` face, byte for byte - no
+    // chord name, no hint. The name and style live on the back.
+    const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
+    const backS = headerHTML(d, ch, n) +
+      `<div class="prompt" style="padding-bottom:6px">${nameHTML(ch, true)}</div>` +
+      `<div class="lines">
+         <div class="bigname" style="font-size:22px; margin-bottom:8px">${esc(styleName)}</div>
+         <div style="font-family:Bitter, serif; font-size:13px; line-height:1.4; color:#3a352c">${esc(styleTip)}</div>
+         <div class="hint" style="margin-top:10px">Style from Moritz.handpan</div>
+       </div>`;
+    document.getElementById("front").innerHTML = answer;
+    document.getElementById("back").innerHTML = backS;
+    renderSeqRail(d);
+  } else {
+    document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
+    document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+    document.getElementById("count").classList.remove("seq");
+    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
+  }
   const cardEl = document.getElementById("card");
   cardEl.classList.toggle("flip", flipped);
   // The flip is a CSS transform, so BOTH faces stay in the DOM and in the
@@ -6838,6 +6971,15 @@ function render() {
 
 /* ---------------- deck / order ---------------- */
 function setOrder() {
+  // §8 E2: in mode S, `order` is the drawn sequence's chord indices, not the
+  // whole deck. `seq.chords` (when set) is passed back as `prev` so a re-roll
+  // never repeats it (HPE.sequence.pick's own no-repeat rule, S1 test 5/9).
+  if (mode === "S") {
+    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords);
+    order = seq.chords ? seq.chords.slice() : [];
+    idx = 0; flipped = false;
+    return;
+  }
   const n = deck().chords.length;
   order = [...Array(n).keys()];
   if (shuffled) for (let i = n - 1; i > 0; i--) {
@@ -7937,8 +8079,12 @@ sheet.addEventListener("keydown", e => {
 
 /* ---------------- interaction ---------------- */
 const card = document.getElementById("card");
-function flip() { flipped = !flipped; render(); }
+// §8 E3: with order emptied (an unsupported deck in mode S), stepping or
+// flipping must throw nothing and change nothing - render() itself already
+// draws the message in that state (renderSeqEmpty above).
+function flip() { if (!order.length) return; flipped = !flipped; render(); }
 function step(dir) {
+  if (!order.length) return;
   idx = (idx + dir + order.length) % order.length;
   flipped = false; render();
 }
@@ -7957,6 +8103,7 @@ card.addEventListener("keydown", e => {
 document.getElementById("prev").onclick = () => step(-1);
 document.getElementById("next").onclick = () => step(1);
 document.getElementById("shuffle").onclick = function () {
+  if (mode === "S") { setOrder(); render(); return; }
   shuffled = !shuffled; setOrder(); render();
   this.textContent = "Shuffle: " + (shuffled ? "on" : "off");
   this.classList.toggle("on", shuffled);
@@ -7984,7 +8131,10 @@ let panelOpen = false;
 // simply always visible as a static sidebar (CSS only).
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
+  const seqNote = document.getElementById("panel-seq-note");
+  const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+          document.getElementById("modeS"), ...seqLink,
           document.getElementById("deck-add"),
           ...settingsPanel.querySelectorAll(".prints button, .prints select")]
     .filter(el => el && !el.disabled);
@@ -8043,14 +8193,27 @@ document.getElementById("print-paper-select").value = printPaper;
 
 document.getElementById("modeA").onclick = () => { setMode("A"); closePanel(); };
 document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); };
+document.getElementById("modeS").onclick = () => { setMode("S"); closePanel(); };
 function setMode(m) {
+  const wasS = mode === "S";
   mode = m; flipped = false; save();
   // .on is a colour; aria-pressed is the state. Both, always together.
-  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
+  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"], ["modeS", m === "S"]]) {
     const el = document.getElementById(id);
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", on ? "true" : "false");
   }
+  const seqNote = document.getElementById("panel-seq-note");
+  seqNote.hidden = m !== "S";
+  const shuffleBtn = document.getElementById("shuffle");
+  if (m === "S") {
+    shuffleBtn.textContent = "New sequence";
+    shuffleBtn.classList.remove("on");
+  } else {
+    shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+    shuffleBtn.classList.toggle("on", shuffled);
+  }
+  if (wasS !== (m === "S")) setOrder();
   render();
 }
 document.addEventListener("keydown", e => {

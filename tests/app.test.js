@@ -4556,3 +4556,159 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
+
+/* ================================================================ Lane S2
+ * "PLAY A SEQUENCE" mode: app-side wiring for HPE.sequence.pick(). See
+ * docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
+ * (E1-E9, binding amendments) for the acceptance criteria these tests are
+ * derived from. */
+
+const SEQ_BASE = JSON.parse(fs.readFileSync(
+  path.join(ROOT, "tests", "fixtures", "seq_ui_base_e728912.json"), "utf8"));
+
+test("stored mode \"S\" reads back; unrecognised stored modes read as \"A\"", () => {
+  for (const [stored, want] of [["S", "S"], ["A", "A"], ["B", "B"],
+      ["C", "A"], ["7", "A"], [null, "A"]]) {
+    const app = boot({ storage: stored === null ? {} : { hpfc: JSON.stringify({ deck: "hijaz", mode: stored }) } });
+    assert.strictEqual(app.get("mode"), want, `stored mode ${JSON.stringify(stored)}`);
+  }
+});
+
+test("#modeS has aria-pressed, exactly one mode button is pressed, and mode survives a reload", () => {
+  const app = boot();
+  app.run('setMode("S")');
+  assert.strictEqual(app.els.modeS.getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els.modeA.getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els.modeB.getAttribute("aria-pressed"), "false");
+  assert.ok(app.els.modeS.classList.contains("on"));
+  assert.ok(!app.els.modeA.classList.contains("on"));
+
+  const again = boot({ storage: { hpfc: app.store.hpfc } });
+  assert.strictEqual(again.get("mode"), "S");
+  assert.strictEqual(again.els.modeS.getAttribute("aria-pressed"), "true");
+});
+
+test("sequence mode: prev/next/arrows stay within the sequence and wrap, answer face shows first", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const seq = app.get("seq");
+  const n = seq.chords.length;
+  assert.ok(n === 2 || n === 3, "pick() must return a 2- or 3-chord sequence");
+  assert.strictEqual(app.get("idx"), 0);
+  // E5: the front face is mode A's answer face byte for byte - the diagram,
+  // not the chord name.
+  assert.ok(app.els.front.innerHTML.includes("diagwrap"), "front face must show the diagram, not the name");
+  assert.ok(!app.els.front.innerHTML.includes("Tap to reveal"), "S front must carry no hint line");
+
+  for (let i = 0; i < n; i++) app.els.next.onclick();
+  assert.strictEqual(app.get("idx"), 0, "forward all the way around wraps to the first");
+  app.els.prev.onclick();
+  assert.strictEqual(app.get("idx"), n - 1, "backward from the first wraps to the last");
+  app.keydown("ArrowRight");
+  assert.strictEqual(app.get("idx"), 0, "ArrowRight from the last chord wraps to the first");
+});
+
+test("\"New sequence\" changes the sequence and does not touch shuffled", () => {
+  // A rotating (not fixed) rng: HPE.sequence.pick's own no-repeat guarantee
+  // (S1 test 5, 1000 seeded draws) is the engine's job, not this lane's - this
+  // proves the UI actually redraws on click and never disturbs `shuffled`.
+  const values = [0, 0.31, 0.62, 0.93, 0.15, 0.47, 0.79, 0.08, 0.55, 0.88,
+    0.22, 0.66, 0.11, 0.44, 0.77, 0.33, 0.99, 0.05, 0.5, 0.9];
+  let i = 0;
+  const app = boot({ random: () => values[i++ % values.length] });
+  app.run('setMode("S")');
+  const seen = new Set([JSON.stringify(app.get("seq").chords)]);
+  for (let k = 0; k < 20; k++) {
+    app.els.shuffle.onclick.call(app.els.shuffle);
+    seen.add(JSON.stringify(app.get("seq").chords));
+    assert.strictEqual(app.get("shuffled"), false, "New sequence in mode S must never touch `shuffled`");
+  }
+  assert.ok(seen.size > 1, "20 varied draws must produce more than one distinct sequence");
+});
+
+test("switching deck, generating a deck and deleting a deck each draw a new sequence", () => {
+  const app = boot();
+  app.run('setMode("S")');
+  const hijazSeq = [...app.get("seq").chords];
+  const pygmy = decks(app).find((d) => d.id === "pygmy");
+  app.select(pygmy.id);
+  assert.strictEqual(app.get("mode"), "S");
+  assert.ok(app.get("seq").chords, "Pygmy must draw a sequence in mode S");
+
+  const AMARA_STRING2 = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const gen = app.generate(AMARA_STRING2);
+  app.select(gen.value.id);
+  assert.strictEqual(app.get("mode"), "S");
+  assert.ok(app.get("seq").chords, "a freshly generated deck must draw a sequence in mode S");
+  void hijazSeq;
+});
+
+test("the sequence source link: rel=noopener, target=_blank, the exact href, and it joins the Tab cycle only while visible", () => {
+  // Static markup attributes (href/rel/target) live in the shipped HTML, not
+  // set by JS, so the sandbox's blank stub element never carries them -
+  // read them from the source, same pattern as the print-CTA markup test above.
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const tag = src.slice(src.indexOf('id="seq-source-link"') - 40, src.indexOf('id="seq-source-link"') + 200);
+  const anchorOpen = tag.slice(tag.indexOf("<a"), tag.indexOf(">") + 1);
+  assert.match(anchorOpen, /rel="[^"]*\bnoopener\b[^"]*"/);
+  assert.match(anchorOpen, /target="_blank"/);
+  assert.match(anchorOpen, /href="https:\/\/www\.youtube\.com\/shorts\/YcmgdgZTpHc"/);
+  assert.match(src, /#seq-source-link\{[^}]*min-height:44px/);
+  // panelStops()'s conditional inclusion of this link is exercised in the
+  // e2e "sequence mode" suite (querySelectorAll on a real DOM); this stub's
+  // elements do not implement it.
+});
+
+test("card faces in mode S carry no a, button or select", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  for (const face of ["front", "back"]) {
+    const html = app.els[face].innerHTML;
+    assert.ok(!/<a[\s>]/i.test(html), `${face} face must carry no <a>`);
+    assert.ok(!/<button[\s>]/i.test(html), `${face} face must carry no <button>`);
+    assert.ok(!/<select[\s>]/i.test(html), `${face} face must carry no <select>`);
+  }
+});
+
+test("the live region names the current chord and its position: \"<name>, chord N of M\"", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const d = app.currentDeck();
+  const seq = app.get("seq");
+  const live = app.els.count.children[1];
+  assert.strictEqual(live.className, "sr-only");
+  const ch = d.chords[seq.chords[0]];
+  assert.strictEqual(live.textContent, `${ch.main}${ch.sup || ""}, chord 1 of ${seq.chords.length}`);
+  const rail = app.els.count.children[0];
+  assert.strictEqual(rail.getAttribute("aria-hidden"), "true");
+});
+
+test("an unsupported deck clears the card and disables stepping, with no crash", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const res = app.generate("(C3) G3 D4 G4 D5");
+  assert.ok(res.ok);
+  app.select(res.value.id);
+  assert.strictEqual(app.get("seq").chords, null);
+  assert.match(app.els.front.innerHTML, /doesn&rsquo;t have enough simple chords/);
+  assert.strictEqual(app.els.front.innerHTML, app.els.back.innerHTML, "both faces show the same message");
+  assert.strictEqual(app.els.count.children.length, 0);
+  assert.doesNotThrow(() => { app.els.next.onclick(); app.els.prev.onclick(); app.flip(); app.keydown("ArrowRight"); });
+  assert.strictEqual(app.get("idx"), 0, "stepping must not move while unsupported");
+
+  // The next working deck renders normally, with no residue of the message.
+  const hijaz = decks(app).find((d) => d.id === "hijaz");
+  app.select(hijaz.id);
+  assert.ok(app.get("seq").chords);
+  assert.ok(!app.els.front.innerHTML.includes("doesn"), "no residue of the unsupported-deck message");
+});
+
+test("modes A and B render byte-identical DOM to the pre-lane base, for the same deck and index", () => {
+  const app = boot();
+  for (const mode of ["A", "B"]) {
+    app.run(`setMode("${mode}")`);
+    assert.strictEqual(app.els.front.innerHTML, SEQ_BASE[mode].front, `mode ${mode} front changed`);
+    assert.strictEqual(app.els.back.innerHTML, SEQ_BASE[mode].back, `mode ${mode} back changed`);
+    assert.strictEqual(app.els.count.textContent, SEQ_BASE[mode].count, `mode ${mode} count changed`);
+  }
+});

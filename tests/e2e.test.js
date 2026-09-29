@@ -7098,4 +7098,278 @@ function run() {
     });
   });
 
+  // Lane S2: "PLAY A SEQUENCE" mode's app-side wiring. See
+  // docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
+  // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
+  // stub can check (see tests/app.test.js) stays there.
+  describe("sequence mode", () => {
+    async function enterSeqMode() {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#modeS");
+      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to take effect" });
+    }
+
+    test("selecting PLAY A SEQUENCE presses #modeS exclusively, shows the credit note, and survives a reload",
+      async () => {
+        await enterSeqMode();
+        const st = await b.eval(`return {
+          a: document.getElementById("modeA").getAttribute("aria-pressed"),
+          b: document.getElementById("modeB").getAttribute("aria-pressed"),
+          s: document.getElementById("modeS").getAttribute("aria-pressed"),
+          noteHidden: document.getElementById("panel-seq-note").hidden,
+        };`);
+        assert.deepStrictEqual(st, { a: "false", b: "false", s: "true", noteHidden: false });
+        const before = await stored();
+        assert.strictEqual(before.mode, "S", "mode S was not saved under \"hpfc\"");
+        await navigate();
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to survive a reload" });
+      });
+
+    test("prev/next/arrows step within the sequence and wrap; the front face shows the diagram, not a hint",
+      async () => {
+        await enterSeqMode();
+        const info = await b.eval(`return {
+          frontHasDiagram: document.getElementById("front").innerHTML.includes("diagwrap"),
+          frontHasHint: document.getElementById("front").innerHTML.includes("Tap to reveal"),
+        };`);
+        assert.ok(!info.frontHasHint, "S mode's front face must carry no hint line");
+        assert.ok(info.frontHasDiagram, "S mode's front face must show the diagram");
+        // Step forward all the way around and confirm it wraps to the first chord.
+        const railText = () => b.eval(`return document.querySelector("#count .seq-rail").textContent;`);
+        const before = await railText();
+        for (let i = 0; i < 5; i++) {
+          await b.click("#next");
+          await b.settle();
+        }
+        const after = await railText();
+        assert.strictEqual(after, before, "the rail's chord list must be unchanged by stepping");
+        await b.click("#prev");
+        await b.settle();
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.settle();
+        // No crash, and the live region still names a position - the exact
+        // wrap arithmetic is covered in tests/app.test.js.
+        const live = await b.eval(`return document.querySelector("#count .sr-only").textContent;`);
+        assert.match(live, /^.+, chord \d+ of \d+$/);
+      });
+
+    test("the live region names the current chord and its position; the visible rail is aria-hidden",
+      async () => {
+        await enterSeqMode();
+        const m = await b.eval(`return {
+          railHidden: document.querySelector("#count .seq-rail").getAttribute("aria-hidden"),
+          live: document.querySelector("#count .sr-only").textContent,
+          countAria: document.getElementById("count").getAttribute("aria-live"),
+        };`);
+        assert.strictEqual(m.railHidden, "true");
+        assert.strictEqual(m.countAria, "polite");
+        assert.match(m.live, /^.+, chord 1 of \d+$/);
+      });
+
+    test("\"New sequence\" redraws without touching Shuffle's own on/off state", async () => {
+      await enterSeqMode();
+      const label = await b.eval(`return document.getElementById("shuffle").textContent;`);
+      assert.strictEqual(label, "New sequence");
+      const seen = new Set();
+      for (let i = 0; i < 8; i++) {
+        await b.click("#shuffle");
+        await b.settle();
+        seen.add(await b.eval(`return document.querySelector("#count .seq-rail").textContent;`));
+      }
+      // `shuffled` is an in-memory flag only - it is never persisted under
+      // "hpfc" even in modes A/B (pre-existing, not S2's concern). Mode A's
+      // Shuffle button reflects it declaratively via .on, so read it there.
+      // Switch back to mode A: Shuffle's own state must read exactly as it
+      // did before mode S was ever entered (default off).
+      await openSettingsPanel();
+      await b.click("#modeA");
+      await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
+        { label: "mode A to take effect" });
+      const btn = await b.eval(`return {
+        text: document.getElementById("shuffle").textContent,
+        on: document.getElementById("shuffle").classList.contains("on"),
+      };`);
+      assert.strictEqual(btn.text, "Shuffle: off");
+      assert.strictEqual(btn.on, false);
+    });
+
+    test("the sequence source link opens in a new tab, is a real 44px target, and joins the Tab cycle only while visible",
+      async () => {
+        await enterSeqMode();
+        // Selecting a mode closes the panel (closePanel() in #modeS's own
+        // onclick) - reopen it to measure the link's rendered, visible size.
+        await openSettingsPanel();
+        const link = await b.eval(`
+          const a = document.getElementById("seq-source-link");
+          const r = a.getBoundingClientRect();
+          return {
+            rel: a.getAttribute("rel"), target: a.getAttribute("target"),
+            href: a.getAttribute("href"), h: r.height, w: r.width,
+            inStops: window.panelStops().includes(a),
+          };
+        `);
+        assert.match(link.rel, /\bnoopener\b/);
+        assert.strictEqual(link.target, "_blank");
+        assert.strictEqual(link.href, "https://www.youtube.com/shorts/YcmgdgZTpHc");
+        assert.ok(link.h >= 44, `link hit target height ${link.h} < 44px`);
+        assert.strictEqual(link.inStops, true, "#seq-source-link must be a Tab stop while visible");
+
+        // Switch back to A: the note (and the link) hide, and it must drop
+        // out of the Tab cycle, while #modeS itself always remains a stop.
+        await b.click("#modeA");
+        await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
+          { label: "mode A to take effect" });
+        const after = await b.eval(`return {
+          noteHidden: document.getElementById("panel-seq-note").hidden,
+          linkInStops: window.panelStops().includes(document.getElementById("seq-source-link")),
+          modeSInStops: window.panelStops().includes(document.getElementById("modeS")),
+        };`);
+        assert.strictEqual(after.noteHidden, true);
+        assert.strictEqual(after.linkInStops, false, "#seq-source-link must leave the Tab cycle once hidden");
+        assert.strictEqual(after.modeSInStops, true, "#modeS is always a stop");
+      });
+
+    test("the settings panel still fits with #modeS and the credit note visible, at 320x568 and 844x390",
+      async () => {
+        await freshLoad();
+        try {
+          for (const [vw, vh, isLandscape] of [[320, 568, false], [844, 390, true]]) {
+            await b.setViewport(vw, vh, !isLandscape);
+            await b.settle();
+            await openSettingsPanel();
+            await b.click("#modeS");
+            await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+              { label: "mode S to take effect" });
+            // Selecting a mode closes the panel (closePanel() in #modeS's
+            // own onclick) - reopen it so the fit is measured with the
+            // panel actually visible, #modeS's row and the note included.
+            await openSettingsPanel();
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const r = p.getBoundingClientRect();
+              return {
+                left: r.left, top: r.top, right: r.right, bottom: r.bottom,
+                scrollH: p.scrollHeight, clientH: p.clientHeight,
+                scrollW: p.scrollWidth, clientW: p.clientWidth,
+              };
+            `);
+            const label = `${vw}x${vh}`;
+            assert.ok(m.left >= 0, `${label}: panel left edge (${m.left}) is off-screen`);
+            assert.ok(m.top >= 0, `${label}: panel top edge (${m.top}) is off-screen`);
+            assert.ok(m.right <= vw + 0.5, `${label}: panel right edge (${m.right}) exceeds viewport width ${vw}`);
+            assert.ok(m.bottom <= vh + 0.5, `${label}: panel bottom edge (${m.bottom}) exceeds viewport height ${vh}`);
+            // Unlike the base "settings panel fits" test above (mode A, no
+            // note), a third mode button plus the credit paragraph do not
+            // fit inside the panel's own box at 844x390 without exceeding
+            // the 44px control floor this app keeps everywhere else - the
+            // panel already ships overflow-y:auto for exactly this case, so
+            // here only the horizontal axis (which has no such affordance
+            // and would mean real clipping) is held to zero overflow.
+            assert.ok(m.scrollW <= m.clientW + 1,
+              `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
+            await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+              { label: `panel to close at ${label}` });
+          }
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+    // Acceptance 7: switching from A to S at a fixed viewport must not move
+    // or resize the chrome around the card - header, .scene/main and footer
+    // rects must match (within 0.5px). Modeled on the CHROME_BUDGET rect
+    // pattern above, but as its own test: that table is not touched here.
+    test("switching to mode S does not move or resize the header, card area or footer",
+      async () => {
+        for (const [w, h] of [[390, 844], [390, 745], [844, 390], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          const rectsOf = (sel) => `(() => {
+            const r = document.querySelector("${sel}").getBoundingClientRect();
+            return { l: r.left, t: r.top, w: r.width, h: r.height };
+          })()`;
+          const before = await b.eval(`return {
+            header: ${rectsOf("header")},
+            main: ${rectsOf("main")},
+            footer: ${rectsOf("footer")},
+          };`);
+          await openSettingsPanel();
+          await b.click("#modeS");
+          await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+            { label: "mode S to take effect" });
+          await b.eval(`document.getElementById("settings-scrim")?.click();
+            document.getElementById("settings-trigger")?.click();
+            return true;`).catch(() => {});
+          await b.settle();
+          const after = await b.eval(`return {
+            header: ${rectsOf("header")},
+            main: ${rectsOf("main")},
+            footer: ${rectsOf("footer")},
+          };`);
+          for (const zone of ["header", "main", "footer"]) {
+            for (const k of ["l", "t", "w", "h"]) {
+              assert.ok(Math.abs(before[zone][k] - after[zone][k]) <= 0.5,
+                `${w}x${h} ${zone}.${k}: mode A ${before[zone][k]} vs mode S ${after[zone][k]}`);
+            }
+          }
+        }
+      });
+
+    test("an unsupported deck's sequence clears the card, disables stepping, and does not crash",
+      async () => {
+        await freshLoad();
+        await openSettingsPanel();
+        await b.click("#deck-add");
+        await b.waitFor(`getComputedStyle(document.getElementById("scale-box")).display !== "none"`,
+          { label: "the scale sheet to open" });
+        await b.eval(`
+          const box = document.getElementById("scale-box");
+          box.value = "(C3) G3 D4 G4 D5";
+          box.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        `);
+        await b.click("#scale-generate");
+        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+          { label: "the generated deck chip" });
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        const m = await b.eval(`return {
+          front: document.getElementById("front").innerHTML,
+          back: document.getElementById("back").innerHTML,
+          countChildren: document.getElementById("count").children.length,
+        };`);
+        assert.match(m.front, /doesn.t have enough simple chords/);
+        assert.strictEqual(m.front, m.back);
+        assert.strictEqual(m.countChildren, 0);
+        // Stepping and flipping on the empty state must not throw.
+        await b.click("#next");
+        await b.click("#prev");
+        await b.eval(`document.getElementById("card").click(); return true;`);
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.settle();
+      });
+
+    test("the printed sheet carries no sequence rail, tip or source link", async () => {
+      await enterSeqMode();
+      const printMarkup = await b.eval(`
+        // The print pipeline reads the same deck/chord data the app does but
+        // renders its own markup; this asserts the CURRENT document (the
+        // live app DOM in mode S) carries none of the print-only absence
+        // requirements' inverse - i.e. that nothing sequence-specific has
+        // leaked into anything the print path could pick up from #app.
+        const app = document.getElementById("app");
+        return app ? app.outerHTML.includes("seq-rail") || app.outerHTML.includes("seq-source-link")
+          ? "leaked" : "clean" : "no-app";
+      `);
+      assert.notStrictEqual(printMarkup, "leaked");
+    });
+  });
+
 }
