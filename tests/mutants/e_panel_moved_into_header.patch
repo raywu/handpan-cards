@@ -1,0 +1,86 @@
+# kills: print controls are never on a card face, and the panel is not inside header/main/footer/card
+# suite: node --test --test-name-pattern print.controls.are.never.on.a.card.face..and.the.panel.is.not.inside.header.main.footer.card tests/e2e.test.js
+# Moves the settings scrim + panel markup back inside <header>, before its
+# closing tag, instead of leaving it as a header sibling. Every control the
+# panel carries still works exactly the same way (openPanel/closePanel don't
+# care where the nodes live in the DOM), so nothing about clicking the
+# trigger, tabbing through the panel or downloading a PDF regresses - but the
+# panel would go inert whenever something else marks <header> inert, and it
+# would be exposed to any header-scoped CSS or landscape layout rule that was
+# never written with a modal dialog in mind. Only the ancestry assertion sees
+# it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -852,6 +852,35 @@
+   <nav class="decks" id="decks">
+     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
+   </nav>
++<div id="settings-scrim" hidden></div>
++<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
++  <h2 id="settings-title" class="sr-only">Settings</h2>
++  <div class="panel-group">
++    <h3 class="panel-heading">Practice</h3>
++    <div class="modebar">
++      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
++      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
++    </div>
++  </div>
++  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
++       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
++  <div class="panel-group" id="panel-scales-group">
++    <h3 class="panel-heading">Scales</h3>
++  </div>
++  <div class="panel-group">
++    <h3 class="panel-heading">Print this deck</h3>
++    <div class="prints" onclick="event.stopPropagation()">
++      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
++      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">PRINT-ONLY PDF</button>
++      <!-- The paper choice keeps the panel open (design direction, "After an
++           action"): the next tap is a print button, not a new task. -->
++      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
++        <option value="letter">LETTER</option>
++        <option value="a4">A4</option>
++      </select>
++    </div>
++  </div>
++</div>
+ </header>
+
+ <main>
+@@ -1043,35 +1072,6 @@
+      (below, in the mode-wiring script) toggle `hidden` and drive the same
+      inert-background + explicit-Tab-stops containment the sheet uses, with
+      the panel's own data. -->
+-<div id="settings-scrim" hidden></div>
+-<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+-  <h2 id="settings-title" class="sr-only">Settings</h2>
+-  <div class="panel-group">
+-    <h3 class="panel-heading">Practice</h3>
+-    <div class="modebar">
+-      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+-      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+-    </div>
+-  </div>
+-  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
+-       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
+-  <div class="panel-group" id="panel-scales-group">
+-    <h3 class="panel-heading">Scales</h3>
+-  </div>
+-  <div class="panel-group">
+-    <h3 class="panel-heading">Print this deck</h3>
+-    <div class="prints" onclick="event.stopPropagation()">
+-      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
+-      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">PRINT-ONLY PDF</button>
+-      <!-- The paper choice keeps the panel open (design direction, "After an
+-           action"): the next tap is a print button, not a new task. -->
+-      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
+-        <option value="letter">LETTER</option>
+-        <option value="a4">A4</option>
+-      </select>
+-    </div>
+-  </div>
+-</div>
+
+ <!-- The scale engine, inlined verbatim from src/engine/*.js. The app is
+      single-file by contract, so these are copies rather than external script

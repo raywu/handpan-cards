@@ -1,6 +1,6 @@
 # kills: the header and footer stay inside their pixel budget, so the card keeps its size
 # suite: node --test --test-name-pattern ^the.header.and.footer.stay.inside.their.pixel.budget..so.the.card.keeps.its.size$ tests/e2e.test.js
-# Replaces the four chrome margins that come off the spacing ramp with fixed,
+# Replaces the chrome margins that come off the spacing ramp with fixed,
 # generous literals - the kind of "a bit more air" edit this lane's brief
 # invites. Nothing about the controls changes - every target is still 44px and
 # still hit-tests to itself - so every tap-target assertion stays green. What
@@ -9,31 +9,32 @@
 # this, because its expectation min(cardW, main.height * ratio) is derived
 # from the very quantity that moved. Only a guard with a FIXED expectation
 # catches it.
+# Re-targeted 2026-09-28 (lane M1, menu-shell): h1's own margin moved into
+# .hrow (h1 is now a grid item with margin:0) and .modebar left the header
+# entirely for the settings panel, so this mutant now hits the three margins
+# that still contribute to the header/footer chrome the budget test measures:
+# header's own margin-bottom, .hrow's new margin-bottom, and footer's
+# margin-top.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -87,9 +87,9 @@ body{
+@@ -108,13 +108,13 @@
     pins this against measured numbers. assertCardFits CANNOT: it derives its
     expectation from the current main height, so it moves with the regression.
     ------------------------------------------------------------------------ */
 -header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
 +header{width:100%; max-width:520px; text-align:center; margin-bottom:20px}
+ /* The h1 row: a 44px|1fr|44px grid so the title stays optically centred once
+    a 44px settings trigger sits beside it. The spacer is the trigger's mirror
+    image, not decoration for its own sake - without it the title drifts right
+    by half the trigger's width. */
+ .hrow{display:grid; grid-template-columns:44px 1fr 44px; align-items:center;
+-  gap:var(--sp-2); margin-bottom:var(--sp-2)}
++  gap:var(--sp-2); margin-bottom:16px}
+ .hspacer{width:44px; height:44px}
  h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
--   letter-spacing:.04em; margin:0 0 var(--sp-2); color:#f4f0e8}
-+   letter-spacing:.04em; margin:2px 0 16px; color:#f4f0e8}
- /* The chip row scrolls horizontally and never wraps; auto margins on the end
-    chips keep it centred while it fits, without making either end unreachable
-    once it overflows. The right edge fades so a cut-off chip reads as "more". */
-@@ -156,7 +156,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
- .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
-   border-radius:999px; border:1.5px solid var(--dga);
-   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
--.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:var(--sp-3)}
-+.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:20px}
- /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
-    an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
-    .modebar has --sp-3 of margin above it and `main` below, so in landscape -
-@@ -252,7 +252,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    letter-spacing:.04em; margin:0; color:#f4f0e8}
+@@ -429,7 +429,7 @@
     root/tone colours it sits between. */
  .sepc{color:#75707c}
  footer{width:100%; max-width:520px; display:flex; align-items:center;

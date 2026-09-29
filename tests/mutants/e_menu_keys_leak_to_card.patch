@@ -1,0 +1,19 @@
+# kills: arrow keys and Enter/Space do not reach the card while the settings panel is open
+# suite: node --test --test-name-pattern arrow.keys.and.Enter.Space.do.not.reach.the.card.while.the.settings.panel.is.open tests/e2e.test.js
+# Drops the `return` that ends the document keydown handler's panelOpen
+# branch. Escape and Tab still behave correctly (they return early inside
+# their own `if`), so every existing panel-keyboard assertion stays green -
+# but any OTHER key, notably ArrowRight/ArrowLeft, falls through to the
+# handler's normal card-stepping code below even though the settings panel
+# is open and modal over the card, silently stepping the deck behind it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7686,7 +7686,6 @@
+       e.preventDefault();
+       stops[next].focus();
+     }
+-    return;
+   }
+   if (e.key === "ArrowRight") step(1);
+   else if (e.key === "ArrowLeft") step(-1);

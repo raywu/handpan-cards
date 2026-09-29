@@ -2,10 +2,13 @@
 # suite: node --test --test-name-pattern the.selected.deck.and.the.active.mode.carry.accessible.state tests/e2e.test.js
 # setMode() paints the .on colour but stops updating aria-pressed, so the mode
 # bar reports whatever the markup shipped with no matter which mode is live.
+# Refreshed 2026-09-28 (lane M1, menu-shell): setMode() moved from the top of
+# index.html's script into the settings-panel JS block (the mode buttons now
+# live in the panel, not the header), but its body is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3857,7 +3857,6 @@ function setMode(m) {
+@@ -7660,7 +7660,6 @@ function setMode(m) {
    for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
      const el = document.getElementById(id);
      el.classList.toggle("on", on);

@@ -124,8 +124,28 @@ body{
    expectation from the current main height, so it moves with the regression.
    ------------------------------------------------------------------------ */
 header{width:100%; max-width:520px; text-align:center; margin-bottom:var(--sp-3)}
+/* The h1 row: a 44px|1fr|44px grid so the title stays optically centred once
+   a 44px settings trigger sits beside it. The spacer is the trigger's mirror
+   image, not decoration for its own sake - without it the title drifts right
+   by half the trigger's width. */
+.hrow{display:grid; grid-template-columns:44px 1fr 44px; align-items:center;
+  gap:var(--sp-2); margin-bottom:var(--sp-2)}
+.hspacer{width:44px; height:44px}
 h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
-   letter-spacing:.04em; margin:0 0 var(--sp-2); color:#f4f0e8}
+   letter-spacing:.04em; margin:0; color:#f4f0e8}
+/* The settings trigger: styled as .mode (below), sized to the 44px target
+   with a CSS-drawn three-line glyph - no icon font. */
+#settings-trigger{width:44px; height:44px; padding:0; flex:none;
+  /* Sits above #settings-scrim (z-index 40): the trigger is the one header
+     control the panel deliberately leaves un-inert so it can also close the
+     panel it opened - it must stay clickable, not just present in the DOM. */
+  position:relative; z-index:42}
+#settings-trigger .glyph{display:block; width:18px; height:2px; background:currentColor;
+  position:relative}
+#settings-trigger .glyph::before, #settings-trigger .glyph::after{
+  content:""; position:absolute; left:0; width:18px; height:2px; background:currentColor}
+#settings-trigger .glyph::before{top:-6px}
+#settings-trigger .glyph::after{top:6px}
 /* The chip row scrolls horizontally and never wraps; auto margins on the end
    chips keep it centred while it fits, without making either end unreachable
    once it overflows. The right edge fades so a cut-off chip reads as "more". */
@@ -210,13 +230,14 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 .chip.on{color:#fff; border-image:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%) 1;
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
-.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:var(--sp-3)}
+/* .modebar no longer lives in the header (menu-shell, 2026-09-28): the
+   NAME->NOTES / NOTES->NAME toggle moved into the settings panel's "Practice"
+   group, so this rule only ever lays out that panel group now. Kept under the
+   same class/selector because #modeA/#modeB and their tests are anchored on
+   it and moved with the controls (IDs are kept). */
+.modebar{display:flex; gap:var(--sp-2); justify-content:center; margin-top:0}
 /* min-height, NOT an oversized ::after overlay. The two are not equivalent:
-   an overlay 44px tall on a 25.5px button hangs 9.25px past each edge, and
-   .modebar has --sp-3 of margin above it and `main` below, so in landscape -
-   where the ramp is at its narrowest rung and the card is already the binding
-   axis - the overlay would lie over the card. An overlay that
-   reaches outside its element is the row-214 defect in another costume. Making
+   an overlay 44px tall on a 25.5px button hangs 9.25px past each edge. Making
    the box itself 44px cannot steal from a neighbour: normal flow gives it the
    room. Precedent: .chip, button.nav, #scale-generate and #scale-delete
    are already sized this way. The label stays optically where it was via flex centring; the vertical
@@ -226,6 +247,26 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
   min-height:44px; display:inline-flex; align-items:center; justify-content:center}
 .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
+#settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
+.sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+  overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
+/* The settings panel and its scrim. Both are body-level siblings of
+   #scale-sheet (index.html markup, near the bottom of <body>), NOT children
+   of <header> - a panel nested in the header would go inert whenever the
+   scale sheet is open (eng review F4). No new colour or surface: #1f1b15 and
+   the #433b2c hairline are the sheet's own tokens (N15). */
+#settings-scrim{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:40}
+#settings-panel{position:fixed; top:calc(var(--sp-3) + 56px); right:var(--sp-3); z-index:41;
+  width:min(320px, calc(100vw - 2 * var(--sp-3))); max-height:calc(100vh - 88px);
+  overflow-y:auto; background:#1f1b15; border:1px solid #433b2c; border-radius:12px;
+  padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-3);
+  box-shadow:0 12px 34px rgba(0,0,0,.5)}
+.panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
+/* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
+   face used as it is used on the sheet's own title (O3/design direction).
+   Controls keep their ALL-CAPS Nunito voice (N15). */
+.panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
+  color:#c4bcab; margin:0}
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
    and the STACKED header spent 134 of them - the title, the deck strip and
@@ -290,9 +331,16 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0); clip-path:inset(50%)}
   /* The strip takes what is left. min-width:0 is what lets it: a flex item's
      automatic minimum is its content, so without it the strip would refuse to
-     shrink and push the mode bar off the row. */
+     shrink and push the settings trigger off the row. */
   .decks{flex:1 1 auto; min-width:0}
-  .modebar{flex:0 0 auto; margin-top:0}
+  /* The h1 row's grid is a portrait-only device (it exists to centre the
+     title against the trigger); in landscape the title is already invisible,
+     so dissolve the grid and let the trigger join the header's own flex row
+     as the last item, after the deck strip (menu-shell, 2026-09-28). */
+  .hrow{display:contents}
+  .hspacer{display:none}
+  .decks{order:1}
+  #settings-trigger{order:2; flex:0 0 auto}
 }
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
 /* The card is sized from whichever axis runs out first.
@@ -353,21 +401,22 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
   text-align:right; max-width:55%; text-transform:uppercase}
-/* Sits below .hdr, not inside it - .hdr's height is unaffected. Every deck,
-   built-in and generated, builds its PDF client-side through HPE.pdfdeck /
-   HPE.pdfcards (one-pdf-path plan) - there is no pre-built file to link, so
-   the row is always <button>/<select>, never an <a href>. */
-.prints{display:flex; justify-content:flex-end; gap:var(--sp-2); padding:2px 13px 0}
-.prints button, .prints select{font:600 7px/1.4 "Nunito Sans";
-  letter-spacing:.08em; color:var(--tone); background:none; border:0; padding:0;
-  margin:0; white-space:nowrap; cursor:pointer; -webkit-appearance:none;
-  appearance:none}
+/* Moved off the card face into the settings panel's "Print this deck" group
+   (menu-shell, 2026-09-28): the card face carries no controls any more. The
+   class and the print/paper wiring (`.closest(".prints")`, `setPrintPaper`)
+   are kept - only the styling changes, from card-scale 7px type to the
+   panel's own .mode-sized controls, which is also what clears the 44px
+   target floor (eng review C4). No new colour: these reuse `.mode`'s own
+   surface, border and text tokens. */
+.prints{display:flex; flex-wrap:wrap; gap:var(--sp-2)}
+.prints button, .prints select{font:600 10.5px/1 "Nunito Sans";
+  letter-spacing:.08em; color:#c4bcab; background:#211d16; border:1px solid #433b2c;
+  border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
+  white-space:nowrap; -webkit-appearance:none; appearance:none}
 .prints button:hover, .prints button:focus-visible,
-.prints select:hover, .prints select:focus-visible{text-decoration:underline}
-/* 44px is the touch target the rest of the app uses; these sit inside a card
-   face that is only 87mm tall, so the target is grown with padding on the ROW
-   rather than on each control, which would break the type rhythm above. */
-.prints button:active, .prints select:active{color:var(--ink)}
+.prints select:hover, .prints select:focus-visible{background:#2a251c}
+.prints button:active, .prints select:active{color:#f1ece1}
+.prints button:disabled{opacity:.5; cursor:default}
 .prompt{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:0 16px 26px}
 .bigname{font-family:Marcellus, serif; color:#545454; line-height:.95; text-align:center}
@@ -792,8 +841,23 @@ button.nav:active{background:#2e281e}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
+  /* menu-shell (2026-09-28, lane M1 necessity): #settings-scrim and
+     #settings-panel are new direct <body> children (a role="dialog" sibling
+     of header/main/footer, deliberately not nested in header - see the
+     settings-panel JS block). Without them in the selector list below they
+     are the one thing it misses and they would print on top of the cards;
+     test_render_agreement.py's
+     test_every_direct_child_of_body_is_hidden_or_belongs_to_the_sheet
+     enforces it. This edits the print block's owning line, crossed
+     deliberately because M1's own change is what made it incomplete - see
+     the M1 PR notes if this collides with a concurrent print-block change.
+     The selector list itself must stay one unbroken comma chain with no
+     comment inside it: test_render_agreement.py's hide_list() regex parses
+     it as a single run up to the display:none declaration, and a comment in
+     the middle truncates what it sees. */
   body.printing > header, body.printing > main, body.printing > .announce,
-  body.printing > #scale-sheet, body.printing > footer{display:none !important}
+  body.printing > #scale-sheet, body.printing > #settings-scrim,
+  body.printing > #settings-panel, body.printing > footer{display:none !important}
   body.printing #printroot{display:block}
   /* B0 finding: the masked `.face::before` frame flattens to a SOLID block in
      Chrome's print export. Re-express it as an inset ring, which survives. */
@@ -804,17 +868,20 @@ button.nav:active{background:#2e281e}
 </head>
 <body>
 <header>
-  <h1>Handpan Chord Cards</h1>
+  <div class="hrow">
+    <span class="hspacer" aria-hidden="true"></span>
+    <h1>Handpan Chord Cards</h1>
+    <button id="settings-trigger" type="button" class="mode" aria-haspopup="dialog"
+            aria-expanded="false" aria-controls="settings-panel" aria-label="Settings">
+      <span class="glyph" aria-hidden="true"></span>
+    </button>
+  </div>
   <!-- "+ ADD" is authored as the strip's first child and buildChips keeps it
        there on every rebuild - see the .chip.add comment for why it is inside
        the strip and why it must stay in normal flow. -->
   <nav class="decks" id="decks">
     <button class="chip add" type="button" id="deck-add" aria-haspopup="dialog">+ ADD</button>
   </nav>
-  <div class="modebar">
-    <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
-    <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-  </div>
 </header>
 
 <main>
@@ -994,6 +1061,44 @@ button.nav:active{background:#2e281e}
            button's confirmation were only ever sharing one line by accident;
            below the button is also where the owner is already looking. -->
       <div id="scale-del-note" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- The settings panel and its scrim: body-level siblings of #scale-sheet,
+     NOT children of <header>/<main>/<footer> (eng review F4) - the sheet
+     inerts those three wholesale while it is open, and a panel nested inside
+     one of them would go dead the moment the sheet opened, breaking the M2
+     "+ Add a scale" hand-off. Both start hidden; openPanel()/closePanel()
+     (below, in the mode-wiring script) toggle `hidden` and drive the same
+     inert-background + explicit-Tab-stops containment the sheet uses, with
+     the panel's own data. -->
+<div id="settings-scrim" hidden></div>
+<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <h2 id="settings-title" class="sr-only">Settings</h2>
+  <div class="panel-group">
+    <h3 class="panel-heading">Practice</h3>
+    <div class="modebar">
+      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+    </div>
+  </div>
+  <!-- M2 ("+ Add a scale") lands here, as a "Scales" group - left empty on
+       purpose by the menu-shell lane (non-goal: M1 does not move + ADD). -->
+  <div class="panel-group" id="panel-scales-group">
+    <h3 class="panel-heading">Scales</h3>
+  </div>
+  <div class="panel-group">
+    <h3 class="panel-heading">Print this deck</h3>
+    <div class="prints" onclick="event.stopPropagation()">
+      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
+      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">PRINT-ONLY PDF</button>
+      <!-- The paper choice keeps the panel open (design direction, "After an
+           action"): the next tap is a print button, not a new task. -->
+      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
+        <option value="letter">LETTER</option>
+        <option value="a4">A4</option>
+      </select>
     </div>
   </div>
 </div>
@@ -6209,7 +6314,16 @@ function isPaper(p) {
     Object.prototype.hasOwnProperty.call(PRINT_PAPER, p);
 }
 let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
-function setPrintPaper(p) { if (isPaper(p)) { printPaper = p; save(); } }
+function setPrintPaper(p) {
+  if (!isPaper(p)) return;
+  printPaper = p; save();
+  // D16: the picker is a static control now (it lives in the settings panel,
+  // not re-rendered per card), so it only reflects state that WE push into
+  // it - sync it here so a call from anywhere (not just its own onchange)
+  // keeps it truthful.
+  const sel = document.getElementById("print-paper-select");
+  if (sel) sel.value = p;
+}
 
 /** The design width the faces are authored at. The printed card is CW points
  *  wide, so the scale factor falls out of PRINT_GEOM and is not a literal of
@@ -6346,26 +6460,17 @@ function downloadDeckPDF(variant, btn) {
 
 function headerHTML(d, ch, n, noPrints) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
-  // A printed card carries no print row: the buttons are screen furniture and
-  // `.prints` is the one part of the header a sheet must drop (B3/AC-B1).
-  // A sibling row below .hdr, not a third flex child inside it: .hdr's own
-  // box (and so the deck name's available width/line count) is untouched by
-  // this feature - see the print-button lane's e2e test.
-  // One branch for every deck (one-pdf-path plan): built-in and generated
-  // decks both print through HPE.pdfdeck/HPE.pdfcards client-side, so there
-  // is no pre-built file to link and no reason for a second markup shape.
-  const prints = noPrints ? "" : `<div class="prints" onclick="event.stopPropagation()">
-      <button type="button" onclick="downloadDeckPDF('full', this)">FULL DECK PDF</button>
-      <button type="button" onclick="downloadDeckPDF('shop', this)">PRINT-ONLY PDF</button>
-      <select aria-label="Paper size" onchange="setPrintPaper(this.value)">
-        <option value="letter"${printPaper === "letter" ? " selected" : ""}>LETTER</option>
-        <option value="a4"${printPaper === "a4" ? " selected" : ""}>A4</option>
-      </select>
-    </div>`;
+  // The card face carries no controls (menu-shell, 2026-09-28): the print
+  // row moved into the settings panel's "Print this deck" group, so this
+  // function never emits one. `noPrints` is kept as a parameter - and every
+  // existing call site, including the legacy print-sheet path at :6218 -
+  // rather than touched, since it is now always a no-op and the call sites
+  // are outside this lane's ownership.
+  void noPrints;
   return `<div class="hdr">
     <div class="l">${esc(d.name)}<br><span class="num">#${n}</span>
       ${deg ? `&nbsp;<span class="deg">${esc(deg)}</span>` : ""}</div>
-    <div class="r">${esc(ch.subtitle)}</div></div>${prints}`;
+    <div class="r">${esc(ch.subtitle)}</div></div>`;
 }
 function nameHTML(ch, big) {
   const len = (ch.main + ch.sup).length;
@@ -6423,20 +6528,14 @@ function render() {
   const away  = document.getElementById(flipped ? "front" : "back");
   away.setAttribute("aria-hidden", "true");
   shown.removeAttribute("aria-hidden");
-  // aria-hidden alone does not remove a control from the tab order, and
-  // headerHTML() renders .prints into BOTH faces - so a keyboard user would
-  // tab into three invisible controls, and a screen reader would meet
-  // focusable content inside an aria-hidden subtree.
-  // Scoped through document, not through the face element: the face is the
-  // node whose innerHTML was just replaced, and the unit suite's DOM stub
-  // serves selectors from the document only.
-  // No "a" in this list (one-pdf-path plan, review item 7): every deck's
-  // .prints row is now <button>/<select> only, so an anchor selector would be
-  // dead weight, not a widening this code still needs.
-  const printCtrls = (id) =>
-    ["button", "select"].map((t) => `#${id} .prints ${t}`).join(",");
-  for (const el of document.querySelectorAll(printCtrls(away.id))) el.tabIndex = -1;
-  for (const el of document.querySelectorAll(printCtrls(shown.id))) el.removeAttribute("tabindex");
+  // The .prints tab-order workaround that used to live here (printCtrls) is
+  // gone: headerHTML() no longer renders .prints into either face at all
+  // (menu-shell, 2026-09-28 - the print row moved to the settings panel), so
+  // there is no focusable control left inside a face for aria-hidden to
+  // strand from the tab order. The aria-hidden/removeAttribute pair above
+  // STAYS: both faces remain in the DOM across a flip, and the one turned
+  // away must still be hidden from assistive tech, printCtrls or not
+  // (e_a11y_both_faces_exposed is re-targeted onto this pair, not retired).
   cardEl.setAttribute("aria-describedby", shown.id);
 }
 
@@ -6561,7 +6660,11 @@ announce.className = "announce";
 // The landmarks behind the sheet. inert while it is open, so the modal really
 // is modal: nothing behind it is clickable, focusable or read by a screen
 // reader, and Generate is the only enabled primary button on the page.
-const background = [...document.querySelectorAll("header, main, footer")];
+// #settings-panel is included alongside header/main/footer (menu-shell,
+// 2026-09-28): the mode buttons moved out of <header> into that body-level
+// sibling, so without it here they would sit outside every landmark this
+// list inerts and stay reachable behind the modal sheet.
+const background = [...document.querySelectorAll("header, main, footer, #settings-panel")];
 
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // section 13: false = right-first (the default)
@@ -7547,8 +7650,48 @@ document.getElementById("shuffle").onclick = function () {
   this.textContent = "Shuffle: " + (shuffled ? "on" : "off");
   this.classList.toggle("on", shuffled);
 };
-document.getElementById("modeA").onclick = () => setMode("A");
-document.getElementById("modeB").onclick = () => setMode("B");
+/* ---------------- settings panel ---------------- */
+// Body-level markup (settings-panel.html region, above): a body-level
+// sibling of #scale-sheet, not a child of header/main/footer (eng review F4).
+const settingsTrigger = document.getElementById("settings-trigger");
+const settingsPanel   = document.getElementById("settings-panel");
+const settingsScrim   = document.getElementById("settings-scrim");
+// The panel's OWN background, not the sheet's `background` const above: main,
+// footer and the deck strip - never the whole header, because the trigger
+// that must stay clickable to CLOSE the panel (dismissal: Escape, a scrim
+// tap, OR the trigger) lives inside the header. Inerting the header would
+// inert the trigger along with it and the panel could never be closed by a
+// second tap on it.
+const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
+                          document.getElementById("decks")].filter(Boolean);
+let panelOpen = false;
+function panelStops() {
+  return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+          ...settingsPanel.querySelectorAll(".prints button, .prints select")]
+    .filter(el => el && !el.disabled);
+}
+function openPanel() {
+  settingsScrim.removeAttribute("hidden");
+  settingsPanel.removeAttribute("hidden");
+  panelOpen = true;
+  settingsTrigger.setAttribute("aria-expanded", "true");
+  for (const el of panelBackground) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+}
+function closePanel() {
+  if (!panelOpen) return;
+  settingsScrim.setAttribute("hidden", "");
+  settingsPanel.setAttribute("hidden", "");
+  panelOpen = false;
+  settingsTrigger.setAttribute("aria-expanded", "false");
+  for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
+  settingsTrigger.focus();
+}
+settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
+settingsScrim.addEventListener("click", closePanel);
+document.getElementById("print-paper-select").value = printPaper;
+
+document.getElementById("modeA").onclick = () => { setMode("A"); closePanel(); };
+document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); };
 function setMode(m) {
   mode = m; flipped = false; save();
   // .on is a colour; aria-pressed is the state. Both, always together.
@@ -7564,6 +7707,22 @@ document.addEventListener("keydown", e => {
   // arrow key is cursor movement inside the box, never a card step.
   if (sheetOpen) {
     if (e.key === "Escape") { e.preventDefault(); closeScaleSheet(); }
+    return;
+  }
+  // While the settings panel is open it owns the keyboard too (eng review
+  // C3), the same guard sheetOpen gets: Escape closes it, Tab cycles the
+  // panel's own stops (plus the trigger that opened it, copying the sheet's
+  // inert+stops pattern with its own data), and no arrow key or Enter/Space
+  // reaches the card underneath.
+  if (panelOpen) {
+    if (e.key === "Escape") { e.preventDefault(); closePanel(); return; }
+    if (e.key === "Tab") {
+      const stops = panelStops();
+      const i = stops.indexOf(document.activeElement);
+      const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+      e.preventDefault();
+      stops[next].focus();
+    }
     return;
   }
   if (e.key === "ArrowRight") step(1);

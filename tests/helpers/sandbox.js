@@ -39,7 +39,11 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Workstream B: the print sheet's container and the geometry <style> the
   // CTA writes into. Both live outside <main> so @media print can hide the
   // app without hiding the sheet.
-  "printroot", "printgeom"];
+  "printroot", "printgeom",
+  // Lane M1: the settings panel that now hosts the mode toggle and print
+  // controls, plus its header trigger and scrim.
+  "settings-trigger", "settings-scrim", "settings-panel", "settings-title",
+  "print-paper-select"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
