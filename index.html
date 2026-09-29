@@ -7761,9 +7761,19 @@ desktopMQ.addEventListener("change", (e) => {
     closePanel();
     // Reviewer finding N4: closePanel()'s own settingsTrigger.focus() call is
     // a silent no-op here - the trigger is display:none at this width once
-    // the CSS has already flipped - so with nothing else to catch it focus
-    // fell to <body>. Re-home it on the card, which is always live.
-    if (document.activeElement === document.body || !document.activeElement) card.focus();
+    // the CSS has already flipped - but at the moment this listener runs,
+    // document.activeElement is STILL the (now-hidden) trigger, not <body>:
+    // the browser's own "focused element became display:none -> blur to
+    // <body>" step has not happened yet, it is a later, separate step. A
+    // check for `=== document.body` alone therefore misses this tick
+    // entirely and nobody re-homes focus - it only lands on <body>
+    // asynchronously, after this handler has already decided (wrongly) that
+    // nothing needs fixing. Check whether the CURRENT active element is
+    // still connected, live and actually rendered instead of naming it.
+    const a = document.activeElement;
+    const stillLive = a && a !== document.body && a.isConnected &&
+      getComputedStyle(a).display !== "none";
+    if (!stillLive) card.focus();
   }
 });
 settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
