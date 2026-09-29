@@ -1035,20 +1035,22 @@ function run() {
      only thing standing between the settings panel and the card underneath
      it for ArrowRight/ArrowLeft - without its own `return`, either arrow key
      typed while the panel is open falls through to step() on the card the
-     panel is supposed to be modal over.
+     panel is supposed to be modal over. That half is exercised directly by
+     the ArrowRight/ArrowLeft assertions below and killed by the
+     e_menu_keys_leak_to_card mutant.
      Enter/Space are a DIFFERENT path: the document handler never acts on
      them at all (only Escape and Tab do, inside the panelOpen branch) -
      flip() is wired to #card's OWN keydown listener (row 7621), which only
      ever fires for a keydown targeting #card or a descendant. With the
      panel open, #card sits inside <main>, which openPanel() makes `inert`,
      so #card cannot hold focus and cannot receive the event in the first
-     place. The earlier version of this test left focus on #settings-trigger,
-     so Enter/Space there activated the TRIGGER's own native click (closing
-     the panel) before ever reaching a point where the guard could matter -
-     it could not fail no matter what the guard did. To test the guard (and
-     the inert boundary) rather than the trigger's own click handler, focus
-     is moved off every panel stop (blur to document.body) first, and the
-     panel's open/closed state is asserted alongside the flip/step state. */
+     place - there is no document-level guard for Enter/Space to test, only
+     the inert boundary. This test proves that boundary directly: it calls
+     #card.focus() while the panel is open and asserts focus did NOT move
+     there (inert refused it), THEN dispatches Enter and Space and asserts
+     the panel stays open and the card neither flips nor steps. Dropping
+     `el.inert = true` from openPanel() lets #card take focus, which reds
+     the focus assertion immediately (m2b_panel_card_not_inert). */
   test("arrow keys and Enter/Space do not reach the card while the settings panel is open", async () => {
     await freshLoad();
     const meta = await decksMeta();
@@ -1061,9 +1063,18 @@ function run() {
     await b.key("ArrowLeft", "ArrowLeft", 37);
     await expectCount(`1 / ${n}`, "ArrowLeft must not step the card while the panel is open");
 
+    // Move focus off the trigger first: otherwise the Enter/Space probes
+    // below would hit the TRIGGER's own click handler (which closes the
+    // panel) before ever reaching a point where the inert boundary matters.
     await b.eval(`document.activeElement.blur()`);
     const blurred = await b.eval(`return document.activeElement === document.body`);
     assert.strictEqual(blurred, true, "focus did not move to <body> for the Enter/Space probes");
+
+    await b.eval(`document.getElementById("card").focus()`);
+    const cardFocused = await b.eval(
+      `return document.activeElement === document.getElementById("card")`);
+    assert.strictEqual(cardFocused, false,
+      "#card sits inside <main>, which the open panel makes inert - it must refuse focus");
 
     const readState = () => b.eval(`return {
       panelOpen: document.getElementById("settings-panel").hidden === false,
