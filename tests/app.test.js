@@ -4558,7 +4558,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
 });
 
 /* ================================================================ Lane S2
- * "PLAY A SEQUENCE" mode: app-side wiring for HPE.sequence.pick(). See
+ * "CHORD PROGRESSION" mode: app-side wiring for HPE.sequence.pick(). See
  * docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
  * (E1-E9, binding amendments) for the acceptance criteria these tests are
  * derived from. */
@@ -4608,7 +4608,7 @@ test("sequence mode: prev/next/arrows stay within the sequence and wrap, answer 
   assert.strictEqual(app.get("idx"), 0, "ArrowRight from the last chord wraps to the first");
 });
 
-test("\"New sequence\" changes the sequence and does not touch shuffled", () => {
+test("\"New progression\" changes the sequence and does not touch shuffled", () => {
   // A rotating (not fixed) rng: HPE.sequence.pick's own no-repeat guarantee
   // (S1 test 5, 1000 seeded draws) is the engine's job, not this lane's - this
   // proves the UI actually redraws on click and never disturbs `shuffled`.
@@ -4621,15 +4621,28 @@ test("\"New sequence\" changes the sequence and does not touch shuffled", () => 
   for (let k = 0; k < 20; k++) {
     app.els.shuffle.onclick.call(app.els.shuffle);
     seen.add(JSON.stringify(app.get("seq").chords));
-    assert.strictEqual(app.get("shuffled"), false, "New sequence in mode S must never touch `shuffled`");
+    assert.strictEqual(app.get("shuffled"), false, "New progression in mode S must never touch `shuffled`");
   }
   assert.ok(seen.size > 1, "20 varied draws must produce more than one distinct sequence");
+});
+
+test("\"New progression\" never redraws the sequence on screen, even with a constant rng", () => {
+  // A constant rng makes pick() deterministic, so only the `prev` argument
+  // setOrder() passes can make consecutive draws differ.
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  let last = JSON.stringify(app.get("seq").chords);
+  for (let k = 0; k < 10; k++) {
+    app.els.shuffle.onclick.call(app.els.shuffle);
+    const now = JSON.stringify(app.get("seq").chords);
+    assert.notStrictEqual(now, last, `re-roll ${k + 1} repeated the sequence on screen`);
+    last = now;
+  }
 });
 
 test("switching deck, generating a deck and deleting a deck each draw a new sequence", () => {
   const app = boot();
   app.run('setMode("S")');
-  const hijazSeq = [...app.get("seq").chords];
   const pygmy = decks(app).find((d) => d.id === "pygmy");
   app.select(pygmy.id);
   assert.strictEqual(app.get("mode"), "S");
@@ -4640,14 +4653,16 @@ test("switching deck, generating a deck and deleting a deck each draw a new sequ
   app.select(gen.value.id);
   assert.strictEqual(app.get("mode"), "S");
   assert.ok(app.get("seq").chords, "a freshly generated deck must draw a sequence in mode S");
-  void hijazSeq;
 
   // Deleting the currently-selected deck falls back to another deck; that
   // fallback must also draw a fresh sequence while mode S is active.
   app.run(`deleteDeck(${JSON.stringify(gen.value.id)})`);
   assert.strictEqual(app.get("mode"), "S");
   assert.notStrictEqual(app.deckId(), gen.value.id, "the deleted deck must no longer be selected");
-  assert.ok(app.get("seq").chords, "the deck deleteDeck() falls back to must draw a sequence in mode S");
+  const drawn = JSON.stringify(arr(app.get("seq").chords));
+  const valid = app.get("[...HPE.sequence.sequences(deck(), 2), ...HPE.sequence.sequences(deck(), 3)]").map((q) => JSON.stringify(arr(q)));
+  assert.ok(valid.includes(drawn), `the fallback deck's sequence ${drawn} must be one of its own sequences`);
+  assert.deepStrictEqual(arr(app.get("order")), arr(app.get("seq").chords), "order must follow the fallback deck's sequence");
 });
 
 test("the sequence source link: rel=noopener, target=_blank, the exact href, and it joins the Tab cycle only while visible", () => {
@@ -4725,6 +4740,19 @@ test("an unsupported deck clears the card and disables stepping, with no crash",
   app.select(hijaz.id);
   assert.ok(app.get("seq").chords);
   assert.ok(!app.els.front.innerHTML.includes("doesn"), "no residue of the unsupported-deck message");
+});
+
+test("an unsupported deck entered from mode A leaves no stale count once mode S is chosen", () => {
+  const app = boot({ random: () => 0 });
+  const res = app.generate("(C3) G3 D4 G4 D5");
+  assert.ok(res.ok);
+  app.select(res.value.id);
+  assert.strictEqual(app.get("mode"), "A");
+  assert.notStrictEqual(app.els.count.textContent, "", "mode A shows a count on this deck");
+  app.run('setMode("S")');
+  assert.strictEqual(app.get("seq").chords, null);
+  assert.strictEqual(app.els.count.textContent, "", "mode A's count must not survive into mode S");
+  assert.strictEqual(app.els.count.children.length, 0);
 });
 
 test("modes A and B render byte-identical DOM to the pre-lane base, for all three decks at idx 0 and 1", () => {

@@ -200,7 +200,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    same class/selector because #modeA/#modeB and their tests are anchored on
    it and moved with the controls (IDs are kept). */
 .modebar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center; margin-top:0}
-/* #modeS ("PLAY A SEQUENCE") takes the full second row: three buttons don't
+/* #modeS ("CHORD PROGRESSION") takes the full second row: three buttons don't
    fit one row of the 320px panel (each existing one is ~118px wide). Plan
    §2 Part B, S2 lane. */
 #modeS{flex:1 0 100%}
@@ -234,51 +234,25 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    scale sheet is open (eng review F4). No new colour or surface: #1f1b15 and
    the #433b2c hairline are the sheet's own tokens (N15). */
 #settings-scrim{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:40}
-#settings-panel{position:fixed; top:calc(var(--sp-3) + 56px); right:var(--sp-3); z-index:41;
-  width:min(320px, calc(100vw - 2 * var(--sp-3))); max-height:calc(100vh - 88px);
-  overflow-y:auto; background:#1f1b15; border:1px solid #433b2c; border-radius:12px;
-  padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-3);
-  box-shadow:0 12px 34px rgba(0,0,0,.5)}
-.panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
-/* Lane S2, ownership deviation (2026-09-29, ordered by review): #modeS's
-   addition to the shared .modebar (see .modebar/#modeS above) means the
-   panel's Practice row now wraps to two rows in EVERY mode, not only S - a
-   320px-wide panel cannot fit three ~118px mode buttons on one row, and
-   #modeS has to render in A and B too (it is how you get INTO mode S). That
-   growth therefore lands on modes A and B as well, and was measured: without
-   any compensating rule, mode A's panel content is 328px in a 300px box at
-   844x390 - the same shortfall this lane was told to fix in mode S. A first
-   attempt scoped the fix to mode S alone (`:has(#modeS.on)`); it left A and B
-   overflowing, because they carry the identical two-row modebar and never
-   matched that selector. The review-preferred fix - one requiring no new
-   max-height:520px rule at all - cannot reach this: the shortfall is a
-   viewport-density tradeoff (less air at a short viewport), and reproducing
-   it unconditionally at every viewport would visibly tighten modes A and B
-   at ORDINARY viewports too, which is a real, needless regression there.
-   This block is therefore mode-agnostic by necessity, not by lane
-   convenience: it restores A and B to the exact chrome they already relied
-   on (a max-height:520px rule already existed here; this is its
-   replacement, sized the same, just no longer nested under it as a second,
-   additive block). Nothing shrinks below the 44px control floor (only the
-   gaps AROUND controls, never the controls themselves, change here). */
+/* Below the desktop breakpoint the panel is a full-screen takeover (owner
+   decision 2026-09-29), not a popover: it covers the whole viewport and the
+   trigger (z-index 42) stays on top of it as the exit, drawn as an X while
+   the panel is open. padding-top clears the header row the trigger sits in.
+   The desktop sidebar block below overrides all of this. */
+#settings-panel{position:fixed; inset:0; z-index:41; overflow-y:auto; background:#1f1b15;
+  padding:calc(var(--sp-3) + 56px) var(--sp-3) var(--sp-3);
+  display:flex; flex-direction:column; align-items:center; gap:var(--sp-3)}
+#settings-panel > .panel-group{width:min(420px, 100%)}
+/* Landscape phone: too short for one column, so the groups sit side by side. */
 @media (max-height:520px){
-  #settings-panel{padding:var(--sp-1) var(--sp-3); gap:var(--sp-2)}
-  .panel-group{gap:0}
-  .modebar{gap:var(--sp-1)}
+  #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    align-content:start; align-items:start}
+  #settings-panel > .panel-group{width:auto}
 }
-/* Mode S alone additionally carries the credit note under the modebar, which
-   the shared tightening above is not enough to fit - so this second rule is
-   scoped to mode S only, via :has() rather than another max-height block,
-   and is NOT gated on viewport height at all: it costs modes A and B nothing
-   at any size, since neither ever matches it (panel-seq-note/#modeS.on only
-   exist in mode S). The credit line itself is decorative prose, not a
-   control - only its link needs the 44px floor - so it is the one thing in
-   this panel allowed to shrink below the rest of the UI's type scale while
-   mode S is active. */
-#settings-panel:has(#modeS.on){gap:0; max-height:calc(100vh - 74px)}
-#settings-panel:has(#modeS.on) .prints{gap:var(--sp-1)}
-#settings-panel:has(#modeS.on) .panel-heading{font-size:12px; line-height:1.1}
-#settings-panel:has(#modeS.on) .panel-note{font-size:9px; line-height:1.15; margin-top:calc(-1 * var(--sp-1))}
+#settings-trigger[aria-expanded="true"] .glyph{background:transparent}
+#settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
+#settings-trigger[aria-expanded="true"] .glyph::after{top:0; transform:rotate(-45deg)}
+.panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
 /* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
    face used as it is used on the sheet's own title (O3/design direction).
    Controls keep their ALL-CAPS Nunito voice (N15). */
@@ -331,7 +305,8 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
        band at y=0 and y=h-1. Right stays flush - the panel's own #1f1b15
        background there is already close enough to --table to pass the same
        check, and it is that one edge (right) the design puts the sidebar on. */
-    display:flex; position:fixed; top:var(--sp-1); right:0; bottom:var(--sp-1);
+    display:flex; position:fixed; top:var(--sp-1); right:0; bottom:var(--sp-1); left:auto;
+    align-items:stretch;
     width:240px; max-width:240px; height:auto; max-height:none;
     border-radius:0; border:none; border-left:1px solid #433b2c;
     box-shadow:none; padding:var(--sp-4) var(--sp-3);
@@ -342,6 +317,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
        the sheet; the base z-index:41 is untouched for <1024px. */
     z-index:20;
   }
+  #settings-panel > .panel-group{width:auto}
   /* [hidden]{display:none !important} (line 456) otherwise wins over the
      rule above at equal !important weight (it has none, so this needs its
      own) - this is the one declaration that actually has to beat it. */
@@ -1170,7 +1146,7 @@ button.nav:active{background:#2e281e}
     <div class="modebar">
       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-      <button class="mode" id="modeS" aria-pressed="false">PLAY A SEQUENCE</button>
+      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
     </div>
     <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
          wording plus one outbound link, credited to Moritz.handpan. -->
@@ -6878,7 +6854,7 @@ function linesHTML(d, ch) {
 // covers A/B on a genuinely empty deck.
 function renderSeqEmpty() {
   const msg = `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-    + `This scale doesn&rsquo;t have enough simple chords to make a sequence. `
+    + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
     + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
   document.getElementById("front").innerHTML = msg;
   document.getElementById("back").innerHTML = msg;
@@ -8224,7 +8200,7 @@ function setMode(m) {
   seqNote.hidden = m !== "S";
   const shuffleBtn = document.getElementById("shuffle");
   if (m === "S") {
-    shuffleBtn.textContent = "New sequence";
+    shuffleBtn.textContent = "New progression";
     shuffleBtn.classList.remove("on");
   } else {
     shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");

@@ -32,6 +32,9 @@
 # are pure line/content drift - the mutant's moved copy is regenerated here
 # byte-identical to the current real element, and the mutation (moving the
 # scrim+panel block into <header>) is unchanged.
+# Refreshed 2026-09-29 (S2 takeover): the #modeS label is now "CHORD
+# PROGRESSION" (owner rename); the moved copy follows it. The mutation is
+# unchanged.
 --- a/index.html
 +++ b/index.html
 @@ -965,6 +965,46 @@
@@ -46,7 +49,7 @@
 +    <div class="modebar">
 +      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 +      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-+      <button class="mode" id="modeS" aria-pressed="false">PLAY A SEQUENCE</button>
++      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
 +    </div>
 +    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
 +         wording plus one outbound link, credited to Moritz.handpan. -->
@@ -93,7 +96,7 @@
 -    <div class="modebar">
 -      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 -      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
--      <button class="mode" id="modeS" aria-pressed="false">PLAY A SEQUENCE</button>
+-      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
 -    </div>
 -    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
 -         wording plus one outbound link, credited to Moritz.handpan. -->

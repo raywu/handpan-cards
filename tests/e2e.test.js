@@ -1110,7 +1110,7 @@ function run() {
       "Space must not step the card while the panel is open");
   });
 
-  test("the settings trigger opens and closes the panel three ways, and reports its own state", async () => {
+  test("the settings trigger opens and closes the full-screen panel, and reports its own state", async () => {
     await freshLoad();
     const haspopup = await b.eval(
       `return document.getElementById("settings-trigger").getAttribute("aria-haspopup")`);
@@ -1133,13 +1133,23 @@ function run() {
       `return document.getElementById("settings-trigger").getAttribute("aria-expanded")`);
     assert.strictEqual(expanded, "false", "aria-expanded must flip back false on close");
 
-    // 2. A tap on the scrim closes it too.
+    // 2. Below the desktop breakpoint the open panel is a full-screen
+    // takeover (owner decision 2026-09-29), so the scrim is covered and the
+    // exit is the trigger, drawn on top of the panel as an X.
     await openSettingsPanel();
-    await b.click("#settings-scrim");
+    const cover = await b.eval(`
+      const p = document.getElementById("settings-panel").getBoundingClientRect();
+      const t = document.getElementById("settings-trigger").getBoundingClientRect();
+      const hit = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2);
+      const before = getComputedStyle(document.querySelector("#settings-trigger .glyph"), "::before");
+      return { p: [p.left, p.top, p.width, p.height], vw: innerWidth, vh: innerHeight,
+               onTop: !!(hit && hit.closest("#settings-trigger")), glyph: before.transform };`);
+    assert.deepStrictEqual(cover.p, [0, 0, cover.vw, cover.vh], "the open panel must cover the whole viewport");
+    assert.ok(cover.onTop, "the trigger must be the topmost element at its own centre while the panel is open");
+    assert.notStrictEqual(cover.glyph, "none", "the open trigger's glyph must be drawn as an X (rotated bars)");
+    await b.click("#settings-trigger");
     await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-      { label: "panel to close on a scrim tap" });
-    focused = await b.eval(`return document.activeElement.id`);
-    assert.strictEqual(focused, "settings-trigger", "a scrim tap must return focus to the trigger");
+      { label: "panel to close on a tap on the X" });
 
     // 3. A second tap on the trigger itself closes it.
     await openSettingsPanel();
@@ -1312,35 +1322,50 @@ function run() {
     }
   });
 
-  test("the settings panel fits entirely on screen, with no clipping or scroll, at 320x568 and 844x390",
+  test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
       await freshLoad();
       try {
-        for (const [vw, vh, isLandscape] of [[320, 568, false], [844, 390, true]]) {
-          await b.setViewport(vw, vh, !isLandscape);
+        for (const [vw, vh] of [[320, 568], [844, 390], [926, 428], [667, 375], [1280, 500]]) {
+          await b.setViewport(vw, vh, vw < vh);
           await b.settle();
-          await openSettingsPanel();
-          const m = await b.eval(`
-            const p = document.getElementById("settings-panel");
-            const r = p.getBoundingClientRect();
-            return {
-              left: r.left, top: r.top, right: r.right, bottom: r.bottom,
-              scrollH: p.scrollHeight, clientH: p.clientHeight,
-              scrollW: p.scrollWidth, clientW: p.clientWidth,
-            };
-          `);
-          const label = `${vw}x${vh}`;
-          assert.ok(m.left >= 0, `${label}: panel left edge (${m.left}) is off-screen`);
-          assert.ok(m.top >= 0, `${label}: panel top edge (${m.top}) is off-screen`);
-          assert.ok(m.right <= vw + 0.5, `${label}: panel right edge (${m.right}) exceeds the viewport width ${vw}`);
-          assert.ok(m.bottom <= vh + 0.5, `${label}: panel bottom edge (${m.bottom}) exceeds the viewport height ${vh}`);
-          assert.ok(m.scrollH <= m.clientH + 1,
-            `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
-          assert.ok(m.scrollW <= m.clientW + 1,
-            `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
-          await b.eval(`document.getElementById("settings-scrim").click(); return true;`);
-          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-            { label: `panel to close at ${label}` });
+          for (const mode of ["A", "B", "S"]) {
+            await openSettingsPanel();
+            await b.click(`#mode${mode}`);
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+              { label: `panel to close after selecting mode ${mode}` });
+            await openSettingsPanel();
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const r = p.getBoundingClientRect();
+              const t = document.getElementById("settings-trigger").getBoundingClientRect();
+              const hit = (a, k) => a.left < k.right && a.right > k.left && a.top < k.bottom && a.bottom > k.top;
+              const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+              return {
+                rect: [r.left, r.top, r.width, r.height],
+                scrollH: p.scrollHeight, clientH: p.clientHeight,
+                scrollW: p.scrollWidth, clientW: p.clientWidth,
+                noteShown: !document.getElementById("panel-seq-note").hidden,
+                offscreen: ctrls.filter(e => { const k = e.getBoundingClientRect();
+                  return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
+                underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
+                short: ctrls.filter(e => e.getBoundingClientRect().height < 44).map(e => e.id || e.textContent.trim()),
+              };
+            `);
+            const label = `${vw}x${vh} mode ${mode}`;
+            assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
+            assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+            assert.ok(m.scrollW <= m.clientW + 1,
+              `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
+            assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
+            assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X trigger`);
+            assert.deepStrictEqual(m.short, [], `${label}: controls under the 44px target`);
+            await b.key("Escape", "Escape", 27);
+            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+              { label: `panel to close at ${label}` });
+          }
         }
       } finally {
         await b.setViewport(900, 900, false);
@@ -7098,7 +7123,7 @@ function run() {
     });
   });
 
-  // Lane S2: "PLAY A SEQUENCE" mode's app-side wiring. See
+  // Lane S2: "CHORD PROGRESSION" mode's app-side wiring. See
   // docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
   // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
   // stub can check (see tests/app.test.js) stays there.
@@ -7111,7 +7136,7 @@ function run() {
         { label: "mode S to take effect" });
     }
 
-    test("selecting PLAY A SEQUENCE presses #modeS exclusively, shows the credit note, and survives a reload",
+    test("selecting CHORD PROGRESSION presses #modeS exclusively, shows the credit note, and survives a reload",
       async () => {
         await enterSeqMode();
         const st = await b.eval(`return {
@@ -7169,10 +7194,10 @@ function run() {
         assert.match(m.live, /^.+, chord 1 of \d+$/);
       });
 
-    test("\"New sequence\" redraws without touching Shuffle's own on/off state", async () => {
+    test("\"New progression\" redraws without touching Shuffle's own on/off state", async () => {
       await enterSeqMode();
       const label = await b.eval(`return document.getElementById("shuffle").textContent;`);
-      assert.strictEqual(label, "New sequence");
+      assert.strictEqual(label, "New progression");
       const seen = new Set();
       for (let i = 0; i < 8; i++) {
         await b.click("#shuffle");
@@ -7198,7 +7223,7 @@ function run() {
 
     // §8 E2, S2 test 12. Modes A and B each carry Shuffle's own on/off state
     // declaratively (label + .on class); entering and leaving S must never
-    // disturb it, and New sequence in S must never touch it either.
+    // disturb it, and New progression in S must never touch it either.
     test("sequence mode: entering and leaving rebuilds the order, with shuffle on and off", async () => {
       const shuffleState = () => b.eval(`return {
         text: document.getElementById("shuffle").textContent,
@@ -7228,14 +7253,14 @@ function run() {
         const chordCount = seqRail.split(" → ").length;
         assert.ok(chordCount === 2 || chordCount === 3, `entering S must give an order of length 2 or 3, got ${chordCount}`);
 
-        // New sequence in S must never touch `shuffled` - re-roll a few times.
+        // New progression in S must never touch `shuffled` - re-roll a few times.
         const seen = new Set([seqRail]);
         for (let i = 0; i < 4; i++) {
           await b.click("#shuffle");
           await b.settle();
           seen.add(await railText());
         }
-        assert.ok(seen.size > 1, "New sequence in S must redraw a different sequence at least once");
+        assert.ok(seen.size > 1, "New progression in S must redraw a different sequence at least once");
 
         await openSettingsPanel();
         await b.click(`#mode${baseMode}`);
@@ -7368,95 +7393,6 @@ function run() {
         }
       });
 
-    test("the settings panel still fits with #modeS and the credit note visible, at 320x568 and 844x390",
-      async () => {
-        await freshLoad();
-        try {
-          for (const [vw, vh, isLandscape] of [[320, 568, false], [844, 390, true]]) {
-            await b.setViewport(vw, vh, !isLandscape);
-            await b.settle();
-            await openSettingsPanel();
-            await b.click("#modeS");
-            await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
-              { label: "mode S to take effect" });
-            // Selecting a mode closes the panel (closePanel() in #modeS's
-            // own onclick) - reopen it so the fit is measured with the
-            // panel actually visible, #modeS's row and the note included.
-            await openSettingsPanel();
-            const m = await b.eval(`
-              const p = document.getElementById("settings-panel");
-              const r = p.getBoundingClientRect();
-              return {
-                left: r.left, top: r.top, right: r.right, bottom: r.bottom,
-                scrollH: p.scrollHeight, clientH: p.clientHeight,
-                scrollW: p.scrollWidth, clientW: p.clientWidth,
-              };
-            `);
-            const label = `${vw}x${vh}`;
-            assert.ok(m.left >= 0, `${label}: panel left edge (${m.left}) is off-screen`);
-            assert.ok(m.top >= 0, `${label}: panel top edge (${m.top}) is off-screen`);
-            assert.ok(m.right <= vw + 0.5, `${label}: panel right edge (${m.right}) exceeds viewport width ${vw}`);
-            assert.ok(m.bottom <= vh + 0.5, `${label}: panel bottom edge (${m.bottom}) exceeds viewport height ${vh}`);
-            // Same vertical no-scroll assertion as the base panel-fit test
-            // (e2e:1315) - #modeS and the credit note must fit inside the
-            // panel's own box, not merely scroll within it.
-            assert.ok(m.scrollH <= m.clientH + 1,
-              `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
-            assert.ok(m.scrollW <= m.clientW + 1,
-              `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
-            await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
-            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-              { label: `panel to close at ${label}` });
-          }
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-
-    // Ownership-deviation proof (2026-09-29, ordered by review): the fix for
-    // #modeS's panel overflow above needed a NEW rule under the shared
-    // max-height:520px breakpoint that is NOT scoped to mode S alone - see
-    // the comment on that rule in index.html for the measured reason
-    // (#modeS's addition to .modebar wraps it to two rows in EVERY mode, so
-    // modes A and B need the same relief S does). This test is the promised
-    // proof that modes A and B still render byte-for-byte the same panel
-    // geometry at 844x390 as they did before this lane's fix existed.
-    test("modes A and B render the identical settings-panel rect at 844x390 that they always have",
-      async () => {
-        await freshLoad();
-        try {
-          await b.setViewport(844, 390, true);
-          await b.settle();
-          const rectFor = async (mode) => {
-            await openSettingsPanel();
-            if (mode !== "A") {
-              await b.click(`#mode${mode}`);
-              await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-                { label: `panel to close after selecting mode ${mode}` });
-              await openSettingsPanel();
-            }
-            const m = await b.eval(`
-              const p = document.getElementById("settings-panel");
-              const r = p.getBoundingClientRect();
-              return { top: r.top, left: r.left, width: r.width,
-                scrollH: p.scrollHeight, clientH: p.clientHeight };
-            `);
-            await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
-            await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-              { label: `panel to close after mode ${mode}` });
-            return m;
-          };
-          const a = await rectFor("A");
-          const bRect = await rectFor("B");
-          assert.deepStrictEqual(bRect, a,
-            `mode B's panel rect ${JSON.stringify(bRect)} must match mode A's ${JSON.stringify(a)}`);
-          assert.ok(a.scrollH <= a.clientH + 1,
-            `mode A must still fit without scroll at 844x390 (${a.scrollH} vs ${a.clientH})`);
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-
     // Acceptance 7: "#count is one line at 320x568 for the longest built-in
     // rail". Anchors are triad, sus4, dim or 5 only, so re-rolling repeatedly
     // exercises every rail width the built-in decks can produce, 3-chord
@@ -7518,6 +7454,55 @@ function run() {
           assert.ok(sawThreeChord, "24 re-rolls never produced a 3-chord sequence - the worst case for width was not exercised");
         } finally {
           await b.setViewport(900, 900, false);
+        }
+      });
+
+    // Pinned worst cases for the rail at 320x568: Hijaz's longest real rail,
+    // a synthetic rail of three sus4 names (anchors are triad, sus4, dim or 5,
+    // so "X#sus4" is the longest name a generated deck can put on the rail),
+    // and a chord name carrying
+    // markup, which must render as literal text (textContent, never innerHTML).
+    test("sequence mode: the pinned longest rail, a 6-character rail and a markup-bearing name all fit on one line at 320x568",
+      async () => {
+        await freshLoad();
+        await b.setViewport(320, 568, true);
+        await b.settle();
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
+        try {
+          const measure = (names) => b.eval(`
+            const d = deck();
+            ${JSON.stringify(names)}.forEach((n, i) => { if (n !== null) { d.chords[[0, 10, 12][i]].main = n; d.chords[[0, 10, 12][i]].sup = ""; } });
+            seq = { chords: [0, 10, 12], style: seq.style };
+            order = seq.chords.slice(); idx = 0; flipped = false;
+            render();
+            const rail = document.querySelector("#count .seq-rail");
+            const count = document.getElementById("count");
+            const kids = Array.from(rail.children);
+            return {
+              text: rail.textContent,
+              bolds: rail.querySelectorAll("b").length,
+              oneLine: Math.abs(kids[0].getBoundingClientRect().top - kids[kids.length - 1].getBoundingClientRect().top) <= 1,
+              fits: count.scrollWidth <= count.clientWidth + 1, sw: count.scrollWidth, cw: count.clientWidth, font: getComputedStyle(count).fontSize,
+            };`);
+          const real = await measure([null, null, null]);
+          assert.strictEqual(real.text, "C# → F#sus4 → G#°");
+          assert.ok(real.oneLine && real.fits, `pinned rail "${real.text}" must fit on one line`);
+
+          const wide = await measure(["G#sus4", "C#sus4", "D#sus4"]);
+          assert.strictEqual(wide.text, "G#sus4 → C#sus4 → D#sus4");
+          assert.ok(wide.oneLine && wide.fits, `6-character rail "${wide.text}" must fit on one line ${JSON.stringify(wide)}`);
+
+          const markup = await measure([null, "<b>x</b>", null]);
+          assert.strictEqual(markup.text, "G#sus4 → <b>x</b> → D#sus4", "markup in a chord name must render as literal text");
+          assert.strictEqual(markup.bolds, 1, "only the current chord's own <b> node may exist in the rail");
+        } finally {
+          await b.setViewport(900, 900, false);
+          await freshLoad();
         }
       });
 
