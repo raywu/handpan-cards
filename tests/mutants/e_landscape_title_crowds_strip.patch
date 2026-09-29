@@ -1,27 +1,35 @@
 # kills: the landscape deck strip scrolls rather than clips, at both ends
 # suite: node --test --test-name-pattern ^the.landscape.deck.strip.scrolls.rather.than.clips..at.both.ends$ tests/e2e.test.js
-# The landscape h1 goes from visually-hidden back to a drawn 14px title. This
-# is the defect the landscape block's own comment describes and then claims
-# to have fixed: "with the title out the strip gets the whole width, and on
-# the two WIDER rows it then fits". Nothing used to hold that half of the
-# claim - the test asserted only that the NARROW row still overflows, which a
-# re-drawn title makes MORE true, not less.
+# The landscape h1 goes from visually-hidden back to a drawn 14px title that
+# also claims fixed width. This is the defect the landscape block's own
+# comment describes and then claims to have fixed: "with the title out the
+# strip gets the whole width, and on the two WIDER rows it then fits".
 #
-# Restoring the title takes ~126px of the header row, and 926x428 drops from
-# a strip that fits (652 of 652) to one that overflows (611 of 526). The
-# header-height and chrome-budget assertions next door do not move: the row
-# is still one 44px line, because the title sits INSIDE it.
+# Re-targeted 2026-09-28 (lane M1, menu-shell): the original mutant only
+# dropped the visually-hidden rule (leaving h1 a shrink-to-fit flex item, its
+# width now governed by `.hrow{display:contents}`), which no longer crowds
+# either wide row enough to overflow - the settings-trigger swap freed extra
+# width the modebar used to occupy, and a bare font-size bump costs the row
+# only as many pixels as the title text itself needs. A forced width is what
+# actually reproduces "the title takes real space back from the strip"; 300px
+# reliably pushes 926x428 and 1280x500 over their own content width, which is
+# the wide-row assertion this mutant exists to kill. The header-height and
+# chrome-budget assertions next door do not move: the row is still one 44px
+# line, because the title sits INSIDE it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -261,8 +261,7 @@
+@@ -310,12 +310,11 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+   /* Visually hidden, NOT display:none: the h1 stays in the accessibility
       tree, so the document keeps its heading and the header keeps its name.
       The clip-rect pair is the old and the current spelling of the same
       thing; both are here because Safari honoured clip long before it
       honoured clip-path. */
 -  h1{position:absolute; width:1px; height:1px; margin:0; padding:0; border:0;
 -    overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0); clip-path:inset(50%)}
-+  h1{font-size:14px}
++  h1{width:300px; font-size:14px}
    /* The strip takes what is left. min-width:0 is what lets it: a flex item's
       automatic minimum is its content, so without it the strip would refuse to
-      shrink and push the mode bar off the row. */
+      shrink and push the settings trigger off the row. */
+   .decks{flex:1 1 auto; min-width:0}
+   /* The h1 row's grid is a portrait-only device (it exists to centre the

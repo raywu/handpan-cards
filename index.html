@@ -841,8 +841,23 @@ button.nav:active{background:#2e281e}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
+  /* menu-shell (2026-09-28, lane M1 necessity): #settings-scrim and
+     #settings-panel are new direct <body> children (a role="dialog" sibling
+     of header/main/footer, deliberately not nested in header - see the
+     settings-panel JS block). Without them in the selector list below they
+     are the one thing it misses and they would print on top of the cards;
+     test_render_agreement.py's
+     test_every_direct_child_of_body_is_hidden_or_belongs_to_the_sheet
+     enforces it. This edits the print block's owning line, crossed
+     deliberately because M1's own change is what made it incomplete - see
+     the M1 PR notes if this collides with a concurrent print-block change.
+     The selector list itself must stay one unbroken comma chain with no
+     comment inside it: test_render_agreement.py's hide_list() regex parses
+     it as a single run up to the display:none declaration, and a comment in
+     the middle truncates what it sees. */
   body.printing > header, body.printing > main, body.printing > .announce,
-  body.printing > #scale-sheet, body.printing > footer{display:none !important}
+  body.printing > #scale-sheet, body.printing > #settings-scrim,
+  body.printing > #settings-panel, body.printing > footer{display:none !important}
   body.printing #printroot{display:block}
   /* B0 finding: the masked `.face::before` frame flattens to a SOLID block in
      Chrome's print export. Re-express it as an inset ring, which survives. */
@@ -6645,7 +6660,11 @@ announce.className = "announce";
 // The landmarks behind the sheet. inert while it is open, so the modal really
 // is modal: nothing behind it is clickable, focusable or read by a screen
 // reader, and Generate is the only enabled primary button on the page.
-const background = [...document.querySelectorAll("header, main, footer")];
+// #settings-panel is included alongside header/main/footer (menu-shell,
+// 2026-09-28): the mode buttons moved out of <header> into that body-level
+// sibling, so without it here they would sit outside every landmark this
+// list inerts and stay reachable behind the modal sheet.
+const background = [...document.querySelectorAll("header, main, footer, #settings-panel")];
 
 let palette = 0;                 // D6 index 0-5
 let mirror = false;              // section 13: false = right-first (the default)
