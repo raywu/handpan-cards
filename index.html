@@ -246,6 +246,23 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    shows without JS ever clearing `hidden`. */
 @media (min-width:1024px) and (min-height:700px){
   #settings-trigger, #settings-scrim{display:none}
+  /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
+     lets header - and the deck-chip strip inside it - run out to
+     min(92vw,900px), which at >=1024px overruns the right edge and sits
+     under the fixed 240px sidebar. Cap header to the room actually left of
+     the sidebar; the card is unaffected (it is sized from --card-w, not
+     from header's width). */
+  /* header is centred by body's align-items:center (flex column), so
+     capping its max-width to (100vw - sidebar) is not enough: shrinking a
+     CENTRED box moves both edges inward by half the saved width, so the
+     right edge only retreats HALF as far as the sidebar needs. Solving for
+     the max-width that puts the header's right edge exactly `gutter` clear
+     of the 240px sidebar (header_right = padding + (bodyContentWidth +
+     headerWidth)/2, set equal to 100vw - 240px - gutter) cancels the body
+     padding term entirely and leaves headerWidth = 100vw - 480px - 2*gutter.
+     Verified at 1024x768: decks right lands at 764px, exactly gutter (20px)
+     clear of the sidebar's left edge at 784px. */
+  header{max-width:calc(100vw - 480px - 2 * var(--sp-3))}
   #settings-panel{
     /* top/bottom inset var(--sp-1), not 0: the page-background test's outer
        frame (tests/e2e.test.js "page background covers every viewport")
@@ -259,6 +276,12 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     width:240px; max-width:240px; height:auto; max-height:none;
     border-radius:0; border:none; border-left:1px solid #433b2c;
     box-shadow:none; padding:var(--sp-4) var(--sp-3);
+    /* Reviewer finding F3: the base rule's z-index:41 (shared with the
+       below-breakpoint MODAL panel, which must stay above its own scrim at
+       40) puts the desktop sidebar over the full-screen #scale-sheet
+       (z-index 30). The sidebar is never modal here, so it can sit below
+       the sheet; the base z-index:41 is untouched for <1024px. */
+    z-index:20;
   }
   /* [hidden]{display:none !important} (line 456) otherwise wins over the
      rule above at equal !important weight (it has none, so this needs its
@@ -5840,7 +5863,8 @@ function selectDeck(id) {
   // new deck's chip instead of leaving it stranded on the trigger.
   const a = document.activeElement;
   const rehome = !!a && a !== document.body &&
-    (a.id === "settings-trigger" || !!(a.closest && a.closest("#decks")));
+    (a.id === "settings-trigger" || a.id === "deck-add" ||
+      !!(a.closest && a.closest("#decks")));
   deckId = id;
   storedDeck = id;
   save(); setOrder(); buildChips(); render();
@@ -7479,12 +7503,19 @@ function runGenerate() {
 // later closes it out from under the panel. Closing the panel before
 // showSheet() runs means its inert/hidden state is torn down through its own
 // closePanel(), never through the sheet's teardown. settingsTrigger is the
-// opener, not addChip itself: #deck-add is inside the panel closePanel() just
-// hid, so it cannot receive focus, and settingsTrigger is what hideSheet()
-// must focus back on cancel (Back/Escape/popstate). selectDeck()'s rehome
-// check recognises "settings-trigger" so Generate/Save still land on the new
-// deck's chip instead.
-addChip.onclick = () => { closePanel(); openScaleSheet(settingsTrigger); };
+// opener below the desktop breakpoint, not addChip itself: #deck-add is
+// inside the panel closePanel() just hid, so it cannot receive focus, and
+// settingsTrigger is what hideSheet() must focus back on cancel
+// (Back/Escape/popstate). selectDeck()'s rehome check recognises
+// "settings-trigger" so Generate/Save still land on the new deck's chip
+// instead.
+// Reviewer finding F2: on desktop closePanel() is a no-op (the sidebar is
+// never "closed") and settingsTrigger is display:none there, so
+// hideSheet()'s (sheetOpener || addChip).focus() call was silently failing
+// and focus fell to <body>. #deck-add stays visible in the sidebar at this
+// width, so use it as the opener instead; selectDeck()'s rehome check now
+// also recognises "deck-add".
+addChip.onclick = () => { closePanel(); openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger); };
 // The page's way out. Same handler Escape runs, so there is one close path.
 backBtn.onclick = () => closeScaleSheet();
 genBtn.onclick = runGenerate;
@@ -7726,7 +7757,14 @@ function closePanel() {
 // its modal wiring and `hidden` (irrelevant at desktop - see the CSS
 // override above) change.
 desktopMQ.addEventListener("change", (e) => {
-  if (e.matches && panelOpen) closePanel();
+  if (e.matches && panelOpen) {
+    closePanel();
+    // Reviewer finding N4: closePanel()'s own settingsTrigger.focus() call is
+    // a silent no-op here - the trigger is display:none at this width once
+    // the CSS has already flipped - so with nothing else to catch it focus
+    // fell to <body>. Re-home it on the card, which is always live.
+    if (document.activeElement === document.body || !document.activeElement) card.focus();
+  }
 });
 settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
 settingsScrim.addEventListener("click", closePanel);
@@ -7767,6 +7805,15 @@ document.addEventListener("keydown", e => {
     }
     return;
   }
+  // Reviewer finding N3: on desktop the sidebar is never "opened"
+  // (panelOpen never goes true there), so a native form control inside it -
+  // #print-paper-select - had its own ArrowLeft/ArrowRight behaviour
+  // doubled by this handler stepping the card underneath. Ignore arrow keys
+  // that land on a form control, or anywhere inside the sidebar itself.
+  const kt = e.target;
+  const ktag = kt && kt.tagName;
+  if (ktag === "SELECT" || ktag === "INPUT" || ktag === "TEXTAREA" ||
+      (kt && kt.closest && kt.closest("#settings-panel"))) return;
   if (e.key === "ArrowRight") step(1);
   else if (e.key === "ArrowLeft") step(-1);
 });

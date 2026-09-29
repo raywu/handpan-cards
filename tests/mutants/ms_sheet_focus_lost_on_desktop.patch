@@ -1,0 +1,19 @@
+# kills: focus lands on a live control after the add-scale sheet closes, on desktop, not <body>
+# suite: node --test --test-name-pattern ^focus.lands.on.a.live.control.after.the.add.scale.sheet.closes..on.desktop..not..body.$ tests/e2e.test.js
+# Reviewer finding F2: reverts addChip.onclick to always pass
+# settingsTrigger as the sheet's opener, ignoring desktopMQ.matches.
+# settingsTrigger is display:none on desktop, so hideSheet()'s
+# (sheetOpener || addChip).focus() call silently no-ops on both the
+# Generate and the Escape/Cancel paths, and focus is stranded on <body>.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7515,7 +7515,7 @@
+ // and focus fell to <body>. #deck-add stays visible in the sidebar at this
+ // width, so use it as the opener instead; selectDeck()'s rehome check now
+ // also recognises "deck-add".
+-addChip.onclick = () => { closePanel(); openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger); };
++addChip.onclick = () => { closePanel(); openScaleSheet(settingsTrigger); };
+ // The page's way out. Same handler Escape runs, so there is one close path.
+ backBtn.onclick = () => closeScaleSheet();
+ genBtn.onclick = runGenerate;

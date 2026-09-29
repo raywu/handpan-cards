@@ -6764,6 +6764,13 @@ function run() {
         assert.strictEqual(st.active.connected, true, "focus must be on a connected element");
         assert.strictEqual(st.active.inert, false, "focus must not be on an inert element");
         assert.strictEqual(st.active.visible, true, "focus must be on a visible element");
+        // Reviewer finding N4: <body> passes all three checks above (it is
+        // connected, never inert, and always "visible"), so it slipped past
+        // this test even though it means the trigger's own settingsTrigger.focus()
+        // call in closePanel() silently failed (the trigger is display:none
+        // at this width) and nobody re-homed focus onto a live control.
+        assert.notStrictEqual(st.active.tag, "BODY",
+          "focus must not be stranded on <body> after resizing to desktop with the panel open");
 
         await b.setViewport(900, 800, false);
         await b.settle();
@@ -6817,6 +6824,178 @@ function run() {
           "interactive controls under the 44px minimum in the desktop sidebar");
         assert.deepStrictEqual(stolen.map((p) => `${p.sel}: ${p.bad.join(", ")}`), [],
           "a control's own box hit-tests to something else in the desktop sidebar");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding F1: the header only widens to min(92vw,900px) (line
+    // ~164); at 1024-1280px that right edge sits UNDER the 240px sidebar, so
+    // a deck strip with enough chips to actually reach that edge (built-ins
+    // alone never do) gets its last chips hidden under the sidebar instead of
+    // scrolled into view.
+    test("the deck-chip strip stays clear of the sidebar with several custom decks", async () => {
+      await freshLoad();
+      try {
+        for (const s of SIX_SCALES.slice(0, 4)) await generate(s);
+        for (const [w, h] of [[1024, 768], [1280, 800]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const rects = await b.eval(`
+            const rr = (sel) => document.querySelector(sel).getBoundingClientRect();
+            const r = (x) => ({ left: x.left, right: x.right, top: x.top, bottom: x.bottom });
+            return { decks: r(rr("#decks")), panel: r(rr("#settings-panel")) };
+          `);
+          const disjoint = (a, c) => a.right <= c.left || c.right <= a.left || a.bottom <= c.top || c.bottom <= a.top;
+          assert.ok(disjoint(rects.decks, rects.panel),
+            `${w}x${h}: the deck strip overlaps the sidebar: ${JSON.stringify(rects)}`);
+
+          // Scroll the strip to its end and confirm the last chip is actually
+          // reachable at its own centre point, not merely off to the side
+          // under the sidebar (the bug: elementFromPoint there returns #modeA).
+          const hit = await b.eval(`
+            const strip = document.getElementById("decks");
+            strip.scrollLeft = strip.scrollWidth;
+            const chips = strip.querySelectorAll(".chip");
+            const last = chips[chips.length - 1];
+            const r = last.getBoundingClientRect();
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            const el = document.elementFromPoint(cx, cy);
+            return { hitId: el && el.id, hitsLast: !!(el === last || (el && last.contains(el))) };
+          `);
+          assert.ok(hit.hitsLast,
+            `${w}x${h}: the last deck chip is not hit-testable after scrolling to it (hit ${hit.hitId})`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding F2: addChip.onclick always passes settingsTrigger as
+    // the opener; the trigger is display:none on desktop, so hideSheet()'s
+    // sheetOpener.focus() silently fails and focus is stranded on <body>.
+    test("focus lands on a live control after the add-scale sheet closes, on desktop, not <body>", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+
+        // Generate path: focus should land on the new deck's chip.
+        await openSheet();
+        await typeScale(SIX_SCALES[0]);
+        await b.click("#scale-generate");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close after Generate" });
+        let a = await b.eval(`return {
+          tag: document.activeElement.tagName,
+          isChip: !!(document.activeElement.classList && document.activeElement.classList.contains("chip")),
+        };`);
+        assert.notStrictEqual(a.tag, "BODY", "focus fell to <body> after Generate on desktop");
+        assert.ok(a.isChip, "focus should land on the new deck's chip after Generate on desktop");
+
+        // Escape path: focus should return to #deck-add, which is now the
+        // visible, focusable opener on desktop (unlike the hidden trigger).
+        await openSheet();
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close after Escape" });
+        assert.strictEqual(await activeId(), "deck-add",
+          "focus should return to #deck-add after Escape on desktop");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding F3: the sidebar (z-index 41, the same value the below-
+    // breakpoint modal panel uses) draws OVER the full-screen #scale-sheet
+    // (z-index 30) when the sheet is open on desktop.
+    test("the add-scale sheet covers the sidebar when open on desktop", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        await openSheet();
+        // Note: elementFromPoint is unusable here -- showSheet()'s own
+        // background-inerting loop marks #settings-panel inert while the
+        // sheet is open, and inert elements are skipped during hit-testing
+        // regardless of their actual paint order. Compare z-index directly.
+        const z = await b.eval(`
+          return {
+            panel: parseInt(getComputedStyle(document.getElementById("settings-panel")).zIndex, 10),
+            sheet: parseInt(getComputedStyle(document.getElementById("scale-sheet")).zIndex, 10),
+          };
+        `);
+        assert.ok(z.panel < z.sheet,
+          `the sidebar's z-index (${z.panel}) must be below the sheet's (${z.sheet}) so the sheet visually covers it while open`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding N3: the document keydown handler's final ArrowRight/
+    // ArrowLeft branch only checks sheetOpen/panelOpen, and the desktop
+    // sidebar never sets panelOpen=true (it is never "opened"), so a native
+    // <select> inside it gets its own arrow-key behaviour DOUBLED by the
+    // global card-step shortcut.
+    test("arrow keys typed into a sidebar form control do not also step the card", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const meta = await decksMeta();
+        const n = meta[0].chords;
+        await expectCount(`1 / ${n}`, "starts on the first card at desktop");
+        await b.eval(`document.getElementById("print-paper-select").focus(); return true;`);
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.settle();
+        await expectCount(`1 / ${n}`,
+          "ArrowRight typed into the sidebar's paper select must not also step the card");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    // Reviewer finding N1: the breakpoint is written twice - once in the CSS
+    // media query, once in desktopMQ's own matchMedia() string - and nothing
+    // asserted they still agree at a width close enough to the line that a
+    // drift in either one would show up. 1050x800 is the tell: the CSS
+    // (min-width:1024px) already presents the sidebar there, but a JS
+    // threshold that had drifted upward (e.g. to 1100px) would still believe
+    // it is below the breakpoint and would never run closePanel() on the
+    // matchMedia change - leaving main/header/#decks stuck inert under a
+    // sidebar that otherwise looks correct. 1023x800 is the sibling check
+    // that the two thresholds also agree just below the line.
+    test("the CSS breakpoint and desktopMQ agree at 1050x800 and 1023x800", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(900, 800, false);
+        await openSettingsPanel();
+        let st = await b.eval(`return { role: document.getElementById("settings-panel").getAttribute("role") };`);
+        assert.strictEqual(st.role, "dialog", "sanity: the panel should be modal below the breakpoint");
+
+        await b.setViewport(1050, 800, false);
+        await b.settle();
+        st = await b.eval(`return {
+          triggerDisplay: getComputedStyle(document.getElementById("settings-trigger")).display,
+          role: document.getElementById("settings-panel").getAttribute("role"),
+          ariaModal: document.getElementById("settings-panel").getAttribute("aria-modal"),
+          mainInert: document.querySelector("main").inert,
+        };`);
+        assert.strictEqual(st.triggerDisplay, "none", "1050x800: the CSS says desktop, the trigger should be hidden");
+        assert.strictEqual(st.role, null,
+          "1050x800: modal state must be shed - the JS breakpoint must agree with the CSS one");
+        assert.strictEqual(st.ariaModal, null, "1050x800: aria-modal must be shed at 1050x800");
+        assert.strictEqual(st.mainInert, false, "1050x800: main must not be stuck inert");
+
+        await b.setViewport(1023, 800, false);
+        await b.settle();
+        st = await b.eval(`return {
+          triggerDisplay: getComputedStyle(document.getElementById("settings-trigger")).display,
+          panelDisplay: getComputedStyle(document.getElementById("settings-panel")).display,
+        };`);
+        assert.strictEqual(st.triggerDisplay, "flex", "1023x800: below the breakpoint, the trigger should be visible");
+        assert.strictEqual(st.panelDisplay, "none",
+          "1023x800: below the breakpoint, the closed panel should not render");
       } finally {
         await b.setViewport(900, 900, false);
       }
