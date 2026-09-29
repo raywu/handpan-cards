@@ -6249,7 +6249,20 @@ function run() {
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
     // pixels entirely in-browser (an <img> onto a <canvas>) so no PNG decoder
     // needs writing on the Node side - the browser already has one.
-    async function edgeCheck() {
+    //
+    // `tol` is deliberately different per job:
+    //  - matrix rows and the sheet-open row only need to reject white and
+    //    off-palette pixels; the real render's gradient midpoint measures a
+    //    stable max of ~8.37 at every size, so a wide tolerance (~20) leaves
+    //    plenty of headroom against rendering drift without risking a false
+    //    pass on an actually-wrong colour.
+    //  - the gradient-removed row is the one that must tell a real render
+    //    (measured ~3.0 from --table) apart from Chromium's OWN
+    //    color-scheme:dark canvas default (rgb(18,18,18), used when nothing
+    //    paints a background at all; ~10.4 from --table, ~12.08 measured
+    //    under the ab_root_bg_dropped mutant) - so it needs a tight
+    //    tolerance (~5) that sits strictly between those two numbers.
+    async function edgeCheck(tol) {
       const shot = await b.send("Page.captureScreenshot", { format: "png" });
       return b.eval(`
         return new Promise((resolve, reject) => {
@@ -6270,14 +6283,7 @@ function run() {
               if (bad || x < 0 || y < 0 || x >= w || y >= h) return;
               const i = (y * w + x) * 4;
               const r = data[i], g = data[i + 1], bch = data[i + 2];
-              // Tolerance is deliberately tight: the legit body-gradient blend
-              // measures a stable max of ~8.4 at every size in this matrix,
-              // while Chromium's OWN color-scheme:dark canvas default
-              // (rgb(18,18,18), used when nothing paints a background at all)
-              // sits at ~10.4 from --table - a real gap this threshold must
-              // keep on the far side of so a dropped html background-color
-              // still reads as a failure and not a lucky near-miss.
-              if (Math.min(dist(r, g, bch, table), dist(r, g, bch, table2)) > 9) {
+              if (Math.min(dist(r, g, bch, table), dist(r, g, bch, table2)) > ${tol}) {
                 bad = { x, y, r, g, b: bch };
               }
             };
@@ -6301,7 +6307,7 @@ function run() {
         try {
           await b.setViewport(vw, vh, true);
           await b.settle();
-          const r = await edgeCheck();
+          const r = await edgeCheck(20);
           assert.strictEqual(r.bad, null,
             `edge pixel not table-coloured at ${vw}x${vh}: ${JSON.stringify(r.bad)}`);
         } finally {
@@ -6316,7 +6322,7 @@ function run() {
         await b.setViewport(390, 844, true);
         await openSheet();
         await b.settle();
-        const r = await edgeCheck();
+        const r = await edgeCheck(20);
         assert.strictEqual(r.bad, null,
           `edge pixel not table-coloured with the sheet open: ${JSON.stringify(r.bad)}`);
       } finally {
@@ -6335,7 +6341,7 @@ function run() {
         await b.setViewport(390, 844, true);
         await b.eval(`document.body.style.backgroundImage = "none"; return true;`);
         await b.settle();
-        const r = await edgeCheck();
+        const r = await edgeCheck(5);
         assert.strictEqual(r.bad, null,
           `edge pixel not table-coloured with body's gradient removed: ${JSON.stringify(r.bad)}`);
       } finally {
