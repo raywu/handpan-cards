@@ -1,0 +1,23 @@
+# kills: the print stylesheet gives the page box something to fill
+# suite: node --test --test-name-pattern page.box.something.to.fill tests/app.test.js
+# Context-refreshed 2026-09-29 (R1): the mutated line is unchanged in
+# substance; the legacy print-sheet's
+# `body.printing #printroot, body.printing #printroot .printpage{height:100%}`
+# line that used to follow it is gone, along with the test this mutant
+# originally named ("the sheet centres in the page box instead of
+# top-aligning at the paper edge", retired with the print sheet). The suite
+# pattern above still matches the surviving assertion - that html,body
+# resolves height as a percentage, never a page-box literal - which still
+# requires this exact fill rule.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -871,7 +871,7 @@
+    colour for the page background. ---------------------------------------- */
+ @media print{
+   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+-  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
++  html,body{height:auto; min-height:0; overflow:visible; background:#fff}
+   /* The safe-area padding is an on-screen notch reservation and has no meaning
+      on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}

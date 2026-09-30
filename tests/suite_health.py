@@ -37,7 +37,7 @@ FLOORS = {
     "tests/test_pdf_build.py": 11,
     "tests/test_gen_deck.py": 17,
     "tests/test_print.py": 40,
-    "tests/test_render_agreement.py": 34,
+    "tests/test_render_agreement.py": 24,
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 6,
@@ -47,8 +47,8 @@ FLOORS = {
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 11,
     # node
-    "tests/app.test.js": 205,
-    "tests/e2e.test.js": 155,
+    "tests/app.test.js": 184,
+    "tests/e2e.test.js": 152,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 42,
     "tests/voicing.test.js": 15,

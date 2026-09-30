@@ -8,10 +8,14 @@
 # static #print-paper-select, so a call from anywhere other than the select's
 # own onchange (e.g. restoring state on load) would leave the control lying
 # about what will actually print.
+# Context-refreshed 2026-09-29 (R1): the mutated lines are unchanged in
+# substance; the whole legacy print-sheet chain (PRINT_GEOM through
+# openPrintSheet) was deleted above this function, moving it from :6287 to
+# :6437.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6287,12 +6287,6 @@
+@@ -6437,12 +6437,6 @@
  function setPrintPaper(p) {
    if (!isPaper(p)) return;
    printPaper = p; save();
@@ -23,4 +27,4 @@ diff --git a/index.html b/index.html
 -  if (sel) sel.value = p;
  }
 
- /** The design width the faces are authored at. The printed card is CW points
+ /* The print CTA for every deck - built-in and generated alike: the browser is
