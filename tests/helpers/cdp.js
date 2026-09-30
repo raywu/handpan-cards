@@ -241,6 +241,55 @@ class Browser {
     await this.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(box.x + dx) });
     await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   }
+  // Timed drag, touch or mouse, for the swipe suite (M1: CDP timestamp deltas
+  // are honoured, so no wall-clock sleeps are needed for a timed gesture).
+  // pts is [[dx, ms], ...] or [[dx, ms, dy], ...] for a diagonal/vertical leg.
+  async drag(selector, pts, { pointer = "touch", release = true, y0 = 0 } = {}) {
+    const box = await this.eval(`
+      const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    `);
+    const t0 = Date.now() / 1000;
+    const at = (dx, dy) => ({ x: box.x + dx, y: box.y + y0 + (dy || 0) });
+    const last = pts.length ? pts[pts.length - 1] : [0, 0, 0];
+    if (pointer === "touch") {
+      const tp = (dx, dy) => [{ ...at(dx, dy), radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+      await this.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(0, 0), timestamp: t0 });
+      for (const [dx, ms, dy] of pts) {
+        await this.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dx, dy), timestamp: t0 + ms / 1000 });
+      }
+      if (release) {
+        await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 });
+      }
+    } else {
+      const p0 = at(0, 0);
+      await this.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p0.x, y: p0.y, button: "left", clickCount: 1, timestamp: t0 });
+      for (const [dx, ms, dy] of pts) {
+        const p = at(dx, dy);
+        await this.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y, buttons: 1, timestamp: t0 + ms / 1000 });
+      }
+      if (release) {
+        const p = at(last[0], last[2]);
+        await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 });
+      }
+    }
+  }
+  // Finishes every WAAPI animation on `selector`, looping because finish()
+  // on a fly-out chains land(), which starts the enter animation.
+  async finishAnimations(selector = ".scene") {
+    return this.eval(`
+      return (async () => {
+        const el = document.querySelector(${JSON.stringify(selector)});
+        for (let i = 0; i < 4; i++) {
+          const anims = el.getAnimations();
+          if (!anims.length) break;
+          anims.forEach(a => a.finish());
+          await Promise.resolve();
+        }
+        return true;
+      })();
+    `);
+  }
   async close() {
     try { this.ws.close(); } catch {}
     // Deregisters as well as kills, so a normally-closed browser is not killed

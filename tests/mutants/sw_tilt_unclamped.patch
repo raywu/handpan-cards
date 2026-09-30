@@ -1,0 +1,16 @@
+# kills: the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG
+# suite: node --test --test-name-pattern ^card.swipe:.the.tilt.is.SWIPE_TILT_DEG_PER_PX.per.px.and.clamps.at.SWIPE_TILT_MAX_DEG$ tests/e2e.test.js
+# Drops the Math.max/Math.min clamp in swipeTilt(): a long drag now keeps
+# rotating past SWIPE_TILT_MAX_DEG instead of capping there.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8046,7 +8046,7 @@ function swipeDecision(dx, vx) {
+   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+ }
+ function swipeTilt(dx) {
+-  return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));
++  return dx * SWIPE_TILT_DEG_PER_PX;
+ }
+ function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
+ let drag = null, flight = null, eatClick = false;

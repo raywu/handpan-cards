@@ -1,0 +1,17 @@
+# kills: a tap during the fly-out lands it once and never flips the wrong card
+# suite: node --test --test-name-pattern ^card.swipe:.a.tap.during.the.fly-out.lands.it.once.and.never.flips.the.wrong.card$ tests/e2e.test.js
+# Drops the eatClick assignment from the capture pointerdown: a tap that
+# lands directly on #card while a fly-out is in flight no longer marks the
+# follow-up click for suppression, so it also flips the card that just
+# landed instead of only landing it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8154,7 +8154,6 @@ document.addEventListener("pointerdown", e => {
+     const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
+       e.clientY >= r.top && e.clientY <= r.bottom;
+     const inside = inRestBox || card.contains(e.target);
+-    eatClick = inside;
+     land();
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+       scene.getAnimations().forEach(a => a.cancel());

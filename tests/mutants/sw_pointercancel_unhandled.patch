@@ -1,0 +1,16 @@
+# kills: a pointercancel mid-drag springs back from the last move and does not step
+# suite: node --test --test-name-pattern ^card.swipe:.a.pointercancel.mid-drag.springs.back.from.the.last.move.and.does.not.step$ tests/e2e.test.js
+# Drops the pointercancel listener entirely: a cancelled gesture (e.g. the
+# browser taking over for a system gesture) leaves drag state dangling
+# instead of springing the card back and clearing it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8129,7 +8129,6 @@ card.addEventListener("pointerdown", e => {
+ });
+ card.addEventListener("pointermove", swipeMove);
+ card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
+-card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+ card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+ // Capture phase: land a pending fly-out before any other input reaches the app.
+ // Mid-flight, .scene has moved away from its resting position, so a real

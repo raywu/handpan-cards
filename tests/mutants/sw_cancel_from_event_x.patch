@@ -1,0 +1,19 @@
+# kills: a pointercancel mid-drag springs back from the last move and does not step
+# suite: node --test --test-name-pattern ^card.swipe:.a.pointercancel.mid-drag.springs.back.from.the.last.move.and.does.not.step$ tests/e2e.test.js
+# Recomputes dx from the terminating event's own clientX instead of using
+# drag.last (the last real pointermove's offset). A pointercancel dispatched
+# with a stale/zero clientX (the browser does not guarantee a meaningful
+# coordinate on cancel) then springs back from the wrong offset instead of
+# the last real move.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8075,7 +8075,7 @@ function release(e, cancelled) {
+     const span = pts[pts.length - 1].t - pts[0].t;
+     if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
+   }
+-  const dx = drag.last;
++  const dx = e.clientX - drag.x0;
+   const moved = drag.moved;
+   const blocked = cancelled || panelOpen || sheetOpen;
+   const dir = blocked ? 0 : swipeDecision(dx, vx);

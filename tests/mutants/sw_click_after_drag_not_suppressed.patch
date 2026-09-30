@@ -1,0 +1,17 @@
+# kills: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping
+# suite: node --test --test-name-pattern ^card.swipe:.a.mouse.drag.commits.without.flipping,.a.mouse.click.still.flips,.a.short.mouse.drag.springs.back.without.flipping$ tests/e2e.test.js
+# Drops the eatClick branch from the capture-phase click listener: a mouse
+# drag that commits (or springs back) no longer suppresses the click a mouse
+# drag naturally fires on release, so the card flips too on a committing or
+# springing-back drag, not only on a genuine tap.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8135,7 +8135,6 @@ document.addEventListener("pointerdown", e => {
+ document.addEventListener("keydown", () => { land(); }, true);
+ document.addEventListener("click", e => {
+   land();
+-  if (eatClick) { eatClick = false; e.stopPropagation(); e.preventDefault(); }
+ }, true);
+
+ /* ---------------- go ---------------- */

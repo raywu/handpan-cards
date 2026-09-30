@@ -1,0 +1,18 @@
+# kills: a short fast fling commits and a slow drag of the same length does not
+# suite: node --test --test-name-pattern ^card.swipe:.a.short.fast.fling.commits.and.a.slow.drag.of.the.same.length.does.not$ tests/e2e.test.js
+# Drops the fling escape hatch entirely: a fast short flick under
+# SWIPE_COMMIT_PX no longer commits, only distance does - the fling test's
+# whole premise (a short, fast drag commits where an equally short, slow
+# drag does not) stops holding.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8043,7 +8043,7 @@ const scene = card.parentElement;
+ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+ function swipeDecision(dx, vx) {
+   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+-  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
++  return Math.abs(dx) > SWIPE_COMMIT_PX ? (dx < 0 ? 1 : -1) : 0;
+ }
+ function swipeTilt(dx) {
+   return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));

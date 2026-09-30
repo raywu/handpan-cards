@@ -6,15 +6,18 @@
 # Only a test that actually drives prev/next/arrows past both ends and checks
 # the resulting idx can see this - a test that only checks rail-list stability
 # or a loose "chord N of M" regex without bounding N<=M does not.
+# Context-refreshed 2026-09-30 (lane SW): the N40 flip-reset change added a
+# transition-suppression dance below the wrap line; the wrap expression
+# itself is unchanged, only the line number and the lines below it moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8102,7 +8102,7 @@
+@@ -7845,7 +7845,7 @@
  function flip() { if (!order.length) return; flipped = !flipped; render(); }
  function step(dir) {
    if (!order.length) return;
 -  idx = (idx + dir + order.length) % order.length;
 +  idx = idx + dir;
+   // N40/OV2: suppress .card's reverse-flip transition across every reset.
+   card.style.transition = "none";
    flipped = false; render();
- }
- card.addEventListener("click", flip);

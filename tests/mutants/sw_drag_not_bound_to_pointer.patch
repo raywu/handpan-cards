@@ -1,0 +1,17 @@
+# kills: a second pointer cannot end or hijack a drag in progress
+# suite: node --test --test-name-pattern ^card.swipe:.a.second.pointer.cannot.end.or.hijack.a.drag.in.progress$ tests/e2e.test.js
+# Drops the pointerId check from the pointerup guard: any pointer's pointerup
+# now ends the current drag, even one from a second, unrelated pointer that
+# never started the gesture.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8124,7 +8124,7 @@ card.addEventListener("pointerdown", e => {
+   card.setPointerCapture(e.pointerId);
+ });
+ card.addEventListener("pointermove", swipeMove);
+-card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
++card.addEventListener("pointerup", e => { if (drag) release(e, false); });
+ card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+ card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+ // Capture phase: land a pending fly-out before any other input reaches the app.

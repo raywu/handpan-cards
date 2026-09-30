@@ -1,0 +1,16 @@
+# kills: a printed card carries no transform
+# suite: node --test --test-name-pattern ^card.swipe:.a.printed.card.carries.no.transform$ tests/e2e.test.js
+# Deletes the @media print{.scene{transform:none!important}} rule: a card
+# left mid-drag or mid-tilt before printing would print with its swipe
+# transform still applied.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -934,7 +934,6 @@ footer.seq{row-gap:var(--sp-1)}
+   /* The safe-area padding is an on-screen notch reservation and has no meaning
+      on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}
+-  .scene{transform:none!important}
+ }
+ </style>
+ </head>

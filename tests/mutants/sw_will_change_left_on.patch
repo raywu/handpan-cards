@@ -1,0 +1,17 @@
+# kills: the card follows a held drag with a tilt, then springs back below the threshold
+# suite: node --test --test-name-pattern ^card.swipe:.the.card.follows.a.held.drag.with.a.tilt,.then.springs.back.below.the.threshold$ tests/e2e.test.js
+# Drops the willChange reset from swipeRest(): once a spring-back or landing
+# settles, .scene keeps `will-change: transform` set indefinitely instead of
+# clearing it, leaving an unnecessary compositor layer hint.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8050,7 +8050,7 @@ function swipeTilt(dx) {
+ }
+ function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
+ let drag = null, flight = null, eatClick = false;
+-function swipeRest() { scene.style.transform = ""; scene.style.willChange = ""; }
++function swipeRest() { scene.style.transform = ""; }
+ function land() {
+   if (!flight) return;
+   const f = flight;

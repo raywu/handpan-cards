@@ -1,0 +1,16 @@
+# kills: #count is written once per step, never per frame
+# suite: node --test --test-name-pattern ^card.swipe:.#count.is.written.once.per.step,.never.per.frame$ tests/e2e.test.js
+# Adds a #count write inside swipeMove()'s per-pointermove branch: the
+# counter now gets rewritten on every drag frame instead of only once, at
+# commit, via render().
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8115,6 +8115,7 @@ function swipeMove(e) {
+   if (drag.moved && !reducedMotion.matches) {
+     scene.style.willChange = "transform";
+     scene.style.transform = swipeXf(dx);
++    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
+   }
+ }
+ card.addEventListener("pointerdown", e => {

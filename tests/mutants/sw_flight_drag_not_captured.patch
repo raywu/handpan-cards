@@ -1,0 +1,18 @@
+# kills: card swipe: a second real swipe from the REST position during flight is not dropped
+# suite: node --test --test-name-pattern ^card.swipe:.a.second.real.swipe.from.the.REST.position.during.flight.is.not.dropped$ tests/e2e.test.js
+# Drops the setPointerCapture call when a new drag starts mid-flight from
+# outside #card's displaced bounds: without it, subsequent pointermove/up
+# events keep hit-testing against whatever element the touch actually lands
+# on (not #card), so #card's own pointermove listener never sees them and
+# the second real swipe is silently dropped.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8158,7 +8158,6 @@ document.addEventListener("pointerdown", e => {
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+       scene.getAnimations().forEach(a => a.cancel());
+       drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+-      card.setPointerCapture(e.pointerId);
+     }
+   } else {
+     eatClick = false;

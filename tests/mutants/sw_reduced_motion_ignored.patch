@@ -1,0 +1,20 @@
+# kills: under reduced motion the swipe steps instantly with no animation
+# suite: node --test --test-name-pattern ^card.swipe:.under.reduced.motion.the.swipe.steps.instantly.with.no.animation$ tests/e2e.test.js
+# Drops the reduced-motion early return in release(): a committing swipe
+# always plays the WAAPI fly-out/enter animation and never steps instantly,
+# even when prefers-reduced-motion is set.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8081,11 +8081,6 @@ function release(e, cancelled) {
+   const dir = blocked ? 0 : swipeDecision(dx, vx);
+   drag = null;
+   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+-  if (reducedMotion.matches) {
+-    scene.style.transform = ""; scene.style.willChange = "";
+-    if (dir) step(dir);
+-    return;
+-  }
+   scene.style.transform = "";
+   if (!dir) {
+     scene.animate(
