@@ -490,6 +490,8 @@ the verified head SHA, an independent swarm-reviewer at that SHA, and
 
 **Owner answer (2026-09-29 interview): N40 is IN SCOPE for SW.** SW widens to own the flip-reset in `step()` so `#prev`/`#next`/arrow keys suppress the reverse-flip reveal the same way `land()` does, with one test and one mutant. D1-D10 not asked; defaults stand.
 
+**Integrator auto-decisions (AFK, 2026-09-30, lane SW / PR #169):** (a) The N40 suppression lives in `step()` itself; `land()` reaches it by calling `step()` and carries no copy, so `sw_flip_reset_animates` targets `step()`. (b) The one N40 mutant breaks only the button/arrow path, so the N40 e2e test kills it and E7 does not. (c) The lane also fixed a pre-existing e2e test (the menu row-split test) that left a desktop viewport behind and made E10 fail in full-file order; that is inside SW's `tests/e2e.test.js` ownership. (d) README's mutant count updated to 461 by the integrator.
+
 | # | Decision | Recommended default | Alternative |
 |---|---|---|---|
 | D1 | Approach | **A2 + S1**: WAAPI on `.scene`, one card, no new DOM (§2.2) | A1 (more bytes, and transitionend edge cases); S2 (a visible stack, `render()` edits, budget risk) |
