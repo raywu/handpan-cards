@@ -6,9 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -411,7 +411,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
- main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
- /* swipe: the drag moves .scene, never .card - .card's transform is the flip. */
+@@ -424,7 +424,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    even when the listener itself did nothing. */
+ main{touch-action:pan-y pinch-zoom}
  .scene{touch-action:pan-y pinch-zoom}
 -main{overflow-x:clip}
  /* The card is sized from whichever axis runs out first.
