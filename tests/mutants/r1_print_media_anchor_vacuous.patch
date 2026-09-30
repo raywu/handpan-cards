@@ -12,6 +12,11 @@
 # used to add is gone along with #printroot; the equivalent literal now lands
 # directly on the surviving html,body fill rule, which the narrowed test
 # still requires to stay a percentage.
+# Context-refreshed 2026-09-29 (R1): the second hunk's line number moved from
+# :869 to :871 - the whole legacy print-sheet CSS block above it is gone, and
+# the explanatory comment directly above this rule (the "floor that stops the
+# block ever being shorter than the sheet" paragraph, about printGridCSS's
+# min-height) was deleted with it, since it no longer applies.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -23,10 +28,10 @@ diff --git a/index.html b/index.html
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
  }
-@@ -869,7 +870,7 @@
-      the floor that stops the block ever being shorter than the sheet, which
-      is what made every sheet paginate onto two pages. Floor and fill
-      together - neither alone is correct. */
+@@ -871,7 +872,7 @@
+    colour for the page background. ---------------------------------------- */
+ @media print{
+   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 +  html,body{height:840pt; min-height:0; overflow:visible; background:#fff}
    /* The safe-area padding is an on-screen notch reservation and has no meaning

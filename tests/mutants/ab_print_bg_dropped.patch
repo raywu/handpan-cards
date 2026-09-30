@@ -4,19 +4,18 @@
 # F1). Without it, a dark html background prints through the print block's
 # `*{print-color-adjust:exact}` on the margins or overflow pages of a browser
 # Cmd+P.
-# Context-refreshed 2026-09-29 (R1): the mutated line is unchanged; the
-# `body.printing #printroot, body.printing #printroot .printpage{height:100%}`
-# line that used to sit directly below it is gone with the legacy print-sheet
-# CSS, so the trailing context now runs straight into the safe-area comment.
+# Context-refreshed 2026-09-29 (R1): the mutated line is unchanged; the whole
+# legacy print-sheet CSS block above it (#printroot, body.printing) is gone,
+# so the surrounding comment and line number moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -869,7 +869,7 @@
-      the floor that stops the block ever being shorter than the sheet, which
-      is what made every sheet paginate onto two pages. Floor and fill
-      together - neither alone is correct. */
+@@ -872,7 +872,7 @@
+ @media print{
+   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 +  html,body{height:100%; min-height:0; overflow:visible}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
    body{margin:0; padding:0; background:#fff; display:block}
+ }

@@ -7,15 +7,14 @@
 # Re-targeted 2026-09-29 (R1): isIOS() is a shared symbol that survives the
 # legacy print-sheet retirement (it still gates the PDF-download path's
 # navigation-vs-download branch on iOS). The mutated lines are unchanged in
-# substance, only moved from :4201 to :6405 by the deletion of everything
+# substance, only moved from :4201 to :6409 by the deletion of everything
 # between PRINT_GEOM and openPrintSheet. The test this kills is narrowed to
 # assert isIOS() directly rather than printLayoutName(), since printLayoutName
 # itself is retired with the print sheet.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6405,9 +6405,7 @@ const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
-  */
+@@ -6409,6 +6409,4 @@
  function isIOS(ua) {
    const s = String(ua || "");
 -  return /iPad|iPhone|iPod/.test(s) ||
@@ -23,5 +22,3 @@ diff --git a/index.html b/index.html
 -    (/Macintosh/.test(s) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
 +  return /iPad|iPhone|iPod/.test(s);
  }
-
- /* ---------------- the print CTA (Workstream B) ----------------
