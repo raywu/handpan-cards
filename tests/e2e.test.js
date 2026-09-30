@@ -490,11 +490,24 @@ function run() {
     await b.swipe("#card", 120);
     await expectCount(`1 / ${n}`, "swiping right did not step back");
 
-    // Just past the 55px threshold, but slow (0.2 px/ms) so a fling cannot
-    // mask the distance (M4): only the commit distance decides.
-    await b.drag("#card", [[-20, 100], [-40, 200], [-60, 300]]);
+    // Just past the 18px threshold, but slow and stalled right at release so
+    // a fling cannot mask the distance (M4): only the commit distance decides.
+    await b.drag("#card", [[-6, 150], [-13, 300], [-20, 450]]);
     await b.finishAnimations();
-    await expectCount(`2 / ${n}`, "a 60px drag did not clear the 55px threshold");
+    await expectCount(`2 / ${n}`, "a 20px drag did not clear the 18px threshold");
+  });
+
+  // Owner: "Swipe gesture is very difficult at low speed... requires a very
+  // quick flick." A deliberate, unhurried drag - ~30px over 600ms, ~0.05
+  // px/ms even in the trailing fling window - must now commit on distance
+  // alone (30 > the new 18px SWIPE_COMMIT_PX), with no flick required.
+  test("a slow, deliberate drag past the new lower threshold still commits", async () => {
+    await freshLoad();
+    const n = (await decksMeta())[0].chords;
+
+    await b.drag("#card", [[-5, 100], [-10, 200], [-15, 300], [-20, 400], [-25, 500], [-30, 600]]);
+    await b.finishAnimations();
+    await expectCount(`2 / ${n}`, "a slow 30px drag over 600ms did not step the deck");
   });
 
   test("a swipe shorter than the threshold does not navigate", async () => {
@@ -522,8 +535,9 @@ function run() {
     // real guard against a handler that stopped reacting to touchend
     // altogether. Waiting on the ack only pins each exact-count read past the
     // CDP-vs-handler race; the read itself depends on step() rendering
-    // synchronously, not on listener registration order. Slow (0.1 px/ms)
-    // so a fling cannot commit these.
+    // synchronously, not on listener registration order. Slow (~0.03 px/ms
+    // in the trailing fling window) so a fling cannot commit these, and the
+    // 15px distance stays under the 18px commit threshold.
     await b.eval(`
       window.__swipeAck = 0;
       document.getElementById("card").addEventListener(
@@ -532,15 +546,15 @@ function run() {
       return true;
     `);
 
-    await b.drag("#card", [[-10, 100], [-20, 200], [-30, 300], [-40, 400], [-50, 500]]);
+    await b.drag("#card", [[-3, 100], [-6, 200], [-9, 300], [-12, 400], [-15, 500]]);
     await b.waitFor(`window.__swipeAck === 1`, { timeout: 5000, label: "swipe 1 to be acknowledged" });
     await b.finishAnimations();
-    assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
+    assert.strictEqual(await countText(), `1 / ${n}`, "a 15px drag navigated; the deadzone shrank");
 
-    await b.drag("#card", [[10, 100], [20, 200], [30, 300], [40, 400], [50, 500]]);
+    await b.drag("#card", [[3, 100], [6, 200], [9, 300], [12, 400], [15, 500]]);
     await b.waitFor(`window.__swipeAck === 2`, { timeout: 5000, label: "swipe 2 to be acknowledged" });
     await b.finishAnimations();
-    assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
+    assert.strictEqual(await countText(), `1 / ${n}`, "a 15px drag back navigated; the deadzone shrank");
 
     // N1 (review nit, PR 143 attempt 1): a swipe PAST the threshold, run
     // last, is what actually guards against a handler that silently stopped
@@ -7763,7 +7777,7 @@ function run() {
       assert.strictEqual(await sceneStyle().then((s) => s.willChange), "transform");
       const cardXf = await cardTransform();
       assert.strictEqual(rotationAmount(cardXf), 0, "the .card itself must not rotate during a swipe");
-      await g.release(40, 400);
+      await g.release(12, 400);
       assert.strictEqual(await sceneAnimCount(), 1, "release below threshold should start exactly one spring-back animation");
       assert.strictEqual(await countText(), `1 / ${n}`, "a spring-back must not step the deck");
       await b.finishAnimations();
@@ -7845,26 +7859,27 @@ function run() {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
 
-      await b.drag("#card", [[-15, 15], [-30, 50]]);
+      await b.drag("#card", [[-8, 10], [-15, 25]]);
       await b.finishAnimations();
-      await expectCount(`2 / ${n}`, "a fast 30px fling should commit");
+      await expectCount(`2 / ${n}`, "a fast 15px fling should commit");
 
       await freshLoad();
-      await b.drag("#card", [[-15, 40], [-30, 75]]);
+      await b.drag("#card", [[-8, 300], [-15, 600]]);
       await b.finishAnimations();
-      await expectCount(`1 / ${n}`, "a slow 30px drag should not commit");
+      await expectCount(`1 / ${n}`, "a slow 15px drag should not commit");
 
-      // (a): the whole gesture averages 0.05 px/ms, but the last 100ms window
-      // (OV3's fling window) alone is a fling.
+      // (a): the whole gesture averages ~0.12 px/ms, under the fling
+      // threshold, but the last 100ms window (OV3's fling window) alone is
+      // a fling.
       await freshLoad();
-      await b.drag("#card", [[-10, 100], [-50, 140]]);
+      await b.drag("#card", [[-3, 100], [-17, 140]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "a fling within the trailing window should commit");
 
       // (b): the flick ages out of the fling window once the pointer sits
       // still before release.
       await freshLoad();
-      await b.drag("#card", [[-30, 30], [-30, 230]]);
+      await b.drag("#card", [[-15, 30], [-15, 230]]);
       await b.finishAnimations();
       await expectCount(`1 / ${n}`, "a stale flick (held still before release) should not commit");
     });
@@ -7895,7 +7910,7 @@ function run() {
       assert.strictEqual(await cardFlipped(), true, "a mouse click must still flip");
       await b.click("#card");
       assert.strictEqual(await cardFlipped(), false);
-      await b.drag("#card", [[-15, 100], [-30, 300]], { pointer: "mouse" });
+      await b.drag("#card", [[-8, 100], [-15, 300]], { pointer: "mouse" });
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "a short slow mouse drag must spring back, not navigate");
       assert.strictEqual(await cardFlipped(), false, "a spring-back must not flip");
@@ -8311,7 +8326,7 @@ function run() {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
       const g = await startDrag("#card");
-      // Held below SWIPE_COMMIT_PX (55) AND over enough elapsed time (300ms)
+      // Held below SWIPE_COMMIT_PX (18) AND over enough elapsed time (300ms)
       // that its velocity reads well under the fling threshold, on purpose:
       // a move at ms=0 has effectively infinite velocity, so ANY dx there
       // (even a small one) registers as a fling and commits regardless of
@@ -8321,7 +8336,7 @@ function run() {
       // if ever allowed through, ends the drag as a spring-back, not a
       // commit - silently swallowing the real gesture's own eventual release
       // rather than producing a same-looking commit that would mask it.
-      await g.move(-30, 300);
+      await g.move(-17, 300);
       await b.eval(`
         const card = document.getElementById("card");
         card.dispatchEvent(new PointerEvent("pointerdown", {
@@ -8333,7 +8348,7 @@ function run() {
         return true;
       `);
       const mid = await sceneXform();
-      assert.ok(Math.abs(mid.m41 - (-30)) <= 1, `a second pointer must not disturb the drag, m41=${mid.m41}`);
+      assert.ok(Math.abs(mid.m41 - (-17)) <= 1, `a second pointer must not disturb the drag, m41=${mid.m41}`);
       assert.strictEqual(await countText(), `1 / ${n}`, "a second pointer's pointerup must not end the drag");
       await g.release(-120, 200);
       await b.finishAnimations();
