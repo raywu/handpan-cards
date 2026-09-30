@@ -13,9 +13,10 @@
 # border-radius - the press ring follows the card's corners now - and this
 # patch carried that line as hunk CONTEXT, so it went stale. The mutation
 # itself is byte-identical to before.
-# Context-refreshed 2026-09-30 (S2): only line numbers moved (the swipe-only
-# lane's touch-action additions land earlier in the file); the context text
-# and the mutation itself are unchanged.
+# Context-refreshed 2026-09-30 (S2, bounce 1): the trailing context line (the
+# first line of the touch-action comment right after .card{}) was rewritten
+# from "touch-action must be set on #card ITSELF..." to "Belt-and-braces: ..."
+# (reviewer nit); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -28,4 +29,4 @@ diff --git a/index.html b/index.html
 +.scene{width:var(--card-w); aspect-ratio:63/87; perspective:1400px}
  .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
    transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
-   /* touch-action must be set on #card ITSELF, not only its ancestors: the
+   /* Belt-and-braces: effective touch-action is the INTERSECTION of an

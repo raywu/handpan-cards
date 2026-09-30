@@ -5,10 +5,10 @@
 # release (including a jitter that moved 0px) runs the full swipeXf/
 # SWIPE_BACK_MS animate() call, producing a visible jitter hop on a touch
 # that was never meant to move the card at all.
-# Context-refreshed 2026-09-30 (S2): the guard's own line dropped its
-# redundant `scene.style.transform = "";` (swipeRest() already clears it)
-# and the eatClick line below it lost its setTimeout decay - the mutation
-# itself (deleting the early-return guard) is unchanged.
+# Context-refreshed 2026-09-30 (S2, bounce 1): the trailing context (the
+# comment right after the guard) was rewritten from the old "Q17" text back
+# to base's cancelled/eatClick comment as part of restoring the setTimeout(0)
+# decay - the mutation itself (deleting the early-return guard) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -17,6 +17,6 @@ diff --git a/index.html b/index.html
    // flip itself comes from #card's click listener, untouched since eatClick
    // is not set below).
 -  if (!dir && !moved) { swipeRest(); return; }
-   // Q17: eatClick used to decay on its own via `setTimeout(fn, 0)`, racing
-   // the native click the UA synthesizes after this same pointerup/mouseup -
-   // no spec guarantees which macrotask runs first, and under CI's scheduler
+   // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
+   // never has a trailing click to suppress - the UA does not synthesize one -
+   // so eatClick must never be armed here for `cancelled`. Arming it anyway

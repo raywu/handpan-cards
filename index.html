@@ -456,12 +456,14 @@ main{overflow-x:clip}
   aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
-  /* touch-action must be set on #card ITSELF, not only its ancestors: the
-     swipe listeners are on #card, so most real touches hit-test there
-     directly, and a browser resolves touch-action from the hit-tested
-     element's own value first - main/.scene's touch-action:none above only
-     covers the mid-flight case where the touch hit-tests to an ancestor
-     because .scene has moved away from #card's own box. */
+  /* Belt-and-braces: effective touch-action is the INTERSECTION of an
+     element's own value with every ancestor's, so main/.scene's
+     touch-action:none above already covers #card - this rule changes
+     nothing on its own. It stays so #card is correct in isolation (e.g.
+     moved to a container that does not set touch-action) and so the
+     mid-flight case, where the touch hit-tests to an ancestor because
+     .scene has moved away from #card's own box, is covered by both rules
+     agreeing rather than by one alone. */
   touch-action:none;
   /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
      and a box-shadow takes the radius of the element it is ON - so without
@@ -8122,17 +8124,13 @@ function release(e, cancelled) {
   // flip itself comes from #card's click listener, untouched since eatClick
   // is not set below).
   if (!dir && !moved) { swipeRest(); return; }
-  // Q17: eatClick used to decay on its own via `setTimeout(fn, 0)`, racing
-  // the native click the UA synthesizes after this same pointerup/mouseup -
-  // no spec guarantees which macrotask runs first, and under CI's scheduler
-  // jitter the timeout sometimes cleared eatClick before the click it was
-  // meant to suppress arrived, so a moved mouse drag intermittently flipped
-  // the card it should have left alone. eatClick now stays true until
-  // something that actually needs it to be false clears it: the click
-  // handler consumes it (the normal path), or the next pointerdown's
-  // no-flight reset clears it (covers a moved drag whose trailing click
-  // never fires at all, e.g. a touch drag past the tap-click threshold).
-  if (moved) eatClick = true;
+  // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
+  // never has a trailing click to suppress - the UA does not synthesize one -
+  // so eatClick must never be armed here for `cancelled`. Arming it anyway
+  // left eatClick stuck true with nothing left to clear it (no click handler
+  // runs, and the next pointerdown's own eatClick assignment only clears it
+  // if flight is set), eating the next unrelated click/Enter.
+  if (moved && !cancelled) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
   if (reducedMotion.matches) {
     scene.style.transform = ""; scene.style.willChange = "";
     if (dir) step(dir);

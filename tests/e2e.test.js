@@ -8063,17 +8063,13 @@ function run() {
       // starts and ends a fresh, trivial drag on #card via pointer capture -
       // Chrome then never fires "click" at all, so a mouse click can never
       // reach the target and can't exercise eatClick's guard either way.
-      // A TOUCH drag like this one never synthesizes a trailing click either
-      // (unlike mouse, touch only does that for a tap-sized movement), so the
-      // drag's OWN eatClick (set by release() on the commit) is never
-      // consumed by anything and would mask the guard under test - clear it
-      // directly (eatClick no longer decays on its own; it now waits for the
-      // next click or pointerdown, same as a real user would produce), then
-      // dispatch a real pointerdown (so the capture handler's eatClick
-      // assignment - the one under test - actually runs) followed by a
-      // genuine click() (which fires no pointerdown of its own, so it cannot
-      // re-trigger the guard by accident, only observe it).
-      await b.eval(`eatClick = false; return true;`);
+      // Wait out the drag's OWN eatClick (set by release() on the commit,
+      // same as the eatClickClear() pattern below) so it cannot mask the
+      // guard under test, then dispatch a real pointerdown (so the capture
+      // handler's eatClick assignment - the one under test - actually runs)
+      // followed by a genuine click() (which fires no pointerdown of its
+      // own, so it cannot re-trigger the guard by accident, only observe it).
+      await b.waitFor(`!eatClick`, { label: "eatClick to decay" });
       await b.eval(`
         const el = document.getElementById("card");
         el.dispatchEvent(new PointerEvent("pointerdown", {
@@ -8091,13 +8087,10 @@ function run() {
     test("card swipe: buttons and arrows during the fly-out land it first, never dropping or doubling a step", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
-      // A touch drag never synthesizes a trailing click, so eatClick from
-      // the drag's own commit is never consumed on its own - it now waits
-      // for the next click or pointerdown (same as a real user would
-      // produce) instead of a setTimeout(0) decay. Clear it directly so the
-      // deliberate action below is never mistaken for the drag's own
+      // eatClick decays on a setTimeout(0) queued at release; wait it out so
+      // the deliberate action below is never mistaken for the drag's own
       // trailing tap-click.
-      const eatClickClear = () => b.eval(`eatClick = false; return true;`);
+      const eatClickClear = () => b.waitFor(`!eatClick`, { label: "eatClick to decay" });
 
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await eatClickClear();
@@ -8115,6 +8108,65 @@ function run() {
       assert.strictEqual(await countText(), `7 / ${n}`, "a programmatic .click() during flight should land then step");
       await b.finishAnimations();
       assert.strictEqual(await countText(), `7 / ${n}`, "finishing leftover animations must not add another step");
+    });
+
+    test("card swipe: Enter on a focused #next after a settled touch swipe still steps", async () => {
+      // Regression: release() used to arm eatClick on every moved touch drag
+      // with no decay, relying on a later click or pointerdown to clear it.
+      // A touch drag never produces a trailing click, so eatClick stayed
+      // stuck true - the document click listener (capture phase) then ate
+      // the very next click ANYWHERE, including the native click a browser
+      // synthesizes for Enter on a focused button, well after the swipe had
+      // fully settled.
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await b.eval(`document.getElementById("next").focus(); return true;`);
+      await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await expectCount(`3 / ${n}`, "Enter on #next after a settled touch swipe must still step");
+    });
+
+    test("card swipe: a click right after a cancelled drag is not eaten", async () => {
+      // Same regression as above, via the Q15 cancel path: release(e, true)
+      // must never arm eatClick at all, since a cancelled interaction never
+      // has a trailing click to consume it either. eatClick's own decay is a
+      // setTimeout(0), which reliably clears it before any CDP round-trip (a
+      // real Enter keypress included) can land - so a `!cancelled` regression
+      // is only observable in the narrow window before that decay fires.
+      // Dispatch the pointercancel and the click in ONE synchronous script so
+      // the click lands in the exact same task as release(e, true), before
+      // the decay's setTimeout(0) has any chance to run.
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.eval(`
+        window.__dragId = null;
+        document.getElementById("card").addEventListener(
+          "pointerdown", (e) => { window.__dragId = e.pointerId; }, { once: true },
+        );
+        return true;
+      `);
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      await b.eval(`
+        const id = window.__dragId;
+        document.getElementById("card").dispatchEvent(new PointerEvent("pointercancel", {
+          pointerId: id, isPrimary: true, clientX: 0, bubbles: true,
+        }));
+        document.getElementById("next").click();
+        return true;
+      `);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a click immediately after a cancelled drag must not be eaten");
+      // The pointercancel above was a synthetic PointerEvent, not a real CDP
+      // touch release, so the underlying touch (id 1) is still "down" as far
+      // as Chrome's input pipeline is concerned; end it for real or the next
+      // test's touchstart with the same id misbehaves.
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     });
 
     test("card swipe: a real touch tap at the card's REST position during flight lands it and must not flip", async () => {
