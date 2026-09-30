@@ -7450,6 +7450,11 @@ function run() {
             return {
               prev: cy("#prev"), shuffle: cy("#shuffle"), next: cy("#next"),
               shuffleCx: cx("#shuffle"),
+              shuffleW: document.getElementById("shuffle").getBoundingClientRect().width,
+              countR: document.getElementById("count").getBoundingClientRect().right,
+              shuffleL: document.getElementById("shuffle").getBoundingClientRect().left,
+              shuffleR: document.getElementById("shuffle").getBoundingClientRect().right,
+              nextL: document.getElementById("next").getBoundingClientRect().left,
               countCx: cx("#count"), footCx: foot.left + foot.width / 2,
             };
           `);
@@ -7461,16 +7466,58 @@ function run() {
             assert.ok(Math.abs(m.countCx - m.footCx) <= 1,
               `${w}x${h} mode ${mode}: #count cx ${m.countCx} vs footer centre ${m.footCx}`);
           }
-          // F1: mode S turns #shuffle into a free-standing refresh button in the
-          // middle grid column - it must sit centred there like prev/next sit
-          // centred in their own columns, not pinned to the column's start edge.
-          if (mode === "S" && ((w === 380 && h === 700) || (w === 844 && h === 390))) {
+          // #shuffle is a centred item in the middle column, never stretched
+          // across it (the text toggle is ~95px wide, the refresh icon 56px).
+          assert.ok(m.shuffleW <= 120,
+            `${w}x${h} mode ${mode}: #shuffle is ${m.shuffleW}px wide - stretched across its column`);
+          const landscapeS = mode === "S" && h <= 520;
+          if (!landscapeS) {
             assert.ok(Math.abs(m.shuffleCx - m.footCx) <= 1,
-              `${w}x${h} mode S: #shuffle cx ${m.shuffleCx} vs footer centre ${m.footCx}`);
+              `${w}x${h} mode ${mode}: #shuffle cx ${m.shuffleCx} vs footer centre ${m.footCx}`);
+          } else {
+            // D8: landscape S puts the refresh button in its own column
+            // beside #next, right of the rail.
+            assert.ok(m.shuffleL >= m.countR - 0.5 && m.shuffleR <= m.nextL + 0.5,
+              `${w}x${h} mode S: #shuffle [${m.shuffleL}, ${m.shuffleR}] is not between #count (right ${m.countR}) and #next (left ${m.nextL})`);
           }
         }
       }
     });
+
+    test("landscape mode S keeps the style line inside the footer, clear of every control and the status line",
+      async () => {
+        for (const [w, h] of [[844, 390], [667, 375], [1280, 500]]) {
+          await b.setViewport(w, h, false);
+          await b.eval(`localStorage.clear();
+            localStorage.setItem("hpfc", JSON.stringify({ mode: "S", deck: "custom:gone" })); return true;`);
+          await navigate();
+          await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+            { label: "deck chips to be built" });
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          await b.settle();
+          const m = await b.eval(`
+            const box = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+            const text = (e) => { const g = document.createRange(); g.selectNodeContents(e);
+              const rs = Array.from(g.getClientRects()); if (!rs.length) return null;
+              return { l: Math.min(...rs.map((x) => x.left)), t: Math.min(...rs.map((x) => x.top)),
+                       r: Math.max(...rs.map((x) => x.right)), b: Math.max(...rs.map((x) => x.bottom)) }; };
+            const st = document.getElementById("seq-style");
+            return { hidden: st.hidden, style: text(st), foot: box(document.getElementById("foot")),
+              announce: text(document.querySelector(".announce")),
+              others: ["#prev", "#next", "#shuffle", "#count"].map((s) => [s, box(document.querySelector(s))]) };
+          `);
+          assert.strictEqual(m.hidden, false, `${w}x${h}: #seq-style hidden in mode S`);
+          assert.ok(m.announce, `${w}x${h}: the deck-gone boot left .announce empty, so the overlap check is vacuous`);
+          const hit = (a, c) => a.l < c.r - 0.5 && c.l < a.r - 0.5 && a.t < c.b - 0.5 && c.t < a.b - 0.5;
+          assert.ok(m.style.t >= m.foot.t - 0.5 && m.style.b <= m.foot.b + 0.5,
+            `${w}x${h}: style text [${m.style.t}, ${m.style.b}] spills out of #foot [${m.foot.t}, ${m.foot.b}]`);
+          assert.ok(!hit(m.style, m.announce),
+            `${w}x${h}: style text ${JSON.stringify(m.style)} overlaps the status line ${JSON.stringify(m.announce)}`);
+          for (const [sel, r] of m.others) {
+            assert.ok(!hit(m.style, r), `${w}x${h}: style text ${JSON.stringify(m.style)} overlaps ${sel} ${JSON.stringify(r)}`);
+          }
+        }
+      });
 
     test("the mode S refresh button is a 44px icon that hit-tests to itself", async () => {
       for (const [w, h] of [[380, 700], [844, 390]]) {

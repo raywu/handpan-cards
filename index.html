@@ -552,24 +552,18 @@ button.nav:active{background:#2e281e}
 .seq-style b{color:#eae6df; font-weight:700}
 footer.seq{row-gap:var(--sp-1)}
 /* D8: landscape's own height budget is the tightest in the app (table M), so
-   a whole extra full-width row (portrait's +64px) does not fit here. Instead
-   .shuffle-wrap stops being display:contents: it becomes the actual row-2
-   grid item in the middle column, positioned so the style line sits under
-   the refresh button - in the middle column, on the same row as prev/next -
-   rather than reserving a third grid row and its gap the way portrait does.
-   The rail itself also drops to the same acceptance-4-era 11px-row footprint
-   it has in modes A/B here: table M's 520px budget has no room left for the
-   larger rail's own +15px on top of the style line, and this is the one
-   breakpoint where the rail was never asked to grow (O3/D10 fixed its size
-   for the general case; this media-scoped override is landscape-only and
-   leaves that everywhere else untouched, same pattern as the header and
-   spacing-ramp overrides above). */
+   the portrait stack (a third full-width row, about +64px) does not fit. The
+   footer becomes four columns instead: prev | rail over style | refresh | next.
+   The arrows and the refresh button span both rows and stay on one centre
+   line; the style line sits under the rail inside the footer box, so it never
+   reaches the .announce row below it. */
 @media (max-height:520px){
-  footer.seq{row-gap:0}
-  footer.seq .count.seq{font-size:13px; line-height:1.3}
-  footer.seq .shuffle-wrap{display:block; position:relative; grid-row:2; text-align:center}
-  footer.seq .seq-style{position:absolute; top:100%; left:50%; transform:translateX(-50%);
-    margin:2px 0 0; font-size:10px; line-height:1.1; white-space:nowrap}
+  footer.seq{grid-template-columns:56px 1fr 56px 56px; row-gap:2px}
+  footer.seq #prev{grid-area:1/1/3/2}
+  footer.seq .count.seq{grid-area:1/2}
+  footer.seq .seq-style{grid-area:2/2; font-size:11.5px; line-height:1.35}
+  footer.seq #shuffle{grid-area:1/3/3/4}
+  footer.seq #next{grid-area:1/4/3/5}
 }
 /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
    that toggles a mode the user must be able to turn OFF. Same reasoning as
@@ -582,7 +576,7 @@ footer.seq{row-gap:var(--sp-1)}
    "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
    in a 44px box instead of sitting 7px under the counter. That is a real
    visual change, accepted as the price of the target. */
-.shuffle{grid-row:2; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
+.shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 .shuffle.on{color:#f1ece1}
@@ -591,7 +585,7 @@ footer.seq{row-gap:var(--sp-1)}
    acceptance 5) is icon-only, square at the 44px target rather than
    text-width, so it sits on the controls row exactly like prev/next. */
 .shuffle.reroll{border:1px solid #433b2c; border-radius:10px; background:#211d16;
-  color:#eae6df; width:56px; height:44px; padding:0; justify-self:center}
+  color:#eae6df; width:56px; height:44px; padding:0}
 .shuffle.reroll svg{width:20px; height:20px}
 /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
    the stroke. Anything that clips its children (a scroll container, and
