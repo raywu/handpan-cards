@@ -1,5 +1,7 @@
 # Android background and settings menu
 
+> **Closed 2026-09-29.** The OPEN rows below were triaged by `docs/plans/2026-09-29-backlog-and-refactor.md` §7 (base `e428946`). New work goes to that plan's §7 carried list, not here. Row bodies are unchanged so history stays greppable.
+
 - **Goal:** after the lanes below merge, (a) no box, canvas or browser-chrome colour that the page controls paints anything but the table colour at any viewport size, and CI proves that for every candidate CDP can see; (b) the print options, the NAME->NOTES / NOTES->NAME toggle and "+ Add a scale" live in one settings menu, opened from the header, and the card face carries no controls.
 - **Date:** 2026-09-28
 - **Base:** `main` @ `879499d` (merge of PR #151). Every file:line below was read at that SHA.
