@@ -1,20 +1,22 @@
 # kills: switching to mode S keeps the header and footer width fixed and grows the footer only by the style block
 # suite: node --test --test-name-pattern ^switching.to.mode.S.keeps.the.header.and.footer.width.fixed.and.grows.the.footer.only.by.the.style.block$ tests/e2e.test.js
-# Lane S2, D8/E3. The `@media (max-height:520px)` override is meant to
-# TIGHTEN the style row for landscape's tighter budget; this swaps its two
-# values for larger ones (as if the desktop step-up ramp had been pasted in
-# by mistake), so landscape grows the footer well past its 40px budget.
+# Lane S2, D8/E3. Drops the whole max-height:520px footer.seq override, so
+# landscape S falls back to portrait's full-width style row and full-size
+# rail - well past the tight landscape budget this breakpoint exists for.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -551,8 +551,8 @@ footer.seq{row-gap:var(--sp-1)}
-    rest of the chrome already uses, rather than reserving its portrait-sized
-    line height on a screen with no room for it. */
- @media (max-height:520px){
+@@ -564,13 +564,6 @@ footer.seq{row-gap:var(--sp-1)}
+    for the general case; this media-scoped override is landscape-only and
+    leaves that everywhere else untouched, same pattern as the header and
+    spacing-ramp overrides above). */
+-@media (max-height:520px){
 -  footer.seq{row-gap:0}
--  .seq-style{font-size:11px; line-height:1.25}
-+  footer.seq{row-gap:var(--sp-3)}
-+  .seq-style{font-size:14px; line-height:1.6}
- }
+-  footer.seq .count.seq{font-size:13px; line-height:1.3}
+-  footer.seq .shuffle-wrap{display:block; position:relative; grid-row:2; text-align:center}
+-  footer.seq .seq-style{position:absolute; top:100%; left:50%; transform:translateX(-50%);
+-    margin:2px 0 0; font-size:10px; line-height:1.1; white-space:nowrap}
+-}
  /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
     that toggles a mode the user must be able to turn OFF. Same reasoning as
+    .mode: the box grows, nothing is overlaid. The 7px top margin is folded into

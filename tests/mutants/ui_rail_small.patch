@@ -10,8 +10,8 @@ diff --git a/index.html b/index.html
  .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
    color:#c4bcab; text-align:center}
  .count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
--  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#eae6df}
-+  font:600 11px/1 "Nunito Sans"; letter-spacing:.02em; color:#eae6df}
+-  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
++  font:600 11px/1 "Nunito Sans"; letter-spacing:.02em; color:#c4bcab}
  /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
     deck's root colour carried as an underline instead of the text's own ink -
     O3/D10: the old ink-coloured approach failed AA on more than one deck's

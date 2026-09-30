@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -299,7 +299,7 @@ button.nav:active{background:#2e281e}
+@@ -974,7 +974,7 @@ footer.seq{row-gap:var(--sp-1)}
    <div class="mid">
      <!-- polite, not assertive: stepping is the user's own action, so the new
           position should follow the card, never interrupt it. -->
 -    <div class="count" id="count" aria-live="polite"></div>
 +    <div class="count" id="count"></div>
-     <button class="shuffle" id="shuffle">Shuffle: off</button>
-   </div>
-   <button class="nav" id="next" aria-label="Next card">&rarr;</button>
+     <!-- shuffle-wrap is markup grouping only (display:contents) outside the
+          D8 landscape break - see the CSS comment above .shuffle-wrap. -->
+     <div class="shuffle-wrap">

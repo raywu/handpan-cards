@@ -1,0 +1,17 @@
+# kills: the footer controls share one centre line in every mode
+# suite: node --test --test-name-pattern ^the.footer.controls.share.one.centre.line.in.every.mode$ tests/e2e.test.js
+# Lane S2, F1 (reviewer bounce 2). Drops justify-self:center from
+# .shuffle.reroll, so the 56px-wide refresh button sits at the start of the
+# footer's 1fr middle column instead of centred between prev and next.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -591,7 +591,7 @@ footer.seq{row-gap:var(--sp-1)}
+    acceptance 5) is icon-only, square at the 44px target rather than
+    text-width, so it sits on the controls row exactly like prev/next. */
+ .shuffle.reroll{border:1px solid #433b2c; border-radius:10px; background:#211d16;
+-  color:#eae6df; width:56px; height:44px; padding:0; justify-self:center}
++  color:#eae6df; width:56px; height:44px; padding:0}
+ .shuffle.reroll svg{width:20px; height:20px}
+ /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
+    the stroke. Anything that clips its children (a scroll container, and
