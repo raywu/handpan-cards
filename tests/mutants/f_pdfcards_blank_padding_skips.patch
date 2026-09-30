@@ -1,0 +1,19 @@
+# kills: test_every_vector_matches_print - the full deck's page-padding cards stay blank
+# suite: python3 -m unittest tests.test_pdf_parity.PrintParityTest.test_every_vector_matches_print
+#
+# The full-deck padding loop (pads the sheet out to a multiple of 9 cards)
+# pushes "skip" instead of "blank". A skip card draws nothing at all where a
+# blank card draws the blank-card template, so the full "Cards" PDF's later
+# pages stop matching the print adapter's own vector count.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -555,7 +555,7 @@ HPE.pdfcards = (function () {
+         cards.push(["chord", [i + 1, deck.chords[i]]]);
+       }
+       for (i = 0; i < (deck.blank_cards || 0); i++) cards.push(["blank", null]);
+-      while (cards.length % 9 !== 0) cards.push(["blank", null]);
++      while (cards.length % 9 !== 0) cards.push(["skip", null]);
+     }
+
+     function calibration(c) {

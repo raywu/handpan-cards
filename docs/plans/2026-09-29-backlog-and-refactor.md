@@ -329,10 +329,10 @@ Deltas from quality-eval §6 only:
 | E6 | Outside voice: rw 135 is visible with the sheet open | Apply: DROP to DEFER, with a trigger (B12a) |
 | E7 | Outside voice: one-pdf 6's committed PDFs are not parity-gated | Apply: DROP to DEFER, with a trigger (B16a) |
 | E8 | Outside voice: the R1 device gate is contested by Task 5's own disposition | Apply: keep the conservative gate as O1's default, and let the owner rule it met |
-| E9 | Coordinator: the two #163 reviewer nits | B22 (download filename) DROP; B23 (`.shuffle.reroll :active`) DEFER |
+| E9 | Coordinator: the two #163 reviewer nits | B22 (download filename) DROP; B23 (`.shuffle.reroll :active`) DEFER (superseded by #164) |
 | E10 | Scope Challenge: the plan touches 8+ files | Accept as-is. Each lane is already minimal, and R1's breadth is deletion of one dead chain |
 | E11 | TODOS.md updates | None proposed. §7's carried list is the backlog, and this pass may write only the plan file |
-| E12 | Next step | "Ready to implement". A design review is not needed: R1 deletes unreachable UI, and B23 is deferred |
+| E12 | Next step | "Ready to implement". A design review is not needed: R1 deletes unreachable UI, and B23 is deferred (superseded by #164) |
 
 ## §7 Queue disposition
 
@@ -368,7 +368,7 @@ Counts: 1 + 4 + 7 + 5 + 39 + 36 = 92.
 | Owner requests | DEFER | SM-2, stats, PWA, audio |
 
 **Carried after D1.** These are the only live items:
-- DEFER: rw 2, 7, 122, 123, 135; one-pdf 6; the #163 `:active` nit (B23); and the four roadmap items;
+- DEFER: rw 2, 7, 122, 123, 135; one-pdf 6; and the four roadmap items;
 - OWNER: rw 5, 6, the checklist, and the swipe animation;
 - Part A DEFER: A7, A8.
 
@@ -444,7 +444,7 @@ The test-plan artifact is at `~/.gstack/projects/raywu-handpan-cards/ray-main-en
 ### NOT in scope
 - Marker-anchored mutants (A15): needs a `mutation_check.sh` change (N13).
 - Retiring the slow hygiene mutants: an owner call (O3).
-- Renaming the `PRINTER_ONLY` download (B22): it ripples into the committed PDF names.
+- Renaming the `PRINTER_ONLY` download (B22): it ripples into the committed PDF names. (done in #164)
 - An ink-level check on the committed PDFs (B16a): deferred to the next `hifi.py` change.
 - The swipe animation: it has its own plan.
 

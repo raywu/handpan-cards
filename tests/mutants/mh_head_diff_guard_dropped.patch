@@ -1,0 +1,30 @@
+# kills: the same post-image committed to HEAD IS reported stale
+# suite: node --test --test-name-pattern=.same.post-image.committed.to.HEAD.IS.reported.stale. tests/mutation_harness.test.js
+#
+# Deletes the `git diff --quiet HEAD -- <paths>` check that distinguishes "the
+# sweep applied this patch to this very tree, uncommitted" from "a normal
+# commit folded the patch's post-image into HEAD for good". Reverts to the old
+# behaviour: any patch that applies cleanly in reverse is treated as not
+# stale, even when its precondition is permanently gone.
+diff --git a/tests/mutation_harness.test.js b/tests/mutation_harness.test.js
+--- a/tests/mutation_harness.test.js
++++ b/tests/mutation_harness.test.js
+@@ -422,18 +422,6 @@ function staleMutants(root, mutantsDir) {
+         execFileSync("git", ["apply", "--check", "-R", p], { cwd: root, env: childEnv() });
+         // Applies cleanly in reverse: something already turned this patch's
+         // pre-image into its post-image. See which, above.
+-        const paths = stalePatchedPaths(fs.readFileSync(p, "utf8"));
+-        let matchesHead = true;
+-        if (paths.length) {
+-          try {
+-            execFileSync("git", ["diff", "--quiet", "HEAD", "--", ...paths],
+-              { cwd: root, env: childEnv() });
+-            matchesHead = true; // exit 0: tree already matches HEAD there
+-          } catch {
+-            matchesHead = false; // exit 1: tree differs from HEAD (uncommitted apply)
+-          }
+-        }
+-        if (matchesHead) stale.push(name);
+       } catch {
+         // Neither direction applies: a genuinely stale (or malformed) patch.
+         stale.push(name);
