@@ -409,6 +409,9 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   #settings-trigger{order:2; flex:0 0 auto}
 }
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
+/* swipe: the drag moves .scene, never .card - .card's transform is the flip. */
+.scene{touch-action:pan-y pinch-zoom}
+main{overflow-x:clip}
 /* The card is sized from whichever axis runs out first.
    --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and
    letting aspect-ratio derive the height is a one-way constraint, and in
@@ -931,6 +934,7 @@ footer.seq{row-gap:var(--sp-1)}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
+  .scene{transform:none!important}
 }
 </style>
 </head>
@@ -7842,7 +7846,11 @@ function flip() { if (!order.length) return; flipped = !flipped; render(); }
 function step(dir) {
   if (!order.length) return;
   idx = (idx + dir + order.length) % order.length;
+  // N40/OV2: suppress .card's reverse-flip transition across every reset.
+  card.style.transition = "none";
   flipped = false; render();
+  card.offsetHeight;
+  card.style.transition = "";
 }
 card.addEventListener("click", flip);
 // Bound to #card, so it fires for keys that BUBBLE from any descendant.
@@ -8026,13 +8034,109 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") step(1);
   else if (e.key === "ArrowLeft") step(-1);
 });
-let tx = null;
-card.addEventListener("touchstart", e => { tx = e.touches[0].clientX; }, { passive: true });
-card.addEventListener("touchend", e => {
-  if (tx === null) return;
-  const dx = e.changedTouches[0].clientX - tx; tx = null;
-  if (Math.abs(dx) > 55) step(dx < 0 ? 1 : -1);
-}, { passive: true });
+/* ---------------- swipe (Tinder-style card drag) ---------------- */
+const SWIPE_COMMIT_PX = 55, SWIPE_FLING_PX_MS = 0.5, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
+const SWIPE_TILT_DEG_PER_PX = 0.05, SWIPE_TILT_MAX_DEG = 8;
+const SWIPE_OUT_MS = 220, SWIPE_BACK_MS = 260, SWIPE_IN_MS = 180, SWIPE_IN_PX = 24;
+const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";
+const scene = card.parentElement;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+function swipeDecision(dx, vx) {
+  const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+}
+function swipeTilt(dx) {
+  return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));
+}
+function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
+let drag = null, flight = null, eatClick = false;
+function swipeRest() { scene.style.transform = ""; scene.style.willChange = ""; }
+function land() {
+  if (!flight) return;
+  const f = flight;
+  flight = null;
+  f.anim.cancel();
+  step(f.dir);
+  if (reducedMotion.matches) { swipeRest(); return; }
+  scene.animate(
+    [{ transform: `translate3d(${f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },
+     { transform: "translate3d(0,0,0)", opacity: 1 }],
+    { duration: SWIPE_IN_MS, easing: SWIPE_EASE },
+  );
+}
+function release(e, cancelled) {
+  if (!drag) return;
+  const now = e.timeStamp;
+  drag.pts.push({ x: e.clientX, t: now });
+  const cutoff = now - SWIPE_FLING_WINDOW_MS;
+  const pts = drag.pts.filter(p => p.t >= cutoff);
+  let vx = 0;
+  if (pts.length >= 2) {
+    const span = pts[pts.length - 1].t - pts[0].t;
+    if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
+  }
+  const dx = drag.last;
+  const moved = drag.moved;
+  const blocked = cancelled || panelOpen || sheetOpen;
+  const dir = blocked ? 0 : swipeDecision(dx, vx);
+  drag = null;
+  if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+  if (reducedMotion.matches) {
+    scene.style.transform = ""; scene.style.willChange = "";
+    if (dir) step(dir);
+    return;
+  }
+  scene.style.transform = "";
+  if (!dir) {
+    scene.animate(
+      [{ transform: swipeXf(dx) }, { transform: "translate3d(0,0,0) rotate(0deg)" }],
+      { duration: SWIPE_BACK_MS, easing: SWIPE_EASE },
+    ).finished.then(swipeRest, () => {});
+    return;
+  }
+  const dist = window.innerWidth / 2 + scene.offsetWidth;
+  const anim = scene.animate(
+    [{ transform: swipeXf(dx) },
+     { transform: `translate3d(${-dir * dist}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
+    { duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE, fill: "forwards" },
+  );
+  flight = { dir, anim };
+  anim.finished.then(() => { if (flight && flight.anim === anim) land(); }, () => {});
+}
+function swipeMove(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x0;
+  if (Math.abs(dx) > SWIPE_SLOP_PX) drag.moved = true;
+  drag.last = dx;
+  const now = e.timeStamp;
+  drag.pts.push({ x: e.clientX, t: now });
+  const cutoff = now - SWIPE_FLING_WINDOW_MS;
+  while (drag.pts.length > 1 && drag.pts[0].t < cutoff) drag.pts.shift();
+  if (drag.moved && !reducedMotion.matches) {
+    scene.style.willChange = "transform";
+    scene.style.transform = swipeXf(dx);
+  }
+}
+card.addEventListener("pointerdown", e => {
+  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+  scene.getAnimations().forEach(a => a.cancel());
+  drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+  card.setPointerCapture(e.pointerId);
+});
+card.addEventListener("pointermove", swipeMove);
+card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
+card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+// Capture phase: land a pending fly-out before any other input reaches the app.
+document.addEventListener("pointerdown", e => {
+  eatClick = !!flight && card.contains(e.target);
+  land();
+}, true);
+document.addEventListener("keydown", () => { land(); }, true);
+document.addEventListener("click", e => {
+  land();
+  if (eatClick) { eatClick = false; e.stopPropagation(); e.preventDefault(); }
+}, true);
 
 /* ---------------- go ---------------- */
 sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncSheet(true);
