@@ -1,5 +1,7 @@
 # Remaining work - /swarm coordination doc
 
+> **Closed 2026-09-29.** The OPEN rows below were triaged by `docs/plans/2026-09-29-backlog-and-refactor.md` §7 (base `e428946`). New work goes to that plan's §7 carried list, not here. Row bodies are unchanged so history stays greppable.
+
 **Goal:** land every outstanding item on the handpan-cards backlog - tooling
 nits, the print button, the border restyle, the Pygmy blurb, the mobile audit,
 and engine adoption - without app and print ever diverging and without a deck's

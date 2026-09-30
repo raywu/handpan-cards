@@ -1,5 +1,7 @@
 # Scale-engine coordination
 
+> **Closed 2026-09-29.** The OPEN rows below were triaged by `docs/plans/2026-09-29-backlog-and-refactor.md` §7 (base `e428946`). New work goes to that plan's §7 carried list, not here. Row bodies are unchanged so history stays greppable.
+
 Workstream: `scale-engine`. Plan of record: `docs/SCALE_ENGINE_PLAN.md` (merged
 at 29056fd, PR #8). This doc is the bus; the plan is the spec. When they
 disagree, the plan wins on WHAT and this doc wins on WHO and WHEN.

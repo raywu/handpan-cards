@@ -1,5 +1,7 @@
 # One PDF path coordination
 
+> **Closed 2026-09-29.** The OPEN rows below were triaged by `docs/plans/2026-09-29-backlog-and-refactor.md` §7 (base `e428946`). New work goes to that plan's §7 carried list, not here. Row bodies are unchanged so history stays greppable.
+
 Execution record for `docs/plans/2026-09-24-one-pdf-path.md` (as amended by its
 section 9 review). The plan is the task list; this doc is the bus. **If it isn't
 in the doc, it did not happen.**
