@@ -7637,23 +7637,32 @@ function run() {
     });
 
     test("the menu's NAME->NOTES and NOTES->NAME buttons split their row evenly", async () => {
-      for (const [w, h] of [[380, 700], [1280, 800]]) {
-        await freshLoad();
-        await b.setViewport(w, h, w < h);
-        await b.settle();
-        await openSettingsPanel();
-        const m = await b.eval(`
-          const ra = document.getElementById("modeA").getBoundingClientRect();
-          const rb = document.getElementById("modeB").getBoundingClientRect();
-          const rs = document.getElementById("modeS").getBoundingClientRect();
-          return { wa: ra.width, wb: rb.width, la: ra.left, ls: rs.left, rbRight: rb.right, rsRight: rs.right };
-        `);
-        assert.ok(Math.abs(m.wa - m.wb) <= 1, `${w}x${h}: #modeA width ${m.wa} vs #modeB width ${m.wb}`);
-        assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #modeS left ${m.ls}`);
-        assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #modeS right ${m.rsRight}`);
-        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
-        await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
-          { label: "panel to close" });
+      try {
+        for (const [w, h] of [[380, 700], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const ra = document.getElementById("modeA").getBoundingClientRect();
+            const rb = document.getElementById("modeB").getBoundingClientRect();
+            const rs = document.getElementById("modeS").getBoundingClientRect();
+            return { wa: ra.width, wb: rb.width, la: ra.left, ls: rs.left, rbRight: rb.right, rsRight: rs.right };
+          `);
+          assert.ok(Math.abs(m.wa - m.wb) <= 1, `${w}x${h}: #modeA width ${m.wa} vs #modeB width ${m.wb}`);
+          assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #modeS left ${m.ls}`);
+          assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #modeS right ${m.rsRight}`);
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: "panel to close" });
+        }
+      } finally {
+        // This test is the only one in the file that leaves the viewport at
+        // a >=1024x700 desktop size without resetting it - the swipe suite's
+        // settings-panel guard test inherits that ambient state (no swipe
+        // test sets its own viewport) and the desktop-sidebar breakpoint
+        // means panelOpen is never set, silently defeating that guard.
+        await b.setViewport(900, 900, false);
       }
     });
 
