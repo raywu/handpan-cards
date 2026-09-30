@@ -1,20 +1,21 @@
 # kills: the print stylesheet gives the page box something to fill
 # suite: node --test --test-name-pattern ^the.print.stylesheet.gives.the.page.box.something.to.fill$ tests/app.test.js
-# Drops `body.printing #printroot,` from the fill rule. .printpage's height:100%
-# then has no resolved parent height, collapses to the min-height floor, and the
-# sheet top-aligns flush with the paper edge - the 43b2851 regression.
-# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated line
-# is unchanged; only the line above it moved (lane A added `background:#fff`
-# to the html,body fill rule just above this one).
+# HTML element selectors are case-insensitive, so an uppercased html/body rule
+# is live CSS. It carries the top of the same percentage chain, and a later
+# rule at equal specificity wins: 760pt under Chrome's 792pt box renders
+# identically while replacing the platform-resolved fill with a literal.
+# Context-refreshed 2026-09-29 (R1): the insertion point is unchanged; the
+# legacy print-sheet's `body.printing #printroot, ...{height:100%}` line that
+# used to sit directly below it is gone with the retired print sheet.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -788,7 +788,7 @@
+@@ -869,6 +869,7 @@
+      the floor that stops the block ever being shorter than the sheet, which
       is what made every sheet paginate onto two pages. Floor and fill
       together - neither alone is correct. */
    html,body{height:100%; min-height:0; overflow:visible; background:#fff}
--  body.printing #printroot, body.printing #printroot .printpage{height:100%}
-+  body.printing #printroot .printpage{height:100%}
++  HTML,BODY{height:760pt}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
    body{margin:0; padding:0; background:#fff; display:block}

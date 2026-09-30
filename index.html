@@ -860,76 +860,21 @@ button.nav:active{background:#2e281e}
    needs the acknowledgement. */
 #scale-delete[data-armed]:active{color:#eae6df}
 
-/* ---- the print sheet (Workstream B) ---------------------------------------
+/* ---- print (R1, 2026-09-29) -----------------------------------------------
    This block is deliberately LAST in the <style> element. It redefines
    `.face::before` for printed cards, and `tests/test_render_agreement.py:238`
    reads that rule with a whole-file regex that takes the FIRST match - so the
    screen rule at :320 has to stay the one it finds. Nothing goes below here.
-   The grid's card and gutter sizes are NOT in this block: printGridCSS()
-   writes them from PRINT_GEOM into #printgeom, so there is one definition
-   site for them (AC-B3). ------------------------------------------------- */
-#printroot{display:none}
-#printroot .printpage{position:relative; display:flex; align-items:center;
-  justify-content:center; break-after:page; page-break-after:always}
-#printroot .printpage:last-child{break-after:auto; page-break-after:auto}
-#printroot .printsheet{display:grid}
-#printroot .printcell{position:relative; overflow:hidden}
-/* The faces are authored at a screen width and scaled down to the card's
-   physical size; the wrapper carries the transform so the grid cell keeps its
-   printed dimensions. It must stay IN FLOW: out of flow (position:absolute)
-   Chrome clips it at every page break, so each page but the last loses its
-   bottom row's diagram. `relative` and not `static` because .printcell .face
-   is absolutely positioned and needs this element as its containing block -
-   under static the face would resolve against .printcell and shrink twice. */
-#printroot .printscale{position:relative; top:0; left:0; transform-origin:top left}
-#printroot .printcell .face{position:absolute; inset:0; box-shadow:none;
-  backface-visibility:visible; -webkit-backface-visibility:visible}
-#printroot .printname{padding:0 13px; font-family:Marcellus, Georgia, serif;
-  font-size:26px; line-height:1.1; color:var(--name); text-align:center}
-#printroot .printblurb{padding:0 13px 10px; text-align:center;
-  font:400 9px/1.5 "Nunito Sans", sans-serif; color:var(--sep)}
-#printroot .printkeys{display:flex; justify-content:center; gap:var(--sp-2);
-  font:400 9px/1 "Nunito Sans", sans-serif; letter-spacing:.06em; color:var(--ink)}
-#printroot .printkeys .ring{display:inline-block; width:9px; height:9px;
-  margin-right:5px; border-radius:50%; border:2px solid var(--ink);
-  vertical-align:-1px}
-#printroot .blankrule{height:1px; margin:14px 18px; background:#e0e0e0}
+   The legacy browser-print sheet (#printroot, body.printing) was retired
+   once the owner's device gate (item 1, iPhone ruler check) passed; every
+   deck now downloads a client-built PDF instead, so this block only forces
+   colour for the page background. ---------------------------------------- */
 @media print{
   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-  /* height:100% is a PERCENTAGE, not a page-box literal: the platform
-     resolves it against whatever page area it actually chose, which is the
-     one number we are never allowed to assume. It gives .printpage free
-     space to centre the sheet in; min-height (emitted by printGridCSS) is
-     the floor that stops the block ever being shorter than the sheet, which
-     is what made every sheet paginate onto two pages. Floor and fill
-     together - neither alone is correct. */
   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
-  body.printing #printroot, body.printing #printroot .printpage{height:100%}
   /* The safe-area padding is an on-screen notch reservation and has no meaning
      on paper; left in, it shifts every page by the device's insets. */
   body{margin:0; padding:0; background:#fff; display:block}
-  /* menu-shell (2026-09-28, lane M1 necessity): #settings-scrim and
-     #settings-panel are new direct <body> children (a role="dialog" sibling
-     of header/main/footer, deliberately not nested in header - see the
-     settings-panel JS block). Without them in the selector list below they
-     are the one thing it misses and they would print on top of the cards;
-     test_render_agreement.py's
-     test_every_direct_child_of_body_is_hidden_or_belongs_to_the_sheet
-     enforces it. This edits the print block's owning line, crossed
-     deliberately because M1's own change is what made it incomplete - see
-     the M1 PR notes if this collides with a concurrent print-block change.
-     The selector list itself must stay one unbroken comma chain with no
-     comment inside it: test_render_agreement.py's hide_list() regex parses
-     it as a single run up to the display:none declaration, and a comment in
-     the middle truncates what it sees. */
-  body.printing > header, body.printing > main, body.printing > .announce,
-  body.printing > #scale-sheet, body.printing > #settings-scrim,
-  body.printing > #settings-panel, body.printing > footer{display:none !important}
-  body.printing #printroot{display:block}
-  /* B0 finding: the masked `.face::before` frame flattens to a SOLID block in
-     Chrome's print export. Re-express it as an inset ring, which survives. */
-  #printroot .printcell .face::before{display:none}
-  #printroot .printcell .face{box-shadow:inset 0 0 0 3.2px var(--ga)}
 }
 </style>
 </head>
@@ -6447,51 +6392,6 @@ function sizePanHits(svg, minPx) {
 // three built-in decks have committed PDFs; a generated/custom deck has none.
 /** The print sheet's page geometry, in PDF points, copied from
  *  `tools/hifi.py:35-37` - which is the print spec, not a second opinion.
- *  CSS `pt` is a physical unit in print, so these carry over unchanged.
- *
- *  ONE declaration, read by every layout. The wide sheet is 3x3 and is pinned
- *  by value against `hifi.slots()`; the narrow sheet of D17 is 3x2 and has no
- *  Python oracle to be pinned against, so what holds it honest is that it
- *  derives from these same six numbers (AC-B3). A second copy would agree
- *  today and drift later.
- */
-const PRINT_GEOM = { PW: 612, PH: 792, CW: 177.6, CH: 247.2, GX: 12.2, GY: 9.4 };
-
-/** The two page layouts. D17: a narrow viewport drops a ROW, never a column -
- *  the iOS overflow is vertical. Both are 3 columns of the same card.
- *
- *  The gutters live here rather than being read straight from PRINT_GEOM
- *  because they are the only slack the sheet has. B7 on an iPhone 14 (iOS
- *  26.6) printed the narrow sheet sheared at both edges: iOS Safari ignores
- *  `@page{margin:0}` and enforces its own printable area, and 3 columns plus
- *  two 12.2pt gutters is 557.2pt, which fits only a 13.7pt margin. At zero
- *  gutters the same three cards are 532.8pt - still 1.2pt over the 531.6pt
- *  iOS actually grants, which is why the zero-gutter sheet ALSO clipped. The
- *  narrow sheet therefore ROTATES: 494.4pt across and 532.8pt down clears
- *  PRINT_SAFE on both axes, at the card's exact printed size. The owner chose
- *  exact size over scaling the sheet down (2026-09-22).
- *  `constrained` marks the layouts a margin-enforcing platform can select;
- *  `wide` is not one of them (see printLayoutName), so it keeps hifi's
- *  gutters for the platforms that honour `margin:0`.
- */
-const PRINT_LAYOUTS = {
-  wide: { cols: 3, rows: 3, gx: PRINT_GEOM.GX, gy: PRINT_GEOM.GY },
-  narrow: { cols: 3, rows: 2, gx: 0, gy: 0, rotate: true, constrained: true },
-};
-
-/** The printable area a platform that ignores `@page` leaves us, per side.
- *  Measured on iPhone 14 / iOS 26.6, US Letter (2026-09-21): the paper is
- *  612pt wide and the drawn content spanned 531.6pt, so the enforced margin
- *  is 40.2pt (0.558in) - NOT the 0.5in the previous oracle assumed. 45pt
- *  carries that measurement with ~12% headroom, because it came from one
- *  device at one scale factor.
- */
-/*  Reviewer R3: nothing in the app READS this - layout selection is by UA and
- *  viewport, never by arithmetic against a margin. It is an executable spec
- *  anchor for a device measurement, exported so tests/app.test.js can assert
- *  every constrained layout still fits what the platform actually grants. */
-const PRINT_SAFE = { margin: 45 };
-
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
@@ -6513,150 +6413,13 @@ function isIOS(ua) {
     (/Macintosh/.test(s) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
 }
 
-/** AC-B5b: slots-per-page is decided ONCE, here. The name this returns picks
- *  a `PRINT_LAYOUTS` entry, `printGridCSS()` turns that into the stylesheet
- *  `#printgeom` carries, and the `@media print` block never re-decides the
- *  width itself - it has no width query and no layout selector at all.
- *  The iOS clause comes FIRST and ignores width: keyed on width alone, an
- *  iPad in portrait (744/768/810/820/834 CSS px) and an iPhone 14 in
- *  landscape (844) both selected the 557.2 x 760.4pt wide sheet on a platform
- *  whose printable box is ~531.6 x 711.6pt - short on both axes, and too tall
- *  for rotation to rescue. Off iOS the app's own 640px breakpoint still
- *  applies; note that `index.html:41` is a TWO-condition query
- *  (`min-width:640px and min-height:700px`), so it and this function
- *  deliberately disagree on a landscape phone.
- */
-function printLayoutName(w, ua) {
-  if (isIOS(ua)) return "narrow";
-  return w >= 640 ? "wide" : "narrow";
-}
-
-/** The grid declaration, written from PRINT_GEOM so the stylesheet carries no
- *  card-geometry literal of its own (the same single-definition-site rule
- *  AC-B3 puts on the slot emitter).
- */
-function printGridCSS(name, paper) {
-  const g = PRINT_GEOM, L = PRINT_LAYOUTS[name], p = PRINT_PAPER[paper] || PRINT_PAPER.letter;
-  // Reserve the SHEET's own footprint, never the paper's. A platform that
-  // ignores @page owns the page box; a block taller than that box does not
-  // clip, it paginates - every sheet becomes two pages, the second carrying
-  // the sliced remainder. min-height lets the platform's box supply the rest.
-  const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
-  const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-  // Rounded: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary float,
-  // and a stylesheet is text a human reads in devtools.
-  const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
-  return `@page{size:${p.css}; margin:0}\n` +
-    `#printroot .printpage{min-height:${footprint}pt}\n` +
-    `#printroot .printsheet{grid-template-columns:repeat(${L.cols}, ${g.CW}pt);` +
-    `grid-template-rows:repeat(${L.rows}, ${g.CH}pt);` +
-    `column-gap:${L.gx}pt; row-gap:${L.gy}pt}\n` +
-    (L.rotate ? `#printroot .printsheet{transform:rotate(-90deg)}\n` : "") +
-    `#printroot .printscale{width:${PRINT_DESIGN_W}px;` +
-    `height:${PRINT_DESIGN_W * g.CH / g.CW}px;` +
-    `transform:scale(${g.CW / 72 * 96 / PRINT_DESIGN_W})}`;
-}
-
-/** The card list a print sheet is built from, mirroring `tools/hifi.py`
- *  build() (:379-395), which is the print spec.
- *
- *  The full deck opens with a title and a legend card and pads the last page
- *  with BLANK templates; the print-shop sheet is chord cards only and pads
- *  with EMPTY slots, so a shop never prints a blank template nobody asked
- *  for.
- *
- *  `blank_cards` asks for blanks BEYOND that padding. `data/decks.json` (what
- *  the DECKS line is generated from) now carries it as `print.blank_cards`
- *  (Pygmy: 7) - NESTED under the per-deck print overlay, not as a top-level
- *  `d.blank_cards` key. `HPE.pdfdeck.fromBuiltin`'s generic overlay flatten
- *  copies it to the top level of the deck object it builds for the PDF
- *  emitter (no dedicated lift needed), but this function reads the browser
- *  deck object directly (`deck().blank_cards`), which no shipped deck sets -
- *  so the branch below is still the thing that actually fills a short last
- *  page for every built-in today, and stays live the moment a shipped deck's
- *  top-level `blank_cards` is set.
- *  Pinned by "blank_cards is honoured when present" in tests/app.test.js.
- *
- *  `slotsPerPage` is an ARGUMENT, never a viewport read: D17 makes it 6 on a
- *  narrow viewport and 9 on a wide one, and one decision point for that
- *  number is what keeps the padding here and the CSS grid from disagreeing
- *  (AC-B5b). A function that read window.innerWidth itself would also stop
- *  being testable without a viewport stub.
- */
-/** The static legend copy. It teaches the CARD ANATOMY, not the deck, so it
- *  is the same on every sheet - the decision recorded under "The copy a custom
- *  deck does not have". Mirrors tools/hifi.py legend_card (:490-511).
- */
-const PRINT_LEGEND_LINES = [
-  "The diagram lights every field whose note is in the chord.",
-  "Notes read from the root, in the chord's own spelling order.",
-  "The number line is the same notes by their pan index."
-];
-
-/** One printCardList() entry as the inner markup of a `.face`.
- *  Chord cards draw through the app's own renderers; the other three kinds
- *  mirror tools/hifi.py title_card (:474), legend_card (:490) and blank_card
- *  (:514). A custom deck has no print-overlay copy, so the canonical seed
- *  string stands in for `sub`, the engine's own warning reasons stand in for
- *  the blurb, and there is no credit line.
- */
-function printCardHTML(d, card) {
-  if (card.kind === "skip") return "";
-  const seed = HPE.core.formatSeed(d.fields);
-  if (card.kind === "chord") {
-    // Full card anatomy, per CLAUDE.md "Card anatomy": header, chord name,
-    // diagram, then the note and number lines. `nameHTML(ch, false)` leaves the
-    // size to the print stylesheet - the screen's `big` size is in `vw`, which
-    // means nothing on paper.
-    return headerHTML(d, card.chord, card.n, true) +
-      `<div class="printname">${nameHTML(card.chord, false)}</div>` +
-      `<div class="diagwrap">${pan(d, card.chord)}</div>` + linesHTML(d, card.chord);
-  }
-  if (card.kind === "title") {
-    const blurb = (d.warnings || []).map(w => `<div>${esc(w.reason)}</div>`).join("");
-    return `<div class="hdr">
-      <div class="l">${esc(d.name)}<br><span class="num">${esc(d.sub || seed)}</span></div>
-      <div class="r">CHORD CARDS</div></div>
-      <div class="diagwrap">${pan(d, null)}</div>
-      <div class="printblurb">${blurb}</div>`;
-  }
-  if (card.kind === "legend") {
-    const demo = d.chords[0];
-    return `<div class="hdr">
-      <div class="l">${esc(d.name)}</div><div class="r">LEGEND</div></div>
-      <div class="prompt"><div class="bigname" style="font-size:28px">How to read</div></div>
-      <div class="diagwrap">${pan(d, demo)}</div>
-      <div class="printkeys">
-        <span class="key"><span class="ring" style="border-color:${d.colors.root}"></span>ROOT NOTE</span>
-        <span class="key"><span class="ring" style="border-color:${d.colors.tone}"></span>CHORD NOTE</span>
-      </div>
-      <div class="printblurb">${PRINT_LEGEND_LINES.map(l => `<div>${esc(l)}</div>`).join("")}</div>`;
-  }
-  // blank: a deck-branded template with two rules to write on.
-  return `<div class="hdr"><div class="l">${esc(d.name)}</div></div>
-    <div class="diagwrap">${pan(d, null)}</div>
-    <div class="lines"><div class="blankrule"></div><div class="blankrule"></div></div>`;
-}
-
-function printCardList(d, variant, slotsPerPage) {
-  const chords = d.chords.map((ch, i) => ({ kind: "chord", n: i + 1, chord: ch }));
-  const shop = variant === "shop";
-  const cards = shop ? chords
-    : [{ kind: "title" }, { kind: "legend" }].concat(chords,
-        Array.from({ length: d.blank_cards || 0 }, () => ({ kind: "blank" })));
-  const filler = shop ? "skip" : "blank";
-  while (cards.length % slotsPerPage !== 0) cards.push({ kind: filler });
-  return cards;
-}
-
-/* ---------------- the print CTA (Workstream B) ----------------
- * As of the one-pdf-path plan, every deck - built-in or generated - prints
- * the same way: downloadDeckPDF below builds the PDF client-side and hands
- * it to the platform (download link on desktop, window.open/location.href
- * on iOS). window.print()/openPrintSheet is legacy, kept only until the
- * owner's device gate retires it (see the comment above downloadDeckPDF).
- * The container is `hidden` and contributes nothing to the practice screen
- * at any other moment (AC-B5).
+/* ---------------- the print CTA ----------------
+ * Every deck - built-in or generated - prints the same way: downloadDeckPDF
+ * below builds the PDF client-side and hands it to the platform (download
+ * link on desktop, window.open/location.href on iOS). The legacy
+ * window.print()/openPrintSheet browser-print sheet was retired (R1,
+ * 2026-09-29) once the owner's device gate passed - see the comment above
+ * downloadDeckPDF.
  */
 // Type-guarded like store.deck / store.mode above (D-3): "hpfc" is shared, so
 // a non-string or unrecognised value here must not survive into printPaper.
@@ -6682,77 +6445,14 @@ function setPrintPaper(p) {
   if (sel) sel.value = p;
 }
 
-/** The design width the faces are authored at. The printed card is CW points
- *  wide, so the scale factor falls out of PRINT_GEOM and is not a literal of
- *  its own. */
-const PRINT_DESIGN_W = 340;
-
-function printSheetHTML(d, variant, name) {
-  const L = PRINT_LAYOUTS[name], slots = L.cols * L.rows;
-  const cards = printCardList(d, variant, slots);
-  let out = "";
-  for (let i = 0; i < cards.length; i += slots) {
-    const cells = cards.slice(i, i + slots).map(c => {
-      const inner = printCardHTML(d, c);
-      // A `skip` is an EMPTY slot on the print-shop sheet: the cell holds the
-      // grid open and draws nothing.
-      return `<div class="printcell">${inner
-        ? `<div class="printscale"><div class="face">${inner}</div></div>` : ""}</div>`;
-    }).join("");
-    out += `<div class="printpage"><div class="printsheet">${cells}</div></div>`;
-  }
-  return out;
-}
-
-/* Idempotent, and it re-queries its own elements every time: this runs from a
-   listener registered at boot, when #printroot has not been parsed yet, so a
-   captured reference would be null. Clearing an already-empty container is a
-   no-op, which is what lets one boot-scope listener serve both the app's CTA
-   and a print the user started themselves (Cmd+P, iOS Share -> Print). */
-function teardownPrintSheet() {
-  const root = document.getElementById("printroot");
-  root.innerHTML = "";
-  root.hidden = true;
-  document.body.classList.remove("printing");
-  document.getElementById("printgeom").textContent = "";
-}
-
-function openPrintSheet(variant) {
-  const root = document.getElementById("printroot");
-  try {
-    // AC-B5b: the viewport is read ONCE, here, and feeds ONE thing - the
-    // stylesheet below. The container carries no layout class: nothing in
-    // @media print selects on one, so a class would only be a second decision
-    // point free to drift from this one.
-    const name = printLayoutName(window.innerWidth, navigator.userAgent);
-    document.getElementById("printgeom").textContent = printGridCSS(name, printPaper);
-    root.innerHTML = printSheetHTML(deck(), variant, name);
-    root.hidden = false;
-    document.body.classList.add("printing");
-    window.print();
-  } catch (e) {
-    // Only the throw path tears down synchronously: if print() threw, no print
-    // is happening and no afterprint will arrive. The SUCCESS path must NOT
-    // clean up here - window.print() blocks on desktop Chrome but returns
-    // immediately on iOS Safari, which schedules the print UI asynchronously,
-    // so a finally would empty the sheet before iOS rasterized it and print
-    // the live app page instead. Teardown belongs to afterprint (boot scope).
-    teardownPrintSheet();
-    throw e;
-  }
-}
-
-/* The print CTA for every deck - built-in and generated alike (one-pdf-path
-   plan; see the comment above openPrintSheet) - as of the client-pdf-emitter
-   plan: the browser is no longer asked to print, the page writes the PDF
-   itself and hands it over. iOS Safari is the reason - it ignores `@page`
-   entirely (no paper size, no orientation, no margins), so the browser-print
-   sheet could never produce the 62.65 x 87.21 mm card the print spec
-   measures, on the one platform this app is used on most.
-
-   `openPrintSheet` above is deliberately left in place and unreferenced by
-   the CTA (plan D2): until the owner's device gate says the emitter prints
-   correctly on the phone, the old path is the way back.
+/* The print CTA for every deck - built-in and generated alike: the browser is
+   never asked to print, the page writes the PDF itself and hands it over.
+   iOS Safari is the reason - it ignores `@page` entirely (no paper size, no
+   orientation, no margins), so a browser-print sheet could never produce the
+   62.65 x 87.21 mm card the print spec measures, on the one platform this
+   app is used on most. The legacy browser-print path (openPrintSheet) was
+   retired once the owner's device gate confirmed the emitter prints
+   correctly on the phone (R1, 2026-09-29).
 
    The bytes are HPE.pdfcards', a port of tools/hifi.py held glyph for glyph
    against it by tests/test_pdf_parity.py. Nothing about the page layout is
@@ -6815,15 +6515,12 @@ function downloadDeckPDF(variant, btn) {
   }
 }
 
-function headerHTML(d, ch, n, noPrints) {
+function headerHTML(d, ch, n) {
   const deg = d.degrees[String(pc(d, ch.roots[0]))] || "";
   // The card face carries no controls (menu-shell, 2026-09-28): the print
   // row moved into the settings panel's "Print this deck" group, so this
-  // function never emits one. `noPrints` is kept as a parameter - and every
-  // existing call site, including the legacy print-sheet path at :6218 -
-  // rather than touched, since it is now always a no-op and the call sites
-  // are outside this lane's ownership.
-  void noPrints;
+  // function never emits one. The `noPrints` parameter was removed (R1,
+  // 2026-09-29) along with the legacy print-sheet call site that passed it.
   return `<div class="hdr">
     <div class="l">${esc(d.name)}<br><span class="num">#${n}</span>
       ${deg ? `&nbsp;<span class="deg">${esc(deg)}</span>` : ""}</div>
@@ -7791,11 +7488,6 @@ function closeScaleSheet() {
   hideSheet();
   if (routed) history.back();
 }
-/* The print sheet's only teardown on the success path. Registered ONCE here,
-   not inside openPrintSheet(), so pressing the CTA N times leaves one
-   listener rather than N. */
-window.addEventListener("afterprint", teardownPrintSheet);
-
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
@@ -8296,11 +7988,5 @@ if (location.hash === ADD_ROUTE || location.hash.indexOf(EDIT_ROUTE) === 0)
 else if (location.hash.indexOf(SHARE_PREFIX) === 0)
   openShare(location.hash.slice(SHARE_PREFIX.length));
 </script>
-<!-- The print sheet lives outside <main> so `@media print` can hide the app
-     without hiding it. It is `hidden` until the CTA fills it and is emptied
-     again afterwards (AC-B5); `aria-hidden` keeps a filled sheet out of the
-     accessibility tree even in the instant it is populated. -->
-<div id="printroot" hidden aria-hidden="true"></div>
-<style id="printgeom"></style>
 </body>
 </html>

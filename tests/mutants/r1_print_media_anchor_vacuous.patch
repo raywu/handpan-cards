@@ -5,11 +5,13 @@
 # unrelated block and the rule scan asserts nothing. This decoy also carries
 # the anchor string itself, so an anchor assertion alone does not save it -
 # the slice starts inside the comment and the comment satisfies the anchor.
-# Only stripping comments before the scan closes it. Paired with the page-box
+# Only stripping comments before the scan closes it. Paired with a page-box
 # literal the scan exists to catch.
-# Context-refreshed 2026-09-28 (android-bg-and-menu lane A): the mutated
-# lines are unchanged; the surrounding context moved (meta tags and an html
-# background-color rule were added earlier in the file).
+# Re-targeted 2026-09-29 (R1): the legacy print sheet's
+# `body.printing #printroot{display:block; height:840pt}` literal this mutant
+# used to add is gone along with #printroot; the equivalent literal now lands
+# directly on the surviving html,body fill rule, which the narrowed test
+# still requires to stay a percentage.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -17,15 +19,16 @@ diff --git a/index.html b/index.html
     the box the user is typing into out of sight. The ramp keeps its proportions
     and gives back roughly a third; the rhythm still reads because it is the
     RATIOS that group things, not the absolute values. */
-+/* @media print rules for body.printing #printroot live at the foot */
++/* @media print rules for html,body live at the foot */
  @media (max-height:520px){
    :root{--sp-1:3px; --sp-2:6px; --sp-3:9px; --sp-4:14px}
  }
-@@ -789,6 +790,7 @@
+@@ -869,7 +870,7 @@
+      the floor that stops the block ever being shorter than the sheet, which
+      is what made every sheet paginate onto two pages. Floor and fill
       together - neither alone is correct. */
-   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
-   body.printing #printroot, body.printing #printroot .printpage{height:100%}
-+  body.printing #printroot{display:block; height:840pt}
+-  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
++  html,body{height:840pt; min-height:0; overflow:visible; background:#fff}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
    body{margin:0; padding:0; background:#fff; display:block}

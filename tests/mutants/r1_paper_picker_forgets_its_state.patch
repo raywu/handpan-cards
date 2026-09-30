@@ -1,0 +1,30 @@
+# kills: print CTA: the paper picker reports the paper that will actually print
+# suite: node --test --test-name-pattern actually.print tests/app.test.js
+# Re-targeted 2026-09-28 (lane M1, menu-shell): the paper picker used to be
+# re-rendered per card by headerHTML(), with `selected` computed from
+# printPaper on every render - that markup is gone now that the picker is a
+# single static control in the settings panel (D16). The equivalent failure
+# mode today is setPrintPaper() forgetting to push the new value into the
+# static #print-paper-select, so a call from anywhere other than the select's
+# own onchange (e.g. restoring state on load) would leave the control lying
+# about what will actually print.
+# Context-refreshed 2026-09-29 (R1): the mutated lines are unchanged in
+# substance; the whole legacy print-sheet chain (PRINT_GEOM through
+# openPrintSheet) was deleted above this function, moving it from :6287 to
+# :6432.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6432,12 +6432,6 @@
+ function setPrintPaper(p) {
+   if (!isPaper(p)) return;
+   printPaper = p; save();
+-  // D16: the picker is a static control now (it lives in the settings panel,
+-  // not re-rendered per card), so it only reflects state that WE push into
+-  // it - sync it here so a call from anywhere (not just its own onchange)
+-  // keeps it truthful.
+-  const sel = document.getElementById("print-paper-select");
+-  if (sel) sel.value = p;
+ }
+
+ /* The print CTA for every deck - built-in and generated alike (one-pdf-path

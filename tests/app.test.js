@@ -3553,20 +3553,6 @@ test("the visual system's three fonts land on the elements CLAUDE.md names them 
   }
 });
 
-/* ------------------------------------------- 20. the print sheet card list */
-
-/* Workstream B, AC-B2 and AC-B4. `tools/hifi.py` build() (:379-395) is the
- * print spec and these tests are written against IT, not against the JS: the
- * full deck leads with a title and a legend card and pads with BLANK
- * templates; the print-shop sheet carries chord cards only and pads with
- * empty SKIPS, so a shop never prints a blank template it was not asked for.
- *
- * Slots per page is an ARGUMENT here, never a viewport read (AC-B2). D17
- * makes it 6 on a narrow viewport and 9 on a wide one, and a function that
- * reached for window.innerWidth itself would be neither pure nor testable
- * without viewport mocking this suite does not otherwise do. Every case below
- * therefore runs at both 9 and 6. */
-
 /** The generated Amara deck, selected, so deck() returns it. */
 function customDeck(app) {
   const res = app.generate(AMARA_STRING);
@@ -3575,478 +3561,52 @@ function customDeck(app) {
   return res.value.id;
 }
 
-const kinds = (app, variant, slots) =>
-  arr(app.get(`printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).map(function(c){return c.kind})`));
-
-test("print sheet card list: the full variant leads with title and legend", () => {
-  const app = boot();
-  customDeck(app);
-  for (const slots of [9, 6]) {
-    const ks = kinds(app, "full", slots);
-    assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"],
-      `full sheet at ${slots}/page must open with the title and legend cards`);
-    assert.strictEqual(ks.filter((k) => k === "title").length, 1);
-    assert.strictEqual(ks.filter((k) => k === "legend").length, 1);
-  }
-});
-
-test("print sheet card list: padding fills the last page, with the right filler", () => {
-  const app = boot();
-  customDeck(app);
-  const chordCount = app.get("deck().chords.length");
-  for (const slots of [9, 6]) {
-    const full = kinds(app, "full", slots);
-    assert.strictEqual(full.length % slots, 0,
-      `full sheet at ${slots}/page left a ragged last page`);
-    // hifi.py pads the full deck with blank TEMPLATE cards.
-    assert.ok(full.every((k) => ["title", "legend", "chord", "blank"].includes(k)));
-    assert.strictEqual(full.length - chordCount - 2,
-      full.filter((k) => k === "blank").length);
-
-    const shop = kinds(app, "shop", slots);
-    assert.strictEqual(shop.length % slots, 0,
-      `print-shop sheet at ${slots}/page left a ragged last page`);
-    // ...and the print-shop sheet with EMPTY slots, never with blanks.
-    assert.ok(!shop.includes("blank"),
-      "the print-shop sheet must not ship blank template cards");
-    assert.ok(!shop.includes("title") && !shop.includes("legend"),
-      "the print-shop sheet is chord cards only");
-    assert.strictEqual(shop.filter((k) => k === "chord").length, chordCount);
-    assert.strictEqual(shop.filter((k) => k === "skip").length,
-      shop.length - chordCount);
-  }
-});
-
-test("print sheet card list: a deck that exactly fills its pages gets no padding", () => {
-  const app = boot();
-  customDeck(app);
-  const n = app.get("deck().chords.length");
-  // Amara generates 25 chords; 25 + title + legend = 27 = 3 pages of 9 exactly.
-  assert.strictEqual(n, 25, "fixture changed - pick a new exact-fit arithmetic");
-  assert.deepStrictEqual(kinds(app, "full", 9).filter((k) => k === "blank"), []);
-});
-
-test("print sheet covers every chord exactly once, numbered from 1", () => {
-  const app = boot();
-  customDeck(app);
-  for (const variant of ["full", "shop"]) {
-    for (const slots of [9, 6]) {
-      const ns = arr(app.get(
-        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
-        `.filter(function(c){return c.kind === "chord"}).map(function(c){return c.n})`));
-      const total = app.get("deck().chords.length");
-      assert.deepStrictEqual(ns, Array.from({ length: total }, (_, i) => i + 1),
-        `${variant} at ${slots}/page must carry every chord once, numbered 1..n in deck order`);
-      const names = arr(app.get(
-        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})` +
-        `.filter(function(c){return c.kind === "chord"})` +
-        `.map(function(c){return c.chord.main + (c.chord.sup || "")})`));
-      const expected = arr(app.get(
-        `deck().chords.map(function(c){return c.main + (c.sup || "")})`));
-      assert.deepStrictEqual(names, expected,
-        "the printed cards must be the deck's own chords, in deck order");
-    }
-  }
-});
-
-test("print sheet card list: a built-in deck composes the same way", () => {
-  const app = boot();
-  // Only Pygmy's print overlay carries a blank_cards literal (nested, at
-  // DECKS[i].print.blank_cards - see "blank_cards is honoured when present"
-  // below for why the browser never reads that nested copy). Amara's overlay
-  // has none, so its list is title + legend + chords + padding, no blanks.
-  const di = deckIndex(app, "amara");
-  const ks = arr(app.get(
-    `printCardList(DECKS[${di}], "full", 9).map(function(c){return c.kind})`));
-  assert.deepStrictEqual(ks.slice(0, 2), ["title", "legend"]);
-  assert.strictEqual(ks.length % 9, 0);
-  assert.strictEqual(ks.filter((k) => k === "chord").length,
-    app.get(`DECKS[${di}].chords.length`));
-});
-
-/* ---------------------------------------------------------------------------
- * 21. the print card markup
- *
- * B3. One function turns a printCardList() entry into the inner markup of a
- * `.face`, so the print sheet draws through the app's own renderers rather
- * than a second set. The non-chord kinds mirror tools/hifi.py's title_card
- * (:474), legend_card (:490) and blank_card (:514) - the print spec - with
- * the copy substitutions D17's "The copy a custom deck does not have"
- * settled: the canonical seed string in place of the print overlay's `sub`,
- * the engine's own warning reasons in place of the blurb, and no credit line.
- * ------------------------------------------------------------------------ */
-
-const cardHTML = (app, variant, slots, i) =>
-  String(app.get(
-    `printCardHTML(deck(), printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}])`));
-
-test("print card markup: a chord card is the app's own answer face, minus the print row", () => {
-  const app = boot();
-  customDeck(app);
-  const html = cardHTML(app, "shop", 9, 0);
-  const main = String(app.get("deck().chords[0].main"));
-  assert.ok(html.includes(main), "the chord card must carry its chord name");
-  assert.ok(html.includes("<svg"), "the chord card must carry the pan diagram");
-  assert.ok(html.includes("notesline") && html.includes("numline"),
-    "the chord card must carry the note line and the number line");
-  assert.ok(html.includes("#1"), "the chord card must carry its index number");
-  assert.ok(!html.includes('class="prints"'),
-    "a printed card must not carry the .prints row - it is screen furniture");
-});
-
-test("print card markup: the title card names the deck and carries its seed and blurb", () => {
-  const app = boot();
-  customDeck(app);
-  const html = cardHTML(app, "full", 9, 0);
-  const name = String(app.get("deck().name"));
-  const seed = String(app.get("HPE.core.formatSeed(deck().fields)"));
-  assert.ok(html.includes(name), "the title card must name the deck");
-  assert.ok(html.includes(seed),
-    "a custom deck has no print-overlay `sub`; the canonical seed string stands in");
-  assert.ok(html.includes("CHORD CARDS"), "mirrors hifi.title_card:479");
-  assert.ok(html.includes("<svg"), "the title card carries an unhighlighted pan");
-  assert.ok(!html.includes("notesline"),
-    "the title card is not a chord card and has no note line");
-  const warnings = arr(app.get("(deck().warnings || []).map(function(w){return w.reason})"));
-  for (const w of warnings) {
-    assert.ok(html.includes(String(app.get(`esc(${JSON.stringify(w)})`))),
-      "the engine's own reason strings are the custom deck's blurb");
-  }
-});
-
-test("print card markup: the legend card is the same static anatomy lesson for every deck", () => {
-  const app = boot();
-  customDeck(app);
-  const custom = cardHTML(app, "full", 9, 1);
-  const di = deckIndex(app, "hijaz");
-  const builtin = String(app.get(
-    `printCardHTML(DECKS[${di}], printCardList(DECKS[${di}], "full", 9)[1])`));
-  for (const s of ["LEGEND", "How to read", "ROOT NOTE", "CHORD NOTE"]) {
-    assert.ok(custom.includes(s), `the legend card must carry "${s}"`);
-    assert.ok(builtin.includes(s), `the built-in legend card must carry "${s}" too`);
-  }
-  assert.ok(custom.includes("<svg"), "the legend card demonstrates on a pan");
-  assert.ok(!custom.includes("notesline"),
-    "the legend card teaches the anatomy; it is not a chord card");
-});
-
-test("print card markup: a blank card is a deck-branded template with no chord on it", () => {
-  const app = boot();
-  customDeck(app);
-  const html = String(app.get('printCardHTML(deck(), {kind: "blank"})'));
-  assert.ok(html.includes(String(app.get("deck().name"))),
-    "the blank card is deck-branded - hifi.blank_card:516");
-  assert.ok(html.includes("<svg"), "the blank card carries an unhighlighted pan");
-  assert.ok(!html.includes("notesline") && !html.includes("numline"),
-    "the blank card's note and number rows are RULES to write on, not rendered lines");
-  assert.ok(html.includes("blankrule"),
-    "the two write-on rules mirror hifi.blank_card:520-521");
-});
-
-test("print card markup: an empty print-shop slot renders nothing at all", () => {
-  const app = boot();
-  customDeck(app);
-  assert.strictEqual(String(app.get('printCardHTML(deck(), {kind: "skip"})')), "",
-    "a `skip` is an EMPTY slot on the print-shop sheet, not a card");
-});
-
-test("print card markup: every card a sheet emits renders", () => {
-  const app = boot();
-  customDeck(app);
-  for (const variant of ["full", "shop"]) {
-    for (const slots of [9, 6]) {
-      const n = Number(app.get(
-        `printCardList(deck(), ${JSON.stringify(variant)}, ${slots}).length`));
-      for (let i = 0; i < n; i++) {
-        const kind = String(app.get(
-          `printCardList(deck(), ${JSON.stringify(variant)}, ${slots})[${i}].kind`));
-        const html = cardHTML(app, variant, slots, i);
-        if (kind === "skip") assert.strictEqual(html, "");
-        else assert.ok(html.length > 0,
-          `${variant} at ${slots}/page: card ${i} (${kind}) rendered nothing`);
-      }
-    }
-  }
-});
-
-/* ---------------------------------------------------------------------------
- * 22. the print sheet's layout selection and its grid CSS
- *
- * B4/AC-B5b. Slots-per-page is decided ONCE, in JS, at 640px - the app's own
- * breakpoint (index.html:41). That decision reaches print as the grid
- * `printGridCSS()` writes into `#printgeom`, and the `@media print` block
- * never re-decides the width itself: a second breakpoint in CSS is the drift
- * vector that ships 9 padded cards into a 6-slot grid.
- * ------------------------------------------------------------------------ */
-
-test("print sheet slot count agrees with the layout the breakpoint picks", () => {
-  const app = boot();
-  for (const [w, name, slots] of [[640, "wide", 9], [1024, "wide", 9],
-                                  [639, "narrow", 6], [380, "narrow", 6]]) {
-    assert.strictEqual(String(app.get(`printLayoutName(${w})`)), name,
-      `${w}px must select the ${name} layout`);
-    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
-    assert.strictEqual(L.cols * L.rows, slots,
-      `the ${name} layout must be ${slots} slots per page`);
-    assert.strictEqual(L.cols, 3,
-      "both layouts are 3 columns wide - D17 reduces ROWS, not columns");
-    // The grid the app actually renders, not a slot emitter nothing calls:
-    // `printGridCSS` is what `#printgeom` receives, so its repeat() counts are
-    // the page's real capacity. A slots-per-page decision that disagreed with
-    // them would pad a 6-slot grid with 9 cards.
-    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
-    assert.match(css, new RegExp(`grid-template-columns:repeat\\(${L.cols},`),
-      `${name}: the emitted grid must be ${L.cols} columns`);
-    assert.match(css, new RegExp(`grid-template-rows:repeat\\(${L.rows},`),
-      `${name}: the emitted grid must be ${L.rows} rows`);
-  }
-});
-
-test("print sheet grid CSS is emitted from PRINT_GEOM, never typed", () => {
-  const app = boot();
-  const g = plain(app.get("PRINT_GEOM"));
-  for (const name of ["wide", "narrow"]) {
-    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
-    const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, "letter")`));
-    assert.ok(css.includes(`repeat(${L.cols}, ${g.CW}pt)`),
-      `${name}: columns must come from PRINT_GEOM.CW`);
-    assert.ok(css.includes(`repeat(${L.rows}, ${g.CH}pt)`),
-      `${name}: rows must come from PRINT_GEOM.CH`);
-    assert.ok(css.includes(`column-gap:${L.gx}pt`) && css.includes(`row-gap:${L.gy}pt`),
-      `${name}: gutters must come from the layout`);
-  }
-});
-
-/* B7 on an iPhone 14 (iOS 26.6): iOS Safari ignores `@page{margin:0}` and
-   enforces its own printable area, so a sheet sized against the full 612pt
-   page is sheared at BOTH edges - the outer cards lose their borders and the
-   corner of their header copy. 3 columns plus 12.2pt gutters is 557.2pt,
-   which only fits if the platform grants a 13.7pt margin; iOS grants about
-   0.5in. Dropping the narrow layout's gutters brings the block to 532.8pt,
-   which fits with room to spare and keeps the card at its printed size -
-   the owner's choice on 2026-09-22 over scaling the sheet down. */
-test("every print layout fits inside the platform-enforced printable area", () => {
-  const app = boot();
-  const g = plain(app.get("PRINT_GEOM"));
-  const S = plain(app.get("PRINT_SAFE"));
-  const layouts = plain(app.get("PRINT_LAYOUTS"));
-  // Reviewer R1: `constrained` selects WHICH layouts this loop checks, so it
-  // is load-bearing for the whole test. Dropping it from PRINT_LAYOUTS.narrow
-  // left the suite at 163/163 green - `if (!L.constrained) continue` then
-  // skipped every layout and the fit assertions below ran zero times. Pin the
-  // flag by value AND count the iterations, so an empty loop cannot pass.
-  assert.strictEqual(layouts.narrow.constrained, true,
-    "the narrow layout must stay marked constrained or the fit loop checks nothing");
-  let checked = 0;
-  // iOS Safari ignores `@page` entirely - size, orientation AND margin:0 - so
-  // the page box is wholly platform-chosen and the margin is whatever the
-  // platform grants. Measured on iPhone 14 / iOS 26.6, US Letter: the drawn
-  // area is 531.6pt of 612, i.e. 40.2pt per side. PRINT_SAFE.margin carries
-  // that measurement with headroom. The old oracle asserted a bare 72
-  // (0.5in/side) and passed a sheet that clipped on the device.
-  assert.ok(S.margin >= 42,
-    `PRINT_SAFE.margin is ${S.margin}pt, under the ~40.2pt iOS actually enforces`);
-  /* Reviewer R4: the old loop measured ONE paper. g.PW/g.PH are Letter, and
-     the app deliberately carries no paper dimensions at all (asserting one is
-     what paginated every sheet), so the papers live here, in the test, as the
-     measurement they are. A4 is the tight axis: at PRINT_SAFE.margin
-     its 595.28pt width leaves 505.28pt of safe width against Letter's 522 -
-     and it fit by luck until now. */
-  const PAPERS = { letter: [g.PW, g.PH], a4: [595.28, 841.89] };
-  assert.deepStrictEqual(Object.keys(PAPERS).sort(),
-    Object.keys(plain(app.get("PRINT_PAPER"))).sort(),
-    "every paper the app offers must be measured by this fit loop");
-  for (const [paper, [pw, ph]] of Object.entries(PAPERS)) {
-    const safeW = pw - 2 * S.margin, safeH = ph - 2 * S.margin;
-    for (const [name, L] of Object.entries(layouts)) {
-      if (!L.constrained) continue;   // only layouts a margin-enforcing platform can select
-      checked++;
-      const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
-      const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-      // A rotated sheet presents its height horizontally and vice versa.
-      const w = L.rotate ? sh : sw, h = L.rotate ? sw : sh;
-      assert.ok(w <= safeW,
-        `the ${name} sheet presents ${w}pt of width on ${paper}, over the ${safeW}pt safe area`);
-      assert.ok(h <= safeH,
-        `the ${name} sheet presents ${h}pt of height on ${paper}, over the ${safeH}pt safe area`);
-    }
-  }
-  assert.ok(checked > 0,
-    "the fit loop asserted nothing - no paper/constrained-layout pair was measured");
-  // The fit must come from the layout, never from the card: 62.65 x 87.21 mm
-  // is the print spec both renderers share.
-  assert.strictEqual(g.CW, 177.6, "the card keeps its printed width");
-  assert.strictEqual(g.CH, 247.2, "the card keeps its printed height");
-  // Reviewer N1/N2: pin both gutter pairs by value, not merely by arithmetic.
-  assert.strictEqual(layouts.wide.gx, g.GX, "the wide sheet keeps hifi's column gutter");
-  assert.strictEqual(layouts.wide.gy, g.GY, "the wide sheet keeps hifi's row gutter");
-  assert.strictEqual(layouts.narrow.gx, 0, "the narrow sheet drops its column gutter");
-  assert.strictEqual(layouts.narrow.gy, 0, "the narrow sheet drops its row gutter");
-});
-
-test("iOS selects the narrow layout at every viewport width", () => {
-  const app = boot();
-  const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
-  const IPAD = "Mozilla/5.0 (iPad; CPU OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1";
-  const DESKTOP = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
-  // Reviewer N3: printLayoutName keyed on width alone, so an iPad in portrait
-  // (744/768/810/820/834) and an iPhone 14 in landscape (844) both selected
-  // "wide" on the same iOS Safari - a 557.2 x 760.4pt sheet that misses the
-  // printable box on BOTH axes, where rotation cannot save it either.
-  for (const w of [744, 768, 810, 820, 834, 844, 1024, 1366]) {
-    for (const ua of [IOS, IPAD]) {
-      assert.strictEqual(
-        String(app.get(`printLayoutName(${w}, ${JSON.stringify(ua)})`)), "narrow",
-        `iOS at ${w}px must not select a layout that overflows its printable area`);
-    }
-    assert.strictEqual(
-      String(app.get(`printLayoutName(${w}, ${JSON.stringify(DESKTOP)})`)), "wide",
-      `a real desktop at ${w}px honours margin:0 and keeps the 3x3 sheet`);
-  }
-  assert.strictEqual(String(app.get(`printLayoutName(380, ${JSON.stringify(DESKTOP)})`)), "narrow",
-    "the width rule still applies off iOS");
-});
-
 /* Reviewer R2: iPadOS defaults to "Request Desktop Website", so a real iPad
-   sends a Macintosh UA and is caught only by the maxTouchPoints clause. That
-   branch had no test: collapsing isIOS() to /iPad|iPhone|iPod/ left the suite
-   at 163/163 green, while a real iPad fell through to the width rule and got
-   the 557.2 x 760.4pt wide sheet that misses on both axes. */
+   sends a Macintosh UA and is caught only by the maxTouchPoints clause.
+   isIOS() is a shared symbol (R1, 2026-09-29): it still gates the PDF
+   download path's navigation-vs-download branch on iOS, so its UA/touch
+   detection stays covered here even with the legacy print-sheet layout
+   selection (printLayoutName) retired. */
 test("iPadOS in desktop mode is still treated as iOS", () => {
   const MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
   const ipad = boot({ userAgent: MAC, maxTouchPoints: 5 });
   assert.strictEqual(Boolean(ipad.get(`isIOS(${JSON.stringify(MAC)})`)), true,
     "a Macintosh UA with a touchscreen is an iPad, not a Mac");
-  for (const w of [1024, 1366]) {
-    assert.strictEqual(String(ipad.get(`printLayoutName(${w}, ${JSON.stringify(MAC)})`)), "narrow",
-      `an iPad in desktop mode at ${w}px must not select the wide sheet`);
-  }
-  // A real Mac sends the same UA with no touchscreen and must keep 3x3.
+  // A real Mac sends the same UA with no touchscreen and must not be an iPad.
   const mac = boot({ userAgent: MAC, maxTouchPoints: 0 });
   assert.strictEqual(Boolean(mac.get(`isIOS(${JSON.stringify(MAC)})`)), false,
     "a trackpad Mac is not an iPad");
-  assert.strictEqual(String(mac.get(`printLayoutName(1366, ${JSON.stringify(MAC)})`)), "wide",
-    "a real desktop Safari keeps the 3x3 sheet");
-});
-
-/* THE ATTEMPT-3 ORACLE. printGridCSS() asserted the PAPER height as the
-   PRINTABLE height (`.printpage{height:792pt}`), the same error class as
-   assuming @page{margin:0} is honoured. On iOS the printable box is about
-   711.6pt, less an OS header/footer band of roughly 50pt, so a 792pt block
-   does not merely clip - it PAGINATES: every sheet becomes two physical
-   pages. Measured in Chrome at the parent commit: 8 pages for 4 sheets,
-   every odd page blank. On the device it is the owner's "Page 1 of 10" for a
-   5-sheet deck, with the sliced bottom row landing at the top of page 2.
-   The fix is to stop declaring a page-box dimension at all and reserve only
-   the sheet's own footprint, which the platform's box then contains. */
-test("the print stylesheet never declares a page-box height", () => {
-  const app = boot();
-  const g = plain(app.get("PRINT_GEOM"));
-  const layouts = plain(app.get("PRINT_LAYOUTS"));
-  const papers = plain(app.get("PRINT_PAPER"));
-  for (const paper of Object.keys(papers)) {
-    for (const [name, L] of Object.entries(layouts)) {
-      const css = String(app.get(`printGridCSS(${JSON.stringify(name)}, ${JSON.stringify(paper)})`));
-      assert.ok(!/\.printpage\s*\{[^}]*(?<!min-)height\s*:/.test(css),
-        `${name}/${paper} still fixes .printpage's height to a page-box number`);
-      // Every paper-height literal must be gone from the emitted CSS: it is a
-      // number we cannot know on a platform that owns the page box.
-      for (const h of [792, 841.89]) {
-        assert.ok(!css.includes(`${h}pt`),
-          `${name}/${paper} still emits the ${h}pt paper height`);
-      }
-      // What it DOES reserve is the sheet's own footprint after rotation.
-      const sw = L.cols * g.CW + (L.cols - 1) * L.gx;
-      const sh = L.rows * g.CH + (L.rows - 1) * L.gy;
-      const footprint = Math.round((L.rotate ? sw : sh) * 100) / 100;
-      /* Reviewer N3: constrain the SELECTOR, not just the value. A bare
-         substring let the floor move from .printpage to .printsheet and still
-         pass - and the floor is precisely the half of "floor and fill" that
-         Chrome can never exercise, because Chrome shrink-to-fits where iOS
-         paginates. Nothing downstream would have caught the move. */
-      assert.match(css,
-        new RegExp(`#printroot \\.printpage\\{[^}]*min-height:${String(footprint).replace(".", "\\.")}pt`),
-        `${name}/${paper} must reserve ${footprint}pt on .printpage itself`);
-      // Reviewer N1: 3 * 247.2 + 2 * 9.4 lands on 760.3999999999999 in binary
-      // float. A stylesheet is text a human reads in devtools; round it.
-      assert.ok(!/min-height:[0-9.]*[0-9]{8}/.test(css),
-        `${name}/${paper} emits an unrounded float into the stylesheet`);
-    }
-  }
-  // The reservation has to be smaller than the smallest printable box we have
-  // measured, or the block paginates again on the next platform.
-  /* Reviewer N2: bound EVERY constrained layout, not `narrow` by name. The
-     guard exists for whichever layout a margin-enforcing platform selects;
-     naming one lets a second such layout reintroduce the pagination unseen. */
-  let bounded = 0;
-  for (const [name, L] of Object.entries(layouts)) {
-    if (!L.constrained) continue;
-    bounded++;
-    const f = L.rotate
-      ? L.cols * g.CW + (L.cols - 1) * L.gx
-      : L.rows * g.CH + (L.rows - 1) * L.gy;
-    assert.ok(f <= 661.6,
-      `the ${name} sheet reserves ${f}pt, over the ~661.6pt iOS leaves inside its own bands`);
-  }
-  assert.ok(bounded > 0, "no layout was bounded against a printable box");
 });
 
 /* The regression a fresh reviewer caught at 43b2851: min-height alone
    collapses .printpage to its own content, so `align-items:center` has no
-   free space to distribute and the sheet TOP-ALIGNS. Rendered, desktop wide
-   put its top card border at y=0.0 - flush with the paper edge, inside every
-   consumer printer's non-printable band - and on iOS it would sit under the
-   OS header band. The fill is a PERCENTAGE so the platform resolves it
-   against the page area it chose, the one number we may never assume; paired
-   with the min-height floor it holds the pagination fix AND the centring.
-   tests/e2e.test.js measures the rendered position; this pins the rule. */
+   free space to distribute and the sheet TOP-ALIGNS - a defect that mattered
+   while the legacy print sheet lived at #printroot. That container is gone
+   (R1, 2026-09-29), but html/body still have to resolve their height as a
+   PERCENTAGE rather than a page-box literal: iOS Safari ignores `@page`
+   outright, so a literal here is a number we can never assume and (even
+   post-cutover) breaks a plain browser Cmd+P print of the app itself. */
 test("the print stylesheet gives the page box something to fill", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const css = html.slice(html.indexOf("@media print"));
   assert.match(css, /html,\s*body\{[^}]*height:100%/,
     "html/body must fill the page box or a percentage height cannot resolve");
-  /* Reviewer N1: pin BOTH selectors, not just the second. #printroot is the
-     parent the .printpage percentage resolves against, so deleting
-     `body.printing #printroot,` leaves this rule matching while the fill
-     silently stops resolving - .printpage collapses to the min-height floor
-     and the sheet top-aligns, the exact 43b2851 regression. Mutated, that
-     deletion survived all 167 unit tests; only e2e caught it, and e2e is the
-     oracle the plan says cannot carry the floor half. */
-  assert.match(css,
-    /body\.printing #printroot,\s*body\.printing #printroot \.printpage\{height:100%\}/,
-    "#printroot AND .printpage must both fill, or the percentage has no resolved parent");
-  /* Reviewer N-a: anchoring the guard on `.printpage{height:` never inspects
-     the PARENT. `body.printing #printroot{display:block; height:840pt}`
-     survived all 167 tests: .printpage's percentage then resolves against a
-     hard page-box literal laundered through the very parent the assertion
-     above pins, and 840pt over iOS's ~711.6pt printable box paginates - the
-     43b2851 class again, and the class the plan says e2e structurally cannot
-     catch because Chrome shrink-to-fits where iOS paginates. So scan every
-     rule in the block instead of one hand-picked selector, and take any unit
-     at all rather than a list of five - `em`, `vh` and `calc()` all resolve
-     to a fixed length just as well as `pt` does. `min-height` is deliberately
-     untouched: that IS the floor, and it is the one length that belongs. */
-  /* Strip CSS comments BEFORE anything reads the stylesheet. Two separate
-     defects share this one cause. The scan can go VACUOUS and stay green:
-     `indexOf` takes the FIRST textual "@media print", so a comment merely
-     mentioning the phrase - in a file this comment-dense, an ordinary thing
-     to write - aims the brace matcher at an unrelated block and every
-     assertion below silently checks nothing. An anchor assertion alone did
-     not close it, because the slice then STARTS inside the decoy comment and
-     the comment's own text satisfies the anchor. And it can go the other way:
-     the `([^{}]+)` selector capture swallows any comment in front of a rule,
-     so `/* clear of the body edge *\/ .cropmark{height:6pt}` failed the test
-     and printed the comment as the selector. Comments are not CSS; remove
-     them and both cases disappear. The anchor stays as cheap insurance
-     against the matcher being truncated early by a brace inside a string. */
+  /* Strip CSS comments BEFORE anything reads the stylesheet. The scan can go
+     VACUOUS and stay green: `indexOf` takes the FIRST textual "@media
+     print", so a comment merely mentioning the phrase - in a file this
+     comment-dense, an ordinary thing to write - aims the brace matcher at an
+     unrelated block and every assertion below silently checks nothing. An
+     anchor assertion alone did not close it, because the slice then STARTS
+     inside the decoy comment and the comment's own text satisfies the
+     anchor. Comments are not CSS; remove them and the case disappears. */
   const block = printBlock(html.replace(/\/\*[\s\S]*?\*\//g, " "));
-  assert.ok(block.includes("body.printing #printroot"),
+  assert.ok(block.includes("html,body") || block.includes("html, body"),
     "printBlock did not find the real print stylesheet - the scan below would assert nothing");
   for (const [, sel, body] of block.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     /* html and body carry the top of the same percentage chain, so a literal
        lands there just as well (reviewer N3: `html,body{height:760pt}` inside
        the block passed 167/167 - later rule, same specificity, it wins). */
-    if (!/#printroot|(^|[,\s])(html|body)([,\s{]|$)/i.test(sel)) continue;
+    if (!/(^|[,\s])(html|body)([,\s{]|$)/i.test(sel)) continue;
     /* matchAll, not match: CSS gives the LAST declaration the win, so reading
        only the first height let `{height:100%; min-height:0; height:760pt}`
        through (reviewer N2), and the shipped html,body rule shows
@@ -4090,36 +3650,13 @@ test("PRINT_PAPER carries no page-box height", () => {
   }
 });
 
-test("the narrow print stylesheet actually emits the rotation", () => {
-  const app = boot();
-  const css = String(app.get('printGridCSS("narrow", "letter")'));
-  assert.ok(/#printroot \.printsheet\{transform:rotate\(-90deg\)\}/.test(css),
-    "the narrow sheet must be rotated by the emitted stylesheet, not just flagged");
-  const wide = String(app.get('printGridCSS("wide", "letter")'));
-  assert.ok(!/rotate\(-90deg\)/.test(wide), "the wide sheet must not rotate");
-});
-
-test("print sheet paper size is a control, and only the page box changes", () => {
-  const app = boot();
-  const letter = String(app.get('printGridCSS("wide", "letter")'));
-  const a4 = String(app.get('printGridCSS("wide", "a4")'));
-  assert.ok(/@page\{size:letter;/.test(letter));
-  assert.ok(/@page\{size:A4;/.test(a4));
-  // D16 and D17 are orthogonal: A4 is 297mm against Letter's 279.4mm, nowhere
-  // near the ~97mm a third card row plus its gutter would need. The grid is
-  // byte-identical; only the page box differs.
-  const grid = (css) => css.split("\n").filter((l) => l.includes("grid-template")).join("\n");
-  assert.strictEqual(grid(letter), grid(a4),
-    "paper size must not change the card grid");
-  assert.notStrictEqual(letter, a4, "paper size must change the page box");
-});
-
 /* ---------------------------------------------------------------------------
  * 23. the print CTA
  *
- * B5. Custom decks get the same two print options the built-ins have. A
- * built-in's are `<a href>` to the pre-built PDFs and must not move; a custom
- * deck's are `<button>` that fill the print container and call window.print().
+ * B5/one-pdf-path plan. Every deck - built-in or custom - gets the same two
+ * print options, and both build the PDF client-side and hand it to the
+ * browser as a download (the legacy `<button>`-that-calls-window.print()
+ * path was retired by R1, 2026-09-29, once the owner's device gate passed).
  * ------------------------------------------------------------------------ */
 
 /* Lane M1 (menu-shell, 2026-09-28): the print controls moved off the card
@@ -4153,161 +3690,6 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
-});
-
-/** Run the CTA and capture the sheet while it is live. window.print() is a
- *  moment the container is guaranteed populated; the app now holds the sheet
- *  up until `afterprint` (it has to - print() returns before iOS rasterizes),
- *  so capturing here is convenience, not necessity. Nothing test-only is
- *  added to the app for this. */
-function printed(app, variant) {
-  app.run(`captured = null; window.print = function(){ captured = {
-    html: document.getElementById("printroot").innerHTML,
-    cls: document.getElementById("printroot").className,
-    hidden: document.getElementById("printroot").hidden,
-    css: document.getElementById("printgeom").textContent }; };
-    openPrintSheet(${JSON.stringify(variant)});`);
-  return plain(app.get("captured"));
-}
-const cellCount = (html) => (html.match(/class="printcell"/g) || []).length;
-
-test("blank_cards is honoured when present, and no shipped deck carries it", () => {
-  const app = boot();
-  // slotsPerPage = 1 so the padding loop never fires: with it, deck-authored
-  // blanks and padding blanks are the identical descriptor and the padding
-  // moves with the total, so the count says nothing about the branch.
-  const kinds = (js) => plain(app.get(js)).map(c => c.kind);
-  const with7 = kinds('printCardList(Object.assign({}, deck(), {blank_cards: 7}), "full", 1)');
-  assert.strictEqual(with7.filter(k => k === "blank").length, 7,
-    "a deck carrying blank_cards: 7 must contribute exactly 7 blank templates");
-  assert.deepStrictEqual(with7.slice(-7), Array(7).fill("blank"),
-    "and they come after the chords, not among them");
-  assert.strictEqual(
-    kinds('printCardList(deck(), "full", 1)').filter(k => k === "blank").length, 0,
-    "a deck without the key contributes none");
-  // The gap the branch exists to close: `blank_cards` now lives in
-  // data/decks.json as `print.blank_cards` (Pygmy: 7), but NESTED under the
-  // print overlay - printCardList reads the top-level `d.blank_cards`, which
-  // no shipped deck sets. `HPE.pdfdeck.fromBuiltin`'s generic overlay flatten
-  // carries the nested value to the top level for the PDF emitter; this
-  // branch stays dead in the browser until some deck sets the top-level key
-  // directly.
-  const carriers = plain(app.get('DECKS.filter(d => "blank_cards" in d).map(d => d.id)'));
-  assert.deepStrictEqual(carriers, [],
-    "no shipped deck carries top-level blank_cards - if one does, this test's premise changed");
-});
-
-test("the print container carries no layout class", () => {
-  // The only thing that decides slots-per-page is the stylesheet `openPrintSheet`
-  // writes into `#printgeom`. Nothing in `@media print` selects on `.wide` or
-  // `.narrow` - grep the block and there is no such selector - so a class on
-  // the container is a second decision point that can only ever drift from the
-  // first one. `#printroot` must come out of a print with the class it had
-  // before: none.
-  const app = boot({ innerWidth: 380 });
-  customDeck(app);
-  const cap = printed(app, "full");
-  assert.ok(cap, "the CTA must call window.print()");
-  assert.strictEqual(cap.cls, "",
-    "#printroot must carry no layout class - the stylesheet is the decision point");
-  assert.ok(cap.css.length > 0,
-    "and that stylesheet must actually be there");
-});
-
-test("the CTA passes the real platform through, not just the viewport", () => {
-  // Wiring test: printLayoutName is only as good as the argument the call site
-  // hands it. A wide-viewport iPad that still gets the 3x3 sheet is exactly
-  // the B7 clipping the platform clause exists to stop.
-  const app = boot({
-    innerWidth: 820,
-    userAgent: "Mozilla/5.0 (iPad; CPU OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
-  });
-  customDeck(app);
-  const cap = printed(app, "full");
-  assert.ok(cap, "the CTA must call window.print()");
-  const narrow = plain(app.get('PRINT_LAYOUTS["narrow"]'));
-  assert.ok(cap.css.includes(`grid-template-rows:repeat(${narrow.rows}, `),
-    "an 820px iPad must still get the narrow sheet - it ignores @page like every iOS Safari");
-  assert.ok(/transform:rotate\(-90deg\)/.test(cap.css),
-    "and the stylesheet the CTA emits must carry the rotation");
-});
-
-test("print sheet slot count agrees with the viewport at the moment the CTA fires", () => {
-  for (const [w, name, slots] of [[1024, "wide", 9], [380, "narrow", 6]]) {
-    const app = boot({ innerWidth: w });
-    customDeck(app);
-    const cap = printed(app, "full");
-    assert.ok(cap, "the CTA must call window.print()");
-    assert.strictEqual(cap.hidden, false, "the sheet must be showing when print() fires");
-    const L = plain(app.get(`PRINT_LAYOUTS[${JSON.stringify(name)}]`));
-    assert.ok(cap.css.includes(`grid-template-columns:repeat(${L.cols}, `) &&
-              cap.css.includes(`grid-template-rows:repeat(${L.rows}, `),
-      `${w}px must emit the ${name} grid - the stylesheet is what selects it`);
-    assert.strictEqual(L.cols * L.rows, slots);
-    // The emitted cells are the padded card list, so their count is a multiple
-    // of the slot count the emitted grid provides. One decision, one place:
-    // the CSS never re-reads the width (AC-B5b).
-    assert.strictEqual(cellCount(cap.html) % slots, 0,
-      `${w}px: ${cellCount(cap.html)} cells is not a whole number of ${slots}-slot pages`);
-    assert.strictEqual(cellCount(cap.html),
-      Number(app.get(`printCardList(deck(), "full", ${slots}).length`)));
-    assert.ok(cap.css.includes(`repeat(${L.rows}, `),
-      "the geometry stylesheet must carry the same layout's row count");
-  }
-});
-
-/* The defect B7 caught on an iPhone 14 (iOS 26.6): window.print() BLOCKS on
-   desktop Chrome until the dialog is dismissed, but RETURNS IMMEDIATELY on
-   iOS Safari, which schedules the print UI asynchronously. A synchronous
-   teardown therefore runs before iOS rasterizes, and iOS prints the live app
-   page instead of the card sheet. This test stubs the iOS shape - print()
-   returns without firing afterprint - and asserts the sheet is STILL up. */
-test("print sheet survives a print() that returns before the printer has read it", () => {
-  const app = boot();
-  customDeck(app);
-  const root = app.els.printroot;
-  app.run("window.print = function(){};");
-  app.run('openPrintSheet("full")');
-  assert.notStrictEqual(root.innerHTML, "",
-    "iOS Safari rasterizes AFTER print() returns; an emptied container prints the app");
-  assert.strictEqual(root.hidden, false, "the sheet must still be showing");
-  assert.strictEqual(app.docEl.classList.contains("printing"), true,
-    "body.printing is what the @media print block keys off");
-  assert.notStrictEqual(app.els.printgeom.textContent, "",
-    "the geometry stylesheet has to outlive print() too");
-});
-
-test("print sheet leaves no residue", () => {
-  const app = boot();
-  customDeck(app);
-  const root = app.els.printroot;
-  assert.strictEqual(root.hidden, true, "the print container starts hidden");
-  assert.strictEqual(root.innerHTML, "", "the print container starts empty");
-  app.run("window.print = function(){};");
-  app.run('openPrintSheet("full")');
-  app.fireWindow("afterprint");
-  assert.strictEqual(root.innerHTML, "",
-    "a stray print sheet in the DOM is a regression on the practice screen");
-  assert.strictEqual(root.hidden, true, "the print container was left showing");
-  assert.strictEqual(app.els.printgeom.textContent, "",
-    "the geometry stylesheet was left behind");
-  assert.strictEqual(app.docEl.classList.contains("printing"), false,
-    "body.printing hides the whole app; leaving it on blanks the screen");
-  // Idempotent: the listener is registered once at boot, so it also fires on
-  // a print the app never started (the user's own Cmd+P / Share -> Print).
-  app.fireWindow("afterprint");
-  assert.strictEqual(root.innerHTML, "", "a second afterprint must be a no-op");
-  assert.strictEqual(app.docEl.classList.contains("printing"), false);
-});
-
-test("print sheet is emptied even when the print dialog throws", () => {
-  const app = boot();
-  customDeck(app);
-  app.run("window.print = function(){ throw new Error('no printer'); }");
-  assert.throws(() => app.run('openPrintSheet("full")'), /no printer/);
-  assert.strictEqual(app.els.printroot.innerHTML, "",
-    "a throwing print() must not strand the sheet in the DOM");
-  assert.strictEqual(app.docEl.classList.contains("printing"), false);
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -4365,19 +3747,6 @@ test("print CTA: the paper picker reports the paper that will actually print", (
     "setPrintPaper must push the new paper into the picker's own value");
   app.run('setPrintPaper("letter")');
   assert.strictEqual(picked(), "letter");
-});
-
-test("print CTA: the paper picker changes the page box and nothing else", () => {
-  const app = boot();
-  customDeck(app);
-  app.run('setPrintPaper("a4")');
-  const a4 = printed(app, "full");
-  assert.ok(a4.css.includes("size:A4"), "the sheet must be built for the selected paper");
-  app.run('setPrintPaper("letter")');
-  const letter = printed(app, "full");
-  assert.ok(letter.css.includes("size:letter"));
-  assert.strictEqual(cellCount(a4.html), cellCount(letter.html),
-    "D16 and D17 are orthogonal: paper size must not change the card count");
 });
 
 /* ---------------------------------------------------------------------------
@@ -4528,18 +3897,19 @@ test("the CTA buttons call the emitter, built-in and custom alike", () => {
     "exactly one settings panel serves every deck");
 });
 
-test("openPrintSheet survives the cutover, unreferenced by the CTA", () => {
-  // D2 of the plan: the browser-print path stays in the file until the owner's
-  // device gate says the emitter replaces it. Deleting it here would leave no
-  // way back if the iPhone says no.
+test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller", () => {
+  // R1, 2026-09-29: the owner's iPhone ruler check (device gate, item 1) is
+  // MET, so the browser-print path this test used to keep alive has been
+  // retired. Every deck downloads a client-built PDF instead.
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.doesNotMatch(src, /id="printroot"/);
+  assert.doesNotMatch(src, /function openPrintSheet/);
+  assert.doesNotMatch(src, /onclick="[^"]*window\.print\(\)/,
+    "no control still calls window.print() directly");
   const app = boot();
   customDeck(app);
-  assert.strictEqual(typeof app.get("openPrintSheet"), "function");
-  assert.strictEqual(typeof app.get("PRINT_LAYOUTS"), "object");
-  printed(app, "full");
-  assert.strictEqual(app.printCalls().length, 0,
-    "printed() stubs print(); this only proves the old path still runs end to end");
-  assert.ok(String(app.get('document.getElementById("printroot").innerHTML')).length > 0);
+  assert.strictEqual(app.get("typeof openPrintSheet"), "undefined");
+  assert.strictEqual(app.get("typeof PRINT_LAYOUTS"), "undefined");
 });
 
 test("the head carries theme-color and color-scheme meta tags matching --table", () => {

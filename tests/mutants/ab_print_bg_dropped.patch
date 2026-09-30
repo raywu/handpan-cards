@@ -1,18 +1,22 @@
 # kills: under print media, html computes to a white background
 # suite: node --test --test-name-pattern ^under.print.media..html.computes.to.a.white.background$ tests/e2e.test.js
 # Drops the print-block background:#fff lane A adds to html,body (eng review
-# F1). Without it, A3's dark html background prints through the print
-# block's `*{print-color-adjust:exact}` on the margins or overflow pages of a
-# browser Cmd+P.
+# F1). Without it, a dark html background prints through the print block's
+# `*{print-color-adjust:exact}` on the margins or overflow pages of a browser
+# Cmd+P.
+# Context-refreshed 2026-09-29 (R1): the mutated line is unchanged; the
+# `body.printing #printroot, body.printing #printroot .printpage{height:100%}`
+# line that used to sit directly below it is gone with the legacy print-sheet
+# CSS, so the trailing context now runs straight into the safe-area comment.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -784,7 +784,7 @@
+@@ -869,7 +869,7 @@
       the floor that stops the block ever being shorter than the sheet, which
       is what made every sheet paginate onto two pages. Floor and fill
       together - neither alone is correct. */
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
 +  html,body{height:100%; min-height:0; overflow:visible}
-   body.printing #printroot, body.printing #printroot .printpage{height:100%}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
+   body{margin:0; padding:0; background:#fff; display:block}
