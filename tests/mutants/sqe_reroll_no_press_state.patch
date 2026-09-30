@@ -1,0 +1,16 @@
+# kills: the re-roll control reads as a button in mode S and reverts outside it
+# suite: node --test --test-name-pattern ^the.re-roll.control.reads.as.a.button.in.mode.S.and.reverts.outside.it$ tests/app.test.js
+# Drops .shuffle.reroll:active, so pressing "New progression" only recolours
+# its text while the arrow buttons beside it darken their fill: the framed
+# re-roll button feels flatter than its neighbours (#163 reviewer nit 2).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -843,7 +843,6 @@ button.nav:active{background:#2e281e}
+ .mode:active{background:#2e281e}
+ .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
+ .shuffle:active{color:#eae6df}
+-.shuffle.reroll:active{background:#2e281e}
+ .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
+ #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
+ #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}

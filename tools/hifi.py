@@ -464,7 +464,7 @@ def chord_card(c, x, y, deck, num, chord):
                  y + deck["y_note"], y + deck["y_num"])
 
     # Owner decision 2026-09-15 (queue row 113): a pan-wide warning belongs on
-    # the CARDS. PRINTER_ONLY ships chord cards and nothing else, so a warning
+    # the CARDS. CHORD_ONLY ships chord cards and nothing else, so a warning
     # drawn only on the title card is dropped by the file the print shop gets.
     for i, line in enumerate(card_warnings(deck)):
         tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,

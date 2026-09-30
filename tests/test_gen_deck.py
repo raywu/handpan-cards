@@ -482,13 +482,13 @@ class GeneratedDeckPdfTest(unittest.TestCase):
                       "a voicing that uses the bottom shell needs its badge")
         self.assertEqual(self.pages_bottom, pages)
 
-    def test_a_no_thirds_warning_reaches_the_PRINTER_ONLY_chord_cards(self):
+    def test_a_no_thirds_warning_reaches_the_CHORD_ONLY_chord_cards(self):
         """Owner decision 2026-09-15 (queue row 113): the warning goes on the
         CARDS, not only on the title card.
 
-        PRINTER_ONLY omits the title and legend cards, so a warning that lives
+        CHORD_ONLY omits the title and legend cards, so a warning that lives
         only in `_blurb` is dropped by exactly the file the print shop gets.
-        The oracle is the PRINTER_ONLY text, which contains chord cards only.
+        The oracle is the CHORD_ONLY text, which contains chord cards only.
         """
         tmp = os.path.join(self.tmp, "no_thirds_print.pdf")
         deck = decks.from_generated(generate(SEED_NO_THIRDS))

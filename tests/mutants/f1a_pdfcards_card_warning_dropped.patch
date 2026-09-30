@@ -1,7 +1,7 @@
 # kills: a no-thirds pan draws the NO 3RDS warning badge, in orange, on every chord card
 # suite: node --test --test-name-pattern ^a.no-thirds.pan.draws.the.NO.3RDS.warning.badge,.in.orange,.on.every.chord.card$ tests/pdfcards.test.js
 #
-# cardWarnings drops every warning. PRINTER_ONLY ships chord cards only, so
+# cardWarnings drops every warning. CHORD_ONLY ships chord cards only, so
 # the badge at the foot of each chord card is the ONLY place a pan-wide
 # warning (e.g. NO_THIRDS) survives the split - this mutant prints a
 # no-thirds deck with no sign anywhere on the sheets that the pan was warned.

@@ -443,7 +443,7 @@ class CardWidthBudgetTest(unittest.TestCase):
 class CardWarningTest(PaletteSafeTest):
     """Owner decision 2026-09-15 (queue row 113): warnings go on the CARDS.
 
-    A warning drawn only on the title card is lost in PRINTER_ONLY, which
+    A warning drawn only on the title card is lost in CHORD_ONLY, which
     ships chord cards and nothing else.  Measured off the recording canvas,
     like every other assertion in this file.
     """

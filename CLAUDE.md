@@ -34,7 +34,7 @@ holds).
   GENERATED copy of `data/decks.json` written by `tools/sync_decks.py`.
 - `README.md` - usage, hosting, layout provenance notes.
 - `*.pdf` - print outputs ("Cards" = full deck with title/legend/blank
-  templates; "PRINTER_ONLY" = chord cards only, for the print shop).
+  templates; "CHORD_ONLY" = chord cards only, for the print shop).
 - `tools/decks.py`, `tools/hifi.py` - print generator (see "Print pipeline").
   `decks.py` reads `data/decks.json`, PRINT OVERLAY included: the overlay
   (R, cy, title, credit, blurb, legend copy, blank-card padding, colours) now
@@ -295,7 +295,7 @@ this by attaching per-instrument images.
 - **Pan-wide warnings print on the chord cards**, not only on the title card:
   `hifi.CARD_WARNINGS` maps an engine warning code to a short orange badge at
   the foot of every chord card (today `NO_THIRDS` -> `NO 3RDS ON THIS PAN`).
-  PRINTER_ONLY omits the title card, so that is the only place a warning
+  CHORD_ONLY omits the title card, so that is the only place a warning
   survives the split. The title card still carries the engine's full reason
   string via `decks._blurb`.
 - **Card copy is English-only.** The bilingual German/English subtitles
@@ -335,7 +335,7 @@ pitch classes (midi % 12), never stored.
 ## Print pipeline (tools/)
 
 `python3 decks.py` builds all six PDFs into the repo root (three decks x
-full "Cards" + PRINTER_ONLY variants). Requirements: `pip install reportlab`
+full "Cards" + CHORD_ONLY variants). Requirements: `pip install reportlab`
 (the test suite additionally needs `pymupdf`, and `fonttools` for
 `tools/validate.py` check 5). The required TTFs
 (Marcellus-Regular, Bitter-Regular/-Bold, NunitoSans-Regular/-SemiBold) are
