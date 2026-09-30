@@ -7417,7 +7417,7 @@ function run() {
           assert.ok(Math.abs(before.footer.w - after.footer.w) <= 0.5,
             `${w}x${h} footer.w changed: mode A ${before.footer.w} vs mode S ${after.footer.w}`);
           const growth = after.footer.h - before.footer.h;
-          const maxGrowth = after.innerHeight > 520 ? 70 : 40;
+          const maxGrowth = after.innerHeight > 520 ? 70 : 10;
           assert.ok(growth <= maxGrowth,
             `${w}x${h} footer grew by ${growth}px switching to S, budget ${maxGrowth}px`);
           assert.ok(after.scrollHeight <= after.innerHeight + 0.5,
@@ -7449,6 +7449,7 @@ function run() {
             const foot = document.getElementById("foot").getBoundingClientRect();
             return {
               prev: cy("#prev"), shuffle: cy("#shuffle"), next: cy("#next"),
+              shuffleCx: cx("#shuffle"),
               countCx: cx("#count"), footCx: foot.left + foot.width / 2,
             };
           `);
@@ -7459,6 +7460,13 @@ function run() {
           if (h > w) {
             assert.ok(Math.abs(m.countCx - m.footCx) <= 1,
               `${w}x${h} mode ${mode}: #count cx ${m.countCx} vs footer centre ${m.footCx}`);
+          }
+          // F1: mode S turns #shuffle into a free-standing refresh button in the
+          // middle grid column - it must sit centred there like prev/next sit
+          // centred in their own columns, not pinned to the column's start edge.
+          if (mode === "S" && ((w === 380 && h === 700) || (w === 844 && h === 390))) {
+            assert.ok(Math.abs(m.shuffleCx - m.footCx) <= 1,
+              `${w}x${h} mode S: #shuffle cx ${m.shuffleCx} vs footer centre ${m.footCx}`);
           }
         }
       }

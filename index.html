@@ -529,30 +529,47 @@ button.nav:active{background:#2e281e}
 .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
   color:#c4bcab; text-align:center}
 .count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
-  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#eae6df}
+  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
 /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
    deck's root colour carried as an underline instead of the text's own ink -
    O3/D10: the old ink-coloured approach failed AA on more than one deck's
-   root colour against the table background. */
-.seq-rail b{font-weight:700; text-decoration:underline; text-decoration-color:var(--root);
-  text-underline-offset:3px}
+   root colour against the table background. Marcellus has no bold cut, so a
+   browser-faked bold does not carry the distinction; colour plus the
+   underline do that work instead. */
+.seq-rail b{font-weight:400; color:#f1ece1; text-decoration:underline;
+  text-decoration-color:var(--root); text-underline-offset:3px}
 /* The mode-S style line: a static paragraph in the footer, never on the card
    (O2/D1-D9). Grid-column:1/-1 gives it its own full-width row below the
    controls; it is [hidden] outside mode S, so no extra row or gap is
    reserved when it is not shown. footer.seq tightens the row gap only while
    it is visible, so the extra line reads as part of the footer, not a second
-   footer stacked under the first. */
+   footer stacked under the first. .shuffle-wrap is display:contents here -
+   pure markup grouping, same as .mid - so this portrait rule is unaffected
+   by the wrapper's presence. */
+.shuffle-wrap{display:contents}
 .seq-style{grid-row:3; grid-column:1/-1; margin:0; text-align:center;
   font:400 12px/1.4 "Nunito Sans"; color:#a79d8b}
 .seq-style b{color:#eae6df; font-weight:700}
 footer.seq{row-gap:var(--sp-1)}
 /* D8: landscape's own height budget is the tightest in the app (table M), so
-   the style line tightens further under the same max-height:520px break the
-   rest of the chrome already uses, rather than reserving its portrait-sized
-   line height on a screen with no room for it. */
+   a whole extra full-width row (portrait's +64px) does not fit here. Instead
+   .shuffle-wrap stops being display:contents: it becomes the actual row-2
+   grid item in the middle column, positioned so the style line sits under
+   the refresh button - in the middle column, on the same row as prev/next -
+   rather than reserving a third grid row and its gap the way portrait does.
+   The rail itself also drops to the same acceptance-4-era 11px-row footprint
+   it has in modes A/B here: table M's 520px budget has no room left for the
+   larger rail's own +15px on top of the style line, and this is the one
+   breakpoint where the rail was never asked to grow (O3/D10 fixed its size
+   for the general case; this media-scoped override is landscape-only and
+   leaves that everywhere else untouched, same pattern as the header and
+   spacing-ramp overrides above). */
 @media (max-height:520px){
   footer.seq{row-gap:0}
-  .seq-style{font-size:11px; line-height:1.25}
+  footer.seq .count.seq{font-size:13px; line-height:1.3}
+  footer.seq .shuffle-wrap{display:block; position:relative; grid-row:2; text-align:center}
+  footer.seq .seq-style{position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    margin:2px 0 0; font-size:10px; line-height:1.1; white-space:nowrap}
 }
 /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
    that toggles a mode the user must be able to turn OFF. Same reasoning as
@@ -574,7 +591,7 @@ footer.seq{row-gap:var(--sp-1)}
    acceptance 5) is icon-only, square at the 44px target rather than
    text-width, so it sits on the controls row exactly like prev/next. */
 .shuffle.reroll{border:1px solid #433b2c; border-radius:10px; background:#211d16;
-  color:#eae6df; width:44px; height:44px; padding:0}
+  color:#eae6df; width:56px; height:44px; padding:0; justify-self:center}
 .shuffle.reroll svg{width:20px; height:20px}
 /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
    the stroke. Anything that clips its children (a scroll container, and
@@ -958,13 +975,17 @@ footer.seq{row-gap:var(--sp-1)}
     <!-- polite, not assertive: stepping is the user's own action, so the new
          position should follow the card, never interrupt it. -->
     <div class="count" id="count" aria-live="polite"></div>
-    <button class="shuffle" id="shuffle">Shuffle: off</button>
+    <!-- shuffle-wrap is markup grouping only (display:contents) outside the
+         D8 landscape break - see the CSS comment above .shuffle-wrap. -->
+    <div class="shuffle-wrap">
+      <button class="shuffle" id="shuffle">Shuffle: off</button>
+      <!-- Mode S only (§8 O1-O9): the playing-style tip, moved off the card
+           into the footer. Static markup; render()'s S branch fills the two
+           spans and setMode() shows/hides the whole line. -->
+      <p class="seq-style" id="seq-style" hidden><b id="seq-style-name"></b> &middot; <span id="seq-style-tip"></span></p>
+    </div>
   </div>
   <button class="nav" id="next" aria-label="Next card">&rarr;</button>
-  <!-- Mode S only (§8 O1-O9): the playing-style tip, moved off the card into
-       the footer. Static markup; render()'s S branch fills the two spans and
-       setMode() shows/hides the whole line. -->
-  <p class="seq-style" id="seq-style" hidden><b id="seq-style-name"></b> &middot; <span id="seq-style-tip"></span></p>
 </footer>
 
 <!-- The practice-screen live region. It is a sibling of the landmarks the
@@ -7937,7 +7958,7 @@ document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); }
 document.getElementById("modeS").onclick = () => { setMode("S"); closePanel(); };
 // Acceptance 5: icon-only in mode S, no visible text - the label moves to
 // aria-label so the control is still named for assistive tech.
-const REFRESH_ICON_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" '
+const REFRESH_ICON_SVG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" '
   + 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
   + '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
 function setMode(m) {
