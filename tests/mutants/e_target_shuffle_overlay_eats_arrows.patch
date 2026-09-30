@@ -19,5 +19,6 @@ diff --git a/index.html b/index.html
 +/* the whole footer strip should toggle shuffle, not just the 95px label */
 +.shuffle::after{content:""; position:absolute; top:0; height:44px; left:-200px; right:-200px}
  .shuffle.on{color:#f1ece1}
- /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
-    the stroke. Anything that clips its children (a scroll container, and
+ /* Mode S: the same control re-rolls the progression, an action rather than a
+    toggle, so it borrows button.nav's frame to read as a button. */
+ .shuffle.reroll{border:1px solid #433b2c; border-radius:10px; background:#211d16;

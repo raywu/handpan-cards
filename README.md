@@ -72,7 +72,7 @@ decisions behind it.
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
 - **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
-  PRINT-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
+  CHORD-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
   the scale engine's PDF modules (`HPE.pdfdeck` adapts the deck, `HPE.pdfcards`
   draws it - a separate renderer from the one the flip cards use), so a
@@ -124,7 +124,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 440 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 442 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

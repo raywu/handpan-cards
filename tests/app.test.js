@@ -4136,7 +4136,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   customDeck(app);
   const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
   for (const html of [builtin, custom]) {
-    for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+    for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
       assert.ok(!html.includes(label), `the card header must not carry "${label}" any more`);
     }
     assert.ok(!html.includes("<button"), "the card header must carry no buttons");
@@ -4144,7 +4144,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
-  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+  for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
   // One-pdf-path plan: every deck builds its PDF client-side - one panel, one
@@ -4638,6 +4638,25 @@ test("\"New progression\" never redraws the sequence on screen, even with a cons
     assert.notStrictEqual(now, last, `re-roll ${k + 1} repeated the sequence on screen`);
     last = now;
   }
+});
+
+test("the re-roll control reads as a button in mode S and reverts outside it", () => {
+  const app = boot();
+  app.run('setMode("S")');
+  assert.ok(app.els.shuffle.classList.contains("reroll"), "mode S must mark #shuffle .reroll");
+  app.run('setMode("A")');
+  assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
+  const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+    ".reroll must borrow button.nav's border so it reads as a button");
+});
+
+test("the mode S panel note introduces the video as seven ways to play chords", () => {
+  const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  const note = html.match(/<p class="panel-note" id="panel-seq-note"[^>]*>([\s\S]*?)<\/p>/);
+  assert.ok(note, "#panel-seq-note must exist");
+  assert.match(note[1], /^\s*7 different ways to play chords:\s*<a id="seq-source-link"/);
+  assert.ok(!/Styles adapted from/.test(note[1]), "the old credit line must be gone");
 });
 
 test("switching deck, generating a deck and deleting a deck each draw a new sequence", () => {
