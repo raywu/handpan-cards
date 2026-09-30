@@ -17,7 +17,6 @@
 # lane's touch-action additions land earlier in the file); the context text
 # and the mutation itself are unchanged.
 diff --git a/index.html b/index.html
-index 0bfea86..1432d17 100644
 --- a/index.html
 +++ b/index.html
 @@ -452,8 +452,7 @@ main{overflow-x:clip}
