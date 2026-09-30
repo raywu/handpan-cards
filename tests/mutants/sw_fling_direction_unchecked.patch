@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8042,7 +8042,7 @@ const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.
- const scene = card.parentElement;
- const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
- function swipeDecision(dx, vx) {
+@@ -8075,7 +8075,7 @@ function swipeDecision(dx, dy, vx) {
+   // spuriously commit a step. This axis-dominance check, not a change to any
+   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
+   if (Math.abs(dy) > Math.abs(dx)) return 0;
 -  const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
 +  const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS;
    return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;

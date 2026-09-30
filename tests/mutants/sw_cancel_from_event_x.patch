@@ -8,12 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8075,7 +8075,7 @@ function release(e, cancelled) {
+@@ -8109,7 +8109,7 @@ function release(e, cancelled) {
      const span = pts[pts.length - 1].t - pts[0].t;
      if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
    }
 -  const dx = drag.last;
 +  const dx = e.clientX - drag.x0;
+   const dy = drag.lastY;
    const moved = drag.moved;
    const blocked = cancelled || panelOpen || sheetOpen;
-   const dir = blocked ? 0 : swipeDecision(dx, vx);
