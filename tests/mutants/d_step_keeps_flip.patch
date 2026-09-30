@@ -1,18 +1,21 @@
 # kills: step() wraps forward and backward and clears the flip
 # suite: node --test --test-name-pattern ^step...wraps.forward.and.backward.and.clears.the.flip$ tests/app.test.js
-# Refreshed 2026-09-29 (lane S2): step() and flip() both gained an
-# `if (!order.length) return;` guard (E3, unsupported-deck empty sequence) -
-# the guarded line the mutation targets is otherwise unchanged, only the
-# line number and one added guard line above moved.
+# Context-refreshed 2026-09-30 (lane SW): the N40 flip-reset change wraps the
+# mutated line in a transition-suppression dance (card.style.transition set
+# to "none", a forced reflow, then reset) - the mutated line and its meaning
+# are unchanged, only the line number and the surrounding lines moved.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8086,7 +8086,7 @@ function flip() { if (!order.length) return; flipped = !flipped; render(); }
+@@ -7845,10 +7845,10 @@ function flip() { if (!order.length) return; flipped = !flipped; render(); }
  function step(dir) {
    if (!order.length) return;
    idx = (idx + dir + order.length) % order.length;
+   // N40/OV2: suppress .card's reverse-flip transition across every reset.
+   card.style.transition = "none";
 -  flipped = false; render();
 +  render();
+   card.offsetHeight;
+   card.style.transition = "";
  }
  card.addEventListener("click", flip);
- // Bound to #card, so it fires for keys that BUBBLE from any descendant.
