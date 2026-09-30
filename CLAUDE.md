@@ -368,16 +368,19 @@ mutants anchor on the DECKS line and go stale on every data change.
   Domain verification in account settings prevents takeover. HTTPS is
   automatic via Let's Encrypt.
 
-## Owner-approved roadmap (not yet built)
+## Roadmap and ideas (not yet built)
 
 The user-configurable-scale feature (chord engine, layout generator, share
 URLs) has a reviewed plan with binding owner decisions in
 `docs/SCALE_ENGINE_PLAN.md`. Read it before starting that work.
 
-1. Spaced repetition: grade cards (again/good/easy) post-flip, simple SM-2,
-   per-deck progress in localStorage, JSON export/import.
-2. Per-deck practice stats view.
-3. PWA: manifest + service worker, offline, installable.
-4. Audio toggle: WebAudio arpeggio of each card's tones from the embedded
-   MIDI numbers, low-to-high.
+Ideas, NOT committed roadmap (owner, 2026-09-30) - do not start any of these
+without asking the owner:
+- Spaced repetition: grade cards (again/good/easy) post-flip, simple SM-2,
+  per-deck progress in localStorage, JSON export/import.
+- Per-deck practice stats view.
+- PWA: manifest + service worker, offline, installable.
+- Audio toggle: WebAudio arpeggio of each card's tones from the embedded
+  MIDI numbers, low-to-high. An eng-reviewed plan is parked at
+  `docs/plans/2026-09-30-audio-arpeggio.md`.
 Test at 380px viewport. Do not alter deck data or diagram geometry.
