@@ -477,7 +477,7 @@ function run() {
     await expectCount(`${n} / ${n}`, "ArrowLeft from the first card wraps to the last");
   });
 
-  /* The swipe handler (index.html:5084-5090) is the primary way the app is
+  /* The swipe block (search `swipeDecision`) is the primary way the app is
      navigated on a phone and had no test of any kind until this group. A unit
      test cannot reach it: it is real touch dispatch, not a click. */
   test("a swipe past the threshold steps the deck in the swiped direction", async () => {
@@ -490,12 +490,10 @@ function run() {
     await b.swipe("#card", 120);
     await expectCount(`1 / ${n}`, "swiping right did not step back");
 
-    // Just past the 55px threshold. Paired with the 50px drag in the next test
-    // this brackets the constant to within 10px, so a mutant that moves it
-    // anywhere inside (50, 60) still dies. 54/56 would be tighter and would
-    // flake: CDP rounds a touch point off a fractional getBoundingClientRect
-    // centre by up to a pixel.
-    await b.swipe("#card", -60);
+    // Just past the 55px threshold, but slow (0.2 px/ms) so a fling cannot
+    // mask the distance (M4): only the commit distance decides.
+    await b.drag("#card", [[-20, 100], [-40, 200], [-60, 300]]);
+    await b.finishAnimations();
     await expectCount(`2 / ${n}`, "a 60px drag did not clear the 55px threshold");
   });
 
@@ -515,16 +513,17 @@ function run() {
     await b.click("#prev");
     await expectCount(`1 / ${n}`, "#prev did not step back to the starting card");
 
-    // b.swipe() resolves once CDP has accepted the synthetic touch events, and
+    // b.drag() resolves once CDP has accepted the synthetic touch events, and
     // with passive listeners that can be BEFORE the page has handled them - so
     // a poll of #count right after can read stale. A second touchend listener
     // on the same element acks that touchend reached #card - it does NOT prove
     // the app acted on it (a dropped touchstart still fires touchend and still
-    // acks), so the final -120 swipe below, which must still navigate, is the
+    // acks), so the final -120 drag below, which must still navigate, is the
     // real guard against a handler that stopped reacting to touchend
     // altogether. Waiting on the ack only pins each exact-count read past the
     // CDP-vs-handler race; the read itself depends on step() rendering
-    // synchronously (index.html ~:7509), not on listener registration order.
+    // synchronously, not on listener registration order. Slow (0.1 px/ms)
+    // so a fling cannot commit these.
     await b.eval(`
       window.__swipeAck = 0;
       document.getElementById("card").addEventListener(
@@ -533,12 +532,14 @@ function run() {
       return true;
     `);
 
-    await b.swipe("#card", -50);
+    await b.drag("#card", [[-10, 100], [-20, 200], [-30, 300], [-40, 400], [-50, 500]]);
     await b.waitFor(`window.__swipeAck === 1`, { timeout: 5000, label: "swipe 1 to be acknowledged" });
+    await b.finishAnimations();
     assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag navigated; the deadzone shrank");
 
-    await b.swipe("#card", 50);
+    await b.drag("#card", [[10, 100], [20, 200], [30, 300], [40, 400], [50, 500]]);
     await b.waitFor(`window.__swipeAck === 2`, { timeout: 5000, label: "swipe 2 to be acknowledged" });
+    await b.finishAnimations();
     assert.strictEqual(await countText(), `1 / ${n}`, "a 50px drag back navigated; the deadzone shrank");
 
     // N1 (review nit, PR 143 attempt 1): a swipe PAST the threshold, run
@@ -547,6 +548,7 @@ function run() {
     // #card, not that the app acted on it (see the comment above).
     await b.swipe("#card", -120);
     await b.waitFor(`window.__swipeAck === 3`, { timeout: 5000, label: "swipe 3 to be acknowledged" });
+    await b.finishAnimations();
     assert.strictEqual(await countText(), `2 / ${n}`, "a swipe past the threshold did not navigate at all");
   });
 
@@ -7691,6 +7693,553 @@ function run() {
         await b.settle();
       });
 
+  });
+
+  /* ---------------------------------------------------------------- *
+   * card swipe (Tinder-style drag) - docs/plans/2026-09-29-card-swipe-animation.md
+   * ---------------------------------------------------------------- */
+  describe("card swipe", () => {
+    // Computed .scene transform as {a, b, m41} (cos, sin, translateX), or
+    // {none: true} for "none". translate3d + rotate forces a 3D matrix, so
+    // both matrix() and matrix3d() forms are handled.
+    async function sceneXform() {
+      return b.eval(`
+        const t = getComputedStyle(document.querySelector(".scene")).transform;
+        if (t === "none") return { none: true, a: 1, b: 0, m41: 0 };
+        const m3 = /^matrix3d\\(([^)]+)\\)$/.exec(t);
+        if (m3) {
+          const v = m3[1].split(",").map(Number);
+          return { none: false, a: v[0], b: v[1], m41: v[12] };
+        }
+        const v = /^matrix\\(([^)]+)\\)$/.exec(t)[1].split(",").map(Number);
+        return { none: false, a: v[0], b: v[1], m41: v[4] };
+      `);
+    }
+    const sceneAnimCount = () => b.eval(`return document.querySelector(".scene").getAnimations().length;`);
+    const sceneStyle = () => b.eval(`
+      const s = document.querySelector(".scene");
+      return { transform: s.style.transform, willChange: s.style.willChange };
+    `);
+
+    // A held touch drag the test can move and release/cancel in further
+    // stages, without CDP re-dispatching touchStart (which would start a
+    // second, unrelated gesture).
+    async function startDrag(selector) {
+      const box = await b.eval(`
+        const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      const t0 = Date.now() / 1000;
+      const pt = (dx, dy) => [{ x: box.x + dx, y: box.y + (dy || 0), radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+      await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0, 0), timestamp: t0 });
+      return {
+        async move(dx, ms, dy) {
+          await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(dx, dy), timestamp: t0 + ms / 1000 });
+        },
+        async release(dx, ms, dy) {
+          await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(dx, dy), timestamp: t0 + ms / 1000 });
+          await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
+        },
+      };
+    }
+
+    test("card swipe: the card follows a held drag with a tilt, then springs back below the threshold", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      const held = await sceneXform();
+      assert.ok(Math.abs(held.m41 - 80) <= 1, `m41 ${held.m41} should be ~80`);
+      assert.ok(held.b > 0, `expected a positive rotation, got b=${held.b}`);
+      assert.strictEqual(await sceneStyle().then((s) => s.willChange), "transform");
+      const cardXf = await cardTransform();
+      assert.strictEqual(rotationAmount(cardXf), 0, "the .card itself must not rotate during a swipe");
+      await g.release(40, 400);
+      assert.strictEqual(await sceneAnimCount(), 1, "release below threshold should start exactly one spring-back animation");
+      assert.strictEqual(await countText(), `1 / ${n}`, "a spring-back must not step the deck");
+      await b.finishAnimations();
+      const after = await sceneXform();
+      assert.strictEqual(after.none, true, ".scene transform should be none once settled");
+      const style = await sceneStyle();
+      assert.strictEqual(style.willChange, "", "willChange must be cleared once settled");
+      const touchAction = await b.eval(`return getComputedStyle(document.querySelector(".scene")).touchAction;`);
+      assert.strictEqual(touchAction, "pan-y pinch-zoom");
+    });
+
+    test("card swipe: the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG", async () => {
+      await freshLoad();
+      const angle = (x) => Math.atan2(x.b, x.a) * 180 / Math.PI;
+      let g = await startDrag("#card");
+      await g.move(100, 0);
+      assert.ok(Math.abs(angle(await sceneXform()) - 5) <= 0.2, "100px should tilt ~5deg");
+      await g.release(100, 50);
+      await b.finishAnimations();
+
+      g = await startDrag("#card");
+      await g.move(400, 0);
+      assert.ok(Math.abs(angle(await sceneXform()) - 8) <= 0.2, "400px should clamp to 8deg");
+      await g.release(400, 50);
+      await b.finishAnimations();
+
+      g = await startDrag("#card");
+      await g.move(-400, 0);
+      assert.ok(Math.abs(angle(await sceneXform()) - (-8)) <= 0.2, "-400px should clamp to -8deg");
+      await g.release(-400, 50);
+      await b.finishAnimations();
+    });
+
+    test("card swipe: a commit flies the card out, then steps and deals the next card in from the opposite side", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      const mid = await b.eval(`
+        const anims = document.querySelector(".scene").getAnimations();
+        const a = anims[0];
+        const effect = a.effect.getKeyframes();
+        const timing = a.effect.getComputedTiming();
+        return {
+          count: (document.getElementById("count").textContent || "").trim(),
+          n: anims.length,
+          duration: timing.duration,
+          easing: a.effect.getTiming().easing,
+          lastX: parseFloat(effect[effect.length - 1].transform.match(/translate3d\\(([-\\d.]+)px/)[1]),
+        };
+      `);
+      assert.strictEqual(mid.count, `1 / ${n}`, "count must not move before the fly-out finishes");
+      assert.strictEqual(mid.n, 1);
+      assert.strictEqual(mid.duration, 220);
+      assert.strictEqual(mid.easing, "cubic-bezier(0.4, 0, 1, 1)");
+      assert.ok(mid.lastX < -380, `fly-out should end well off-screen, got ${mid.lastX}`);
+
+      await b.eval(`document.querySelector(".scene").getAnimations().forEach(a => a.finish()); return true;`);
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${n}"`,
+        { label: "the fly-out landing to advance the count" });
+      const front = await b.eval(`return document.getElementById("front").textContent;`);
+      const chord2 = await b.eval(`return deck().chords[order[1]].main;`);
+      assert.ok(front.includes(chord2), "front face should hold the second chord after landing");
+      const enter = await b.eval(`
+        const a = document.querySelector(".scene").getAnimations()[0];
+        const kf = a.effect.getKeyframes();
+        return { x: parseFloat(kf[0].transform.match(/translate3d\\(([-\\d.]+)px/)[1]), opacity: +kf[0].opacity };
+      `);
+      assert.strictEqual(enter.x, 24);
+      assert.strictEqual(enter.opacity, 0);
+      await b.finishAnimations();
+      assert.strictEqual(await sceneAnimCount(), 0);
+      const settled = await sceneXform();
+      assert.strictEqual(settled.none, true);
+    });
+
+    test("card swipe: a short fast fling commits and a slow drag of the same length does not", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+
+      await b.drag("#card", [[-15, 15], [-30, 50]]);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a fast 30px fling should commit");
+
+      await freshLoad();
+      await b.drag("#card", [[-15, 40], [-30, 75]]);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "a slow 30px drag should not commit");
+
+      // (a): the whole gesture averages 0.05 px/ms, but the last 100ms window
+      // (OV3's fling window) alone is a fling.
+      await freshLoad();
+      await b.drag("#card", [[-10, 100], [-50, 140]]);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a fling within the trailing window should commit");
+
+      // (b): the flick ages out of the fling window once the pointer sits
+      // still before release.
+      await freshLoad();
+      await b.drag("#card", [[-30, 30], [-30, 230]]);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "a stale flick (held still before release) should not commit");
+    });
+
+    test("card swipe: a tap-sized flick never steps and the tap still flips", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-4, 5], [-8, 10]]);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "a tap-sized flick must not navigate");
+      // A tap that small (below SWIPE_SLOP_PX) is recognised by the browser's
+      // own touch-to-click synthesis as a tap, and the card's click listener
+      // (unrelated to the swipe code) flips it - the swipe handling must not
+      // suppress that.
+      assert.strictEqual(await cardFlipped(), true, "a tap-sized flick must still flip the card");
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), false, "a plain mouse click must flip it back");
+    });
+
+    test("card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a mouse drag past the threshold should commit");
+      assert.strictEqual(await cardFlipped(), false, "a committing drag must not flip the card");
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true, "a mouse click must still flip");
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), false);
+      await b.drag("#card", [[-15, 100], [-30, 300]], { pointer: "mouse" });
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a short slow mouse drag must spring back, not navigate");
+      assert.strictEqual(await cardFlipped(), false, "a spring-back must not flip");
+    });
+
+    test("card swipe: a flipped card keeps its back face during the fly-out and the next card arrives front-up", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true);
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      const midFlipped = await cardFlipped();
+      assert.strictEqual(midFlipped, true, ".card must keep .flip mid-flight");
+      await b.eval(`document.querySelector(".scene").getAnimations().forEach(a => a.finish()); return true;`);
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${n}"`,
+        { label: "the fly-out to land" });
+      assert.strictEqual(await cardFlipped(), false, ".flip must be gone once the new card lands");
+      const frontHidden = await b.eval(`return document.getElementById("front").getAttribute("aria-hidden");`);
+      assert.notStrictEqual(frontHidden, "true");
+      const cardXf = await cardTransform();
+      assert.strictEqual(rotationAmount(cardXf), 0, "the reset must be immediate, not mid-transition");
+      const cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
+      assert.strictEqual(cardAnims, 0, "the flip reset must not animate while the new card deals in");
+    });
+
+    test("card swipe: a tap during the fly-out lands it once and never flips the wrong card", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await b.click("#card");
+      assert.strictEqual(await countText(), `2 / ${n}`, "a tap during flight should land it immediately");
+      assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the new card");
+      const outAnim = await b.eval(`return document.querySelector(".scene").getAnimations().some(a => a.effect.getComputedTiming().duration === 220);`);
+      assert.strictEqual(outAnim, false, "the fly-out animation must be gone once landed");
+    });
+
+    test("card swipe: buttons and arrows during the fly-out land it first, never dropping or doubling a step", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // eatClick decays on a setTimeout(0) queued at release; wait it out so
+      // the deliberate action below is never mistaken for the drag's own
+      // trailing tap-click.
+      const eatClickClear = () => b.waitFor(`!eatClick`, { label: "eatClick to decay" });
+
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await eatClickClear();
+      await b.click("#next");
+      await expectCount(`3 / ${n}`, "a #next click during flight should land then step");
+
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await eatClickClear();
+      await b.key("ArrowRight", "ArrowRight", 39);
+      await expectCount(`5 / ${n}`, "an ArrowRight during flight should land then step");
+
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await eatClickClear();
+      await b.eval(`document.getElementById("next").click(); return true;`);
+      assert.strictEqual(await countText(), `7 / ${n}`, "a programmatic .click() during flight should land then step");
+      await b.finishAnimations();
+      assert.strictEqual(await countText(), `7 / ${n}`, "finishing leftover animations must not add another step");
+    });
+
+    test("card swipe: a drag with the settings panel open, or opened mid-drag, does nothing", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await openSettingsPanel();
+      await b.drag("#card", [[-60, 100], [-120, 200]]);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "a drag while the settings panel is open must not navigate");
+      let xf = await sceneXform();
+      assert.strictEqual(xf.none, true);
+      await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+      await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
+
+      const g = await startDrag("#card");
+      await g.move(-120, 100);
+      // Mid-drag open: setting panelOpen directly is the same observable the
+      // real openPanel() produces by the time release() reads it (M6).
+      await b.eval(`panelOpen = true; return true;`);
+      await g.release(-120, 200);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "opening the panel mid-drag must suppress the release");
+      xf = await sceneXform();
+      assert.strictEqual(xf.none, true);
+    });
+
+    test("card swipe: a drag with the scale sheet open does nothing", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await openSheet();
+      const open = await b.eval(`return sheetOpen === true;`);
+      assert.strictEqual(open, true, "sheetOpen must be true once the sheet is shown");
+      await b.drag("#card", [[-60, 100], [-120, 200]]);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "a drag while the scale sheet is open must not navigate");
+    });
+
+    test("card swipe: under reduced motion the swipe steps instantly with no animation", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      try {
+        await b.send("Emulation.setEmulatedMedia", {
+          media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+        });
+        const g = await startDrag("#card");
+        await g.move(-80, 0);
+        const held = await sceneXform();
+        assert.strictEqual(held.none, true, "reduced motion must not move .scene while held");
+        await g.release(-120, 100);
+        assert.strictEqual(await countText(), `2 / ${n}`, "reduced motion must step synchronously on release");
+        const anims = await b.eval(`return document.getAnimations().length;`);
+        assert.strictEqual(anims, 0, "reduced motion must not animate anything");
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+      }
+    });
+
+    test("card swipe: a vertical drag scrolls the page and does not step, at 320x568 and 844x390", async () => {
+      try {
+        for (const [w, h] of [[320, 568], [844, 390]]) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          const n = (await decksMeta())[0].chords;
+          await b.eval(`window.__pcOnce = 0; document.getElementById("card").addEventListener("pointercancel", () => { window.__pcOnce++; }, { once: true }); return true;`);
+          if (h > w) {
+            // CHROME_BUDGET fits every viewport with no page overflow by design
+            // (untouched here), so there is nothing to scroll without a forced
+            // spacer; this proves our own touch-action/pointer-capture choices
+            // do not block the browser's native vertical scroll, not that any
+            // real page content overflows at this viewport.
+            await b.eval(`document.body.style.minHeight = "2000px"; return true;`);
+          }
+          await b.drag("#card", [[15, 100, -100]]);
+          await b.finishAnimations();
+          assert.strictEqual(await countText(), `1 / ${n}`, `${w}x${h}: a vertical drag must not step the deck`);
+          const xf = await sceneXform();
+          assert.strictEqual(xf.none, true, `${w}x${h}: .scene transform must settle to none`);
+          // Observable chosen per viewport, recorded here rather than disjoined
+          // in the assertion (ER10): headless Chromium's synthetic touch scroll
+          // is reliable at the short 320x568 page; the short 844x390 landscape
+          // page has nothing to scroll, so a pointercancel is the signal there.
+          if (h > w) {
+            const scrollY = await b.eval(`return window.scrollY;`);
+            assert.ok(scrollY > 0, `${w}x${h}: the page should have scrolled vertically, scrollY=${scrollY}`);
+          } else {
+            const pc = await b.eval(`return window.__pcOnce;`);
+            assert.ok(pc > 0, `${w}x${h}: a pointercancel should have been observed`);
+          }
+        }
+      } finally {
+        // Viewport is a browser-level setting; freshLoad() does not reset it,
+        // so a throw mid-loop must not leak a small viewport into later tests.
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("card swipe: a card in flight never widens the page, at 380x800 and 844x390", async () => {
+      try {
+        for (const [w, h] of [[380, 800], [844, 390]]) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          let g = await startDrag("#card");
+          await g.move(100, 0);
+          await b.eval(`window.scrollTo(500, 0); return true;`);
+          let m = await b.eval(`return { scrollX: window.scrollX, scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth };`);
+          assert.strictEqual(m.scrollX, 0, `${w}x${h}: held drag must not scroll horizontally`);
+          assert.ok(m.scrollWidth <= m.innerWidth, `${w}x${h}: held drag must not widen the page (${m.scrollWidth} > ${m.innerWidth})`);
+          await g.release(0, 50);
+          await b.finishAnimations();
+
+          g = await startDrag("#card");
+          await g.move(-40, 100);
+          await g.release(-120, 200);
+          await b.eval(`
+            const a = document.querySelector(".scene").getAnimations()[0];
+            if (a) a.currentTime = 150;
+            window.scrollTo(500, 0);
+            return true;
+          `);
+          m = await b.eval(`return { scrollX: window.scrollX, scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth };`);
+          assert.strictEqual(m.scrollX, 0, `${w}x${h}: a paused fly-out must not scroll horizontally`);
+          assert.ok(m.scrollWidth <= m.innerWidth, `${w}x${h}: a paused fly-out must not widen the page (${m.scrollWidth} > ${m.innerWidth})`);
+          await b.finishAnimations();
+        }
+      } finally {
+        // The viewport is a browser-level setting, not a page one - freshLoad()
+        // does not reset it, so it must not leak into later tests either on
+        // pass or on an assertion throw mid-loop.
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("card swipe: #count is written once per step, never per frame", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.eval(`
+        window.__countBatches = 0;
+        new MutationObserver(() => { window.__countBatches++; })
+          .observe(document.getElementById("count"), { childList: true, characterData: true, subtree: true });
+        return true;
+      `);
+      const g = await startDrag("#card");
+      for (let i = 1; i <= 12; i++) await g.move(-10 * i, i * 20);
+      const duringMoves = await b.eval(`return window.__countBatches;`);
+      assert.strictEqual(duringMoves, 0, "no #count write should happen while dragging");
+      await g.release(-120, 260);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the drag should have committed");
+      const total = await b.eval(`return window.__countBatches;`);
+      assert.strictEqual(total, 1, "#count should be written exactly once for the whole step");
+    });
+
+    test("card swipe: a 2-card order and a 2-chord sequence (prev == next) animate and land", async () => {
+      await freshLoad();
+      await b.eval(`order = [0, 1]; idx = 0; render(); return true;`);
+      const finish = () => b.eval(`document.querySelector(".scene").getAnimations().forEach(a => a.finish()); return true;`);
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await finish();
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / 2"`,
+        { label: "2-card order to advance" });
+      await b.drag("#card", [[40, 100], [80, 200], [120, 300]]);
+      await finish();
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "1 / 2"`,
+        { label: "2-card order to go back" });
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await finish();
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / 2"`,
+        { label: "2-card order to advance again" });
+
+      await openSettingsPanel();
+      await b.click("#modeS");
+      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to take effect" });
+      await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
+      await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
+      await b.eval(`
+        seq = { chords: [0, 10], style: seq.style };
+        order = seq.chords.slice(); idx = 0; flipped = false;
+        render();
+        return true;
+      `);
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await finish();
+      await b.waitFor(`(document.querySelector("#count .sr-only") || {}).textContent?.includes("chord 2 of 2")`,
+        { label: "the rail to mark chord 2" });
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await finish();
+      await b.waitFor(`(document.querySelector("#count .sr-only") || {}).textContent?.includes("chord 1 of 2")`,
+        { label: "the rail to wrap back to chord 1" });
+    });
+
+    test("card swipe: a printed card carries no transform", async () => {
+      await freshLoad();
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      try {
+        await b.send("Emulation.setEmulatedMedia", { media: "print" });
+        const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
+        assert.strictEqual(xf, "none", "a printed card must carry no swipe transform");
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { media: "" });
+        await g.release(0, 50);
+        await b.finishAnimations();
+      }
+    });
+
+    test("card swipe: a pointercancel mid-drag springs back from the last move and does not step", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.eval(`
+        window.__dragId = null;
+        document.getElementById("card").addEventListener(
+          "pointerdown", (e) => { window.__dragId = e.pointerId; }, { once: true },
+        );
+        return true;
+      `);
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      await b.eval(`
+        const id = window.__dragId;
+        document.getElementById("card").dispatchEvent(new PointerEvent("pointercancel", {
+          pointerId: id, isPrimary: true, clientX: 0, bubbles: true,
+        }));
+        return true;
+      `);
+      assert.strictEqual(await countText(), `1 / ${n}`, "a pointercancel must not step the deck");
+      const anim = await b.eval(`
+        const anims = document.querySelector(".scene").getAnimations();
+        const a = anims[0];
+        const kf = a ? a.effect.getKeyframes() : null;
+        return {
+          n: anims.length,
+          duration: a ? a.effect.getComputedTiming().duration : null,
+          x0: kf ? parseFloat(kf[0].transform.match(/translate3d\\(([-\\d.]+)px/)[1]) : null,
+        };
+      `);
+      assert.strictEqual(anim.n, 1, "a pointercancel should spring back with exactly one animation");
+      assert.strictEqual(anim.duration, 260);
+      assert.ok(Math.abs(anim.x0 - 80) <= 1, `spring-back should start from the last real move (80), got ${anim.x0}`);
+      await b.finishAnimations();
+      const settled = await sceneXform();
+      assert.strictEqual(settled.none, true);
+      const style = await sceneStyle();
+      assert.strictEqual(style.willChange, "");
+      // The pointercancel above was a synthetic PointerEvent on the app's own
+      // element, not a real CDP touch release, so the underlying touch (id 1)
+      // is still "down" as far as Chrome's input pipeline is concerned; end
+      // it for real or the next test's touchstart with the same id misbehaves.
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    });
+
+    test("card swipe: a second pointer cannot end or hijack a drag in progress", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startDrag("#card");
+      await g.move(-80, 0);
+      await b.eval(`
+        const card = document.getElementById("card");
+        card.dispatchEvent(new PointerEvent("pointerdown", {
+          pointerId: 999, pointerType: "mouse", isPrimary: true, button: 0, clientX: 0, bubbles: true,
+        }));
+        card.dispatchEvent(new PointerEvent("pointerup", {
+          pointerId: 999, pointerType: "mouse", isPrimary: true, button: 0, clientX: 0, bubbles: true,
+        }));
+        return true;
+      `);
+      const mid = await sceneXform();
+      assert.ok(Math.abs(mid.m41 - (-80)) <= 1, `a second pointer must not disturb the drag, m41=${mid.m41}`);
+      assert.strictEqual(await countText(), `1 / ${n}`, "a second pointer's pointerup must not end the drag");
+      await g.release(-120, 200);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the original touch should still be able to commit");
+    });
+
+    // N40 (owner in-scope widening): step() suppresses .card's reverse-flip
+    // transition for every caller, not just land() - #next, ArrowRight, and
+    // the swipe's own land() all reset a flipped card the same way.
+    test("card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition", async () => {
+      await freshLoad();
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true);
+      await b.click("#next");
+      assert.strictEqual(await cardFlipped(), false, "#next must reset the flip");
+      let cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
+      assert.strictEqual(cardAnims, 0, "#next must not animate the reverse-flip");
+
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      assert.strictEqual(await cardFlipped(), false, "ArrowRight must reset the flip");
+      cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
+      assert.strictEqual(cardAnims, 0, "ArrowRight must not animate the reverse-flip");
+    });
   });
 
 }

@@ -9,7 +9,7 @@
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
-const { test } = require("node:test");
+const { test, describe } = require("node:test");
 const assert = require("node:assert");
 const { boot } = require("./helpers/sandbox.js");
 
@@ -4251,4 +4251,38 @@ test("an unsupported deck hides the style block and a working deck brings it bac
   const COPY = app.get("SEQ_STYLE_COPY");
   const curStyle = app.get("seq.style");
   assert.strictEqual(app.els["seq-style-name"].textContent, COPY[curStyle][0]);
+});
+
+describe("swipe decision", () => {
+  test("swipeDecision commits strictly past SWIPE_COMMIT_PX, left = next", () => {
+    const app = boot();
+    assert.strictEqual(app.get("SWIPE_COMMIT_PX"), 55);
+    assert.strictEqual(app.get("swipeDecision(55,0)"), 0);
+    assert.strictEqual(app.get("swipeDecision(55.5,0)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-55.5,0)"), 1);
+    assert.strictEqual(app.get("swipeDecision(-50,0)"), 0);
+  });
+
+  test("swipeDecision flings past SWIPE_FLING_PX_MS only in the drag direction and past the slop", () => {
+    const app = boot();
+    assert.strictEqual(app.get("swipeDecision(-20,-0.49)"), 0);
+    assert.strictEqual(app.get("swipeDecision(-20,-0.51)"), 1);
+    assert.strictEqual(app.get("swipeDecision(20,0.51)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-20,0.9)"), 0, "a reversed velocity must not commit");
+    assert.strictEqual(app.get("swipeDecision(-10,-5)"), 0, "below the slop must not commit on velocity alone");
+    assert.strictEqual(app.get("swipeDecision(-11,-5)"), 1);
+  });
+
+  test("swipe constants are the plan's values", () => {
+    const app = boot();
+    assert.strictEqual(app.get("SWIPE_FLING_PX_MS"), 0.5);
+    assert.strictEqual(app.get("SWIPE_FLING_WINDOW_MS"), 100);
+    assert.strictEqual(app.get("SWIPE_SLOP_PX"), 10);
+    assert.strictEqual(app.get("SWIPE_TILT_DEG_PER_PX"), 0.05);
+    assert.strictEqual(app.get("SWIPE_TILT_MAX_DEG"), 8);
+    assert.strictEqual(app.get("SWIPE_OUT_MS"), 220);
+    assert.strictEqual(app.get("SWIPE_BACK_MS"), 260);
+    assert.strictEqual(app.get("SWIPE_IN_MS"), 180);
+    assert.strictEqual(app.get("SWIPE_IN_PX"), 24);
+  });
 });
