@@ -421,9 +421,16 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
    touch too, with no JS listener involved - a permanent non-passive
    touchstart listener was tried and it regressed an unrelated held-drag test
    by changing Chrome's scroll-blocking heuristics for every ordinary touch,
-   even when the listener itself did nothing. */
-main{touch-action:pan-y pinch-zoom}
-.scene{touch-action:pan-y pinch-zoom}
+   even when the listener itself did nothing.
+   The card is swipe-only (owner decision, 2026-09-30): a device log from
+   iOS 18.7 WebKit showed `pan-y pinch-zoom` letting the scroll recogniser
+   claim a clearly horizontal swipe - pointercancel fired as soon as
+   accumulated vertical drift crossed ~10-11.7px, well under the ~6.3px seen
+   on swipes that committed cleanly. A touch on the card must never scroll or
+   zoom the page, so both main and .scene drop to touch-action:none - main
+   for the same mid-flight-hit-test reason as above. */
+main{touch-action:none}
+.scene{touch-action:none}
 main{overflow-x:clip}
 /* The card is sized from whichever axis runs out first.
    --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and
@@ -449,6 +456,13 @@ main{overflow-x:clip}
   aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+  /* touch-action must be set on #card ITSELF, not only its ancestors: the
+     swipe listeners are on #card, so most real touches hit-test there
+     directly, and a browser resolves touch-action from the hit-tested
+     element's own value first - main/.scene's touch-action:none above only
+     covers the mid-flight case where the touch hit-tests to an ancestor
+     because .scene has moved away from #card's own box. */
+  touch-action:none;
   /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
      and a box-shadow takes the radius of the element it is ON - so without
      this the press ring is a hard rectangle around a rounded card, with a
@@ -8098,8 +8112,18 @@ function release(e, cancelled) {
   // visible jitter hop on a touch that never left the slop radius (the tap
   // flip itself comes from #card's click listener, untouched since eatClick
   // is not set below).
-  if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
-  if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+  if (!dir && !moved) { swipeRest(); return; }
+  // Q17: eatClick used to decay on its own via `setTimeout(fn, 0)`, racing
+  // the native click the UA synthesizes after this same pointerup/mouseup -
+  // no spec guarantees which macrotask runs first, and under CI's scheduler
+  // jitter the timeout sometimes cleared eatClick before the click it was
+  // meant to suppress arrived, so a moved mouse drag intermittently flipped
+  // the card it should have left alone. eatClick now stays true until
+  // something that actually needs it to be false clears it: the click
+  // handler consumes it (the normal path), or the next pointerdown's
+  // no-flight reset clears it (covers a moved drag whose trailing click
+  // never fires at all, e.g. a touch drag past the tap-click threshold).
+  if (moved) eatClick = true;
   if (reducedMotion.matches) {
     scene.style.transform = ""; scene.style.willChange = "";
     if (dir) step(dir);
@@ -8128,8 +8152,9 @@ function swipeMove(e) {
   // Q15: a mouse button released outside the window (or a native context
   // menu opened over it) delivers no pointerup/lostpointercapture - the OS
   // eats it - so a `pointermove` with no buttons held is the only signal
-  // that the drag should have ended. `e.buttons` is a touch/pen no-op (it is
-  // always 0 there), so this only fires for `pointerType === "mouse"`.
+  // that the drag should have ended. An active touch/pen contact reports
+  // `e.buttons === 1` too, so the `pointerType === "mouse"` guard is what
+  // actually restricts this to mouse, not any quirk of `e.buttons` itself.
   if (e.pointerType === "mouse" && !(e.buttons & 1)) { release(e, true); return; }
   const dx = e.clientX - drag.x0;
   if (Math.abs(dx) > SWIPE_SLOP_PX) drag.moved = true;

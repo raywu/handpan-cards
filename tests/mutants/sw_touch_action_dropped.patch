@@ -1,17 +1,17 @@
-# kills: the card follows a held drag with a tilt, then springs back below the threshold
-# suite: node --test --test-name-pattern ^card.swipe:.the.card.follows.a.held.drag.with.a.tilt,.then.springs.back.below.the.threshold$ tests/e2e.test.js
-# Deletes .scene{touch-action:pan-y pinch-zoom} entirely: getComputedStyle on
-# .scene itself no longer reports the declared value (main's own rule is a
-# separate declaration on a different element and does not change .scene's
-# own computed touch-action property).
+# kills: card swipe: the card is swipe-only - main and .scene never scroll or zoom
+# suite: node --test --test-name-pattern ^card.swipe:.the.card.is.swipe-only.-.main.and..scene.never.scroll.or.zoom$ tests/e2e.test.js
+# Deletes .scene{touch-action:none} entirely: getComputedStyle on .scene
+# itself no longer reports the declared value (main's own rule is a separate
+# declaration on a different element and does not change .scene's own
+# computed touch-action property).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -423,7 +423,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
-    by changing Chrome's scroll-blocking heuristics for every ordinary touch,
-    even when the listener itself did nothing. */
- main{touch-action:pan-y pinch-zoom}
--.scene{touch-action:pan-y pinch-zoom}
+@@ -430,7 +430,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    zoom the page, so both main and .scene drop to touch-action:none - main
+    for the same mid-flight-hit-test reason as above. */
+ main{touch-action:none}
+-.scene{touch-action:none}
  main{overflow-x:clip}
  /* The card is sized from whichever axis runs out first.
     --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and

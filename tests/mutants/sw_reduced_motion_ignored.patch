@@ -3,16 +3,18 @@
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,
 # even when prefers-reduced-motion is set.
-# Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
-# this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
-# swipe functions down); the mutation itself is unchanged.
+# Context-refreshed 2026-09-30 (S2): the lines above the reduced-motion block
+# changed (the jitter-hop guard dropped a redundant transform clear and the
+# eatClick line lost its setTimeout decay, gaining an explanatory comment) -
+# the mutation itself (dropping the reduced-motion early return) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8100,11 +8100,6 @@
-   // is not set below).
-   if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
-   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+@@ -8121,11 +8121,6 @@ function release(e, cancelled) {
+   // handler consumes it (the normal path), or the next pointerdown's
+   // no-flight reset clears it (covers a moved drag whose trailing click
+   // never fires at all, e.g. a touch drag past the tap-click threshold).
+   if (moved) eatClick = true;
 -  if (reducedMotion.matches) {
 -    scene.style.transform = ""; scene.style.willChange = "";
 -    if (dir) step(dir);

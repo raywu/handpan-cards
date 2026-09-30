@@ -4,13 +4,18 @@
 # swipeMove, so a mouse button released outside the window - which delivers
 # no pointerup/lostpointercapture at all - leaves the drag live and following
 # the pointer forever.
+# Context-refreshed 2026-09-30 (S2): the comment above the guard was
+# rewritten (the old text wrongly claimed `e.buttons` is always 0 for
+# touch/pen; it is 1 for an active contact - the pointerType guard is what
+# actually restricts this to mouse) - the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8130,7 +8130,6 @@
+@@ -8152,7 +8152,6 @@
    // eats it - so a `pointermove` with no buttons held is the only signal
-   // that the drag should have ended. `e.buttons` is a touch/pen no-op (it is
-   // always 0 there), so this only fires for `pointerType === "mouse"`.
+   // that the drag should have ended. An active touch/pen contact reports
+   // `e.buttons === 1` too, so the `pointerType === "mouse"` guard is what
+   // actually restricts this to mouse, not any quirk of `e.buttons` itself.
 -  if (e.pointerType === "mouse" && !(e.buttons & 1)) { release(e, true); return; }
    const dx = e.clientX - drag.x0;
    if (Math.abs(dx) > SWIPE_SLOP_PX) drag.moved = true;
