@@ -9,11 +9,16 @@
 # pattern above still matches the surviving assertion - that html,body
 # resolves height as a percentage, never a page-box literal - which still
 # requires this exact fill rule.
+# Context-refreshed 2026-09-30 (N2): the hunk's leading context line was
+# rewritten by the Q3 stale-comment fix (the print-block header comment above
+# `@media print{` no longer ends in "colour for the page background."), so
+# the context and line number were updated to match.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -871,7 +871,7 @@
-    colour for the page background. ---------------------------------------- */
+@@ -941,7 +941,7 @@
+    once the owner's device gate (item 1, iPhone ruler check) passed; every
+    deck now downloads a client-built PDF instead. ---------------------------- */
  @media print{
    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
 -  html,body{height:100%; min-height:0; overflow:visible; background:#fff}

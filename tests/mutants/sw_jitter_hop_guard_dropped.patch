@@ -1,0 +1,18 @@
+# kills: card swipe: a jitter hop below the slop radius clears with no spring-back animation
+# suite: node --test --test-name-pattern ^card.swipe:.a.jitter.hop.below.the.slop.radius.clears.with.no.spring-back.animation$ tests/e2e.test.js
+# Q9: drops the early return that skips the spring-back animation for a
+# touch that never left the slop radius. Without it, every non-committing
+# release (including a jitter that moved 0px) runs the full swipeXf/
+# SWIPE_BACK_MS animate() call, producing a visible jitter hop on a touch
+# that was never meant to move the card at all.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8098,7 +8098,6 @@ function release(e, cancelled) {
+   // visible jitter hop on a touch that never left the slop radius (the tap
+   // flip itself comes from #card's click listener, untouched since eatClick
+   // is not set below).
+-  if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
+   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+   if (reducedMotion.matches) {
+     scene.style.transform = ""; scene.style.willChange = "";

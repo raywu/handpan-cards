@@ -1,0 +1,17 @@
+# kills: card swipe: the no-flight capture branch resets eatClick on every real pointerdown
+# suite: node --test --test-name-pattern ^card.swipe:.the.no-flight.capture.branch.resets.eatClick.on.every.real.pointerdown$ tests/e2e.test.js
+# Q12: drops the `eatClick = false;` reset in the pointerdown capture
+# handler's no-flight branch, so a stale `eatClick = true` (e.g. left over
+# from a moved-but-not-committed drag) survives a later, unrelated real
+# pointerdown+click sequence and wrongly eats that click too.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8177,7 +8177,6 @@ document.addEventListener("pointerdown", e => {
+       card.setPointerCapture(e.pointerId);
+     }
+   } else {
+-    eatClick = false;
+     land();
+   }
+ }, true);

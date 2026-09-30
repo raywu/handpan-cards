@@ -3,14 +3,17 @@
 # Drops the pointercancel listener entirely: a cancelled gesture (e.g. the
 # browser taking over for a system gesture) leaves drag state dangling
 # instead of springing the card back and clearing it.
+# Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
+# this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
+# swipe functions down); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8129,7 +8129,6 @@ card.addEventListener("pointerdown", e => {
+@@ -8151,7 +8151,6 @@
  });
  card.addEventListener("pointermove", swipeMove);
  card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
 -card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
  card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
- // Capture phase: land a pending fly-out before any other input reaches the app.
- // Mid-flight, .scene has moved away from its resting position, so a real
+ // Q15: a right-click (or ctrl+click on macOS) opens a context menu with no
+ // pointerup of its own, leaving a live drag stuck following the pointer.

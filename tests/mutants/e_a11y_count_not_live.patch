@@ -2,15 +2,18 @@
 # suite: node --test --test-name-pattern only.the.face.that.is.showing.is.exposed tests/e2e.test.js
 # The card counter stops being a live region, so stepping with the arrows or a
 # swipe announces nothing at all.
+# Context-refreshed 2026-09-30 (N2): line numbers shifted and the trailing
+# .shuffle-wrap comment was reworded elsewhere in this workstream ("outside
+# the D8 landscape break" -> "in every mode"); the mutated line is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -974,7 +974,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -986,7 +986,7 @@
    <div class="mid">
      <!-- polite, not assertive: stepping is the user's own action, so the new
           position should follow the card, never interrupt it. -->
 -    <div class="count" id="count" aria-live="polite"></div>
 +    <div class="count" id="count"></div>
-     <!-- shuffle-wrap is markup grouping only (display:contents) outside the
-          D8 landscape break - see the CSS comment above .shuffle-wrap. -->
+     <!-- shuffle-wrap is markup grouping only (display:contents) in every
+          mode - see the CSS comment above .shuffle-wrap. -->
      <div class="shuffle-wrap">

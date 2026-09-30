@@ -3,10 +3,13 @@
 # Drops the panelOpen check from both the pointerdown start guard and
 # release()'s blocked expression: a drag started or ended while the settings
 # panel is open now steps the card instead of being fully ignored.
+# Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
+# this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
+# swipe functions down); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8077,7 +8077,7 @@ function release(e, cancelled) {
+@@ -8089,7 +8089,7 @@
    }
    const dx = drag.last;
    const moved = drag.moved;
@@ -14,8 +17,8 @@ diff --git a/index.html b/index.html
 +  const blocked = cancelled || sheetOpen;
    const dir = blocked ? 0 : swipeDecision(dx, vx);
    drag = null;
-   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
-@@ -8118,7 +8118,7 @@ function swipeMove(e) {
+   // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
+@@ -8144,7 +8144,7 @@
    }
  }
  card.addEventListener("pointerdown", e => {

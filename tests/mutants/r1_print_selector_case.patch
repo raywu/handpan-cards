@@ -7,11 +7,14 @@
 # Context-refreshed 2026-09-29 (R1): the insertion point is unchanged; the
 # legacy print-sheet's `body.printing #printroot, ...{height:100%}` line that
 # used to sit directly below it is gone with the retired print sheet.
+# Context-refreshed 2026-09-30 (N2): the hunk's leading context line was
+# rewritten by the Q3 stale-comment fix (the print-block header comment above
+# `@media print{` no longer ends in "colour for the page background."), so
+# the context and line number were updated to match.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -871,7 +871,8 @@
-    colour for the page background. ---------------------------------------- */
+@@ -945,6 +945,7 @@
  @media print{
    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
    html,body{height:100%; min-height:0; overflow:visible; background:#fff}

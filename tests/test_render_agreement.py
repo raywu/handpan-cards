@@ -561,10 +561,11 @@ class PrintStylesheetTest(unittest.TestCase):
         self.print_css = self.style[i:]
 
     def test_print_block_is_last_in_the_style_element(self):
-        """`tests/test_render_agreement.py:238` reads `.face::before` with a
-        whole-file regex and takes the FIRST match. The print block redefines
-        that rule for printed cards, so it has to sit BELOW the screen rule -
-        and the cheapest way to guarantee that forever is to keep it last."""
+        """The print block forces print colour adjustment, clears the page
+        background and padding, and resets the swipe transform - none of it
+        scoped by selector specificity, so nothing after it in the <style>
+        element could ever safely override it. Keeping it last is the
+        cheapest way to guarantee that forever."""
         self.assertIn("@media print", self.style)
         self.assertEqual(self.style.count("@media print"), 1)
         # Nothing but the print block's own braces after it.

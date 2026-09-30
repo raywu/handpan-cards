@@ -1,0 +1,19 @@
+# kills: card swipe: a right-click at the rest position during the fly-out does not eat the next click
+# suite: node --test --test-name-pattern ^card.swipe:.a.right-click.at.the.rest.position.during.the.fly-out.does.not.eat.the.next.click$ tests/e2e.test.js
+# Q11: drops the `e.button === 0` guard, so a right-click (or middle-click)
+# at the card's rest position during a fly-out arms eatClick same as a real
+# left click would. A right-click never produces a "click" event of its own,
+# so nothing ever consumes that armed flag - it survives to swallow the
+# reader's next, unrelated left click.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8170,7 +8170,7 @@ document.addEventListener("pointerdown", e => {
+     // Q11: a right-button press (button 2) must not arm eatClick - a
+     // contextmenu/auxclick follows it, never a "click", so a later Enter on
+     // a focused control would otherwise have its own click eaten.
+-    eatClick = inside && e.button === 0;
++    eatClick = inside;
+     land();
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+       scene.getAnimations().forEach(a => a.cancel());

@@ -933,14 +933,15 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-delete[data-armed]:active{color:#eae6df}
 
 /* ---- print (R1, 2026-09-29) -----------------------------------------------
-   This block is deliberately LAST in the <style> element. It redefines
-   `.face::before` for printed cards, and `tests/test_render_agreement.py:238`
-   reads that rule with a whole-file regex that takes the FIRST match - so the
-   screen rule at :320 has to stay the one it finds. Nothing goes below here.
-   The legacy browser-print sheet (#printroot, body.printing) was retired
+   Forces print colour adjustment, clears the page background and padding for
+   paper, and resets .scene's swipe transform so a card mid-flight never
+   prints offset or tilted. None of that is scoped by selector specificity,
+   so nothing after this block in the <style> element could ever safely
+   override it - this block is deliberately LAST, enforced by
+   tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element.
+   The legacy browser-print sheet (the old printing body class) was retired
    once the owner's device gate (item 1, iPhone ruler check) passed; every
-   deck now downloads a client-built PDF instead, so this block only forces
-   colour for the page background. ---------------------------------------- */
+   deck now downloads a client-built PDF instead. ---------------------------- */
 @media print{
   *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
   html,body{height:100%; min-height:0; overflow:visible; background:#fff}
@@ -986,8 +987,8 @@ footer.seq{row-gap:var(--sp-1)}
     <!-- polite, not assertive: stepping is the user's own action, so the new
          position should follow the card, never interrupt it. -->
     <div class="count" id="count" aria-live="polite"></div>
-    <!-- shuffle-wrap is markup grouping only (display:contents) outside the
-         D8 landscape break - see the CSS comment above .shuffle-wrap. -->
+    <!-- shuffle-wrap is markup grouping only (display:contents) in every
+         mode - see the CSS comment above .shuffle-wrap. -->
     <div class="shuffle-wrap">
       <button class="shuffle" id="shuffle">Shuffle: off</button>
       <!-- Mode S only (§8 O1-O9): the playing-style tip, moved off the card
@@ -6471,8 +6472,6 @@ function sizePanHits(svg, minPx) {
 // this: that file's deck keys are owned by the print-pipeline lane and are
 // regenerated, so a filename field there would be silently dropped. Only the
 // three built-in decks have committed PDFs; a generated/custom deck has none.
-/** The print sheet's page geometry, in PDF points, copied from
- *  `tools/hifi.py:35-37` - which is the print spec, not a second opinion.
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
@@ -6497,10 +6496,9 @@ function isIOS(ua) {
 /* ---------------- the print CTA ----------------
  * Every deck - built-in or generated - prints the same way: downloadDeckPDF
  * below builds the PDF client-side and hands it to the platform (download
- * link on desktop, window.open/location.href on iOS). The legacy
- * window.print()/openPrintSheet browser-print sheet was retired (R1,
- * 2026-09-29) once the owner's device gate passed - see the comment above
- * downloadDeckPDF.
+ * link on desktop, window.open/location.href on iOS). The legacy browser
+ * print dialog sheet (openPrintSheet) was retired (R1, 2026-09-29) once the
+ * owner's device gate passed - see the comment above downloadDeckPDF.
  */
 // Type-guarded like store.deck / store.mode above (D-3): "hpfc" is shared, so
 // a non-string or unrecognised value here must not survive into printPaper.
@@ -8094,6 +8092,13 @@ function release(e, cancelled) {
   const blocked = cancelled || panelOpen || sheetOpen;
   const dir = blocked ? 0 : swipeDecision(dx, vx);
   drag = null;
+  // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
+  // returns 0 there - this guard is equivalent to !moved and leaves fling
+  // behaviour untouched. Skipping the spring-back animation here avoids a
+  // visible jitter hop on a touch that never left the slop radius (the tap
+  // flip itself comes from #card's click listener, untouched since eatClick
+  // is not set below).
+  if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
   if (reducedMotion.matches) {
     scene.style.transform = ""; scene.style.willChange = "";
@@ -8120,6 +8125,12 @@ function release(e, cancelled) {
 }
 function swipeMove(e) {
   if (!drag || e.pointerId !== drag.id) return;
+  // Q15: a mouse button released outside the window (or a native context
+  // menu opened over it) delivers no pointerup/lostpointercapture - the OS
+  // eats it - so a `pointermove` with no buttons held is the only signal
+  // that the drag should have ended. `e.buttons` is a touch/pen no-op (it is
+  // always 0 there), so this only fires for `pointerType === "mouse"`.
+  if (e.pointerType === "mouse" && !(e.buttons & 1)) { release(e, true); return; }
   const dx = e.clientX - drag.x0;
   if (Math.abs(dx) > SWIPE_SLOP_PX) drag.moved = true;
   drag.last = dx;
@@ -8142,6 +8153,9 @@ card.addEventListener("pointermove", swipeMove);
 card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
 card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
 card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+// Q15: a right-click (or ctrl+click on macOS) opens a context menu with no
+// pointerup of its own, leaving a live drag stuck following the pointer.
+card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
 // Capture phase: land a pending fly-out before any other input reaches the app.
 // Mid-flight, .scene has moved away from its resting position, so a real
 // pointerdown at the card's rest spot hit-tests to some ancestor (e.g.
@@ -8153,7 +8167,10 @@ document.addEventListener("pointerdown", e => {
     const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
       e.clientY >= r.top && e.clientY <= r.bottom;
     const inside = inRestBox || card.contains(e.target);
-    eatClick = inside;
+    // Q11: a right-button press (button 2) must not arm eatClick - a
+    // contextmenu/auxclick follows it, never a "click", so a later Enter on
+    // a focused control would otherwise have its own click eaten.
+    eatClick = inside && e.button === 0;
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
       scene.getAnimations().forEach(a => a.cancel());

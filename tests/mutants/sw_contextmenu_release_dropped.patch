@@ -1,0 +1,18 @@
+# kills: card swipe: a synthetic contextmenu on #card releases a live drag
+# suite: node --test --test-name-pattern ^card.swipe:.a.synthetic.contextmenu.on..card.releases.a.live.drag$ tests/e2e.test.js
+# Q15: drops the contextmenu listener that releases a live drag, so a right-
+# click (or ctrl+click on macOS) opening a context menu mid-drag - which
+# delivers no pointerup of its own - leaves the drag stuck live.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8153,9 +8153,6 @@
+ card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
+ card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+ card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+-// Q15: a right-click (or ctrl+click on macOS) opens a context menu with no
+-// pointerup of its own, leaving a live drag stuck following the pointer.
+-card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
+ // Capture phase: land a pending fly-out before any other input reaches the app.
+ // Mid-flight, .scene has moved away from its resting position, so a real
+ // pointerdown at the card's rest spot hit-tests to some ancestor (e.g.

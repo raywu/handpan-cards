@@ -3906,10 +3906,28 @@ test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no windo
   assert.doesNotMatch(src, /function openPrintSheet/);
   assert.doesNotMatch(src, /onclick="[^"]*window\.print\(\)/,
     "no control still calls window.print() directly");
+  // Q2: the original forms above (`[>{.#]` / `\(\)\s*;`) are narrower than
+  // they look - they miss window.print() with no trailing `;` and
+  // body.printing) - and they let two now-stale comments ("#printroot,
+  // body.printing" at index.html:940, "window.print()/openPrintSheet" at
+  // :6501) read as if the code they describe still exists. These
+  // code-shaped forms catch a real reintroduction wherever it appears,
+  // comment or not, which is why both comments were reworded rather than
+  // stripped (AD6) - they no longer match.
+  assert.doesNotMatch(src, /addEventListener\(\s*["']afterprint/);
+  assert.doesNotMatch(src, /body\.printing\b/);
+  assert.doesNotMatch(src, /\bwindow\.print\s*\(/);
+  // printGridCSS never existed in this codebase (confirmed by grep across
+  // index.html and this file before adding these lines), so this is a
+  // future-reintroduction guard, not a check against a symbol that was ever
+  // here - the same reasoning AD6 applies to the afterprint/body.printing/
+  // window.print forms above.
+  assert.doesNotMatch(src, /printGridCSS\s*\(/);
   const app = boot();
   customDeck(app);
   assert.strictEqual(app.get("typeof openPrintSheet"), "undefined");
   assert.strictEqual(app.get("typeof PRINT_LAYOUTS"), "undefined");
+  assert.strictEqual(app.get("typeof printGridCSS"), "undefined");
 });
 
 test("the head carries theme-color and color-scheme meta tags matching --table", () => {

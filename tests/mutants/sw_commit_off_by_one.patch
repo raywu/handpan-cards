@@ -2,7 +2,7 @@
 # suite: node --test --test-name-pattern ^swipeDecision.commits.strictly.past.SWIPE_COMMIT_PX..left...next$ tests/app.test.js
 # Turns the strict "past the threshold" commit into "at or past it", so a
 # drag that lands EXACTLY on SWIPE_COMMIT_PX now commits - the spec's own
-# `swipeDecision(55,0) === 0` boundary case goes the other way.
+# `swipeDecision(18,0) === 0` boundary case goes the other way.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
