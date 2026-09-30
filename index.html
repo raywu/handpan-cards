@@ -843,6 +843,7 @@ button.nav:active{background:#2e281e}
 .mode:active{background:#2e281e}
 .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
 .shuffle:active{color:#eae6df}
+.shuffle.reroll:active{background:#2e281e}
 .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
 #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
 #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}
@@ -6762,7 +6763,7 @@ function pdfFileName(d, variant, paper) {
   // person with both on their desktop can see they are the same kind of thing.
   const stem = d.name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   const tail = paper === "a4" ? "A4" : "Letter";
-  return stem + (variant === "shop" ? "_PRINTER_ONLY_Chords_" : "_Cards_") + tail + ".pdf";
+  return stem + (variant === "shop" ? "_CHORD_ONLY_" : "_Cards_") + tail + ".pdf";
 }
 
 function downloadDeckPDF(variant, btn) {

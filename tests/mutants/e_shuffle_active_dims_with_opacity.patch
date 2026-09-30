@@ -16,6 +16,6 @@ diff --git a/index.html b/index.html
  .mode.on:active{background:#ddd7cb; border-color:#ddd7cb}
 -.shuffle:active{color:#eae6df}
 +.shuffle:active{opacity:.6}
+ .shuffle.reroll:active{background:#2e281e}
  .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
  #scale-generate:active{background:#ddd7cb; border-color:#ddd7cb}
- #scale-generate:disabled:active{background:#f1ece1; border-color:#f1ece1}

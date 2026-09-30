@@ -398,10 +398,10 @@ if __name__ == "__main__":
     n1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_Cards_Letter.pdf"), HIJAZ)
     n2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_Cards_Letter.pdf"), PYGMY)
     n3 = hifi.build(os.path.join(OUT, "D_Amara_9_Cards_Letter.pdf"), AMARA)
-    p1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf"),
+    p1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf"),
                     HIJAZ, chords_only=True)
-    p2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf"),
+    p2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf"),
                     PYGMY, chords_only=True)
-    p3 = hifi.build(os.path.join(OUT, "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf"),
+    p3 = hifi.build(os.path.join(OUT, "D_Amara_9_CHORD_ONLY_Letter.pdf"),
                     AMARA, chords_only=True)
     print("full:", n1, n2, n3, "| printer:", p1, p2, p3)

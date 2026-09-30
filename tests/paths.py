@@ -11,9 +11,9 @@ PDFS = {
     "hijaz_full": "CSharp_Hijaz_Orion_9_Cards_Letter.pdf",
     "pygmy_full": "F3_Low_Pygmy_18_Cards_Letter.pdf",
     "amara_full": "D_Amara_9_Cards_Letter.pdf",
-    "hijaz_print": "CSharp_Hijaz_Orion_9_PRINTER_ONLY_Chords_Letter.pdf",
-    "pygmy_print": "F3_Low_Pygmy_18_PRINTER_ONLY_Chords_Letter.pdf",
-    "amara_print": "D_Amara_9_PRINTER_ONLY_Chords_Letter.pdf",
+    "hijaz_print": "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf",
+    "pygmy_print": "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf",
+    "amara_print": "D_Amara_9_CHORD_ONLY_Letter.pdf",
 }
 
 

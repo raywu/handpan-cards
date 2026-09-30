@@ -216,7 +216,7 @@ test("a no-thirds pan draws the NO 3RDS warning badge, in orange, on every chord
   const glyphs = pdfGlyphs(P.build(deck, { variant: "shop" }));
   const badges = coloursOf(glyphs, P.CARD_WARNINGS.NO_THIRDS);
   assert.equal(badges.length, deck.chords.length,
-    "one NO 3RDS badge per chord card - PRINTER_ONLY has no title card, so " +
+    "one NO 3RDS badge per chord card - CHORD_ONLY has no title card, so " +
     "this is the only place the warning can survive");
   // hifi's ORANGE (src/engine/pdfcards.js:34), the fixed accent used for
   // every warning and bottom-note badge - not a deck colour.

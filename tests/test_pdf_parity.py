@@ -249,7 +249,7 @@ class PrintParityTest(unittest.TestCase):
                 self._assert_vectors_match(case, "full")
 
     def test_every_vector_matches_print_in_the_shop_variant(self):
-        # PRINTER_ONLY drops the title and legend cards, so it draws a
+        # CHORD_ONLY drops the title and legend cards, so it draws a
         # different set of vectors - and on a different page break.
         for case in CASES:
             with self.subTest(case=case):

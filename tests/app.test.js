@@ -4439,12 +4439,12 @@ test("the download is named the way the print pipeline names its files", () => {
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
   // tools/decks.py:409-416 names the six shipped files: `<Name>_Cards_Letter.pdf`
-  // and `<Name>_PRINTER_ONLY_Chords_Letter.pdf`, with punctuation folded out of
+  // and `<Name>_CHORD_ONLY_Letter.pdf`, with punctuation folded out of
   // the deck name. A custom deck's download joins that shelf, so it takes the
   // same shape rather than inventing a second one.
   assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
   app.run('downloadDeckPDF("shop")');
-  assert.match(anchor(app).download, /^[A-Za-z0-9_]+_PRINTER_ONLY_Chords_Letter\.pdf$/);
+  assert.match(anchor(app).download, /^[A-Za-z0-9_]+_CHORD_ONLY_Letter\.pdf$/);
   app.run('setPrintPaper("a4"); downloadDeckPDF("full")');
   assert.match(anchor(app).download, /_Cards_A4\.pdf$/,
     "the paper the user picked has to reach the filename, or two downloads collide");
@@ -4649,6 +4649,8 @@ test("the re-roll control reads as a button in mode S and reverts outside it", (
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
   assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
     ".reroll must borrow button.nav's border so it reads as a button");
+  assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
+    ".reroll must press like button.nav:active, not only recolour its text");
 });
 
 test("the mode S panel note introduces the video as seven ways to play chords", () => {
