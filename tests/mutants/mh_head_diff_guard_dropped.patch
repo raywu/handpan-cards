@@ -1,5 +1,5 @@
 # kills: the same post-image committed to HEAD IS reported stale
-# suite: node --test --test-name-pattern=.same.post-image.committed.to.HEAD.IS.reported.stale. tests/mutation_harness.test.js
+# suite: node --test --test-name-pattern=.same.post-image.committed.to.HEAD.IS.reported.stale tests/mutation_harness.test.js
 #
 # Deletes the `git diff --quiet HEAD -- <paths>` check that distinguishes "the
 # sweep applied this patch to this very tree, uncommitted" from "a normal

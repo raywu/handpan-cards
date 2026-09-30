@@ -1,5 +1,5 @@
 # kills: a patch applied to the working tree but uncommitted is NOT reported stale
-# suite: node --test --test-name-pattern=.patch.applied.to.the.working.tree.but.uncommitted.is.NOT.reported.stale. tests/mutation_harness.test.js
+# suite: node --test --test-name-pattern=.patch.applied.to.the.working.tree.but.uncommitted.is.NOT.reported.stale tests/mutation_harness.test.js
 #
 # Deletes the -R reverse-apply fallback entirely, so every patch that fails a
 # forward `git apply --check` is reported stale outright - even one this very
