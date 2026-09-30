@@ -7053,7 +7053,7 @@ function run() {
 
     test("\"New progression\" redraws without touching Shuffle's own on/off state", async () => {
       await enterSeqMode();
-      const label = await b.eval(`return document.getElementById("shuffle").textContent;`);
+      const label = await b.eval(`return document.getElementById("shuffle").getAttribute("aria-label");`);
       assert.strictEqual(label, "New progression");
       const seen = new Set();
       for (let i = 0; i < 8; i++) {
@@ -7272,7 +7272,10 @@ function run() {
             const m = await b.eval(`
               const rail = document.querySelector("#count .seq-rail");
               const count = document.getElementById("count");
-              const mid = document.querySelector(".mid");
+              // .mid is display:contents in the footer grid (D18): it draws no
+              // box of its own, so containment is checked against #foot, the
+              // footer landmark that actually owns the rect.
+              const mid = document.getElementById("foot");
               const prev = document.getElementById("prev");
               const next = document.getElementById("next");
               const cr = count.getBoundingClientRect(), mr = mid.getBoundingClientRect();
@@ -7363,46 +7366,239 @@ function run() {
         }
       });
 
-    // Acceptance 7: switching from A to S at a fixed viewport must not move
-    // or resize the chrome around the card - header, .scene/main and footer
-    // rects must match (within 0.5px). Modeled on the CHROME_BUDGET rect
-    // pattern above, but as its own test: that table is not touched here.
-    test("switching to mode S does not move or resize the header, card area or footer",
+    // Acceptance 7 (revised, O1/O5): switching from A to S at a fixed viewport
+    // must keep the header exactly where it was and the footer's LEFT EDGE
+    // and WIDTH fixed - only its height may grow, and only by the style block
+    // O1 adds. The card must still satisfy assertCardFits's own relation to
+    // main (E3, replaces "does not move or resize the header, card area or
+    // footer": that claim is false by design now the footer grows in S - D13).
+    // 1280x500, not 1280x800: assertCardFits's LANDSCAPE_CONTROLS always
+    // expects #settings-trigger tappable, but M3's desktop sidebar
+    // (>=1024x700) makes it display:none by design - 1280x500 is the same
+    // short-but-wide desktop window the pre-existing assertCardFits call
+    // sites above already use for that reason.
+    const E3_VIEWPORTS = [[390, 844], [390, 745], [380, 700], [320, 568], [844, 390], [667, 375], [1280, 500]];
+    test("switching to mode S keeps the header and footer width fixed and grows the footer only by the style block",
       async () => {
-        for (const [w, h] of [[390, 844], [390, 745], [844, 390], [1280, 800]]) {
+        const rectsOf = (sel) => `(() => {
+          const r = document.querySelector("${sel}").getBoundingClientRect();
+          return { l: r.left, t: r.top, w: r.width, h: r.height };
+        })()`;
+        for (const [w, h] of E3_VIEWPORTS) {
           await freshLoad();
           await b.setViewport(w, h, w < h);
           await b.settle();
-          const rectsOf = (sel) => `(() => {
-            const r = document.querySelector("${sel}").getBoundingClientRect();
-            return { l: r.left, t: r.top, w: r.width, h: r.height };
-          })()`;
           const before = await b.eval(`return {
             header: ${rectsOf("header")},
-            main: ${rectsOf("main")},
             footer: ${rectsOf("footer")},
           };`);
+          await assertCardFits(`at ${w}x${h} in mode A`);
           await openSettingsPanel();
           await b.click("#modeS");
           await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
             { label: "mode S to take effect" });
-          await b.eval(`document.getElementById("settings-scrim")?.click();
-            document.getElementById("settings-trigger")?.click();
-            return true;`).catch(() => {});
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: "panel to close" });
           await b.settle();
           const after = await b.eval(`return {
             header: ${rectsOf("header")},
-            main: ${rectsOf("main")},
             footer: ${rectsOf("footer")},
+            scrollHeight: document.scrollingElement.scrollHeight,
+            innerHeight: window.innerHeight,
+            styleBottom: document.getElementById("seq-style").getBoundingClientRect().bottom,
           };`);
-          for (const zone of ["header", "main", "footer"]) {
-            for (const k of ["l", "t", "w", "h"]) {
-              assert.ok(Math.abs(before[zone][k] - after[zone][k]) <= 0.5,
-                `${w}x${h} ${zone}.${k}: mode A ${before[zone][k]} vs mode S ${after[zone][k]}`);
-            }
+          for (const k of ["l", "t", "w", "h"]) {
+            assert.ok(Math.abs(before.header[k] - after.header[k]) <= 0.5,
+              `${w}x${h} header.${k}: mode A ${before.header[k]} vs mode S ${after.header[k]}`);
           }
+          assert.ok(Math.abs(before.footer.l - after.footer.l) <= 0.5,
+            `${w}x${h} footer.l moved: mode A ${before.footer.l} vs mode S ${after.footer.l}`);
+          assert.ok(Math.abs(before.footer.w - after.footer.w) <= 0.5,
+            `${w}x${h} footer.w changed: mode A ${before.footer.w} vs mode S ${after.footer.w}`);
+          const growth = after.footer.h - before.footer.h;
+          const maxGrowth = after.innerHeight > 520 ? 70 : 40;
+          assert.ok(growth <= maxGrowth,
+            `${w}x${h} footer grew by ${growth}px switching to S, budget ${maxGrowth}px`);
+          assert.ok(after.scrollHeight <= after.innerHeight + 0.5,
+            `${w}x${h} the page scrolls in mode S: scrollHeight ${after.scrollHeight} > innerHeight ${after.innerHeight}`);
+          assert.ok(after.styleBottom <= after.innerHeight + 0.5,
+            `${w}x${h} #seq-style's bottom (${after.styleBottom}) is past innerHeight (${after.innerHeight})`);
+          await assertCardFits(`at ${w}x${h} in mode S`);
         }
       });
+
+    test("the footer controls share one centre line in every mode", async () => {
+      const viewports = [[380, 700], [320, 568], [844, 390], [1280, 800]];
+      for (const [w, h] of viewports) {
+        await freshLoad();
+        await b.setViewport(w, h, w < h);
+        await b.settle();
+        for (const mode of ["A", "B", "S"]) {
+          await openSettingsPanel();
+          await b.click(`#mode${mode}`);
+          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+            { label: `mode ${mode} to take effect` });
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: "panel to close" });
+          await b.settle();
+          const m = await b.eval(`
+            const cy = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return r.top + r.height / 2; };
+            const cx = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return r.left + r.width / 2; };
+            const foot = document.getElementById("foot").getBoundingClientRect();
+            return {
+              prev: cy("#prev"), shuffle: cy("#shuffle"), next: cy("#next"),
+              countCx: cx("#count"), footCx: foot.left + foot.width / 2,
+            };
+          `);
+          assert.ok(Math.abs(m.prev - m.shuffle) <= 0.5,
+            `${w}x${h} mode ${mode}: #prev cy ${m.prev} vs #shuffle cy ${m.shuffle}`);
+          assert.ok(Math.abs(m.next - m.shuffle) <= 0.5,
+            `${w}x${h} mode ${mode}: #next cy ${m.next} vs #shuffle cy ${m.shuffle}`);
+          if (h > w) {
+            assert.ok(Math.abs(m.countCx - m.footCx) <= 1,
+              `${w}x${h} mode ${mode}: #count cx ${m.countCx} vs footer centre ${m.footCx}`);
+          }
+        }
+      }
+    });
+
+    test("the mode S refresh button is a 44px icon that hit-tests to itself", async () => {
+      for (const [w, h] of [[380, 700], [844, 390]]) {
+        await freshLoad();
+        await b.setViewport(w, h, w < h);
+        await b.settle();
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+          { label: "panel to close" });
+        await b.settle();
+        const m = await b.eval(`
+          const hitsSelf = (sel) => {
+            const el = document.querySelector(sel);
+            const r = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return !!hit && (hit === el || el.contains(hit));
+          };
+          const btn = document.getElementById("shuffle");
+          const r = btn.getBoundingClientRect();
+          return {
+            w: r.width, h: r.height,
+            ariaLabel: btn.getAttribute("aria-label"),
+            hasSvg: !!btn.querySelector("svg"),
+            text: btn.textContent.trim(),
+            hitsSelf: hitsSelf("#shuffle"),
+            prevHits: hitsSelf("#prev"), nextHits: hitsSelf("#next"),
+          };
+        `);
+        assert.ok(m.w >= 44 && m.h >= 44, `${w}x${h}: #shuffle is ${m.w}x${m.h}, must be at least 44x44`);
+        assert.strictEqual(m.ariaLabel, "New progression");
+        assert.ok(m.hasSvg, "#shuffle must contain an svg in mode S");
+        assert.strictEqual(m.text, "", "#shuffle must carry no visible text in mode S");
+        assert.strictEqual(m.hitsSelf, true, `${w}x${h}: #shuffle does not hit-test to itself`);
+        assert.strictEqual(m.prevHits, true, `${w}x${h}: #prev does not hit-test to itself`);
+        assert.strictEqual(m.nextHits, true, `${w}x${h}: #next does not hit-test to itself`);
+
+        await openSettingsPanel();
+        await b.click("#modeA");
+        await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
+          { label: "mode A to take effect" });
+        const a = await b.eval(`
+          const btn = document.getElementById("shuffle");
+          return { hasSvg: !!btn.querySelector("svg"), ariaLabel: btn.getAttribute("aria-label"), text: btn.textContent };
+        `);
+        assert.strictEqual(a.hasSvg, false, "leaving S must remove the svg");
+        assert.strictEqual(a.ariaLabel, null, "leaving S must drop the aria-label");
+        assert.strictEqual(a.text, "Shuffle: off");
+      }
+    });
+
+    test("the rail is centred Marcellus of at least 18px and its current chord meets AA on every deck", async () => {
+      const hexToRgb = (hex) => {
+        const h = hex.replace("#", "");
+        return [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16));
+      };
+      await freshLoad();
+      await b.setViewport(380, 700, true);
+      await b.settle();
+      await openSettingsPanel();
+      await b.click("#modeS");
+      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to take effect" });
+      for (const deckId of ["hijaz", "pygmy", "amara"]) {
+        await b.eval(`selectDeck(${JSON.stringify(deckId)}); return true;`);
+        await b.settle();
+        const m = await b.eval(`
+          const parse = (s) => (s.match(/[\\d.]+/g) || []).slice(0, 3).map(Number);
+          const count = document.getElementById("count");
+          const cs = getComputedStyle(count);
+          const cur = count.querySelector("b");
+          const bcs = cur ? getComputedStyle(cur) : null;
+          return {
+            fontFamily: cs.fontFamily, fontSize: parseFloat(cs.fontSize), textAlign: cs.textAlign,
+            color: bcs ? parse(bcs.color) : null,
+            decorationLine: bcs ? bcs.textDecorationLine : null,
+            decorationColor: bcs ? parse(bcs.textDecorationColor) : null,
+            root: deck().colors.root,
+          };
+        `);
+        assert.ok(/^Marcellus/i.test(m.fontFamily), `${deckId}: #count font-family is "${m.fontFamily}"`);
+        assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
+        assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
+        assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
+        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
+        assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
+          `${deckId}: underline colour must be the deck's root colour`);
+      }
+    });
+
+    test("the hint line is centred under the card", async () => {
+      await freshLoad();
+      await b.setViewport(844, 390, true);
+      await b.settle();
+      const m = await b.eval(`
+        const hint = document.querySelector(".hint");
+        const cs = getComputedStyle(hint);
+        const range = document.createRange();
+        range.selectNodeContents(hint);
+        const rects = Array.from(range.getClientRects());
+        const hintBox = hint.getBoundingClientRect();
+        const boxCentre = (hintBox.left + hintBox.right) / 2;
+        return { textAlign: cs.textAlign, offsets: rects.map((r) => Math.abs((r.left + r.right) / 2 - boxCentre)) };
+      `);
+      assert.strictEqual(m.textAlign, "center", `.hint text-align is "${m.textAlign}"`);
+      assert.ok(m.offsets.length > 0, ".hint has no rendered line boxes");
+      for (const off of m.offsets) {
+        assert.ok(off <= 1, `a .hint line box is ${off}px off centre`);
+      }
+    });
+
+    test("the menu's NAME->NOTES and NOTES->NAME buttons split their row evenly", async () => {
+      for (const [w, h] of [[380, 700], [1280, 800]]) {
+        await freshLoad();
+        await b.setViewport(w, h, w < h);
+        await b.settle();
+        await openSettingsPanel();
+        const m = await b.eval(`
+          const ra = document.getElementById("modeA").getBoundingClientRect();
+          const rb = document.getElementById("modeB").getBoundingClientRect();
+          const rs = document.getElementById("modeS").getBoundingClientRect();
+          return { wa: ra.width, wb: rb.width, la: ra.left, ls: rs.left, rbRight: rb.right, rsRight: rs.right };
+        `);
+        assert.ok(Math.abs(m.wa - m.wb) <= 1, `${w}x${h}: #modeA width ${m.wa} vs #modeB width ${m.wb}`);
+        assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #modeS left ${m.ls}`);
+        assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #modeS right ${m.rsRight}`);
+        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+          { label: "panel to close" });
+      }
+    });
 
     test("an unsupported deck's sequence clears the card, disables stepping, and does not crash",
       async () => {

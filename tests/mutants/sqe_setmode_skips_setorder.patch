@@ -7,8 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8213,8 +8213,8 @@ function setMode(m) {
-     shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+@@ -7966,7 +7966,7 @@ function setMode(m) {
      shuffleBtn.classList.toggle("on", shuffled);
      shuffleBtn.classList.remove("reroll");
    }
