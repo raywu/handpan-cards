@@ -1,0 +1,17 @@
+# kills: an unsupported deck hides the style block and a working deck brings it back
+# suite: node --test --test-name-pattern ^an.unsupported.deck.hides.the.style.block.and.a.working.deck.brings.it.back$ tests/app.test.js
+# Lane S2, U5. Drops the #seq-style hide in renderSeqEmpty(), leaving the
+# style block's stale name/tip from the last supported deck visible under
+# the "not enough chords" message.
+diff --git a/index.html b/index.html
+index e4c1bf6..7ccc449 100644
+--- a/index.html
++++ b/index.html
+@@ -6613,7 +6613,6 @@ function renderSeqEmpty() {
+   while (countEmpty.children.length) countEmpty.removeChild(countEmpty.children[0]);
+   countEmpty.textContent = "";
+   countEmpty.classList.remove("seq");
+-  document.getElementById("seq-style").hidden = true;
+   document.getElementById("card").classList.remove("flip");
+   const shown = document.getElementById("front");
+   const away = document.getElementById("back");

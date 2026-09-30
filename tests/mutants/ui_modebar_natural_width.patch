@@ -1,0 +1,17 @@
+# kills: the menu's NAME->NOTES and NOTES->NAME buttons split their row evenly
+# suite: node --test --test-name-pattern ^the.menu.s.NAME..NOTES.and.NOTES..NAME.buttons.split.their.row.evenly$ tests/e2e.test.js
+# Lane S2, audit fix A5. Drops .modebar .mode{flex:1 1 0}, leaving NAME->NOTES
+# and NOTES->NAME sized by their own text again - a ragged pair instead of
+# an equal-width row.
+diff --git a/index.html b/index.html
+index e4c1bf6..37f686f 100644
+--- a/index.html
++++ b/index.html
+@@ -229,7 +229,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    ragged pair sat side by side. #modeS's own flex:1 0 100% above wins on
+    specificity (an id beats this class pair), so the full-row button is
+    untouched. */
+-.modebar .mode{flex:1 1 0}
+ #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
+ .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}

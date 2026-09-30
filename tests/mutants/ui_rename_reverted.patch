@@ -1,0 +1,17 @@
+# kills: the three-over-two style reads exactly "3:2 polyrhythm"
+# suite: node --test --test-name-pattern ^the.three-over-two.style.reads.exactly..3.2.polyrhythm.$ tests/app.test.js
+# Lane S2, O3/U2. Reverts the display rename back to "3 over 2"; the id
+# "three-over-two" is unchanged, only the label reverts.
+diff --git a/index.html b/index.html
+index e4c1bf6..f2435c1 100644
+--- a/index.html
++++ b/index.html
+@@ -5952,7 +5952,7 @@ let seq = null;
+ const SEQ_STYLE_COPY = {
+   "together": ["All at once", "Strike every note of the chord together, then let it ring before the next one"],
+   "arpeggio": ["Arpeggio", "Play the notes one at a time, low to high, then come back down"],
+-  "three-over-two": ["3:2 polyrhythm", "One hand plays three even strokes while the other plays two, in the same span"],
++  "three-over-two": ["3 over 2", "One hand plays three even strokes while the other plays two, in the same span"],
+   "three-three-two": ["3-3-2", "Group your strokes 3 + 3 + 2 and keep the cycle going through each chord"],
+   "paradiddle": ["Paradiddle", "Right-left-right-right, left-right-left-left, moving the strokes across the chord's notes"],
+   "groove": ["Groove", "Keep one chord shape and add slaps, soft ghost notes, or move the accent around"],

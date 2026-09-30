@@ -4,15 +4,19 @@
 # less than half what WCAG AA asks at 9.5px, on the one string that tells a
 # first-run user what to do. The comment above it still claims 5.65:1, which is
 # the shape this regression would really take.
+# Re-targeted 2026-09-29 (lane S2, A4 audit fix): text-align:center joined
+# .hint's second line, so the trailing context line now reads
+# "text-transform:uppercase; text-align:center}" - the `-` line (color) is
+# unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -152,7 +152,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -493,7 +493,7 @@
     #6f6658 is the same warm grey darkened to 5.65:1, comfortably past the 4.5:1
     WCAG AA needs at this size. It is a UI grey, not a deck palette colour, so
     the design system is untouched. */
 -.hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#6f6658;
 +.hint{margin-top:14px; font:600 9.5px/1.6 "Nunito Sans"; letter-spacing:.14em; color:#b6ae9f;
-   text-transform:uppercase}
+   text-transform:uppercase; text-align:center}
  .diagwrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0;
    padding:2px 6px 0}

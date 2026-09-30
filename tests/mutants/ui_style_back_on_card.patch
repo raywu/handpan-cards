@@ -1,0 +1,17 @@
+# kills: mode S shows the style in the footer, never on the card
+# suite: node --test --test-name-pattern ^mode.S.shows.the.style.in.the.footer..never.on.the.card$ tests/app.test.js
+# Lane S2, O2/U1. Re-adds the style name and tip to the mode-S back face, the
+# regression the plan's move-off-the-card acceptance exists to prevent.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6680,6 +6680,8 @@ function render() {
+     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
+     const backS = headerHTML(d, ch, n) +
+-      `<div class="prompt">${nameHTML(ch, true)}</div>`;
++      `<div class="prompt">${nameHTML(ch, true)}</div>`
++      + `<div class="style-name">${styleName}</div>`
++      + `<div class="style-tip">${styleTip}</div>`;
+     document.getElementById("front").innerHTML = answer;
+     document.getElementById("back").innerHTML = backS;
+     document.getElementById("seq-style-name").textContent = styleName;

@@ -3,6 +3,8 @@
 # Reverts the two LOWER-priority greys of row 215 only, leaving .hint correct.
 # Without this the hint mutant alone would prove the test live while the
 # .hdr .l .num (3.45:1 at 9px) and .sepc (2.95:1) probes could be dead code.
+# Re-targeted 2026-09-29 (lane S2): line drift only from the footer grid
+# rewrite above .sepc; the .sepc rule and its trailing comment are unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -15,12 +17,12 @@ diff --git a/index.html b/index.html
  .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
  .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
    text-align:right; max-width:55%; text-transform:uppercase}
-@@ -250,7 +250,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+@@ -508,7 +508,7 @@
  /* The note/number-line separators: #9a949f was 2.95:1 on the paper. #75707c
     keeps the same cool cast at 4.81:1 and stays clearly recessive against the
     root/tone colours it sits between. */
 -.sepc{color:#75707c}
 +.sepc{color:#9a949f}
- footer{width:100%; max-width:520px; display:flex; align-items:center;
-   justify-content:space-between; gap:var(--sp-2); margin-top:var(--sp-3)}
- button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
+ /* The footer is a grid, not a flex row: row 1 is .count (the progression
+    rail), full width; row 2 is prev/shuffle/next, one line, vertically
+    centred with each other in every mode (§8 acceptance 6). Every row-2 item

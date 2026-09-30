@@ -1,0 +1,16 @@
+# kills: mode S shows the style in the footer, never on the card
+# suite: node --test --test-name-pattern ^mode.S.shows.the.style.in.the.footer..never.on.the.card$ tests/app.test.js
+# Lane S2, O2/U1. setMode drops `seqStyle.hidden = m !== "S"`, so #seq-style
+# stays visible after leaving mode S.
+diff --git a/index.html b/index.html
+index e4c1bf6..4c85ed8 100644
+--- a/index.html
++++ b/index.html
+@@ -7952,7 +7952,6 @@ function setMode(m) {
+   const seqNote = document.getElementById("panel-seq-note");
+   seqNote.hidden = m !== "S";
+   document.getElementById("foot").classList.toggle("seq", m === "S");
+-  document.getElementById("seq-style").hidden = m !== "S";
+   const shuffleBtn = document.getElementById("shuffle");
+   if (m === "S") {
+     shuffleBtn.innerHTML = REFRESH_ICON_SVG;

@@ -1,0 +1,19 @@
+# kills: the rail is centred Marcellus of at least 18px and its current chord meets AA on every deck
+# suite: node --test --test-name-pattern ^the.rail.is.centred.Marcellus.of.at.least.18px.and.its.current.chord.meets.AA.on.every.deck$ tests/e2e.test.js
+# Lane S2, O3/D10/E4. Drops the root-colour underline from the rail's current
+# chord, leaving font-weight as the only cue - the colour rule itself is
+# untouched, only the decoration that carries it is gone.
+diff --git a/index.html b/index.html
+index e4c1bf6..d5c1c7e 100644
+--- a/index.html
++++ b/index.html
+@@ -534,8 +534,7 @@ button.nav:active{background:#2e281e}
+    deck's root colour carried as an underline instead of the text's own ink -
+    O3/D10: the old ink-coloured approach failed AA on more than one deck's
+    root colour against the table background. */
+-.seq-rail b{font-weight:700; text-decoration:underline; text-decoration-color:var(--root);
+-  text-underline-offset:3px}
++.seq-rail b{font-weight:700}
+ /* The mode-S style line: a static paragraph in the footer, never on the card
+    (O2/D1-D9). Grid-column:1/-1 gives it its own full-width row below the
+    controls; it is [hidden] outside mode S, so no extra row or gap is

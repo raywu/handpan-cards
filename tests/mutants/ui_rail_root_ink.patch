@@ -1,0 +1,18 @@
+# kills: the rail is centred Marcellus of at least 18px and its current chord meets AA on every deck
+# suite: node --test --test-name-pattern ^the.rail.is.centred.Marcellus.of.at.least.18px.and.its.current.chord.meets.AA.on.every.deck$ tests/e2e.test.js
+# Lane S2, O3/D10/E4. Re-adds the inline root-colour ink the CSS underline
+# replaced (the rail's <b> went back to reading its colour from the deck's
+# root, which fails AA against #1a1815 on more than one deck - Pygmy's
+# purple root is 2.46:1, well under the 4.5:1 this test guards).
+diff --git a/index.html b/index.html
+index e4c1bf6..93d0848 100644
+--- a/index.html
++++ b/index.html
+@@ -6643,6 +6643,7 @@ function renderSeqRail(d) {
+     const c = d.chords[ci];
+     const node = document.createElement(i === idx ? "b" : "span");
+     node.textContent = c.main + (c.sup || "");
++    if (i === idx) node.style.setProperty("color", "var(--root)");
+     rail.appendChild(node);
+   });
+   const live = document.createElement("span");

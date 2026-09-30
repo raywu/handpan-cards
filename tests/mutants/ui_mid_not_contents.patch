@@ -1,0 +1,18 @@
+# kills: the footer controls share one centre line in every mode
+# suite: node --test --test-name-pattern ^the.footer.controls.share.one.centre.line.in.every.mode$ tests/e2e.test.js
+# Lane S2, acceptance 6/E1. Drops `.mid{display:contents}`, so `.mid` becomes
+# its own grid item instead of letting #count/#shuffle participate directly in
+# the footer grid, knocking #count and #shuffle out of the shared centre line.
+diff --git a/index.html b/index.html
+index e4c1bf6..8b73449 100644
+--- a/index.html
++++ b/index.html
+@@ -524,7 +524,7 @@ footer{width:100%; max-width:520px; margin-top:var(--sp-3);
+ button.nav{grid-row:2; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
+   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
+ button.nav:active{background:#2e281e}
+-.mid{display:contents}
++.mid{}
+ /* Acceptance 4: the rail is larger and centred. */
+ .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
+   color:#c4bcab; text-align:center}
