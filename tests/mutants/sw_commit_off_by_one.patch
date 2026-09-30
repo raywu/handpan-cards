@@ -1,0 +1,17 @@
+# kills: swipeDecision commits strictly past SWIPE_COMMIT_PX, left = next
+# suite: node --test --test-name-pattern ^swipeDecision.commits.strictly.past.SWIPE_COMMIT_PX..left...next$ tests/app.test.js
+# Turns the strict "past the threshold" commit into "at or past it", so a
+# drag that lands EXACTLY on SWIPE_COMMIT_PX now commits - the spec's own
+# `swipeDecision(55,0) === 0` boundary case goes the other way.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8043,7 +8043,7 @@ const scene = card.parentElement;
+ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+ function swipeDecision(dx, vx) {
+   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+-  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
++  return Math.abs(dx) >= SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+ }
+ function swipeTilt(dx) {
+   return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));

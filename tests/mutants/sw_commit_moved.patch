@@ -1,0 +1,17 @@
+# kills: a swipe past the threshold steps the deck in the swiped direction
+# suite: node --test --test-name-pattern ^a.swipe.past.the.threshold.steps.the.deck.in.the.swiped.direction$ tests/e2e.test.js
+# Moves the commit distance from 55px to 61px. The test's final slow leg lands
+# at exactly -60px, which cleared the real 55px threshold but no longer clears
+# 61 - the deck does not step.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8035,7 +8035,7 @@ document.addEventListener("keydown", e => {
+   else if (e.key === "ArrowLeft") step(-1);
+ });
+ /* ---------------- swipe (Tinder-style card drag) ---------------- */
+-const SWIPE_COMMIT_PX = 55, SWIPE_FLING_PX_MS = 0.5, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
++const SWIPE_COMMIT_PX = 61, SWIPE_FLING_PX_MS = 0.5, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
+ const SWIPE_TILT_DEG_PER_PX = 0.05, SWIPE_TILT_MAX_DEG = 8;
+ const SWIPE_OUT_MS = 220, SWIPE_BACK_MS = 260, SWIPE_IN_MS = 180, SWIPE_IN_PX = 24;
+ const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";

@@ -1,0 +1,17 @@
+# kills: the card follows a held drag with a tilt, then springs back below the threshold
+# suite: node --test --test-name-pattern ^card.swipe:.the.card.follows.a.held.drag.with.a.tilt,.then.springs.back.below.the.threshold$ tests/e2e.test.js
+# Narrows .scene's touch-action from "pan-y pinch-zoom" to "pan-y": pinch-zoom
+# is no longer explicitly allowed over the card, which a strict UA could take
+# as license to intercept it for its own gesture handling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -410,7 +410,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+ }
+ main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
+ /* swipe: the drag moves .scene, never .card - .card's transform is the flip. */
+-.scene{touch-action:pan-y pinch-zoom}
++.scene{touch-action:pan-y}
+ main{overflow-x:clip}
+ /* The card is sized from whichever axis runs out first.
+    --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and

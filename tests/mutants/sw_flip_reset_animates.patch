@@ -1,0 +1,20 @@
+# kills: a flipped card keeps its back face during the fly-out and the next card arrives front-up
+# suite: node --test --test-name-pattern ^card.swipe:.a.flipped.card.keeps.its.back.face.during.the.fly-out.and.the.next.card.arrives.front-up$ tests/e2e.test.js
+# Drops step()'s transition:none/forced-reflow/transition:"" dance entirely: a
+# flipped card's reset back to front-up now runs .card's normal 450ms
+# reverse-flip transition instead of resetting instantly, briefly showing the
+# NEW card's back face while the fly-out lands.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7847,10 +7847,7 @@ function step(dir) {
+   if (!order.length) return;
+   idx = (idx + dir + order.length) % order.length;
+   // N40/OV2: suppress .card's reverse-flip transition across every reset.
+-  card.style.transition = "none";
+   flipped = false; render();
+-  card.offsetHeight;
+-  card.style.transition = "";
+ }
+ card.addEventListener("click", flip);
+ // Bound to #card, so it fires for keys that BUBBLE from any descendant.

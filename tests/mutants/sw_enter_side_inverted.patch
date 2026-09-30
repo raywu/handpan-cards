@@ -1,0 +1,16 @@
+# kills: a commit flies the card out, then steps and deals the next card in from the opposite side
+# suite: node --test --test-name-pattern ^card.swipe:.a.commit.flies.the.card.out,.then.steps.and.deals.the.next.card.in.from.the.opposite.side$ tests/e2e.test.js
+# Flips the sign of the enter-side offset in land(): the new card now flies in
+# from the SAME side it was swiped toward instead of the opposite side.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8059,7 +8059,7 @@ function land() {
+   step(f.dir);
+   if (reducedMotion.matches) { swipeRest(); return; }
+   scene.animate(
+-    [{ transform: `translate3d(${f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },
++    [{ transform: `translate3d(${-f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },
+      { transform: "translate3d(0,0,0)", opacity: 1 }],
+     { duration: SWIPE_IN_MS, easing: SWIPE_EASE },
+   );

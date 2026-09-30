@@ -1,0 +1,29 @@
+# kills: a drag with the scale sheet open does nothing
+# suite: node --test --test-name-pattern ^card.swipe:.a.drag.with.the.scale.sheet.open.does.nothing$ tests/e2e.test.js
+# Drops the sheetOpen check from both the pointerdown start guard and
+# release()'s blocked expression: a drag started or ended while the scale
+# sheet is open now steps the card instead of being fully ignored. The
+# sheet's own preview SVG occludes #card at the test viewport, so only the
+# mid-drag branch of the test (pointer capture bypasses the occlusion)
+# observes this.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8077,7 +8077,7 @@ function release(e, cancelled) {
+   }
+   const dx = drag.last;
+   const moved = drag.moved;
+-  const blocked = cancelled || panelOpen || sheetOpen;
++  const blocked = cancelled || panelOpen;
+   const dir = blocked ? 0 : swipeDecision(dx, vx);
+   drag = null;
+   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+@@ -8118,7 +8118,7 @@ function swipeMove(e) {
+   }
+ }
+ card.addEventListener("pointerdown", e => {
+-  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
++  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || !order.length) return;
+   scene.getAnimations().forEach(a => a.cancel());
+   drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+   card.setPointerCapture(e.pointerId);

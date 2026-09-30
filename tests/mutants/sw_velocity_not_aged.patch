@@ -1,0 +1,23 @@
+# kills: a short fast fling commits and a slow drag of the same length does not
+# suite: node --test --test-name-pattern ^card.swipe:.a.short.fast.fling.commits.and.a.slow.drag.of.the.same.length.does.not$ tests/e2e.test.js
+# Drops the release-time refresh of drag.pts against the touchend/pointerup's
+# own e.timeStamp: velocity is computed straight from whatever pointermove
+# aging left behind, with no fresh point and no re-prune at release. A flick
+# followed by holding still (no further pointermove fires on a zero-delta
+# touch move) leaves the initial fast segment sitting in drag.pts unaged, so
+# a stale flick still reads as a fling instead of correctly aging out.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8066,10 +8066,7 @@ function land() {
+ }
+ function release(e, cancelled) {
+   if (!drag) return;
+-  const now = e.timeStamp;
+-  drag.pts.push({ x: e.clientX, t: now });
+-  const cutoff = now - SWIPE_FLING_WINDOW_MS;
+-  const pts = drag.pts.filter(p => p.t >= cutoff);
++  const pts = drag.pts;
+   let vx = 0;
+   if (pts.length >= 2) {
+     const span = pts[pts.length - 1].t - pts[0].t;

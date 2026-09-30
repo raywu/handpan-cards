@@ -1,0 +1,24 @@
+# kills: #next and ArrowRight on a flipped card deal without a reverse-flip transition
+# suite: node --test --test-name-pattern ^card.swipe:.#next.and.ArrowRight.on.a.flipped.card.deal.without.a.reverse-flip.transition$ tests/e2e.test.js
+# N40: drops step()'s transition:none/forced-reflow/transition:"" dance, the
+# same shared code sw_flip_reset_animates targets via land()'s call - but here
+# reached through #next/ArrowRight instead of the swipe's own fly-out landing.
+# Before N40 this path had no suppression at all: #next/ArrowRight on a
+# flipped card would reverse-flip-animate while dealing in the next card,
+# showing its back face first. Kept as its own mutant (distinct from
+# sw_flip_reset_animates) because it is the button/arrow surface N40 added,
+# with its own dedicated test.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7847,10 +7847,7 @@ function step(dir) {
+   if (!order.length) return;
+   idx = (idx + dir + order.length) % order.length;
+   // N40/OV2: suppress .card's reverse-flip transition across every reset.
+-  card.style.transition = "none";
+   flipped = false; render();
+-  card.offsetHeight;
+-  card.style.transition = "";
+ }
+ card.addEventListener("click", flip);
+ // Bound to #card, so it fires for keys that BUBBLE from any descendant.
