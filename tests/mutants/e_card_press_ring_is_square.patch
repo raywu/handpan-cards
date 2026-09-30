@@ -7,21 +7,31 @@
 # box-shadow, which takes the radius of the element it is ON and so rings a
 # rounded card with a hard rectangle, ~3.5px of square nub at each corner, for
 # as long as the finger is down.
+# Context-refreshed 2026-09-30 (S2, bounce 1): the touch-action comment above
+# it was rewritten from "touch-action must be set on #card ITSELF..." to
+# "Belt-and-braces: ..." (reviewer nit) - the mutation itself (dropping
+# border-radius:12px) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -293,13 +293,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
- .scene{height:min(100%, calc(var(--card-w) * 87 / 63)); width:auto; max-width:100%;
-   aspect-ratio:63/87; perspective:1400px}
+@@ -457,19 +457,5 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
  .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
--  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+-  /* Belt-and-braces: effective touch-action is the INTERSECTION of an
+-     element's own value with every ancestor's, so main/.scene's
+-     touch-action:none above already covers #card - this rule changes
+-     nothing on its own. It stays so #card is correct in isolation (e.g.
+-     moved to a container that does not set touch-action) and so the
+-     mid-flight case, where the touch hit-tests to an ancestor because
+-     .scene has moved away from #card's own box, is covered by both rules
+-     agreeing rather than by one alone. */
+-  touch-action:none;
 -  /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
 -     and a box-shadow takes the radius of the element it is ON - so without
 -     this the press ring is a hard rectangle around a rounded card, with a
 -     square nub of ring at each corner. It clips nothing: .card paints no
 -     background and no border, and .face already carries the same radius. */
 -  border-radius:12px}
-+  transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer}
++  touch-action:none}
  .card.flip{transform:rotateY(180deg)}
  @media (prefers-reduced-motion: reduce){ .card{transition:none} }
- .face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;

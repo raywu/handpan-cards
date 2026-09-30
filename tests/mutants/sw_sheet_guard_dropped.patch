@@ -9,24 +9,27 @@
 # Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
 # this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
 # swipe functions down); the mutation itself is unchanged.
+# Context-refreshed 2026-09-30 (S2): hunk line numbers/context updated for
+# the swipe-only lane's index.html edits (swipeDecision gained a dy
+# parameter and drag/y0/lastY tracking); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8089,7 +8089,7 @@
-   }
+@@ -8112,7 +8112,7 @@ function release(e, cancelled) {
    const dx = drag.last;
+   const dy = drag.lastY;
    const moved = drag.moved;
 -  const blocked = cancelled || panelOpen || sheetOpen;
 +  const blocked = cancelled || panelOpen;
-   const dir = blocked ? 0 : swipeDecision(dx, vx);
+   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
    drag = null;
    // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
-@@ -8144,7 +8144,7 @@
+@@ -8179,7 +8179,7 @@ function swipeMove(e) {
    }
  }
  card.addEventListener("pointerdown", e => {
 -  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
 +  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || !order.length) return;
    scene.getAnimations().forEach(a => a.cancel());
-   drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
    card.setPointerCapture(e.pointerId);

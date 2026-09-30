@@ -1,0 +1,17 @@
+# kills: swipeDecision never commits when the drag has travelled further vertically than horizontally
+# suite: node --test --test-name-pattern ^swipeDecision.never.commits.when.the.drag.has.travelled.further.vertically.than.horizontally$ tests/app.test.js
+# Drops swipeDecision's axis-dominance guard (|dy| > |dx| => 0). Without it, a
+# fast-enough vertical drag can cross SWIPE_FLING_PX_MS on dx alone and
+# spuriously commit a step even though touch-action:none no longer lets the
+# browser's own scroll recogniser cut it short.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8076,7 +8076,6 @@ function swipeDecision(dx, dy, vx) {
+   // vertical drag can otherwise cross SWIPE_FLING_PX_MS on dx alone and
+   // spuriously commit a step. This axis-dominance check, not a change to any
+   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
+-  if (Math.abs(dy) > Math.abs(dx)) return 0;
+   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
+   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+ }

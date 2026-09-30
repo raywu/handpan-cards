@@ -7786,7 +7786,22 @@ function run() {
       const style = await sceneStyle();
       assert.strictEqual(style.willChange, "", "willChange must be cleared once settled");
       const touchAction = await b.eval(`return getComputedStyle(document.querySelector(".scene")).touchAction;`);
-      assert.strictEqual(touchAction, "pan-y pinch-zoom");
+      assert.strictEqual(touchAction, "none");
+    });
+
+    test("card swipe: the card is swipe-only - main and .scene never scroll or zoom", async () => {
+      await freshLoad();
+      // Owner decision (2026-09-30): a device log from iOS 18.7 WebKit showed
+      // `pan-y pinch-zoom` letting the scroll recogniser claim a clearly
+      // horizontal swipe once accumulated vertical drift crossed ~10px, well
+      // under the ~6.3px seen on swipes that committed cleanly - so a touch
+      // on the card must never scroll or zoom the page at all.
+      const touchAction = await b.eval(`return {
+        main: getComputedStyle(document.querySelector("main")).touchAction,
+        scene: getComputedStyle(document.querySelector(".scene")).touchAction,
+      };`);
+      assert.strictEqual(touchAction.main, "none", "main must be swipe-only");
+      assert.strictEqual(touchAction.scene, "none", ".scene must be swipe-only");
     });
 
     test("card swipe: the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG", async () => {
@@ -7887,6 +7902,19 @@ function run() {
       await b.drag("#card", [[-15, 30], [-15, 230]]);
       await b.finishAnimations();
       await expectCount(`1 / ${n}`, "a stale flick (held still before release) should not commit");
+    });
+
+    test("card swipe: a horizontal swipe with real vertical drift (the iOS device case) still commits", async () => {
+      // The exact device shape that iOS 18.7 WebKit was cancelling under
+      // `pan-y pinch-zoom` (dx -80, dy ~12, ~100ms, angle a few degrees off
+      // horizontal): this proves the APP logic never rejected that gesture -
+      // only the browser's own scroll recogniser did, which touch-action:none
+      // now prevents from ever claiming it.
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 50, 6], [-80, 100, 12]]);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the device-case swipe (dx -80, dy 12, ~100ms) must commit");
     });
 
     test("card swipe: a tap-sized flick never steps and the tap still flips", async () => {
@@ -8082,6 +8110,65 @@ function run() {
       assert.strictEqual(await countText(), `7 / ${n}`, "finishing leftover animations must not add another step");
     });
 
+    test("card swipe: Enter on a focused #next after a settled touch swipe still steps", async () => {
+      // Regression: release() used to arm eatClick on every moved touch drag
+      // with no decay, relying on a later click or pointerdown to clear it.
+      // A touch drag never produces a trailing click, so eatClick stayed
+      // stuck true - the document click listener (capture phase) then ate
+      // the very next click ANYWHERE, including the native click a browser
+      // synthesizes for Enter on a focused button, well after the swipe had
+      // fully settled.
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await b.eval(`document.getElementById("next").focus(); return true;`);
+      await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+      await expectCount(`3 / ${n}`, "Enter on #next after a settled touch swipe must still step");
+    });
+
+    test("card swipe: a click right after a cancelled drag is not eaten", async () => {
+      // Same regression as above, via the Q15 cancel path: release(e, true)
+      // must never arm eatClick at all, since a cancelled interaction never
+      // has a trailing click to consume it either. eatClick's own decay is a
+      // setTimeout(0), which reliably clears it before any CDP round-trip (a
+      // real Enter keypress included) can land - so a `!cancelled` regression
+      // is only observable in the narrow window before that decay fires.
+      // Dispatch the pointercancel and the click in ONE synchronous script so
+      // the click lands in the exact same task as release(e, true), before
+      // the decay's setTimeout(0) has any chance to run.
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.eval(`
+        window.__dragId = null;
+        document.getElementById("card").addEventListener(
+          "pointerdown", (e) => { window.__dragId = e.pointerId; }, { once: true },
+        );
+        return true;
+      `);
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      await b.eval(`
+        const id = window.__dragId;
+        document.getElementById("card").dispatchEvent(new PointerEvent("pointercancel", {
+          pointerId: id, isPrimary: true, clientX: 0, bubbles: true,
+        }));
+        document.getElementById("next").click();
+        return true;
+      `);
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "a click immediately after a cancelled drag must not be eaten");
+      // The pointercancel above was a synthetic PointerEvent, not a real CDP
+      // touch release, so the underlying touch (id 1) is still "down" as far
+      // as Chrome's input pipeline is concerned; end it for real or the next
+      // test's touchstart with the same id misbehaves.
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    });
+
     test("card swipe: a real touch tap at the card's REST position during flight lands it and must not flip", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
@@ -8233,7 +8320,15 @@ function run() {
       }
     });
 
-    test("card swipe: a vertical drag scrolls the page and does not step, at 320x568 and 844x390", async () => {
+    test("card swipe: a vertical drag never scrolls the page and does not step, at 320x568 and 844x390", async () => {
+      // Superseded (2026-09-30, owner decision - the card is swipe-only): a
+      // vertical drag used to be handed to the browser's native scroll under
+      // `pan-y pinch-zoom`, ending in a pointercancel. A device log from iOS
+      // 18.7 WebKit showed that same scroll recogniser claiming even a
+      // clearly HORIZONTAL swipe once vertical drift crossed ~10px - so
+      // main/.scene are now touch-action:none and a touch on the card never
+      // scrolls or cancels at all; this test now asserts the opposite of what
+      // it asserted before.
       try {
         for (const [w, h] of [[320, 568], [844, 390]]) {
           await freshLoad();
@@ -8243,28 +8338,33 @@ function run() {
           await b.eval(`window.__pcOnce = 0; document.getElementById("card").addEventListener("pointercancel", () => { window.__pcOnce++; }, { once: true }); return true;`);
           if (h > w) {
             // CHROME_BUDGET fits every viewport with no page overflow by design
-            // (untouched here), so there is nothing to scroll without a forced
-            // spacer; this proves our own touch-action/pointer-capture choices
-            // do not block the browser's native vertical scroll, not that any
-            // real page content overflows at this viewport.
-            await b.eval(`document.body.style.minHeight = "2000px"; return true;`);
+            // (untouched here), so there would be nothing to scroll without a
+            // forced spacer even if scrolling were still possible here.
+            // An absolutely-positioned spacer, not body.style.minHeight: main
+            // is a flex:1 child of body, so raising body's min-height used to
+            // let main (and the centred #card inside it) grow to fill the
+            // extra space and drift far down the now-2000px column - well
+            // past the 568px viewport, which put the drag's start point off
+            // #card entirely (elementFromPoint returned null there) and made
+            // the "no scroll" result meaningless. A spacer removed from flow
+            // adds scrollable height without moving #card at all.
+            await b.eval(`
+              const spacer = document.createElement("div");
+              spacer.style.cssText = "position:absolute; top:0; left:0; height:2000px; width:1px; pointer-events:none;";
+              document.body.appendChild(spacer);
+              return true;
+            `);
           }
+          const before = await b.eval(`return window.scrollY;`);
           await b.drag("#card", [[15, 100, -100]]);
           await b.finishAnimations();
           assert.strictEqual(await countText(), `1 / ${n}`, `${w}x${h}: a vertical drag must not step the deck`);
           const xf = await sceneXform();
           assert.strictEqual(xf.none, true, `${w}x${h}: .scene transform must settle to none`);
-          // Observable chosen per viewport, recorded here rather than disjoined
-          // in the assertion (ER10): headless Chromium's synthetic touch scroll
-          // is reliable at the short 320x568 page; the short 844x390 landscape
-          // page has nothing to scroll, so a pointercancel is the signal there.
-          if (h > w) {
-            const scrollY = await b.eval(`return window.scrollY;`);
-            assert.ok(scrollY > 0, `${w}x${h}: the page should have scrolled vertically, scrollY=${scrollY}`);
-          } else {
-            const pc = await b.eval(`return window.__pcOnce;`);
-            assert.ok(pc > 0, `${w}x${h}: a pointercancel should have been observed`);
-          }
+          const scrollY = await b.eval(`return window.scrollY;`);
+          assert.strictEqual(scrollY, before, `${w}x${h}: the page must never scroll from a drag on the card`);
+          const pc = await b.eval(`return window.__pcOnce;`);
+          assert.strictEqual(pc, 0, `${w}x${h}: touch-action:none must never produce a pointercancel`);
         }
       } finally {
         // Viewport is a browser-level setting; freshLoad() does not reset it,
@@ -8283,8 +8383,18 @@ function run() {
           await g.move(100, 0);
           await b.eval(`window.scrollTo(500, 0); return true;`);
           let m = await b.eval(`return { scrollX: window.scrollX, scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth };`);
+          // Compare against the viewport width we asked for (w), not
+          // window.innerWidth: on a mobile-emulated viewport, once page
+          // content genuinely overflows horizontally, Chrome's mobile layout
+          // can widen the layout viewport itself to fit that content (the
+          // classic "horizontal scroll on mobile" failure mode) - innerWidth
+          // then grows right along with scrollWidth and the two stay equal,
+          // silently passing a scrollWidth<=innerWidth check even though the
+          // page did get wider than the device. w is fixed by setViewport()
+          // and is unaffected by any such widening, so it is the invariant
+          // that actually catches main{overflow-x:clip} being dropped.
           assert.strictEqual(m.scrollX, 0, `${w}x${h}: held drag must not scroll horizontally`);
-          assert.ok(m.scrollWidth <= m.innerWidth, `${w}x${h}: held drag must not widen the page (${m.scrollWidth} > ${m.innerWidth})`);
+          assert.ok(m.scrollWidth <= w, `${w}x${h}: held drag must not widen the page (${m.scrollWidth} > ${w})`);
           await g.release(0, 50);
           await b.finishAnimations();
 
@@ -8299,7 +8409,7 @@ function run() {
           `);
           m = await b.eval(`return { scrollX: window.scrollX, scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth };`);
           assert.strictEqual(m.scrollX, 0, `${w}x${h}: a paused fly-out must not scroll horizontally`);
-          assert.ok(m.scrollWidth <= m.innerWidth, `${w}x${h}: a paused fly-out must not widen the page (${m.scrollWidth} > ${m.innerWidth})`);
+          assert.ok(m.scrollWidth <= w, `${w}x${h}: a paused fly-out must not widen the page (${m.scrollWidth} > ${w})`);
           await b.finishAnimations();
         }
       } finally {

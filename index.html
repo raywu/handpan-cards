@@ -421,9 +421,16 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
    touch too, with no JS listener involved - a permanent non-passive
    touchstart listener was tried and it regressed an unrelated held-drag test
    by changing Chrome's scroll-blocking heuristics for every ordinary touch,
-   even when the listener itself did nothing. */
-main{touch-action:pan-y pinch-zoom}
-.scene{touch-action:pan-y pinch-zoom}
+   even when the listener itself did nothing.
+   The card is swipe-only (owner decision, 2026-09-30): a device log from
+   iOS 18.7 WebKit showed `pan-y pinch-zoom` letting the scroll recogniser
+   claim a clearly horizontal swipe - pointercancel fired as soon as
+   accumulated vertical drift crossed ~10-11.7px, well under the ~6.3px seen
+   on swipes that committed cleanly. A touch on the card must never scroll or
+   zoom the page, so both main and .scene drop to touch-action:none - main
+   for the same mid-flight-hit-test reason as above. */
+main{touch-action:none}
+.scene{touch-action:none}
 main{overflow-x:clip}
 /* The card is sized from whichever axis runs out first.
    --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and
@@ -449,6 +456,15 @@ main{overflow-x:clip}
   aspect-ratio:63/87; perspective:1400px}
 .card{position:relative; width:100%; height:100%; transform-style:preserve-3d;
   transition:transform .45s cubic-bezier(.2,.7,.25,1); cursor:pointer;
+  /* Belt-and-braces: effective touch-action is the INTERSECTION of an
+     element's own value with every ancestor's, so main/.scene's
+     touch-action:none above already covers #card - this rule changes
+     nothing on its own. It stays so #card is correct in isolation (e.g.
+     moved to a container that does not set touch-action) and so the
+     mid-flight case, where the touch hit-tests to an ancestor because
+     .scene has moved away from #card's own box, is covered by both rules
+     agreeing rather than by one alone. */
+  touch-action:none;
   /* The 12px radius lives on .face, but .card:active's ring is a box-shadow
      and a box-shadow takes the radius of the element it is ON - so without
      this the press ring is a hard rectangle around a rounded card, with a
@@ -8052,7 +8068,15 @@ const SWIPE_OUT_MS = 220, SWIPE_BACK_MS = 260, SWIPE_IN_MS = 180, SWIPE_IN_PX = 
 const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";
 const scene = card.parentElement;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-function swipeDecision(dx, vx) {
+function swipeDecision(dx, dy, vx) {
+  // A drag that has travelled further vertically than horizontally is not a
+  // horizontal swipe, whatever its raw dx/vx read: touch-action:none no
+  // longer lets the browser's own scroll recogniser cut a vertical drag
+  // short (that was the bug this whole lane exists to fix), so a fast-enough
+  // vertical drag can otherwise cross SWIPE_FLING_PX_MS on dx alone and
+  // spuriously commit a step. This axis-dominance check, not a change to any
+  // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
+  if (Math.abs(dy) > Math.abs(dx)) return 0;
   const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
 }
@@ -8088,9 +8112,10 @@ function release(e, cancelled) {
     if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
   }
   const dx = drag.last;
+  const dy = drag.lastY;
   const moved = drag.moved;
   const blocked = cancelled || panelOpen || sheetOpen;
-  const dir = blocked ? 0 : swipeDecision(dx, vx);
+  const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
   drag = null;
   // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
   // returns 0 there - this guard is equivalent to !moved and leaves fling
@@ -8098,8 +8123,14 @@ function release(e, cancelled) {
   // visible jitter hop on a touch that never left the slop radius (the tap
   // flip itself comes from #card's click listener, untouched since eatClick
   // is not set below).
-  if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
-  if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+  if (!dir && !moved) { swipeRest(); return; }
+  // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
+  // never has a trailing click to suppress - the UA does not synthesize one -
+  // so eatClick must never be armed here for `cancelled`. Arming it anyway
+  // left eatClick stuck true with nothing left to clear it (no click handler
+  // runs, and the next pointerdown's own eatClick assignment only clears it
+  // if flight is set), eating the next unrelated click/Enter.
+  if (moved && !cancelled) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
   if (reducedMotion.matches) {
     scene.style.transform = ""; scene.style.willChange = "";
     if (dir) step(dir);
@@ -8128,12 +8159,14 @@ function swipeMove(e) {
   // Q15: a mouse button released outside the window (or a native context
   // menu opened over it) delivers no pointerup/lostpointercapture - the OS
   // eats it - so a `pointermove` with no buttons held is the only signal
-  // that the drag should have ended. `e.buttons` is a touch/pen no-op (it is
-  // always 0 there), so this only fires for `pointerType === "mouse"`.
+  // that the drag should have ended. An active touch/pen contact reports
+  // `e.buttons === 1` too, so the `pointerType === "mouse"` guard is what
+  // actually restricts this to mouse, not any quirk of `e.buttons` itself.
   if (e.pointerType === "mouse" && !(e.buttons & 1)) { release(e, true); return; }
   const dx = e.clientX - drag.x0;
   if (Math.abs(dx) > SWIPE_SLOP_PX) drag.moved = true;
   drag.last = dx;
+  drag.lastY = e.clientY - drag.y0;
   const now = e.timeStamp;
   drag.pts.push({ x: e.clientX, t: now });
   const cutoff = now - SWIPE_FLING_WINDOW_MS;
@@ -8146,7 +8179,7 @@ function swipeMove(e) {
 card.addEventListener("pointerdown", e => {
   if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
   scene.getAnimations().forEach(a => a.cancel());
-  drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
   card.setPointerCapture(e.pointerId);
 });
 card.addEventListener("pointermove", swipeMove);
@@ -8174,7 +8207,7 @@ document.addEventListener("pointerdown", e => {
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
       scene.getAnimations().forEach(a => a.cancel());
-      drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+      drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
       card.setPointerCapture(e.pointerId);
     }
   } else {

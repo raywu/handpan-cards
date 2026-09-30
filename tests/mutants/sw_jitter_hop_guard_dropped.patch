@@ -5,14 +5,18 @@
 # release (including a jitter that moved 0px) runs the full swipeXf/
 # SWIPE_BACK_MS animate() call, producing a visible jitter hop on a touch
 # that was never meant to move the card at all.
+# Context-refreshed 2026-09-30 (S2, bounce 1): the trailing context (the
+# comment right after the guard) was rewritten from the old "Q17" text back
+# to base's cancelled/eatClick comment as part of restoring the setTimeout(0)
+# decay - the mutation itself (deleting the early-return guard) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8098,7 +8098,6 @@ function release(e, cancelled) {
+@@ -8112,7 +8112,6 @@ function release(e, cancelled) {
    // visible jitter hop on a touch that never left the slop radius (the tap
    // flip itself comes from #card's click listener, untouched since eatClick
    // is not set below).
--  if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
-   if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
-   if (reducedMotion.matches) {
-     scene.style.transform = ""; scene.style.willChange = "";
+-  if (!dir && !moved) { swipeRest(); return; }
+   // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
+   // never has a trailing click to suppress - the UA does not synthesize one -
+   // so eatClick must never be armed here for `cancelled`. Arming it anyway

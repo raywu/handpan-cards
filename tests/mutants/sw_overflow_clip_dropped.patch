@@ -3,13 +3,26 @@
 # Drops `main{overflow-x:clip}`: a card mid fly-out (translated well past the
 # viewport edge) now widens the page's scrollable area instead of being
 # clipped, at both a portrait and a landscape viewport.
+# Context-refreshed 2026-09-30 (S2): main/.scene's touch-action moved from
+# "pan-y pinch-zoom" to "none" and the comment above gained the iOS
+# swipe-only rationale - the mutation itself (dropping overflow-x:clip) is
+# unchanged.
+# The test itself needed a fix alongside this refresh: at the 380x800 mobile
+# viewport, once overflow-x:clip is gone the overflowing content widens
+# Chrome's mobile LAYOUT viewport itself (the classic "horizontal scroll on
+# mobile" failure), so window.innerWidth grows right along with
+# document.documentElement.scrollWidth and a scrollWidth<=innerWidth check
+# passed trivially even with this mutation applied. The test now compares
+# scrollWidth against the fixed viewport width passed to setViewport()
+# instead, which this mutation correctly fails (478 > 380).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -424,7 +424,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
-    even when the listener itself did nothing. */
- main{touch-action:pan-y pinch-zoom}
- .scene{touch-action:pan-y pinch-zoom}
+@@ -430,7 +430,6 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    zoom the page, so both main and .scene drop to touch-action:none - main
+    for the same mid-flight-hit-test reason as above. */
+ main{touch-action:none}
+ .scene{touch-action:none}
 -main{overflow-x:clip}
  /* The card is sized from whichever axis runs out first.
     --card-w caps the WIDTH (88vw, 46vh, 420px), but taking it as the width and

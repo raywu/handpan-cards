@@ -4275,20 +4275,26 @@ describe("swipe decision", () => {
   test("swipeDecision commits strictly past SWIPE_COMMIT_PX, left = next", () => {
     const app = boot();
     assert.strictEqual(app.get("SWIPE_COMMIT_PX"), 18);
-    assert.strictEqual(app.get("swipeDecision(18,0)"), 0);
-    assert.strictEqual(app.get("swipeDecision(18.5,0)"), -1);
-    assert.strictEqual(app.get("swipeDecision(-18.5,0)"), 1);
-    assert.strictEqual(app.get("swipeDecision(-15,0)"), 0);
+    assert.strictEqual(app.get("swipeDecision(18,0,0)"), 0);
+    assert.strictEqual(app.get("swipeDecision(18.5,0,0)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-18.5,0,0)"), 1);
+    assert.strictEqual(app.get("swipeDecision(-15,0,0)"), 0);
   });
 
   test("swipeDecision flings past SWIPE_FLING_PX_MS only in the drag direction and past the slop", () => {
     const app = boot();
-    assert.strictEqual(app.get("swipeDecision(-15,-0.14)"), 0);
-    assert.strictEqual(app.get("swipeDecision(-15,-0.16)"), 1);
-    assert.strictEqual(app.get("swipeDecision(15,0.16)"), -1);
-    assert.strictEqual(app.get("swipeDecision(-15,0.9)"), 0, "a reversed velocity must not commit");
-    assert.strictEqual(app.get("swipeDecision(-10,-5)"), 0, "below the slop must not commit on velocity alone");
-    assert.strictEqual(app.get("swipeDecision(-11,-5)"), 1);
+    assert.strictEqual(app.get("swipeDecision(-15,0,-0.14)"), 0);
+    assert.strictEqual(app.get("swipeDecision(-15,0,-0.16)"), 1);
+    assert.strictEqual(app.get("swipeDecision(15,0,0.16)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-15,0,0.9)"), 0, "a reversed velocity must not commit");
+    assert.strictEqual(app.get("swipeDecision(-10,0,-5)"), 0, "below the slop must not commit on velocity alone");
+    assert.strictEqual(app.get("swipeDecision(-11,0,-5)"), 1);
+  });
+
+  test("swipeDecision never commits when the drag has travelled further vertically than horizontally", () => {
+    const app = boot();
+    assert.strictEqual(app.get("swipeDecision(20,25,0.9)"), 0, "|dy| > |dx| must veto even a large dx/vx");
+    assert.strictEqual(app.get("swipeDecision(20,19,0.9)"), -1, "|dy| <= |dx| still commits");
   });
 
   test("swipe constants are the plan's values", () => {

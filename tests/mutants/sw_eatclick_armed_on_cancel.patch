@@ -1,0 +1,19 @@
+# kills: card swipe: a click right after a cancelled drag is not eaten
+# suite: node --test --test-name-pattern ^card.swipe:.a.click.right.after.a.cancelled.drag.is.not.eaten$ tests/e2e.test.js
+# Drops the `!cancelled` guard, so a cancelled release (pointercancel/
+# lostpointercapture) arms eatClick same as a normal commit. No click ever
+# follows a cancel, so eatClick is left stuck true with nothing to clear it,
+# eating the next unrelated click - e.g. Enter's native click on a focused
+# button.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8130,7 +8130,7 @@ function release(e, cancelled) {
+   // left eatClick stuck true with nothing left to clear it (no click handler
+   // runs, and the next pointerdown's own eatClick assignment only clears it
+   // if flight is set), eating the next unrelated click/Enter.
+-  if (moved && !cancelled) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
++  if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+   if (reducedMotion.matches) {
+     scene.style.transform = ""; scene.style.willChange = "";
+     if (dir) step(dir);

@@ -1,16 +1,23 @@
-# kills: the card follows a held drag with a tilt, then springs back below the threshold
+# kills: card swipe: the card follows a held drag with a tilt, then springs back below the threshold
 # suite: node --test --test-name-pattern ^card.swipe:.the.card.follows.a.held.drag.with.a.tilt,.then.springs.back.below.the.threshold$ tests/e2e.test.js
-# Narrows .scene's touch-action from "pan-y pinch-zoom" to "pan-y": pinch-zoom
-# is no longer explicitly allowed over the card, which a strict UA could take
-# as license to intercept it for its own gesture handling.
+# Widens .scene's touch-action from "none" back to "pan-y": under the owner's
+# swipe-only decision (2026-09-30) a touch on the card must never scroll or
+# zoom the page at all, so anything short of "none" is wrong - "pan-y" would
+# let the scroll recogniser re-claim exactly the near-horizontal swipes the
+# device log showed being cancelled. This test asserts .scene's computed
+# touchAction is "none" and catches the narrowing directly.
+# Re-cut 2026-09-30 (S2): the original mutation narrowed "pan-y pinch-zoom"
+# to "pan-y" under the pre-swipe-only CSS; that value no longer exists, so
+# this patch now narrows the current "none" value instead. Same test, same
+# intent (touch-action must not be loosened), different starting value.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -423,7 +423,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
-    by changing Chrome's scroll-blocking heuristics for every ordinary touch,
-    even when the listener itself did nothing. */
- main{touch-action:pan-y pinch-zoom}
--.scene{touch-action:pan-y pinch-zoom}
+@@ -428,7 +428,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100
+    zoom the page, so both main and .scene drop to touch-action:none - main
+    for the same mid-flight-hit-test reason as above. */
+ main{touch-action:none}
+-.scene{touch-action:none}
 +.scene{touch-action:pan-y}
  main{overflow-x:clip}
  /* The card is sized from whichever axis runs out first.

@@ -7,11 +7,14 @@
 # touchend-based handler was replaced by the pointer-driven drag/fling
 # implementation; the same inversion now targets swipeDecision()'s direction
 # expression.
+# Context-refreshed 2026-09-30 (S2): swipeDecision gained a dy parameter and
+# an axis-dominance guard (touch-action:none fix); the mutated line and its
+# line number both moved, the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8044,4 +8044,4 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
- function swipeDecision(dx, vx) {
+@@ -8077,5 +8077,5 @@ function swipeDecision(dx, dy, vx) {
+   if (Math.abs(dy) > Math.abs(dx)) return 0;
    const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
 -  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
 +  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? -1 : 1) : 0;
