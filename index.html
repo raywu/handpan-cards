@@ -409,7 +409,20 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   #settings-trigger{order:2; flex:0 0 auto}
 }
 main{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0}
-/* swipe: the drag moves .scene, never .card - .card's transform is the flip. */
+/* swipe: the drag moves .scene, never .card - .card's transform is the flip.
+   touch-action is decided by the browser's compositor thread from the LIVE
+   CSS at the moment a touch begins - before pointerdown/touchstart are even
+   dispatched to JS - so a script-side mutation made inside the pointerdown
+   handler that lands a fly-out is always too late to affect that same touch.
+   Mid-flight, .scene has moved away from its resting position, so a real
+   touch at the card's rest spot hit-tests to <main> (or further), not #card,
+   and #card/.scene's own touch-action does not apply to it. main only ever
+   contains .scene, so giving it the identical value permanently covers that
+   touch too, with no JS listener involved - a permanent non-passive
+   touchstart listener was tried and it regressed an unrelated held-drag test
+   by changing Chrome's scroll-blocking heuristics for every ordinary touch,
+   even when the listener itself did nothing. */
+main{touch-action:pan-y pinch-zoom}
 .scene{touch-action:pan-y pinch-zoom}
 main{overflow-x:clip}
 /* The card is sized from whichever axis runs out first.
@@ -8134,16 +8147,6 @@ card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === d
 // pointerdown at the card's rest spot hit-tests to some ancestor (e.g.
 // <main>), not #card - card.contains(e.target) would miss it. Test against
 // the resting rect captured when the flight started instead.
-// A touch landing outside #card/.scene inherits ITS hit target's touch-action
-// (often unrestricted), so without this the browser's own gesture recognizer
-// can claim a horizontal move as a native scroll before pointerdown's own
-// preventDefault has any effect, cancelling the pointer sequence below.
-// touchstart fires AFTER pointerdown for the same contact, so it reads the
-// eatClick decision the pointerdown handler below just made, rather than
-// re-deriving it from `flight` (already cleared there by land()).
-document.addEventListener("touchstart", e => {
-  if (eatClick && e.touches.length === 1) e.preventDefault();
-}, { capture: true, passive: false });
 document.addEventListener("pointerdown", e => {
   if (flight) {
     const r = flight.rect;
@@ -8153,11 +8156,6 @@ document.addEventListener("pointerdown", e => {
     eatClick = inside;
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
-      // The touch landed outside #card/.scene, so its touch-action comes
-      // from whatever it actually hit (often unrestricted) - without this,
-      // the browser can claim the gesture as a native scroll and fire
-      // pointercancel once the move crosses its own threshold.
-      e.preventDefault();
       scene.getAnimations().forEach(a => a.cancel());
       drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
       card.setPointerCapture(e.pointerId);

@@ -8,8 +8,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8163,7 +8163,6 @@ document.addEventListener("pointerdown", e => {
-       e.preventDefault();
+@@ -8158,7 +8158,6 @@ document.addEventListener("pointerdown", e => {
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
        scene.getAnimations().forEach(a => a.cancel());
        drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
 -      card.setPointerCapture(e.pointerId);
