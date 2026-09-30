@@ -4256,26 +4256,26 @@ test("an unsupported deck hides the style block and a working deck brings it bac
 describe("swipe decision", () => {
   test("swipeDecision commits strictly past SWIPE_COMMIT_PX, left = next", () => {
     const app = boot();
-    assert.strictEqual(app.get("SWIPE_COMMIT_PX"), 55);
-    assert.strictEqual(app.get("swipeDecision(55,0)"), 0);
-    assert.strictEqual(app.get("swipeDecision(55.5,0)"), -1);
-    assert.strictEqual(app.get("swipeDecision(-55.5,0)"), 1);
-    assert.strictEqual(app.get("swipeDecision(-50,0)"), 0);
+    assert.strictEqual(app.get("SWIPE_COMMIT_PX"), 18);
+    assert.strictEqual(app.get("swipeDecision(18,0)"), 0);
+    assert.strictEqual(app.get("swipeDecision(18.5,0)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-18.5,0)"), 1);
+    assert.strictEqual(app.get("swipeDecision(-15,0)"), 0);
   });
 
   test("swipeDecision flings past SWIPE_FLING_PX_MS only in the drag direction and past the slop", () => {
     const app = boot();
-    assert.strictEqual(app.get("swipeDecision(-20,-0.49)"), 0);
-    assert.strictEqual(app.get("swipeDecision(-20,-0.51)"), 1);
-    assert.strictEqual(app.get("swipeDecision(20,0.51)"), -1);
-    assert.strictEqual(app.get("swipeDecision(-20,0.9)"), 0, "a reversed velocity must not commit");
+    assert.strictEqual(app.get("swipeDecision(-15,-0.14)"), 0);
+    assert.strictEqual(app.get("swipeDecision(-15,-0.16)"), 1);
+    assert.strictEqual(app.get("swipeDecision(15,0.16)"), -1);
+    assert.strictEqual(app.get("swipeDecision(-15,0.9)"), 0, "a reversed velocity must not commit");
     assert.strictEqual(app.get("swipeDecision(-10,-5)"), 0, "below the slop must not commit on velocity alone");
     assert.strictEqual(app.get("swipeDecision(-11,-5)"), 1);
   });
 
   test("swipe constants are the plan's values", () => {
     const app = boot();
-    assert.strictEqual(app.get("SWIPE_FLING_PX_MS"), 0.5);
+    assert.strictEqual(app.get("SWIPE_FLING_PX_MS"), 0.15);
     assert.strictEqual(app.get("SWIPE_FLING_WINDOW_MS"), 100);
     assert.strictEqual(app.get("SWIPE_SLOP_PX"), 10);
     assert.strictEqual(app.get("SWIPE_TILT_DEG_PER_PX"), 0.05);
