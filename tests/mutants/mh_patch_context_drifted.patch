@@ -1,0 +1,18 @@
+# kills: every mutant patch applies to the tree it will run against
+# suite: node --test --test-name-pattern ^every.mutant.patch.applies.to.the.tree.it.will.run.against$ tests/mutation_harness.test.js
+# Edits a comment line inside e_reap_ignores_signals.patch's own hunk context
+# (tests/helpers/cdp.js:82), so the two patches can never both apply to the
+# same tree. Exists only to prove the stale-patch test fires and names the
+# OTHER patch, not itself - see the "already applied" branch in the test.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -79,7 +79,7 @@ let reaperInstalled = false;
+ function installReaper() {
+   if (reaperInstalled) return;
+   reaperInstalled = true;
+-  // 'exit' cannot await anything - kill() and rmSync() are both synchronous,
++  // 'exit' cannot await anything at all - kill() and rmSync() are both synchronous,
+   // which is the whole reason the reaper is shaped this way.
+   process.on("exit", reapAll);
+   for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"]) {

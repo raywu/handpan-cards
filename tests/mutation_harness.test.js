@@ -358,3 +358,53 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
     `to the file, and nothing in tests/mutation_check.sh reads it:\n` +
     offenders.slice(0, 5).join("\n") + `\n(${offenders.length} total)`);
 });
+
+/* Early warning for the failure mode "a normal commit edits a context line a
+ * mutant patch anchors on, and the mutant silently stops applying" - `git
+ * apply` on a context mismatch is a hard error, so a stale patch does not
+ * survive the mutant, it is never even applied, and tests/mutation_check.sh
+ * exits 4 (queue's clean-tree-baseline abort) rather than naming the patch.
+ * This test names it directly and fast, without running the sweep.
+ *
+ * A patch that currently APPLIES CLEANLY IN REVERSE is not stale - it is one
+ * the mutation gate has already applied to this very tree (this test can run
+ * as one of the sweep's own suites, against a tree with exactly one mutant
+ * patch already in it), so `git apply --check` on it fails for the opposite
+ * reason: it is already there. Checking `git apply --check -R` distinguishes
+ * the two and keeps this test from being killed vacuously by its own mutant
+ * corpus. */
+test("every mutant patch applies to the tree it will run against", () => {
+  let hasGit = true;
+  try {
+    execFileSync("git", ["--version"], { cwd: ROOT, env: childEnv() });
+  } catch {
+    hasGit = false;
+  }
+  if (!hasGit) {
+    assert.ok(!process.env.CI, "git must be present in CI");
+    return;
+  }
+
+  const dir = path.join(ROOT, "tests", "mutants");
+  const names = fs.readdirSync(dir).filter((f) => f.endsWith(".patch")).sort();
+  const stale = [];
+  for (const name of names) {
+    const p = path.join(dir, name);
+    try {
+      execFileSync("git", ["apply", "--check", p], { cwd: ROOT, env: childEnv() });
+    } catch {
+      try {
+        execFileSync("git", ["apply", "--check", "-R", p], { cwd: ROOT, env: childEnv() });
+        // Already applied to this tree (e.g. the sweep applied it itself) -
+        // not stale.
+      } catch {
+        stale.push(name);
+      }
+    }
+  }
+  assert.deepStrictEqual(stale, [],
+    `these mutant patches no longer apply to the tree they will run against ` +
+    `- a later commit edited a context line one of them anchors on:\n` +
+    stale.join("\n") +
+    `\nregenerate: apply by hand, edit, \`git diff > patch\`, keep the header`);
+});
