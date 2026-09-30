@@ -42,8 +42,15 @@ function childEnv(extra) {
   const env = { ...process.env, ...(extra || {}) };
   // See TRAP above. Also drop E2E_PORT: pinning it is the exact environmental
   // difference that turns the real e2e prefix red (queue rows 162, 173, 174).
+  // GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE are dropped too (review: the
+  // process.env approach leaks between tests) - a child that inherits one of
+  // these from an outer `git` invocation runs against the WRONG repo/tree/
+  // index, silently, rather than the fixture repo it was given a cwd for.
   delete env.NODE_TEST_CONTEXT;
   delete env.E2E_PORT;
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_INDEX_FILE;
   return env;
 }
 
@@ -320,6 +327,18 @@ test("children are spawned without NODE_TEST_CONTEXT", () => {
   assert.equal(r.status, 0);
 });
 
+test("childEnv scrubs GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE even when passed as extra", () => {
+  // Q1 N5: these three must never reach a spawned child, whatever set them -
+  // the outer process or the `extra` argument merged in above. A leaked
+  // GIT_DIR/GIT_WORK_TREE points a child `git` invocation at the WRONG repo
+  // or working tree; GIT_INDEX_FILE points it at the wrong index. None of
+  // this test mutates process.env.
+  const env = childEnv({ GIT_DIR: "x", GIT_WORK_TREE: "y", GIT_INDEX_FILE: "z" });
+  assert.equal(env.GIT_DIR, undefined);
+  assert.equal(env.GIT_WORK_TREE, undefined);
+  assert.equal(env.GIT_INDEX_FILE, undefined);
+});
+
 /* Queue row 86, N9. The row reads "three mutant patches carry stale
  * `index 169aa79..` blob headers"; a per-file check of the preimage blob
  * against `git rev-parse HEAD:<path>` said 250 of 250 did. That is not a
@@ -366,13 +385,110 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
  * exits 4 (queue's clean-tree-baseline abort) rather than naming the patch.
  * This test names it directly and fast, without running the sweep.
  *
- * A patch that currently APPLIES CLEANLY IN REVERSE is not stale - it is one
- * the mutation gate has already applied to this very tree (this test can run
- * as one of the sweep's own suites, against a tree with exactly one mutant
- * patch already in it), so `git apply --check` on it fails for the opposite
- * reason: it is already there. Checking `git apply --check -R` distinguishes
- * the two and keeps this test from being killed vacuously by its own mutant
- * corpus. */
+ * A patch that currently APPLIES CLEANLY IN REVERSE is not necessarily
+ * stale - it might be one the mutation gate has already applied to this very
+ * tree, uncommitted (this test can run as one of the sweep's own suites,
+ * against a tree with exactly one mutant patch already in it). But it might
+ * ALSO be stale in a different way: a normal commit folded the patch's own
+ * post-image into HEAD (e.g. the change it mutates away from landed for real
+ * reasons), in which case the patch's precondition is gone for good, not
+ * "already applied for now". `git diff --quiet HEAD -- <paths>` on the
+ * patch's own `+++ b/` paths tells the two apart: non-zero (the tree differs
+ * from HEAD there) means an uncommitted application, not stale; zero (the
+ * tree already matches HEAD) means the post-image is permanent, so the
+ * patch is stale.
+ *
+ * Extracted into staleMutants() so a fixture repo - which cannot reach the
+ * real corpus or ROOT - can exercise both branches directly (Q1 N1/N2). */
+function stalePatchedPaths(patchText) {
+  const paths = [];
+  for (const line of patchText.split("\n")) {
+    const m = line.match(/^\+\+\+ b\/(.+)$/);
+    if (m) paths.push(m[1]);
+  }
+  return paths;
+}
+
+function staleMutants(root, mutantsDir) {
+  const names = fs.readdirSync(mutantsDir).filter((f) => f.endsWith(".patch")).sort();
+  const stale = [];
+  for (const name of names) {
+    const p = path.join(mutantsDir, name);
+    try {
+      execFileSync("git", ["apply", "--check", p], { cwd: root, env: childEnv() });
+      // Applies forward cleanly: definitely not stale.
+    } catch {
+      try {
+        execFileSync("git", ["apply", "--check", "-R", p], { cwd: root, env: childEnv() });
+        // Applies cleanly in reverse: something already turned this patch's
+        // pre-image into its post-image. See which, above.
+        const paths = stalePatchedPaths(fs.readFileSync(p, "utf8"));
+        let matchesHead = true;
+        if (paths.length) {
+          try {
+            execFileSync("git", ["diff", "--quiet", "HEAD", "--", ...paths],
+              { cwd: root, env: childEnv() });
+            matchesHead = true; // exit 0: tree already matches HEAD there
+          } catch {
+            matchesHead = false; // exit 1: tree differs from HEAD (uncommitted apply)
+          }
+        }
+        if (matchesHead) stale.push(name);
+      } catch {
+        // Neither direction applies: a genuinely stale (or malformed) patch.
+        stale.push(name);
+      }
+    }
+  }
+  return stale;
+}
+
+// Fixture repo for staleMutants(): one committed file, one patch generated by
+// diffing a "bad" edit against it (same discipline as makeFixture above),
+// checked back out before commit so the patch's pre-image is real.
+function makeStaleFixtureRepo(t) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "stalemutants-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "ok\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  fs.writeFileSync(path.join(dir, "subject.txt"), "bad\n");
+  const body = git(dir, ["diff", "--", "subject.txt"]);
+  git(dir, ["checkout", "--", "subject.txt"]);
+  const patchName = "x_subject_is_bad.patch";
+  const patchPath = path.join(dir, "tests", "mutants", patchName);
+  fs.writeFileSync(patchPath, `# kills: subject\n# suite: node check.js\n${body}`);
+  return { dir, mutantsDir: path.join(dir, "tests", "mutants"), patchPath, patchName };
+}
+
+test("a patch applied to the working tree but uncommitted is NOT reported stale", (t) => {
+  // Pins the -R reverse-apply guard: it must fail if that branch is deleted,
+  // since without it every patch here would (wrongly) hit the outer catch
+  // and be reported stale. Passes today, before the HEAD-diff fix.
+  const { dir, mutantsDir, patchPath, patchName } = makeStaleFixtureRepo(t);
+  execFileSync("git", ["apply", patchPath], { cwd: dir, env: childEnv() });
+  const stale = staleMutants(dir, mutantsDir);
+  assert.deepStrictEqual(stale, [], `${patchName} should not be reported stale`);
+});
+
+test("the same post-image committed to HEAD IS reported stale", (t) => {
+  // Fails today (the old logic treats any reverse-appliable patch as "already
+  // applied, not stale") and passes once the new `git diff --quiet HEAD`
+  // check distinguishes a committed post-image from an uncommitted one.
+  const { dir, mutantsDir, patchPath, patchName } = makeStaleFixtureRepo(t);
+  execFileSync("git", ["apply", patchPath], { cwd: dir, env: childEnv() });
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "the mutant's post-image landed for real"]);
+  const stale = staleMutants(dir, mutantsDir);
+  assert.deepStrictEqual(stale, [patchName]);
+});
+
 test("every mutant patch applies to the tree it will run against", () => {
   let hasGit = true;
   try {
@@ -386,22 +502,7 @@ test("every mutant patch applies to the tree it will run against", () => {
   }
 
   const dir = path.join(ROOT, "tests", "mutants");
-  const names = fs.readdirSync(dir).filter((f) => f.endsWith(".patch")).sort();
-  const stale = [];
-  for (const name of names) {
-    const p = path.join(dir, name);
-    try {
-      execFileSync("git", ["apply", "--check", p], { cwd: ROOT, env: childEnv() });
-    } catch {
-      try {
-        execFileSync("git", ["apply", "--check", "-R", p], { cwd: ROOT, env: childEnv() });
-        // Already applied to this tree (e.g. the sweep applied it itself) -
-        // not stale.
-      } catch {
-        stale.push(name);
-      }
-    }
-  }
+  const stale = staleMutants(ROOT, dir);
   assert.deepStrictEqual(stale, [],
     `these mutant patches no longer apply to the tree they will run against ` +
     `- a later commit edited a context line one of them anchors on:\n` +

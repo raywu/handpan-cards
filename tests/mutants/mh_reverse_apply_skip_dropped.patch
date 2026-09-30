@@ -1,0 +1,39 @@
+# kills: a patch applied to the working tree but uncommitted is NOT reported stale
+# suite: node --test --test-name-pattern=.patch.applied.to.the.working.tree.but.uncommitted.is.NOT.reported.stale tests/mutation_harness.test.js
+#
+# Deletes the -R reverse-apply fallback entirely, so every patch that fails a
+# forward `git apply --check` is reported stale outright - even one this very
+# tree already has applied, uncommitted. That is exactly the case the guard
+# exists to protect (queue row 165's early-warning test running as one of the
+# sweep's own suites, against a tree with one mutant already applied).
+diff --git a/tests/mutation_harness.test.js b/tests/mutation_harness.test.js
+--- a/tests/mutation_harness.test.js
++++ b/tests/mutation_harness.test.js
+@@ -418,26 +418,7 @@ function staleMutants(root, mutantsDir) {
+       execFileSync("git", ["apply", "--check", p], { cwd: root, env: childEnv() });
+       // Applies forward cleanly: definitely not stale.
+     } catch {
+-      try {
+-        execFileSync("git", ["apply", "--check", "-R", p], { cwd: root, env: childEnv() });
+-        // Applies cleanly in reverse: something already turned this patch's
+-        // pre-image into its post-image. See which, above.
+-        const paths = stalePatchedPaths(fs.readFileSync(p, "utf8"));
+-        let matchesHead = true;
+-        if (paths.length) {
+-          try {
+-            execFileSync("git", ["diff", "--quiet", "HEAD", "--", ...paths],
+-              { cwd: root, env: childEnv() });
+-            matchesHead = true; // exit 0: tree already matches HEAD there
+-          } catch {
+-            matchesHead = false; // exit 1: tree differs from HEAD (uncommitted apply)
+-          }
+-        }
+-        if (matchesHead) stale.push(name);
+-      } catch {
+-        // Neither direction applies: a genuinely stale (or malformed) patch.
+-        stale.push(name);
+-      }
++      stale.push(name);
+     }
+   }
+   return stale;
