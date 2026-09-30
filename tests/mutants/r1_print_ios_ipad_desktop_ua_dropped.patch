@@ -2,8 +2,8 @@
 # suite: node --test --test-name-pattern ^iPadOS.in.desktop.mode.is.still.treated.as.iOS$ tests/app.test.js
 # Reviewer R2: iPadOS defaults to Request Desktop Website, so a real iPad
 # sends a Macintosh UA and only the maxTouchPoints clause catches it. Without
-# it an iPad falls through to the width rule and gets the 557.2 x 760.4pt wide
-# sheet, which misses the printable box on both axes.
+# it, an iPad in desktop mode is not detected as iOS, so downloadDeckPDF takes
+# the <a download> branch, which iOS Safari ignores: no file is saved.
 # Re-targeted 2026-09-29 (R1): isIOS() is a shared symbol that survives the
 # legacy print-sheet retirement (it still gates the PDF-download path's
 # navigation-vs-download branch on iOS). The mutated lines are unchanged in

@@ -156,7 +156,7 @@ Sorted FIX, OWNER, DEFER, DROP, STALE. "Verified at" means `e428946`. Rows close
 | B5 | rw 2: the subtitle fit under-measures (0.231 vs 0.554 pt/char) | `tools/hifi.py:210-211`, `src/engine/pdfcards.js:212-214`. The widest subtitle draws 104.24 against a 106.56 pt budget; fit never fires | S3 | C1 | DEFER | **Trigger:** any subtitle over 34 chars, or a subtitle-copy change. Both renderers share the bug, so parity holds |
 | B6 | rw 7: ring clearance checked only at 380x800 | `tests/e2e.test.js:5451-5457` | S3 | C1 | DEFER | **Trigger:** the next edit to `#scale-box` or `.sheetbody` padding or overflow. Cosmetic |
 | B7 | rw 122, 123: refusal edge paths | 122: deleting both `refusal = null` resets (`:7713`, `:7731`) passes all 208 `app.test.js` tests. 123: the layout controls `:7309-7360` do not repaint while a refusal stands (`resyncSheet` `:7550` returns early) | S3 | C1 | DEFER | **Trigger:** the next edit to `openScaleSheet`/`openEditSheet` (122), or to the layout controls or `resyncSheet` (123). Both paths need collision-then-Escape or Edit-under-refusal; RESET and reopening recover |
-| B8 | Roadmap: SM-2, stats, PWA, audio | CLAUDE.md "Owner-approved roadmap"; chord-sequence plan N21-N23 | - | - | DEFER (each) | **Trigger:** owner pick after the swipe lane (O5). §4 names the prerequisites |
+| B8 | Roadmap: SM-2, stats, PWA, audio | CLAUDE.md "Owner-approved roadmap"; chord-sequence plan N21-N23 | - | - | DEFER (each) | **Trigger:** owner pick after the swipe lane (O5). §4 names the prerequisites. Superseded 2026-09-30 (owner): SM-2, stats, PWA and audio are ideas, not roadmap; do not start any without asking the owner (see CLAUDE.md "Roadmap and ideas") |
 | B9 | Test-precision nits, remaining-work: 3, 8, 9, 15, 26, 27, 32, 81, 86, 131, 132, 139, 145, 152, 153, 154 | Per-row evidence is in §7 | S4 | C1 | DROP | Each is imprecise, but none names a regression it would miss. 139 and 153 recounted: 37 unanchored and ~77 prose kills. Every unanchored pattern selects one test |
 | B10 | Tooling hygiene: rw 16, 17, 18, 68, 98, 124-130, 146 | `suite_health.py`, `regen_data_mutants.py`, `validate.yml` | S4 | C1 | DROP | Dev tooling: a failure is red and loud, never a silent green |
 | B11 | Comment and doc drift: rw 11, 22, 25, 28, 35, 43, 138; android Q4-Q8, Q15-Q17, Q23, Q25, Q26 | Per-row evidence is in §7 | S4 | C1 | DROP | Comment-only. Editing `index.html` for a comment restales mutants. Q6, Q7, Q17 and rw 131/132 ride along with any lane that owns their lines (N11) |
@@ -284,7 +284,7 @@ The evidence is CI 5/5 at the head SHA, with a mutation gate of 442 minus the re
      - if checklist item 1 has passed before the swipe lane starts, run R1 first. It deletes ~25-29 `index.html` mutants that the swipe lane would otherwise have to keep applying;
      - otherwise the swipe lane goes first, and R1 rebases onto it later. The only shared line is the `headerHTML` signature.
    - The two are **serialised, never concurrent**: both edit `index.html` and both stale `e_*` patches.
-3. **Roadmap, after the swipe, in the owner's order (O5):**
+3. **Roadmap, after the swipe, in the owner's order (O5):** Superseded 2026-09-30 (owner): SM-2, stats, PWA and audio are ideas, not roadmap; do not start any without asking the owner (see CLAUDE.md "Roadmap and ideas").
    - **Audio arpeggio.** No refactor needed. It reads each card's `fields` midi at render, and S mode's chord list per N21. Cheapest next: it touches no state model.
    - **SM-2.** Needs per-card state in localStorage, keyed by deck and card. It lands on A4's module-level `let`s. That is acceptable for one more field set, and not a reason to refactor first. S mode stores no per-card state (N22). It should precede stats.
    - **Stats.** Read-only over SM-2's store. After SM-2.
@@ -314,7 +314,7 @@ Deltas from quality-eval §6 only:
 | O2 | **Queue-doc consolidation.** Close the four ledgers with a banner pointing at §7 (D1), and carry the survivors in one list here? | **Yes.** The survivors: DEFER B5-B8, OWNER B1-B4 and the checklist. No row body is rewritten, so history stays greppable. New findings go to the next triage doc, not back into the old ledgers |
 | O3 | **Mutant-corpus policy** | **Three parts:**<br>1. No bulk retirement.<br>2. New mutants only for S1/S2 escape paths, plus one per new test group (quality-eval D2).<br>3. Keep the 5 slow hygiene mutants (206 s): a regression there hangs CI.<br>The alternative is to retire them and save ~3.5 min per PR. Choose it if gate time starts to hurt more than a CI hang would |
 | O4 | **The 2026-09-15 interview items.** rw 5: de-duplicate the twin mutant. rw 6: guard `formatSeed` | **rw 5:** retire `e_edit_chip_appended` in R2 (keeps the decision; one file deletion). **rw 6:** overturn to DROP (no reachable input) |
-| O5 | **What comes next** among the swipe animation and the roadmap | **Order:**<br>1. R2 + D1.<br>2. The swipe animation (after R2; before or after R1 by the §4 rule).<br>3. The roadmap: audio, SM-2, stats, PWA |
+| O5 | **What comes next** among the swipe animation and the roadmap | **Order:**<br>1. R2 + D1.<br>2. The swipe animation (after R2; before or after R1 by the §4 rule).<br>3. The roadmap: audio, SM-2, stats, PWA. Superseded 2026-09-30 (owner): SM-2, stats, PWA and audio are ideas, not roadmap; do not start any without asking the owner (see CLAUDE.md "Roadmap and ideas") |
 | O6 | Device checklist (§2) | One owner pass. Item 1 unblocks R1; the rest close rows 12, 23, 29, 34, 133 and Q3 whatever the result. A failure becomes a new row in the next triage |
 
 **Eng-review auto-decisions** (spawned session: the recommended option was taken at each point, and nothing destructive was chosen). Each is folded into the sections above. Detail is in "Eng review" below.
@@ -329,10 +329,10 @@ Deltas from quality-eval §6 only:
 | E6 | Outside voice: rw 135 is visible with the sheet open | Apply: DROP to DEFER, with a trigger (B12a) |
 | E7 | Outside voice: one-pdf 6's committed PDFs are not parity-gated | Apply: DROP to DEFER, with a trigger (B16a) |
 | E8 | Outside voice: the R1 device gate is contested by Task 5's own disposition | Apply: keep the conservative gate as O1's default, and let the owner rule it met |
-| E9 | Coordinator: the two #163 reviewer nits | B22 (download filename) DROP; B23 (`.shuffle.reroll :active`) DEFER |
+| E9 | Coordinator: the two #163 reviewer nits | B22 (download filename) DROP; B23 (`.shuffle.reroll :active`) DEFER (superseded by #164) |
 | E10 | Scope Challenge: the plan touches 8+ files | Accept as-is. Each lane is already minimal, and R1's breadth is deletion of one dead chain |
 | E11 | TODOS.md updates | None proposed. §7's carried list is the backlog, and this pass may write only the plan file |
-| E12 | Next step | "Ready to implement". A design review is not needed: R1 deletes unreachable UI, and B23 is deferred |
+| E12 | Next step | "Ready to implement". A design review is not needed: R1 deletes unreachable UI, and B23 is deferred (superseded by #164) |
 
 ## §7 Queue disposition
 
@@ -368,7 +368,7 @@ Counts: 1 + 4 + 7 + 5 + 39 + 36 = 92.
 | Owner requests | DEFER | SM-2, stats, PWA, audio |
 
 **Carried after D1.** These are the only live items:
-- DEFER: rw 2, 7, 122, 123, 135; one-pdf 6; the #163 `:active` nit (B23); and the four roadmap items;
+- DEFER: rw 2, 7, 122, 123, 135; one-pdf 6; and the four roadmap items;
 - OWNER: rw 5, 6, the checklist, and the swipe animation;
 - Part A DEFER: A7, A8.
 
@@ -444,7 +444,7 @@ The test-plan artifact is at `~/.gstack/projects/raywu-handpan-cards/ray-main-en
 ### NOT in scope
 - Marker-anchored mutants (A15): needs a `mutation_check.sh` change (N13).
 - Retiring the slow hygiene mutants: an owner call (O3).
-- Renaming the `PRINTER_ONLY` download (B22): it ripples into the committed PDF names.
+- Renaming the `PRINTER_ONLY` download (B22): it ripples into the committed PDF names. (done in #164)
 - An ink-level check on the committed PDFs (B16a): deferred to the next `hifi.py` change.
 - The swipe animation: it has its own plan.
 
