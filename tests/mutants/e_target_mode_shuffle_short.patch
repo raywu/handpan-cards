@@ -9,10 +9,11 @@
 # Refreshed 2026-09-29 (lane S2) for line drift only - a new #modeS button
 # and .panel-note credit paragraph were added elsewhere; .mode/.shuffle CSS
 # itself is unchanged.
+# Refreshed 2026-09-30 for context only - .shuffle gained justify-self:center.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -224,7 +224,7 @@
+@@ -223,7 +223,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     min-height is ever removed. */
  .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
@@ -21,12 +22,12 @@ diff --git a/index.html b/index.html
  .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
  /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
     ragged pair sat side by side. #modeS's own flex:1 0 100% above wins on
-@@ -565,7 +565,7 @@
+@@ -576,7 +576,7 @@ footer.seq{row-gap:var(--sp-1)}
     "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */
--.shuffle{grid-row:2; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
-+.shuffle{grid-row:2; margin-top:7px; display:inline-flex; align-items:center;
+-.shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
++.shuffle{grid-row:2; justify-self:center; margin-top:7px; display:inline-flex; align-items:center;
    justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
    font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
  .shuffle.on{color:#f1ece1}

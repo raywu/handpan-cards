@@ -1,17 +1,19 @@
 # kills: the footer controls share one centre line in every mode
 # suite: node --test --test-name-pattern ^the.footer.controls.share.one.centre.line.in.every.mode$ tests/e2e.test.js
-# Lane S2, F1 (reviewer bounce 2). Drops justify-self:center from
-# .shuffle.reroll, so the 56px-wide refresh button sits at the start of the
-# footer's 1fr middle column instead of centred between prev and next.
+# Lane S2, F1 (reviewer bounce 2). Drops justify-self:center from .shuffle,
+# so in portrait S the 56px refresh button sits at the start of the footer's
+# 1fr middle column instead of centred between prev and next, and in A/B the
+# text toggle stretches across the whole column.
+# Refreshed 2026-09-30: justify-self moved from .shuffle.reroll to .shuffle.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -591,7 +591,7 @@ footer.seq{row-gap:var(--sp-1)}
-    acceptance 5) is icon-only, square at the 44px target rather than
-    text-width, so it sits on the controls row exactly like prev/next. */
- .shuffle.reroll{border:1px solid #433b2c; border-radius:10px; background:#211d16;
--  color:#eae6df; width:56px; height:44px; padding:0; justify-self:center}
-+  color:#eae6df; width:56px; height:44px; padding:0}
- .shuffle.reroll svg{width:20px; height:20px}
- /* --ring is how far the ring paints OUTSIDE the border box: the offset plus
-    the stroke. Anything that clips its children (a scroll container, and
+@@ -576,7 +576,7 @@ footer.seq{row-gap:var(--sp-1)}
+    "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
+    in a 44px box instead of sitting 7px under the counter. That is a real
+    visual change, accepted as the price of the target. */
+-.shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
++.shuffle{grid-row:2; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
+   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
+   font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
+ .shuffle.on{color:#f1ece1}

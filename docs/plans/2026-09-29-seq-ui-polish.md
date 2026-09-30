@@ -269,7 +269,7 @@ The standing gates from quality-eval §6 and CLAUDE.md apply unchanged, plus the
 | D5 | The rename is display-only; id `three-over-two` is unchanged | Renaming the id to `three-two` | The id is engine data used by `pick()` and the tests; renaming it changes the engine for no user-visible gain |
 | D6 | Refresh button: inline SVG circular arrow in a 56x44 frame identical to `button.nav`, with `aria-label` and no `title` | A text+icon combo; a `title` tooltip | The owner asked to save space. The three buttons now read as one control set. `title` duplicates the label to screen readers on some browsers |
 | D7 | Mode A and B adopt the same aligned grid | Fixing S only | O5's misalignment exists in every mode. It costs 0px (table M) |
-| D8 | Landscape S puts the style under the rail in the middle column, on one row with the buttons | Stacking it as in portrait (+64px) | +6.8px instead of about +64px on the tightest viewport class |
+| D8 | Landscape S is a four-column footer: prev \| rail over style \| refresh \| next. The refresh button sits beside `#next`, not centred | Stacking it as in portrait (+64px); an absolutely positioned tip under the refresh button (shipped at 836d9f5, overlapped `.announce`) | +2px at 844x390 with the full 20px rail, instead of about +64px on the tightest viewport class, and the style text stays inside `#foot` |
 | D9 | Accept the portrait S cost (+64px of footer; card -8% at 380x700, -19% at 320x568) | Clamping the tip to one line; a tap-to-show tip | Clamping hides content. A tap-to-show tip is a feature (N45). Recorded as X2 |
 | D10 | The current chord is drawn `#f1ece1` with a `--root` underline | Keeping `--root` ink at the larger size | Pygmy's 2.46 fails even the 3:1 large-text floor. The underline keeps the deck colour cue without a new colour |
 | D11 | The fixture is not regenerated (N43) | Regenerating it as the brief assumed | A/B faces are unchanged, so an unchanged fixture is the stronger proof |
@@ -326,3 +326,14 @@ A/B faces unchanged .................. fixture test :4779 (N43)
 **Worktree parallelization.** None: one lane, serialised R1 → UI → SW (§4).
 
 NO UNRESOLVED DECISIONS
+
+## Integrator takeover (2026-09-30, AFK auto-decisions)
+
+The lane used both bounce attempts (CI red at a444c1c; reviewer FAIL at 9779405) and the second reviewer FAILed at 836d9f5: in landscape S the absolutely positioned style line sat below `#foot` and overlapped the `.announce` status text. Per the bounce cap the integrator took the lane over. The F1 bounce brief was partly at fault: it asked for the refresh button to be centred at 844x390, which contradicts D8.
+
+- **A1.** D8 implemented as the planner's prototype: a four-column grid in `@media (max-height:520px)`, 20px rail restored in landscape (+2px growth at 844x390, inside E3's 10px budget).
+- **A2.** E1 asserts refresh centring in portrait only; in landscape S it asserts the button sits between `#count` and `#next`.
+- **A3.** `justify-self:center` moved to `.shuffle` in every mode, so the A/B text toggle is ~95px again instead of stretching across the middle column (reviewer-2 nit). E1 now asserts `#shuffle` width <= 120px.
+- **A4.** New e2e test (e2e FLOORS 163 -> 164): landscape S keeps the style text inside `#foot` and clear of `#prev`, `#next`, `#shuffle`, `#count` and the `.announce` text, booted with a missing saved deck so `.announce` is populated.
+- **A5.** Mutants: `ui_landscape_style_row` and `ui_refresh_off_centre` retargeted; `e_target_mode_shuffle_short` and `e_target_shuffle_overlay_eats_arrows` context-refreshed; new `ui_landscape_refresh_over_rail` (README 434 -> 435). Each verified killed locally by its own suite.
+- **A6.** Kept as shipped: the style line under the controls in portrait, the Nunito style name, and the portrait `.count.seq` metrics.

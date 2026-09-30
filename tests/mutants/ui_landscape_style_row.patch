@@ -1,21 +1,24 @@
 # kills: switching to mode S keeps the header and footer width fixed and grows the footer only by the style block
 # suite: node --test --test-name-pattern ^switching.to.mode.S.keeps.the.header.and.footer.width.fixed.and.grows.the.footer.only.by.the.style.block$ tests/e2e.test.js
 # Lane S2, D8/E3. Drops the whole max-height:520px footer.seq override, so
-# landscape S falls back to portrait's full-width style row and full-size
-# rail - well past the tight landscape budget this breakpoint exists for.
+# landscape S falls back to portrait's full-width style row under the
+# controls - well past the tight landscape budget this breakpoint exists for.
+# Refreshed 2026-09-30 (integrator takeover): the override is now D8's
+# four-column grid, not the absolutely positioned style line.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -564,13 +564,6 @@ footer.seq{row-gap:var(--sp-1)}
-    for the general case; this media-scoped override is landscape-only and
-    leaves that everywhere else untouched, same pattern as the header and
-    spacing-ramp overrides above). */
+@@ -557,14 +557,6 @@ footer.seq{row-gap:var(--sp-1)}
+    The arrows and the refresh button span both rows and stay on one centre
+    line; the style line sits under the rail inside the footer box, so it never
+    reaches the .announce row below it. */
 -@media (max-height:520px){
--  footer.seq{row-gap:0}
--  footer.seq .count.seq{font-size:13px; line-height:1.3}
--  footer.seq .shuffle-wrap{display:block; position:relative; grid-row:2; text-align:center}
--  footer.seq .seq-style{position:absolute; top:100%; left:50%; transform:translateX(-50%);
--    margin:2px 0 0; font-size:10px; line-height:1.1; white-space:nowrap}
+-  footer.seq{grid-template-columns:56px 1fr 56px 56px; row-gap:0}
+-  footer.seq #prev{grid-area:1/1/3/2}
+-  footer.seq .count.seq{grid-area:1/2}
+-  footer.seq .seq-style{grid-area:2/2; font-size:11.5px; line-height:1.35}
+-  footer.seq #shuffle{grid-area:1/3/3/4}
+-  footer.seq #next{grid-area:1/4/3/5}
 -}
  /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
     that toggles a mode the user must be able to turn OFF. Same reasoning as
