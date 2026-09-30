@@ -7914,7 +7914,25 @@ function run() {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
-      await b.click("#card");
+      // A real mouse b.click() here goes through mousedown/mouseup, which
+      // starts and ends a fresh, trivial drag on #card via pointer capture -
+      // Chrome then never fires "click" at all, so a mouse click can never
+      // reach the target and can't exercise eatClick's guard either way.
+      // Wait out the drag's OWN eatClick (set by release() on the commit,
+      // same as the eatClickClear() pattern below) so it cannot mask the
+      // guard under test, then dispatch a real pointerdown (so the capture
+      // handler's eatClick assignment - the one under test - actually runs)
+      // followed by a genuine click() (which fires no pointerdown of its
+      // own, so it cannot re-trigger the guard by accident, only observe it).
+      await b.waitFor(`!eatClick`, { label: "eatClick to decay" });
+      await b.eval(`
+        const el = document.getElementById("card");
+        el.dispatchEvent(new PointerEvent("pointerdown", {
+          bubbles: true, cancelable: true, isPrimary: true, pointerId: 999, button: 0,
+        }));
+        el.click();
+        return true;
+      `);
       assert.strictEqual(await countText(), `2 / ${n}`, "a tap during flight should land it immediately");
       assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the new card");
       const outAnim = await b.eval(`return document.querySelector(".scene").getAnimations().some(a => a.effect.getComputedTiming().duration === 220);`);
@@ -7980,6 +7998,20 @@ function run() {
       await b.drag("#card", [[-60, 100], [-120, 200]]);
       await b.finishAnimations();
       await expectCount(`1 / ${n}`, "a drag while the scale sheet is open must not navigate");
+
+      // The sheet's own preview SVG occludes #card at this viewport, so a
+      // fresh physical touch there never reaches #card at all - the guard
+      // above is only exercised by coincidence of that occlusion. Open the
+      // sheet mid-drag instead (pointer capture routes the released touch to
+      // #card regardless of what now covers it), mirroring the settings-panel
+      // mid-drag case (M6).
+      await b.eval(`hideSheet(); return true;`);
+      const g = await startDrag("#card");
+      await g.move(-120, 100);
+      await b.eval(`sheetOpen = true; return true;`);
+      await g.release(-120, 200);
+      await b.finishAnimations();
+      await expectCount(`1 / ${n}`, "opening the scale sheet mid-drag must suppress the release");
     });
 
     test("card swipe: under reduced motion the swipe steps instantly with no animation", async () => {
@@ -8202,7 +8234,17 @@ function run() {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
       const g = await startDrag("#card");
-      await g.move(-80, 0);
+      // Held below SWIPE_COMMIT_PX (55) AND over enough elapsed time (300ms)
+      // that its velocity reads well under the fling threshold, on purpose:
+      // a move at ms=0 has effectively infinite velocity, so ANY dx there
+      // (even a small one) registers as a fling and commits regardless of
+      // this guard - which would make the spurious pointerup below commit
+      // too, landing on the same final count as the real gesture and hiding
+      // the bug entirely. Slow and short means the spurious release below,
+      // if ever allowed through, ends the drag as a spring-back, not a
+      // commit - silently swallowing the real gesture's own eventual release
+      // rather than producing a same-looking commit that would mask it.
+      await g.move(-30, 300);
       await b.eval(`
         const card = document.getElementById("card");
         card.dispatchEvent(new PointerEvent("pointerdown", {
@@ -8214,7 +8256,7 @@ function run() {
         return true;
       `);
       const mid = await sceneXform();
-      assert.ok(Math.abs(mid.m41 - (-80)) <= 1, `a second pointer must not disturb the drag, m41=${mid.m41}`);
+      assert.ok(Math.abs(mid.m41 - (-30)) <= 1, `a second pointer must not disturb the drag, m41=${mid.m41}`);
       assert.strictEqual(await countText(), `1 / ${n}`, "a second pointer's pointerup must not end the drag");
       await g.release(-120, 200);
       await b.finishAnimations();
@@ -8226,17 +8268,32 @@ function run() {
     // the swipe's own land() all reset a flipped card the same way.
     test("card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition", async () => {
       await freshLoad();
+      // b.settle() after flipping is not optional here: two style changes
+      // (add .flip, then remove it) with no real painted frame committed in
+      // between never register as a transition-eligible change at all in this
+      // headless harness, baseline or mutant alike - a bare back-to-back
+      // b.click("#card") -> b.click("#next") proves nothing either way.
+      // A short real-time wait after the reset (not an immediate read, which
+      // always reads back as already-settled) is what actually distinguishes
+      // an instant reset from an animated one: long enough for a real
+      // transition to register as a running CSSTransition, nowhere near long
+      // enough (450ms total) for it to finish.
+      const shortWait = () => new Promise((r) => setTimeout(r, 100));
       await b.click("#card");
+      await b.settle();
       assert.strictEqual(await cardFlipped(), true);
       await b.click("#next");
       assert.strictEqual(await cardFlipped(), false, "#next must reset the flip");
+      await shortWait();
       let cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
       assert.strictEqual(cardAnims, 0, "#next must not animate the reverse-flip");
 
       await b.click("#card");
+      await b.settle();
       assert.strictEqual(await cardFlipped(), true);
       await b.key("ArrowRight", "ArrowRight", 39);
       assert.strictEqual(await cardFlipped(), false, "ArrowRight must reset the flip");
+      await shortWait();
       cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
       assert.strictEqual(cardAnims, 0, "ArrowRight must not animate the reverse-flip");
     });
