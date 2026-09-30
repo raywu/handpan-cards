@@ -374,12 +374,10 @@ The user-configurable-scale feature (chord engine, layout generator, share
 URLs) has a reviewed plan with binding owner decisions in
 `docs/SCALE_ENGINE_PLAN.md`. Read it before starting that work.
 
-Roadmap (owner-approved):
-1. Spaced repetition: grade cards (again/good/easy) post-flip, simple SM-2,
-   per-deck progress in localStorage, JSON export/import.
-
 Ideas, NOT committed roadmap (owner, 2026-09-30) - do not start any of these
 without asking the owner:
+- Spaced repetition: grade cards (again/good/easy) post-flip, simple SM-2,
+  per-deck progress in localStorage, JSON export/import.
 - Per-deck practice stats view.
 - PWA: manifest + service worker, offline, installable.
 - Audio toggle: WebAudio arpeggio of each card's tones from the embedded
