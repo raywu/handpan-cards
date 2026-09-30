@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8206,7 +8206,6 @@ function setMode(m) {
-   if (m === "S") {
-     shuffleBtn.textContent = "New progression";
+@@ -7959,7 +7959,6 @@ function setMode(m) {
+     shuffleBtn.innerHTML = REFRESH_ICON_SVG;
+     shuffleBtn.setAttribute("aria-label", "New progression");
      shuffleBtn.classList.remove("on");
 -    shuffleBtn.classList.add("reroll");
    } else {
      shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
-     shuffleBtn.classList.toggle("on", shuffled);
+     shuffleBtn.removeAttribute("aria-label");

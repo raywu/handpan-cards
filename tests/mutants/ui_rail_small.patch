@@ -1,0 +1,17 @@
+# kills: the rail is centred Marcellus of at least 18px and its current chord meets AA on every deck
+# suite: node --test --test-name-pattern ^the.rail.is.centred.Marcellus.of.at.least.18px.and.its.current.chord.meets.AA.on.every.deck$ tests/e2e.test.js
+# Lane S2, acceptance 4. Reverts the progression rail to its pre-restyle
+# size and typeface (11px Nunito Sans, the old .count default) instead of
+# the larger 20px Marcellus the plan asks for.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -529,7 +529,7 @@ button.nav:active{background:#2e281e}
+ .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
+   color:#c4bcab; text-align:center}
+ .count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
+-  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
++  font:600 11px/1 "Nunito Sans"; letter-spacing:.02em; color:#c4bcab}
+ /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
+    deck's root colour carried as an underline instead of the text's own ink -
+    O3/D10: the old ink-coloured approach failed AA on more than one deck's

@@ -1,0 +1,18 @@
+# kills: nothing on the card or in the footer credits Moritz.handpan; the menu link stays
+# suite: node --test --test-name-pattern ^nothing.on.the.card.or.in.the.footer.credits.Moritz.handpan..the.menu.link.stays$ tests/app.test.js
+# Lane S2, O1/U3. Re-adds the "Style from Moritz.handpan" credit line to the
+# mode-S back face. The menu's own "7 different ways to play chords" link
+# (#seq-source-link) is untouched.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6680,7 +6680,8 @@ function render() {
+     // renderSeqRail's "DOM nodes and textContent only" rule).
+     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
+     const backS = headerHTML(d, ch, n) +
+-      `<div class="prompt">${nameHTML(ch, true)}</div>`;
++      `<div class="prompt">${nameHTML(ch, true)}</div>`
++      + `<div class="hint">Style from Moritz.handpan</div>`;
+     document.getElementById("front").innerHTML = answer;
+     document.getElementById("back").innerHTML = backS;
+     document.getElementById("seq-style-name").textContent = styleName;

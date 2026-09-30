@@ -15,10 +15,14 @@
 # that still contribute to the header/footer chrome the budget test measures:
 # header's own margin-bottom, .hrow's new margin-bottom, and footer's
 # margin-top.
+# Re-targeted 2026-09-29 (lane S2): the footer became a CSS grid (prev/rail/
+# next/shuffle), so its margin-top now sits on the rule's opening line rather
+# than its own trailing line. Same three margins, new line anchors.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -108,13 +108,13 @@
+@@ -123,12 +123,12 @@
+    tests/e2e.test.js "the header and footer stay inside their pixel budget"
     pins this against measured numbers. assertCardFits CANNOT: it derives its
     expectation from the current main height, so it moves with the regression.
     ------------------------------------------------------------------------ */
@@ -32,14 +36,11 @@ diff --git a/index.html b/index.html
 -  gap:var(--sp-2); margin-bottom:var(--sp-2)}
 +  gap:var(--sp-2); margin-bottom:16px}
  .hspacer{width:44px; height:44px}
- h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27px);
-    letter-spacing:.04em; margin:0; color:#f4f0e8}
-@@ -429,7 +429,7 @@
-    root/tone colours it sits between. */
- .sepc{color:#75707c}
- footer{width:100%; max-width:520px; display:flex; align-items:center;
--  justify-content:space-between; gap:var(--sp-2); margin-top:var(--sp-3)}
-+  justify-content:space-between; gap:var(--sp-2); margin-top:20px}
- button.nav{flex:0 0 auto; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;
-   background:#211d16; color:#eae6df; font-size:18px; cursor:pointer}
- button.nav:active{background:#2e281e}
+@@ -512,6 +512,6 @@
+    carries no box of its own (display:contents): it is markup grouping only,
+    so its children (.count, .shuffle) participate in this grid directly. */
+-footer{width:100%; max-width:520px; margin-top:var(--sp-3);
++footer{width:100%; max-width:520px; margin-top:20px;
+   display:grid; grid-template-columns:56px 1fr 56px; grid-template-rows:auto auto;
+   align-items:center; column-gap:var(--sp-2); row-gap:0}
+ button.nav{grid-row:2; width:56px; height:44px; border-radius:10px; border:1px solid #433b2c;

@@ -4162,3 +4162,93 @@ test("modes A and B render byte-identical DOM to the pre-lane base, for all thre
     }
   }
 });
+
+test("mode S shows the style in the footer, never on the card", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const STYLES = app.get("HPE.sequence.STYLES");
+  const COPY = app.get("SEQ_STYLE_COPY");
+  for (const s of STYLES) {
+    app.run(`seq.style = ${JSON.stringify(s)}`);
+    app.run("render()");
+    assert.ok(!app.els.back.innerHTML.includes(COPY[s][0]),
+      `back face must not carry the style name for ${s}`);
+    assert.ok(!app.els.back.innerHTML.includes(COPY[s][1]),
+      `back face must not carry the style tip for ${s}`);
+    assert.strictEqual(app.els["seq-style"].hidden, false, `#seq-style must show for ${s}`);
+    assert.strictEqual(app.els["seq-style-name"].textContent, COPY[s][0]);
+    assert.strictEqual(app.els["seq-style-tip"].textContent, COPY[s][1]);
+  }
+  app.run('setMode("A")');
+  assert.strictEqual(app.els["seq-style"].hidden, true, "#seq-style must hide outside mode S");
+  assert.strictEqual(app.els.foot.classList.contains("seq"), false, "#foot must drop .seq outside mode S");
+  app.run('setMode("S")');
+  assert.strictEqual(app.els.foot.classList.contains("seq"), true, "#foot must carry .seq in mode S");
+
+  // A stored mode "S" must boot straight into the shown state, with no
+  // setMode call from the test - the boot path goes through setMode(mode)
+  // itself (index.html's own bootstrap line).
+  const again = boot({ storage: { hpfc: JSON.stringify({ mode: "S" }) } });
+  assert.strictEqual(again.els["seq-style"].hidden, false, "a stored mode S must boot with #seq-style shown");
+  assert.strictEqual(again.els.foot.classList.contains("seq"), true, "a stored mode S must boot with #foot.seq set");
+});
+
+test("the three-over-two style reads exactly \"3:2 polyrhythm\"", () => {
+  const app = boot({ random: () => 0 });
+  const COPY = app.get("SEQ_STYLE_COPY");
+  assert.strictEqual(COPY["three-over-two"][0], "3:2 polyrhythm");
+  app.run('setMode("S")');
+  app.run('seq.style = "three-over-two"');
+  app.run("render()");
+  assert.strictEqual(app.els["seq-style-name"].textContent, "3:2 polyrhythm");
+  const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  assert.ok(!html.includes("3 over 2"), 'index.html source must not contain "3 over 2"');
+});
+
+test("nothing on the card or in the footer credits Moritz.handpan; the menu link stays", () => {
+  const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+  assert.doesNotMatch(html, /Style from Moritz/i);
+  const hrefMatch = html.match(/<a id="seq-source-link"[^>]*\bhref="([^"]+)"/);
+  assert.ok(hrefMatch, "#seq-source-link must still exist with an href");
+
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  assert.doesNotMatch(app.els.back.innerHTML, /Moritz/i);
+  assert.doesNotMatch(app.els.front.innerHTML, /Moritz/i);
+  assert.doesNotMatch(app.els["seq-style-name"].textContent, /Moritz/i);
+  assert.doesNotMatch(app.els["seq-style-tip"].textContent, /Moritz/i);
+  assert.doesNotMatch(app.els.count.textContent, /Moritz/i);
+  assert.strictEqual(hrefMatch[1], "https://www.youtube.com/shorts/YcmgdgZTpHc",
+    "#seq-source-link's href must be unchanged (N44)");
+});
+
+test("in mode S the re-roll control is an icon named \"New progression\", and leaving S restores Shuffle", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  assert.strictEqual(app.els.shuffle.getAttribute("aria-label"), "New progression");
+  assert.match(app.els.shuffle.innerHTML, /^<svg[^>]*aria-hidden="true"/);
+  assert.ok(app.els.shuffle.classList.contains("reroll"));
+  app.run('setMode("A")');
+  assert.strictEqual(app.els.shuffle.getAttribute("aria-label"), null,
+    "leaving S must drop the aria-label");
+  assert.strictEqual(app.els.shuffle.textContent, "Shuffle: off");
+  assert.ok(!app.els.shuffle.classList.contains("reroll"));
+});
+
+test("an unsupported deck hides the style block and a working deck brings it back", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const res = app.generate("(C3) G3 D4 G4 D5");
+  assert.ok(res.ok);
+  app.select(res.value.id);
+  assert.strictEqual(app.get("seq").chords, null);
+  assert.strictEqual(app.els["seq-style"].hidden, true, "an unsupported deck must hide #seq-style");
+
+  const hijaz = decks(app).find((d) => d.id === "hijaz");
+  app.select(hijaz.id);
+  assert.ok(app.get("seq").chords);
+  assert.strictEqual(app.els["seq-style"].hidden, false, "a working deck must bring #seq-style back");
+  const COPY = app.get("SEQ_STYLE_COPY");
+  const curStyle = app.get("seq.style");
+  assert.strictEqual(app.els["seq-style-name"].textContent, COPY[curStyle][0]);
+});

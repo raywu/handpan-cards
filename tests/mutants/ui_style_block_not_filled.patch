@@ -1,0 +1,16 @@
+# kills: mode S shows the style in the footer, never on the card
+# suite: node --test --test-name-pattern ^mode.S.shows.the.style.in.the.footer..never.on.the.card$ tests/app.test.js
+# Lane S2, O2/U1. render()'s S branch skips filling #seq-style-name/#seq-style-tip,
+# so the footer's style line stays blank even though it is shown.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6683,8 +6683,6 @@ function render() {
+       `<div class="prompt">${nameHTML(ch, true)}</div>`;
+     document.getElementById("front").innerHTML = answer;
+     document.getElementById("back").innerHTML = backS;
+-    document.getElementById("seq-style-name").textContent = styleName;
+-    document.getElementById("seq-style-tip").textContent = styleTip;
+     document.getElementById("seq-style").hidden = false;
+     renderSeqRail(d);
+   } else {

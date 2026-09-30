@@ -1,0 +1,17 @@
+# kills: landscape mode S keeps the style line inside the footer, clear of every control and the status line
+# suite: node --test --test-name-pattern ^landscape.mode.S.keeps.the.style.line.inside.the.footer,.clear.of.every.control.and.the.status.line$ tests/e2e.test.js
+# Integrator takeover of lane S2, D8. Puts the landscape refresh button in the
+# rail's own middle column instead of its column beside #next, so the button
+# sits on top of the style line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -562,7 +562,7 @@ footer.seq{row-gap:var(--sp-1)}
+   footer.seq #prev{grid-area:1/1/3/2}
+   footer.seq .count.seq{grid-area:1/2}
+   footer.seq .seq-style{grid-area:2/2; font-size:11.5px; line-height:1.35}
+-  footer.seq #shuffle{grid-area:1/3/3/4}
++  footer.seq #shuffle{grid-area:1/2/3/3}
+   footer.seq #next{grid-area:1/4/3/5}
+ }
+ /* Was 95.2 x 11.5 - the smallest interactive target in the app, and the one
