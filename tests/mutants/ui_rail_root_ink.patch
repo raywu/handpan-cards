@@ -5,7 +5,6 @@
 # root, which fails AA against #1a1815 on more than one deck - Pygmy's
 # purple root is 2.46:1, well under the 4.5:1 this test guards).
 diff --git a/index.html b/index.html
-index e4c1bf6..93d0848 100644
 --- a/index.html
 +++ b/index.html
 @@ -6643,6 +6643,7 @@ function renderSeqRail(d) {

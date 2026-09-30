@@ -3,7 +3,6 @@
 # Lane S2, O2/U1. setMode drops `seqStyle.hidden = m !== "S"`, so #seq-style
 # stays visible after leaving mode S.
 diff --git a/index.html b/index.html
-index e4c1bf6..4c85ed8 100644
 --- a/index.html
 +++ b/index.html
 @@ -7952,7 +7952,6 @@ function setMode(m) {

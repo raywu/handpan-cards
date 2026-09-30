@@ -3,7 +3,6 @@
 # Lane S2, acceptance 5/U4. Drops removeAttribute("aria-label") on leaving S,
 # so Shuffle keeps announcing "New progression" in modes A/B.
 diff --git a/index.html b/index.html
-index e4c1bf6..617be61 100644
 --- a/index.html
 +++ b/index.html
 @@ -7961,7 +7961,6 @@ function setMode(m) {

@@ -4,7 +4,6 @@
 # chord, leaving font-weight as the only cue - the colour rule itself is
 # untouched, only the decoration that carries it is gone.
 diff --git a/index.html b/index.html
-index e4c1bf6..d5c1c7e 100644
 --- a/index.html
 +++ b/index.html
 @@ -534,8 +534,7 @@ button.nav:active{background:#2e281e}

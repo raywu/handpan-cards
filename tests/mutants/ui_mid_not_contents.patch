@@ -4,7 +4,6 @@
 # its own grid item instead of letting #count/#shuffle participate directly in
 # the footer grid, knocking #count and #shuffle out of the shared centre line.
 diff --git a/index.html b/index.html
-index e4c1bf6..8b73449 100644
 --- a/index.html
 +++ b/index.html
 @@ -524,7 +524,7 @@ footer{width:100%; max-width:520px; margin-top:var(--sp-3);

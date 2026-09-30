@@ -3,7 +3,6 @@
 # Lane S2, O3/U2. Reverts the display rename back to "3 over 2"; the id
 # "three-over-two" is unchanged, only the label reverts.
 diff --git a/index.html b/index.html
-index e4c1bf6..f2435c1 100644
 --- a/index.html
 +++ b/index.html
 @@ -5952,7 +5952,7 @@ let seq = null;

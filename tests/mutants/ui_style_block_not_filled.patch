@@ -3,7 +3,6 @@
 # Lane S2, O2/U1. render()'s S branch skips filling #seq-style-name/#seq-style-tip,
 # so the footer's style line stays blank even though it is shown.
 diff --git a/index.html b/index.html
-index e4c1bf6..772a085 100644
 --- a/index.html
 +++ b/index.html
 @@ -6683,8 +6683,6 @@ function render() {

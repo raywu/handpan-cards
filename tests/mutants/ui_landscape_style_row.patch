@@ -5,7 +5,6 @@
 # values for larger ones (as if the desktop step-up ramp had been pasted in
 # by mistake), so landscape grows the footer well past its 40px budget.
 diff --git a/index.html b/index.html
-index e4c1bf6..a19ab96 100644
 --- a/index.html
 +++ b/index.html
 @@ -551,8 +551,8 @@ footer.seq{row-gap:var(--sp-1)}

@@ -4,7 +4,6 @@
 # size and typeface (11px Nunito Sans, the old .count default) instead of
 # the larger 20px Marcellus the plan asks for.
 diff --git a/index.html b/index.html
-index e4c1bf6..b440442 100644
 --- a/index.html
 +++ b/index.html
 @@ -529,7 +529,7 @@ button.nav:active{background:#2e281e}

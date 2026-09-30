@@ -4,7 +4,6 @@
 # and NOTES->NAME sized by their own text again - a ragged pair instead of
 # an equal-width row.
 diff --git a/index.html b/index.html
-index e4c1bf6..37f686f 100644
 --- a/index.html
 +++ b/index.html
 @@ -229,7 +229,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p

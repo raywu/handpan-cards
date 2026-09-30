@@ -3,7 +3,6 @@
 # Lane S2, O2/U1. `foot.classList.toggle("seq", m === "S")` becomes
 # `add("seq")`, so #foot never drops .seq once mode S has been entered once.
 diff --git a/index.html b/index.html
-index e4c1bf6..8c63bcc 100644
 --- a/index.html
 +++ b/index.html
 @@ -7951,7 +7951,7 @@ function setMode(m) {

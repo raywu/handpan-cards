@@ -3,7 +3,6 @@
 # Lane S2, audit fix A4. Drops text-align:center from .hint, leaving the
 # "TAP TO REVEAL THE NOTES" line at its default start alignment.
 diff --git a/index.html b/index.html
-index e4c1bf6..21d6901 100644
 --- a/index.html
 +++ b/index.html
 @@ -494,7 +494,7 @@ main{flex:1; display:flex; align-items:center; justify-content:center; width:100

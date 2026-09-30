@@ -4,7 +4,6 @@
 # so the icon-only refresh button in mode S carries no accessible name. Also
 # caught by the e2e 44px-icon test (E2).
 diff --git a/index.html b/index.html
-index e4c1bf6..3ab2bf8 100644
 --- a/index.html
 +++ b/index.html
 @@ -7956,7 +7956,6 @@ function setMode(m) {

@@ -4,7 +4,6 @@
 # mode-S back face. The menu's own "7 different ways to play chords" link
 # (#seq-source-link) is untouched.
 diff --git a/index.html b/index.html
-index e4c1bf6..30a216a 100644
 --- a/index.html
 +++ b/index.html
 @@ -6680,7 +6680,8 @@ function render() {
