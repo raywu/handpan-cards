@@ -1,13 +1,14 @@
 # kills: #next and ArrowRight on a flipped card deal without a reverse-flip transition
 # suite: node --test --test-name-pattern ^card.swipe:.#next.and.ArrowRight.on.a.flipped.card.deal.without.a.reverse-flip.transition$ tests/e2e.test.js
-# N40: drops step()'s transition:none/forced-reflow/transition:"" dance, the
-# same shared code sw_flip_reset_animates targets via land()'s call - but here
-# reached through #next/ArrowRight instead of the swipe's own fly-out landing.
-# Before N40 this path had no suppression at all: #next/ArrowRight on a
-# flipped card would reverse-flip-animate while dealing in the next card,
-# showing its back face first. Kept as its own mutant (distinct from
-# sw_flip_reset_animates) because it is the button/arrow surface N40 added,
-# with its own dedicated test.
+# N40: drops step()'s transition:none/forced-reflow/transition:"" dance -
+# the same diff as the retired sw_flip_reset_animates.patch (2026-09-30: both
+# mutants targeted the identical hunk, so one was dropped as redundant). This
+# one is killed by BOTH E7 ("a flipped card keeps its back face during the
+# fly-out and the next card arrives front-up") and N40 ("#next and
+# ArrowRight on a flipped card deal without a reverse-flip transition") -
+# E7 reaches step() via the swipe's own fly-out landing, N40 via #next/
+# ArrowRight - so this file's `# kills:`/`# suite:` above name only the N40
+# path; E7 kills it too but is not re-listed here.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

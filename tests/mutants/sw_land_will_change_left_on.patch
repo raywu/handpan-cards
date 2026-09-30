@@ -1,0 +1,18 @@
+# kills: card swipe: a commit flies the card out, then steps and deals the next card in from the opposite side
+# suite: node --test --test-name-pattern ^card.swipe:.a.commit.flies.the.card.out,.then.steps.and.deals.the.next.card.in.from.the.opposite.side$ tests/e2e.test.js
+# Q12: drops the `scene.style.willChange = "";` reset in land(), leaving the
+# will-change hint pinned from the fly-out through the deal-in animation and
+# beyond - a real browser promotes and keeps that layer, which is the kind of
+# leak this reset exists to close.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8065,7 +8065,6 @@ function land() {
+   const f = flight;
+   flight = null;
+   f.anim.cancel();
+   step(f.dir);
+-  scene.style.willChange = "";
+   if (reducedMotion.matches) { swipeRest(); return; }
+   scene.animate(
+     [{ transform: `translate3d(${f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },

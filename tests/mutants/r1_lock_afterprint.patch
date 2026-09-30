@@ -1,0 +1,17 @@
+# kills: the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller
+# suite: node --test --test-name-pattern ^the.legacy.print.sheet.is.gone. tests/app.test.js
+# Q2: re-introduces an `addEventListener("afterprint", ...)` call in code (not
+# a comment), the browser-print-dialog wiring the R1 retirement removed. Guards
+# that the lock test's code-shaped regex, not just the old narrower forms,
+# still catches a real reintroduction.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6546,6 +6546,7 @@ function pdfFilename(d, variant, paper) {
+ }
+
+ function downloadDeckPDF(variant, btn) {
++  if (false) { window.addEventListener("afterprint", () => {}); }
+   const d = deck();
+   // One function, one decision: a built-in deck's print overlay lives under
+   // `print` in data/decks.json (carried into `const DECKS` above); a

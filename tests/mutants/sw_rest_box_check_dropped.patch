@@ -5,15 +5,18 @@
 # touch at the card's rest spot hit-tests to some ancestor (e.g. <main>), not
 # #card - the tap is no longer recognised as "inside", so eatClick stays false
 # and the follow-up click flips the card that just landed.
+# Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
+# this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
+# swipe functions down); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8151,7 +8151,7 @@ document.addEventListener("pointerdown", e => {
+@@ -8166,7 +8166,7 @@
      const r = flight.rect;
      const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
        e.clientY >= r.top && e.clientY <= r.bottom;
 -    const inside = inRestBox || card.contains(e.target);
 +    const inside = card.contains(e.target);
-     eatClick = inside;
-     land();
-     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+     // Q11: a right-button press (button 2) must not arm eatClick - a
+     // contextmenu/auxclick follows it, never a "click", so a later Enter on
+     // a focused control would otherwise have its own click eaten.

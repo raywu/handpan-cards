@@ -6,14 +6,19 @@
 # Context-refreshed 2026-09-29 (R1): the mutated line is unchanged; the print
 # block's comment header below it was reworded when the legacy print-sheet
 # CSS was deleted, moving this from :731 to :858.
+# Context-refreshed 2026-09-30 (N2): the Q3 stale-comment fix reworded the
+# print-block header comment again (it no longer opens with "This block is
+# deliberately LAST in the <style> element. It redefines"), so the hunk's
+# trailing context line and line number were updated to match; the mutated
+# line itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -858,7 +858,6 @@
+@@ -930,7 +930,6 @@
     the file - so without this the armed button is the only control on the page
     that does not answer a press. Confirming a delete is the press that most
     needs the acknowledgement. */
 -#scale-delete[data-armed]:active{color:#eae6df}
 
  /* ---- print (R1, 2026-09-29) -----------------------------------------------
-    This block is deliberately LAST in the <style> element. It redefines
+    Forces print colour adjustment, clears the page background and padding for

@@ -7864,7 +7864,12 @@ function run() {
       await expectCount(`2 / ${n}`, "a fast 15px fling should commit");
 
       await freshLoad();
-      await b.drag("#card", [[-8, 300], [-15, 600]]);
+      // The trailing 100ms window (500-600ms) must itself read as moving but
+      // under the fling threshold (~0.05 px/ms here) - a window with zero
+      // trailing velocity (e.g. a last leg with no intermediate point) would
+      // pass for the wrong reason: "not fast enough" versus "not moving at
+      // all" are different guards, and this drag is testing the former.
+      await b.drag("#card", [[-8, 300], [-11, 520], [-15, 600]]);
       await b.finishAnimations();
       await expectCount(`1 / ${n}`, "a slow 15px drag should not commit");
 
@@ -7899,6 +7904,30 @@ function run() {
       assert.strictEqual(await cardFlipped(), false, "a plain mouse click must flip it back");
     });
 
+    test("card swipe: a jitter hop below the slop radius clears with no spring-back animation", async () => {
+      await freshLoad();
+      // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so a spy on scene.animate
+      // (not a getAnimations().length read right after pointerup, which
+      // races the 260ms spring-back and could pass on the unfixed code under
+      // a slow CI frame) is the only reliable way to prove no animation ever
+      // started.
+      await b.eval(`
+        window.__animateCalls = 0;
+        const scene = document.querySelector(".scene");
+        const orig = scene.animate.bind(scene);
+        scene.animate = (...args) => { window.__animateCalls++; return orig(...args); };
+        return true;
+      `);
+      const g = await startDrag("#card");
+      await g.release(6, 50);
+      const calls = await b.eval(`return window.__animateCalls;`);
+      assert.strictEqual(calls, 0, "a real touch drag below the slop radius must not start any animation");
+      const xf = await sceneXform();
+      assert.strictEqual(xf.none, true, ".scene transform must be cleared immediately, not animated back");
+      assert.strictEqual(await cardFlipped(), true,
+        "the tap-sized touch must still flip the card, via #card's own click listener");
+    });
+
     test("card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
@@ -7914,6 +7943,68 @@ function run() {
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "a short slow mouse drag must spring back, not navigate");
       assert.strictEqual(await cardFlipped(), false, "a spring-back must not flip");
+    });
+
+    test("card swipe: a right-click at the rest position during the fly-out does not eat the next click", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+      await b.eval(`
+        const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
+        a.pause();
+        a.currentTime = 150;
+        return true;
+      `);
+      const rest = await b.eval(`
+        const r = flight.rect;
+        return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 };
+      `);
+      // Q11: a CDP right-button press gives pointerdown with button 2 plus
+      // contextmenu, and no "click" ever fires for it. The capture handler's
+      // pointerdown still lands the pending flight (any button does), so
+      // this also advances the count by one - that landing, not a bug, is
+      // why the assertion below expects landing index + 1 for the Enter step.
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: rest.x, y: rest.y, button: "right", clickCount: 1 });
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: rest.x, y: rest.y, button: "right", clickCount: 1 });
+      await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${n}"`,
+        { label: "the right-click to land the flight" });
+      // Not a mouse click on #next: a real click there fires its own
+      // pointerdown first, and that pointerdown's capture handler resets
+      // eatClick from #next's own target (outside the card/rest box, so
+      // "inside" is false there regardless of this guard) before the click
+      // event itself ever fires - so a mouse click on #next can't tell a
+      // stuck eatClick apart from one that was never stuck (confirmed
+      // empirically: it passes with the `sw_eatclick_any_button` mutant
+      // applied too). A keyboard Enter was tried too and also can't
+      // discriminate - this CDP harness's raw key dispatch never
+      // synthesizes a button's native Enter-activates-click behaviour, even
+      // on a freshly focused #next with no prior interaction at all.
+      // A programmatic .click() is the one action that reaches the
+      // document's capture click listener with no pointerdown of its own
+      // (the same technique the "no-flight capture branch" test below uses
+      // as its positive control), so it sees eatClick exactly as the
+      // right-click left it.
+      await b.eval(`document.getElementById("next").click(); return true;`);
+      await expectCount(`3 / ${n}`, "a later click must still step, unmasked by the right-click");
+    });
+
+    test("card swipe: the no-flight capture branch resets eatClick on every real pointerdown", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // Positive control: writing eatClick = true through b.eval, then a
+      // PROGRAMMATIC .click() (which fires no pointerdown of its own, so the
+      // capture handler's reset never runs), proves the eval reaches the
+      // live top-level binding: the click must be eaten and #next must not step.
+      await b.eval(`eatClick = true; return true;`);
+      await b.eval(`document.getElementById("next").click(); return true;`);
+      await expectCount(`1 / ${n}`, "a stale eatClick=true must still eat a programmatic click");
+
+      // Q12: set eatClick = true again, then a REAL click (mousedown +
+      // mouseup -> a genuine pointerdown reaches the no-flight capture
+      // branch first and resets eatClick to false before the click fires).
+      await b.eval(`eatClick = true; return true;`);
+      await b.click("#next");
+      await expectCount(`2 / ${n}`, "a real pointerdown must reset eatClick before its own click fires");
     });
 
     test("card swipe: a flipped card keeps its back face during the fly-out and the next card arrives front-up", async () => {
@@ -8071,8 +8162,15 @@ function run() {
 
       const g = await startDrag("#card");
       await g.move(-120, 100);
-      // Mid-drag open: setting panelOpen directly is the same observable the
-      // real openPanel() produces by the time release() reads it (M6).
+      // Q10: tried a real openPanel() call here instead of the direct
+      // panelOpen assignment. At this 900x900 viewport openPanel() is off
+      // the desktopMQ, so it inerts panelBackground, which includes <main> -
+      // and measured against sw_panel_guard_dropped, an inert ancestor
+      // silently swallows every further pointer event to #card, captured or
+      // not: the test's own g.release() touch never reaches release(), so
+      // count stays unchanged under BOTH the fixed code and the mutant - the
+      // rewrite cannot discriminate the guard at all. The direct assignment
+      // is kept for that reason (M6).
       await b.eval(`panelOpen = true; return true;`);
       await g.release(-120, 200);
       await b.finishAnimations();
@@ -8095,8 +8193,17 @@ function run() {
       // fresh physical touch there never reaches #card at all - the guard
       // above is only exercised by coincidence of that occlusion. Open the
       // sheet mid-drag instead (pointer capture routes the released touch to
-      // #card regardless of what now covers it), mirroring the settings-panel
-      // mid-drag case (M6).
+      // #card regardless of what now covers it).
+      //
+      // Q10: tried a real showSheet() call here too. showSheet()'s own
+      // `background` array also includes <main>, so it inerts the same
+      // ancestor openPanel() does - and the identical finding applies
+      // (measured against sw_sheet_guard_dropped): an inert ancestor
+      // swallows every further pointer event to #card regardless of pointer
+      // capture, so the test's own g.release() touch never reaches
+      // release() under either the fixed code or the mutant. The rewrite
+      // can't discriminate the guard, so the direct assignment is kept
+      // (M6).
       await b.eval(`hideSheet(); return true;`);
       const g = await startDrag("#card");
       await g.move(-120, 100);
@@ -8322,6 +8429,60 @@ function run() {
       await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     });
 
+    test("card swipe: a mouse button released off-window during a drag is recognised and releases it", async () => {
+      await freshLoad();
+      const box = await b.eval(`
+        const r = document.getElementById("card").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      // Q15: a mouse button released outside the browser window (or a native
+      // context menu opened over it) delivers no pointerup/lostpointercapture
+      // at all - the OS eats it - and the drag stays live, following the
+      // pointer forever. A CDP mouseMoved with buttons: 0 after a left
+      // mousePressed arrives as a real pointermove with buttons === 0, which
+      // is the only signal available.
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
+      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + 60, y: box.y, buttons: 0 });
+      const dragState = await b.eval(`return drag;`);
+      assert.strictEqual(dragState, null, "a pointermove with no buttons held must release a live mouse drag");
+      await b.finishAnimations();
+      const xf = await b.eval(`return getComputedStyle(document.querySelector(".scene")).transform;`);
+      assert.strictEqual(xf, "none", "the scene must settle with no inline transform");
+      // End the press for real (both to leave no stuck button state for later
+      // tests, and because this mouseup - same target throughout, since
+      // pointer capture kept routing to #card - is itself a genuine click:
+      // an extra explicit b.click() here would be a SECOND click, toggling
+      // the flip right back and hiding a real eatClick-stuck failure behind
+      // an even number of flips).
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x + 60, y: box.y, button: "left", clickCount: 1 });
+      assert.strictEqual(await cardFlipped(), true, "the release's own click must still flip the card, proving eatClick was not left stuck");
+    });
+
+    test("card swipe: a synthetic contextmenu on #card releases a live drag", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startDrag("#card");
+      await g.move(60, 0);
+      // Q15: ctrl+click also fires contextmenu, but only on macOS, so it is
+      // not portable to Linux CI - a synthetic dispatch reaches the listener
+      // just the same while the drag is live.
+      await b.eval(`
+        document.getElementById("card").dispatchEvent(
+          new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+        return true;
+      `);
+      const dragState = await b.eval(`return drag;`);
+      assert.strictEqual(dragState, null, "a contextmenu during a live drag must release it");
+      await b.finishAnimations();
+      const xf = await sceneXform();
+      assert.strictEqual(xf.none, true, ".scene transform must settle to none after the contextmenu release");
+      await expectCount(`1 / ${n}`, "a contextmenu release must not step the deck");
+      // The contextmenu dispatch above is a synthetic event on the app's own
+      // element, not a CDP touch release, so Chrome's input pipeline still
+      // considers touch id 1 down; end it for real.
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    });
+
     test("card swipe: a second pointer cannot end or hijack a drag in progress", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
@@ -8336,6 +8497,8 @@ function run() {
       // if ever allowed through, ends the drag as a spring-back, not a
       // commit - silently swallowing the real gesture's own eventual release
       // rather than producing a same-looking commit that would mask it.
+      // -15 (not -17) was avoided here: Chromium's synthetic-touch slop
+      // delays the resulting pointermove past the point this test reads it.
       await g.move(-17, 300);
       await b.eval(`
         const card = document.getElementById("card");
@@ -8365,29 +8528,37 @@ function run() {
       // between never register as a transition-eligible change at all in this
       // headless harness, baseline or mutant alike - a bare back-to-back
       // b.click("#card") -> b.click("#next") proves nothing either way.
-      // A short real-time wait after the reset (not an immediate read, which
-      // always reads back as already-settled) is what actually distinguishes
-      // an instant reset from an animated one: long enough for a real
-      // transition to register as a running CSSTransition, nowhere near long
-      // enough (450ms total) for it to finish.
-      const shortWait = () => new Promise((r) => setTimeout(r, 100));
-      await b.click("#card");
-      await b.settle();
-      assert.strictEqual(await cardFlipped(), true);
-      await b.click("#next");
-      assert.strictEqual(await cardFlipped(), false, "#next must reset the flip");
-      await shortWait();
-      let cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
-      assert.strictEqual(cardAnims, 0, "#next must not animate the reverse-flip");
+      // A `transitionrun` listener, armed before the reset and read back
+      // after two real animation frames, is what distinguishes an instant
+      // reset from an animated one: the event fires the frame a transition
+      // is scheduled (no fixed real-time wait, and nothing to race against
+      // the .45s duration - if it hasn't fired within two frames it never
+      // will for this reset).
+      const armTransitionRun = () => b.eval(`
+        window.__transitionRuns = 0;
+        document.getElementById("card").addEventListener("transitionrun", () => { window.__transitionRuns++; });
+        return true;
+      `);
+      const twoFrames = () => b.eval(`return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));`);
+      const transitionRuns = () => b.eval(`return window.__transitionRuns;`);
 
       await b.click("#card");
       await b.settle();
       assert.strictEqual(await cardFlipped(), true);
+      await armTransitionRun();
+      await b.click("#next");
+      assert.strictEqual(await cardFlipped(), false, "#next must reset the flip");
+      await twoFrames();
+      assert.strictEqual(await transitionRuns(), 0, "#next must not animate the reverse-flip");
+
+      await b.click("#card");
+      await b.settle();
+      assert.strictEqual(await cardFlipped(), true);
+      await armTransitionRun();
       await b.key("ArrowRight", "ArrowRight", 39);
       assert.strictEqual(await cardFlipped(), false, "ArrowRight must reset the flip");
-      await shortWait();
-      cardAnims = await b.eval(`return document.getElementById("card").getAnimations().filter(a => a instanceof CSSTransition).length;`);
-      assert.strictEqual(cardAnims, 0, "ArrowRight must not animate the reverse-flip");
+      await twoFrames();
+      assert.strictEqual(await transitionRuns(), 0, "ArrowRight must not animate the reverse-flip");
     });
   });
 

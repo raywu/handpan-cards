@@ -1,0 +1,18 @@
+# kills: card swipe: a second real swipe from the REST position during flight is not dropped
+# suite: node --test --test-name-pattern ^card.swipe:.a.second.real.swipe.from.the.REST.position.during.flight.is.not.dropped$ tests/e2e.test.js
+# Q12: drops `main{touch-action:pan-y pinch-zoom}`, leaving `main` free to
+# start its own native horizontal pan/scroll gesture under a real touch drag
+# that starts over it (the REST position, mid-flight, hit-tests to `main` -
+# see the comment above the pointerdown listener). `.scene`'s own rule alone
+# no longer suffices once the ancestor has none.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -422,7 +422,6 @@
+    touchstart listener was tried and it regressed an unrelated held-drag test
+    by changing Chrome's scroll-blocking heuristics for every ordinary touch,
+    even when the listener itself did nothing. */
+-main{touch-action:pan-y pinch-zoom}
+ .scene{touch-action:pan-y pinch-zoom}
+ main{overflow-x:clip}
+ /* The card is sized from whichever axis runs out first.

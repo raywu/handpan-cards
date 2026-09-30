@@ -3,12 +3,15 @@
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,
 # even when prefers-reduced-motion is set.
+# Context-refreshed 2026-09-30 (N2): hunk line numbers/context updated for
+# this workstream's index.html edits (Q9/Q11/Q12/Q15 additions shifted the
+# swipe functions down); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8081,11 +8081,6 @@ function release(e, cancelled) {
-   const dir = blocked ? 0 : swipeDecision(dx, vx);
-   drag = null;
+@@ -8100,11 +8100,6 @@
+   // is not set below).
+   if (!dir && !moved) { scene.style.transform = ""; swipeRest(); return; }
    if (moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
 -  if (reducedMotion.matches) {
 -    scene.style.transform = ""; scene.style.willChange = "";
