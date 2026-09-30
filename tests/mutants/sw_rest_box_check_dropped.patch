@@ -1,0 +1,19 @@
+# kills: card swipe: a real touch tap at the card's REST position during flight lands it and must not flip
+# suite: node --test --test-name-pattern ^card.swipe:.a.real.touch.tap.at.the.card.s.REST.position.during.flight.lands.it.and.must.not.flip$ tests/e2e.test.js
+# Drops the rest-box check and falls back to the original card.contains(e.target)
+# test: mid-flight, .scene has moved away from its resting position, so a real
+# touch at the card's rest spot hit-tests to some ancestor (e.g. <main>), not
+# #card - the tap is no longer recognised as "inside", so eatClick stays false
+# and the follow-up click flips the card that just landed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8151,7 +8151,7 @@ document.addEventListener("pointerdown", e => {
+     const r = flight.rect;
+     const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
+       e.clientY >= r.top && e.clientY <= r.bottom;
+-    const inside = inRestBox || card.contains(e.target);
++    const inside = card.contains(e.target);
+     eatClick = inside;
+     land();
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {

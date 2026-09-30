@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8059,7 +8059,7 @@ function land() {
-   step(f.dir);
+@@ -8062,7 +8062,7 @@ function land() {
+   scene.style.willChange = "";
    if (reducedMotion.matches) { swipeRest(); return; }
    scene.animate(
 -    [{ transform: `translate3d(${f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },

@@ -7837,6 +7837,8 @@ function run() {
       assert.strictEqual(await sceneAnimCount(), 0);
       const settled = await sceneXform();
       assert.strictEqual(settled.none, true);
+      assert.strictEqual(await sceneStyle().then((s) => s.willChange), "",
+        "willChange must be cleared once a committed swipe lands, not only on a spring-back");
     });
 
     test("card swipe: a short fast fling commits and a slow drag of the same length does not", async () => {
@@ -7972,6 +7974,72 @@ function run() {
       assert.strictEqual(await countText(), `7 / ${n}`, "a programmatic .click() during flight should land then step");
       await b.finishAnimations();
       assert.strictEqual(await countText(), `7 / ${n}`, "finishing leftover animations must not add another step");
+    });
+
+    test("card swipe: a real touch tap at the card's REST position during flight lands it and must not flip", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.setViewport(380, 800, true);
+      await b.settle();
+      try {
+        // .scene carries the fly-out transform, so #card's OWN rect moves
+        // with it mid-flight - capture the rest position before dragging.
+        const rest = await b.eval(`
+          const r = document.getElementById("card").getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        `);
+        await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+        await b.eval(`
+          const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
+          a.pause();
+          a.currentTime = 150;
+          return true;
+        `);
+        // A real touch at the REST centre: mid-flight the card has visually
+        // moved away, so this point hit-tests to some other element, not
+        // #card - unlike a synthetic pointerdown dispatched on #card itself.
+        await b.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [{ x: rest.x, y: rest.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }],
+        });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        assert.strictEqual(await countText(), `2 / ${n}`, "a real tap at the rest position during flight should land it");
+        assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the new card");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("card swipe: a second real swipe from the REST position during flight is not dropped", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.setViewport(380, 800, true);
+      await b.settle();
+      try {
+        const rest = await b.eval(`
+          const r = document.getElementById("card").getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        `);
+        await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
+        await b.eval(`
+          const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
+          a.pause();
+          a.currentTime = 150;
+          return true;
+        `);
+        const t0 = Date.now() / 1000;
+        const pt = (dx) => [{ x: rest.x + dx, y: rest.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0), timestamp: t0 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(-40), timestamp: t0 + 0.1 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(-80), timestamp: t0 + 0.2 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(-120), timestamp: t0 + 0.3 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.3 });
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `3 / ${n}`,
+          "a second real swipe starting at the rest position during flight must not be dropped");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
     });
 
     test("card swipe: a drag with the settings panel open, or opened mid-drag, does nothing", async () => {

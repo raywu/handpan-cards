@@ -8057,6 +8057,7 @@ function land() {
   flight = null;
   f.anim.cancel();
   step(f.dir);
+  scene.style.willChange = "";
   if (reducedMotion.matches) { swipeRest(); return; }
   scene.animate(
     [{ transform: `translate3d(${f.dir * SWIPE_IN_PX}px,0,0)`, opacity: 0 },
@@ -8095,12 +8096,13 @@ function release(e, cancelled) {
     return;
   }
   const dist = window.innerWidth / 2 + scene.offsetWidth;
+  const rect = card.getBoundingClientRect();
   const anim = scene.animate(
     [{ transform: swipeXf(dx) },
      { transform: `translate3d(${-dir * dist}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
     { duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE, fill: "forwards" },
   );
-  flight = { dir, anim };
+  flight = { dir, anim, rect };
   anim.finished.then(() => { if (flight && flight.anim === anim) land(); }, () => {});
 }
 function swipeMove(e) {
@@ -8128,9 +8130,42 @@ card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) r
 card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
 card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
 // Capture phase: land a pending fly-out before any other input reaches the app.
+// Mid-flight, .scene has moved away from its resting position, so a real
+// pointerdown at the card's rest spot hit-tests to some ancestor (e.g.
+// <main>), not #card - card.contains(e.target) would miss it. Test against
+// the resting rect captured when the flight started instead.
+// A touch landing outside #card/.scene inherits ITS hit target's touch-action
+// (often unrestricted), so without this the browser's own gesture recognizer
+// can claim a horizontal move as a native scroll before pointerdown's own
+// preventDefault has any effect, cancelling the pointer sequence below.
+// touchstart fires AFTER pointerdown for the same contact, so it reads the
+// eatClick decision the pointerdown handler below just made, rather than
+// re-deriving it from `flight` (already cleared there by land()).
+document.addEventListener("touchstart", e => {
+  if (eatClick && e.touches.length === 1) e.preventDefault();
+}, { capture: true, passive: false });
 document.addEventListener("pointerdown", e => {
-  eatClick = !!flight && card.contains(e.target);
-  land();
+  if (flight) {
+    const r = flight.rect;
+    const inRestBox = e.clientX >= r.left && e.clientX <= r.right &&
+      e.clientY >= r.top && e.clientY <= r.bottom;
+    const inside = inRestBox || card.contains(e.target);
+    eatClick = inside;
+    land();
+    if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+      // The touch landed outside #card/.scene, so its touch-action comes
+      // from whatever it actually hit (often unrestricted) - without this,
+      // the browser can claim the gesture as a native scroll and fire
+      // pointercancel once the move crosses its own threshold.
+      e.preventDefault();
+      scene.getAnimations().forEach(a => a.cancel());
+      drag = { id: e.pointerId, x0: e.clientX, last: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+      card.setPointerCapture(e.pointerId);
+    }
+  } else {
+    eatClick = false;
+    land();
+  }
 }, true);
 document.addEventListener("keydown", () => { land(); }, true);
 document.addEventListener("click", e => {
