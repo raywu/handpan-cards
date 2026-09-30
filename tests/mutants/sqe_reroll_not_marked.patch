@@ -1,0 +1,16 @@
+# kills: the re-roll control reads as a button in mode S and reverts outside it
+# suite: node --test --test-name-pattern ^the.re-roll.control.reads.as.a.button.in.mode.S.and.reverts.outside.it$ tests/app.test.js
+# setMode("S") no longer adds .reroll to #shuffle, so "New progression" keeps
+# the bare caption styling of the Shuffle toggle and reads as a label, not a
+# button - the owner's 2026-09-29 report that there was no way to re-roll.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8206,7 +8206,6 @@ function setMode(m) {
+   if (m === "S") {
+     shuffleBtn.textContent = "New progression";
+     shuffleBtn.classList.remove("on");
+-    shuffleBtn.classList.add("reroll");
+   } else {
+     shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+     shuffleBtn.classList.toggle("on", shuffled);
