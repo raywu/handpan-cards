@@ -1172,7 +1172,7 @@ button.nav:active{background:#2e281e}
     <h3 class="panel-heading">Print this deck</h3>
     <div class="prints" onclick="event.stopPropagation()">
       <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
-      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">PRINT-ONLY PDF</button>
+      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
       <!-- The paper choice keeps the panel open (design direction, "After an
            action"): the next tap is a print button, not a new task. -->
       <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">

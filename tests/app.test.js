@@ -4136,7 +4136,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   customDeck(app);
   const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
   for (const html of [builtin, custom]) {
-    for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+    for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
       assert.ok(!html.includes(label), `the card header must not carry "${label}" any more`);
     }
     assert.ok(!html.includes("<button"), "the card header must carry no buttons");
@@ -4144,7 +4144,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
-  for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+  for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
   // One-pdf-path plan: every deck builds its PDF client-side - one panel, one

@@ -72,7 +72,7 @@ decisions behind it.
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
 - **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
-  PRINT-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
+  CHORD-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
   the scale engine's PDF modules (`HPE.pdfdeck` adapts the deck, `HPE.pdfcards`
   draws it - a separate renderer from the one the flip cards use), so a

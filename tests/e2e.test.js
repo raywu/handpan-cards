@@ -797,7 +797,7 @@ function run() {
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
       assert.strictEqual(m.buttons, 2, `deck ${id}: expected exactly 2 buttons, found ${m.buttons}`);
       assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
-      assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "PRINT-ONLY PDF"], `deck ${id}`);
+      assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "CHORD-ONLY PDF"], `deck ${id}`);
     }
 
     // And a generated deck gets the identical row - it is the same element.
@@ -6695,12 +6695,12 @@ function run() {
       }
     });
 
-    test("the sidebar's FULL DECK and PRINT-ONLY buttons produce a PDF blob", async () => {
+    test("the sidebar's FULL DECK and CHORD-ONLY buttons produce a PDF blob", async () => {
       await freshLoad();
       try {
         await b.setViewport(1280, 800, false);
         await b.settle();
-        for (const label of ["FULL DECK PDF", "PRINT-ONLY PDF"]) {
+        for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
           const cap = await b.eval(`
             return (async () => {
               const real = URL.createObjectURL;
