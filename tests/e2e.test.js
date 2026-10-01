@@ -7807,6 +7807,12 @@ function run() {
         },
         async release(dx, ms, dy) {
           await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(dx, dy), timestamp: t0 + ms / 1000 });
+          // Armed (and awaited) before touchEnd, not after: a real touchend's
+          // lostpointercapture can fire before an eval sent only after the
+          // dispatch would get around to attaching the listener, which would
+          // miss it and degrade every settle below to its full timeout. See
+          // endMouseDragForReal and cdp.js's armPendingSettle.
+          await b.armPendingSettle();
           await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
           // See b.settleAfterRealRelease / endMouseDragForReal: a real
           // touchend's lostpointercapture fires asynchronously and can land
@@ -9047,6 +9053,46 @@ function run() {
         assert.strictEqual(xf.none, true, "the transform must be cleared once the gesture ends");
         const style = await sceneStyle();
         assert.strictEqual(style.willChange, "", "willChange must be cleared once the gesture ends");
+      });
+
+      test("card swipe (wheel): deltaX>0 follows with a negative translateX mid-gesture", async () => {
+        await freshLoad();
+        await wheelAt(20, 0);
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, false, "a wheel event under threshold must apply a follow transform");
+        assert.ok(xf.m41 < 0, `deltaX>0 (sx>0) must move the card to translateX<0, got ${xf.m41}`);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+      });
+
+      test("card swipe (wheel): a sub-threshold gesture's spring-back starts exactly where the follow transform left off", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[20, 0], [20, 0]]);
+        const follow = await sceneXform();
+        assert.strictEqual(follow.none, false, "a sub-threshold gesture must leave a follow transform in place");
+        const followDeg = Math.atan2(follow.b, follow.a) * 180 / Math.PI;
+        // Wait past WHEEL_GESTURE_GAP_MS (160ms) so wheelGestureEnd() fires
+        // and springBack()'s WAAPI animation is created - read its keyframes
+        // statically (safe regardless of playback progress, same pattern as
+        // the fly-out/enter keyframe reads above).
+        await new Promise((r) => setTimeout(r, 250));
+        const first = await b.eval(`
+          const a = document.querySelector(".scene").getAnimations()[0];
+          const kf = a.effect.getKeyframes();
+          const m = kf[0].transform.match(/translate3d\\(([-\\d.]+)px[^)]*\\)\\s*rotate\\(([-\\d.]+)deg\\)/);
+          return { x: parseFloat(m[1]), deg: parseFloat(m[2]) };
+        `);
+        assert.ok(
+          Math.abs(first.x - follow.m41) < 0.5,
+          `spring-back's first keyframe translateX (${first.x}) must match the follow transform it left off at (${follow.m41})`,
+        );
+        assert.ok(
+          Math.abs(first.deg - followDeg) < 0.5,
+          `spring-back's first keyframe rotate (${first.deg}) must match the follow transform's rotate (${followDeg})`,
+        );
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`);
       });
 
       test("card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed", async () => {

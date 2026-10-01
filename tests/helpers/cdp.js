@@ -260,6 +260,7 @@ class Browser {
         await this.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dx, dy), timestamp: t0 + ms / 1000 });
       }
       if (release) {
+        await this.armPendingSettle();
         await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 });
         this.settleAfterRealRelease();
       }
@@ -272,6 +273,7 @@ class Browser {
       }
       if (release) {
         const p = at(last[0], last[2]);
+        await this.armPendingSettle();
         await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 });
         this.settleAfterRealRelease();
       }
@@ -294,17 +296,25 @@ class Browser {
   // NEXT real press this browser makes (drag(), or a test-local press that
   // calls waitForPendingSettle() first) - that is the only place the actual
   // race (a stale lostpointercapture landing on a fresh capture) can bite.
-  settleAfterRealRelease() {
-    this._pendingSettle = this.deferPendingSettle();
-    return this._pendingSettle;
-  }
-  async deferPendingSettle() {
+  // Arms the lostpointercapture listener. Must be called (and awaited)
+  // BEFORE the real touchend/mouseup is dispatched, or the trusted event -
+  // which can fire before this function would otherwise get around to
+  // attaching the listener - is missed entirely and every settle below
+  // degrades to its full timeout. See endMouseDragForReal (tests/e2e.test.js)
+  // for the same pattern.
+  async armPendingSettle() {
     await this.eval(`
       window.__cdpLpcSeen = false;
       const c = document.getElementById("card");
       if (c) c.addEventListener("lostpointercapture", () => { window.__cdpLpcSeen = true; }, { once: true });
       return true;
     `).catch(() => {});
+  }
+  settleAfterRealRelease() {
+    this._pendingSettle = this.deferPendingSettle();
+    return this._pendingSettle;
+  }
+  async deferPendingSettle() {
     await this.waitFor(`window.__cdpLpcSeen === true`, {
       label: "a real release's own lostpointercapture to fire",
       timeout: 1000,

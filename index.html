@@ -8244,7 +8244,11 @@ function wheelGestureEnd() {
   wheel = null;
   if (w.skip || w.fired) return;
   if (reducedMotion.matches) { swipeRest(); return; }
-  springBack(w.sx);
+  // The follow transform during the gesture is swipeXf(-w.sx) (see the
+  // listener below); springBack's own first keyframe is swipeXf(dx), so it
+  // must take -w.sx too, or the spring-back starts mirrored (opposite
+  // translateX and rotate) from where the card actually was.
+  springBack(-w.sx);
 }
 if (wheelMain) wheelMain.addEventListener("wheel", e => {
   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
