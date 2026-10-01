@@ -287,7 +287,7 @@ it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP
      - **Verify:** `python3 -m unittest tests.test_suite_health`
   2. B185-3. Raise the `core.test.js` floor from 42 to 49.
      - **Accept:** suite health passes at 49.
-     - **Verify:** `node --test --test-reporter=tap tests/core.test.js | grep '^# tests'` gives 49, and `python3 -m unittest tests.test_suite_health` passes.
+     - **Verify:** `node --test --test-reporter=tap tests/core.test.js | grep -x '# tests 49'` exits 0, and `python3 -m unittest tests.test_suite_health` passes.
   3. B185-4. Assert that the reason names the pitch class and contains no
      literal `<X>`. Confirm red by hand-breaking `voicing.js:51-54` locally,
      then revert.
@@ -323,11 +323,11 @@ it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP
   1. A188-2, then A188-1. Add an `app.test.js` case: after S then B, `#count`
      lacks `.seq` (red under a hand-dropped `remove`). Then hoist the shared
      counter tail once, and add `qa_count_seq_kept_in_b.patch`. The hoist
-     strands `e_boot_count.patch`: its removed line (`index.html:6774`)
+     strands `e_boot_count.patch`: its removed line (`index.html:6775`)
      appears twice today and changes indent once hoisted, so
      `refresh_mutants.py` cannot place it. Re-cut it by hand on the single
      hoisted line, keeping the mutation (`idx + 1` -> `idx`) and rewriting its
-     "mode-A copy" header.
+     "mode-A copy" header. The re-cut body must still be a genuine `git diff` hunk (tests/CONTRACT.md rule 4): regenerate it with `git diff` on a scratch edit rather than typing it, as commit 44467b6 did.
      - **Accept:** the card faces stay byte-identical, and `e_boot_count`
        applies and is killed by CI's mutation gate.
      - **Verify:** `node --test tests/app.test.js && node tools/regen_card_fixture.js --check`
@@ -337,12 +337,14 @@ it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP
      line uses `.` wildcards, not quotes. The first three are killed by
      existing e2e tests. `sw_eatclick_timer_not_cleared` has
      NO killer today: `e2e.test.js:8754` asserts only that the handle is null,
-     and `setEatClick` (`index.html:8160`) nulls it separately from
+     and `setEatClick` (`index.html:8161`) nulls it separately from
      `clearTimeout`. Add that mutant only after rebasing onto EH's step 5.
      - **Accept:** each applies, and CI's mutation gate kills each one.
      - **Verify:** `for p in tests/mutants/sw_{eatclick_decay_dropped,wheel_commit_threshold,mouse_decay_zero,eatclick_timer_not_cleared}.patch; do git apply --check $p; done`. Locally, kill one with a single `--test-name-pattern` e2e test. CI is the oracle.
   3. R186-2. Add `qr_res_wrong_href`, `qr_res_no_noopener` and
-     `qr_res_hidden_landscape`.
+     `qr_res_hidden_landscape`. Cut them on a Resources link other than the
+     TRAINING CARDS one (`index.html:1253-1254`), or step 6's rename strands
+     their removed line and `refresh_mutants.py` reports them UNFIXABLE.
      - **Accept / Verify:** as in step 2.
   4. Q31. Rewrite the header only: the click is eaten within the decay window.
      Q35. `git mv` to `sw_scene_touch_action_loosened.patch`, keeping the body
@@ -356,16 +358,20 @@ it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP
      - **Verify:** `python3 -m unittest tests.test_render_agreement && python3 tools/validate.py && ! grep -n "CLAUDE.md G5" index.html`
   6. R186-5 (owner). Test first: change the e2e Resources table's
      `res-trainingcards` label to `"HTC"` (red against main). Then change the
-     link text at `index.html:1254` to `HTC`, keeping its `aria-label`
-     ("Handpan Training Cards by Sven Kirchhofer") and `href` unchanged.
+     link text at `index.html:1254` to `HTC` and its `aria-label` to
+     "HTC, Handpan Training Cards by Sven Kirchhofer"; `href` unchanged. The
+     visible text must start the accessible name (WCAG 2.5.3 Label in Name),
+     so a voice-control user saying "click HTC" still hits the link
+     (auto-decision, 2026-10-01, from review 2 of #192).
      **Hand-edit `e_panel_moved_into_header.patch`.** `refresh_mutants.py`
      cannot fix it: the patch removes the whole Resources block (with
      `>TRAINING CARDS</a>` at patch:173) and re-adds it (patch:106), so once
      `index.html` reads HTC the tool reports UNFIXABLE and exits 1. Change
-     `TRAINING CARDS` to `HTC` on both the `-` line and the `+` line, then
+     `TRAINING CARDS` to `HTC`, and the aria-label as above, on both the `-`
+     line and the `+` line, then
      confirm with `git apply --check`. Also update the label named in the
      header comment of `qr_res_link_not_a_stop.patch`.
-     - **Accept:** the panel shows "HTC", the screen-reader name is unchanged,
+     - **Accept:** the panel shows "HTC", the accessible name starts with "HTC",
        and `e_panel_moved_into_header.patch` applies.
      - **Verify:** `node --test --test-name-pattern 'Resources' tests/e2e.test.js && git apply --check tests/mutants/e_panel_moved_into_header.patch && ! grep -n '>TRAINING CARDS<' index.html`
   7. Lane-final. Runs after step 6.
@@ -400,7 +406,7 @@ it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP
   4. Comments and dead code: E190-3 (`:8200,8246`), S1 (`:6976`), E190-4/S3
      (delete `withViewport` at `:239` and the comment at `:216-221`), and
      E190-6 (rename the parameter to `opts`).
-     - **Verify:** `! grep -nE "withViewport|rest of this test|e2e:1170" tests/e2e.test.js && ! grep -n "rest of$" tests/e2e.test.js && node --check tests/e2e.test.js`, then `python3 tools/refresh_mutants.py --check`. The second grep is needed because the phrase at `:8247-8248` wraps ("...into the rest of" / "this test").
+     - **Verify:** `! grep -nE "withViewport|rest of this test|e2e:1170|into the rest of$" tests/e2e.test.js && node --check tests/e2e.test.js`, then `python3 tools/refresh_mutants.py --check`. The `into the rest of$` alternative is needed because the phrase at `:8246-8247` wraps ("...into the rest of" / "this test"); a bare `rest of$` also matches unrelated comments at `:310` and `:2773`.
   5. Killer for AP's `sw_eatclick_timer_not_cleared`. Add a test: release, then
      re-arm `eatClick` via a second release inside the first decay window, and
      wait past the FIRST decay. `eatClick` must still be armed. It passes on
@@ -532,7 +538,7 @@ Every task is folded into the lane steps above.
 | ID | Source | Finding | Answer |
 |---|---|---|---|
 | OV-1 | codex | Patches targeting lane-owned test files were unassigned; the `qb_core` and `c_deck_data_drift` exceptions were unstated | A) Apply (auto, recommended) |
-| OV-2 | codex, verified | `sw_eatclick_timer_not_cleared` has no killer (`e2e.test.js:8754`, `index.html:8160`) | A) Apply: EH writes the killer, AP merges last (auto) |
+| OV-2 | codex, verified | `sw_eatclick_timer_not_cleared` has no killer (`e2e.test.js:8754`, `index.html:8161`) | A) Apply: EH writes the killer, AP merges last (auto) |
 | OV-3 | codex, verified | The `bare.blank` pattern already matches `mutation_harness.test.js:822` | A) Apply (auto) |
 | OV-4 | codex | The D180-7 e2e test was assigned to AP, which does not own `e2e.test.js` | A) Apply: split (auto) (superseded 2026-10-01: moved to lane SM) |
 | OV-5 | codex, verified | There is no current R186-3 off-by-one: `panelStops()` includes the trigger | A) Apply: re-word and re-tier (auto) |
