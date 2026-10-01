@@ -8643,12 +8643,20 @@ function run() {
         type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
       });
       const id = await b.eval(`return drag ? drag.id : null;`);
+      assert.ok(id !== null, "a real mouse press must start a drag");
       return {
         id, box, t0,
         async move(dx, ms, dy) {
           await b.send("Input.dispatchMouseEvent", {
             type: "mouseMoved", x: box.x + dx, y: box.y + (dy || 0), buttons: 1, timestamp: t0 + ms / 1000,
           });
+          // A stray trusted lostpointercapture left over from a previous
+          // test's cleanup can land between the press and this move and
+          // cancel the drag before it ever registers movement (drag.moved
+          // stays false, drag goes null) - wait for the move to actually be
+          // seen so a caller's later assertions fail with a clear signal
+          // here rather than a confusing one downstream.
+          await b.waitFor(`drag && drag.moved`, { label: "drag to register the move" });
         },
       };
     }
@@ -8664,6 +8672,39 @@ function run() {
           bubbles: true, cancelable: true,
         }, ${JSON.stringify(extra || {})})));
         return true;
+      `);
+    }
+    // Ends a real mouse press (one started via startMouseDrag, whose
+    // pointerdown called card.setPointerCapture) for real, then waits for
+    // Chrome's own trusted lostpointercapture that the real release
+    // triggers asynchronously - a synthetic lostpointercapture dispatched
+    // mid-test never releases this real capture, so the real one still
+    // fires on the real mouseup. If a test returns before it fires, it can
+    // land on the very next test's drag instead (same real-input pipeline,
+    // reused low pointer ids) and cancel it before its first move.
+    async function endMouseDragForReal(x, y) {
+      await b.eval(`
+        window.__lpcSeen = false;
+        document.getElementById("card").addEventListener("lostpointercapture", () => {
+          window.__lpcSeen = true;
+        }, { once: true });
+        return true;
+      `);
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+      await b.waitFor(`window.__lpcSeen === true`, {
+        label: "the real mouseup's own lostpointercapture to fire",
+        timeout: 1000,
+      }).catch(() => {});
+      // Seeing the event fire does not mean Chrome's internal capture
+      // bookkeeping for this pointerId has fully settled - reusing the
+      // same low pointerId for a brand new capture right away can
+      // spuriously re-fire a trusted lostpointercapture against it. Two
+      // real animation-frame round trips give the input pipeline a
+      // chance to drain before the next test's pointerdown.
+      await b.eval(`
+        return new Promise(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        });
       `);
     }
 
@@ -8686,6 +8727,10 @@ function run() {
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the real Chrome mouse-release order must still commit");
       assert.strictEqual(await cardFlipped(), false, "a committing drag must not flip the card");
+      // startMouseDrag's mousePressed never got a real release - end it for
+      // real (and wait out the resulting real lostpointercapture) so it
+      // cannot bleed into a later test's press.
+      await endMouseDragForReal(rx, ry);
     });
 
     test("card swipe: a touch lostpointercapture still cancels the drag, not a mouse-only release", async () => {
@@ -8709,8 +8754,39 @@ function run() {
       await b.finishAnimations();
       // Synthetic lpc on the app's own element does not end the real
       // underlying touch (id 1) as far as Chrome's input pipeline is
-      // concerned; end it for real or a later test's touchstart misbehaves.
+      // concerned, nor does it release the real pointer capture #card
+      // still holds (card.setPointerCapture on pointerdown) - end the
+      // touch for real or a later test's touchstart misbehaves.
+      await b.eval(`
+        window.__lpcSeen = false;
+        document.getElementById("card").addEventListener("lostpointercapture", () => {
+          window.__lpcSeen = true;
+        }, { once: true });
+        return true;
+      `);
       await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      // Ending a real, captured touch makes Chrome fire its OWN trusted
+      // lostpointercapture asynchronously - if this test returns before
+      // that fires, it can land on the very next test's drag instead
+      // (same pointerId, reused by CDP's touch dispatch), cancelling it
+      // before its first move. Wait for it here so it is consumed by
+      // this test's own (already-null) `drag`, not a later one's.
+      await b.waitFor(`window.__lpcSeen === true`, {
+        label: "the real touchend's own lostpointercapture to fire",
+        timeout: 1000,
+      });
+      // The real lostpointercapture firing does not guarantee Chrome's
+      // internal capture bookkeeping for the old (touch) pointerId has
+      // fully settled yet - reusing the same low pointerId for a brand
+      // new mouse capture immediately afterward can spuriously re-fire a
+      // trusted lostpointercapture against that new capture. Two real
+      // animation-frame round trips give the browser's input pipeline a
+      // chance to drain before the next test's pointerdown.
+      await b.eval(`
+        return new Promise(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        });
+      `);
     });
 
     test("card swipe: a mouse lostpointercapture with a button still held cancels the drag", async () => {
@@ -8727,9 +8803,10 @@ function run() {
       assert.strictEqual(await countText(), `1 / ${n}`, "lpc with a button still held must not commit");
       await b.finishAnimations();
       assert.strictEqual(await countText(), `1 / ${n}`, "settling after the spring-back must still not have stepped");
-      // Release the real underlying mouse button so it cannot bleed into a
-      // later test.
-      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: rx, y: ry, button: "left", clickCount: 1 });
+      // Release the real underlying mouse button (and wait out the real
+      // lostpointercapture that triggers) so it cannot bleed into a later
+      // test's drag.
+      await endMouseDragForReal(rx, ry);
     });
 
     test("card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips", async () => {
@@ -8760,6 +8837,11 @@ function run() {
         "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
       assert.strictEqual(await cardFlipped(), true, "a click well after the 400ms decay must flip");
+      // startMouseDrag's mousePressed never got a real release of its own
+      // (the commit above is driven by the synthetic lpc, and b.click()
+      // above presses and releases again at a fresh location) - send a
+      // final real release so a stuck button cannot bleed into a later test.
+      await endMouseDragForReal(rx, ry);
     });
 
     // Eng review item 3: every place that assigns eatClick must also cancel
@@ -8818,6 +8900,10 @@ function run() {
       assert.strictEqual(await countText(), `2 / ${n}`, "the committed drag should have landed exactly once");
       assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the newly-landed card");
       await b.finishAnimations();
+      // startMouseDrag's mousePressed never got a real release - end it for
+      // real (and wait out the resulting real lostpointercapture) so it
+      // cannot bleed into a later test's drag.
+      await endMouseDragForReal(rx, ry);
     });
 
     // Eng review item 1: on the lpc-as-release path the event's own point is
@@ -8893,7 +8979,7 @@ function run() {
       test("card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture", async () => {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
-        await wheelGesture([[-30, 0], [-30, 0], [-30, 0], [-30, 0]]);
+        await wheelGesture([[30, 0], [30, 0], [30, 0], [30, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "a trackpad swipe past 80px should advance once");
       });
@@ -8901,7 +8987,7 @@ function run() {
       test("card swipe (wheel): deltaX under 80px does nothing and leaves no transform", async () => {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
-        await wheelGesture([[-20, 0], [-20, 0]]);
+        await wheelGesture([[20, 0], [20, 0]]);
         await new Promise((r) => setTimeout(r, 250));
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
@@ -8934,7 +9020,7 @@ function run() {
       test("card swipe (wheel): ctrlKey (pinch-zoom) is ignored", async () => {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
-        await wheelAt(-100, 0, 2); // modifiers bit 2 = Ctrl
+        await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
         await new Promise((r) => setTimeout(r, 250));
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
@@ -8945,11 +9031,11 @@ function run() {
       test("card swipe (wheel): a second gesture after the 160ms gap advances again", async () => {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
-        await wheelGesture([[-50, 0], [-50, 0]]);
+        await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
         await new Promise((r) => setTimeout(r, 220)); // past the 160ms gesture gap
-        await wheelGesture([[-50, 0], [-50, 0]]);
+        await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
       });
@@ -8983,14 +9069,15 @@ function run() {
         // actually exercises the skip condition itself.
         await b.eval(`
           document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
-            bubbles: true, cancelable: true, deltaX: -50, deltaY: 0,
+            bubbles: true, cancelable: true, deltaX: 50, deltaY: 0,
           }));
           document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
-            bubbles: true, cancelable: true, deltaX: -50, deltaY: 0,
+            bubbles: true, cancelable: true, deltaX: 50, deltaY: 0,
           }));
           return true;
         `);
         await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
       });
 
@@ -9000,7 +9087,7 @@ function run() {
         // The committing leg crosses the threshold and starts the 220ms
         // fly-out; the deck count already reads the committed value even
         // though the card is still mid-flight.
-        await wheelAt(-100, 0);
+        await wheelAt(100, 0);
         // The deck count only updates at land(), which fires when the
         // 220ms fly-out finishes - polling expectCount here would wait out
         // that whole animation and land it for real before we ever get to
@@ -9018,8 +9105,8 @@ function run() {
         await new Promise((r) => setTimeout(r, 180));
         assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
           "the first gesture must have ended via its own gap timer while its flight is still mid-air");
-        await wheelAt(-100, 0);
-        await wheelAt(-20, 0);
+        await wheelAt(100, 0);
+        await wheelAt(20, 0);
         // A second, un-skipped gesture would call flyOut() again on the
         // same scene element while the first fly-out is still running:
         // flyOut's own finished-callback self-protection
@@ -9041,8 +9128,8 @@ function run() {
         // First event locks the gesture to the x axis (|dx|=50 > |dy|=5).
         // Later events in the SAME gesture report dy >> dx; the lock must
         // still treat the gesture as horizontal and keep committing on dx.
-        await wheelAt(-50, 5);
-        await wheelAt(-50, 200);
+        await wheelAt(50, 5);
+        await wheelAt(50, 200);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "an axis locked to x at gesture start must keep stepping off dx alone");
       });

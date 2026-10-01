@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8259,7 +8259,7 @@ wheelMain.addEventListener("wheel", e => {
+@@ -8264,7 +8264,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
    if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
    if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
    e.preventDefault();
 -  if (wheel.fired) return;
 +  if (!wheel.fired) return;
    wheel.sx += dx;
-   // wheel.sx plays the same role as a drag's own dx (the scene's own visual
-   // offset): negative -> next card, matching swipeDecision's dx < 0 -> dir 1.
+   // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
+   // next card, content follows the fingers (plan: docs/plans/2026-09-30-

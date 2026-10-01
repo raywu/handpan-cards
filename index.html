@@ -8266,17 +8266,18 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
   e.preventDefault();
   if (wheel.fired) return;
   wheel.sx += dx;
-  // wheel.sx plays the same role as a drag's own dx (the scene's own visual
-  // offset): negative -> next card, matching swipeDecision's dx < 0 -> dir 1.
+  // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
+  // next card, content follows the fingers (plan: docs/plans/2026-09-30-
+  // desktop-swipe.md). Before the threshold the card follows -sx.
   const effDx = wheel.sx;
   if (Math.abs(wheel.sx) > WHEEL_COMMIT_PX) {
     wheel.fired = true;
-    const dir = effDx < 0 ? 1 : -1;
+    const dir = effDx > 0 ? 1 : -1;
     if (reducedMotion.matches) step(dir);
-    else flyOut(dir, effDx);
+    else flyOut(dir, -effDx);
   } else if (!reducedMotion.matches) {
     scene.style.willChange = "transform";
-    scene.style.transform = swipeXf(effDx);
+    scene.style.transform = swipeXf(-effDx);
   }
 }, { passive: false });
 
