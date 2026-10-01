@@ -94,6 +94,11 @@ jobs:
   suite-health:
     name: suite health
     needs: [python-tests, js-tests]
+    # Must still run (and give a real verdict from whatever got uploaded) even
+    # when python-tests or js-tests failed - GitHub Actions skips a job by
+    # default when a `needs` job didn't succeed, which would otherwise hide
+    # suite-health's own verdict exactly when a red run makes it most useful.
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
