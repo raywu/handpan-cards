@@ -3,7 +3,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4877,8 +4877,7 @@ sheet.addEventListener("keydown", e => {
+@@ -7924,8 +7924,7 @@ sheet.addEventListener("keydown", e => {
                   editingId ? moveL : null, editingId ? moveR : null,
                   editingId ? resetBtn : null,
                   editingId ? degSel : null,
@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -                 editingId ? delBtn : null]
 +                 mirrorL, mirrorR, ...swatches.children, genBtn]
      .filter(el => el && !el.disabled);
-   const i = stops.indexOf(document.activeElement);
-   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+   cycleTabStops(stops, e);
+ });

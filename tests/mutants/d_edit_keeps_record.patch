@@ -3,8 +3,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2774,7 +2774,7 @@ function replaceScale(oldStr, seed) {
-   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+@@ -6223,7 +6223,7 @@ function replaceScale(oldStr, seed) {
+   const rec = scaleRecord(seed);
    const list = savedScales();
    const at = list.findIndex(r => r && r.s === oldStr);
 -  if (at < 0) { rememberScale(seed); return; }

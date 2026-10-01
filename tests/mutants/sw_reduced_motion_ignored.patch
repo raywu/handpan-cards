@@ -1,23 +1,28 @@
 # kills: card swipe: under reduced motion the swipe steps instantly with no animation
-# under reduced motion the swipe steps instantly with no animation
 # suite: node --test --test-name-pattern ^card.swipe:.under.reduced.motion.the.swipe.steps.instantly.with.no.animation$ tests/e2e.test.js
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,
 # even when prefers-reduced-motion is set.
-# Context-refreshed 2026-09-30 (S2, bounce 1): the eatClick line above it
-# regained the setTimeout(0) decay and a `!cancelled` guard (restoring base
-# semantics per reviewer) - the mutation itself (dropping the reduced-motion
-# early return) is unchanged.
-# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
+# Refreshed 2026-10-01 (lane A, quality-refactor finding 13): this branch now
+# calls the shared swipeRest() instead of re-implementing its
+# scene.style.transform/willChange reset inline, so the removed block is
+# shorter than before, but the mutation itself (dropping the whole
+# reduced-motion branch, including the `if (dir) step(dir); return;` that
+# makes the swipe commit instantly) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8171,11 +8171,6 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8237,16 +8237,6 @@ function release(e, cancelled, pushPoint = true) {
    // click can arrive a tick or more after this runs - touch/pen keep the
    // immediate decay, since their synthesized click (if any) follows at once.
    if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
 -  if (reducedMotion.matches) {
--    scene.style.transform = ""; scene.style.willChange = "";
+-    // Was its own scene.style.transform/willChange reset, byte-for-byte the
+-    // same as swipeRest() - re-implemented, not duplicated-by-reference, so a
+-    // future rest-state change here could drift from the other four sites
+-    // that already call swipeRest() (finding 13, quality-refactor plan
+-    // 2026-09-30).
+-    swipeRest();
 -    if (dir) step(dir);
 -    return;
 -  }

@@ -551,6 +551,30 @@ test("render() with an emptied order does not throw and leaves the last card on 
     "render() with an empty order overwrote the last good card");
 });
 
+// Finding 18 (quality-refactor plan 2026-09-30): render() used to build all
+// four of question/answer/questionB/answerB on every call regardless of
+// mode, which called pan() - an SVG build, the expensive part of a render -
+// twice (once in `answer`, once in `questionB`) even though only one of
+// those two faces is ever shown in any single mode. This spies on the
+// app's own `pan` to count builds per render, rather than re-deriving which
+// faces "should" need a diagram here - card_face_v1.json (finding 0)
+// already pins what every face's HTML must equal; this test only pins how
+// many times the expensive diagram builder runs to get there.
+test("render() builds the diagram at most once per render, in every mode", () => {
+  const app = boot();
+  app.run(`
+    globalThis.__panCalls = 0;
+    globalThis.__origPan = pan;
+    pan = function(...a) { __panCalls++; return __origPan(...a); };
+  `);
+  app.run('__panCalls = 0; setMode("A");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode A should build the diagram once per render");
+  app.run('__panCalls = 0; setMode("B");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode B should build the diagram once per render");
+  app.run('__panCalls = 0; setMode("S");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode S should build the diagram once per render");
+});
+
 test("an unknown deck id still falls back to a built-in deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
   assert.strictEqual(app.deckId(), decks(app)[0].id);
@@ -686,29 +710,45 @@ test("the built-in decks keep the derived extent they have always rendered", () 
   }
 });
 
-/* ------------------------------------------- 15. generation-time budget */
+/* ------------------------------------------- 15. generation operation budget */
 
-// [eng-review 15A] Generation happens while the user waits, so it has a budget.
-// Timed inside an already-booted app: parse + select.build + registry
-// insertion, never process startup or the engine module load.
-function budget(fixture, ms) {
-  test(`generating ${fixture} stays inside ${ms} ms`, () => {
+// Finding 21 (quality-refactor plan 2026-09-30): generation runs on the
+// submit path, so it has a cost budget, but the wall-clock assertion this
+// replaced (`budget(fixture, ms)`, timing app.generate() and asserting the
+// best of 3 runs stayed under a millisecond ceiling) is a function of
+// whatever machine runs the test, not of the algorithm - it can read green
+// on a loaded CI runner's lucky draw and still miss a real regression that
+// a generous ms margin happens to absorb.
+//
+// voicing().choose() (src/engine/voicing.js, called from HPE.select's
+// build(), inside its candidates loop, once per (root, chord-type)
+// candidate) is the one operation whose count scales with field count the
+// same way wall-clock time did for these two fixtures, and it is
+// deterministic: measured at 48
+// calls for "twelve note pan" and 108 for "nineteen field maximum", both
+// fixtures reproducibly, across repeated runs. Pinning an upper bound on
+// that count (with headroom over the measured value, so it is not a second
+// byte-for-byte pin) catches the kind of regression the timing test existed
+// for - an accidental extra pass over the candidate list doubles this count
+// outright, long before it would double wall-clock time on a quiet machine.
+function opBudget(fixture, max) {
+  test(`generating ${fixture} calls voicing().choose at most ${max} times`, () => {
     const app = boot();
-    const s = scale(fixture);
-    app.generate(s);                 // warm the JIT; the budget is steady state
-    let best = Infinity;
-    for (let i = 0; i < 3; i++) {
-      const t0 = process.hrtime.bigint();
-      const res = app.generate(s);
-      const dt = Number(process.hrtime.bigint() - t0) / 1e6;
-      assert.strictEqual(res.ok, true, res.reason);
-      best = Math.min(best, dt);
-    }
-    assert.ok(best < ms, `generation took ${best.toFixed(1)} ms, budget ${ms} ms`);
+    app.run(`
+      globalThis.__chooseCalls = 0;
+      const __origChoose = HPE.voicing.choose;
+      HPE.voicing.choose = function (...a) { __chooseCalls++; return __origChoose(...a); };
+    `);
+    const res = app.generate(scale(fixture));
+    assert.strictEqual(res.ok, true, res.reason);
+    const calls = app.get("__chooseCalls");
+    assert.ok(calls > 0, "the spy never saw a call - it is not wired to the real candidate path");
+    assert.ok(calls <= max,
+      `generation called voicing().choose ${calls} times, budget ${max}`);
   });
 }
-budget("twelve note pan", 200);
-budget("nineteen field maximum", 500);
+opBudget("twelve note pan", 60);
+opBudget("nineteen field maximum", 130);
 
 /* ================================================================ Phase 3 UI
  * The scale sheet: the "+ ADD" chip, the live parse line, the message tiers,
@@ -1726,7 +1766,7 @@ test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said
      nothing.
 
      The message on screen here is NO_THIRDS, read off the deck at open time
-     (index.html:4790-4793) and NOT derivable from the seed - which is the
+     (openEditSheet()'s `d.warnings` read) and NOT derivable from the seed - which is the
      whole point of the fixture. A rejected seed would prove nothing: the
      re-derive would reproduce the parser's own refusal word for word, so the
      assertion would hold whether the guard was there or not. That is the
@@ -3807,7 +3847,7 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py:409-416 names the six shipped files: `<Name>_Cards_Letter.pdf`
+  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files: `<Name>_Cards_Letter.pdf`
   // and `<Name>_CHORD_ONLY_Letter.pdf`, with punctuation folded out of
   // the deck name. A custom deck's download joins that shelf, so it takes the
   // same shape rather than inventing a second one.
@@ -3908,12 +3948,13 @@ test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no windo
     "no control still calls window.print() directly");
   // Q2: the original forms above (`[>{.#]` / `\(\)\s*;`) are narrower than
   // they look - they miss window.print() with no trailing `;` and
-  // body.printing) - and they let two now-stale comments ("#printroot,
-  // body.printing" at index.html:940, "window.print()/openPrintSheet" at
-  // :6501) read as if the code they describe still exists. These
+  // body.printing) - and they used to let two now-removed comments
+  // ("#printroot, body.printing" and "window.print()/openPrintSheet")
+  // read as if the code they described still existed. These
   // code-shaped forms catch a real reintroduction wherever it appears,
   // comment or not, which is why both comments were reworded rather than
-  // stripped (AD6) - they no longer match.
+  // stripped at the time (AD6) - they no longer match, and have since
+  // been removed entirely.
   assert.doesNotMatch(src, /addEventListener\(\s*["']afterprint/);
   assert.doesNotMatch(src, /body\.printing\b/);
   assert.doesNotMatch(src, /\bwindow\.print\s*\(/);
@@ -4309,4 +4350,39 @@ describe("swipe decision", () => {
     assert.strictEqual(app.get("SWIPE_IN_MS"), 180);
     assert.strictEqual(app.get("SWIPE_IN_PX"), 24);
   });
+});
+
+/**
+ * tests/fixtures/card_face_v1.json pins a sha256/16 digest of every FULL CARD
+ * FACE's innerHTML (header + diagram + badge + note line + number line) for
+ * every built-in deck x card x mode (A, B, S) x face (front, back), generated
+ * from e8f9be8 (the quality-refactor plan's reference commit - see
+ * tools/regen_card_fixture.js's header). The pre-existing pan_render_v1.json
+ * above pins the diagram alone; a refactor to render() (finding 18) or to any
+ * app helper (finding 13) could change the header, a note line, a number line
+ * or a badge and that fixture would never see it. This test is that oracle.
+ *
+ * It shells out to the tool's own --check rather than re-deriving the walk
+ * over decks/cards/modes/sequences here, so there is exactly one place (the
+ * tool) that knows how to build a face digest - this test and `node
+ * tools/regen_card_fixture.js --check` can never disagree about what "every
+ * face" means.
+ *
+ * A failure here is not automatically a bug - a deliberate face change
+ * regenerates the fixture (node tools/regen_card_fixture.js) IN THE SAME
+ * COMMIT and says why in that commit's message / the PR body.
+ */
+test("every built-in card face still matches the committed digest of card_face_v1.json", () => {
+  const { execFileSync } = require("node:child_process");
+  const path = require("node:path");
+  const tool = path.join(__dirname, "..", "tools", "regen_card_fixture.js");
+  try {
+    execFileSync(process.execPath, [tool, "--check"], { stdio: "pipe" });
+  } catch (e) {
+    assert.fail(
+      "card_face_v1.json is stale (or missing) - regenerate it on purpose with " +
+      "`node tools/regen_card_fixture.js` only if this card face change is deliberate:\n" +
+      (e.stdout ? e.stdout.toString() : "") + (e.stderr ? e.stderr.toString() : "")
+    );
+  }
 });

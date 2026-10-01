@@ -3,9 +3,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2773,7 +2773,7 @@ function forgetScale(str) {
+@@ -6222,7 +6222,7 @@ function forgetScale(str) {
  function replaceScale(oldStr, seed) {
-   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+   const rec = scaleRecord(seed);
    const list = savedScales();
 -  const at = list.findIndex(r => r && r.s === oldStr);
 +  const at = list.length - 1;

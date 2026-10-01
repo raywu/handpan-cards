@@ -444,7 +444,12 @@ main{overflow-x:clip}
    ~134px of overflow was split above and below by align-items:center, laying
    the card over the header and the footer - five controls (both mode buttons,
    SHUFFLE, the counter and + ADD) had perfect on-screen rects
-   that elementFromPoint resolved to the card.
+   that elementFromPoint resolved to the card. (Of those five, the mode
+   buttons and + ADD since moved behind the settings panel - menu-shell,
+   2026-09-28 - so today's landscape-fit matrix in tests/e2e.test.js checks
+   #settings-trigger in their place; SHUFFLE and the counter are still direct
+   footer controls and still covered. The CSS fix below is unchanged either
+   way: it is about the card's own sizing, not which controls sit under it.)
    So the HEIGHT is the definite axis and the width is derived from it:
    height = min(what the box has, what --card-w would have asked for), which
    makes the used width min(available-height x 63/87, --card-w). Portrait is
@@ -766,7 +771,7 @@ footer.seq{row-gap:var(--sp-1)}
    that takes over if that rule is ever scoped differently, and it is
    deliberately NOT what the pan test rests on; the mutant for that test drops
    #scale-parse:empty instead. A refusal long enough to wrap still steps the
-   pan one line; core.js:125 caps an interpolated bad token at 12 characters,
+   pan one line; HPE.core's badNote() caps an interpolated bad token at 12 characters,
    and that is the only input that reaches two lines at 380px.
    No font fallback stack on purpose: system-ui renders wider here and pushed
    a one-line refusal to 37.19px, i.e. into the wrap case, on every device
@@ -6186,8 +6191,14 @@ function writeScales(list) {
 // order, so the index is the chip position across a reload - filtering the old
 // record out and pushing the new one would send an options-only edit to the end
 // of the row on the next boot while it sat in place until then.
+// Shared by rememberScale and replaceScale: the stored shape of a seed, byte-
+// for-byte identical between the two before this extraction (finding 13,
+// quality-refactor plan 2026-09-30).
+function scaleRecord(seed) {
+  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+}
 function rememberScale(seed) {
-  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const rec = scaleRecord(seed);
   const out = [];
   let placed = false;
   for (const r of savedScales()) {
@@ -6209,7 +6220,7 @@ function forgetScale(str) {
 // reload. Appending would move the deck to the end of the row on the next boot
 // while it sat in place until then.
 function replaceScale(oldStr, seed) {
-  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const rec = scaleRecord(seed);
   const list = savedScales();
   const at = list.findIndex(r => r && r.s === oldStr);
   if (at < 0) { rememberScale(seed); return; }
@@ -6500,12 +6511,11 @@ function sizePanHits(svg, minPx) {
 }
 
 /* ---------------- card faces ---------------- */
-// Literal basenames of the already-committed print PDFs (repo root), keyed by
-// built-in deck id. Not string-built from d.name/d.id and not stored in
-// data/decks.json - see CLAUDE.md's print pipeline and the PR that added
-// this: that file's deck keys are owned by the print-pipeline lane and are
-// regenerated, so a filename field there would be silently dropped. Only the
-// three built-in decks have committed PDFs; a generated/custom deck has none.
+// Print is fully client-side (since 2026-09-24): every deck, built-in or
+// generated, builds its own PDF in the browser via downloadDeckPDF() below.
+// There is no link to a committed PDF in the repo root and no lookup table
+// keyed by built-in deck id - pdfFileName() derives the download name from
+// the deck itself, so a built-in and a custom deck take the same path.
 /** D16's paper control. Only the PAGE BOX changes: A4 is 297mm against
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
@@ -6571,7 +6581,7 @@ function setPrintPaper(p) {
    against it by tests/test_pdf_parity.py. Nothing about the page layout is
    decided here - only delivery. */
 function pdfFileName(d, variant, paper) {
-  // tools/decks.py:409-416 names the six shipped files. A custom deck's
+  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files. A custom deck's
   // download joins that shelf rather than inventing a second shape, so a
   // person with both on their desktop can see they are the same kind of thing.
   const stem = d.name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
@@ -6724,17 +6734,17 @@ function render() {
   document.documentElement.style.setProperty("--ga", d.colors.ga);
   document.documentElement.style.setProperty("--gb", d.colors.gb);
 
-  const answer = headerHTML(d, ch, n) +
-    `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
-  const question = headerHTML(d, ch, n) +
-    `<div class="prompt">${nameHTML(ch, true)}
-     <div class="hint">Tap to reveal the notes</div></div>`;
-  const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
-    `<div class="diagwrap">${pan(d, ch)}</div>
-     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
-  const answerB = headerHTML(d, ch, n) +
-    `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
-
+  // Finding 18 (quality-refactor plan 2026-09-30): build only the two faces
+  // the current mode shows, and call pan() (an SVG build, the expensive part
+  // of a render) at most once. Before this, all four of answer/question/
+  // questionB/answerB were built on every render regardless of mode, and
+  // pan() - appearing once in `answer` and once in `questionB` - ran twice
+  // even though only one of those two faces is ever shown (mode S also
+  // reuses mode A's `answer`, so it hit the same double build). Every
+  // template literal below is byte-for-byte what the old unconditional
+  // consts produced for that mode; card_face_v1.json (finding 0) pins every
+  // deck x card x mode x face combination, so a text drift here cannot pass
+  // silently.
   if (mode === "S") {
     // §8 E5: the front face is mode A's `answer` face, byte for byte - no
     // chord name, no hint. The name lives on the back; the style name/tip no
@@ -6742,6 +6752,8 @@ function render() {
     // paragraph in the footer, filled here via textContent (never innerHTML;
     // style copy is our own string data, but the pattern matches
     // renderSeqRail's "DOM nodes and textContent only" rule).
+    const answer = headerHTML(d, ch, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
     const backS = headerHTML(d, ch, n) +
       `<div class="prompt">${nameHTML(ch, true)}</div>`;
@@ -6751,9 +6763,24 @@ function render() {
     document.getElementById("seq-style-tip").textContent = styleTip;
     document.getElementById("seq-style").hidden = false;
     renderSeqRail(d);
+  } else if (mode === "A") {
+    const question = headerHTML(d, ch, n) +
+      `<div class="prompt">${nameHTML(ch, true)}
+     <div class="hint">Tap to reveal the notes</div></div>`;
+    const answer = headerHTML(d, ch, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
+    document.getElementById("front").innerHTML = question;
+    document.getElementById("back").innerHTML  = answer;
+    document.getElementById("count").classList.remove("seq");
+    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   } else {
-    document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
-    document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+    const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>
+     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
+    const answerB = headerHTML(d, ch, n) +
+      `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
+    document.getElementById("front").innerHTML = questionB;
+    document.getElementById("back").innerHTML  = answerB;
     document.getElementById("count").classList.remove("seq");
     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   }
@@ -7123,10 +7150,21 @@ function previewLayout() {
 // like. The ring is the selection's, not always the rim's - a bottom shell is
 // built from below and can start anywhere the rim does not, and before Stage 3
 // it could not be rotated at all.
-function rotateLayout(by) {
+// Shared prologue for every layout-editor move (rotateLayout, moveNote,
+// stepLayoutSel): fetch the editable fields, bail if there are none, and
+// sync layoutOrder against the current field count. Byte-for-byte identical
+// across the three before this extraction (finding 13, quality-refactor
+// plan 2026-09-30). Returns null for "nothing to do", which every caller
+// turns straight into its own early return.
+function layoutPrologue() {
   const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  if (!fields) return null;
+  return { fields, n: syncLayoutOrder(fields) };
+}
+function rotateLayout(by) {
+  const p = layoutPrologue();
+  if (!p) return;
+  const { fields, n } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
@@ -7141,9 +7179,9 @@ function rotateLayout(by) {
 // its place - a swap, so a note is never lost and the result is always still a
 // permutation. It stays inside the note's own zone: a rim note is on the rim.
 function moveNote(by) {
-  const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  const p = layoutPrologue();
+  if (!p) return;
+  const { fields, n } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
@@ -7159,9 +7197,9 @@ function moveNote(by) {
 /** Walk the selection one slot, wrapping across the whole pan - the keyboard
  *  equivalent of tapping the next note round. */
 function stepLayoutSel(by) {
-  const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  const p = layoutPrologue();
+  if (!p) return;
+  const { n } = p;
   if (!n) return;
   layoutSel = (layoutSel + by + n) % n;
   previewLayout();
@@ -7764,7 +7802,7 @@ function disarmDelete() {
   // moved to #scale-refusal, so there is no longer damage here to repair,
   // and swapping the call for say("") passes every test. But DELETING it
   // outright is NOT a no-op - on a valid seed syncParseState() reaches
-  // say("", "") (see the clears near index.html:4700), so the call also
+  // say("", "") (see the clears inside syncParseState()), so the call also
   // clears #scale-msg. Today that means an arm/disarm cycle wipes a standing
   // pan warning (edit a NO_THIRDS deck, tap DELETE, tap away: the "No 3rds
   // on this pan" line is gone). No test asserts either way - see queue row
@@ -7862,6 +7900,19 @@ scaleBox.addEventListener("input", updateParse);
 nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
 degSel.addEventListener("change", () => resyncSheet(true));
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
+// Shared by every modal Tab trap (the sheet below, the settings panel
+// further down): wrap-around cycling through a caller-built stop list, the
+// one piece of the two traps' keydown handlers that was byte-for-byte
+// identical (finding 13, quality-refactor plan 2026-09-30). The stop list
+// itself - which controls, in what order, filtered for the current mode -
+// stays caller-side, since the sheet and the panel compute genuinely
+// different lists.
+function cycleTabStops(stops, e) {
+  const i = stops.indexOf(document.activeElement);
+  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+  e.preventDefault();
+  stops[next].focus();
+}
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
@@ -7876,10 +7927,7 @@ sheet.addEventListener("keydown", e => {
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(el => el && !el.disabled);
-  const i = stops.indexOf(document.activeElement);
-  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-  e.preventDefault();
-  stops[next].focus();
+  cycleTabStops(stops, e);
 });
 
 /* ---------------- interaction ---------------- */
@@ -7899,12 +7947,15 @@ function step(dir) {
 }
 card.addEventListener("click", flip);
 // Bound to #card, so it fires for keys that BUBBLE from any descendant.
-// .prints' onclick="event.stopPropagation()" guards the mouse path only:
-// without this target check, Enter/Space on a focused print button or the
-// paper <select> is swallowed by preventDefault() before it activates - no
-// PDF (or no paper change), and the card flips instead, revealing the answer
-// in NAME->NOTES mode. There is no <a> in .prints any more (one-pdf-path
-// plan dropped the print link), so this guards button/select only.
+// Originally guarded Enter/Space on a focused print button or the paper
+// <select> from flipping the card instead of activating - but since the
+// menu-shell change (2026-09-28, see headerHTML()'s own comment) .prints
+// lives in the settings panel, not inside #card, so neither element is a
+// descendant this handler ever sees: the target check below has no live
+// target today. Left in place (2026-09-30 quality-refactor finding 9,
+// owner-gated: see CLAUDE.md G5) rather than removed, since #card carries
+// no controls at all right now and a future one could make it relevant
+// again.
 card.addEventListener("keydown", e => {
   if (e.target && e.target.closest && e.target.closest("button, select")) return;
   if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
@@ -8053,13 +8104,7 @@ document.addEventListener("keydown", e => {
   // reaches the card underneath.
   if (panelOpen) {
     if (e.key === "Escape") { e.preventDefault(); closePanel(); return; }
-    if (e.key === "Tab") {
-      const stops = panelStops();
-      const i = stops.indexOf(document.activeElement);
-      const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-      e.preventDefault();
-      stops[next].focus();
-    }
+    if (e.key === "Tab") cycleTabStops(panelStops(), e);
     return;
   }
   // Reviewer finding N3: on desktop the sidebar is never "opened"
@@ -8193,7 +8238,12 @@ function release(e, cancelled, pushPoint = true) {
   // immediate decay, since their synthesized click (if any) follows at once.
   if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
   if (reducedMotion.matches) {
-    scene.style.transform = ""; scene.style.willChange = "";
+    // Was its own scene.style.transform/willChange reset, byte-for-byte the
+    // same as swipeRest() - re-implemented, not duplicated-by-reference, so a
+    // future rest-state change here could drift from the other four sites
+    // that already call swipeRest() (finding 13, quality-refactor plan
+    // 2026-09-30).
+    swipeRest();
     if (dir) step(dir);
     return;
   }
@@ -8222,11 +8272,20 @@ function swipeMove(e) {
     scene.style.transform = swipeXf(dx);
   }
 }
-card.addEventListener("pointerdown", e => {
-  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+// Shared by both pointerdown sites below (the ordinary one here and the
+// mid-flight capture-phase one further down): starting a drag is cancelling
+// any in-flight animation, seeding `drag` from the event, and capturing the
+// pointer on #card - identical in both before this extraction (finding 13,
+// quality-refactor plan 2026-09-30). The guard for WHEN to start stays
+// caller-side, since the two sites gate on different conditions.
+function startDrag(e) {
   scene.getAnimations().forEach(a => a.cancel());
   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
   card.setPointerCapture(e.pointerId);
+}
+card.addEventListener("pointerdown", e => {
+  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+  startDrag(e);
 });
 card.addEventListener("pointermove", swipeMove);
 card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
@@ -8323,9 +8382,7 @@ document.addEventListener("pointerdown", e => {
     setEatClick(inside && e.button === 0);
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
-      scene.getAnimations().forEach(a => a.cancel());
-      drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-      card.setPointerCapture(e.pointerId);
+      startDrag(e);
     }
   } else {
     setEatClick(false);

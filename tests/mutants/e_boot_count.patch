@@ -1,18 +1,22 @@
 # kills: boots with the first deck loaded
 # suite: node --test --test-name-pattern ^boots.with.the.first.deck.loaded$ tests/e2e.test.js
-# Refreshed 2026-09-29 (lane S2): render() now branches on mode === "S" for a
-# separate rail/back-face path; the A/B counter line moved into the "else"
-# branch and gained a sibling classList.remove("seq") line right above it,
-# but the mutation (dropping "+ 1" from the counter) is identical.
+# Refreshed 2026-10-01 (lane A, quality-refactor finding 18): render() now
+# builds only the current mode's two faces and branches per mode before
+# touching the DOM, so the counter line that used to live once in a shared
+# tail now has one copy per branch (mode A and mode B each set it
+# independently; mode S never shows a plain counter). The default boot mode
+# is A, so this anchors the mode-A copy specifically, via the two innerHTML
+# assignments right above it that only appear in that branch - the mutation
+# itself (dropping "+ 1" from the counter) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6945,7 +6945,7 @@ function render() {
-     document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
-     document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+@@ -6772,7 +6772,7 @@ function render() {
+     document.getElementById("front").innerHTML = question;
+     document.getElementById("back").innerHTML  = answer;
      document.getElementById("count").classList.remove("seq");
 -    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
 +    document.getElementById("count").textContent = `${idx} / ${order.length}`;
-   }
-   const cardEl = document.getElementById("card");
-   cardEl.classList.toggle("flip", flipped);
+   } else {
+     const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+       `<div class="diagwrap">${pan(d, ch)}</div>

@@ -1,22 +1,23 @@
 # kills: arrow keys and Enter/Space do not reach the card while the settings panel is open
 # suite: node --test --test-name-pattern arrow.keys.and.Enter.Space.do.not.reach.the.card.while.the.settings.panel.is.open tests/e2e.test.js
-# Context refreshed 2026-09-29 (M3, desktop sidebar): the N3 form-control
-# guard was inserted right after the panelOpen branch, so the trailing
-# context now includes its lead comment rather than the bare step() calls.
-# The mutation itself is unchanged: dropping the `return` that ends the
-# document keydown handler's panelOpen branch. Escape and Tab still behave
-# correctly (they return early inside their own `if`), so every existing
-# panel-keyboard assertion stays green - but any OTHER key, notably
-# ArrowRight/ArrowLeft, falls through to the handler's normal card-stepping
+# Refreshed 2026-10-01 (lane A, quality-refactor): finding 13 extracted the
+# Tab-trap body into the shared cycleTabStops() helper, so the panelOpen
+# branch here collapsed from an inline `if (e.key === "Tab") { ...
+# e.preventDefault(); stops[next].focus(); } return;` to a one-line call
+# plus a trailing `return;` that now closes the whole `if (panelOpen) {...}`
+# block instead of a nested Tab-only block. The mutation itself is
+# unchanged: dropping the `return` that ends the document keydown handler's
+# panelOpen branch, so any key other than Escape/Tab (notably
+# ArrowRight/ArrowLeft) falls through to the handler's normal card-stepping
 # code below even though the settings panel is open and modal over the
 # card, silently stepping the deck behind it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7803,7 +7803,6 @@
-       e.preventDefault();
-       stops[next].focus();
-     }
+@@ -8105,7 +8105,6 @@ document.addEventListener("keydown", e => {
+   if (panelOpen) {
+     if (e.key === "Escape") { e.preventDefault(); closePanel(); return; }
+     if (e.key === "Tab") cycleTabStops(panelStops(), e);
 -    return;
    }
    // Reviewer finding N3: on desktop the sidebar is never "opened"

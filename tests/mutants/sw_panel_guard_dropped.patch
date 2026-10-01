@@ -14,7 +14,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8151,7 +8151,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8217,7 +8217,7 @@ function release(e, cancelled, pushPoint = true) {
    const dx = drag.last;
    const dy = drag.lastY;
    const moved = drag.moved;
@@ -23,12 +23,12 @@ diff --git a/index.html b/index.html
    const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
    drag = null;
    // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
-@@ -8202,7 +8202,7 @@ function swipeMove(e) {
-   }
+@@ -8284,7 +8284,7 @@ function startDrag(e) {
+   card.setPointerCapture(e.pointerId);
  }
  card.addEventListener("pointerdown", e => {
 -  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
 +  if (drag || !e.isPrimary || e.button !== 0 || sheetOpen || !order.length) return;
-   scene.getAnimations().forEach(a => a.cancel());
-   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-   card.setPointerCapture(e.pointerId);
+   startDrag(e);
+ });
+ card.addEventListener("pointermove", swipeMove);
