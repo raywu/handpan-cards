@@ -52,6 +52,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
@@ -577,6 +578,32 @@ class CollectJsCancelledTest(unittest.TestCase):
         self.assertEqual(rc, 1, "a non-zero exit with failed=0 and cancelled=0 must still be red")
 
 
+class EmitPythonUnexpectedSuccessTest(unittest.TestCase):
+    """F3 (2026-10-01 bounce): emit_python's exit code is the python suites
+    job's verdict, so it must go red where `unittest discover` did - including
+    on an @expectedFailure test that passes."""
+
+    def test_emit_python_exits_red_on_an_unexpected_success(self):
+        class Probe(unittest.TestCase):
+            @unittest.expectedFailure
+            def test_passes_anyway(self):
+                pass
+
+        suite = unittest.TestSuite([Probe("test_passes_anyway")])
+        tmp = tempfile.mkdtemp()
+        try:
+            outfile = os.path.join(tmp, "py.json")
+            with mock.patch.object(suite_health.unittest.TestLoader, "discover",
+                                   return_value=suite):
+                rc = suite_health.emit_python(outfile)
+            with open(outfile) as f:
+                data = json.load(f)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        self.assertEqual(data["unexpected_successes"], 1)
+        self.assertEqual(rc, 1, "an unexpected success must exit the gate red")
+
+
 class VerifyArtifactsTest(unittest.TestCase):
     """Finding 11 (2026-09-30 quality refactor): suite-health now reads two
     JSON artifacts emitted by the python-tests/js-tests jobs (suite_health.
@@ -628,7 +655,8 @@ class VerifyArtifactsTest(unittest.TestCase):
 
     def _good_py(self):
         return {"total_run": 2, "by_module": {"tests.test_a": 2},
-                "skipped": [], "failures": 0, "errors": 0, "output_excerpt": ""}
+                "skipped": [], "failures": 0, "errors": 0,
+                "unexpected_successes": 0, "output_excerpt": ""}
 
     def _good_js(self):
         return {"have_browser": True, "probe_problem": None,
@@ -684,6 +712,19 @@ class VerifyArtifactsTest(unittest.TestCase):
         self.assertTrue(
             any("skipped" in p for p in problems),
             f"a skip must fail even though 3 >= the floor of 2: {problems}")
+
+    def test_a_python_unexpected_success_fails(self):
+        # unittest's wasSuccessful() counts an @expectedFailure test that
+        # passes as a failure, so the bare `unittest discover` step this gate
+        # replaced went red on one; failures and errors alone never see it.
+        py = self._good_py()
+        py["unexpected_successes"] = 1
+        py_path = self._write("py.json", py)
+        js_path = self._write("js.json", self._good_js())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("suite is not green" in p for p in problems),
+            f"an unexpected success must fail the gate: {problems}")
 
     def test_a_js_failure_fails_even_when_the_total_meets_the_floor(self):
         js = self._good_js()

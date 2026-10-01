@@ -42,8 +42,9 @@ jobs:
           cache-dependency-path: requirements-ci.txt
       - run: pip install -r requirements-ci.txt
       # This IS the gate, not a precursor to one: --emit-python runs the same
-      # discover()+TextTestRunner() unittest would, once, and returns 1 if
-      # anything failed or errored (finding 11, 2026-10-01 - a prior version
+      # discover()+TextTestRunner() unittest would, once, and returns 1 on
+      # anything unittest's wasSuccessful() counts - failures, errors and
+      # unexpected successes (finding 11, 2026-10-01 - a prior version
       # of this step ran discover() here AND again inside collect_python(),
       # doubling this job's wall time for no extra coverage). -W
       # error::ResourceWarning is a process-wide warnings filter, so it still

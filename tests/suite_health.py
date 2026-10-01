@@ -162,6 +162,9 @@ def check_python():
     if result.skipped:
         problems.append("python: skipped tests are not allowed: "
                         + ", ".join(str(s[0]) for s in result.skipped))
+    if result.unexpectedSuccesses:
+        problems.append("python: suite is not green "
+                        f"({len(result.unexpectedSuccesses)} unexpected success(es))")
     if result.failures or result.errors:
         print(f"--- python: {len(result.failures)} failing, {len(result.errors)} "
               f"erroring test(s), the suite's own output follows ---")
@@ -508,6 +511,7 @@ def collect_python():
         "skipped": [str(s[0]) for s in result.skipped],
         "failures": len(result.failures),
         "errors": len(result.errors),
+        "unexpected_successes": len(result.unexpectedSuccesses),
         "output_excerpt": excerpt(captured.getvalue())
         if (result.failures or result.errors) else "",
     }
@@ -516,7 +520,8 @@ def collect_python():
 def emit_python(outfile):
     """Run the python suites and write collect_python()'s data to `outfile`.
 
-    Exit code reflects whether the suite ITSELF is green (failures/errors) -
+    Exit code reflects whether the suite ITSELF is green (failures, errors,
+    unexpected successes - what unittest's own wasSuccessful() counts) -
     floor/skip verdicts are verify()'s job, not this job's.
     """
     data = collect_python()
@@ -529,10 +534,12 @@ def emit_python(outfile):
             print(e)
         return 1
     print(f"python: ran {data['total_run']}, skipped {len(data['skipped'])}, "
-          f"failures {data['failures']}, errors {data['errors']}")
+          f"failures {data['failures']}, errors {data['errors']}, "
+          f"unexpected successes {data['unexpected_successes']}")
     if data["output_excerpt"]:
         print(data["output_excerpt"])
-    return 1 if (data["failures"] or data["errors"]) else 0
+    return 1 if (data["failures"] or data["errors"]
+                 or data["unexpected_successes"]) else 0
 
 
 def collect_js():
@@ -614,7 +621,8 @@ def _load_artifact(path, required_keys):
     return data, None
 
 
-_PY_ARTIFACT_KEYS = {"total_run", "by_module", "skipped", "failures", "errors"}
+_PY_ARTIFACT_KEYS = {"total_run", "by_module", "skipped", "failures", "errors",
+                     "unexpected_successes"}
 _JS_ARTIFACT_KEYS = {"have_browser", "found", "files"}
 
 
@@ -640,7 +648,7 @@ def verify_python(data):
     if data["skipped"]:
         problems.append("python: skipped tests are not allowed: "
                         + ", ".join(data["skipped"]))
-    if data["failures"] or data["errors"]:
+    if data["failures"] or data["errors"] or data["unexpected_successes"]:
         problems.append("python: suite is not green")
     return problems
 
