@@ -7797,6 +7797,7 @@ function run() {
         const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
+      await b.waitForPendingSettle();
       const t0 = Date.now() / 1000;
       const pt = (dx, dy) => [{ x: box.x + dx, y: box.y + (dy || 0), radiusX: 4, radiusY: 4, force: 1, id: 1 }];
       await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0, 0), timestamp: t0 });
@@ -7809,8 +7810,11 @@ function run() {
           await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
           // See b.settleAfterRealRelease / endMouseDragForReal: a real
           // touchend's lostpointercapture fires asynchronously and can land
-          // on a later test's drag if this returns too soon.
-          await b.settleAfterRealRelease();
+          // on a later test's drag if that later drag does not wait for it
+          // first - deferred (not awaited) here for the same reason it is
+          // deferred in cdp.js's drag(): a caller that inspects animation
+          // state right after this release must see it immediately.
+          b.settleAfterRealRelease();
         },
       };
     }
@@ -8582,6 +8586,9 @@ function run() {
         const r = document.getElementById("card").getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
+      // A fresh test's first real press - same cross-test-boundary race as
+      // drag()/startDrag()/startMouseDrag(), see waitForPendingSettle.
+      await b.waitForPendingSettle();
       // Q15: a mouse button released outside the browser window (or a native
       // context menu opened over it) delivers no pointerup/lostpointercapture
       // at all - the OS eats it - and the drag stays live, following the
@@ -8675,6 +8682,7 @@ function run() {
         const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
+      await b.waitForPendingSettle();
       const t0 = Date.now() / 1000;
       await b.send("Input.dispatchMouseEvent", {
         type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
@@ -8733,16 +8741,23 @@ function run() {
       // frames so Chrome's capture bookkeeping for this pointer id has
       // drained before a later test reuses it. The listener above is
       // armed here (not inside settleAfterRealRelease) because it must be
-      // attached before mouseReleased is sent, not after.
-      await b.waitFor(`window.__cdpLpcSeen === true`, {
-        label: "the real mouseup's own lostpointercapture to fire",
-        timeout: 1000,
-      }).catch(() => {});
-      await b.eval(`
-        return new Promise(resolve => {
-          requestAnimationFrame(() => requestAnimationFrame(resolve));
-        });
-      `);
+      // attached before mouseReleased is sent, not after. The wait itself is
+      // deferred (not awaited) rather than run inline: a caller that
+      // inspects animation state right after this release must see it
+      // immediately, not after several real animation frames have elapsed -
+      // whichever NEXT real press this browser makes pays for the wait
+      // instead, via waitForPendingSettle().
+      b._pendingSettle = (async () => {
+        await b.waitFor(`window.__cdpLpcSeen === true`, {
+          label: "the real mouseup's own lostpointercapture to fire",
+          timeout: 1000,
+        }).catch(() => {});
+        await b.eval(`
+          return new Promise(resolve => {
+            requestAnimationFrame(() => requestAnimationFrame(resolve));
+          });
+        `).catch(() => {});
+      })();
     }
 
     test("card swipe: Chrome's real mouse-release order - lostpointercapture, then pointerup, then click - commits without flipping", async () => {
