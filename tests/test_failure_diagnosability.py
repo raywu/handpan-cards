@@ -32,6 +32,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tests import paths  # noqa: E402
 from tests import suite_health  # noqa: E402
 
+sys.path.insert(0, paths.TOOLS)
+# validate.py stubs sys.modules["hifi"] at import time (it skips font
+# registration so it can run without the tools/fonts TTFs) and never cleans
+# the stub up - fine for validate.py run standalone, but when this test file
+# is run in the SAME process as tests.test_pdf_build (as
+# `python3 -m unittest tests.test_readme_currency tests.test_failure_diagnosability
+# tests.test_pdf_build` does), the stub leaks and test_pdf_build's own
+# `import hifi` gets the stub instead of the real module. Snapshot whether
+# "hifi" was already loaded, and if this import is the one that introduces
+# the stub, remove it again so a later real `import hifi` elsewhere in the
+# same process is unaffected.
+_hifi_was_loaded = "hifi" in sys.modules
+import validate  # noqa: E402
+import inline_engine  # noqa: E402
+if not _hifi_was_loaded and not hasattr(sys.modules.get("hifi"), "build"):
+    del sys.modules["hifi"]
+
 
 MARKER = "DIAGNOSABILITY_MARKER_9f3a1c"
 
@@ -257,6 +274,91 @@ class MutationCheckReportsBaselineOutput(unittest.TestCase):
         self.assertNotIn(MARKER, out,
                          "per-mutant suite output was dumped into the log - 219 "
                          "mutants of that is worse than silence:\n" + out)
+
+
+class ValidateReportsCheckFailures(unittest.TestCase):
+    """tools/validate.py had the same defect as the two tools above: a failing
+    check raised a bare AssertionError, which aborted the whole script and
+    left every check after it unexplained - and unrun. `validate.run_check`
+    is the fix: it catches a failing check, prints ITS OWN message labelled
+    with the check's number and description, records the failure, and lets
+    the remaining checks still run.
+    """
+
+    def test_a_failing_check_prints_its_own_message_and_is_recorded(self):
+        failures = []
+        buf = io.StringIO()
+
+        def boom():
+            assert False, MARKER
+
+        with contextlib.redirect_stdout(buf):
+            validate.run_check(1, "a fixture check", boom, failures)
+
+        out = buf.getvalue()
+        self.assertIn(MARKER, out,
+                     "a failing check's own message never reached stdout:\n" + out)
+        self.assertIn("1", out, out)
+        self.assertEqual(len(failures), 1, failures)
+        self.assertEqual(failures[0][0], 1)
+
+    def test_a_passing_check_is_not_recorded_as_a_failure(self):
+        failures = []
+        buf = io.StringIO()
+
+        with contextlib.redirect_stdout(buf):
+            validate.run_check(2, "a fixture check", lambda: None, failures)
+
+        self.assertEqual(failures, [])
+        self.assertIn("OK", buf.getvalue())
+
+    def test_a_later_check_still_runs_after_an_earlier_one_fails(self):
+        # The whole point of reporting instead of raising: one red check must
+        # not hide every check after it.
+        failures = []
+        buf = io.StringIO()
+        ran_second = []
+
+        with contextlib.redirect_stdout(buf):
+            validate.run_check(1, "first", lambda: (_ for _ in ()).throw(AssertionError(MARKER)), failures)
+            validate.run_check(2, "second", lambda: ran_second.append(True), failures)
+
+        self.assertEqual(ran_second, [True],
+                         "a failing check aborted the run instead of being reported")
+        self.assertEqual(len(failures), 1)
+
+
+class InlineEngineReportsReinjectionFailures(unittest.TestCase):
+    """tools/inline_engine.py had the same defect tools/sync_decks.py already
+    fixed: it wrote the engine regions and reported success without ever
+    reading the bytes back - a smoke test against stale in-memory data would
+    pass even if the write silently failed to land. `sync()` now re-parses
+    index.html via its own `desync()` after writing, and raises with
+    `desync()`'s own reasons if that re-parse still finds a problem.
+    """
+
+    def test_a_failed_reinjection_raises_with_desyncs_own_reason(self):
+        workdir = tempfile.mkdtemp(prefix="inline-engine-diag-")
+        try:
+            engine_dir = os.path.join(workdir, "src", "engine")
+            os.makedirs(engine_dir)
+            with open(os.path.join(engine_dir, "core.js"), "w") as fh:
+                fh.write("var HPE = {};\n")
+            index_path = os.path.join(workdir, "index.html")
+            with open(index_path, "w") as fh:
+                fh.write("<html>\n<!-- engine begin -->\n<!-- engine end -->\n</html>\n")
+
+            with mock.patch.object(inline_engine, "INDEX", index_path), \
+                    mock.patch.object(inline_engine, "ENGINE_DIR", engine_dir), \
+                    mock.patch.object(inline_engine, "MODULES", ["core"]), \
+                    mock.patch.object(inline_engine, "desync", return_value=[MARKER]):
+                with self.assertRaises(SystemExit) as ctx:
+                    inline_engine.sync()
+                self.assertIn(MARKER, str(ctx.exception),
+                             "sync() did not surface desync()'s own reason:\n"
+                             + str(ctx.exception))
+        finally:
+            shutil.rmtree(workdir, ignore_errors=True)
 
 
 if __name__ == "__main__":

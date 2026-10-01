@@ -129,5 +129,113 @@ class ReadmeCurrencyTest(unittest.TestCase):
             f"worth of drift; restate it")
 
 
+# --- Finding 7 (2026-09-30 quality-refactor plan): stale cross-file line
+# refs in source comments ----------------------------------------------------
+#
+# A line ref like `index.html:3392` or `decks.py:66` reads true the day it is
+# written and silently lies after the next edit shifts a line number - unlike
+# a symbol name, nothing re-checks it. This is a RATCHET, not a one-time
+# cleanup: LINE_REF_ALLOWLIST lists every offender that existed when the lint
+# landed, by (file, line number) of the COMMENT that contains the ref, not
+# the ref's target. The test below requires the allowlist and what is
+# actually on disk to match EXACTLY, in both directions:
+#   - a ref not on the list (new, or moved to a different line) FAILS;
+#   - a list entry whose line no longer contains a matching ref FAILS too -
+#     so a lane that fixes a ref MUST delete its own entry in the same PR,
+#     and cannot accidentally leave the allowlist wider than reality.
+# The list is grouped by owning lane (one block per file-ownership group) so
+# each lane can delete only its own lines. T owns this file and the tools/*
+# + CLAUDE.md refs (already fixed, so no T block remains); B deletes the
+# src/engine/*.js block as it fixes those refs; A deletes the index.html /
+# tests/app.test.js block as it fixes those. The lane that empties the list
+# last leaves LINE_REF_ALLOWLIST as an empty string.
+LINE_REF_ALLOWLIST = """
+# lane B (src/engine/*.js) - delete entries in this block as they are fixed
+src/engine/pdfdeck.js:6
+src/engine/pdfdeck.js:19
+src/engine/pdfcards.js:28
+src/engine/pdfcards.js:106
+src/engine/pdfcards.js:141
+src/engine/pdfcards.js:178
+src/engine/pdfcards.js:286
+src/engine/pdfcards.js:386
+src/engine/pdfcards.js:426
+src/engine/pdfcards.js:531
+
+# lane A (index.html, tests/app.test.js) - delete entries in this block as
+# they are fixed
+index.html:765
+index.html:2162
+index.html:2175
+index.html:2481
+index.html:2559
+index.html:2594
+index.html:2631
+index.html:2739
+index.html:2839
+index.html:2879
+index.html:2984
+index.html:6556
+index.html:7749
+tests/app.test.js:1729
+tests/app.test.js:3810
+tests/app.test.js:3912
+"""
+
+# The files the ratchet watches. Deliberately NOT the whole repo: it tracks
+# exactly the files the three owning lanes (T, B, A) are responsible for, per
+# the plan's finding-7 lane row. Other files (other *.test.js, docs/, TODOS.md)
+# are out of this ratchet's scope.
+LINE_REF_FILES = (
+    ["index.html", "tests/app.test.js", "CLAUDE.md"]
+    + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*.py")))
+    + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "tools", "*.js")))
+    + sorted(os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "src", "engine", "*.js")))
+)
+
+# `<file>:<digits>`, optionally a `-digits` range and/or `,digits` list, e.g.
+# `decks.py:66,157` or `src/engine/layout.js:289-302`. A symbol anchor (a
+# function or key name) never matches this, which is the whole point.
+LINE_REF_RE = re.compile(r"[A-Za-z_./]+\.(?:py|js|html):\d+(?:-\d+)?(?:,\d+)*")
+
+
+def _parse_line_ref_allowlist(text):
+    entries = set()
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        path, _, lineno = line.rpartition(":")
+        entries.add((path, int(lineno)))
+    return entries
+
+
+class LineRefRatchetTest(unittest.TestCase):
+    def test_stale_line_refs_in_comments_match_the_allowlist_exactly(self):
+        allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
+        found = set()
+        for relpath in LINE_REF_FILES:
+            full = os.path.join(ROOT, relpath)
+            with open(full, encoding="utf-8") as fh:
+                for i, line in enumerate(fh, start=1):
+                    if LINE_REF_RE.search(line):
+                        found.add((relpath, i))
+
+        new = sorted(found - allowed)
+        self.assertEqual(
+            new, [],
+            "new <file>:<digits> line ref(s) found in a source comment - these "
+            "go stale the moment a line shifts; use a symbol anchor (function "
+            "or key name) instead, or add to LINE_REF_ALLOWLIST only if this "
+            "is a pre-existing offender another lane owns: %r" % (new,))
+
+        stale = sorted(allowed - found)
+        self.assertEqual(
+            stale, [],
+            "LINE_REF_ALLOWLIST entry no longer matches a real offender - the "
+            "ratchet may only shrink, so delete the line instead of leaving "
+            "it: %r" % (stale,))
+
+
 if __name__ == "__main__":
     unittest.main()
