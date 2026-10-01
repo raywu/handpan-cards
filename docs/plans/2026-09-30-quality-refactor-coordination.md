@@ -16,9 +16,9 @@ this doc records what happened. **If it isn't in the doc, it did not happen.**
 
 ## Cycle state
 
-Cycle: 1   Wave: 3 (closed)   Merged this batch (lane PRs only): #183 1264f35, #184 08e255a, #185 26a8565, #182 b6dd13e, #188 44467b6, #190 3febec9
+Cycle: 1   Wave: 3 (closed)   Merged this batch (lane PRs only, head SHAs): #183 1264f35, #184 08e255a, #185 26a8565, #182 b6dd13e, #188 44467b6, #190 8e8bbb5
 
-**Workstream done (2026-10-01).** Every lane is merged. "Done when" check: the card-face fixture (A) and PDF parity (P) pass in CI at main; the only FLOORS change is E's documented move (e2e 196 -> 190, `harness.test.js` 9 added); the longest mutation-gate shard at #190's head ran 5m26s (shard 2/4), under 6 min.
+**Workstream done (2026-10-01).** Every lane is merged. "Done when" check: the card-face fixture (A) and PDF parity (P) pass in CI at main; no FLOORS row was lowered except E's documented move (e2e 196 -> 190 with `harness.test.js` 9 added, sum 199 >= 196, as plan item 17 allows); C raised `test_suite_health.py` 12 -> 18 and `mutation_harness.test.js` 18 -> 43; the longest mutation-gate shard at #190's head ran 5m33s (shard 2/4, attempt 2; 5m24s and 5m26s on attempts 1 and 3), under 6 min.
 
 | Lane | Branch | PR | Head SHA | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|
@@ -54,7 +54,6 @@ held until #180 and #186 merged because all three touch `index.html` and e2e.
 | #182 | C | PASS_WITH_NITS | see nits below | merged b6dd13e (shard 2 baseline flake rerun at same SHA) |
 | #187 | docs | PASS_WITH_NITS | Attempts column, cap wording, queue-row order, F label | merged 4791bfa; nits fixed here |
 | #188 | A | PASS_WITH_NITS | 5 nits (below); fixture verified byte-identical from e8f9be8; 5 hand-rewritten mutants not weakened | merged 44467b6 |
-
 | #189 | docs | PASS_WITH_NITS | N1 C Attempts wording, N2 #188 nit count, N3 "Merged this batch" scope | merged 4525ec4; nits fixed here |
 | #190 | E | FAIL | B1 harness.test.js mutants scored SURVIVED without a browser (mutation_check.sh skip + shard marker); B2 Q1 share-link test ran at 900px after freshLoad()'s viewport reset | cap reached; coordinator fixed B1, B2, N1, N2 (8e8bbb5) |
 | #190 | E | PASS_WITH_NITS | see nits below; 380px assertion and both new qe_ mutants verified killing | merged 3febec9 (CI green on 3 attempts at 8e8bbb5) |
