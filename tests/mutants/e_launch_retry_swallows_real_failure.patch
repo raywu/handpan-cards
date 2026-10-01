@@ -1,5 +1,5 @@
 # kills: a browser that exits at once is not retried
-# suite: node --test --test-name-pattern ^a.browser.that.exits.at.once.is.not.retried$ tests/e2e.test.js
+# suite: node --test --test-name-pattern ^a.browser.that.exits.at.once.is.not.retried$ tests/harness.test.js
 # The launch retry fires on EVERY rejection instead of only the slow-start
 # timeout, so real breakage - a browser that exits, a WebSocket that will not
 # open, a setup send that fails - is paid for twice before the same error

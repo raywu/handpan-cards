@@ -1,0 +1,16 @@
+# kills: settle() returns promptly when no animation is running
+# suite: node --test --test-name-pattern ^settle...returns.promptly.when.no.animation.is.running$ tests/harness.test.js
+# Drops the n === 0 early return, so settle() always loops to its 500ms
+# deadline even when document.getAnimations() is already empty - exactly the
+# fixed-sleep regression finding 6 (quality refactor 2026-09-30) replaced.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -181,7 +181,6 @@ class Browser {
+     const deadline = Date.now() + 500;
+     for (;;) {
+       const n = await this.eval(`return document.getAnimations().length;`);
+-      if (n === 0) return;
+       if (Date.now() > deadline) return;
+       await new Promise((r) => setTimeout(r, 20));
+     }
