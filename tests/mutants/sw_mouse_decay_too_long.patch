@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8170,7 +8170,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8236,7 +8236,7 @@ function release(e, cancelled, pushPoint = true) {
    // 0) ahead of pointerup/click on a real mouse release, so the trailing
    // click can arrive a tick or more after this runs - touch/pen keep the
    // immediate decay, since their synthesized click (if any) follows at once.
 -  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
 +  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 4000 : 0);
    if (reducedMotion.matches) {
-     scene.style.transform = ""; scene.style.willChange = "";
-     if (dir) step(dir);
+     // Was its own scene.style.transform/willChange reset, byte-for-byte the
+     // same as swipeRest() - re-implemented, not duplicated-by-reference, so a

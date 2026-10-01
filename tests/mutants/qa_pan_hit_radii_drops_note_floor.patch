@@ -7,7 +7,6 @@
 # clamped DOWN to 44px instead of keeping its own larger, already-visible
 # radius - a user aiming at a circle they can plainly see could miss it.
 diff --git a/index.html b/index.html
-index 3e34a0f..e5da572 100644
 --- a/index.html
 +++ b/index.html
 @@ -6476,7 +6476,7 @@ function panHitRadii(ext, sizePx, minPx, pts) {

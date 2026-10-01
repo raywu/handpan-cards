@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8114,7 +8114,7 @@ function swipeMove(e) {
+@@ -8269,7 +8269,7 @@ function swipeMove(e) {
    while (drag.pts.length > 1 && drag.pts[0].t < cutoff) drag.pts.shift();
    if (drag.moved && !reducedMotion.matches) {
      scene.style.willChange = "transform";
@@ -15,4 +15,4 @@ diff --git a/index.html b/index.html
 +    card.style.transform = swipeXf(dx);
    }
  }
- card.addEventListener("pointerdown", e => {
+ // Shared by both pointerdown sites below (the ordinary one here and the

@@ -6,8 +6,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6680,7 +6680,8 @@ function render() {
-     // renderSeqRail's "DOM nodes and textContent only" rule).
+@@ -6756,7 +6756,8 @@ function render() {
+       `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
      const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
      const backS = headerHTML(d, ch, n) +
 -      `<div class="prompt">${nameHTML(ch, true)}</div>`;

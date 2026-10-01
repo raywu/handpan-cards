@@ -8,8 +8,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8297,7 +8297,6 @@ document.addEventListener("pointerdown", e => {
-       card.setPointerCapture(e.pointerId);
+@@ -8385,7 +8385,6 @@ document.addEventListener("pointerdown", e => {
+       startDrag(e);
      }
    } else {
 -    setEatClick(false);

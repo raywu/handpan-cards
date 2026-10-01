@@ -7,11 +7,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8115,6 +8115,7 @@ function swipeMove(e) {
+@@ -8270,6 +8270,7 @@ function swipeMove(e) {
    if (drag.moved && !reducedMotion.matches) {
      scene.style.willChange = "transform";
      scene.style.transform = swipeXf(dx);
 +    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
    }
  }
- card.addEventListener("pointerdown", e => {
+ // Shared by both pointerdown sites below (the ordinary one here and the

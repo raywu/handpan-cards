@@ -7,7 +7,6 @@
 # identityOrder(0)) returns an empty array and every layout-editor control
 # becomes a no-op.
 diff --git a/index.html b/index.html
-index cf47255..6c2f4fd 100644
 --- a/index.html
 +++ b/index.html
 @@ -7142,7 +7142,7 @@ function previewLayout() {

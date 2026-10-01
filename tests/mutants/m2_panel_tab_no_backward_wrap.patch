@@ -1,22 +1,27 @@
 # kills: Tab is trapped inside the settings panel and cycles every stop, wrapping both ways
 # suite: node --test --test-name-pattern Tab.is.trapped.inside.the.settings.panel.and.cycles.every.stop..wrapping.both.ways tests/e2e.test.js
-# Off-by-one on the settings panel's OWN Shift+Tab wrap (not the scale
-# sheet's copy of this logic at a different line): `i <= 0` becomes `i < 0`,
-# so Shift+Tab from the FIRST stop no longer wraps to the last one - it
-# computes stops[-1], which is undefined, and .focus() on it throws, leaving
-# focus stuck instead of cycling backward through the panel.
-# Refreshed 2026-09-29 (lane S2): only the line number moved; the settings
-# panel's Tab-wrap logic itself is unchanged (panelStops() grew #modeS/
-# #seq-source-link as conditional entries elsewhere, not on this line).
+# Off-by-one on the Shift+Tab wrap, now in the single cycleTabStops() helper
+# shared by the sheet's and the settings panel's Tab traps (finding 13,
+# quality-refactor plan 2026-09-30): `i <= 0` becomes `i < 0`, so Shift+Tab
+# from the FIRST stop no longer wraps to the last one - it computes
+# stops[-1], which is undefined, and .focus() on it throws, leaving focus
+# stuck instead of cycling backward through the panel.
+# Refreshed 2026-10-01 (lane A, quality-refactor): the settings panel's own
+# inline Tab-handling code (previously at a different line, duplicated from
+# the sheet's copy) no longer exists - both call sites now share this one
+# function - so this anchors the shared implementation directly. The
+# mutation itself is unchanged and is a distinct mutant from
+# qa_cycle_tab_stops_no_wrap.patch, which drops the whole wrap clause rather
+# than off-by-one'ing its comparison.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8233,7 +8233,7 @@ document.addEventListener("keydown", e => {
-     if (e.key === "Tab") {
-       const stops = panelStops();
-       const i = stops.indexOf(document.activeElement);
--      const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-+      const next = e.shiftKey ? (i < 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-       e.preventDefault();
-       stops[next].focus();
-     }
+@@ -7909,7 +7909,7 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
+ // different lists.
+ function cycleTabStops(stops, e) {
+   const i = stops.indexOf(document.activeElement);
+-  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
++  const next = e.shiftKey ? (i < 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+   e.preventDefault();
+   stops[next].focus();
+ }

@@ -7,7 +7,6 @@
 # (identity-order) pan; once the pan has been rotated, slot and field
 # disagree and the tap lands on the wrong ring.
 diff --git a/index.html b/index.html
-index 3e34a0f..ad5cc68 100644
 --- a/index.html
 +++ b/index.html
 @@ -7121,7 +7121,7 @@ function selectPanField(id) {

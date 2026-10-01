@@ -3,10 +3,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2813,13 +2813,8 @@ function writeScales(list) {
- // of the row on the next boot while it sat in place until then.
+@@ -6199,13 +6199,8 @@ function scaleRecord(seed) {
+ }
  function rememberScale(seed) {
-   const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+   const rec = scaleRecord(seed);
 -  const out = [];
 -  let placed = false;
 -  for (const r of savedScales()) {

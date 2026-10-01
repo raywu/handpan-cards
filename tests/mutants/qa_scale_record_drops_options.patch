@@ -6,7 +6,6 @@
 # mirror) on every save, so the typed name this test checks for in
 # localStorage never reaches it.
 diff --git a/index.html b/index.html
-index cf47255..4e8ab88 100644
 --- a/index.html
 +++ b/index.html
 @@ -6195,7 +6195,7 @@ function writeScales(list) {

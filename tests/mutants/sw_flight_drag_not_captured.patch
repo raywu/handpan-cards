@@ -5,15 +5,21 @@
 # events keep hit-testing against whatever element the touch actually lands
 # on (not #card), so #card's own pointermove listener never sees them and
 # the second real swipe is silently dropped.
-# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
+# Refreshed 2026-10-01 (lane A, quality-refactor finding 13): startDrag() now
+# holds the single setPointerCapture call shared by the ordinary #card
+# pointerdown and the mid-flight capture-phase pointerdown (both used to
+# inline their own copy); this anchors that shared call site directly. The
+# mutation itself is unchanged and is a distinct mutant from
+# qa_start_drag_never_arms_drag.patch, which drops the `drag = {...}`
+# assignment on the line above rather than the capture call.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8294,7 +8294,6 @@ document.addEventListener("pointerdown", e => {
-     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
-       scene.getAnimations().forEach(a => a.cancel());
-       drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
--      card.setPointerCapture(e.pointerId);
-     }
-   } else {
-     setEatClick(false);
+@@ -8281,7 +8281,6 @@ function swipeMove(e) {
+ function startDrag(e) {
+   scene.getAnimations().forEach(a => a.cancel());
+   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
+-  card.setPointerCapture(e.pointerId);
+ }
+ card.addEventListener("pointerdown", e => {
+   if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
