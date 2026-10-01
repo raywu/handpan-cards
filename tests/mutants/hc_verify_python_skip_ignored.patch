@@ -9,15 +9,16 @@
 # total_run well above the floor) no longer produces a problem.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
+index f8b57d5..9aa85f9 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -621,9 +621,6 @@ def verify_python(data):
+@@ -645,9 +645,6 @@ def verify_python(data):
      if data["total_run"] < LEGACY_PYTHON:
          problems.append(f"python: only {data['total_run']} tests ran in total, "
                          f"aggregate floor is {LEGACY_PYTHON}")
 -    if data["skipped"]:
 -        problems.append("python: skipped tests are not allowed: "
 -                        + ", ".join(data["skipped"]))
-     if data["failures"] or data["errors"]:
+     if data["failures"] or data["errors"] or data["unexpected_successes"]:
          problems.append("python: suite is not green")
      return problems
