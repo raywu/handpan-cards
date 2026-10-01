@@ -16,18 +16,23 @@ this doc records what happened. **If it isn't in the doc, it did not happen.**
 
 ## Cycle state
 
-Cycle: 1   Wave: 2   Merged this batch: #178 265c964, #179 f0693c2, #177 a432c1f
+Cycle: 1   Wave: 3   Merged this batch: #183 1264f35, #184 08e255a, #185 26a8565, #182 b6dd13e
 
 | Lane | Branch | PR | Head SHA | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|
 | D0 plan fixes | `claude/quality-coord` | #177 | a432c1f | PASS_WITH_NITS | 1 | yes | — |
 | M | `claude/q-m-mutant-tooling` | #179 | f0693c2 | PASS_WITH_NITS | 2 (taken over) | yes | — |
 | P | `claude/q-p-parity` | #178 | 265c964 | PASS_WITH_NITS | 1 | yes | — |
-| C | `claude/q-c-ci-gate` | — | — | — | 0 | — | running |
-| B | — | — | — | — | 0 | — | T |
-| T | `claude/q-t-tooling` | — | — | — | 0 | — | running |
-| A | — | — | — | — | 0 | — | B, D0, T |
-| E | — | — | — | — | 0 | — | C, A |
+| T | `claude/q-t-tooling` | #183 | 1264f35 | PASS_WITH_NITS | 2 | yes | — |
+| F e2e fly-out deflake (split out) | `claude/deflake-flyout` | #184 | 08e255a | PASS_WITH_NITS | — | yes | — |
+| B | `claude/q-b-engine` | #185 | 26a8565 | PASS_WITH_NITS | — | yes | — |
+| C | `claude/q-c-ci-gate` | #182 | b6dd13e | PASS_WITH_NITS | cap (F3, F1 taken over) | yes | — |
+| A | `claude/q-a-app-shell` | — | — | — | 0 | — | running (spawned on aa7b261) |
+| E | — | — | — | — | 0 | — | A |
+
+Outside the workstream, also merged this cycle: #180 desktop swipe (7e69814,
+integrator fixed F4 after the cap), #186 Resources menu (c85c460). Lane A was
+held until #180 and #186 merged because all three touch `index.html` and e2e.
 
 ## Review log
 
@@ -40,6 +45,11 @@ Cycle: 1   Wave: 2   Merged this batch: #178 265c964, #179 f0693c2, #177 a432c1f
 | #177 | D0 | FAIL | M's acceptance `grep -c '^@@'` = 1 unreachable (decks.json + index.html hunks); 5 nits | coordinator fixed all (attempt 1) |
 | #179 | M | PASS_WITH_NITS | 8 nits (unknown-prefix loop, mutant relocation, -U8 comment, sync_decks main() dup, staged-only dirty check, git guard, missing-target traceback, 2 fixture gaps) | merged f0693c2 |
 | #177 | D0 | PASS_WITH_NITS | 5 nits (waves list, R3 162, -U8 wording, stale M row, P floor wording) | merged a432c1f; nits fixed in the follow-up docs PR |
+| #183 | T | FAIL, FAIL, PASS_WITH_NITS | allowlist keyed on host line numbers; see nits below | merged 1264f35 |
+| #184 | F | PASS_WITH_NITS | see nits below | merged 08e255a |
+| #185 | B | PASS_WITH_NITS | see nits below | merged 26a8565 |
+| #182 | C | FAIL x4 | F3; F1 (check_node dropped the per-file floor) | cap reached; coordinator fixed F3 and F1 (02e368d, mutant b6dd13e) |
+| #182 | C | PASS_WITH_NITS | see nits below | merged b6dd13e (shard 2 baseline flake rerun at same SHA) |
 
 ## Queue
 
@@ -62,8 +72,19 @@ Cycle: 1   Wave: 2   Merged this batch: #178 265c964, #179 f0693c2, #177 a432c1f
   touched `sync_decks.inject()` under a coordinator directive.
 - #177 FAIL fixed by the coordinator (D0's author). B and A now also wait on T,
   so T's ratchet allowlist exists before they delete their entries.
+- The fly-out deflake was split out of E as lane F (#184) so it could land early.
+- Lane A held until #180 (desktop swipe) and #186 (Resources) merged; all three touch `index.html` and e2e, so they were serialised.
+- #182 hit the cap after four FAILs; the coordinator fixed F3 and F1 and a fresh reviewer gated the merge. Shard 2's baseline abort was rerun at the same SHA per the flake rule.
+- Lane A's fixture is generated from e8f9be8 per finding 0; if the base fails `--check`, A reports the commit rather than regenerating.
 
 ## Queue rows to file
+
+- T/#183: `_diff_refs` stale half is untested; `import validate` side effect; `run_check` catches only AssertionError; `sync_decks.main()` still duplicates `inject()`.
+- F/#184: fixed ports race (e2e :8099/:8079/:8128); fly-out animation matched by duration 220.
+- B/#185: dedupe gaps at `voicing.js` (badNote) and `select.js` (three sites); `qb_core_pc_no_wrap` header; `core.test.js` FLOORS row is 42 but the file has 49 tests (raise, never lower); voicing BAD_NOTE `<X>` substitution untested.
+- C/#182: `.get(...,0)` defaults fail open; shard headroom (5m16s at 128 mutants); unexpected success not named in the log; python excerpt shorter than old `-v`; MUTANT_SHARD dirty check is shard-only; unbounded `collect_js` error string; redundant aggregate floors (4 reviewer mutants survived).
+- #180 (outside workstream, E's area): triplicated settle logic and e2e writes private `b._pendingSettle`; mouse settle always takes the 1 s timeout; retry's release click flips the card; re-press log not visible in CI; wheel/drag springBack overlap; plan doc vs committed mutants mismatch; document click `land()` cuts the fly-out; main-side mouse-drag test baseline flake.
+- #186 (outside workstream): 1024x700 test asserts horizontal overflow only; planned wrong-href/noopener/landscape mutants not committed; Tab-trap loop has a 1-press margin; backward Tab covered only via wrap; 320px label-wrap inequality.
 
 - P/N1: `test_pdf_parity.py:64-65` says the smallest count is Amara shop 676; Hijaz shop is 524.
 - P/N2: "2-field instrument" is wrong; it has 4 fields.
