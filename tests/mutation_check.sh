@@ -62,6 +62,18 @@ if [ -n "${MUTANT_SHARD:-}" ]; then
     echo "MUTANT_SHARD=$MUTANT_SHARD selects zero of $TOTAL_MUTANTS mutants."
     exit 1
   fi
+  # Unset now that the shard is resolved: a suite command below (run_suite)
+  # inherits this script's own environment verbatim, and some suites ARE
+  # nested re-invocations of this very script (an h_*/mh_* mutant patching
+  # mutation_check.sh itself names a `# suite:` that runs this file's test
+  # harness, which spawns its own tiny-fixture mutation_check.sh runs). Left
+  # set, those inner runs would inherit this shard spec and try to shard
+  # their own small fixture corpus against a tests/shard_mutants.js that
+  # fixture never copied in - "Cannot find module .../shard_mutants.js" -
+  # which reds the baseline check and hard-aborts the whole outer shard.
+  # Unsetting here, once, fixes every such nested invocation (JS and Python
+  # alike) at the source, instead of every call site having to scrub it.
+  unset MUTANT_SHARD MUTANT_REPORT
 fi
 
 # The paths a patch touches, one per line (both sides, so a patch that adds or

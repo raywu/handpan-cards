@@ -24,7 +24,7 @@ jobs:
         run: python tools/validate.py
       - name: App boot simulation
         run: node tools/boot_sim.js
-      - name: Mutant corpus is in sync with its sources (finding, 2026-09-30)
+      - name: Mutant corpus is in sync with its sources
         run: python3 tools/refresh_mutants.py --check
 
   python-tests:
@@ -41,15 +41,15 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-ci.txt
       - run: pip install -r requirements-ci.txt
+      # This IS the gate, not a precursor to one: --emit-python runs the same
+      # discover()+TextTestRunner() unittest would, once, and returns 1 if
+      # anything failed or errored (finding 11, 2026-10-01 - a prior version
+      # of this step ran discover() here AND again inside collect_python(),
+      # doubling this job's wall time for no extra coverage). -W
+      # error::ResourceWarning is a process-wide warnings filter, so it still
+      # applies to the suite run that happens inside suite_health.py.
       - name: Deck data, print layout, PDF build, render agreement
-        run: python -W error::ResourceWarning -m unittest discover -s tests -t . -v
-      # suite-health (below) verifies this job's results from the artifact
-      # instead of re-running the suite itself (finding 11, 2026-09-30 quality
-      # refactor) - emit_python() re-tallies the same discover() run above into
-      # JSON, it does not run anything a second time.
-      - name: Emit per-file results for suite-health
-        if: always()
-        run: python3 tests/suite_health.py --emit-python artifacts/python-results.json
+        run: python -W error::ResourceWarning tests/suite_health.py --emit-python artifacts/python-results.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,14 +76,12 @@ jobs:
       # runner over CDP, so this repo stays dependency-free.
       - name: Show browser in use
         run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
+      # This IS the gate, not a precursor to one: --emit-js runs every
+      # tests/*.test.js file once via collect_js() and returns 1 if any file
+      # came back red (finding 11, 2026-10-01 - a prior version of this step
+      # ran `node --test "tests/*.test.js"` here AND again inside collect_js(),
+      # doubling this job's wall time for no extra coverage).
       - name: App units and browser e2e
-        run: node --test "tests/*.test.js"
-      # suite-health verifies this job's results from the artifact instead of
-      # re-running every *.test.js file itself (finding 11). collect_js() runs
-      # each file exactly once here, same as the step above, just captured as
-      # JSON instead of only a console log.
-      - name: Emit per-file results for suite-health
-        if: always()
         run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
       - uses: actions/upload-artifact@v4
         if: always()

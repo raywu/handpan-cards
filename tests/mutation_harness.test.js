@@ -53,26 +53,6 @@ function childEnv(extra) {
   delete env.GIT_DIR;
   delete env.GIT_WORK_TREE;
   delete env.GIT_INDEX_FILE;
-  // MUTANT_SHARD/MUTANT_REPORT (finding 4, 2026-09-30 quality refactor): CI's
-  // sharded mutation-gate job sets these in THIS process's own environment
-  // while running this very suite (one of the h_*/mh_* mutants' # suite:
-  // command is a node --test invocation of this file). Without scrubbing
-  // them, every OTHER fixture test that spawns tests/mutation_check.sh below
-  // would inherit the outer shard spec and try to shard its tiny fixture
-  // corpus against a tests/shard_mutants.js that fixture never copied in -
-  // exactly the "Cannot find module .../tests/shard_mutants.js" failure that
-  // actually happened in CI. `extra` was already spread into `env` above, so
-  // save its values first and restore them after the blanket delete - a
-  // caller that explicitly wants sharding (the MUTANT_SHARD test below) still
-  // gets it.
-  const keepShard = extra && Object.prototype.hasOwnProperty.call(extra, "MUTANT_SHARD")
-    ? extra.MUTANT_SHARD : undefined;
-  const keepReport = extra && Object.prototype.hasOwnProperty.call(extra, "MUTANT_REPORT")
-    ? extra.MUTANT_REPORT : undefined;
-  delete env.MUTANT_SHARD;
-  delete env.MUTANT_REPORT;
-  if (keepShard !== undefined) env.MUTANT_SHARD = keepShard;
-  if (keepReport !== undefined) env.MUTANT_REPORT = keepReport;
   return env;
 }
 

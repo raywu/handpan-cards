@@ -629,6 +629,32 @@ class VerifyArtifactsTest(unittest.TestCase):
             any("skipped" in p for p in problems),
             f"a skip must fail even though 3 >= the floor of 2: {problems}")
 
+    def test_a_python_skip_fails_even_when_the_total_meets_the_floor(self):
+        # unittest itself exits 0 on a skip, so verify_python's own "skipped
+        # tests are not allowed" check is the only thing that can catch this -
+        # total_run meeting the floor must not paper over it.
+        py = self._good_py()
+        py["total_run"] = 3
+        py["by_module"]["tests.test_a"] = 3
+        py["skipped"] = ["tests.test_a.SomeTest.test_thing"]
+        py_path = self._write("py.json", py)
+        js_path = self._write("js.json", self._good_js())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("skipped" in p for p in problems),
+            f"a skip must fail even though 3 >= the floor of 2: {problems}")
+
+    def test_a_js_failure_fails_even_when_the_total_meets_the_floor(self):
+        js = self._good_js()
+        js["files"]["tests/a.test.js"] = {
+            "total": 2, "failed": 1, "skipped": 0, "browser_skips": 0}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("suite is not green" in p for p in problems),
+            f"a failure must fail even though the floor is met: {problems}")
+
     def test_an_unregistered_js_file_fails(self):
         js = self._good_js()
         js["found"] = ["tests/a.test.js", "tests/new.test.js"]

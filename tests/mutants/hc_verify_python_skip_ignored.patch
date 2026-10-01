@@ -1,0 +1,23 @@
+# kills: tests.test_suite_health.VerifyArtifactsTest.test_a_python_skip_fails_even_when_the_total_meets_the_floor
+# suite: python3 -m unittest tests.test_suite_health.VerifyArtifactsTest.test_a_python_skip_fails_even_when_the_total_meets_the_floor
+# Finding 11 bounce, N1 (2026-10-01). verify_python() now reads a recorded
+# artifact instead of re-running the suite, which means unittest's own
+# "skipped tests exit 0" behaviour is no longer masked by a live run's exit
+# code - this check is the ONLY thing standing between a skip and a green
+# verdict. Deletes the "python: skipped tests are not allowed" branch
+# entirely, so an artifact with a non-empty "skipped" list (even with
+# total_run well above the floor) no longer produces a problem.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -621,9 +621,6 @@ def verify_python(data):
+     if data["total_run"] < LEGACY_PYTHON:
+         problems.append(f"python: only {data['total_run']} tests ran in total, "
+                         f"aggregate floor is {LEGACY_PYTHON}")
+-    if data["skipped"]:
+-        problems.append("python: skipped tests are not allowed: "
+-                        + ", ".join(data["skipped"]))
+     if data["failures"] or data["errors"]:
+         problems.append("python: suite is not green")
+     return problems

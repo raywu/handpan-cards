@@ -1,0 +1,20 @@
+# kills: tests.test_suite_health.VerifyArtifactsTest.test_a_js_failure_fails_even_when_the_total_meets_the_floor
+# suite: python3 -m unittest tests.test_suite_health.VerifyArtifactsTest.test_a_js_failure_fails_even_when_the_total_meets_the_floor
+# Finding 11 bounce, N1 (2026-10-01). Deletes verify_js()'s "suite is not
+# green" branch, so a per-file artifact entry with failed > 0 (even with
+# total meeting the floor) no longer produces a problem - the same class of
+# silent-red risk hc_verify_python_skip_ignored.patch proves on the python
+# side, here for the js failed-count check instead.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -662,8 +662,6 @@ def verify_js(data):
+         total_counted += total
+         if total < floor:
+             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
+-        if failed:
+-            problems.append(f"{path}: suite is not green")
+         if skipped:
+             browser_skips = entry.get("browser_skips", 0)
+             if have_browser or browser_skips < skipped:
