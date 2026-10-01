@@ -185,10 +185,12 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             "timeout - it is blocked draining pipes held by a survivor")
 
     def assert_timeout_reported(self, result):
-        total, failed, skipped, output = result
+        total, failed, skipped, cancelled, returncode, output = result
         self.assertIsNone(total)
         self.assertIsNone(failed)
         self.assertEqual(skipped, 0)
+        self.assertEqual(cancelled, 0)
+        self.assertIsNone(returncode)
         self.assertIn("TIMED OUT after 2s", output)
 
     def assert_dead(self, pid, what):
@@ -222,7 +224,7 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         self.assert_returned_promptly()
         self.assert_dead(pid, "pipe-holding survivor")
         self.assertIn(
-            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[5],
             "the suite's own output was dropped from the timeout excerpt - a "
             "return code with no text is unexplainable from a CI log")
 
@@ -249,7 +251,7 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         self.assert_timeout_reported(result)
         self.assert_returned_promptly()
         self.assertIn(
-            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[5],
             "the suite's own output was dropped from the timeout excerpt - a "
             "return code with no text is unexplainable from a CI log")
         # Row 108: even on the one shape where run_node_file can never reach
@@ -281,7 +283,7 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         self.assert_timeout_reported(result)
         self.assert_returned_promptly()
         self.assertIn(
-            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[3],
+            "TAP_MARKER_SHOULD_REACH_THE_TAIL", result[5],
             "10KB of stderr evicted the short TAP stdout from the timeout excerpt")
 
     def reap(self, pid):
@@ -401,7 +403,7 @@ class RunNodeFileMissingNodeTest(unittest.TestCase):
             old_path = os.environ.get("PATH", "")
             os.environ["PATH"] = tmp
             try:
-                total, failed, skipped, out = suite_health.run_node_file(
+                total, failed, skipped, cancelled, returncode, out = suite_health.run_node_file(
                     "tests/core.test.js")
             except FileNotFoundError:
                 self.fail("a missing `node` binary must be reported, not raised")
@@ -508,7 +510,7 @@ class CheckNodeTimeoutExcerptTest(unittest.TestCase):
 
         def fake_run_node_file(p):
             self.assertEqual(p, path)
-            return None, None, 0, timeout_out
+            return None, None, 0, 0, None, timeout_out
 
         orig_run_node_file = suite_health.run_node_file
         orig_probe_browser = suite_health.probe_browser
@@ -534,6 +536,45 @@ class CheckNodeTimeoutExcerptTest(unittest.TestCase):
         self.assertIn(
             marker, buf.getvalue(),
             "a timed-out suite's own TAP excerpt never reached the CI log")
+
+
+class CollectJsCancelledTest(unittest.TestCase):
+    """F2 (2026-10-01 bounce): emit_js's own exit code must also go red on a
+    `fail 0, cancelled > 0` / non-zero-exit node run, not just on verify_js
+    reading the artifact after the fact - both are the gate, per Finding 11."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._orig_run_node_file = suite_health.run_node_file
+        self._orig_probe_browser = suite_health.probe_browser
+        self._orig_glob = suite_health.glob.glob
+        path = "tests/app.test.js"
+        self.path = path
+        suite_health.probe_browser = lambda: (True, None)
+        suite_health.glob.glob = lambda *a, **kw: [os.path.join(suite_health.paths.ROOT, path)]
+
+    def tearDown(self):
+        suite_health.run_node_file = self._orig_run_node_file
+        suite_health.probe_browser = self._orig_probe_browser
+        suite_health.glob.glob = self._orig_glob
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_emit_js_exits_red_on_cancelled_with_zero_failed(self):
+        suite_health.run_node_file = lambda p: (2, 0, 0, 1, 1, "# tests 2\n# fail 0\n# cancelled 1\n")
+        outfile = os.path.join(self.tmp, "js.json")
+        rc = suite_health.emit_js(outfile)
+        self.assertEqual(rc, 1, "a cancelled test with failed=0 must still exit the gate red")
+        with open(outfile) as f:
+            data = json.load(f)
+        entry = data["files"][self.path]
+        self.assertEqual(entry["cancelled"], 1)
+        self.assertEqual(entry["returncode"], 1)
+
+    def test_emit_js_exits_red_on_nonzero_exit_alone(self):
+        suite_health.run_node_file = lambda p: (2, 0, 0, 0, 1, "# tests 2\n# fail 0\n# cancelled 0\n")
+        outfile = os.path.join(self.tmp, "js.json")
+        rc = suite_health.emit_js(outfile)
+        self.assertEqual(rc, 1, "a non-zero exit with failed=0 and cancelled=0 must still be red")
 
 
 class VerifyArtifactsTest(unittest.TestCase):
@@ -654,6 +695,33 @@ class VerifyArtifactsTest(unittest.TestCase):
         self.assertTrue(
             any("suite is not green" in p for p in problems),
             f"a failure must fail even though the floor is met: {problems}")
+
+    def test_a_js_cancelled_count_fails_even_with_zero_failed(self):
+        # F2 (2026-10-01): node 22 reports a per-test timeout, or a throwing
+        # describe-scoped before()/after() hook, as `fail 0, cancelled > 0`
+        # with a non-zero exit code - `failed` alone must not be trusted green.
+        js = self._good_js()
+        js["files"]["tests/a.test.js"] = {
+            "total": 2, "failed": 0, "skipped": 0, "browser_skips": 0,
+            "cancelled": 1, "returncode": 1}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("suite is not green" in p for p in problems),
+            f"a cancelled test must fail even with failed=0: {problems}")
+
+    def test_a_js_nonzero_exit_fails_even_with_zero_failed_and_cancelled(self):
+        js = self._good_js()
+        js["files"]["tests/a.test.js"] = {
+            "total": 2, "failed": 0, "skipped": 0, "browser_skips": 0,
+            "cancelled": 0, "returncode": 1}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("suite is not green" in p for p in problems),
+            f"a non-zero exit must fail even with failed=0 and cancelled=0: {problems}")
 
     def test_an_unregistered_js_file_fails(self):
         js = self._good_js()

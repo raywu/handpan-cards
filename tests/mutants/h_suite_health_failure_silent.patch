@@ -9,11 +9,12 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -249,9 +249,6 @@ def check_node():
-         if total < floor:
-             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
-         if failed:
--            print(f"--- {path}: {failed} failing test(s), its own output follows ---")
+@@ -441,10 +441,6 @@ def check_node():
+         # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+         # non-zero exit code (F2, 2026-10-01).
+         if failed or cancelled or returncode:
+-            print(f"--- {path}: failed={failed} cancelled={cancelled} "
+-                  f"exit={returncode}, its own output follows ---")
 -            print(excerpt(out))
 -            print(f"--- end of {path} output ---")
              problems.append(f"{path}: suite is not green")

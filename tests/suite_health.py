@@ -288,10 +288,18 @@ NO_NODE = "node: no `node` binary found on PATH"
 
 
 def run_node_file(path):
-    """-> (total, failed, skipped, output) for one node test file.
+    """-> (total, failed, skipped, cancelled, returncode, output) for one node
+    test file.
 
     A suite that overruns NODE_TIMEOUT returns totals of None with the timeout
     named in the output, so the caller reports a problem instead of raising.
+
+    cancelled and returncode exist because `failed > 0` is not the only way
+    node --test reports red (finding 11 bounce, F2, 2026-10-01): on node 22, a
+    test that overruns its own `{ timeout }` option, or a describe-scoped
+    before()/after() hook that throws, reports `# fail 0 # cancelled N` and
+    still exits non-zero. A caller that only checked `failed` would call that
+    green.
     """
     try:
         proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
@@ -302,7 +310,7 @@ def run_node_file(path):
         # UNIT files regardless of have_browser, so without this guard a
         # node-less machine kills the gate with a traceback instead of a
         # problem naming the cause.
-        return None, None, None, NO_NODE
+        return None, None, None, None, None, NO_NODE
 
     try:
         try:
@@ -319,7 +327,7 @@ def run_node_file(path):
             # Both ends, via the shared excerpt() - not a tail-only slice: a
             # long stderr must not evict the short TAP summary that says what
             # ran (row 109).
-            return None, None, 0, (
+            return None, None, 0, 0, None, (
                 f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
                 f"{excerpt(stdout + stderr)}")
     except BaseException:
@@ -343,7 +351,8 @@ def run_node_file(path):
         m = re.search(rf"^# {name} (\d+)$", out, re.M)
         return int(m.group(1)) if m else None
 
-    return field("tests"), field("fail"), field("skipped") or 0, out
+    return (field("tests"), field("fail"), field("skipped") or 0,
+            field("cancelled") or 0, proc.returncode, out)
 
 
 # Every other subprocess in this file is bounded (NODE_TIMEOUT, the drains).
@@ -411,7 +420,7 @@ def check_node():
         if path in E2E_FILES and not have_browser:
             print(f"  {path}: not run, no browser installed")
             continue
-        total, failed, skipped, out = run_node_file(path)
+        total, failed, skipped, cancelled, returncode, out = run_node_file(path)
         if total is None:
             if "TIMED OUT" in out:
                 print(f"  {path}: TIMED OUT after {NODE_TIMEOUT}s")
@@ -428,10 +437,12 @@ def check_node():
             continue
         total_counted += total
         print(f"  {path}: ran {total}, failed {failed}, skipped {skipped}, floor {floor}")
-        if total < floor:
-            problems.append(f"{path}: only {total} tests ran, floor is {floor}")
-        if failed:
-            print(f"--- {path}: {failed} failing test(s), its own output follows ---")
+        # failed > 0 is not the only red: node 22 reports a per-test timeout or
+        # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+        # non-zero exit code (F2, 2026-10-01).
+        if failed or cancelled or returncode:
+            print(f"--- {path}: failed={failed} cancelled={cancelled} "
+                  f"exit={returncode}, its own output follows ---")
             print(excerpt(out))
             print(f"--- end of {path} output ---")
             problems.append(f"{path}: suite is not green")
@@ -536,16 +547,21 @@ def collect_js():
         if path in E2E_FILES and not have_browser:
             files[path] = {"skipped_no_browser": True}
             continue
-        total, failed, skipped, out = run_node_file(path)
+        total, failed, skipped, cancelled, returncode, out = run_node_file(path)
         if total is None:
             files[path] = {"total": None, "error": out}
             any_red = True
             continue
-        entry = {"total": total, "failed": failed, "skipped": skipped, "browser_skips": 0}
+        entry = {"total": total, "failed": failed, "skipped": skipped,
+                 "browser_skips": 0, "cancelled": cancelled, "returncode": returncode}
         if skipped:
             entry["browser_skips"] = len(
                 re.findall(r"^ok .*(?:browser|chrom).*# SKIP", out, re.M | re.I))
-        if failed:
+        # failed > 0 is not the only red: node 22 reports a per-test timeout or
+        # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+        # non-zero exit code (F2, 2026-10-01) - record both so verify_js, which
+        # reads this artifact instead of re-running node, can see it too.
+        if failed or cancelled or returncode:
             entry["output_excerpt"] = excerpt(out)
             any_red = True
         files[path] = entry
@@ -659,10 +675,15 @@ def verify_js(data):
             problems.append(f"{path}: {entry.get('error', 'no result recorded')}")
             continue
         total, failed, skipped = entry["total"], entry["failed"], entry["skipped"]
+        cancelled = entry.get("cancelled", 0)
+        returncode = entry.get("returncode", 0)
         total_counted += total
         if total < floor:
             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
-        if failed:
+        # failed > 0 is not the only red: node 22 reports a per-test timeout or
+        # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+        # non-zero exit code (F2, 2026-10-01).
+        if failed or cancelled or returncode:
             problems.append(f"{path}: suite is not green")
         if skipped:
             browser_skips = entry.get("browser_skips", 0)

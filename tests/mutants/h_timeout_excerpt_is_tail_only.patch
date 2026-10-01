@@ -7,9 +7,9 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -312,7 +312,7 @@ def run_node_file(path):
+@@ -329,7 +329,7 @@ def run_node_file(path):
              # ran (row 109).
-             return None, None, 0, (
+             return None, None, 0, 0, None, (
                  f"{path}: TIMED OUT after {NODE_TIMEOUT}s - the suite hung and was killed.\n"
 -                f"{excerpt(stdout + stderr)}")
 +                f"{(stdout + stderr)[-2000:]}")

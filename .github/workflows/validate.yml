@@ -78,9 +78,13 @@ jobs:
         run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
       # This IS the gate, not a precursor to one: --emit-js runs every
       # tests/*.test.js file once via collect_js() and returns 1 if any file
-      # came back red (finding 11, 2026-10-01 - a prior version of this step
-      # ran `node --test "tests/*.test.js"` here AND again inside collect_js(),
-      # doubling this job's wall time for no extra coverage).
+      # came back red - a failed count above zero, OR (F2 bounce, 2026-10-01)
+      # a non-zero `node --test` exit code or a non-zero `# cancelled` count,
+      # which node 22 reports with `fail 0` for a per-test timeout or a
+      # throwing before()/after() hook (finding 11, 2026-10-01 - a prior
+      # version of this step ran `node --test "tests/*.test.js"` here AND
+      # again inside collect_js(), doubling this job's wall time for no extra
+      # coverage).
       - name: App units and browser e2e
         run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
       - uses: actions/upload-artifact@v4

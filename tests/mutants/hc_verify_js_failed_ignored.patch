@@ -9,11 +9,14 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -662,8 +662,6 @@ def verify_js(data):
+@@ -680,11 +680,6 @@ def verify_js(data):
          total_counted += total
          if total < floor:
              problems.append(f"{path}: only {total} tests ran, floor is {floor}")
--        if failed:
+-        # failed > 0 is not the only red: node 22 reports a per-test timeout or
+-        # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+-        # non-zero exit code (F2, 2026-10-01).
+-        if failed or cancelled or returncode:
 -            problems.append(f"{path}: suite is not green")
          if skipped:
              browser_skips = entry.get("browser_skips", 0)
