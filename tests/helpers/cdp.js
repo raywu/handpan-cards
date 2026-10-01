@@ -44,6 +44,13 @@ function findBrowser() {
 // ---------------------------------------------------------------------------
 const LIVE = new Set();
 
+// The one definition of "the app has booted", shared by Browser.goto() below
+// and tests/e2e.test.js's navigate() - see goto() for why they are not fully
+// merged (a reload has a staleness check with nothing to be stale against on
+// the very first load).
+const APP_READY_EXPR =
+  `document.readyState === "complete" && !!document.querySelector("#count")?.textContent`;
+
 // A synchronous sleep. The 'exit' handler cannot await, and the wait below has
 // to happen there too.
 function sleepSync(ms) {
@@ -139,9 +146,13 @@ class Browser {
     await this.send("Page.navigate", { url });
     // Poll for the app to have booted rather than trusting a load event: the
     // Google Fonts <link> is render-blocking, so readyState alone is not enough.
+    // APP_READY_EXPR is the one definition of "booted" this navigator and
+    // tests/e2e.test.js's navigate() both poll for (finding 17, quality
+    // refactor 2026-09-30) - navigate() layers its own staleness check on top
+    // for a reload, which this first-ever load has nothing to be stale against.
     const deadline = Date.now() + 15000;
     for (;;) {
-      const ready = await this.eval(`return document.readyState === "complete" && !!document.querySelector("#count")?.textContent;`).catch(() => false);
+      const ready = await this.eval(`return ${APP_READY_EXPR};`).catch(() => false);
       if (ready) return;
       if (Date.now() > deadline) throw new Error("page never became ready: " + url);
       await new Promise((r) => setTimeout(r, 50));
@@ -158,8 +169,22 @@ class Browser {
       await new Promise((r) => setTimeout(r, 40));
     }
   }
-  async settle() {   // let CSS transitions finish
-    await this.eval(`return new Promise(r => requestAnimationFrame(() => setTimeout(r, 500)));`);
+  // Let CSS/WAAPI animations finish. Finding 6 (quality refactor 2026-09-30):
+  // this used to be a fixed 500ms sleep, paid by all ~76 call sites whether or
+  // not anything was actually animating. Wait one frame so a just-started
+  // animation is registered, then poll getAnimations() until it is empty,
+  // with the old 500ms kept as a CEILING - not a guaranteed wait - so a
+  // stuck/never-clearing animation still bounds the suite the way the fixed
+  // sleep always did, instead of hanging it.
+  async settle() {
+    await this.eval(`return new Promise(r => requestAnimationFrame(r));`);
+    const deadline = Date.now() + 500;
+    for (;;) {
+      const n = await this.eval(`return document.getAnimations().length;`);
+      if (n === 0) return;
+      if (Date.now() > deadline) return;
+      await new Promise((r) => setTimeout(r, 20));
+    }
   }
   async setViewport(width, height, mobile = true) {
     await this.send("Emulation.setDeviceMetricsOverride", {
@@ -472,4 +497,7 @@ async function launch() {
   }
 }
 
-module.exports = { launch, findBrowser };
+// Browser and APP_READY_EXPR are exported for tests/harness.test.js's
+// self-tests of settle() and the shared readiness predicate, not for e2e
+// journeys - those only ever get a Browser instance from launch().
+module.exports = { launch, findBrowser, Browser, APP_READY_EXPR };

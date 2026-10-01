@@ -17,14 +17,14 @@ const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser } = require("./helpers/cdp.js");
+const { launch, findBrowser, APP_READY_EXPR } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
 // suites running side by side (several agents share this machine) simply cannot
 // collide. E2E_PORT pins a specific port when you want one; a pinned port that
 // is already taken is a LOUD, immediate failure, never a hang - see the before()
-// hook and the "a taken port fails the harness fast" test at the end of this file.
+// hook and the "a taken port fails the harness fast" test in tests/harness.test.js.
 const PORT = Number(process.env.E2E_PORT) || 0;
 // Not known until the server is listening (port 0 is resolved by the OS).
 // NB: this deliberately shadows the global URL class for the whole module.
@@ -195,9 +195,13 @@ function run() {
         const loaded = onceEvent("Page.loadEventFired", 20000);
         await b.send("Page.navigate", { url: target || URL });
         await loaded;
+        // APP_READY_EXPR is the same "has the app booted" predicate
+        // Browser.goto() polls for on the very first load (finding 17,
+        // quality refactor 2026-09-30); this reload layers its own
+        // staleness check on top, which the first load has nothing to be
+        // stale against.
         await b.waitFor(
-          `document.readyState === "complete" && !window.__stale
-             && !!document.getElementById("count")?.textContent`,
+          `${APP_READY_EXPR} && !window.__stale`,
           { timeout: 10000, label: "the new document to commit" },
         );
         return;
@@ -209,8 +213,17 @@ function run() {
     throw last;
   }
 
+  // The suite's default desktop viewport, set once in before() and restored
+  // here on every freshLoad() - finding 17 (quality refactor 2026-09-30):
+  // a test that called b.setViewport() directly and never restored it used
+  // to leak that viewport into whichever test's freshLoad() ran next. Use
+  // withViewport() below instead of a bare setViewport() for a test-scoped
+  // size; freshLoad() resetting unconditionally is the backstop either way.
+  const DEFAULT_VIEWPORT = [900, 900, false];
+
   async function freshLoad() {
     if (navDead) throw navDead;
+    await b.setViewport(...DEFAULT_VIEWPORT);
     await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
     await navigate();
     // "+ ADD" ships in the markup, so waiting on ".chip" alone can be satisfied
@@ -218,6 +231,18 @@ function run() {
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
       label: "deck chips to be built",
     });
+  }
+
+  // Run fn() at a non-default viewport, then restore DEFAULT_VIEWPORT in a
+  // finally - so a test that needs e.g. a mobile size cannot leak it into
+  // whatever runs after it even before that test's own next freshLoad().
+  async function withViewport(width, height, mobile, fn) {
+    await b.setViewport(width, height, mobile);
+    try {
+      return await fn();
+    } finally {
+      await b.setViewport(...DEFAULT_VIEWPORT);
+    }
   }
 
   // Lane M1: the print controls and the mode toggle both live behind the
@@ -351,6 +376,13 @@ function run() {
     b.eval(`return getComputedStyle(document.getElementById("card")).transform;`);
   const cardFlipped = () =>
     b.eval(`return document.getElementById("card").classList.contains("flip");`);
+
+  // One touch-point-array builder shared by every synthetic touch gesture in
+  // this file (finding 17, quality refactor 2026-09-30: three call sites drew
+  // their own identical `{ radiusX: 4, radiusY: 4, force: 1, id: 1 }` literal).
+  function touchPoint(x, y) {
+    return [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+  }
 
   /* ---------------------------------------------------------------- *
    * 1. boot
@@ -982,23 +1014,31 @@ function run() {
       "a print button stayed disabled after HPE.pdfcards.build threw");
   });
 
-  /* The card's own keydown handler treats Space and Enter as "flip", and it
-     is bound to #card, so it fires for a key event that BUBBLES from any
-     descendant. The wrapper's onclick="event.stopPropagation()" guards the
-     mouse path only - keydown is a separate listener on a separate phase.
-     A <button> converts a focused Enter into its own click natively (no
-     preventDefault trick is needed the way an <a> needed one), but the
-     card's keydown handler could still flip the card first if it does not
-     ignore an event that bubbled from inside .prints - which in
-     NAME->NOTES mode would silently reveal the very answer being studied. */
-  test("Enter on a print button activates it and does not flip the card", async () => {
+  /* Finding 9 (quality refactor 2026-09-30, A-F1): the previous version of
+     this test added its OWN click listener to prove "activated", which fires
+     from the browser's native Enter-converts-to-click behaviour alone and
+     never touches a line of app code - a mutant that broke the button's real
+     onclick wiring (downloadDeckPDF(...); closePanel()) would still pass it.
+     This version spies on HPE.pdfcards.build, the function downloadDeckPDF
+     itself calls, and also checks closePanel()'s own observable effect (the
+     panel's `hidden` attribute coming back), so a mutant that breaks that
+     real call chain has something to break.
+
+     The card's own keydown handler treats Space and Enter as "flip" and is
+     bound to #card, so it fires for a key event that BUBBLES from any
+     descendant; the wrapper's onclick="event.stopPropagation()" guards the
+     mouse path only, keydown being a separate listener on a separate phase.
+     It is unreachable from here today (#settings-panel is not inside #card;
+     see index.html's own note by the handler, G5/owner-gated, left in place),
+     so `flipped` below is expected to stay false independent of this guard -
+     the assertion is kept as a regression guard in case that ever changes. */
+  test("Enter on a print button runs its real click handler and does not flip the card", async () => {
     await freshLoad();
     await openSettingsPanel();
     await b.eval(`
-      window.__printBtnActivated = false;
-      const btn = document.querySelector("#settings-panel .prints button");
-      btn.addEventListener("click", () => { window.__printBtnActivated = true; });
-      btn.focus();
+      window.__buildCalls = [];
+      HPE.pdfcards.build = (deck, variant) => { window.__buildCalls.push(variant); };
+      document.querySelector("#settings-panel .prints button").focus();
       return true;
     `);
     await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -1007,15 +1047,20 @@ function run() {
     await b.settle();
     const m = await b.eval(`
       return {
-        activated: window.__printBtnActivated,
+        buildCalls: window.__buildCalls,
+        panelHidden: document.getElementById("settings-panel").hasAttribute("hidden"),
         flipped: document.getElementById("card").classList.contains("flip"),
       };
     `);
     assert.strictEqual(m.flipped, false,
-      "Enter on a print button flipped the card - the card's keydown handler is " +
-      "swallowing events that bubble up from the button");
-    assert.strictEqual(m.activated, true,
-      "Enter on a focused print button never activated it");
+      "Enter on a print button flipped the card");
+    assert.strictEqual(m.buildCalls.length, 1,
+      "Enter on the FULL DECK PDF button never reached HPE.pdfcards.build - " +
+      "the real onclick chain did not run");
+    assert.strictEqual(m.buildCalls[0].variant, "full",
+      "Enter on the FULL DECK PDF button built the wrong variant");
+    assert.strictEqual(m.panelHidden, true,
+      "Enter on a print button never called closePanel() - the panel stayed open");
   });
 
   /* The paper <select> lives in the same .prints row as the print buttons and
@@ -1999,9 +2044,11 @@ function run() {
      The link is built through the app's own shareLink(), never hand-encoded
      here, so the wire format is exercised exactly as a real share does it. */
   test("a fresh navigation to a share link shows the deck, count and a lit field", async () => {
-    await b.setViewport(380, 800, true);
     try {
+      // After freshLoad(), which resets to DEFAULT_VIEWPORT: Q1 is a 380px
+      // finding, and the share-link boot below must happen at that width.
       await freshLoad();
+      await b.setViewport(380, 800, true);
       await generate(SIX_SCALES[1]);
       const shared = await b.eval(`
         const d = CUSTOM[deckId];
@@ -2024,6 +2071,8 @@ function run() {
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
         label: "deck chips to be built after the share link boots",
       });
+      assert.strictEqual(await b.eval(`return window.innerWidth;`), 380,
+        "the share link must boot at Q1's 380px width");
 
       const after = await b.eval(`
         const l = document.querySelector("#front .hdr .l");
@@ -6049,461 +6098,6 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
-   * harness contract: a taken port fails loudly, it does not hang
-   * ---------------------------------------------------------------- */
-
-  // Regression guard. Several agents share this machine and the port is fixed,
-  // so a collision is routine; before this test the `listen` await never
-  // settled on EADDRINUSE (the callback only fires on success), so the run hung
-  // until something outside killed it and waitForServer's "is port N taken?"
-  // message was dead code in exactly the case it was written for.
-  //
-  // The child is marked with E2E_HARNESS_CHILD so it cannot re-enter here.
-  test("a taken port fails the harness fast, naming the port and E2E_PORT", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const net = require("node:net");
-    const { spawnSync } = require("node:child_process");
-
-    // Port 0: the OS picks a free one, so this can never collide with a
-    // parallel agent the way a hardcoded number would.
-    const squatter = net.createServer();
-    await new Promise((res, rej) => {
-      squatter.once("error", rej);
-      squatter.listen(0, "127.0.0.1", res);
-    });
-    const taken = squatter.address().port;
-
-    // This file is itself running inside node's test runner, which marks the
-    // environment with NODE_TEST_CONTEXT. Inherited, that makes the child think
-    // it is a runner-managed worker and exit 0 immediately - which would make
-    // this test pass against a broken harness. Strip it.
-    const env = { ...process.env, E2E_PORT: String(taken), E2E_HARNESS_CHILD: "1" };
-    delete env.NODE_TEST_CONTEXT;
-
-    let r;
-    try {
-      r = spawnSync(process.execPath, ["--test", "tests/e2e.test.js"], {
-        cwd: REPO,
-        encoding: "utf8",
-        timeout: 30000,
-        env,
-      });
-    } finally {
-      await new Promise((res) => squatter.close(res));
-    }
-
-    const out = (r.stdout || "") + (r.stderr || "");
-    // A timeout kill shows up as a signal (and, on some platforms, an error).
-    // That IS the hang, so it must fail here rather than pass quietly.
-    assert.strictEqual(r.signal, null,
-      `the harness was killed by ${r.signal} - it hung on a taken port instead of failing`);
-    assert.strictEqual(r.error, undefined,
-      `spawnSync failed: ${r.error && r.error.message}`);
-    assert.strictEqual(typeof r.status, "number", "no exit status from the harness");
-    assert.notStrictEqual(r.status, 0, "the harness exited 0 with its port taken");
-    assert.ok(out.includes(String(taken)),
-      `the failure never named port ${taken}:\n${out.slice(-2000)}`);
-    assert.ok(out.includes("E2E_PORT"),
-      `the failure never mentioned E2E_PORT:\n${out.slice(-2000)}`);
-  });
-
-  // The other half of the same defect: `node --test` has no per-test deadline,
-  // so a wedged suite used to hang tests/suite_health.py forever - which is how
-  // a single stuck port burned a whole CI job. run_node_file must bound every
-  // suite it starts and report the overrun as a PROBLEM, not a traceback.
-  test("suite_health bounds every node suite with a wall clock", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const os = require("node:os");
-    const { spawnSync } = require("node:child_process");
-
-    // A suite that never finishes. Written outside tests/ so the *.test.js glob
-    // in suite_health.py cannot pick it up and demand a FLOORS row for it.
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "suite-health-hang-"));
-    const hang = path.join(dir, "hang.test.js");
-    fs.writeFileSync(hang,
-      'require("node:test").test("never finishes", () => ' +
-      "new Promise((r) => setTimeout(r, 60000)));\n");
-
-    const probe = [
-      "import sys",
-      "from tests import suite_health",
-      "total, failed, skipped, cancelled, returncode, out = suite_health.run_node_file(sys.argv[1])",
-      'print("TOTAL", total)',
-      "print(out)",
-    ].join("\n");
-
-    // Same NODE_TEST_CONTEXT trap as above: inherited, the node run_node_file
-    // starts would think it is a runner-managed worker and exit at once.
-    const env = { ...process.env, NODE_SUITE_TIMEOUT: "3" };
-    delete env.NODE_TEST_CONTEXT;
-
-    const started = Date.now();
-    let r;
-    try {
-      r = spawnSync("python3", ["-c", probe, hang], {
-        cwd: REPO,
-        encoding: "utf8",
-        timeout: 60000,
-        env,
-      });
-    } finally {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-    const elapsed = Date.now() - started;
-    const out = (r.stdout || "") + (r.stderr || "");
-
-    assert.strictEqual(r.signal, null,
-      `run_node_file was killed by ${r.signal} - it never bounded the hung suite`);
-    assert.strictEqual(r.error, undefined,
-      `run_node_file never returned: ${r.error && r.error.message} (after ${elapsed}ms)`);
-    assert.strictEqual(r.status, 0,
-      `run_node_file raised instead of reporting the timeout:\n${out.slice(-2000)}`);
-    assert.ok(!/Traceback \(most recent call last\)/.test(out),
-      `the timeout surfaced as a traceback:\n${out.slice(-2000)}`);
-    assert.ok(/^TOTAL None$/m.test(out),
-      `a timed-out suite must not report a test count:\n${out.slice(-2000)}`);
-    assert.ok(out.includes("TIMED OUT after 3s"),
-      `the timeout was not reported with its limit:\n${out.slice(-2000)}`);
-    assert.ok(out.includes("hang.test.js"),
-      `the timeout report did not name the file:\n${out.slice(-2000)}`);
-  });
-
-
-  /* ---------------------------------------------------------------- *
-   * browser reaping (tests/helpers/cdp.js)
-   *
-   * The harness spawns a real browser and a real profile directory. Both are
-   * cleaned up by close(), which only ever runs from after(). Two paths skip
-   * after() entirely and used to orphan the browser: a launch() that rejects
-   * AFTER spawn (the debug-port timeout, the WebSocket open, any of the setup
-   * CDP sends), and a suite killed by a signal - which is exactly how
-   * SUITE_TIMEOUT in tests/mutation_check.sh and NODE_TIMEOUT in
-   * tests/suite_health.py end an overrunning run. The orphans were observed on
-   * a dev box as chrome-headless-shell roots reparented to init, alongside 52
-   * abandoned hpfc-prof-* directories.
-   *
-   * Both tests give the child its own TMPDIR, so "was the profile directory
-   * removed?" is answerable without guessing which hpfc-prof-* was ours, and
-   * so a stray process can be recognised by its --user-data-dir argument.
-   * Every child strips NODE_TEST_CONTEXT: inherited, a node child believes it
-   * is a runner-managed worker and exits 0 at once, which would make these
-   * pass against the very code they exist to condemn.
-   * ---------------------------------------------------------------- */
-
-  const { spawn: spawnChild, execFileSync } = require("node:child_process");
-  const osmod = require("node:os");
-
-  function childEnv(extra) {
-    const env = { ...process.env, E2E_HARNESS_CHILD: "1", ...extra };
-    delete env.NODE_TEST_CONTEXT;
-    return env;
-  }
-
-  function alive(pid) {
-    try { process.kill(pid, 0); return true; } catch { return false; }
-  }
-
-  // Anything still running that was pointed at this profile root - the browser
-  // root process and every renderer/zygote child carry --user-data-dir.
-  function processesUnder(dir) {
-    let out = "";
-    try { out = execFileSync("ps", ["-eo", "pid=,args=", "-ww"], { encoding: "utf8" }); } catch { return []; }
-    return out.split("\n").filter((l) => l.includes(dir));
-  }
-
-  function killUnder(dir) {
-    for (const line of processesUnder(dir)) {
-      const pid = Number(line.trim().split(/\s+/)[0]);
-      if (pid && pid !== process.pid) { try { process.kill(pid, "SIGKILL"); } catch {} }
-    }
-  }
-
-  async function until(pred, ms) {
-    const deadline = Date.now() + ms;
-    for (;;) {
-      if (pred()) return true;
-      if (Date.now() > deadline) return false;
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-
-  const CDP_HELPER = path.join(REPO, "tests/helpers/cdp.js");
-
-  test("a SIGTERMed suite reaps its browser and its profile directory", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "reap-term-"));
-    // Launch a browser, announce the root pid, then sit still: no after(), no
-    // close() - only a signal handler can save this.
-    const script =
-      "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
-      "(async () => { const b = await launch();" +
-      "  if (!b) { console.log('NOBROWSER'); process.exit(0); }" +
-      "  console.log('PID ' + b.proc.pid + ' DIR ' + b.profileDir);" +
-      "  setInterval(() => {}, 1000); })();";
-
-    const child = spawnChild(process.execPath, ["-e", script], {
-      cwd: REPO, env: childEnv({ TMPDIR: tmp }), stdio: ["ignore", "pipe", "pipe"],
-    });
-    let out = "", err = "";
-    child.stdout.on("data", (d) => { out += d.toString(); });
-    child.stderr.on("data", (d) => { err += d.toString(); });
-    const exited = new Promise((r) => child.on("exit", (c, s) => r({ c, s })));
-
-    const announced = await until(() => /PID \d+ DIR \S+/.test(out) || /NOBROWSER/.test(out), 60000);
-    if (/NOBROWSER/.test(out)) {
-      child.kill("SIGKILL"); await exited;
-      fs.rmSync(tmp, { recursive: true, force: true });
-      return;
-    }
-    assert.ok(announced, `the child never launched a browser:\n${out}\n${err.slice(-2000)}`);
-    const m = out.match(/PID (\d+) DIR (\S+)/);
-    const browserPid = Number(m[1]);
-    const profileDir = m[2];
-    assert.ok(alive(browserPid), "the browser was not running before the kill");
-
-    try {
-      child.kill("SIGTERM");
-      // A handler that swallows the signal would be a WORSE bug than the leak:
-      // an overrunning suite would stop being killable. The child must die.
-      // The race has an explicit settle point, so the loser's timer is cleared
-      // rather than left armed: an armed timer holds node's event loop open for
-      // its full budget, and this suite runs 34 more times in every sweep.
-      let bail;
-      const gone = await Promise.race([
-        exited,
-        new Promise((r) => { bail = setTimeout(() => r(null), 15000); }),
-      ]).finally(() => clearTimeout(bail));
-      assert.ok(gone, "SIGTERM did not terminate the child - the handler swallowed it");
-
-      const reaped = await until(() => !alive(browserPid), 10000);
-      assert.ok(reaped, `browser pid ${browserPid} outlived the SIGTERMed suite`);
-      const clear = await until(() => processesUnder(profileDir).length === 0, 10000);
-      assert.ok(clear, `processes still hold the profile:\n${processesUnder(profileDir).join("\n")}`);
-      const removed = await until(() => !fs.existsSync(profileDir), 10000);
-      assert.ok(removed, `the profile directory survived: ${profileDir}`);
-    } finally {
-      try { child.kill("SIGKILL"); } catch {}
-      killUnder(tmp);
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-  test("a launch() that fails after spawn leaves no browser and no profile", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "reap-fail-"));
-    // A stand-in browser that reports a debug port nothing is listening on, so
-    // launch() gets past spawn and then fails at the WebSocket - the shape of
-    // every post-spawn failure, without a 20s wait for the port timeout.
-    const fake = path.join(tmp, "fake-browser");
-    fs.writeFileSync(fake,
-      "#!/bin/sh\n" +
-      "echo 'DevTools listening on ws://127.0.0.1:1/devtools/browser/dead' 1>&2\n" +
-      "exec sleep 300\n");
-    fs.chmodSync(fake, 0o755);
-
-    const profiles = path.join(tmp, "profiles");
-    fs.mkdirSync(profiles);
-    // The child reports what is left the moment launch() rejects, BEFORE it
-    // exits. Checking after exit would prove nothing: the process-teardown
-    // reaper cleans up on the way out, so a launch() that never reaped its own
-    // failure would still look clean from outside. The leak this closes is the
-    // window a long-lived process spends holding an orphan it already gave up on.
-    const script =
-      "const { execFileSync } = require('node:child_process');" +
-      "const fs = require('node:fs');" +
-      "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
-      "(async () => { try { await launch(); console.log('NOTHROW'); }" +
-      "  catch (e) { console.log('THREW ' + (e && (e.message || e.type || e))); }" +
-      "  const root = process.env.TMPDIR;" +
-      "  const left = fs.readdirSync(root).filter((n) => n.startsWith('hpfc-prof-'));" +
-      "  const ps = execFileSync('ps', ['-eo', 'pid=,args=', '-ww'], { encoding: 'utf8' })" +
-      "    .split('\\n').filter((l) => l.includes(root));" +
-      "  console.log('LEFT ' + JSON.stringify(left));" +
-      "  console.log('PROCS ' + ps.length);" +
-      "  process.exit(0); })();";
-
-    const r = await new Promise((resolve) => {
-      const c = spawnChild(process.execPath, ["-e", script], {
-        cwd: REPO,
-        env: childEnv({ TMPDIR: profiles, CHROME_BIN: fake }),
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      let o = "", e = "";
-      c.stdout.on("data", (d) => { o += d.toString(); });
-      c.stderr.on("data", (d) => { e += d.toString(); });
-      c.on("exit", (code) => resolve({ code, o, e }));
-      // unref: a pure backstop must not by itself keep the process alive for a
-      // minute after the child has already exited.
-      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000).unref();
-    });
-
-    try {
-      assert.ok(/THREW/.test(r.o),
-        `launch() should have rejected past spawn:\n${r.o}\n${r.e.slice(-2000)}`);
-      // The original error is a diagnostic other lanes read; it must survive.
-      assert.ok(!/THREW (undefined|null)\b/.test(r.o), `the failure lost its error:\n${r.o}`);
-
-      const leftLine = r.o.match(/LEFT (\[.*\])/);
-      assert.ok(leftLine, `the child never reported its profile directories:\n${r.o}`);
-      assert.deepStrictEqual(JSON.parse(leftLine[1]), [],
-        `launch() left profile directories behind: ${leftLine[1]}`);
-      const procLine = r.o.match(/PROCS (\d+)/);
-      assert.ok(procLine, `the child never reported surviving processes:\n${r.o}`);
-      assert.strictEqual(Number(procLine[1]), 0,
-        `launch() left ${procLine[1]} process(es) holding the profile`);
-      // And nothing outlived the child either.
-      const clear = await until(() => processesUnder(profiles).length === 0, 5000);
-      assert.ok(clear,
-        `a browser outlived the failed launch:\n${processesUnder(profiles).join("\n")}`);
-    } finally {
-      killUnder(tmp);
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-
-  /* ---------------------------------------------------------------- *
-   * launch retry (tests/helpers/cdp.js)
-   *
-   * CI run 34518203026 aborted the mutation gate at its BASELINE check: the
-   * e2e suite failed on the CLEAN tree with "browser did not report a debug
-   * port", ~2 minutes into a 232-mutant sweep, and attempt 2 with no code
-   * change was green. The exit branch of the launch race did NOT fire, so the
-   * browser was alive and had simply not printed its DevTools ws URL inside
-   * the 20s bound - a loaded runner, not breakage. Fourth occurrence, first
-   * captured signature.
-   *
-   * So launch() retries that ONE rejection ONCE. The two tests below are the
-   * whole contract: a slow start is retried (and its first, still-alive
-   * browser reaped first), and a browser that really fails is NOT - retrying
-   * real breakage only doubles the wall clock before the same failure.
-   *
-   * Both drive a stand-in browser through CHROME_BIN, the seam findBrowser()
-   * already has, and both lower the port bound through
-   * HPFC_CDP_PORT_TIMEOUT_MS - which can only ever LOWER it - so the slow-start
-   * path costs the sweep half a second instead of 20 seconds twice.
-   * ---------------------------------------------------------------- */
-
-  // Reports, from inside the child and BEFORE it exits (see the reaping tests
-  // above for why "after exit" would prove nothing): how many times the fake
-  // browser was executed, what launch() finally threw, and what it left behind.
-  const LAUNCH_PROBE =
-    "const { execFileSync } = require('node:child_process');" +
-    "const fs = require('node:fs');" +
-    "const { launch } = require(" + JSON.stringify(CDP_HELPER) + ");" +
-    "(async () => { try { await launch(); console.log('NOTHROW'); }" +
-    "  catch (e) { console.log('THREW ' + (e && (e.message || e.type || e))); }" +
-    "  const log = process.env.FAKE_LOG;" +
-    "  console.log('LAUNCHES ' + (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\\n').filter(Boolean).length : 0));" +
-    "  const root = process.env.TMPDIR;" +
-    "  const left = fs.readdirSync(root).filter((n) => n.startsWith('hpfc-prof-'));" +
-    "  const ps = execFileSync('ps', ['-eo', 'pid=,args=', '-ww'], { encoding: 'utf8' })" +
-    "    .split('\\n').filter((l) => l.includes(root));" +
-    "  console.log('LEFT ' + JSON.stringify(left));" +
-    "  console.log('PROCS ' + ps.length);" +
-    "  process.exit(0); })();";
-
-  function runLaunchProbe(fakeBody, tmp) {
-    const fake = path.join(tmp, "fake-browser");
-    const log = path.join(tmp, "invocations");
-    fs.writeFileSync(fake, fakeBody.replace(/@LOG@/g, log));
-    fs.chmodSync(fake, 0o755);
-    const profiles = path.join(tmp, "profiles");
-    fs.mkdirSync(profiles);
-    return new Promise((resolve) => {
-      const c = spawnChild(process.execPath, ["-e", LAUNCH_PROBE], {
-        cwd: REPO,
-        env: childEnv({
-          TMPDIR: profiles, CHROME_BIN: fake, FAKE_LOG: log,
-          HPFC_CDP_PORT_TIMEOUT_MS: "500",
-        }),
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      let o = "", e = "";
-      c.stdout.on("data", (d) => { o += d.toString(); });
-      c.stderr.on("data", (d) => { e += d.toString(); });
-      c.on("exit", (code) => resolve({ code, o, e }));
-      setTimeout(() => { try { c.kill("SIGKILL"); } catch {} }, 60000).unref();
-    });
-  }
-
-  test("a slow-starting browser is retried once, and the first one is reaped", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "launch-slow-"));
-    // First run: alive, silent, past the bound - the observed CI signature
-    // exactly (NOT an exit, which is a different branch and must not retry).
-    // Second run: reports a port nothing listens on, so the retry is provably
-    // reached without this test needing a real browser.
-    const body =
-      "#!/bin/sh\n" +
-      "echo run >> '@LOG@'\n" +
-      "if [ \"$(wc -l < '@LOG@')\" -le 1 ]; then exec sleep 120; fi\n" +
-      "echo 'DevTools listening on ws://127.0.0.1:1/devtools/browser/dead' 1>&2\n" +
-      "exec sleep 120\n";
-    const r = await runLaunchProbe(body, tmp);
-
-    try {
-      const launches = r.o.match(/LAUNCHES (\d+)/);
-      assert.ok(launches, `the child never reported the launch count:\n${r.o}\n${r.e.slice(-2000)}`);
-      assert.strictEqual(Number(launches[1]), 2,
-        "a slow start must be retried exactly once (two browsers spawned, not " +
-        `${launches[1]}):\n${r.o}\n${r.e.slice(-2000)}`);
-      // Not the timeout again: the retry got past the port wait and died at the
-      // dead WebSocket, which is only reachable on the second attempt.
-      assert.ok(!/THREW browser did not report a debug port/.test(r.o),
-        `the retry never happened - launch() rethrew the slow-start timeout:\n${r.o}`);
-      // A silent retry turns a known intermittent into an unknown slowdown.
-      assert.ok(/retry/i.test(r.e),
-        `the retry was silent - nothing on stderr names it:\n${r.e.slice(-2000)}`);
-      // The first browser is ALIVE when the retry starts; not reaping it leaks a
-      // Chrome and a profile dir per retry.
-      const leftLine = r.o.match(/LEFT (\[.*\])/);
-      assert.ok(leftLine, `the child never reported its profile directories:\n${r.o}`);
-      assert.deepStrictEqual(JSON.parse(leftLine[1]), [],
-        `the retry left profile directories behind: ${leftLine[1]}`);
-      const procLine = r.o.match(/PROCS (\d+)/);
-      assert.ok(procLine, `the child never reported surviving processes:\n${r.o}`);
-      assert.strictEqual(Number(procLine[1]), 0,
-        `the retry left ${procLine[1]} process(es) holding a profile`);
-    } finally {
-      killUnder(tmp);
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-  test("a browser that exits at once is not retried", async () => {
-    if (process.env.E2E_HARNESS_CHILD) return;
-
-    const tmp = fs.mkdtempSync(path.join(osmod.tmpdir(), "launch-dead-"));
-    // Real breakage, not a slow runner: retrying it just pays the same failure
-    // twice, and on a 232-mutant sweep that is the difference between a red
-    // suite and a timed-out one.
-    const body =
-      "#!/bin/sh\n" +
-      "echo run >> '@LOG@'\n" +
-      "exit 3\n";
-    const r = await runLaunchProbe(body, tmp);
-
-    try {
-      const launches = r.o.match(/LAUNCHES (\d+)/);
-      assert.ok(launches, `the child never reported the launch count:\n${r.o}\n${r.e.slice(-2000)}`);
-      assert.strictEqual(Number(launches[1]), 1,
-        "a browser that exited must NOT be retried (one spawn, not " +
-        `${launches[1]}):\n${r.o}\n${r.e.slice(-2000)}`);
-      assert.ok(/THREW browser exited: 3/.test(r.o),
-        `the original failure must reach the caller unchanged:\n${r.o}`);
-    } finally {
-      killUnder(tmp);
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
-  });
-
-  /* ---------------------------------------------------------------- *
    * page background covers every viewport (lane A, android-bg-and-menu
    * plan 2026-09-28)
    *
@@ -7962,7 +7556,7 @@ function run() {
       `);
       await b.waitForPendingSettle();
       const t0 = Date.now() / 1000;
-      const pt = (dx, dy) => [{ x: box.x + dx, y: box.y + (dy || 0), radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+      const pt = (dx, dy) => touchPoint(box.x + dx, box.y + (dy || 0));
       await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0, 0), timestamp: t0 });
       return {
         async move(dx, ms, dy) {
@@ -8189,10 +7783,32 @@ function run() {
       assert.strictEqual(await cardFlipped(), true, "a mouse click must still flip");
       await b.click("#card");
       assert.strictEqual(await cardFlipped(), false);
+      // Q29/finding 5: the count was already `2 / n` from the commit above
+      // and a spring-back never changes it, so waiting on the count proves
+      // nothing about the spring-back itself. b.settle() waits for the real
+      // animation queue (and the task queue behind it, e.g. eatClick's own
+      // decay) to go quiet instead, so a flip that would only land on a LATER
+      // task than finishAnimations() forced is not missed.
       await b.drag("#card", [[-8, 100], [-15, 300]], { pointer: "mouse" });
       await b.finishAnimations();
-      await expectCount(`2 / ${n}`, "a short slow mouse drag must spring back, not navigate");
-      assert.strictEqual(await cardFlipped(), false, "a spring-back must not flip");
+      await b.settle();
+      const flipped = await cardFlipped();
+      if (flipped) {
+        const diag = await b.eval(`
+          return {
+            transform: getComputedStyle(document.querySelector(".scene")).transform,
+            eatClick: typeof eatClick !== "undefined" ? eatClick : null,
+          };
+        `);
+        assert.fail(
+          `a spring-back must not flip (.scene transform=${diag.transform}, eatClick=${diag.eatClick})`,
+        );
+      }
+      assert.strictEqual(
+        (await b.eval(`return (document.getElementById("count").textContent || "").trim();`)),
+        `2 / ${n}`,
+        "a short slow mouse drag must spring back, not navigate",
+      );
     });
 
     test("card swipe: a right-click at the rest position during the fly-out does not eat the next click", async () => {
@@ -8221,10 +7837,13 @@ function run() {
       // event itself ever fires - so a mouse click on #next can't tell a
       // stuck eatClick apart from one that was never stuck (confirmed
       // empirically: it passes with the `sw_eatclick_any_button` mutant
-      // applied too). A keyboard Enter was tried too and also can't
-      // discriminate - this CDP harness's raw key dispatch never
-      // synthesizes a button's native Enter-activates-click behaviour, even
-      // on a freshly focused #next with no prior interaction at all.
+      // applied too). A keyboard Enter on a freshly focused #next is not
+      // used either: this harness's b.key() sends only keyDown/keyUp with no
+      // `char` event, which does not trigger a button's native
+      // Enter-activates-click at all. And even a native activation click
+      // arrives with no pointerdown of its own, exactly like .click() below,
+      // so it could not discriminate a stuck eatClick from one that was
+      // never stuck anyway.
       // A programmatic .click() is the one action that reaches the
       // document's capture click listener with no pointerdown of its own
       // (the same technique the "no-flight capture branch" test below uses
@@ -8407,7 +8026,7 @@ function run() {
         // #card - unlike a synthetic pointerdown dispatched on #card itself.
         await b.send("Input.dispatchTouchEvent", {
           type: "touchStart",
-          touchPoints: [{ x: rest.x, y: rest.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }],
+          touchPoints: touchPoint(rest.x, rest.y),
         });
         await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
         assert.strictEqual(await countText(), `2 / ${n}`, "a real tap at the rest position during flight should land it");
@@ -8431,7 +8050,7 @@ function run() {
         await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
         await pauseFlyoutAnimation(150);
         const t0 = Date.now() / 1000;
-        const pt = (dx) => [{ x: rest.x + dx, y: rest.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+        const pt = (dx) => touchPoint(rest.x + dx, rest.y);
         await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0), timestamp: t0 });
         await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(-40), timestamp: t0 + 0.1 });
         await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(-80), timestamp: t0 + 0.2 });
@@ -8577,8 +8196,8 @@ function run() {
           assert.strictEqual(pc, 0, `${w}x${h}: touch-action:none must never produce a pointercancel`);
         }
       } finally {
-        // Viewport is a browser-level setting; freshLoad() does not reset it,
-        // so a throw mid-loop must not leak a small viewport into later tests.
+        // Viewport is a browser-level setting; restore it here so a throw
+        // mid-loop cannot leak a small viewport into the rest of this test.
         await b.setViewport(900, 900, false);
       }
     });
@@ -8623,9 +8242,9 @@ function run() {
           await b.finishAnimations();
         }
       } finally {
-        // The viewport is a browser-level setting, not a page one - freshLoad()
-        // does not reset it, so it must not leak into later tests either on
-        // pass or on an assertion throw mid-loop.
+        // The viewport is a browser-level setting, not a page one; restore it
+        // here so a mid-loop assertion throw cannot leak it into the rest of
+        // this test (freshLoad() resets it before the next one).
         await b.setViewport(900, 900, false);
       }
     });

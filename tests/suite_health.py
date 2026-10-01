@@ -49,7 +49,8 @@ FLOORS = {
     "tests/test_pdf_parity.py": 11,
     # node
     "tests/app.test.js": 193,
-    "tests/e2e.test.js": 196,
+    "tests/e2e.test.js": 190,
+    "tests/harness.test.js": 9,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 42,
     "tests/voicing.test.js": 15,
@@ -65,9 +66,12 @@ FLOORS = {
     "tests/sequence.test.js": 9,
 }
 
-# The e2e suite is the only one allowed to vanish: it skips itself when no
-# browser is present, which is a supported configuration.
-E2E_FILES = {"tests/e2e.test.js"}
+# The e2e suites are the only ones allowed to vanish: they skip themselves
+# when no browser is present, which is a supported configuration. (The 3
+# settle() self-tests in harness.test.js do not need a browser, but the file
+# still carries the same skip-if-no-browser guard as e2e.test.js, so it must
+# be listed here too.)
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40

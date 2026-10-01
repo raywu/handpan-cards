@@ -262,7 +262,7 @@ for p in "${PATCHES[@]}"; do
   # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
   # skipped itself for want of a browser.
   case "$cmd" in
-    *tests/e2e.test.js*)
+    *tests/e2e.test.js*|*tests/harness.test.js*)
       if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
         echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
         SKIPPED=$((SKIPPED + 1)); continue

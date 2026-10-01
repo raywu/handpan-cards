@@ -162,6 +162,13 @@ const E2E_MISNAMED = {
   name: "d_fixture_e2e_under_a_d_name", header: "a fixture e2e assertion",
   suiteHeader: "# suite: node --test tests/e2e.test.js\n",
 };
+// tests/harness.test.js drives a real browser too, and skips itself to a 0 exit
+// without one exactly as e2e.test.js does - so a mutant judged by it is just as
+// unevaluable on a browserless machine and must take the same skip branch.
+const HARNESS_SKIPPED = {
+  name: "e_fixture_harness_needs_browser", header: "a fixture harness assertion",
+  suiteHeader: "# suite: node --test tests/harness.test.js\n",
+};
 
 test("green baseline: the sweep kills its fixture mutant and passes", (t) => {
   const dir = makeFixture(t, { mutants: [KILLABLE] });
@@ -253,6 +260,21 @@ test("an e2e mutant is skipped for its suite, not for its filename", (t) => {
   assert.doesNotMatch(out, /^d_fixture_e2e_under_a_d_name\.patch survived/m, out);
   assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
   assert.notEqual(code, 0, out);
+});
+
+test("a mutant judged by harness.test.js is skipped without a browser, never survived", (t) => {
+  const dir = makeFixture(t, { mutants: [KILLABLE, HARNESS_SKIPPED] });
+  const { code, out } = sweep(dir);
+  assert.match(out, /^e_fixture_harness_needs_browser\.patch skipped/m, out);
+  assert.doesNotMatch(out, /^e_fixture_harness_needs_browser\.patch survived/m, out);
+  assert.doesNotMatch(out, /MUTATION GATE PASSED/, out);
+  assert.notEqual(code, 0, out);
+});
+
+test("the shard partition treats a harness.test.js mutant as browser-selecting", () => {
+  assert.equal(isE2ESelecting("# suite: node --test tests/harness.test.js\n"), true);
+  assert.equal(isE2ESelecting("# suite: node --test tests/e2e.test.js\n"), true);
+  assert.equal(isE2ESelecting("# suite: node check.js\n"), false);
 });
 
 test("a dirty tree is refused before anything is applied", (t) => {
