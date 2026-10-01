@@ -3,15 +3,16 @@
 # Drops the willChange reset from swipeRest(): once a spring-back or landing
 # settles, .scene keeps `will-change: transform` set indefinitely instead of
 # clearing it, leaving an unnecessary compositor layer hint.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8050,7 +8050,7 @@ function swipeTilt(dx) {
+@@ -8085,7 +8085,7 @@ function swipeTilt(dx) {
  }
  function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
- let drag = null, flight = null, eatClick = false;
+ let drag = null, flight = null, eatClick = false, eatClickTimer = null;
 -function swipeRest() { scene.style.transform = ""; scene.style.willChange = ""; }
 +function swipeRest() { scene.style.transform = ""; }
- function land() {
-   if (!flight) return;
-   const f = flight;
+ // Clears eatClick and cancels any pending decay timer. Every site that
+ // assigns eatClick (armed or cleared) goes through this, so a stale timer
+ // from an earlier release can never clear a freshly-armed eatClick out from

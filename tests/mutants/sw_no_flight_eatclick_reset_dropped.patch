@@ -4,14 +4,15 @@
 # handler's no-flight branch, so a stale `eatClick = true` (e.g. left over
 # from a moved-but-not-committed drag) survives a later, unrelated real
 # pointerdown+click sequence and wrongly eats that click too.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8177,7 +8177,6 @@ document.addEventListener("pointerdown", e => {
+@@ -8297,7 +8297,6 @@ document.addEventListener("pointerdown", e => {
        card.setPointerCapture(e.pointerId);
      }
    } else {
--    eatClick = false;
+-    setEatClick(false);
      land();
    }
  }, true);

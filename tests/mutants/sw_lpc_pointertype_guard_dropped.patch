@@ -1,0 +1,18 @@
+# kills: card swipe: a touch lostpointercapture still cancels the drag, not a mouse-only release
+# suite: node --test --test-name-pattern ^card.swipe..a.touch.lostpointercapture.still.cancels.the.drag..not.a.mouse-only.release$ tests/e2e.test.js
+# Drops the pointerType === "mouse" guard: a touch lostpointercapture
+# (buttons already 0) is now also treated as Chrome's ordinary mouse
+# release path instead of a cancel, so it wrongly springs back via the
+# non-cancelled branch rather than cancelling the drag outright.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8219,7 +8219,7 @@ card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.i
+ // not pushed into drag.pts on this path (see release()'s pushPoint doc).
+ card.addEventListener("lostpointercapture", e => {
+   if (!drag || e.pointerId !== drag.id) return;
+-  if (e.pointerType === "mouse" && !(e.buttons & 1)) release(e, false, false);
++  if (!(e.buttons & 1)) release(e, false, false);
+   else release(e, true);
+ });
+ // Q15: a right-click (or ctrl+click on macOS) opens a context menu with no

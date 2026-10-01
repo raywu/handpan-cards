@@ -1,0 +1,17 @@
+# kills: card swipe (wheel): a trackpad swipe does nothing while the settings panel is open
+# suite: node --test --test-name-pattern ^card.swipe..wheel...a.trackpad.swipe.does.nothing.while.the.settings.panel.is.open$ tests/e2e.test.js
+# Drops panelOpen/sheetOpen from the wheel gesture's skip condition: a
+# trackpad swipe now advances the deck even while the settings panel or
+# scale sheet is open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8248,7 +8248,7 @@ wheelMain.addEventListener("wheel", e => {
+     // is open is skipped for its whole duration (the flag persists until
+     // the 160ms gap, not just for this event), so wheel momentum arriving
+     // right after a flight lands cannot start a fresh gesture and double-step.
+-    const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
++    const skip = !!(flight || drag || !order.length);
+     wheel = { sx: 0, sy: 0, axis: null, fired: false, skip, timer: null };
+   }
+   if (wheel.timer) clearTimeout(wheel.timer);

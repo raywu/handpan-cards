@@ -1,0 +1,18 @@
+# kills: card swipe: Chrome's real mouse-release order - lostpointercapture, then pointerup, then click - commits without flipping
+# suite: node --test --test-name-pattern ^card.swipe..Chrome.s.real.mouse-release.order.-.lostpointercapture..then.pointerup..then.click.-.commits.without.flipping$ tests/e2e.test.js
+# Drops the buttons-aware ordinary-release branch entirely: every mouse
+# lostpointercapture is now treated as a cancel, so Chrome's real buttons-0
+# lpc-before-pointerup release order springs back instead of committing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8219,8 +8219,7 @@ card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.i
+ // not pushed into drag.pts on this path (see release()'s pushPoint doc).
+ card.addEventListener("lostpointercapture", e => {
+   if (!drag || e.pointerId !== drag.id) return;
+-  if (e.pointerType === "mouse" && !(e.buttons & 1)) release(e, false, false);
+-  else release(e, true);
++  release(e, true);
+ });
+ // Q15: a right-click (or ctrl+click on macOS) opens a context menu with no
+ // pointerup of its own, leaving a live drag stuck following the pointer.

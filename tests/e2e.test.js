@@ -8631,6 +8631,316 @@ function run() {
     // N40 (owner in-scope widening): step() suppresses .card's reverse-flip
     // transition for every caller, not just land() - #next, ArrowRight, and
     // the swipe's own land() all reset a flipped card the same way.
+    /* ---- desktop swipe: mouse lpc-release order + trackpad wheel ----
+     * docs/plans/2026-09-30-desktop-swipe.md */
+    async function startMouseDrag(selector) {
+      const box = await b.eval(`
+        const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      const t0 = Date.now() / 1000;
+      await b.send("Input.dispatchMouseEvent", {
+        type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
+      });
+      const id = await b.eval(`return drag ? drag.id : null;`);
+      return {
+        id, box, t0,
+        async move(dx, ms, dy) {
+          await b.send("Input.dispatchMouseEvent", {
+            type: "mouseMoved", x: box.x + dx, y: box.y + (dy || 0), buttons: 1, timestamp: t0 + ms / 1000,
+          });
+        },
+      };
+    }
+    // Dispatches one synthetic event on `selector` via its own CDP round
+    // trip (Runtime.evaluate), so a setTimeout(0) queued by the app between
+    // two dispatches gets a chance to fire - required to replicate Chrome's
+    // real mouse-release order (lostpointercapture, then pointerup, then
+    // click, each its own task) rather than three listeners firing
+    // synchronously inside one script.
+    async function dispatchEvt(selector, ctor, type, extra) {
+      return b.eval(`
+        document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new ${ctor}(${JSON.stringify(type)}, Object.assign({
+          bubbles: true, cancelable: true,
+        }, ${JSON.stringify(extra || {})})));
+        return true;
+      `);
+    }
+
+    test("card swipe: Chrome's real mouse-release order - lostpointercapture, then pointerup, then click - commits without flipping", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startMouseDrag("#card");
+      assert.ok(g.id !== null, "a real mouse press must start a drag");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      // Lab-observed order (db trace 2lru4aur8i92pgogjd0t): lostpointercapture
+      // (buttons 0, real coords) fires BEFORE pointerup.
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
+      await dispatchEvt("#card", "PointerEvent", "pointerup", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, button: 0, buttons: 0, clientX: rx, clientY: ry,
+      });
+      await dispatchEvt("#card", "MouseEvent", "click", {});
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the real Chrome mouse-release order must still commit");
+      assert.strictEqual(await cardFlipped(), false, "a committing drag must not flip the card");
+    });
+
+    test("card swipe: a touch lostpointercapture still cancels the drag, not a mouse-only release", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      const id = await b.eval(`return drag.id;`);
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: id, pointerType: "touch", isPrimary: true, buttons: 0, clientX: 0,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "a touch lostpointercapture must not commit");
+      const anim = await b.eval(`
+        const a = document.querySelector(".scene").getAnimations()[0];
+        const kf = a ? a.effect.getKeyframes() : null;
+        return { n: document.querySelector(".scene").getAnimations().length,
+                 duration: a ? a.effect.getComputedTiming().duration : null };
+      `);
+      assert.strictEqual(anim.n, 1, "a cancelled touch drag should spring back with one animation");
+      assert.strictEqual(anim.duration, 260, "a cancelled drag springs back, it does not fly out");
+      await b.finishAnimations();
+      // Synthetic lpc on the app's own element does not end the real
+      // underlying touch (id 1) as far as Chrome's input pipeline is
+      // concerned; end it for real or a later test's touchstart misbehaves.
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    });
+
+    test("card swipe: a mouse lostpointercapture with a button still held cancels the drag", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      // buttons still reporting the left button held (bit 1) must be treated
+      // like any other cancel, not the Chrome ordinary-release path.
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: rx, clientY: ry,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "lpc with a button still held must not commit");
+      await b.finishAnimations();
+      assert.strictEqual(await countText(), `1 / ${n}`, "settling after the spring-back must still not have stepped");
+      // Release the real underlying mouse button so it cannot bleed into a
+      // later test.
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: rx, y: ry, button: "left", clickCount: 1 });
+    });
+
+    test("card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the drag should have committed");
+      await new Promise((r) => setTimeout(r, 450));
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true, "a click well after the 400ms decay must flip");
+    });
+
+    // Eng review item 3: every place that assigns eatClick must also cancel
+    // any pending decay timer, so a stale timer from an earlier assignment
+    // can never fire later and clobber a fresher one. The clearest, most
+    // deterministic way to prove this is white-box: a committing mouse drag
+    // arms a real 400ms timer, then a mid-flight tap (landing the flight via
+    // the document capture-phase pointerdown branch, which assigns eatClick
+    // with no decay) must leave no timer behind - if it did, that stale
+    // timer firing later could clear eatClick out from under a later,
+    // unrelated assignment. `eatClickTimer` does not exist at all before
+    // this change, so this test fails with a ReferenceError on unmodified
+    // code and only passes once the timer is centralized and cancelled on
+    // every assignment.
+    test("card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // Commit via the synthetic lpc path only (no trailing pointerup/click
+      // dispatched) so nothing consumes the decay timer on its own - a real
+      // trailing click would eat it immediately via the document click
+      // listener, which is a different (already-tested) path, not a stale
+      // timer surviving past its own assignment.
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
+      const armed = await b.eval(`return eatClickTimer !== null && flight !== null;`);
+      assert.strictEqual(armed, true, "a committing mouse drag must arm a decay timer and be mid-flight");
+      // ~100ms into the ~400ms decay window (and well inside the 220ms
+      // fly-out - do NOT poll countText here, that would wait out the
+      // fly-out and land it for real before the tap), tap the card - the
+      // document capture-phase pointerdown's `if (flight)` branch lands it
+      // and reassigns eatClick with no decay.
+      await new Promise((r) => setTimeout(r, 100));
+      const stillMidFlight = await b.eval(`return flight !== null;`);
+      assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
+      await b.eval(`
+        const el = document.getElementById("card");
+        el.dispatchEvent(new PointerEvent("pointerdown", {
+          bubbles: true, cancelable: true, isPrimary: true, pointerId: 999, button: 0,
+        }));
+        el.click();
+        return true;
+      `);
+      const timerAfterTap = await b.eval(`return eatClickTimer;`);
+      assert.strictEqual(timerAfterTap, null,
+        "landing the flight via a mid-flight tap must cancel the committing drag's stale decay timer");
+      assert.strictEqual(await countText(), `2 / ${n}`, "the committed drag should have landed exactly once");
+      assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the newly-landed card");
+      await b.finishAnimations();
+    });
+
+    // Eng review item 1: on the lpc-as-release path the event's own point is
+    // not pushed into drag.pts, so a lostpointercapture carrying a stale/
+    // unrelated coordinate cannot corrupt the trailing-window velocity
+    // calculation into a spurious fling. A short, slow drag (real dx well
+    // under SWIPE_COMMIT_PX, real velocity well under the fling threshold)
+    // must still spring back even when the lpc event itself claims clientX 0 -
+    // a coordinate far from the real release point that, if pushed, would
+    // read as an enormous last-instant velocity.
+    test("card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startMouseDrag("#card");
+      await g.move(-15, 300);
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: 0, clientY: g.box.y,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "a short slow drag must not commit, stale lpc point or not");
+      await b.finishAnimations();
+      // A short, non-committing drag still counts as "moved" (it exceeded
+      // the slop threshold), so release() still arms eatClick to swallow the
+      // drag's own trailing click - exactly as the existing "short mouse
+      // drag springs back without flipping" test already covers. This test
+      // is only about the fling-velocity corruption: a stale lpc clientX
+      // must not turn the spring-back into a spurious commit (asserted
+      // above), not about whether the trailing click flips.
+      assert.strictEqual(await countText(), `1 / ${n}`);
+    });
+
+    describe("trackpad two-finger swipe (wheel)", () => {
+      async function wheelAt(dx, dy, modifiers) {
+        const where = await b.eval(`
+          const r = document.querySelector("main").getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        `);
+        return b.send("Input.dispatchMouseEvent", {
+          type: "mouseWheel", x: where.x, y: where.y, deltaX: dx, deltaY: dy,
+          ...(modifiers ? { modifiers } : {}),
+        });
+      }
+      async function wheelGesture(legs) {
+        for (const [dx, dy] of legs) await wheelAt(dx, dy);
+      }
+
+      test("card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[-30, 0], [-30, 0], [-30, 0], [-30, 0]]);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "a trackpad swipe past 80px should advance once");
+      });
+
+      test("card swipe (wheel): deltaX under 80px does nothing and leaves no transform", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[-20, 0], [-20, 0]]);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, true, "the transform must be cleared once the gesture ends");
+        const style = await sceneStyle();
+        assert.strictEqual(style.willChange, "", "willChange must be cleared once the gesture ends");
+      });
+
+      test("card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        const where = await b.eval(`
+          const r = document.querySelector("main").getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        `);
+        await b.eval(`
+          window.__wheelPrevented = null;
+          document.querySelector("main").addEventListener("wheel", (e) => {
+            window.__wheelPrevented = e.defaultPrevented;
+          }, { once: true });
+          return true;
+        `);
+        await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: where.x, y: where.y, deltaX: 0, deltaY: 100 });
+        const prevented = await b.eval(`return window.__wheelPrevented;`);
+        assert.strictEqual(prevented, false, "a vertical-dominant wheel must not be preventDefault-ed");
+        assert.strictEqual(await countText(), `1 / ${n}`);
+      });
+
+      test("card swipe (wheel): ctrlKey (pinch-zoom) is ignored", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelAt(-100, 0, 2); // modifiers bit 2 = Ctrl
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, true, "a ctrl+wheel gesture must leave no follow transform");
+      });
+
+      test("card swipe (wheel): a second gesture after the 160ms gap advances again", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[-50, 0], [-50, 0]]);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "the first gesture should commit");
+        await new Promise((r) => setTimeout(r, 220)); // past the 160ms gesture gap
+        await wheelGesture([[-50, 0], [-50, 0]]);
+        await b.finishAnimations();
+        await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
+      });
+
+      test("card swipe (wheel): a trackpad swipe does nothing while the settings panel is open", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await openSettingsPanel();
+        await wheelGesture([[-50, 0], [-50, 0]]);
+        await new Promise((r) => setTimeout(r, 250));
+        assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
+      });
+
+      test("card swipe (wheel): momentum wheel events after a committed gesture lands do not step again", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        // The committing leg crosses the threshold; the remaining legs are
+        // trackpad momentum arriving in the same physical gesture, still
+        // within the 160ms gap, after the card has already flown out and
+        // landed.
+        await wheelAt(-100, 0);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "the first leg alone should already have committed");
+        await wheelAt(-20, 0);
+        await wheelAt(-10, 0);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "momentum after landing must not advance the deck a second time");
+      });
+
+      test("card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        // First event locks the gesture to the x axis (|dx|=50 > |dy|=5).
+        // Later events in the SAME gesture report dy >> dx; the lock must
+        // still treat the gesture as horizontal and keep committing on dx.
+        await wheelAt(-50, 5);
+        await wheelAt(-50, 200);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "an axis locked to x at gesture start must keep stepping off dx alone");
+      });
+    });
+
     test("card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition", async () => {
       await freshLoad();
       // b.settle() after flipping is not optional here: two style changes
