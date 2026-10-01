@@ -1,0 +1,21 @@
+# kills: a tap selects the note that was tapped, on a pan that is already corrected
+# suite: node --test --test-name-pattern ^a.tap.selects.the.note.that.was.tapped..on.a.pan.that.is.already.corrected$ tests/app.test.js
+# selectPanField's own comment (index.html, just above the function) names
+# this exact conversion as the only place field->slot happens: `order[field]
+# = slot`. Setting layoutSel to the field INDEX instead of looking it up
+# through layoutOrder selects the right note only on an uncorrected
+# (identity-order) pan; once the pan has been rotated, slot and field
+# disagree and the tap lands on the wrong ring.
+diff --git a/index.html b/index.html
+index 3e34a0f..ad5cc68 100644
+--- a/index.html
++++ b/index.html
+@@ -7121,7 +7121,7 @@ function selectPanField(id) {
+   const n = syncLayoutOrder(fields);
+   const i = layoutIds(fields).indexOf(String(id));
+   if (i < 0) return false;
+-  layoutSel = (layoutOrder || identityOrder(n))[i];
++  layoutSel = i;
+   previewLayout();
+   return true;
+ }
