@@ -204,7 +204,19 @@ class _Sandbox:
             os.chmod(p, mode)
 
     def run(self):
+        # MUTANT_SHARD/MUTANT_REPORT (finding 4, 2026-09-30 quality refactor):
+        # CI's sharded mutation-gate job sets these in the OUTER process's own
+        # environment, and one of the h_* mutants this sandbox exists to test
+        # (h_baseline_output_discarded.patch) runs this very test file as its
+        # # suite: command. Without scrubbing, this inner mutation_check.sh
+        # run would inherit the outer shard spec and try to shard its own
+        # 1-mutant fixture corpus against a tests/shard_mutants.js this
+        # sandbox never copied in - the same "Cannot find module
+        # .../tests/shard_mutants.js" failure the JS harness's childEnv()
+        # guards against.
         env = dict(os.environ, MUTANT_TIMEOUT="60")
+        env.pop("MUTANT_SHARD", None)
+        env.pop("MUTANT_REPORT", None)
         return subprocess.run([os.path.join(self.root, "tests", "mutation_check.sh")],
                               cwd=self.root, capture_output=True, text=True,
                               timeout=300, env=env)
