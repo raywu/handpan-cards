@@ -1,4 +1,5 @@
-# kills: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping
+# kills: card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping
+# a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping
 # suite: node --test --test-name-pattern ^card.swipe:.a.mouse.drag.commits.without.flipping,.a.mouse.click.still.flips,.a.short.mouse.drag.springs.back.without.flipping$ tests/e2e.test.js
 # Drops the eatClick branch from the capture-phase click listener: a mouse
 # drag that commits (or springs back) no longer suppresses the click a mouse

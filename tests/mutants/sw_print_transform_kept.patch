@@ -1,4 +1,5 @@
-# kills: a printed card carries no transform
+# kills: card swipe: a printed card carries no transform
+# a printed card carries no transform
 # suite: node --test --test-name-pattern ^card.swipe:.a.printed.card.carries.no.transform$ tests/e2e.test.js
 # Deletes the @media print{.scene{transform:none!important}} rule: a card
 # left mid-drag or mid-tilt before printing would print with its swipe

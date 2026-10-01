@@ -378,6 +378,41 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
     offenders.slice(0, 5).join("\n") + `\n(${offenders.length} total)`);
 });
 
+/* Finding 2 (2026-09-30 quality-refactor plan). tools/regen_data_mutants.py
+ * used to write data/decks.json's CANONICAL copy with `ensure_ascii=False`
+ * while the committed file (and the DECKS line it writes into index.html)
+ * both use the ensure_ascii=True default - a one-flag divergence that turned
+ * every `b_*.patch` into 9-10 hunks of unicode-escape noise instead of the
+ * one or two real hunks its mutator makes per touched file. A sync mutant
+ * (the common case) touches two files - index.html's DECKS line and
+ * data/decks.json - so the patch carries two `diff --git` sections, each
+ * normally one hunk; `b_layout_angle_swap` is the one legitimate exception,
+ * genuinely editing two non-adjacent fields ("4" and "6") within
+ * data/decks.json, so 2 real hunks in one file is correct, not noise. The
+ * bound below - at most 2 hunks per touched file - passes every genuine
+ * edit this corpus makes today while still catching the 9-10-hunk reformat
+ * explosion if the CANONICAL write ever diverges from the committed format
+ * again. */
+test("every b_*.patch has at most two @@ hunks per touched file (regen_data_mutants.py CANONICAL write matches the committed format)", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const offenders = [];
+  for (const name of fs.readdirSync(dir).filter((f) => f.startsWith("b_") && f.endsWith(".patch"))) {
+    const text = fs.readFileSync(path.join(dir, name), "utf8");
+    const sections = text.split(/^diff --git /m).slice(1);
+    for (const section of sections) {
+      const hunks = (section.match(/^@@/gm) || []).length;
+      if (hunks > 2) {
+        const file = (section.match(/^a\/(\S+)/m) || [, "?"])[1];
+        offenders.push(`${name} (${file}): ${hunks} hunks`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    `expected at most two @@ hunks per touched file in each b_*.patch; run ` +
+    `\`python3 tools/regen_data_mutants.py\` on a clean tree to regenerate:\n` +
+    offenders.join("\n"));
+});
+
 /* Early warning for the failure mode "a normal commit edits a context line a
  * mutant patch anchors on, and the mutant silently stops applying" - `git
  * apply` on a context mismatch is a hard error, so a stale patch does not
@@ -407,6 +442,75 @@ function stalePatchedPaths(patchText) {
     if (m) paths.push(m[1]);
   }
   return paths;
+}
+
+// Finding 12 (2026-09-30 quality-refactor plan), second lint: a patch that
+// `git apply --check` accepts today can still be riding a NON-UNIQUE anchor -
+// its removed+context block happens to occur more than once in the file it
+// targets, and `git apply` only ever checked the hint line, not uniqueness.
+// A later refactor that reorders those occurrences can make the patch start
+// silently mutating the WRONG occurrence while `git apply --check` keeps
+// succeeding - the same ambiguity tools/refresh_mutants.py refuses to guess
+// at, applied here as an early-warning lint instead of a refusal, because
+// unlike refresh_mutants.py this path has no rewrite to perform. Same
+// section/hunk parsing as tools/refresh_mutants.py's splitSections/hunksOf,
+// kept independent (this file owns no shared module with that tool).
+function splitSections(body) {
+  if (!body.trim()) return [];
+  const pieces = body.split(/(?=^diff --git )/m).filter((p) => p.trim());
+  return pieces.map((text) => {
+    const m = text.match(/^\+\+\+ b\/(.+)$/m);
+    return { file: m ? m[1] : null, text };
+  });
+}
+
+function hunksOf(sectionText) {
+  const hunks = [];
+  let old = null;
+  for (const line of sectionText.split("\n")) {
+    if (line.startsWith("@@")) {
+      if (old !== null) hunks.push(old);
+      old = [];
+    } else if (old === null) {
+      continue;
+    } else if (line.startsWith(" ") || line.startsWith("-")) {
+      old.push(line.slice(1));
+    }
+  }
+  if (old !== null) hunks.push(old);
+  return hunks;
+}
+
+function findAllOccurrences(haystack, needle) {
+  if (!needle.length) return [];
+  const hits = [];
+  for (let i = 0; i <= haystack.length - needle.length; i++) {
+    let ok = true;
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) { ok = false; break; }
+    }
+    if (ok) hits.push(i);
+  }
+  return hits;
+}
+
+function hasNonUniqueAnchor(root, patchText) {
+  const headerEnd = patchText.split("\n").findIndex((l) => !l.startsWith("#"));
+  const body = patchText.split("\n").slice(headerEnd < 0 ? 0 : headerEnd).join("\n");
+  for (const { file, text } of splitSections(body)) {
+    if (!file) continue;
+    let current;
+    try {
+      current = fs.readFileSync(path.join(root, file), "utf8").split("\n");
+    } catch {
+      continue; // file doesn't exist here (e.g. a fixture section) - skip
+    }
+    if (current[current.length - 1] === "") current.pop();
+    for (const old of hunksOf(text)) {
+      if (findAllOccurrences(current, old).length > 1) return true;
+    }
+  }
+  return false;
 }
 
 function staleMutants(root, mutantsDir) {
@@ -441,6 +545,25 @@ function staleMutants(root, mutantsDir) {
     }
   }
   return stale;
+}
+
+// A separate wrapper, not a change to staleMutants() itself: this file's own
+// mh_reverse_apply_skip_dropped.patch targets staleMutants()'s body verbatim
+// (it deletes the -R fallback branch), so editing that function's lines would
+// stale a mutant outside this lane's ownership (mh_* patch BODIES are never
+// touched, per the quality-refactor plan's ownership table). The Finding 12
+// non-unique-anchor lint is therefore layered on top, as its own pass over
+// the patches staleMutants() already called live.
+function staleOrNonUniqueMutants(root, mutantsDir) {
+  const stale = staleMutants(root, mutantsDir);
+  const names = fs.readdirSync(mutantsDir).filter((f) => f.endsWith(".patch")).sort();
+  const result = new Set(stale);
+  for (const name of names) {
+    if (result.has(name)) continue;
+    const p = path.join(mutantsDir, name);
+    if (hasNonUniqueAnchor(root, fs.readFileSync(p, "utf8"))) result.add(name);
+  }
+  return names.filter((n) => result.has(n));
 }
 
 // Fixture repo for staleMutants(): one committed file, one patch generated by
@@ -489,6 +612,187 @@ test("the same post-image committed to HEAD IS reported stale", (t) => {
   assert.deepStrictEqual(stale, [patchName]);
 });
 
+/* Finding 3 (2026-09-30 quality-refactor plan). tools/refresh_mutants.py
+ * re-anchors a stale patch by finding its removed-line block elsewhere in the
+ * current file content, rather than requiring a human to hand-edit the diff.
+ * Three fixture repos below exercise its three outcomes: a patch whose
+ * context merely shifted gets re-anchored and still carries the same
+ * intent; a patch whose anchor is genuinely ambiguous (occurs twice) is
+ * refused rather than guessed at; a patch that already applies is left
+ * byte-identical (a true no-op, not "regenerated to the same bytes"). */
+const REFRESH_SCRIPT = path.join(ROOT, "tools", "refresh_mutants.py");
+
+function runRefresh(dir, args) {
+  return spawnSync("python3", [REFRESH_SCRIPT, ...(args || [])],
+    { cwd: dir, encoding: "utf8", env: childEnv({ REFRESH_MUTANTS_ROOT: dir }) });
+}
+
+function makeRefreshFixtureRepo(t, { preimage, postimage, finalContent, kills, suite }) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refreshmutants-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  // tools/refresh_mutants.py resolves its own ROOT as its parent's parent -
+  // mirror that layout so the fixture's `tools/` dir plays the role of ROOT.
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), preimage);
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  // Build the mutant patch against `preimage`, as a real author would.
+  fs.writeFileSync(path.join(dir, "subject.txt"), postimage);
+  const body = git(dir, ["diff", "--", "subject.txt"]);
+  git(dir, ["checkout", "--", "subject.txt"]);
+
+  // Now drift the committed file (simulating an unrelated later commit),
+  // so the patch's context no longer matches - unless finalContent is left
+  // equal to preimage, in which case the patch stays fresh (no commit needed).
+  if (finalContent !== preimage) {
+    fs.writeFileSync(path.join(dir, "subject.txt"), finalContent);
+    git(dir, ["add", "."]);
+    git(dir, ["commit", "-qm", "unrelated drift"]);
+  }
+
+  const patchName = "x_subject_is_bad.patch";
+  const patchPath = path.join(dir, "tests", "mutants", patchName);
+  fs.writeFileSync(patchPath, `# kills: ${kills}\n# suite: ${suite}\n${body}`);
+  return { dir, patchPath, patchName };
+}
+
+test("refresh_mutants.py leaves an already-applying patch byte-identical", (t) => {
+  const preimage = "one\ntwo\nthree\n";
+  const postimage = "one\nTWO\nthree\n";
+  const { dir, patchPath } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent: preimage,
+    kills: "subject", suite: "node check.js",
+  });
+  const before = fs.readFileSync(patchPath, "utf8");
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stderr);
+  const after = fs.readFileSync(patchPath, "utf8");
+  assert.strictEqual(after, before, "a fresh patch must not be rewritten");
+});
+
+test("refresh_mutants.py re-anchors a patch whose context drifted", (t) => {
+  const preimage = "alpha\nbeta\ngamma\ndelta\n";
+  const postimage = "alpha\nBETA\ngamma\ndelta\n";
+  // Unrelated drift: a line inserted well before the mutated line shifts
+  // every context line's position without touching the mutated text itself.
+  const finalContent = "zero\nalpha\nbeta\ngamma\ndelta\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const check = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.notStrictEqual(check.status, 0, "fixture setup: patch must be stale before refresh");
+
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(patchName.replace(/\./g, "\\.")));
+
+  const applied = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.strictEqual(applied.status, 0, `${patchName} should apply cleanly after refresh:\n${applied.stderr}`);
+
+  git(dir, ["apply", patchPath]);
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    "zero\nalpha\nBETA\ngamma\ndelta\n");
+});
+
+test("refresh_mutants.py refuses an ambiguous anchor rather than guessing", (t) => {
+  const preimage = "alpha\nbeta\ngamma\n";
+  const postimage = "alpha\nBETA\ngamma\n";
+  // Unrelated drift that (a) pushes the block far enough down the file that
+  // `git apply`'s own line-number hint no longer finds it (so the patch is
+  // reported stale, not silently applied in the wrong place) and (b)
+  // duplicates the exact pre-image block, so re-anchoring by content alone
+  // is no longer unique either.
+  const padding = Array.from({ length: 10 }, (_, i) => `pad${i}`).join("\n") + "\n";
+  const finalContent = padding + "alpha\nbeta\ngamma\n" + "alpha\nbeta\ngamma\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const before = fs.readFileSync(patchPath, "utf8");
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "an ambiguous anchor must not exit 0");
+  assert.match(result.stderr, /AMBIGUOUS/);
+  assert.match(result.stderr, new RegExp(patchName.replace(/\./g, "\\.")));
+  assert.strictEqual(fs.readFileSync(patchPath, "utf8"), before,
+    "a refused patch must be left untouched");
+});
+
+test("a patch whose anchor became non-unique IS reported stale, even though it still applies", (t) => {
+  // Fails before the hasNonUniqueAnchor() extension (git apply --check alone
+  // sees the hinted lines still match at their original position and calls
+  // it live); passes once staleMutants also rejects a precondition that
+  // would equally match a second place in the file - the exact gap
+  // Finding 12 names.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "stalemutants2-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  fs.mkdirSync(mutantsDir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "ok\nkeep\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  fs.writeFileSync(path.join(dir, "subject.txt"), "bad\nkeep\n");
+  const body = git(dir, ["diff", "--", "subject.txt"]);
+  git(dir, ["checkout", "--", "subject.txt"]);
+  const patchName = "x_subject_is_bad.patch";
+  const patchPath = path.join(mutantsDir, patchName);
+  fs.writeFileSync(patchPath, `# kills: subject\n# suite: node check.js\n${body}`);
+
+  // Simulate a later, unrelated refactor duplicating subject.txt's content
+  // right after itself - the patch's hint (line 1) still matches here, so
+  // `git apply --check` keeps succeeding, but "ok\nkeep" now occurs twice.
+  fs.appendFileSync(path.join(dir, "subject.txt"), "ok\nkeep\n");
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "unrelated duplication"]);
+
+  execFileSync("git", ["apply", "--check", patchPath], { cwd: dir, env: childEnv() }); // fixture sanity: still applies
+  const stale = staleOrNonUniqueMutants(dir, mutantsDir);
+  assert.deepStrictEqual(stale, [patchName],
+    `${patchName} rides a non-unique anchor and must be reported stale`);
+});
+
+// Known, tracked exception to the anchor-uniqueness lint below: a patch
+// whose precondition (context + removed lines) matches more than one
+// location in the file it targets today - a real Finding 12 gap - but whose
+// fix requires editing the BODY of a tests/mutants/h_* patch against
+// tests/mutation_check.sh, which is outside lane M's ownership (see
+// docs/plans/2026-09-30-quality-refactor.md's ownership table: lane M owns
+// only `# kills:`/`# suite:` header lines on those patches, never their
+// bodies). Listed explicitly, never silently dropped, so this lint still
+// catches any OTHER patch drifting into ambiguity while leaving this one for
+// whichever lane owns tests/mutation_check.sh's mutants to re-anchor.
+const KNOWN_NON_UNIQUE_ANCHORS = [
+  "f_fixture_sha.patch",
+];
+
+test("no mutant patch outside the tracked exceptions rides a non-unique anchor", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const stale = staleOrNonUniqueMutants(ROOT, dir);
+  const unexpected = stale.filter((n) => !KNOWN_NON_UNIQUE_ANCHORS.includes(n));
+  assert.deepStrictEqual(unexpected, [],
+    `these mutant patches' preconditions (context + removed lines) now match ` +
+    `more than one place in the file they target - a future refactor could ` +
+    `silently mutate the wrong occurrence while \`git apply --check\` keeps ` +
+    `succeeding:\n` + unexpected.join("\n"));
+  const nowFixed = KNOWN_NON_UNIQUE_ANCHORS.filter((n) => !stale.includes(n));
+  assert.deepStrictEqual(nowFixed, [],
+    `${nowFixed.join(", ")} no longer rides a non-unique anchor - remove it ` +
+    `from KNOWN_NON_UNIQUE_ANCHORS`);
+});
+
 test("every mutant patch applies to the tree it will run against", () => {
   let hasGit = true;
   try {
@@ -508,4 +812,223 @@ test("every mutant patch applies to the tree it will run against", () => {
     `- a later commit edited a context line one of them anchors on:\n` +
     stale.join("\n") +
     `\nregenerate: apply by hand, edit, \`git diff > patch\`, keep the header`);
+});
+
+// --- Finding 12 (a): every pattern-based `# suite:` command must select
+// exactly the test its `# kills:` line names. -----------------------------
+//
+// Scope: only a suite command that SELECTS a test via a pattern - python's
+// `unittest -k` (substring, or fnmatch when the pattern holds a wildcard),
+// or node's `--test-name-pattern` (a regex) - can silently select zero
+// tests, or a different test than the header claims; that mismatch is the
+// real risk. A direct invocation (python's `module.Class.method` form, or a
+// suite that is not a test runner at all, e.g. `node tools/boot_sim.js`)
+// names its target unambiguously and is skipped - this repo's own patches
+// already rely on that: several direct-invocation `# kills:` lines are
+// prose, or a test name plus a trailing explanation, never a literal match.
+const JS_TEST_CALL_RE = /(?:^|[^.\w])(?:test|it)\(\s*(["'`])((?:\\.|(?!\1)[\s\S])*)\1/gm;
+const PY_TEST_DEF_RE = /def (test_\w+)\s*\(/g;
+
+function jsTestNames(file) {
+  const text = fs.readFileSync(file, "utf8");
+  const literal = new Set();
+  const templates = [];
+  let m;
+  JS_TEST_CALL_RE.lastIndex = 0;
+  while ((m = JS_TEST_CALL_RE.exec(text))) {
+    const quote = m[1];
+    const raw = m[2].replace(/\\(.)/g, "$1");
+    if (quote === "`" && /\$\{/.test(raw)) {
+      // A template-literal name built inside a loop over cases (e.g.
+      // `` `${code} shows the engine's own sentence...` ``): the exact
+      // instantiated text cannot be enumerated statically, so this becomes a
+      // regex instead - escape the fixed segments, wildcard each `${...}` -
+      // that one specific instantiation can be tested against below.
+      const pattern = raw
+        .split(/\$\{[^}]*\}/)
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*");
+      templates.push(new RegExp("^" + pattern + "$"));
+    } else {
+      literal.add(raw);
+    }
+  }
+  return { literal, templates };
+}
+
+function pyTestNames(root, mod) {
+  const file = path.join(root, mod.replace(/\./g, "/") + ".py");
+  const names = new Set();
+  let text;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch {
+    return names;
+  }
+  let m;
+  PY_TEST_DEF_RE.lastIndex = 0;
+  while ((m = PY_TEST_DEF_RE.exec(text))) names.add(m[1]);
+  return names;
+}
+
+function fnmatchToRegex(pattern) {
+  let re = "";
+  for (const c of pattern) {
+    if (c === "*") re += ".*";
+    else if (c === "?") re += ".";
+    else re += c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp("^" + re + "$");
+}
+
+// Resolve the set of test names a patch's `# suite:` command actually
+// selects, or null if the command is out of this lint's scope.
+function resolveSelection(root, suite, kills) {
+  const words = suite.trim().split(/\s+/);
+  if (words.includes("unittest")) {
+    const ki = words.indexOf("-k");
+    if (ki === -1) return null; // direct invocation: unambiguous, out of scope
+    const pattern = words[ki + 1];
+    const mods = words.slice(ki + 2).filter((w) => w.startsWith("tests."));
+    const discovered = new Set();
+    for (const mod of mods) for (const n of pyTestNames(root, mod)) discovered.add(n);
+    const re = /[*?[]/.test(pattern) ? fnmatchToRegex(pattern) : null;
+    return [...discovered].filter((n) => (re ? re.test(n) : n.includes(pattern)));
+  }
+  if (suite.includes("--test-name-pattern")) {
+    const idx = words.findIndex((w) => w === "--test-name-pattern" || w.startsWith("--test-name-pattern="));
+    const pattern = words[idx].includes("=")
+      ? words[idx].split("=").slice(1).join("=")
+      : words[idx + 1];
+    const jsFiles = words.filter((w) => w.endsWith(".test.js"));
+    let re;
+    try {
+      re = new RegExp(pattern);
+    } catch {
+      return [];
+    }
+    const literal = new Set();
+    const templates = [];
+    for (const f of jsFiles) {
+      const found = jsTestNames(path.join(root, f));
+      for (const n of found.literal) literal.add(n);
+      templates.push(...found.templates);
+    }
+    const selected = [...literal].filter((n) => re.test(n));
+    if (selected.length === 0 && re.test(kills) && templates.some((t) => t.test(kills))) {
+      // A template-literal-parameterized test: its exact instantiated name
+      // cannot be enumerated statically, but the kills text names one
+      // specific instantiation, the suite pattern selects exactly that
+      // text, and the text has the parameterized test's own shape - as
+      // close to "selected" as static analysis gets without running the
+      // file's own loop.
+      return [kills];
+    }
+    return selected;
+  }
+  return null; // not a recognized pattern-based test-runner command
+}
+
+function headerLintViolations(root, mutantsDir) {
+  const names = fs.readdirSync(mutantsDir).filter((f) => f.endsWith(".patch")).sort();
+  const violations = [];
+  for (const name of names) {
+    const text = fs.readFileSync(path.join(mutantsDir, name), "utf8");
+    const killsM = text.match(/^# kills: (.*)$/m);
+    const suiteM = text.match(/^# suite: (.*)$/m);
+    if (!killsM || !suiteM) continue;
+    const kills = killsM[1];
+    const suite = suiteM[1];
+    const selected = resolveSelection(root, suite, kills);
+    if (selected === null) continue; // out of lint scope
+    if (!(selected.length === 1 && selected[0] === kills)) {
+      violations.push({ name, kills, suite, selected });
+    }
+  }
+  return violations;
+}
+
+function writeFixturePatch(mutantsDir, name, kills, suite) {
+  fs.mkdirSync(mutantsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(mutantsDir, name),
+    `# kills: ${kills}\n# suite: ${suite}\ndiff --git a/x b/x\n`
+  );
+}
+
+test("a -k pattern that selects a different test than # kills: names is flagged", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "headerlint-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests"), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "tests", "test_thing.py"),
+    "def test_alpha(self):\n    pass\n\ndef test_beta(self):\n    pass\n"
+  );
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  writeFixturePatch(mutantsDir, "x_wrong.patch", "a prose description of alpha",
+    "python3 -m unittest -k test_alpha tests.test_thing");
+  const violations = headerLintViolations(dir, mutantsDir);
+  assert.deepStrictEqual(violations.map((v) => v.name), ["x_wrong.patch"]);
+  assert.deepStrictEqual(violations[0].selected, ["test_alpha"]);
+});
+
+test("a -k pattern naming the literal selected test is not flagged", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "headerlint-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "tests", "test_thing.py"), "def test_alpha(self):\n    pass\n");
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  writeFixturePatch(mutantsDir, "x_right.patch", "test_alpha",
+    "python3 -m unittest -k test_alpha tests.test_thing");
+  assert.deepStrictEqual(headerLintViolations(dir, mutantsDir), []);
+});
+
+test("a --test-name-pattern that selects nothing is flagged", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "headerlint-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "tests", "x.test.js"), "test('alpha', () => {});\n");
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  writeFixturePatch(mutantsDir, "x_missing.patch", "beta",
+    "node --test --test-name-pattern ^beta$ tests/x.test.js");
+  const violations = headerLintViolations(dir, mutantsDir);
+  assert.deepStrictEqual(violations.map((v) => v.name), ["x_missing.patch"]);
+  assert.deepStrictEqual(violations[0].selected, []);
+});
+
+test("a template-literal-parameterized test name whose kills line names the instantiation is not flagged", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "headerlint-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests"), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "tests", "x.test.js"),
+    "for (const code of ['NO_DING', 'BAD_NOTE']) {\n" +
+      "  test(`${code} shows the engine's own sentence`, () => {});\n" +
+      "}\n"
+  );
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  writeFixturePatch(mutantsDir, "x_template.patch", "NO_DING shows the engine's own sentence",
+    "node --test --test-name-pattern ^NO_DING.shows.the.engine.s.own.sentence$ tests/x.test.js");
+  assert.deepStrictEqual(headerLintViolations(dir, mutantsDir), []);
+});
+
+test("a direct python unittest invocation (no -k) is out of this lint's scope", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "headerlint-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests"), { recursive: true });
+  const mutantsDir = path.join(dir, "tests", "mutants");
+  writeFixturePatch(mutantsDir, "x_direct.patch", "some prose that is not the method name",
+    "python3 -m unittest tests.test_thing.SomeCase.test_alpha");
+  assert.deepStrictEqual(headerLintViolations(dir, mutantsDir), []);
+});
+
+test("every mutant patch's # kills: line is actually selected by its # suite: command", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const violations = headerLintViolations(ROOT, dir);
+  assert.deepStrictEqual(violations, [],
+    `these mutant patches' # kills: line is not what their # suite: command ` +
+    `selects (header-only fix: correct # kills:, demote the old text to a ` +
+    `plain comment beneath it):\n` +
+    violations.map((v) => `${v.name}: kills=${JSON.stringify(v.kills)} ` +
+      `selected=${JSON.stringify(v.selected)}`).join("\n"));
 });

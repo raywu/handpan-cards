@@ -1,4 +1,5 @@
-# kills: the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG
+# kills: card swipe: the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG
+# the tilt is SWIPE_TILT_DEG_PER_PX per px and clamps at SWIPE_TILT_MAX_DEG
 # suite: node --test --test-name-pattern ^card.swipe:.the.tilt.is.SWIPE_TILT_DEG_PER_PX.per.px.and.clamps.at.SWIPE_TILT_MAX_DEG$ tests/e2e.test.js
 # Drops the Math.max/Math.min clamp in swipeTilt(): a long drag now keeps
 # rotating past SWIPE_TILT_MAX_DEG instead of capping there.

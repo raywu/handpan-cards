@@ -1,4 +1,5 @@
-# kills: a survivor holding the pipes is escalated to SIGKILL
+# kills: test_a_survivor_holding_the_pipes_is_escalated_to_sigkill
+# a survivor holding the pipes is escalated to SIGKILL
 # suite: python3 -m unittest -k test_a_survivor_holding_the_pipes_is_escalated_to_sigkill tests.test_suite_health
 # The SIGKILL escalation goes back to asking proc.poll(), which speaks for the
 # DIRECT child only. node --test is a supervisor: it can be reaped while a

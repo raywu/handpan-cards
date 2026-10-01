@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^m6.collapses.into.m7b5.and.the.deck.keeps.the.canonical.order$ tests/select.test.js
-# kills: the ENGINE-SPEC section 5 collapse of Xm6 into the m7b5 built on
+# kills: m6 collapses into m7b5 and the deck keeps the canonical order
+# the ENGINE-SPEC section 5 collapse of Xm6 into the m7b5 built on
 # its sixth.
 diff --git a/src/engine/select.js b/src/engine/select.js
 --- a/src/engine/select.js

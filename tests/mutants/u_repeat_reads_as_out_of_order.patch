@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^NOTE_REPEATED.names.the.note.that.is.already.on.that.shell$ tests/core.test.js
-# kills: the same note twice in a row reads as a repeat, not as the riddle "C4 is not above C4"
+# kills: NOTE_REPEATED names the note that is already on that shell
+# the same note twice in a row reads as a repeat, not as the riddle "C4 is not above C4"
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

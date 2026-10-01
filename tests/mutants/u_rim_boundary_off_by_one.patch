@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^the.Pygmy.maker.string.yields.eleven.rim.fields.from.the.grammar$ tests/core.test.js
-# kills: zone assignment: the first ELEVEN top notes are rim, so the Pygmy string yields 11 rim and 0 inner
+# kills: the Pygmy maker string yields eleven rim fields from the grammar
+# zone assignment: the first ELEVEN top notes are rim, so the Pygmy string yields 11 rim and 0 inner
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

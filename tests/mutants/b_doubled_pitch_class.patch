@@ -4,64 +4,12 @@
 diff --git a/data/decks.json b/data/decks.json
 --- a/data/decks.json
 +++ b/data/decks.json
-@@ -13,9 +13,9 @@
-       "1": "I",
-       "2": "bII",
-       "6": "iv",
--      "8": "v\u00b0",
-+      "8": "v°",
-       "11": "bvii",
--      "5": "iii\u00b0"
-+      "5": "iii°"
-     },
-     "geom": {
-       "rim": 0.745,
-@@ -187,7 +187,7 @@
-         ]
-       },
+@@ -333,17 +333,18 @@
        {
--        "main": "D\u00b0",
-+        "main": "D°",
-         "sup": "",
-         "subtitle": "DIMINISHED",
+         "main": "Bm",
+         "sup": "add9",
+         "subtitle": "B MINOR ADD 9",
          "fields": [
-@@ -200,7 +200,7 @@
-         ]
-       },
-       {
--        "main": "D\u00b0",
-+        "main": "D°",
-         "sup": "7",
-         "subtitle": "DIMINISHED 7",
-         "fields": [
-@@ -214,7 +214,7 @@
-         ]
-       },
-       {
--        "main": "F\u00b0",
-+        "main": "F°",
-         "sup": "",
-         "subtitle": "DIMINISHED",
-         "fields": [
-@@ -266,7 +266,7 @@
-         ]
-       },
-       {
--        "main": "G#\u00b0",
-+        "main": "G#°",
-         "sup": "",
-         "subtitle": "DIMINISHED",
-         "fields": [
-@@ -306,7 +306,7 @@
-         ]
-       },
-       {
--        "main": "B\u00b0",
-+        "main": "B°",
-         "sup": "",
-         "subtitle": "DIMINISHED",
-         "fields": [
-@@ -338,7 +338,8 @@
            2,
            4,
            6,
@@ -71,28 +19,20 @@ diff --git a/data/decks.json b/data/decks.json
          ],
          "roots": [
            2
-@@ -420,7 +421,7 @@
-       "0": "v",
-       "1": "VI",
-       "3": "VII",
--      "7": "ii\u00b0"
-+      "7": "ii°"
-     },
-     "geom": {
-       "rim": 0.722,
-@@ -668,7 +669,7 @@
          ]
        },
        {
--        "main": "G\u00b0",
-+        "main": "G°",
-         "sup": "",
-         "subtitle": "DIMINISHED",
-         "fields": [
+         "main": "Bm",
+         "sup": "6/9",
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5384,7 +5384,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -5963,17 +5963,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     mulberry32: mulberry32
+   };
+ })(HPE);
+ </script>
+ <!-- engine:sequence end -->
  <!-- engine end -->
  
  <script>
@@ -101,3 +41,8 @@ diff --git a/index.html b/index.html
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
+ // (which deck, which mode) and is SHARED with whatever a later feature adds to
+ // it, so save() reads-modifies-writes rather than replacing it. Saved scales
+ // are a list, own their own key, and hold the SEED - the canonical scale string
+ // plus its options - never the built deck, which is derived (D14).
+ const STORE_KEY = "hpfc";

@@ -1,4 +1,5 @@
-# kills: a commit flies the card out, then steps and deals the next card in from the opposite side
+# kills: card swipe: a commit flies the card out, then steps and deals the next card in from the opposite side
+# a commit flies the card out, then steps and deals the next card in from the opposite side
 # suite: node --test --test-name-pattern ^card.swipe:.a.commit.flies.the.card.out,.then.steps.and.deals.the.next.card.in.from.the.opposite.side$ tests/e2e.test.js
 # Flips the sign of the enter-side offset in land(): the new card now flies in
 # from the SAME side it was swiped toward instead of the opposite side.

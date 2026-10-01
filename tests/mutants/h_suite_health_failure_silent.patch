@@ -1,4 +1,5 @@
-# kills: suite_health prints a failing node suite's own output
+# kills: test_failing_node_suite_output_reaches_stdout
+# suite_health prints a failing node suite's own output
 # suite: python3 -m unittest -k test_failing_node_suite_output_reaches_stdout tests.test_failure_diagnosability
 # Deletes the excerpt, restoring the defect: a node suite that fails is recorded
 # as "suite is not green" with its entire TAP stream - the failing test names,

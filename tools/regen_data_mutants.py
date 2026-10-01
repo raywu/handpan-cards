@@ -10,19 +10,23 @@ Run from the repo root on a clean tree after ANY change to deck data:
 
 Why this exists: the b_* mutants edit data/decks.json and the DECKS JSON in
 index.html in lockstep (so validate.py stays green and only the named test
-catches them), and they anchor on the single-line DECKS literal. The lockstep
-partner used to be tools/decks.py, which held a second hand-maintained copy of
-the data; since 2026-09-16 it derives from data/decks.json and has no literal
-left to edit, so every behavioural mutant's decks.py replacement list is []. Any data
+catches them), and they anchor on the single-line DECKS literal. Any data
 change therefore turns every one of them STALE and fails the mutation gate.
 Re-deriving them from intent takes seconds; hand-editing 17 KB diffs does not.
+(tools/decks.py was a second lockstep partner until 2026-09-16, when it
+started deriving from data/decks.json instead of holding its own copy; it has
+had no literal for any mutant to edit since, and this tool no longer touches
+it - see finding 15, 2026-09-30 quality-refactor plan.)
 
 Adding a mutant: append an entry to MUTANTS - header lines (the first must be
-"# kills: <test name>"), exact-string replacements for decks.py (normally [];
-see above), and a mutator for the parsed app JSON. Name it in DESYNC_ONLY if it
-wants index.html and data/decks.json to DISAGREE. Keep each mutant
-orthogonal: it must fail ONLY the test it names, or the gate's guarantee that
-that test is live is void (tests/mutation_check.sh runs the named test).
+"# kills: <test name>"), an exact-string replacement list that must stay []
+(the second tuple element predates the 2026-09-16 decks.py change above and
+is asserted empty rather than removed, to avoid reshaping all eleven existing
+entries for one tool's benefit), and a mutator for the parsed app JSON. Name
+it in DESYNC_ONLY if it wants index.html and data/decks.json to DISAGREE.
+Keep each mutant orthogonal: it must fail ONLY the test it names, or the
+gate's guarantee that that test is live is void (tests/mutation_check.sh runs
+the named test).
 """
 import json
 import os
@@ -30,11 +34,10 @@ import re
 import subprocess
 import sys
 
-DECKS_PY = "tools/decks.py"
 INDEX = "index.html"
 CANONICAL = "data/decks.json"
 OUT = "tests/mutants"
-TRACKED = [INDEX, DECKS_PY, CANONICAL]
+TRACKED = [INDEX, CANONICAL]
 
 
 def sh(*a):
@@ -189,10 +192,15 @@ def apply_json(mutator, sync=True):
     assert again is not None and json.loads(again.group(1)) == decks, \
         "re-injection did not land"
     if sync:
-        # Byte-identical to Task 1's writer, or every patch carries a
-        # whole-file reformat of data/decks.json as noise.
+        # ensure_ascii defaults to True - the format the committed file and
+        # sync_decks.py's own `json.dumps` both use. `False` here produced
+        # literal unicode (the `deg` character in degrees labels) instead of
+        # the committed `°` escape, turning every hunk-free data mutation
+        # into 9-10 hunks of pure reformatting noise (finding 2, 2026-09-30
+        # quality-refactor plan). Byte-identical to sync_decks.py's canonical()
+        # round-trip, or every patch carries a whole-file reformat as noise.
         with open(CANONICAL, "w", encoding="utf-8") as fh:
-            json.dump(decks, fh, indent=2, ensure_ascii=False)
+            json.dump(decks, fh, indent=2)
             fh.write("\n")
 
 
@@ -232,14 +240,10 @@ if subprocess.run(["git", "diff", "--quiet", "--"] + TRACKED).returncode != 0:
     sys.exit("REFUSING: tracked files already modified")
 
 for name, (header, replacements, mutator) in MUTANTS.items():
-    src = open(DECKS_PY).read()
-    for old, new in replacements:
-        assert src.count(old) == 1, (name, "anchor count", src.count(old), old)
-        src = src.replace(old, new)
-    open(DECKS_PY, "w").write(src)
+    assert not replacements, (name, "replacements", replacements)
     if mutator is not None:
         apply_json(mutator, sync=name not in DESYNC_ONLY)
-    diff = sh("git", "diff", "--", *TRACKED)
+    diff = sh("git", "diff", "-U8", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
     # Drop git's `index <preimage>..<postimage>` lines. They name the blob this
     # patch was cut from, which the next commit to the file invalidates, and

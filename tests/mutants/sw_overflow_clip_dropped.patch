@@ -1,4 +1,5 @@
-# kills: a card in flight never widens the page, at 380x800 and 844x390
+# kills: card swipe: a card in flight never widens the page, at 380x800 and 844x390
+# a card in flight never widens the page, at 380x800 and 844x390
 # suite: node --test --test-name-pattern ^card.swipe:.a.card.in.flight.never.widens.the.page,.at.380x800.and.844x390$ tests/e2e.test.js
 # Drops `main{overflow-x:clip}`: a card mid fly-out (translated well past the
 # viewport edge) now widens the page's scrollable area instead of being

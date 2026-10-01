@@ -1,4 +1,5 @@
-# kills: #count is written once per step, never per frame
+# kills: card swipe: #count is written once per step, never per frame
+# #count is written once per step, never per frame
 # suite: node --test --test-name-pattern ^card.swipe:.#count.is.written.once.per.step,.never.per.frame$ tests/e2e.test.js
 # Adds a #count write inside swipeMove()'s per-pointermove branch: the
 # counter now gets rewritten on every drag frame instead of only once, at

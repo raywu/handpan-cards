@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^a.top.note.that.does.not.clear.the.ding.is.told.the.ding.is.the.floor$ tests/core.test.js
-# kills: the ding alternate says "at or below" and offers only the fix the user can make - the reverted wording is the riddle "F3 is not above the ding F3" plus advice to retune the pan
+# kills: a top note that does not clear the ding is told the ding is the floor
+# the ding alternate says "at or below" and offers only the fix the user can make - the reverted wording is the riddle "F3 is not above the ding F3" plus advice to retune the pan
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

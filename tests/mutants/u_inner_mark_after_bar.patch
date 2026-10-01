@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^a.misplaced.or.repeated.separator.is.BAD.NOTE.naming.the.slash$ tests/core.test.js
-# kills: a misplaced or repeated separator is BAD_NOTE naming the slash (a separator after the bar is silently swallowed)
+# kills: a misplaced or repeated separator is BAD_NOTE naming the slash
+# a misplaced or repeated separator is BAD_NOTE naming the slash (a separator after the bar is silently swallowed)
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

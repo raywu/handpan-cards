@@ -1,4 +1,5 @@
-# kills: a second pointer cannot end or hijack a drag in progress
+# kills: card swipe: a second pointer cannot end or hijack a drag in progress
+# a second pointer cannot end or hijack a drag in progress
 # suite: node --test --test-name-pattern ^card.swipe:.a.second.pointer.cannot.end.or.hijack.a.drag.in.progress$ tests/e2e.test.js
 # Drops the pointerId check from the pointerup guard: any pointer's pointerup
 # now ends the current drag, even one from a second, unrelated pointer that

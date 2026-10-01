@@ -1,4 +1,5 @@
-# kills: buttons and arrows during the fly-out land it first, never dropping or doubling a step
+# kills: card swipe: buttons and arrows during the fly-out land it first, never dropping or doubling a step
+# buttons and arrows during the fly-out land it first, never dropping or doubling a step
 # suite: node --test --test-name-pattern ^card.swipe:.buttons.and.arrows.during.the.fly-out.land.it.first,.never.dropping.or.doubling.a.step$ tests/e2e.test.js
 # Drops land() from the capture-phase click listener. Per OV1, a real mouse
 # click on #next/#prev during a fly-out is already landed by the earlier
