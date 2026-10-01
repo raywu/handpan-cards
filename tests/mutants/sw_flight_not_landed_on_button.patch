@@ -6,14 +6,15 @@
 # capture-phase pointerdown listener before the click ever fires, so only
 # E9's third leg - a programmatic .click() (no pointerdown of its own) -
 # depends on this listener's own land() call, and only that leg fails.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8134,7 +8134,6 @@ document.addEventListener("pointerdown", e => {
+@@ -8303,7 +8303,6 @@ document.addEventListener("pointerdown", e => {
  }, true);
  document.addEventListener("keydown", () => { land(); }, true);
  document.addEventListener("click", e => {
 -  land();
-   if (eatClick) { eatClick = false; e.stopPropagation(); e.preventDefault(); }
+   if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); }
  }, true);
  

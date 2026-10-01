@@ -13,10 +13,11 @@
 # Context-refreshed 2026-09-30 (S2): hunk line numbers/context updated for
 # the swipe-only lane's index.html edits (swipeDecision gained a dy
 # parameter and drag/y0/lastY tracking); the mutation itself is unchanged.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8112,7 +8112,7 @@ function release(e, cancelled) {
+@@ -8151,7 +8151,7 @@ function release(e, cancelled, pushPoint = true) {
    const dx = drag.last;
    const dy = drag.lastY;
    const moved = drag.moved;
@@ -25,12 +26,12 @@ diff --git a/index.html b/index.html
    const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
    drag = null;
    // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
-@@ -8179,7 +8179,7 @@ function swipeMove(e) {
+@@ -8202,7 +8202,7 @@ function swipeMove(e) {
    }
  }
  card.addEventListener("pointerdown", e => {
 -  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
 +  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || !order.length) return;
    scene.getAnimations().forEach(a => a.cancel());
-   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
    card.setPointerCapture(e.pointerId);

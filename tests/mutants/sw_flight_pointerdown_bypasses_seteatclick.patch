@@ -1,0 +1,18 @@
+# kills: card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag
+# suite: node --test --test-name-pattern ^card.swipe..landing.a.flight.during.a.mid-flight.tap.cancels.a.stale.mouse-decay.timer.from.the.committing.drag$ tests/e2e.test.js
+# Replaces the flight-branch's setEatClick call with a direct eatClick
+# assignment, bypassing the timer-cancelling helper: a stale decay timer
+# from an earlier committing drag survives a later mid-flight tap instead
+# of being cancelled.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8289,7 +8289,7 @@ document.addEventListener("pointerdown", e => {
+     // Q11: a right-button press (button 2) must not arm eatClick - a
+     // contextmenu/auxclick follows it, never a "click", so a later Enter on
+     // a focused control would otherwise have its own click eaten.
+-    setEatClick(inside && e.button === 0);
++    eatClick = inside && e.button === 0;
+     land();
+     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
+       scene.getAnimations().forEach(a => a.cancel());

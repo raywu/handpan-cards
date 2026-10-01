@@ -1,0 +1,18 @@
+# kills: card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture
+# suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.past.80px.advances.the.deck.exactly.once.per.gesture$ tests/e2e.test.js
+# Inverts the wheel.fired guard (checks !wheel.fired instead of
+# wheel.fired) so the gesture accumulator never runs after the first
+# event: the deck never advances at all, instead of advancing exactly
+# once per gesture.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8264,7 +8264,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+   if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+   if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+   e.preventDefault();
+-  if (wheel.fired) return;
++  if (!wheel.fired) return;
+   wheel.sx += dx;
+   // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
+   // next card, content follows the fingers (plan: docs/plans/2026-09-30-

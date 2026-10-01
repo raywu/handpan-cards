@@ -8078,8 +8078,19 @@ function swipeTilt(dx) {
   return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));
 }
 function swipeXf(dx) { return `translate3d(${dx}px,0,0) rotate(${swipeTilt(dx)}deg)`; }
-let drag = null, flight = null, eatClick = false;
+let drag = null, flight = null, eatClick = false, eatClickTimer = null;
 function swipeRest() { scene.style.transform = ""; scene.style.willChange = ""; }
+// Clears eatClick and cancels any pending decay timer. Every site that
+// assigns eatClick (armed or cleared) goes through this, so a stale timer
+// from an earlier release can never clear a freshly-armed eatClick out from
+// under a later one (see the click-mid-flight race test).
+function setEatClick(v, decayMs) {
+  if (eatClickTimer) { clearTimeout(eatClickTimer); eatClickTimer = null; }
+  eatClick = v;
+  if (v && decayMs != null) {
+    eatClickTimer = setTimeout(() => { eatClick = false; eatClickTimer = null; }, decayMs);
+  }
+}
 function land() {
   if (!flight) return;
   const f = flight;
@@ -8094,10 +8105,36 @@ function land() {
     { duration: SWIPE_IN_MS, easing: SWIPE_EASE },
   );
 }
-function release(e, cancelled) {
+function springBack(dx) {
+  scene.style.transform = "";
+  scene.animate(
+    [{ transform: swipeXf(dx) }, { transform: "translate3d(0,0,0) rotate(0deg)" }],
+    { duration: SWIPE_BACK_MS, easing: SWIPE_EASE },
+  ).finished.then(swipeRest, () => {});
+}
+function flyOut(dir, dx) {
+  scene.style.transform = "";
+  const dist = window.innerWidth / 2 + scene.offsetWidth;
+  const rect = card.getBoundingClientRect();
+  const anim = scene.animate(
+    [{ transform: swipeXf(dx) },
+     { transform: `translate3d(${-dir * dist}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
+    { duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE, fill: "forwards" },
+  );
+  flight = { dir, anim, rect };
+  anim.finished.then(() => { if (flight && flight.anim === anim) land(); }, () => {});
+}
+// `pushPoint` is false on the lpc-as-release path (a mouse release that
+// arrived as lostpointercapture ahead of pointerup, see the listener below):
+// Chrome's lpc event does not reliably carry the real release coordinate, so
+// appending it to drag.pts would let a bogus point corrupt the trailing-
+// window velocity calculation below. drag.pts/drag.last, built entirely from
+// real pointermove samples, are used as they stand instead.
+function release(e, cancelled, pushPoint = true) {
   if (!drag) return;
+  const pointerType = drag.pointerType;
   const now = e.timeStamp;
-  drag.pts.push({ x: e.clientX, t: now });
+  if (pushPoint) drag.pts.push({ x: e.clientX, t: now });
   const cutoff = now - SWIPE_FLING_WINDOW_MS;
   const pts = drag.pts.filter(p => p.t >= cutoff);
   let vx = 0;
@@ -8118,35 +8155,23 @@ function release(e, cancelled) {
   // flip itself comes from #card's click listener, untouched since eatClick
   // is not set below).
   if (!dir && !moved) { swipeRest(); return; }
-  // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
-  // never has a trailing click to suppress - the UA does not synthesize one -
-  // so eatClick must never be armed here for `cancelled`. Arming it anyway
-  // left eatClick stuck true with nothing left to clear it (no click handler
-  // runs, and the next pointerdown's own eatClick assignment only clears it
-  // if flight is set), eating the next unrelated click/Enter.
-  if (moved && !cancelled) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+  // A cancelled release (pointercancel/off-window mouseup) never has a
+  // trailing click to suppress - the UA does not synthesize one - so
+  // eatClick must never be armed here for `cancelled`. Arming it anyway left
+  // eatClick stuck true with nothing left to clear it, eating the next
+  // unrelated click/Enter. A committed mouse release decays after 400ms
+  // instead of setTimeout(0): Chrome can deliver lostpointercapture (buttons
+  // 0) ahead of pointerup/click on a real mouse release, so the trailing
+  // click can arrive a tick or more after this runs - touch/pen keep the
+  // immediate decay, since their synthesized click (if any) follows at once.
+  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
   if (reducedMotion.matches) {
     scene.style.transform = ""; scene.style.willChange = "";
     if (dir) step(dir);
     return;
   }
-  scene.style.transform = "";
-  if (!dir) {
-    scene.animate(
-      [{ transform: swipeXf(dx) }, { transform: "translate3d(0,0,0) rotate(0deg)" }],
-      { duration: SWIPE_BACK_MS, easing: SWIPE_EASE },
-    ).finished.then(swipeRest, () => {});
-    return;
-  }
-  const dist = window.innerWidth / 2 + scene.offsetWidth;
-  const rect = card.getBoundingClientRect();
-  const anim = scene.animate(
-    [{ transform: swipeXf(dx) },
-     { transform: `translate3d(${-dir * dist}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
-    { duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE, fill: "forwards" },
-  );
-  flight = { dir, anim, rect };
-  anim.finished.then(() => { if (flight && flight.anim === anim) land(); }, () => {});
+  if (!dir) { springBack(dx); return; }
+  flyOut(dir, dx);
 }
 function swipeMove(e) {
   if (!drag || e.pointerId !== drag.id) return;
@@ -8173,16 +8198,87 @@ function swipeMove(e) {
 card.addEventListener("pointerdown", e => {
   if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
   scene.getAnimations().forEach(a => a.cancel());
-  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
   card.setPointerCapture(e.pointerId);
 });
 card.addEventListener("pointermove", swipeMove);
 card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
 card.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) release(e, true); });
-card.addEventListener("lostpointercapture", e => { if (drag && e.pointerId === drag.id) release(e, true); });
+// Chrome on macOS delivers lostpointercapture as part of an ordinary mouse
+// release - buttons already 0, pointerup still to come - not only on an
+// actual cancel (touch/pen, or a mouse button still held per `buttons`).
+// Firefox/Safari fire lpc after pointerup, when drag is already null, so
+// this only matters in Chrome; the buttons guard is what protects browsers
+// that populate `buttons` on the event at all. The lpc event's own point is
+// not pushed into drag.pts on this path (see release()'s pushPoint doc).
+card.addEventListener("lostpointercapture", e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (e.pointerType === "mouse" && !(e.buttons & 1)) release(e, false, false);
+  else release(e, true);
+});
 // Q15: a right-click (or ctrl+click on macOS) opens a context menu with no
 // pointerup of its own, leaving a live drag stuck following the pointer.
 card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
+
+/* ---------------- swipe (two-finger trackpad) ---------------- */
+// <main> holds only .scene (index.html's header/#decks and the settings
+// panel are outside it), so a wheel listener here cannot catch an unrelated
+// horizontal-scroll element.
+const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
+// document.querySelector, not getElementById: <main> carries no id, and the
+// unit-test DOM stub (tests/helpers/sandbox.js) only tracks ids, so this
+// deliberately returns null there - same as panelBackground's own
+// querySelector("main") above - and the listener registration below is
+// guarded accordingly; the e2e suite drives a real browser where it resolves.
+const wheelMain = document.querySelector("main");
+let wheel = null; // { sx, sy, axis, fired, skip, timer }
+function wheelGestureEnd() {
+  if (!wheel) return;
+  const w = wheel;
+  wheel = null;
+  if (w.skip || w.fired) return;
+  if (reducedMotion.matches) { swipeRest(); return; }
+  // The follow transform during the gesture is swipeXf(-w.sx) (see the
+  // listener below); springBack's own first keyframe is swipeXf(dx), so it
+  // must take -w.sx too, or the spring-back starts mirrored (opposite
+  // translateX and rotate) from where the card actually was.
+  springBack(-w.sx);
+}
+if (wheelMain) wheelMain.addEventListener("wheel", e => {
+  if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
+  if (!wheel) {
+    // A gesture that starts while a flight/drag is live or the panel/sheet
+    // is open is skipped for its whole duration (the flag persists until
+    // the 160ms gap, not just for this event), so wheel momentum arriving
+    // right after a flight lands cannot start a fresh gesture and double-step.
+    const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
+    wheel = { sx: 0, sy: 0, axis: null, fired: false, skip, timer: null };
+  }
+  if (wheel.timer) clearTimeout(wheel.timer);
+  wheel.timer = setTimeout(wheelGestureEnd, WHEEL_GESTURE_GAP_MS);
+  if (wheel.skip) return;
+  const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+  const dx = e.deltaX * scale, dy = e.deltaY * scale;
+  if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+  e.preventDefault();
+  if (wheel.fired) return;
+  wheel.sx += dx;
+  // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
+  // next card, content follows the fingers (plan: docs/plans/2026-09-30-
+  // desktop-swipe.md). Before the threshold the card follows -sx.
+  const effDx = wheel.sx;
+  if (Math.abs(wheel.sx) > WHEEL_COMMIT_PX) {
+    wheel.fired = true;
+    const dir = effDx > 0 ? 1 : -1;
+    if (reducedMotion.matches) step(dir);
+    else flyOut(dir, -effDx);
+  } else if (!reducedMotion.matches) {
+    scene.style.willChange = "transform";
+    scene.style.transform = swipeXf(-effDx);
+  }
+}, { passive: false });
+
 // Capture phase: land a pending fly-out before any other input reaches the app.
 // Mid-flight, .scene has moved away from its resting position, so a real
 // pointerdown at the card's rest spot hit-tests to some ancestor (e.g.
@@ -8197,22 +8293,22 @@ document.addEventListener("pointerdown", e => {
     // Q11: a right-button press (button 2) must not arm eatClick - a
     // contextmenu/auxclick follows it, never a "click", so a later Enter on
     // a focused control would otherwise have its own click eaten.
-    eatClick = inside && e.button === 0;
+    setEatClick(inside && e.button === 0);
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
       scene.getAnimations().forEach(a => a.cancel());
-      drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+      drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
       card.setPointerCapture(e.pointerId);
     }
   } else {
-    eatClick = false;
+    setEatClick(false);
     land();
   }
 }, true);
 document.addEventListener("keydown", () => { land(); }, true);
 document.addEventListener("click", e => {
   land();
-  if (eatClick) { eatClick = false; e.stopPropagation(); e.preventDefault(); }
+  if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); }
 }, true);
 
 /* ---------------- go ---------------- */

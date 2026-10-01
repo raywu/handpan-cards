@@ -1,0 +1,18 @@
+# kills: card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis
+# suite: node --test --test-name-pattern ^card.swipe..wheel...the.axis.lock.holds.for.the.whole.gesture.even.once.later.deltas.favour.the.other.axis$ tests/e2e.test.js
+# Drops the `wheel.axis === null` guard so the axis is recomputed on
+# every wheel event instead of locked at gesture start: a later event
+# whose dy dominates flips an already-horizontal gesture to vertical and
+# stops it from committing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8256,7 +8256,7 @@ wheelMain.addEventListener("wheel", e => {
+   if (wheel.skip) return;
+   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+   const dx = e.deltaX * scale, dy = e.deltaY * scale;
+-  if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
++  if (dx !== 0 || dy !== 0) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+   if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+   e.preventDefault();
+   if (wheel.fired) return;

@@ -1,0 +1,23 @@
+# kills: card swipe (wheel): deltaX under 80px does nothing and leaves no transform
+# suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.under.80px.does.nothing.and.leaves.no.transform$ tests/e2e.test.js
+# Drops the springBack(w.sx) call in wheelGestureEnd: a sub-threshold
+# wheel gesture that never committed leaves the scene's follow transform
+# and willChange hint in place forever instead of settling back to rest.
+# Context-refreshed 2026-10-01 (desktop-swipe lane, bounce 2/2): F3 fix
+# changed the call to springBack(-w.sx) and added explanatory comment lines
+# above it; the mutation (drop the call entirely) is unchanged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8244,11 +8244,6 @@ function wheelGestureEnd() {
+   wheel = null;
+   if (w.skip || w.fired) return;
+   if (reducedMotion.matches) { swipeRest(); return; }
+-  // The follow transform during the gesture is swipeXf(-w.sx) (see the
+-  // listener below); springBack's own first keyframe is swipeXf(dx), so it
+-  // must take -w.sx too, or the spring-back starts mirrored (opposite
+-  // translateX and rotate) from where the card actually was.
+-  springBack(-w.sx);
+ }
+ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture

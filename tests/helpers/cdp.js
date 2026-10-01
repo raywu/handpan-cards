@@ -245,6 +245,7 @@ class Browser {
   // are honoured, so no wall-clock sleeps are needed for a timed gesture).
   // pts is [[dx, ms], ...] or [[dx, ms, dy], ...] for a diagonal/vertical leg.
   async drag(selector, pts, { pointer = "touch", release = true, y0 = 0 } = {}) {
+    await this.waitForPendingSettle();
     const box = await this.eval(`
       const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -259,7 +260,9 @@ class Browser {
         await this.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dx, dy), timestamp: t0 + ms / 1000 });
       }
       if (release) {
+        await this.armPendingSettle();
         await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 });
+        this.settleAfterRealRelease();
       }
     } else {
       const p0 = at(0, 0);
@@ -270,8 +273,64 @@ class Browser {
       }
       if (release) {
         const p = at(last[0], last[2]);
+        await this.armPendingSettle();
         await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 });
+        this.settleAfterRealRelease();
       }
+    }
+  }
+  // A real touchend/mouseup releases the element's pointer capture (if any)
+  // asynchronously via a trusted lostpointercapture - if a caller moves on
+  // (e.g. a fresh page load for the next test) before that fires, Chrome can
+  // deliver it late, against whatever now occupies the same element/pointer
+  // id, and cancel a drag that never asked for it. Wait for one (there may be
+  // none, if the element never captured) and then let two real animation
+  // frames pass so Chrome's own capture bookkeeping for the old pointer id
+  // has drained before it gets reused.
+  //
+  // This is deliberately NOT awaited by the caller that just released: a
+  // test that inspects page/animation state right after its own drag ends
+  // (e.g. counting in-flight animations) must see that state immediately,
+  // not after several real animation frames have been allowed to pass. The
+  // wait is instead stashed as a pending promise and paid for by whichever
+  // NEXT real press this browser makes (drag(), or a test-local press that
+  // calls waitForPendingSettle() first) - that is the only place the actual
+  // race (a stale lostpointercapture landing on a fresh capture) can bite.
+  // Arms the lostpointercapture listener. Must be called (and awaited)
+  // BEFORE the real touchend/mouseup is dispatched, or the trusted event -
+  // which can fire before this function would otherwise get around to
+  // attaching the listener - is missed entirely and every settle below
+  // degrades to its full timeout. See endMouseDragForReal (tests/e2e.test.js)
+  // for the same pattern.
+  async armPendingSettle() {
+    await this.eval(`
+      window.__cdpLpcSeen = false;
+      const c = document.getElementById("card");
+      if (c) c.addEventListener("lostpointercapture", () => { window.__cdpLpcSeen = true; }, { once: true });
+      return true;
+    `).catch(() => {});
+  }
+  settleAfterRealRelease() {
+    this._pendingSettle = this.deferPendingSettle();
+    return this._pendingSettle;
+  }
+  async deferPendingSettle() {
+    await this.waitFor(`window.__cdpLpcSeen === true`, {
+      label: "a real release's own lostpointercapture to fire",
+      timeout: 1000,
+    }).catch(() => {});
+    await this.eval(`
+      return new Promise(resolve => { requestAnimationFrame(() => requestAnimationFrame(resolve)); });
+    `).catch(() => {});
+  }
+  // Awaited by any helper about to start a NEW real press/capture, so it
+  // does not collide with a straggling lostpointercapture from whatever this
+  // browser last released. A no-op once already settled.
+  async waitForPendingSettle() {
+    if (this._pendingSettle) {
+      const p = this._pendingSettle;
+      this._pendingSettle = null;
+      await p;
     }
   }
   // Finishes every WAAPI animation on `selector`, looping because finish()

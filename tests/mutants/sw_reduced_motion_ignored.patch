@@ -8,18 +8,19 @@
 # regained the setTimeout(0) decay and a `!cancelled` guard (restoring base
 # semantics per reviewer) - the mutation itself (dropping the reduced-motion
 # early return) is unchanged.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8131,11 +8131,6 @@ function release(e, cancelled) {
-   // runs, and the next pointerdown's own eatClick assignment only clears it
-   // if flight is set), eating the next unrelated click/Enter.
-   if (moved && !cancelled) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
+@@ -8171,11 +8171,6 @@ function release(e, cancelled, pushPoint = true) {
+   // click can arrive a tick or more after this runs - touch/pen keep the
+   // immediate decay, since their synthesized click (if any) follows at once.
+   if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
 -  if (reducedMotion.matches) {
 -    scene.style.transform = ""; scene.style.willChange = "";
 -    if (dir) step(dir);
 -    return;
 -  }
-   scene.style.transform = "";
-   if (!dir) {
-     scene.animate(
+   if (!dir) { springBack(dx); return; }
+   flyOut(dir, dx);
+ }

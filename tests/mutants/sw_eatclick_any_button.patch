@@ -5,15 +5,16 @@
 # left click would. A right-click never produces a "click" event of its own,
 # so nothing ever consumes that armed flag - it survives to swallow the
 # reader's next, unrelated left click.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8170,7 +8170,7 @@ document.addEventListener("pointerdown", e => {
+@@ -8289,7 +8289,7 @@ document.addEventListener("pointerdown", e => {
      // Q11: a right-button press (button 2) must not arm eatClick - a
      // contextmenu/auxclick follows it, never a "click", so a later Enter on
      // a focused control would otherwise have its own click eaten.
--    eatClick = inside && e.button === 0;
-+    eatClick = inside;
+-    setEatClick(inside && e.button === 0);
++    setEatClick(inside);
      land();
      if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
        scene.getAnimations().forEach(a => a.cancel());

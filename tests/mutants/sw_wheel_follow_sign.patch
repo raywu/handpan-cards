@@ -1,0 +1,17 @@
+# kills: card swipe (wheel): deltaX>0 follows with a negative translateX mid-gesture
+# suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.0.follows.with.a.negative.translateX.mid.gesture$ tests/e2e.test.js
+# Flips the sub-threshold follow transform's sign: swipeXf(effDx) instead of
+# swipeXf(-effDx). A right-to-left swipe (deltaX>0, sx>0) would then drag
+# the card the wrong way (translateX>0) while it is still being followed,
+# before the gesture ever commits or springs back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8280,6 +8280,6 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+     else flyOut(dir, -effDx);
+   } else if (!reducedMotion.matches) {
+     scene.style.willChange = "transform";
+-    scene.style.transform = swipeXf(-effDx);
++    scene.style.transform = swipeXf(effDx);
+   }
+ }, { passive: false });

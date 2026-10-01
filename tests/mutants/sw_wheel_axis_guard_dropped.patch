@@ -1,0 +1,15 @@
+# kills: card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed
+# suite: node --test --test-name-pattern ^card.swipe..wheel...a.vertical-dominant.wheel.does.nothing.and.is.not.preventDefault-ed$ tests/e2e.test.js
+# Drops the `if (wheel.axis !== "x") return;` guard: a vertical-dominant
+# wheel gesture is now preventDefault-ed and processed as a swipe too.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8257,7 +8257,6 @@ wheelMain.addEventListener("wheel", e => {
+   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+   const dx = e.deltaX * scale, dy = e.deltaY * scale;
+   if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+-  if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+   e.preventDefault();
+   if (wheel.fired) return;
+   wheel.sx += dx;

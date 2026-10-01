@@ -1,0 +1,19 @@
+# kills: card swipe (wheel): a second gesture after the 160ms gap advances again
+# suite: node --test --test-name-pattern ^card.swipe..wheel...a.second.gesture.after.the.160ms.gap.advances.again$ tests/e2e.test.js
+# Widens WHEEL_GESTURE_GAP_MS from 160ms to 1600ms: a second gesture
+# starting 220ms after the first (well past the documented 160ms gap)
+# is still folded into the first, now-already-fired gesture and skipped
+# instead of starting its own, separately-committing gesture.
+# Context-refreshed 2026-09-30 (desktop-swipe lane, pass 2): wheelMain now guarded with `if (wheelMain)` (null-safe for the unit-test DOM stub); the mutation itself is unchanged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8230,7 +8230,7 @@ card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
+ // <main> holds only .scene (index.html's header/#decks and the settings
+ // panel are outside it), so a wheel listener here cannot catch an unrelated
+ // horizontal-scroll element.
+-const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
++const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 1600;
+ // document.querySelector, not getElementById: <main> carries no id, and the
+ // unit-test DOM stub (tests/helpers/sandbox.js) only tracks ids, so this
+ // deliberately returns null there - same as panelBackground's own

@@ -7,23 +7,26 @@
 # release-time filter in release() (so it uses all of drag.pts unfiltered).
 # A short fast flick preceded by any slower motion earlier in the same
 # gesture then averages out to a sub-threshold velocity and stops committing.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8069,7 +8069,7 @@ function release(e, cancelled) {
+@@ -8142,7 +8142,7 @@ function release(e, cancelled, pushPoint = true) {
    const now = e.timeStamp;
-   drag.pts.push({ x: e.clientX, t: now });
+   if (pushPoint) drag.pts.push({ x: e.clientX, t: now });
    const cutoff = now - SWIPE_FLING_WINDOW_MS;
 -  const pts = drag.pts.filter(p => p.t >= cutoff);
 +  const pts = drag.pts;
    let vx = 0;
    if (pts.length >= 2) {
      const span = pts[pts.length - 1].t - pts[0].t;
-@@ -8111,7 +8111,6 @@ function swipeMove(e) {
+@@ -8195,8 +8195,7 @@ function swipeMove(e) {
    const now = e.timeStamp;
    drag.pts.push({ x: e.clientX, t: now });
    const cutoff = now - SWIPE_FLING_WINDOW_MS;
 -  while (drag.pts.length > 1 && drag.pts[0].t < cutoff) drag.pts.shift();
-   if (drag.moved && !reducedMotion.matches) {
+-  if (drag.moved && !reducedMotion.matches) {
++    if (drag.moved && !reducedMotion.matches) {
      scene.style.willChange = "transform";
      scene.style.transform = swipeXf(dx);
+   }

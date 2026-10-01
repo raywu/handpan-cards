@@ -7797,6 +7797,7 @@ function run() {
         const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
+      await b.waitForPendingSettle();
       const t0 = Date.now() / 1000;
       const pt = (dx, dy) => [{ x: box.x + dx, y: box.y + (dy || 0), radiusX: 4, radiusY: 4, force: 1, id: 1 }];
       await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0, 0), timestamp: t0 });
@@ -7806,7 +7807,20 @@ function run() {
         },
         async release(dx, ms, dy) {
           await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(dx, dy), timestamp: t0 + ms / 1000 });
+          // Armed (and awaited) before touchEnd, not after: a real touchend's
+          // lostpointercapture can fire before an eval sent only after the
+          // dispatch would get around to attaching the listener, which would
+          // miss it and degrade every settle below to its full timeout. See
+          // endMouseDragForReal and cdp.js's armPendingSettle.
+          await b.armPendingSettle();
           await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
+          // See b.settleAfterRealRelease / endMouseDragForReal: a real
+          // touchend's lostpointercapture fires asynchronously and can land
+          // on a later test's drag if that later drag does not wait for it
+          // first - deferred (not awaited) here for the same reason it is
+          // deferred in cdp.js's drag(): a caller that inspects animation
+          // state right after this release must see it immediately.
+          b.settleAfterRealRelease();
         },
       };
     }
@@ -8578,6 +8592,9 @@ function run() {
         const r = document.getElementById("card").getBoundingClientRect();
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
+      // A fresh test's first real press - same cross-test-boundary race as
+      // drag()/startDrag()/startMouseDrag(), see waitForPendingSettle.
+      await b.waitForPendingSettle();
       // Q15: a mouse button released outside the browser window (or a native
       // context menu opened over it) delivers no pointerup/lostpointercapture
       // at all - the OS eats it - and the drag stays live, following the
@@ -8664,6 +8681,576 @@ function run() {
     // N40 (owner in-scope widening): step() suppresses .card's reverse-flip
     // transition for every caller, not just land() - #next, ArrowRight, and
     // the swipe's own land() all reset a flipped card the same way.
+    /* ---- desktop swipe: mouse lpc-release order + trackpad wheel ----
+     * docs/plans/2026-09-30-desktop-swipe.md */
+    async function startMouseDrag(selector) {
+      const box = await b.eval(`
+        const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      await b.waitForPendingSettle();
+      const press = async () => {
+        const t0 = Date.now() / 1000;
+        await b.send("Input.dispatchMouseEvent", {
+          type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
+        });
+        return t0;
+      };
+      const g = { box, t0: await press(), represses: 0 };
+      g.id = await b.eval(`return drag ? drag.id : null;`);
+      assert.ok(g.id !== null, "a real mouse press must start a drag");
+      g.move = async (dx, ms, dy) => {
+        const send = () => b.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved", x: box.x + dx, y: box.y + (dy || 0), buttons: 1, timestamp: g.t0 + ms / 1000,
+        });
+        await send();
+        // Headless Chrome can drop a fresh mouse capture while the button is
+        // still held (a trusted lostpointercapture right after its own
+        // gotpointercapture, observed ~1 run in 13 straight after the
+        // second-pointer touch test, sometimes on consecutive presses). The
+        // app rightly cancels on that, so the drag dies before this move
+        // registers. That is the harness's input pipeline, not the app:
+        // release and re-press, a bounded number of times, then require the
+        // move. A drag still live but not moving is never retried.
+        while (!(await b.waitFor(`drag && drag.moved`, { label: "drag to register the move", timeout: 1500 })
+          .then(() => true, () => false))) {
+          assert.ok(g.represses < 3, "drag to register the move (re-pressed 3 times)");
+          assert.strictEqual(await b.eval(`return drag;`), null, "drag to register the move (drag still live)");
+          g.represses++;
+          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+          await b.finishAnimations();
+          await new Promise(r => setTimeout(r, 150 * g.represses));
+          g.t0 = await press();
+          g.id = await b.eval(`return drag ? drag.id : null;`);
+          assert.ok(g.id !== null, "a real mouse re-press must start a drag");
+          await send();
+        }
+        if (g.represses && process.env.E2E_LOG_REPRESS) console.error(`startMouseDrag: re-pressed ${g.represses}x`);
+      };
+      return g;
+    }
+    // Dispatches one synthetic event on `selector` via its own CDP round
+    // trip (Runtime.evaluate), so a setTimeout(0) queued by the app between
+    // two dispatches gets a chance to fire - required to replicate Chrome's
+    // real mouse-release order (lostpointercapture, then pointerup, then
+    // click, each its own task) rather than three listeners firing
+    // synchronously inside one script.
+    async function dispatchEvt(selector, ctor, type, extra) {
+      return b.eval(`
+        document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new ${ctor}(${JSON.stringify(type)}, Object.assign({
+          bubbles: true, cancelable: true,
+        }, ${JSON.stringify(extra || {})})));
+        return true;
+      `);
+    }
+    // Ends a real mouse press (one started via startMouseDrag, whose
+    // pointerdown called card.setPointerCapture) for real, then waits for
+    // Chrome's own trusted lostpointercapture that the real release
+    // triggers asynchronously - a synthetic lostpointercapture dispatched
+    // mid-test never releases this real capture, so the real one still
+    // fires on the real mouseup. If a test returns before it fires, it can
+    // land on the very next test's drag instead (same real-input pipeline,
+    // reused low pointer ids) and cancel it before its first move.
+    async function endMouseDragForReal(x, y) {
+      await b.eval(`
+        window.__cdpLpcSeen = false;
+        document.getElementById("card").addEventListener("lostpointercapture", () => {
+          window.__cdpLpcSeen = true;
+        }, { once: true });
+        return true;
+      `);
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+      // See b.settleAfterRealRelease (tests/helpers/cdp.js): waits for the
+      // real release's own lostpointercapture, then two real animation
+      // frames so Chrome's capture bookkeeping for this pointer id has
+      // drained before a later test reuses it. The listener above is
+      // armed here (not inside settleAfterRealRelease) because it must be
+      // attached before mouseReleased is sent, not after. The wait itself is
+      // deferred (not awaited) rather than run inline: a caller that
+      // inspects animation state right after this release must see it
+      // immediately, not after several real animation frames have elapsed -
+      // whichever NEXT real press this browser makes pays for the wait
+      // instead, via waitForPendingSettle().
+      b._pendingSettle = (async () => {
+        await b.waitFor(`window.__cdpLpcSeen === true`, {
+          label: "the real mouseup's own lostpointercapture to fire",
+          timeout: 1000,
+        }).catch(() => {});
+        await b.eval(`
+          return new Promise(resolve => {
+            requestAnimationFrame(() => requestAnimationFrame(resolve));
+          });
+        `).catch(() => {});
+      })();
+    }
+
+    test("card swipe: Chrome's real mouse-release order - lostpointercapture, then pointerup, then click - commits without flipping", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startMouseDrag("#card");
+      assert.ok(g.id !== null, "a real mouse press must start a drag");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      // Lab-observed order (db trace 2lru4aur8i92pgogjd0t): lostpointercapture
+      // (buttons 0, real coords) fires BEFORE pointerup.
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
+      await dispatchEvt("#card", "PointerEvent", "pointerup", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, button: 0, buttons: 0, clientX: rx, clientY: ry,
+      });
+      await dispatchEvt("#card", "MouseEvent", "click", {});
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the real Chrome mouse-release order must still commit");
+      assert.strictEqual(await cardFlipped(), false, "a committing drag must not flip the card");
+      // startMouseDrag's mousePressed never got a real release - end it for
+      // real (and wait out the resulting real lostpointercapture) so it
+      // cannot bleed into a later test's press.
+      await endMouseDragForReal(rx, ry);
+    });
+
+    test("card swipe: a touch lostpointercapture still cancels the drag, not a mouse-only release", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startDrag("#card");
+      await g.move(80, 0);
+      const id = await b.eval(`return drag.id;`);
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: id, pointerType: "touch", isPrimary: true, buttons: 0, clientX: 0,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "a touch lostpointercapture must not commit");
+      const anim = await b.eval(`
+        const a = document.querySelector(".scene").getAnimations()[0];
+        const kf = a ? a.effect.getKeyframes() : null;
+        return { n: document.querySelector(".scene").getAnimations().length,
+                 duration: a ? a.effect.getComputedTiming().duration : null };
+      `);
+      assert.strictEqual(anim.n, 1, "a cancelled touch drag should spring back with one animation");
+      assert.strictEqual(anim.duration, 260, "a cancelled drag springs back, it does not fly out");
+      await b.finishAnimations();
+      // Synthetic lpc on the app's own element does not end the real
+      // underlying touch (id 1) as far as Chrome's input pipeline is
+      // concerned, nor does it release the real pointer capture #card
+      // still holds (card.setPointerCapture on pointerdown) - end the
+      // touch for real or a later test's touchstart misbehaves.
+      await b.eval(`
+        window.__lpcSeen = false;
+        document.getElementById("card").addEventListener("lostpointercapture", () => {
+          window.__lpcSeen = true;
+        }, { once: true });
+        return true;
+      `);
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      // Ending a real, captured touch makes Chrome fire its OWN trusted
+      // lostpointercapture asynchronously - if this test returns before
+      // that fires, it can land on the very next test's drag instead
+      // (same pointerId, reused by CDP's touch dispatch), cancelling it
+      // before its first move. Wait for it here so it is consumed by
+      // this test's own (already-null) `drag`, not a later one's.
+      await b.waitFor(`window.__lpcSeen === true`, {
+        label: "the real touchend's own lostpointercapture to fire",
+        timeout: 1000,
+      });
+      // The real lostpointercapture firing does not guarantee Chrome's
+      // internal capture bookkeeping for the old (touch) pointerId has
+      // fully settled yet - reusing the same low pointerId for a brand
+      // new mouse capture immediately afterward can spuriously re-fire a
+      // trusted lostpointercapture against that new capture. Two real
+      // animation-frame round trips give the browser's input pipeline a
+      // chance to drain before the next test's pointerdown.
+      await b.eval(`
+        return new Promise(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        });
+      `);
+    });
+
+    test("card swipe: a mouse lostpointercapture with a button still held cancels the drag", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      // buttons still reporting the left button held (bit 1) must be treated
+      // like any other cancel, not the Chrome ordinary-release path.
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: rx, clientY: ry,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "lpc with a button still held must not commit");
+      await b.finishAnimations();
+      assert.strictEqual(await countText(), `1 / ${n}`, "settling after the spring-back must still not have stepped");
+      // Release the real underlying mouse button (and wait out the real
+      // lostpointercapture that triggers) so it cannot bleed into a later
+      // test's drag.
+      await endMouseDragForReal(rx, ry);
+    });
+
+    test("card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // Commit via the synthetic lpc path only (no trailing pointerup/click
+      // dispatched), exactly as the eng-review-item-3 test below does: a
+      // real mouse release's own trailing click fires (and self-eats)
+      // almost immediately, which would clear eatClick/eatClickTimer within
+      // milliseconds regardless of the configured decay duration and so
+      // cannot discriminate a wrong decay length (e.g. 400ms mutated to
+      // 4000ms) - a behavioral click-then-flip assertion driven by a real
+      // b.drag()+b.click() always "passes" either way, since the real
+      // click's own pointerdown resets eatClick unconditionally before the
+      // mutation can matter.
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
+      await b.finishAnimations();
+      await expectCount(`2 / ${n}`, "the drag should have committed");
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "the committing drag must arm eatClick right after landing");
+      await new Promise((r) => setTimeout(r, 450));
+      assert.strictEqual(await b.eval(`return eatClick;`), false,
+        "eatClick must have decayed back to false on its own well past the 400ms window");
+      await b.click("#card");
+      assert.strictEqual(await cardFlipped(), true, "a click well after the 400ms decay must flip");
+      // startMouseDrag's mousePressed never got a real release of its own
+      // (the commit above is driven by the synthetic lpc, and b.click()
+      // above presses and releases again at a fresh location) - send a
+      // final real release so a stuck button cannot bleed into a later test.
+      await endMouseDragForReal(rx, ry);
+    });
+
+    // Eng review item 3: every place that assigns eatClick must also cancel
+    // any pending decay timer, so a stale timer from an earlier assignment
+    // can never fire later and clobber a fresher one. The clearest, most
+    // deterministic way to prove this is white-box: a committing mouse drag
+    // arms a real 400ms timer, then a mid-flight tap (landing the flight via
+    // the document capture-phase pointerdown branch, which assigns eatClick
+    // with no decay) must leave no timer behind - if it did, that stale
+    // timer firing later could clear eatClick out from under a later,
+    // unrelated assignment. `eatClickTimer` does not exist at all before
+    // this change, so this test fails with a ReferenceError on unmodified
+    // code and only passes once the timer is centralized and cancelled on
+    // every assignment.
+    test("card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // Commit via the synthetic lpc path only (no trailing pointerup/click
+      // dispatched) so nothing consumes the decay timer on its own - a real
+      // trailing click would eat it immediately via the document click
+      // listener, which is a different (already-tested) path, not a stale
+      // timer surviving past its own assignment.
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
+      const armed = await b.eval(`return eatClickTimer !== null && flight !== null;`);
+      assert.strictEqual(armed, true, "a committing mouse drag must arm a decay timer and be mid-flight");
+      // ~100ms into the ~400ms decay window (and well inside the 220ms
+      // fly-out - do NOT poll countText here, that would wait out the
+      // fly-out and land it for real before the tap), tap the card - the
+      // document capture-phase pointerdown's `if (flight)` branch lands it
+      // and reassigns eatClick with no decay.
+      await new Promise((r) => setTimeout(r, 100));
+      const stillMidFlight = await b.eval(`return flight !== null;`);
+      assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
+      // Check eatClickTimer right after the bare pointerdown, before the
+      // trailing click fires: the click listener's own `if (eatClick)
+      // setEatClick(false)` would clear a lingering timer as a side effect
+      // regardless of what the pointerdown branch did, which would mask a
+      // bypass of setEatClick there (a direct `eatClick = ...` assignment
+      // that skips cancelling the stale timer). Isolating the pointerdown
+      // is what makes that bypass observable.
+      await b.eval(`
+        document.getElementById("card").dispatchEvent(new PointerEvent("pointerdown", {
+          bubbles: true, cancelable: true, isPrimary: true, pointerId: 999, button: 0,
+        }));
+        return true;
+      `);
+      const timerAfterPointerdown = await b.eval(`return eatClickTimer;`);
+      assert.strictEqual(timerAfterPointerdown, null,
+        "landing the flight via a mid-flight tap's pointerdown must cancel the committing drag's stale decay timer");
+      await b.eval(`document.getElementById("card").click(); return true;`);
+      assert.strictEqual(await countText(), `2 / ${n}`, "the committed drag should have landed exactly once");
+      assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the newly-landed card");
+      await b.finishAnimations();
+      // startMouseDrag's mousePressed never got a real release - end it for
+      // real (and wait out the resulting real lostpointercapture) so it
+      // cannot bleed into a later test's drag.
+      await endMouseDragForReal(rx, ry);
+    });
+
+    // Eng review item 1: on the lpc-as-release path the event's own point is
+    // not pushed into drag.pts, so a lostpointercapture carrying a stale/
+    // unrelated coordinate cannot corrupt the trailing-window velocity
+    // calculation into a spurious fling. A short, slow drag (real dx well
+    // under SWIPE_COMMIT_PX, real velocity well under the fling threshold)
+    // must still spring back even when the lpc event itself claims clientX 0 -
+    // a coordinate far from the real release point that, if pushed, would
+    // read as an enormous last-instant velocity.
+    test("card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", async () => {
+      await freshLoad();
+      const n = (await decksMeta())[0].chords;
+      // Every event in this test is dispatched synthetically (never through
+      // CDP's Input.dispatchMouseEvent), so every e.timeStamp lives in the
+      // same performance.now() clock: a real pointermove from
+      // startMouseDrag()/g.move() gets its timeStamp from CDP's own
+      // (unrelated) timestamp parameter, which does not compare
+      // meaningfully against a synthetic lostpointercapture's timeStamp -
+      // mixing the two made the window/velocity math below meaningless
+      // (span came out negative and vx stayed 0 regardless of pushPoint).
+      const box = await b.eval(`
+        const r = document.querySelector("#card").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      const pid = 4242;
+      await dispatchEvt("#card", "PointerEvent", "pointerdown", {
+        pointerId: pid, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1,
+        clientX: box.x, clientY: box.y,
+      });
+      // Real wall-clock gap so this first sample ages out of the 100ms
+      // trailing window by the time the final move/lpc pair fires.
+      await new Promise((r) => setTimeout(r, 150));
+      // The final real sample: a short drag (|dx| well under
+      // SWIPE_COMMIT_PX) landing just before the lpc event, so it is still
+      // inside the trailing window - exactly the point a stale pushed
+      // coordinate would corrupt.
+      await dispatchEvt("#card", "PointerEvent", "pointermove", {
+        pointerId: pid, pointerType: "mouse", isPrimary: true, buttons: 1,
+        clientX: box.x - 15, clientY: box.y,
+      });
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: pid, pointerType: "mouse", isPrimary: true, buttons: 0,
+        clientX: 0, clientY: box.y,
+      });
+      assert.strictEqual(await countText(), `1 / ${n}`, "a short slow drag must not commit, stale lpc point or not");
+      await b.finishAnimations();
+      // A short, non-committing drag still counts as "moved" (it exceeded
+      // the slop threshold), so release() still arms eatClick to swallow the
+      // drag's own trailing click - exactly as the existing "short mouse
+      // drag springs back without flipping" test already covers. This test
+      // is only about the fling-velocity corruption: a stale lpc clientX
+      // must not turn the spring-back into a spurious commit (asserted
+      // above), not about whether the trailing click flips.
+      assert.strictEqual(await countText(), `1 / ${n}`);
+    });
+
+    describe("trackpad two-finger swipe (wheel)", () => {
+      async function wheelAt(dx, dy, modifiers) {
+        const where = await b.eval(`
+          const r = document.querySelector("main").getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        `);
+        return b.send("Input.dispatchMouseEvent", {
+          type: "mouseWheel", x: where.x, y: where.y, deltaX: dx, deltaY: dy,
+          ...(modifiers ? { modifiers } : {}),
+        });
+      }
+      async function wheelGesture(legs) {
+        for (const [dx, dy] of legs) await wheelAt(dx, dy);
+      }
+
+      test("card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[30, 0], [30, 0], [30, 0], [30, 0]]);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "a trackpad swipe past 80px should advance once");
+      });
+
+      test("card swipe (wheel): deltaX under 80px does nothing and leaves no transform", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[20, 0], [20, 0]]);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, true, "the transform must be cleared once the gesture ends");
+        const style = await sceneStyle();
+        assert.strictEqual(style.willChange, "", "willChange must be cleared once the gesture ends");
+      });
+
+      test("card swipe (wheel): deltaX>0 follows with a negative translateX mid-gesture", async () => {
+        await freshLoad();
+        await wheelAt(20, 0);
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, false, "a wheel event under threshold must apply a follow transform");
+        assert.ok(xf.m41 < 0, `deltaX>0 (sx>0) must move the card to translateX<0, got ${xf.m41}`);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+      });
+
+      test("card swipe (wheel): a sub-threshold gesture's spring-back starts exactly where the follow transform left off", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[20, 0], [20, 0]]);
+        const follow = await sceneXform();
+        assert.strictEqual(follow.none, false, "a sub-threshold gesture must leave a follow transform in place");
+        const followDeg = Math.atan2(follow.b, follow.a) * 180 / Math.PI;
+        // Wait past WHEEL_GESTURE_GAP_MS (160ms) so wheelGestureEnd() fires
+        // and springBack()'s WAAPI animation is created - read its keyframes
+        // statically (safe regardless of playback progress, same pattern as
+        // the fly-out/enter keyframe reads above).
+        await new Promise((r) => setTimeout(r, 250));
+        const first = await b.eval(`
+          const a = document.querySelector(".scene").getAnimations()[0];
+          const kf = a.effect.getKeyframes();
+          const m = kf[0].transform.match(/translate3d\\(([-\\d.]+)px[^)]*\\)\\s*rotate\\(([-\\d.]+)deg\\)/);
+          return { x: parseFloat(m[1]), deg: parseFloat(m[2]) };
+        `);
+        assert.ok(
+          Math.abs(first.x - follow.m41) < 0.5,
+          `spring-back's first keyframe translateX (${first.x}) must match the follow transform it left off at (${follow.m41})`,
+        );
+        assert.ok(
+          Math.abs(first.deg - followDeg) < 0.5,
+          `spring-back's first keyframe rotate (${first.deg}) must match the follow transform's rotate (${followDeg})`,
+        );
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`);
+      });
+
+      test("card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        const where = await b.eval(`
+          const r = document.querySelector("main").getBoundingClientRect();
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+        `);
+        await b.eval(`
+          window.__wheelPrevented = null;
+          document.querySelector("main").addEventListener("wheel", (e) => {
+            window.__wheelPrevented = e.defaultPrevented;
+          }, { once: true });
+          return true;
+        `);
+        await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: where.x, y: where.y, deltaX: 0, deltaY: 100 });
+        const prevented = await b.eval(`return window.__wheelPrevented;`);
+        assert.strictEqual(prevented, false, "a vertical-dominant wheel must not be preventDefault-ed");
+        assert.strictEqual(await countText(), `1 / ${n}`);
+      });
+
+      test("card swipe (wheel): ctrlKey (pinch-zoom) is ignored", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
+        const xf = await sceneXform();
+        assert.strictEqual(xf.none, true, "a ctrl+wheel gesture must leave no follow transform");
+      });
+
+      test("card swipe (wheel): a second gesture after the 160ms gap advances again", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await wheelGesture([[50, 0], [50, 0]]);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "the first gesture should commit");
+        await new Promise((r) => setTimeout(r, 220)); // past the 160ms gesture gap
+        await wheelGesture([[50, 0], [50, 0]]);
+        await b.finishAnimations();
+        await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
+      });
+
+      test("card swipe (wheel): a trackpad swipe does nothing while the settings panel is open", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        await openSettingsPanel();
+        // openSettingsPanel()'s click is a real CDP mouse press/release, and
+        // the gesture-skip computation below reads `order`/`flight`/`drag`
+        // at the moment the synthetic wheel event arrives - wait for that
+        // real click's own event turn to fully settle first, or a rare,
+        // otherwise-undetectable race (this assertion observed flaking
+        // roughly 1 run in 10 locally without this wait) can catch `order`
+        // transiently empty or `flight`/`drag` transiently non-null for a
+        // reason that has nothing to do with the panelOpen/sheetOpen guard
+        // this test exists to cover, making the mutant look caught (or not)
+        // by accident rather than by the thing under test.
+        await b.waitFor(
+          `typeof order !== "undefined" && order.length > 0 && !flight && !drag`,
+          { label: "swipe state to settle after opening the settings panel" },
+        );
+        // The open settings panel visually overlays <main>, so a real,
+        // coordinate-targeted wheel event (CDP's Input.dispatchMouseEvent,
+        // as wheelAt()/wheelGesture() use) hit-tests to the panel/backdrop
+        // and never reaches wheelMain's own listener at all - that reaches
+        // the same "nothing happens" outcome regardless of the handler's
+        // own panelOpen/sheetOpen skip check, so it cannot discriminate a
+        // mutation that drops that check. Dispatching the WheelEvent
+        // synthetically, directly on <main>, bypasses the occlusion and
+        // actually exercises the skip condition itself.
+        await b.eval(`
+          document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
+            bubbles: true, cancelable: true, deltaX: 50, deltaY: 0,
+          }));
+          document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
+            bubbles: true, cancelable: true, deltaX: 50, deltaY: 0,
+          }));
+          return true;
+        `);
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
+      });
+
+      test("card swipe (wheel): momentum wheel events after a committed gesture lands do not step again", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        // The committing leg crosses the threshold and starts the 220ms
+        // fly-out; the deck count already reads the committed value even
+        // though the card is still mid-flight.
+        await wheelAt(100, 0);
+        // The deck count only updates at land(), which fires when the
+        // 220ms fly-out finishes - polling expectCount here would wait out
+        // that whole animation and land it for real before we ever get to
+        // exercise the mid-flight guard, so check `flight` directly instead.
+        assert.strictEqual(await b.eval(`return flight !== null;`), true,
+          "the committing leg must start a fly-out immediately");
+        // Wait past the 160ms gesture-gap so the first gesture object ends
+        // (wheel = null) and the next wheel event starts a genuinely NEW
+        // gesture, but stay under the 220ms fly-out so `flight` is still
+        // non-null when that new gesture evaluates its skip condition -
+        // this is what the `flight` term in the skip guard exists for: a
+        // new trackpad gesture arriving as momentum while the previous
+        // card is still flying out must not be allowed to commit a second
+        // step on top of it.
+        await new Promise((r) => setTimeout(r, 180));
+        assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
+          "the first gesture must have ended via its own gap timer while its flight is still mid-air");
+        await wheelAt(100, 0);
+        await wheelAt(20, 0);
+        // A second, un-skipped gesture would call flyOut() again on the
+        // same scene element while the first fly-out is still running:
+        // flyOut's own finished-callback self-protection
+        // (`if (flight && flight.anim === anim) land()`) then means only
+        // the SECOND animation's landing ever calls step() - net count
+        // still reads one step higher, masking the bug - so the committed
+        // count alone cannot discriminate this mutation. A second,
+        // overlapping animation on .scene is the observable symptom.
+        assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
+          "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
+        await new Promise((r) => setTimeout(r, 250));
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
+      });
+
+      test("card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis", async () => {
+        await freshLoad();
+        const n = (await decksMeta())[0].chords;
+        // First event locks the gesture to the x axis (|dx|=50 > |dy|=5).
+        // Later events in the SAME gesture report dy >> dx; the lock must
+        // still treat the gesture as horizontal and keep committing on dx.
+        await wheelAt(50, 5);
+        await wheelAt(50, 200);
+        await b.finishAnimations();
+        await expectCount(`2 / ${n}`, "an axis locked to x at gesture start must keep stepping off dx alone");
+      });
+    });
+
     test("card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition", async () => {
       await freshLoad();
       // b.settle() after flipping is not optional here: two style changes

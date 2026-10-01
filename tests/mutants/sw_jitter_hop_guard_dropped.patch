@@ -9,14 +9,15 @@
 # comment right after the guard) was rewritten from the old "Q17" text back
 # to base's cancelled/eatClick comment as part of restoring the setTimeout(0)
 # decay - the mutation itself (deleting the early-return guard) is unchanged.
+# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8112,7 +8112,6 @@ function release(e, cancelled) {
+@@ -8160,7 +8160,6 @@ function release(e, cancelled, pushPoint = true) {
    // visible jitter hop on a touch that never left the slop radius (the tap
    // flip itself comes from #card's click listener, untouched since eatClick
    // is not set below).
 -  if (!dir && !moved) { swipeRest(); return; }
-   // A cancelled release (pointercancel/lostpointercapture/off-window mouseup)
-   // never has a trailing click to suppress - the UA does not synthesize one -
-   // so eatClick must never be armed here for `cancelled`. Arming it anyway
+   // A cancelled release (pointercancel/off-window mouseup) never has a
+   // trailing click to suppress - the UA does not synthesize one - so
+   // eatClick must never be armed here for `cancelled`. Arming it anyway left
