@@ -183,16 +183,8 @@ LINE_REF_ALLOWLIST = """
 # lane B (src/engine/*.js) is done: every pdfdeck.js/pdfcards.js ref was
 # replaced with a symbol anchor (2026-10-01), so no block remains here.
 
-# lane A (index.html, tests/app.test.js) - delete entries in this block as
-# they are fixed. The entries that used to sit inside the pdfdeck/pdfcards
-# engine regions (duplicating lane B's block above) are gone: engine-region
-# lines are no longer scanned in index.html at all (see note above).
-index.html: core.js:125
-index.html: tools/decks.py:409-416
-index.html: index.html:4700
-tests/app.test.js: index.html:4790-4793
-tests/app.test.js: tools/decks.py:409-416
-tests/app.test.js: index.html:940
+# lane A (index.html, tests/app.test.js) is done: every ref was replaced
+# with a symbol anchor (2026-10-01), so no block remains here.
 """
 
 # The files the ratchet watches. Deliberately NOT the whole repo: it tracks

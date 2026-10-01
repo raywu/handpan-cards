@@ -1726,7 +1726,7 @@ test("an ordinary tap in the sheet says nothing, so it cannot wipe what was said
      nothing.
 
      The message on screen here is NO_THIRDS, read off the deck at open time
-     (index.html:4790-4793) and NOT derivable from the seed - which is the
+     (openEditSheet()'s `d.warnings` read) and NOT derivable from the seed - which is the
      whole point of the fixture. A rejected seed would prove nothing: the
      re-derive would reproduce the parser's own refusal word for word, so the
      assertion would hold whether the guard was there or not. That is the
@@ -3807,7 +3807,7 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py:409-416 names the six shipped files: `<Name>_Cards_Letter.pdf`
+  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files: `<Name>_Cards_Letter.pdf`
   // and `<Name>_CHORD_ONLY_Letter.pdf`, with punctuation folded out of
   // the deck name. A custom deck's download joins that shelf, so it takes the
   // same shape rather than inventing a second one.
@@ -3908,12 +3908,13 @@ test("the legacy print sheet is gone: no #printroot, no openPrintSheet, no windo
     "no control still calls window.print() directly");
   // Q2: the original forms above (`[>{.#]` / `\(\)\s*;`) are narrower than
   // they look - they miss window.print() with no trailing `;` and
-  // body.printing) - and they let two now-stale comments ("#printroot,
-  // body.printing" at index.html:940, "window.print()/openPrintSheet" at
-  // :6501) read as if the code they describe still exists. These
+  // body.printing) - and they used to let two now-removed comments
+  // ("#printroot, body.printing" and "window.print()/openPrintSheet")
+  // read as if the code they described still existed. These
   // code-shaped forms catch a real reintroduction wherever it appears,
   // comment or not, which is why both comments were reworded rather than
-  // stripped (AD6) - they no longer match.
+  // stripped at the time (AD6) - they no longer match, and have since
+  // been removed entirely.
   assert.doesNotMatch(src, /addEventListener\(\s*["']afterprint/);
   assert.doesNotMatch(src, /body\.printing\b/);
   assert.doesNotMatch(src, /\bwindow\.print\s*\(/);
