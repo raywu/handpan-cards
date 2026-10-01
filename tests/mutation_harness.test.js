@@ -383,17 +383,21 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
  * while the committed file (and the DECKS line it writes into index.html)
  * both use the ensure_ascii=True default - a one-flag divergence that turned
  * every `b_*.patch` into 9-10 hunks of unicode-escape noise instead of the
- * one or two real hunks its mutator makes per touched file. A sync mutant
- * (the common case) touches two files - index.html's DECKS line and
- * data/decks.json - so the patch carries two `diff --git` sections, each
- * normally one hunk; `b_layout_angle_swap` is the one legitimate exception,
- * genuinely editing two non-adjacent fields ("4" and "6") within
- * data/decks.json, so 2 real hunks in one file is correct, not noise. The
- * bound below - at most 2 hunks per touched file - passes every genuine
- * edit this corpus makes today while still catching the 9-10-hunk reformat
- * explosion if the CANONICAL write ever diverges from the committed format
- * again. */
-test("every b_*.patch has at most two @@ hunks per touched file (regen_data_mutants.py CANONICAL write matches the committed format)", () => {
+ * one real hunk its mutator makes per touched file. A sync mutant (the
+ * common case) touches two files - index.html's DECKS line and
+ * data/decks.json - so the patch carries two `diff --git` sections.
+ * `b_layout_angle_swap` edits two non-adjacent fields ("4" and "6") within
+ * data/decks.json, which sounds like it would need two hunks, but both
+ * fields sit well inside `git diff`'s default 3-line context window of each
+ * other, so the real corpus has exactly ONE hunk there too (checked
+ * directly: every file section in every tracked b_*.patch today has exactly
+ * one `@@`) - there is no legitimate multi-hunk case in this corpus, so the
+ * bound is 1, not 2. The regenerator is also run directly (not just the
+ * static patch corpus) in the second test below, so a future mutator that
+ * genuinely needs two separate edits that regen_data_mutants.py renders as
+ * two hunks is still free to widen this bound - it is a fact about today's
+ * mutators, not a policy ceiling. */
+test("every b_*.patch has at most one @@ hunk per touched file (regen_data_mutants.py CANONICAL write matches the committed format)", () => {
   const dir = path.join(ROOT, "tests", "mutants");
   const offenders = [];
   for (const name of fs.readdirSync(dir).filter((f) => f.startsWith("b_") && f.endsWith(".patch"))) {
@@ -401,16 +405,54 @@ test("every b_*.patch has at most two @@ hunks per touched file (regen_data_muta
     const sections = text.split(/^diff --git /m).slice(1);
     for (const section of sections) {
       const hunks = (section.match(/^@@/gm) || []).length;
-      if (hunks > 2) {
+      if (hunks > 1) {
         const file = (section.match(/^a\/(\S+)/m) || [, "?"])[1];
         offenders.push(`${name} (${file}): ${hunks} hunks`);
       }
     }
   }
   assert.deepStrictEqual(offenders, [],
-    `expected at most two @@ hunks per touched file in each b_*.patch; run ` +
+    `expected at most one @@ hunk per touched file in each b_*.patch; run ` +
     `\`python3 tools/regen_data_mutants.py\` on a clean tree to regenerate:\n` +
     offenders.join("\n"));
+});
+
+/* Same claim, but exercising the TOOL rather than just the checked-in
+ * output: regenerate every b_*.patch from a clean worktree copy of this
+ * repo and assert the freshly-written patches also carry exactly one hunk
+ * per touched file. This is the test that would actually catch the
+ * ensure_ascii=False regression above if it ever came back - the static
+ * check on the committed corpus only catches a regeneration that was
+ * already run and committed; this one catches the tool producing the wrong
+ * output BEFORE anyone commits it. Runs in a throwaway worktree (never the
+ * real checkout) since regen_data_mutants.py writes index.html and
+ * data/decks.json in place. */
+test("regenerating every b_*.patch from a clean tree keeps exactly one hunk per touched file", (t) => {
+  const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "regen-mutants-"));
+  t.after(() => {
+    execFileSync("git", ["worktree", "remove", "--force", worktree], { cwd: ROOT });
+  });
+  execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: ROOT });
+  const result = spawnSync("python3", [path.join(worktree, "tools", "regen_data_mutants.py")],
+    { cwd: worktree, encoding: "utf8" });
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+
+  const dir = path.join(worktree, "tests", "mutants");
+  const offenders = [];
+  for (const name of fs.readdirSync(dir).filter((f) => f.startsWith("b_") && f.endsWith(".patch"))) {
+    const text = fs.readFileSync(path.join(dir, name), "utf8");
+    const sections = text.split(/^diff --git /m).slice(1);
+    for (const section of sections) {
+      const hunks = (section.match(/^@@/gm) || []).length;
+      if (hunks > 1) {
+        const file = (section.match(/^a\/(\S+)/m) || [, "?"])[1];
+        offenders.push(`${name} (${file}): ${hunks} hunks`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    `freshly regenerated b_*.patch files should carry at most one @@ hunk ` +
+    `per touched file:\n` + offenders.join("\n"));
 });
 
 /* Early warning for the failure mode "a normal commit edits a context line a
@@ -701,6 +743,108 @@ test("refresh_mutants.py re-anchors a patch whose context drifted", (t) => {
   git(dir, ["apply", patchPath]);
   assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
     "zero\nalpha\nBETA\ngamma\ndelta\n");
+});
+
+/* P1 (coordinator FAIL, 2026-09-30 quality-refactor plan review of PR #179,
+ * attempt 1). The test above only shifts a hunk's line NUMBERS, by
+ * prepending an unrelated line before the whole block - every context
+ * line's own CONTENT is untouched, so it never exercised the actual bug:
+ * the old splice() anchored on the full context+removed block as one
+ * contiguous run, so a CONTEXT line's content changing (not just its line
+ * number) made the whole anchor fail to match, even though the removed/added
+ * lines the mutant actually targets were never touched. Repro that shipped
+ * with the FAIL verdict: tests/mutants/sw_tilt_unclamped.patch's hunk ends
+ * with the trailing context line `let drag = null, flight = null, eatClick
+ * = false;` - appending a comment to THAT line (never touched by the mutant
+ * itself) made refresh_mutants.py print `UNFIXABLE "not a context-drift
+ * case"`. This fixture reproduces the same shape generically: `beta` is a
+ * context line adjacent to the mutated line `gamma`, and only `beta`'s own
+ * text changes - `gamma`/`GAMMA` are never touched by the drift. */
+test("refresh_mutants.py re-anchors a patch whose CONTEXT LINE CONTENT changed mid-file", (t) => {
+  const preimage = "alpha\nbeta\ngamma\ndelta\nepsilon\n";
+  const postimage = "alpha\nbeta\nGAMMA\ndelta\nepsilon\n";
+  // Unrelated drift: a context line adjacent to the mutated line has its own
+  // TEXT changed (not just shifted) - the old whole-block anchor breaks here
+  // even though "gamma" itself is untouched.
+  const finalContent = "alpha\nBETA2\ngamma\ndelta\nepsilon\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const check = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.notStrictEqual(check.status, 0, "fixture setup: patch must be stale before refresh");
+
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(patchName.replace(/\./g, "\\.")));
+
+  const applied = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.strictEqual(applied.status, 0, `${patchName} should apply cleanly after refresh:\n${applied.stderr}`);
+
+  git(dir, ["apply", patchPath]);
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    "alpha\nBETA2\nGAMMA\ndelta\nepsilon\n");
+});
+
+/* P1b (same FAIL verdict as above). refresh_one() used to write `git diff`'s
+ * output verbatim, including the `index <preimage>..<postimage>` blob-header
+ * line - exactly what "no mutant patch carries a blob header it cannot keep
+ * true" (above) forbids, since that hash goes stale on the very next commit
+ * to the file. tools/regen_data_mutants.py already strips this line the same
+ * way; refresh_mutants.py must too. */
+test("refresh_mutants.py never writes a blob-header line into a refreshed patch", (t) => {
+  const preimage = "alpha\nbeta\ngamma\ndelta\nepsilon\n";
+  const postimage = "alpha\nbeta\nGAMMA\ndelta\nepsilon\n";
+  const finalContent = "alpha\nBETA2\ngamma\ndelta\nepsilon\n";
+  const { dir, patchPath } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  const after = fs.readFileSync(patchPath, "utf8");
+  assert.doesNotMatch(after, /^index [0-9a-f]{7,40}\.\.[0-9a-f]{7,40}/m,
+    "refreshed patch must not carry a blob-header line");
+});
+
+/* Nit 3 (same review). tools/regen_data_mutants.py already refuses to run on
+ * a dirty tree for the files it touches (`REFUSING: tracked files already
+ * modified`) - refresh_mutants.py splices against a file's CURRENT content,
+ * `git diff`s it, then `git checkout --`s it back, so an uncommitted edit to
+ * a target file would silently be baked into the freshly-written patch body
+ * rather than left alone. Must refuse the same way. */
+test("refresh_mutants.py refuses to run (non-check mode) on a dirty target file", (t) => {
+  const preimage = "alpha\nbeta\ngamma\ndelta\n";
+  const postimage = "alpha\nBETA\ngamma\ndelta\n";
+  const { dir, patchPath } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent: preimage,
+    kills: "subject", suite: "node check.js",
+  });
+  const before = fs.readFileSync(patchPath, "utf8");
+  // An uncommitted edit to the very file the patch targets.
+  fs.appendFileSync(path.join(dir, "subject.txt"), "uncommitted\n");
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "a dirty target file must not be silently refreshed");
+  assert.match(result.stderr, /REFUSING/, result.stderr);
+  assert.strictEqual(fs.readFileSync(patchPath, "utf8"), before,
+    "a refused run must leave the patch untouched");
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    preimage + "uncommitted\n", "a refused run must not touch the dirty file either");
+});
+
+test("refresh_mutants.py --check tolerates a dirty target file", (t) => {
+  const preimage = "alpha\nbeta\ngamma\ndelta\n";
+  const postimage = "alpha\nBETA\ngamma\ndelta\n";
+  const { dir } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent: preimage,
+    kills: "subject", suite: "node check.js",
+  });
+  fs.appendFileSync(path.join(dir, "subject.txt"), "uncommitted\n");
+  const result = runRefresh(dir, ["--check"]);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
 });
 
 test("refresh_mutants.py refuses an ambiguous anchor rather than guessing", (t) => {

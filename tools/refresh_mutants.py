@@ -8,21 +8,31 @@ run of lines) is still perfectly valid. Hand-editing the diff to re-anchor it
 is slow and error-prone; this tool does it mechanically.
 
 Algorithm, per patch file, per touched-file section, per hunk:
-  1. Read the hunk's pre-image lines (context + removed) and post-image lines
-     (context + added) - the same two blocks `git diff` would show either
-     side of.
-  2. Search the CURRENT file's lines for the pre-image block as a contiguous
-     run.
-       - exactly one match: splice in the post-image block at that location.
+  1. Parse the hunk into an ordered list of CHUNKS: alternating runs of
+     context lines and "change" groups (a run of removed lines followed by
+     a run of added lines - a change group may have either side empty for a
+     pure insertion or pure deletion).
+  2. Anchor on the CHANGE, not the context (-U0 / --unidiff-zero semantics,
+     per the 2026-09-30 quality-refactor plan): for a change group with
+     removed lines, search the CURRENT file for that removed-lines run as a
+     contiguous block, with NO context required on either side. A context
+     line elsewhere in the hunk - even one directly touching the change,
+     e.g. the line right after it - is free to have drifted; this tool
+     never needs it to match. For a pure insertion (no removed lines), fall
+     back to the nearest context chunk (the one immediately before it in
+     the hunk, or after if the hunk opens with the insertion) as the
+     anchor, and insert the added lines beside that match.
+       - exactly one match: splice in the added lines at that location.
        - zero matches: the mutant's anchor is gone for good (not a context
          drift) - refuse to touch this patch, it needs a human.
        - more than one match: the anchor is AMBIGUOUS - which occurrence was
          meant is a judgement call this tool refuses to make. Exit nonzero
          and name the patch; never guess.
-  3. Once every hunk in every section finds a unique anchor, write the
-     spliced content to the real tracked files, `git diff` to capture a
-     fresh patch body, `git checkout --` to restore the tree, and write the
-     new patch (original `#` header, regenerated body).
+  3. Once every change group in every hunk in every section finds a unique
+     anchor, write the spliced content to the real tracked files, `git diff`
+     to capture a fresh patch body, `git checkout --` to restore the tree,
+     and write the new patch (original `#` header, regenerated body, minus
+     the `index <sha>..<sha>` blob-header line - see `strip_index_lines`).
 
 A patch that already applies cleanly (`git apply --check`) is left byte-
 identical - this tool only touches patches `git apply --check` rejects.
@@ -48,6 +58,16 @@ MUTANTS_DIR = ROOT / "tests" / "mutants"
 
 DIFF_GIT_RE = re.compile(r"^diff --git ", re.MULTILINE)
 PLUS_PATH_RE = re.compile(r"^\+\+\+ b/(.+)$", re.MULTILINE)
+INDEX_LINE_RE = re.compile(r"^index [0-9a-f]{7,40}\.\.[0-9a-f]{7,40}")
+
+
+def strip_index_lines(diff_text):
+    """Drop git's `index <preimage>..<postimage>` blob-header lines before
+    writing a patch. They name the blob the patch was cut from, which the
+    next commit to the file invalidates - tests/mutation_harness.test.js's
+    "no mutant patch carries a blob header it cannot keep true" rejects them,
+    and tools/regen_data_mutants.py strips the same line the same way."""
+    return "\n".join(l for l in diff_text.split("\n") if not INDEX_LINE_RE.match(l))
 
 
 class Ambiguous(Exception):
@@ -86,28 +106,58 @@ def split_sections(body):
 
 
 def hunks_of(section_text):
-    """section_text -> list of (old_lines, new_lines), each a list of str."""
+    """section_text -> list of hunks; each hunk is the raw list of diff body
+    lines (everything between one '@@...@@' header and the next), still
+    carrying their leading ' '/'-'/'+' markers - parse_chunks() below does
+    the anchoring-relevant parsing."""
     hunks = []
-    old, new = None, None
+    cur = None
     for line in section_text.splitlines():
         if line.startswith("@@"):
-            if old is not None:
-                hunks.append((old, new))
-            old, new = [], []
-        elif old is None:
+            if cur is not None:
+                hunks.append(cur)
+            cur = []
+        elif cur is None:
             continue
-        elif line.startswith(" "):
-            old.append(line[1:])
-            new.append(line[1:])
-        elif line.startswith("-"):
-            old.append(line[1:])
-        elif line.startswith("+"):
-            new.append(line[1:])
         elif line.startswith("\\"):
             continue
-    if old is not None:
-        hunks.append((old, new))
+        else:
+            cur.append(line)
+    if cur is not None:
+        hunks.append(cur)
     return hunks
+
+
+def parse_chunks(hunk_lines):
+    """One hunk's raw lines -> ordered list of chunks, alternating:
+      {"type": "ctx", "lines": [...]}
+      {"type": "chg", "removed": [...], "added": [...]}
+    A change chunk's removed/added runs may each be empty (pure insertion
+    or pure deletion) but not both."""
+    chunks = []
+    ctx = []
+    i = 0
+    while i < len(hunk_lines):
+        line = hunk_lines[i]
+        if line.startswith(" "):
+            ctx.append(line[1:])
+            i += 1
+            continue
+        if ctx:
+            chunks.append({"type": "ctx", "lines": ctx})
+            ctx = []
+        removed = []
+        while i < len(hunk_lines) and hunk_lines[i].startswith("-"):
+            removed.append(hunk_lines[i][1:])
+            i += 1
+        added = []
+        while i < len(hunk_lines) and hunk_lines[i].startswith("+"):
+            added.append(hunk_lines[i][1:])
+            i += 1
+        chunks.append({"type": "chg", "removed": removed, "added": added})
+    if ctx:
+        chunks.append({"type": "ctx", "lines": ctx})
+    return chunks
 
 
 def find_unique(haystack, needle):
@@ -127,23 +177,59 @@ def find_unique(haystack, needle):
     return matches[0]
 
 
+def splice_chunks(patch_name, file_path, lines, chunks):
+    """Apply one hunk's chunks to `lines` (mutated in place via rebinding),
+    anchoring each change group on its removed lines alone (or, for a pure
+    insertion, on the nearest context chunk) - never on the full
+    context+removed block. Returns the updated lines list, or raises
+    Ambiguous/Unfixable."""
+    for pos, chunk in enumerate(chunks):
+        if chunk["type"] != "chg":
+            continue
+        removed, added = chunk["removed"], chunk["added"]
+        if removed:
+            try:
+                idx = find_unique(lines, removed)
+            except ValueError as e:
+                if str(e) == "ambiguous":
+                    raise Ambiguous(patch_name, file_path, "multiple")
+                raise Unfixable(patch_name, file_path)
+            lines[idx:idx + len(removed)] = added
+            continue
+        # Pure insertion: anchor on the nearest context chunk instead -
+        # prefer the one immediately before this change in the hunk (insert
+        # right after its match), falling back to the one immediately after
+        # (insert right before its match) when the hunk opens with the
+        # insertion.
+        before = chunks[pos - 1] if pos > 0 and chunks[pos - 1]["type"] == "ctx" else None
+        after = chunks[pos + 1] if pos + 1 < len(chunks) and chunks[pos + 1]["type"] == "ctx" else None
+        anchor_lines, insert_after = (before["lines"], True) if before else (
+            (after["lines"], False) if after else (None, None))
+        if anchor_lines is None:
+            raise Unfixable(patch_name, file_path)
+        try:
+            idx = find_unique(lines, anchor_lines)
+        except ValueError as e:
+            if str(e) == "ambiguous":
+                raise Ambiguous(patch_name, file_path, "multiple")
+            raise Unfixable(patch_name, file_path)
+        at = idx + len(anchor_lines) if insert_after else idx
+        lines[at:at] = added
+    return lines
+
+
 def splice(patch_name, file_path, hunks):
-    """Apply every hunk's old->new splice to file_path's current content,
-    returning the new full text, or raise Ambiguous/Unfixable."""
+    """Apply every hunk's chunks to file_path's current content, returning
+    (full_path, new_text), or raise Ambiguous/Unfixable."""
     full_path = ROOT / file_path
     text = full_path.read_text(encoding="utf-8")
     trailing_newline = text.endswith("\n")
     lines = text.split("\n")
     if trailing_newline:
         lines = lines[:-1]
-    for old, new in hunks:
-        try:
-            idx = find_unique(lines, old)
-        except ValueError as e:
-            if str(e) == "ambiguous":
-                raise Ambiguous(patch_name, file_path, "multiple")
-            raise Unfixable(patch_name, file_path)
-        lines[idx:idx + len(old)] = new
+    for hunk_lines in hunks:
+        chunks = parse_chunks(hunk_lines)
+        lines = splice_chunks(patch_name, file_path, lines, chunks)
     new_text = "\n".join(lines)
     if trailing_newline:
         new_text += "\n"
@@ -185,7 +271,7 @@ def refresh_one(patch_path, check_only):
             full_path.write_text(new_text, encoding="utf-8")
         diff_paths = [fp for _, fp, _ in touched]
         diffed = git(["diff", "--"] + diff_paths)
-        new_body = diffed.stdout
+        new_body = strip_index_lines(diffed.stdout)
     finally:
         for full_path, orig in originals.items():
             full_path.write_text(orig, encoding="utf-8")
@@ -201,6 +287,24 @@ def main(argv):
         return 2
 
     names = sorted(p.name for p in MUTANTS_DIR.glob("*.patch"))
+
+    if not check_only:
+        # Refuse a dirty tree for any file a patch might touch, same
+        # discipline as tools/regen_data_mutants.py: this tool reads a
+        # file's CURRENT content to splice against, writes it, `git diff`s
+        # it, then restores the pre-splice content - if that pre-splice
+        # content is itself an uncommitted edit, the restore preserves the
+        # dirty edit (not destructive) but the fresh patch body would
+        # silently bake in that uncommitted change as part of the mutant.
+        targets = set()
+        for name in names:
+            text = (MUTANTS_DIR / name).read_text(encoding="utf-8")
+            targets.update(PLUS_PATH_RE.findall(text))
+        if targets and git(["diff", "--quiet", "--"] + sorted(targets)).returncode != 0:
+            print("REFUSING: tracked files already modified: "
+                  + ", ".join(sorted(targets)), file=sys.stderr)
+            return 1
+
     changed = []
     problems = []
     for name in names:

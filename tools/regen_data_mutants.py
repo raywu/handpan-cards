@@ -34,6 +34,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # tools/
+import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
+
 INDEX = "index.html"
 CANONICAL = "data/decks.json"
 OUT = "tests/mutants"
@@ -166,7 +169,7 @@ MUTANTS = {
 DESYNC_ONLY = {"b_decks_json_desync"}
 
 
-PATTERN = re.compile(r"^const DECKS = (\[.*\]);$", re.M)
+PATTERN = sync_decks.PATTERN
 
 
 def apply_json(mutator, sync=True):
@@ -176,21 +179,22 @@ def apply_json(mutator, sync=True):
     check 1 stays green, and only the test named in the mutant's header fails.
     sync=False is the DESYNC case - exactly one mutant (b_decks_json_desync)
     wants index.html to disagree with canonical, which check 1 exists to catch.
+
+    The index.html write + re-parse is tools/sync_decks.py's inject() -
+    finding 15, 2026-09-30 quality-refactor plan: this tool used to keep its
+    own copy of that lambda-substitution-plus-reparse dance (CLAUDE.md,
+    "Known pitfalls": a naive re.sub silently drops the degrees' U+00B0
+    escapes), so the two tools could drift on the one trick that makes either
+    of them trustworthy. `decks` here is the MUTATED object, not the
+    canonical file's own content, which is exactly what inject() is written
+    to accept.
     """
     html = open(INDEX, encoding="utf-8").read()
     m = PATTERN.search(html)
     decks = json.loads(m.group(1))
     assert json.dumps(decks) == m.group(1), "serialisation format drifted"
     mutator(decks)
-    # A LAMBDA replacement plus a re-parse of the WRITTEN file: the degrees
-    # carry U+00B0 and re's replacement template eats backslash escapes
-    # (CLAUDE.md, "Known pitfalls"), and a smoke test on stale data passes.
-    line = "const DECKS = " + json.dumps(decks) + ";"
-    html = PATTERN.sub(lambda _m: line, html, count=1)
-    open(INDEX, "w", encoding="utf-8").write(html)
-    again = PATTERN.search(open(INDEX, encoding="utf-8").read())
-    assert again is not None and json.loads(again.group(1)) == decks, \
-        "re-injection did not land"
+    sync_decks.inject(decks)
     if sync:
         # ensure_ascii defaults to True - the format the committed file and
         # sync_decks.py's own `json.dumps` both use. `False` here produced
