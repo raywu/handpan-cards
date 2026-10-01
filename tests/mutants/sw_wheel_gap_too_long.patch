@@ -4,6 +4,7 @@
 # starting 220ms after the first (well past the documented 160ms gap)
 # is still folded into the first, now-already-fired gesture and skipped
 # instead of starting its own, separately-committing gesture.
+# Context-refreshed 2026-09-30 (desktop-swipe lane, pass 2): wheelMain now guarded with `if (wheelMain)` (null-safe for the unit-test DOM stub); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -13,6 +14,6 @@ diff --git a/index.html b/index.html
  // horizontal-scroll element.
 -const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
 +const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 1600;
- const wheelMain = document.querySelector("main");
- let wheel = null; // { sx, sy, axis, fired, skip, timer }
- function wheelGestureEnd() {
+ // document.querySelector, not getElementById: <main> carries no id, and the
+ // unit-test DOM stub (tests/helpers/sandbox.js) only tracks ids, so this
+ // deliberately returns null there - same as panelBackground's own

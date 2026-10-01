@@ -2,13 +2,14 @@
 # suite: node --test --test-name-pattern ^card.swipe..wheel...ctrlKey..pinch-zoom..is.ignored$ tests/e2e.test.js
 # Drops the `if (e.ctrlKey) return;` guard: a ctrl+wheel pinch-zoom
 # gesture is now treated as an ordinary trackpad swipe.
+# Context-refreshed 2026-09-30 (desktop-swipe lane, pass 2): wheelMain now guarded with `if (wheelMain)` (null-safe for the unit-test DOM stub); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8242,7 +8242,6 @@ function wheelGestureEnd() {
+@@ -8247,7 +8247,6 @@ function wheelGestureEnd() {
    springBack(w.sx);
  }
- wheelMain.addEventListener("wheel", e => {
+ if (wheelMain) wheelMain.addEventListener("wheel", e => {
 -  if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
    if (!wheel) {
      // A gesture that starts while a flight/drag is live or the panel/sheet

@@ -8231,6 +8231,11 @@ card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
 // panel are outside it), so a wheel listener here cannot catch an unrelated
 // horizontal-scroll element.
 const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
+// document.querySelector, not getElementById: <main> carries no id, and the
+// unit-test DOM stub (tests/helpers/sandbox.js) only tracks ids, so this
+// deliberately returns null there - same as panelBackground's own
+// querySelector("main") above - and the listener registration below is
+// guarded accordingly; the e2e suite drives a real browser where it resolves.
 const wheelMain = document.querySelector("main");
 let wheel = null; // { sx, sy, axis, fired, skip, timer }
 function wheelGestureEnd() {
@@ -8241,7 +8246,7 @@ function wheelGestureEnd() {
   if (reducedMotion.matches) { swipeRest(); return; }
   springBack(w.sx);
 }
-wheelMain.addEventListener("wheel", e => {
+if (wheelMain) wheelMain.addEventListener("wheel", e => {
   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
   if (!wheel) {
     // A gesture that starts while a flight/drag is live or the panel/sheet

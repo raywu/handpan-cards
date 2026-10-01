@@ -3,14 +3,15 @@
 # Drops the springBack(w.sx) call in wheelGestureEnd: a sub-threshold
 # wheel gesture that never committed leaves the scene's follow transform
 # and willChange hint in place forever instead of settling back to rest.
+# Context-refreshed 2026-09-30 (desktop-swipe lane, pass 2): wheelMain now guarded with `if (wheelMain)` (null-safe for the unit-test DOM stub); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8239,7 +8239,6 @@ function wheelGestureEnd() {
+@@ -8244,7 +8244,6 @@ function wheelGestureEnd() {
    wheel = null;
    if (w.skip || w.fired) return;
    if (reducedMotion.matches) { swipeRest(); return; }
 -  springBack(w.sx);
  }
- wheelMain.addEventListener("wheel", e => {
+ if (wheelMain) wheelMain.addEventListener("wheel", e => {
    if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
