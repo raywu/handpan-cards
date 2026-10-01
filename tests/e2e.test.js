@@ -8689,27 +8689,45 @@ function run() {
         return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       `);
       await b.waitForPendingSettle();
-      const t0 = Date.now() / 1000;
-      await b.send("Input.dispatchMouseEvent", {
-        type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
-      });
-      const id = await b.eval(`return drag ? drag.id : null;`);
-      assert.ok(id !== null, "a real mouse press must start a drag");
-      return {
-        id, box, t0,
-        async move(dx, ms, dy) {
-          await b.send("Input.dispatchMouseEvent", {
-            type: "mouseMoved", x: box.x + dx, y: box.y + (dy || 0), buttons: 1, timestamp: t0 + ms / 1000,
-          });
-          // A stray trusted lostpointercapture left over from a previous
-          // test's cleanup can land between the press and this move and
-          // cancel the drag before it ever registers movement (drag.moved
-          // stays false, drag goes null) - wait for the move to actually be
-          // seen so a caller's later assertions fail with a clear signal
-          // here rather than a confusing one downstream.
-          await b.waitFor(`drag && drag.moved`, { label: "drag to register the move" });
-        },
+      const press = async () => {
+        const t0 = Date.now() / 1000;
+        await b.send("Input.dispatchMouseEvent", {
+          type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, timestamp: t0,
+        });
+        return t0;
       };
+      const g = { box, t0: await press(), represses: 0 };
+      g.id = await b.eval(`return drag ? drag.id : null;`);
+      assert.ok(g.id !== null, "a real mouse press must start a drag");
+      g.move = async (dx, ms, dy) => {
+        const send = () => b.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved", x: box.x + dx, y: box.y + (dy || 0), buttons: 1, timestamp: g.t0 + ms / 1000,
+        });
+        await send();
+        // Headless Chrome can drop a fresh mouse capture while the button is
+        // still held (a trusted lostpointercapture right after its own
+        // gotpointercapture, observed ~1 run in 13 straight after the
+        // second-pointer touch test, sometimes on consecutive presses). The
+        // app rightly cancels on that, so the drag dies before this move
+        // registers. That is the harness's input pipeline, not the app:
+        // release and re-press, a bounded number of times, then require the
+        // move. A drag still live but not moving is never retried.
+        while (!(await b.waitFor(`drag && drag.moved`, { label: "drag to register the move", timeout: 1500 })
+          .then(() => true, () => false))) {
+          assert.ok(g.represses < 3, "drag to register the move (re-pressed 3 times)");
+          assert.strictEqual(await b.eval(`return drag;`), null, "drag to register the move (drag still live)");
+          g.represses++;
+          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+          await b.finishAnimations();
+          await new Promise(r => setTimeout(r, 150 * g.represses));
+          g.t0 = await press();
+          g.id = await b.eval(`return drag ? drag.id : null;`);
+          assert.ok(g.id !== null, "a real mouse re-press must start a drag");
+          await send();
+        }
+        if (g.represses && process.env.E2E_LOG_REPRESS) console.error(`startMouseDrag: re-pressed ${g.represses}x`);
+      };
+      return g;
     }
     // Dispatches one synthetic event on `selector` via its own CDP round
     // trip (Runtime.evaluate), so a setTimeout(0) queued by the app between
