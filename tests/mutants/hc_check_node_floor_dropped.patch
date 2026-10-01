@@ -1,0 +1,19 @@
+# kills: tests.test_suite_health.CheckNodeFloorTest.test_a_green_run_below_its_floor_is_a_problem
+# suite: python3 -m unittest tests.test_suite_health.CheckNodeFloorTest.test_a_green_run_below_its_floor_is_a_problem
+# PR #182 review 4, F1. check_node is the local gate tests/CONTRACT.md
+# documents; dropping its per-file floor leaves `python3 tests/suite_health.py`
+# green over a JS suite that ran 43 of 193 tests (verify_js keeps its own copy,
+# so CI would not notice).
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -440,8 +440,6 @@ def check_node():
+             continue
+         total_counted += total
+         print(f"  {path}: ran {total}, failed {failed}, skipped {skipped}, floor {floor}")
+-        if total < floor:
+-            problems.append(f"{path}: only {total} tests ran, floor is {floor}")
+         # failed > 0 is not the only red: node 22 reports a per-test timeout or
+         # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+         # non-zero exit code (F2, 2026-10-01).
