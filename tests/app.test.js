@@ -721,9 +721,10 @@ test("the built-in decks keep the derived extent they have always rendered", () 
 // a generous ms margin happens to absorb.
 //
 // voicing().choose() (src/engine/voicing.js, called from HPE.select's
-// build() once per (root, chord-type) candidate - see select.js:307) is the
-// one operation whose count scales with field count the same way wall-clock
-// time did for these two fixtures, and it is deterministic: measured at 48
+// build(), inside its candidates loop, once per (root, chord-type)
+// candidate) is the one operation whose count scales with field count the
+// same way wall-clock time did for these two fixtures, and it is
+// deterministic: measured at 48
 // calls for "twelve note pan" and 108 for "nineteen field maximum", both
 // fixtures reproducibly, across repeated runs. Pinning an upper bound on
 // that count (with headroom over the measured value, so it is not a second
