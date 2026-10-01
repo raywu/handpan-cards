@@ -1,0 +1,19 @@
+# kills: Shift+Tab from the sheet's first stop wraps to the last, not off the front
+# suite: node --test --test-name-pattern ^Shift.Tab.from.the.sheet.s.first.stop.wraps.to.the.last..not.off.the.front$ tests/app.test.js
+# cycleTabStops() is shared by the sheet's and the settings panel's Tab traps
+# (finding 13, quality-refactor plan 2026-09-30). Dropping the Shift+Tab wrap
+# clause sends Shift+Tab from the first stop to index -1 instead of the last
+# stop.
+diff --git a/index.html b/index.html
+index cf47255..b5299fe 100644
+--- a/index.html
++++ b/index.html
+@@ -7892,7 +7892,7 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
+ // different lists.
+ function cycleTabStops(stops, e) {
+   const i = stops.indexOf(document.activeElement);
+-  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
++  const next = e.shiftKey ? i - 1 : (i === stops.length - 1 ? 0 : i + 1);
+   e.preventDefault();
+   stops[next].focus();
+ }

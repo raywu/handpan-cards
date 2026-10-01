@@ -1,0 +1,21 @@
+# kills: ROTATE makes its correction from the keyboard alone at 380px
+# suite: node --test --test-name-pattern ^ROTATE.makes.its.correction.from.the.keyboard.alone.at.380px$ tests/e2e.test.js
+# layoutPrologue() is shared by rotateLayout, moveNote and stepLayoutSel
+# (finding 13, quality-refactor plan 2026-09-30). Never calling
+# syncLayoutOrder(fields) and hard-coding n=0 means layoutOrder is never
+# reconciled against the deck's actual field count, so slotOccupants(null ||
+# identityOrder(0)) returns an empty array and every layout-editor control
+# becomes a no-op.
+diff --git a/index.html b/index.html
+index cf47255..6c2f4fd 100644
+--- a/index.html
++++ b/index.html
+@@ -7142,7 +7142,7 @@ function previewLayout() {
+ function layoutPrologue() {
+   const fields = layoutFields();
+   if (!fields) return null;
+-  return { fields, n: syncLayoutOrder(fields) };
++  return { fields, n: 0 };
+ }
+ function rotateLayout(by) {
+   const p = layoutPrologue();
