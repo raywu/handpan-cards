@@ -6191,8 +6191,14 @@ function writeScales(list) {
 // order, so the index is the chip position across a reload - filtering the old
 // record out and pushing the new one would send an options-only edit to the end
 // of the row on the next boot while it sat in place until then.
+// Shared by rememberScale and replaceScale: the stored shape of a seed, byte-
+// for-byte identical between the two before this extraction (finding 13,
+// quality-refactor plan 2026-09-30).
+function scaleRecord(seed) {
+  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+}
 function rememberScale(seed) {
-  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const rec = scaleRecord(seed);
   const out = [];
   let placed = false;
   for (const r of savedScales()) {
@@ -6214,7 +6220,7 @@ function forgetScale(str) {
 // reload. Appending would move the deck to the end of the row on the next boot
 // while it sat in place until then.
 function replaceScale(oldStr, seed) {
-  const rec = { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
+  const rec = scaleRecord(seed);
   const list = savedScales();
   const at = list.findIndex(r => r && r.s === oldStr);
   if (at < 0) { rememberScale(seed); return; }
@@ -7127,10 +7133,21 @@ function previewLayout() {
 // like. The ring is the selection's, not always the rim's - a bottom shell is
 // built from below and can start anywhere the rim does not, and before Stage 3
 // it could not be rotated at all.
-function rotateLayout(by) {
+// Shared prologue for every layout-editor move (rotateLayout, moveNote,
+// stepLayoutSel): fetch the editable fields, bail if there are none, and
+// sync layoutOrder against the current field count. Byte-for-byte identical
+// across the three before this extraction (finding 13, quality-refactor
+// plan 2026-09-30). Returns null for "nothing to do", which every caller
+// turns straight into its own early return.
+function layoutPrologue() {
   const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  if (!fields) return null;
+  return { fields, n: syncLayoutOrder(fields) };
+}
+function rotateLayout(by) {
+  const p = layoutPrologue();
+  if (!p) return;
+  const { fields, n } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
@@ -7145,9 +7162,9 @@ function rotateLayout(by) {
 // its place - a swap, so a note is never lost and the result is always still a
 // permutation. It stays inside the note's own zone: a rim note is on the rim.
 function moveNote(by) {
-  const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  const p = layoutPrologue();
+  if (!p) return;
+  const { fields, n } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
@@ -7163,9 +7180,9 @@ function moveNote(by) {
 /** Walk the selection one slot, wrapping across the whole pan - the keyboard
  *  equivalent of tapping the next note round. */
 function stepLayoutSel(by) {
-  const fields = layoutFields();
-  if (!fields) return;
-  const n = syncLayoutOrder(fields);
+  const p = layoutPrologue();
+  if (!p) return;
+  const { n } = p;
   if (!n) return;
   layoutSel = (layoutSel + by + n) % n;
   previewLayout();
@@ -7866,6 +7883,19 @@ scaleBox.addEventListener("input", updateParse);
 nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
 degSel.addEventListener("change", () => resyncSheet(true));
 scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
+// Shared by every modal Tab trap (the sheet below, the settings panel
+// further down): wrap-around cycling through a caller-built stop list, the
+// one piece of the two traps' keydown handlers that was byte-for-byte
+// identical (finding 13, quality-refactor plan 2026-09-30). The stop list
+// itself - which controls, in what order, filtered for the current mode -
+// stays caller-side, since the sheet and the panel compute genuinely
+// different lists.
+function cycleTabStops(stops, e) {
+  const i = stops.indexOf(document.activeElement);
+  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+  e.preventDefault();
+  stops[next].focus();
+}
 // Tab is trapped inside: the sheet's own controls, in visual order.
 sheet.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
@@ -7880,10 +7910,7 @@ sheet.addEventListener("keydown", e => {
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(el => el && !el.disabled);
-  const i = stops.indexOf(document.activeElement);
-  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-  e.preventDefault();
-  stops[next].focus();
+  cycleTabStops(stops, e);
 });
 
 /* ---------------- interaction ---------------- */
@@ -8060,13 +8087,7 @@ document.addEventListener("keydown", e => {
   // reaches the card underneath.
   if (panelOpen) {
     if (e.key === "Escape") { e.preventDefault(); closePanel(); return; }
-    if (e.key === "Tab") {
-      const stops = panelStops();
-      const i = stops.indexOf(document.activeElement);
-      const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
-      e.preventDefault();
-      stops[next].focus();
-    }
+    if (e.key === "Tab") cycleTabStops(panelStops(), e);
     return;
   }
   // Reviewer finding N3: on desktop the sidebar is never "opened"
@@ -8200,7 +8221,12 @@ function release(e, cancelled, pushPoint = true) {
   // immediate decay, since their synthesized click (if any) follows at once.
   if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
   if (reducedMotion.matches) {
-    scene.style.transform = ""; scene.style.willChange = "";
+    // Was its own scene.style.transform/willChange reset, byte-for-byte the
+    // same as swipeRest() - re-implemented, not duplicated-by-reference, so a
+    // future rest-state change here could drift from the other four sites
+    // that already call swipeRest() (finding 13, quality-refactor plan
+    // 2026-09-30).
+    swipeRest();
     if (dir) step(dir);
     return;
   }
@@ -8229,11 +8255,20 @@ function swipeMove(e) {
     scene.style.transform = swipeXf(dx);
   }
 }
-card.addEventListener("pointerdown", e => {
-  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+// Shared by both pointerdown sites below (the ordinary one here and the
+// mid-flight capture-phase one further down): starting a drag is cancelling
+// any in-flight animation, seeding `drag` from the event, and capturing the
+// pointer on #card - identical in both before this extraction (finding 13,
+// quality-refactor plan 2026-09-30). The guard for WHEN to start stays
+// caller-side, since the two sites gate on different conditions.
+function startDrag(e) {
   scene.getAnimations().forEach(a => a.cancel());
   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
   card.setPointerCapture(e.pointerId);
+}
+card.addEventListener("pointerdown", e => {
+  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+  startDrag(e);
 });
 card.addEventListener("pointermove", swipeMove);
 card.addEventListener("pointerup", e => { if (drag && e.pointerId === drag.id) release(e, false); });
@@ -8330,9 +8365,7 @@ document.addEventListener("pointerdown", e => {
     setEatClick(inside && e.button === 0);
     land();
     if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
-      scene.getAnimations().forEach(a => a.cancel());
-      drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-      card.setPointerCapture(e.pointerId);
+      startDrag(e);
     }
   } else {
     setEatClick(false);
