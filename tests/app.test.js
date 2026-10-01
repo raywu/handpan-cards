@@ -710,29 +710,44 @@ test("the built-in decks keep the derived extent they have always rendered", () 
   }
 });
 
-/* ------------------------------------------- 15. generation-time budget */
+/* ------------------------------------------- 15. generation operation budget */
 
-// [eng-review 15A] Generation happens while the user waits, so it has a budget.
-// Timed inside an already-booted app: parse + select.build + registry
-// insertion, never process startup or the engine module load.
-function budget(fixture, ms) {
-  test(`generating ${fixture} stays inside ${ms} ms`, () => {
+// Finding 21 (quality-refactor plan 2026-09-30): generation runs on the
+// submit path, so it has a cost budget, but the wall-clock assertion this
+// replaced (`budget(fixture, ms)`, timing app.generate() and asserting the
+// best of 3 runs stayed under a millisecond ceiling) is a function of
+// whatever machine runs the test, not of the algorithm - it can read green
+// on a loaded CI runner's lucky draw and still miss a real regression that
+// a generous ms margin happens to absorb.
+//
+// voicing().choose() (src/engine/voicing.js, called from HPE.select's
+// build() once per (root, chord-type) candidate - see select.js:307) is the
+// one operation whose count scales with field count the same way wall-clock
+// time did for these two fixtures, and it is deterministic: measured at 48
+// calls for "twelve note pan" and 108 for "nineteen field maximum", both
+// fixtures reproducibly, across repeated runs. Pinning an upper bound on
+// that count (with headroom over the measured value, so it is not a second
+// byte-for-byte pin) catches the kind of regression the timing test existed
+// for - an accidental extra pass over the candidate list doubles this count
+// outright, long before it would double wall-clock time on a quiet machine.
+function opBudget(fixture, max) {
+  test(`generating ${fixture} calls voicing().choose at most ${max} times`, () => {
     const app = boot();
-    const s = scale(fixture);
-    app.generate(s);                 // warm the JIT; the budget is steady state
-    let best = Infinity;
-    for (let i = 0; i < 3; i++) {
-      const t0 = process.hrtime.bigint();
-      const res = app.generate(s);
-      const dt = Number(process.hrtime.bigint() - t0) / 1e6;
-      assert.strictEqual(res.ok, true, res.reason);
-      best = Math.min(best, dt);
-    }
-    assert.ok(best < ms, `generation took ${best.toFixed(1)} ms, budget ${ms} ms`);
+    app.run(`
+      globalThis.__chooseCalls = 0;
+      const __origChoose = HPE.voicing.choose;
+      HPE.voicing.choose = function (...a) { __chooseCalls++; return __origChoose(...a); };
+    `);
+    const res = app.generate(scale(fixture));
+    assert.strictEqual(res.ok, true, res.reason);
+    const calls = app.get("__chooseCalls");
+    assert.ok(calls > 0, "the spy never saw a call - it is not wired to the real candidate path");
+    assert.ok(calls <= max,
+      `generation called voicing().choose ${calls} times, budget ${max}`);
   });
 }
-budget("twelve note pan", 200);
-budget("nineteen field maximum", 500);
+opBudget("twelve note pan", 60);
+opBudget("nineteen field maximum", 130);
 
 /* ================================================================ Phase 3 UI
  * The scale sheet: the "+ ADD" chip, the live parse line, the message tiers,
