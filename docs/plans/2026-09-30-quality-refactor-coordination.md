@@ -16,16 +16,16 @@ this doc records what happened. **If it isn't in the doc, it did not happen.**
 
 ## Cycle state
 
-Cycle: 1   Wave: 1   Merged this batch: —
+Cycle: 1   Wave: 2   Merged this batch: #178 265c964, #179 f0693c2, #177 a432c1f
 
 | Lane | Branch | PR | Head SHA | Verdict | Attempts | Merged | Blocked on |
 |---|---|---|---|---|---|---|---|
-| D0 plan fixes | `claude/quality-coord` | #177 | — | FAIL | 1 | — | — |
-| M | `claude/q-m-mutant-tooling` | #179 | f0693c2 | FAIL | 2 (taken over) | — | — |
+| D0 plan fixes | `claude/quality-coord` | #177 | a432c1f | PASS_WITH_NITS | 1 | yes | — |
+| M | `claude/q-m-mutant-tooling` | #179 | f0693c2 | PASS_WITH_NITS | 2 (taken over) | yes | — |
 | P | `claude/q-p-parity` | #178 | 265c964 | PASS_WITH_NITS | 1 | yes | — |
-| C | — | — | — | — | 0 | — | M |
-| B | — | — | — | — | 0 | — | M, D0, T |
-| T | — | — | — | — | 0 | — | M, D0 |
+| C | `claude/q-c-ci-gate` | — | — | — | 0 | — | running |
+| B | — | — | — | — | 0 | — | T |
+| T | `claude/q-t-tooling` | — | — | — | 0 | — | running |
 | A | — | — | — | — | 0 | — | B, D0, T |
 | E | — | — | — | — | 0 | — | C, A |
 
@@ -38,6 +38,8 @@ Cycle: 1   Wave: 1   Merged this batch: —
 | #179 | M | FAIL | refresh_mutants anchored on context; index lines kept | bounced to lane M (attempt 1) |
 | #179 | M | FAIL | parse_chunks loops on a bare blank context line (20 patches) | cap reached; coordinator took the lane over (f0693c2) |
 | #177 | D0 | FAIL | M's acceptance `grep -c '^@@'` = 1 unreachable (decks.json + index.html hunks); 5 nits | coordinator fixed all (attempt 1) |
+| #179 | M | PASS_WITH_NITS | 8 nits (unknown-prefix loop, mutant relocation, -U8 comment, sync_decks main() dup, staged-only dirty check, git guard, missing-target traceback, 2 fixture gaps) | merged f0693c2 |
+| #177 | D0 | PASS_WITH_NITS | 5 nits (waves list, R3 162, -U8 wording, stale M row, P floor wording) | merged a432c1f; nits fixed in the follow-up docs PR |
 
 ## Queue
 
@@ -68,4 +70,5 @@ Cycle: 1   Wave: 1   Merged this batch: —
 - P/N3: `test_the_sweep_actually_ran` does not assert a no-thirds seed.
 - M: `f_fixture_sha` non-unique anchor deferred to C (`KNOWN_NON_UNIQUE_ANCHORS`).
 - M/review nit: `refresh_mutants` anchors on removed lines only, so a mutant can silently move to an identical line in another function.
-- M/review nits: refusal message lists every target file; `git diff` runs without `--no-color --no-ext-diff`; `--check` not yet in CI (C).
+- M/review nits: refusal message lists every target file; `git diff` runs without `--no-color --no-ext-diff`; `--check` not yet in CI (C, briefed).
+- M/#179 final nits: `parse_chunks` loops on an unknown hunk-line prefix (raise instead); `-U8` comment at `mutation_harness.test.js` ~386 is wrong; `sync_decks.main()` still duplicates `inject()` (T); dirty-target check misses staged-only changes; regen-in-worktree test lacks a git guard; missing target file gives a traceback; two `diff --git` sections for one file lose the first splice; no fixtures for the lint's bare-blank line or the pure-insertion re-anchor path (32 patches).
