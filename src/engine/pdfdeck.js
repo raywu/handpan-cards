@@ -3,7 +3,7 @@
 // The engine emits a pan: fields, geometry, chords, colours. hifi's card
 // builders read about twenty keys the engine knows nothing about - the title
 // line, the credit, the blurb, the legend copy, the diagram radius, the two
-// text baselines. tools/decks.py:354 `from_generated` synthesises those on the
+// text baselines. tools/decks.py's `from_generated` synthesises those on the
 // Python side, and this is a statement-for-statement port of it, because a
 // browser deck that drew from a second, independently written adapter would
 // diverge from the print pipeline in exactly the places nobody looks.
@@ -16,8 +16,9 @@ HPE.pdfdeck = (function () {
   "use strict";
 
   // The diagram band on the card, in points from the card's bottom edge
-  // (tools/decks.py:167). R is whatever radius makes the furthest drawn
-  // element reach the edge of that band, and the pan is centred in it.
+  // (tools/decks.py's `_BAND_LOW`/`_BAND_HIGH`). R is whatever radius makes
+  // the furthest drawn element reach the edge of that band, and the pan is
+  // centred in it.
   var BAND_LOW = 50.0;
   var BAND_HIGH = 198.0;
   var BAND_CY = (BAND_LOW + BAND_HIGH) / 2.0;

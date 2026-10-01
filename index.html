@@ -2159,7 +2159,7 @@ HPE.pdf = (function () {
 // The engine emits a pan: fields, geometry, chords, colours. hifi's card
 // builders read about twenty keys the engine knows nothing about - the title
 // line, the credit, the blurb, the legend copy, the diagram radius, the two
-// text baselines. tools/decks.py:354 `from_generated` synthesises those on the
+// text baselines. tools/decks.py's `from_generated` synthesises those on the
 // Python side, and this is a statement-for-statement port of it, because a
 // browser deck that drew from a second, independently written adapter would
 // diverge from the print pipeline in exactly the places nobody looks.
@@ -2172,8 +2172,9 @@ HPE.pdfdeck = (function () {
   "use strict";
 
   // The diagram band on the card, in points from the card's bottom edge
-  // (tools/decks.py:167). R is whatever radius makes the furthest drawn
-  // element reach the edge of that band, and the pan is centred in it.
+  // (tools/decks.py's `_BAND_LOW`/`_BAND_HIGH`). R is whatever radius makes
+  // the furthest drawn element reach the edge of that band, and the pan is
+  // centred in it.
   var BAND_LOW = 50.0;
   var BAND_HIGH = 198.0;
   var BAND_CY = (BAND_LOW + BAND_HIGH) / 2.0;
@@ -2478,7 +2479,7 @@ HPE.pdfcards = (function () {
   var BLACK = [0, 0, 0];
   var WHITE = [1, 1, 1];
 
-  // ---- palette (tools/hifi.py:22-32) ------------------------------------
+  // ---- palette (tools/hifi.py's BLUE/GREEN/NAME/INK/SEP/ORANGE/FAINT) ----
   var BLUE0 = [0.043, 0.482, 0.459];
   var GREEN0 = [0.867, 0.561, 0.000];
   var NAME = [0.329, 0.329, 0.329];
@@ -2556,7 +2557,7 @@ HPE.pdfcards = (function () {
     return HPE.pdf.stringWidth(text, font, size);
   }
 
-  // ---- text helpers (tools/hifi.py:41-68) --------------------------------
+  // ---- text helpers (tools/hifi.py's tw/tracked/fit/note_w) --------------
   function tw(text, font, size, track) {
     track = track || 0.0;
     return stringWidth(text, font, size) +
@@ -2591,7 +2592,7 @@ HPE.pdfcards = (function () {
            stringWidth(String(octv), font, size * 0.66);
   }
 
-  // ---- diagram label sizing (tools/hifi.py:118-160) ----------------------
+  // ---- diagram label sizing (tools/hifi.py's label_ratio/label_size/num_size/fit_note) ----
   // One rule sizes every glyph the pan draws, in both outputs. See CLAUDE.md
   // under "Diagram label rule" for where the three ratios come from and why
   // the index number takes no 1.05.
@@ -2628,7 +2629,7 @@ HPE.pdfcards = (function () {
     return w;
   }
 
-  // ---- card chrome (tools/hifi.py:176-223) -------------------------------
+  // ---- card chrome (tools/hifi.py's duo_frame/plain_frame/side_credit/card_header) ----
   function duoFrame(c, x, y, w, h, bw, rad, ga) {
     // gb is not passed: the 2026-09-16 restyle made the frame a single-colour
     // four-sided one in the root colour, and the deck grad tuple is kept
@@ -2736,7 +2737,7 @@ HPE.pdfcards = (function () {
     }
   }
 
-  // ---- diagram (tools/hifi.py:270-354) -----------------------------------
+  // ---- diagram (tools/hifi.py's draw_ring) --------------------------------
   function drawRing(c, x, y, r, state) {
     c.setDash();
     c.setFillColor(WHITE);
@@ -2836,7 +2837,7 @@ HPE.pdfcards = (function () {
     });
   }
 
-  // ---- page assembly (tools/hifi.py:356-377) -----------------------------
+  // ---- page assembly (tools/hifi.py's slots/crop_marks) -------------------
   function slots(paper) {
     var page = pageSize(paper);
     var tw_ = 3 * CW + 2 * GX;
@@ -2876,7 +2877,7 @@ HPE.pdfcards = (function () {
     });
   }
 
-  // ---- card types (tools/hifi.py:431-521) --------------------------------
+  // ---- card types (tools/hifi.py's chord_card/title_card/legend_card/blank_card) ----
   var CARD_WARNINGS = { NO_THIRDS: "NO 3RDS ON THIS PAN" };
 
   function cardWarnings(deck) {
@@ -2981,7 +2982,7 @@ HPE.pdfcards = (function () {
     c.line(x + 18, y + deck.y_num - 3, x + CW - 18, y + deck.y_num - 3);
   }
 
-  // ---- build (tools/hifi.py:379-427) -------------------------------------
+  // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
     var chordsOnly = opts.variant === "shop";
@@ -3529,6 +3530,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
   }
 
+  // Finding 10: the field-record predicate every other module reimplemented
+  // (voicing.js, select.js) - a field is the ding iff its zone (index 3 of
+  // the [name, octave, midi, zone, angle, label] record) is "ding".
+  function isDing(rec) {
+    return rec[3] === "ding";
+  }
+
   function orderedIds(fields) {
     var top = [];
     var bottom = [];
@@ -3625,7 +3633,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX }
+    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX },
+    // Finding 10 (2026-09-30 quality-refactor plan): the shared copies of
+    // helpers every other module used to reimplement. `pc` is `pitchClass`
+    // under the short name the other modules already called it by.
+    err: err,
+    badNote: badNote,
+    utf8Bytes: utf8Bytes,
+    pc: pitchClass,
+    isDing: isDing,
+    fieldsOf: fieldsOf
   };
 })(HPE);
 </script>
@@ -3679,16 +3696,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * this module asks it to report an impossible request rather than throw, and
    * section 2 forbids inventing a code, so an absent pitch class reuses
    * BAD_NOTE - the generic "this note cannot be used" rejection. */
+  // Finding 10 (2026-09-30 quality-refactor plan): delegates to core.err,
+  // which runs the identical substitution loop; the `<X>` key matches every
+  // call site below.
   function fail(code, x) {
-    var reason = core().REASONS[code].reason;
-    if (x !== undefined && x !== null) reason = reason.split("<X>").join(String(x));
-    return { ok: false, code: code, reason: reason };
+    if (x !== undefined && x !== null) return core().err(code, { "<X>": String(x) });
+    return core().err(code);
   }
 
   /* ---- the field map (section 11: {id: [name, octave, midi, zone, angle, label]}) */
 
   function isDing(rec) {
-    return rec[3] === "ding";
+    return core().isDing(rec);
   }
 
   function isTopShell(rec) {
@@ -4023,28 +4042,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Math.round(value * f) / f;
   }
 
+  // Finding 10 (2026-09-30 quality-refactor plan): fieldsOf/err/badNote are
+  // HPE.core's own helpers; layout.js always loads after core.js (every
+  // caller's loadEngine list includes "core" ahead of "layout"), so this
+  // module just delegates rather than keeping its own copy.
   function fieldsOf(seedOrFields) {
-    return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
-  }
-
-  function reasonFor(code) {
-    var table = (HPE.core && HPE.core.REASONS) || null;
-    return table && table[code] ? table[code].reason : code;
+    return HPE.core.fieldsOf(seedOrFields);
   }
 
   function err(code) {
-    return { ok: false, code: code, reason: reasonFor(code) };
+    return HPE.core.err(code);
   }
 
   /* Section 2's enum is CLOSED and carries no code for "that correction is not
    * a permutation", so a rejected `order` is BAD_NOTE naming the value, exactly
    * as core.parseSeed names an unparseable token. */
   function badNote(token) {
-    return {
-      ok: false,
-      code: "BAD_NOTE",
-      reason: reasonFor("BAD_NOTE").split("<X>").join(String(token).slice(0, 12))
-    };
+    return HPE.core.badNote(token);
   }
 
   function point(orb, angle) {
@@ -4408,8 +4422,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var MAJOR_REF = [0, 2, 4, 5, 7, 9, 11];
   var MINOR_REF = [0, 2, 3, 5, 7, 8, 10];
 
+  // Finding 10 (2026-09-30 quality-refactor plan): pc now lives once, in
+  // HPE.core; naming.js always loads after it (every caller's loadEngine
+  // list includes "core" ahead of "naming").
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return HPE.core.pc(n);
   }
 
   function uniquePcs(list) {
@@ -4741,8 +4758,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE[name];
   }
 
+  // Finding 10 (2026-09-30 quality-refactor plan): pc/isDing now live once,
+  // in HPE.core.
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return core().pc(n);
   }
 
   function has(list, value) {
@@ -4759,7 +4778,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  function isDing(record) { return record[3] === "ding"; }
+  function isDing(record) { return core().isDing(record); }
   function isTopShell(record) { return record[3] !== "ding" && record[3] !== "bottom"; }
 
   /* Every pitch class present on a field the predicate accepts. */
@@ -5399,46 +5418,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { ok: true, value: value };
   }
 
+  // Finding 10 (2026-09-30 quality-refactor plan): err/badNote/utf8Bytes now
+  // live once, in HPE.core; share.js always loads after it (share.test.js
+  // and every other caller's loadEngine list put "core" ahead of "share").
   function err(code, substitutions) {
-    var reason = HPE.core.REASONS[code].reason;
-    for (var key in substitutions) {
-      if (Object.prototype.hasOwnProperty.call(substitutions, key)) {
-        reason = reason.split(key).join(substitutions[key]);
-      }
-    }
-    return { ok: false, code: code, reason: reason };
+    return HPE.core.err(code, substitutions);
   }
 
   function badNote(token) {
-    return err("BAD_NOTE", { "<X>": String(token).slice(0, 12) });
+    return HPE.core.badNote(token);
   }
 
   /* ---- bytes ------------------------------------------------------------ */
 
   function utf8Bytes(str) {
-    var bytes = [];
-    for (var i = 0; i < str.length; i += 1) {
-      var code = str.charCodeAt(i);
-      if (code >= 0xd800 && code <= 0xdbff && i + 1 < str.length) {
-        var low = str.charCodeAt(i + 1);
-        if (low >= 0xdc00 && low <= 0xdfff) {
-          code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
-          i += 1;
-        }
-      }
-      if (code < 0x80) {
-        bytes.push(code);
-      } else if (code < 0x800) {
-        bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
-      } else if (code < 0x10000) {
-        bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f),
-                   0x80 | (code & 0x3f));
-      } else {
-        bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f),
-                   0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
-      }
-    }
-    return bytes;
+    return HPE.core.utf8Bytes(str);
   }
 
   function utf8String(bytes) {

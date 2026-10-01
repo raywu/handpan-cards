@@ -7,8 +7,8 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -281,7 +281,7 @@ HPE.pdfcards = (function () {
-   // ---- diagram (tools/hifi.py:270-354) -----------------------------------
+@@ -286,7 +286,7 @@ HPE.pdfcards = (function () {
+   // ---- diagram (tools/hifi.py's draw_ring) --------------------------------
    function drawRing(c, x, y, r, state) {
      c.setDash();
 -    c.setFillColor(WHITE);

@@ -1,0 +1,19 @@
+# suite: node --test --test-name-pattern ^core.err.builds.the..ok.false..code..reason..shape.and.substitutes.every.key$ tests/core.test.js
+# kills: core.err builds the {ok:false, code, reason} shape and substitutes every key
+# Guards the substitution loop with a condition that is never true (the own
+# property check against the REASONS entry instead of the substitutions
+# object), so no <X>-style placeholder is ever filled in - every caller that
+# now shares this one copy (layout.js, voicing.js's fail, share.js) would
+# ship a literal "<X>" in its reason string.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -116,6 +116,6 @@
+     var entry = REASONS[code];
+     var reason = alternate ? entry.alternates[alternate] : entry.reason;
+     for (var key in substitutions) {
+-      if (Object.prototype.hasOwnProperty.call(substitutions, key)) {
++      if (Object.prototype.hasOwnProperty.call(entry, key)) {
+         reason = reason.split(key).join(substitutions[key]);
+       }
+     }

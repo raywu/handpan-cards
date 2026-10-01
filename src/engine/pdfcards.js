@@ -25,7 +25,7 @@ HPE.pdfcards = (function () {
   var BLACK = [0, 0, 0];
   var WHITE = [1, 1, 1];
 
-  // ---- palette (tools/hifi.py:22-32) ------------------------------------
+  // ---- palette (tools/hifi.py's BLUE/GREEN/NAME/INK/SEP/ORANGE/FAINT) ----
   var BLUE0 = [0.043, 0.482, 0.459];
   var GREEN0 = [0.867, 0.561, 0.000];
   var NAME = [0.329, 0.329, 0.329];
@@ -103,7 +103,7 @@ HPE.pdfcards = (function () {
     return HPE.pdf.stringWidth(text, font, size);
   }
 
-  // ---- text helpers (tools/hifi.py:41-68) --------------------------------
+  // ---- text helpers (tools/hifi.py's tw/tracked/fit/note_w) --------------
   function tw(text, font, size, track) {
     track = track || 0.0;
     return stringWidth(text, font, size) +
@@ -138,7 +138,7 @@ HPE.pdfcards = (function () {
            stringWidth(String(octv), font, size * 0.66);
   }
 
-  // ---- diagram label sizing (tools/hifi.py:118-160) ----------------------
+  // ---- diagram label sizing (tools/hifi.py's label_ratio/label_size/num_size/fit_note) ----
   // One rule sizes every glyph the pan draws, in both outputs. See CLAUDE.md
   // under "Diagram label rule" for where the three ratios come from and why
   // the index number takes no 1.05.
@@ -175,7 +175,7 @@ HPE.pdfcards = (function () {
     return w;
   }
 
-  // ---- card chrome (tools/hifi.py:176-223) -------------------------------
+  // ---- card chrome (tools/hifi.py's duo_frame/plain_frame/side_credit/card_header) ----
   function duoFrame(c, x, y, w, h, bw, rad, ga) {
     // gb is not passed: the 2026-09-16 restyle made the frame a single-colour
     // four-sided one in the root colour, and the deck grad tuple is kept
@@ -283,7 +283,7 @@ HPE.pdfcards = (function () {
     }
   }
 
-  // ---- diagram (tools/hifi.py:270-354) -----------------------------------
+  // ---- diagram (tools/hifi.py's draw_ring) --------------------------------
   function drawRing(c, x, y, r, state) {
     c.setDash();
     c.setFillColor(WHITE);
@@ -383,7 +383,7 @@ HPE.pdfcards = (function () {
     });
   }
 
-  // ---- page assembly (tools/hifi.py:356-377) -----------------------------
+  // ---- page assembly (tools/hifi.py's slots/crop_marks) -------------------
   function slots(paper) {
     var page = pageSize(paper);
     var tw_ = 3 * CW + 2 * GX;
@@ -423,7 +423,7 @@ HPE.pdfcards = (function () {
     });
   }
 
-  // ---- card types (tools/hifi.py:431-521) --------------------------------
+  // ---- card types (tools/hifi.py's chord_card/title_card/legend_card/blank_card) ----
   var CARD_WARNINGS = { NO_THIRDS: "NO 3RDS ON THIS PAN" };
 
   function cardWarnings(deck) {
@@ -528,7 +528,7 @@ HPE.pdfcards = (function () {
     c.line(x + 18, y + deck.y_num - 3, x + CW - 18, y + deck.y_num - 3);
   }
 
-  // ---- build (tools/hifi.py:379-427) -------------------------------------
+  // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
     var chordsOnly = opts.variant === "shop";

@@ -180,17 +180,8 @@ class ReadmeCurrencyTest(unittest.TestCase):
 # exactly what LINE_REF_RE matches in the comment (e.g. `tools/decks.py:354`
 # or `index.html:4700`), NOT the host file's own line number.
 LINE_REF_ALLOWLIST = """
-# lane B (src/engine/*.js) - delete entries in this block as they are fixed
-src/engine/pdfdeck.js: tools/decks.py:354
-src/engine/pdfdeck.js: tools/decks.py:167
-src/engine/pdfcards.js: tools/hifi.py:22-32
-src/engine/pdfcards.js: tools/hifi.py:41-68
-src/engine/pdfcards.js: tools/hifi.py:118-160
-src/engine/pdfcards.js: tools/hifi.py:176-223
-src/engine/pdfcards.js: tools/hifi.py:270-354
-src/engine/pdfcards.js: tools/hifi.py:356-377
-src/engine/pdfcards.js: tools/hifi.py:431-521
-src/engine/pdfcards.js: tools/hifi.py:379-427
+# lane B (src/engine/*.js) is done: every pdfdeck.js/pdfcards.js ref was
+# replaced with a symbol anchor (2026-10-01), so no block remains here.
 
 # lane A (index.html, tests/app.test.js) - delete entries in this block as
 # they are fixed. The entries that used to sit inside the pdfdeck/pdfcards
