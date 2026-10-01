@@ -1,4 +1,5 @@
-# kills: a killed suite's own output reaches the timeout excerpt
+# kills: test_a_killed_suites_own_output_reaches_the_excerpt
+# a killed suite's own output reaches the timeout excerpt
 # suite: python3 -m unittest -k test_a_killed_suites_own_output_reaches_the_excerpt tests.test_suite_health
 # The drain throws away TimeoutExpired's partial output instead of carrying it,
 # so whenever a survivor holds the pipes - the defining condition for reaching

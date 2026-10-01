@@ -14,7 +14,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5384,7 +5384,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -5963,17 +5963,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     mulberry32: mulberry32
+   };
+ })(HPE);
+ </script>
+ <!-- engine:sequence end -->
  <!-- engine end -->
  
  <script>
@@ -23,3 +28,8 @@ diff --git a/index.html b/index.html
  
  /* ---------------- state ---------------- */
  // Two storage keys, deliberately separate. "hpfc" is the small settings object
+ // (which deck, which mode) and is SHARED with whatever a later feature adds to
+ // it, so save() reads-modifies-writes rather than replacing it. Saved scales
+ // are a list, own their own key, and hold the SEED - the canonical scale string
+ // plus its options - never the built deck, which is derived (D14).
+ const STORE_KEY = "hpfc";

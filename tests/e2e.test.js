@@ -252,6 +252,51 @@ function run() {
     }
   }
 
+  // Lane F (deflake): several tests drag a card into its fly-out, then pause
+  // the 220ms fly-out animation to inspect/exercise the card at a fixed
+  // midpoint. Finding-then-pausing it via a SEPARATE b.eval after the drag
+  // races real wall-clock time - on a slow CI runner the animation can
+  // finish and the card can land before that eval ever runs, silently
+  // turning the test into a no-op (observed: a right-click test's mutant
+  // kill depended on this). installFlyoutPauseHook wraps .scene's own
+  // .animate() so any 220ms animation it creates is paused in the SAME task
+  // it is created in, before any wall-clock time can pass - removing the
+  // race entirely rather than racing to win it. Call it once per freshLoad,
+  // before the drag that triggers the fly-out.
+  async function installFlyoutPauseHook() {
+    await b.eval(`
+      const scene = document.querySelector(".scene");
+      if (!scene.__flyoutPauseHooked) {
+        scene.__flyoutPauseHooked = true;
+        const orig = scene.animate.bind(scene);
+        scene.animate = (...args) => {
+          const anim = orig(...args);
+          if (anim.effect && anim.effect.getComputedTiming().duration === 220) anim.pause();
+          return anim;
+        };
+      }
+      return true;
+    `);
+  }
+
+  // Finds the (already-paused, thanks to installFlyoutPauseHook) fly-out
+  // animation and sets it to a fixed midpoint. Asserts it is actually
+  // pending first: a missing animation means the hook was not installed
+  // before the drag, or the fly-out already landed - either way the rest of
+  // the test would pass vacuously, which is the exact failure mode this
+  // helper exists to rule out.
+  async function pauseFlyoutAnimation(currentTime = 150) {
+    const found = await b.eval(`
+      const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
+      if (!a) return false;
+      if (a.playState !== "paused") a.pause();
+      a.currentTime = ${currentTime};
+      return true;
+    `);
+    assert.strictEqual(found, true,
+      "the fly-out animation must still be pending (call installFlyoutPauseHook before the drag)");
+  }
+
   // Click the i-th deck chip and wait for the deck to actually change over.
   // #decks holds deck chips only (M2, 2026-09-28: "+ Add a scale" moved into
   // the settings panel), so deck i is the (i + 1)-th chip. The hit test below
@@ -7980,13 +8025,9 @@ function run() {
     test("card swipe: a right-click at the rest position during the fly-out does not eat the next click", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
+      await installFlyoutPauseHook();
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
-      await b.eval(`
-        const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
-        a.pause();
-        a.currentTime = 150;
-        return true;
-      `);
+      await pauseFlyoutAnimation(150);
       const rest = await b.eval(`
         const r = flight.rect;
         return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 };
@@ -8185,13 +8226,9 @@ function run() {
           const r = document.getElementById("card").getBoundingClientRect();
           return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
         `);
+        await installFlyoutPauseHook();
         await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
-        await b.eval(`
-          const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
-          a.pause();
-          a.currentTime = 150;
-          return true;
-        `);
+        await pauseFlyoutAnimation(150);
         // A real touch at the REST centre: mid-flight the card has visually
         // moved away, so this point hit-tests to some other element, not
         // #card - unlike a synthetic pointerdown dispatched on #card itself.
@@ -8217,13 +8254,9 @@ function run() {
           const r = document.getElementById("card").getBoundingClientRect();
           return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
         `);
+        await installFlyoutPauseHook();
         await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
-        await b.eval(`
-          const a = document.querySelector(".scene").getAnimations().find(a => a.effect.getComputedTiming().duration === 220);
-          a.pause();
-          a.currentTime = 150;
-          return true;
-        `);
+        await pauseFlyoutAnimation(150);
         const t0 = Date.now() / 1000;
         const pt = (dx) => [{ x: rest.x + dx, y: rest.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
         await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(0), timestamp: t0 });

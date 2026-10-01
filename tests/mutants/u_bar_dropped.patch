@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^formatSeed.prints.the.canonical.D13.string.with.explicit.octaves$ tests/core.test.js
-# kills: formatSeed: the bottom shell must be printed after a ` |`, or the bottom notes re-parse as top notes
+# kills: formatSeed prints the canonical D13 string with explicit octaves
+# formatSeed: the bottom shell must be printed after a ` |`, or the bottom notes re-parse as top notes
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

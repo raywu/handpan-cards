@@ -1,4 +1,5 @@
-# kills: under reduced motion the swipe steps instantly with no animation
+# kills: card swipe: under reduced motion the swipe steps instantly with no animation
+# under reduced motion the swipe steps instantly with no animation
 # suite: node --test --test-name-pattern ^card.swipe:.under.reduced.motion.the.swipe.steps.instantly.with.no.animation$ tests/e2e.test.js
 # Drops the reduced-motion early return in release(): a committing swipe
 # always plays the WAAPI fly-out/enter animation and never steps instantly,

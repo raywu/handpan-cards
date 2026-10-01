@@ -1,4 +1,5 @@
-# kills: a drag with the settings panel open, or opened mid-drag, does nothing
+# kills: card swipe: a drag with the settings panel open, or opened mid-drag, does nothing
+# a drag with the settings panel open, or opened mid-drag, does nothing
 # suite: node --test --test-name-pattern ^card.swipe:.a.drag.with.the.settings.panel.open,.or.opened.mid-drag,.does.nothing$ tests/e2e.test.js
 # Drops the panelOpen check from both the pointerdown start guard and
 # release()'s blocked expression: a drag started or ended while the settings

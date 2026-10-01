@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^a.pan.with.no.third.yields.ok.plus.NO.THIRDS$ tests/select.test.js
-# kills: the NO_THIRDS warning of ENGINE-SPEC sections 16 and 17, which
+# kills: a pan with no third yields ok plus NO_THIRDS
+# the NO_THIRDS warning of ENGINE-SPEC sections 16 and 17, which
 # select.build is the only producer of.
 diff --git a/src/engine/select.js b/src/engine/select.js
 --- a/src/engine/select.js

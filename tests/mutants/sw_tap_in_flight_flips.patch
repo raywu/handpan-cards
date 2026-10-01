@@ -1,4 +1,5 @@
-# kills: a tap during the fly-out lands it once and never flips the wrong card
+# kills: card swipe: a tap during the fly-out lands it once and never flips the wrong card
+# a tap during the fly-out lands it once and never flips the wrong card
 # suite: node --test --test-name-pattern ^card.swipe:.a.tap.during.the.fly-out.lands.it.once.and.never.flips.the.wrong.card$ tests/e2e.test.js
 # Drops the eatClick assignment from the capture pointerdown: a tap that
 # lands directly on #card while a fly-out is in flight no longer marks the

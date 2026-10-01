@@ -1,4 +1,5 @@
-# kills: E4 - prev is excluded from the 3-chord pool only, so a repeated
+# kills: pick never returns the previous sequence when another exists
+# E4 - prev is excluded from the 3-chord pool only, so a repeated
 # 2-chord sequence survives the exclusion step instead of being filtered
 # before the length draw
 # suite: node --test --test-name-pattern ^pick.never.returns.the.previous.sequence.when.another.exists$ tests/sequence.test.js

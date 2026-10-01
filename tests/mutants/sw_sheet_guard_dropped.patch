@@ -1,4 +1,5 @@
-# kills: a drag with the scale sheet open does nothing
+# kills: card swipe: a drag with the scale sheet open does nothing
+# a drag with the scale sheet open does nothing
 # suite: node --test --test-name-pattern ^card.swipe:.a.drag.with.the.scale.sheet.open.does.nothing$ tests/e2e.test.js
 # Drops the sheetOpen check from both the pointerdown start guard and
 # release()'s blocked expression: a drag started or ended while the scale

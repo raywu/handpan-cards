@@ -1,4 +1,5 @@
-# kills: #next and ArrowRight on a flipped card deal without a reverse-flip transition
+# kills: card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition
+# #next and ArrowRight on a flipped card deal without a reverse-flip transition
 # suite: node --test --test-name-pattern ^card.swipe:.#next.and.ArrowRight.on.a.flipped.card.deal.without.a.reverse-flip.transition$ tests/e2e.test.js
 # N40: drops step()'s transition:none/forced-reflow/transition:"" dance -
 # the same diff as the retired sw_flip_reset_animates.patch (2026-09-30: both

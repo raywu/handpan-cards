@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^ext.grows.when.a.bottom.shell.is.added$ tests/layout.test.js
-# kills: ext is the furthest DRAWN element, so a bottom-shell pan needs an ext well past 1.06
+# kills: ext grows when a bottom shell is added
+# ext is the furthest DRAWN element, so a bottom-shell pan needs an ext well past 1.06
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js

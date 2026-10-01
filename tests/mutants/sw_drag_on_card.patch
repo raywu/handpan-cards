@@ -1,4 +1,5 @@
-# kills: the card follows a held drag with a tilt, then springs back below the threshold
+# kills: card swipe: the card follows a held drag with a tilt, then springs back below the threshold
+# the card follows a held drag with a tilt, then springs back below the threshold
 # suite: node --test --test-name-pattern ^card.swipe:.the.card.follows.a.held.drag.with.a.tilt,.then.springs.back.below.the.threshold$ tests/e2e.test.js
 # Drags the wrong element: transforms .card instead of .scene during
 # pointermove. .scene never moves (m41/matrix reads identity) and any

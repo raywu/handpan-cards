@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^D2.forced.chords.keep.their.extensions.above.the.root.unless.forced.too$ tests/voicing.test.js
-# kills: the D2 forced test, which is over ANY non-root tone, chord tones AND
+# kills: D2 forced chords keep their extensions above the root unless forced too
+# the D2 forced test, which is over ANY non-root tone, chord tones AND
 # extensions alike (ENGINE-SPEC section 6). Here it ignores extensions, so the
 # five-field pan's Cadd9 - forced only by its 9th - stops clustering.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js

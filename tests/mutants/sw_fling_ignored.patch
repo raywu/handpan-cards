@@ -1,4 +1,5 @@
-# kills: a short fast fling commits and a slow drag of the same length does not
+# kills: card swipe: a short fast fling commits and a slow drag of the same length does not
+# a short fast fling commits and a slow drag of the same length does not
 # suite: node --test --test-name-pattern ^card.swipe:.a.short.fast.fling.commits.and.a.slow.drag.of.the.same.length.does.not$ tests/e2e.test.js
 # Drops the fling escape hatch entirely: a fast short flick under
 # SWIPE_COMMIT_PX no longer commits, only distance does - the fling test's

@@ -37,82 +37,127 @@ def hexc(color):
                                    (color.red, color.green, color.blue))
 
 
+def run_check(num, desc, fn, failures):
+    """Run one numbered check and REPORT its own failure instead of letting a
+    bare AssertionError abort the script.
+
+    Finding 15 (2026-09-30 quality-refactor plan): the old `main()` was one
+    long sequence of bare `assert`s, so the first failure raised, aborted the
+    whole run, and left every check after it unexplained - and unrun. This
+    prints the check's own message labelled with its number and description
+    (so the failure is diagnosable from CI output alone), appends
+    `(num, desc, message)` to `failures` on failure, and - critically - lets
+    the caller go on to run the next check either way.
+    """
+    try:
+        fn()
+    except AssertionError as e:
+        msg = str(e) if str(e) else repr(e)
+        print("%s. %s: FAILED - %s" % (num, desc, msg))
+        failures.append((num, desc, msg))
+    else:
+        print("%s. %s: OK" % (num, desc))
+
+
 def main():
+    failures = []
+
     # 1. index.html's DECKS line is a current copy of data/decks.json.
     #    data/decks.json is the SOURCE; this is the check-4 analogue for data.
-    assert sync_decks.main(["sync_decks.py", "--check"]) == 0, \
-        "index.html's DECKS line is stale - run `python3 tools/sync_decks.py`"
+    def check_1():
+        assert sync_decks.main(["sync_decks.py", "--check"]) == 0, \
+            "index.html's DECKS line is stale - run `python3 tools/sync_decks.py`"
+    run_check(1, "index.html DECKS == data/decks.json", check_1, failures)
+
     app = sync_decks.canonical()
-    print("1. index.html DECKS == data/decks.json: OK")
 
     # 1b. tools/decks.py's deck dicts carry the canonical data unchanged.
     #     After the adapter lands this cannot drift by construction, so the
     #     check is a GUARD ON THE ADAPTER (a print overlay key must never
     #     shadow a canonical one), not a drift detector between two copies.
-    for d in app:
-        py = PY[d["id"]]
-        spec = py["spec"]
-        for fid, val in d["fields"].items():
-            assert tuple(val) == spec[int(fid)], (d["id"], "field", fid)
-        geom = spec["_geom"]
-        for k, v in d["geom"].items():
-            assert geom.get(k) == v, (d["id"], "geom", k)
-        assert len(d["chords"]) == len(py["chords"]), (d["id"], "chord count")
-        for ch, (main_, sup, sub, fields, roots) in zip(d["chords"], py["chords"]):
-            assert ch["main"] == main_ and ch["sup"] == sup, (d["id"], ch["main"])
-            assert ch["subtitle"] == sub, (d["id"], ch["subtitle"], sub)
-            assert ch["fields"] == list(fields), (d["id"], ch["main"], "fields")
-            assert set(ch["roots"]) == set(roots), (d["id"], ch["main"], "roots")
-        assert {int(k): v for k, v in d["degrees"].items()} == py["degrees"]
-        assert d["colors"]["root"] == hexc(py["col_root"]), (d["id"], "root colour")
-        assert d["colors"]["tone"] == hexc(py["col_tone"]), (d["id"], "tone colour")
-        ga, gb = py["grad"]
-        assert d["colors"]["ga"] == hexc(ga) and d["colors"]["gb"] == hexc(gb)
-    print("1b. tools/decks.py deck dicts == data/decks.json: OK")
+    def check_1b():
+        for d in app:
+            py = PY[d["id"]]
+            spec = py["spec"]
+            for fid, val in d["fields"].items():
+                assert tuple(val) == spec[int(fid)], (d["id"], "field", fid)
+            geom = spec["_geom"]
+            for k, v in d["geom"].items():
+                assert geom.get(k) == v, (d["id"], "geom", k)
+            assert len(d["chords"]) == len(py["chords"]), (d["id"], "chord count")
+            for ch, (main_, sup, sub, fields, roots) in zip(d["chords"], py["chords"]):
+                assert ch["main"] == main_ and ch["sup"] == sup, (d["id"], ch["main"])
+                assert ch["subtitle"] == sub, (d["id"], ch["subtitle"], sub)
+                assert ch["fields"] == list(fields), (d["id"], ch["main"], "fields")
+                assert set(ch["roots"]) == set(roots), (d["id"], ch["main"], "roots")
+            assert {int(k): v for k, v in d["degrees"].items()} == py["degrees"]
+            assert d["colors"]["root"] == hexc(py["col_root"]), (d["id"], "root colour")
+            assert d["colors"]["tone"] == hexc(py["col_tone"]), (d["id"], "tone colour")
+            ga, gb = py["grad"]
+            assert d["colors"]["ga"] == hexc(ga) and d["colors"]["gb"] == hexc(gb)
+    run_check("1b", "tools/decks.py deck dicts == data/decks.json", check_1b, failures)
 
-    # 2. invariants over every card
-    total = 0
-    for d in app:
-        pc = lambda f: d["fields"][str(f)][2] % 12
-        for ch in d["chords"]:
-            total += 1
-            pcs = {pc(f) for f in ch["fields"]}
-            rpc = pc(ch["roots"][0])
-            assert rpc in pcs, (d["id"], ch["main"], "root pc missing")
-            root_f = {int(f) for f in d["fields"] if pc(int(f)) == rpc}
-            tone_f = {int(f) for f in d["fields"]
-                      if pc(int(f)) in pcs and pc(int(f)) != rpc}
-            assert not (root_f & tone_f), (d["id"], ch["main"], "overlap")
-            for f in ch["fields"]:
-                assert f in root_f or f in tone_f, (d["id"], ch["main"], f)
-            assert len(pcs) == len(ch["fields"]), (d["id"], ch["main"], "doubled pc")
-    assert total == 96, total
-    print("2. invariants over all %d cards: OK" % total)
+    # 2. invariants over every card. The expected total is DERIVED from
+    # data/decks.json itself (the sum of each deck's own chord count), not a
+    # hardcoded literal that silently goes stale the next time a deck grows -
+    # it still catches the loop below skipping or double-counting a deck.
+    counted = {}
+
+    def check_2():
+        expected_total = sum(len(d["chords"]) for d in app)
+        total = 0
+        for d in app:
+            pc = lambda f: d["fields"][str(f)][2] % 12
+            for ch in d["chords"]:
+                total += 1
+                pcs = {pc(f) for f in ch["fields"]}
+                rpc = pc(ch["roots"][0])
+                assert rpc in pcs, (d["id"], ch["main"], "root pc missing")
+                root_f = {int(f) for f in d["fields"] if pc(int(f)) == rpc}
+                tone_f = {int(f) for f in d["fields"]
+                          if pc(int(f)) in pcs and pc(int(f)) != rpc}
+                assert not (root_f & tone_f), (d["id"], ch["main"], "overlap")
+                for f in ch["fields"]:
+                    assert f in root_f or f in tone_f, (d["id"], ch["main"], f)
+                assert len(pcs) == len(ch["fields"]), (d["id"], ch["main"], "doubled pc")
+        assert total == expected_total, (total, expected_total)
+        counted["total"] = total
+    run_check(2, "invariants over all cards", check_2, failures)
+    if "total" in counted:
+        print("    (%d cards)" % counted["total"])
 
     # 3. English-only card copy
-    for name in ("index.html", "tools/decks.py", "tools/hifi.py",
-                 "data/decks.json"):
-        hits = GERMAN.findall(open(os.path.join(ROOT, name)).read())
-        assert not hits, (name, hits)
-    print("3. no German card copy: OK")
+    def check_3():
+        for name in ("index.html", "tools/decks.py", "tools/hifi.py",
+                     "data/decks.json"):
+            hits = GERMAN.findall(open(os.path.join(ROOT, name)).read())
+            assert not hits, (name, hits)
+    run_check(3, "no German card copy", check_3, failures)
 
     # 4. the inlined engine == src/engine/*.js. index.html carries a verbatim
     # copy of each module (the app is single-file by contract), so a change to
     # a module that is not re-synced would ship an app running old engine code.
-    problems = inline_engine.desync()
-    assert not problems, problems
-    print("4. inlined engine regions == src/engine/ (%s): OK"
-          % ", ".join(inline_engine.MODULES))
+    def check_4():
+        problems = inline_engine.desync()
+        assert not problems, problems
+    run_check(4, "inlined engine regions == src/engine/ (%s)"
+              % ", ".join(inline_engine.MODULES), check_4, failures)
 
     # 5. the generated font module == what tools/inline_fonts.py writes from
     # tools/fonts/. src/engine/fontdata.js is GENERATED, and check 4 above only
     # proves index.html carries a copy of whatever the file says - not that the
     # file still matches the TTFs the print pipeline prints with.
-    assert inline_fonts.main(["inline_fonts.py", "--check"]) == 0, \
-        "src/engine/fontdata.js is stale - run `python3 tools/inline_fonts.py`"
-    print("5. src/engine/fontdata.js == tools/fonts/ subsets: OK")
+    def check_5():
+        assert inline_fonts.main(["inline_fonts.py", "--check"]) == 0, \
+            "src/engine/fontdata.js is stale - run `python3 tools/inline_fonts.py`"
+    run_check(5, "src/engine/fontdata.js == tools/fonts/ subsets", check_5, failures)
+
+    return failures
 
 
 if __name__ == "__main__":
-    main()
+    _failures = main()
+    if _failures:
+        print("validate.py: %d check(s) FAILED" % len(_failures))
+        sys.exit(1)
     print("validate.py: all checks passed")

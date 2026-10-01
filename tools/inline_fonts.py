@@ -18,7 +18,7 @@ tests/test_font_subset.py can pin every number against reportlab directly.
 CHARSET is FROZEN.  It is printable ASCII plus the degree sign, which is the
 exact union of every character the three seed decks and hifi's own literals can
 draw (card copy is English-only by CLAUDE.md, and `deg` reaches the cards
-through the diminished-chord suffix at src/engine/naming.js:22).  None of the
+through the `"°"` diminished-chord suffix entry in src/engine/naming.js).  None of the
 five faces has a cmap entry for U+266F / U+266D, so sharps and flats are the
 ASCII `#` and `b` there as they are everywhere else in this repo.  The tool
 FAILS rather than silently dropping a glyph if a face cannot cover the set.
@@ -36,8 +36,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, "tools", "fonts")
 OUT = os.path.join(ROOT, "src", "engine", "fontdata.js")
 
-# hifi's own registration names (tools/hifi.py:16-20), so a port of a hifi call
-# site reads the same identifier on both sides.
+# hifi's own registration names (its pdfmetrics.registerFont() calls in
+# tools/hifi.py), so a port of a hifi call site reads the same identifier on
+# both sides.
 FACES = [
     ("Display", "Marcellus-Regular.ttf"),
     ("Notes", "Bitter-Regular.ttf"),
