@@ -17,17 +17,21 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const E2E_SUITE_MARKER = "tests/e2e.test.js";
+// harness.test.js drives the same browser and skips without one, so its
+// mutants are e2e-selecting for both the skip rule and the shard balance.
+const E2E_SUITE_MARKERS = ["tests/e2e.test.js", "tests/harness.test.js"];
 
 function suiteOf(patchText) {
   const m = patchText.match(/^# suite:\s*(.*)$/m);
   return m ? m[1].trim() : "";
 }
 
-// Mirrors mutation_check.sh's own case match: `*tests/e2e.test.js*` against
+// Mirrors mutation_check.sh's own case match:
+// `*tests/e2e.test.js*|*tests/harness.test.js*` against
 // the suite command, never the patch's filename.
 function isE2ESelecting(patchText) {
-  return suiteOf(patchText).includes(E2E_SUITE_MARKER);
+  const suite = suiteOf(patchText);
+  return E2E_SUITE_MARKERS.some((m) => suite.includes(m));
 }
 
 function loadMutants(dir) {
@@ -62,7 +66,7 @@ function shardFor(dir, index, total) {
   return partition(loadMutants(dir), total)[index];
 }
 
-module.exports = { suiteOf, isE2ESelecting, loadMutants, partition, shardFor, E2E_SUITE_MARKER };
+module.exports = { suiteOf, isE2ESelecting, loadMutants, partition, shardFor, E2E_SUITE_MARKERS };
 
 if (require.main === module) {
   // CLI: node shard_mutants.js <i 1..N> <N> [mutants-dir]

@@ -1,0 +1,17 @@
+# kills: a mutant judged by harness.test.js is skipped without a browser, never survived
+# suite: node --test --test-name-pattern ^a.mutant.judged.by.harness.test.js.is.skipped.without.a.browser..never.survived$ tests/mutation_harness.test.js
+# The browser skip narrows back to e2e.test.js only. harness.test.js self-skips
+# to a 0 exit without a browser too, so its mutants are scored SURVIVED on a
+# browserless machine (PR 190 review B1).
+diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
+--- a/tests/mutation_check.sh
++++ b/tests/mutation_check.sh
+@@ -262,7 +262,7 @@ for p in "${PATCHES[@]}"; do
+   # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
+   # skipped itself for want of a browser.
+   case "$cmd" in
+-    *tests/e2e.test.js*|*tests/harness.test.js*)
++    *tests/e2e.test.js*)
+       if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
+         echo "$base skipped  (no browser; e2e mutants cannot be validated here)"
+         SKIPPED=$((SKIPPED + 1)); continue

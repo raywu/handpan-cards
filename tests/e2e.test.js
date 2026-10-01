@@ -2044,9 +2044,11 @@ function run() {
      The link is built through the app's own shareLink(), never hand-encoded
      here, so the wire format is exercised exactly as a real share does it. */
   test("a fresh navigation to a share link shows the deck, count and a lit field", async () => {
-    await b.setViewport(380, 800, true);
     try {
+      // After freshLoad(), which resets to DEFAULT_VIEWPORT: Q1 is a 380px
+      // finding, and the share-link boot below must happen at that width.
       await freshLoad();
+      await b.setViewport(380, 800, true);
       await generate(SIX_SCALES[1]);
       const shared = await b.eval(`
         const d = CUSTOM[deckId];
@@ -2069,6 +2071,8 @@ function run() {
       await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
         label: "deck chips to be built after the share link boots",
       });
+      assert.strictEqual(await b.eval(`return window.innerWidth;`), 380,
+        "the share link must boot at Q1's 380px width");
 
       const after = await b.eval(`
         const l = document.querySelector("#front .hdr .l");
@@ -7833,14 +7837,13 @@ function run() {
       // event itself ever fires - so a mouse click on #next can't tell a
       // stuck eatClick apart from one that was never stuck (confirmed
       // empirically: it passes with the `sw_eatclick_any_button` mutant
-      // applied too). A keyboard Enter on a freshly focused #next was tried
-      // too, and this harness's raw key dispatch DOES synthesize a real
-      // button's native Enter-activates-click behaviour (verified directly
-      // by the "Enter on a print button" test above) - but that native click
-      // also arrives with no pointerdown of its own, exactly like .click()
-      // below, so it is equally unable to discriminate a stuck eatClick from
-      // one that was never stuck; it was dropped as redundant with .click(),
-      // not because it fails to activate the button.
+      // applied too). A keyboard Enter on a freshly focused #next is not
+      // used either: this harness's b.key() sends only keyDown/keyUp with no
+      // `char` event, which does not trigger a button's native
+      // Enter-activates-click at all. And even a native activation click
+      // arrives with no pointerdown of its own, exactly like .click() below,
+      // so it could not discriminate a stuck eatClick from one that was
+      // never stuck anyway.
       // A programmatic .click() is the one action that reaches the
       // document's capture click listener with no pointerdown of its own
       // (the same technique the "no-flight capture branch" test below uses
@@ -8193,8 +8196,8 @@ function run() {
           assert.strictEqual(pc, 0, `${w}x${h}: touch-action:none must never produce a pointercancel`);
         }
       } finally {
-        // Viewport is a browser-level setting; freshLoad() does not reset it,
-        // so a throw mid-loop must not leak a small viewport into later tests.
+        // Viewport is a browser-level setting; restore it here so a throw
+        // mid-loop cannot leak a small viewport into the rest of this test.
         await b.setViewport(900, 900, false);
       }
     });
@@ -8239,9 +8242,9 @@ function run() {
           await b.finishAnimations();
         }
       } finally {
-        // The viewport is a browser-level setting, not a page one - freshLoad()
-        // does not reset it, so it must not leak into later tests either on
-        // pass or on an assertion throw mid-loop.
+        // The viewport is a browser-level setting, not a page one; restore it
+        // here so a mid-loop assertion throw cannot leak it into the rest of
+        // this test (freshLoad() resets it before the next one).
         await b.setViewport(900, 900, false);
       }
     });

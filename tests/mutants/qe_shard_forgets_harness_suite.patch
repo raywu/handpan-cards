@@ -1,0 +1,16 @@
+# kills: the shard partition treats a harness.test.js mutant as browser-selecting
+# suite: node --test --test-name-pattern ^the.shard.partition.treats.a.harness.test.js.mutant.as.browser-selecting$ tests/mutation_harness.test.js
+# The shard balancer forgets harness.test.js: its browser mutants are dealt
+# from the non-e2e deck, out of step with mutation_check.sh's skip rule.
+diff --git a/tests/shard_mutants.js b/tests/shard_mutants.js
+--- a/tests/shard_mutants.js
++++ b/tests/shard_mutants.js
+@@ -19,7 +19,7 @@ const path = require("node:path");
+ 
+ // harness.test.js drives the same browser and skips without one, so its
+ // mutants are e2e-selecting for both the skip rule and the shard balance.
+-const E2E_SUITE_MARKERS = ["tests/e2e.test.js", "tests/harness.test.js"];
++const E2E_SUITE_MARKERS = ["tests/e2e.test.js"];
+ 
+ function suiteOf(patchText) {
+   const m = patchText.match(/^# suite:\s*(.*)$/m);
