@@ -1,0 +1,13 @@
+# kills: test_every_glyph_lands_where_print_puts_it
+# suite: python3 -m unittest -k test_every_glyph_lands_where_print_puts_it tests.test_pdf_parity
+#
+# NO_THIRDS badge y-offset: y + 6.0 becomes y + 16.0. No parity seed had a
+# no-thirds pan, so this survived every existing suite (finding N-F1).
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -472,3 +472,3 @@ HPE.pdfcards = (function () {
+     cardWarnings(deck).forEach(function (line, i) {
+-      tracked(c, x + CW / 2, y + 6.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
++      tracked(c, x + CW / 2, y + 16.0 - i * 5.5, line, "LabelSB", 4.0, 0.7,
+               "c", ORANGE);

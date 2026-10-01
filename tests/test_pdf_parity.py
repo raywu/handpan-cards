@@ -40,6 +40,9 @@ NODE = shutil.which("node") or "node"
 SEEDS = [
     "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
     "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+    # No-thirds pan: only power chords and sus chords, so this is the only
+    # seed that exercises the NO_THIRDS card-warning badge (finding N-F1).
+    "(C3) G3 D4 G4 D5",
 ]
 
 # The three shipped decks, built through HPE.pdfdeck.fromBuiltin on the JS
@@ -53,6 +56,21 @@ BUILTINS = ["hijaz", "pygmy", "amara"]
 CASES = SEEDS + BUILTINS
 
 VARIANTS = ("full", "shop")
+
+# An empty trace is a passing test that proves nothing, so every case needs a
+# vector floor - but one fixed number does not fit every case. The no-thirds
+# seed is a tiny 2-field instrument with only a few chords, so its sheets
+# carry far fewer vectors than the other cases (measured: 147 full, 61 shop)
+# and need their own floor; every other case keeps the 500 that was already
+# measured against the smallest of them (the Amara shop sheet, at 676).
+DEFAULT_VECTOR_FLOOR = 500
+VECTOR_FLOORS = {
+    "(C3) G3 D4 G4 D5": {"full": 100, "shop": 40},
+}
+
+
+def _vector_floor(case, variant):
+    return VECTOR_FLOORS.get(case, {}).get(variant, DEFAULT_VECTOR_FLOOR)
 
 
 def _generate(seed):
@@ -170,8 +188,7 @@ def _drawings(path, nd=1):
 
 @unittest.skipIf(fitz is None, "pymupdf is required")
 class PrintParityTest(unittest.TestCase):
-    def _pair(self, case, variant):
-        tmp = tempfile.mkdtemp()
+    def _build_pair(self, case, variant, tmp):
         py_path = os.path.join(tmp, "py.pdf")
         js_path = os.path.join(tmp, "js.pdf")
         if case in BUILTINS:
@@ -183,30 +200,25 @@ class PrintParityTest(unittest.TestCase):
             deck = decks.from_generated(payload)
             hifi.build(py_path, deck, chords_only=(variant == "shop"))
             _js_pdf(payload, js_path, variant=variant)
-        return _glyphs(py_path), _glyphs(js_path)
+        return py_path, js_path
+
+    def _pair(self, case, variant):
+        with tempfile.TemporaryDirectory() as tmp:
+            py_path, js_path = self._build_pair(case, variant, tmp)
+            return _glyphs(py_path), _glyphs(js_path)
 
     def _pair_drawings(self, case, variant):
-        tmp = tempfile.mkdtemp()
-        py_path = os.path.join(tmp, "py.pdf")
-        js_path = os.path.join(tmp, "js.pdf")
-        if case in BUILTINS:
-            deck = getattr(decks, case.upper())
-            hifi.build(py_path, deck, chords_only=(variant == "shop"))
-            _js_pdf_builtin(case, js_path, variant=variant)
-        else:
-            payload = _generate(case)
-            deck = decks.from_generated(payload)
-            hifi.build(py_path, deck, chords_only=(variant == "shop"))
-            _js_pdf(payload, js_path, variant=variant)
-        return _drawings(py_path), _drawings(js_path)
+        with tempfile.TemporaryDirectory() as tmp:
+            py_path, js_path = self._build_pair(case, variant, tmp)
+            return _drawings(py_path), _drawings(js_path)
 
     def _assert_vectors_match(self, case, variant):
         py, js = self._pair_drawings(case, variant)
         self.assertEqual(len(py), len(js), "page count")
         # An empty trace is a passing test that proves nothing, the same
         # reason test_every_glyph_lands_where_print_puts_it holds a floor.
-        # The smallest case measured is the Amara shop sheet at 676.
-        self.assertGreater(sum(len(p) for p in py), 500,
+        # The floor is per case: see VECTOR_FLOORS above.
+        self.assertGreater(sum(len(p) for p in py), _vector_floor(case, variant),
                            "a deck with no vectors is not a parity check")
         for i, (a, b) in enumerate(zip(py, js)):
             with self.subTest(case=case, variant=variant, page=i + 1):
@@ -274,27 +286,27 @@ class PrintParityTest(unittest.TestCase):
         # drawn at a fixed page coordinate rather than off the card grid, so
         # it deliberately does NOT move with the cards.
         payload = _generate(SEEDS[0])
-        tmp = tempfile.mkdtemp()
-        a = os.path.join(tmp, "letter.pdf")
-        b = os.path.join(tmp, "a4.pdf")
-        _js_pdf(payload, a, paper="letter")
-        _js_pdf(payload, b, paper="a4")
-        dx = (595.28 - 612) / 2
-        # y is measured DOWN from the top of the page by the reader, so a
-        # y-up shift of dy reads as a shift of (841.89 - 792) - dy.
-        dy_read = (841.89 - 792) - (841.89 - 792) / 2
-        letter, a4 = _glyphs(a, nd=6)[1:], _glyphs(b, nd=6)[1:]
-        self.assertGreaterEqual(len(letter), 1, "need a page without the bar")
-        self.assertEqual(len(letter), len(a4))
-        for i, (pa, pb) in enumerate(zip(letter, a4)):
-            self.assertGreater(len(pa), 100)
-            self.assertEqual(len(pa), len(pb))
-            for ga, gb in zip(pa, pb):
-                self.assertAlmostEqual(gb[0] - dx, ga[0], places=3,
-                                       msg="page %d x" % (i + 2))
-                self.assertAlmostEqual(gb[1] - dy_read, ga[1], places=3,
-                                       msg="page %d y" % (i + 2))
-                self.assertEqual((gb[2], gb[3]), (ga[2], ga[3]))
+        with tempfile.TemporaryDirectory() as tmp:
+            a = os.path.join(tmp, "letter.pdf")
+            b = os.path.join(tmp, "a4.pdf")
+            _js_pdf(payload, a, paper="letter")
+            _js_pdf(payload, b, paper="a4")
+            dx = (595.28 - 612) / 2
+            # y is measured DOWN from the top of the page by the reader, so a
+            # y-up shift of dy reads as a shift of (841.89 - 792) - dy.
+            dy_read = (841.89 - 792) - (841.89 - 792) / 2
+            letter, a4 = _glyphs(a, nd=6)[1:], _glyphs(b, nd=6)[1:]
+            self.assertGreaterEqual(len(letter), 1, "need a page without the bar")
+            self.assertEqual(len(letter), len(a4))
+            for i, (pa, pb) in enumerate(zip(letter, a4)):
+                self.assertGreater(len(pa), 100)
+                self.assertEqual(len(pa), len(pb))
+                for ga, gb in zip(pa, pb):
+                    self.assertAlmostEqual(gb[0] - dx, ga[0], places=3,
+                                           msg="page %d x" % (i + 2))
+                    self.assertAlmostEqual(gb[1] - dy_read, ga[1], places=3,
+                                           msg="page %d y" % (i + 2))
+                    self.assertEqual((gb[2], gb[3]), (ga[2], ga[3]))
 
 
 class SweepCoverageTest(unittest.TestCase):
