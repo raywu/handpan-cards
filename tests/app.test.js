@@ -551,6 +551,30 @@ test("render() with an emptied order does not throw and leaves the last card on 
     "render() with an empty order overwrote the last good card");
 });
 
+// Finding 18 (quality-refactor plan 2026-09-30): render() used to build all
+// four of question/answer/questionB/answerB on every call regardless of
+// mode, which called pan() - an SVG build, the expensive part of a render -
+// twice (once in `answer`, once in `questionB`) even though only one of
+// those two faces is ever shown in any single mode. This spies on the
+// app's own `pan` to count builds per render, rather than re-deriving which
+// faces "should" need a diagram here - card_face_v1.json (finding 0)
+// already pins what every face's HTML must equal; this test only pins how
+// many times the expensive diagram builder runs to get there.
+test("render() builds the diagram at most once per render, in every mode", () => {
+  const app = boot();
+  app.run(`
+    globalThis.__panCalls = 0;
+    globalThis.__origPan = pan;
+    pan = function(...a) { __panCalls++; return __origPan(...a); };
+  `);
+  app.run('__panCalls = 0; setMode("A");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode A should build the diagram once per render");
+  app.run('__panCalls = 0; setMode("B");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode B should build the diagram once per render");
+  app.run('__panCalls = 0; setMode("S");');
+  assert.strictEqual(app.get("__panCalls"), 1, "mode S should build the diagram once per render");
+});
+
 test("an unknown deck id still falls back to a built-in deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
   assert.strictEqual(app.deckId(), decks(app)[0].id);

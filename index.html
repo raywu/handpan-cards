@@ -6734,17 +6734,17 @@ function render() {
   document.documentElement.style.setProperty("--ga", d.colors.ga);
   document.documentElement.style.setProperty("--gb", d.colors.gb);
 
-  const answer = headerHTML(d, ch, n) +
-    `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
-  const question = headerHTML(d, ch, n) +
-    `<div class="prompt">${nameHTML(ch, true)}
-     <div class="hint">Tap to reveal the notes</div></div>`;
-  const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
-    `<div class="diagwrap">${pan(d, ch)}</div>
-     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
-  const answerB = headerHTML(d, ch, n) +
-    `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
-
+  // Finding 18 (quality-refactor plan 2026-09-30): build only the two faces
+  // the current mode shows, and call pan() (an SVG build, the expensive part
+  // of a render) at most once. Before this, all four of answer/question/
+  // questionB/answerB were built on every render regardless of mode, and
+  // pan() - appearing once in `answer` and once in `questionB` - ran twice
+  // even though only one of those two faces is ever shown (mode S also
+  // reuses mode A's `answer`, so it hit the same double build). Every
+  // template literal below is byte-for-byte what the old unconditional
+  // consts produced for that mode; card_face_v1.json (finding 0) pins every
+  // deck x card x mode x face combination, so a text drift here cannot pass
+  // silently.
   if (mode === "S") {
     // §8 E5: the front face is mode A's `answer` face, byte for byte - no
     // chord name, no hint. The name lives on the back; the style name/tip no
@@ -6752,6 +6752,8 @@ function render() {
     // paragraph in the footer, filled here via textContent (never innerHTML;
     // style copy is our own string data, but the pattern matches
     // renderSeqRail's "DOM nodes and textContent only" rule).
+    const answer = headerHTML(d, ch, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
     const backS = headerHTML(d, ch, n) +
       `<div class="prompt">${nameHTML(ch, true)}</div>`;
@@ -6761,9 +6763,24 @@ function render() {
     document.getElementById("seq-style-tip").textContent = styleTip;
     document.getElementById("seq-style").hidden = false;
     renderSeqRail(d);
+  } else if (mode === "A") {
+    const question = headerHTML(d, ch, n) +
+      `<div class="prompt">${nameHTML(ch, true)}
+     <div class="hint">Tap to reveal the notes</div></div>`;
+    const answer = headerHTML(d, ch, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
+    document.getElementById("front").innerHTML = question;
+    document.getElementById("back").innerHTML  = answer;
+    document.getElementById("count").classList.remove("seq");
+    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   } else {
-    document.getElementById("front").innerHTML = mode === "A" ? question : questionB;
-    document.getElementById("back").innerHTML  = mode === "A" ? answer   : answerB;
+    const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+      `<div class="diagwrap">${pan(d, ch)}</div>
+     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
+    const answerB = headerHTML(d, ch, n) +
+      `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
+    document.getElementById("front").innerHTML = questionB;
+    document.getElementById("back").innerHTML  = answerB;
     document.getElementById("count").classList.remove("seq");
     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   }
