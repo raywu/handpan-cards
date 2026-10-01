@@ -37,6 +37,8 @@ const { execFileSync, spawnSync } = require("node:child_process");
 
 const ROOT = path.join(__dirname, "..");
 const SCRIPT = path.join(ROOT, "tests", "mutation_check.sh");
+const SHARD_MODULE = path.join(ROOT, "tests", "shard_mutants.js");
+const { partition, isE2ESelecting, loadMutants } = require(SHARD_MODULE);
 
 function childEnv(extra) {
   const env = { ...process.env, ...(extra || {}) };
@@ -1206,4 +1208,87 @@ test("every mutant patch's # kills: line is actually selected by its # suite: co
     `plain comment beneath it):\n` +
     violations.map((v) => `${v.name}: kills=${JSON.stringify(v.kills)} ` +
       `selected=${JSON.stringify(v.selected)}`).join("\n"));
+});
+
+// --- Finding 4 (2026-09-30 quality refactor): MUTANT_SHARD -------------------
+//
+// The mutation gate is the CI critical path (~14.5 min). tests/shard_mutants.js
+// partitions the real corpus into N shards that mutation_check.sh runs as a
+// CI matrix; these tests pin the partition itself (pure, no shell) and then
+// drive MUTANT_SHARD through the real script once to prove the env var wiring
+// actually restricts what a sweep evaluates.
+
+test("the N=4 shard partition over the real corpus is disjoint and complete", () => {
+  const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
+  const shards = partition(entries, 4);
+  const seen = new Set();
+  for (const shard of shards) {
+    for (const name of shard) {
+      assert.ok(!seen.has(name), `${name} was dealt into more than one shard`);
+      seen.add(name);
+    }
+  }
+  const allNames = new Set(entries.map((e) => e.name));
+  assert.deepStrictEqual(seen, allNames,
+    "the union of all 4 shards must equal every mutant in the corpus, exactly once");
+});
+
+test("the N=4 shard partition balances e2e-selecting mutants within 1 per shard", () => {
+  // 161 of 477 mutants select tests/e2e.test.js (by the suite COMMAND, not a
+  // filename substring) and cluster under the e_/sw_ name prefixes - a flat
+  // index%N would leave one shard carrying most of the slow e2e suite.
+  const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
+  const shards = partition(entries, 4);
+  const byName = new Map(entries.map((e) => [e.name, e]));
+  const e2eCounts = shards.map(
+    (shard) => shard.filter((name) => isE2ESelecting(byName.get(name).text)).length);
+  const spread = Math.max(...e2eCounts) - Math.min(...e2eCounts);
+  assert.ok(spread <= 1,
+    `e2e-selecting mutants per shard differ by more than 1: ${e2eCounts.join(", ")}`);
+});
+
+test("the shard partition does not depend on input order", () => {
+  const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
+  const reversed = [...entries].reverse();
+  assert.deepStrictEqual(partition(entries, 4), partition(reversed, 4),
+    "partition sorts by name itself - it must not trust the caller's order");
+});
+
+function sweepSharded(dir, shardSpec, reportPath) {
+  const r = spawnSync("bash", [path.join(dir, "tests", "mutation_check.sh")], {
+    cwd: dir, encoding: "utf8",
+    env: childEnv({ MUTANT_TIMEOUT: "60", MUTANT_SHARD: shardSpec, MUTANT_REPORT: reportPath }),
+    timeout: 120000,
+  });
+  return { code: r.status, out: `${r.stdout || ""}${r.stderr || ""}` };
+}
+
+test("MUTANT_SHARD restricts a real sweep to its own partition, and the two shards together cover the fixture corpus", (t) => {
+  const KILLABLE2 = { name: "z_subject_is_ok_too", header: "subject.txt stays ok (second)" };
+  const dir = makeFixture(t, { mutants: [KILLABLE, KILLABLE2] });
+  fs.copyFileSync(SHARD_MODULE, path.join(dir, "tests", "shard_mutants.js"));
+  const report1 = path.join(dir, "shard1.txt");
+  const report2 = path.join(dir, "shard2.txt");
+
+  const r1 = sweepSharded(dir, "1/2", report1);
+  const r2 = sweepSharded(dir, "2/2", report2);
+
+  assert.equal(r1.code, 0, r1.out);
+  assert.equal(r2.code, 0, r2.out);
+
+  const names1 = fs.readFileSync(report1, "utf8").trim().split("\n").filter(Boolean);
+  const names2 = fs.readFileSync(report2, "utf8").trim().split("\n").filter(Boolean);
+  assert.equal(names1.length, 1, `shard 1 report: ${names1}`);
+  assert.equal(names2.length, 1, `shard 2 report: ${names2}`);
+  assert.notStrictEqual(names1[0], names2[0], "the two shards must not share a mutant");
+  assert.deepStrictEqual(
+    new Set([...names1, ...names2]),
+    new Set(["x_subject_is_ok.patch", "z_subject_is_ok_too.patch"]),
+    "the union of both shard reports must equal the whole fixture corpus");
+
+  // Each shard must evaluate ONLY its own mutant, never the sibling's.
+  const other1 = names2[0].replace(/\.patch$/, "");
+  const other2 = names1[0].replace(/\.patch$/, "");
+  assert.doesNotMatch(r1.out, new RegExp(`^${other1}\\.patch`, "m"), r1.out);
+  assert.doesNotMatch(r2.out, new RegExp(`^${other2}\\.patch`, "m"), r2.out);
 });

@@ -42,7 +42,9 @@ long before 30s is in question.
 """
 import glob
 import io
+import json
 import os
+import shutil
 import signal
 import stat
 import subprocess
@@ -532,6 +534,117 @@ class CheckNodeTimeoutExcerptTest(unittest.TestCase):
         self.assertIn(
             marker, buf.getvalue(),
             "a timed-out suite's own TAP excerpt never reached the CI log")
+
+
+class VerifyArtifactsTest(unittest.TestCase):
+    """Finding 11 (2026-09-30 quality refactor): suite-health now reads two
+    JSON artifacts emitted by the python-tests/js-tests jobs (suite_health.
+    emit_python/emit_js) instead of re-running every suite itself. verify()
+    must give every verdict check_python()/check_node() used to give, from
+    data alone - a missing or malformed artifact is itself a failure, since a
+    silent fallback to running suites would be exactly the re-run this finding
+    removes.
+
+    FLOORS/PY_FILES/JS_FILES/the LEGACY_* aggregates and exists() are
+    monkeypatched to a small fixed table for the duration of each test, the
+    same style CheckNodeTimeoutExcerptTest above uses - so these cases pin
+    verify()'s own logic, not today's real corpus."""
+
+    def setUp(self):
+        self._orig = {
+            "FLOORS": dict(suite_health.FLOORS),
+            "PY_FILES": list(suite_health.PY_FILES),
+            "JS_FILES": list(suite_health.JS_FILES),
+            "LEGACY_PYTHON": suite_health.LEGACY_PYTHON,
+            "LEGACY_NODE_UNIT": suite_health.LEGACY_NODE_UNIT,
+            "LEGACY_NODE_FULL": suite_health.LEGACY_NODE_FULL,
+            "exists": suite_health.exists,
+        }
+        suite_health.FLOORS = {"tests/test_a.py": 2, "tests/a.test.js": 2}
+        suite_health.PY_FILES = ["tests/test_a.py"]
+        suite_health.JS_FILES = ["tests/a.test.js"]
+        suite_health.LEGACY_PYTHON = 2
+        suite_health.LEGACY_NODE_UNIT = 2
+        suite_health.LEGACY_NODE_FULL = 2
+        suite_health.exists = lambda p: True
+        self.tmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        suite_health.FLOORS = self._orig["FLOORS"]
+        suite_health.PY_FILES = self._orig["PY_FILES"]
+        suite_health.JS_FILES = self._orig["JS_FILES"]
+        suite_health.LEGACY_PYTHON = self._orig["LEGACY_PYTHON"]
+        suite_health.LEGACY_NODE_UNIT = self._orig["LEGACY_NODE_UNIT"]
+        suite_health.LEGACY_NODE_FULL = self._orig["LEGACY_NODE_FULL"]
+        suite_health.exists = self._orig["exists"]
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _write(self, name, data):
+        p = os.path.join(self.tmp, name)
+        with open(p, "w") as f:
+            json.dump(data, f)
+        return p
+
+    def _good_py(self):
+        return {"total_run": 2, "by_module": {"tests.test_a": 2},
+                "skipped": [], "failures": 0, "errors": 0, "output_excerpt": ""}
+
+    def _good_js(self):
+        return {"have_browser": True, "probe_problem": None,
+                "found": ["tests/a.test.js"],
+                "files": {"tests/a.test.js":
+                          {"total": 2, "failed": 0, "skipped": 0, "browser_skips": 0}}}
+
+    def test_a_missing_artifact_fails(self):
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, os.path.join(self.tmp, "nope.json"))
+        self.assertTrue(any("missing artifact" in p for p in problems), problems)
+
+    def test_a_malformed_artifact_fails(self):
+        js_path = self._write("js.json", self._good_js())
+        py_path = os.path.join(self.tmp, "py.json")
+        with open(py_path, "w") as f:
+            f.write("{not valid json")
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(any("malformed artifact" in p for p in problems), problems)
+
+    def test_a_count_under_floor_fails(self):
+        py = self._good_py()
+        py["total_run"] = 1
+        py["by_module"]["tests.test_a"] = 1
+        py_path = self._write("py.json", py)
+        js_path = self._write("js.json", self._good_js())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(any("floor is 2" in p for p in problems), problems)
+
+    def test_a_skipped_test_fails_even_when_the_total_meets_the_floor(self):
+        js = self._good_js()
+        # 3 ran (above the floor of 2) but one of them was skipped.
+        js["files"]["tests/a.test.js"] = {
+            "total": 3, "failed": 0, "skipped": 1, "browser_skips": 0}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("skipped" in p for p in problems),
+            f"a skip must fail even though 3 >= the floor of 2: {problems}")
+
+    def test_an_unregistered_js_file_fails(self):
+        js = self._good_js()
+        js["found"] = ["tests/a.test.js", "tests/new.test.js"]
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("no FLOORS row" in p and "tests/new.test.js" in p for p in problems),
+            problems)
+
+    def test_a_clean_artifact_pair_passes(self):
+        # The counterpart to the five failure cases above: verify() must not
+        # manufacture a problem out of a genuinely healthy pair of artifacts.
+        py_path = self._write("py.json", self._good_py())
+        js_path = self._write("js.json", self._good_js())
+        self.assertEqual(suite_health.verify(py_path, js_path), [])
 
 
 if __name__ == "__main__":

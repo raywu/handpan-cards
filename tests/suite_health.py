@@ -20,6 +20,7 @@ see.
 """
 import glob
 import io
+import json
 import os
 import re
 import signal
@@ -41,7 +42,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 6,
     "tests/test_failure_diagnosability.py": 11,
     "tests/test_readme_currency.py": 6,
-    "tests/test_suite_health.py": 12,
+    "tests/test_suite_health.py": 18,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
@@ -59,7 +60,7 @@ FLOORS = {
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
     "tests/pdfcards.test.js": 14,
-    "tests/mutation_harness.test.js": 18,
+    "tests/mutation_harness.test.js": 43,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 9,
 }
@@ -452,7 +453,295 @@ def check_node():
     return problems
 
 
+# --- Finding 11 (2026-09-30 quality refactor) -------------------------------
+#
+# suite-health used to RE-RUN every python and node suite that python-tests and
+# js-tests had just run, on its own job, in parallel - three CI jobs executing
+# the same tests for one aggregate verdict.
+#
+# The fix keeps check_python()/check_node() exactly as they were (every test
+# above drives them directly, several by monkeypatching their module globals)
+# and adds a second path alongside them: the python-tests and js-tests CI jobs
+# now call emit_python()/emit_js() to RUN the suites once and serialize RESULTS
+# - not just counts, but per-file pass/fail/skip tallies and a failing suite's
+# own output - to a JSON artifact. The suite-health job then calls verify(),
+# which applies every check check_python()/check_node() used to apply (a floor
+# miss, a skip, a malformed run, an unregistered JS file) to that JSON, with no
+# suite execution of its own. A missing or malformed artifact is itself a
+# failure - there is no silent fallback to running suites, because a fallback
+# is exactly the re-run this finding removes.
+#
+# collect_python()/collect_js() intentionally duplicate check_python()/
+# check_node()'s execution logic rather than refactoring them to share it: the
+# existing tests above patch check_node()'s free variables (run_node_file,
+# probe_browser, FLOORS, JS_FILES, glob.glob) directly, so reshaping check_node
+# to call collect_js() under the hood would require every one of those patches
+# to keep working through an extra layer of indirection for no behavioural
+# gain - check_python()/check_node() stay as the "run everything, right here"
+# path a developer invokes directly with no CI plumbing at all.
+
+
+def collect_python():
+    """Run every python suite once; return raw per-file data, no FLOORS applied."""
+    loader = unittest.TestLoader()
+    suite = loader.discover(start_dir="tests", top_level_dir=paths.ROOT)
+    if loader.errors:
+        return {"discovery_errors": [str(e) for e in loader.errors]}
+    captured = io.StringIO()
+    runner = unittest.TextTestRunner(verbosity=0, stream=captured,
+                                     resultclass=PerFileResult)
+    result = runner.run(suite)
+    return {
+        "total_run": result.testsRun,
+        "by_module": result.by_module,
+        "skipped": [str(s[0]) for s in result.skipped],
+        "failures": len(result.failures),
+        "errors": len(result.errors),
+        "output_excerpt": excerpt(captured.getvalue())
+        if (result.failures or result.errors) else "",
+    }
+
+
+def emit_python(outfile):
+    """Run the python suites and write collect_python()'s data to `outfile`.
+
+    Exit code reflects whether the suite ITSELF is green (failures/errors) -
+    floor/skip verdicts are verify()'s job, not this job's.
+    """
+    data = collect_python()
+    os.makedirs(os.path.dirname(os.path.abspath(outfile)) or ".", exist_ok=True)
+    with open(outfile, "w") as f:
+        json.dump(data, f, indent=2)
+    if "discovery_errors" in data:
+        print("python: test discovery raised errors")
+        for e in data["discovery_errors"]:
+            print(e)
+        return 1
+    print(f"python: ran {data['total_run']}, skipped {len(data['skipped'])}, "
+          f"failures {data['failures']}, errors {data['errors']}")
+    if data["output_excerpt"]:
+        print(data["output_excerpt"])
+    return 1 if (data["failures"] or data["errors"]) else 0
+
+
+def collect_js():
+    """Run every tests/*.test.js file once, per file; return raw data."""
+    have_browser, probe_problem = probe_browser()
+    found = sorted(
+        os.path.relpath(f, paths.ROOT).replace(os.sep, "/")
+        for f in glob.glob(os.path.join(paths.ROOT, "tests", "*.test.js")))
+    files = {}
+    any_red = False
+    for path in found:
+        if path in E2E_FILES and not have_browser:
+            files[path] = {"skipped_no_browser": True}
+            continue
+        total, failed, skipped, out = run_node_file(path)
+        if total is None:
+            files[path] = {"total": None, "error": out}
+            any_red = True
+            continue
+        entry = {"total": total, "failed": failed, "skipped": skipped, "browser_skips": 0}
+        if skipped:
+            entry["browser_skips"] = len(
+                re.findall(r"^ok .*(?:browser|chrom).*# SKIP", out, re.M | re.I))
+        if failed:
+            entry["output_excerpt"] = excerpt(out)
+            any_red = True
+        files[path] = entry
+    return {
+        "have_browser": have_browser,
+        "probe_problem": probe_problem,
+        "found": found,
+        "files": files,
+    }, any_red
+
+
+def emit_js(outfile):
+    """Run the node suites and write collect_js()'s data to `outfile`."""
+    data, any_red = collect_js()
+    os.makedirs(os.path.dirname(os.path.abspath(outfile)) or ".", exist_ok=True)
+    with open(outfile, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"node: browser {'yes' if data['have_browser'] else 'no'}")
+    if data["probe_problem"]:
+        print(f"node: browser probe problem: {data['probe_problem']}")
+        any_red = True
+    for path, entry in data["files"].items():
+        if entry.get("skipped_no_browser"):
+            print(f"  {path}: not run, no browser installed")
+            continue
+        if entry.get("total") is None:
+            print(f"  {path}: ERROR: {entry.get('error')}")
+            continue
+        print(f"  {path}: ran {entry['total']}, failed {entry['failed']}, "
+              f"skipped {entry['skipped']}")
+        if entry.get("output_excerpt"):
+            print(entry["output_excerpt"])
+    return 1 if any_red else 0
+
+
+def _load_artifact(path, required_keys):
+    """-> (data, None) or (None, problem string). Never raises."""
+    if not os.path.exists(path):
+        return None, f"missing artifact: {path}"
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
+        return None, f"malformed artifact {path}: {e}"
+    if not isinstance(data, dict):
+        return None, f"malformed artifact {path}: expected a JSON object"
+    missing = required_keys - set(data)
+    if missing:
+        return None, f"malformed artifact {path}: missing key(s) {sorted(missing)}"
+    return data, None
+
+
+_PY_ARTIFACT_KEYS = {"total_run", "by_module", "skipped", "failures", "errors"}
+_JS_ARTIFACT_KEYS = {"have_browser", "found", "files"}
+
+
+def verify_python(data):
+    """Apply the same checks check_python() applied, from a recorded run."""
+    if "discovery_errors" in data:
+        return ["python: test discovery raised errors: "
+                + "; ".join(data["discovery_errors"])]
+    problems = []
+    by_module = data["by_module"]
+    for path in sorted(PY_FILES):
+        floor = FLOORS[path]
+        ran = by_module.get(module_of(path), 0)
+        if not exists(path):
+            if floor:
+                problems.append(f"{path}: floor is {floor} but the file does not exist")
+            continue
+        if ran < floor:
+            problems.append(f"{path}: only {ran} tests ran, floor is {floor}")
+    if data["total_run"] < LEGACY_PYTHON:
+        problems.append(f"python: only {data['total_run']} tests ran in total, "
+                        f"aggregate floor is {LEGACY_PYTHON}")
+    if data["skipped"]:
+        problems.append("python: skipped tests are not allowed: "
+                        + ", ".join(data["skipped"]))
+    if data["failures"] or data["errors"]:
+        problems.append("python: suite is not green")
+    return problems
+
+
+def verify_js(data):
+    """Apply the same checks check_node() applied, from a recorded run."""
+    problems = []
+    have_browser = data["have_browser"]
+    if data.get("probe_problem"):
+        problems.append(data["probe_problem"])
+    found = data["found"]
+    files = data["files"]
+    for path in found:
+        if path not in FLOORS:
+            problems.append(f"{path}: no FLOORS row in tests/suite_health.py "
+                            f"- add one (0 is a fine starting value)")
+    total_counted = 0
+    for path in sorted(set(JS_FILES) | set(found)):
+        floor = FLOORS.get(path, 0)
+        if not exists(path):
+            if floor:
+                problems.append(f"{path}: floor is {floor} but the file does not exist")
+            continue
+        entry = files.get(path)
+        if entry is None:
+            if floor:
+                problems.append(f"{path}: no result in artifact, floor is {floor}")
+            continue
+        if entry.get("skipped_no_browser"):
+            continue
+        if entry.get("total") is None:
+            problems.append(f"{path}: {entry.get('error', 'no result recorded')}")
+            continue
+        total, failed, skipped = entry["total"], entry["failed"], entry["skipped"]
+        total_counted += total
+        if total < floor:
+            problems.append(f"{path}: only {total} tests ran, floor is {floor}")
+        if failed:
+            problems.append(f"{path}: suite is not green")
+        if skipped:
+            browser_skips = entry.get("browser_skips", 0)
+            if have_browser or browser_skips < skipped:
+                problems.append(f"{path}: {skipped} skipped test(s), "
+                                f"{browser_skips} explained by a missing browser")
+    aggregate = LEGACY_NODE_FULL if have_browser else LEGACY_NODE_UNIT
+    if total_counted < aggregate:
+        problems.append(f"node: only {total_counted} tests ran in total, "
+                        f"aggregate floor is {aggregate}")
+    return problems
+
+
+def verify(py_path, js_path):
+    """-> list of problems, reading both artifacts instead of running suites."""
+    problems = []
+    # The python artifact has two valid shapes - the usual counts, or just
+    # discovery_errors (loader.discover() itself blew up) - so it is loaded
+    # by hand here rather than through _load_artifact's single required-key set.
+    if not os.path.exists(py_path):
+        py_err = f"missing artifact: {py_path}"
+        py_data = None
+    else:
+        try:
+            with open(py_path) as f:
+                py_data = json.load(f)
+            py_err = None
+            if not isinstance(py_data, dict):
+                py_err = f"malformed artifact {py_path}: expected a JSON object"
+                py_data = None
+            elif "discovery_errors" not in py_data:
+                missing = _PY_ARTIFACT_KEYS - set(py_data)
+                if missing:
+                    py_err = f"malformed artifact {py_path}: missing key(s) {sorted(missing)}"
+                    py_data = None
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
+            py_err = f"malformed artifact {py_path}: {e}"
+            py_data = None
+    js_data, js_err = _load_artifact(js_path, _JS_ARTIFACT_KEYS)
+
+    if py_err:
+        problems.append(py_err)
+    else:
+        problems += verify_python(py_data)
+    if js_err:
+        problems.append(js_err)
+    else:
+        problems += verify_js(js_data)
+    return problems
+
+
 if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--emit-python", metavar="OUTFILE",
+                    help="run the python suites once and write their results here")
+    ap.add_argument("--emit-js", metavar="OUTFILE",
+                    help="run the node suites once and write their results here")
+    ap.add_argument("--verify", nargs=2, metavar=("PY_JSON", "JS_JSON"),
+                    help="verify two previously emitted artifacts; runs nothing")
+    args = ap.parse_args()
+
+    if args.emit_python:
+        sys.exit(emit_python(args.emit_python))
+    if args.emit_js:
+        sys.exit(emit_js(args.emit_js))
+    if args.verify:
+        issues = verify(*args.verify)
+        print()
+        if issues:
+            for i in issues:
+                print("FAIL:", i)
+            sys.exit(1)
+        print("SUITE HEALTH OK")
+        sys.exit(0)
+
+    # No flags: the original all-in-one local path, unchanged - run every
+    # suite directly and apply every check, with no artifacts involved.
     issues = check_python() + check_node()
     print()
     if issues:

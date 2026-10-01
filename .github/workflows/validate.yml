@@ -17,11 +17,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab fonttools
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: pip install -r requirements-ci.txt
       - name: App JSON vs decks.py, card invariants, English-only copy
         run: python tools/validate.py
       - name: App boot simulation
         run: node tools/boot_sim.js
+      - name: Mutant corpus is in sync with its sources (finding, 2026-09-30)
+        run: python3 tools/refresh_mutants.py --check
 
   python-tests:
     name: python suites
@@ -34,9 +38,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf fonttools
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: pip install -r requirements-ci.txt
       - name: Deck data, print layout, PDF build, render agreement
         run: python -W error::ResourceWarning -m unittest discover -s tests -t . -v
+      # suite-health (below) verifies this job's results from the artifact
+      # instead of re-running the suite itself (finding 11, 2026-09-30 quality
+      # refactor) - emit_python() re-tallies the same discover() run above into
+      # JSON, it does not run anything a second time.
+      - name: Emit per-file results for suite-health
+        if: always()
+        run: python3 tests/suite_health.py --emit-python artifacts/python-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-results
+          path: artifacts/python-results.json
 
   js-tests:
     name: js suites (unit + e2e)
@@ -49,35 +67,60 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
       # The print regression test prints a real PDF over CDP and measures the
       # card frames with pymupdf; nothing else in this job needs python.
-      - run: pip install pymupdf
+      - run: pip install -r requirements-ci.txt
       # No npm install: the e2e harness drives the Chrome already present on the
       # runner over CDP, so this repo stays dependency-free.
       - name: Show browser in use
         run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
       - name: App units and browser e2e
         run: node --test "tests/*.test.js"
+      # suite-health verifies this job's results from the artifact instead of
+      # re-running every *.test.js file itself (finding 11). collect_js() runs
+      # each file exactly once here, same as the step above, just captured as
+      # JSON instead of only a console log.
+      - name: Emit per-file results for suite-health
+        if: always()
+        run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: js-results
+          path: artifacts/js-results.json
 
   suite-health:
     name: suite health
+    needs: [python-tests, js-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf fonttools
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-results
+          path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: js-results
+          path: artifacts
       # Both runners exit 0 when they collect nothing, and a decorated skip is
-      # easy to miss in a log. This asserts a floor and forbids silent skips.
-      - run: python tests/suite_health.py
+      # easy to miss in a log. This asserts a floor and forbids silent skips -
+      # from the artifacts python-tests/js-tests already produced, not by
+      # re-running either suite (finding 11, 2026-09-30 quality refactor).
+      - run: python3 tests/suite_health.py --verify artifacts/python-results.json artifacts/js-results.json
 
-  mutation-gate:
-    name: mutation gate
+  mutation-gate-shard:
+    name: mutation gate shard ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,7 +131,50 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install reportlab pymupdf fonttools
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: pip install -r requirements-ci.txt
       # Every test group must have a mutant that kills it; a test nothing can
-      # kill is not a test.
-      - run: ./tests/mutation_check.sh
+      # kill is not a test. Sharded 4 ways (finding 4, 2026-09-30 quality
+      # refactor): MUTANT_SHARD restricts this run to one partition of the
+      # corpus, computed live by tests/shard_mutants.js so an added mutant
+      # reshards itself; MUTANT_REPORT records this shard's mutant list before
+      # the sweep runs, so a shard that fails partway still uploads proof of
+      # what it owned, for the aggregate job below to check completeness.
+      - run: |
+          mkdir -p artifacts
+          MUTANT_SHARD="${{ matrix.shard }}/4" MUTANT_REPORT="artifacts/mutant-shard-${{ matrix.shard }}.txt" ./tests/mutation_check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutant-shard-report-${{ matrix.shard }}
+          path: artifacts/mutant-shard-*.txt
+
+  mutation-gate:
+    name: mutation gate
+    needs: mutation-gate-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mutant-shard-report-*
+          path: artifacts
+          merge-multiple: true
+      - name: All 4 shards must have passed
+        run: |
+          if [ "${{ needs.mutation-gate-shard.result }}" != "success" ]; then
+            echo "one or more mutation-gate shards did not succeed: ${{ needs.mutation-gate-shard.result }}"
+            exit 1
+          fi
+      - name: The union of all shard reports must equal the full mutant corpus
+        run: |
+          set -euo pipefail
+          (cd tests/mutants && ls *.patch) | sort >expected.txt
+          cat artifacts/mutant-shard-*.txt | sort >actual.txt
+          if ! diff -u expected.txt actual.txt; then
+            echo "shard reports do not cover the mutant corpus exactly once - see diff above"
+            exit 1
+          fi
+          echo "all $(wc -l <expected.txt) mutants accounted for across 4 shards"
