@@ -7762,6 +7762,10 @@ function run() {
         async release(dx, ms, dy) {
           await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(dx, dy), timestamp: t0 + ms / 1000 });
           await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + ms / 1000 + 0.001 });
+          // See b.settleAfterRealRelease / endMouseDragForReal: a real
+          // touchend's lostpointercapture fires asynchronously and can land
+          // on a later test's drag if this returns too soon.
+          await b.settleAfterRealRelease();
         },
       };
     }
@@ -8684,23 +8688,23 @@ function run() {
     // reused low pointer ids) and cancel it before its first move.
     async function endMouseDragForReal(x, y) {
       await b.eval(`
-        window.__lpcSeen = false;
+        window.__cdpLpcSeen = false;
         document.getElementById("card").addEventListener("lostpointercapture", () => {
-          window.__lpcSeen = true;
+          window.__cdpLpcSeen = true;
         }, { once: true });
         return true;
       `);
       await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
-      await b.waitFor(`window.__lpcSeen === true`, {
+      // See b.settleAfterRealRelease (tests/helpers/cdp.js): waits for the
+      // real release's own lostpointercapture, then two real animation
+      // frames so Chrome's capture bookkeeping for this pointer id has
+      // drained before a later test reuses it. The listener above is
+      // armed here (not inside settleAfterRealRelease) because it must be
+      // attached before mouseReleased is sent, not after.
+      await b.waitFor(`window.__cdpLpcSeen === true`, {
         label: "the real mouseup's own lostpointercapture to fire",
         timeout: 1000,
       }).catch(() => {});
-      // Seeing the event fire does not mean Chrome's internal capture
-      // bookkeeping for this pointerId has fully settled - reusing the
-      // same low pointerId for a brand new capture right away can
-      // spuriously re-fire a trusted lostpointercapture against it. Two
-      // real animation-frame round trips give the input pipeline a
-      // chance to drain before the next test's pointerdown.
       await b.eval(`
         return new Promise(resolve => {
           requestAnimationFrame(() => requestAnimationFrame(resolve));

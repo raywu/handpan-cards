@@ -260,6 +260,7 @@ class Browser {
       }
       if (release) {
         await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 });
+        await this.settleAfterRealRelease();
       }
     } else {
       const p0 = at(0, 0);
@@ -271,8 +272,32 @@ class Browser {
       if (release) {
         const p = at(last[0], last[2]);
         await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 });
+        await this.settleAfterRealRelease();
       }
     }
+  }
+  // A real touchend/mouseup releases the element's pointer capture (if any)
+  // asynchronously via a trusted lostpointercapture - if a caller moves on
+  // (e.g. a fresh page load for the next test) before that fires, Chrome can
+  // deliver it late, against whatever now occupies the same element/pointer
+  // id, and cancel a drag that never asked for it. Wait for one (there may be
+  // none, if the element never captured) and then let two real animation
+  // frames pass so Chrome's own capture bookkeeping for the old pointer id
+  // has drained before it gets reused.
+  async settleAfterRealRelease() {
+    await this.eval(`
+      window.__cdpLpcSeen = false;
+      const c = document.getElementById("card");
+      if (c) c.addEventListener("lostpointercapture", () => { window.__cdpLpcSeen = true; }, { once: true });
+      return true;
+    `).catch(() => {});
+    await this.waitFor(`window.__cdpLpcSeen === true`, {
+      label: "a real release's own lostpointercapture to fire",
+      timeout: 1000,
+    }).catch(() => {});
+    await this.eval(`
+      return new Promise(resolve => { requestAnimationFrame(() => requestAnimationFrame(resolve)); });
+    `).catch(() => {});
   }
   // Finishes every WAAPI animation on `selector`, looping because finish()
   // on a fly-out chains land(), which starts the enter animation.
