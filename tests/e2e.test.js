@@ -8735,10 +8735,29 @@ function run() {
     test("card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
-      await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
+      // Commit via the synthetic lpc path only (no trailing pointerup/click
+      // dispatched), exactly as the eng-review-item-3 test below does: a
+      // real mouse release's own trailing click fires (and self-eats)
+      // almost immediately, which would clear eatClick/eatClickTimer within
+      // milliseconds regardless of the configured decay duration and so
+      // cannot discriminate a wrong decay length (e.g. 400ms mutated to
+      // 4000ms) - a behavioral click-then-flip assertion driven by a real
+      // b.drag()+b.click() always "passes" either way, since the real
+      // click's own pointerdown resets eatClick unconditionally before the
+      // mutation can matter.
+      const g = await startMouseDrag("#card");
+      await g.move(-100, 60);
+      const rx = g.box.x - 100, ry = g.box.y;
+      await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
+        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: rx, clientY: ry,
+      });
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the drag should have committed");
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "the committing drag must arm eatClick right after landing");
       await new Promise((r) => setTimeout(r, 450));
+      assert.strictEqual(await b.eval(`return eatClick;`), false,
+        "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
       assert.strictEqual(await cardFlipped(), true, "a click well after the 400ms decay must flip");
     });
@@ -8779,17 +8798,23 @@ function run() {
       await new Promise((r) => setTimeout(r, 100));
       const stillMidFlight = await b.eval(`return flight !== null;`);
       assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
+      // Check eatClickTimer right after the bare pointerdown, before the
+      // trailing click fires: the click listener's own `if (eatClick)
+      // setEatClick(false)` would clear a lingering timer as a side effect
+      // regardless of what the pointerdown branch did, which would mask a
+      // bypass of setEatClick there (a direct `eatClick = ...` assignment
+      // that skips cancelling the stale timer). Isolating the pointerdown
+      // is what makes that bypass observable.
       await b.eval(`
-        const el = document.getElementById("card");
-        el.dispatchEvent(new PointerEvent("pointerdown", {
+        document.getElementById("card").dispatchEvent(new PointerEvent("pointerdown", {
           bubbles: true, cancelable: true, isPrimary: true, pointerId: 999, button: 0,
         }));
-        el.click();
         return true;
       `);
-      const timerAfterTap = await b.eval(`return eatClickTimer;`);
-      assert.strictEqual(timerAfterTap, null,
-        "landing the flight via a mid-flight tap must cancel the committing drag's stale decay timer");
+      const timerAfterPointerdown = await b.eval(`return eatClickTimer;`);
+      assert.strictEqual(timerAfterPointerdown, null,
+        "landing the flight via a mid-flight tap's pointerdown must cancel the committing drag's stale decay timer");
+      await b.eval(`document.getElementById("card").click(); return true;`);
       assert.strictEqual(await countText(), `2 / ${n}`, "the committed drag should have landed exactly once");
       assert.strictEqual(await cardFlipped(), false, "the landing tap must not also flip the newly-landed card");
       await b.finishAnimations();
@@ -8806,10 +8831,37 @@ function run() {
     test("card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", async () => {
       await freshLoad();
       const n = (await decksMeta())[0].chords;
-      const g = await startMouseDrag("#card");
-      await g.move(-15, 300);
+      // Every event in this test is dispatched synthetically (never through
+      // CDP's Input.dispatchMouseEvent), so every e.timeStamp lives in the
+      // same performance.now() clock: a real pointermove from
+      // startMouseDrag()/g.move() gets its timeStamp from CDP's own
+      // (unrelated) timestamp parameter, which does not compare
+      // meaningfully against a synthetic lostpointercapture's timeStamp -
+      // mixing the two made the window/velocity math below meaningless
+      // (span came out negative and vx stayed 0 regardless of pushPoint).
+      const box = await b.eval(`
+        const r = document.querySelector("#card").getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      `);
+      const pid = 4242;
+      await dispatchEvt("#card", "PointerEvent", "pointerdown", {
+        pointerId: pid, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1,
+        clientX: box.x, clientY: box.y,
+      });
+      // Real wall-clock gap so this first sample ages out of the 100ms
+      // trailing window by the time the final move/lpc pair fires.
+      await new Promise((r) => setTimeout(r, 150));
+      // The final real sample: a short drag (|dx| well under
+      // SWIPE_COMMIT_PX) landing just before the lpc event, so it is still
+      // inside the trailing window - exactly the point a stale pushed
+      // coordinate would corrupt.
+      await dispatchEvt("#card", "PointerEvent", "pointermove", {
+        pointerId: pid, pointerType: "mouse", isPrimary: true, buttons: 1,
+        clientX: box.x - 15, clientY: box.y,
+      });
       await dispatchEvt("#card", "PointerEvent", "lostpointercapture", {
-        pointerId: g.id, pointerType: "mouse", isPrimary: true, buttons: 0, clientX: 0, clientY: g.box.y,
+        pointerId: pid, pointerType: "mouse", isPrimary: true, buttons: 0,
+        clientX: 0, clientY: box.y,
       });
       assert.strictEqual(await countText(), `1 / ${n}`, "a short slow drag must not commit, stale lpc point or not");
       await b.finishAnimations();
@@ -8906,7 +8958,24 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await openSettingsPanel();
-        await wheelGesture([[-50, 0], [-50, 0]]);
+        // The open settings panel visually overlays <main>, so a real,
+        // coordinate-targeted wheel event (CDP's Input.dispatchMouseEvent,
+        // as wheelAt()/wheelGesture() use) hit-tests to the panel/backdrop
+        // and never reaches wheelMain's own listener at all - that reaches
+        // the same "nothing happens" outcome regardless of the handler's
+        // own panelOpen/sheetOpen skip check, so it cannot discriminate a
+        // mutation that drops that check. Dispatching the WheelEvent
+        // synthetically, directly on <main>, bypasses the occlusion and
+        // actually exercises the skip condition itself.
+        await b.eval(`
+          document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
+            bubbles: true, cancelable: true, deltaX: -50, deltaY: 0,
+          }));
+          document.querySelector("main").dispatchEvent(new WheelEvent("wheel", {
+            bubbles: true, cancelable: true, deltaX: -50, deltaY: 0,
+          }));
+          return true;
+        `);
         await new Promise((r) => setTimeout(r, 250));
         assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
       });
@@ -8914,18 +8983,42 @@ function run() {
       test("card swipe (wheel): momentum wheel events after a committed gesture lands do not step again", async () => {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
-        // The committing leg crosses the threshold; the remaining legs are
-        // trackpad momentum arriving in the same physical gesture, still
-        // within the 160ms gap, after the card has already flown out and
-        // landed.
+        // The committing leg crosses the threshold and starts the 220ms
+        // fly-out; the deck count already reads the committed value even
+        // though the card is still mid-flight.
         await wheelAt(-100, 0);
-        await b.finishAnimations();
-        await expectCount(`2 / ${n}`, "the first leg alone should already have committed");
+        // The deck count only updates at land(), which fires when the
+        // 220ms fly-out finishes - polling expectCount here would wait out
+        // that whole animation and land it for real before we ever get to
+        // exercise the mid-flight guard, so check `flight` directly instead.
+        assert.strictEqual(await b.eval(`return flight !== null;`), true,
+          "the committing leg must start a fly-out immediately");
+        // Wait past the 160ms gesture-gap so the first gesture object ends
+        // (wheel = null) and the next wheel event starts a genuinely NEW
+        // gesture, but stay under the 220ms fly-out so `flight` is still
+        // non-null when that new gesture evaluates its skip condition -
+        // this is what the `flight` term in the skip guard exists for: a
+        // new trackpad gesture arriving as momentum while the previous
+        // card is still flying out must not be allowed to commit a second
+        // step on top of it.
+        await new Promise((r) => setTimeout(r, 180));
+        assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
+          "the first gesture must have ended via its own gap timer while its flight is still mid-air");
+        await wheelAt(-100, 0);
         await wheelAt(-20, 0);
-        await wheelAt(-10, 0);
+        // A second, un-skipped gesture would call flyOut() again on the
+        // same scene element while the first fly-out is still running:
+        // flyOut's own finished-callback self-protection
+        // (`if (flight && flight.anim === anim) land()`) then means only
+        // the SECOND animation's landing ever calls step() - net count
+        // still reads one step higher, masking the bug - so the committed
+        // count alone cannot discriminate this mutation. A second,
+        // overlapping animation on .scene is the observable symptom.
+        assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
+          "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
         await new Promise((r) => setTimeout(r, 250));
         await b.finishAnimations();
-        await expectCount(`2 / ${n}`, "momentum after landing must not advance the deck a second time");
+        await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
       });
 
       test("card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis", async () => {
