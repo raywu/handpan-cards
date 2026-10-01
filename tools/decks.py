@@ -279,8 +279,8 @@ def _from_canonical(deck_id, **extra_overlay):
     if "blurb" in shared:
         # The chord count in the blurb's last line is DERIVED from the
         # deck's own chord list, not hand-typed - a hand-typed literal goes
-        # stale the moment a chord is added or removed (Pygmy shipped
-        # "25 CHORDS" after it grew to 27).
+        # stale the moment a chord is added or removed (Pygmy shipped a
+        # stale lower count after its chord list grew past it).
         lines = list(shared["blurb"])
         lines[-1] = re.sub(r"\d+(?=\s*CHORDS)", str(len(chords)), lines[-1])
         shared["blurb"] = lines

@@ -8,6 +8,7 @@ not the two this docstring used to list - the plan doc and this file state the
 same carve-out and had drifted apart on its scope. See
 docs/plans/2026-09-18-readme-refresh.md, "CONTRACT carve-out".
 """
+import collections
 import glob
 import os
 import re
@@ -136,50 +137,71 @@ class ReadmeCurrencyTest(unittest.TestCase):
 # written and silently lies after the next edit shifts a line number - unlike
 # a symbol name, nothing re-checks it. This is a RATCHET, not a one-time
 # cleanup: LINE_REF_ALLOWLIST lists every offender that existed when the lint
-# landed, by (file, line number) of the COMMENT that contains the ref, not
-# the ref's target. The test below requires the allowlist and what is
-# actually on disk to match EXACTLY, in both directions:
-#   - a ref not on the list (new, or moved to a different line) FAILS;
-#   - a list entry whose line no longer contains a matching ref FAILS too -
-#     so a lane that fixes a ref MUST delete its own entry in the same PR,
-#     and cannot accidentally leave the allowlist wider than reality.
+# landed.
+#
+# Reviewer bounce (2026-10-01, PR #183): the allowlist used to key entries by
+# (host file, COMMENT's line number). That made the whole ratchet fail on any
+# edit that merely shifted lines above a ref - e.g. inserting one neutral line
+# after <meta charset> in index.html turned every one of lane A's 13 entries
+# "stale" and every still-present ref "new" in the same run, even though not
+# one ref actually changed. It also had a hole in the other direction: a
+# SECOND, different ref landing on an already-allowlisted line was invisible,
+# because the key was the line number, not what the line said.
+#
+# Fixed by keying on (host file, the ref TEXT itself) as a MULTISET, not on
+# line number:
+#   - a ref's host line moving (anything above it changes) leaves the ref's
+#     own text untouched, so the key is unchanged and the ratchet stays green;
+#   - a genuinely new ref, or a second distinct ref added to an
+#     already-allowlisted line, is a new (file, text) key (or a repeated one
+#     over its allowed count) - still caught as new;
+#   - a list entry whose text no longer appears anywhere in the file is still
+#     caught as stale, so a lane that fixes a ref must still delete its entry.
+#
+# Separately, `index.html`'s pdfdeck/pdfcards `<!-- engine:... -->` regions
+# are GENERATED verbatim from src/engine/*.js (see CLAUDE.md, "Hard
+# constraints") and are already pinned to that source by
+# `tools/validate.py` check 4 - any stale ref inside them is lane B's to fix
+# in the .js source, not lane A's to fix twice. Lines inside an engine region
+# are therefore skipped when scanning index.html. Of the original 13
+# index.html entries, 10 fell inside the inlined pdfdeck/pdfcards copies and
+# duplicated lane B's own src/engine/pdfdeck.js and pdfcards.js block below
+# word-for-word; those 10 are removed here. Only 765, 6556 and 7749 (outside
+# any engine region) remain as lane A's.
+#
 # The list is grouped by owning lane (one block per file-ownership group) so
 # each lane can delete only its own lines. T owns this file and the tools/*
 # + CLAUDE.md refs (already fixed, so no T block remains); B deletes the
 # src/engine/*.js block as it fixes those refs; A deletes the index.html /
 # tests/app.test.js block as it fixes those. The lane that empties the list
 # last leaves LINE_REF_ALLOWLIST as an empty string.
+#
+# Format: one `<host file>: <ref text>` entry per line. The ref text is
+# exactly what LINE_REF_RE matches in the comment (e.g. `tools/decks.py:354`
+# or `index.html:4700`), NOT the host file's own line number.
 LINE_REF_ALLOWLIST = """
 # lane B (src/engine/*.js) - delete entries in this block as they are fixed
-src/engine/pdfdeck.js:6
-src/engine/pdfdeck.js:19
-src/engine/pdfcards.js:28
-src/engine/pdfcards.js:106
-src/engine/pdfcards.js:141
-src/engine/pdfcards.js:178
-src/engine/pdfcards.js:286
-src/engine/pdfcards.js:386
-src/engine/pdfcards.js:426
-src/engine/pdfcards.js:531
+src/engine/pdfdeck.js: tools/decks.py:354
+src/engine/pdfdeck.js: tools/decks.py:167
+src/engine/pdfcards.js: tools/hifi.py:22-32
+src/engine/pdfcards.js: tools/hifi.py:41-68
+src/engine/pdfcards.js: tools/hifi.py:118-160
+src/engine/pdfcards.js: tools/hifi.py:176-223
+src/engine/pdfcards.js: tools/hifi.py:270-354
+src/engine/pdfcards.js: tools/hifi.py:356-377
+src/engine/pdfcards.js: tools/hifi.py:431-521
+src/engine/pdfcards.js: tools/hifi.py:379-427
 
 # lane A (index.html, tests/app.test.js) - delete entries in this block as
-# they are fixed
-index.html:765
-index.html:2162
-index.html:2175
-index.html:2481
-index.html:2559
-index.html:2594
-index.html:2631
-index.html:2739
-index.html:2839
-index.html:2879
-index.html:2984
-index.html:6556
-index.html:7749
-tests/app.test.js:1729
-tests/app.test.js:3810
-tests/app.test.js:3912
+# they are fixed. The entries that used to sit inside the pdfdeck/pdfcards
+# engine regions (duplicating lane B's block above) are gone: engine-region
+# lines are no longer scanned in index.html at all (see note above).
+index.html: core.js:125
+index.html: tools/decks.py:409-416
+index.html: index.html:4700
+tests/app.test.js: index.html:4790-4793
+tests/app.test.js: tools/decks.py:409-416
+tests/app.test.js: index.html:940
 """
 
 # The files the ratchet watches. Deliberately NOT the whole repo: it tracks
@@ -198,43 +220,124 @@ LINE_REF_FILES = (
 # function or key name) never matches this, which is the whole point.
 LINE_REF_RE = re.compile(r"[A-Za-z_./]+\.(?:py|js|html):\d+(?:-\d+)?(?:,\d+)*")
 
+# Matches the begin/end markers of a generated engine region (see
+# CLAUDE.md, "Hard constraints"). Only index.html carries these today, but
+# the scan checks every file uniformly - a marker simply never occurs
+# elsewhere. The begin pattern requires a closing "-->" on the SAME line
+# (the real marker is a one-line HTML comment) so that tests/app.test.js's
+# own `/<!-- engine:(\w+) begin/g` regex LITERAL - which has no "-->" after
+# "begin" - cannot be mistaken for a real marker and leave the rest of that
+# file treated as "inside an engine region" forever.
+_ENGINE_BEGIN_RE = re.compile(r"<!--\s*engine:\S+\s+begin\b.*-->")
+_ENGINE_END_RE = re.compile(r"<!--\s*engine:\S+\s+end\s*-->")
+
 
 def _parse_line_ref_allowlist(text):
-    entries = set()
+    entries = collections.Counter()
     for raw in text.splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        path, _, lineno = line.rpartition(":")
-        entries.add((path, int(lineno)))
+        host, sep, reftext = line.partition(": ")
+        assert sep, f"malformed LINE_REF_ALLOWLIST entry (want '<file>: <ref>'): {line!r}"
+        entries[(host, reftext)] += 1
     return entries
+
+
+def _scan_lines(relpath, lines):
+    """(relpath, ref-text) for every LINE_REF_RE match across `lines`,
+    skipping lines inside a generated <!-- engine:... --> region (those are
+    pinned to src/engine/*.js by tools/validate.py check 4, not by this
+    ratchet). Shared by the real scan and the neutral-line-insert test so
+    both use the exact same region-skip rule."""
+    found = collections.Counter()
+    in_engine_region = False
+    for line in lines:
+        if _ENGINE_BEGIN_RE.search(line):
+            in_engine_region = True
+        if not in_engine_region:
+            for match in LINE_REF_RE.findall(line):
+                found[(relpath, match)] += 1
+        if _ENGINE_END_RE.search(line):
+            in_engine_region = False
+    return found
+
+
+def _find_line_refs(relpath):
+    full = os.path.join(ROOT, relpath)
+    with open(full, encoding="utf-8") as fh:
+        lines = fh.readlines()
+    return _scan_lines(relpath, lines)
 
 
 class LineRefRatchetTest(unittest.TestCase):
     def test_stale_line_refs_in_comments_match_the_allowlist_exactly(self):
         allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
-        found = set()
+        found = collections.Counter()
         for relpath in LINE_REF_FILES:
-            full = os.path.join(ROOT, relpath)
-            with open(full, encoding="utf-8") as fh:
-                for i, line in enumerate(fh, start=1):
-                    if LINE_REF_RE.search(line):
-                        found.add((relpath, i))
+            found.update(_find_line_refs(relpath))
 
-        new = sorted(found - allowed)
+        new = sorted((found - allowed).elements())
         self.assertEqual(
             new, [],
             "new <file>:<digits> line ref(s) found in a source comment - these "
-            "go stale the moment a line shifts; use a symbol anchor (function "
-            "or key name) instead, or add to LINE_REF_ALLOWLIST only if this "
-            "is a pre-existing offender another lane owns: %r" % (new,))
+            "go stale the moment their TARGET moves; use a symbol anchor "
+            "(function or key name) instead, or add to LINE_REF_ALLOWLIST "
+            "only if this is a pre-existing offender another lane owns: "
+            "%r" % (new,))
 
-        stale = sorted(allowed - found)
+        stale = sorted((allowed - found).elements())
         self.assertEqual(
             stale, [],
             "LINE_REF_ALLOWLIST entry no longer matches a real offender - the "
             "ratchet may only shrink, so delete the line instead of leaving "
             "it: %r" % (stale,))
+
+    def test_a_neutral_line_inserted_above_a_ref_does_not_redden_the_ratchet(self):
+        # Regression for the reviewer-found bug: the OLD line-number-keyed
+        # allowlist failed this. Insert one harmless line above every ref in
+        # a copy of index.html's text and confirm the (file, text) scan is
+        # unaffected - i.e. that shifting every ref down by one line changes
+        # nothing the ratchet keys on.
+        full = os.path.join(ROOT, "index.html")
+        with open(full, encoding="utf-8") as fh:
+            lines = fh.readlines()
+
+        shifted = []
+        for line in lines:
+            if LINE_REF_RE.search(line) and not _ENGINE_BEGIN_RE.search(line):
+                shifted.append("<!-- neutral -->\n")
+            shifted.append(line)
+
+        before = _scan_lines("index.html", lines)
+        after = _scan_lines("index.html", shifted)
+
+        self.assertEqual(
+            before, after,
+            "a line ref's (file, text) identity must survive its comment "
+            "moving to a different line number")
+
+    def test_a_genuinely_new_ref_still_fails(self):
+        allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
+        found = collections.Counter(allowed)
+        found[("index.html", "tools/decks.py:9999")] += 1
+        new = sorted((found - allowed).elements())
+        self.assertEqual(new, [("index.html", "tools/decks.py:9999")])
+
+    def test_an_extra_ref_on_an_already_allowlisted_line_still_fails(self):
+        # The hole the old line-number key had: a second ref landing on a
+        # line that already had one allowlisted ref used to be invisible,
+        # because only the line number was ever recorded. With a
+        # text-keyed multiset, a second occurrence of an ALREADY-allowlisted
+        # text on the same line (e.g. the comment grows a duplicate mention)
+        # is still extra and still fails, same as a wholly different text.
+        allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
+        key = ("index.html", "index.html:4700")
+        self.assertIn(key, allowed, "fixture assumption: this entry exists")
+        found = collections.Counter(allowed)
+        found[key] += 1  # a duplicate mention of the same ref on that line
+        new = sorted((found - allowed).elements())
+        self.assertEqual(new, [key])
 
 
 if __name__ == "__main__":
