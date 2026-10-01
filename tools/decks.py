@@ -62,8 +62,8 @@ GENERATED_OMITTED = {
 # with no inner shell there is no rim-vs-inner radial crowding, so `r_note`
 # solves to 0.1783 (S_NOSEP) instead of 0.1456 (S_PYGMY) - and `f_num`, which is
 # 0.64 * r_note, rides along at 0.1141 instead of 0.0932.  `f_num` is the whole
-# channel.  For BOTH seeds the max in the reach formula
-# (`src/engine/layout.js:289-302`) is won by the same bottom-shell number term,
+# channel.  For BOTH seeds the max in `solve()`'s `reach`/`ext` computation
+# (`src/engine/layout.js`) is won by the same bottom-shell number term,
 # `bottomOrb + rBnote + nOut + f_num * LABEL_REACH`:
 #
 #   term                                            S_PYGMY   S_NOSEP
@@ -154,7 +154,7 @@ GENERATED_OMITTED = {
 # this was measured on - `ext` is exactly 1.06, because the shell circle wins
 # outright and `EXT_PAD` is all that is added to it.  R is then the constant
 # 69.8.  The precondition is NOT just "top-only": `rimNumOut = hasInner`
-# (`src/engine/layout.js:284`), so an inner shell switches the rim NUMBER term
+# in `solve()` (`src/engine/layout.js`), so an inner shell switches the rim NUMBER term
 # on, and that term can beat the shell circle with no bottom shell anywhere.
 # Worked counterexample, generated 2026-09-09 with `tools/gen_deck.js`:
 #
@@ -279,8 +279,8 @@ def _from_canonical(deck_id, **extra_overlay):
     if "blurb" in shared:
         # The chord count in the blurb's last line is DERIVED from the
         # deck's own chord list, not hand-typed - a hand-typed literal goes
-        # stale the moment a chord is added or removed (Pygmy shipped
-        # "25 CHORDS" after it grew to 27).
+        # stale the moment a chord is added or removed (Pygmy shipped a
+        # stale lower count after its chord list grew past it).
         lines = list(shared["blurb"])
         lines[-1] = re.sub(r"\d+(?=\s*CHORDS)", str(len(chords)), lines[-1])
         shared["blurb"] = lines
@@ -385,7 +385,11 @@ def from_generated(payload):
         cy=_BAND_CY,
         y_note=_Y_NOTE,
         y_num=_Y_NUM,
-        # --- palette (the two-tone split frame) -------------------------
+        # --- palette --------------------------------------------------
+        # The card border is a single-colour, four-sided frame in col_root
+        # (2026-09-16 restyle). col_tone/grad still feed this dict - the `gb`
+        # plumbing CLAUDE.md keeps wired on purpose - but neither draws the
+        # border any more.
         col_root=root,
         col_tone=tone,
         grad=(root, tone),

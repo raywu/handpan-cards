@@ -11,7 +11,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { boot } = require("../tests/helpers/sandbox.js");
+const { boot } = require("./sandbox.js");
 
 const digest = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
 

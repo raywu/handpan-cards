@@ -11,8 +11,9 @@ generated copy, and both are committed.
     python3 tools/sync_decks.py --check    # report drift, write nothing
 
 The injected payload is json.dumps with DEFAULT arguments. That is not a taste
-call: tools/regen_data_mutants.py:158 asserts the embedded line reserialises to
-itself, so any other separator or ensure_ascii setting breaks the data mutants.
+call: tools/regen_data_mutants.py's apply_json() asserts the embedded line
+reserialises to itself, so any other separator or ensure_ascii setting breaks
+the data mutants.
 """
 import json
 import os

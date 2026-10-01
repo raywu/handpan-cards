@@ -262,11 +262,12 @@ this by attaching per-instrument images.
   satisfiable, and the OWNER CHOSE NO-SHRINK** (2026-09-15).
   Names therefore draw over the solver's own budget for the field circle. What
   keeps that safe is **`fit_note` in print and the field circle itself in the
-  app** - not `ext`. `ext` IS computed from `f_num` alone
-  (`src/engine/layout.js:288-302`), but it is emitted for **generated decks
-  only**: none of the three shipped geoms carries an `ext` key, so
-  `index.html:3392` falls back to `R * 1.06` for Hijaz and Amara and to the
-  bottom-ring derivation for Pygmy. The `f_num` argument therefore covers
+  app** - not `ext`. `ext` IS computed from `f_num` alone, in `solve()`'s
+  `reach`/`ext` block in `src/engine/layout.js`, but it is emitted for
+  **generated decks only**: none of the three shipped geoms carries an `ext`
+  key, so `pan()`'s `const ext = ...` line in `index.html` falls back to
+  `R * 1.06` for Hijaz and Amara and to the bottom-ring derivation for Pygmy.
+  The `f_num` argument therefore covers
   generated decks and says nothing about the built-ins, whose extent is a fixed
   literal no label size can reach in the first place. The bound that does hold
   everywhere - that a name's glyph box stays inside the circle it labels - is
