@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^core.isDing.is.true.only.for.a.field.record.whose.zone.is..ding.$ tests/core.test.js
+# kills: core.isDing is true only for a field record whose zone is "ding"
+# Checks the wrong field-record index (4, the angle) instead of 3 (the zone),
+# so core.isDing - now the single copy voicing.js and select.js both delegate
+# to - never recognises a ding field at all.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -470,6 +470,6 @@
+   // Finding 10: the field-record predicate every other module reimplemented
+   // (voicing.js, select.js) - a field is the ding iff its zone (index 3 of
+   // the [name, octave, midi, zone, angle, label] record) is "ding".
+   function isDing(rec) {
+-    return rec[3] === "ding";
++    return rec[4] === "ding";
+   }

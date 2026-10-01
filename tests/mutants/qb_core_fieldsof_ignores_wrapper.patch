@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^core.fieldsOf.unwraps.a.seed.s..fields..or.returns.a.bare.fields.map.unchanged$ tests/core.test.js
+# kills: core.fieldsOf unwraps a seed's .fields, or returns a bare fields map unchanged
+# Always returns the argument unchanged, so a wrapped seed ({fields, options})
+# is never unwrapped - the single copy layout.js and formatSeed both now call.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -464,5 +464,5 @@
+   /* ---- section 12: the canonical string and the deck id ----------------- */
+
+   function fieldsOf(seedOrFields) {
+-    return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
++    return seedOrFields;
+   }

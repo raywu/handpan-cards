@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^core.badNote.names.the.offending.token.and.truncates.past.12.characters$ tests/core.test.js
+# kills: core.badNote names the offending token and truncates past 12 characters
+# Drops the 12-character truncation, so an oversized bad-note token prints in
+# full in the reason string instead of being capped - the single copy every
+# other module now calls (layout.js, share.js).
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -123,4 +123,4 @@
+
+   function badNote(token) {
+-    return err("BAD_NOTE", { "<X>": String(token).slice(0, 12) });
++    return err("BAD_NOTE", { "<X>": String(token) });
+   }

@@ -45,16 +45,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * this module asks it to report an impossible request rather than throw, and
    * section 2 forbids inventing a code, so an absent pitch class reuses
    * BAD_NOTE - the generic "this note cannot be used" rejection. */
+  // Finding 10 (2026-09-30 quality-refactor plan): delegates to core.err,
+  // which runs the identical substitution loop; the `<X>` key matches every
+  // call site below.
   function fail(code, x) {
-    var reason = core().REASONS[code].reason;
-    if (x !== undefined && x !== null) reason = reason.split("<X>").join(String(x));
-    return { ok: false, code: code, reason: reason };
+    if (x !== undefined && x !== null) return core().err(code, { "<X>": String(x) });
+    return core().err(code);
   }
 
   /* ---- the field map (section 11: {id: [name, octave, midi, zone, angle, label]}) */
 
   function isDing(rec) {
-    return rec[3] === "ding";
+    return core().isDing(rec);
   }
 
   function isTopShell(rec) {

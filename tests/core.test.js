@@ -728,3 +728,60 @@ test("the Pygmy seed with a separator solves to the golden Pygmy angles", () => 
   assert.equal(Object.keys(pygmy.fields).length, 18,
     "all 18 fields were compared: 9 rim + 2 inner + 6 bottom + the ding");
 });
+
+// Finding 10 (2026-09-30 quality-refactor plan, lane B): these six helpers
+// were each built more than once across the engine (err/badNote x4,
+// utf8Bytes x2, pc/isDing/fieldsOf duplicated between modules). They are now
+// exported once from core.js, and every other module calls this copy. These
+// cases pin the shared contract so a future edit to one copy can't silently
+// diverge from the others again.
+test("HPE.core exports pc, isDing, fieldsOf, err, badNote and utf8Bytes", () => {
+  assert.equal(typeof core.pc, "function");
+  assert.equal(typeof core.isDing, "function");
+  assert.equal(typeof core.fieldsOf, "function");
+  assert.equal(typeof core.err, "function");
+  assert.equal(typeof core.badNote, "function");
+  assert.equal(typeof core.utf8Bytes, "function");
+});
+
+test("core.pc reduces any integer, positive or negative, to a pitch class 0-11", () => {
+  assert.equal(core.pc(0), 0);
+  assert.equal(core.pc(12), 0);
+  assert.equal(core.pc(13), 1);
+  assert.equal(core.pc(-1), 11);
+  assert.equal(core.pc(-13), 11);
+});
+
+test('core.isDing is true only for a field record whose zone is "ding"', () => {
+  assert.equal(core.isDing(["D", 3, 50, "ding", 270, "D3"]), true);
+  assert.equal(core.isDing(["A", 3, 57, "rim", 270, "A3"]), false);
+  assert.equal(core.isDing(["C", 3, 48, "bottom", 0, "C3"]), false);
+});
+
+test("core.fieldsOf unwraps a seed's .fields, or returns a bare fields map unchanged", () => {
+  const fields = { 1: ["D", 3, 50, "ding", 0, "D3"] };
+  assert.equal(core.fieldsOf({ fields: fields, options: {} }), fields);
+  assert.equal(core.fieldsOf(fields), fields);
+  assert.equal(core.fieldsOf(null), null);
+});
+
+test("core.err builds the {ok:false, code, reason} shape and substitutes every key", () => {
+  const result = core.err("NO_FIFTH", { "<X>": "D3" });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "NO_FIFTH");
+  assert.equal(result.reason, core.REASONS.NO_FIFTH.reason.split("<X>").join("D3"));
+});
+
+test("core.badNote names the offending token and truncates past 12 characters", () => {
+  const short = core.badNote("Hx");
+  assert.equal(short.code, "BAD_NOTE");
+  assert.equal(short.reason, core.REASONS.BAD_NOTE.reason.split("<X>").join("Hx"));
+  const long = core.badNote("abcdefghijklmnopqrstuvwxyz");
+  assert.equal(long.reason, core.REASONS.BAD_NOTE.reason.split("<X>").join("abcdefghijkl"));
+});
+
+test("core.utf8Bytes encodes ASCII, two-byte and astral (surrogate-pair) characters as UTF-8", () => {
+  assert.deepEqual(host(core.utf8Bytes("A")), [0x41]);
+  assert.deepEqual(host(core.utf8Bytes("°")), [0xc2, 0xb0]); // degree sign
+  assert.deepEqual(host(core.utf8Bytes("\u{1f600}")), [0xf0, 0x9f, 0x98, 0x80]); // astral
+});

@@ -60,8 +60,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE[name];
   }
 
+  // Finding 10 (2026-09-30 quality-refactor plan): pc/isDing now live once,
+  // in HPE.core.
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return core().pc(n);
   }
 
   function has(list, value) {
@@ -78,7 +80,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  function isDing(record) { return record[3] === "ding"; }
+  function isDing(record) { return core().isDing(record); }
   function isTopShell(record) { return record[3] !== "ding" && record[3] !== "bottom"; }
 
   /* Every pitch class present on a field the predicate accepts. */

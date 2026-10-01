@@ -1,0 +1,17 @@
+# suite: node --test --test-name-pattern ^core.pc.reduces.any.integer..positive.or.negative..to.a.pitch.class.0.11$ tests/core.test.js
+# kills: core.pc reduces any integer, positive or negative, to a pitch class 0-11
+# Drops the second +12 wrap, so any negative midi returns a negative pitch
+# class instead of 0-11 - every module that now calls core.pc (naming.js,
+# select.js, voicing.js's core().pc) inherits the bug silently.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -73,7 +73,7 @@ HPE.core = (function () {
+   /* ---- small helpers ---------------------------------------------------- */
+
+   function pitchClass(midi) {
+-    return ((midi % 12) + 12) % 12;
++    return (midi % 12) + 12;
+   }
+
+   // Section 3: midi = 12 * (octave + 1) + letter + accidental, letter-anchored,

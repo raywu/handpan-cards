@@ -467,6 +467,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
   }
 
+  // Finding 10: the field-record predicate every other module reimplemented
+  // (voicing.js, select.js) - a field is the ding iff its zone (index 3 of
+  // the [name, octave, midi, zone, angle, label] record) is "ding".
+  function isDing(rec) {
+    return rec[3] === "ding";
+  }
+
   function orderedIds(fields) {
     var top = [];
     var bottom = [];
@@ -563,6 +570,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX }
+    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX },
+    // Finding 10 (2026-09-30 quality-refactor plan): the shared copies of
+    // helpers every other module used to reimplement. `pc` is `pitchClass`
+    // under the short name the other modules already called it by.
+    err: err,
+    badNote: badNote,
+    utf8Bytes: utf8Bytes,
+    pc: pitchClass,
+    isDing: isDing,
+    fieldsOf: fieldsOf
   };
 })(HPE);

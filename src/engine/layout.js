@@ -68,28 +68,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Math.round(value * f) / f;
   }
 
+  // Finding 10 (2026-09-30 quality-refactor plan): fieldsOf/err/badNote are
+  // HPE.core's own helpers; layout.js always loads after core.js (every
+  // caller's loadEngine list includes "core" ahead of "layout"), so this
+  // module just delegates rather than keeping its own copy.
   function fieldsOf(seedOrFields) {
-    return (seedOrFields && seedOrFields.fields) ? seedOrFields.fields : seedOrFields;
-  }
-
-  function reasonFor(code) {
-    var table = (HPE.core && HPE.core.REASONS) || null;
-    return table && table[code] ? table[code].reason : code;
+    return HPE.core.fieldsOf(seedOrFields);
   }
 
   function err(code) {
-    return { ok: false, code: code, reason: reasonFor(code) };
+    return HPE.core.err(code);
   }
 
   /* Section 2's enum is CLOSED and carries no code for "that correction is not
    * a permutation", so a rejected `order` is BAD_NOTE naming the value, exactly
    * as core.parseSeed names an unparseable token. */
   function badNote(token) {
-    return {
-      ok: false,
-      code: "BAD_NOTE",
-      reason: reasonFor("BAD_NOTE").split("<X>").join(String(token).slice(0, 12))
-    };
+    return HPE.core.badNote(token);
   }
 
   function point(orb, angle) {

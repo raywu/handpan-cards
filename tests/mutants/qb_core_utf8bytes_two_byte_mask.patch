@@ -1,0 +1,18 @@
+# suite: node --test --test-name-pattern ^core.utf8Bytes.encodes.ASCII..two.byte.and.astral..surrogate.pair..characters.as.UTF.8$ tests/core.test.js
+# kills: core.utf8Bytes encodes ASCII, two-byte and astral (surrogate-pair) characters as UTF-8
+# The two-byte continuation byte drops its 0x80 marker bit, so every
+# code point in U+0080-U+07FF (the degree sign included) encodes to a byte
+# sequence no UTF-8 decoder recognises - share.js's checksum now runs over
+# this one shared copy, so every share link with a non-ASCII name would break.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -530,7 +530,7 @@
+       if (code < 0x80) {
+         bytes.push(code);
+       } else if (code < 0x800) {
+-        bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
++        bytes.push(0xc0 | (code >> 6), code & 0x3f);
+       } else if (code < 0x10000) {
+         bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f),
+                    0x80 | (code & 0x3f));

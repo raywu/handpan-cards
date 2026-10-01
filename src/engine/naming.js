@@ -85,8 +85,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var MAJOR_REF = [0, 2, 4, 5, 7, 9, 11];
   var MINOR_REF = [0, 2, 3, 5, 7, 8, 10];
 
+  // Finding 10 (2026-09-30 quality-refactor plan): pc now lives once, in
+  // HPE.core; naming.js always loads after it (every caller's loadEngine
+  // list includes "core" ahead of "naming").
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return HPE.core.pc(n);
   }
 
   function uniquePcs(list) {
