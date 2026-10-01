@@ -111,6 +111,16 @@ def sync():
         return False
     with open(INDEX, "w", encoding="utf-8") as fh:
         fh.write(new)
+
+    # ALWAYS re-parse what was written, the same way tools/sync_decks.py does
+    # for the DECKS line (finding 15, 2026-09-30 quality-refactor plan): a
+    # smoke test against stale in-memory data would pass even if the write
+    # silently failed to land; only reading the bytes back off disk proves it.
+    problems = desync()
+    if problems:
+        raise SystemExit(
+            "re-injection did not land - index.html engine regions NOT in "
+            "sync: %s" % "; ".join(problems))
     return True
 
 

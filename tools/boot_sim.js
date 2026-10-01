@@ -1,9 +1,8 @@
 // Boot simulation for index.html: boots the app against the shared DOM stub in
-// tests/helpers/sandbox.js, then exercises every card of every deck in both
+// tools/sandbox.js, then exercises every card of every deck in both
 // modes (flip, step, deck switch, shuffle) and checks the rendered HTML.
 // No dependencies - run with: node tools/boot_sim.js
-const path = require("node:path");
-const { boot } = require(path.join(__dirname, "..", "tests", "helpers", "sandbox.js"));
+const { boot } = require("./sandbox.js");
 
 const app = boot();
 if (!app.els.front.innerHTML.includes("hdr")) throw new Error("front not rendered at boot");

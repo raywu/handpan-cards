@@ -45,6 +45,19 @@ const builtinId = builtinFlag >= 0 ? argv[builtinFlag + 1] : undefined;
 if (builtinFlag >= 0 && (builtinId === undefined || builtinId.slice(0, 2) === "--")) {
   usage();
 }
+// Both branches below build the same way once they have a `built` deck
+// object: load the engine, run it through HPE.pdfcards.build with the same
+// --variant/--paper options, write the bytes to --out. Only how `built` is
+// produced (fromBuiltin off data/decks.json vs. fromGenerated off stdin)
+// differs between them.
+function writeDeck(HPE, built) {
+  const bytes = HPE.pdfcards.build(built, {
+    variant: opt("variant", "full"),
+    paper: opt("paper", "letter"),
+  });
+  fs.writeFileSync(out, Buffer.from(bytes));
+}
+
 if (builtinId) {
   const canonicalPath = path.join(__dirname, "..", "data", "decks.json");
   const canonical = JSON.parse(fs.readFileSync(canonicalPath, "utf8"));
@@ -55,23 +68,13 @@ if (builtinId) {
     process.exit(2);
   }
   const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
-  const built = HPE.pdfdeck.fromBuiltin(deck, deck.print);
-  const bytes = HPE.pdfcards.build(built, {
-    variant: opt("variant", "full"),
-    paper: opt("paper", "letter"),
-  });
-  fs.writeFileSync(out, Buffer.from(bytes));
+  writeDeck(HPE, HPE.pdfdeck.fromBuiltin(deck, deck.print));
 } else {
   let buf = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (d) => { buf += d; });
   process.stdin.on("end", () => {
     const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
-    const deck = HPE.pdfdeck.fromGenerated(JSON.parse(buf));
-    const bytes = HPE.pdfcards.build(deck, {
-      variant: opt("variant", "full"),
-      paper: opt("paper", "letter"),
-    });
-    fs.writeFileSync(out, Buffer.from(bytes));
+    writeDeck(HPE, HPE.pdfdeck.fromGenerated(JSON.parse(buf)));
   });
 }
