@@ -4310,3 +4310,38 @@ describe("swipe decision", () => {
     assert.strictEqual(app.get("SWIPE_IN_PX"), 24);
   });
 });
+
+/**
+ * tests/fixtures/card_face_v1.json pins a sha256/16 digest of every FULL CARD
+ * FACE's innerHTML (header + diagram + badge + note line + number line) for
+ * every built-in deck x card x mode (A, B, S) x face (front, back), generated
+ * from e8f9be8 (the quality-refactor plan's reference commit - see
+ * tools/regen_card_fixture.js's header). The pre-existing pan_render_v1.json
+ * above pins the diagram alone; a refactor to render() (finding 18) or to any
+ * app helper (finding 13) could change the header, a note line, a number line
+ * or a badge and that fixture would never see it. This test is that oracle.
+ *
+ * It shells out to the tool's own --check rather than re-deriving the walk
+ * over decks/cards/modes/sequences here, so there is exactly one place (the
+ * tool) that knows how to build a face digest - this test and `node
+ * tools/regen_card_fixture.js --check` can never disagree about what "every
+ * face" means.
+ *
+ * A failure here is not automatically a bug - a deliberate face change
+ * regenerates the fixture (node tools/regen_card_fixture.js) IN THE SAME
+ * COMMIT and says why in that commit's message / the PR body.
+ */
+test("every built-in card face still matches the committed digest of card_face_v1.json", () => {
+  const { execFileSync } = require("node:child_process");
+  const path = require("node:path");
+  const tool = path.join(__dirname, "..", "tools", "regen_card_fixture.js");
+  try {
+    execFileSync(process.execPath, [tool, "--check"], { stdio: "pipe" });
+  } catch (e) {
+    assert.fail(
+      "card_face_v1.json is stale (or missing) - regenerate it on purpose with " +
+      "`node tools/regen_card_fixture.js` only if this card face change is deliberate:\n" +
+      (e.stdout ? e.stdout.toString() : "") + (e.stderr ? e.stderr.toString() : "")
+    );
+  }
+});
