@@ -539,6 +539,27 @@ class CheckNodeTimeoutExcerptTest(unittest.TestCase):
             "a timed-out suite's own TAP excerpt never reached the CI log")
 
 
+class CheckNodeFloorTest(unittest.TestCase):
+    """check_node is the documented local gate (tests/CONTRACT.md: "floors + no
+    silent skips"); a green run below a file's floor must still be a problem.
+    Lane C's first cut dropped that check from check_node while verify_js kept
+    it, so the local path went green over a suite that ran 43 of 193 tests."""
+
+    def test_a_green_run_below_its_floor_is_a_problem(self):
+        import contextlib
+
+        path = "tests/app.test.js"
+        with mock.patch.object(suite_health, "run_node_file",
+                               lambda p: (43, 0, 0, 0, 0, "# tests 43\n# fail 0\n")), \
+             mock.patch.object(suite_health, "probe_browser", lambda: (True, None)), \
+             mock.patch.object(suite_health.glob, "glob", lambda *a, **kw: []), \
+             mock.patch.object(suite_health, "FLOORS", {path: 193}), \
+             mock.patch.object(suite_health, "JS_FILES", [path]), \
+             contextlib.redirect_stdout(io.StringIO()):
+            problems = suite_health.check_node()
+        self.assertIn(f"{path}: only 43 tests ran, floor is 193", problems)
+
+
 class CollectJsCancelledTest(unittest.TestCase):
     """F2 (2026-10-01 bounce): emit_js's own exit code must also go red on a
     `fail 0, cancelled > 0` / non-zero-exit node run, not just on verify_js

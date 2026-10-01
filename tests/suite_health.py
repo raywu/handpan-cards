@@ -440,6 +440,8 @@ def check_node():
             continue
         total_counted += total
         print(f"  {path}: ran {total}, failed {failed}, skipped {skipped}, floor {floor}")
+        if total < floor:
+            problems.append(f"{path}: only {total} tests ran, floor is {floor}")
         # failed > 0 is not the only red: node 22 reports a per-test timeout or
         # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
         # non-zero exit code (F2, 2026-10-01).
@@ -473,8 +475,9 @@ def check_node():
 # js-tests had just run, on its own job, in parallel - three CI jobs executing
 # the same tests for one aggregate verdict.
 #
-# The fix keeps check_python()/check_node() exactly as they were (every test
-# above drives them directly, several by monkeypatching their module globals)
+# The fix keeps check_python()/check_node() as the local gate, with every
+# verdict they gave (every test above drives them directly, several by
+# monkeypatching their module globals; CheckNodeFloorTest pins the per-file floor)
 # and adds a second path alongside them: the python-tests and js-tests CI jobs
 # now call emit_python()/emit_js() to RUN the suites once and serialize RESULTS
 # - not just counts, but per-file pass/fail/skip tallies and a failing suite's
