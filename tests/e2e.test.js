@@ -1266,6 +1266,11 @@ function run() {
       assert.ok(ids.includes("modeB"), `Tab never reached #modeB: ${JSON.stringify(seen)}`);
       assert.ok(ids.includes("deck-add"),
         `Tab never reached + ADD A SCALE: ${JSON.stringify(seen)}`);
+      // Eng review amendment 1: the three Resources links join panelStops()
+      // after the print controls, so a forward Tab cycle must reach all three.
+      for (const id of ["res-handpaner", "res-dingandtones", "res-trainingcards"]) {
+        assert.ok(ids.includes(id), `Tab never reached #${id}: ${JSON.stringify(seen)}`);
+      }
       // #deck-add opens the scale sheet dialog, exactly what the old strip
       // chip advertised (review gap on PR #155: the move into the panel
       // dropped this attribute).
@@ -1411,10 +1416,18 @@ function run() {
                   return k.left < 0 || k.top < 0 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5; }).map(e => e.id || e.textContent.trim()),
                 underTrigger: ctrls.filter(e => hit(e.getBoundingClientRect(), t)).map(e => e.id || e.textContent.trim()),
                 short: ctrls.filter(e => e.getBoundingClientRect().height < 44).map(e => e.id || e.textContent.trim()),
+                resIds: ctrls.filter(e => e.id && e.id.startsWith("res-")).map(e => e.id),
               };
             `);
             const label = `${vw}x${vh} mode ${mode}`;
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
+            // A hidden Resources group would silently vanish from `ctrls`
+            // (the `offsetParent` filter above) and pass every other
+            // assertion here vacuously, so require all three ids to actually
+            // be present and measured at every size/mode.
+            assert.deepStrictEqual(m.resIds.slice().sort(),
+              ["res-dingandtones", "res-handpaner", "res-trainingcards"],
+              `${label}: the Resources links are not all visible/measured`);
             assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
             assert.ok(m.scrollH <= m.clientH + 1,
               `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
@@ -1431,6 +1444,155 @@ function run() {
       } finally {
         await b.setViewport(900, 900, false);
       }
+    });
+
+  /* ---------------------------------------------------------------- *
+   * Resources menu (docs/plans/2026-10-01-resources-menu.md, eng review
+   * amendments 1-7)
+   * ---------------------------------------------------------------- */
+
+  const RESOURCES = [
+    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER" },
+    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES" },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "TRAINING CARDS" },
+  ];
+
+  test("the settings panel has exactly one Resources group with the three outbound links", async () => {
+    await freshLoad();
+    await openSettingsPanel();
+    const m = await b.eval(`
+      const headings = [...document.querySelectorAll("#settings-panel .panel-heading")]
+        .filter(h => h.textContent.trim() === "Resources");
+      const group = headings[0] ? headings[0].closest(".panel-group") : null;
+      const links = group ? [...group.querySelectorAll("a")] : [];
+      return {
+        headingCount: headings.length,
+        links: links.map(a => ({
+          id: a.id, href: a.getAttribute("href"), target: a.getAttribute("target"),
+          rel: a.getAttribute("rel"), label: a.textContent.trim(),
+          className: a.className,
+          textDecoration: getComputedStyle(a).textDecorationLine,
+        })),
+      };
+    `);
+    assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
+    assert.strictEqual(m.links.length, 3, `expected 3 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    m.links.forEach((link, i) => {
+      const expected = RESOURCES[i];
+      assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
+      assert.strictEqual(link.href, expected.href, `link ${i} href mismatch: ${JSON.stringify(link)}`);
+      assert.strictEqual(link.label, expected.label, `link ${i} label mismatch: ${JSON.stringify(link)}`);
+      assert.strictEqual(link.target, "_blank", `link ${i} must open in a new tab: ${JSON.stringify(link)}`);
+      assert.match(link.rel, /\bnoopener\b/, `link ${i} rel must contain noopener: ${JSON.stringify(link)}`);
+      assert.match(link.className, /\bmode\b/, `link ${i} must reuse .mode styling: ${JSON.stringify(link)}`);
+      // Eng review amendment 2: a.mode gets no text-decoration from .mode,
+      // so the anchor's own rule must suppress the UA underline explicitly.
+      assert.strictEqual(link.textDecoration, "none",
+        `link ${i} must not show the default anchor underline: ${JSON.stringify(link)}`);
+    });
+  });
+
+  // Eng review amendment 5 (Codex finding, "outside voice"): the desktop
+  // sidebar at its smallest supported size, 1024x700, must not gain NEW
+  // vertical or horizontal scroll from the Resources group beyond what the
+  // sidebar already does. Baseline measured on origin/main before this group
+  // existed: scrollHeight === clientHeight (688px) at 1024x700 in every mode
+  // - i.e. no overflow at all. Recorded in the PR body per the amendment.
+  test("the desktop sidebar at 1024x700 gains no new HORIZONTAL scroll from the Resources group, in modes A, B and S",
+    async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1024, 700, false);
+        await b.settle();
+        for (const mode of ["A", "B", "S"]) {
+          await b.click(`#mode${mode}`);
+          await b.settle();
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+            return {
+              scrollH: p.scrollHeight, clientH: p.clientHeight,
+              scrollW: p.scrollWidth, clientW: p.clientWidth,
+              resVisible: resIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.getClientRects().length > 0;
+              }),
+            };
+          `);
+          const label = `1024x700 mode ${mode}`;
+          assert.ok(m.scrollW <= m.clientW + 1,
+            `${label}: the sidebar (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
+          assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  // Eng review amendment 7 (Codex finding): the original behaviour test only
+  // proved nothing broke when a click was intercepted and defaultPrevented -
+  // true of literally any link, even a dead one. This proves ACTIVATION: a
+  // real mouse click and a real Enter keypress on a focused link each produce
+  // exactly one recorded navigation attempt, to the right href, with
+  // target=_blank - while the panel stays open and the practice mode and
+  // current card are unchanged (amendment 3: links deliberately do not call
+  // closePanel()).
+  test("Resources links activate on click and on Enter, to the right href, without closing the panel or changing mode/card",
+    async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.eval(`
+        window.__resActivations = [];
+        window.__resCapture = (e) => {
+          const a = e.target.closest && e.target.closest("a[id^='res-']");
+          if (!a) return;
+          window.__resActivations.push({
+            id: a.id, href: a.getAttribute("href"), target: a.getAttribute("target"),
+          });
+          // Stop the real navigation the click would otherwise trigger -
+          // this is a test harness concern, not production behaviour.
+          e.preventDefault();
+        };
+        document.addEventListener("click", window.__resCapture, true);
+        return true;
+      `);
+      const before = await b.eval(`return {
+        modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+        front: document.getElementById("front").textContent,
+      };`);
+
+      for (const r of RESOURCES) {
+        await b.eval(`window.__resActivations = []; return true;`);
+        await b.click(`#${r.id}`);
+        const afterClick = await b.eval(`return window.__resActivations;`);
+        assert.strictEqual(afterClick.length, 1,
+          `clicking #${r.id} should produce exactly one activation, got ${JSON.stringify(afterClick)}`);
+        assert.strictEqual(afterClick[0].href, r.href, `#${r.id} click activation had the wrong href`);
+        assert.strictEqual(afterClick[0].target, "_blank", `#${r.id} click activation had the wrong target`);
+        const panelOpenAfterClick = await b.eval(
+          `return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`);
+        assert.strictEqual(panelOpenAfterClick, true,
+          `clicking #${r.id} must not close the settings panel`);
+
+        await b.eval(`
+          window.__resActivations = [];
+          document.getElementById(${JSON.stringify(r.id)}).focus();
+          return document.activeElement.id;
+        `);
+        await b.key("Enter", "Enter", 13);
+        const afterEnter = await b.eval(`return window.__resActivations;`);
+        assert.strictEqual(afterEnter.length, 1,
+          `pressing Enter on #${r.id} should produce exactly one activation, got ${JSON.stringify(afterEnter)}`);
+        assert.strictEqual(afterEnter[0].href, r.href, `#${r.id} Enter activation had the wrong href`);
+        assert.strictEqual(afterEnter[0].target, "_blank", `#${r.id} Enter activation had the wrong target`);
+      }
+
+      const after = await b.eval(`return {
+        modeA: document.getElementById("modeA").getAttribute("aria-pressed"),
+        front: document.getElementById("front").textContent,
+      };`);
+      assert.strictEqual(after.modeA, before.modeA, "a Resources link changed the practice mode");
+      assert.strictEqual(after.front, before.front, "a Resources link changed the displayed card");
     });
 
   test("the paper choice survives a reload", async () => {
@@ -6832,7 +6994,8 @@ function run() {
         await b.settle();
         const probe = await probeTargets(
           ["#modeA", "#modeB", "#deck-add",
-           "#settings-panel .prints button", "#settings-panel .prints select"]);
+           "#settings-panel .prints button", "#settings-panel .prints select",
+           "#res-handpaner", "#res-dingandtones", "#res-trainingcards"]);
         const short = probe.filter((p) => !p.missing && p.h < 44);
         const stolen = probe.filter((p) => !p.missing && p.bad.length);
         assert.deepStrictEqual(probe.filter((p) => p.missing), []);

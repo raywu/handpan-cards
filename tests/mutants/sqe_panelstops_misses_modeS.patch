@@ -8,15 +8,19 @@
 # the third Practice-group button never joins the settings panel's Tab/
 # Shift+Tab cycle no matter which mode is active - a keyboard user tabbing
 # through the panel skips over PLAY A SEQUENCE.
+# Refreshed 2026-10-01 (lane R, resources-menu) for line drift only -
+# panelStops() now also appends the three Resources links after the print
+# controls; the removed line (dropping #modeS) and the mutation itself are
+# unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8134,7 +8134,7 @@ function panelStops() {
+@@ -7943,7 +7943,7 @@ function panelStops() {
    const seqNote = document.getElementById("panel-seq-note");
    const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
 -          document.getElementById("modeS"), ...seqLink,
 +          ...seqLink,
            document.getElementById("deck-add"),
-           ...settingsPanel.querySelectorAll(".prints button, .prints select")]
-     .filter(el => el && !el.disabled);
+           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+           // Eng review amendment 1: the three Resources links join the Tab
