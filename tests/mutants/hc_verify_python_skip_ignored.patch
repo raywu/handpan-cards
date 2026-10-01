@@ -9,7 +9,6 @@
 # total_run well above the floor) no longer produces a problem.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index f8b57d5..9aa85f9 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -645,9 +645,6 @@ def verify_python(data):

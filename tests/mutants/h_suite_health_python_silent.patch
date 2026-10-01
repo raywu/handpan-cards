@@ -13,7 +13,6 @@
 # clean 1 test / OK, mutant 1 test / 1 failure.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index f8b57d5..6c1da91 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -130,11 +130,7 @@ def check_python():

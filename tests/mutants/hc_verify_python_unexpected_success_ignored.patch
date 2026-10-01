@@ -5,7 +5,6 @@
 # unittest discover step this gate replaced - verifies green.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index f8b57d5..507477e 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -648,7 +648,7 @@ def verify_python(data):

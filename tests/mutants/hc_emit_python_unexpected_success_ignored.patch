@@ -5,7 +5,6 @@
 # green on an @expectedFailure test that passes.
 # Body generated per tests/CONTRACT.md rule 4.
 diff --git a/tests/suite_health.py b/tests/suite_health.py
-index f8b57d5..e6d17a6 100644
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
 @@ -538,8 +538,7 @@ def emit_python(outfile):
