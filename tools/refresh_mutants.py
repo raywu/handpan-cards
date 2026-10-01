@@ -139,7 +139,7 @@ def parse_chunks(hunk_lines):
     i = 0
     while i < len(hunk_lines):
         line = hunk_lines[i]
-        if line.startswith(" "):
+        if line == "" or line.startswith(" "):
             ctx.append(line[1:])
             i += 1
             continue

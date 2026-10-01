@@ -509,13 +509,15 @@ function splitSections(body) {
 function hunksOf(sectionText) {
   const hunks = [];
   let old = null;
-  for (const line of sectionText.split("\n")) {
+  const lines = sectionText.split("\n");
+  if (lines[lines.length - 1] === "") lines.pop();
+  for (const line of lines) {
     if (line.startsWith("@@")) {
       if (old !== null) hunks.push(old);
       old = [];
     } else if (old === null) {
       continue;
-    } else if (line.startsWith(" ") || line.startsWith("-")) {
+    } else if (line === "" || line.startsWith(" ") || line.startsWith("-")) {
       old.push(line.slice(1));
     }
   }
@@ -786,6 +788,35 @@ test("refresh_mutants.py re-anchors a patch whose CONTEXT LINE CONTENT changed m
   git(dir, ["apply", patchPath]);
   assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
     "alpha\nBETA2\nGAMMA\ndelta\nepsilon\n");
+});
+
+/* Attempt-2 FAIL (PR #179 re-review). git writes an empty context line as
+ * " ", but an editor that strips trailing whitespace leaves "" - and
+ * `git apply` accepts both. 20 committed patches carry the bare form;
+ * parse_chunks() used to loop forever on it instead of treating it as
+ * blank context. */
+test("refresh_mutants.py re-anchors a stale patch with a bare blank context line", (t) => {
+  const preimage = "alpha\n\ngamma\ndelta\nepsilon\n";
+  const postimage = "alpha\n\nGAMMA\ndelta\nepsilon\n";
+  const finalContent = "alpha\n\ngamma\nDELTA2\nepsilon\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const raw = fs.readFileSync(patchPath, "utf8");
+  const bare = raw.replace(/^ $/m, "");
+  assert.notStrictEqual(bare, raw, "fixture setup: patch must carry a blank context line");
+  fs.writeFileSync(patchPath, bare);
+
+  const result = spawnSync("python3", [REFRESH_SCRIPT],
+    { cwd: dir, encoding: "utf8", timeout: 20000, env: childEnv({ REFRESH_MUTANTS_ROOT: dir }) });
+  assert.strictEqual(result.signal, null, "refresh_mutants.py must terminate");
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(patchName.replace(/\./g, "\\.")));
+
+  git(dir, ["apply", patchPath]);
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    "alpha\n\nGAMMA\nDELTA2\nepsilon\n");
 });
 
 /* P1b (same FAIL verdict as above). refresh_one() used to write `git diff`'s
