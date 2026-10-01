@@ -8958,6 +8958,20 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await openSettingsPanel();
+        // openSettingsPanel()'s click is a real CDP mouse press/release, and
+        // the gesture-skip computation below reads `order`/`flight`/`drag`
+        // at the moment the synthetic wheel event arrives - wait for that
+        // real click's own event turn to fully settle first, or a rare,
+        // otherwise-undetectable race (this assertion observed flaking
+        // roughly 1 run in 10 locally without this wait) can catch `order`
+        // transiently empty or `flight`/`drag` transiently non-null for a
+        // reason that has nothing to do with the panelOpen/sheetOpen guard
+        // this test exists to cover, making the mutant look caught (or not)
+        // by accident rather than by the thing under test.
+        await b.waitFor(
+          `typeof order !== "undefined" && order.length > 0 && !flight && !drag`,
+          { label: "swipe state to settle after opening the settings panel" },
+        );
         // The open settings panel visually overlays <main>, so a real,
         // coordinate-targeted wheel event (CDP's Input.dispatchMouseEvent,
         // as wheelAt()/wheelGesture() use) hit-tests to the panel/backdrop
