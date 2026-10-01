@@ -1,0 +1,25 @@
+# kills: Tab is trapped inside the settings panel and cycles every stop, wrapping both ways
+# suite: node --test --test-name-pattern Tab.is.trapped.inside.the.settings.panel.and.cycles.every.stop..wrapping.both.ways tests/e2e.test.js
+# Eng review amendment 1 (docs/plans/2026-10-01-resources-menu.md). Drops the
+# Resources-links querySelectorAll from panelStops()'s returned array, so the
+# three #res-* anchors never join the panel's own Tab/Shift+Tab cycle: a
+# keyboard user tabbing through the panel reaches "CHORD-ONLY PDF" and then
+# wraps straight back to the trigger, skipping HANDPANER, DING & TONES and
+# TRAINING CARDS entirely. Every other stop (modeA/B/S, the print controls,
+# deck-add) is untouched, so only the forward-cycle assertion that now
+# requires all three res-* ids to appear in `seen` can see this.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7945,10 +7945,7 @@ function panelStops() {
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+           document.getElementById("modeS"), ...seqLink,
+           document.getElementById("deck-add"),
+-          ...settingsPanel.querySelectorAll(".prints button, .prints select"),
+-          // Eng review amendment 1: the three Resources links join the Tab
+-          // trap after the print controls, in DOM order.
+-          ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
++          ...settingsPanel.querySelectorAll(".prints button, .prints select")]
+     .filter(el => el && !el.disabled);
+ }
+ function openPanel() {

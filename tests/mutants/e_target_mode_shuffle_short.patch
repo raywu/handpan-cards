@@ -10,6 +10,10 @@
 # and .panel-note credit paragraph were added elsewhere; .mode/.shuffle CSS
 # itself is unchanged.
 # Refreshed 2026-09-30 for context only - .shuffle gained justify-self:center.
+# Refreshed 2026-10-01 (lane R, resources-menu) for context only - the
+# Resources panel group was added right after the .mode rule's comment block
+# (a.mode{text-decoration:none}), shifting line numbers; .mode/.shuffle CSS
+# itself is unchanged and the mutation is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -19,10 +23,10 @@ diff --git a/index.html b/index.html
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
 -  min-height:44px; display:inline-flex; align-items:center; justify-content:center}
 +  display:inline-flex; align-items:center; justify-content:center}
- .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
- /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
-    ragged pair sat side by side. #modeS's own flex:1 0 100% above wins on
-@@ -576,7 +576,7 @@ footer.seq{row-gap:var(--sp-1)}
+ /* Eng review amendment 2: .mode is shared with <button>, which has no UA
+    underline to begin with; an <a class="mode"> (the Resources links) needs
+    this explicitly or the browser's default link underline shows through. */
+@@ -612,7 +612,7 @@ footer.seq{row-gap:var(--sp-1)}
     "SHUFFLE: OFF" opens from 7px to 16.25px, because the label is now centred
     in a 44px box instead of sitting 7px under the counter. That is a real
     visual change, accepted as the price of the target. */
