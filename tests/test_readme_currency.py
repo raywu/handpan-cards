@@ -221,13 +221,18 @@ LINE_REF_FILES = (
 LINE_REF_RE = re.compile(r"[A-Za-z_./]+\.(?:py|js|html):\d+(?:-\d+)?(?:,\d+)*")
 
 # Matches the begin/end markers of a generated engine region (see
-# CLAUDE.md, "Hard constraints"). Only index.html carries these today, but
-# the scan checks every file uniformly - a marker simply never occurs
-# elsewhere. The begin pattern requires a closing "-->" on the SAME line
-# (the real marker is a one-line HTML comment) so that tests/app.test.js's
-# own `/<!-- engine:(\w+) begin/g` regex LITERAL - which has no "-->" after
-# "begin" - cannot be mistaken for a real marker and leave the rest of that
-# file treated as "inside an engine region" forever.
+# CLAUDE.md, "Hard constraints"). The scan checks every LINE_REF_FILES entry
+# uniformly with the SAME pair of regexes - it is not special-cased to
+# index.html, and in fact a few other files quote or regex-match the marker
+# syntax too (CLAUDE.md's own prose, tools/inline_engine.py's docstring
+# example and its BEGIN/END literals, tests/app.test.js's own marker-reading
+# regex). That is harmless everywhere a quoted/matched begin is followed by a
+# matching end on the same read (CLAUDE.md and the inline_engine.py docstring
+# both are), and the begin pattern additionally requires a closing "-->" on
+# the SAME line specifically so that tests/app.test.js's
+# `/<!-- engine:(\w+) begin/g` regex LITERAL - which has no "-->" after
+# "begin" - is never mistaken for a real marker and does not leave the rest
+# of that file treated as "inside an engine region" forever.
 _ENGINE_BEGIN_RE = re.compile(r"<!--\s*engine:\S+\s+begin\b.*-->")
 _ENGINE_END_RE = re.compile(r"<!--\s*engine:\S+\s+end\s*-->")
 
@@ -248,8 +253,9 @@ def _scan_lines(relpath, lines):
     """(relpath, ref-text) for every LINE_REF_RE match across `lines`,
     skipping lines inside a generated <!-- engine:... --> region (those are
     pinned to src/engine/*.js by tools/validate.py check 4, not by this
-    ratchet). Shared by the real scan and the neutral-line-insert test so
-    both use the exact same region-skip rule."""
+    ratchet). This is the SHIPPED scan primitive: the real ratchet test and
+    every regression test below call this same function (never reimplement
+    it inline), so a mutant here is caught wherever it is exercised."""
     found = collections.Counter()
     in_engine_region = False
     for line in lines:
@@ -270,6 +276,20 @@ def _find_line_refs(relpath):
     return _scan_lines(relpath, lines)
 
 
+def _diff_refs(found, allowed):
+    """(new, stale) sorted lists of (file, text) keys, each a MULTISET
+    difference: an entry present in `found` more times than `allowed` shows
+    up in `new` (once per excess occurrence), and vice versa for `stale`.
+    This is the SHIPPED comparison primitive - the real ratchet test and
+    every regression test below call this same function, so a mutant that
+    weakens it (e.g. a Counter diff collapsing to a set diff, which drops
+    multiplicity and would hide a duplicate-occurrence bug) is caught
+    wherever it is exercised, not just in the one real-tree assertion."""
+    new = sorted((found - allowed).elements())
+    stale = sorted((allowed - found).elements())
+    return new, stale
+
+
 class LineRefRatchetTest(unittest.TestCase):
     def test_stale_line_refs_in_comments_match_the_allowlist_exactly(self):
         allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
@@ -277,7 +297,7 @@ class LineRefRatchetTest(unittest.TestCase):
         for relpath in LINE_REF_FILES:
             found.update(_find_line_refs(relpath))
 
-        new = sorted((found - allowed).elements())
+        new, stale = _diff_refs(found, allowed)
         self.assertEqual(
             new, [],
             "new <file>:<digits> line ref(s) found in a source comment - these "
@@ -286,58 +306,94 @@ class LineRefRatchetTest(unittest.TestCase):
             "only if this is a pre-existing offender another lane owns: "
             "%r" % (new,))
 
-        stale = sorted((allowed - found).elements())
         self.assertEqual(
             stale, [],
             "LINE_REF_ALLOWLIST entry no longer matches a real offender - the "
             "ratchet may only shrink, so delete the line instead of leaving "
             "it: %r" % (stale,))
 
-    def test_a_neutral_line_inserted_above_a_ref_does_not_redden_the_ratchet(self):
-        # Regression for the reviewer-found bug: the OLD line-number-keyed
-        # allowlist failed this. Insert one harmless line above every ref in
-        # a copy of index.html's text and confirm the (file, text) scan is
-        # unaffected - i.e. that shifting every ref down by one line changes
-        # nothing the ratchet keys on.
-        full = os.path.join(ROOT, "index.html")
-        with open(full, encoding="utf-8") as fh:
-            lines = fh.readlines()
 
+# --- Regression tests for the ratchet mechanism itself --------------------
+#
+# These exist to pin the BEHAVIOUR of _scan_lines/_diff_refs/
+# _parse_line_ref_allowlist, not the current state of LINE_REF_ALLOWLIST or
+# any real source file. Reviewer bounce (PR #183, round 2): an earlier
+# version of these tests asserted against the LIVE allowlist (e.g. "the
+# entry ('index.html', 'index.html:4700') exists") and built its own
+# Counter-arithmetic fixtures by hand instead of calling the shipped
+# functions. That meant (a) the moment lane A fixed that ref and deleted its
+# allowlist line, this file's OWN tests would fail - the plan's end state of
+# an EMPTY LINE_REF_ALLOWLIST could never be green - and (b) hand-rolled
+# Counter arithmetic in the test body cannot catch a bug in the shipped
+# _scan_lines/_diff_refs code, since the test never calls it.
+# Every test below therefore uses an entirely synthetic allowlist and
+# synthetic file content, and drives both through _scan_lines and
+# _diff_refs exactly as the real ratchet test does. Blanking
+# LINE_REF_ALLOWLIST to "" (the plan's eventual end state) does not touch
+# any fixture here.
+class LineRefRatchetMechanismTest(unittest.TestCase):
+    def test_a_neutral_line_inserted_above_a_ref_does_not_redden_the_ratchet(self):
+        # A synthetic "file", not a real one: a ref outside any engine
+        # region, a second ref INSIDE one (to prove the region-skip itself
+        # is also unaffected by a line shift), and a plain line with no ref.
+        lines = [
+            "no ref on this line at all\n",
+            "a comment mentioning tools/decks.py:42 right here\n",
+            "<!-- engine:core begin - synced from src/engine/core.js -->\n",
+            "inside the region: tools/hifi.py:99 must stay invisible\n",
+            "<!-- engine:core end -->\n",
+            "a trailing comment about index.html:7\n",
+        ]
         shifted = []
         for line in lines:
             if LINE_REF_RE.search(line) and not _ENGINE_BEGIN_RE.search(line):
                 shifted.append("<!-- neutral -->\n")
             shifted.append(line)
+        # also shift a line with no ref, to prove that is inert too
+        shifted.insert(0, "<!-- neutral -->\n")
 
-        before = _scan_lines("index.html", lines)
-        after = _scan_lines("index.html", shifted)
+        before = _scan_lines("synthetic.html", lines)
+        after = _scan_lines("synthetic.html", shifted)
 
         self.assertEqual(
             before, after,
             "a line ref's (file, text) identity must survive its comment "
             "moving to a different line number")
+        # fixture sanity: the region-skipped ref really was excluded, and the
+        # two refs outside the region really were found, in BOTH versions.
+        self.assertEqual(
+            before,
+            collections.Counter({
+                ("synthetic.html", "tools/decks.py:42"): 1,
+                ("synthetic.html", "index.html:7"): 1,
+            }))
 
     def test_a_genuinely_new_ref_still_fails(self):
-        allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
-        found = collections.Counter(allowed)
-        found[("index.html", "tools/decks.py:9999")] += 1
-        new = sorted((found - allowed).elements())
-        self.assertEqual(new, [("index.html", "tools/decks.py:9999")])
+        allowed = _parse_line_ref_allowlist(
+            "synthetic.py: tools/decks.py:1\n")
+        found = _scan_lines("synthetic.py", [
+            "# synthetic.py: tools/decks.py:1\n",
+            "# a brand new, never-allowlisted tools/decks.py:9999\n",
+        ])
+        new, stale = _diff_refs(found, allowed)
+        self.assertEqual(new, [("synthetic.py", "tools/decks.py:9999")])
+        self.assertEqual(stale, [])
 
     def test_an_extra_ref_on_an_already_allowlisted_line_still_fails(self):
         # The hole the old line-number key had: a second ref landing on a
         # line that already had one allowlisted ref used to be invisible,
         # because only the line number was ever recorded. With a
         # text-keyed multiset, a second occurrence of an ALREADY-allowlisted
-        # text on the same line (e.g. the comment grows a duplicate mention)
-        # is still extra and still fails, same as a wholly different text.
-        allowed = _parse_line_ref_allowlist(LINE_REF_ALLOWLIST)
-        key = ("index.html", "index.html:4700")
-        self.assertIn(key, allowed, "fixture assumption: this entry exists")
-        found = collections.Counter(allowed)
-        found[key] += 1  # a duplicate mention of the same ref on that line
-        new = sorted((found - allowed).elements())
-        self.assertEqual(new, [key])
+        # text - even one that lands on the very same line - is still an
+        # excess occurrence and still fails.
+        allowed = _parse_line_ref_allowlist(
+            "synthetic.py: tools/decks.py:1\n")
+        found = _scan_lines("synthetic.py", [
+            "# synthetic.py: tools/decks.py:1 and again tools/decks.py:1\n",
+        ])
+        new, stale = _diff_refs(found, allowed)
+        self.assertEqual(new, [("synthetic.py", "tools/decks.py:1")])
+        self.assertEqual(stale, [])
 
 
 if __name__ == "__main__":
