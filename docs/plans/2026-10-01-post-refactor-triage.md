@@ -106,7 +106,7 @@ merged into one row each: M179-3 = T183-4, E190-4 + S3, and D180-8 into Q29.
 | D180-4 | The re-press log never shows in CI | `e2e.test.js:8510` is gated on `E2E_LOG_REPRESS`, which nothing sets | FIX | The retry rate is invisible, and it is the flake signal |
 | D180-5 | Wheel and drag spring-backs can overlap | `index.html:8287,8321-8331,8340` | DEFER | Needs a simultaneous scroll and drag. Reopen on an owner report |
 | D180-6 | The desktop-swipe plan's mutants were never committed | `docs/plans/2026-09-30-desktop-swipe.md:110-112`; nothing mutates `WHEEL_COMMIT_PX`, the 400 to 0 decay, or `clearTimeout(eatClickTimer)` | FIX | Three unguarded constants or paths |
-| D180-7 | The click-capture `land()` cuts the mouse fly-out | `index.html:8393-8395` calls `land()` before the eatClick check; probe: `flight===null` right after a mouse release | FIX (owner, 2026-10-01) | User-visible on desktop: a mouse swipe never shows the 220 ms fly-out. Q14 called this informational before #180 made mouse a supported path |
+| D180-7 | The click-capture `land()` cuts the mouse fly-out | `index.html:8393-8395` calls `land()` before the eatClick check; probe: `flight===null` right after a mouse release | FIX (owner, 2026-10-01), moved to docs/plans/2026-10-01-swipe-momentum.md (lane SM) | User-visible on desktop: a mouse swipe never shows the 220 ms fly-out. Q14 called this informational before #180 made mouse a supported path |
 | D180-8 | The main-side mouse-drag test flakes | Same test as Q29 | CLOSE | Duplicate of Q29, which is fixed |
 | R186-1 | The 1024x700 test asserts horizontal overflow only | `e2e.test.js:1546-1576` reads `scrollH` but never asserts on it | FIX | A vertical-scroll regression passes |
 | R186-2 | The planned wrong-href, noopener and landscape mutants are missing | `docs/plans/2026-10-01-resources-menu.md:85-86,133`; the killers exist at `e2e.test.js:1436,1505` | FIX | Unguarded link attributes (noopener is a safety property) |
@@ -133,7 +133,7 @@ merged into one row each: M179-3 = T183-4, E190-4 + S3, and D180-8 into Q29.
 |---|---|---|---|---|
 | S1 | A stale line ref "e2e:1170" | `e2e.test.js:6976`; the test is now at `:1277` | FIX | Wrong pointer. Name the test instead |
 | S2 | The cdp.js "roadmap: audio" comment moved | `cdp.js:410` | CLOSE | Merged into Q20; audio is out of scope |
-| S4 | The README says "477 mutant patches", but there are 519 | `README.md:127`; `ls tests/mutants/*.patch \| wc -l` gives 519; the test tolerates 90% (`test_readme_currency.py:119`) | DEFER | The tolerance is by design. Reopen when `test_readme_currency` fails |
+| S4 | The README says "477 mutant patches", but there are 519 | `README.md:127`; `ls tests/mutants/*.patch \| wc -l` gives 519; the test tolerates 90% (`test_readme_currency.py:119`) | DEFER | The tolerance is by design. Reopen when `test_readme_currency` fails. Expected to fire in lane SM, which restates the count |
 
 (S3 is merged into E190-4. `shareLink`, which has no callers, was already kept by quality-eval D3, so it is not new.)
 
@@ -142,7 +142,7 @@ merged into one row each: M179-3 = T183-4, E190-4 + S3, and D180-8 into Q29.
 Both questions below are resolved; the original wording is kept for the record.
 
 - **R186-5 (owner):** change the label "TRAINING CARDS" to "HTC", as Sven calls it; otherwise the wrapping is accepted and closed. Worked in AP step 7.
-- **D180-7 (owner):** yes. Owner, verbatim: "it's pretty good, but with click drag, the animation makes it less clear that the card has flown off the screen. Two finger swipe works great". The target is parity: a committed mouse click-drag plays the same fly-out a two-finger (wheel) swipe already plays. Worked in EH step 6 and AP step 8.
+- **D180-7 (owner):** yes. Owner, verbatim: "it's pretty good, but with click drag, the animation makes it less clear that the card has flown off the screen. Two finger swipe works great". The target is parity: a committed mouse click-drag plays the same fly-out a two-finger (wheel) swipe already plays. Moved to lane SM in `docs/plans/2026-10-01-swipe-momentum.md`, which merges after AP. The owner's momentum follow-up makes the mouse duration velocity-dependent, so 'same fly-out as the wheel' no longer holds.
 
 ### Original questions
 
@@ -153,6 +153,7 @@ Both questions below are resolved; the original wording is kept for the record.
      split by ownership: EH adds the e2e test (fly-out still live 30 ms after a
      real mouse release), and AP changes the handler and adds one `sw_` mutant,
      merging after EH.
+   - (Routing superseded; see Owner answers.)
 2. **R186-5. Are two-line Resources labels acceptable at 320px and 380px?**
    - **Recommendation: accept and close.** The text stays inside its 44px
      targets. A fix would mean changing the copy or the type scale, which the
@@ -161,7 +162,7 @@ Both questions below are resolved; the original wording is kept for the record.
 ## FIX ranking
 
 Two FIX items are user-visible: D180-7 (desktop fly-out) and R186-5 (the
-"HTC" label). Both are in AP.
+"HTC" label). R186-5 is in AP; D180-7 is in lane SM (swipe-momentum plan).
 
 1. **Flake and CI trust:**
    - M179-1, C182-1, B185-3, M179-4, M-4, M-1, M179-6, T183-3
@@ -206,9 +207,9 @@ regenerated by nobody. Re-running `regen_data_mutants.py` is not allowed.
 
 All four lanes are file-disjoint, so they are dispatched in **one wave**. They
 merge serially in the order **MT, HF, EH, AP**. After each merge, the next lane
-rebases and reruns `--check`. AP goes last because two of its mutants
-(`sw_eatclick_timer_not_cleared`, and the D180-7 one) need killer
-tests that EH writes. AP adds those mutants only after rebasing onto EH's merge.
+rebases and reruns `--check`. AP goes last because one of its mutants,
+`sw_eatclick_timer_not_cleared`, needs a killer test that EH writes. AP adds
+it only after rebasing onto EH's merge. Lane SM (swipe-momentum plan) follows AP.
 
 ### Lane MT: mutant tooling
 
@@ -294,7 +295,7 @@ tests that EH writes. AP adds those mutants only after rebasing onto EH's merge.
 - **Goal:** close the mutant gaps on swipe, Resources and the counter; fix the
   wrong app comments.
 - **Non-goals:**
-  - no behaviour change, except D180-7
+  - no behaviour change (D180-7 moved to lane SM)
   - nothing inside the engine regions or the DECKS line
   - no label or copy changes except R186-5's "TRAINING CARDS" -> "HTC"
 - **Owns:**
@@ -345,14 +346,6 @@ tests that EH writes. AP adds those mutants only after rebasing onto EH's merge.
      - **Accept:** the panel shows "HTC"; the screen-reader name is unchanged;
        at 380px the label is one line.
      - **Verify:** `node --test --test-name-pattern 'Resources' tests/e2e.test.js && python3 tools/refresh_mutants.py --check && ! grep -n '>TRAINING CARDS<' index.html`
-  8. D180-7. After rebasing onto EH's fly-out test: in the capture handler at
-     `index.html:8393-8395`, when `eatClick` is armed, eat the click without
-     calling `land()`, and drop the `todo` from EH's fly-out test. Add one `sw_` mutant that restores the `land()` call.
-     - **Accept:** EH's fly-out test passes; a committed mouse drag and a
-       committed wheel swipe run the same fly-out (same duration, card leaves
-       the viewport before the next card enters); the mutant is killed in CI.
-       Touch and wheel behaviour unchanged (their existing e2e tests stay green).
-     - **Verify:** the EH fly-out test alone with `--test-name-pattern`, then `git apply --check` on the new mutant
 - **Lane risk R1.** Steps 2 and 3 add 7 e2e-selecting mutants. The longest
   shard is 5m33s against the 6 min target, and 7 more mutants is about 2 per
   shard. AP reports the per-shard wall-clock at its head SHA. If any shard
@@ -388,12 +381,6 @@ tests that EH writes. AP adds those mutants only after rebasing onto EH's merge.
      re-arm `eatClick` via a second release inside the first decay window, and
      wait past the FIRST decay. `eatClick` must still be armed. It passes on
      main now, and is red when `clearTimeout` is dropped by hand locally.
-  6. D180-7. Add the fly-out test: after a real mouse release that commits,
-     the fly-out is still live 30 ms later and the outgoing card ends past the
-     viewport edge, matching what the wheel-swipe test already asserts. Red on main; AP step 8 turns it green, so mark it
-     `{ todo: true }` here and AP drops the `todo`.
-     - **Verify:** run the new test alone with `--test-name-pattern`
-     - **Verify:** run the new test alone with `--test-name-pattern`
 - **CI is the oracle for the full e2e suite.** Run only single tests locally.
 
 ## Standing gates
@@ -423,7 +410,7 @@ After the last lane merges, one docs PR updates the queues:
 | Subagent runs | 4 lane runs, 5 reviewers, and about 3 expected bounces (each a lane run plus a reviewer): about 15 |
 | CI runs | About 2 per lane plus 1 docs, plus about 3 flake reruns: about 12 |
 
-D180-7 and R186-5 add two small steps to AP: about one extra CI run.
+R186-5 adds one small step to AP. D180-7 is costed in the swipe-momentum plan.
 
 ## Auto-decisions
 
@@ -444,13 +431,13 @@ D180-7 and R186-5 add two small steps to AP: about one extra CI run.
   proposed. The one ordering change: merges go MT, HF, EH, AP, and AP adds
   `sw_eatclick_timer_not_cleared` only after EH's killer test has merged.
 - D180-7's test moves to EH and its handler fix stays in AP, so the wave
-  stays file-disjoint.
+  stays file-disjoint. Superseded 2026-10-01: D180-7 moved to lane SM; EH writes no fly-out test and AP makes no handler change.
 - R186-3 stays FIX but is re-tiered to cosmetic: there is no current
   off-by-one.
 - D180-7: EH's fly-out test lands as `todo` so EH's CI stays green; AP drops it.
-  (First taken as an AFK auto-decision, then confirmed by the owner the same day.)
-- S4 stays DEFER. After AP, the corpus is 528 patches with D180-7.
-  README's 477 holds until 531.
+  (First taken as an AFK auto-decision, then confirmed by the owner the same day.) Superseded 2026-10-01: D180-7 moved to lane SM; EH writes no fly-out test and AP makes no handler change.
+- S4 stays DEFER. After AP, the corpus is 527 patches.
+  README's 477 holds until 531; lane SM adds 9 and restates the count.
 - No TODOS.md entries. The DEFER rows and their triggers in this doc are the
   backlog.
 
@@ -486,7 +473,8 @@ Critical gaps: 0.
 | MT | `tools/`, mutation-harness tests | — |
 | HF | `tests/` health and parity | — |
 | EH | `tests/e2e`, `tests/helpers` | — |
-| AP | `index.html`, `tests/app` | EH (2 mutants only) |
+| AP | `index.html`, `tests/app` | EH (1 mutant only) |
+| SM | `index.html` swipe region, `tests/app`, `tests/e2e` | AP (merged) |
 
 Launch MT, HF, EH and AP in parallel worktrees. Merge them serially: MT, then
 HF, then EH, then AP. The one conflict point is `tests/mutants/`, which is
@@ -496,7 +484,7 @@ split by target file under the mutant rule.
 - [ ] **T1 (P1)** Mutant ownership names the test-file-target patches and the two exceptions. Done in this doc (OV-1).
 - [ ] **T2 (P1)** EH adds the stale-decay killer before AP adds `sw_eatclick_timer_not_cleared` (OV-2). Files: `tests/e2e.test.js`, `tests/mutants/`. Verify: the CI mutation gate.
 - [ ] **T3 (P2)** MT step 3 uses unique test names, and its verify counts 2 passes (OV-3).
-- [ ] **T4 (P2)** D180-7 (approved) is split: the test in EH, the handler in AP (OV-4).
+- [ ] **T4** superseded: D180-7 moved to lane SM (swipe-momentum plan).
 - [ ] **T5 (P3)** Re-word R186-3 as future-proofing (OV-5). Done.
 - [ ] **T6 (P2)** The M-1 kill is proven by CI, not by the local command (OV-6).
 - [ ] **T7 (P3)** R186-1 becomes a new VERTICAL test rather than an extended HORIZONTAL one (ENG-7).
@@ -510,7 +498,7 @@ Every task is folded into the lane steps above.
 | OV-1 | codex | Patches targeting lane-owned test files were unassigned; the `qb_core` and `c_deck_data_drift` exceptions were unstated | A) Apply (auto, recommended) |
 | OV-2 | codex, verified | `sw_eatclick_timer_not_cleared` has no killer (`e2e.test.js:8754`, `index.html:8160`) | A) Apply: EH writes the killer, AP merges last (auto) |
 | OV-3 | codex, verified | The `bare.blank` pattern already matches `mutation_harness.test.js:822` | A) Apply (auto) |
-| OV-4 | codex | The D180-7 e2e test was assigned to AP, which does not own `e2e.test.js` | A) Apply: split (auto) |
+| OV-4 | codex | The D180-7 e2e test was assigned to AP, which does not own `e2e.test.js` | A) Apply: split (auto) (superseded 2026-10-01: moved to lane SM) |
 | OV-5 | codex, verified | There is no current R186-3 off-by-one: `panelStops()` includes the trigger | A) Apply: re-word and re-tier (auto) |
 | OV-6 | codex | The M-1 verify does not prove the kill | A) Apply: CI is the oracle (auto) |
 | ENG-7 | in-host | Extending a test named HORIZONTAL with a vertical assertion misleads | A) Apply: add a new test (auto) |
