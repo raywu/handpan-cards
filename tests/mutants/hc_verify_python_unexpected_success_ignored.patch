@@ -1,0 +1,18 @@
+# kills: tests.test_suite_health.VerifyArtifactsTest.test_a_python_unexpected_success_fails
+# suite: python3 -m unittest tests.test_suite_health.VerifyArtifactsTest.test_a_python_unexpected_success_fails
+# F3 bounce (2026-10-01). verify_python() drops the unexpected_successes
+# term, so an @expectedFailure test that passes - red under the bare
+# unittest discover step this gate replaced - verifies green.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -648,7 +648,7 @@ def verify_python(data):
+     if data["skipped"]:
+         problems.append("python: skipped tests are not allowed: "
+                         + ", ".join(data["skipped"]))
+-    if data["failures"] or data["errors"] or data["unexpected_successes"]:
++    if data["failures"] or data["errors"]:
+         problems.append("python: suite is not green")
+     return problems
+ 

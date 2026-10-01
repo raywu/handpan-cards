@@ -5967,7 +5967,7 @@ function run() {
     const probe = [
       "import sys",
       "from tests import suite_health",
-      "total, failed, skipped, out = suite_health.run_node_file(sys.argv[1])",
+      "total, failed, skipped, cancelled, returncode, out = suite_health.run_node_file(sys.argv[1])",
       'print("TOTAL", total)',
       "print(out)",
     ].join("\n");

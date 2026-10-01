@@ -15,7 +15,7 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -118,11 +118,7 @@ def check_python():
+@@ -130,11 +130,7 @@ def check_python():
          for e in loader.errors:
              print(e)
          return ["python: test discovery raised errors"]
@@ -28,9 +28,9 @@ diff --git a/tests/suite_health.py b/tests/suite_health.py
                                       resultclass=PerFileResult)
      result = runner.run(suite)
      problems = []
-@@ -151,10 +147,6 @@ def check_python():
-         problems.append("python: skipped tests are not allowed: "
-                         + ", ".join(str(s[0]) for s in result.skipped))
+@@ -166,10 +162,6 @@ def check_python():
+         problems.append("python: suite is not green "
+                         f"({len(result.unexpectedSuccesses)} unexpected success(es))")
      if result.failures or result.errors:
 -        print(f"--- python: {len(result.failures)} failing, {len(result.errors)} "
 -              f"erroring test(s), the suite's own output follows ---")

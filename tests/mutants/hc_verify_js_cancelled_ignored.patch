@@ -1,0 +1,23 @@
+# kills: tests.test_suite_health.VerifyArtifactsTest.test_a_js_cancelled_count_fails_even_with_zero_failed
+# suite: python3 -m unittest tests.test_suite_health.VerifyArtifactsTest.test_a_js_cancelled_count_fails_even_with_zero_failed
+# F2 bounce (2026-10-01). Narrows verify_js's red check back to `if failed:`,
+# so a recorded artifact entry with fail 0 / cancelled > 0 (or a non-zero
+# returncode alone) no longer produces a problem - the same silent-red shape
+# hc_collect_js_cancelled_ignored.patch proves on collect_js's own exit code,
+# here for the read-the-artifact side of the gate instead.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -680,10 +680,7 @@ def verify_js(data):
+         total_counted += total
+         if total < floor:
+             problems.append(f"{path}: only {total} tests ran, floor is {floor}")
+-        # failed > 0 is not the only red: node 22 reports a per-test timeout or
+-        # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+-        # non-zero exit code (F2, 2026-10-01).
+-        if failed or cancelled or returncode:
++        if failed:
+             problems.append(f"{path}: suite is not green")
+         if skipped:
+             browser_skips = entry.get("browser_skips", 0)

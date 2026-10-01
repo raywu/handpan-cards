@@ -33,6 +33,49 @@ if [ ${#PATCHES[@]} -eq 0 ]; then
   echo "NO MUTANTS FOUND - the red-proof gate is empty."; exit 1
 fi
 
+# MUTANT_SHARD=i/N (1-indexed i) restricts the sweep to one of N partitions of
+# the corpus, computed by tests/shard_mutants.js - never a hardcoded count, so
+# a PR that adds mutants reshards itself automatically. The partitioner deals
+# e2e-selecting and other mutants as two SEPARATE round-robin decks (see that
+# file for why a flat index%N is not balanced), so no shard is left carrying
+# most of the slow e2e suite. MUTANT_REPORT, if set, gets one mutant basename
+# per line for this shard - written BEFORE the sweep runs, so a CI job that
+# fails partway still uploads proof of which mutants it owned (finding 4,
+# 2026-09-30 quality refactor: this is what the `mutation gate` aggregate job
+# diffs against the full corpus to catch a sharding bug that silently drops a
+# mutant).
+if [ -n "${MUTANT_SHARD:-}" ]; then
+  TOTAL_MUTANTS=${#PATCHES[@]}
+  SHARD_I="${MUTANT_SHARD%%/*}"
+  SHARD_N="${MUTANT_SHARD##*/}"
+  SHARD_NAMES=()
+  while IFS= read -r line; do [ -n "$line" ] && SHARD_NAMES+=("$line"); done < <(
+    node tests/shard_mutants.js "$SHARD_I" "$SHARD_N" tests/mutants
+  )
+  if [ -n "${MUTANT_REPORT:-}" ]; then
+    mkdir -p "$(dirname "$MUTANT_REPORT")" 2>/dev/null || true
+    printf '%s\n' "${SHARD_NAMES[@]}" >"$MUTANT_REPORT"
+  fi
+  PATCHES=()
+  for n in "${SHARD_NAMES[@]}"; do PATCHES+=("tests/mutants/$n"); done
+  if [ ${#PATCHES[@]} -eq 0 ]; then
+    echo "MUTANT_SHARD=$MUTANT_SHARD selects zero of $TOTAL_MUTANTS mutants."
+    exit 1
+  fi
+  # Unset now that the shard is resolved: a suite command below (run_suite)
+  # inherits this script's own environment verbatim, and some suites ARE
+  # nested re-invocations of this very script (an h_*/mh_* mutant patching
+  # mutation_check.sh itself names a `# suite:` that runs this file's test
+  # harness, which spawns its own tiny-fixture mutation_check.sh runs). Left
+  # set, those inner runs would inherit this shard spec and try to shard
+  # their own small fixture corpus against a tests/shard_mutants.js that
+  # fixture never copied in - "Cannot find module .../shard_mutants.js" -
+  # which reds the baseline check and hard-aborts the whole outer shard.
+  # Unsetting here, once, fixes every such nested invocation (JS and Python
+  # alike) at the source, instead of every call site having to scrub it.
+  unset MUTANT_SHARD MUTANT_REPORT
+fi
+
 # The paths a patch touches, one per line (both sides, so a patch that adds or
 # deletes a file is covered too).
 patch_paths() {

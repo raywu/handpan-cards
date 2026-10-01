@@ -53,7 +53,7 @@ if not _hifi_was_loaded and not hasattr(sys.modules.get("hifi"), "build"):
 MARKER = "DIAGNOSABILITY_MARKER_9f3a1c"
 
 
-def _run_check_node(fake_output, total=5, failed=2, skipped=0):
+def _run_check_node(fake_output, total=5, failed=2, skipped=0, cancelled=0, returncode=0):
     """Drive check_node over ONE synthetic node suite and capture its stdout.
 
     The suite's result is injected, so no node process runs and the assertion is
@@ -69,7 +69,8 @@ def _run_check_node(fake_output, total=5, failed=2, skipped=0):
             mock.patch.object(suite_health, "FLOORS", {fake: 0}), \
             mock.patch.object(suite_health, "exists", lambda p: True), \
             mock.patch.object(suite_health, "run_node_file",
-                              return_value=(total, failed, skipped, fake_output)), \
+                              return_value=(total, failed, skipped, cancelled,
+                                            returncode, fake_output)), \
             contextlib.redirect_stdout(buf):
         problems = suite_health.check_node()
     return buf.getvalue(), problems

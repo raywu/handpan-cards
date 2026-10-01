@@ -1,0 +1,19 @@
+# kills: tests.test_suite_health.EmitPythonUnexpectedSuccessTest.test_emit_python_exits_red_on_an_unexpected_success
+# suite: python3 -m unittest tests.test_suite_health.EmitPythonUnexpectedSuccessTest.test_emit_python_exits_red_on_an_unexpected_success
+# F3 bounce (2026-10-01). emit_python()'s exit code is the python suites
+# job's verdict; dropping the unexpected_successes term leaves that job
+# green on an @expectedFailure test that passes.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -538,8 +538,7 @@ def emit_python(outfile):
+           f"unexpected successes {data['unexpected_successes']}")
+     if data["output_excerpt"]:
+         print(data["output_excerpt"])
+-    return 1 if (data["failures"] or data["errors"]
+-                 or data["unexpected_successes"]) else 0
++    return 1 if (data["failures"] or data["errors"]) else 0
+ 
+ 
+ def collect_js():

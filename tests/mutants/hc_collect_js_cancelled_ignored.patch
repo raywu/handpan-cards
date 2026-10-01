@@ -1,0 +1,21 @@
+# kills: tests.test_suite_health.CollectJsCancelledTest.test_emit_js_exits_red_on_cancelled_with_zero_failed
+# suite: python3 -m unittest tests.test_suite_health.CollectJsCancelledTest.test_emit_js_exits_red_on_cancelled_with_zero_failed
+# F2 bounce (2026-10-01). Narrows collect_js's red check back to `if failed:`,
+# so emit_js exits 0 on a node run with fail 0 / cancelled > 0 - exactly the
+# node 22 shape (a per-test timeout, or a throwing before()/after() hook)
+# that F2 exists to catch. cancelled/returncode are still recorded in the
+# artifact, so this mutant tests the GATE's own exit code, not just the
+# artifact's content.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -561,7 +561,7 @@ def collect_js():
+         # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
+         # non-zero exit code (F2, 2026-10-01) - record both so verify_js, which
+         # reads this artifact instead of re-running node, can see it too.
+-        if failed or cancelled or returncode:
++        if failed:
+             entry["output_excerpt"] = excerpt(out)
+             any_red = True
+         files[path] = entry
