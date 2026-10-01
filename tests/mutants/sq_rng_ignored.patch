@@ -1,4 +1,5 @@
-# kills: draw() ignores the given rng and calls Math.random directly
+# kills: pick is deterministic for a seed and uses only the rng it is given
+# draw() ignores the given rng and calls Math.random directly
 # suite: node --test --test-name-pattern ^pick.is.deterministic.for.a.seed.and.uses.only.the.rng.it.is.given$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js

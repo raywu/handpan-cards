@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^NOTE_OUT_OF_RANGE.names.the.note.as.the.parser.placed.it$ tests/core.test.js
-# kills: a top note pushed past MIDI 127 is reported as off the keyboard, not as text that is not a note
+# kills: NOTE_OUT_OF_RANGE names the note as the parser placed it
+# a top note pushed past MIDI 127 is reported as off the keyboard, not as text that is not a note
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

@@ -30,6 +30,36 @@ def canonical():
         return json.load(fh)
 
 
+def inject(decks):
+    """Write `decks` into index.html's `const DECKS` line and re-parse the
+    file to confirm the write landed (CLAUDE.md, "Known pitfalls": the
+    degrees carry U+00B0, and a naive re.sub treats it as an escape and
+    silently writes nothing - a smoke test against stale data would pass;
+    only reading the bytes back proves it). Raises SystemExit on failure.
+
+    `decks` need not be the canonical file's own content - this is also
+    tools/regen_data_mutants.py's injection path for a MUTATED decks object
+    (finding 15, 2026-09-30 quality-refactor plan), so both tools share one
+    injection+re-parse implementation instead of keeping two copies in sync
+    by hand."""
+    with open(INDEX, encoding="utf-8") as fh:
+        html = fh.read()
+    match = PATTERN.search(html)
+    if not match:
+        raise SystemExit("index.html has no `const DECKS = [...]` line")
+
+    want = json.dumps(decks)
+    line = "const DECKS = " + want + ";"
+    html = PATTERN.sub(lambda _m: line, html, count=1)
+    with open(INDEX, "w", encoding="utf-8") as fh:
+        fh.write(html)
+
+    with open(INDEX, encoding="utf-8") as fh:
+        again = PATTERN.search(fh.read())
+    if again is None or again.group(1) != want:
+        raise SystemExit("re-injection did not land - index.html NOT in sync")
+
+
 def main(argv):
     # Parse argv, never substring-match it: a typo beside a real flag would
     # silently select WRITE mode, and on this tool that overwrites index.html.

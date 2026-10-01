@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^D9.root.octave..lowest.top.shell.instance..else.lowest.overall$ tests/voicing.test.js
-# kills: the D9 root-octave policy (ENGINE-SPEC section 7), the LOWEST
+# kills: D9 root octave: lowest top-shell instance, else lowest overall
+# the D9 root-octave policy (ENGINE-SPEC section 7), the LOWEST
 # top-shell instance of the root pitch class. Here it takes the HIGHEST.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
 --- a/src/engine/voicing.js

@@ -1,4 +1,5 @@
-# kills: a pointercancel mid-drag springs back from the last move and does not step
+# kills: card swipe: a pointercancel mid-drag springs back from the last move and does not step
+# a pointercancel mid-drag springs back from the last move and does not step
 # suite: node --test --test-name-pattern ^card.swipe:.a.pointercancel.mid-drag.springs.back.from.the.last.move.and.does.not.step$ tests/e2e.test.js
 # Recomputes dx from the terminating event's own clientX instead of using
 # drag.last (the last real pointermove's offset). A pointercancel dispatched

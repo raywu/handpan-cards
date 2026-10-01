@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^a.seventh.bottom.field.is.rejected.TOO.MANY.RIM$ tests/layout.test.js
-# kills: a seventh bottom field is TOO_MANY_RIM
+# kills: a seventh bottom field is rejected TOO_MANY_RIM
+# a seventh bottom field is TOO_MANY_RIM
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js

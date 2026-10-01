@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^D2.forced.chords.cluster.chord.tones.to.the.highest.instance.below.the.root$ tests/voicing.test.js
-# kills: D2 "every chord tone moves to its HIGHEST instance below the root".
+# kills: D2 forced chords cluster chord tones to the highest instance below the root
+# D2 "every chord tone moves to its HIGHEST instance below the root".
 # Here a clustered chord tone takes the LOWEST instance below the root, so Pygmy Gm7b5 from G5 takes F4 instead of F5.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
 --- a/src/engine/voicing.js

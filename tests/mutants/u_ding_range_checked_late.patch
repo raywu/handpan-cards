@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^the.ding.is.resolved.before.any.other.token..so.its.range.comes.first$ tests/core.test.js
-# kills: the ding is range-checked BEFORE the separator checks and the lex loop, so `(B9) Zz3` is NOTE_OUT_OF_RANGE and section 3 precedence holds
+# kills: the ding is resolved before any other token, so its range comes first
+# the ding is range-checked BEFORE the separator checks and the lex loop, so `(B9) Zz3` is NOTE_OUT_OF_RANGE and section 3 precedence holds
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

@@ -1,4 +1,5 @@
-# kills: anchor tier preference flipped, so a power chord out-ranks a major/minor triad
+# kills: anchors pick one simple chord per root on every built-in deck
+# anchor tier preference flipped, so a power chord out-ranks a major/minor triad
 # suite: node --test --test-name-pattern ^anchors.pick.one.simple.chord.per.root.on.every.built.in.deck$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js

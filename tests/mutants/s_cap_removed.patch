@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^the.cap.bites.on.the.12.note.pan..27.candidates..25.cards$ tests/select.test.js
-# kills: the ENGINE-SPEC section 8 cap itself. With no trim the 12-note pan
+# kills: the cap bites on the 12-note pan: 27 candidates, 25 cards
+# the ENGINE-SPEC section 8 cap itself. With no trim the 12-note pan
 # ships all 27 collapsed candidates instead of 25.
 diff --git a/src/engine/select.js b/src/engine/select.js
 --- a/src/engine/select.js

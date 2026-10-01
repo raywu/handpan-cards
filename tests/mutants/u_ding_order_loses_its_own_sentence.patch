@@ -1,5 +1,6 @@
 # suite: node --test --test-name-pattern ^NOTE_OUT_OF_ORDER.names.the.ding.as.the.ding..and.an.explicit.note.plainly$ tests/core.test.js
-# kills: a top note failing against the DING takes the section 2 `ding` alternate, not the generic ordering sentence
+# kills: NOTE_OUT_OF_ORDER names the ding as the ding, and an explicit note plainly
+# a top note failing against the DING takes the section 2 `ding` alternate, not the generic ordering sentence
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
