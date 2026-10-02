@@ -313,6 +313,28 @@ class ValidateReportsCheckFailures(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertIn("OK", buf.getvalue())
 
+    def test_a_keyerror_is_reported_like_any_other_check_failure(self):
+        # T183-3 (2026-10-01 post-refactor triage): run_check used to catch only
+        # AssertionError, so a check that raised KeyError (or anything else)
+        # aborted the whole script instead of being reported - exactly the
+        # failure mode finding 15 was about, just for a different exception type.
+        failures = []
+        buf = io.StringIO()
+        ran_second = []
+
+        def boom():
+            {}[MARKER]
+
+        with contextlib.redirect_stdout(buf):
+            validate.run_check(1, "a fixture check", boom, failures)
+            validate.run_check(2, "second", lambda: ran_second.append(True), failures)
+
+        self.assertEqual(ran_second, [True],
+                         "a KeyError in one check aborted the run instead of "
+                         "being reported")
+        self.assertEqual(len(failures), 1, failures)
+        self.assertEqual(failures[0][0], 1)
+
     def test_a_later_check_still_runs_after_an_earlier_one_fails(self):
         # The whole point of reporting instead of raising: one red check must
         # not hide every check after it.

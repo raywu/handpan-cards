@@ -240,14 +240,38 @@ if len(sys.argv) > 1:
         sys.exit(2)
     sys.exit(check_only())
 
-if subprocess.run(["git", "diff", "--quiet", "--"] + TRACKED).returncode != 0:
-    sys.exit("REFUSING: tracked files already modified")
+# M179-4 (2026-10-01 post-refactor triage): compare against HEAD, not the
+# index, so a `git add`ed-but-uncommitted edit is caught too, and name
+# only the dirty subset (M-3) rather than every tracked path. `--no-color
+# --no-ext-diff` (M-4) guards against a user's diff.external/color.diff
+# config.
+# M179-4 bounce 1: worktree-vs-HEAD alone misses a staged edit whose
+# worktree was then restored to match HEAD (index != worktree == HEAD,
+# e.g. `git add` followed by `git restore --worktree`) - that diff reports
+# nothing even though the index still carries the staged edit, and this
+# script reads the WORKTREE file to regenerate b_* patches, silently
+# baking the vanished staged edit's absence in. Union with the staged
+# (index-vs-HEAD) diff to catch that case too. A git failure on either
+# call must refuse, not be read as "no output, so nothing is dirty".
+# Mirrors tools/refresh_mutants.py's dirty_targets().
+_worktree_diff = subprocess.run(
+    ["git", "diff", "--no-color", "--no-ext-diff", "--name-only", "HEAD", "--"] + TRACKED,
+    capture_output=True, text=True)
+_staged_diff = subprocess.run(
+    ["git", "diff", "--no-color", "--no-ext-diff", "--cached", "--name-only", "HEAD", "--"] + TRACKED,
+    capture_output=True, text=True)
+if _worktree_diff.returncode != 0 or _staged_diff.returncode != 0:
+    sys.exit("REFUSING: could not verify the working tree is clean: "
+              + (_worktree_diff.stderr or "") + (_staged_diff.stderr or ""))
+_dirty = sorted(set(_worktree_diff.stdout.split()) | set(_staged_diff.stdout.split()))
+if _dirty:
+    sys.exit("REFUSING: tracked files already modified: " + ", ".join(_dirty))
 
 for name, (header, replacements, mutator) in MUTANTS.items():
     assert not replacements, (name, "replacements", replacements)
     if mutator is not None:
         apply_json(mutator, sync=name not in DESYNC_ONLY)
-    diff = sh("git", "diff", "-U8", "--", *TRACKED)
+    diff = sh("git", "diff", "--no-color", "--no-ext-diff", "-U8", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
     # Drop git's `index <preimage>..<postimage>` lines. They name the blob this
     # patch was cut from, which the next commit to the file invalidates, and

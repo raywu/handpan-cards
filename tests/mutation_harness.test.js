@@ -44,10 +44,10 @@ function childEnv(extra) {
   const env = { ...process.env, ...(extra || {}) };
   // See TRAP above. Also drop E2E_PORT: pinning it is the exact environmental
   // difference that turns the real e2e prefix red (queue rows 162, 173, 174).
-  // GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE are dropped too (review: the
-  // process.env approach leaks between tests) - a child that inherits one of
-  // these from an outer `git` invocation runs against the WRONG repo/tree/
-  // index, silently, rather than the fixture repo it was given a cwd for.
+  // GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE are dropped too - a child that
+  // inherits one of these from an outer `git` invocation runs against the
+  // WRONG repo/tree/index, silently, rather than the fixture repo it was
+  // given a cwd for.
   delete env.NODE_TEST_CONTEXT;
   delete env.E2E_PORT;
   delete env.GIT_DIR;
@@ -412,8 +412,11 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
  * data/decks.json - so the patch carries two `diff --git` sections.
  * `b_layout_angle_swap` edits two non-adjacent fields ("4" and "6") within
  * data/decks.json, which sounds like it would need two hunks, but both
- * fields sit well inside `git diff`'s default 3-line context window of each
- * other, so the real corpus has exactly ONE hunk there too (checked
+ * fields sit well inside the `-U8` context window tools/regen_data_mutants.py
+ * generates its diffs with (M179-2, 2026-10-01 post-refactor triage: this
+ * used to say "git diff's default 3-line context window", but the
+ * regenerator passes `-U8`, not the default), so the real corpus has exactly
+ * ONE hunk there too (checked
  * directly: every file section in every tracked b_*.patch today has exactly
  * one `@@`) - there is no legitimate multi-hunk case in this corpus, so the
  * bound is 1, not 2. The regenerator is also run directly (not just the
@@ -477,6 +480,35 @@ test("regenerating every b_*.patch from a clean tree keeps exactly one hunk per 
   assert.deepStrictEqual(offenders, [],
     `freshly regenerated b_*.patch files should carry at most one @@ hunk ` +
     `per touched file:\n` + offenders.join("\n"));
+});
+
+/* M179-4 bounce 1 (2026-10-01 post-refactor triage), mirrored onto
+ * regen_data_mutants.py: its own dirty-check has the same union-of-two-diffs
+ * fix as refresh_mutants.py's dirty_targets(), but (unlike refresh_mutants.py)
+ * had no direct test of its own refusal at all. Stage an edit to index.html
+ * (one of TRACKED) and restore the worktree to match HEAD again - index !=
+ * worktree == HEAD - and confirm the script still refuses instead of
+ * silently regenerating over a staged-but-invisible-to-worktree-diff
+ * change. */
+test("regen_data_mutants.py refuses a staged edit whose worktree was restored to HEAD", (t) => {
+  const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "regen-dirty-"));
+  t.after(() => {
+    execFileSync("git", ["worktree", "remove", "--force", worktree], { cwd: ROOT });
+  });
+  execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: ROOT });
+
+  const indexPath = path.join(worktree, "index.html");
+  const original = fs.readFileSync(indexPath, "utf8");
+  fs.writeFileSync(indexPath, original + "\n<!-- staged -->\n");
+  git(worktree, ["add", "index.html"]);
+  git(worktree, ["restore", "--source=HEAD", "--worktree", "index.html"]);
+
+  const result = spawnSync("python3", [path.join(worktree, "tools", "regen_data_mutants.py")],
+    { cwd: worktree, encoding: "utf8" });
+  assert.notStrictEqual(result.status, 0,
+    "a staged edit restored to match HEAD in the worktree must still refuse");
+  assert.match(result.stdout + result.stderr, /REFUSING/, result.stdout + result.stderr);
+  assert.match(result.stdout + result.stderr, /index\.html/, result.stdout + result.stderr);
 });
 
 /* Early warning for the failure mode "a normal commit edits a context line a
@@ -890,6 +922,109 @@ test("refresh_mutants.py refuses to run (non-check mode) on a dirty target file"
     preimage + "uncommitted\n", "a refused run must not touch the dirty file either");
 });
 
+/* M179-4 (2026-10-01 post-refactor triage). The dirty-tree refusal ran `git
+ * diff --quiet -- <targets>`, which compares the worktree against the INDEX,
+ * not HEAD - a change that has been `git add`ed but not committed makes the
+ * worktree match the index, so the refusal missed it entirely and a staged
+ * edit would get silently baked into the freshly-written patch body. Fixed
+ * by comparing against HEAD instead.
+ *
+ * M-3 (same step): the refusal listed every target any patch might touch,
+ * not just the dirty ones, which sends the user hunting through a list of
+ * clean files for the one that is actually dirty. This fixture has TWO
+ * target files - only one of them staged-dirty - so the message naming just
+ * that one proves both fixes at once. */
+test("M179-4 refresh refuses a staged-only edit and names only dirty files", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-staged-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\n");
+  fs.writeFileSync(path.join(dir, "other.txt"), "one\ntwo\nthree\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  // Build one real patch per target file, same discipline as elsewhere here:
+  // generate via `git diff` against a committed tree, then check out.
+  function makePatch(file, preimage, postimage) {
+    fs.writeFileSync(path.join(dir, file), postimage);
+    const body = git(dir, ["diff", "--", file]);
+    git(dir, ["checkout", "--", file]);
+    return body;
+  }
+  const subjectBody = makePatch("subject.txt", "alpha\nbeta\ngamma\n", "alpha\nBETA\ngamma\n");
+  const otherBody = makePatch("other.txt", "one\ntwo\nthree\n", "one\nTWO\nthree\n");
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_subject.patch"),
+    `# kills: subject\n# suite: node check.js\n${subjectBody}`);
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_other.patch"),
+    `# kills: other\n# suite: node check.js\n${otherBody}`);
+
+  // Stage (but do not commit) an edit to subject.txt only.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\nstaged\n");
+  git(dir, ["add", "subject.txt"]);
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "a staged-only edit must not be silently refreshed");
+  assert.match(result.stderr, /REFUSING/, result.stderr);
+  assert.match(result.stderr, /subject\.txt/, result.stderr);
+  assert.doesNotMatch(result.stderr, /other\.txt/,
+    `the refusal must name only the dirty file, not every target:\n${result.stderr}`);
+});
+
+test("M179-4 bounce 1: refresh refuses a staged edit whose worktree was restored to HEAD", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-staged-restored-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\n");
+  fs.writeFileSync(path.join(dir, "other.txt"), "one\ntwo\nthree\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  function makePatch(file, preimage, postimage) {
+    fs.writeFileSync(path.join(dir, file), postimage);
+    const body = git(dir, ["diff", "--", file]);
+    git(dir, ["checkout", "--", file]);
+    return body;
+  }
+  const subjectBody = makePatch("subject.txt", "alpha\nbeta\ngamma\n", "alpha\nBETA\ngamma\n");
+  const otherBody = makePatch("other.txt", "one\ntwo\nthree\n", "one\nTWO\nthree\n");
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_subject.patch"),
+    `# kills: subject\n# suite: node check.js\n${subjectBody}`);
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_other.patch"),
+    `# kills: other\n# suite: node check.js\n${otherBody}`);
+
+  // Drift subject.txt via a real commit, same as a normal "patch needs
+  // refreshing" state, so a plain worktree-vs-HEAD diff would otherwise
+  // have something unrelated to key off of.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\ndelta\n");
+  git(dir, ["add", "subject.txt"]);
+  git(dir, ["commit", "-qm", "drift"]);
+
+  // Stage an edit, then restore the worktree to match the new HEAD: the
+  // index now differs from HEAD, but the worktree does not - the exact
+  // blind spot `git diff --name-only HEAD --` (worktree vs HEAD) misses.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\ndelta\nSTAGED\n");
+  git(dir, ["add", "subject.txt"]);
+  git(dir, ["restore", "--source=HEAD", "--worktree", "subject.txt"]);
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0,
+    "a staged edit restored to match HEAD in the worktree must still refuse");
+  assert.match(result.stderr, /REFUSING/, result.stderr);
+  assert.match(result.stderr, /subject\.txt/, result.stderr);
+  assert.doesNotMatch(result.stderr, /other\.txt/,
+    `the refusal must name only the dirty file, not every target:\n${result.stderr}`);
+});
+
 test("refresh_mutants.py --check tolerates a dirty target file", (t) => {
   const preimage = "alpha\nbeta\ngamma\ndelta\n";
   const postimage = "alpha\nBETA\ngamma\ndelta\n";
@@ -900,6 +1035,76 @@ test("refresh_mutants.py --check tolerates a dirty target file", (t) => {
   fs.appendFileSync(path.join(dir, "subject.txt"), "uncommitted\n");
   const result = runRefresh(dir, ["--check"]);
   assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+});
+
+/* M179-1 (2026-10-01 post-refactor triage). parse_chunks() walked a hunk's
+ * raw lines with a while loop that only advances `i` inside the removed-run
+ * or added-run collectors (lines starting with "-" or "+"). A line that
+ * starts with neither - a malformed hunk, e.g. a hand-edited patch that lost
+ * its leading marker - matches none of parse_chunks' branches, so `i` never
+ * advances and the loop spins forever. One malformed patch hangs the
+ * `--check` CI step. Reproduces the evidence row's own repro
+ * (`timeout 5 python3 -c "...parse_chunks([' a','xbogus','-b'])"` gave
+ * `exit=124`) directly against the real module, not a fixture repo - no git
+ * repo is needed to exercise parse_chunks() in isolation. */
+test("M179-1 refresh exits on an unknown hunk prefix", () => {
+  const code = [
+    "import sys",
+    `sys.path.insert(0, ${JSON.stringify(path.join(ROOT, "tools"))})`,
+    "import refresh_mutants as rm",
+    "try:",
+    "    rm.parse_chunks([' a', 'xbogus', '-b'])",
+    "except SystemExit:",
+    "    raise",
+    "except BaseException as e:",
+    "    print(type(e).__name__ + ': ' + str(e), file=sys.stderr)",
+    "    sys.exit(1)",
+    "sys.exit(0)",
+  ].join("\n");
+  const result = spawnSync("python3", ["-c", code], { encoding: "utf8", timeout: 5000 });
+  assert.strictEqual(result.signal, null,
+    `parse_chunks must terminate within 5s, not hang: ${JSON.stringify(result)}`);
+  assert.notStrictEqual(result.status, 0,
+    "an unknown hunk-line prefix must not be silently accepted");
+});
+
+/* M179-6 (2026-10-01 post-refactor triage). splice() reads a patch's target
+ * file with `full_path.read_text()` and never catches a missing file -
+ * refresh_mutants.py's main() only catches Ambiguous/Unfixable, so a mutant
+ * patch naming a file that no longer exists crashes with a raw traceback
+ * instead of being reported the same way every other unrecoverable patch is. */
+test("M179-6 refresh reports UNFIXABLE for a missing target", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-missing-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "ok\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  const patchName = "x_missing_target.patch";
+  const patchPath = path.join(dir, "tests", "mutants", patchName);
+  fs.writeFileSync(patchPath, [
+    "# kills: subject",
+    "# suite: node check.js",
+    "diff --git a/missing.txt b/missing.txt",
+    "--- a/missing.txt",
+    "+++ b/missing.txt",
+    "@@ -1 +1 @@",
+    "-old",
+    "+new",
+    "",
+  ].join("\n"));
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "a missing target file must not exit 0");
+  assert.match(result.stderr, /UNFIXABLE/, result.stdout + result.stderr);
+  assert.match(result.stderr, new RegExp(patchName.replace(/\./g, "\\.")),
+    result.stdout + result.stderr);
 });
 
 test("refresh_mutants.py refuses an ambiguous anchor rather than guessing", (t) => {
@@ -963,19 +1168,15 @@ test("a patch whose anchor became non-unique IS reported stale, even though it s
     `${patchName} rides a non-unique anchor and must be reported stale`);
 });
 
-// Known, tracked exception to the anchor-uniqueness lint below: a patch
-// whose precondition (context + removed lines) matches more than one
-// location in the file it targets today - a real Finding 12 gap - but whose
-// fix requires editing the BODY of a tests/mutants/h_* patch against
-// tests/mutation_check.sh, which is outside lane M's ownership (see
-// docs/plans/2026-09-30-quality-refactor.md's ownership table: lane M owns
-// only `# kills:`/`# suite:` header lines on those patches, never their
-// bodies). Listed explicitly, never silently dropped, so this lint still
-// catches any OTHER patch drifting into ambiguity while leaving this one for
-// whichever lane owns tests/mutation_check.sh's mutants to re-anchor.
-const KNOWN_NON_UNIQUE_ANCHORS = [
-  "f_fixture_sha.patch",
-];
+// Known, tracked exceptions to the anchor-uniqueness lint below would be
+// listed here. M-1 (2026-10-01 post-refactor triage) re-anchored
+// tests/mutants/f_fixture_sha.patch (the only entry this list ever held) with
+// -U6 context so its preimage block includes `"main": "C#sus"`, which is
+// unique against the file - it no longer rides a non-unique anchor. The list
+// is empty rather than deleted: it stays the place a future genuinely
+// non-fixable ambiguity (one outside this lane's ownership to re-anchor) gets
+// tracked explicitly, never silently dropped.
+const KNOWN_NON_UNIQUE_ANCHORS = [];
 
 test("no mutant patch outside the tracked exceptions rides a non-unique anchor", () => {
   const dir = path.join(ROOT, "tests", "mutants");
@@ -990,6 +1191,73 @@ test("no mutant patch outside the tracked exceptions rides a non-unique anchor",
   assert.deepStrictEqual(nowFixed, [],
     `${nowFixed.join(", ")} no longer rides a non-unique anchor - remove it ` +
     `from KNOWN_NON_UNIQUE_ANCHORS`);
+});
+
+/* M179-8 (2026-10-01 post-refactor triage), first fixture: the Finding 12
+ * non-unique-anchor lint's own hunksOf() (above, line ~533) parses a hunk's
+ * preimage by scanning for " "/"-"/blank-prefixed lines. A context line that
+ * is empty in the FILE can be written by git as a bare "" (an editor that
+ * strips trailing whitespace does this - see tests/CONTRACT.md's "bare blank
+ * context line" trap), and that line is part of the anchor: dropping it
+ * shortens the preimage block the lint searches for, which can turn a truly
+ * unique anchor into one that (wrongly) matches more than one place. The
+ * fixture file repeats "A" / "X" as a contiguous pair twice, but only once
+ * with a blank line between them - so the full 3-line block (A, blank, X) is
+ * unique while the 2-line block (A, X) a buggy parse would search for
+ * instead is not. */
+test("M179-8 lint accepts a bare blank context line", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lint-blank-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const fileName = "subject.txt";
+  fs.writeFileSync(path.join(dir, fileName), "A\n\nX\nA\nX\nA\nX\n");
+  const patchText = [
+    "# kills: subject",
+    "# suite: node check.js",
+    `diff --git a/${fileName} b/${fileName}`,
+    `--- a/${fileName}`,
+    `+++ b/${fileName}`,
+    "@@ -1,3 +1,3 @@",
+    " A",
+    "",
+    "-X",
+    "+Y",
+    "",
+  ].join("\n");
+  assert.strictEqual(hasNonUniqueAnchor(dir, patchText), false,
+    "the bare blank context line is part of the anchor (A, <blank>, X occurs " +
+    "only once) - dropping it would widen the search to the ambiguous (A, X) pair");
+});
+
+/* M179-8, second fixture: tools/refresh_mutants.py's splice_chunks() has a
+ * dedicated branch for a PURE INSERTION (no removed lines) - it anchors on
+ * the nearest context chunk instead of the removed-lines block the normal
+ * path uses - and 33 patches in the real corpus are pure insertions, but
+ * nothing exercised that branch directly before this. A plain context-shift
+ * drift (prepending an unrelated line, same shape as the "context drifted"
+ * fixture above) is enough to force a real re-anchor through that path. */
+test("M179-8 refresh re-anchors a pure-insertion patch", (t) => {
+  const preimage = "alpha\nbeta\ngamma\n";
+  const postimage = "alpha\nbeta\nINSERTED\ngamma\n";
+  const finalContent = "zero\nalpha\nbeta\ngamma\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const check = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.notStrictEqual(check.status, 0, "fixture setup: patch must be stale before refresh");
+
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(patchName.replace(/\./g, "\\.")));
+
+  const applied = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.strictEqual(applied.status, 0, `${patchName} should apply cleanly after refresh:\n${applied.stderr}`);
+
+  git(dir, ["apply", patchPath]);
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    "zero\nalpha\nbeta\nINSERTED\ngamma\n");
 });
 
 test("every mutant patch applies to the tree it will run against", () => {
@@ -1256,7 +1524,9 @@ test("the N=4 shard partition over the real corpus is disjoint and complete", ()
 });
 
 test("the N=4 shard partition balances e2e-selecting mutants within 1 per shard", () => {
-  // 161 of 477 mutants select tests/e2e.test.js (by the suite COMMAND, not a
+  // A sizeable and growing share of the corpus (E190-2, post-refactor
+  // triage: the exact count drifts as mutants are added, so this comment
+  // names no figure) select tests/e2e.test.js (by the suite COMMAND, not a
   // filename substring) and cluster under the e_/sw_ name prefixes - a flat
   // index%N would leave one shard carrying most of the slow e2e suite.
   const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
