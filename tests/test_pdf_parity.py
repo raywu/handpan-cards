@@ -59,10 +59,11 @@ VARIANTS = ("full", "shop")
 
 # An empty trace is a passing test that proves nothing, so every case needs a
 # vector floor - but one fixed number does not fit every case. The no-thirds
-# seed is a tiny 2-field instrument with only a few chords, so its sheets
-# carry far fewer vectors than the other cases (measured: 147 full, 61 shop)
-# and need their own floor; every other case keeps the 500 that was already
-# measured against the smallest of them (the Amara shop sheet, at 676).
+# seed `(C3) G3 D4 G4 D5` is a 5-field instrument (the ding included) with only
+# a few chords, so its sheets carry far fewer vectors than the other cases
+# (measured: 147 full, 61 shop) and need their own floor; every other case
+# keeps the 500 that was already measured against the smallest of them (the
+# Hijaz shop sheet, at 524).
 DEFAULT_VECTOR_FLOOR = 500
 VECTOR_FLOORS = {
     "(C3) G3 D4 G4 D5": {"full": 100, "shop": 40},
@@ -233,6 +234,11 @@ class PrintParityTest(unittest.TestCase):
         # two does not say that; a bar separator does.
         self.assertTrue(any("|" in s for s in SEEDS),
                         "one seed must carry a bottom shell")
+        # P/N3: the NO_THIRDS card-warning badge (finding N-F1) is only
+        # exercised by this one seed - a sweep that silently dropped it would
+        # still pass every other check here.
+        self.assertIn("(C3) G3 D4 G4 D5", SEEDS,
+                      "the no-thirds seed must stay in the sweep")
 
     def test_the_sweep_covers_every_builtin_and_both_variants(self):
         # Review C1's coverage floor: a parameterization that silently

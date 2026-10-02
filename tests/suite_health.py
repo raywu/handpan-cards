@@ -52,7 +52,7 @@ FLOORS = {
     "tests/e2e.test.js": 190,
     "tests/harness.test.js": 9,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 42,
+    "tests/core.test.js": 49,
     "tests/voicing.test.js": 15,
     "tests/layout.test.js": 51,
     "tests/naming.test.js": 32,
@@ -687,11 +687,19 @@ def verify_js(data):
         if entry.get("skipped_no_browser"):
             continue
         if entry.get("total") is None:
-            problems.append(f"{path}: {entry.get('error', 'no result recorded')}")
+            problems.append(f"{path}: {excerpt(entry.get('error', 'no result recorded'))}")
+            continue
+        # C182-1: "cancelled"/"returncode" must be PRESENT, not defaulted to 0 -
+        # a missing key is itself a malformed artifact (an emit_js regression),
+        # and a silent 0 would read as green.
+        missing = {"cancelled", "returncode"} - set(entry)
+        if missing:
+            problems.append(f"{path}: malformed artifact entry: missing key(s) "
+                            f"{sorted(missing)}")
             continue
         total, failed, skipped = entry["total"], entry["failed"], entry["skipped"]
-        cancelled = entry.get("cancelled", 0)
-        returncode = entry.get("returncode", 0)
+        cancelled = entry["cancelled"]
+        returncode = entry["returncode"]
         total_counted += total
         if total < floor:
             problems.append(f"{path}: only {total} tests ran, floor is {floor}")

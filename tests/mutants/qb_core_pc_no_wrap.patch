@@ -1,8 +1,10 @@
 # suite: node --test --test-name-pattern ^core.pc.reduces.any.integer..positive.or.negative..to.a.pitch.class.0.11$ tests/core.test.js
 # kills: core.pc reduces any integer, positive or negative, to a pitch class 0-11
 # Drops the second +12 wrap, so any negative midi returns a negative pitch
-# class instead of 0-11 - every module that now calls core.pc (naming.js,
-# select.js, voicing.js's core().pc) inherits the bug silently.
+# class instead of 0-11 - every module that calls core.pc (naming.js,
+# select.js) inherits the bug silently. voicing.js keeps its own local
+# pitchClass() copy of the identical formula, so it is unaffected by this
+# mutant and is not one of the callers above.
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js

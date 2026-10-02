@@ -683,7 +683,8 @@ class VerifyArtifactsTest(unittest.TestCase):
         return {"have_browser": True, "probe_problem": None,
                 "found": ["tests/a.test.js"],
                 "files": {"tests/a.test.js":
-                          {"total": 2, "failed": 0, "skipped": 0, "browser_skips": 0}}}
+                          {"total": 2, "failed": 0, "skipped": 0, "browser_skips": 0,
+                           "cancelled": 0, "returncode": 0}}}
 
     def test_a_missing_artifact_fails(self):
         py_path = self._write("py.json", self._good_py())
@@ -711,7 +712,8 @@ class VerifyArtifactsTest(unittest.TestCase):
         js = self._good_js()
         # 3 ran (above the floor of 2) but one of them was skipped.
         js["files"]["tests/a.test.js"] = {
-            "total": 3, "failed": 0, "skipped": 1, "browser_skips": 0}
+            "total": 3, "failed": 0, "skipped": 1, "browser_skips": 0,
+            "cancelled": 0, "returncode": 0}
         js_path = self._write("js.json", js)
         py_path = self._write("py.json", self._good_py())
         problems = suite_health.verify(py_path, js_path)
@@ -750,7 +752,8 @@ class VerifyArtifactsTest(unittest.TestCase):
     def test_a_js_failure_fails_even_when_the_total_meets_the_floor(self):
         js = self._good_js()
         js["files"]["tests/a.test.js"] = {
-            "total": 2, "failed": 1, "skipped": 0, "browser_skips": 0}
+            "total": 2, "failed": 1, "skipped": 0, "browser_skips": 0,
+            "cancelled": 0, "returncode": 0}
         js_path = self._write("js.json", js)
         py_path = self._write("py.json", self._good_py())
         problems = suite_health.verify(py_path, js_path)
@@ -784,6 +787,50 @@ class VerifyArtifactsTest(unittest.TestCase):
         self.assertTrue(
             any("suite is not green" in p for p in problems),
             f"a non-zero exit must fail even with failed=0 and cancelled=0: {problems}")
+
+    def test_a_js_entry_missing_cancelled_fails(self):
+        # C182-1: a run artifact is the only thing verify() ever sees - a
+        # missing "cancelled" key must not silently default to 0 (green),
+        # since that is exactly the kind of gap a real emit_js regression
+        # would produce.
+        js = self._good_js()
+        js["files"]["tests/a.test.js"] = {
+            "total": 2, "failed": 0, "skipped": 0, "browser_skips": 0,
+            "returncode": 0}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("cancelled" in p for p in problems),
+            f"a missing cancelled key must fail closed: {problems}")
+
+    def test_a_js_entry_missing_returncode_fails(self):
+        js = self._good_js()
+        js["files"]["tests/a.test.js"] = {
+            "total": 2, "failed": 0, "skipped": 0, "browser_skips": 0,
+            "cancelled": 0}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        self.assertTrue(
+            any("returncode" in p for p in problems),
+            f"a missing returncode key must fail closed: {problems}")
+
+    def test_a_huge_js_error_is_excerpted(self):
+        # C182-6: a malformed/erroring entry's own "error" text can be
+        # arbitrarily large (a full node crash dump); verify() must bound it
+        # the same way collect_js's own output_excerpt does, not print it raw.
+        js = self._good_js()
+        huge = "X" * 10000
+        js["files"]["tests/a.test.js"] = {"total": None, "error": huge}
+        js_path = self._write("js.json", js)
+        py_path = self._write("py.json", self._good_py())
+        problems = suite_health.verify(py_path, js_path)
+        matches = [p for p in problems if "tests/a.test.js" in p]
+        self.assertTrue(matches, problems)
+        self.assertLess(len(matches[0]), len(huge),
+                         "a huge error string must be excerpted, not printed raw")
+        self.assertIn("elided", matches[0])
 
     def test_an_unregistered_js_file_fails(self):
         js = self._good_js()
