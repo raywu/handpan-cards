@@ -902,6 +902,76 @@ test("refresh_mutants.py --check tolerates a dirty target file", (t) => {
   assert.strictEqual(result.status, 0, result.stdout + result.stderr);
 });
 
+/* M179-1 (2026-10-01 post-refactor triage). parse_chunks() walked a hunk's
+ * raw lines with a while loop that only advances `i` inside the removed-run
+ * or added-run collectors (lines starting with "-" or "+"). A line that
+ * starts with neither - a malformed hunk, e.g. a hand-edited patch that lost
+ * its leading marker - matches none of parse_chunks' branches, so `i` never
+ * advances and the loop spins forever. One malformed patch hangs the
+ * `--check` CI step. Reproduces the evidence row's own repro
+ * (`timeout 5 python3 -c "...parse_chunks([' a','xbogus','-b'])"` gave
+ * `exit=124`) directly against the real module, not a fixture repo - no git
+ * repo is needed to exercise parse_chunks() in isolation. */
+test("M179-1 refresh exits on an unknown hunk prefix", () => {
+  const code = [
+    "import sys",
+    `sys.path.insert(0, ${JSON.stringify(path.join(ROOT, "tools"))})`,
+    "import refresh_mutants as rm",
+    "try:",
+    "    rm.parse_chunks([' a', 'xbogus', '-b'])",
+    "except SystemExit:",
+    "    raise",
+    "except BaseException as e:",
+    "    print(type(e).__name__ + ': ' + str(e), file=sys.stderr)",
+    "    sys.exit(1)",
+    "sys.exit(0)",
+  ].join("\n");
+  const result = spawnSync("python3", ["-c", code], { encoding: "utf8", timeout: 5000 });
+  assert.strictEqual(result.signal, null,
+    `parse_chunks must terminate within 5s, not hang: ${JSON.stringify(result)}`);
+  assert.notStrictEqual(result.status, 0,
+    "an unknown hunk-line prefix must not be silently accepted");
+});
+
+/* M179-6 (2026-10-01 post-refactor triage). splice() reads a patch's target
+ * file with `full_path.read_text()` and never catches a missing file -
+ * refresh_mutants.py's main() only catches Ambiguous/Unfixable, so a mutant
+ * patch naming a file that no longer exists crashes with a raw traceback
+ * instead of being reported the same way every other unrecoverable patch is. */
+test("M179-6 refresh reports UNFIXABLE for a missing target", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-missing-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "ok\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  const patchName = "x_missing_target.patch";
+  const patchPath = path.join(dir, "tests", "mutants", patchName);
+  fs.writeFileSync(patchPath, [
+    "# kills: subject",
+    "# suite: node check.js",
+    "diff --git a/missing.txt b/missing.txt",
+    "--- a/missing.txt",
+    "+++ b/missing.txt",
+    "@@ -1 +1 @@",
+    "-old",
+    "+new",
+    "",
+  ].join("\n"));
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "a missing target file must not exit 0");
+  assert.match(result.stderr, /UNFIXABLE/, result.stdout + result.stderr);
+  assert.match(result.stderr, new RegExp(patchName.replace(/\./g, "\\.")),
+    result.stdout + result.stderr);
+});
+
 test("refresh_mutants.py refuses an ambiguous anchor rather than guessing", (t) => {
   const preimage = "alpha\nbeta\ngamma\n";
   const postimage = "alpha\nBETA\ngamma\n";
@@ -963,19 +1033,15 @@ test("a patch whose anchor became non-unique IS reported stale, even though it s
     `${patchName} rides a non-unique anchor and must be reported stale`);
 });
 
-// Known, tracked exception to the anchor-uniqueness lint below: a patch
-// whose precondition (context + removed lines) matches more than one
-// location in the file it targets today - a real Finding 12 gap - but whose
-// fix requires editing the BODY of a tests/mutants/h_* patch against
-// tests/mutation_check.sh, which is outside lane M's ownership (see
-// docs/plans/2026-09-30-quality-refactor.md's ownership table: lane M owns
-// only `# kills:`/`# suite:` header lines on those patches, never their
-// bodies). Listed explicitly, never silently dropped, so this lint still
-// catches any OTHER patch drifting into ambiguity while leaving this one for
-// whichever lane owns tests/mutation_check.sh's mutants to re-anchor.
-const KNOWN_NON_UNIQUE_ANCHORS = [
-  "f_fixture_sha.patch",
-];
+// Known, tracked exceptions to the anchor-uniqueness lint below would be
+// listed here. M-1 (2026-10-01 post-refactor triage) re-anchored
+// tests/mutants/f_fixture_sha.patch (the only entry this list ever held) with
+// -U6 context so its preimage block includes `"main": "C#sus"`, which is
+// unique against the file - it no longer rides a non-unique anchor. The list
+// is empty rather than deleted: it stays the place a future genuinely
+// non-fixable ambiguity (one outside this lane's ownership to re-anchor) gets
+// tracked explicitly, never silently dropped.
+const KNOWN_NON_UNIQUE_ANCHORS = [];
 
 test("no mutant patch outside the tracked exceptions rides a non-unique anchor", () => {
   const dir = path.join(ROOT, "tests", "mutants");

@@ -143,6 +143,16 @@ def parse_chunks(hunk_lines):
             ctx.append(line[1:])
             i += 1
             continue
+        if not (line.startswith("-") or line.startswith("+")):
+            # M179-1 (2026-10-01 post-refactor triage): a line that is not
+            # blank/context ("" or " "-prefixed) and not a removed/added
+            # marker ("-"/"+") matches none of this function's branches. The
+            # old code fell straight into the removed/added while loops
+            # below, both of which no-op on such a line - `i` never advances,
+            # so a single malformed hunk line spun this loop forever. Raise
+            # instead of looping: a hunk this tool cannot parse needs a
+            # human, not a hang.
+            raise ValueError(f"unknown hunk-line prefix: {line!r}")
         if ctx:
             chunks.append({"type": "ctx", "lines": ctx})
             ctx = []
@@ -222,7 +232,15 @@ def splice(patch_name, file_path, hunks):
     """Apply every hunk's chunks to file_path's current content, returning
     (full_path, new_text), or raise Ambiguous/Unfixable."""
     full_path = ROOT / file_path
-    text = full_path.read_text(encoding="utf-8")
+    try:
+        text = full_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        # M179-6 (2026-10-01 post-refactor triage): a patch naming a file
+        # that no longer exists in the tree is not a context-drift case -
+        # there is nothing to re-anchor against - so report it the same way
+        # as every other unrecoverable patch instead of crashing with a raw
+        # traceback.
+        raise Unfixable(patch_name, file_path)
     trailing_newline = text.endswith("\n")
     lines = text.split("\n")
     if trailing_newline:
