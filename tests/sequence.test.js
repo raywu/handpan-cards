@@ -512,6 +512,52 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     "sus (pos1) resolving forward into its root chord (pos2) should be intermediate");
   assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), "advanced",
     "the same pair in the other order does not resolve and should be advanced");
+
+  // The 4-note cap: a >4-field chord anywhere in the sequence pushes it to
+  // advanced even with no repeat and a home start.
+  const capDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["D", 5, 74, "rim", null, "7"], "8": ["F", 5, 77, "rim", null, "8"], "9": ["A", 5, 81, "rim", null, "9"],
+    "10": ["C", 6, 84, "rim", null, "10"], "11": ["E", 6, 88, "rim", null, "11"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Dm9", sup: "", fields: [7, 8, 9, 10, 11], roots: [7] }
+  ]);
+  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), "advanced",
+    "a 5-field chord should push the sequence past intermediate's 4-note cap");
+
+  // LOW/HIGH register excludes a card from intermediate even at <=4 fields.
+  const registerDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["D", 5, 74, "rim", null, "7"], "8": ["F", 5, 77, "rim", null, "8"], "9": ["A", 5, 81, "rim", null, "9"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Dm", sup: "", subtitle: "- LOW VOICING", fields: [7, 8, 9], roots: [7] }
+  ]);
+  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 1, 2]), "advanced",
+    "a LOW VOICING card should exclude the sequence from intermediate");
+
+  // The sus-resolve exception must check the WRAP pair (last position back to
+  // first), not just forward-adjacent positions in array order.
+  const wrapDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["C", 5, 72, "rim", null, "7"], "8": ["F", 5, 77, "rim", null, "8"], "9": ["G", 5, 79, "rim", null, "9"],
+    "10": ["C", 6, 84, "rim", null, "10"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Csus4", sup: "add9", fields: [7, 8, 9, 10], roots: [7] }
+  ]);
+  assert.strictEqual(E.sequence.tierOf(wrapDeck, [0, 1, 2]), "intermediate",
+    "chord2 (sus, root C) resolving into chord0 (root C) only via the wrap should be intermediate");
 });
 
 /* -------------------------------------------------------------- D1 step 3 */
