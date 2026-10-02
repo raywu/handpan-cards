@@ -1,0 +1,16 @@
+# kills: tierOf classifies the golden fixtures and every BASIC sequence
+# repeatResolves' wrap-pair branch (k+1 % n === j) dropped, so a sus chord
+# at the LAST position resolving into the FIRST position via the cyclic
+# wrap is no longer recognised
+# suite: node --test --test-name-pattern ^tierOf.classifies.the.golden.fixtures.and.every.BASIC.sequence$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -287,7 +287,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         !chordIsSus(deck, seq[b]);
+     }
+     if ((j + 1) % n === k) return resolvesAt(j, k);
+-    if ((k + 1) % n === j) return resolvesAt(k, j);
+     return false;
+   }
+
