@@ -9,12 +9,12 @@
 diff --git a/tools/sync_decks.py b/tools/sync_decks.py
 --- a/tools/sync_decks.py
 +++ b/tools/sync_decks.py
-@@ -71,7 +71,7 @@ def main(argv):
-     # (CLAUDE.md again); only reading the bytes back proves the write landed.
+@@ -57,7 +57,7 @@ def inject(decks):
+ 
      with open(INDEX, encoding="utf-8") as fh:
          again = PATTERN.search(fh.read())
 -    if again is None or again.group(1) != want:
 +    if again is None or json.loads(again.group(1)) != canonical():
-         print("re-injection did not land - index.html NOT in sync", file=sys.stderr)
-         return 1
+         raise SystemExit("re-injection did not land - index.html NOT in sync")
+ 
  
