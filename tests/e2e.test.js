@@ -216,9 +216,8 @@ function run() {
   // The suite's default desktop viewport, set once in before() and restored
   // here on every freshLoad() - finding 17 (quality refactor 2026-09-30):
   // a test that called b.setViewport() directly and never restored it used
-  // to leak that viewport into whichever test's freshLoad() ran next. Use
-  // withViewport() below instead of a bare setViewport() for a test-scoped
-  // size; freshLoad() resetting unconditionally is the backstop either way.
+  // to leak that viewport into whichever test's freshLoad() ran next.
+  // freshLoad() resetting unconditionally is the backstop.
   const DEFAULT_VIEWPORT = [900, 900, false];
 
   async function freshLoad() {
@@ -231,18 +230,6 @@ function run() {
     await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
       label: "deck chips to be built",
     });
-  }
-
-  // Run fn() at a non-default viewport, then restore DEFAULT_VIEWPORT in a
-  // finally - so a test that needs e.g. a mobile size cannot leak it into
-  // whatever runs after it even before that test's own next freshLoad().
-  async function withViewport(width, height, mobile, fn) {
-    await b.setViewport(width, height, mobile);
-    try {
-      return await fn();
-    } finally {
-      await b.setViewport(...DEFAULT_VIEWPORT);
-    }
   }
 
   // Lane M1: the print controls and the mode toggle both live behind the
@@ -1037,7 +1024,7 @@ function run() {
     await openSettingsPanel();
     await b.eval(`
       window.__buildCalls = [];
-      HPE.pdfcards.build = (deck, variant) => { window.__buildCalls.push(variant); };
+      HPE.pdfcards.build = (deck, opts) => { window.__buildCalls.push(opts); };
       document.querySelector("#settings-panel .prints button").focus();
       return true;
     `);
@@ -1298,8 +1285,14 @@ function run() {
       assert.strictEqual(first.isTrigger, true,
         "focus is not on the trigger right after opening");
 
+      // The bound is derived from the app's own panelStops() list, not a
+      // hand-picked constant: a forward cycle visits every stop once, then
+      // one more Tab wraps back to the trigger (R186-3, future-proofing -
+      // a fixed headroom would silently stop catching a missing wrap the
+      // day the panel grows past it).
+      const bound = (await b.eval(`return window.panelStops().length;`)) + 1;
       const seen = [first];
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < bound; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await describe());
         if (seen[seen.length - 1].isTrigger) break;
@@ -1567,6 +1560,43 @@ function run() {
           const label = `1024x700 mode ${mode}`;
           assert.ok(m.scrollW <= m.clientW + 1,
             `${label}: the sidebar (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
+          assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  // R186-1: the HORIZONTAL test above only ever asserted scrollW <= clientW,
+  // despite its own comment citing a VERTICAL baseline (scrollHeight ===
+  // clientHeight at 1024x700 before the Resources group existed). This is
+  // the test that actually checks that baseline still holds: no NEW vertical
+  // scroll from the Resources group, in modes A, B and S. A rename of the
+  // HORIZONTAL test is a non-goal (it would break the mutant `# suite:`
+  // pattern that targets it by name), so this is a new, separate test.
+  test("the desktop sidebar at 1024x700 gains no new VERTICAL scroll from the Resources group, in modes A, B and S",
+    async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1024, 700, false);
+        await b.settle();
+        for (const mode of ["A", "B", "S"]) {
+          await b.click(`#mode${mode}`);
+          await b.settle();
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+            return {
+              scrollH: p.scrollHeight, clientH: p.clientHeight,
+              resVisible: resIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.getClientRects().length > 0;
+              }),
+            };
+          `);
+          const label = `1024x700 mode ${mode}`;
+          assert.ok(m.scrollH <= m.clientH + 1,
+            `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
           assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
         }
       } finally {
@@ -6973,7 +7003,8 @@ function run() {
     // Drives a real forward or backward Tab cycle through the currently-open
     // panel (native focus, exactly like a keyboard user), tagging every stop
     // with its index into the app's own panelStops() first (two print buttons
-    // carry no id, same technique as the M2 Tab-trap test at e2e:1170), and
+    // carry no id, same technique as the "Tab is trapped inside the settings
+    // panel" test above), and
     // returns the ids visited, stopping once focus wraps back to the trigger
     // or after `max` presses.
     async function driveTabCycle(reverse, max = 14) {
@@ -8197,7 +8228,7 @@ function run() {
         }
       } finally {
         // Viewport is a browser-level setting; restore it here so a throw
-        // mid-loop cannot leak a small viewport into the rest of this test.
+        // mid-loop cannot leak a small viewport into the next test.
         await b.setViewport(900, 900, false);
       }
     });
@@ -8243,8 +8274,8 @@ function run() {
         }
       } finally {
         // The viewport is a browser-level setting, not a page one; restore it
-        // here so a mid-loop assertion throw cannot leak it into the rest of
-        // this test (freshLoad() resets it before the next one).
+        // here so a mid-loop assertion throw cannot leak it into the next
+        // test (freshLoad() resets it before the next one, too).
         await b.setViewport(900, 900, false);
       }
     });
@@ -8507,7 +8538,7 @@ function run() {
           assert.ok(g.id !== null, "a real mouse re-press must start a drag");
           await send();
         }
-        if (g.represses && process.env.E2E_LOG_REPRESS) console.error(`startMouseDrag: re-pressed ${g.represses}x`);
+        if (g.represses) console.error(`startMouseDrag: re-pressed ${g.represses}x`);
       };
       return g;
     }
@@ -8700,6 +8731,40 @@ function run() {
       // above presses and releases again at a fresh location) - send a
       // final real release so a stuck button cannot bleed into a later test.
       await endMouseDragForReal(rx, ry);
+    });
+
+    // AP's `sw_eatclick_timer_not_cleared` mutant: drop the
+    // `clearTimeout(eatClickTimer)` inside setEatClick (index.html's own
+    // comment says every assignment site must go through it exactly so a
+    // stale timer from an earlier release can never clear a freshly-armed
+    // eatClick out from under a later one). Whitebox by design, same as the
+    // other eatClick/eatClickTimer reads above: setEatClick is a top-level
+    // function declaration in a classic (non-module) script, so it hangs off
+    // `window` like `eatClick` and `eatClickTimer` themselves, and the bug
+    // lives inside the function's own body - independent of how a caller
+    // (mouse release, touch release, the click listener) reaches it.
+    test("a stale eatClick decay never clears a re-armed eatClick", async () => {
+      await freshLoad();
+      // Mirrors release()'s own mouse-release decay (setEatClick(true, 400)
+      // at index.html's release()).
+      const DECAY_MS = 400;
+      // First release arms eatClick with a 400ms decay timer.
+      await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "setEatClick(true, ...) must arm eatClick");
+      // A second release lands partway through the first decay window and
+      // re-arms eatClick with its OWN fresh 400ms timer.
+      await new Promise((r) => setTimeout(r, DECAY_MS / 2));
+      await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
+      // Wait past the FIRST decay's deadline (400ms after the first call,
+      // i.e. 200ms after the second) but comfortably before the second
+      // decay's own deadline (600ms after the first call) - if the stale
+      // timer from the first call were not cancelled when the second call
+      // re-armed, it would fire in this window and clear the re-armed
+      // eatClick early.
+      await new Promise((r) => setTimeout(r, DECAY_MS / 2 + 100));
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "a stale decay timer from an earlier setEatClick cleared a re-armed eatClick");
     });
 
     // Eng review item 3: every place that assigns eatClick must also cancel
