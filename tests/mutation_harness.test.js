@@ -44,10 +44,10 @@ function childEnv(extra) {
   const env = { ...process.env, ...(extra || {}) };
   // See TRAP above. Also drop E2E_PORT: pinning it is the exact environmental
   // difference that turns the real e2e prefix red (queue rows 162, 173, 174).
-  // GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE are dropped too (review: the
-  // process.env approach leaks between tests) - a child that inherits one of
-  // these from an outer `git` invocation runs against the WRONG repo/tree/
-  // index, silently, rather than the fixture repo it was given a cwd for.
+  // GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE are dropped too - a child that
+  // inherits one of these from an outer `git` invocation runs against the
+  // WRONG repo/tree/index, silently, rather than the fixture repo it was
+  // given a cwd for.
   delete env.NODE_TEST_CONTEXT;
   delete env.E2E_PORT;
   delete env.GIT_DIR;
@@ -412,8 +412,11 @@ test("no mutant patch carries a blob header it cannot keep true", () => {
  * data/decks.json - so the patch carries two `diff --git` sections.
  * `b_layout_angle_swap` edits two non-adjacent fields ("4" and "6") within
  * data/decks.json, which sounds like it would need two hunks, but both
- * fields sit well inside `git diff`'s default 3-line context window of each
- * other, so the real corpus has exactly ONE hunk there too (checked
+ * fields sit well inside the `-U8` context window tools/regen_data_mutants.py
+ * generates its diffs with (M179-2, 2026-10-01 post-refactor triage: this
+ * used to say "git diff's default 3-line context window", but the
+ * regenerator passes `-U8`, not the default), so the real corpus has exactly
+ * ONE hunk there too (checked
  * directly: every file section in every tracked b_*.patch today has exactly
  * one `@@`) - there is no legitimate multi-hunk case in this corpus, so the
  * bound is 1, not 2. The regenerator is also run directly (not just the
@@ -1442,9 +1445,11 @@ test("the N=4 shard partition over the real corpus is disjoint and complete", ()
 });
 
 test("the N=4 shard partition balances e2e-selecting mutants within 1 per shard", () => {
-  // 161 of 477 mutants select tests/e2e.test.js (by the suite COMMAND, not a
-  // filename substring) and cluster under the e_/sw_ name prefixes - a flat
-  // index%N would leave one shard carrying most of the slow e2e suite.
+  // A growing share of the corpus (183 of 519 as of 2026-10-01 - E190-2,
+  // post-refactor triage: a count, not a fact to re-assert) select
+  // tests/e2e.test.js (by the suite COMMAND, not a filename substring) and
+  // cluster under the e_/sw_ name prefixes - a flat index%N would leave one
+  // shard carrying most of the slow e2e suite.
   const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
   const shards = partition(entries, 4);
   const byName = new Map(entries.map((e) => [e.name, e]));
