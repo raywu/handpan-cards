@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8132,7 +8132,7 @@ let panelOpen = false;
+@@ -8457,7 +8457,7 @@ let panelOpen = false;
  const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
  function panelStops() {
    const seqNote = document.getElementById("panel-seq-note");
@@ -19,4 +19,4 @@ diff --git a/index.html b/index.html
 +  const seqLink = seqNote ? [document.getElementById("seq-source-link")] : [];
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
            document.getElementById("modeS"), ...seqLink,
-           document.getElementById("deck-add"),
+           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),

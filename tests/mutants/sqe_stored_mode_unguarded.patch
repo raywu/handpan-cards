@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5948,7 +5948,7 @@ let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
+@@ -6459,7 +6459,7 @@ let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
  let storedDeck = deckId;              // built-in or custom:; see save()
  // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
  // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
 -let mode   = ["A", "B", "S"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
 +let mode   = ["A", "B"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
- let shuffled = false;
- let order = [], idx = 0, flipped = false;
- // The current sequence in mode S: {chords:[chordIndex,...], style:"<id>"} or
+ // Difficulty (sequence-difficulty plan D-7): type-guarded like mode, so a
+ // corrupted/future value reads back as "basic" rather than propagating.
+ let tier = ["basic", "intermediate", "advanced"].includes(store.tier) ? store.tier : "basic";

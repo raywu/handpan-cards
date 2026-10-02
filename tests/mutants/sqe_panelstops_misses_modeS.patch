@@ -15,12 +15,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7943,7 +7943,7 @@ function panelStops() {
+@@ -8459,7 +8459,7 @@ function panelStops() {
    const seqNote = document.getElementById("panel-seq-note");
    const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
 -          document.getElementById("modeS"), ...seqLink,
 +          ...seqLink,
+           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
+           document.getElementById("tier-advanced"),
            document.getElementById("deck-add"),
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
-           // Eng review amendment 1: the three Resources links join the Tab
