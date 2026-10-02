@@ -563,9 +563,12 @@ class PrintStylesheetTest(unittest.TestCase):
     def test_print_block_is_last_in_the_style_element(self):
         """The print block forces print colour adjustment, clears the page
         background and padding, and resets the swipe transform - none of it
-        scoped by selector specificity, so nothing after it in the <style>
-        element could ever safely override it. Keeping it last is the
-        cheapest way to guarantee that forever."""
+        scoped by selector specificity, so it leans on cascade order instead:
+        CSS resolves an equal-specificity tie in favor of whichever rule
+        comes later, so being last means this block overrides every earlier
+        rule touching the same properties - not that nothing after it could
+        safely override it (trivially true, since it is last), but that
+        nothing before it can escape being overridden by it."""
         self.assertIn("@media print", self.style)
         self.assertEqual(self.style.count("@media print"), 1)
         # Nothing but the print block's own braces after it.
