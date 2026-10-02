@@ -13,5 +13,5 @@ diff --git a/index.html b/index.html
 -         target="_blank" rel="noopener">DING &amp; TONES</a>
 +         target="_blank">DING &amp; TONES</a>
        <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
-          target="_blank" rel="noopener" aria-label="HTC, Handpan Training Cards by Sven Kirchhofer">HTC</a>
+          target="_blank" rel="noopener">HTC</a>
      </div>
