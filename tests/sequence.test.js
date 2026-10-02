@@ -567,6 +567,26 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   ]);
   assert.strictEqual(E.sequence.tierOf(wrapDeck, [0, 1, 2]), "intermediate",
     "chord2 (sus, root C) resolving into chord0 (root C) only via the wrap should be intermediate");
+
+  // Intermediate's length range is exactly {3, 4}: a 5-chord sequence that
+  // otherwise satisfies every other intermediate rule (home start, no
+  // repeats, <=4 fields, no register) must still fall through to advanced.
+  const lengthDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["E", 5, 76, "rim", null, "7"], "8": ["G", 5, 79, "rim", null, "8"], "9": ["B", 5, 83, "rim", null, "9"],
+    "10": ["F", 5, 77, "rim", null, "10"], "11": ["A", 5, 81, "rim", null, "11"], "12": ["C", 6, 84, "rim", null, "12"],
+    "13": ["G", 5, 79, "rim", null, "13"], "14": ["B", 5, 83, "rim", null, "14"], "15": ["D", 6, 86, "rim", null, "15"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] },
+    { main: "F", sup: "", fields: [10, 11, 12], roots: [10] },
+    { main: "G", sup: "", fields: [13, 14, 15], roots: [13] }
+  ]);
+  assert.strictEqual(E.sequence.tierOf(lengthDeck, [0, 1, 2, 3, 4]), "advanced",
+    "a 5-chord sequence is outside intermediate's {3,4} length range even with no other violation");
 });
 
 /* -------------------------------------------------------------- D1 step 3 */
