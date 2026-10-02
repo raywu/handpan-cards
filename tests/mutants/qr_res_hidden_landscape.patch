@@ -1,0 +1,18 @@
+# kills: the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size
+# suite: node --test --test-name-pattern ^the.full.screen.settings.panel.fits.with.no.scroll.in.every.mode..at.320x568.and.every.landscape.size$ tests/e2e.test.js
+# R186-2 (docs/plans/2026-10-01-resources-menu.md:85-86,133). Hides the last
+# panel-group (Resources) in the landscape grid, so `offsetParent` drops its
+# three links out of `ctrls` entirely and every other assertion in the fit
+# test would pass vacuously at 844x390/926x428/667x375/1280x500 - exactly the
+# "hidden group passes vacuously" case the resIds assertion exists to catch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -257,6 +257,7 @@ a.mode{text-decoration:none}
+   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+     align-content:start; align-items:start}
+   #settings-panel > .panel-group{width:auto}
++  #settings-panel > .panel-group:last-child{display:none}
+ }
+ #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
+ #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}

@@ -1492,7 +1492,7 @@ function run() {
   const RESOURCES = [
     { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER" },
     { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES" },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "TRAINING CARDS" },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC" },
   ];
 
   test("the settings panel has exactly one Resources group with the three outbound links", async () => {

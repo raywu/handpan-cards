@@ -961,8 +961,12 @@ footer.seq{row-gap:var(--sp-1)}
    Forces print colour adjustment, clears the page background and padding for
    paper, and resets .scene's swipe transform so a card mid-flight never
    prints offset or tilted. None of that is scoped by selector specificity,
-   so nothing after this block in the <style> element could ever safely
-   override it - this block is deliberately LAST, enforced by
+   so it leans on cascade order instead: CSS resolves an equal-specificity
+   tie in favor of whichever rule comes LATER, so being last here means
+   this block overrides every earlier rule touching the same properties -
+   not that nothing after it could safely override it (trivially true,
+   since it is last), but that nothing before it can escape being
+   overridden by it. Enforced by
    tests/test_render_agreement.py::test_print_block_is_last_in_the_style_element.
    The legacy browser-print sheet (the old printing body class) was retired
    once the owner's device gate (item 1, iPhone ruler check) passed; every
@@ -1251,7 +1255,7 @@ footer.seq{row-gap:var(--sp-1)}
       <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"
          target="_blank" rel="noopener">DING &amp; TONES</a>
       <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
-         target="_blank" rel="noopener" aria-label="Handpan Training Cards by Sven Kirchhofer">TRAINING CARDS</a>
+         target="_blank" rel="noopener">HTC</a>
     </div>
   </div>
 </div>
@@ -6771,8 +6775,6 @@ function render() {
       `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
     document.getElementById("front").innerHTML = question;
     document.getElementById("back").innerHTML  = answer;
-    document.getElementById("count").classList.remove("seq");
-    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   } else {
     const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
       `<div class="diagwrap">${pan(d, ch)}</div>
@@ -6781,6 +6783,8 @@ function render() {
       `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
     document.getElementById("front").innerHTML = questionB;
     document.getElementById("back").innerHTML  = answerB;
+  }
+  if (mode !== "S") {
     document.getElementById("count").classList.remove("seq");
     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   }
@@ -7953,7 +7957,8 @@ card.addEventListener("click", flip);
 // lives in the settings panel, not inside #card, so neither element is a
 // descendant this handler ever sees: the target check below has no live
 // target today. Left in place (2026-09-30 quality-refactor finding 9,
-// owner-gated: see CLAUDE.md G5) rather than removed, since #card carries
+// owner-gated: see docs/plans/2026-09-30-quality-refactor.md:97 G5)
+// rather than removed, since #card carries
 // no controls at all right now and a future one could make it relevant
 // again.
 card.addEventListener("keydown", e => {

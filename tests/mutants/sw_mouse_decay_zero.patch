@@ -1,0 +1,20 @@
+# kills: card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips
+# suite: node --test --test-name-pattern ^card.swipe..a.click.more.than.400ms.after.a.committing.mouse.drag.is.not.eaten.and.flips$ tests/e2e.test.js
+# Q33/D180-6: drops the mouse branch of the decay ternary to 0, same as
+# touch/pen, so a committing mouse release never gets its 400ms eatClick
+# window at all. The test's own `eatClick` check right after `finishAnimations()`
+# - before the 450ms wait - requires eatClick still true at that point; a
+# zero-length decay has already fired its setTimeout(0) by then, so the
+# assertion sees `false` where it expects `true`.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8236,7 +8236,7 @@ function release(e, cancelled, pushPoint = true) {
+   // 0) ahead of pointerup/click on a real mouse release, so the trailing
+   // click can arrive a tick or more after this runs - touch/pen keep the
+   // immediate decay, since their synthesized click (if any) follows at once.
+-  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
++  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 0 : 0);
+   if (reducedMotion.matches) {
+     // Was its own scene.style.transform/willChange reset, byte-for-byte the
+     // same as swipeRest() - re-implemented, not duplicated-by-reference, so a

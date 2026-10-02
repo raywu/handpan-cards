@@ -1,10 +1,13 @@
 # kills: card swipe: a click right after a cancelled drag is not eaten
 # suite: node --test --test-name-pattern ^card.swipe:.a.click.right.after.a.cancelled.drag.is.not.eaten$ tests/e2e.test.js
 # Drops the `!cancelled` guard, so a cancelled release (pointercancel/
-# lostpointercapture) arms eatClick same as a normal commit. No click ever
-# follows a cancel, so eatClick is left stuck true with nothing to clear it,
-# eating the next unrelated click - e.g. Enter's native click on a focused
-# button.
+# lostpointercapture) arms eatClick same as a normal commit, decay and all
+# (the decay branch at index.html:8159-8164 is untouched, so eatClick still
+# clears itself after the usual 400ms/0ms window - it is not stuck). The
+# failure is that a click landing inside that window right after a
+# cancelled drag is wrongly eaten instead of flipping, since a cancel
+# should never arm eatClick at all (it has no trailing click of its own to
+# consume).
 # Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html

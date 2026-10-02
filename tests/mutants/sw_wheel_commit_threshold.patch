@@ -1,0 +1,17 @@
+# kills: card swipe (wheel): deltaX under 80px does nothing and leaves no transform
+# suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.under.80px.does.nothing.and.leaves.no.transform$ tests/e2e.test.js
+# Q33/D180-6: drops WHEEL_COMMIT_PX from 80 to 30, so the test's 40px
+# (20+20) sub-threshold gesture now clears the lowered threshold and
+# wrongly commits a step instead of leaving the count at `1 / n`.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8310,7 +8310,7 @@ card.addEventListener("contextmenu", e => { if (drag) release(e, true); });
+ // <main> holds only .scene (index.html's header/#decks and the settings
+ // panel are outside it), so a wheel listener here cannot catch an unrelated
+ // horizontal-scroll element.
+-const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
++const WHEEL_COMMIT_PX = 30, WHEEL_GESTURE_GAP_MS = 160;
+ // document.querySelector, not getElementById: <main> carries no id, and the
+ // unit-test DOM stub (tests/helpers/sandbox.js) only tracks ids, so this
+ // deliberately returns null there - same as panelBackground's own

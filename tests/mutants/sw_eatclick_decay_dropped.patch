@@ -1,0 +1,22 @@
+# kills: card swipe: Enter on a focused #next after a settled touch swipe still steps
+# suite: node --test --test-name-pattern ^card.swipe..Enter.on.a.focused..next.after.a.settled.touch.swipe.still.steps$ tests/e2e.test.js
+# Q33/D180-6: drops setEatClick's decay branch entirely, so an armed eatClick
+# never auto-clears on its own - only another setEatClick call (armed or
+# cleared) resets it. A touch drag never produces a trailing click/pointerdown
+# to clear it, so eatClick stays stuck true and eats the very next click
+# anywhere, including the native click a browser synthesizes for Enter on a
+# focused button, well after the swipe had fully settled - the exact
+# regression release()'s own decay exists to prevent.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8159,9 +8159,6 @@ function swipeRest() { scene.style.transform = ""; scene.style.willChange = "";
+ function setEatClick(v, decayMs) {
+   if (eatClickTimer) { clearTimeout(eatClickTimer); eatClickTimer = null; }
+   eatClick = v;
+-  if (v && decayMs != null) {
+-    eatClickTimer = setTimeout(() => { eatClick = false; eatClickTimer = null; }, decayMs);
+-  }
+ }
+ function land() {
+   if (!flight) return;

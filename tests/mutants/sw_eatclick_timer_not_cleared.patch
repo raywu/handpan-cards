@@ -1,0 +1,21 @@
+# kills: a stale eatClick decay never clears a re-armed eatClick
+# suite: node --test --test-name-pattern ^a.stale.eatClick.decay.never.clears.a.re.armed.eatClick$ tests/e2e.test.js
+# Q33/D180-6 (deferred to post-EH-merge per integrator amendment, added
+# 2026-10-01 after lane EH's killer test landed on main). Drops
+# `clearTimeout(eatClickTimer)` from setEatClick's guard, so a stale timer
+# from an earlier setEatClick call is forgotten (eatClickTimer is nulled)
+# but never actually cancelled: when a second call re-arms eatClick before
+# the first decay fires, the first timer still fires later on its own
+# original schedule and wrongly clears the re-armed eatClick early.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8162,7 +8162,7 @@ function swipeRest() { scene.style.transform = ""; scene.style.willChange = "";
+ // from an earlier release can never clear a freshly-armed eatClick out from
+ // under a later one (see the click-mid-flight race test).
+ function setEatClick(v, decayMs) {
+-  if (eatClickTimer) { clearTimeout(eatClickTimer); eatClickTimer = null; }
++  if (eatClickTimer) { eatClickTimer = null; }
+   eatClick = v;
+   if (v && decayMs != null) {
+     eatClickTimer = setTimeout(() => { eatClick = false; eatClickTimer = null; }, decayMs);

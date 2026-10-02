@@ -4205,6 +4205,14 @@ test("an unsupported deck entered from mode A leaves no stale count once mode S 
   assert.strictEqual(app.els.count.children.length, 0);
 });
 
+test("#count drops .seq when leaving mode S for mode B", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  assert.strictEqual(app.els.count.classList.contains("seq"), true, "mode S must mark #count .seq");
+  app.run('setMode("B")');
+  assert.strictEqual(app.els.count.classList.contains("seq"), false, "#count must drop .seq in mode B");
+});
+
 test("modes A and B render byte-identical DOM to the pre-lane base, for all three decks at idx 0 and 1", () => {
   for (const deckId of ["hijaz", "pygmy", "amara"]) {
     for (const idx of [0, 1]) {
