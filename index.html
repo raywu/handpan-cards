@@ -8430,8 +8430,14 @@ document.addEventListener("pointerdown", e => {
 }, true);
 document.addEventListener("keydown", () => { land(); }, true);
 document.addEventListener("click", e => {
+  // D180-7 (docs/plans/2026-10-01-swipe-momentum.md): a mouse release that
+  // commits a drag fires its own trailing click. Check eatClick FIRST and
+  // return - calling land() unconditionally used to kill the fly-out
+  // animation on that very click, before it ever had a chance to play at
+  // its release speed. A click that didn't come from a drag (eatClick
+  // false) still lands a live flight, same as before.
+  if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); return; }
   land();
-  if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); }
 }, true);
 
 /* ---------------- go ---------------- */
