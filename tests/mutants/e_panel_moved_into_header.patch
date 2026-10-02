@@ -65,7 +65,6 @@
 # and reverting) since the tool's removed-lines anchor can drop the diff
 # body on a patch this large - the same failure mode as the 2026-10-02
 # refresh above.
-index 257b535..cad21b9 100644
 --- a/index.html
 +++ b/index.html
 @@ -1110,6 +1110,87 @@ footer.seq{row-gap:var(--sp-1)}
