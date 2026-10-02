@@ -890,6 +890,59 @@ test("refresh_mutants.py refuses to run (non-check mode) on a dirty target file"
     preimage + "uncommitted\n", "a refused run must not touch the dirty file either");
 });
 
+/* M179-4 (2026-10-01 post-refactor triage). The dirty-tree refusal ran `git
+ * diff --quiet -- <targets>`, which compares the worktree against the INDEX,
+ * not HEAD - a change that has been `git add`ed but not committed makes the
+ * worktree match the index, so the refusal missed it entirely and a staged
+ * edit would get silently baked into the freshly-written patch body. Fixed
+ * by comparing against HEAD instead.
+ *
+ * M-3 (same step): the refusal listed every target any patch might touch,
+ * not just the dirty ones, which sends the user hunting through a list of
+ * clean files for the one that is actually dirty. This fixture has TWO
+ * target files - only one of them staged-dirty - so the message naming just
+ * that one proves both fixes at once. */
+test("M179-4 refresh refuses a staged-only edit and names only dirty files", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-staged-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\n");
+  fs.writeFileSync(path.join(dir, "other.txt"), "one\ntwo\nthree\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  // Build one real patch per target file, same discipline as elsewhere here:
+  // generate via `git diff` against a committed tree, then check out.
+  function makePatch(file, preimage, postimage) {
+    fs.writeFileSync(path.join(dir, file), postimage);
+    const body = git(dir, ["diff", "--", file]);
+    git(dir, ["checkout", "--", file]);
+    return body;
+  }
+  const subjectBody = makePatch("subject.txt", "alpha\nbeta\ngamma\n", "alpha\nBETA\ngamma\n");
+  const otherBody = makePatch("other.txt", "one\ntwo\nthree\n", "one\nTWO\nthree\n");
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_subject.patch"),
+    `# kills: subject\n# suite: node check.js\n${subjectBody}`);
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_other.patch"),
+    `# kills: other\n# suite: node check.js\n${otherBody}`);
+
+  // Stage (but do not commit) an edit to subject.txt only.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\nstaged\n");
+  git(dir, ["add", "subject.txt"]);
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0, "a staged-only edit must not be silently refreshed");
+  assert.match(result.stderr, /REFUSING/, result.stderr);
+  assert.match(result.stderr, /subject\.txt/, result.stderr);
+  assert.doesNotMatch(result.stderr, /other\.txt/,
+    `the refusal must name only the dirty file, not every target:\n${result.stderr}`);
+});
+
 test("refresh_mutants.py --check tolerates a dirty target file", (t) => {
   const preimage = "alpha\nbeta\ngamma\ndelta\n";
   const postimage = "alpha\nBETA\ngamma\ndelta\n";

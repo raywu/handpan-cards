@@ -288,7 +288,7 @@ def refresh_one(patch_path, check_only):
         for full_path, _, new_text in touched:
             full_path.write_text(new_text, encoding="utf-8")
         diff_paths = [fp for _, fp, _ in touched]
-        diffed = git(["diff", "--"] + diff_paths)
+        diffed = git(["diff", "--no-color", "--no-ext-diff", "--"] + diff_paths)
         new_body = strip_index_lines(diffed.stdout)
     finally:
         for full_path, orig in originals.items():
@@ -318,10 +318,21 @@ def main(argv):
         for name in names:
             text = (MUTANTS_DIR / name).read_text(encoding="utf-8")
             targets.update(PLUS_PATH_RE.findall(text))
-        if targets and git(["diff", "--quiet", "--"] + sorted(targets)).returncode != 0:
-            print("REFUSING: tracked files already modified: "
-                  + ", ".join(sorted(targets)), file=sys.stderr)
-            return 1
+        if targets:
+            # M179-4 (2026-10-01 post-refactor triage): compare against HEAD,
+            # not the index - `git diff --quiet --` (no HEAD) compares the
+            # worktree to the index, so a `git add`ed-but-uncommitted edit
+            # makes the two match and the refusal missed it. `--name-only`
+            # against HEAD both detects a staged-only edit and gives M-3's
+            # fix for free: the dirty SUBSET of targets, not every target any
+            # patch might touch. M-4: `--no-color --no-ext-diff` so a user's
+            # `diff.external`/`color.diff=always` config cannot corrupt this.
+            dirty = git(["diff", "--no-color", "--no-ext-diff", "--name-only",
+                         "HEAD", "--"] + sorted(targets)).stdout.split()
+            if dirty:
+                print("REFUSING: tracked files already modified: "
+                      + ", ".join(sorted(dirty)), file=sys.stderr)
+                return 1
 
     changed = []
     problems = []

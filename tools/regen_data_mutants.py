@@ -240,14 +240,22 @@ if len(sys.argv) > 1:
         sys.exit(2)
     sys.exit(check_only())
 
-if subprocess.run(["git", "diff", "--quiet", "--"] + TRACKED).returncode != 0:
-    sys.exit("REFUSING: tracked files already modified")
+_dirty = subprocess.run(
+    ["git", "diff", "--no-color", "--no-ext-diff", "--name-only", "HEAD", "--"] + TRACKED,
+    capture_output=True, text=True).stdout.split()
+if _dirty:
+    # M179-4 (2026-10-01 post-refactor triage): compare against HEAD, not the
+    # index, so a `git add`ed-but-uncommitted edit is caught too, and name
+    # only the dirty subset (M-3) rather than every tracked path. `--no-color
+    # --no-ext-diff` (M-4) guards against a user's diff.external/color.diff
+    # config. Mirrors tools/refresh_mutants.py's same fix.
+    sys.exit("REFUSING: tracked files already modified: " + ", ".join(sorted(_dirty)))
 
 for name, (header, replacements, mutator) in MUTANTS.items():
     assert not replacements, (name, "replacements", replacements)
     if mutator is not None:
         apply_json(mutator, sync=name not in DESYNC_ONLY)
-    diff = sh("git", "diff", "-U8", "--", *TRACKED)
+    diff = sh("git", "diff", "--no-color", "--no-ext-diff", "-U8", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
     # Drop git's `index <preimage>..<postimage>` lines. They name the blob this
     # patch was cut from, which the next commit to the file invalidates, and
