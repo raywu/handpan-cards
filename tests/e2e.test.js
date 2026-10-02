@@ -9098,6 +9098,319 @@ function run() {
       });
     });
 
+    /* ---------------------------------------------------------------- *
+     * mouse momentum - docs/plans/2026-10-01-swipe-momentum.md
+     * ---------------------------------------------------------------- */
+    describe("mouse momentum", () => {
+      // Installs a recorder around scene.animate(), once per fresh load: for
+      // every call it records { kf, timing, t }, where `timing` is the
+      // NORMALIZED easing from effect.getTiming() (the form
+      // "cubic-bezier(0.4, 0, 1, 1)" the rest of this suite already reads at
+      // `:7689` - the raw opts string would not compare equal, finding OV-3).
+      // It attaches its OWN anim.finished.then() before returning the
+      // animation, so it runs before the app's own .then(land) in flyOut()
+      // while fill:"forwards" still holds the end pose - that is what lets
+      // `finishedAt`/`finishRect` see where the card actually landed, not
+      // the rest position land() resets it to. It also schedules a
+      // setTimeout(30) that samples { alive, m41, currentTime } ON THE PAGE,
+      // 30ms after creation, so CDP round-trip latency cannot stretch that
+      // window (finding F1: currentTime can still be 0 if the sample lands
+      // before the first animation frame - callers must check that first).
+      async function installRecorder() {
+        await b.eval(`
+          window.__anims = [];
+          const scene = document.querySelector(".scene");
+          const orig = scene.animate.bind(scene);
+          scene.animate = (kf, opts) => {
+            const anim = orig(kf, opts);
+            const rec = { kf, timing: anim.effect.getTiming(), t: performance.now(), finishedAt: null, finishRect: null, sample: null };
+            window.__anims.push(rec);
+            anim.finished.then(() => {
+              rec.finishedAt = performance.now();
+              const r = document.getElementById("card").getBoundingClientRect();
+              rec.finishRect = { left: r.left, right: r.right };
+            }, () => {});
+            setTimeout(() => {
+              const t = getComputedStyle(scene).transform;
+              let m41 = 0;
+              if (t !== "none") {
+                const m3 = /^matrix3d\\(([^)]+)\\)$/.exec(t);
+                const v = (m3 ? m3[1] : /^matrix\\(([^)]+)\\)$/.exec(t)[1]).split(",").map(Number);
+                m41 = m3 ? v[12] : v[4];
+              }
+              rec.sample = { alive: !!(flight && flight.anim === anim), m41, currentTime: anim.currentTime };
+            }, 30);
+            return anim;
+          };
+          return true;
+        `);
+      }
+      const recordedAnims = () => b.eval(`return window.__anims;`);
+      // Keyframe #0's translateX, in px - the dx the out-animation started
+      // from (flyOut's own swipeXf(dx) first keyframe).
+      function dxOf(kf) {
+        return parseFloat(/translate3d\(([-\d.]+)px/.exec(kf[0].transform)[1]);
+      }
+      // Replays a recorded { kf, timing } pair on a detached, off-screen div:
+      // paused at currentTime 0 and then 4ms, (x4 - x0) / 4 is the curve's
+      // own slope near t=0 - the same initial speed the unit tests check
+      // analytically from x1/y1, here read back from the real WAAPI engine
+      // instead.
+      async function replaySpeed(anim) {
+        return b.eval(`
+          const kf = ${JSON.stringify(anim.kf)};
+          const timing = ${JSON.stringify(anim.timing)};
+          const div = document.createElement("div");
+          div.style.position = "fixed"; div.style.left = "-9999px"; div.style.top = "-9999px";
+          document.body.appendChild(div);
+          const a = div.animate(kf, timing);
+          a.pause();
+          function x() {
+            const t = getComputedStyle(div).transform;
+            if (t === "none") return 0;
+            const m3 = /^matrix3d\\(([^)]+)\\)$/.exec(t);
+            const v = (m3 ? m3[1] : /^matrix\\(([^)]+)\\)$/.exec(t)[1]).split(",").map(Number);
+            return m3 ? v[12] : v[4];
+          }
+          a.currentTime = 0;
+          const x0 = x();
+          a.currentTime = 4;
+          const x4 = x();
+          div.remove();
+          return (x4 - x0) / 4;
+        `);
+      }
+
+      test("card swipe (mouse momentum): a fast release flies on at its release speed, leaves the viewport, then the next card enters", async () => {
+        async function flick(width, height, legs, v) {
+          await b.setViewport(width, height, false);
+          try {
+            await freshLoad();
+            const n = (await decksMeta())[0].chords;
+            await installRecorder();
+            await b.drag("#card", legs, { pointer: "mouse" });
+            await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
+              { label: "the out animation's 30ms sample to be taken" });
+            const out = (await recordedAnims())[0];
+            assert.ok(out.sample, "the 30ms sample must have been taken");
+            assert.strictEqual(out.sample.alive, true,
+              "the flight must still be live 30ms after release (D180-7)");
+            assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
+            const dx = dxOf(out.kf);
+            const liveV = (out.sample.m41 - dx) / out.sample.currentTime;
+            assert.strictEqual(Math.sign(liveV), Math.sign(v), "the live sample must move in the release direction");
+            assert.ok(Math.abs(liveV) >= 0.85 * Math.abs(v) && Math.abs(liveV) <= 1.15 * Math.abs(v),
+              `live average speed ${liveV} out of [0.85, 1.15] x ${v}`);
+            const replayed = await replaySpeed(out);
+            assert.strictEqual(Math.sign(replayed), Math.sign(v), "the replayed curve must start in the release direction");
+            assert.ok(Math.abs(replayed) >= 0.9 * Math.abs(v) && Math.abs(replayed) <= 1.1 * Math.abs(v),
+              `replayed start speed ${replayed} out of [0.9, 1.1] x ${v}`);
+            await b.waitFor(`window.__anims[0].finishedAt !== null`, { label: "the out animation to finish", timeout: 2000 });
+            const finished = (await recordedAnims())[0];
+            if (v < 0) assert.ok(finished.finishRect.right <= 0, `leftward fly-out must clear the viewport, right=${finished.finishRect.right}`);
+            else assert.ok(finished.finishRect.left >= width, `rightward fly-out must clear the viewport, left=${finished.finishRect.left}`);
+            await b.finishAnimations();
+            await b.waitFor(`window.__anims.length >= 2`, { label: "the enter animation to be recorded" });
+            const anims = await recordedAnims();
+            assert.strictEqual(anims.length, 2, "exactly one enter animation must follow the out animation");
+            const enter = anims[1];
+            assert.ok(enter.kf[0].opacity !== undefined, "the enter animation must be the opacity keyframe pair");
+            assert.ok(enter.t >= finished.finishedAt, "the enter animation must start at or after the out animation finished");
+            const newCount = await countText();
+            const [idx] = newCount.split(" / ").map(Number);
+            return { n, idx };
+          } finally {
+            await b.setViewport(900, 900, false);
+          }
+        }
+
+        let r = await flick(1024, 700, [[-40, 16], [-100, 32], [-180, 48]], -3.75);
+        assert.strictEqual(r.idx, 2, "a leftward release must advance exactly one card");
+        assert.strictEqual(await cardFlipped(), false, "a committing drag must never flip the card");
+
+        await flick(380, 800, [[-40, 20], [-100, 40], [-160, 80]], -2);
+
+        // The rightward (dir = -1) leg runs from the SECOND card, reached by
+        // one #next click, so the "go back" path is covered too.
+        await b.setViewport(1024, 700, false);
+        try {
+          await freshLoad();
+          await b.click("#next");
+          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${(await decksMeta())[0].chords}"`,
+            { label: "the #next click to land" });
+          await installRecorder();
+          await b.drag("#card", [[40, 16], [100, 32], [180, 48]], { pointer: "mouse" });
+          await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
+            { label: "the out animation's 30ms sample to be taken" });
+          const out = (await recordedAnims())[0];
+          assert.strictEqual(out.sample.alive, true);
+          const dx = dxOf(out.kf);
+          const liveV = (out.sample.m41 - dx) / out.sample.currentTime;
+          assert.ok(liveV > 0, "a rightward release must move right");
+          const replayed = await replaySpeed(out);
+          assert.ok(replayed > 0 && Math.abs(replayed - 3.75) / 3.75 <= 0.1);
+          await b.finishAnimations();
+          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "1 / ${(await decksMeta())[0].chords}"`,
+            { label: "the rightward release to go back one card" });
+          assert.strictEqual(await cardFlipped(), false);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+      test("card swipe (mouse momentum): a slow commit starts at the floor speed and is off-screen within SWIPE_MOMENTUM_MAX_MS", async () => {
+        await b.setViewport(1024, 700, false);
+        try {
+          await freshLoad();
+          await installRecorder();
+          await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
+          await b.waitFor(`window.__anims.length >= 1`, { label: "the out animation to be recorded" });
+          const out = (await recordedAnims())[0];
+          assert.ok(out.timing.duration <= 320, `duration ${out.timing.duration} must not exceed SWIPE_MOMENTUM_MAX_MS`);
+          const replayed = await replaySpeed(out);
+          assert.ok(replayed < 0, "a leftward commit must start moving left");
+          assert.ok(Math.abs(replayed) >= 0.9 * 1.5 && Math.abs(replayed) <= 1.1 * 1.5,
+            `floor start speed ${replayed} out of [0.9, 1.1] x 1.5`);
+          await b.waitFor(`flight === null`, { label: "the flight to land", timeout: out.timing.duration + 1000 });
+          const finished = (await recordedAnims())[0];
+          assert.ok(finished.finishRect.right <= 0, `must clear the viewport, right=${finished.finishRect.right}`);
+          await b.finishAnimations();
+          const anims = await recordedAnims();
+          assert.strictEqual(anims.length, 2);
+          assert.ok(anims[1].t >= finished.finishedAt);
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+      test("card swipe (mouse momentum): touch, pen and wheel fly-outs keep the fixed 220ms curve", async () => {
+        await b.setViewport(1024, 700, false);
+        try {
+          // Touch.
+          await freshLoad();
+          await installRecorder();
+          await b.drag("#card", [[-40, 16], [-100, 32], [-180, 48]], { pointer: "touch" });
+          await b.waitFor(`window.__anims.length >= 1`, { label: "the touch out animation to be recorded" });
+          let out = (await recordedAnims())[0];
+          assert.strictEqual(out.timing.duration, 220);
+          assert.strictEqual(out.timing.easing, "cubic-bezier(0.4, 0, 1, 1)");
+          await b.finishAnimations();
+
+          // Pen, sent inline (tests/helpers/cdp.js's drag() takes no
+          // pointerType - decision 4's auto-decision 4 keeps it that way).
+          await freshLoad();
+          await installRecorder();
+          const box = await b.eval(`
+            const r = document.getElementById("card").getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+          `);
+          const observedPointerType = await b.eval(`
+            window.__seenPointerType = null;
+            document.getElementById("card").addEventListener("pointerdown",
+              (e) => { window.__seenPointerType = e.pointerType; }, { once: true });
+            return true;
+          `).then(() => true);
+          void observedPointerType;
+          await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
+          await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 40, y: box.y, buttons: 1, pointerType: "pen" });
+          await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 180, y: box.y, buttons: 1, pointerType: "pen" });
+          await b.armPendingSettle();
+          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x - 180, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
+          b.settleAfterRealRelease();
+          const seenPointerType = await b.eval(`return window.__seenPointerType;`);
+          if (seenPointerType === "pen") {
+            await b.waitFor(`window.__anims.length >= 1`, { label: "the pen out animation to be recorded" });
+            out = (await recordedAnims())[0];
+            assert.strictEqual(out.timing.duration, 220, "pen must keep the fixed 220ms curve");
+            assert.strictEqual(out.timing.easing, "cubic-bezier(0.4, 0, 1, 1)");
+          }
+          // Auto-decision (plan, decision 4, item 4): if CDP does not surface
+          // pointerType "pen" to the page, this leg is dropped rather than
+          // changing tests/helpers/cdp.js (a non-goal of this lane).
+          await b.finishAnimations();
+
+          // Wheel.
+          await freshLoad();
+          await installRecorder();
+          const where = await b.eval(`
+            const r = document.querySelector("main").getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+          `);
+          for (let i = 0; i < 4; i++) {
+            await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: where.x, y: where.y, deltaX: 30, deltaY: 0 });
+          }
+          await b.waitFor(`window.__anims.length >= 1`, { label: "the wheel out animation to be recorded" });
+          out = (await recordedAnims())[0];
+          assert.strictEqual(out.timing.duration, 220, "wheel must keep the fixed 220ms curve");
+          assert.strictEqual(out.timing.easing, "cubic-bezier(0.4, 0, 1, 1)");
+          await b.finishAnimations();
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+      test("card swipe (mouse momentum): under reduced motion a mouse commit steps instantly with no animation", async () => {
+        await b.setViewport(1024, 700, false);
+        try {
+          await freshLoad();
+          const n = (await decksMeta())[0].chords;
+          try {
+            await b.send("Emulation.setEmulatedMedia", {
+              media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+            });
+            await installRecorder();
+            await b.drag("#card", [[-40, 16], [-100, 32], [-180, 48]], { pointer: "mouse" });
+            assert.strictEqual(await countText(), `2 / ${n}`, "reduced motion must step synchronously on release");
+            const anims = await recordedAnims();
+            assert.strictEqual(anims.length, 0, "reduced motion must never build a momentum curve");
+          } finally {
+            await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+          }
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+
+      test("card swipe (mouse momentum): buttons, arrows and the wheel during a live mouse flight land it first, never dropping or doubling a step", async () => {
+        await b.setViewport(1024, 700, false);
+        try {
+          // (a) a real click on #next.
+          await freshLoad();
+          let n = (await decksMeta())[0].chords;
+          await installRecorder();
+          await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
+          assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
+          await b.click("#next");
+          await expectCount(`3 / ${n}`, "a real click on #next mid-flight must land the flight, then step");
+
+          // (b) an ArrowRight keydown.
+          await freshLoad();
+          n = (await decksMeta())[0].chords;
+          await installRecorder();
+          await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
+          assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
+          await b.key("ArrowRight", "ArrowRight", 39);
+          await expectCount(`3 / ${n}`, "ArrowRight mid-flight must land the flight, then step");
+
+          // (c) a wheel gesture started mid-flight is skipped entirely.
+          await freshLoad();
+          n = (await decksMeta())[0].chords;
+          await installRecorder();
+          await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
+          assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
+          const where = await b.eval(`
+            const r = document.querySelector("main").getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+          `);
+          await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: where.x, y: where.y, deltaX: 30, deltaY: 0 });
+          await b.finishAnimations();
+          await expectCount(`2 / ${n}`, "a wheel gesture mid-flight must be skipped entirely, not a second step");
+        } finally {
+          await b.setViewport(900, 900, false);
+        }
+      });
+    });
+
     test("card swipe: #next and ArrowRight on a flipped card deal without a reverse-flip transition", async () => {
       await freshLoad();
       // b.settle() after flipping is not optional here: two style changes
