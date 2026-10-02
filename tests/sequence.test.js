@@ -530,17 +530,26 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     "a 5-field chord should push the sequence past intermediate's 4-note cap (root E avoids confounding with Dm's repeated D root)");
 
   // LOW/HIGH register excludes a card from intermediate even at <=4 fields.
+  // A plain Em triad (index 1) is seeded ahead of the LOW VOICING Em (index
+  // 3) purely so anchors() elects the plain one as E's sole anchor (first
+  // seen wins a shape-tier tie) - that keeps the tested sequence [0, 2, 3]
+  // out of BASIC for the anchor reason alone, so failing INTERMEDIATE can
+  // only be attributed to the register check, not to a root repeat or a
+  // BASIC/INTERMEDIATE gate confound. The plain Em (index 1) is never part
+  // of the tested sequence.
   const registerDeck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
     "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
-    "7": ["D", 5, 74, "rim", null, "7"], "8": ["F", 5, 77, "rim", null, "8"], "9": ["A", 5, 81, "rim", null, "9"]
+    "7": ["E", 5, 76, "rim", null, "7"], "8": ["G", 5, 79, "rim", null, "8"], "9": ["B", 5, 83, "rim", null, "9"],
+    "10": ["E", 6, 88, "rim", null, "10"], "11": ["G", 6, 91, "rim", null, "11"], "12": ["B", 6, 95, "rim", null, "12"]
   }, [
     { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] },
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
-    { main: "Dm", sup: "", subtitle: "- LOW VOICING", fields: [7, 8, 9], roots: [7] }
+    { main: "Em", sup: "", subtitle: "- LOW VOICING", fields: [10, 11, 12], roots: [10] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 1, 2]), "advanced",
+  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 2, 3]), "advanced",
     "a LOW VOICING card should exclude the sequence from intermediate");
 
   // The sus-resolve exception must check the WRAP pair (last position back to
