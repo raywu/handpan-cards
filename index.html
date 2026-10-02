@@ -6771,8 +6771,6 @@ function render() {
       `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
     document.getElementById("front").innerHTML = question;
     document.getElementById("back").innerHTML  = answer;
-    document.getElementById("count").classList.remove("seq");
-    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   } else {
     const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
       `<div class="diagwrap">${pan(d, ch)}</div>
@@ -6781,6 +6779,8 @@ function render() {
       `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
     document.getElementById("front").innerHTML = questionB;
     document.getElementById("back").innerHTML  = answerB;
+  }
+  if (mode !== "S") {
     document.getElementById("count").classList.remove("seq");
     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   }
