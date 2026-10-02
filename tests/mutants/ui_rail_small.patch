@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -529,7 +529,7 @@ button.nav:active{background:#2e281e}
- .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
-   color:#c4bcab; text-align:center}
- .count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
--  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
-+  font:600 11px/1 "Nunito Sans"; letter-spacing:.02em; color:#c4bcab}
+@@ -621,7 +621,7 @@ button.nav:active{background:#2e281e}
+    genuinely does not fit). ADVANCED's longer rails (up to 6 chords) may wrap
+    to a second line; min-width:0 lets the flex rail shrink inside the grid
+    track instead of forcing #count wider than its column. */
+-.count.seq{min-width:0; font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
++.count.seq{min-width:0; font:600 11px/1 "Nunito Sans"; letter-spacing:.02em; color:#c4bcab}
  /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
     deck's root colour carried as an underline instead of the text's own ink -
     O3/D10: the old ink-coloured approach failed AA on more than one deck's
