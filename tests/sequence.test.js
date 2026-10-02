@@ -529,6 +529,15 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), "advanced",
     "a 5-field chord should push the sequence past intermediate's 4-note cap (root E avoids confounding with Dm's repeated D root)");
 
+  // Nit (perf review on PR #202): a length-2 sequence is exclusively a BASIC
+  // shape - neither intermediate ({3,4}) nor advanced ({4,5,6}) ever deal a
+  // length-2 sequence - so one that fails BASIC's gate has no tier left to
+  // fall through to and must classify null, not default to "advanced". Here
+  // chord2 (Em9, 5 fields) is not anchor-eligible, so [0, 2] fails basicGate's
+  // "every chord must be an anchor" check.
+  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 2]), null,
+    "a length-2 sequence that fails BASIC has no tier to fall through to and should classify null");
+
   // LOW/HIGH register excludes a card from intermediate even at <=4 fields.
   // A plain Em triad (index 1) is seeded ahead of the LOW VOICING Em (index
   // 3) purely so anchors() elects the plain one as E's sole anchor (first
@@ -874,6 +883,79 @@ test("a deck forcing the DFS fallback on every length finishes under 50ms", () =
     const dt = Date.now() - t0;
     assert.ok(result.chords, `${tier} forced fallback should still deal`);
     assert.ok(dt < 50, `${tier} forced fallback took ${dt}ms`);
+  }
+});
+
+// Perf review on PR #202 (reviewer FAIL @ f037e86): pick() recomputed
+// anchors/home inside tierOf on every accept() call in the hot sampling and
+// DFS-fallback loops, so these four specific generated decks - all of which
+// land in the "length 4 pool empty, drop to exhaustive DFS" path for at
+// least one tier - measured 54-107ms, over the 50ms bound (D1 step 6 / E-1).
+// The fix computes a ctx (anchors list, home pc, home anchor index) once per
+// pick() call and threads it through the sampler/DFS instead of recomputing
+// per leaf; accept() also now checks the cheap matrix/identical-card rule
+// before the tier gate. Swept over seeds 0..49 on every tier to catch any
+// seed-dependent regression, not just the reviewer's reported seeds.
+test("the four reviewer-reported slow decks finish under 50ms over seeds 0..49", () => {
+  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
+  const seedStrings = [
+    "(G3) D4 F4 F#4 B4 F#5 G5 A#5",
+    "(A3) E4 G4 G#4 A4 C5 D#5 E5 A5",
+    "(B3) F4 F#4 A4 B4 C5 D5 F5 F#5 A5 B5 C6 D6",
+    "(G#3) E4 G4 G#4 A4 C5 D#5 G#5"
+  ];
+  for (const s of seedStrings) {
+    const parsed = full.core.parseSeed(s, {});
+    assert.equal(parsed.ok, true, `reviewer seed did not parse: ${s}`);
+    const built = full.select.build(parsed.value);
+    assert.equal(built.ok, true, `reviewer seed did not build: ${s}`);
+    const deck = built.value;
+    for (const tier of ["basic", "intermediate", "advanced"]) {
+      for (let seed = 0; seed < 50; seed += 1) {
+        const t0 = Date.now();
+        let result;
+        assert.doesNotThrow(() => {
+          result = tier === "basic"
+            ? full.sequence.pick(deck, full.sequence.mulberry32(seed), null)
+            : full.sequence.pick(deck, full.sequence.mulberry32(seed), null, tier);
+        }, `${s} ${tier} seed ${seed} threw`);
+        const dt = Date.now() - t0;
+        assert.ok(dt < 50, `${s} ${tier} seed ${seed} took ${dt}ms`);
+        assert.ok(result.chords || typeof result.reason === "string",
+          `${s} ${tier} seed ${seed} returned neither chords nor a reason`);
+      }
+    }
+  }
+});
+
+// Perf review on PR #202: a stuck rng (every draw forced to 0) on the
+// built-in Pygmy deck (52 chords, the largest built-in) forces the full DFS
+// fallback - the reviewer measured 8965ms on advanced before the fix. The
+// fix's ctx-sharing and connectivity pruning alone brought this to ~100ms,
+// still over budget purely because Pygmy's accepted set at this tier is
+// itself close to the (then) 200,000-node budget; reducing the budget to the
+// named DFS_NODE_BUDGET=40000 (src/engine/sequence.js) measured ~22-27ms on
+// repeated runs, comfortably under 50ms, per the coordinator's explicit
+// allowance to cap via the node budget and state the measured figure here.
+// "lengths 5-6" in the review ask are advanced's natural {4,5,6} range;
+// intermediate only ever draws length 3-4, so it is exercised at its own
+// natural lengths below - both tiers go through the identical forced-DFS
+// path on this deck regardless of which length is drawn.
+test("Pygmy forced-fallback (stuck rng) finishes under 50ms for advanced and intermediate", () => {
+  const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+  const pygmy = DECKS.find((d) => d.id === "pygmy");
+  assert.ok(pygmy, "pygmy deck missing from data/decks.json");
+  const E = engine();
+  const stuckAtZero = () => 0;
+  for (const tier of ["intermediate", "advanced"]) {
+    for (let run = 0; run < 3; run += 1) {
+      const t0 = Date.now();
+      const result = E.sequence.pick(pygmy, stuckAtZero, null, tier);
+      const dt = Date.now() - t0;
+      assert.ok(result.chords || typeof result.reason === "string",
+        `pygmy ${tier} run ${run} returned neither chords nor a reason`);
+      assert.ok(dt < 50, `pygmy ${tier} run ${run} forced fallback took ${dt}ms`);
+    }
   }
 });
 
