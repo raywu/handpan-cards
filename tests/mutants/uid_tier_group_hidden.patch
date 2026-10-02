@@ -1,0 +1,17 @@
+# kills: the Difficulty group is present and visible in modes A, B and S
+# suite: node --test --test-name-pattern ^the.Difficulty.group.is.present.and.visible.in.modes.A,.B.and.S$ tests/e2e.test.js
+# D-8/D-10: the Difficulty group is supposed to be always visible, its
+# buttons only ever greyed out (disabled), never hidden. This mutant hides
+# the whole group outright.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -257,7 +257,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    forced 100px floor alone exceeds that width's entire pre-feature spare
+    budget) - is documented and narrowly accepted at exactly those
+    viewport/mode pairs in the two tests referenced above. */
+-#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3))}
++#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3)); display:none}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+    oversized overlay): the link is the one Tab stop in .panel-note. */
+ #seq-source-link{display:inline-flex; align-items:center; min-height:44px}

@@ -1,0 +1,15 @@
+# kills: clicking a tier presses it exclusively, persists, re-deals at that tier, and closes the panel
+# suite: node --test --test-name-pattern ^clicking.a.tier.presses.it.exclusively,.persists,.re-deals.at.that.tier,.and.closes.the.panel$ tests/e2e.test.js
+# D-7/D-11: the selected tier must persist under hpfc.tier so it survives a
+# reload. Dropping the assignment here leaves it unsaved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6497,7 +6497,6 @@ const save = () => {
+     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
+     next.deck = storedDeck;
+     next.mode = mode;
+-    next.tier = tier;
+     next.printPaper = printPaper;
+     localStorage.setItem(STORE_KEY, JSON.stringify(next));
+   } catch (e) {}

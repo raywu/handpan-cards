@@ -1,0 +1,15 @@
+# kills: clicking the already-pressed tier still re-deals
+# suite: node --test --test-name-pattern ^clicking.the.already-pressed.tier.still.re-deals$ tests/e2e.test.js
+# D-11 reviewer nit: clicking the already-pressed tier button must still
+# re-deal a (possibly different) progression, not become a no-op early-return.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8538,6 +8538,7 @@ function syncTierUI() {
+   }
+ }
+ function setTier(t) {
++  if (t === tier) return;
+   tier = t; save();
+   syncTierUI();
+   seq = null;
