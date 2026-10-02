@@ -1,22 +1,26 @@
 # kills: boots with the first deck loaded
 # suite: node --test --test-name-pattern ^boots.with.the.first.deck.loaded$ tests/e2e.test.js
-# Refreshed 2026-10-01 (lane A, quality-refactor finding 18): render() now
-# builds only the current mode's two faces and branches per mode before
-# touching the DOM, so the counter line that used to live once in a shared
-# tail now has one copy per branch (mode A and mode B each set it
-# independently; mode S never shows a plain counter). The default boot mode
-# is A, so this anchors the mode-A copy specifically, via the two innerHTML
-# assignments right above it that only appear in that branch - the mutation
-# itself (dropping "+ 1" from the counter) is unchanged.
+# Re-cut 2026-10-01 (lane AP, post-refactor triage A188-1): render() used to
+# set the counter tail (classList.remove("seq") + textContent) once per
+# branch, mode A and mode B each independently, because finding 18's
+# mode-gated render() put each face-build and its counter update in the
+# same branch. That duplication is now hoisted into a single `if (mode !==
+# "S")` block after the if/else, so the line this mutant drops "+ 1" from
+# exists exactly once. refresh_mutants.py could not place this patch
+# because the removed line text (`index.html:6775` pre-hoist) appeared
+# twice in the file and the indentation changed once hoisted, so it is
+# re-cut by hand against the single hoisted line (default boot mode is A,
+# so this still anchors boot's first render) - the mutation itself
+# (dropping "+ 1" from the counter) is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6772,7 +6772,7 @@ function render() {
-     document.getElementById("front").innerHTML = question;
-     document.getElementById("back").innerHTML  = answer;
+@@ -6782,7 +6782,7 @@ function render() {
+   }
+   if (mode !== "S") {
      document.getElementById("count").classList.remove("seq");
 -    document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
 +    document.getElementById("count").textContent = `${idx} / ${order.length}`;
-   } else {
-     const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
-       `<div class="diagwrap">${pan(d, ch)}</div>
+   }
+   const cardEl = document.getElementById("card");
+   cardEl.classList.toggle("flip", flipped);

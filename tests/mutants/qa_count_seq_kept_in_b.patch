@@ -1,0 +1,19 @@
+# kills: #count drops .seq when leaving mode S for mode B
+# suite: node --test --test-name-pattern ^.count.drops..seq.when.leaving.mode.S.for.mode.B$ tests/app.test.js
+# A188-1 (lane AP, post-refactor triage): render()'s counter tail
+# (classList.remove("seq") + textContent) is hoisted into a single
+# `if (mode !== "S")` block. Drop the classList.remove("seq") call so the
+# .seq class a mode-S render added survives into mode A/B: the counter text
+# still updates, but #count keeps the single-line sequence styling instead
+# of reverting to the plain "N / M" layout.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6781,7 +6781,6 @@ function render() {
+     document.getElementById("back").innerHTML  = answerB;
+   }
+   if (mode !== "S") {
+-    document.getElementById("count").classList.remove("seq");
+     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
+   }
+   const cardEl = document.getElementById("card");
