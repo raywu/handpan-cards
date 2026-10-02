@@ -8733,6 +8733,40 @@ function run() {
       await endMouseDragForReal(rx, ry);
     });
 
+    // AP's `sw_eatclick_timer_not_cleared` mutant: drop the
+    // `clearTimeout(eatClickTimer)` inside setEatClick (index.html's own
+    // comment says every assignment site must go through it exactly so a
+    // stale timer from an earlier release can never clear a freshly-armed
+    // eatClick out from under a later one). Whitebox by design, same as the
+    // other eatClick/eatClickTimer reads above: setEatClick is a top-level
+    // function declaration in a classic (non-module) script, so it hangs off
+    // `window` like `eatClick` and `eatClickTimer` themselves, and the bug
+    // lives inside the function's own body - independent of how a caller
+    // (mouse release, touch release, the click listener) reaches it.
+    test("a stale eatClick decay never clears a re-armed eatClick", async () => {
+      await freshLoad();
+      // Mirrors release()'s own mouse-release decay (setEatClick(true, 400)
+      // at index.html's release()).
+      const DECAY_MS = 400;
+      // First release arms eatClick with a 400ms decay timer.
+      await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "setEatClick(true, ...) must arm eatClick");
+      // A second release lands partway through the first decay window and
+      // re-arms eatClick with its OWN fresh 400ms timer.
+      await new Promise((r) => setTimeout(r, DECAY_MS / 2));
+      await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
+      // Wait past the FIRST decay's deadline (400ms after the first call,
+      // i.e. 200ms after the second) but comfortably before the second
+      // decay's own deadline (600ms after the first call) - if the stale
+      // timer from the first call were not cancelled when the second call
+      // re-armed, it would fire in this window and clear the re-armed
+      // eatClick early.
+      await new Promise((r) => setTimeout(r, DECAY_MS / 2 + 100));
+      assert.strictEqual(await b.eval(`return eatClick;`), true,
+        "a stale decay timer from an earlier setEatClick cleared a re-armed eatClick");
+    });
+
     // Eng review item 3: every place that assigns eatClick must also cancel
     // any pending decay timer, so a stale timer from an earlier assignment
     // can never fire later and clobber a fresher one. The clearest, most
