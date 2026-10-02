@@ -92,6 +92,8 @@ held until #180 and #186 merged because all three touch `index.html` and e2e.
 
 ## Queue rows to file
 
+Triaged 2026-10-01 in `2026-10-01-post-refactor-triage.md` (#192): each row below has a disposition there, and FIX rows were worked in #194-#198. New reviewer nits from that wave are queued as Q36+ in `2026-09-30-nit-queue.md`.
+
 - P/N1: `test_pdf_parity.py:64-65` says the smallest count is Amara shop 676; Hijaz shop is 524.
 - P/N2: "2-field instrument" is wrong; it has 4 fields.
 - P/N3: `test_the_sweep_actually_ran` does not assert a no-thirds seed.
