@@ -1,0 +1,38 @@
+# kills: D-12 (owner decision 2026-10-02, "Scroll, one line") - the current
+# chord must be scrolled into view inside the rail on every advance/back/
+# redeal. This mutant removes renderSeqRail's scrollIntoView call entirely.
+# suite: node --test --test-name-pattern ^D.12..the.rail.never.wraps.and.the.current.chord.stays.in.view tests/e2e.test.js
+# Without this call, a long ADVANCED rail leaves the current chord wherever
+# the browser's default (unscrolled) layout puts it - for anything past the
+# first screenful, that is off to the right (or, with justify-content:safe
+# center, partly off either side), never kept in view across an advance. The
+# new e2e test's "curInRail" assertion (current chord's rect fully inside the
+# rail's own visible rect) catches this the first time idx moves off-screen.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7319,23 +7319,7 @@
+   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
+   countEl.appendChild(rail);
+   countEl.appendChild(live);
+-  // D-12: keep the current chord in view on every advance/back/redeal -
+-  // render() is the only caller of renderSeqRail, and render() is in turn
+-  // the only path step()/shuffle/redeal use to show a new current chord, so
+-  // wiring the scroll here (rather than at each call site) covers all three.
+-  // block:'nearest' means this never scrolls the PAGE (the rail is the only
+-  // scrollable ancestor in its vertical axis; "nearest" leaves an
+-  // already-visible row alone), and inline:'center' is the one that matters -
+-  // it is what keeps a long ADVANCED rail's current chord inside the rail's
+-  // visible width instead of scrolled off to one side. Honours
+-  // prefers-reduced-motion the same way the swipe-gesture code already does.
+-  if (curNode) {
+-    curNode.scrollIntoView({
+-      behavior: reducedMotion.matches ? "auto" : "smooth",
+-      block: "nearest",
+-      inline: "center",
+-    });
+-  }
++  void curNode;
+ }
+ function render() {
+   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }

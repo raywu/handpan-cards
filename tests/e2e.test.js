@@ -6377,6 +6377,39 @@ function run() {
       }
     });
 
+    // The sidebar-tightening query (index.html's "narrow-height budget" rule,
+    // max-height:745px) exists for 1024x700 alone, which has no spare room
+    // once the Difficulty group's forced two-row tier bar is counted;
+    // 1280x800 is outside that bound and must keep the panel's default,
+    // untightened spacing - the same values it had before this lane's work:
+    // panel gap/padding from the base --sp-3/--sp-4 ramp at >=640px width/
+    // >=700px height, and each .panel-group's own heading-to-control gap
+    // from its untightened --sp-1.
+    test("at 1280x800 the sidebar keeps its default (untightened) spacing", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const m = await b.eval(`
+          const panel = document.getElementById("settings-panel");
+          const cs = getComputedStyle(panel);
+          const headings = [...panel.querySelectorAll(".panel-heading")];
+          const practiceHeading = headings.find(h => h.textContent.trim() === "Practice");
+          const modeA = document.getElementById("modeA");
+          return {
+            gap: cs.gap, padding: cs.padding,
+            headingToControlGap: modeA.getBoundingClientRect().top - practiceHeading.getBoundingClientRect().bottom,
+          };
+        `);
+        assert.strictEqual(m.gap, "20px", "1280x800: panel gap must equal the untightened --sp-3 ramp value");
+        assert.strictEqual(m.padding, "28px 20px", "1280x800: panel padding must equal the untightened --sp-4/--sp-3 ramp values");
+        assert.ok(Math.abs(m.headingToControlGap - 6) <= 1,
+          `1280x800: heading-to-control gap should be the untightened .panel-group --sp-1 (6px), got ${m.headingToControlGap}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("at 1280x800, ArrowRight steps the counter and Enter flips the card", async () => {
       await freshLoad();
       try {
@@ -7219,6 +7252,129 @@ function run() {
         }
       });
 
+    // D-12 (owner decision 2026-10-02, "Scroll, one line" - supersedes the
+    // wrap-to-a-second-line design the two tests above were written against):
+    // the rail never wraps, at any sequence length, and keeps the current
+    // chord in view by scrolling horizontally instead. Picks the longest
+    // ADVANCED rail ANY built-in deck can draw, by actual rendered pixel
+    // width (not chord count or character count, which can rank two
+    // candidates differently once per-glyph kerning is in play) - sampling
+    // pick() directly rather than re-rolling through the UI, since the UI
+    // path cannot target "longest" without re-implementing pick()'s own
+    // selection logic here (same reasoning as Acceptance 7 above).
+    async function pickLongestAdvancedRail() {
+      return b.eval(`
+        const measure = (text) => {
+          const c = document.createElement("canvas");
+          const ctx = c.getContext("2d");
+          ctx.font = "400 20px Marcellus, serif";
+          return ctx.measureText(text).width;
+        };
+        let best = null;
+        for (const d of DECKS) {
+          for (let i = 0; i < 60; i++) {
+            const picked = HPE.sequence.pick(d, Math.random, null, "advanced");
+            if (!picked || !picked.chords) continue;
+            const text = picked.chords.map(ci => {
+              const c = d.chords[ci];
+              return c.main + (c.sup || "");
+            }).join(" → ");
+            const w = measure(text);
+            if (!best || w > best.w) best = { deckId: d.id, chords: picked.chords, text, w };
+          }
+        }
+        return best;
+      `);
+    }
+    const D12_VIEWPORTS = [[667, 375], [844, 390], [320, 568], [380, 740]];
+    test("D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail",
+      async () => {
+        const longest = await pickLongestAdvancedRail();
+        assert.ok(longest && longest.chords && longest.chords.length >= 3,
+          `could not find a usable ADVANCED sequence to test against: ${JSON.stringify(longest)}`);
+        for (const [w, h] of D12_VIEWPORTS) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await b.send("Emulation.setEmulatedMedia", {
+            media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+          });
+          try {
+            await b.eval(`
+              selectDeck(${JSON.stringify(longest.deckId)});
+              tier = "advanced"; mode = "S";
+              seq = { chords: ${JSON.stringify(longest.chords)}, style: "together" };
+              order = seq.chords.slice(); idx = 0; flipped = false;
+              document.getElementById("foot").classList.add("seq");
+              render();
+              return true;
+            `);
+            for (let step = 0; step <= longest.chords.length; step++) {
+              const m = await b.eval(`
+                const rail = document.querySelector("#count .seq-rail");
+                const cur = rail.querySelector(".seq-chord > b, b.seq-chord") || rail.querySelector("b");
+                const rr = rail.getBoundingClientRect(), cr = cur.getBoundingClientRect();
+                const kids = Array.from(rail.children);
+                const docEl = document.documentElement;
+                return {
+                  oneLine: Math.abs(kids[0].getBoundingClientRect().top - kids[kids.length - 1].getBoundingClientRect().top) <= 1,
+                  curInRail: cr.left >= rr.left - 0.5 && cr.right <= rr.right + 0.5,
+                  noBodyHScroll: docEl.scrollWidth <= docEl.clientWidth + 1,
+                  idx, text: rail.textContent,
+                };
+              `);
+              assert.ok(m.oneLine, `${w}x${h} step ${step}: rail "${m.text}" wrapped to more than one line`);
+              assert.ok(m.curInRail, `${w}x${h} step ${step}: current chord is not fully inside the rail's visible box ("${m.text}")`);
+              assert.ok(m.noBodyHScroll, `${w}x${h} step ${step}: page has horizontal scroll`);
+              await b.eval(`step(1); return true;`);
+              await b.settle();
+            }
+          } finally {
+            await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+            await b.setViewport(900, 900, false);
+          }
+        }
+      });
+
+    test("D-12: BASIC and ADVANCED footer/card dimensions are identical at the four rail viewports",
+      async () => {
+        const longest = await pickLongestAdvancedRail();
+        for (const [w, h] of D12_VIEWPORTS) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await openSettingsPanel();
+          await b.click("#modeS");
+          await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+            { label: "mode S to take effect" });
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
+          await b.settle();
+          const rectsOf = (sel) => `(() => {
+            const r = document.querySelector("${sel}").getBoundingClientRect();
+            return { w: r.width, h: r.height };
+          })()`;
+          const basic = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
+          await b.eval(`
+            selectDeck(${JSON.stringify(longest.deckId)});
+            tier = "advanced";
+            seq = { chords: ${JSON.stringify(longest.chords)}, style: "together" };
+            order = seq.chords.slice(); idx = 0; flipped = false;
+            render();
+            return true;
+          `);
+          await b.settle();
+          const advanced = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
+          for (const box of ["footer", "card"]) {
+            for (const k of ["w", "h"]) {
+              assert.ok(Math.abs(basic[box][k] - advanced[box][k]) <= 0.5,
+                `${w}x${h} ${box}.${k}: BASIC ${basic[box][k]} vs the longest ADVANCED rail ${advanced[box][k]}`);
+            }
+          }
+          await b.setViewport(900, 900, false);
+        }
+      });
+
     // Acceptance 7 (revised, O1/O5): switching from A to S at a fixed viewport
     // must keep the header exactly where it was and the footer's LEFT EDGE
     // and WIDTH fixed - only its height may grow, and only by the style block
@@ -7600,6 +7756,12 @@ function run() {
     // desktop sidebar column), and never a 2+1 wrapped row in between.
     test("the Difficulty group matches the Practice group's width and switches from a row to a column layout",
       async () => {
+        // Narrow single-column viewports keep the three tier buttons on one
+        // row. The landscape grid (812x375) and the desktop sidebar
+        // (1280x800) are both narrower settings-group columns (~270-370px),
+        // and INTERMEDIATE's unbroken word forces ADVANCED to wrap onto its
+        // own row inside .tierbar at that width - "row" is false at both.
+        const expectRow = { "380x740": true, "320x640": true, "812x375": false, "1280x800": false };
         for (const [w, h, landscape] of [[380, 740, false], [320, 640, false], [812, 375, true], [1280, 800, false]]) {
           await freshLoad();
           await b.setViewport(w, h, landscape);
@@ -7619,6 +7781,7 @@ function run() {
             };
           `);
           assert.ok(m.widthsMatch, `${w}x${h}: Difficulty group width must equal the Practice group's`);
+          assert.strictEqual(m.row, expectRow[`${w}x${h}`], `${w}x${h}: tier-button row layout`);
           assert.ok(m.basicH >= 44 && m.interH >= 44 && m.advH >= 44,
             `${w}x${h}: every tier button must be a >=44px tall hit target`);
           await b.setViewport(900, 900, false);

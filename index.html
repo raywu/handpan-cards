@@ -225,9 +225,9 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
-/* Difficulty selector (D-9/D-10, amended during D2 implementation - see
-   docs/plans/2026-10-02-sequence-difficulty.md addendum "D2 step 2 vertical
-   budget"). D-9's own container-query column/row toggle was measured and
+/* Difficulty selector (D-9/D-10, amended during D2 implementation per the
+   owner decision "Fix layout before merge", 2026-10-02). D-9's own
+   container-query column/row toggle was measured and
    rejected: the 240px desktop sidebar (content box ~199px) cannot fit three
    equal-width buttons on one row even at zero padding (INTERMEDIATE's bare
    label alone is wider than the whole sidebar), so "row >=348px, else a
@@ -316,12 +316,14 @@ a.mode{text-decoration:none}
   padding:calc(var(--sp-3) + 56px) var(--sp-3) var(--sp-3);
   display:flex; flex-direction:column; align-items:center; gap:var(--sp-3)}
 #settings-panel > .panel-group{width:min(420px, 100%)}
-/* 320x568 mode S only (2026-10-02, panel-fit bounce follow-up): restoring
+/* Mode S, every viewport (2026-10-02, panel-fit bounce follow-up; this rule
+   carries no width scoping, so it is not "320x568 only" - it fires
+   wherever #panel-seq-note is unhidden, sidebar included): restoring
    the Difficulty group's real, uncollapsed gap to "Scales" (above) gives
-   back the budget that used to cover this viewport's pre-existing, unrelated
+   back the budget that used to cover 320x568's pre-existing, unrelated
    shortfall too - #panel-seq-note only renders in mode S (setMode() toggles
    its `hidden`), and its extra two lines were already documented as the
-   near-entire cause of this exact viewport's old "narrowly accepted"
+   near-entire cause of that viewport's old "narrowly accepted"
    overflow before any of this lane's work. `:has()` targets the padding
    trim at mode S alone so modes A/B, already an exact fit, are untouched -
    a plain width query would shave this padding in every mode and has no
@@ -333,6 +335,58 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
+  /* The collapsed top margin on #panel-tier-group (above) only makes sense
+     in the single-column flow it was written for, where it cancels the
+     gap ABOVE it against the group immediately preceding it in document
+     order. In this grid, groups sit in independent columns/rows, so that
+     same negative margin instead lifts the Difficulty group 9px clear off
+     its own grid row, overlapping whatever sits above it in that column
+     (2026-10-02, owner nit). Zero it here; the grid's own row placement
+     already gives each group its real gap. */
+  #panel-tier-group{margin-top:0}
+}
+/* 568x320 is the one landscape-grid size narrow enough to force 2 columns
+   instead of 3 (auto-fit, minmax(200px,1fr) against this width's ~550px
+   content box); 667x375 and 812x375 get 3 columns, already fit, and are
+   untouched by the fixes below - narrowing them to this width keeps that
+   fix (the heading-alignment nit above) from being reshuffled by the
+   reorder here. */
+@media (max-height:520px) and (max-width:600px){
+  /* 568x320 mode A overflowed the panel by 64px (scrollH 384 vs clientH
+     320) before this rule: in its own ~270px grid column, INTERMEDIATE's
+     unbroken word at the base padding/letter-spacing forces ADVANCED onto
+     a second tierbar row, adding a whole extra 44px+gap row to the group
+     (2026-10-02, owner nit - restore main's pre-Difficulty-group fit).
+     Trimming horizontal padding and letter-spacing (min-height:44px, the
+     >=44px hit-target floor, is untouched) narrows all three buttons just
+     enough to keep them on one row at this column width. */
+  .tierbar .mode{padding:7px 5px 6px; letter-spacing:.03em}
+  /* This grid's auto-placement pairs items by SOURCE order into 2 columns,
+     so adding the Difficulty group after Practice shifted every later pair
+     by one slot and turned an even 4-group layout (2 rows, nothing wasted)
+     into an odd 5-group one (3 rows, the last group alone in its row with
+     its partner column empty). Reordering (grid honours `order` for
+     auto-placement, not just paint order) so the two tall, two-row groups
+     - Practice and Print - share a row, and the three short, one-row
+     groups - Difficulty, Scales, Resources - share the other two, removes
+     that waste without touching any group's own content or height. */
+  #settings-panel > .panel-group:nth-child(2){order:1}
+  #settings-panel > .panel-group:nth-child(5){order:2}
+  #panel-tier-group{order:3}
+  #panel-scales-group{order:4}
+  #settings-panel > .panel-group:nth-child(6){order:5}
+  /* Even with the reorder above removing the wasted odd-row-out, the grid's
+     inherited base gap (--sp-3, 9px here) and padding-bottom still leave
+     this breakpoint over its 320px budget; tighten both one ramp step
+     further, same technique the sidebar's narrow-height budget uses. */
+  #settings-panel{gap:var(--sp-1)}
+  #settings-panel:not(:has(#panel-seq-note:not([hidden]))){padding-bottom:var(--sp-1)}
+  /* Mode S's own extra two-line note (#panel-seq-note, inside the Practice
+     group) leaves this breakpoint still a little over main's own
+     already-overflowing 358px in that mode even after the reorder and the
+     trims above; the row gap is the only budget left that doesn't touch
+     the note's own text or any control. */
+  #settings-panel:has(#panel-seq-note:not([hidden])){gap:0}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -344,7 +398,7 @@ a.mode{text-decoration:none}
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
-   owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum).
+   owner follow-up 2026-09-28; verdict and reasons recorded in git history).
    Same markup as the mobile panel - this is presentation only. The trigger
    and scrim disappear; the panel's role="dialog"/aria-modal, its inert
    background loop and its Tab-stop trap are only ever applied by
@@ -408,7 +462,8 @@ a.mode{text-decoration:none}
      own) - this is the one declaration that actually has to beat it. */
   #settings-panel[hidden]{display:flex !important}
 }
-/* The sidebar's own narrow-height budget (2026-10-02, panel-fit addendum):
+/* The sidebar's own narrow-height budget (owner decision "Fix layout before
+   merge", 2026-10-02):
    1024x700 is the shortest supported sidebar height and, unlike 1280x800
    (already clean), has no spare room once the Difficulty group's forced
    two-row tier bar is counted. Gated on the SAME min-width/min-height pair
@@ -417,8 +472,14 @@ a.mode{text-decoration:none}
    modal/mobile panel at a short landscape size like 1280x500 (which has its
    own, separate max-height tightening above and is NOT the sidebar - a
    min-width-only gate here once leaked into it and pushed a Resources link
-   under the X trigger); max-height:900px on top of that leaves the roomier
-   1280x800 sidebar - already passing with its default spacing - untouched.
+   under the X trigger). max-height:745px is measured, not round: at 1024px
+   wide the untightened panel's content is a fixed 730px tall regardless of
+   viewport height, so any sidebar shorter than ~742px overflows without this
+   rule and anything at or above it already fits (742 measured exact-fit,
+   745 picked for a few px of margin) - 1280x800/1366x768/1440x900 (clientH
+   788/756/888, all already >=742) pass that boundary and are left at their
+   default spacing untouched; a flat max-height:900px here used to catch all
+   three along with 1024x700 even though only 1024x700 needs it.
    Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2), no new
    spacing unit - a `calc()` shrink of a ramp step used to sit here instead
    (sp-2-3px, sp-1/2) but tests/app.test.js's "every gap...comes from the
@@ -427,7 +488,7 @@ a.mode{text-decoration:none}
    would be; `--panel-gap` is repeated here (see its :root comment) so
    #panel-tier-group's top margin still cancels exactly this tightened gap
    instead of the untightened one. */
-@media (min-width:1024px) and (min-height:700px) and (max-height:900px){
+@media (min-width:1024px) and (min-height:700px) and (max-height:745px){
   #settings-panel{padding:var(--sp-3) var(--sp-3); gap:var(--sp-2); --panel-gap:var(--sp-2)}
   .panel-group{gap:0}
   /* Same mode-S-only shortfall as the 320x568 rule above (see its comment):
@@ -687,13 +748,33 @@ button.nav:active{background:#2e281e}
    underline do that work instead. */
 .seq-rail b{font-weight:400; color:#f1ece1; text-decoration:underline;
   text-decoration-color:var(--root); text-underline-offset:3px}
-/* D-12: .seq-rail is a flex container so a long ADVANCED sequence can wrap to
-   a second line instead of overflowing or shrinking type (N28). Each
-   "-> name" pair is grouped into one .seq-unit (renderSeqRail) with
-   white-space:nowrap, so a wrap never splits a separator from the name that
-   follows it, and a separator never opens a line. justify-content:center
-   keeps a short BASIC rail centred exactly as the old inline text was. */
-.seq-rail{display:inline-flex; flex-wrap:wrap; justify-content:center; column-gap:.35em; row-gap:.1em}
+/* D-12 (owner decision 2026-10-02, "Scroll, one line" - supersedes the
+   earlier wrap-to-a-second-line design): .seq-rail never wraps, regardless of
+   sequence length or viewport. A long ADVANCED sequence instead overflows
+   its own box and scrolls horizontally - card and footer DIMENSIONS stay
+   identical to BASIC at every viewport, because a rail that never wraps
+   never grows a second row. Each "-> name" pair stays grouped into one
+   .seq-unit (renderSeqRail) with white-space:nowrap so a separator is never
+   orphaned from the name it precedes. width:100% makes .seq-rail fill
+   #count's grid-column track (not shrink-to-fit, which would let it spill
+   past the track instead of scrolling within it); justify-content:safe center
+   keeps a short BASIC rail centred exactly as before. Plain `center` (no
+   `safe`) was tried first and measured broken: when flex content overflows,
+   an unsafe `center` splits the overflow evenly onto BOTH sides, but
+   scrollLeft cannot go negative - so the left-side overflow this produces is
+   permanently unreachable, not merely unscrolled-to, and idx 0 of a long
+   ADVANCED rail rendered partly off the left edge with no way to scroll to
+   it (measured: rail.left 135.5 vs its own first chord's rect.left 79.67 at
+   667x375, scrollLeft stuck at 0). `safe center` is the CSS Box Alignment
+   fallback built for exactly this: it centres only while centring doesn't
+   overflow, and falls back to start-alignment (everything reachable from
+   scrollLeft 0) the moment it would. The scrollbar is hidden (rail scrolling
+   is driven by renderSeqRail's own scrollIntoView call, not by the user
+   hunting for a visible bar) but the element is still a real,
+   keyboard/wheel/touch scrollable region. */
+.seq-rail{display:flex; flex-wrap:nowrap; justify-content:safe center; column-gap:.35em;
+  width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+.seq-rail::-webkit-scrollbar{display:none; height:0}
 .seq-unit{white-space:nowrap}
 /* The mode-S style line: a static paragraph in the footer, never on the card
    (O2/D1-D9). Grid-column:1/-1 gives it its own full-width row below the
@@ -7183,7 +7264,7 @@ const TIER_LABEL = { basic: "BASIC", intermediate: "INTERMEDIATE", advanced: "AD
 function renderSeqEmpty() {
   const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
     ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-      + `This scale doesn&rsquo;t have an ${TIER_LABEL[tier]} progression. `
+      + `This scale has no ${TIER_LABEL[tier]} progression. `
       + `Try another difficulty, or pick another scale.</div></div>`
     : `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
       + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
@@ -7215,10 +7296,12 @@ function renderSeqRail(d) {
   rail.className = "seq-rail";
   rail.setAttribute("aria-hidden", "true");
   const curCh = d.chords[seq.chords[idx]];
-  // D-12: each "-> name" pair is one .seq-unit (CSS white-space:nowrap) so a
-  // wrap at 380px never splits a separator from the name it precedes (eng
-  // E-7: this also changes what the rail's child count means - callers that
-  // need the number of CHORDS count .seq-chord elements, not rail.children).
+  // D-12: each "-> name" pair is one .seq-unit (CSS white-space:nowrap) so the
+  // rail's own horizontal scroll never splits a separator from the name it
+  // precedes (eng E-7: this also changes what the rail's child count means -
+  // callers that need the number of CHORDS count .seq-chord elements, not
+  // rail.children).
+  let curNode = null;
   seq.chords.forEach((ci, i) => {
     const unit = document.createElement("span");
     unit.className = "seq-unit";
@@ -7229,12 +7312,30 @@ function renderSeqRail(d) {
     node.textContent = c.main + (c.sup || "");
     unit.appendChild(node);
     rail.appendChild(unit);
+    if (i === idx) curNode = node;
   });
   const live = document.createElement("span");
   live.className = "sr-only";
   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
   countEl.appendChild(rail);
   countEl.appendChild(live);
+  // D-12: keep the current chord in view on every advance/back/redeal -
+  // render() is the only caller of renderSeqRail, and render() is in turn
+  // the only path step()/shuffle/redeal use to show a new current chord, so
+  // wiring the scroll here (rather than at each call site) covers all three.
+  // block:'nearest' means this never scrolls the PAGE (the rail is the only
+  // scrollable ancestor in its vertical axis; "nearest" leaves an
+  // already-visible row alone), and inline:'center' is the one that matters -
+  // it is what keeps a long ADVANCED rail's current chord inside the rail's
+  // visible width instead of scrolled off to one side. Honours
+  // prefers-reduced-motion the same way the swipe-gesture code already does.
+  if (curNode) {
+    curNode.scrollIntoView({
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }
 }
 function render() {
   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
