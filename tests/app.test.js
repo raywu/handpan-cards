@@ -4357,6 +4357,110 @@ describe("swipe decision", () => {
     assert.strictEqual(app.get("SWIPE_BACK_MS"), 260);
     assert.strictEqual(app.get("SWIPE_IN_MS"), 180);
     assert.strictEqual(app.get("SWIPE_IN_PX"), 24);
+    assert.strictEqual(app.get("SWIPE_MOMENTUM_MIN_MS"), 140);
+    assert.strictEqual(app.get("SWIPE_MOMENTUM_MAX_MS"), 320);
+    assert.strictEqual(app.get("SWIPE_MOMENTUM_FLOOR_PX_MS"), 1.5);
+  });
+});
+
+// swipeOutTiming(vx, dir, dx, dist) -> { end, duration, easing }: the mouse
+// momentum curve (docs/plans/2026-10-01-swipe-momentum.md, decision 2). A
+// cubic-bezier's initial slope is y1/x1 (in progress-per-unit-time); over a
+// span of (end - |dx|) px in `duration` ms that is a px/ms speed, which is
+// what every case below checks against the release speed `v`.
+describe("swipeOutTiming", () => {
+  // Parses a recorded { end, duration, easing } triple and returns the
+  // curve's own start speed in px/ms: (y1 / x1) * (end - |dx|) / duration.
+  function start(t, dx) {
+    const m = t.easing.match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+)/);
+    const x1 = parseFloat(m[1]), y1 = parseFloat(m[2]);
+    return (y1 / x1) * (t.end - Math.abs(dx)) / t.duration;
+  }
+
+  test("swipeOutTiming: an unclamped release flies linearly at its own speed", () => {
+    const app = boot();
+    const t = app.get("swipeOutTiming(-2, 1, -54, 654)");
+    assert.strictEqual(t.end, 654);
+    assert.strictEqual(t.duration, 300);
+    const m = t.easing.match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\)/);
+    assert.strictEqual(m[1], m[2], "unclamped: x1 must equal y1 (a straight line)");
+    assert.strictEqual(start(t, -54), 2);
+  });
+
+  test("swipeOutTiming: a fast flick clamps at SWIPE_MOMENTUM_MIN_MS and still starts at its release speed", () => {
+    const app = boot();
+    const t = app.get("swipeOutTiming(-10, 1, -54, 654)");
+    assert.strictEqual(t.duration, 140);
+    assert.ok(Math.abs(start(t, -54) - 10) / 10 < 0.01, "start speed within 1% of 10");
+    const m = t.easing.match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+)/);
+    assert.ok(parseFloat(m[2]) <= 1, "y1 must not overshoot past 1");
+  });
+
+  test("swipeOutTiming: a slow or zero-velocity release starts at the floor and clamps at SWIPE_MOMENTUM_MAX_MS", () => {
+    const app = boot();
+    for (const [vx, dir, dx] of [[0, 1, -54], [-0.2, -1, 54]]) {
+      const t = app.get(`swipeOutTiming(${vx}, ${dir}, ${dx}, 654)`);
+      assert.strictEqual(t.duration, 320);
+      assert.ok(Math.abs(start(t, dx) - 1.5) / 1.5 < 0.01, "start speed within 1% of the floor, 1.5");
+    }
+  });
+
+  test("swipeOutTiming: a velocity against the flight direction counts as zero", () => {
+    const app = boot();
+    for (const [vx, dir, dx] of [[3, 1, -54], [-3, -1, 54]]) {
+      const t = app.get(`swipeOutTiming(${vx}, ${dir}, ${dx}, 654)`);
+      assert.ok(Math.abs(start(t, dx) - 1.5) / 1.5 < 0.01,
+        "a velocity pointed back up the drag must be floored, not used negative");
+    }
+  });
+
+  test("swipeOutTiming: a card dragged past dist still flies forward", () => {
+    const app = boot();
+    const t = app.get("swipeOutTiming(-3, 1, -900, 654)");
+    assert.strictEqual(t.end, 1110, "end must grow past dist to keep the span forward");
+    assert.ok(t.end > 900);
+    assert.strictEqual(t.end - 900, 210);
+    const v = start(t, -900);
+    assert.ok(v > 0, "the start speed must stay positive, never a backward run to a clamped dist");
+    assert.ok(Math.abs(v - 3) / 3 < 0.01);
+  });
+
+  test("swipeOutTiming: the curve stays monotone, in range and forward for every input", () => {
+    const app = boot();
+    // Samples y(t) of a cubic bezier (P0=(0,0), P3=(1,1)) at 101 points in t
+    // and asserts it never decreases - the derivative's quadratic has a
+    // negative discriminant whenever y1 <= 1 and y2 == 2/3 (and, for k <= 1,
+    // x1 == 1/3 so y1 == k/3 <= 1/3 <= 1 too), so every case below is covered
+    // by the same argument, not just the y1 <= 1 branch of a fast flick.
+    function monotoneY(x1, y1, x2, y2) {
+      let prevY = -Infinity;
+      for (let i = 0; i <= 100; i++) {
+        const t = i / 100;
+        const mt = 1 - t;
+        const y = 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t * t * t;
+        if (y < prevY - 1e-9) return false;
+        prevY = y;
+      }
+      return true;
+    }
+    for (let vx = -12; vx <= 12; vx += 0.5) {
+      for (const dir of [1, -1]) {
+        for (const absDx of [0, 200, 654, 1200]) {
+          const dx = dir < 0 ? absDx : -absDx;
+          const t = app.get(`swipeOutTiming(${vx}, ${dir}, ${dx}, 654)`);
+          assert.ok(t.duration >= 140 && t.duration <= 320,
+            `duration out of range for vx=${vx} dir=${dir} dx=${dx}: ${t.duration}`);
+          assert.ok(t.end - absDx >= 210 - 1e-9,
+            `remaining span too small for vx=${vx} dir=${dir} dx=${dx}`);
+          const m = t.easing.match(/cubic-bezier\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\)/);
+          const [x1, y1, x2, y2] = m.slice(1).map(Number);
+          assert.ok(x1 > 0 && x1 <= 1, `x1 out of (0,1] for vx=${vx} dir=${dir} dx=${dx}: ${x1}`);
+          assert.ok(y1 >= 0 && y1 <= 1, `y1 out of [0,1] for vx=${vx} dir=${dir} dx=${dx}: ${y1}`);
+          assert.ok(monotoneY(x1, y1, x2, y2),
+            `curve not monotone for vx=${vx} dir=${dir} dx=${dx}`);
+        }
+      }
+    }
   });
 });
 
