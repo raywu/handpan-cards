@@ -6,8 +6,8 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -366,7 +366,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if ((n === 3 || n === 4) && intermediateGate(deck, chords, ctx.home)) {
+@@ -381,7 +381,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (intermediateGate(deck, chords, ctx.home)) {
        return "intermediate";
      }
 -    if (n >= 3) return "advanced";
