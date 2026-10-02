@@ -51,7 +51,11 @@ def run_check(num, desc, fn, failures):
     """
     try:
         fn()
-    except AssertionError as e:
+    except Exception as e:
+        # T183-3 (2026-10-01 post-refactor triage): was `except AssertionError`,
+        # so a check that raised anything else (e.g. KeyError) still aborted the
+        # whole script and left every check after it unexplained and unrun -
+        # the exact failure mode this function exists to prevent.
         msg = str(e) if str(e) else repr(e)
         print("%s. %s: FAILED - %s" % (num, desc, msg))
         failures.append((num, desc, msg))
