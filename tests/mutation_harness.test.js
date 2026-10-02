@@ -1111,6 +1111,73 @@ test("no mutant patch outside the tracked exceptions rides a non-unique anchor",
     `from KNOWN_NON_UNIQUE_ANCHORS`);
 });
 
+/* M179-8 (2026-10-01 post-refactor triage), first fixture: the Finding 12
+ * non-unique-anchor lint's own hunksOf() (above, line ~533) parses a hunk's
+ * preimage by scanning for " "/"-"/blank-prefixed lines. A context line that
+ * is empty in the FILE can be written by git as a bare "" (an editor that
+ * strips trailing whitespace does this - see tests/CONTRACT.md's "bare blank
+ * context line" trap), and that line is part of the anchor: dropping it
+ * shortens the preimage block the lint searches for, which can turn a truly
+ * unique anchor into one that (wrongly) matches more than one place. The
+ * fixture file repeats "A" / "X" as a contiguous pair twice, but only once
+ * with a blank line between them - so the full 3-line block (A, blank, X) is
+ * unique while the 2-line block (A, X) a buggy parse would search for
+ * instead is not. */
+test("M179-8 lint accepts a bare blank context line", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lint-blank-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const fileName = "subject.txt";
+  fs.writeFileSync(path.join(dir, fileName), "A\n\nX\nA\nX\nA\nX\n");
+  const patchText = [
+    "# kills: subject",
+    "# suite: node check.js",
+    `diff --git a/${fileName} b/${fileName}`,
+    `--- a/${fileName}`,
+    `+++ b/${fileName}`,
+    "@@ -1,3 +1,3 @@",
+    " A",
+    "",
+    "-X",
+    "+Y",
+    "",
+  ].join("\n");
+  assert.strictEqual(hasNonUniqueAnchor(dir, patchText), false,
+    "the bare blank context line is part of the anchor (A, <blank>, X occurs " +
+    "only once) - dropping it would widen the search to the ambiguous (A, X) pair");
+});
+
+/* M179-8, second fixture: tools/refresh_mutants.py's splice_chunks() has a
+ * dedicated branch for a PURE INSERTION (no removed lines) - it anchors on
+ * the nearest context chunk instead of the removed-lines block the normal
+ * path uses - and 33 patches in the real corpus are pure insertions, but
+ * nothing exercised that branch directly before this. A plain context-shift
+ * drift (prepending an unrelated line, same shape as the "context drifted"
+ * fixture above) is enough to force a real re-anchor through that path. */
+test("M179-8 refresh re-anchors a pure-insertion patch", (t) => {
+  const preimage = "alpha\nbeta\ngamma\n";
+  const postimage = "alpha\nbeta\nINSERTED\ngamma\n";
+  const finalContent = "zero\nalpha\nbeta\ngamma\n";
+  const { dir, patchPath, patchName } = makeRefreshFixtureRepo(t, {
+    preimage, postimage, finalContent,
+    kills: "subject", suite: "node check.js",
+  });
+  const check = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.notStrictEqual(check.status, 0, "fixture setup: patch must be stale before refresh");
+
+  const result = runRefresh(dir, []);
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, new RegExp(patchName.replace(/\./g, "\\.")));
+
+  const applied = spawnSync("git", ["apply", "--check", patchPath],
+    { cwd: dir, encoding: "utf8", env: childEnv() });
+  assert.strictEqual(applied.status, 0, `${patchName} should apply cleanly after refresh:\n${applied.stderr}`);
+
+  git(dir, ["apply", patchPath]);
+  assert.strictEqual(fs.readFileSync(path.join(dir, "subject.txt"), "utf8"),
+    "zero\nalpha\nbeta\nINSERTED\ngamma\n");
+});
+
 test("every mutant patch applies to the tree it will run against", () => {
   let hasGit = true;
   try {
