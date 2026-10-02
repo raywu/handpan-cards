@@ -482,6 +482,35 @@ test("regenerating every b_*.patch from a clean tree keeps exactly one hunk per 
     `per touched file:\n` + offenders.join("\n"));
 });
 
+/* M179-4 bounce 1 (2026-10-01 post-refactor triage), mirrored onto
+ * regen_data_mutants.py: its own dirty-check has the same union-of-two-diffs
+ * fix as refresh_mutants.py's dirty_targets(), but (unlike refresh_mutants.py)
+ * had no direct test of its own refusal at all. Stage an edit to index.html
+ * (one of TRACKED) and restore the worktree to match HEAD again - index !=
+ * worktree == HEAD - and confirm the script still refuses instead of
+ * silently regenerating over a staged-but-invisible-to-worktree-diff
+ * change. */
+test("regen_data_mutants.py refuses a staged edit whose worktree was restored to HEAD", (t) => {
+  const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "regen-dirty-"));
+  t.after(() => {
+    execFileSync("git", ["worktree", "remove", "--force", worktree], { cwd: ROOT });
+  });
+  execFileSync("git", ["worktree", "add", "--detach", worktree, "HEAD"], { cwd: ROOT });
+
+  const indexPath = path.join(worktree, "index.html");
+  const original = fs.readFileSync(indexPath, "utf8");
+  fs.writeFileSync(indexPath, original + "\n<!-- staged -->\n");
+  git(worktree, ["add", "index.html"]);
+  git(worktree, ["restore", "--source=HEAD", "--worktree", "index.html"]);
+
+  const result = spawnSync("python3", [path.join(worktree, "tools", "regen_data_mutants.py")],
+    { cwd: worktree, encoding: "utf8" });
+  assert.notStrictEqual(result.status, 0,
+    "a staged edit restored to match HEAD in the worktree must still refuse");
+  assert.match(result.stdout + result.stderr, /REFUSING/, result.stdout + result.stderr);
+  assert.match(result.stdout + result.stderr, /index\.html/, result.stdout + result.stderr);
+});
+
 /* Early warning for the failure mode "a normal commit edits a context line a
  * mutant patch anchors on, and the mutant silently stops applying" - `git
  * apply` on a context mismatch is a hard error, so a stale patch does not
@@ -940,6 +969,56 @@ test("M179-4 refresh refuses a staged-only edit and names only dirty files", (t)
 
   const result = runRefresh(dir, []);
   assert.notStrictEqual(result.status, 0, "a staged-only edit must not be silently refreshed");
+  assert.match(result.stderr, /REFUSING/, result.stderr);
+  assert.match(result.stderr, /subject\.txt/, result.stderr);
+  assert.doesNotMatch(result.stderr, /other\.txt/,
+    `the refusal must name only the dirty file, not every target:\n${result.stderr}`);
+});
+
+test("M179-4 bounce 1: refresh refuses a staged edit whose worktree was restored to HEAD", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "refresh-staged-restored-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, "tests", "mutants"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "tools"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\n");
+  fs.writeFileSync(path.join(dir, "other.txt"), "one\ntwo\nthree\n");
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "user.email", "fixture@example.invalid"]);
+  git(dir, ["config", "user.name", "Fixture"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["add", "."]);
+  git(dir, ["commit", "-qm", "fixture"]);
+
+  function makePatch(file, preimage, postimage) {
+    fs.writeFileSync(path.join(dir, file), postimage);
+    const body = git(dir, ["diff", "--", file]);
+    git(dir, ["checkout", "--", file]);
+    return body;
+  }
+  const subjectBody = makePatch("subject.txt", "alpha\nbeta\ngamma\n", "alpha\nBETA\ngamma\n");
+  const otherBody = makePatch("other.txt", "one\ntwo\nthree\n", "one\nTWO\nthree\n");
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_subject.patch"),
+    `# kills: subject\n# suite: node check.js\n${subjectBody}`);
+  fs.writeFileSync(path.join(dir, "tests", "mutants", "x_other.patch"),
+    `# kills: other\n# suite: node check.js\n${otherBody}`);
+
+  // Drift subject.txt via a real commit, same as a normal "patch needs
+  // refreshing" state, so a plain worktree-vs-HEAD diff would otherwise
+  // have something unrelated to key off of.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\ndelta\n");
+  git(dir, ["add", "subject.txt"]);
+  git(dir, ["commit", "-qm", "drift"]);
+
+  // Stage an edit, then restore the worktree to match the new HEAD: the
+  // index now differs from HEAD, but the worktree does not - the exact
+  // blind spot `git diff --name-only HEAD --` (worktree vs HEAD) misses.
+  fs.writeFileSync(path.join(dir, "subject.txt"), "alpha\nbeta\ngamma\ndelta\nSTAGED\n");
+  git(dir, ["add", "subject.txt"]);
+  git(dir, ["restore", "--source=HEAD", "--worktree", "subject.txt"]);
+
+  const result = runRefresh(dir, []);
+  assert.notStrictEqual(result.status, 0,
+    "a staged edit restored to match HEAD in the worktree must still refuse");
   assert.match(result.stderr, /REFUSING/, result.stderr);
   assert.match(result.stderr, /subject\.txt/, result.stderr);
   assert.doesNotMatch(result.stderr, /other\.txt/,
@@ -1445,11 +1524,11 @@ test("the N=4 shard partition over the real corpus is disjoint and complete", ()
 });
 
 test("the N=4 shard partition balances e2e-selecting mutants within 1 per shard", () => {
-  // A growing share of the corpus (183 of 519 as of 2026-10-01 - E190-2,
-  // post-refactor triage: a count, not a fact to re-assert) select
-  // tests/e2e.test.js (by the suite COMMAND, not a filename substring) and
-  // cluster under the e_/sw_ name prefixes - a flat index%N would leave one
-  // shard carrying most of the slow e2e suite.
+  // A sizeable and growing share of the corpus (E190-2, post-refactor
+  // triage: the exact count drifts as mutants are added, so this comment
+  // names no figure) select tests/e2e.test.js (by the suite COMMAND, not a
+  // filename substring) and cluster under the e_/sw_ name prefixes - a flat
+  // index%N would leave one shard carrying most of the slow e2e suite.
   const entries = loadMutants(path.join(ROOT, "tests", "mutants"));
   const shards = partition(entries, 4);
   const byName = new Map(entries.map((e) => [e.name, e]));

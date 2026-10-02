@@ -3,10 +3,10 @@
 // shell script, so tests/mutation_harness.test.js can assert the partition
 // is disjoint, complete and e2e-balanced without driving a shell at all.
 //
-// A plain `index % N` over the whole corpus is NOT good enough: a growing
-// share of the corpus (183 of 519 as of 2026-10-01 - E190-2, post-refactor
-// triage: this count drifts as mutants are added, so treat it as a snapshot,
-// not a fact to re-assert) selects tests/e2e.test.js by mutation_check.sh's
+// A plain `index % N` over the whole corpus is NOT good enough: a sizeable
+// and growing share of the corpus (E190-2, post-refactor triage: the exact
+// count drifts as mutants are added, so this comment names no figure) selects
+// tests/e2e.test.js by mutation_check.sh's
 // own `*tests/e2e.test.js*` suite rule (not a substring match on the filename - a
 // mutant named e_* or sw_* is not what makes it e2e, its `# suite:` command
 // is), and those cluster under the `e_`/`sw_` name prefixes. A flat modulo

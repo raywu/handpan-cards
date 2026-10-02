@@ -246,7 +246,13 @@ def splice(patch_name, file_path, hunks):
     if trailing_newline:
         lines = lines[:-1]
     for hunk_lines in hunks:
-        chunks = parse_chunks(hunk_lines)
+        try:
+            chunks = parse_chunks(hunk_lines)
+        except ValueError:
+            # M179-1's unknown-hunk-prefix case: not a context-drift
+            # scenario to retry, so report it the same way as every other
+            # unrecoverable patch instead of an uncaught traceback.
+            raise Unfixable(patch_name, file_path)
         lines = splice_chunks(patch_name, file_path, lines, chunks)
     new_text = "\n".join(lines)
     if trailing_newline:
@@ -257,6 +263,37 @@ def splice(patch_name, file_path, hunks):
 def git(args, **kw):
     return subprocess.run(["git"] + args, cwd=ROOT, text=True,
                            capture_output=True, check=False, **kw)
+
+
+class GitStatusError(RuntimeError):
+    """Raised when git itself fails while checking the targets' status -
+    the caller must refuse, not treat empty/missing stdout as "clean"."""
+
+
+def dirty_targets(targets):
+    """Return the sorted subset of `targets` that differ from HEAD, in
+    either the index or the worktree.
+
+    M179-4 bounce 1 (2026-10-01 post-refactor triage): `git diff --name-only
+    HEAD --` alone compares the WORKTREE to HEAD and is blind to a staged
+    edit whose worktree content was then restored to match HEAD again
+    (index != worktree == HEAD, e.g. `git add` followed by `git restore
+    --worktree`) - that diff reports no difference even though the index
+    still carries the staged edit, and refresh_one() reads the WORKTREE
+    file, which silently bakes a vanished staged edit's absence into the
+    refreshed patch while `git diff` (used to regenerate the patch body)
+    would see the index. Union with `git diff --cached --name-only HEAD --`
+    (index vs HEAD), which catches that case regardless of worktree state.
+    A git failure on EITHER call must refuse, not be read as "no output,
+    so nothing is dirty"."""
+    sorted_targets = sorted(targets)
+    worktree = git(["diff", "--no-color", "--no-ext-diff", "--name-only",
+                     "HEAD", "--"] + sorted_targets)
+    staged = git(["diff", "--no-color", "--no-ext-diff", "--cached",
+                  "--name-only", "HEAD", "--"] + sorted_targets)
+    if worktree.returncode != 0 or staged.returncode != 0:
+        raise GitStatusError((worktree.stderr or "") + (staged.stderr or ""))
+    return sorted(set(worktree.stdout.split()) | set(staged.stdout.split()))
 
 
 def refresh_one(patch_path, check_only):
@@ -322,16 +359,22 @@ def main(argv):
             # M179-4 (2026-10-01 post-refactor triage): compare against HEAD,
             # not the index - `git diff --quiet --` (no HEAD) compares the
             # worktree to the index, so a `git add`ed-but-uncommitted edit
-            # makes the two match and the refusal missed it. `--name-only`
-            # against HEAD both detects a staged-only edit and gives M-3's
-            # fix for free: the dirty SUBSET of targets, not every target any
-            # patch might touch. M-4: `--no-color --no-ext-diff` so a user's
+            # makes the two match and the refusal missed it. M-3: name only
+            # the dirty SUBSET of targets, not every target any patch might
+            # touch. M-4: `--no-color --no-ext-diff` so a user's
             # `diff.external`/`color.diff=always` config cannot corrupt this.
-            dirty = git(["diff", "--no-color", "--no-ext-diff", "--name-only",
-                         "HEAD", "--"] + sorted(targets)).stdout.split()
+            # M179-4 bounce 1: worktree-vs-HEAD ALONE still missed a staged
+            # edit whose worktree was restored to HEAD afterwards - see
+            # dirty_targets()'s docstring. A git failure refuses too.
+            try:
+                dirty = dirty_targets(targets)
+            except GitStatusError as e:
+                print("REFUSING: could not verify the working tree is "
+                      "clean: " + str(e), file=sys.stderr)
+                return 1
             if dirty:
                 print("REFUSING: tracked files already modified: "
-                      + ", ".join(sorted(dirty)), file=sys.stderr)
+                      + ", ".join(dirty), file=sys.stderr)
                 return 1
 
     changed = []
