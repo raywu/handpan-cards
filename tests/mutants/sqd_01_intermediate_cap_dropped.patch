@@ -1,0 +1,15 @@
+# kills: tierOf classifies the golden fixtures and every BASIC sequence
+# intermediateGate's 4-note cap check removed, so a 5-field chord no longer
+# pushes an otherwise-intermediate sequence to advanced
+# suite: node --test --test-name-pattern ^tierOf.classifies.the.golden.fixtures.and.every.BASIC.sequence$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -317,7 +317,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (chordRootPc(deck, seq[0]) !== home) return false;
+     if (hasForbiddenRepeat(deck, seq, true)) return false;
+     for (var i = 0; i < seq.length; i += 1) {
+-      if (deck.chords[seq[i]].fields.length > 4) return false;
+       if (chordRegister(deck, seq[i]) !== "") return false;
+     }
+     return true;

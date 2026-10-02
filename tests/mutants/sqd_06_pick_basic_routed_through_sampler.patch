@@ -1,0 +1,17 @@
+# kills: pick(..., undefined) and pick(..., "basic") reproduce the pre-tier golden fixture
+# pick's early "basic" branch to pickBasic removed, so a basic-tier request
+# falls through to the tiered rejection sampler instead
+# suite: node --test --test-name-pattern ^pick......undefined..and.pick.......basic...reproduce.the.pre.tier.golden.fixture$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -546,9 +546,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (TIERS.indexOf(t) < 0) {
+       throw new Error("HPE.sequence.pick: unknown tier");
+     }
+-    if (t === "basic") {
+-      return pickBasic(deck, rng, prev);
+-    }
+     var anchorsList = anchors(deck);
+     var homeAnchorIdx = homeAnchor(deck, anchorsList);
+     if (homeAnchorIdx === null) {

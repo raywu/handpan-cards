@@ -25,8 +25,8 @@ diff --git a/data/decks.json b/data/decks.json
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5963,17 +5963,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     mulberry32: mulberry32
+@@ -6343,17 +6343,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
    };
  })(HPE);
  </script>
