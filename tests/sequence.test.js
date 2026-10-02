@@ -519,15 +519,15 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
     "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
-    "7": ["D", 5, 74, "rim", null, "7"], "8": ["F", 5, 77, "rim", null, "8"], "9": ["A", 5, 81, "rim", null, "9"],
-    "10": ["C", 6, 84, "rim", null, "10"], "11": ["E", 6, 88, "rim", null, "11"]
+    "7": ["E", 5, 76, "rim", null, "7"], "8": ["G", 5, 79, "rim", null, "8"], "9": ["B", 5, 83, "rim", null, "9"],
+    "10": ["D", 6, 86, "rim", null, "10"], "11": ["F", 6, 89, "rim", null, "11"]
   }, [
     { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
-    { main: "Dm9", sup: "", fields: [7, 8, 9, 10, 11], roots: [7] }
+    { main: "Em9", sup: "", fields: [7, 8, 9, 10, 11], roots: [7] }
   ]);
   assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), "advanced",
-    "a 5-field chord should push the sequence past intermediate's 4-note cap");
+    "a 5-field chord should push the sequence past intermediate's 4-note cap (root E avoids confounding with Dm's repeated D root)");
 
   // LOW/HIGH register excludes a card from intermediate even at <=4 fields.
   const registerDeck = syntheticDeck({
