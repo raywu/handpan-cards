@@ -933,14 +933,19 @@ test("the four reviewer-reported slow decks finish under 50ms over seeds 0..49",
 // fallback - the reviewer measured 8965ms on advanced before the fix. The
 // fix's ctx-sharing and connectivity pruning alone brought this to ~100ms,
 // still over budget purely because Pygmy's accepted set at this tier is
-// itself close to the (then) 200,000-node budget; reducing the budget to the
-// named DFS_NODE_BUDGET=40000 (src/engine/sequence.js) measured ~22-27ms on
-// repeated runs, comfortably under 50ms, per the coordinator's explicit
-// allowance to cap via the node budget and state the measured figure here.
-// "lengths 5-6" in the review ask are advanced's natural {4,5,6} range;
-// intermediate only ever draws length 3-4, so it is exercised at its own
-// natural lengths below - both tiers go through the identical forced-DFS
-// path on this deck regardless of which length is drawn.
+// itself close to the (then) 200,000-node budget. A first pass capped
+// DFS_NODE_BUDGET at 40,000 (~22-27ms locally) but CI's runner is slower
+// than local hardware and measured 64ms there (still over 50ms) - a timing
+// assertion alone is hardware-flaky. DFS_NODE_BUDGET is now 15,000
+// (src/engine/sequence.js), which measured ~8.4-10.5ms locally (a budget
+// sweep at 40k/30k/25k/20k/15k/10k showed an ~linear budget-to-time
+// relationship, so the ~2.5-3x local-to-CI slowdown observed at 40,000
+// projects 15,000 to roughly 20-26ms in CI - comfortably under 50ms with
+// headroom for CI variance). "lengths 5-6" in the review ask are advanced's
+// natural {4,5,6} range; intermediate only ever draws length 3-4, so it is
+// exercised at its own natural lengths below - both tiers go through the
+// identical forced-DFS path on this deck regardless of which length is
+// drawn.
 test("Pygmy forced-fallback (stuck rng) finishes under 50ms for advanced and intermediate", () => {
   const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
   const pygmy = DECKS.find((d) => d.id === "pygmy");
@@ -955,6 +960,47 @@ test("Pygmy forced-fallback (stuck rng) finishes under 50ms for advanced and int
       assert.ok(result.chords || typeof result.reason === "string",
         `pygmy ${tier} run ${run} returned neither chords nor a reason`);
       assert.ok(dt < 50, `pygmy ${tier} run ${run} forced fallback took ${dt}ms`);
+    }
+  }
+});
+
+// Hardware-independent companion to the timing test above: a wall-clock
+// bound is only ever a proxy, and CI's runner proved slower than local
+// hardware (see the comment above). This asserts the actual invariant the
+// budget is meant to guarantee - dfsFindAll never visits more than
+// DFS_NODE_BUDGET nodes - by reconstructing the exact fallback path
+// pick()/attemptLength() takes for Pygmy (the largest built-in, so its
+// worst case bounds every other built-in and every realistic generated
+// deck) at every length each tier actually draws, independent of rng,
+// JIT warmup or runner speed.
+test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier length", () => {
+  const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+  const pygmy = DECKS.find((d) => d.id === "pygmy");
+  assert.ok(pygmy, "pygmy deck missing from data/decks.json");
+  const E = engine();
+  const I = E.sequence._internal;
+  const TIER_LENGTHS = { intermediate: [3, 4], advanced: [4, 5, 6] };
+  const matrix = I.buildConnectMatrix(pygmy);
+  const anchorsList = E.sequence.anchors(pygmy);
+  const home = I.homePc(pygmy);
+  const homeAnchorIdx = I.homeAnchor(pygmy, anchorsList);
+  const ctx = { anchorsList, home, homeAnchorIdx };
+  for (const tier of ["intermediate", "advanced"]) {
+    const pool = I.tierPool(pygmy, tier);
+    const startSet = I.tierStartSet(pygmy, tier, pool);
+    for (const len of TIER_LENGTHS[tier]) {
+      function accept(seq) {
+        for (let i = 0; i < seq.length; i += 1) {
+          const next = seq[(i + 1) % seq.length];
+          if (seq[i] === next) return false;
+          if (!matrix[seq[i]][next]) return false;
+        }
+        return I.classifyTier(pygmy, seq, ctx) === tier;
+      }
+      const stats = {};
+      I.dfsFindAll(startSet, pool, len, accept, I.DFS_NODE_BUDGET, matrix, stats);
+      assert.ok(stats.nodes <= I.DFS_NODE_BUDGET,
+        `pygmy ${tier} length ${len}: dfsFindAll visited ${stats.nodes} nodes, over the ${I.DFS_NODE_BUDGET} budget`);
     }
   }
 });

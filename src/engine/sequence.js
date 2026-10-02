@@ -36,13 +36,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // measured ~100ms at 200,000 - the fallback explores its full budget
   // whenever the tier's pool is this large and well-connected, independent
   // of pruning, because the accepted set itself can be close to that size.
-  // 40,000 measured ~22-27ms on the same worst case, comfortably under the
-  // 50ms bound (D1 step 6 / D-11), while staying far larger than the space
-  // of any realistic generated deck that would actually reach this fallback
-  // (per D-2's own note, "a tiny generated pan is the only realistic way to
-  // reach the fallback, and its space is small enough for the budget") - the
-  // reduction only tightens the pathological worst case, not realistic use.
-  var DFS_NODE_BUDGET = 40000;
+  // 40,000 measured ~22-27ms locally on the same worst case, but CI's
+  // runner is slower than local hardware: the same 40,000-budget build
+  // measured 64ms in CI (job 110789441606, still over the 50ms bound).
+  // 15,000 measured ~8.4-10.5ms locally (a budget sweep at 40k/30k/25k/
+  // 20k/15k/10k showed a near-linear budget-to-time relationship, so the
+  // ~2.5-3x local-to-CI slowdown observed at 40,000 projects 15,000 to
+  // roughly 20-26ms in CI), comfortably under the 50ms bound (D1 step 6 /
+  // D-11) with margin for CI variance, while staying far larger than the
+  // space of any realistic generated deck that would actually reach this
+  // fallback (per D-2's own note, "a tiny generated pan is the only
+  // realistic way to reach the fallback, and its space is small enough
+  // for the budget") - the reduction only tightens the pathological worst
+  // case, not realistic use.
+  var DFS_NODE_BUDGET = 15000;
 
   function pc(n) {
     return ((n % 12) + 12) % 12;
@@ -358,12 +365,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // (intermediate's {3,4}); a length-2 sequence that fails BASIC's gate has
   // nowhere left to fall through to - length 2 is exclusively a BASIC shape -
   // so it classifies null rather than "advanced", and so does length <=1.
+  // basicGate/intermediateGate each already reject on length internally
+  // (their own first line) - classifyTier does not re-check length before
+  // calling them. A redundant outer length pre-filter here would short-
+  // circuit the gate's own length check via `&&`, making it unreachable
+  // dead code: exactly what let a length-off-by-one mutant in
+  // intermediateGate survive mutation testing on PR #202's perf review
+  // (tests/mutants/sqd_05_intermediate_length_range_off_by_one.patch) once
+  // an earlier draft of this function added such a pre-filter.
   function classifyTier(deck, chords, ctx) {
     var n = chords.length;
-    if ((n === 2 || n === 3) && basicGate(deck, chords, ctx.anchorsList, ctx.homeAnchorIdx)) {
+    if (basicGate(deck, chords, ctx.anchorsList, ctx.homeAnchorIdx)) {
       return "basic";
     }
-    if ((n === 3 || n === 4) && intermediateGate(deck, chords, ctx.home)) {
+    if (intermediateGate(deck, chords, ctx.home)) {
       return "intermediate";
     }
     if (n >= 3) return "advanced";
@@ -426,7 +441,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // which sequences are found - it only lets the same node budget reach
   // deeper into the space that can actually be accepted (perf review on PR
   // #202, item 4).
-  function dfsFindAll(startSet, pool, len, accept, budget, matrix) {
+  // `stats`, when passed, gets its `.nodes` set to the final visited-node
+  // count on return - a deterministic, hardware-independent way to prove
+  // the DFS never exceeds `budget` (used by the perf regression test
+  // instead of a wall-clock timing, which varies with the runner).
+  function dfsFindAll(startSet, pool, len, accept, budget, matrix, stats) {
     var found = [];
     var nodes = 0;
     var seq = new Array(len);
@@ -450,6 +469,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     rec(0);
+    if (stats) stats.nodes = nodes;
     return found;
   }
 
@@ -564,6 +584,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     sequences: sequences,
     tierOf: tierOf,
     pick: pick,
-    mulberry32: mulberry32
+    mulberry32: mulberry32,
+    // Exposed for the hardware-independent DFS-budget regression test
+    // (perf review on PR #202): lets a test reconstruct the real
+    // fallback path for a given deck/tier and assert on the node count
+    // dfsFindAll actually visits, rather than on wall-clock time.
+    _internal: {
+      DFS_NODE_BUDGET: DFS_NODE_BUDGET,
+      dfsFindAll: dfsFindAll,
+      tierPool: tierPool,
+      tierStartSet: tierStartSet,
+      buildConnectMatrix: buildConnectMatrix,
+      classifyTier: classifyTier,
+      homePc: homePc,
+      homeAnchor: homeAnchor,
+      sameSequence: sameSequence
+    }
   };
 })(HPE);
