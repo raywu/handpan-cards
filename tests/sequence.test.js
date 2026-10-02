@@ -1,6 +1,42 @@
 // HPE.sequence - the chord-sequence-mode engine (S1 of
-// docs/plans/2026-09-29-chord-sequence-mode.md). Tests are named exactly as
-// listed in that plan's section 3 ("S1 failing tests").
+// docs/plans/2026-09-29-chord-sequence-mode.md), extended with difficulty
+// tiers (D1 of docs/plans/2026-10-02-sequence-difficulty.md). Tests are named
+// exactly as listed in the chord-sequence plan's section 3 ("S1 failing
+// tests") for the S1 block, and by the tier plan's §4 step numbers below.
+//
+// tests/fixtures/sequence_basic_golden.json (D1 step 1b) was captured from
+// the UNMODIFIED engine at main@61b01c2, before any tier code existed, with
+// this script (run once, output committed, script itself not checked in):
+//
+//   const fs = require("fs");
+//   const { loadEngine } = require("./tests/helpers/engine.js");
+//   const DECKS = JSON.parse(fs.readFileSync("data/decks.json", "utf8"));
+//   const E = loadEngine(["sequence"]);
+//   const out = {};
+//   for (const id of ["hijaz", "pygmy", "amara"]) {
+//     const deck = DECKS.find((d) => d.id === id);
+//     out[id] = [];
+//     for (let seed = 0; seed < 200; seed += 1) {
+//       const rngNull = E.sequence.mulberry32(seed);
+//       const nullDeal = E.sequence.pick(deck, rngNull, null);
+//       const nullNext = rngNull();
+//       const rngPrev = E.sequence.mulberry32(seed); // fresh rng, same seed
+//       const prevDeal = E.sequence.pick(deck, rngPrev, nullDeal.chords);
+//       const prevNext = rngPrev();
+//       out[id].push({
+//         seed,
+//         nullCase: { chords: nullDeal.chords, style: nullDeal.style, nextRng: nullNext },
+//         prevCase: { chords: prevDeal.chords, style: prevDeal.style, nextRng: prevNext }
+//       });
+//     }
+//   }
+//   fs.writeFileSync("tests/fixtures/sequence_basic_golden.json", JSON.stringify(out));
+//
+// This fixture is the BASIC-parity oracle for step 4 (eng E-4): comparing
+// pick-vs-pick after the engine edit would pass a mutant that routes BOTH
+// the undefined-tier and "basic" calls through the new tiered sampler: the
+// fixture was captured before that code existed, so it cannot share such a
+// bug.
 "use strict";
 
 const test = require("node:test");
@@ -9,9 +45,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { loadEngine } = require("./helpers/engine.js");
+const { score } = require("./helpers/sequence_score.js");
 
 const ROOT = path.join(__dirname, "..");
 const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+const BASIC_GOLDEN = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "sequence_basic_golden.json"), "utf8"));
 
 function deckById(id) {
   const hit = DECKS.find((d) => d.id === id);
@@ -393,6 +432,374 @@ test("pick excludes prev before choosing a length", () => {
   assert.deepStrictEqual(host(fallback.chords), [0, 1]);
   assert.strictEqual(typeof fallback.style, "string");
   assert.ok(E.sequence.STYLES.includes(fallback.style));
+});
+
+/* ================================================================
+ * D1 - difficulty tiers (docs/plans/2026-10-02-sequence-difficulty.md §4)
+ * ================================================================ */
+
+// Part 3a/3b of the Pygmy Progression Tiers doc (artifact
+// f14b7860-bf38-4c6d-b579-f54f9535b405, rev 56), 1-based "#N" card numbers
+// converted to 0-based chord indices. These are the golden fixtures step 2
+// names; tierOf is asserted against them directly (D1 step 2/3).
+const PYGMY_INTERMEDIATE = {
+  I1: [0, 30, 24], I2: [4, 41, 50], I3: [0, 48, 50], I4: [4, 23, 35],
+  I5: [0, 7, 35], I6: [0, 43, 37, 30], I7: [4, 16, 41, 50], I8: [2, 0, 21, 19]
+};
+const PYGMY_ADVANCED = {
+  A1: [36, 51, 38, 0], A2: [23, 50, 16, 41], A3: [5, 17, 25, 0],
+  A4: [49, 51, 15, 16], A5: [5, 22, 23, 7, 33, 35], A6: [25, 38, 44, 38]
+};
+const HIJAZ_INTERMEDIATE = [0, 6, 2];
+const HIJAZ_ADVANCED = [14, 13, 3, 5];
+const AMARA_INTERMEDIATE = [0, 18, 16];
+const AMARA_ADVANCED = [10, 20, 15, 24];
+
+/* -------------------------------------------------------------- D1 step 2/3 */
+
+test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
+  const E = engine();
+  for (const [name, seq] of Object.entries(PYGMY_INTERMEDIATE)) {
+    assert.strictEqual(E.sequence.tierOf(PYGMY, seq), "intermediate",
+      `Pygmy ${name} ${seq} should classify intermediate`);
+  }
+  for (const [name, seq] of Object.entries(PYGMY_ADVANCED)) {
+    assert.strictEqual(E.sequence.tierOf(PYGMY, seq), "advanced",
+      `Pygmy ${name} ${seq} should classify advanced`);
+  }
+  assert.strictEqual(E.sequence.tierOf(HIJAZ, HIJAZ_INTERMEDIATE), "intermediate");
+  assert.strictEqual(E.sequence.tierOf(HIJAZ, HIJAZ_ADVANCED), "advanced");
+  assert.strictEqual(E.sequence.tierOf(AMARA, AMARA_INTERMEDIATE), "intermediate");
+  assert.strictEqual(E.sequence.tierOf(AMARA, AMARA_ADVANCED), "advanced");
+
+  // Every BASIC sequence today (36 / 23 / 16) still classifies "basic".
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    let count = 0;
+    for (const length of [2, 3]) {
+      for (const seq of E.sequence.sequences(deck, length)) {
+        assert.strictEqual(E.sequence.tierOf(deck, seq), "basic",
+          `${id} BASIC sequence ${seq} should classify basic`);
+        count += 1;
+      }
+    }
+    assert.strictEqual(count, { hijaz: 23, pygmy: 36, amara: 16 }[id],
+      `${id} BASIC candidate count changed`);
+  }
+
+  // A synthetic deck isolating the sus-resolve exception: chord0 = C anchor
+  // (home), chord1 = Dm anchor (root D), chord2 = Dsus4-shaped 4-field
+  // non-anchor chord sharing Dm's root. [0,2,1] (sus, then its resolution,
+  // adjacent on the wrap) is the one repeat INTERMEDIATE allows - advanced
+  // otherwise, since nothing else distinguishes the two tiers here.
+  const resolveDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"],
+    "2": ["E", 4, 64, "rim", null, "2"],
+    "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"],
+    "5": ["F", 4, 65, "rim", null, "5"],
+    "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["D", 5, 74, "rim", null, "7"],
+    "8": ["G", 5, 79, "rim", null, "8"],
+    "9": ["A", 5, 81, "rim", null, "9"],
+    "10": ["C", 6, 84, "rim", null, "10"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Dsus4", sup: "add9", fields: [7, 8, 9, 10], roots: [7] }
+  ]);
+  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 2, 1]), "intermediate",
+    "sus (pos1) resolving forward into its root chord (pos2) should be intermediate");
+  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), "advanced",
+    "the same pair in the other order does not resolve and should be advanced");
+});
+
+/* -------------------------------------------------------------- D1 step 3 */
+
+test("TIERS lists the three tier ids in order", () => {
+  const E = engine();
+  assert.deepStrictEqual(host(E.sequence.TIERS), ["basic", "intermediate", "advanced"]);
+});
+
+/* -------------------------------------------------------------- D1 step 4 */
+
+test("pick(..., undefined) and pick(..., \"basic\") reproduce the pre-tier golden fixture", () => {
+  const E = engine();
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const row of BASIC_GOLDEN[id]) {
+      for (const tierArg of [undefined, "basic"]) {
+        const rngNull = E.sequence.mulberry32(row.seed);
+        const nullDeal = tierArg === undefined
+          ? E.sequence.pick(deck, rngNull, null)
+          : E.sequence.pick(deck, rngNull, null, tierArg);
+        assert.deepStrictEqual(host(nullDeal.chords), row.nullCase.chords,
+          `${id} seed ${row.seed} null-prev chords diverged from the golden fixture`);
+        assert.strictEqual(nullDeal.style, row.nullCase.style);
+        assert.strictEqual(rngNull(), row.nullCase.nextRng);
+
+        const rngPrev = E.sequence.mulberry32(row.seed);
+        const prevDeal = tierArg === undefined
+          ? E.sequence.pick(deck, rngPrev, row.nullCase.chords)
+          : E.sequence.pick(deck, rngPrev, row.nullCase.chords, tierArg);
+        assert.deepStrictEqual(host(prevDeal.chords), row.prevCase.chords,
+          `${id} seed ${row.seed} prev-excluded chords diverged from the golden fixture`);
+        assert.strictEqual(prevDeal.style, row.prevCase.style);
+        assert.strictEqual(rngPrev(), row.prevCase.nextRng);
+      }
+    }
+  }
+});
+
+test("pick throws on an unknown tier", () => {
+  const E = engine();
+  assert.throws(() => E.sequence.pick(HIJAZ, E.sequence.mulberry32(1), null, "expert"),
+    /HPE\.sequence\.pick: unknown tier/);
+});
+
+test("pick uses only the rng it is given for intermediate/advanced tiers", () => {
+  const E = engine();
+  const vmMath = vm.runInContext("Math", E._context);
+  const originalRandom = vmMath.random;
+  vmMath.random = () => { throw new Error("pick must not call Math.random"); };
+  try {
+    for (const tier of ["intermediate", "advanced"]) {
+      const rng = E.sequence.mulberry32(7);
+      assert.doesNotThrow(() => E.sequence.pick(PYGMY, rng, null, tier));
+    }
+  } finally {
+    vmMath.random = originalRandom;
+  }
+});
+
+test("intermediate/advanced deals satisfy tierOf, connectivity, length range and no consecutive repeat", () => {
+  const E = engine();
+  const TIER_LENGTHS = { intermediate: [3, 4], advanced: [4, 5, 6] };
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const tier of ["intermediate", "advanced"]) {
+      let prev = null;
+      for (let seed = 0; seed < 2000; seed += 1) {
+        const rng = E.sequence.mulberry32(seed);
+        const result = E.sequence.pick(deck, rng, prev, tier);
+        assert.ok(result.chords, `${id} ${tier} seed ${seed} returned ${result.reason}`);
+        const seq = host(result.chords);
+        assert.strictEqual(E.sequence.tierOf(deck, seq), tier,
+          `${id} ${tier} seed ${seed} ${seq} did not classify as ${tier}`);
+        assert.ok(TIER_LENGTHS[tier].includes(seq.length),
+          `${id} ${tier} seed ${seed} length ${seq.length} out of range`);
+        for (let i = 0; i < seq.length; i += 1) {
+          const a = seq[i];
+          const b = seq[(i + 1) % seq.length];
+          assert.notStrictEqual(a, b,
+            `${id} ${tier} seed ${seed} ${seq} has a consecutive repeat at ${i}`);
+          assert.ok(connectsRef(deck, a, b),
+            `${id} ${tier} seed ${seed} ${a} -> ${b} does not connect`);
+        }
+        prev = seq;
+      }
+    }
+  }
+});
+
+test("intermediate/advanced length is drawn uniformly over the tier's lengths", () => {
+  const E = engine();
+  const N = 10000;
+  for (const tier of ["intermediate", "advanced"]) {
+    const lengths = tier === "intermediate" ? [3, 4] : [4, 5, 6];
+    const counts = {};
+    for (const l of lengths) counts[l] = 0;
+    const rng = E.sequence.mulberry32(314);
+    let prev = null;
+    for (let i = 0; i < N; i += 1) {
+      const result = E.sequence.pick(PYGMY, rng, prev, tier);
+      counts[result.chords.length] += 1;
+      prev = result.chords;
+    }
+    const expected = 100 / lengths.length;
+    for (const l of lengths) {
+      const pct = (100 * counts[l]) / N;
+      assert.ok(Math.abs(pct - expected) <= 3,
+        `${tier} length=${l} share ${pct}% not within 3pp of ${expected}%`);
+    }
+  }
+});
+
+/* -------------------------------------------------------------- D1 step 5 */
+
+test("fallback and empty-tier reasons per D-2/D-6", () => {
+  const E = engine();
+
+  // A synthetic 4-card all-anchor deck (home C, Dm, Em, G). A stuck-at-zero
+  // rng makes every random attempt identical and rejected (intermediate: the
+  // repeated draw always fails tierOf or connects before 512 attempts run
+  // out), forcing the DFS fallback - which still finds and deals a sequence.
+  const fourCard = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["E", 4, 64, "rim", null, "7"], "8": ["G", 4, 67, "rim", null, "8"], "9": ["B", 4, 71, "rim", null, "9"],
+    "10": ["G", 4, 67, "rim", null, "10"], "11": ["B", 4, 71, "rim", null, "11"], "12": ["D", 5, 74, "rim", null, "12"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] },
+    { main: "G", sup: "", fields: [10, 11, 12], roots: [10] }
+  ]);
+  const stuckAtZero = () => 0;
+  for (const tier of ["intermediate", "advanced"]) {
+    const result = E.sequence.pick(fourCard, stuckAtZero, null, tier);
+    assert.ok(result.chords, `${tier} fallback on the 4-card deck should still deal`);
+    assert.strictEqual(E.sequence.tierOf(fourCard, host(result.chords)), tier);
+  }
+
+  // A synthetic 3-card all-anchor deck (home C, Dm, Em - no non-anchor card
+  // and no 4th anchor) has anchors but nothing INTERMEDIATE can build a
+  // length-3/4 sequence from without an index repeat, which 3 distinct roots
+  // and no sus-resolve pair can never satisfy: NO_TIER_SEQUENCE every time.
+  const threeCard = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["E", 4, 64, "rim", null, "7"], "8": ["G", 4, 67, "rim", null, "8"], "9": ["B", 4, 71, "rim", null, "9"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] }
+  ]);
+  for (let seed = 0; seed < 200; seed += 1) {
+    const result = E.sequence.pick(threeCard, E.sequence.mulberry32(seed), null, "intermediate");
+    assert.deepStrictEqual(host(result), { chords: null, reason: "NO_TIER_SEQUENCE" },
+      `threeCard intermediate seed ${seed} should be NO_TIER_SEQUENCE`);
+  }
+  // The same deck's ADVANCED tier (no repeat restriction) does find sequences
+  // - confirming NO_TIER_SEQUENCE above is tier-specific, not deck-wide.
+  const advancedOnThreeCard = E.sequence.pick(threeCard, E.sequence.mulberry32(1), null, "advanced");
+  assert.ok(advancedOnThreeCard.chords);
+
+  // NO_HOME_CHORD wins on every tier, reusing the NO_THIRDS fixture from S1-7.
+  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
+  const parsed = full.core.parseSeed("(C3) G3 D4 G4 D5", {});
+  const noHomeDeck = full.select.build(parsed.value).value;
+  for (const tier of ["basic", "intermediate", "advanced"]) {
+    const result = tier === "basic"
+      ? full.sequence.pick(noHomeDeck, full.sequence.mulberry32(1), null)
+      : full.sequence.pick(noHomeDeck, full.sequence.mulberry32(1), null, tier);
+    assert.deepStrictEqual(host(result), { chords: null, reason: "NO_HOME_CHORD" },
+      `NO_HOME_CHORD should win on tier ${tier}`);
+  }
+
+  // D-3 / coordinator nit: when prev is the tier's ONLY sequence, pick
+  // returns prev (with a freshly drawn style) rather than NO_TIER_SEQUENCE.
+  // A synthetic deck with a single home-root start (chord0, root C) and the
+  // sus-resolve pair isolated to chords1/2 (root D) has exactly one
+  // intermediate-valid sequence in total: [0,2,1].
+  const oneTierSequenceDeck = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"],
+    "2": ["E", 4, 64, "rim", null, "2"],
+    "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"],
+    "5": ["F", 4, 65, "rim", null, "5"],
+    "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["D", 5, 74, "rim", null, "7"],
+    "8": ["G", 5, 79, "rim", null, "8"],
+    "9": ["A", 5, 81, "rim", null, "9"],
+    "10": ["C", 6, 84, "rim", null, "10"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Dsus4", sup: "add9", fields: [7, 8, 9, 10], roots: [7] }
+  ]);
+  const onlyTierSequence = [0, 2, 1];
+  const styles = new Set();
+  for (let seed = 0; seed < 500; seed += 1) {
+    const result = E.sequence.pick(oneTierSequenceDeck, E.sequence.mulberry32(seed), onlyTierSequence, "intermediate");
+    assert.deepStrictEqual(host(result.chords), onlyTierSequence,
+      `seed ${seed} should fall back to prev, the tier's only sequence`);
+    styles.add(result.style);
+  }
+  assert.ok(styles.size > 1, "the style should still be freshly drawn on the fallback-to-prev path");
+});
+
+/* -------------------------------------------------------------- D1 step 6 */
+
+test("generated decks: every tier returns a sequence or a reason, never throws, under 50ms", () => {
+  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
+  const scales = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "tests", "fixtures", "synthetic_scales.json"), "utf8"));
+  function fixtureRow(name) {
+    const row = scales.find((r) => r.name === name);
+    assert.ok(row, `fixture row "${name}" is missing`);
+    return row;
+  }
+  const NINETEEN = fixtureRow("nineteen field maximum").string;
+  const TWELVE = fixtureRow("twelve note pan").string;
+  function splitSeed(str) {
+    const [top, bottom = ""] = str.split("|");
+    const tokens = top.trim().split(/\s+/);
+    return { ding: tokens[0], top: tokens.slice(1), bottom: bottom.trim() ? bottom.trim().split(/\s+/) : [] };
+  }
+  function seedOf(str, nTop, nBottom) {
+    const parts = splitSeed(str);
+    const top = parts.top.slice(0, nTop);
+    const bottom = parts.bottom.slice(0, nBottom);
+    let s = `${parts.ding} ${top.join(" ")}`;
+    if (bottom.length) s += ` | ${bottom.join(" ")}`;
+    const parsed = full.core.parseSeed(s);
+    assert.equal(parsed.ok, true, `sweep seed did not parse: ${s} (${parsed.code})`);
+    return { string: s, seed: parsed.value };
+  }
+  const sweep = [];
+  for (let n = 5; n <= 19; n += 1) {
+    const topHeavy = Math.min(n, 13);
+    sweep.push({ n, label: `top-heavy N=${n}`, ...seedOf(NINETEEN, topHeavy, n - topHeavy) });
+    const nBottom = Math.min(6, Math.floor(n / 3));
+    const nTop = Math.min(13, n - nBottom);
+    sweep.push({ n, label: `mixed N=${n}`, ...seedOf(NINETEEN, nTop, n - nTop) });
+    if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, ...seedOf(TWELVE, n, 0) });
+  }
+
+  for (const row of sweep) {
+    const built = full.select.build(row.seed);
+    if (!built.ok) continue;
+    const deck = built.value;
+    for (const tier of ["basic", "intermediate", "advanced"]) {
+      const t0 = Date.now();
+      let result;
+      assert.doesNotThrow(() => {
+        result = tier === "basic"
+          ? full.sequence.pick(deck, full.sequence.mulberry32(1), null)
+          : full.sequence.pick(deck, full.sequence.mulberry32(1), null, tier);
+      }, `${row.label} ${tier} threw`);
+      const dt = Date.now() - t0;
+      assert.ok(dt < 50, `${row.label} ${tier} took ${dt}ms`);
+      assert.ok(result.chords || typeof result.reason === "string",
+        `${row.label} ${tier} returned neither chords nor a reason`);
+    }
+  }
+});
+
+test("a deck forcing the DFS fallback on every length finishes under 50ms", () => {
+  const E = engine();
+  const fourCard = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"],
+    "7": ["E", 4, 64, "rim", null, "7"], "8": ["G", 4, 67, "rim", null, "8"], "9": ["B", 4, 71, "rim", null, "9"],
+    "10": ["G", 4, 67, "rim", null, "10"], "11": ["B", 4, 71, "rim", null, "11"], "12": ["D", 5, 74, "rim", null, "12"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
+    { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] },
+    { main: "G", sup: "", fields: [10, 11, 12], roots: [10] }
+  ]);
+  const stuckAtZero = () => 0;
+  for (const tier of ["intermediate", "advanced"]) {
+    const t0 = Date.now();
+    const result = E.sequence.pick(fourCard, stuckAtZero, null, tier);
+    const dt = Date.now() - t0;
+    assert.ok(result.chords, `${tier} forced fallback should still deal`);
+    assert.ok(dt < 50, `${tier} forced fallback took ${dt}ms`);
+  }
 });
 
 /* -------------------------------------------------------------- S1-8 */
