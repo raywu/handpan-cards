@@ -89,23 +89,11 @@ def main(argv):
               file=sys.stderr)
         return 1
 
-    # A LAMBDA replacement, not a bare string: the `degrees` labels carry
-    # U+00B0 and re's replacement parser treats backslash escapes in the
-    # template, which is how a past hand-injection silently wrote nothing
-    # (CLAUDE.md, "Known pitfalls").
-    line = "const DECKS = " + want + ";"
-    html = PATTERN.sub(lambda _m: line, html, count=1)
-    with open(INDEX, "w", encoding="utf-8") as fh:
-        fh.write(html)
-
-    # ALWAYS re-parse what was written. A smoke test against stale data passes
-    # (CLAUDE.md again); only reading the bytes back proves the write landed.
-    with open(INDEX, encoding="utf-8") as fh:
-        again = PATTERN.search(fh.read())
-    if again is None or again.group(1) != want:
-        print("re-injection did not land - index.html NOT in sync", file=sys.stderr)
-        return 1
-
+    # M179-3/T183-4 (2026-10-01 post-refactor triage): this used to duplicate
+    # inject()'s write-plus-reparse body instead of calling it, which is the
+    # two-injection-paths-for-one-line bug the finding is about. inject()
+    # raises SystemExit with its own reason on failure.
+    inject(canonical())
     print("DECKS in index.html re-synced from data/decks.json")
     return 0
 
