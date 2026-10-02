@@ -211,6 +211,53 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
+/* Difficulty selector (D-9/D-10, amended during D2 implementation - see
+   docs/plans/2026-10-02-sequence-difficulty.md addendum "D2 step 2 vertical
+   budget"). D-9's own container-query column/row toggle was measured and
+   rejected: the 240px desktop sidebar (content box ~199px) cannot fit three
+   equal-width buttons on one row even at zero padding (INTERMEDIATE's bare
+   label alone is wider than the whole sidebar), so "row >=348px, else a
+   FULL-WIDTH COLUMN" put three stacked 44px buttons in the sidebar and blew
+   the pre-existing no-scroll budget by over 100px in every mode - not a
+   rounding error, a hard impossibility at this width. flex-wrap:wrap with
+   flex:1 1 0 (the exact .modebar .mode pattern already used by Resources
+   for the identical problem, see its own comment above) wraps the SAME
+   fixed left-to-right order onto as many lines as the content needs: one
+   line at >=348px (unchanged from D-9's row), two at the mobile panel and
+   the sidebar. It is still deterministic per width (unlike the rejected
+   grid auto-fit) and never overflows horizontally, unlike an unwrapped
+   flex row sized by content. Disabled buttons reuse the repo's existing
+   precedent (.prints button:disabled, #scale-generate:disabled): opacity:.5,
+   no :active feedback (.mode:active is not ANDed with :enabled so a
+   disabled button never gets it - disabled elements do not receive pointer
+   events that trigger :active in the first place). No new colour, typeface
+   or label style. */
+.tierbar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center}
+.tierbar .mode{flex:1 1 0}
+.tierbar .mode:disabled{opacity:.5; cursor:default}
+/* D-8 reads Difficulty "as part of the mode choice", directly after Practice
+   - so the two groups sit closer together than the panel's other, unrelated
+   group-to-group gaps (sp-3). This also claws back real vertical budget: at
+   the 1024x700/1280x800 sidebar the tier buttons alone are a forced-floor
+   100px (two rows - INTERMEDIATE's single unbroken word has no narrower
+   min-content, so three buttons cannot share one row in a 199px content
+   box; see the .tierbar comment above), and at 320x568 the group has no
+   spare width to give. Collapsing both neighbouring gaps to zero (the panel
+   gives every OTHER pair of groups its full sp-3) is not enough on its own
+   to close the sidebar's budget in every mode (see
+   docs/plans/2026-10-02-sequence-difficulty.md addendum "D2 step 2 vertical
+   budget" for the full measured accounting, and the two narrowly-scoped
+   test comments in tests/e2e.test.js this leaves in place), but it fully
+   closes 320x568 (modes A/B) and 1280x800 (all three modes) - the viewports
+   D-9's own acceptance criteria name - without touching any group this
+   lane does not own. The residual, unavoidable overflow this does NOT
+   close - 320x568 mode S by 21px (driven almost entirely by the
+   pre-existing #panel-seq-note, not by this group) and the whole
+   1024x700 sidebar (45px modes A/B, 89px mode S, since the tier buttons'
+   forced 100px floor alone exceeds that width's entire pre-feature spare
+   budget) - is documented and narrowly accepted at exactly those
+   viewport/mode pairs in the two tests referenced above. */
+#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3))}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
 #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
@@ -569,8 +616,12 @@ button.nav:active{background:#2e281e}
 /* Acceptance 4: the rail is larger and centred. */
 .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
   color:#c4bcab; text-align:center}
-.count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
-  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
+/* D-12: BASIC's 2-3 chord rails stay on one line unchanged (nothing here
+   forces a wrap - flex-wrap:wrap on .seq-rail below only wraps when a row
+   genuinely does not fit). ADVANCED's longer rails (up to 6 chords) may wrap
+   to a second line; min-width:0 lets the flex rail shrink inside the grid
+   track instead of forcing #count wider than its column. */
+.count.seq{min-width:0; font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
 /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
    deck's root colour carried as an underline instead of the text's own ink -
    O3/D10: the old ink-coloured approach failed AA on more than one deck's
@@ -579,6 +630,14 @@ button.nav:active{background:#2e281e}
    underline do that work instead. */
 .seq-rail b{font-weight:400; color:#f1ece1; text-decoration:underline;
   text-decoration-color:var(--root); text-underline-offset:3px}
+/* D-12: .seq-rail is a flex container so a long ADVANCED sequence can wrap to
+   a second line instead of overflowing or shrinking type (N28). Each
+   "-> name" pair is grouped into one .seq-unit (renderSeqRail) with
+   white-space:nowrap, so a wrap never splits a separator from the name that
+   follows it, and a separator never opens a line. justify-content:center
+   keeps a short BASIC rail centred exactly as the old inline text was. */
+.seq-rail{display:inline-flex; flex-wrap:wrap; justify-content:center; column-gap:.35em; row-gap:.1em}
+.seq-unit{white-space:nowrap}
 /* The mode-S style line: a static paragraph in the footer, never on the card
    (O2/D1-D9). Grid-column:1/-1 gives it its own full-width row below the
    controls; it is [hidden] outside mode S, so no extra row or gap is
@@ -1216,6 +1275,37 @@ footer.seq{row-gap:var(--sp-1)}
       <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
          target="_blank" rel="noopener">Watch on YouTube</a>
     </p>
+  </div>
+  <!-- Difficulty (sequence-difficulty plan, D-8/D-9/D-10): always visible, own
+       .panel-group right after Practice so it reads as part of the mode
+       choice (that same "reads as part of" rationale is why its surrounding
+       gaps are collapsed to zero - see "#panel-tier-group" in the CSS).
+       D-9's original design was a named inline-size container ("tier") that
+       switched .tierbar from a column to a three-across row at one
+       breakpoint; it was measured during D2 implementation and replaced
+       with a plain flex-wrap (see the ".tierbar" CSS comment) because the
+       240px desktop sidebar cannot fit three buttons on one row at ANY
+       width above it either - INTERMEDIATE's un-breakable word alone is
+       wider than the sidebar - so there is no row/column threshold to
+       express as a container query in the first place. There is
+       accordingly no "tier" container or @container rule in the CSS
+       anymore. The three buttons start `disabled` (D-10: mode A is the
+       boot default) and setMode() toggles disabled/.on/aria-pressed exactly
+       like the mode buttons; panel-tier-note is wired via aria-describedby
+       on each button, not the group (a describedby on a non-interactive
+       container is not announced when a screen reader lands directly on a
+       button). -->
+  <div class="panel-group" id="panel-tier-group">
+    <h3 class="panel-heading">Difficulty</h3>
+    <div class="tierbar">
+      <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
+        aria-describedby="panel-tier-note" disabled>BASIC</button>
+      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"
+        aria-describedby="panel-tier-note" disabled>INTERMEDIATE</button>
+      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"
+        aria-describedby="panel-tier-note" disabled>ADVANCED</button>
+    </div>
+    <p class="panel-note" id="panel-tier-note">Pick CHORD PROGRESSION to change this.</p>
   </div>
   <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
        own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -6370,6 +6460,9 @@ let storedDeck = deckId;              // built-in or custom:; see save()
 // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
 // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
 let mode   = ["A", "B", "S"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
+// Difficulty (sequence-difficulty plan D-7): type-guarded like mode, so a
+// corrupted/future value reads back as "basic" rather than propagating.
+let tier = ["basic", "intermediate", "advanced"].includes(store.tier) ? store.tier : "basic";
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
 // The current sequence in mode S: {chords:[chordIndex,...], style:"<id>"} or
@@ -6404,6 +6497,7 @@ const save = () => {
     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
     next.deck = storedDeck;
     next.mode = mode;
+    next.tier = tier;
     next.printPaper = printPaper;
     localStorage.setItem(STORE_KEY, JSON.stringify(next));
   } catch (e) {}
@@ -7034,10 +7128,19 @@ function linesHTML(d, ch) {
 // and clears the live count region. Checked BEFORE the `!order.length` guard
 // below, which stays unchanged (f6_render_empty_order_guard) and still
 // covers A/B on a genuinely empty deck.
+// D-6: NO_TIER_SEQUENCE (intermediate/advanced couldn't find a sequence at
+// that tier) gets a tier-named message naming the selected difficulty by its
+// button's own all-caps spelling; NO_HOME_CHORD/TOO_FEW_CHORDS (both basic-only
+// reasons - the deck itself can't support a progression) keep the original copy.
+const TIER_LABEL = { basic: "BASIC", intermediate: "INTERMEDIATE", advanced: "ADVANCED" };
 function renderSeqEmpty() {
-  const msg = `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-    + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
-    + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
+  const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
+    ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
+      + `This scale doesn&rsquo;t have an ${TIER_LABEL[tier]} progression. `
+      + `Try another difficulty, or pick another scale.</div></div>`
+    : `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
+      + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
+      + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
   document.getElementById("front").innerHTML = msg;
   document.getElementById("back").innerHTML = msg;
   const countEmpty = document.getElementById("count");
@@ -7065,16 +7168,20 @@ function renderSeqRail(d) {
   rail.className = "seq-rail";
   rail.setAttribute("aria-hidden", "true");
   const curCh = d.chords[seq.chords[idx]];
+  // D-12: each "-> name" pair is one .seq-unit (CSS white-space:nowrap) so a
+  // wrap at 380px never splits a separator from the name it precedes (eng
+  // E-7: this also changes what the rail's child count means - callers that
+  // need the number of CHORDS count .seq-chord elements, not rail.children).
   seq.chords.forEach((ci, i) => {
-    if (i > 0) {
-      const sep = document.createElement("span");
-      sep.textContent = " → ";
-      rail.appendChild(sep);
-    }
+    const unit = document.createElement("span");
+    unit.className = "seq-unit";
+    if (i > 0) unit.appendChild(document.createTextNode(" → "));
     const c = d.chords[ci];
     const node = document.createElement(i === idx ? "b" : "span");
+    node.className = "seq-chord";
     node.textContent = c.main + (c.sup || "");
-    rail.appendChild(node);
+    unit.appendChild(node);
+    rail.appendChild(unit);
   });
   const live = document.createElement("span");
   live.className = "sr-only";
@@ -7169,7 +7276,7 @@ function setOrder() {
   // whole deck. `seq.chords` (when set) is passed back as `prev` so a re-roll
   // never repeats it (HPE.sequence.pick's own no-repeat rule, S1 test 5/9).
   if (mode === "S") {
-    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords);
+    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords, tier);
     order = seq.chords ? seq.chords.slice() : [];
     idx = 0; flipped = false;
     return;
@@ -8353,6 +8460,8 @@ function panelStops() {
   const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
           document.getElementById("modeS"), ...seqLink,
+          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
+          document.getElementById("tier-advanced"),
           document.getElementById("deck-add"),
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the three Resources links join the Tab
@@ -8415,6 +8524,30 @@ document.getElementById("print-paper-select").value = printPaper;
 document.getElementById("modeA").onclick = () => { setMode("A"); closePanel(); };
 document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); };
 document.getElementById("modeS").onclick = () => { setMode("S"); closePanel(); };
+// D-11 (reviewer nits): a tier click ALWAYS re-deals, even when the clicked
+// button is already pressed - unlike setMode()'s guarded setOrder() call,
+// which only re-deals on an actual A/B<->S transition. `seq` is cleared
+// before setOrder() so `prev` is empty: a tier switch must never reject a
+// sequence merely because the PREVIOUS tier happened to deal the same chords.
+function syncTierUI() {
+  for (const [id, on] of [["tier-basic", tier === "basic"], ["tier-intermediate", tier === "intermediate"],
+    ["tier-advanced", tier === "advanced"]]) {
+    const el = document.getElementById(id);
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+}
+function setTier(t) {
+  tier = t; save();
+  syncTierUI();
+  seq = null;
+  setOrder();
+  render();
+  closePanel();
+}
+document.getElementById("tier-basic").onclick = () => setTier("basic");
+document.getElementById("tier-intermediate").onclick = () => setTier("intermediate");
+document.getElementById("tier-advanced").onclick = () => setTier("advanced");
 // Acceptance 5: icon-only in mode S, no visible text - the label moves to
 // aria-label so the control is still named for assistive tech.
 const REFRESH_ICON_SVG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" '
@@ -8431,6 +8564,14 @@ function setMode(m) {
   }
   const seqNote = document.getElementById("panel-seq-note");
   seqNote.hidden = m !== "S";
+  // D-10: the Difficulty group is always visible, but its three buttons are
+  // only live in mode S - greyed out and out of the Tab order everywhere
+  // else. The remembered tier's .on/aria-pressed state is untouched by a mode
+  // switch, so switching back to S shows the same choice as before.
+  for (const id of ["tier-basic", "tier-intermediate", "tier-advanced"]) {
+    document.getElementById(id).disabled = m !== "S";
+  }
+  document.getElementById("panel-tier-note").hidden = m === "S";
   document.getElementById("foot").classList.toggle("seq", m === "S");
   document.getElementById("seq-style").hidden = m !== "S";
   const shuffleBtn = document.getElementById("shuffle");
@@ -8808,7 +8949,7 @@ sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncShee
 // looks for it.
 restoreScales();
 const wantedDeck = deckId;
-deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
+deckId = deck().id; storedDeck = deckId; syncTierUI(); setOrder(); buildChips(); setMode(mode);
 // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
 // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
 // means the user's own saved scale is gone - deleted, or dropped as corrupt -

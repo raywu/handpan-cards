@@ -662,7 +662,7 @@ test("selecting a deck persists its id, custom decks included", () => {
 
   // and a mode change while a custom deck is showing keeps that deck.
   app.run('setMode("B")');
-  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B", printPaper: "letter" });
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B", tier: "basic", printPaper: "letter" });
 });
 
 /* --------------------------------------------- 14. pan() honours geom.ext */
@@ -2655,10 +2655,15 @@ test("every gap in the app comes from the spacing ramp, never a fresh literal", 
   // And nothing reintroduces the one-value rhythm the owner reported ("there is
   // not enough spacing between each ui component" - every gap in the chrome and
   // the whole sheet was the same 9px). gap:0 is allowed: #scale-swatches butts
-  // its 44px targets together on purpose.
+  // its 44px targets together on purpose. An em-valued gap (D-12: .seq-rail's
+  // wrap spacing between chord units) is a different measurement domain from
+  // the ramp entirely - it is text-flow spacing proportional to the rail's own
+  // font size, the same role letter-spacing already plays elsewhere in the
+  // app, not a px-fixed gap between UI chrome components - so it is exempt
+  // the same way gap:0 is, not a literal the ramp forgot.
   const bad = [...css.matchAll(/gap:\s*([^;}]+)/g)]
     .map((m) => m[1].trim())
-    .filter((v) => v !== "0" && !v.startsWith("var(--sp-"));
+    .filter((v) => v !== "0" && !v.startsWith("var(--sp-") && !/^\.\d+em$/.test(v));
   assert.deepStrictEqual(bad, [],
     `these gaps bypass the ramp: ${JSON.stringify(bad)}`);
 });
@@ -3720,7 +3725,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
     assert.ok(!/<select/.test(html), "the card header must carry no select");
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
   for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
@@ -3930,7 +3935,7 @@ test("the paper control drives the page box, not just the filename", () => {
  * closePanel() ("After an action": a PDF build closes the panel). */
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
   assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
@@ -4157,15 +4162,18 @@ test("the live region names the current chord and its position: \"<name>, chord 
 
 test("the rail's chord labels are set via textContent, never innerHTML", () => {
   // E6: renderSeqRail() must never innerHTML chord data into the DOM.
+  // D-12: each chord is now one .seq-unit (an optional separator text node
+  // plus one labelled name node), not an alternating flat pair of siblings.
   const app = boot({ random: () => 0 });
   app.run('setMode("S")');
   const d = app.currentDeck();
   const seq = app.get("seq");
   const rail = app.els.count.children[0];
-  const labelNodes = rail.children.filter((_, i) => i % 2 === 0);
-  assert.strictEqual(labelNodes.length, seq.chords.length);
+  assert.strictEqual(rail.children.length, seq.chords.length, "one .seq-unit per chord");
+  const labelNodes = rail.children.map((unit) => unit.children[unit.children.length - 1]);
   seq.chords.forEach((ci, i) => {
     const ch = d.chords[ci];
+    assert.strictEqual(labelNodes[i].className, "seq-chord");
     assert.strictEqual(labelNodes[i].textContent, `${ch.main}${ch.sup || ""}`);
   });
 });

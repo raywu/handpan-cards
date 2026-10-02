@@ -49,7 +49,10 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "print-paper-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "modeS", "panel-seq-note", "seq-source-link",
-  "seq-style", "seq-style-name", "seq-style-tip", "foot"];
+  "seq-style", "seq-style-name", "seq-style-tip", "foot",
+  // sequence-difficulty D2: the always-visible Difficulty selector, additive
+  // like every entry above it.
+  "tier-basic", "tier-intermediate", "tier-advanced", "panel-tier-note"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -280,6 +283,12 @@ function boot(opts = {}) {
     document: {
       getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
       createElement: (tag) => { const e = bindFocus(makeElement("dyn", tag || "div")); created.push(e); return e; },
+      // D-12 (sequence-difficulty): renderSeqRail() groups a separator and a
+      // chord name into one unit with a real text node between them, so the
+      // stub needs a minimal one too - just enough to be appendChild'd and
+      // read back by nodeType/textContent, nothing a real Text node does
+      // beyond that.
+      createTextNode: (text) => ({ nodeType: 3, textContent: String(text) }),
       get activeElement() { return focusState.active; },
       querySelector: (sel) => queryAll(sel)[0] || null,
       querySelectorAll: (sel) => queryAll(sel),
