@@ -1,0 +1,21 @@
+# kills: swipeOutTiming: a card dragged past dist still flies forward
+# swipeOutTiming: a card dragged past dist still flies forward
+# suite: node --test --test-name-pattern ^swipeOutTiming:.a.card.dragged.past.dist.still.flies.forward$ tests/app.test.js
+# Drops the Math.max(dist, ...) guard and uses dist directly as the flight's
+# end point (docs/plans/2026-10-01-swipe-momentum.md, decision 2). When a
+# drag has already carried the card past dist (|dx| > dist), the remaining
+# span end - |dx| goes negative - a card dragged to -900px against a 654px
+# dist would be asked to fly BACKWARD to finish the gesture, instead of the
+# guard keeping the flight moving forward.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8176,7 +8176,7 @@ function swipeDecision(dx, dy, vx) {
+ // so the curve is monotone for every input (unit-tested with a 101-sample sweep).
+ function swipeOutTiming(vx, dir, dx, dist) {
+   const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);
+-  const end = Math.max(dist, Math.abs(dx) + SWIPE_MOMENTUM_FLOOR_PX_MS * SWIPE_MOMENTUM_MIN_MS);
++  const end = dist;
+   const d = end - Math.abs(dx);
+   const duration = Math.min(SWIPE_MOMENTUM_MAX_MS, Math.max(SWIPE_MOMENTUM_MIN_MS, d / v));
+   const k = v * duration / d;

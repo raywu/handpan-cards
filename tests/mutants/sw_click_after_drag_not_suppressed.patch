@@ -5,15 +5,22 @@
 # drag that commits (or springs back) no longer suppresses the click a mouse
 # drag naturally fires on release, so the card flips too on a committing or
 # springing-back drag, not only on a genuine tap.
-# Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
+# Hand-edited 2026-10-01 (swipe-momentum lane, D180-7): refresh_mutants.py
+# reported this anchor UNFIXABLE because D180-7 (docs/plans/2026-10-01-
+# swipe-momentum.md) reordered the listener - eatClick is now checked FIRST,
+# with its own `return;`, and land() moved below it - so the removed line's
+# exact text no longer exists anywhere in the file for the tool to re-anchor
+# on. The mutation's INTENT is unchanged: drop the eatClick branch entirely,
+# so every click (including a drag's own trailing one) falls through to an
+# unconditional land(), same observable bug as before the reorder.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8304,7 +8304,6 @@ document.addEventListener("pointerdown", e => {
- document.addEventListener("keydown", () => { land(); }, true);
- document.addEventListener("click", e => {
+@@ -8444,7 +8444,6 @@ document.addEventListener("click", e => {
+   // animation on that very click, before it ever had a chance to play at
+   // its release speed. A click that didn't come from a drag (eatClick
+   // false) still lands a live flight, same as before.
+-  if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); return; }
    land();
--  if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); }
  }, true);
  
- /* ---------------- go ---------------- */

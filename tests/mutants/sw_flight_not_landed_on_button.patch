@@ -10,11 +10,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8303,7 +8303,6 @@ document.addEventListener("pointerdown", e => {
- }, true);
- document.addEventListener("keydown", () => { land(); }, true);
- document.addEventListener("click", e => {
+@@ -8445,7 +8445,6 @@ document.addEventListener("click", e => {
+   // its release speed. A click that didn't come from a drag (eatClick
+   // false) still lands a live flight, same as before.
+   if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); return; }
 -  land();
-   if (eatClick) { setEatClick(false); e.stopPropagation(); e.preventDefault(); }
  }, true);
  
+ /* ---------------- go ---------------- */

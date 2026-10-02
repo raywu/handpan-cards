@@ -13,10 +13,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8077,5 +8077,5 @@ function swipeDecision(dx, dy, vx) {
+@@ -8154,7 +8154,7 @@ function swipeDecision(dx, dy, vx) {
+   // SWIPE_* threshold, is what keeps a vertical drag from ever navigating.
    if (Math.abs(dy) > Math.abs(dx)) return 0;
    const fling = Math.abs(dx) > SWIPE_SLOP_PX && Math.abs(vx) > SWIPE_FLING_PX_MS && vx * dx > 0;
 -  return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
 +  return Math.abs(dx) > 0 || fling ? (dx < 0 ? 1 : -1) : 0;
  }
- function swipeTilt(dx) {
+ // Mouse momentum curve (docs/plans/2026-10-01-swipe-momentum.md, decision 2):
+ // a cubic-bezier whose initial slope matches the release speed `v`, over the

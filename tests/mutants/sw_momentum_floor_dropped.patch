@@ -1,0 +1,20 @@
+# kills: swipeOutTiming: a slow or zero-velocity release starts at the floor and clamps at SWIPE_MOMENTUM_MAX_MS
+# swipeOutTiming: a slow or zero-velocity release starts at the floor and clamps at SWIPE_MOMENTUM_MAX_MS
+# suite: node --test --test-name-pattern ^swipeOutTiming:.a.slow.or.zero-velocity.release.starts.at.the.floor.and.clamps.at.SWIPE_MOMENTUM_MAX_MS$ tests/app.test.js
+# Replaces SWIPE_MOMENTUM_FLOOR_PX_MS with 0 in swipeOutTiming's speed floor
+# (docs/plans/2026-10-01-swipe-momentum.md, decision 2). A zero-velocity
+# release then starts the easing curve at literal 0 px/ms instead of the
+# plan's 1.5 px/ms floor - the card restarts from a standstill, exactly the
+# D180-7 symptom this lane exists to fix.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8175,7 +8175,7 @@ function swipeDecision(dx, dy, vx) {
+ // with y2 fixed at 2/3 the derivative's quadratic has a negative discriminant,
+ // so the curve is monotone for every input (unit-tested with a 101-sample sweep).
+ function swipeOutTiming(vx, dir, dx, dist) {
+-  const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);
++  const v = Math.max(-dir * vx, 0);
+   const end = Math.max(dist, Math.abs(dx) + SWIPE_MOMENTUM_FLOOR_PX_MS * SWIPE_MOMENTUM_MIN_MS);
+   const d = end - Math.abs(dx);
+   const duration = Math.min(SWIPE_MOMENTUM_MAX_MS, Math.max(SWIPE_MOMENTUM_MIN_MS, d / v));

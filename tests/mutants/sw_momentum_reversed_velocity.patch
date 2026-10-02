@@ -1,0 +1,20 @@
+# kills: swipeOutTiming: a velocity against the flight direction counts as zero
+# swipeOutTiming: a velocity against the flight direction counts as zero
+# suite: node --test --test-name-pattern ^swipeOutTiming:.a.velocity.against.the.flight.direction.counts.as.zero$ tests/app.test.js
+# Replaces the signed -dir * vx projection with Math.abs(vx)
+# (docs/plans/2026-10-01-swipe-momentum.md, decision 2). A velocity pointed
+# back up the drag (opposite the committed flight direction) then still
+# contributes its full magnitude instead of being floored to the minimum
+# speed, so a card can be seeded with a release speed in the wrong direction.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8175,7 +8175,7 @@ function swipeDecision(dx, dy, vx) {
+ // with y2 fixed at 2/3 the derivative's quadratic has a negative discriminant,
+ // so the curve is monotone for every input (unit-tested with a 101-sample sweep).
+ function swipeOutTiming(vx, dir, dx, dist) {
+-  const v = Math.max(-dir * vx, SWIPE_MOMENTUM_FLOOR_PX_MS);
++  const v = Math.max(Math.abs(vx), SWIPE_MOMENTUM_FLOOR_PX_MS);
+   const end = Math.max(dist, Math.abs(dx) + SWIPE_MOMENTUM_FLOOR_PX_MS * SWIPE_MOMENTUM_MIN_MS);
+   const d = end - Math.abs(dx);
+   const duration = Math.min(SWIPE_MOMENTUM_MAX_MS, Math.max(SWIPE_MOMENTUM_MIN_MS, d / v));
