@@ -1,0 +1,21 @@
+# kills: card swipe (mouse momentum): a fast release flies on at its release speed, leaves the viewport, then the next card enters
+# card swipe (mouse momentum): a fast release flies on at its release speed, leaves the viewport, then the next card enters
+# suite: node --test --test-name-pattern ^card.swipe.\(mouse.momentum\):.a.fast.release.flies.on.at.its.release.speed,.leaves.the.viewport,.then.the.next.card.enters$ tests/e2e.test.js
+# Always passes null for vx in release()'s flyOut call, including on a mouse
+# release (docs/plans/2026-10-01-swipe-momentum.md, decision 2). Every mouse
+# commit then falls back to the fixed SWIPE_OUT_MS/SWIPE_OUT_EASE curve, so a
+# fast flick restarts the card from a standstill instead of continuing at the
+# speed it was released - the replayed start speed sits at 0, not the live
+# release speed this test measures.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8295,7 +8295,7 @@ function release(e, cancelled, pushPoint = true) {
+     return;
+   }
+   if (!dir) { springBack(dx); return; }
+-  flyOut(dir, dx, pointerType === "mouse" ? vx : null);
++  flyOut(dir, dx, null);
+ }
+ function swipeMove(e) {
+   if (!drag || e.pointerId !== drag.id) return;

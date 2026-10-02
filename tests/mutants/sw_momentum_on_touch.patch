@@ -1,0 +1,20 @@
+# kills: card swipe (mouse momentum): touch, pen and wheel fly-outs keep the fixed 220ms curve
+# card swipe (mouse momentum): touch, pen and wheel fly-outs keep the fixed 220ms curve
+# suite: node --test --test-name-pattern ^card.swipe.\(mouse.momentum\):.touch,.pen.and.wheel.fly-outs.keep.the.fixed.220ms.curve$ tests/e2e.test.js
+# Drops the pointerType === "mouse" gate in release()'s flyOut call
+# (docs/plans/2026-10-01-swipe-momentum.md, decision 1: mouse only). A touch
+# or pen release then also seeds swipeOutTiming instead of keeping the fixed
+# 220ms SWIPE_OUT_MS curve, so the touch fly-out's measured duration comes
+# out shorter (observed 174ms) instead of the required 220ms.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8295,7 +8295,7 @@ function release(e, cancelled, pushPoint = true) {
+     return;
+   }
+   if (!dir) { springBack(dx); return; }
+-  flyOut(dir, dx, pointerType === "mouse" ? vx : null);
++  flyOut(dir, dx, vx);
+ }
+ function swipeMove(e) {
+   if (!drag || e.pointerId !== drag.id) return;

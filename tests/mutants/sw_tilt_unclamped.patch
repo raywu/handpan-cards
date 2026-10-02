@@ -7,8 +7,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8081,7 +8081,7 @@ function swipeDecision(dx, dy, vx) {
-   return Math.abs(dx) > SWIPE_COMMIT_PX || fling ? (dx < 0 ? 1 : -1) : 0;
+@@ -8186,7 +8186,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
+   return { end, duration, easing: `cubic-bezier(${r4(x1)}, ${r4(y1)}, 0.6667, 0.6667)` };
  }
  function swipeTilt(dx) {
 -  return Math.max(-SWIPE_TILT_MAX_DEG, Math.min(SWIPE_TILT_MAX_DEG, dx * SWIPE_TILT_DEG_PER_PX));

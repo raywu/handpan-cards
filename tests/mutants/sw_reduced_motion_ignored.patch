@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8237,16 +8237,6 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8284,16 +8284,6 @@ function release(e, cancelled, pushPoint = true) {
    // click can arrive a tick or more after this runs - touch/pen keep the
    // immediate decay, since their synthesized click (if any) follows at once.
    if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
@@ -27,5 +27,5 @@ diff --git a/index.html b/index.html
 -    return;
 -  }
    if (!dir) { springBack(dx); return; }
-   flyOut(dir, dx);
+   flyOut(dir, dx, pointerType === "mouse" ? vx : null);
  }

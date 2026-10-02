@@ -1,0 +1,20 @@
+# kills: swipeOutTiming: an unclamped release flies linearly at its own speed
+# swipeOutTiming: an unclamped release flies linearly at its own speed
+# suite: node --test --test-name-pattern ^swipeOutTiming:.an.unclamped.release.flies.linearly.at.its.own.speed$ tests/app.test.js
+# Hardcodes the easing curve's y1 control point to 0 instead of k * x1
+# (docs/plans/2026-10-01-swipe-momentum.md, decision 2). The curve's initial
+# slope, y1 / x1, becomes 0 regardless of release speed, so every mouse
+# fly-out starts from a dead stop again - the exact standstill restart this
+# lane exists to remove - instead of continuing at the release velocity.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8181,7 +8181,7 @@ function swipeOutTiming(vx, dir, dx, dist) {
+   const duration = Math.min(SWIPE_MOMENTUM_MAX_MS, Math.max(SWIPE_MOMENTUM_MIN_MS, d / v));
+   const k = v * duration / d;
+   const x1 = Math.min(1 / 3, 1 / k);
+-  const y1 = k * x1;
++  const y1 = 0;
+   const r4 = (n) => n.toFixed(4);
+   return { end, duration, easing: `cubic-bezier(${r4(x1)}, ${r4(y1)}, 0.6667, 0.6667)` };
+ }
