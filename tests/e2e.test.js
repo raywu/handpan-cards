@@ -7821,6 +7821,60 @@ function run() {
           }
         }
       });
+
+    // 2026-10-02 panel-fit bounce: the Difficulty group's collapsed top
+    // margin must never eat into the gap BELOW it too (it used to, via a
+    // symmetric negative margin-bottom hardcoded to a ramp step that desynced
+    // from the panel's actual gap once a narrower media query tightened it -
+    // see "#panel-tier-group" in the CSS). No tier button may ever overlap
+    // another panel element, and the gap from the last tier button down to
+    // the next heading must be at least as big as the panel's own ordinary
+    // group-to-group gap (minus 1px slack), i.e. a real group boundary, not
+    // a squeezed or negative one.
+    test("the Difficulty group never overlaps the next panel element, and its gap to the next heading is a real group gap",
+      async () => {
+        for (const [w, h, mode] of [[1024, 700, "S"], [320, 568, "S"], [1024, 700, "A"]]) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await openSettingsPanel();
+          await b.click(`#mode${mode}`);
+          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+            { label: `mode ${mode} to take effect` });
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const rect = el => el.getBoundingClientRect();
+            const hit = (a, k) => a.left < k.right && a.right > k.left && a.top < k.bottom && a.bottom > k.top;
+            const panel = document.getElementById("settings-panel");
+            const panelEls = [...panel.querySelectorAll("*")].filter(el =>
+              !document.getElementById("panel-tier-group").contains(el) && el !== document.getElementById("panel-tier-group"));
+            const tierBtns = ["tier-basic", "tier-intermediate", "tier-advanced"].map(id => rect(document.getElementById(id)));
+            const overlaps = [];
+            for (const br of tierBtns) for (const el of panelEls) {
+              if (hit(br, rect(el))) overlaps.push(el.tagName + (el.id ? "#" + el.id : "") + (el.className ? "." + el.className : ""));
+            }
+            const headings = [...panel.querySelectorAll(".panel-heading")].map(h => ({ text: h.textContent.trim(), r: rect(h) }));
+            const scalesHeading = headings.find(h => h.text === "Scales");
+            const lastBtnBottom = Math.max(...tierBtns.map(r => r.bottom));
+            const gapToScales = scalesHeading ? scalesHeading.r.top - lastBtnBottom : null;
+            // Reference gap: between the two groups that are NOT the tier
+            // group - Scales heading top vs the end of the Difficulty group's
+            // own predecessor chain is unavailable without another collapsed
+            // margin to compare against, so use the gap already measured
+            // elsewhere in this deck: the Print group's heading vs the
+            // Scales group's own bottom edge, both ordinary (uncollapsed)
+            // group boundaries.
+            const scalesGroup = document.getElementById("panel-scales-group");
+            const printHeading = headings.find(h => h.text === "Print this deck");
+            const ordinaryGap = printHeading ? printHeading.r.top - rect(scalesGroup).bottom : null;
+            return { overlaps, gapToScales, ordinaryGap };
+          `);
+          assert.deepStrictEqual(m.overlaps, [],
+            `${w}x${h} mode ${mode}: a tier button overlaps another panel element: ${JSON.stringify(m.overlaps)}`);
+          assert.ok(m.gapToScales >= m.ordinaryGap - 1,
+            `${w}x${h} mode ${mode}: gap to Scales heading (${m.gapToScales}) must be >= the panel's ordinary group gap (${m.ordinaryGap}) minus 1px`);
+        }
+      });
   });
 
   /* ---------------------------------------------------------------- *

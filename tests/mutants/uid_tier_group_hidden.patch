@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -257,7 +257,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
-    forced 100px floor alone exceeds that width's entire pre-feature spare
-    budget) - is documented and narrowly accepted at exactly those
-    viewport/mode pairs in the two tests referenced above. */
--#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3))}
-+#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3)); display:none}
+@@ -274,7 +274,7 @@
+    vertical budget this used to buy back is now recovered instead by the
+    dedicated height-gated query below (see its own comment), which is the
+    only place still allowed to trade the ramp down a step for room. */
+-#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:0}
++#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:0; display:none}
  /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
     oversized overlay): the link is the one Tab stop in .panel-note. */
  #seq-source-link{display:inline-flex; align-items:center; min-height:44px}

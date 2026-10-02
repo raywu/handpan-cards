@@ -1,0 +1,22 @@
+# kills: the Difficulty group never overlaps the next panel element, and its gap to the next heading is a real group gap
+# suite: node --test --test-name-pattern ^the.Difficulty.group.never.overlaps.the.next.panel.element..and.its.gap.to.the.next.heading.is.a.real.group.gap$ tests/e2e.test.js
+# 2026-10-02 panel-fit bounce: reintroduces the exact bug the test above was
+# written to catch - a negative margin-bottom on #panel-tier-group that pulls
+# the group's bottom edge up into the next ("Scales") heading. The live rule
+# is margin-bottom:0 (the gap below is the panel's ordinary, uncollapsed
+# gap); this mutant restores a hardcoded negative collapse there, which at
+# 1024x700/320x568 in mode S is large enough to draw the tier buttons on top
+# of the next panel-group's content, exactly as the coordinator's screenshots
+# showed before the fix.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -274,7 +274,7 @@
+    vertical budget this used to buy back is now recovered instead by the
+    dedicated height-gated query below (see its own comment), which is the
+    only place still allowed to trade the ramp down a step for room. */
+-#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:0}
++#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:calc(-1 * var(--sp-4))}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+    oversized overlay): the link is the one Tab stop in .panel-note. */
+ #seq-source-link{display:inline-flex; align-items:center; min-height:44px}

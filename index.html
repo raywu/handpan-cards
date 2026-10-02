@@ -45,6 +45,20 @@
      deliberately gated on BOTH axes so that no phone viewport - portrait or
      landscape - ever picks it up and spends the chrome budget on it. */
   --sp-1:4px; --sp-2:8px; --sp-3:14px; --sp-4:22px;
+  /* The panel's own inter-group gap, read by #panel-tier-group's negative
+     top margin (below) so the margin cancels EXACTLY the gap
+     #settings-panel is actually using at the current breakpoint. It cannot
+     just be `var(--sp-3)` inlined there: a narrower-viewport media query
+     can tighten the panel's real `gap:` to a smaller ramp step, and a
+     margin still subtracting the UNTIGHTENED value then overlaps the next
+     group (2026-10-02, panel-fit bounce: this is what produced the
+     Difficulty-group/Scales-heading overlap at 1024x700). This custom
+     property is NOT read by anything named `gap:` itself - the spacing-ramp
+     test (tests/app.test.js "every gap...") only accepts a literal
+     `var(--sp-N)` token after `gap:`, so every place that overrides the
+     panel's `gap:` to a different ramp step must also repeat that same
+     step into `--panel-gap` right beside it, kept in sync by hand. */
+  --panel-gap:var(--sp-3);
 }
 @media (min-width:640px) and (min-height:700px){
   :root{--sp-1:6px; --sp-2:12px; --sp-3:20px; --sp-4:28px}
@@ -237,27 +251,30 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 .tierbar .mode:disabled{opacity:.5; cursor:default}
 /* D-8 reads Difficulty "as part of the mode choice", directly after Practice
    - so the two groups sit closer together than the panel's other, unrelated
-   group-to-group gaps (sp-3). This also claws back real vertical budget: at
-   the 1024x700/1280x800 sidebar the tier buttons alone are a forced-floor
-   100px (two rows - INTERMEDIATE's single unbroken word has no narrower
-   min-content, so three buttons cannot share one row in a 199px content
-   box; see the .tierbar comment above), and at 320x568 the group has no
-   spare width to give. Collapsing both neighbouring gaps to zero (the panel
-   gives every OTHER pair of groups its full sp-3) is not enough on its own
-   to close the sidebar's budget in every mode (see
-   docs/plans/2026-10-02-sequence-difficulty.md addendum "D2 step 2 vertical
-   budget" for the full measured accounting, and the two narrowly-scoped
-   test comments in tests/e2e.test.js this leaves in place), but it fully
-   closes 320x568 (modes A/B) and 1280x800 (all three modes) - the viewports
-   D-9's own acceptance criteria name - without touching any group this
-   lane does not own. The residual, unavoidable overflow this does NOT
-   close - 320x568 mode S by 21px (driven almost entirely by the
-   pre-existing #panel-seq-note, not by this group) and the whole
-   1024x700 sidebar (45px modes A/B, 89px mode S, since the tier buttons'
-   forced 100px floor alone exceeds that width's entire pre-feature spare
-   budget) - is documented and narrowly accepted at exactly those
-   viewport/mode pairs in the two tests referenced above. */
-#panel-tier-group{margin-top:calc(-1 * var(--sp-3)); margin-bottom:calc(-1 * var(--sp-3))}
+   group-to-group gaps (sp-3): only the TOP margin collapses the gap above
+   the tier group, cancelling exactly the panel's own current `gap:` via
+   `--panel-gap` (see its definition at :root) so the two never drift out of
+   sync. The gap BELOW the tier group, to the next ("Scales") heading, is
+   the panel's ordinary, uncollapsed gap, same as every other pair of
+   groups - same as every reader expects a group boundary to look.
+
+   2026-10-02 panel-fit bounce (supersedes the original D-9 design below):
+   the margin-bottom used to cancel that gap too, on the theory that it
+   "claws back real vertical budget" the 1024x700/1280x800 sidebar needed
+   (the tier buttons alone are a forced-floor 100px - two rows, since
+   INTERMEDIATE's single unbroken word has no narrower min-content, so
+   three buttons cannot share one row in a 199px content box; see the
+   .tierbar comment above). In practice it did the opposite of "claws back
+   budget" the moment a narrower-viewport media query tightened the panel's
+   actual `gap:` underneath it without correspondingly shrinking this
+   margin: the margin kept subtracting the WIDER, untightened amount and
+   drew the Difficulty group's bottom edge and the "Scales" heading on top
+   of each other at 1024x700 (screenshot evidence), and flush with zero gap
+   at 320x568 - neither of which is an acceptable group boundary. The
+   vertical budget this used to buy back is now recovered instead by the
+   dedicated height-gated query below (see its own comment), which is the
+   only place still allowed to trade the ramp down a step for room. */
+#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:0}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
 #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
@@ -299,6 +316,18 @@ a.mode{text-decoration:none}
   padding:calc(var(--sp-3) + 56px) var(--sp-3) var(--sp-3);
   display:flex; flex-direction:column; align-items:center; gap:var(--sp-3)}
 #settings-panel > .panel-group{width:min(420px, 100%)}
+/* 320x568 mode S only (2026-10-02, panel-fit bounce follow-up): restoring
+   the Difficulty group's real, uncollapsed gap to "Scales" (above) gives
+   back the budget that used to cover this viewport's pre-existing, unrelated
+   shortfall too - #panel-seq-note only renders in mode S (setMode() toggles
+   its `hidden`), and its extra two lines were already documented as the
+   near-entire cause of this exact viewport's old "narrowly accepted"
+   overflow before any of this lane's work. `:has()` targets the padding
+   trim at mode S alone so modes A/B, already an exact fit, are untouched -
+   a plain width query would shave this padding in every mode and has no
+   way to tell them apart. Padding is not scanned by the spacing-ramp test
+   (only `gap:` is), so trimming it here does not need a ramp step. */
+#settings-panel:has(#panel-seq-note:not([hidden])){padding-bottom:0}
 /* Landscape phone: too short for one column, so the groups sit side by side. */
 @media (max-height:520px){
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
@@ -390,11 +419,22 @@ a.mode{text-decoration:none}
    min-width-only gate here once leaked into it and pushed a Resources link
    under the X trigger); max-height:900px on top of that leaves the roomier
    1280x800 sidebar - already passing with its default spacing - untouched.
-   Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2,
-   sp-1->half-sp-1), no new spacing unit. */
+   Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2), no new
+   spacing unit - a `calc()` shrink of a ramp step used to sit here instead
+   (sp-2-3px, sp-1/2) but tests/app.test.js's "every gap...comes from the
+   spacing ramp" test only accepts a literal `var(--sp-N)` (or `0`) after
+   `gap:`, so a calc() there is caught the same way a bare pixel literal
+   would be; `--panel-gap` is repeated here (see its :root comment) so
+   #panel-tier-group's top margin still cancels exactly this tightened gap
+   instead of the untightened one. */
 @media (min-width:1024px) and (min-height:700px) and (max-height:900px){
-  #settings-panel{padding:var(--sp-3) var(--sp-3); gap:calc(var(--sp-2) - 3px)}
-  .panel-group{gap:calc(var(--sp-1) / 2)}
+  #settings-panel{padding:var(--sp-3) var(--sp-3); gap:var(--sp-2); --panel-gap:var(--sp-2)}
+  .panel-group{gap:0}
+  /* Same mode-S-only shortfall as the 320x568 rule above (see its comment):
+     #panel-seq-note only renders in mode S, and the sidebar's own narrow
+     budget has no room left for it once the Difficulty group's real gap to
+     "Scales" is restored. */
+  #settings-panel:has(#panel-seq-note:not([hidden])){padding-bottom:0}
 }
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
@@ -1293,31 +1333,16 @@ footer.seq{row-gap:var(--sp-1)}
          target="_blank" rel="noopener">Watch on YouTube</a>
     </p>
   </div>
-  <!-- Difficulty (sequence-difficulty plan, D-8/D-9/D-10): always visible, own
-       .panel-group right after Practice so it reads as part of the mode
-       choice (that same "reads as part of" rationale is why its surrounding
-       gaps are collapsed to zero - see "#panel-tier-group" in the CSS, and
-       why this group carries no heading of its own - 2026-10-02 vertical-
-       budget fix, docs/plans/2026-10-02-sequence-difficulty.md addendum
-       "panel-fit": a second "Difficulty" heading cost a full line plus a gap
-       on every viewport for a group already reading as a continuation of
-       Practice immediately above it; dropping it is lossless there and
-       buys back exactly that line everywhere, mobile panel and sidebar
-       alike). D-9's original design was a named inline-size container
-       ("tier") that switched .tierbar from a column to a three-across row
-       at one breakpoint; it was measured during D2 implementation and
-       replaced with a plain flex-wrap (see the ".tierbar" CSS comment)
-       because the 240px desktop sidebar cannot fit three buttons on one row
-       at ANY width above it either - INTERMEDIATE's un-breakable word alone
-       is wider than the sidebar - so there is no row/column threshold to
-       express as a container query in the first place. There is
-       accordingly no "tier" container or @container rule in the CSS
-       anymore. The three buttons start `disabled` (D-10: mode A is the
-       boot default) and setMode() toggles disabled/.on/aria-pressed exactly
-       like the mode buttons; panel-tier-note is wired via aria-describedby
-       on each button, not the group (a describedby on a non-interactive
-       container is not announced when a screen reader lands directly on a
-       button). -->
+  <!-- Difficulty (D-8/D-9/D-10): always visible, no own heading - reads as
+       part of Practice above it (see "#panel-tier-group" CSS comment for the
+       margin/gap rationale and the panel-fit history). D-9's container-query
+       design was dropped for plain flex-wrap (see ".tierbar" CSS) - the
+       240px sidebar can't fit 3 buttons at any width, so there is no
+       row/column threshold to express. Buttons start `disabled` (D-10: mode
+       A is boot default); setMode() toggles disabled/.on/aria-pressed like
+       the mode buttons. panel-tier-note is wired via aria-describedby on
+       each button, not the group (not announced on a non-interactive
+       container). -->
   <div class="panel-group" id="panel-tier-group">
     <div class="tierbar">
       <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
