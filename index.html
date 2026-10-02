@@ -385,8 +385,12 @@ a.mode{text-decoration:none}
      group) leaves this breakpoint still a little over main's own
      already-overflowing 358px in that mode even after the reorder and the
      trims above; the row gap is the only budget left that doesn't touch
-     the note's own text or any control. */
-  #settings-panel:has(#panel-seq-note:not([hidden])){gap:0}
+     the note's own text or any control. row-gap only, NOT the `gap`
+     shorthand (2026-10-02, reviewer nit): the shorthand also zeroes
+     column-gap, which costs no height here but left adjacent columns
+     touching with no gutter at all (Practice/Print, Difficulty/Scales) -
+     a column-gap:0 was never the budget this rule needed to spend. */
+  #settings-panel:has(#panel-seq-note:not([hidden])){row-gap:0}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -398,7 +402,8 @@ a.mode{text-decoration:none}
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
-   owner follow-up 2026-09-28; verdict and reasons recorded in git history).
+   owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum,
+   docs/plans/2026-09-28-android-bg-and-menu.md:169 and :307).
    Same markup as the mobile panel - this is presentation only. The trigger
    and scrim disappear; the panel's role="dialog"/aria-modal, its inert
    background loop and its Tab-stop trap are only ever applied by
@@ -463,7 +468,8 @@ a.mode{text-decoration:none}
   #settings-panel[hidden]{display:flex !important}
 }
 /* The sidebar's own narrow-height budget (owner decision "Fix layout before
-   merge", 2026-10-02):
+   merge", 2026-10-02; mode-aware fix 2026-10-02 after reviewer FAIL #2 found
+   mode S still overflowing above this block's original bound):
    1024x700 is the shortest supported sidebar height and, unlike 1280x800
    (already clean), has no spare room once the Difficulty group's forced
    two-row tier bar is counted. Gated on the SAME min-width/min-height pair
@@ -472,14 +478,30 @@ a.mode{text-decoration:none}
    modal/mobile panel at a short landscape size like 1280x500 (which has its
    own, separate max-height tightening above and is NOT the sidebar - a
    min-width-only gate here once leaked into it and pushed a Resources link
-   under the X trigger). max-height:745px is measured, not round: at 1024px
-   wide the untightened panel's content is a fixed 730px tall regardless of
-   viewport height, so any sidebar shorter than ~742px overflows without this
-   rule and anything at or above it already fits (742 measured exact-fit,
-   745 picked for a few px of margin) - 1280x800/1366x768/1440x900 (clientH
-   788/756/888, all already >=742) pass that boundary and are left at their
-   default spacing untouched; a flat max-height:900px here used to catch all
-   three along with 1024x700 even though only 1024x700 needs it.
+   under the X trigger).
+
+   The two numbers below are DIFFERENT per mode and both measured with a
+   height sweep (every integer height 700-900 at both 1024 and 1280 wide):
+   modes A/B overflow NOWHERE in that whole sweep (max overflow 0 at every
+   height, once the block below applies) - they were never the problem.
+   Mode S is the one with the taller content (#panel-seq-note, rendered only
+   in mode S): with the tightened spacing below applied, mode S's exact-fit
+   height is 758px (757px overflows by 1px, 758px overflows by 0), climbing
+   to 12px of overflow at 746px. The first block's `max-height:745px` bound
+   predates the Difficulty group and was measured for modes A/B only (742
+   measured exact-fit there, 745 picked for a few px of margin) - it never
+   covered mode S's own, taller 746-757px gap, which is what reviewer FAIL #2
+   measured as a regression (+12px at 1024x746/1100x746/1280x746, +8 at
+   1024x750).
+   Fix: a SECOND block below, scoped to mode S alone via the same
+   `:has(#panel-seq-note:not([hidden]))` selector already used elsewhere in
+   this file, extends the same tightened spacing up to max-height:761px
+   (758 exact-fit + 3px margin, same margin convention as the first block's
+   742->745). It only touches mode S - modes A/B keep the original 745px
+   bound untouched, since raising it for them would change their spacing
+   for no overflow reason. 1280x800/1366x768/1440x900 (clientH 788/756/888,
+   all already >=761) pass both bounds and are left at their default spacing
+   untouched.
    Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2), no new
    spacing unit - a `calc()` shrink of a ramp step used to sit here instead
    (sp-2-3px, sp-1/2) but tests/app.test.js's "every gap...comes from the
@@ -496,6 +518,16 @@ a.mode{text-decoration:none}
      budget has no room left for it once the Difficulty group's real gap to
      "Scales" is restored. */
   #settings-panel:has(#panel-seq-note:not([hidden])){padding-bottom:0}
+}
+/* Mode-S-only extension of the block above, 746px-761px: modes A/B don't
+   reach here (they never overflow, see the comment above), so this is
+   scoped entirely through the `:has()` selector rather than widening the
+   block above's max-height and affecting every mode. */
+@media (min-width:1024px) and (min-height:700px) and (max-height:761px){
+  #settings-panel:has(#panel-seq-note:not([hidden])){
+    padding:var(--sp-3) var(--sp-3); padding-bottom:0; gap:var(--sp-2); --panel-gap:var(--sp-2)
+  }
+  #settings-panel:has(#panel-seq-note:not([hidden])) .panel-group{gap:0}
 }
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
@@ -771,9 +803,13 @@ button.nav:active{background:#2e281e}
    scrollLeft 0) the moment it would. The scrollbar is hidden (rail scrolling
    is driven by renderSeqRail's own scrollIntoView call, not by the user
    hunting for a visible bar) but the element is still a real,
-   keyboard/wheel/touch scrollable region. */
-.seq-rail{display:flex; flex-wrap:nowrap; justify-content:safe center; column-gap:.35em;
-  width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+   keyboard/wheel/touch scrollable region. A browser without `safe` support
+   ignores the whole `safe center` value rather than falling back to plain
+   centring, so the plain `justify-content:center` declaration goes first:
+   a `safe`-aware browser overrides it with the second declaration, and one
+   without just keeps the first. */
+.seq-rail{display:flex; flex-wrap:nowrap; justify-content:center; justify-content:safe center;
+  column-gap:.35em; width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
 .seq-rail::-webkit-scrollbar{display:none; height:0}
 .seq-unit{white-space:nowrap}
 /* The mode-S style line: a static paragraph in the footer, never on the card
@@ -7323,10 +7359,13 @@ function renderSeqRail(d) {
   // render() is the only caller of renderSeqRail, and render() is in turn
   // the only path step()/shuffle/redeal use to show a new current chord, so
   // wiring the scroll here (rather than at each call site) covers all three.
-  // block:'nearest' means this never scrolls the PAGE (the rail is the only
-  // scrollable ancestor in its vertical axis; "nearest" leaves an
-  // already-visible row alone), and inline:'center' is the one that matters -
-  // it is what keeps a long ADVANCED rail's current chord inside the rail's
+  // block:'nearest' is a no-op here, not a guarantee against page scroll:
+  // the rail only scrolls horizontally (overflow-x:auto), so in the vertical
+  // axis the nearest scrollable ancestor "nearest" could walk up to is the
+  // page itself. It never fires in practice because the current chord's row
+  // never moves vertically across a render - that comes from the layout, not
+  // from this option. inline:'center' is the one doing real work - it is
+  // what keeps a long ADVANCED rail's current chord inside the rail's
   // visible width instead of scrolled off to one side. Honours
   // prefers-reduced-motion the same way the swipe-gesture code already does.
   if (curNode) {

@@ -1,7 +1,8 @@
-# kills: D-12 (owner decision 2026-10-02, "Scroll, one line") - the rail must
-# never wrap to a second line, at any sequence length or viewport. This
-# mutant restores the pre-D-12 wrapping behaviour (flex-wrap:wrap).
+# kills: D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail
 # suite: node --test --test-name-pattern ^D.12..the.rail.never.wraps.and.the.current.chord.stays.in.view tests/e2e.test.js
+# (owner decision 2026-10-02, "Scroll, one line") - the rail must never wrap
+# to a second line, at any sequence length or viewport. This mutant restores
+# the pre-D-12 wrapping behaviour (flex-wrap:wrap).
 # D-12 supersedes the earlier wrap-to-a-second-line design (see the CSS
 # comment above .seq-rail in index.html). A long ADVANCED rail must overflow
 # and scroll horizontally instead of wrapping; this mutant flips flex-wrap

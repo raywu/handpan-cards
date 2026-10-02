@@ -1,7 +1,8 @@
-# kills: D-12 (owner decision 2026-10-02, "Scroll, one line") - the current
-# chord must be scrolled into view inside the rail on every advance/back/
-# redeal. This mutant removes renderSeqRail's scrollIntoView call entirely.
+# kills: D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail
 # suite: node --test --test-name-pattern ^D.12..the.rail.never.wraps.and.the.current.chord.stays.in.view tests/e2e.test.js
+# (owner decision 2026-10-02, "Scroll, one line") - the current chord must be
+# scrolled into view inside the rail on every advance/back/redeal. This
+# mutant removes renderSeqRail's scrollIntoView call entirely.
 # Without this call, a long ADVANCED rail leaves the current chord wherever
 # the browser's default (unscrolled) layout puts it - for anything past the
 # first screenful, that is off to the right (or, with justify-content:safe

@@ -1605,6 +1605,52 @@ function run() {
       }
     });
 
+  // Reviewer FAIL #2 (2026-10-02): the sidebar's narrow-height budget
+  // (index.html's "narrow-height budget" comment above max-height:745px)
+  // was measured for modes A/B only and left a gap at viewport heights the
+  // original two tests above never sampled - 1024x700 is the one height
+  // they check, and the gap sits strictly above it. A height sweep (every
+  // integer 700-900 at 1024 and 1280 wide, modes A/B/S) found: modes A/B
+  // overflow NOWHERE in that whole range; mode S overflows 746-757px, worst
+  // at 746 (+12px, res-trainingcards pushed offscreen), and is clean again
+  // at 758+. This test samples that worst height (746), the coordinator's
+  // named regression point (750), and a point past the old bound but still
+  // inside the gap (757, the last still-overflowing height) at both
+  // 1024 and 1280 wide, in all three modes - modes A/B are included so a
+  // future fix that over-corrects for mode S and reintroduces an A/B
+  // regression is also caught.
+  test("the desktop sidebar has no vertical scroll at 1024x746/750/757 and 1280x746 (reviewer FAIL #2 mode-S gap), in modes A, B and S",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [w, h] of [[1024, 746], [1024, 750], [1024, 757], [1280, 746]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const mode of ["A", "B", "S"]) {
+            await b.click(`#mode${mode}`);
+            await b.settle();
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+              return {
+                scrollH: p.scrollHeight, clientH: p.clientHeight,
+                resVisible: resIds.every(id => {
+                  const el = document.getElementById(id);
+                  return el && el.getClientRects().length > 0;
+                }),
+              };
+            `);
+            const label = `${w}x${h} mode ${mode}`;
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically by ${m.scrollH - m.clientH}px`);
+            assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
   // Eng review amendment 7 (Codex finding): the original behaviour test only
   // proved nothing broke when a click was intercepted and defaultPrevented -
   // true of literally any link, even a dead one. This proves ACTIVATION: a
@@ -7752,8 +7798,13 @@ function run() {
     });
 
     // D-9: a three-across row once the group's own container is wide enough
-    // (mobile portrait), a single column when it is not (the 240px-ish
-    // desktop sidebar column), and never a 2+1 wrapped row in between.
+    // (mobile portrait). Narrower columns (the landscape grid and the
+    // desktop sidebar, both tested below) do NOT fall to a single column -
+    // INTERMEDIATE's unbroken word forces a 2+1 wrap instead (BASIC and
+    // INTERMEDIATE share a row, ADVANCED wraps onto its own row alone). The
+    // `row` assertion below only tells row-of-three apart from not-row-of-
+    // three; it does not distinguish that 2+1 wrap from a true single
+    // column, both of which read `row: false`.
     test("the Difficulty group matches the Practice group's width and switches from a row to a column layout",
       async () => {
         // Narrow single-column viewports keep the three tier buttons on one

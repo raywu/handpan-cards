@@ -2655,15 +2655,23 @@ test("every gap in the app comes from the spacing ramp, never a fresh literal", 
   // And nothing reintroduces the one-value rhythm the owner reported ("there is
   // not enough spacing between each ui component" - every gap in the chrome and
   // the whole sheet was the same 9px). gap:0 is allowed: #scale-swatches butts
-  // its 44px targets together on purpose. An em-valued gap (D-12: .seq-rail's
-  // wrap spacing between chord units) is a different measurement domain from
-  // the ramp entirely - it is text-flow spacing proportional to the rail's own
+  // its 44px targets together on purpose. .seq-rail's column-gap:.35em (D-12)
+  // is a different measurement domain from the ramp entirely - it is
+  // text-flow spacing between chord units, proportional to the rail's own
   // font size, the same role letter-spacing already plays elsewhere in the
   // app, not a px-fixed gap between UI chrome components - so it is exempt
-  // the same way gap:0 is, not a literal the ramp forgot.
-  const bad = [...css.matchAll(/gap:\s*([^;}]+)/g)]
-    .map((m) => m[1].trim())
-    .filter((v) => v !== "0" && !v.startsWith("var(--sp-") && !/^\.\d+em$/.test(v));
+  // the same way gap:0 is, not a literal the ramp forgot. The exemption is
+  // tied to that one selector, not to em-valued gaps in general, so a new
+  // selector reaching for an em gap still has to justify itself here.
+  const bad = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .flatMap((m) => {
+      const selector = m[1].trim();
+      return [...m[2].matchAll(/gap:\s*([^;}]+)/g)].map((g) => ({ selector, value: g[1].trim() }));
+    })
+    .filter(({ selector, value }) =>
+      value !== "0" && !value.startsWith("var(--sp-") &&
+      !(selector.endsWith(".seq-rail") && value === ".35em"))
+    .map(({ value }) => value);
   assert.deepStrictEqual(bad, [],
     `these gaps bypass the ramp: ${JSON.stringify(bad)}`);
 });

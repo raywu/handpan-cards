@@ -111,6 +111,10 @@ function makeElement(id, tag = "div") {
     // focus() is rebound per boot (see bindFocus) so document.activeElement
     // tracks it; the standalone default keeps makeElement usable on its own.
     focus() {}, blur() {},
+    // No-op: jsdom-less stub has no scroll container or layout, so there is
+    // nothing to scroll. renderSeqRail() (D-12) calls this unconditionally
+    // on every render in sequence mode; without a stub it throws.
+    scrollIntoView() {},
     // clicks is counted so a test can tell a created-and-abandoned <a> from
     // one the app actually activated; a real anchor click is the whole of the
     // download on every platform but iOS.
