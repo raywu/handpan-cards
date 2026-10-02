@@ -571,10 +571,21 @@ test("choose rejects a pitch class the pan does not carry, with a spec code", ()
   assert.strictEqual(typeof got.reason, "string");
   assert.ok(got.reason.length > 0);
   assert.strictEqual(got.value, undefined, "an err result never carries value");
+  // B185-4: the absent tone is Ab - the reason must NAME it, and the ENGINE-
+  // SPEC section 2 substitution placeholder must never leak into user text.
+  assert.ok(got.reason.includes("Ab"),
+    `reason must name the absent pitch class Ab: ${got.reason}`);
+  assert.ok(!got.reason.includes("<X>"),
+    `reason must not contain a literal substitution placeholder: ${got.reason}`);
 
   // A root pitch class that is not on the pan is rejected the same way.
   const noRoot = V.choose(amara.fields, pc(61), [0, 4, 7]);
   assert.strictEqual(noRoot.ok, false);
   assert.ok(Object.prototype.hasOwnProperty.call(plain(HPE.core.REASONS), noRoot.code));
   assert.strictEqual(V.rootField(amara.fields, pc(61)), null);
+  // Amara carries no C# at all, so the missing ROOT pitch class is C#.
+  assert.ok(noRoot.reason.includes("C#"),
+    `reason must name the absent root pitch class C#: ${noRoot.reason}`);
+  assert.ok(!noRoot.reason.includes("<X>"),
+    `reason must not contain a literal substitution placeholder: ${noRoot.reason}`);
 });

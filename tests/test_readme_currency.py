@@ -378,6 +378,20 @@ class LineRefRatchetMechanismTest(unittest.TestCase):
         self.assertEqual(new, [("synthetic.py", "tools/decks.py:1")])
         self.assertEqual(stale, [])
 
+    def test_a_stale_allowlist_entry_is_reported(self):
+        # T183-1: an allowlist entry whose ref no longer appears anywhere in
+        # the scanned content (the offender was fixed, but its allowlist line
+        # was never deleted) must come back as stale - that is what tells a
+        # lane which allowlist line to remove.
+        allowed = _parse_line_ref_allowlist(
+            "synthetic.py: tools/decks.py:1\n")
+        found = _scan_lines("synthetic.py", [
+            "# no ref here at all\n",
+        ])
+        new, stale = _diff_refs(found, allowed)
+        self.assertEqual(new, [])
+        self.assertEqual(stale, [("synthetic.py", "tools/decks.py:1")])
+
 
 if __name__ == "__main__":
     unittest.main()
