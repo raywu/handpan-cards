@@ -103,7 +103,7 @@ diff --git a/index.html b/index.html
 +      <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"
 +         target="_blank" rel="noopener">DING &amp; TONES</a>
 +      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
-+         target="_blank" rel="noopener" aria-label="Handpan Training Cards by Sven Kirchhofer">TRAINING CARDS</a>
++         target="_blank" rel="noopener" aria-label="HTC, Handpan Training Cards by Sven Kirchhofer">HTC</a>
 +    </div>
 +  </div>
 +</div>
@@ -170,7 +170,7 @@ diff --git a/index.html b/index.html
 -      <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"
 -         target="_blank" rel="noopener">DING &amp; TONES</a>
 -      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
--         target="_blank" rel="noopener" aria-label="Handpan Training Cards by Sven Kirchhofer">TRAINING CARDS</a>
+-         target="_blank" rel="noopener" aria-label="HTC, Handpan Training Cards by Sven Kirchhofer">HTC</a>
 -    </div>
 -  </div>
 -</div>
