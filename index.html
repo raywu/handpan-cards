@@ -8223,14 +8223,22 @@ function springBack(dx) {
     { duration: SWIPE_BACK_MS, easing: SWIPE_EASE },
   ).finished.then(swipeRest, () => {});
 }
-function flyOut(dir, dx) {
+// `vx` is the mouse release speed (docs/plans/2026-10-01-swipe-momentum.md,
+// decision 1: mouse only). Left null (touch, pen, wheel) this keeps the
+// fixed SWIPE_OUT_MS/SWIPE_OUT_EASE curve; a mouse release instead seeds
+// swipeOutTiming so the card leaves at the speed it was released, not from
+// a standstill.
+function flyOut(dir, dx, vx = null) {
   scene.style.transform = "";
   const dist = window.innerWidth / 2 + scene.offsetWidth;
   const rect = card.getBoundingClientRect();
+  const { end, duration, easing } = vx === null
+    ? { end: dist, duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE }
+    : swipeOutTiming(vx, dir, dx, dist);
   const anim = scene.animate(
     [{ transform: swipeXf(dx) },
-     { transform: `translate3d(${-dir * dist}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
-    { duration: SWIPE_OUT_MS, easing: SWIPE_OUT_EASE, fill: "forwards" },
+     { transform: `translate3d(${-dir * end}px,0,0) rotate(${-dir * SWIPE_TILT_MAX_DEG}deg)` }],
+    { duration, easing, fill: "forwards" },
   );
   flight = { dir, anim, rect };
   anim.finished.then(() => { if (flight && flight.anim === anim) land(); }, () => {});
@@ -8287,7 +8295,7 @@ function release(e, cancelled, pushPoint = true) {
     return;
   }
   if (!dir) { springBack(dx); return; }
-  flyOut(dir, dx);
+  flyOut(dir, dx, pointerType === "mouse" ? vx : null);
 }
 function swipeMove(e) {
   if (!drag || e.pointerId !== drag.id) return;

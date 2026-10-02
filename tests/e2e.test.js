@@ -9111,11 +9111,17 @@ function run() {
       // animation, so it runs before the app's own .then(land) in flyOut()
       // while fill:"forwards" still holds the end pose - that is what lets
       // `finishedAt`/`finishRect` see where the card actually landed, not
-      // the rest position land() resets it to. It also schedules a
-      // setTimeout(30) that samples { alive, m41, currentTime } ON THE PAGE,
-      // 30ms after creation, so CDP round-trip latency cannot stretch that
-      // window (finding F1: currentTime can still be 0 if the sample lands
-      // before the first animation frame - callers must check that first).
+      // the rest position land() resets it to. It also samples
+      // { alive, m41, currentTime } ON THE PAGE, polled via requestAnimationFrame
+      // rather than a fixed-delay setTimeout: a WAAPI animation's currentTime
+      // stays 0 until the compositor assigns it a start time on the FIRST
+      // frame tick after creation, and that tick's wall-clock offset from
+      // creation is not fixed (observed 0-30ms+ in this harness) - a fixed
+      // 30ms timer can land either side of it (finding F1: currentTime can
+      // still be 0 at the sample - callers must check that first regardless).
+      // Polling on rAF instead samples on the frame boundary itself, so
+      // currentTime is > 0 as soon as a sample is taken at all; it still
+      // bails out (sample stays null) if the flight already finished first.
       async function installRecorder() {
         await b.eval(`
           window.__anims = [];
@@ -9130,7 +9136,11 @@ function run() {
               const r = document.getElementById("card").getBoundingClientRect();
               rec.finishRect = { left: r.left, right: r.right };
             }, () => {});
-            setTimeout(() => {
+            function poll(framesLeft) {
+              if (anim.currentTime === 0 && anim.playState === "running" && framesLeft > 0) {
+                requestAnimationFrame(() => poll(framesLeft - 1));
+                return;
+              }
               const t = getComputedStyle(scene).transform;
               let m41 = 0;
               if (t !== "none") {
@@ -9139,7 +9149,8 @@ function run() {
                 m41 = m3 ? v[12] : v[4];
               }
               rec.sample = { alive: !!(flight && flight.anim === anim), m41, currentTime: anim.currentTime };
-            }, 30);
+            }
+            requestAnimationFrame(() => poll(20));
             return anim;
           };
           return true;
@@ -9244,6 +9255,7 @@ function run() {
             { label: "the out animation's 30ms sample to be taken" });
           const out = (await recordedAnims())[0];
           assert.strictEqual(out.sample.alive, true);
+          assert.ok(out.sample.currentTime > 0, "currentTime must not be 0 (an animation frame must have run)");
           const dx = dxOf(out.kf);
           const liveV = (out.sample.m41 - dx) / out.sample.currentTime;
           assert.ok(liveV > 0, "a rightward release must move right");
