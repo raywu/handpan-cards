@@ -111,15 +111,30 @@ class Browser {
     this.proc = proc; this.ws = ws; this.profileDir = profileDir;
     this.entry = entry || { proc, profileDir };
     this.id = 0; this.pending = new Map(); this.sessionId = null;
+    this.eventHandlers = new Map();      // CDP method -> async handler(params)
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
-      const p = this.pending.get(msg.id);
-      if (p) {
-        clearTimeout(p.timer);          // else the timer holds the event loop
-        this.pending.delete(msg.id);
-        msg.error ? p.reject(new Error(JSON.stringify(msg.error))) : p.resolve(msg.result);
+      if (msg.id !== undefined) {
+        const p = this.pending.get(msg.id);
+        if (p) {
+          clearTimeout(p.timer);          // else the timer holds the event loop
+          this.pending.delete(msg.id);
+          msg.error ? p.reject(new Error(JSON.stringify(msg.error))) : p.resolve(msg.result);
+        }
+        return;
       }
+      // An unsolicited CDP event (no id), e.g. Fetch.requestPaused - dispatch
+      // to whatever enableRealFonts() (or a future caller) registered. Errors
+      // here must not crash the ws listener, so they are swallowed; a stuck
+      // paused request would show up as the page itself timing out instead.
+      const h = this.eventHandlers.get(msg.method);
+      if (h) Promise.resolve(h(msg.params)).catch(() => {});
     });
+  }
+  // Registers a handler for an unsolicited CDP event method. Only one handler
+  // per method is kept - callers that need more can dispatch internally.
+  on(method, handler) {
+    this.eventHandlers.set(method, handler);
   }
   send(method, params = {}, useSession = true) {
     const id = ++this.id;
@@ -380,6 +395,51 @@ class Browser {
     // a second time at process exit.
     reap(this.entry);
   }
+  // Reviewer FAIL #3 (bounce 4): launch()'s default blocks Google Fonts
+  // outright (see its comment), so every test that measures layout has only
+  // ever seen FALLBACK font metrics - real Marcellus/Bitter/Nunito Sans run
+  // wider/taller and overflowed cells CI never saw. Called instead of (not
+  // in addition to) that block, for tests that specifically need real
+  // layout: intercepts the Google Fonts CSS request and fulfills it locally
+  // with @font-face rules pointing at base64 data URIs built from the TTFs
+  // already checked into tools/fonts/, so no network access (and no second
+  // hop to fonts.gstatic.com) is needed at all. Caller must still await
+  // `document.fonts.ready` after navigation before measuring - this only
+  // makes the real bytes available, it does not wait for them to decode.
+  async enableRealFonts() {
+    const fontDir = path.join(__dirname, "..", "..", "tools", "fonts");
+    const face = (file, family, weight) => {
+      const data = fs.readFileSync(path.join(fontDir, file)).toString("base64");
+      return `@font-face{font-family:'${family}';font-weight:${weight};` +
+        `src:url(data:font/ttf;base64,${data}) format('truetype');}`;
+    };
+    // Matches index.html's own `family=Marcellus&family=Bitter:wght@400;700&`
+    // `family=Nunito+Sans:wght@400;600` request exactly - one TTF per weight
+    // actually requested, no more.
+    const css = [
+      face("Marcellus-Regular.ttf", "Marcellus", 400),
+      face("Bitter-Regular.ttf", "Bitter", 400),
+      face("Bitter-Bold.ttf", "Bitter", 700),
+      face("NunitoSans-Regular.ttf", "Nunito Sans", 400),
+      face("NunitoSans-SemiBold.ttf", "Nunito Sans", 600),
+    ].join("\n");
+    const body = Buffer.from(css, "utf8").toString("base64");
+    this.on("Fetch.requestPaused", async (params) => {
+      if (!/fonts\.googleapis\.com/.test(params.request.url)) {
+        await this.send("Fetch.continueRequest", { requestId: params.requestId });
+        return;
+      }
+      await this.send("Fetch.fulfillRequest", {
+        requestId: params.requestId,
+        responseCode: 200,
+        responseHeaders: [{ name: "Content-Type", value: "text/css" }],
+        body,
+      });
+    });
+    await this.send("Fetch.enable", {
+      patterns: [{ urlPattern: "*fonts.googleapis.com*" }, { urlPattern: "*fonts.gstatic.com*" }],
+    });
+  }
 }
 
 // The wait for the browser to print its DevTools ws URL. NOT raisable: a longer
@@ -400,7 +460,7 @@ const SLOW_START = "browser did not report a debug port";
 // One launch attempt: spawn, wait for the port, connect, set the session up.
 // Reaps its own browser on every post-spawn failure and rethrows the ORIGINAL
 // error - callers, and launch()'s retry test below, read the message.
-async function launchOnce() {
+async function launchOnce(opts = {}) {
   const bin = findBrowser();
   if (!bin) return null;
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "hpfc-prof-"));
@@ -459,10 +519,19 @@ async function launchOnce() {
     b.sessionId = sessionId;
     await b.send("Page.enable");
     await b.send("Runtime.enable");
-    // Google Fonts is render-blocking in index.html; block it so runs are
-    // deterministic and work offline. Tests therefore measure fallback metrics.
-    await b.send("Network.enable");
-    await b.send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
+    if (opts.realFonts) {
+      // Reviewer FAIL #3: serve the real TTFs instead of blocking - see
+      // enableRealFonts()'s own comment for why this exists and what it does
+      // and does not wait for.
+      await b.enableRealFonts();
+    } else {
+      // Google Fonts is render-blocking in index.html; block it so runs are
+      // deterministic and work offline. Tests therefore measure fallback
+      // metrics - pass { realFonts: true } to launch() for tests that need
+      // real layout instead.
+      await b.send("Network.enable");
+      await b.send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
+    }
     return b;
   } catch (err) {
     try { if (ws) ws.close(); } catch {}
@@ -486,14 +555,14 @@ async function launchOnce() {
 //
 // The notice goes to stderr on purpose: a silent retry would convert a known
 // intermittent into an unexplained 20s of dead air in the log.
-async function launch() {
+async function launch(opts = {}) {
   try {
-    return await launchOnce();
+    return await launchOnce(opts);
   } catch (err) {
     if (!err || err.message !== SLOW_START) throw err;
     process.stderr.write(
       `[cdp] ${SLOW_START} within ${portTimeoutMs()}ms - reaped it and retrying the launch once\n`);
-    return await launchOnce();
+    return await launchOnce(opts);
   }
 }
 

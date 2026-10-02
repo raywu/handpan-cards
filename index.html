@@ -330,6 +330,19 @@ a.mode{text-decoration:none}
    way to tell them apart. Padding is not scanned by the spacing-ramp test
    (only `gap:` is), so trimming it here does not need a ramp step. */
 #settings-panel:has(#panel-seq-note:not([hidden])){padding-bottom:0}
+/* Reviewer FAIL #3 (bounce 4): 320x568 mode S overflowed by 4px under REAL
+   fonts (tested via tests/helpers/cdp.js's `launch({ realFonts: true })` -
+   CI's default harness blocks Google Fonts, so this never showed up before).
+   Real exact-fit at this width is 572px (confirmed by a height sweep:
+   571px overflows 1px, 572px overflows 0). min-height:521 keeps this from
+   stacking with the landscape grid rule immediately below (<=520px, a
+   different layout - single-column vs grid); modes A/B are already an exact
+   fit in this single-column portrait layout and stay untouched by the
+   `:has()` scoping. One ramp step down on the panel's own gap (sp-3->sp-2)
+   is more than the 4px needed, same technique as the sidebar budget above. */
+@media (min-height:521px) and (max-height:575px){
+  #settings-panel:has(#panel-seq-note:not([hidden])){gap:var(--sp-2); --panel-gap:var(--sp-2)}
+}
 /* Landscape phone: too short for one column, so the groups sit side by side. */
 @media (max-height:520px){
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
@@ -469,7 +482,10 @@ a.mode{text-decoration:none}
 }
 /* The sidebar's own narrow-height budget (owner decision "Fix layout before
    merge", 2026-10-02; mode-aware fix 2026-10-02 after reviewer FAIL #2 found
-   mode S still overflowing above this block's original bound):
+   mode S still overflowing above this block's original bound; RECALIBRATED
+   2026-10-02 after reviewer FAIL #3 found this whole budget had only ever
+   been measured against CI's FALLBACK-font harness - see tests/helpers/cdp.js's
+   `realFonts` option and its callers for the real-font measurements below):
    1024x700 is the shortest supported sidebar height and, unlike 1280x800
    (already clean), has no spare room once the Difficulty group's forced
    two-row tier bar is counted. Gated on the SAME min-width/min-height pair
@@ -480,28 +496,31 @@ a.mode{text-decoration:none}
    min-width-only gate here once leaked into it and pushed a Resources link
    under the X trigger).
 
-   The two numbers below are DIFFERENT per mode and both measured with a
-   height sweep (every integer height 700-900 at both 1024 and 1280 wide):
-   modes A/B overflow NOWHERE in that whole sweep (max overflow 0 at every
-   height, once the block below applies) - they were never the problem.
-   Mode S is the one with the taller content (#panel-seq-note, rendered only
-   in mode S): with the tightened spacing below applied, mode S's exact-fit
-   height is 758px (757px overflows by 1px, 758px overflows by 0), climbing
-   to 12px of overflow at 746px. The first block's `max-height:745px` bound
-   predates the Difficulty group and was measured for modes A/B only (742
-   measured exact-fit there, 745 picked for a few px of margin) - it never
-   covered mode S's own, taller 746-757px gap, which is what reviewer FAIL #2
-   measured as a regression (+12px at 1024x746/1100x746/1280x746, +8 at
-   1024x750).
-   Fix: a SECOND block below, scoped to mode S alone via the same
-   `:has(#panel-seq-note:not([hidden]))` selector already used elsewhere in
-   this file, extends the same tightened spacing up to max-height:761px
-   (758 exact-fit + 3px margin, same margin convention as the first block's
-   742->745). It only touches mode S - modes A/B keep the original 745px
-   bound untouched, since raising it for them would change their spacing
-   for no overflow reason. 1280x800/1366x768/1440x900 (clientH 788/756/888,
-   all already >=761) pass both bounds and are left at their default spacing
-   untouched.
+   FALLBACK-font numbers (still true, and still what most of the e2e suite
+   measures - CI's CDP harness blocks Google Fonts by default): modes A/B
+   never overflow in a height sweep 700-900 at 1024/1280 wide; mode S's
+   exact-fit is 758px, climbing to 12px of overflow at 746px.
+
+   REAL-font numbers (reviewer FAIL #3, confirmed with the real Marcellus/
+   Bitter/Nunito Sans TTFs already checked into tools/fonts/ via
+   `launch({ realFonts: true })`): modes A/B are NOT clean under real fonts -
+   real glyph metrics run taller, and untightened spacing overflows from
+   16px at 746px down to 0px at the real exact-fit height of 762px (1024 and
+   1280/1366/1536 wide alike - the overflow is height-only, not width-only).
+   Mode S's real exact-fit stays within the SAME 746-761px window the block
+   below already tightens for it (0px overflow confirmed at every sampled
+   height 746-762 under real fonts) - its own extension did not need to move.
+
+   Fix: this first block's bound moves from max-height:745px to 765px (762
+   real exact-fit + 3px margin, same margin convention the original
+   742->745 fallback bound used) so modes A/B get the tightened spacing
+   through the real gap too. The second block below keeps its own
+   mode-S-scoped 761px bound unchanged, now mostly redundant with this one
+   but still correct and left in place as the mode-aware extension it always
+   was - modes A/B pass through it untouched either way (the `:has()`
+   scoping on `#panel-seq-note` was never about width or height).
+   1280x800/1366x768/1440x900 (clientH 788/756/888, all already >=765) pass
+   both bounds and are left at their default spacing untouched.
    Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2), no new
    spacing unit - a `calc()` shrink of a ramp step used to sit here instead
    (sp-2-3px, sp-1/2) but tests/app.test.js's "every gap...comes from the
@@ -510,7 +529,7 @@ a.mode{text-decoration:none}
    would be; `--panel-gap` is repeated here (see its :root comment) so
    #panel-tier-group's top margin still cancels exactly this tightened gap
    instead of the untightened one. */
-@media (min-width:1024px) and (min-height:700px) and (max-height:745px){
+@media (min-width:1024px) and (min-height:700px) and (max-height:765px){
   #settings-panel{padding:var(--sp-3) var(--sp-3); gap:var(--sp-2); --panel-gap:var(--sp-2)}
   .panel-group{gap:0}
   /* Same mode-S-only shortfall as the 320x568 rule above (see its comment):
@@ -766,11 +785,10 @@ button.nav:active{background:#2e281e}
 /* Acceptance 4: the rail is larger and centred. */
 .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
   color:#c4bcab; text-align:center}
-/* D-12: BASIC's 2-3 chord rails stay on one line unchanged (nothing here
-   forces a wrap - flex-wrap:wrap on .seq-rail below only wraps when a row
-   genuinely does not fit). ADVANCED's longer rails (up to 6 chords) may wrap
-   to a second line; min-width:0 lets the flex rail shrink inside the grid
-   track instead of forcing #count wider than its column. */
+/* D-12: the rail is always one line (.seq-rail below is flex-wrap:nowrap;
+   a rail too wide for its track scrolls horizontally instead of wrapping).
+   min-width:0 lets the flex rail shrink inside the grid track instead of
+   forcing #count wider than its column. */
 .count.seq{min-width:0; font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
 /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
    deck's root colour carried as an underline instead of the text's own ink -
@@ -7300,8 +7318,8 @@ const TIER_LABEL = { basic: "BASIC", intermediate: "INTERMEDIATE", advanced: "AD
 function renderSeqEmpty() {
   const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
     ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-      + `This scale has no ${TIER_LABEL[tier]} progression. `
-      + `Try another difficulty, or pick another scale.</div></div>`
+      + `This scale has no ${TIER_LABEL[tier]} progressions. `
+      + `Pick another difficulty or another scale.</div></div>`
     : `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
       + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
       + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
@@ -8756,7 +8774,14 @@ function setMode(m) {
   // else. The remembered tier's .on/aria-pressed state is untouched by a mode
   // switch, so switching back to S shows the same choice as before.
   for (const id of ["tier-basic", "tier-intermediate", "tier-advanced"]) {
-    document.getElementById(id).disabled = m !== "S";
+    const tierBtn = document.getElementById(id);
+    tierBtn.disabled = m !== "S";
+    // B2 (reviewer FAIL #3): a hidden idref still contributes its text to the
+    // accessible description, so the attribute must come OFF while the
+    // buttons are live (mode S) - otherwise mode-S screen-reader users hear
+    // "Pick CHORD PROGRESSION to change this." on buttons that already work.
+    if (m === "S") tierBtn.removeAttribute("aria-describedby");
+    else tierBtn.setAttribute("aria-describedby", "panel-tier-note");
   }
   document.getElementById("panel-tier-note").hidden = m === "S";
   document.getElementById("foot").classList.toggle("seq", m === "S");

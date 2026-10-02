@@ -6908,6 +6908,106 @@ function run() {
     });
   });
 
+  // Reviewer FAIL #3 (bounce 4): every test above measures FALLBACK font
+  // metrics - launch()'s default blocks fonts.googleapis.com/gstatic.com
+  // outright (see tests/helpers/cdp.js's comment) so runs are deterministic
+  // offline, but that means the panel-fit math above was only ever verified
+  // against a generic serif/sans-serif, never the real Marcellus/Bitter/
+  // Nunito Sans the app actually ships. A SEPARATE browser (`rb`), launched
+  // with `{ realFonts: true }`, serves the TTFs already checked into
+  // tools/fonts/ as local @font-face data URIs instead - no network, no
+  // second hop to fonts.gstatic.com. Kept to its own describe/before/after
+  // rather than swapping the shared `b` so the rest of the suite keeps
+  // measuring the fast, deterministic fallback metrics it was written
+  // against; only the handful of cells reviewer #3 actually measured with
+  // real fonts are re-checked here.
+  describe("real fonts (reviewer FAIL #3 panel overflow)", () => {
+    let rb = null;
+    before(async () => {
+      rb = await launch({ realFonts: true });
+      assert.ok(rb, "browser found by findBrowser() but launch({ realFonts: true }) returned null");
+      await rb.goto(URL);
+      // Fonts load async even once request-intercepted; document.fonts.ready
+      // is the one correct wait - a fixed sleep would be timing-dependent and
+      // settle() only waits on WAAPI/CSS animations, not font loading.
+      await rb.eval(`return document.fonts.ready.then(() => true);`);
+    });
+    after(async () => { if (rb) await rb.close(); });
+
+    async function panelOverflow(w, h, mode, mobile) {
+      await rb.setViewport(w, h, mobile);
+      await rb.settle();
+      if (mobile) {
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+          { label: "panel open" });
+      }
+      await rb.click(`#mode${mode}`);
+      if (mobile) {
+        await rb.waitFor(`document.getElementById("settings-panel").hidden === true`,
+          { label: "panel close after mode" });
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+          { label: "panel reopen" });
+      }
+      await rb.settle();
+      const m = await rb.eval(`
+        const p = document.getElementById("settings-panel");
+        const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        return {
+          scrollH: p.scrollHeight, clientH: p.clientHeight,
+          resVisible: resIds.every(id => {
+            const el = document.getElementById(id);
+            return el && el.getClientRects().length > 0;
+          }),
+        };
+      `);
+      if (mobile) {
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display === "none"`,
+          { label: "panel close for next case" });
+      }
+      return m;
+    }
+
+    // The desktop sidebar cells reviewer #3 measured with real fonts:
+    // 1024/1280 wide, heights 746-760 (overflow +16px->+2px under the OLD
+    // max-height:745px bound), plus the three named width/height pairs that
+    // showed +12px at the same underlying cause (the bound never reached
+    // real fonts' own 762px exact-fit). Widened to 765px, every one of these
+    // is a real-font exact fit (0px overflow) - see index.html's "narrow-
+    // height budget" comment for the measurement this bound is now based on.
+    test("the desktop sidebar has no vertical scroll under REAL fonts at the heights reviewer #3 measured",
+      async () => {
+        const cases = [
+          [1024, 746], [1024, 750], [1024, 754], [1024, 758], [1024, 760],
+          [1280, 746], [1280, 750], [1366, 750], [1536, 750],
+        ];
+        for (const [w, h] of cases) {
+          for (const mode of ["A", "B"]) {
+            const m = await panelOverflow(w, h, mode, false);
+            const label = `${w}x${h} mode ${mode} (real fonts)`;
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) by ${m.scrollH - m.clientH}px`);
+            assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+          }
+        }
+      });
+
+    // 320x568 mode S: reviewer #3 measured +4px under real fonts (the last
+    // Resources link ending at 572 against a 568px box) - a different,
+    // narrower-viewport breakpoint from the sidebar cells above (the
+    // full-screen portrait panel, not the fixed sidebar).
+    test("the 320x568 full-screen panel has no vertical scroll under REAL fonts in mode S",
+      async () => {
+        const m = await panelOverflow(320, 568, "S", true);
+        assert.ok(m.scrollH <= m.clientH + 1,
+          `320x568 mode S (real fonts): the panel (${m.scrollH}px) overflows its own box ` +
+          `(${m.clientH}px) by ${m.scrollH - m.clientH}px`);
+        assert.ok(m.resVisible, "320x568 mode S (real fonts): the Resources links are not all rendered");
+      });
+  });
+
   // Lane S2: "CHORD PROGRESSION" mode's app-side wiring. See
   // docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
   // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
@@ -7850,6 +7950,15 @@ function run() {
         const stopsS = await b.eval(`return window.panelStops().map(e => e.id);`);
         assert.ok(stopsS.includes("tier-basic") && stopsS.includes("tier-intermediate")
           && stopsS.includes("tier-advanced"), "enabled tier buttons must join the Tab trap in mode S");
+        // B2 (reviewer FAIL #3): a hidden idref still contributes its text to
+        // the accessible description, so the live mode-S buttons must not
+        // carry aria-describedby="panel-tier-note" at all - otherwise a
+        // screen reader announces "Pick CHORD PROGRESSION to change this."
+        // on buttons that already work.
+        const describedByS = await b.eval(`return ["tier-basic", "tier-intermediate", "tier-advanced"]
+          .map(id => document.getElementById(id).getAttribute("aria-describedby"));`);
+        assert.deepStrictEqual(describedByS, [null, null, null],
+          "tier buttons must not carry aria-describedby in mode S");
 
         await openSettingsPanel();
         await b.click("#modeA");
@@ -7868,6 +7977,10 @@ function run() {
         const stopsA = await b.eval(`return window.panelStops().map(e => e.id);`);
         assert.ok(!stopsA.includes("tier-basic") && !stopsA.includes("tier-intermediate")
           && !stopsA.includes("tier-advanced"), "disabled tier buttons must not join the Tab trap");
+        const describedByA = await b.eval(`return ["tier-basic", "tier-intermediate", "tier-advanced"]
+          .map(id => document.getElementById(id).getAttribute("aria-describedby"));`);
+        assert.deepStrictEqual(describedByA, ["panel-tier-note", "panel-tier-note", "panel-tier-note"],
+          "disabled tier buttons outside mode S must carry aria-describedby=panel-tier-note");
       });
 
     // D-7/D-11: clicking a tier presses it exclusively, persists across a
