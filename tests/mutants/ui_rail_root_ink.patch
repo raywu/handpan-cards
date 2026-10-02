@@ -7,11 +7,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7180,6 +7180,7 @@ function renderSeqRail(d) {
+@@ -7310,6 +7310,7 @@ function renderSeqRail(d) {
      const node = document.createElement(i === idx ? "b" : "span");
      node.className = "seq-chord";
      node.textContent = c.main + (c.sup || "");
 +    if (i === idx) node.style.setProperty("color", "var(--root)");
      unit.appendChild(node);
      rail.appendChild(unit);
-   });
+     if (i === idx) curNode = node;

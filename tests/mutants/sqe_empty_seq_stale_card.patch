@@ -9,8 +9,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6908,7 +6908,7 @@ function renderSeqRail(d) {
-   countEl.appendChild(live);
+@@ -7338,7 +7338,7 @@ function renderSeqRail(d) {
+   }
  }
  function render() {
 -  if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }

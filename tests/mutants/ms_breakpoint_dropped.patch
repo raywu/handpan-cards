@@ -10,11 +10,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -377,7 +377,6 @@ a.mode{text-decoration:none}
+@@ -460,7 +460,6 @@ a.mode{text-decoration:none}
    /* [hidden]{display:none !important} (line 456) otherwise wins over the
       rule above at equal !important weight (it has none, so this needs its
       own) - this is the one declaration that actually has to beat it. */
 -  #settings-panel[hidden]{display:flex !important}
  }
- /* The sidebar's own narrow-height budget (2026-10-02, panel-fit addendum):
-    1024x700 is the shortest supported sidebar height and, unlike 1280x800
+ /* The sidebar's own narrow-height budget (owner decision "Fix layout before
+    merge", 2026-10-02):
