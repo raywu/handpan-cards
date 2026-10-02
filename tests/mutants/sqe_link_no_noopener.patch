@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1273,7 +1273,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1330,7 +1330,7 @@ footer.seq{row-gap:var(--sp-1)}
      <p class="panel-note" id="panel-seq-note" hidden>
        7 different ways to play chords:
        <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
@@ -17,4 +17,4 @@ diff --git a/index.html b/index.html
 +         target="_blank">Watch on YouTube</a>
      </p>
    </div>
-   <!-- Difficulty (sequence-difficulty plan, D-8/D-9/D-10): always visible, own
+   <!-- Difficulty (D-8/D-9/D-10): always visible, no own heading - reads as
