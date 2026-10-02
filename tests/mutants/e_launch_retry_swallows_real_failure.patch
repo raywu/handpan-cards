@@ -16,11 +16,11 @@
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -296,7 +296,6 @@ async function launch() {
+@@ -559,7 +559,6 @@ async function launch(opts = {}) {
    try {
-     return await launchOnce();
+     return await launchOnce(opts);
    } catch (err) {
 -    if (!err || err.message !== SLOW_START) throw err;
      process.stderr.write(
        `[cdp] ${SLOW_START} within ${portTimeoutMs()}ms - reaped it and retrying the launch once\n`);
-     return await launchOnce();
+     return await launchOnce(opts);

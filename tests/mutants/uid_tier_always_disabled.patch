@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8569,7 +8569,7 @@ function setMode(m) {
-   // else. The remembered tier's .on/aria-pressed state is untouched by a mode
+@@ -8775,7 +8775,7 @@ function setMode(m) {
    // switch, so switching back to S shows the same choice as before.
    for (const id of ["tier-basic", "tier-intermediate", "tier-advanced"]) {
--    document.getElementById(id).disabled = m !== "S";
-+    document.getElementById(id).disabled = true;
-   }
-   document.getElementById("panel-tier-note").hidden = m === "S";
-   document.getElementById("foot").classList.toggle("seq", m === "S");
+     const tierBtn = document.getElementById(id);
+-    tierBtn.disabled = m !== "S";
++    tierBtn.disabled = true;
+     // B2 (reviewer FAIL #3): a hidden idref still contributes its text to the
+     // accessible description, so the attribute must come OFF while the
+     // buttons are live (mode S) - otherwise mode-S screen-reader users hear

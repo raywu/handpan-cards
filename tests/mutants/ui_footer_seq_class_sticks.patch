@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8572,7 +8572,7 @@ function setMode(m) {
-     document.getElementById(id).disabled = m !== "S";
+@@ -8784,7 +8784,7 @@ function setMode(m) {
+     else tierBtn.setAttribute("aria-describedby", "panel-tier-note");
    }
    document.getElementById("panel-tier-note").hidden = m === "S";
 -  document.getElementById("foot").classList.toggle("seq", m === "S");
