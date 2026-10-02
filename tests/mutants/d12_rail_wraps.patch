@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -775,2 +775,2 @@
--.seq-rail{display:flex; flex-wrap:nowrap; justify-content:safe center; column-gap:.35em;
-+.seq-rail{display:flex; flex-wrap:wrap; justify-content:safe center; column-gap:.35em;
-   width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+@@ -803,2 +803,2 @@
+-.seq-rail{display:flex; flex-wrap:nowrap; justify-content:center; justify-content:safe center;
++.seq-rail{display:flex; flex-wrap:wrap; justify-content:center; justify-content:safe center;
+   column-gap:.35em; width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
