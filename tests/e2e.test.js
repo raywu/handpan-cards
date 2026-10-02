@@ -1467,31 +1467,11 @@ function run() {
               ["res-dingandtones", "res-handpaner", "res-trainingcards"],
               `${label}: the Resources links are not all visible/measured`);
             assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
-            // 320x568 mode S only: the Difficulty group
-            // (docs/plans/2026-10-02-sequence-difficulty.md) is not the
-            // cause here - #panel-tier-group's own margins were collapsed
-            // to zero (index.html, ".tierbar" / "#panel-tier-group" rules)
-            // and this exact test passes at 0px overflow in modes A and B
-            // at this same viewport. The remainder is #panel-seq-note
-            // (pre-existing, mode S only) outgrowing the narrow budget this
-            // viewport already had before the Difficulty group existed.
-            // Measured overflow is 21px; 30px leaves margin without
-            // masking a regression beyond this known, documented amount.
-            const vScrollBudget = (vw === 320 && vh === 568 && mode === "S") ? 30 : 1;
-            assert.ok(m.scrollH <= m.clientH + vScrollBudget,
+            assert.ok(m.scrollH <= m.clientH + 1,
               `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
             assert.ok(m.scrollW <= m.clientW + 1,
               `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
-            // Same 320x568 mode S exception as the scrollH budget above:
-            // the panel's pre-existing overflow-y:auto makes the Resources
-            // links (the last group, pushed past the fold by #panel-seq-note
-            // growing in mode S) reachable by scrolling, not truly stuck -
-            // this only tolerates exactly the three res- ids, never any
-            // other control going off screen, here or at any other
-            // viewport/mode.
-            const offscreenAllowed = (vw === 320 && vh === 568 && mode === "S")
-              ? ["res-handpaner", "res-dingandtones", "res-trainingcards"] : [];
-            assert.deepStrictEqual(m.offscreen.slice().sort(), offscreenAllowed.slice().sort(),
+            assert.deepStrictEqual(m.offscreen.slice().sort(), [],
               `${label}: controls off screen`);
             assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X trigger`);
             assert.deepStrictEqual(m.short, [], `${label}: controls under the 44px target`);
@@ -1616,29 +1596,7 @@ function run() {
             };
           `);
           const label = `1024x700 mode ${mode}`;
-          // Difficulty group (docs/plans/2026-10-02-sequence-difficulty.md):
-          // at this 240px sidebar width (content box ~199px), INTERMEDIATE
-          // is a single unbroken word with a ~110.6px min-content, so the
-          // three tier buttons cannot share one row (3 x min-content + 2
-          // gaps vastly exceeds 199px) and are forced onto two 44px rows -
-          // a 100px floor before the group's own heading/note are even
-          // counted. index.html's "#panel-tier-group" rule already
-          // collapses this group's own surrounding gaps to zero (the
-          // maximum available without overlapping a neighbour), which
-          // closes this same assertion at 1280x800 (see that test) but
-          // this narrower 1024x700 sidebar has no further budget to give:
-          // measured overflow is 45px in modes A/B and 89px in mode S
-          // (mode S is worse because the pre-existing #panel-seq-note, not
-          // the Difficulty group, grows by more than the tier group's own
-          // note shrinks by). 1024x700 is not one of D-9's named
-          // acceptance viewports (380x740, 320x640, 812x375, 1280x800 -
-          // which this feature fits cleanly); it is a pre-existing,
-          // stricter CI gate this lane cannot close without redesigning
-          // spacing this lane does not own, so the budget below documents
-          // the known, measured amount rather than masking a regression
-          // beyond it.
-          const vScrollBudget = mode === "S" ? 95 : 50;
-          assert.ok(m.scrollH <= m.clientH + vScrollBudget,
+          assert.ok(m.scrollH <= m.clientH + 1,
             `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
           assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
         }
@@ -7746,20 +7704,30 @@ function run() {
 
     // D-11 reviewer nit: `prev` is cleared on a tier change, so the new tier's
     // sequence is never rejected merely because the OLD tier happened to deal
-    // the identical chord indices.
-    test("a tier change clears prev so the new tier is never rejected for repeating the old one's chords",
+    // the identical chord indices. Asserted directly against the argument
+    // HPE.sequence.pick() receives, rather than against pick()'s output,
+    // because output-shape assertions here (sequence vs. reason) are true
+    // whether or not `seq = null;` runs in setTier() - pick() almost always
+    // returns one or the other regardless of `prev`.
+    test("a tier change clears prev before the next pick() call",
       async () => {
         await enterSeqMode();
         const result = await b.eval(`
-          const before = seq && seq.chords ? seq.chords.slice() : null;
-          // Force the engine's own no-repeat guard to see a "previous" that
-          // exactly matches whatever basic just dealt, then switch tiers the
-          // same way setTier() does, and confirm the new tier was not starved.
-          seq = { chords: before, style: seq.style };
-          setTier("advanced");
-          return { before, after: seq && seq.chords, reason: seq && seq.reason };
+          const calls = [];
+          const origPick = HPE.sequence.pick;
+          HPE.sequence.pick = (d, rng, prev, t) => {
+            calls.push(prev);
+            return origPick(d, rng, prev, t);
+          };
+          try {
+            setTier("advanced");
+          } finally {
+            HPE.sequence.pick = origPick;
+          }
+          return { prevArg: calls[0] };
         `);
-        assert.ok(result.after || result.reason, "a tier switch must produce either a sequence or a recorded reason");
+        assert.strictEqual(result.prevArg, null,
+          "setTier must clear seq before setOrder() calls pick, so pick's prev argument is null");
       });
 
     // hpfc.tier is TYPE-guarded exactly like hpfc.mode (D-7): a corrupted or

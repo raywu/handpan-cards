@@ -379,6 +379,23 @@ a.mode{text-decoration:none}
      own) - this is the one declaration that actually has to beat it. */
   #settings-panel[hidden]{display:flex !important}
 }
+/* The sidebar's own narrow-height budget (2026-10-02, panel-fit addendum):
+   1024x700 is the shortest supported sidebar height and, unlike 1280x800
+   (already clean), has no spare room once the Difficulty group's forced
+   two-row tier bar is counted. Gated on the SAME min-width/min-height pair
+   that turns the panel into a sidebar at all (line 330's own
+   `(min-width:1024px) and (min-height:700px)`), so this can never reach the
+   modal/mobile panel at a short landscape size like 1280x500 (which has its
+   own, separate max-height tightening above and is NOT the sidebar - a
+   min-width-only gate here once leaked into it and pushed a Resources link
+   under the X trigger); max-height:900px on top of that leaves the roomier
+   1280x800 sidebar - already passing with its default spacing - untouched.
+   Reuses the SAME ramp values one step down (sp-4->sp-3, sp-3->sp-2,
+   sp-1->half-sp-1), no new spacing unit. */
+@media (min-width:1024px) and (min-height:700px) and (max-height:900px){
+  #settings-panel{padding:var(--sp-3) var(--sp-3); gap:calc(var(--sp-2) - 3px)}
+  .panel-group{gap:calc(var(--sp-1) / 2)}
+}
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
    and the STACKED header spent 134 of them - the title, the deck strip and
@@ -1279,14 +1296,20 @@ footer.seq{row-gap:var(--sp-1)}
   <!-- Difficulty (sequence-difficulty plan, D-8/D-9/D-10): always visible, own
        .panel-group right after Practice so it reads as part of the mode
        choice (that same "reads as part of" rationale is why its surrounding
-       gaps are collapsed to zero - see "#panel-tier-group" in the CSS).
-       D-9's original design was a named inline-size container ("tier") that
-       switched .tierbar from a column to a three-across row at one
-       breakpoint; it was measured during D2 implementation and replaced
-       with a plain flex-wrap (see the ".tierbar" CSS comment) because the
-       240px desktop sidebar cannot fit three buttons on one row at ANY
-       width above it either - INTERMEDIATE's un-breakable word alone is
-       wider than the sidebar - so there is no row/column threshold to
+       gaps are collapsed to zero - see "#panel-tier-group" in the CSS, and
+       why this group carries no heading of its own - 2026-10-02 vertical-
+       budget fix, docs/plans/2026-10-02-sequence-difficulty.md addendum
+       "panel-fit": a second "Difficulty" heading cost a full line plus a gap
+       on every viewport for a group already reading as a continuation of
+       Practice immediately above it; dropping it is lossless there and
+       buys back exactly that line everywhere, mobile panel and sidebar
+       alike). D-9's original design was a named inline-size container
+       ("tier") that switched .tierbar from a column to a three-across row
+       at one breakpoint; it was measured during D2 implementation and
+       replaced with a plain flex-wrap (see the ".tierbar" CSS comment)
+       because the 240px desktop sidebar cannot fit three buttons on one row
+       at ANY width above it either - INTERMEDIATE's un-breakable word alone
+       is wider than the sidebar - so there is no row/column threshold to
        express as a container query in the first place. There is
        accordingly no "tier" container or @container rule in the CSS
        anymore. The three buttons start `disabled` (D-10: mode A is the
@@ -1296,7 +1319,6 @@ footer.seq{row-gap:var(--sp-1)}
        container is not announced when a screen reader lands directly on a
        button). -->
   <div class="panel-group" id="panel-tier-group">
-    <h3 class="panel-heading">Difficulty</h3>
     <div class="tierbar">
       <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
         aria-describedby="panel-tier-note" disabled>BASIC</button>

@@ -1,0 +1,16 @@
+# kills: a tier change clears prev before the next pick() call
+# suite: node --test --test-name-pattern ^a.tier.change.clears.prev.before.the.next.pick\(\).call$ tests/e2e.test.js
+# D-11 reviewer nit: without `seq = null;`, setOrder()'s call to
+# HPE.sequence.pick() passes the OLD tier's seq.chords as `prev`, so the new
+# tier can be starved by a no-repeat rejection against chords it never dealt.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8540,7 +8540,6 @@ function syncTierUI() {
+ function setTier(t) {
+   tier = t; save();
+   syncTierUI();
+-  seq = null;
+   setOrder();
+   render();
+   closePanel();
