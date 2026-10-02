@@ -5,7 +5,7 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -479,9 +479,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -546,9 +546,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      if (TIERS.indexOf(t) < 0) {
        throw new Error("HPE.sequence.pick: unknown tier");
      }
@@ -13,5 +13,5 @@ diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 -      return pickBasic(deck, rng, prev);
 -    }
      var anchorsList = anchors(deck);
-     if (homeAnchor(deck, anchorsList) === null) {
-       return { chords: null, reason: "NO_HOME_CHORD" };
+     var homeAnchorIdx = homeAnchor(deck, anchorsList);
+     if (homeAnchorIdx === null) {

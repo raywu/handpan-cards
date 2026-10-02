@@ -6,12 +6,12 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -338,7 +338,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var homeAnchorIdx = homeAnchor(deck, anchorsList);
-     if (basicGate(deck, chords, anchorsList, homeAnchorIdx)) return "basic";
-     if (intermediateGate(deck, chords, home)) return "intermediate";
--    return "advanced";
-+    return "intermediate";
+@@ -366,7 +366,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if ((n === 3 || n === 4) && intermediateGate(deck, chords, ctx.home)) {
+       return "intermediate";
+     }
+-    if (n >= 3) return "advanced";
++    if (n >= 3) return "intermediate";
+     return null;
    }
 
-   function tierPool(deck, tier) {
