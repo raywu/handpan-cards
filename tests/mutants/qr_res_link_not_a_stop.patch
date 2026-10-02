@@ -5,7 +5,7 @@
 # three #res-* anchors never join the panel's own Tab/Shift+Tab cycle: a
 # keyboard user tabbing through the panel reaches "CHORD-ONLY PDF" and then
 # wraps straight back to the trigger, skipping HANDPANER, DING & TONES and
-# TRAINING CARDS entirely. Every other stop (modeA/B/S, the print controls,
+# HTC entirely. Every other stop (modeA/B/S, the print controls,
 # deck-add) is untouched, so only the forward-cycle assertion that now
 # requires all three res-* ids to appear in `seen` can see this.
 diff --git a/index.html b/index.html
