@@ -1,0 +1,15 @@
+# kills: rail scroll: a new deal starts at the first chord with scrollLeft 0
+# suite: node --test --test-name-pattern ^rail.scroll..a.new.deal.starts.at.the.first.chord.with.scrollLeft.0 tests/e2e.test.js
+# sameDeal ignores the sequence identity, so a new deal inherits the old rail's scrollLeft instead of starting at 0.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7114,7 +7114,7 @@ function renderSeqEmpty() {
+ let railSeq = null, railEl = null;
+ function renderSeqRail(d) {
+   const countEl = document.getElementById("count");
+-  const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
++  const sameDeal = !!railEl && countEl.children[0] === railEl;
+   const keepLeft = sameDeal ? railEl.scrollLeft : 0;
+   railSeq = seq;
+   countEl.classList.add("seq");

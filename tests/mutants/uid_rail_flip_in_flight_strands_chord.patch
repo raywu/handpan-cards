@@ -1,7 +1,6 @@
-# kills: rail scroll: a flip leaves scrollLeft untouched, with no frame at 0
-# suite: node --test --test-name-pattern ^rail.scroll..a.flip.leaves.scrollLeft.untouched tests/e2e.test.js
-# D2 follow-up. The rebuilt rail starts at scrollLeft 0; dropping the carry-over
-# restores the lurch on every flip of an overflowing rail.
+# kills: rail scroll: a flip inside the smooth-scroll window still ends with the current chord in view
+# suite: node --test --test-name-pattern ^rail.scroll..a.flip.inside.the.smooth.scroll.window.still.ends.with.the.current.chord.in.view tests/e2e.test.js
+# Returning right after the carry-over skips the scroll-to-current, so a flip inside a step's smooth scroll strands the rail with the current chord out of view.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -10,7 +9,7 @@ diff --git a/index.html b/index.html
    // flip inside a step's smooth scroll still ends on the current chord; once the
    // chord is centred it is a no-op, and after a manual scroll it re-centres.
 -  if (keepLeft) rail.scrollLeft = keepLeft;
-+  if (false) rail.scrollLeft = keepLeft;
++  if (keepLeft) { rail.scrollLeft = keepLeft; return; }
    // D-12: keep the current chord in view on every advance/back/redeal -
    // render() is the only caller of renderSeqRail, and render() is in turn
    // the only path step()/shuffle/redeal use to show a new current chord, so
