@@ -478,22 +478,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return found;
   }
 
-  // One attempt at a fixed length: up to 512 uniform random draws, then the
-  // bounded DFS fallback. `empty` is true only when the fallback (whether it
-  // completed or hit the node budget) found literally nothing, per D-2 "a
-  // search that hits the budget ... reports the length empty only if it
-  // found nothing".
-  function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
-    var pool = tierPool(deck, tier, ctx.anchorsList);
-    var startSet = tierStartSet(deck, tier, pool);
-    if (!startSet.length || !pool.length) return { seq: null, empty: true };
-
-    // Cheapest checks first, classifyTier (the expensive one, even with a
-    // shared ctx) last - `excludeSeq`/identical-card/connectivity are O(1)
-    // per pair and reject the overwhelming majority of candidates before
-    // classifyTier's gate functions ever run (perf review on PR #202,
-    // item 3).
-    function accept(seq) {
+  // The acceptance predicate shared by the sampler, the DFS fallback and the
+  // tests that reconstruct the fallback path. Cheapest checks first,
+  // classifyTier (the expensive one, even with a shared ctx) last -
+  // `excludeSeq`/identical-card/connectivity are O(1) per pair and reject the
+  // overwhelming majority of candidates before classifyTier's gate functions
+  // ever run (perf review on PR #202, item 3).
+  function makeAccept(deck, tier, matrix, excludeSeq, ctx) {
+    return function accept(seq) {
       if (excludeSeq && sameSequence(seq, excludeSeq)) return false;
       for (var i = 0; i < seq.length; i += 1) {
         var next = seq[(i + 1) % seq.length];
@@ -504,7 +496,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (!matrix[seq[i]][next]) return false;
       }
       return classifyTier(deck, seq, ctx) === tier;
-    }
+    };
+  }
+
+  // One attempt at a fixed length: up to 512 uniform random draws, then the
+  // bounded DFS fallback. `empty` is true only when the fallback (whether it
+  // completed or hit the node budget) found literally nothing, per D-2 "a
+  // search that hits the budget ... reports the length empty only if it
+  // found nothing".
+  function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
+    var pool = tierPool(deck, tier, ctx.anchorsList);
+    var startSet = tierStartSet(deck, tier, pool);
+    if (!startSet.length || !pool.length) return { seq: null, empty: true };
+
+    var accept = makeAccept(deck, tier, matrix, excludeSeq, ctx);
 
     for (var attempt = 0; attempt < 512; attempt += 1) {
       var seq = [startSet[draw(rng, startSet.length)]];
@@ -597,6 +602,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     _internal: {
       DFS_NODE_BUDGET: DFS_NODE_BUDGET,
       dfsFindAll: dfsFindAll,
+      makeAccept: makeAccept,
       tierPool: tierPool,
       tierStartSet: tierStartSet,
       buildConnectMatrix: buildConnectMatrix,
