@@ -49,7 +49,7 @@ FLOORS = {
     "tests/test_pdf_parity.py": 11,
     # node
     "tests/app.test.js": 193,
-    "tests/e2e.test.js": 190,
+    "tests/e2e.test.js": 251,
     "tests/harness.test.js": 9,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 49,
