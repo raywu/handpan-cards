@@ -535,10 +535,10 @@ class Root {
 
 function cellId(w, h, mode) { return `${w}x${h} ${mode}`; }
 
-async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, workers, log, widthRange }) {
+async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, workers, log, widthRange, RootClass = Root }) {
   const t0 = Date.now();
-  const base = new Root("base", baseHtml, fontMode, workers);
-  const cand = new Root("candidate", candHtml, fontMode, workers);
+  const base = new RootClass("base", baseHtml, fontMode, workers);
+  const cand = new RootClass("candidate", candHtml, fontMode, workers);
   const report = { font: fontMode, skipped: 0, skipReasons: [], cells: 0, invariance: 0, rules: {}, removed: {}, edges: {} };
   const ruleNames = ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"];
   for (const r of ruleNames) report.rules[r] = { fail: 0, reported: 0, first: [], firstReported: [] };
@@ -580,6 +580,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
       report.spare.push({ w, h, ...(await cand.browsers[0].eval(`return window.__pf.spare("A");`)) });
     }
     const [refCell] = await cand.measure([REF_CELL]);
+    if (!refCell || !refCell.every(isMeasured)) throw new PanelFitError(`the reference cell ${cellId(REF_CELL[0], REF_CELL[1], "*")} was not measured`);
     const refRendered = refCell.map((c) => Object.keys(c.controls).filter((k) => c.controls[k].rendered));
 
     // Which bands put the sidebar in play (the app's own desktopMQ decides).
@@ -601,7 +602,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
     cellList.forEach(([w, h], i) => {
       MODES.forEach((m, mi) => {
         const id = cellId(w, h, m);
-        if (!isMeasured(mb[i][mi]) || !isMeasured(mc[i][mi])) {
+        if (!isMeasured((mb[i] || [])[mi]) || !isMeasured((mc[i] || [])[mi])) {
           report.skipped++; report.skipReasons.push(`${id}: no measurement`);
           return;
         }
@@ -639,6 +640,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         if (ov.scroll > report.threshold.maxScroll) { report.threshold.maxScroll = ov.scroll; report.threshold.maxScrollAt = `${w}x${ov.height} mode ${m}`; }
       });
     });
+    assertRunComplete(report);
 
     // ER-8: the invariance check, on the whole vector, in both roots.
     const failures = [];
@@ -665,6 +667,10 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
       const [ib, ic] = await Promise.all([base.measure(pts), cand.measure(pts)]);
       pts.forEach(([w, h], i) => {
         MODES.forEach((m, mi) => {
+          if (!isMeasured((ib[i] || [])[mi]) || !isMeasured((ic[i] || [])[mi])) {
+            report.skipped++; report.skipReasons.push(`${cellId(w, h, m)} (invariance): no measurement`);
+            return;
+          }
           report.invariance++;
           countGutter(ib[i][mi], w, h, m); countGutter(ic[i][mi], w, h, m);
           for (const [name, got, map] of [["base", ib, vecB], ["candidate", ic, vecC]]) {
@@ -805,7 +811,7 @@ async function main(argv) {
 
 module.exports = {
   OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, thresholdCell,
-  overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete, isMeasured,
+  overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete, isMeasured, runFont,
   checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
 };

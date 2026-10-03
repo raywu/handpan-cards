@@ -4575,11 +4575,34 @@ describe("panel fit judge", () => {
       ...over,
     };
   }
-  test("a cell that was never measured is counted as skipped and fails the run", () => {
-    assert.strictEqual(pf.isMeasured(cell()), true);
-    for (const bad of [undefined, null, {}, { needed: 400 }]) assert.strictEqual(pf.isMeasured(bad), false);
-    assert.throws(() => pf.assertRunComplete({ skipped: 1, skipReasons: ["320x568 S: no measurement"] }), /1 cells skipped: 320x568 S/);
-    assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
+  test("panel fit run: an unmeasured cell on either side ends runFont with the skipped-cell failure, not a TypeError", async () => {
+    const mkRoot = (hole) => class FakeRoot {
+      constructor(name) { this.name = name; this.browsers = [{
+        setViewport: async () => {},
+        eval: async (code) => (/hasProgHeading|sidebar/.test(code) ? false : {}),
+      }]; }
+      async start() {}
+      async close() {}
+      async walk() { return { conditions: [], skippedSheets: [] }; }
+      async measure(cells) {
+        return cells.map((_, i) => ["A", "B", "S"].map(() => (hole && i === 1 ? null : cell())));
+      }
+    };
+    const run = (BaseRoot, CandRoot) => pf.runFont({
+      baseHtml: "b", candHtml: "c", baseLabel: "base", candLabel: "cand", fontMode: "fallback", workers: 1,
+      log: () => {}, widthRange: [320, 323],
+      RootClass: class extends mkRoot(false) {
+        constructor(name, ...r) { super(name); this.inner = new (name === "base" ? BaseRoot : CandRoot)(name); this.browsers = this.inner.browsers; }
+        measure(cells) { return this.inner.measure(cells); }
+      },
+    });
+    const complete = mkRoot(false), holey = mkRoot(true);
+    const ok = await run(complete, complete);
+    assert.strictEqual(ok.skipped, 0);
+    assert.ok(ok.cells > 0 && ok.invariance >= 0, "the complete run measured cells");
+    for (const [b, c] of [[complete, holey], [holey, complete]]) {
+      await assert.rejects(run(b, c), (e) => e instanceof pf.PanelFitError && /cells skipped: .*no measurement/.test(e.message));
+    }
   });
 
   const withControl = (c, key, v) => ({ ...c, controls: { ...c.controls, [key]: v } });

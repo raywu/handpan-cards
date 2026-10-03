@@ -8574,10 +8574,15 @@ function run() {
           media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
         });
         try {
-          await rb.eval(`step(-1); flip(); return true;`);
+          assert.strictEqual(await rb.eval(`return matchMedia("(prefers-reduced-motion: reduce)").matches;`), true,
+            "the reduced-motion emulation must have taken effect");
+          const stepFrames = await rb.eval(sampleFrames(`step(-1)`));
           const settled = await rb.eval(settleScroll);
+          assert.ok(settled > 20, `the last chord must scroll the rail: ${settled}`);
+          assert.ok(stepFrames.every((f) => Math.abs(f - settled) <= 0.5),
+            `a step under reduced motion must land instantly (settled ${settled}): ${stepFrames.map((f) => Math.round(f)).join(",")}`);
           const m = await rb.eval(currentInView);
-          assert.ok(m.inView && settled > 20, JSON.stringify(m));
+          assert.ok(m.inView, JSON.stringify(m));
           const frames = await rb.eval(sampleFrames(`flip()`));
           assert.ok(Math.min(...frames) >= settled - 0.5, frames.join(","));
         } finally {
