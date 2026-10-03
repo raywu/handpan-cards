@@ -9,12 +9,13 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -441,10 +441,6 @@ def check_node():
+@@ -509,11 +509,6 @@ def check_node():
          # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
          # non-zero exit code (F2, 2026-10-01).
          if failed or cancelled or returncode:
 -            print(f"--- {path}: failed={failed} cancelled={cancelled} "
 -                  f"exit={returncode}, its own output follows ---")
+-            print_failing(*failing_tests(out))
 -            print(excerpt(out))
 -            print(f"--- end of {path} output ---")
              problems.append(f"{path}: suite is not green")

@@ -10,12 +10,12 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -561,7 +561,7 @@ def collect_js():
+@@ -647,7 +647,7 @@ def collect_js():
          # a throwing before()/after() hook as `fail 0, cancelled > 0` with a
          # non-zero exit code (F2, 2026-10-01) - record both so verify_js, which
          # reads this artifact instead of re-running node, can see it too.
 -        if failed or cancelled or returncode:
 +        if failed:
              entry["output_excerpt"] = excerpt(out)
+             entry["failing_tests"], entry["failing_tests_omitted"] = failing_tests(out)
              any_red = True
-         files[path] = entry
