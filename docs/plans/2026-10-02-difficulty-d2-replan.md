@@ -5,7 +5,8 @@
 - **Base:** `main` @ `655a45c`. PR #203 head `0ea790dac32e68756191d6cdc02c12c996c2d170` (`0ea790d`), merge-base `154d516`. Every `index.html:N` below is at `655a45c` unless it says "PR", which means `0ea790d`.
 - **Shape:** one serial lane, continuing on PR #203's branch. No parallel split: every step edits `index.html` or `tests/e2e.test.js`.
 - **Why a re-plan:** owner, 2026-10-02: "If D2 fails again, take a step back, regroup and design a prompt to draft a plan to address all foreseeable problems and run /plan-eng-review and/or /plan-design-review to retackle D2." D2 failed its fifth review at `0ea790d`.
-- **Status:** drafted. `/plan-design-review` ran 2026-10-03 (Review log; amendments are marked "DR-n" where they land). `/plan-eng-review` ran 2026-10-03 (Review log; amendments are marked "ER-n" where they land, and §4.3.1 supersedes §4.3 wherever the two differ). Four ledger decisions would be reversed by the recommendation; see "Owner decisions needed" (§6) before spawning the lane past step 3.
+- **Amended 2026-10-03 (owner decision, binding): the select is dropped; the control is FIVE mutually exclusive buttons.** Flash cards: NAME -> NOTES, NOTES -> NAME. Progression: BASIC, INTERMEDIATE, ADVANCED. `#modeS` goes away. This reverses D-0 knowingly. Everything about the select below (RP-1's recommendation, the Select states table, K-7 to K-9, K-13, K-15, K-16, OD-1 to OD-4, OD-9) is **superseded** and kept as history; the binding text is F-10 to F-15, RP-15 to RP-18, §4.1a, §4.2a, §6.3, §7 steps 4-12 and §7.1a. Where an older paragraph and one of those disagree, those win. PR #203 is now at `2e538cc` with steps 0-3 delivered; "PR head" in the amended sections means `2e538cc`.
+- **Status:** drafted. `/plan-design-review` ran 2026-10-03 (Review log; amendments are marked "DR-n" where they land). `/plan-eng-review` ran 2026-10-03 (Review log; amendments are marked "ER-n" where they land, and §4.3.1 supersedes §4.3 wherever the two differ). Four ledger decisions would be reversed by the recommendation; see "Owner decisions needed" (§6) before spawning the lane past step 3. *(2026-10-03: the owner answered every OD; §6.3. The five-button amendment itself has NOT been through `/plan-eng-review` or `/plan-design-review`; §10 gate 6.)*
 
 ## §1 Goal and non-goals
 
@@ -21,6 +22,8 @@
 | RN-6 | No new colour, typeface or label style (parent D-10's constraint stands) |
 | RN-7 | No fix for viewports where **main** already overflows. The bar is "no worse than main", not "fits everywhere" |
 | RN-8 | No change to `tests/mutation_check.sh` |
+| RN-9 *(2026-10-03)* | No landscape multicol and no sidebar compaction rule in this lane. The owner accepted both (OD-5, OD-6) as the price of the select; the five-button design measures equal to main without either (F-11), so neither is built unless the owner asks for it on its own merits (OD-13) |
+| RN-10 *(2026-10-03)* | No new media condition. The panel ends on main's three (T-MQ) |
 
 ## §2 Findings
 
@@ -150,11 +153,93 @@ So this plan (a) removes the cost instead of trimming to pay for it, and (b) rep
 
 7,062 cells (981 widths x 2 modal classes + 384 P2 widths + 8 sidebar cells, x 3 modes) took 242 s and 243 s in two runs, one font, one root, with a second sweep competing for the machine: ~29 cells/s. A 26,000-cell grid (four heights per class) did not finish in 10 minutes and is rejected as the oracle's shape. CI timing is unmeasured; D1 saw ~2.5x local.
 
+### F-10 `#modeS` is main's control, not the lane's *(2026-10-03, read at `655a45c` and `2e538cc`)*
+
+`#modeS` exists on main: CSS `index.html:206` (`#modeS{flex:1 0 100%}`), markup `:1210`, `panelStops()` `:8355`, `onclick` `:8417`, `setMode()`'s id loop `:8427`. Two consequences. (1) Because of that `flex:1 0 100%`, main's modal `.modebar` is **always two rows**: NAME -> NOTES and NOTES -> NAME on the first, CHORD PROGRESSION alone on the second. A three-button tier row that *replaces* `#modeS` has the same row structure as main. (2) Removing it touches main-era tests and mutants, not only the lane's (§7.1a).
+
+### F-11 Five buttons under ONE heading cost nothing, anywhere, with main's own grid *(measured)*
+
+Prototype: PR head `2e538cc` with every lane-added panel rule stripped at runtime (RP-4's end state), `#modeS` and `#panel-tier-group` removed, and a `.tierbar` of three `.mode` buttons inserted in the Practice group between `.modebar` and `#panel-seq-note`. No multicol, no sidebar rule, no new media condition. Compared with main at `655a45c`, cell by cell, flash-card state (mode A) and progression state (mode S, INTERMEDIATE lit):
+
+- **594 viewports (33 widths 320-1300 x 18 heights 320-1100) x 2 states x 2 font modes = 2,376 comparisons: 0 differences.** Needed height equal to main within 0.05px, avail equal, the set of controls below the fold identical, no horizontal overflow, the tier row always one row, no label clipped.
+- Re-run on the final label mechanism (RP-17, no `display:none`) with the oracle's own measuring loop: 136 viewports x 2 states x 2 fonts = 544 comparisons, 0 differences.
+- So §4.1's budget is "= main" in every class and both states; oracle rules 1 to 4 have nothing to trade. OD-5, OD-6 and OD-8 were answers to a cost this design does not have.
+
+### F-12 Two headings do not fit where main fits *(measured)*
+
+Three variants: **one** (one heading over both rows), **twoA** (a second `.panel-group` "Progression" with its own heading), **twoB** (a second heading inside the Practice group, the cheapest two-heading form). Needed height in px, real fonts; fallback is 4-5 lower throughout with the same pattern. `!` = overflows where main fits. `~` = overflows where main also overflows.
+
+| Cell (avail) | State | main | one | twoB | twoA | twoB + multicol + sidebar rule | twoA + same |
+|---|---|---|---|---|---|---|---|
+| 320x568 (568) | flash | 494 | 494 | 512 | 522 | 512 | 522 |
+| 320x568 (568) | prog. | 542 | 542 | 560 | 570 ! | 560 | 570 ! |
+| 320x545 (545) | prog. | 542 | 542 | 560 ! | 570 ! | 560 ! | 570 ! |
+| 340x546 (546) | prog. | 542 | 542 | 560 ! | 570 ! | 560 ! | 570 ! |
+| 340x530 (530) | prog. | 542 ~ | 542 ~ | 560 ~ | 570 ~ | 560 ~ | 570 ~ |
+| 380x740 (740) | flash / prog. | 442 / 490 | 442 / 490 | 460 / 508 | 470 / 518 | 460 / 508 | 470 / 518 |
+| 768x1024 (1024) | flash / prog. | 484 / 534 | 484 / 534 | 502 / 552 | 516 / 566 | 502 / 552 | 516 / 566 |
+| 568x320 (320) | flash | 313 | 313 | 331 ! | 337 ! | 281 | 287 |
+| 568x320 (320) | prog. | 360 ~ | 360 ~ | 378 ~ | 384 ~ | 328 ~ | 334 ~ |
+| 601x360 (360) | flash | 313 | 313 | 331 | 337 | 281 | 287 |
+| 601x360 (360) | prog. | 360 | 360 | 378 ! | 384 ! | 328 | 334 |
+| 616x364 (364), 634x370 (370) | prog. | 360 | 360 | 378 ! | 384 ! | 328 | 334 |
+| 667x375 (375) | flash | 313 | 313 | 331 | 263 | 263 | 263 |
+| 667x375 (375) | prog. | 375.8 (0.8 over, inside the oracle's 1px tolerance) | 375.8 | 393.8 ! | 325.8 | 269.8 | 275.8 |
+| 844x390 (390) | flash / prog. | 263 / 310 | 263 / 310 | 281 / 328 | 263 / 310 | 263 / 263 | 263 / 263 |
+| 1024x700 sidebar (688) | flash | 612 | 612 | 630 | 644 | 574 | 580 |
+| 1024x700 sidebar (688) | prog. | 677.8 | 677.8 | 695.8 ! | 709.8 ! | 639.8 | 645.8 |
+
+A second heading costs **+18px** as twoB (+17 fallback) and **+28 to +32px** as twoA. On main's grid that newly overflows in four places where main fits: portrait 320-359 wide in progression state (main's slack is 3-26px there), 568x320 in flash-card state (main has 7px), landscape 601-634 wide in progression state (main has 0-10px; twoB also at 640-667), and the sidebar at 1024x700 in progression state (main has 10.2px). **Even with the multicol and the sidebar rule the owner accepted, twoB still newly overflows in portrait 320-359 wide (to ~379 under fallback), 542-559 tall (538-554 fallback), progression state** - e.g. 320x545 and 340x546, by 14-15px, pushing the Resources row below the fold - and twoA additionally fails 320x568 itself by 2px under real fonts. Nothing in the plan's toolkit recovers 18px in portrait at 320 wide without a height-conditional trim, which is the thing F-3 and F-8 exist to forbid.
+
+**Verdict, per the owner's own rule ("if two headings overflow anywhere main fits, fall back to ONE heading and say so plainly"): two headings overflow where main fits, so the plan ships ONE heading, "Practice", over both rows.** What that loses is stated in RP-15 and put back to the owner as OD-12.
+
+### F-13 Full tier labels fit in portrait; they do not fit in the sidebar or in parts of landscape *(measured)*
+
+Label widths in the `.mode` font (px):
+
+| Label | Real | macOS fallback | CI Linux fallback (PR #203 run 37109352653) |
+|---|---|---|---|
+| BASIC | 35.4 | 36.3 | 36.30 |
+| INTERMEDIATE | 85.8 | 92.8 | 92.73 |
+| ADVANCED | 65.6 | 65.5 | 65.45 |
+| INT. | 22.2 | 23.9 | unmeasured |
+| ADV. | 28.1 | 27.4 | unmeasured |
+
+With `.tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}` (content-proportional widths; equal widths do **not** fit INTERMEDIATE at 320) the spare width per button beyond its 6px paddings, minimum over the F-11 grid:
+
+| Class | Bar width | Labels | Min spare, real | Min spare, fallback |
+|---|---|---|---|---|
+| Portrait modal, 320 wide | 292 | BASIC / INTERMEDIATE / ADVANCED | 15.7 | 13.2 |
+| Portrait big ramp (P2) | 420 | full | 53+ | 53+ |
+| Landscape modal (h <= 520), every column count | 200-420 | BASIC / INT. / ADV. | 19.8 | 19.9 |
+| Sidebar | 199 | BASIC / INT. / ADV. | 15.8 | 15.1 |
+
+Full labels tried everywhere (equal-width flex, the least favourable sizing): they **overflow** in the sidebar (INTERMEDIATE by 12.7 real / 17.3 fallback; ADVANCED too), in landscape at 640-667 wide where the grid has three columns (INTERMEDIATE by 2-6.1 real / 6.2-10.5 fallback), at 860 wide four columns (5 / 9.3), and are marginal at 932 (+3.2 real / -0.8 fallback). They fit in landscape at 568-634 (two columns), around 844, and from ~1000 (7.3 fallback at 1000, 22 at 1164).
+
+So abbreviation is **required** in the sidebar and in landscape at roughly 640-700 and 860-960 wide, and **not required** in any portrait cell from 320 up. RP-17 abbreviates by layout class (all of landscape, all of the sidebar), which over-abbreviates at 568-639, ~800-859 and from ~1000 wide in landscape, where the full words would fit; that trade is OD-11.
+
+### F-14 What reads `#modeS` and the tier buttons at the PR head *(read end to end at `2e538cc`, then cross-checked by searching the bare identifiers; not from one pattern)*
+
+- **CSS:** `#modeS{flex:1 0 100%}` (`:220`); `.modebar .mode{flex:1 1 0}` (`:300`, stays); `.tierbar` rules (`:249-251`); `#panel-tier-group` (`:277`, `:359`, `:418`); the `.tierbar .mode` trim (`:456`).
+- **Markup:** `#modeA`, `#modeB`, `#modeS` (`:1536-1538`); `#panel-tier-group` holding `.tierbar` and three buttons with `aria-describedby="panel-tier-note" disabled` (`:1558-1565`); `#panel-tier-note` (`:1567`).
+- **State:** `let mode = ["A","B","S"].includes(store.mode) ...` (`:6721`); `let tier = ...` defaulting to `"basic"` (`:6724`); `save()` writes `mode` and `tier` (`:6758-6759`).
+- **Readers of `mode === "S"`** (unchanged by this amendment): `:7475`, `:7494`, `:7512`, `:7529`, `:7560` (with the `HPE.sequence.pick(deck(), Math.random, seq && seq.chords, tier)` call at `:7561`), `:8718`. `TIER_LABEL` (`:7394`) feeds the empty-tier message (`:7398`).
+- **Stops:** `panelStops()` id list (`:8745-8756`: trigger, modeA, modeB, modeS, seq-source-link, tier-basic, tier-intermediate, tier-advanced, deck-add, the print controls, three Resources links, filtered by `isStop`).
+- **Handlers:** `onclick` for modeA / modeB / modeS (`:8809-8811`, each `setMode(x); closePanel()`); `syncTierUI()` (`:8817`); `setTier(t)` (`:8825`: `tier = t; save(); syncTierUI(); seq = null; setOrder(); render(); closePanel();`); tier `onclick`s (`:8833-8835`); `setMode(m)` (`:8841-8882`: the modeA/B/S id loop, `seqNote.hidden`, the tier `disabled` / `aria-describedby` loop, `#panel-tier-note`, footer `.seq`, `seq-style`, the shuffle button, `if (wasS !== (m === "S")) setOrder(); render();`); boot (`:9244`: `syncTierUI(); setOrder(); buildChips(); setMode(mode);`).
+- **Outside `index.html`:** `tests/e2e.test.js` (39 lines naming `modeS`, 35 naming a tier id; the clusters are near `:1372`, `:3057`, `:7203-8418`, `:9214`); `tests/app.test.js` (`:4019-4030`, `:4529`, `:4614`, plus 33 `setMode(` calls that stay valid); `tools/sandbox.js` (`:51` id list with `modeS`; `:55` tier ids and `panel-tier-note`); `tools/probe/panel_fit.js` (`:353` `labelWidths` reads `#modeS`'s computed style; `:480` the label list).
+- **Mutants** whose target or context names these (553 patches at `2e538cc`): §7.1a.
+
+### F-15 What the owner's design cannot have, by measurement
+
+1. **Two headings** (F-12). One heading ships.
+2. **Full tier names everywhere** (F-13). They ship in portrait; BASIC / INT. / ADV. in landscape and the sidebar; the accessible name is the full word everywhere (RP-17).
+3. Nothing else. Five buttons, one tap to enter a tier, re-deal on the lit tier, exactly one lit, the Mode-S note in progression state: all hold at zero cost (F-11).
+
 ## §3 Decisions
 
 New ids only (`RP-n`); none reuses a parent id.
 
-- **RP-1 Layout: restructure so the selector costs no height where height is scarce, and delete every lane-added trim.** Options weighed:
+- **RP-1 Layout: restructure so the selector costs no height where height is scarce, and delete every lane-added trim.** *(SUPERSEDED 2026-10-03 as to the form of the control: the owner chose five buttons, row (b8) below and RP-15. The principle in bold, and "delete every lane-added trim", stand. The table, Structure, Select states, Landscape, Sidebar and Cost paragraphs are kept as the record of what was reviewed.)* Options weighed:
 
   | Option | Panel media conditions (main has 3) | Evidence | Verdict |
   |---|---|---|---|
@@ -162,12 +247,13 @@ New ids only (`RP-n`); none reuses a parent id.
   | (b1) Three buttons inside Practice | needs trims | +52 / +100 / +112 (F-5) | Rejected |
   | (b2) One cycling button ("tap to advance the tier") | 4 | Same footprint as a select, but hides the options and their order, and cycling fights D-11's close-on-activate | Rejected |
   | (b3) Native `<select>` beside CHORD PROGRESSION, existing landscape grid | 4 + landscape trims | +50 in landscape wherever Practice is the tallest grid cell | Rejected alone |
-  | **(b3)+(c) Select in a `.tier-row`, landscape CSS multicol, one sidebar rule** | **4** | F-6 | **Recommended** |
+  | **(b3)+(c) Select in a `.tier-row`, landscape CSS multicol, one sidebar rule** | **4** | F-6 | ~~Recommended~~ **Superseded 2026-10-03** (owner: no select) |
   | (c') Fluid `clamp()` spacing instead of the one sidebar rule | 3 | Unmeasured; a continuous function of `vh` has no edge to test at and no mutant that cleanly flips it | Rejected |
-| *(DR-1)* (b4) Three joined segments BASIC / INT. / ADV. in the select's slot | 4 | Design review, 14 cells x 2 fonts: needed height identical to the select everywhere. At 320 wide each segment is 43.7px (under the app's 44px), or 44.3px at the price of CHORD PROGRESSION wrapping to two lines under **real** fonts (129.9px label in a 129px box). Full labels do not fit (INTERMEDIATE needs 64px of a 42px segment at 320, 76 of 66 in the sidebar). Three Tab stops, not one. Keeps D-11 whole (one tap, re-pick re-deals, close on press) and has no native popup | Not recommended by the design review; put to the owner as OD-9 because it is the only always-visible form inside the budget |
+| *(DR-1)* (b4) Three joined segments BASIC / INT. / ADV. in the select's slot | 4 | Design review, 14 cells x 2 fonts: needed height identical to the select everywhere. At 320 wide each segment is 43.7px (under the app's 44px), or 44.3px at the price of CHORD PROGRESSION wrapping to two lines under **real** fonts (129.9px label in a 129px box). Full labels do not fit (INTERMEDIATE needs 64px of a 42px segment at 320, 76 of 66 in the sidebar). Three Tab stops, not one. Keeps D-11 whole (one tap, re-pick re-deals, close on press) and has no native popup | Not recommended by the design review; put to the owner as OD-9 because it is the only always-visible form inside the budget. **Superseded 2026-10-03** by (b8), which is this idea without the CHORD PROGRESSION button competing for the row |
 | *(DR-1)* (b5) Stepper `<` INT. `>` | 4 | Not prototyped. Arithmetic at 320: two 44px arrows leave 41px for the label; hides two options like the select, costs two Tab stops and needs a live region for the value | Rejected: every cost of the select and none of its platform support |
-| *(DR-1)* (b6) Render the control only in CHORD PROGRESSION | 4 | Saves the wrapped row in landscape and sidebar A/B; changes nothing at the three tight cells in mode S (the select already costs 0 at 320x568 S and the sidebar rule is still needed at 1024x700 S). Consistent with R-1 (rendered set is a function of mode) | **Reverses D-0, an owner decision.** Not recommended; nothing in the budget needs it |
-| *(DR-1)* (b7) Select enabled in every mode (choosing a tier in A/B stores it, or switches to CHORD PROGRESSION) | 4 | Zero height. Removes the "disabled with no visible reason" problem and the two-visit journey (DR-4) | **Reverses D-0's "greyed out".** Listed under OD-10 for the owner; not recommended by default |
+| *(DR-1)* (b6) Render the control only in CHORD PROGRESSION | 4 | Saves the wrapped row in landscape and sidebar A/B; changes nothing at the three tight cells in mode S (the select already costs 0 at 320x568 S and the sidebar rule is still needed at 1024x700 S). Consistent with R-1 (rendered set is a function of mode) | **Reverses D-0, an owner decision.** Not recommended; nothing in the budget needs it. Superseded 2026-10-03 |
+| *(DR-1)* (b7) Select enabled in every mode (choosing a tier in A/B stores it, or switches to CHORD PROGRESSION) | 4 | Zero height. Removes the "disabled with no visible reason" problem and the two-visit journey (DR-4) | **Reverses D-0's "greyed out".** Listed under OD-10 for the owner; not recommended by default. Superseded 2026-10-03: (b8) is this, taken to its end |
+| ***(2026-10-03, owner)* (b8) Five mutually exclusive buttons: `#modeS` removed, three tier buttons in its row, each one enters progression at its tier** | **3 (main's)** | F-11: 2,376 comparisons with main, 0 differences, on main's own grid. F-13: full labels in portrait, BASIC / INT. / ADV. in landscape and sidebar | **CHOSEN by the owner. Reverses D-0 knowingly.** Detail in RP-15 to RP-18 |
 
   **Structure.** Inside the Practice group, `.modebar` keeps NAME -> NOTES and NOTES -> NAME on its first row; its second row becomes `<div class="tier-row">` holding `#modeS` and `<select id="tier-select">` (BASIC / INTERMEDIATE / ADVANCED, easiest first). `.tier-row{display:flex; flex-wrap:wrap; gap:var(--sp-2); flex:1 0 100%}`; `#modeS{flex:1 1 150px; min-width:0}`; `#tier-select{flex:1 1 124px; min-width:0}`. **Whether the select shares the row is decided by two CSS constants (150 + 8 + 124 = 282px), not by font metrics**: it shares at every content width >= 282px (every portrait viewport >= 320) and takes its own full-width row below that (landscape columns, sidebar). A wider fallback font can make a label tight; it cannot move the wrap point. The select is styled as a `.mode` (same border, radius, background, font, 44px), `appearance:none` with an inline-SVG chevron in the existing `#c4bcab`; no new colour or face (RN-6).
 
@@ -189,6 +275,20 @@ New ids only (`RP-n`); none reuses a parent id.
 
   **Cost, stated plainly.** (1) Two of three tiers are hidden behind a tap; the selected one is always visible. (2) A native select is the platform's control: its open list is styled by the OS and is not testable here. (3) The landscape arrangement of the pre-existing groups changes (row-major grid -> column-major columns; Scales moves under Practice). (4) The sidebar is tighter at 700-759 tall. (5) At 845-1164 wide landscape the panel is 50px taller than main; it still fits at every height >= 302. (6) In landscape cells where main already scrolls (427-586 wide, up to 366 tall), a different control ends up below the fold than on main (F-6, OD-8). (7) `columns` and `break-inside` on WebKit/iOS Safari are **unverified**; CI is Chrome-only. *Added by the design review:* (8) **DR-2:** at 320 wide `#modeS` shrinks from the full row to 155px; "CHORD PROGRESSION" measures 129.9px real against a 131px content box (1.1px spare) and 132.4px under macOS fallback, where it **wraps to two lines** inside the same 44px (height and budget unchanged; measured). Together with the select's label the pair needs 284.7px real / 294.1px fallback of 292px at the prototype's paddings; with the chevron padding at 18px it is 288.1px fallback. Step 5 pins both labels, not only the select's. (9) **DR-3:** in the landscape modal the position of Scales depends on the mode (568x320: under Practice in A/B, top of column 2 in S), because column-major packing follows content height. Order is always DOM order; the place is not constant. The modal closes on a mode change, so the move is never seen live. (10) **DR-4:** the control is paired with CHORD PROGRESSION by adjacency only in portrait. In landscape and in the sidebar it is a full-width row of its own under that button, with no label; in A/B that row is a dimmed, unlabelled "INTERMEDIATE". (11) **DR-5:** with OD-4(b) accepted, a tier change in the phone modal gives no feedback beyond the select's own text: the panel covers the card and the rail, so the re-deal is seen only after the player closes the panel. And because pressing CHORD PROGRESSION closes the modal (K-5), a player in A/B needs two panel visits to reach a tier for the first time.
 
+- **RP-15 *(2026-10-03, owner; replaces RP-1's recommendation)* Five mutually exclusive buttons, one heading, main's grid.**
+  - **Markup.** Inside the Practice `.panel-group`, in this DOM order: the heading "Practice" (unchanged); `.modebar` holding only `#modeA` (NAME -> NOTES) and `#modeB` (NOTES -> NAME); `<div class="tierbar" role="group" aria-label="Chord progression">` holding `#tier-basic`, `#tier-intermediate`, `#tier-advanced` (easiest first; ids kept from the PR so `hpfc.tier` values, `TIER_LABEL` and the surviving tests keep their anchors); then `#panel-seq-note` (unchanged, `hidden` outside progression). `#modeS`, `#panel-tier-group` and `#panel-tier-note` are deleted. Each tier button is a `.mode` with `aria-pressed`, never `disabled`, no `aria-describedby`.
+  - **CSS, complete.** `.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2); margin-top:calc(var(--sp-2) - var(--sp-1))}` and `.tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}`, plus RP-17's label rules. The `margin-top` reproduces the gap main has between the two `.modebar` rows inside a group whose own gap is `--sp-1`. `#modeS{flex:1 0 100%}` is deleted. **No media condition is added and none of the lane's is kept** (RP-4, RN-10): the grid, the ramps and the sidebar are main's, byte for byte.
+  - **Why nothing wraps or moves by font.** The row is `nowrap` with three flex items sized by content plus slack; the only thing a wider font can do is eat the slack in F-13 (13.2px per button at worst). It cannot add a row. The abbreviation point is a layout class, not a measured width.
+  - **One heading.** F-12. **Stated plainly: the owner asked for two headings and gets one.** With one heading, nothing visible names the BASIC / INTERMEDIATE / ADVANCED row as "chord progression" while a flash-card mode is lit; the Mode-S note under it appears only in progression state, and the group label is for assistive technology only. A first-time player sees three unlabelled difficulty words under two flash-card buttons. OD-12 gives the owner the options that would put a visible name back and what each costs.
+  - **Cost, stated plainly.** (1) One heading, as above. (2) Abbreviated labels in landscape and in the sidebar, including some landscape widths where the full words would fit (OD-11). (3) Three more Tab stops than main in the flash-card state, two more in progression (§4.2a). (4) The tier buttons are 6px-padded, not `.mode`'s 11px, and are content-proportional rather than equal (the narrowest is INT. in the sidebar at about 52px, computed from its measured label, padding and spare width; every tier button measured 44px tall in every cell). (5) WCAG 2.5.3 Label in Name: where the visible text is "INT." the accessible name is "INTERMEDIATE", which does not contain the visible string; a voice-control user saying "click int" may miss. Accepted as a nit against the alternative of an abbreviated accessible name. (6) The words "CHORD PROGRESSION" no longer appear on any control; the footer and the Mode-S note carry the term.
+- **RP-16 *(2026-10-03)* State model: `mode` and `tier` stay as they are; only who writes them changes.**
+  - `mode` stays in `{A, B, S}`, `tier` in `{basic, intermediate, advanced}`, `hpfc.mode` and `hpfc.tier` keep their keys and values. **No storage migration**: a stored `{mode:"S", tier:"advanced"}` from the PR, or `{mode:"S"}` from main, boots into progression with ADVANCED (or the default BASIC) lit. `setMode("S")` stays as internal API (boot calls it; the oracle's `MODES = ["A","B","S"]` and 33 call sites in `tests/app.test.js` drive it); no control calls it directly any more.
+  - `setTier(t)`: sets `tier = t`; sets `mode = "S"` if it is not already; clears `prev` and deals **exactly once** at `t` (one `pick` call per tap, whether the tap entered progression or changed tier or re-pressed the lit tier); saves; re-syncs all five buttons; closes the modal panel. In the sidebar the panel stays and focus stays on the pressed button. The lane chooses how `setTier` and `setMode` share the work; the acceptance is the single deal and the state after it, not the call graph.
+  - `syncTierUI()`: a tier button is `.on` and `aria-pressed="true"` **iff `mode === "S"` and it is the current tier**. `setMode()` calls it, so leaving progression for A or B unlights all three and lights exactly one flash-card button. Invariant, tested at boot, after every tap and after a reload: **exactly one of the five has `aria-pressed="true"` and `.on`, and the other four have `aria-pressed="false"`.**
+  - In a flash-card state the stored tier is remembered but not shown; tapping any tier overwrites it. The owner's design has no "resume progression at the remembered tier" control and the plan adds none.
+  - `setMode()` loses the tier `disabled` / `aria-describedby` loop and the `#panel-tier-note` line; it keeps `seqNote.hidden = m !== "S"` (owner: the Mode-S note stays, shown in progression), the footer class, `seq-style` and the shuffle button.
+- **RP-17 *(2026-10-03)* Tier labels: both strings in the button, swapped by clipping, never by `display:none`.** Each tier button's content is `<span class="t-full">INTERMEDIATE</span><span class="t-abbr" aria-hidden="true">INT.</span>` (BASIC / BASIC, ADVANCED / ADV.). By default `.t-abbr` is visually clipped (`position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap`) and `.t-full` is in flow. Inside the two **existing** blocks `(max-height:520px)` and `(min-width:1024px) and (min-height:700px)` the two swap: `.t-full` takes the clip, `.t-abbr` is in flow. Consequences: the accessible name is the full word in every class (read from the AX tree in the prototype at 380x740, 568x320 and 1280x800: "BASIC", "INTERMEDIATE", "ADVANCED" in all three); nothing is `display:none`, so T-R1 as delivered in step 3 (which rejects `display:none` on **any** element inside the panel, stricter than §4.4's wording) passes unedited; the spans are not controls, so oracle rule 5 and R-1 are untouched; no media condition is added. Measured with the oracle's own loop: 544 comparisons with main, 0 differences (F-11).
+- **RP-18 *(2026-10-03)* The multicol and the sidebar compaction rule are not built.** They were the select's price (old RP-1) and the owner accepted them as such. F-11 shows the five-button design owes nothing: building them anyway would change the landscape arrangement of four pre-existing groups, add the plan's only new media condition, bring back FC-13 (multicol on WebKit, unverified) and F-6's below-the-fold trades, for no cell that needs it. They would also not rescue two headings (F-12). If the owner wants either on its own merits it is a separate lane with its own oracle run: OD-13.
 - **RP-2 Reachability: rendered state is the only truth, enforced from both sides.**
   - *Rule R-1 (CSS side):* no stylesheet rule may unrender a panel control. The only things that take a control out of the panel are the `hidden` attribute written by `setMode()` and the panel being closed. Consequence: **the set of rendered controls is a function of mode alone, identical at every viewport.**
   - *Rule R-2 (JS side):* one helper, `isStop(el)` = `el && !el.disabled && el.getClientRects().length > 0`. (`getClientRects`, not `offsetParent`: the panel is `position:fixed`, and an element with `visibility:hidden` or zero size is a separate matter R-1 covers.) `panelStops()` becomes its fixed id-order list filtered by `isStop`, and the `seqNote.hidden` special case is **deleted** - a link inside a `hidden` paragraph has no client rects, so the general rule already covers it. The sheet listener at PR `:8752` replaces its inline `el && !el.disabled` with `isStop`. `cycleTabStops` gains only an empty-list guard before `preventDefault()`. *(ER-5)* The guard has its own test, `Tab with no stops neither throws nor swallows the key` (unit level, `tests/app.test.js`: `cycleTabStops([], e)` returns without calling `e.preventDefault()`); K-12 does not exercise it. The filter lives in the two list builders, not also inside `cycleTabStops`, so each can be mutated and killed separately.
@@ -217,7 +317,22 @@ New ids only (`RP-n`); none reuses a parent id.
 
 Worst-case content: mode S (note and link visible) with the longest option, INTERMEDIATE, selected. The select's width never depends on the selected option (it is a flex item sized by constants), which step 5 asserts.
 
+#### §4.1a Budget, five buttons *(2026-10-03; replaces the table above, which is kept as the select's record)*
+
+Flash = `mode` A or B. Prog. = `mode` S with INTERMEDIATE lit (the widest label) and the note and link visible. "= main" means equal within 0.5px, in both font modes.
+
+| Class | Where | Flash | Prog. | Tier labels |
+|---|---|---|---|---|
+| P1 | h 521-699, all widths; h >= 700 below 640 wide | = main (442; 494 at 320-359 wide) | = main (490; 542) | full |
+| P2 | w 640-1023, h >= 700 | = main (484) | = main (534) | full |
+| L | h 320-520 | = main at every width | = main at every width | BASIC / INT. / ADV. |
+| SB | w >= 1024, h >= 700 | = main (612) | = main (677.8) | BASIC / INT. / ADV. |
+
+There is no "SB compact" band and no "<= max(main, 320)" row: the candidate is not allowed to be lower than main either, because any difference means the row structure moved. Step 5 asserts the real-font numbers as absolutes and "= main" by running the oracle's measuring function on both roots. Label budget: every tier button's visible label has at least **2px** of spare width beyond its padding in all three font environments (ER-10); measured minimum is 13.2px (F-13), Linux for INT. and ADV. pending step 5's CI printout.
+
 ### §4.2 Keyboard and accessibility state table
+
+*(2026-10-03: K-1 to K-4, K-7 to K-9, K-13, K-15 and K-16 below describe the select and are SUPERSEDED by §4.2a. K-5, K-6, K-10, K-11, K-12 and K-14 are restated there.)*
 
 Controls in DOM order: `#settings-trigger` (modal only), `#modeA`, `#modeB`, `#modeS`, `#tier-select`, `#seq-source-link`, `#deck-add`, FULL DECK PDF, CHORD-ONLY PDF, `#print-paper-select`, `#res-handpaner`, `#res-dingandtones`, `#res-trainingcards`. Viewport classes share one row when their behaviour is identical by R-1; each test still runs at one viewport from **every** class it names (320x568, 768x1024, 568x320, 683x330, 844x390 for the modal; 1024x700 and 1280x800 for the sidebar).
 
@@ -245,7 +360,46 @@ Controls in DOM order: `#settings-trigger` (modal only), `#modeA`, `#modeB`, `#m
 
 Not testable here and marked unmeasured: the open native list (Escape closing the list before the panel; arrow keys committing a value per keypress on Windows/Linux Chrome but not on macOS), iOS's picker wheel, real screen readers. OD-4 exists because of the second of those.
 
+#### §4.2a Five buttons *(2026-10-03, binding)*
+
+Controls in DOM order: `#settings-trigger` (modal only), `#modeA`, `#modeB`, `#tier-basic`, `#tier-intermediate`, `#tier-advanced`, `#seq-source-link`, `#deck-add`, FULL DECK PDF, CHORD-ONLY PDF, `#print-paper-select`, `#res-handpaner`, `#res-dingandtones`, `#res-trainingcards`. `panelStops()` lists them in exactly this order (the PR head lists the link *before* the tiers; that order is now wrong). Each test runs at one viewport from every class it names: 320x568, 768x1024, 568x320, 683x330, 844x390 for the modal; 1024x700 and 1280x800 for the sidebar.
+
+| Row | Class | State | Tab order (Shift+Tab is the exact reverse) | Stops | Test |
+|---|---|---|---|---|---|
+| K-1a | modal, portrait + landscape | flash (A, B) | trigger, modeA, modeB, tier-basic, tier-intermediate, tier-advanced, deck-add, 2 print buttons, paper select, 3 Resources links, wraps | **13** (main: 11) | `Tab cycles exactly the thirteen flash-card stops in the modal at every viewport class` |
+| K-2a | modal, portrait + landscape | prog. (S) | as K-1a with `seq-source-link` after tier-advanced | **14** (main: 12; PR head: 15) | `Tab cycles exactly the fourteen progression stops in the modal at every viewport class` (includes 683x330 and 844x340, Blocker 1's repros) |
+| K-3a | sidebar | flash | native order: K-1a without the trigger | 12 | `the sidebar's native Tab order is the panel's DOM order` |
+| K-4a | sidebar | prog. | native order: K-2a without the trigger | 13 | same test, progression |
+
+State of the five buttons (there is no disabled state, no dimmed state, no describing note):
+
+| State | `#modeA` | `#modeB` | lit tier | other two tiers | `#panel-seq-note` |
+|---|---|---|---|---|---|
+| `mode` A | `aria-pressed="true"`, `.on` | false | none: all three `aria-pressed="false"`, not `.on`, **enabled**, opacity 1, Tab stops | - | `hidden` |
+| `mode` B | false | `aria-pressed="true"`, `.on` | none, as above | - | `hidden` |
+| `mode` S, tier t | false | false | `#tier-t`: `aria-pressed="true"`, `.on` | `aria-pressed="false"` | shown; link is a stop |
+
+| Row | Input | Where | Expected | Test |
+|---|---|---|---|---|
+| K-5a | Enter, Space or click on `#modeA` / `#modeB` | modal | `mode` set; exactly one of five pressed (the flash-card button); all three tiers unlit; `hpfc.tier` unchanged; panel closes; focus on `#settings-trigger` | `a flash-card button unlights every tier and leaves the stored tier alone` |
+| K-6a | same | sidebar | as K-5a; panel stays; focus stays on the pressed button | `in the sidebar a button press re-states all five and keeps focus` |
+| K-7a | Enter, Space or click on an unlit tier, from `mode` A or B | modal | `mode` becomes S and `tier` the tapped one **in one tap**; both saved to `hpfc`; `prev` cleared; exactly one `pick` call, at that tier; the note is shown; panel closes; focus on the trigger; exactly one of five pressed | `tapping a tier from a flash-card mode enters progression at that tier in one tap and closes the panel` |
+| K-8a | same, from `mode` S (a different tier) | modal | as K-7a without the mode change | existing `clicking a tier presses it exclusively, persists, re-deals at that tier, and closes the panel` (kept; its setup no longer presses `#modeS`) |
+| K-9a | Enter, Space or click on the **lit** tier | modal, S | re-deal: one `pick` call, a new deal, panel closes (D-11 as originally written) | existing `clicking the already-pressed tier still re-deals` (kept) |
+| K-10a | Escape | modal, focus on any stop including a tier | panel closes, focus on the trigger, `mode` and `tier` unchanged | existing Escape test, extended to start from `#tier-intermediate` |
+| K-11 | Escape | sidebar | no-op | existing |
+| K-12 | Tab or Shift+Tab with focus outside the stop list | modal | lands on the first / last stop | `Tab from outside the stop list enters the panel cycle` (delivered in step 2, characterization) |
+| K-13a | any | all classes | from the AX tree: each tier button's role is button, its name is exactly "BASIC", "INTERMEDIATE" or "ADVANCED" at 380x740 (full labels drawn), at 568x320 and at 1280x800 (abbreviations drawn); pressed state matches the table above; the three sit in a group named "Chord progression"; none has a description | `the tier buttons are named in full where the label is abbreviated, and grouped as Chord progression` |
+| K-14a | reload | all | stored `{mode:"S", tier:t}` boots with exactly `#tier-t` pressed; stored `{mode:"A", tier:t}` boots with exactly `#modeA` pressed and no tier lit; a stored `mode:"S"` with a corrupt tier boots with BASIC lit | existing `a corrupted hpfc.tier reads back as basic...` extended, plus `exactly one of the five practice buttons is pressed at boot, after every press, and after a reload` |
+| K-16a | Tab to a tier | modal and sidebar | computed outline is the global focus ring (2px, `#e3b25c`); no tier-specific outline rule exists | folded into K-13a's test |
+
+The old K-14 (landscape reads in DOM order) is dropped with the multicol: the landscape grid is main's, and review 5's nit 3 was about the lane's `order` rules, which RP-4 deletes. T-MQ landing on main's three conditions and the oracle's "= main" are what pin it.
+
+**How the abbreviation is exposed to assistive technology.** The full word is real text inside the button in every class (visually clipped where the abbreviation is drawn); the abbreviation is `aria-hidden`. So the name is "INTERMEDIATE" everywhere, there is no `aria-label` on the buttons to drift from the text, and no `title`. Not testable here: how VoiceOver, TalkBack or NVDA actually speak it; voice-control matching on the abbreviated label (RP-15 cost 5).
+
 ### §4.3 The acceptance oracle
+
+*(2026-10-03 amendments to this section and §4.3.1, binding: (1) **Modes** stay A, B, S, driven by `setMode()` as delivered. (2) **Content:** INTERMEDIATE lit, i.e. `tier = "intermediate"` before the mode loop; in A and B no tier is lit. (3) **Edge list on the final design:** widths {640, 1024}, heights {520, 700}. No 759. (4) **OD-8 is answered: accepted.** `OD8_FAIL_BASE_OVERFLOW` becomes `false`, with its unit test (`tests/app.test.js:4587`) and judge mutant following; on this design the count it governs is expected to be 0 anyway, because every control sits where main has it (F-11), and step 10 requires it to be **reported as 0**, not merely tolerated. (5) **Rule 2 and `#modeS`.** The judge iterates the candidate's controls, so a base-only control (`modeS`) is not judged and the tier buttons are judged by rule 3 as new controls. Rule 3's failing half therefore carries the weight for the tier row: a tier button below the fold in a cell where main fits fails. Step 4 adds a judge unit test that a base-only control is ignored and a candidate-only control below the fold fails, so that behaviour is pinned rather than incidental. (6) **`labelWidths`** (`tools/probe/panel_fit.js:353`) reads its font from `#modeA`, not `#modeS`, and the ER-10 printout lists INTERMEDIATE, ADVANCED, BASIC, INT., ADV., NAME -> NOTES; CHORD PROGRESSION is dropped. (7) **OD-7:** floor 320, the default, confirmed.)*
 
 - **Where:** `tools/probe/panel_fit.js` (CLI and library). Session probe scripts live nowhere else from now on. `tests/e2e.test.js` requires the library for the edge-cell tests in §4.4, so the mutation gate and the oracle share one measuring function.
 - **Run:** `node tools/probe/panel_fit.js --base origin/main` at the PR head. It extracts the base's `index.html` with `git show <base>:index.html`, serves both, and runs every cell on both roots in both font modes. **If the base cannot be read, or a font mode is not the one requested, it exits non-zero. It never skips silently.**
@@ -294,8 +448,9 @@ Prototyped by the eng reviewer on main (`655a45c`) and on `0ea790d` in both font
 ### §4.4 Tests that pin the stylesheet
 
 - **T-R1** `no stylesheet rule unrenders a panel control`: CSSOM walk; fails on any rule, inside or outside `@media`, that sets `display:none`, `visibility:hidden` or `content-visibility:hidden` on a selector matching a panel control or one of its ancestors inside the panel, other than the global `[hidden]` rule.
-- **T-MQ** `the panel's media conditions are exactly the listed ones`: the derived list of **dimensional** conditions (§4.3.1; `print` also matches the panel through `*` and is excluded, which is why main counts 3 and not 4) equals a literal list of condition strings in the test. *(ER-3, ER-4)* The list is a ratchet, never committed red: step 3 pins the seven conditions that remain once the 356 blocks are gone, step 6 shortens it as the lane's rules are deleted, step 7 lands it at main's three plus the sidebar compaction rule. Adding a condition means editing this list in the same PR, in view of the reviewer.
-- **T-EDGE** *(ER-13: three tests, so each can go red in its own step and be named in a `# suite:` line)* `the panel meets its budget at every derived edge in portrait`, `... in landscape`, `... in the sidebar`, each in both font modes: §4.1's numbers at edge-1 / edge / edge+1 in both dimensions, modes A, B, S, using the oracle's measuring function. This is the committed, mutation-gated slice of the sweep.
+- **T-MQ** *(2026-10-03: the ratchet now ends at **main's three** conditions, in step 6; there is no fourth. At `2e538cc` it pins seven, `tests/e2e.test.js:1499-1505`.)* `the panel's media conditions are exactly the listed ones`: the derived list of **dimensional** conditions (§4.3.1; `print` also matches the panel through `*` and is excluded, which is why main counts 3 and not 4) equals a literal list of condition strings in the test. *(ER-3, ER-4)* The list is a ratchet, never committed red: step 3 pins the seven conditions that remain once the 356 blocks are gone, step 6 shortens it as the lane's rules are deleted, step 7 lands it at main's three plus the sidebar compaction rule. Adding a condition means editing this list in the same PR, in view of the reviewer.
+- **T-LABEL** *(2026-10-03, new)* `every tier label fits its button with 2px to spare, in one row, in both font modes`: at 320x568, 380x740, 768x1024, 568x320, 640x320, 667x375, 860x400, 1024x700 and 1280x800, in flash and progression state: the three tier buttons share one top edge; each button's `scrollWidth <= clientWidth`; the in-flow label's width is at most the button's content box minus 2px; the in-flow label is the full word in portrait and the abbreviation in landscape and the sidebar; each button is 44px tall and at least 44px wide.
+- **T-EDGE** *(2026-10-03: budget is §4.1a's; edges are widths {640, 1024} and heights {520, 700})* *(ER-13: three tests, so each can go red in its own step and be named in a `# suite:` line)* `the panel meets its budget at every derived edge in portrait`, `... in landscape`, `... in the sidebar`, each in both font modes: §4.1's numbers at edge-1 / edge / edge+1 in both dimensions, modes A, B, S, using the oracle's measuring function. This is the committed, mutation-gated slice of the sweep.
 
 ## §5 Plan versus shipped: every D-decision and D2 acceptance line
 
@@ -325,7 +480,27 @@ Provenance matters here: of the decisions below only **D-0** and the four dated 
 | Step 5 empty tier, step 6 rail, step 7 existing contracts | - | Unchanged | Met |
 | Step 8 >= 4 `uid_*` mutants | - | §7.1 lists 23 app mutants plus the judge's (ER-12) | Met |
 
+### §5a After the owner's 2026-10-03 decision *(supersedes the rows above where they differ)*
+
+| Item | As written | Five-button design | Status |
+|---|---|---|---|
+| D-0 (owner) | Selector always visible, greyed out outside CHORD PROGRESSION | Always visible, **never greyed**: a tier is a way into progression | **Reversed by the owner, knowingly, 2026-10-03** |
+| D-7 persistence | `hpfc.tier`, guarded read | Unchanged; no migration (RP-16) | Met |
+| D-8 placement | Own `.panel-group`, heading "Difficulty" | Inside Practice, in `#modeS`'s row; no heading of its own (F-12) | **Changed by the owner's design; the two-heading wish is unmet, see OD-12** |
+| D-9 layout | Three `.mode` buttons; row >= 348px else column; container query | Three `.mode` buttons, **always one row**, no container query, abbreviated in landscape and sidebar | Changed; "never a 2+1 row" is now **met** (nowrap, T-LABEL) and "single column in the sidebar" is superseded |
+| D-10 greyed state | `disabled`, opacity .5, note, `aria-describedby` | None of it exists | **Moot (D-0 reversed)** |
+| D-11 interaction | Press = save, re-deal, close panel; pressing the current tier re-deals | Exactly that, plus: a press from A or B also enters progression | **Met as originally written** (OD-4 moot) |
+| D-12 rail | One line, scrolls (owner) | Kept (RN-5) | Met |
+| Owner: a control offscreen where main shows it is a regression | - | Every pre-existing control sits where main has it (F-11); the new ones are judged by rule 3 | Met; OD-8's refinement is recorded but has nothing to excuse |
+| Owner: Mode-S note stays, shown in progression | - | `#panel-seq-note` unchanged, after the tier row | Met |
+| Owner: two headings | "flash cards" / "progression" | One heading | **Not met; measured impossible without new overflow (F-12). Said plainly in RP-15; OD-12** |
+| Owner: full labels where they fit, BASIC / INT. / ADV. only where not | - | Full in portrait; abbreviated in all of landscape and the sidebar, which includes landscape widths where full would fit | **Met in portrait and sidebar; over-abbreviated in part of landscape. OD-11** |
+| Step 3 `panelStops()` lists the three tier buttons | - | Listed, before the link (DOM order) | Met |
+| Step 2 "every button >= 44px tall", "no new colour, no new font family" | - | Unchanged `.mode` skin | Met |
+
 ## §6 Owner decisions needed
+
+*(2026-10-03: every decision in §6, §6.1 and §6.2 has been answered by the owner; the answers are in §6.3, which also lists the new ones. The tables below are the record of what was asked.)*
 
 None of these is taken by this plan. Steps 1-3 of the lane need none of them and can start now. *(ER-13)* Steps 4 onward consume OD-1 to OD-6, OD-8 and OD-9 (which step consumes which is in §6.2); OD-7 and OD-10 have defaults that ship unless the owner answers otherwise (RP-6's floor at 320; no cue).
 
@@ -381,7 +556,35 @@ Added by `/plan-eng-review`. Nothing here is decided. The engineering view only:
 | OD-9 | **Select** | steps 4, 5 | Segments: run the oracle on the segment prototype **before** step 4; OD-4 falls away (K-7 as D-11 wrote it, K-15 and its mutant dropped); K-2 is 15 stops and K-4 14; step 5's label-fit tests and three `uid_css_tier_*` mutants are rewritten for three 43.7px segments at 320; ER-10's 2px rule has nothing to give at 320 and the lane is likely to stop there |
 | OD-10 | (a) | none | (b) or (c): new CSS, a T-EDGE re-run and one mutant; (d) re-opens D-0 and K-1/K-3 |
 
-**If OD-1 is declined.** The three-button structure stays, and the owner is choosing between two things the measurements say cannot both hold (F-5): either named bands where the panel scrolls although main does not, or viewport-conditional trims. The lane then keeps steps 1-3 and 7-12, replaces steps 4-6 with "class-wide trims, judged only by the oracle", and this plan makes **no convergence promise** for that path.
+*(Moot since 2026-10-03: OD-1 was neither accepted nor declined; the owner chose five buttons, RP-15.)* **If OD-1 is declined.** The three-button structure stays, and the owner is choosing between two things the measurements say cannot both hold (F-5): either named bands where the panel scrolls although main does not, or viewport-conditional trims. The lane then keeps steps 1-3 and 7-12, replaces steps 4-6 with "class-wide trims, judged only by the oracle", and this plan makes **no convergence promise** for that path.
+
+### §6.3 Owner answers, 2026-10-03, and the decisions that remain
+
+Source for every row: the owner's instruction of 2026-10-03, relayed by the coordinating session.
+
+| # | Answer | Effect on this plan |
+|---|---|---|
+| OD-1 | **Moot.** No select | RP-1's recommendation superseded by RP-15 |
+| OD-2 | **Moot.** The owner asked for two headings instead; measured not to fit (F-12), so one heading, by the owner's own fallback rule | RP-15; OD-12 |
+| OD-3 | **Moot.** No dimmed state, so no note explaining it. `#panel-tier-note` is deleted | RP-16 |
+| OD-4 | **Moot.** D-11 as originally written: a press closes the panel; pressing the lit tier re-deals | K-7a to K-9a |
+| OD-5 | **Accepted as recommended** (landscape multicol) | **Not built: nothing needs it** (F-11, RP-18). Put back as OD-13 so the acceptance is not silently dropped |
+| OD-6 | **Accepted as recommended** (sidebar compaction at 700-759 tall) | **Not built**, same reason. OD-13 |
+| OD-7 | **Default**: oracle fit floor 320 tall | RP-6 stands |
+| OD-8 | **Accepted as recommended**: where main already overflows, judge by total scroll | `OD8_FAIL_BASE_OVERFLOW = false` (§4.3). On this design the governed count is expected to be 0 |
+| OD-9 | **Moot.** Neither the select nor the three-segment form beside CHORD PROGRESSION: `#modeS` is gone and the three tiers take its row | RP-15 |
+| OD-10 | **No cue** | Nothing built. See OD-12 for what "no cue" now leaves unsaid |
+| Tier labels | Full names where they fit; BASIC / INT. / ADV. only where they do not; full names always available to screen readers | RP-17; OD-11 |
+| Mode-S note | Stays, shown in progression | RP-16 |
+| D-0 | Reversed, knowingly | §5a |
+
+**New, raised by the five-button measurements. Owner-only; each has a default that ships unless the owner says otherwise, and none blocks step 4.**
+
+| # | Decision | Default (planner's recommendation) | Alternative and its measured cost |
+|---|---|---|---|
+| OD-11 | Where the tier labels abbreviate. The owner asked for abbreviation "only where they do not fit". Full labels do not fit in the sidebar or in landscape at ~640-700 and ~860-960 wide (F-13) | **By layout class: all of landscape (h <= 520) and all of the sidebar.** Zero new media conditions; the switch point is not a font measurement. It **over-abbreviates** at 568-639, ~800-859 and from ~1000 wide in landscape, where the full words would fit | Abbreviate only in the measured bands: about three new width-conditional rules inside the landscape block, whose edges are the grid's column-count transitions and move with font metrics (INTERMEDIATE is 85.8px real, 92.8 fallback). That is the sub-pixel-constant pattern FC-11 names, and T-MQ's list would grow from three to about six. Not recommended |
+| OD-12 | One heading, not the two the owner wanted (F-12), and with OD-10 answered "no cue" nothing visible says the lower row is chord progression while a flash-card mode is lit | **One heading, "Practice", unchanged.** The row is named for assistive technology by its group label | (a) Two headings anyway (twoB), accepting **new scroll where main fits**: portrait 320-359 wide (to ~379 fallback) x 542-559 tall in progression state, by up to 18px, Resources row below the fold; plus the multicol and the sidebar rule become mandatory again for landscape and 1024x700 (OD-13), with FC-13's WebKit risk. Needs the owner to waive "no worse than main" for that band. (b) Reword the single heading at zero height, e.g. "Flash cards / Progression" (not measured for width at 199px in the sidebar; the lane would measure before taking it). (c) Rename the group label only (assistive technology), zero visible change |
+| OD-13 | The multicol (OD-5) and the sidebar compaction (OD-6) the owner accepted are no longer needed by anything | **Do not build either in this lane** (RP-18, RN-9) | Build them as their own lane, judged by the oracle, if the owner wants the landscape regrouping or the tighter sidebar for their own sake. Measured side effect with five buttons: landscape needed drops 45-113px at 568-667 wide, sidebar drops 56px at 700-759 tall; F-6's below-the-fold trades and FC-13 come back |
 
 ## §7 Lane D2 (continued): step table
 
@@ -389,7 +592,7 @@ Added by `/plan-eng-review`. Nothing here is decided. The engineering view only:
 - **Owns:** `index.html` outside every `<!-- engine:... -->` region and outside the `const DECKS` line; `tests/e2e.test.js`; `tests/app.test.js`; `tools/sandbox.js`; `tests/helpers/cdp.js`; new `tools/probe/panel_fit.js`; `.github/workflows/validate.yml` (the `panel fit` job only); `tests/mutants/uid_*.patch`, `d12_*.patch` and the deletion of `d2_tier_group_margin_overlap.patch` *(ER-13)*; refreshes of ANY `tests/mutants/*.patch` the edit makes stale; `docs/plans/2026-10-02-sequence-difficulty.md` (D-8 to D-12 text and ledger rows only) and this file's Review log.
 - **Never touches:** `src/engine/*`, engine regions, `data/decks.json`, the `const DECKS` line, `tests/mutation_check.sh`, `tests/sequence.test.js`, anything of D3's, the print pipeline.
 - Tests come first in every step: the Acceptance column's first clause is always the red test.
-- *(ER-3)* **Every push leaves every CI job green except `panel fit`**, which is expected red from step 1 until step 7. CI's `data integrity` job runs `python3 tools/refresh_mutants.py --check` and the mutation shards treat a red baseline suite as broken, so: no test is committed red; each step that edits `index.html` or renames a test refreshes the stale patches **in the same push** (commit the change first, then run the refresh tool, then commit its output: parent A-16); and a mutant whose target or killing test a step deletes is deleted or rewritten in that step, not in step 9. Step 9 adds the new mutants and proves the table; it is not where staleness is paid off.
+- *(ER-3)* **Every push leaves every CI job green except `panel fit`**, which is expected red from step 1 until step 7 *(2026-10-03: until step 6)*. CI's `data integrity` job runs `python3 tools/refresh_mutants.py --check` and the mutation shards treat a red baseline suite as broken, so: no test is committed red; each step that edits `index.html` or renames a test refreshes the stale patches **in the same push** (commit the change first, then run the refresh tool, then commit its output: parent A-16); and a mutant whose target or killing test a step deletes is deleted or rewritten in that step, not in step 9. Step 9 adds the new mutants and proves the table; it is not where staleness is paid off.
 
 | # | Step | Acceptance | Verify |
 |---|---|---|---|
@@ -397,16 +600,19 @@ Added by `/plan-eng-review`. Nothing here is decided. The engineering view only:
 | 1 | **Oracle first.** Unit tests for the judge (six rules of §4.3 on synthetic cells, the font-mode check and the condition-grammar whitelist of §4.3.1) red, then `tools/probe/panel_fit.js`; the e2e font assertion fixed (ER-1); then the CI job with its 30-minute timeout | judge tests green; the grammar test rejects `(width >= 640px)`, `(max-height: 30em)` and `(orientation: landscape)`; the fallback job prints the four label widths (ER-10); rule 6's sidebar count on `0ea790d` reported (§4.3.1); run against `0ea790d` it is red in all three known bands and on rules 5 and 6 at h <= 356 (§4.3 "Validation"); edge list derived, containing 356, 575, 600, 761, 765 on that SHA; cells skipped = 0; wall time recorded in the PR | `node --test --test-name-pattern panel.fit tests/app.test.js`; `node tools/probe/panel_fit.js --base origin/main --candidate 0ea790d` |
 | 2 | **R-2.** Red: the CSS-injection test of RP-2 for the panel, its sheet twin, the sandbox `getClientRects` tests (RP-2, ER-6) and the empty-list test (ER-5). K-12's test is written here too but is a **characterization** test: `cycleTabStops` at PR `index.html:8732` already sends outside focus to the first stop (last with Shift), so it is green before and after. Then the sandbox stub and `isStop` in one commit, `panelStops()` without the `hidden` special case, the sheet list, the empty-list guard | the four red tests are red on the pre-step tree for the stated reason and green after; K-12 green throughout; `tests/app.test.js` fully green; the nine F-7 patches refreshed in the same push | `node --test --test-name-pattern unrendered.by.CSS tests/e2e.test.js`; `node --test tests/app.test.js` |
 | 3 | **R-1.** Red: T-R1 (the eng reviewer's prototype of it is red on `0ea790d` on exactly `(max-height: 356px) | #panel-seq-note{display:none}` and green on main). Then delete all four `(max-height:356px)` blocks, and add T-MQ pinned to the seven conditions that remain (ER-3: a ratchet, green at this commit) | T-R1 and T-MQ green; mode S at 683x330 shows the YouTube link (nit 4). Expected and stated in the PR: with the 356 trims gone, oracle rules 1 and 2 get **redder** at h 320-356 until step 6; rules 5 and 6 go to 0 in the modal | `node --test --test-name-pattern no.stylesheet.rule.unrenders tests/e2e.test.js` |
-| - | **Gate: OD-1 to OD-6, OD-8 and OD-9 answered** (ER-13; §6.2 names the step each one feeds; OD-7 and OD-10 ship their defaults unless answered)**.** PR #203 waits here with every job but `panel fit` green | recorded in §8 with date and source | - |
-| 4 | **Markup and wiring.** Red: K-1, K-2, K-5 to K-9, K-13 rewritten against `#tier-select`; the existing tier tests (persist, pass-to-pick, `prev` cleared, corrupted `hpfc.tier`, empty-tier message) re-pointed from clicks to `change`. Then replace `#panel-tier-group` with `.tier-row` + select; `setMode()` flips `disabled` / `aria-describedby`; `change` calls `setTier` | all listed tests green at every viewport class named in §4.2; `uid_tier_reclick` test and mutant removed (OD-4a); `uid_tier_group_hidden`, `uid_tier_note_shown_in_mode_s` and `d2_tier_group_margin_overlap` deleted and the four re-anchored `uid_tier_*` patches rewritten **in this step** (ER-3: their targets are gone, a refresh cannot recover them) | `node --test --test-name-pattern tier tests/e2e.test.js` |
-| 5 | **Select and row CSS.** Red: T-EDGE's portrait rows; `the tier select shares the CHORD PROGRESSION row at every portrait width from 320 and wraps to a full row below 282px of content`; `the tier select's label fits its box in both font modes` (inner width >= label + 1px at 320 wide, each of the three options); `the select's width does not change with the selected option`; 44px in every class; computed colours and font family within the existing `.mode` set; *(DR-2)* `CHORD PROGRESSION never clips beside the select, and stays on one line at 320 wide under real fonts` (scrollWidth <= clientWidth in both font modes; one line asserted under real fonts only; `#modeS` 44px tall in both); *(DR-6)* K-16 | green in both font modes; needed at 320x568 and 380x740 equals main's to 0.5px | `node --test --test-name-pattern tier.select tests/e2e.test.js` |
-| 6 | **Landscape columns.** Red: T-EDGE landscape. K-14 and `no panel group is split across columns` are written first but are **not** red on the pre-step tree where the grid already satisfies them (ER-9: grid items cannot fragment, and K-14 is red only where nit 3 shows); each is proven by its mutant instead. Then `#panel-cols`, the multicol rules, removal of the grid and of every remaining lane-added conditional rule (F-3) | green in both fonts; T-MQ's list shortened to what remains; the `break-inside` test names a cell, found by measurement, where removing the rule splits a group (if no cell in the domain does, the test constrains `#panel-cols`' height to force fragmentation, and says so); every `#settings-panel > .panel-group` selector in `index.html` (`:254`, `:259`, `:329`), the tests and the mutants is found by reading and updated; main's fit test (`tests/e2e.test.js:1429`) passes unedited | named tests; `python3 tools/refresh_mutants.py --check` |
-| 7 | **Sidebar.** Red: T-EDGE's sidebar rows; `the sidebar is compact at 759 tall and default at 760`; the real-font sidebar test extended to mode S (nit 7). Then the one rule | green in both fonts at 1024x700, x759, x760, 1280x800; T-MQ's list at its final four (main's three plus the compaction rule); the existing "keeps its default spacing at 1280x800" test passes unedited | named tests |
-| 8 | **Existing contracts.** | chrome budget, landscape budget, contrast, 44px, rail (D-12) and sidebar-overlap tests pass with no edit beyond selector updates from step 6 | CI |
-| 9 | **Mutants** per §7.1; refresh every stale patch | each new mutant applies, is killed by its named test, and its `# suite:` line selects that test and no other (ER-13: one test per mutant; one test may serve several mutants, as K-13's and T-MQ's do); every new killing test has been seen red with its mutant applied, locally, one test at a time; refresh clean; harness green | `python3 tools/refresh_mutants.py --check`; `node --test tests/mutation_harness.test.js` |
-| 10 | **Full oracle run at the head**, both fonts | 0 on rules 1, 2 (as §4.3 and OD-8's recorded answer define it), 3's failing half (§4.3.1), 4, 5, 6; rule 3's reported half and rule 2's "base overflows" count reported with their bands; skipped = 0; output pasted into the PR body | `node tools/probe/panel_fit.js --base origin/main`, and the CI `panel fit` jobs |
-| 11 | **Docs.** Parent plan: D-8 to D-12 bodies and ledger rewritten to what ships, each with the OD that changed it (nits 5, 8); PR body rewritten from scratch | no claim in the PR body that is not a line of oracle output or a named test | reviewer reads |
+| - | **Gate (2026-10-03): passed for OD-1 to OD-10** (§6.3, recorded in §8). OD-11, OD-12 and OD-13 ship their defaults unless the owner answers otherwise. Still owed before step 4: an eng review of this amendment (§10 gate 6) | recorded in §8 with date and source | - |
+| 3a | **Rework of delivered steps 1-3** (small; the rules, the judge and `isStop` stand). Red first: the judge unit test that a base-only control is ignored and a candidate-only control below the fold fails (§4.3 item 5); the OD-8 unit test flipped to expect `false`. Then `OD8_FAIL_BASE_OVERFLOW = false` with the owner's answer in the comment beside it | judge tests green; `panel fit` still red on the PR for the lane's remaining trims, and for nothing else | `node --test --test-name-pattern panel.fit tests/app.test.js` |
+| 4 | **Markup and wiring: five buttons.** Red first, each seen red for its stated reason: K-1a, K-2a, K-3a/K-4a, K-5a, K-6a, K-7a, K-13a (name and group only; the abbreviation half goes red in step 5), K-14a's `exactly one of the five practice buttons is pressed at boot, after every press, and after a reload`. Re-pointed, titles kept wherever a mutant's `# suite:` line names them: every test that presses or reads `#modeS` (F-14: 39 lines in `tests/e2e.test.js`, `tests/app.test.js:4019-4030`, `:4529`, `:4614`) now enters progression through a tier button or `setMode("S")`; `tools/sandbox.js:51` and `:55` id lists. Then: delete `#modeS`, `#panel-tier-group`, `#panel-tier-note` and their CSS; add the `.tierbar` of RP-15 with RP-17's two spans per button; `setTier` / `syncTierUI` / `setMode` per RP-16; `panelStops()` in §4.2a's order; `labelWidths` reads `#modeA` | all listed tests green at every viewport class named in §4.2a; one `pick` call per tier tap, asserted; `hpfc` written by the PR head and by main both boot correctly (K-14a). **Deleted in this step with their tests** (targets gone, a refresh cannot recover them): `the Difficulty group is present and visible in modes A, B and S`, `the Difficulty group matches the Practice group's width...`, `the tier buttons are disabled and out of the Tab order in modes A and B, enabled only in S`, `the Difficulty group never overlaps the next panel element...`; mutants `uid_tier_always_disabled`, `uid_tier_describedby_left_on_in_mode_s`, `uid_tier_note_shown_in_mode_s`, `uid_tier_group_hidden`, `d2_tier_group_margin_overlap`. **Rewritten in this step:** `sqe_panelstops_misses_modeS` (its changed line names `modeS`), `sqe_mode_not_pressed` and its test `#modeS has aria-pressed, exactly one mode button is pressed, and mode survives a reload`, `e_panel_moved_into_header` (26 changed lines touch the removed markup), main's `selecting CHORD PROGRESSION presses #modeS exclusively, shows the credit note, and survives a reload`. Every other stale patch refreshed in the same push (ER-3). T-MQ's list shortened by whatever conditions no longer match a panel element once the tier group is gone, and said so in the commit | `node --test --test-name-pattern tier tests/e2e.test.js`; `node --test tests/app.test.js`; `python3 tools/refresh_mutants.py --check` |
+| 5 | **Tier row CSS and labels.** First read the `panel fit (fallback)` job's printout of INT. and ADV. on Linux (ER-10; step 4's push produces it). Red: T-LABEL; K-13a's abbreviation half; T-EDGE portrait (§4.1a absolutes under real fonts, "= main" under both). Then RP-15's two `.tierbar` rules and RP-17's swap inside the two existing blocks | green in both font modes; >= 2px spare per label in all three font environments, else stop for the owner (RP-13); needed at 320x568, 380x740 and 768x1024 equals main's to 0.5px in flash and progression; no `display:none` added (T-R1 passes unedited) | `node --test --test-name-pattern tier.label tests/e2e.test.js` |
+| 6 | **Delete every remaining lane-added conditional rule** (F-3's list, whatever of it survived steps 3 and 4). Red: T-EDGE landscape. No multicol, no `#panel-cols` (RP-18) | T-MQ's list is **main's three**: `(max-height: 520px)`, `(min-width: 1024px) and (min-height: 700px)`, `(min-width: 640px) and (min-height: 700px)`; `--panel-gap` and any other lane custom property with no remaining reader removed; main's fit test (`tests/e2e.test.js:1429`) passes unedited; the `panel fit` job goes **green** here and stays green | named tests; `python3 tools/refresh_mutants.py --check` |
+| 7 | **Sidebar.** No new rule. Red: T-EDGE sidebar; the real-font sidebar test extended to progression state (nit 7) | green in both fonts at 1024x700 and 1280x800 (612 / 677.8 real); the existing "keeps its default spacing at 1280x800" test passes unedited | named tests |
+| 8 | **Existing contracts.** | chrome budget, landscape budget, contrast, 44px, rail (D-12), sidebar-overlap, `the menu's NAME -> NOTES and NOTES -> NAME buttons split their row evenly`, and `the mode buttons and Shuffle are 44px tall and steal nothing from their neighbours` pass with no edit beyond replacing `#modeS` as a subject | CI |
+| 9 | **Mutants** per §7.1 and §7.1a; refresh every stale patch | each new mutant applies, is killed by its named test, and its `# suite:` line selects that test and no other (one test may serve several mutants); every new killing test has been seen red with its mutant applied, locally, one test at a time; refresh clean; harness green | `python3 tools/refresh_mutants.py --check`; `node --test tests/mutation_harness.test.js` |
+| 10 | **Full oracle run at the head**, both fonts | 0 on rules 1, 2, 3's failing half, 4, 5, 6; rule 2's "base overflows" count and rule 3's reported half **reported, and expected 0**; if either is not 0 the lane says where and why before asking for review; skipped = 0; derived edges exactly widths {640, 1024}, heights {520, 700}; output pasted into the PR body | `node tools/probe/panel_fit.js --base origin/main`, and the CI `panel fit` jobs |
+| 11 | **Docs.** Parent plan: D-0 marked reversed by the owner (2026-10-03), D-8 to D-12 bodies and ledger rewritten to what ships (nits 5, 8); PR title and body rewritten from scratch | no claim in the PR body that is not a line of oracle output or a named test; the one-heading fallback and the abbreviation classes stated in the PR body in the words of RP-15 | reviewer reads |
 | 12 | **Pre-review checklist** (§7.2), then request review | every box ticked with evidence in the PR | - |
+
+*(Steps 4-12 as reviewed at `d2b882a`, written for the select, are replaced by the rows above; the old text is in this file's git history.)*
 
 ### §7.1 Mutants
 
@@ -439,7 +645,53 @@ Added by `/plan-eng-review`. Nothing here is decided. The engineering view only:
 
 T-EDGE in this table means the named test of that class (§4.4). Deleted with the code they mutate, in the step that deletes it (ER-3): `d2_tier_group_margin_overlap`, `uid_tier_group_hidden`, `uid_tier_note_shown_in_mode_s`, `uid_tier_reclick_noop`. The nine patches of F-7 and every `b_*`/`e_*`/`sqe_*` patch whose anchor moves are refreshed; `e_panel_moved_into_header` is the large one (72 changed lines on the PR).
 
+#### §7.1a Mutants after the five-button decision *(2026-10-03; where this and the table above differ, this wins)*
+
+At `2e538cc` the lane's own patches are `d12_no_scroll_into_view`, `d12_rail_wraps`, `d2_tier_group_margin_overlap` and eight `uid_tier_*`. None of the table's step-1 to step-3 mutants (`uid_panel_stop_ignores_rendering`, `uid_sheet_stop_ignores_rendering`, `uid_cycle_empty_list_throws`, `uid_css_seq_note_hidden_when_short`, `uid_css_fifth_media_condition`, `uid_css_state_dependent_condition`, the nine `uid_fit_*`) exists yet under those names; they are still owed in step 9 and are unaffected by this amendment, except that `uid_fit_od8_constant` now flips `false` to `true`.
+
+**Dead: never written, their target is the select, the multicol or the sidebar rule.** `uid_css_tier_row_nowrap`, `uid_css_tier_basis_grown`, `uid_css_mode_s_basis_shrunk`, `uid_css_tier_focus_ring_removed`, `uid_tier_change_not_dealt_until_reopen`, `uid_tier_select_unlabelled`, `uid_tier_enabled_outside_s`, `uid_css_columns_dropped`, `uid_css_group_breaks_across_columns`, `uid_landscape_order_rule`, `uid_css_sidebar_compaction_dropped`, `uid_css_sidebar_compaction_edge`. Their tests die with them: K-7 to K-9, K-13, K-14, K-15, K-16 as written for the select, `...shares the CHORD PROGRESSION row...`, `...wraps to a full row below 282px...`, `the select's width does not change with the selected option`, `CHORD PROGRESSION never clips beside the select...`, `no panel group is split across columns`, `the landscape panel reads in DOM order`, `the sidebar is compact at 759 tall and default at 760`.
+
+**Deleted from the PR in step 4** (the disabled state and the separate group are gone): `uid_tier_always_disabled`, `uid_tier_describedby_left_on_in_mode_s`, `uid_tier_note_shown_in_mode_s`, `uid_tier_group_hidden`, `d2_tier_group_margin_overlap`.
+
+**Kept, re-anchored:** `uid_tier_not_persisted`, `uid_tier_not_passed_to_pick`, `uid_tier_prev_not_cleared`, and **`uid_tier_reclick_noop`** (the table above deleted it under OD-4(a); D-11 is whole again, so it and `clicking the already-pressed tier still re-deals` stay). `d12_*` kept.
+
+**Main-era patches that name `#modeS` or sit on the removed lines** (classified by reading each patch's changed lines, not its context):
+
+| Patch | Changed lines touch the removed code? | Action |
+|---|---|---|
+| `sqe_panelstops_misses_modeS` | yes (drops `modeS` from the id list) | Rewritten as `uid_panelstops_misses_tier` (drops `tier-intermediate`), killed by K-2a's test; the old patch deleted |
+| `sqe_mode_not_pressed` | yes | Rewritten against the five-button `aria-pressed` loop; its test renamed `exactly one practice button is pressed, and mode survives a reload` (`tests/app.test.js`) |
+| `e_panel_moved_into_header` | yes (26 lines of panel markup) | Regenerated from the new markup |
+| `e_a11y_mode_pressed_frozen`, `e_target_mode_shuffle_short`, `ms_js_breakpoint_drift`, `qr_res_link_not_a_stop`, `qr_res_hidden_landscape`, `ui_footer_seq_class_sticks`, `ui_style_block_left_visible`, `ui_modebar_natural_width`, and the rest of F-7's nine | no, context only | Refreshed; their killing tests keep their titles and are re-pointed where they press `#modeS` |
+
+**New:**
+
+| Mutant | Change | Killed by |
+|---|---|---|
+| `uid_tier_tap_does_not_enter_s` | `setTier` leaves `mode` as it was | K-7a's test |
+| `uid_tier_tap_leaves_panel_open` | `setTier` does not close the panel | K-7a's test |
+| `uid_tier_tap_deals_twice` | a tap from A or B deals in `setMode` and again in `setTier` | K-7a's test (one `pick` call) |
+| `uid_tier_lit_outside_s` | `syncTierUI` ignores `mode` | K-5a's test |
+| `uid_flash_left_lit_in_s` | entering progression by a tier leaves `#modeA` pressed | `exactly one of the five practice buttons is pressed at boot, after every press, and after a reload` |
+| `uid_tier_unlit_at_boot_in_s` | boot does not sync the tier buttons after `setMode` | the same test |
+| `uid_panelstops_misses_tier` | see above | K-2a's test |
+| `uid_panelstops_link_before_tiers` | the PR head's order restored | K-2a's test |
+| `uid_tier_abbr_exposed` | `aria-hidden` removed from `.t-abbr` (name becomes "INTERMEDIATEINT.") | K-13a's test |
+| `uid_tier_full_undisplayed` | the swap hides `.t-full` with `display:none` (name becomes empty where abbreviated) | K-13a's test (T-R1 also fails; the suite line names K-13a's) |
+| `uid_tier_group_unlabelled` | `aria-label` removed from `.tierbar` | K-13a's test |
+| `uid_css_tier_abbr_dropped_sidebar` | swap removed from the sidebar block (INTERMEDIATE overflows by 12.7px) | T-LABEL |
+| `uid_css_tier_abbr_dropped_landscape` | swap removed from the landscape block (overflows at 640-667 and 860 wide) | T-LABEL |
+| `uid_css_tier_abbr_in_portrait` | swap made unconditional | T-LABEL (portrait must draw the full word) |
+| `uid_css_tier_equal_width` | `flex:1 1 auto` -> `1 1 0` (INTERMEDIATE clipped at 320 wide) | T-LABEL |
+| `uid_css_tier_padding_grown` | `padding-inline:6px` -> `16px` (row needs 288.8 of 276 at 320 wide) | T-LABEL |
+| `uid_css_tier_margin_dropped` | `.tierbar`'s `margin-top` removed (needed 4px under main) | T-EDGE (portrait) |
+| `uid_css_mode_s_rule_restored` | re-adds a conditional panel rule under `(max-height:400px)` | T-MQ (same test as `uid_css_fifth_media_condition`; kept as one mutant if the lane finds them identical) |
+
+Two declarations have **no** mutant and the PR says so: `flex-wrap:nowrap` (the flex default; written for the reader) and `white-space:nowrap` on the tier buttons (defensive: it turns a too-wide label into a measurable overflow instead of a silent second line; removing it changes nothing in any measured cell, so a mutant would survive). §7.2 item 6 excepts exactly these two.
+
 ### §7.2 Pre-review checklist
+
+*(2026-10-03: item 3's edge list is widths {640, 1024}, heights {520, 700}; item 4 is **three** panel media conditions; item 5 is every row of §4.2a; item 6 uses §7.1a and its two stated exceptions, with the Linux widths of INT. and ADV. beside the 6px padding; item 10 adds 667x375 and replaces "CHORD PROGRESSION label" with "INTERMEDIATE label"; item 11's residual risks are: WebKit and real screen readers unverified, voice-control matching on abbreviated labels, CI fallback font is not macOS's, one heading where the owner wanted two.)*
 
 1. `gh pr view 203 --json state,mergeable,headRefOid`: OPEN, MERGEABLE, head equals the local tip.
 2. CI green **at that SHA**, every job: data integrity, python suites, js suites, suite health, mutation shards 1-4, mutation gate, `panel fit (real)`, `panel fit (fallback)`.
@@ -457,7 +709,7 @@ T-EDGE in this table means the named test of that class (§4.4). Deleted with th
 
 | # | Decision | Pick | Basis |
 |---|---|---|---|
-| RP-1 | Panel layout | Select in `.tier-row` + landscape multicol + one sidebar rule; all lane trims deleted | F-5, F-6; four media conditions against eight |
+| RP-1 | Panel layout | ~~Select in `.tier-row` + landscape multicol + one sidebar rule~~ **Superseded 2026-10-03 by RP-15 and RP-18.** "All lane trims deleted" stands | F-5, F-6; owner, 2026-10-03 |
 | RP-2 | Reachability | R-1 (CSS never unrenders a control) + R-2 (`isStop`) | F-7; Blocker 1 |
 | RP-3 | Acceptance | `tools/probe/panel_fit.js`, 1px widths, band-lowest heights with asserted invariance, both fonts, in CI | F-4, F-9 |
 | RP-4 | Keep or restart | Continue on PR #203 | Less unreviewed surface |
@@ -471,7 +723,14 @@ T-EDGE in this table means the named test of that class (§4.4). Deleted with th
 | RP-12 | Sandbox ancestry (ER-6) | Parent pointers from `appendChild` plus a markup-derived ancestor map; one `hidden` state for property and attribute | `tools/sandbox.js:68-105`, `:198`, `:431` |
 | RP-13 | Fallback-font constants (ER-10) | Chosen after CI prints Linux widths, 2px slack in all three font environments, else stop for the owner | Linux fallback unmeasured; macOS fallback already wraps CHORD PROGRESSION (DR-2) |
 | RP-14 | Oracle in CI (ER-11, ER-12) | 30-minute timeout; loud pass on a byte-identical `index.html`; judge mutation-gated | Later PRs that do not touch `index.html` should not pay ~30 runner-minutes |
-| OD-1 to OD-10 | see §6 (OD-9 and OD-10 added by the design review; the eng review added none) | **open** | owner |
+| RP-15 | Panel layout (2026-10-03) | Five buttons in the Practice group: main's NAME -> NOTES / NOTES -> NAME row, then a three-button tier row where `#modeS` was; one heading; main's panel CSS otherwise, three media conditions | Owner, 2026-10-03; F-10, F-11, F-12 |
+| RP-16 | State model | `mode` and `tier` and both `hpfc` keys unchanged, no migration; a tier tap sets tier, enters S, deals once, closes the modal; a tier is lit only in S; no disabled state | Owner, 2026-10-03; F-14 |
+| RP-17 | Tier labels | Full words in portrait; INT. / ADV. in landscape and the sidebar by the two existing blocks; clip-swap with no `display:none`; accessible name always the full word | Owner, 2026-10-03; F-13; delivered T-R1 |
+| RP-18 | Multicol and sidebar compaction | Not built | F-11: zero cells need them. Pending OD-13 |
+| OD-1 to OD-10 | see §6 | **answered 2026-10-03** (§6.3): OD-1, 2, 3, 4, 9 moot; OD-5, OD-6, OD-8 accepted; OD-7 default; OD-10 no cue | owner, relayed by the coordinating session |
+| OD-11 | Abbreviate by layout class or only in the measured bands | **open**; default: by class | owner |
+| OD-12 | One heading where the owner wanted two | **open**; default: one heading, "Practice" | owner |
+| OD-13 | Build the accepted multicol and sidebar rule although nothing needs them | **open**; default: no | owner |
 
 ## §9 Failure classes and the oracle for each
 
@@ -483,14 +742,17 @@ T-EDGE in this table means the named test of that class (§4.4). Deleted with th
 | FC-4 | CI green while real fonts overflow | review 3 | Both font modes in the oracle and in T-EDGE; a run whose font mode is not the one requested fails. *(ER-1)* As committed at `0ea790d` that failure cannot happen (`fonts.check()` is true with no faces registered); the assertion is replaced per §4.3.1 and is itself mutation-gated |
 | FC-5 | A test filters away the thing it should catch (`offsetParent` filter, Tab test at a tall viewport, mutant covering only `hidden`) | review 5 | Tests assert a fixed expected control list per mode (K-1 to K-4), never "whatever is rendered"; §7.1's one-mutant-per-rule table |
 | FC-6 | CSS rule no test pins | nit 1 | §7.1; checklist item 6 |
-| FC-7 | Visual order differs from DOM/Tab order | nit 3 | K-14 |
-| FC-8 | Control with no accessible name; description with no referent | nit 2 | K-13, read from the AX tree |
+| FC-7 | Visual order differs from DOM/Tab order | nit 3 | K-14 *(2026-10-03: K-1a to K-4a; no rule reorders anything.)* |
+| FC-8 | Control with no accessible name; description with no referent | nit 2 | K-13, read from the AX tree *(2026-10-03: K-13a.)* |
 | FC-9 | Shipped behaviour drifts from the plan's acceptance lines; PR body claims more than was measured | nits 5, 8; two inaccurate PR-body claims | §5 table; step 11; checklist items 3 and 9 |
 | FC-10 | App uses a DOM API the unit sandbox does not stub | review 2 | Step 2's sandbox test first; `tests/app.test.js` in the step's Verify |
 | FC-11 | Pixel-tuned constant with sub-pixel slack (687.8 of 688) | F-3 | Budget table §4.1 states slack; sidebar edge chosen for 14px, not 0.2px; fallback-font run |
-| FC-12 | New risk from this plan: native select platform behaviour | - | K-9 at event level; the open list is **not covered** - stated in the PR, OD-4(b) removes the worst case. *(Eng review: honest as written. One cheap check was missing and is added to K-15: two `change` events in a row with the modal open, each persisting its tier and neither closing the panel, which is the Windows/Linux arrow-key path at event level.)* |
-| FC-13 | New risk from this plan: multicol on WebKit | - | **Not covered by CI.** Degrades to one scrolling column if `columns` is ignored (nothing clips). Needs one look on an iPhone in landscape before or after merge; the lane cannot self-certify it. *(Eng review: honest as written. "Degrades to one scrolling column" is itself inferred, not measured; the PR says so. No headless WebKit exists in this repo's CI and none is added.)* |
+| FC-12 | New risk from this plan: native select platform behaviour | - | K-9 at event level; the open list is **not covered** - stated in the PR, OD-4(b) removes the worst case. *(Eng review: honest as written. One cheap check was missing and is added to K-15: two `change` events in a row with the modal open, each persisting its tier and neither closing the panel, which is the Windows/Linux arrow-key path at event level.)* **Moot 2026-10-03: no select.** |
+| FC-13 | New risk from this plan: multicol on WebKit | - | **Not covered by CI.** Degrades to one scrolling column if `columns` is ignored (nothing clips). Needs one look on an iPhone in landscape before or after merge; the lane cannot self-certify it. *(Eng review: honest as written. "Degrades to one scrolling column" is itself inferred, not measured; the PR says so. No headless WebKit exists in this repo's CI and none is added.)* **Moot 2026-10-03: no multicol (RP-18); returns if OD-13 is answered yes.** |
 | FC-14 | Lane edits files outside its Owns list | review 5 boundary note | Owns list widened here to what the work needs; checklist item 8 |
+| FC-15 | *(2026-10-03)* More or fewer than one of the five buttons lit: two state variables drive one visual group | - | `exactly one of the five practice buttons is pressed at boot, after every press, and after a reload`; K-5a; mutants `uid_tier_lit_outside_s`, `uid_flash_left_lit_in_s`, `uid_tier_unlit_at_boot_in_s` |
+| FC-16 | *(2026-10-03)* A tier label clipped or wrapped: INTERMEDIATE is 85.8px real, 92.8 macOS fallback, 92.7 Linux fallback, in a third of a 199px sidebar | F-13 | T-LABEL in both fonts at the cells of F-13; step 5 reads CI's Linux widths first (RP-13) |
+| FC-17 | *(2026-10-03)* The visible label and the accessible name differ where abbreviated ("INT." drawn, "INTERMEDIATE" announced) | - | K-13a pins the name. **Not covered:** voice-control users who say what they see; WCAG 2.5.3 expects the name to contain the visible text, and "INTERMEDIATE" does not contain "INT." with its full stop. Stated in the PR as a residual risk; the alternative is `aria-label="INT., Intermediate"`-style naming, an owner-visible wording choice not taken here |
 
 ## §10 Standing merge gates
 
@@ -499,7 +761,7 @@ T-EDGE in this table means the named test of that class (§4.4). Deleted with th
 3. `gh pr merge 203 --merge`, no `--delete-branch`. Merge stays operator-gated outside AFK.
 4. `python3 tools/validate.py`, `tests/test_render_agreement.py` and `tools/inline_engine.py --check` pass at the head.
 5. Never the full e2e suite or `tests/mutation_check.sh` locally; single tests and the oracle only.
-6. `/plan-eng-review` and `/plan-design-review` of this document are logged below **before** step 4 starts.
+6. `/plan-eng-review` and `/plan-design-review` of this document are logged below **before** step 4 starts. *(2026-10-03: both are logged for the plan as it stood at `d2b882a`. The five-button amendment was written after them and has had **neither**. Step 3a and step 4 wait for a fresh `/plan-eng-review` of the amendment by a reviewer who did not write it, logged below, or for the owner's explicit waiver. The author of the amendment did not review it.)*
 
 ## §11 Measured, inferred, unmeasured
 
@@ -509,8 +771,17 @@ T-EDGE in this table means the named test of that class (§4.4). Deleted with th
 - **Measured by the eng review** (single probes, headless Chrome, `655a45c` and `0ea790d`): the CSSOM walk and its derived condition lists (3 and 8 dimensional, plus `print`); the cross-origin `SecurityError` in both font modes; `document.fonts.check()` true in fallback mode; a T-R1 prototype red on the PR and green on main. Read, not run: every reference to `panelStops` and `cycleTabStops` (two callers, PR `:8752` and `:8971`, none passed as a bare value; five test call sites, as F-7 says), `tools/sandbox.js`, `tests/helpers/cdp.js`'s `enableRealFonts`, `validate.yml`, `mutation_check.sh`'s baseline rule.
 - **Unmeasured, added by the eng review:** whether `direction:rtl` (or any single declaration) reorders the multicol panel so K-14 kills it; whether any cell in the domain fragments a group once `break-inside:avoid` is removed; the oracle's run time on `0ea790d`, which has about seven height bands against the recommended design's four (so roughly twice §4.3's estimate); that multicol "degrades to one scrolling column" on an engine that ignores `columns`.
 - **Unmeasured, added by the design review:** iOS Safari's zoom-on-focus for a 10.5px select (the existing `#print-paper-select` has the same exposure); WebKit's rendering of a disabled `appearance:none` select; whether Chrome matches `:focus-visible` on a mouse-opened select; option (b4) beyond 14 cells per font (no 1px sweep was run on it); Linux fallback width of "CHORD PROGRESSION".
+- **Measured for the 2026-10-03 amendment** (headless Chrome on macOS, runtime-injected prototypes over `2e538cc` with every lane-added panel rule stripped, compared with `655a45c`; scripts and JSON in the session scratch directory, not committed): F-11's 2,376 comparisons (594 viewports x flash/progression x two font modes) for one heading, and 544 (136 x 2 x 2) for the clip-swap label mechanism, 0 differences in needed height, available height, offscreen control set and horizontal overflow; F-12's table, both heading variants, with and without multicol and the sidebar rule; F-13's label and button widths in real and macOS fallback fonts; the computed accessible names of the three tier buttons at 380x740, 568x320 and 1280x800 (real fonts, progression); the delivered T-R1's selector rule, read at `tests/e2e.test.js:1444`.
+- **Inferred for the amendment:** that mode B behaves as mode A (only A was measured as the flash-card state; the two buttons share one row and one rule); that the real implementation matches the injected prototype; that the oracle's own "needed" agrees with the prototype harness on the clipped spans (the harness excludes `position:absolute` descendants; the oracle iterates every descendant with a rect, and a clipped 1px span inside a button cannot extend the button's bottom, but the oracle has not been run on it); every mutant in §7.1a's "new" table (designed, none written or run); tab-stop counts 13 / 14 modal and 12 / 13 sidebar (counted from the markup, not from a Tab walk).
+- **Unmeasured for the amendment:** WebKit / iOS Safari; any real screen reader or voice control; Linux fallback widths of INT. and ADV. (BASIC 36.30, INTERMEDIATE 92.73, ADVANCED 65.45 are known from CI); a 1px sweep (594 and 136 sampled viewports, chosen at and beside every edge, not all 7,062 cells: the oracle in step 10 is the full run); OD-12(b)'s reworded heading in the 199px sidebar; CI time.
 
 ## Review log
+
+### Amendment, 2026-10-03 (the planner; **not a review**)
+
+The owner replaced the select with five mutually exclusive buttons after both reviews below were logged. The planner prototyped and measured the new design and amended this document in place: F-10 to F-15, RP-15 to RP-18, §4.1a, §4.2a, the notes in §4.3 and §4.4, §5a, §6.3, §7's rows 3a to 12, §7.1a, FC-15 to FC-17. Findings DR-1 to DR-5 and the K-rows, mutants and tests written for the select are history. The eng review's findings on the oracle, the judge, T-R1, T-MQ, `isStop`, the sandbox and the mutant process (ER-1 to ER-13) are untouched and still bind.
+
+What a reviewer of the amendment should attack first: (1) RP-17's clip-swap against the delivered T-R1 and against the oracle's needed loop; (2) the class-based abbreviation (OD-11) against the owner's word "only"; (3) whether `setTier` calling `setMode` can deal twice or leave two buttons lit (FC-15); (4) FC-17; (5) §7 step 4's size: it deletes a control main shipped, so every main-era test and mutant that presses `#modeS` moves in one push.
 
 ### `/plan-design-review`, 2026-10-03 (independent reviewer; did not write this plan)
 
@@ -641,21 +912,14 @@ Reviewed at `bf4e127`. Spawned, non-interactive: every question the skill would 
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | not run | - |
 | Outside Review | `codex exec` (plan review) | Independent 2nd opinion | 1 | ISSUES FOUND, folded in | 11 findings: 9 overlap the eng review, 2 new and accepted, 3 points rejected |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | ISSUES FOUND, all amended in the plan | 13 findings (3 high, 9 medium, 1 low); 0 critical gaps left open |
-| Design Review | `/plan-design-review` | UI/UX gaps | 1 | ISSUES OPEN (FULL) | score: 6/10 → 8/10, 10 decisions |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | ISSUES FOUND, all amended in the plan. **STALE for the 2026-10-03 amendment: not re-run** | 13 findings (3 high, 9 medium, 1 low); 0 critical gaps left open |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | ISSUES OPEN (FULL). **STALE for the 2026-10-03 amendment: reviewed the select, not five buttons** | score: 6/10 → 8/10, 10 decisions |
 
 - **OUTSIDE COVERAGE:** Codex ran read-only for the eng review (second attempt; the first timed out). The design review ran no outside voice.
 - **CROSS-MODEL:** Codex and the eng reviewer agree on every high finding. No unresolved disagreement.
-- **VERDICT:** Eng and design reviews complete. Steps 1-3 are clear to start. Steps 4 onward are not cleared: they wait on the owner decisions below.
+- **VERDICT (2026-10-03, after the owner's answers):** Steps 1-3 are delivered on PR #203 at `2e538cc`. OD-1 to OD-10 are answered (§6.3). The five-button amendment is **not reviewed**; steps 3a onward wait on an eng review of it (§10 gate 6). OD-11, OD-12 and OD-13 are open with defaults and do not block.
 
-**UNRESOLVED DECISIONS:**
-- OD-1: one native select instead of three buttons (reverses D-9). Planner, design and eng reviewers: accept.
-- OD-2: no visible "Difficulty" label (reverses D-8). All three: accept.
-- OD-3: the "Pick CHORD PROGRESSION" note becomes screen-reader-only (amends D-10). All three: accept.
-- OD-4: no re-deal on re-pick; a tier change does not close the modal (amends D-11). All three: accept.
-- OD-5: landscape multicol regrouping. All three: accept.
-- OD-6: sidebar compaction at 700-759 tall. All three: accept.
-- OD-7: oracle fit floor at 320 tall. All three: accept.
-- OD-8: where main already overflows, judge by total scroll. All three: accept.
-- OD-9: select or three segments BASIC / INT. / ADV. Design and eng reviewers: select.
-- OD-10: zero-height visible cue for the dimmed control; option (d) reverses D-0. Design and eng reviewers: none for this PR.
+**UNRESOLVED DECISIONS** (OD-1 to OD-10 were answered by the owner on 2026-10-03; see §6.3):
+- OD-11: tier labels abbreviate by layout class (all landscape, all sidebar) or only in the measured bands at the cost of about three new width conditions. Planner: by class.
+- OD-12: one heading, because two do not fit where main fits (F-12). Planner: one heading, "Practice"; the owner may instead accept an 18px new-scroll band, or reword the single heading.
+- OD-13: the accepted multicol and sidebar compaction are not needed by five buttons. Planner: do not build them in this lane.
