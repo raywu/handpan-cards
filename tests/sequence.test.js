@@ -37,6 +37,32 @@
 // the undefined-tier and "basic" calls through the new tiered sampler: the
 // fixture was captured before that code existed, so it cannot share such a
 // bug.
+//
+// tests/fixtures/sequence_tier_golden.json (D3 step 1) was captured from the
+// UNMODIFIED engine at main@486813c, before any D3 edit, with this script (run
+// once, output committed, script itself not checked in). `prev` is chained
+// from the previous deal:
+//
+//   const fs = require("fs");
+//   const { loadEngine } = require("./tests/helpers/engine.js");
+//   const DECKS = JSON.parse(fs.readFileSync("data/decks.json", "utf8"));
+//   const E = loadEngine(["sequence"]);
+//   const out = {};
+//   for (const id of ["hijaz", "pygmy", "amara"]) {
+//     const deck = DECKS.find((d) => d.id === id);
+//     out[id] = {};
+//     for (const tier of ["intermediate", "advanced"]) {
+//       out[id][tier] = [];
+//       let prev = null;
+//       for (let seed = 0; seed < 200; seed += 1) {
+//         const rng = E.sequence.mulberry32(seed);
+//         const deal = E.sequence.pick(deck, rng, prev, tier);
+//         out[id][tier].push({ seed, chords: deal.chords, style: deal.style, nextRng: rng() });
+//         prev = deal.chords;
+//       }
+//     }
+//   }
+//   fs.writeFileSync("tests/fixtures/sequence_tier_golden.json", JSON.stringify(out));
 "use strict";
 
 const test = require("node:test");
@@ -51,6 +77,9 @@ const ROOT = path.join(__dirname, "..");
 const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
 const BASIC_GOLDEN = JSON.parse(
   fs.readFileSync(path.join(ROOT, "tests", "fixtures", "sequence_basic_golden.json"), "utf8"));
+
+const TIER_GOLDEN = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "sequence_tier_golden.json"), "utf8"));
 
 function deckById(id) {
   const hit = DECKS.find((d) => d.id === id);
@@ -629,6 +658,24 @@ test("pick(..., undefined) and pick(..., \"basic\") reproduce the pre-tier golde
           `${id} seed ${row.seed} prev-excluded chords diverged from the golden fixture`);
         assert.strictEqual(prevDeal.style, row.prevCase.style);
         assert.strictEqual(rngPrev(), row.prevCase.nextRng);
+      }
+    }
+  }
+});
+
+test("built-in INTERMEDIATE/ADVANCED deals match the pre-D3 fixture", () => {
+  const E = engine();
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const tier of ["intermediate", "advanced"]) {
+      let prev = null;
+      for (const row of TIER_GOLDEN[id][tier]) {
+        const rng = E.sequence.mulberry32(row.seed);
+        const deal = E.sequence.pick(deck, rng, prev, tier);
+        assert.deepStrictEqual(host(deal.chords), row.chords,
+          `${id} ${tier} seed ${row.seed} chords diverged from the pre-D3 fixture`);
+        assert.strictEqual(deal.style, row.style);
+        assert.strictEqual(rng(), row.nextRng);
+        prev = deal.chords;
       }
     }
   }
