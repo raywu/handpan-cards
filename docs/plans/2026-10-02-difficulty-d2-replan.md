@@ -5,7 +5,7 @@
 - **Base:** `main` @ `655a45c`. PR #203 head `0ea790dac32e68756191d6cdc02c12c996c2d170` (`0ea790d`), merge-base `154d516`. Every `index.html:N` below is at `655a45c` unless it says "PR", which means `0ea790d`.
 - **Shape:** one serial lane, continuing on PR #203's branch. No parallel split: every step edits `index.html` or `tests/e2e.test.js`.
 - **Why a re-plan:** owner, 2026-10-02: "If D2 fails again, take a step back, regroup and design a prompt to draft a plan to address all foreseeable problems and run /plan-eng-review and/or /plan-design-review to retackle D2." D2 failed its fifth review at `0ea790d`.
-- **Status:** drafted, NOT yet reviewed. `/plan-eng-review` and `/plan-design-review` have not run; their sections at the end are empty on purpose. Four ledger decisions would be reversed by the recommendation; see "Owner decisions needed" (§6) before spawning the lane past step 3.
+- **Status:** drafted. `/plan-design-review` ran 2026-10-03 (Review log; amendments are marked "DR-n" where they land). `/plan-eng-review` has not been logged in this file as of that review. Four ledger decisions would be reversed by the recommendation; see "Owner decisions needed" (§6) before spawning the lane past step 3.
 
 ## §1 Goal and non-goals
 
@@ -110,8 +110,9 @@ The PR's layout is height-dependent inside these classes, so those rows say noth
 | Three buttons as a third row inside Practice, no heading, no note | +52 | +52 | +100 | +100 | +112 |
 | Native `<select>` sharing the CHORD PROGRESSION row, existing grid | 0 | 0 | +50 where it wraps and Practice is the tallest cell | +50 | +56 |
 | **Recommended (§3): select in a `.tier-row`, landscape multicol, one sidebar rule** | **0** | **0** | **0 or lower than main** | +50 (see F-6) | **0 at h <= 759, +56 above** |
+| *(DR-1, design review)* Three-segment control BASIC / INT. / ADV. in the same `.tier-row` slot, same multicol and sidebar rule | 0 | 0 | same as the row above | same | same |
 
-(Format A/B then S where they differ.) Three 110px buttons cannot share a 292px row; nothing with three always-visible 44px targets fits main's slack without trims. **D-8/D-9 as written and "fits wherever main fits" are jointly unsatisfiable without viewport-conditional trimming.** That, not scope mismatch, is why five rounds of trimming did not converge.
+(Format A/B then S where they differ.) Three 110px buttons cannot share a 292px row; nothing with three always-visible 44px targets **carrying their full labels** fits main's slack without trims. *(DR-1: the sentence as first written, without the qualifier, was too strong. Three 44px-tall segments with abbreviated labels occupy the select's box exactly and measured the same needed height as the select in all 14 probed cells in both font modes. Their cost is width at 320, not height: see RP-1 option (b4) and OD-9.)* **D-8/D-9 as written and "fits wherever main fits" are jointly unsatisfiable without viewport-conditional trimming.** That, not scope mismatch, is why five rounds of trimming did not converge.
 
 ### F-6 The recommended prototype, measured (real / fallback where they differ)
 
@@ -163,14 +164,30 @@ New ids only (`RP-n`); none reuses a parent id.
   | (b3) Native `<select>` beside CHORD PROGRESSION, existing landscape grid | 4 + landscape trims | +50 in landscape wherever Practice is the tallest grid cell | Rejected alone |
   | **(b3)+(c) Select in a `.tier-row`, landscape CSS multicol, one sidebar rule** | **4** | F-6 | **Recommended** |
   | (c') Fluid `clamp()` spacing instead of the one sidebar rule | 3 | Unmeasured; a continuous function of `vh` has no edge to test at and no mutant that cleanly flips it | Rejected |
+| *(DR-1)* (b4) Three joined segments BASIC / INT. / ADV. in the select's slot | 4 | Design review, 14 cells x 2 fonts: needed height identical to the select everywhere. At 320 wide each segment is 43.7px (under the app's 44px), or 44.3px at the price of CHORD PROGRESSION wrapping to two lines under **real** fonts (129.9px label in a 129px box). Full labels do not fit (INTERMEDIATE needs 64px of a 42px segment at 320, 76 of 66 in the sidebar). Three Tab stops, not one. Keeps D-11 whole (one tap, re-pick re-deals, close on press) and has no native popup | Not recommended by the design review; put to the owner as OD-9 because it is the only always-visible form inside the budget |
+| *(DR-1)* (b5) Stepper `<` INT. `>` | 4 | Not prototyped. Arithmetic at 320: two 44px arrows leave 41px for the label; hides two options like the select, costs two Tab stops and needs a live region for the value | Rejected: every cost of the select and none of its platform support |
+| *(DR-1)* (b6) Render the control only in CHORD PROGRESSION | 4 | Saves the wrapped row in landscape and sidebar A/B; changes nothing at the three tight cells in mode S (the select already costs 0 at 320x568 S and the sidebar rule is still needed at 1024x700 S). Consistent with R-1 (rendered set is a function of mode) | **Reverses D-0, an owner decision.** Not recommended; nothing in the budget needs it |
+| *(DR-1)* (b7) Select enabled in every mode (choosing a tier in A/B stores it, or switches to CHORD PROGRESSION) | 4 | Zero height. Removes the "disabled with no visible reason" problem and the two-visit journey (DR-4) | **Reverses D-0's "greyed out".** Listed under OD-10 for the owner; not recommended by default |
 
   **Structure.** Inside the Practice group, `.modebar` keeps NAME -> NOTES and NOTES -> NAME on its first row; its second row becomes `<div class="tier-row">` holding `#modeS` and `<select id="tier-select">` (BASIC / INTERMEDIATE / ADVANCED, easiest first). `.tier-row{display:flex; flex-wrap:wrap; gap:var(--sp-2); flex:1 0 100%}`; `#modeS{flex:1 1 150px; min-width:0}`; `#tier-select{flex:1 1 124px; min-width:0}`. **Whether the select shares the row is decided by two CSS constants (150 + 8 + 124 = 282px), not by font metrics**: it shares at every content width >= 282px (every portrait viewport >= 320) and takes its own full-width row below that (landscape columns, sidebar). A wider fallback font can make a label tight; it cannot move the wrap point. The select is styled as a `.mode` (same border, radius, background, font, 44px), `appearance:none` with an inline-SVG chevron in the existing `#c4bcab`; no new colour or face (RN-6).
 
-  **Landscape.** The four groups are wrapped in `<div id="panel-cols">`, `display:contents` everywhere except under the existing `(max-height:520px)` condition, where `#settings-panel{display:block}` and `#panel-cols{display:block; columns:200px 4; column-gap:var(--sp-3)}`, groups `break-inside:avoid`, `.panel-group + .panel-group{margin-top:var(--sp-3)}`. The wrapper is required: `#settings-panel` has a definite height (`inset:0`), and a multicol box with a definite height overflows sideways into extra columns instead of scrolling down. Multicol replaces the `auto-fit` grid; it adds no media condition. Why it absorbs the select's row by construction: Practice is now three rows + Scales one row = Print two rows + Resources two rows, so column-major packing puts the wrapped select into what was dead space under Scales. Column order is DOM order, which removes nit 3.
+  **Select states (DR-6, design review).** The panel is palette-neutral: no panel control takes a per-deck colour today (`.mode` `index.html:224-231`, `.prints` `:519-526`), and the select must not be the first. Specified so the lane does not improvise:
+
+  | State | Spec | Source |
+  |---|---|---|
+  | Rest (mode S) | `font:600 10.5px/1 "Nunito Sans"`, `letter-spacing:.08em`, `color:#c4bcab`, `background-color:#211d16`, `border:1px solid #433b2c`, `border-radius:8px`, `min-height:44px`, text left-aligned at the `.mode` 11px inline padding, chevron `#c4bcab` right-aligned | `.mode` `:224`; the font shorthand must be set on the select itself (form controls do not inherit it) |
+  | Hover / active | Whatever `.mode` does today, by sharing the selector list, not by a copied rule. If `.mode` has no hover rule, the select has none | one source of truth |
+  | Keyboard focus | The global `:focus-visible{outline:2px solid #e3b25c; outline-offset:2px}` (`:638`). No select-specific outline, and `outline:none` never appears on it | existing |
+  | Disabled (A/B) | `opacity:.5` on the whole control including the chevron, `cursor:default`, remembered tier still legible. On WebKit also `-webkit-text-fill-color:currentColor` so the engine's own disabled grey does not stack on the opacity (**unverified, FC-13's device look covers it**) | D-10 |
+  | Selected value | The select never takes `.on` (cream). In mode S the cream CHORD PROGRESSION button beside or above it is the "on" signal; the select reads as its parameter | DR-6 |
+  | Open list | OS-drawn. `option{background-color:#211d16; color:#c4bcab}` so Chrome on Windows/Linux does not open a white list from a dark panel; not testable here | FC-12 |
+  | Not both a `.mode.on` and a select | The chevron is the only affordance that distinguishes the select from a `.mode` button; it is never dropped, in any class | DR-6 |
+
+**Landscape.** The four groups are wrapped in `<div id="panel-cols">`, `display:contents` everywhere except under the existing `(max-height:520px)` condition, where `#settings-panel{display:block}` and `#panel-cols{display:block; columns:200px 4; column-gap:var(--sp-3)}`, groups `break-inside:avoid`, `.panel-group + .panel-group{margin-top:var(--sp-3)}`. The wrapper is required: `#settings-panel` has a definite height (`inset:0`), and a multicol box with a definite height overflows sideways into extra columns instead of scrolling down. Multicol replaces the `auto-fit` grid; it adds no media condition. Why it absorbs the select's row by construction: Practice is now three rows + Scales one row = Print two rows + Resources two rows, so column-major packing puts the wrapped select into what was dead space under Scales. Column order is DOM order, which removes nit 3.
 
   **Sidebar.** One rule, the only new media condition in the plan: `@media (min-width:1024px) and (min-height:700px) and (max-height:759px){ #settings-panel{gap:var(--sp-2); padding-block:var(--sp-2)} }`. It applies in every mode (no `:has()`), so the sidebar looks the same in A, B and S at a given height. 759 is chosen so that the first uncompacted height, 760, has 14.2px of slack under real fonts; the tight edge would be 745, which leaves 0.2px.
 
-  **Cost, stated plainly.** (1) Two of three tiers are hidden behind a tap; the selected one is always visible. (2) A native select is the platform's control: its open list is styled by the OS and is not testable here. (3) The landscape arrangement of the pre-existing groups changes (row-major grid -> column-major columns; Scales moves under Practice). (4) The sidebar is tighter at 700-759 tall. (5) At 845-1164 wide landscape the panel is 50px taller than main; it still fits at every height >= 302. (6) In landscape cells where main already scrolls (427-586 wide, up to 366 tall), a different control ends up below the fold than on main (F-6, OD-8). (7) `columns` and `break-inside` on WebKit/iOS Safari are **unverified**; CI is Chrome-only.
+  **Cost, stated plainly.** (1) Two of three tiers are hidden behind a tap; the selected one is always visible. (2) A native select is the platform's control: its open list is styled by the OS and is not testable here. (3) The landscape arrangement of the pre-existing groups changes (row-major grid -> column-major columns; Scales moves under Practice). (4) The sidebar is tighter at 700-759 tall. (5) At 845-1164 wide landscape the panel is 50px taller than main; it still fits at every height >= 302. (6) In landscape cells where main already scrolls (427-586 wide, up to 366 tall), a different control ends up below the fold than on main (F-6, OD-8). (7) `columns` and `break-inside` on WebKit/iOS Safari are **unverified**; CI is Chrome-only. *Added by the design review:* (8) **DR-2:** at 320 wide `#modeS` shrinks from the full row to 155px; "CHORD PROGRESSION" measures 129.9px real against a 131px content box (1.1px spare) and 132.4px under macOS fallback, where it **wraps to two lines** inside the same 44px (height and budget unchanged; measured). Together with the select's label the pair needs 284.7px real / 294.1px fallback of 292px at the prototype's paddings; with the chevron padding at 18px it is 288.1px fallback. Step 5 pins both labels, not only the select's. (9) **DR-3:** in the landscape modal the position of Scales depends on the mode (568x320: under Practice in A/B, top of column 2 in S), because column-major packing follows content height. Order is always DOM order; the place is not constant. The modal closes on a mode change, so the move is never seen live. (10) **DR-4:** the control is paired with CHORD PROGRESSION by adjacency only in portrait. In landscape and in the sidebar it is a full-width row of its own under that button, with no label; in A/B that row is a dimmed, unlabelled "INTERMEDIATE". (11) **DR-5:** with OD-4(b) accepted, a tier change in the phone modal gives no feedback beyond the select's own text: the panel covers the card and the rail, so the re-deal is seen only after the player closes the panel. And because pressing CHORD PROGRESSION closes the modal (K-5), a player in A/B needs two panel visits to reach a tier for the first time.
 
 - **RP-2 Reachability: rendered state is the only truth, enforced from both sides.**
   - *Rule R-1 (CSS side):* no stylesheet rule may unrender a panel control. The only things that take a control out of the panel are the `hidden` attribute written by `setMode()` and the panel being closed. Consequence: **the set of rendered controls is a function of mode alone, identical at every viewport.**
@@ -223,6 +240,8 @@ Controls in DOM order: `#settings-trigger` (modal only), `#modeA`, `#modeB`, `#m
 | K-12 | Tab or Shift+Tab with focus outside the stop list | modal | lands on the first / last stop; never a no-op | `Tab from outside the stop list enters the panel cycle` |
 | K-13 | any | all | accessible name of the select is "Difficulty"; in A/B its accessible description is "Pick CHORD PROGRESSION to change this." (read from the AX tree, not from attributes) | `the tier select is named Difficulty and described only while disabled` |
 | K-14 | - | modal landscape, all modes | reading order equals DOM order: over consecutive rendered controls, (column left edge, top) never decreases | `the landscape panel reads in DOM order` (nit 3) |
+| K-15 *(DR-5)* | `change` on `#tier-select`, then close the panel | modal, S, only if OD-4(b) is accepted | after the change: panel still open, focus still on the select, select shows the new tier. After Escape or the close button: the rail and card are the new tier's deal | `after a tier change the closed panel reveals the new deal` |
+| K-16 *(DR-6)* | Tab to `#tier-select` | modal and sidebar, S | computed outline is the global focus ring (2px, `#e3b25c`); in A/B the select's computed opacity is .5 and its chevron is still painted | `the tier select shows the shared focus ring and a dimmed chevron when disabled` |
 
 Not testable here and marked unmeasured: the open native list (Escape closing the list before the panel; arrow keys committing a value per keypress on Windows/Linux Chrome but not on macOS), iOS's picker wheel, real screen readers. OD-4 exists because of the second of those.
 
@@ -298,6 +317,29 @@ None of these is taken by this plan. Steps 1-3 of the lane need none of them and
 
 | OD-8 | Refine the owner's 2026-10-02 ruling for cells where **main already overflows**: there, judge by total scroll (candidate needs no more height than main) and report, not fail, a control that trades places below the fold. Where main fits, the ruling stays exactly as worded | **Accept.** Measured (F-6): zero affected cells where main fits; in the affected cells the candidate scrolls the same or less (568x320 S: 17px against 40px) and a different control is cut. This is the owner's own ruling, so it is the owner's to refine | No measured layout passes: keeping main's grid at 427-586 wide costs +50 at 568x320 A/B, where main has 7px. The lane stops after step 5 and returns to the owner |
 
+### §6.1 Design review: recommendation beside the planner's (2026-10-03)
+
+Added by `/plan-design-review`. The planner's table above is unchanged. Nothing here is decided; every row is still the owner's. Evidence is in the Review log.
+
+| # | Planner | Design reviewer | Differs? | Reviewer's reason |
+|---|---|---|---|---|
+| OD-1 | Accept the select | **Accept the select**, with F-5's "nothing fits" claim corrected (DR-1) and OD-9 answered alongside | No, but the basis changes | The select is not the only form inside the height budget. It is the only one with width to spare at 320: its label can give ~12px back to CHORD PROGRESSION under real fonts; three segments have 0 |
+| OD-2 | Accept: no visible label | **Accept**, with the reservation in DR-4 | No | BASIC / INTERMEDIATE / ADVANCED name their own axis, and `#print-paper-select` ("LETTER", no label) is the panel's precedent. The weak spot is landscape and sidebar, where the control is not beside CHORD PROGRESSION. OD-10 holds the zero-height fixes |
+| OD-3 | Accept: note is screen-reader-only | **Accept** | No | Measured: the visible note costs +19.8 in portrait, +37.5 in the sidebar, and puts 568x320 A/B 11.8px over with `#deck-add` offscreen. No form of visible sentence fits the 7px there. A sighted player sees a dimmed control with no stated reason; that is a real loss and the plan should say so (cost 10), but the fixes that fit are not sentences (OD-10) |
+| OD-4(a) | Accept: no re-deal on re-pick | **Accept** | No | The re-deal button under the card already does this and is where a player looks for it |
+| OD-4(b) | Accept: tier change does not close the modal | **Accept**, with K-15 and cost 11 added | No | A native select must not close its container on `change`: the keyboard case the planner cites is enough. The price is on the phone, where the player gets no sign the deal changed until they close the panel. That is one extra tap, and it is the same contract as the paper-size select two groups below |
+| OD-5 | Accept multicol | **Accept** | No | Screenshots at 568x320, 667x375 and 844x390 read top-to-bottom, left-to-right in DOM order; Practice always leads column 1. Cost 9 (Scales changes column with the mode) is real and small |
+| OD-6 | Accept sidebar compaction at 700-759 | **Accept** | No | At 1024x700 the compacted sidebar still reads as four separate groups under their headings (`proto-1024x700-modeS.png`); nothing crowds. The alternative is 46px of scroll in the mode the feature exists for |
+| OD-7 | Accept floor at 320 tall | **Accept** | No | Not a design question; no objection |
+| OD-8 | Accept: judge by total scroll where main already overflows | **Accept** | No | At 568x320 S main cuts the paper-size select behind 40px of scroll; the prototype cuts the three Resources links behind 17px. Resources are outbound links, the least-used row in the panel and the last in reading order: the right row to be below the fold. The half-cut row also shows that the panel scrolls, which main's clean cut at "Print this deck" does not |
+
+**New, raised by the design review:**
+
+| # | Decision | Planner | Design reviewer | If declined |
+|---|---|---|---|---|
+| OD-9 | Form of the control: native select (two tiers behind a tap, one Tab stop, OS-drawn list, D-11 amended twice) **or** three joined segments BASIC / INT. / ADV. (all tiers visible, one tap, D-11 kept whole, no native popup; abbreviations, three Tab stops, and at 320 wide either 43.7px-wide targets or a two-line CHORD PROGRESSION under real fonts). Both measured at the same needed height in every probed cell. Either one reverses D-9 | Not weighed (F-5 ruled three buttons out on height) | **Select.** The segments are the better interaction at 360 wide and up and the worse fit at 320, where they have no width to spare and this lane has failed five reviews on zero-slack constants. If the owner prefers the segments, the lane runs the oracle on them first (the prototype exists) and OD-4 falls away | n/a: this is a choice between two forms, the planner's stands unless the owner picks the other |
+| OD-10 | A zero-height visible cue for the dimmed, unlabelled control (DR-4). Options: (a) none; (b) a small "DIFFICULTY" legend set into the select's top border (prototyped: 0px in all 14 cells; it is a new label style at 8px, which RN-6 and D-8's own rationale forbid); (c) visually join the select to CHORD PROGRESSION as one split control (prototyped in portrait: 0px, 6-12px lower where they stack; changes the `.mode` button's shape); (d) leave the select enabled in every mode (**reverses D-0**) | (a), implicitly | **(a) for this PR.** (b) is the cheapest real fix and the one to take if the owner finds the dimmed bar confusing on a device; it needs the owner because it adds a label style. (d) is the only option that also removes the two-visit journey, and it is the owner's own decision to reopen | (a) ships |
+
 **If OD-1 is declined.** The three-button structure stays, and the owner is choosing between two things the measurements say cannot both hold (F-5): either named bands where the panel scrolls although main does not, or viewport-conditional trims. The lane then keeps steps 1-3 and 7-12, replaces steps 4-6 with "class-wide trims, judged only by the oracle", and this plan makes **no convergence promise** for that path.
 
 ## §7 Lane D2 (continued): step table
@@ -313,9 +355,9 @@ None of these is taken by this plan. Steps 1-3 of the lane need none of them and
 | 1 | **Oracle first.** Unit tests for the judge (six rules of §4.3 on synthetic cells) red, then `tools/probe/panel_fit.js`; then the CI job | judge tests green; run against `0ea790d` it is red in all three known bands and on rules 5 and 6 at h <= 356 (§4.3 "Validation"); edge list derived, containing 356, 575, 600, 761, 765 on that SHA; cells skipped = 0; wall time recorded in the PR | `node --test --test-name-pattern panel.fit tests/app.test.js`; `node tools/probe/panel_fit.js --base origin/main --candidate 0ea790d` |
 | 2 | **R-2.** Red: the CSS-injection test of RP-2 for the panel, its sheet twin, K-12, and the sandbox `getClientRects` test. Then `isStop`, `panelStops()` without the `hidden` special case, the sheet list, the empty-list guard | the four tests are red on the pre-step tree for the stated reason and green after; `tests/app.test.js` fully green | `node --test --test-name-pattern unrendered.by.CSS tests/e2e.test.js`; `node --test tests/app.test.js` |
 | 3 | **R-1.** Red: T-R1 and T-MQ. Then delete all four `(max-height:356px)` blocks | T-R1 green; T-MQ still red (more than four conditions remain) and is expected to be until step 7; mode S at 683x330 shows the YouTube link (nit 4) | `node --test --test-name-pattern no.stylesheet.rule.unrenders tests/e2e.test.js` |
-| - | **Gate: OD-1, OD-2, OD-3, OD-5, OD-8 answered.** | recorded in §8 with date and source | - |
+| - | **Gate: OD-1, OD-2, OD-3, OD-5, OD-8 answered** (and OD-9, which the design review tied to OD-1)**.** | recorded in §8 with date and source | - |
 | 4 | **Markup and wiring.** Red: K-1, K-2, K-5 to K-9, K-13 rewritten against `#tier-select`; the existing tier tests (persist, pass-to-pick, `prev` cleared, corrupted `hpfc.tier`, empty-tier message) re-pointed from clicks to `change`. Then replace `#panel-tier-group` with `.tier-row` + select; `setMode()` flips `disabled` / `aria-describedby`; `change` calls `setTier` | all listed tests green at every viewport class named in §4.2; `uid_tier_reclick` test and mutant removed (OD-4a) | `node --test --test-name-pattern tier tests/e2e.test.js` |
-| 5 | **Select and row CSS.** Red: T-EDGE's portrait rows; `the tier select shares the CHORD PROGRESSION row at every portrait width from 320 and wraps to a full row below 282px of content`; `the tier select's label fits its box in both font modes` (inner width >= label + 1px at 320 wide, each of the three options); `the select's width does not change with the selected option`; 44px in every class; computed colours and font family within the existing `.mode` set | green in both font modes; needed at 320x568 and 380x740 equals main's to 0.5px | `node --test --test-name-pattern tier.select tests/e2e.test.js` |
+| 5 | **Select and row CSS.** Red: T-EDGE's portrait rows; `the tier select shares the CHORD PROGRESSION row at every portrait width from 320 and wraps to a full row below 282px of content`; `the tier select's label fits its box in both font modes` (inner width >= label + 1px at 320 wide, each of the three options); `the select's width does not change with the selected option`; 44px in every class; computed colours and font family within the existing `.mode` set; *(DR-2)* `CHORD PROGRESSION never clips beside the select, and stays on one line at 320 wide under real fonts` (scrollWidth <= clientWidth in both font modes; one line asserted under real fonts only; `#modeS` 44px tall in both); *(DR-6)* K-16 | green in both font modes; needed at 320x568 and 380x740 equals main's to 0.5px | `node --test --test-name-pattern tier.select tests/e2e.test.js` |
 | 6 | **Landscape columns.** Red: T-EDGE's landscape rows, K-14, `no panel group is split across columns`. Then `#panel-cols`, the multicol rules, removal of the grid and of every remaining lane-added conditional rule (F-3) | green in both fonts; every `#settings-panel > .panel-group` selector in `index.html` (`:254`, `:259`, `:329`), the tests and the mutants is found by reading and updated; main's fit test (`tests/e2e.test.js:1429`) passes unedited | named tests; `python3 tools/refresh_mutants.py --check` |
 | 7 | **Sidebar.** Red: T-EDGE's sidebar rows; `the sidebar is compact at 759 tall and default at 760`; the real-font sidebar test extended to mode S (nit 7). Then the one rule | green in both fonts at 1024x700, x759, x760, 1280x800; T-MQ green (exactly four conditions); the existing "keeps its default spacing at 1280x800" test passes unedited | named tests |
 | 8 | **Existing contracts.** | chrome budget, landscape budget, contrast, 44px, rail (D-12) and sidebar-overlap tests pass with no edit beyond selector updates from step 6 | CI |
@@ -346,6 +388,9 @@ None of these is taken by this plan. Steps 1-3 of the lane need none of them and
 | `uid_tier_enabled_outside_s` | `setMode()` never disables | K-1's test |
 | `uid_tier_describedby_left_on_in_mode_s` | (re-anchored) | K-13's test |
 | `uid_landscape_order_rule` | adds `order:-1` to `#panel-scales-group` in landscape | K-14's test (nit 1: order is now pinned) |
+| `uid_css_mode_s_basis_shrunk` *(DR-2)* | `#modeS` basis 150 -> 120 (label wraps under real fonts at 320) | `CHORD PROGRESSION never clips beside the select, and stays on one line at 320 wide under real fonts` |
+| `uid_css_tier_focus_ring_removed` *(DR-6)* | `#tier-select:focus-visible{outline:none}` added | K-16's test |
+| `uid_tier_change_not_dealt_until_reopen` *(DR-5, only with OD-4(b))* | `change` saves the tier but skips the re-deal | K-15's test |
 | `uid_tier_not_persisted`, `uid_tier_not_passed_to_pick`, `uid_tier_prev_not_cleared`, `uid_tier_always_disabled` | (re-anchored to the select) | their existing tests, re-pointed in step 4 |
 
 Deleted with the code they mutate: `d2_tier_group_margin_overlap`, `uid_tier_group_hidden`, `uid_tier_note_shown_in_mode_s`, `uid_tier_reclick_noop`. The nine patches of F-7 and every `b_*`/`e_*`/`sqe_*` patch whose anchor moves are refreshed; `e_panel_moved_into_header` is the large one (72 changed lines on the PR).
@@ -361,7 +406,7 @@ Deleted with the code they mutate: `d2_tier_group_margin_overlap`, `uid_tier_gro
 7. `python3 tools/validate.py`, `python3 tools/inline_engine.py --check`, `python3 tools/sync_decks.py --check`, `python3 tools/refresh_mutants.py --check` clean; no `<script src>`; engine regions and the DECKS line untouched.
 8. `git diff --stat main...HEAD` lists nothing outside Owns.
 9. §5's table re-read against the shipped code; every "Met" still true; every OD recorded in §8 with its answer, date and source. Nothing is deviated from silently.
-10. 380px, 320x568, 568x320, 844x390, 1024x700 and 1280x800 screenshots in modes A and S under real fonts attached.
+10. 380px, 320x568, 568x320, 844x390, 1024x700 and 1280x800 screenshots in modes A and S under real fonts attached. *(DR-2)* Plus 320x568 in both modes under fallback fonts, where the CHORD PROGRESSION label is tightest.
 11. Residual risks restated in the PR body, unsoftened: WebKit multicol unverified; native select's open list untested; CI fallback font is not macOS's.
 
 ## §8 Decision ledger
@@ -375,7 +420,7 @@ Deleted with the code they mutate: `d2_tier_group_margin_overlap`, `uid_tier_gro
 | RP-5 | Review cap | Two attempts, then the owner | Parent §5; five FAILs |
 | RP-6 | Oracle domain | w 320-1300, h 320-1100 | Smallest supported device; pending OD-7 |
 | RP-7 | Mutant prefix | `uid_*` | Review 5 boundary note |
-| OD-1 to OD-8 | see §6 | **open** | owner |
+| OD-1 to OD-10 | see §6 (OD-9 and OD-10 added by the design review) | **open** | owner |
 
 ## §9 Failure classes and the oracle for each
 
@@ -409,8 +454,89 @@ Deleted with the code they mutate: `d2_tier_group_margin_overlap`, `uid_tier_gro
 
 - **Measured** (at the SHAs above): every number in F-2 to F-6 and F-9; the F-4 cells directly; 1px-width sweeps of main, the PR and the prototype in both font modes (7,062 cells each); both callers and all test call sites in F-7; the prototype's wrap behaviour in both font modes.
 - **Inferred:** the prototype's landscape results at heights 321-520 (computed from the h 320 row; valid because nothing in the prototype's landscape CSS depends on height, which the oracle will assert rather than assume); that the lane's real implementation matches the runtime-injected prototype (it is the same CSS, but injected into main, not built on the PR branch); the oracle's cell count and local time for the final grid (extrapolated from 7,062 cells in 242 s).
-- **Unmeasured:** CI wall time for the oracle; Linux fallback-font metrics; WebKit/iOS Safari for multicol and for the styled select; the native select's open list on any platform; real screen readers; the CSSOM edge-derivation code (designed here, not prototyped); the `visible note` cost of OD-3 beyond the single 568x320 arithmetic.
+- **Unmeasured:** CI wall time for the oracle; Linux fallback-font metrics; WebKit/iOS Safari for multicol and for the styled select; the native select's open list on any platform; real screen readers; the CSSOM edge-derivation code (designed here, not prototyped); the `visible note` cost of OD-3 beyond the single 568x320 arithmetic (*design review measured it at seven viewports: +19.8 at 380x740 and 320x568, +18.8 at 568x320 which puts it 11.8 over the viewport with `#deck-add` offscreen, 0 at 667x375 and 844x390, +37.5 in the sidebar*).
+- **Unmeasured, added by the design review:** iOS Safari's zoom-on-focus for a 10.5px select (the existing `#print-paper-select` has the same exposure); WebKit's rendering of a disabled `appearance:none` select; whether Chrome matches `:focus-visible` on a mouse-opened select; option (b4) beyond 14 cells per font (no 1px sweep was run on it); Linux fallback width of "CHORD PROGRESSION".
 
 ## Review log
 
+### `/plan-design-review`, 2026-10-03 (independent reviewer; did not write this plan)
+
+Reviewed at `9e0b312`. Spawned, non-interactive: every question the skill would have asked is answered below with the option the reviewer would recommend. No owner decision was taken.
+
+**Method.** The planner's prototype (`fin`, runtime-injected into main at `655a45c`) was re-run under real and macOS-fallback fonts at 380x740, 320x568, 568x320, 667x375, 844x390, 1280x800 and 1024x700 in modes A and S, next to main and PR #203 at `0ea790d`. Every needed-height figure the plan gives for those cells reproduced (main, PR and prototype). Five alternatives were then injected the same way: three segments with short labels, three segments with full labels, a joined split control, a legend micro-label, a visible note in A/B. Single probes only; no e2e suite, no mutation run.
+
+**Scores (0-10).**
+
+| Pass | Before | After amendments | What a 10 needs |
+|---|---|---|---|
+| 1 Information architecture | 7 | 8 | The control's relation to CHORD PROGRESSION visible in landscape and sidebar, not only in portrait (OD-10) |
+| 2 Interaction states | 5 | 8 | Hover, focus, disabled, open-list and selected states were unspecified for the one new control; now a table in RP-1. A 10 needs the open list seen on a device |
+| 3 User journey | 5 | 7 | Two panel visits to reach a tier from A/B and no feedback after a change on a phone (cost 11). Stated and tested (K-15), not removed; OD-9's segments would restore the feedback, only OD-10(d) removes the second visit |
+| 4 AI slop risk | 9 | 9 | A native control in the existing `.mode` skin; nothing generic to remove |
+| 5 Design system alignment | 6 | 8 | The plan did not say the panel is palette-neutral, so "per-deck colours" was open; now closed. A 10 needs WebKit's disabled select checked |
+| 6 Responsive and accessibility | 7 | 8 | CHORD PROGRESSION's own fit at 320 was unpinned (DR-2). 44px height holds everywhere measured |
+| 7 Unresolved decisions | 8 open | 10 open | OD-9 and OD-10 added; all ten are the owner's |
+| **Overall** | **6** | **8** | |
+
+**Findings.**
+
+| # | Sev | Finding | Evidence | Disposition |
+|---|---|---|---|---|
+| DR-1 | High | F-5's claim that nothing with three always-visible 44px targets fits without trims is false as written. Three segments BASIC / INT. / ADV. in the select's slot need exactly the select's height | `segshort` real / fallback: 442, 494, 313, 263, 263, 668, 612 in A; 490, 542, 337, 301.8, 286, 733.8, 677.8 in S, equal to `proto` in all 14 cells in both fonts. Segment width 53.7 at 380, **43.7 at 320**, 67 in the sidebar, 90.8 at 568 landscape. With the basis moved to give 44.3px segments, CHORD PROGRESSION wraps under real fonts (129.9 in 129). Full labels overflow (scrollWidth 64 > 42 at 320; 76 > 66 in the sidebar) | **Accepted.** F-5 reworded and a row added; RP-1 options (b4)-(b7) added; OD-9 raised. The reviewer still recommends the select |
+| DR-2 | Medium | At 320 wide the recommended layout leaves CHORD PROGRESSION 1.1px of spare width under real fonts and wraps it to two lines under macOS fallback. The plan pins the select's label fit and not this one | `#modeS` 155px wide, content 131, label 129.9 real / 132.4 fallback; height stays 44 | **Accepted.** Cost 8, step 5 test, mutant `uid_css_mode_s_basis_shrunk`, checklist item 10 |
+| DR-3 | Low | Landscape: Scales sits under Practice in A/B and at the top of column 2 in S | `proto-568x320-modeA.png` against `proto-568x320-modeS.png` | **Accepted as a stated cost** (9). No change: order is DOM order in both, and the modal closes on mode change |
+| DR-4 | Medium | The control is unlabelled and, in landscape and the sidebar, not beside the button it depends on. In A/B it is a dimmed full-width "INTERMEDIATE" with no visible reason | `proto-568x320-modeA.png`, `proto-1280x800-modeA.png`; compare `proto-380x740-modeA.png` where adjacency carries it | **Stated** (cost 10). Fixes that fit the budget change the visual system or D-0, so they go to the owner as OD-10 |
+| DR-5 | Medium | Journey: CHORD PROGRESSION closes the modal, so a first tier change takes two visits; with OD-4(b) a tier change on a phone shows nothing until the panel is closed | K-5, K-7; the modal is full-screen at every phone viewport shot | **Accepted in part.** Cost 11 and K-15 with its mutant added so the "close reveals the new deal" contract is tested. The missing feedback goes away with OD-9's segments (press closes the panel); the two-visit path goes away only with OD-10(d) |
+| DR-6 | Medium | The select's hover, focus, disabled, selected and open-list states were not specified, and the plan did not say whether deck colours apply | RP-1 gave rest-state styling only; the prototype's CSS has no focus or hover rule | **Accepted.** "Select states" table in RP-1, K-16, mutant `uid_css_tier_focus_ring_removed`, three items added to §11 |
+| DR-7 | Info | OD-3's visible note is worse than the plan's single arithmetic line suggested in the sidebar and no better anywhere | `note`: +19.8 at 380x740 and 320x568; 331.8 of 320 at 568x320 with `#deck-add` offscreen; +37.5 in the sidebar (two lines at 240px) | Supports the planner. §11 updated |
+| DR-8 | Info | OD-8 from the user's side: the row that falls below the fold at 568x320 S is Resources, not paper size | `main-568x320-modeS.png` against `proto-568x320-modeS.png` | Supports the planner |
+| DR-9 | Info | PR #203 at `0ea790d` in landscape puts the tier buttons in column 2 under Print with the note, away from Practice | `pr-568x320-modeA.png` | Confirms nit 3; the re-plan removes it |
+
+**Questions the skill would have asked, and the answer taken.**
+
+| Question | Choice | Reason |
+|---|---|---|
+| What to review? | This file | Named by the caller |
+| Generate visual mockups with the design binary? | No; real-font screenshots of main, the PR and runtime prototypes instead | The caller excluded anything needing an API key, and a rendered prototype is better evidence than a mockup for a layout budget measured in single pixels |
+| Run outside design voices (Codex)? | Skipped | The caller runs `/plan-eng-review` as the second independent read; a third model would add opinion, not measurement |
+| DR-1: correct F-5 and record the segmented control, or leave the plan's claim? | Correct and record | The claim is the stated basis for OD-1; the owner should decide OD-1 knowing a second form fits |
+| DR-1: switch the recommendation to segments? | No | Zero width slack at 320 in a lane that has failed five times on zero-slack constants; raised as OD-9 instead |
+| DR-2: fix by `white-space:nowrap`, or allow the two-line fallback and pin "never clips"? | Allow and pin | `nowrap` turns a wrap into an overflow under a wider Linux fallback font, which is unmeasured; two lines inside 44px costs no height |
+| DR-4: add a visible label or cue now? | No; OD-10 | Every cue that fits either adds a label style (RN-6) or reverses D-0 |
+| DR-5: recommend close-on-change to give feedback? | No; keep OD-4(b), add K-15 | A select that closes its container on `change` breaks keyboard use on Windows and Linux Chrome |
+| DR-6: specify states in the plan or leave to the lane? | Specify | A state the plan does not name is one the reviewer cannot hold the lane to |
+| Add anything to TODOS.md? | No | The reviewer may edit this file only; the two device checks are already FC-12 and FC-13 |
+
+**Not in scope of this review:** the oracle's design (§4.3), R-1/R-2, mutant hygiene, the rail (D-12), tier persistence and the engine. Those are `/plan-eng-review`'s.
+
+**What already exists and is reused:** `.mode` skin and 44px minimum (`index.html:224`), the global focus ring (`:638`), `#print-paper-select` as the native-select, no-visible-label, stays-open precedent (`:519-526`), `.panel-note` (`:212`) for the screen-reader text.
+
+**Screenshots** (real fonts; `<root>-<W>x<H>-mode<A|S>.png` for each of 380x740, 320x568, 568x320, 667x375, 844x390, 1280x800, 1024x700 in modes A and S), session-local under `/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/3347d7d0-1ec9-4967-bd81-dd4cf98e29d7/scratchpad/design-review/`: roots `main` (655a45c), `pr` (0ea790d), `proto` (the recommended select), `segshort` (BASIC / INT. / ADV.), `seg126` (same, 44.3px segments), `segfull` (full labels, overflowing), `join` (split control), `label` (legend micro-label), `note` (visible note in A/B). 126 files. The script is `shots.js` beside them.
+
+**Not verified by this review:** WebKit and iOS Safari (multicol, the styled and the disabled select, zoom on focus); the native list when open, on any platform; screen readers; Linux fallback fonts; any alternative beyond the 14 cells per font listed (no 1px sweep); the lane's real implementation, since every non-main, non-PR root is CSS and markup injected into main at runtime.
+
+**Implementation tasks added by this review** (all inside existing steps): step 5 gains the CHORD PROGRESSION fit test and K-16; step 4 gains K-15 if OD-4(b) is accepted; §7.1 gains three mutants.
+
 ## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | not run | - |
+| Outside Review | none | Independent 2nd opinion | 0 | skipped | - |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | not logged | - |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | ISSUES OPEN (FULL) | score: 6/10 → 8/10, 10 decisions |
+
+- **OUTSIDE COVERAGE:** Codex design voice skipped in a spawned, non-interactive run; no outside review completed.
+- **VERDICT:** Design review complete with owner decisions open; not cleared. Eng review required.
+
+**UNRESOLVED DECISIONS:**
+- OD-1: one native select instead of three buttons (reverses D-9). Planner and design reviewer: accept.
+- OD-2: no visible "Difficulty" label (reverses D-8). Both: accept.
+- OD-3: the "Pick CHORD PROGRESSION" note becomes screen-reader-only (amends D-10). Both: accept.
+- OD-4: no re-deal on re-pick; a tier change does not close the modal (amends D-11). Both: accept.
+- OD-5: landscape multicol regrouping. Both: accept.
+- OD-6: sidebar compaction at 700-759 tall. Both: accept.
+- OD-7: oracle fit floor at 320 tall. Both: accept.
+- OD-8: where main already overflows, judge by total scroll. Both: accept.
+- OD-9 (new): select or three segments BASIC / INT. / ADV. Design reviewer: select.
+- OD-10 (new): zero-height visible cue for the dimmed control; option (d) reverses D-0. Design reviewer: none for this PR.
