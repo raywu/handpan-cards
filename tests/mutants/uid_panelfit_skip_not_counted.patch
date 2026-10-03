@@ -1,0 +1,14 @@
+# kills: panel fit run: an unmeasured cell on either side ends runFont with the skipped-cell failure, not a TypeError
+# suite: node --test --test-name-pattern ^panel.fit.run..an.unmeasured.cell.on.either.side.ends.runFont.with.the.skipped.cell.failure..not.a.TypeError tests/app.test.js
+# runFont drops an unmeasured cell without counting it, the original dead-guard shape.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -603,7 +603,6 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
+       MODES.forEach((m, mi) => {
+         const id = cellId(w, h, m);
+         if (!isMeasured((mb[i] || [])[mi]) || !isMeasured((mc[i] || [])[mi])) {
+-          report.skipped++; report.skipReasons.push(`${id}: no measurement`);
+           return;
+         }
+         report.cells++;
