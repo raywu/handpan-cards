@@ -1,0 +1,18 @@
+# kills: the DFS budget truncates exactly at the boundary
+# dfsFindAll's node-budget guard removed, so the search is unbounded and never
+# reports truncation
+# suite: node --test --test-name-pattern ^the.DFS.budget.truncates.exactly.at.the.boundary$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -458,10 +458,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var truncated = false;
+     var seq = new Array(len);
+     function rec(depth) {
+-      if (nodes >= budget) {
+-        truncated = true;
+-        return;
+-      }
+       nodes += 1;
+       if (depth === len) {
+         if (accept(seq)) found.push(seq.slice());

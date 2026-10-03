@@ -25,7 +25,7 @@ diff --git a/data/decks.json b/data/decks.json
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6343,17 +6343,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -6405,17 +6405,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      }
    };
  })(HPE);

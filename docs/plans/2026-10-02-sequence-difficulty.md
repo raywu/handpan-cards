@@ -438,6 +438,8 @@ built-in deals unchanged ────────── step 1 pre-D3 fixture + 
 | A-14 | D3 review C4: vacuous sweep | Every row builds; only `NO_HOME_CHORD`, only on null-home rows | Measured: exactly 3 rows x 5 seeds today |
 | A-15 | D3 review C1: item (f) | Stays NO ACTION, rationale corrected (same accepted set; availability can differ on budget-bound decks) | Needs a contrived deck; gate is the single enforcement point |
 | A-16 | D3 review C3: `sqd_04` refresh | Hand-rewrite; commit engine + `index.html` before running either refresh tool | `refresh_mutants.py` raises `Unfixable`; both tools need clean targets |
+| A-17 | D3 execution: reviewer nits N1-N7 | Applied. N1: the step-2 verify pattern uses `|`, not `\|`; N2: `sqd_13` selects only the boundary test; N3: `sqd_01`/`sqd_02` stay on their own cap/register lines, the anchor `continue` is a separate site (`sqd_07`); N4: sweep/register/reviewer decks built once in `generated()`; N5: 1,894 = 3 + 11 + 1,880 (the 11 buildable synthetic rows include the 3 built-ins again); N6: sites found by content; N7: the app never calls `tierOf` (only `HPE.sequence.pick`; `tierOf` is called by e2e tests on dealt sequences), so A-13 holds | Executed in `claude/difficulty-d3-engine` |
+| A-18 | D3 mutant `# suite:` patterns | One `.` per non-alphanumeric character of the test name, never a collapsed run | A collapsed run (`...tier.in.range`) matched 0 tests, exited 0 and let `sqd_12` "survive" locally |
 
 **Approval readiness: PASS** - the D3 amendment is ready for the lane to be spawned once D2 merges.
 

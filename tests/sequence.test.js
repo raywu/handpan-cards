@@ -37,6 +37,32 @@
 // the undefined-tier and "basic" calls through the new tiered sampler: the
 // fixture was captured before that code existed, so it cannot share such a
 // bug.
+//
+// tests/fixtures/sequence_tier_golden.json (D3 step 1) was captured from the
+// UNMODIFIED engine at main@486813c, before any D3 edit, with this script (run
+// once, output committed, script itself not checked in). `prev` is chained
+// from the previous deal:
+//
+//   const fs = require("fs");
+//   const { loadEngine } = require("./tests/helpers/engine.js");
+//   const DECKS = JSON.parse(fs.readFileSync("data/decks.json", "utf8"));
+//   const E = loadEngine(["sequence"]);
+//   const out = {};
+//   for (const id of ["hijaz", "pygmy", "amara"]) {
+//     const deck = DECKS.find((d) => d.id === id);
+//     out[id] = {};
+//     for (const tier of ["intermediate", "advanced"]) {
+//       out[id][tier] = [];
+//       let prev = null;
+//       for (let seed = 0; seed < 200; seed += 1) {
+//         const rng = E.sequence.mulberry32(seed);
+//         const deal = E.sequence.pick(deck, rng, prev, tier);
+//         out[id][tier].push({ seed, chords: deal.chords, style: deal.style, nextRng: rng() });
+//         prev = deal.chords;
+//       }
+//     }
+//   }
+//   fs.writeFileSync("tests/fixtures/sequence_tier_golden.json", JSON.stringify(out));
 "use strict";
 
 const test = require("node:test");
@@ -51,6 +77,9 @@ const ROOT = path.join(__dirname, "..");
 const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
 const BASIC_GOLDEN = JSON.parse(
   fs.readFileSync(path.join(ROOT, "tests", "fixtures", "sequence_basic_golden.json"), "utf8"));
+
+const TIER_GOLDEN = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "tests", "fixtures", "sequence_tier_golden.json"), "utf8"));
 
 function deckById(id) {
   const hit = DECKS.find((d) => d.id === id);
@@ -510,8 +539,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   ]);
   assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 2, 1]), "intermediate",
     "sus (pos1) resolving forward into its root chord (pos2) should be intermediate");
-  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), "advanced",
-    "the same pair in the other order does not resolve and should be advanced");
+  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), null,
+    "the same pair in the other order does not resolve; at length 3 that is not dealable by any tier, so null");
 
   // The 4-note cap: a >4-field chord anywhere in the sequence pushes it to
   // advanced even with no repeat and a home start.
@@ -526,8 +555,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
     { main: "Em9", sup: "", fields: [7, 8, 9, 10, 11], roots: [7] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), "advanced",
-    "a 5-field chord should push the sequence past intermediate's 4-note cap (root E avoids confounding with Dm's repeated D root)");
+  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), null,
+    "a 5-field chord should push the sequence past intermediate's 4-note cap, and length 3 is not ADVANCED, so null (root E avoids confounding with Dm's repeated D root)");
 
   // Nit (perf review on PR #202): a length-2 sequence is exclusively a BASIC
   // shape - neither intermediate ({3,4}) nor advanced ({4,5,6}) ever deal a
@@ -558,8 +587,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
     { main: "Em", sup: "", subtitle: "- LOW VOICING", fields: [10, 11, 12], roots: [10] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 2, 3]), "advanced",
-    "a LOW VOICING card should exclude the sequence from intermediate");
+  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 2, 3]), null,
+    "a LOW VOICING card should exclude the sequence from intermediate, and length 3 is not ADVANCED, so null");
 
   // The sus-resolve exception must check the WRAP pair (last position back to
   // first), not just forward-adjacent positions in array order.
@@ -598,6 +627,25 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     "a 5-chord sequence is outside intermediate's {3,4} length range even with no other violation");
 });
 
+test("tierOf returns null for a sequence ADVANCED can never deal", () => {
+  const E = engine();
+  // ADVANCED deals lengths 4..6 only (TIER_LENGTHS), so a connecting
+  // 3-chord or 7-chord sequence belongs to no tier. Pygmy's golden ADVANCED
+  // cards pin both ends of the range: A1 has 4 chords, A5 has 6.
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A1), "advanced", "4 chords");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A5), "advanced", "6 chords");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, [5, 22, 23]), null, "3 chords that fail INTERMEDIATE");
+  const seven = [...PYGMY_ADVANCED.A5, 0];
+  assert.strictEqual(seven.length, 7);
+  const I = E.sequence._internal;
+  const matrix = I.buildConnectMatrix(PYGMY);
+  for (let i = 0; i < seven.length; i += 1) {
+    const next = seven[(i + 1) % seven.length];
+    assert.ok(seven[i] !== next && matrix[seven[i]][next], `seven-chord fixture breaks at ${i}`);
+  }
+  assert.strictEqual(E.sequence.tierOf(PYGMY, seven), null, "7 chords connect but ADVANCED never deals 7");
+});
+
 /* -------------------------------------------------------------- D1 step 3 */
 
 test("TIERS lists the three tier ids in order", () => {
@@ -629,6 +677,24 @@ test("pick(..., undefined) and pick(..., \"basic\") reproduce the pre-tier golde
           `${id} seed ${row.seed} prev-excluded chords diverged from the golden fixture`);
         assert.strictEqual(prevDeal.style, row.prevCase.style);
         assert.strictEqual(rngPrev(), row.prevCase.nextRng);
+      }
+    }
+  }
+});
+
+test("built-in INTERMEDIATE/ADVANCED deals match the pre-D3 fixture", () => {
+  const E = engine();
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const tier of ["intermediate", "advanced"]) {
+      let prev = null;
+      for (const row of TIER_GOLDEN[id][tier]) {
+        const rng = E.sequence.mulberry32(row.seed);
+        const deal = E.sequence.pick(deck, rng, prev, tier);
+        assert.deepStrictEqual(host(deal.chords), row.chords,
+          `${id} ${tier} seed ${row.seed} chords diverged from the pre-D3 fixture`);
+        assert.strictEqual(deal.style, row.style);
+        assert.strictEqual(rng(), row.nextRng);
+        prev = deal.chords;
       }
     }
   }
@@ -806,8 +872,33 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
 
 /* -------------------------------------------------------------- D1 step 6 */
 
-test("generated decks: every tier returns a sequence or a reason, never throws, under 50ms", () => {
-  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
+/* -------------------------------------------------------------- D3 shared fixtures */
+
+// Built once, on first use, and shared by every test below (D3 N4): building
+// ~65 generated decks per test would repeat the work the sweep, the nesting
+// test and the register tests each need. A failed build asserts at first use,
+// so one bad row fails the test that needed it, not the whole file.
+const FULL_ENGINE_MODULES = ["core", "voicing", "layout", "naming", "select", "sequence"];
+const REGISTER_ANCHOR_SEED = "(A2) C3 E3 G#3 A#3 C4 E4 G4 G#4 A4 A#4 C#5 | G#2 E3 F3 G3";
+const REGISTER_HOME_SEED = "(A#2) D3 E3 F#3 G3 A3 A#3 D#4 F4 A#4 C5 | F2 A#2 D#3 E3 F4";
+const REVIEWER_SEEDS = [
+  "(G3) D4 F4 F#4 B4 F#5 G5 A#5",
+  "(A3) E4 G4 G#4 A4 C5 D#5 E5 A5",
+  "(B3) F4 F#4 A4 B4 C5 D5 F5 F#5 A5 B5 C6 D6",
+  "(G#3) E4 G4 G#4 A4 C5 D#5 G#5"
+];
+
+let generatedFixtures = null;
+function generated() {
+  if (generatedFixtures) return generatedFixtures;
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  function buildDeck(str) {
+    const parsed = full.core.parseSeed(str, {});
+    assert.equal(parsed.ok, true, `fixture seed did not parse: ${str} (${parsed.code})`);
+    const built = full.select.build(parsed.value);
+    assert.equal(built.ok, true, `fixture seed did not build: ${str}`);
+    return built.value;
+  }
   const scales = JSON.parse(
     fs.readFileSync(path.join(ROOT, "tests", "fixtures", "synthetic_scales.json"), "utf8"));
   function fixtureRow(name) {
@@ -826,40 +917,93 @@ test("generated decks: every tier returns a sequence or a reason, never throws, 
     const parts = splitSeed(str);
     const top = parts.top.slice(0, nTop);
     const bottom = parts.bottom.slice(0, nBottom);
-    let s = `${parts.ding} ${top.join(" ")}`;
-    if (bottom.length) s += ` | ${bottom.join(" ")}`;
-    const parsed = full.core.parseSeed(s);
-    assert.equal(parsed.ok, true, `sweep seed did not parse: ${s} (${parsed.code})`);
-    return { string: s, seed: parsed.value };
+    let seedString = `${parts.ding} ${top.join(" ")}`;
+    if (bottom.length) seedString += ` | ${bottom.join(" ")}`;
+    return seedString;
   }
   const sweep = [];
   for (let n = 5; n <= 19; n += 1) {
     const topHeavy = Math.min(n, 13);
-    sweep.push({ n, label: `top-heavy N=${n}`, ...seedOf(NINETEEN, topHeavy, n - topHeavy) });
+    sweep.push({ n, label: `top-heavy N=${n}`, string: seedOf(NINETEEN, topHeavy, n - topHeavy) });
     const nBottom = Math.min(6, Math.floor(n / 3));
     const nTop = Math.min(13, n - nBottom);
-    sweep.push({ n, label: `mixed N=${n}`, ...seedOf(NINETEEN, nTop, n - nTop) });
-    if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, ...seedOf(TWELVE, n, 0) });
+    sweep.push({ n, label: `mixed N=${n}`, string: seedOf(NINETEEN, nTop, n - nTop) });
+    if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, string: seedOf(TWELVE, n, 0) });
   }
+  const synthetic = scales
+    .map((row) => ({ name: row.name, parsed: full.core.parseSeed(row.string, {}) }))
+    .filter((r) => r.parsed.ok)
+    .map((r) => ({ label: r.name, built: full.select.build(r.parsed.value) }))
+    .filter((r) => r.built.ok)
+    .map((r) => ({ label: r.label, deck: r.built.value }));
+  generatedFixtures = {
+    full,
+    synthetic,
+    sweep: sweep.map((row) => ({ ...row, deck: buildDeck(row.string) })),
+    reviewer: REVIEWER_SEEDS.map((str) => ({ label: str, string: str, deck: buildDeck(str) })),
+    registerAnchor: buildDeck(REGISTER_ANCHOR_SEED),
+    registerHome: buildDeck(REGISTER_HOME_SEED)
+  };
+  return generatedFixtures;
+}
 
-  for (const row of sweep) {
-    const built = full.select.build(row.seed);
-    if (!built.ok) continue;
-    const deck = built.value;
+test("generated decks: every tier deals its own tier, in range and connected, under 50ms", () => {
+  const { full, sweep, reviewer, registerAnchor, registerHome } = generated();
+  const rows = [
+    ...sweep.map((r) => ({ label: r.label, deck: r.deck })),
+    ...reviewer.map((r, i) => ({ label: `reviewer deck ${i}`, deck: r.deck })),
+    { label: "REGISTER_ANCHOR_DECK", deck: registerAnchor },
+    { label: "REGISTER_HOME_DECK", deck: registerHome }
+  ];
+  assert.strictEqual(rows.length, 37 + 4 + 2, "the sweep is 37 decks + 4 reviewer decks + 2 register decks");
+  const LENGTHS = { basic: [2, 3], intermediate: [3, 4], advanced: [4, 5, 6] };
+  const S = full.sequence;
+  const noHomeRows = new Set();
+  const reasons = {};
+  for (const row of rows) {
+    const deck = row.deck;
+    const homeAnchorIdx = S._internal.homeAnchor(deck, S.anchors(deck));
     for (const tier of ["basic", "intermediate", "advanced"]) {
-      const t0 = Date.now();
-      let result;
-      assert.doesNotThrow(() => {
-        result = tier === "basic"
-          ? full.sequence.pick(deck, full.sequence.mulberry32(1), null)
-          : full.sequence.pick(deck, full.sequence.mulberry32(1), null, tier);
-      }, `${row.label} ${tier} threw`);
-      const dt = Date.now() - t0;
-      assert.ok(dt < 50, `${row.label} ${tier} took ${dt}ms`);
-      assert.ok(result.chords || typeof result.reason === "string",
-        `${row.label} ${tier} returned neither chords nor a reason`);
+      let prev = null;
+      for (let seed = 0; seed < 5; seed += 1) {
+        const t0 = Date.now();
+        let result;
+        assert.doesNotThrow(() => {
+          result = tier === "basic"
+            ? S.pick(deck, S.mulberry32(seed), prev)
+            : S.pick(deck, S.mulberry32(seed), prev, tier);
+        }, `${row.label} ${tier} seed ${seed} threw`);
+        const dt = Date.now() - t0;
+        assert.ok(dt < 50, `${row.label} ${tier} seed ${seed} took ${dt}ms`);
+        if (!result.chords) {
+          assert.strictEqual(result.reason, "NO_HOME_CHORD",
+            `${row.label} ${tier} seed ${seed} returned ${result.reason}, not a deal`);
+          assert.strictEqual(homeAnchorIdx, null,
+            `${row.label} ${tier} seed ${seed}: NO_HOME_CHORD on a deck that has a home anchor`);
+          noHomeRows.add(row.label);
+          reasons[tier] = (reasons[tier] || 0) + 1;
+          continue;
+        }
+        const chords = host(result.chords);
+        assert.strictEqual(homeAnchorIdx === null, false,
+          `${row.label} ${tier} seed ${seed}: dealt on a deck with no home anchor`);
+        assert.strictEqual(S.tierOf(deck, chords), tier,
+          `${row.label} ${tier} seed ${seed} dealt ${JSON.stringify(chords)} which tierOf calls ${S.tierOf(deck, chords)}`);
+        assert.ok(LENGTHS[tier].includes(chords.length),
+          `${row.label} ${tier} seed ${seed} dealt length ${chords.length}`);
+        for (let i = 0; i < chords.length; i += 1) {
+          const next = chords[(i + 1) % chords.length];
+          assert.notStrictEqual(chords[i], next, `${row.label} ${tier} seed ${seed}: identical neighbours at ${i}`);
+          assert.ok(connectsRef(deck, chords[i], next),
+            `${row.label} ${tier} seed ${seed}: ${chords[i]} -> ${next} does not connect`);
+        }
+        prev = chords;
+      }
     }
   }
+  assert.strictEqual(noHomeRows.size, 3, `NO_HOME_CHORD rows: ${[...noHomeRows].join(", ")}`);
+  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 15 },
+    "exactly 3 rows x 5 seeds per tier carry NO_HOME_CHORD");
 });
 
 test("a deck forcing the DFS fallback on every length finishes under 50ms", () => {
@@ -897,19 +1041,8 @@ test("a deck forcing the DFS fallback on every length finishes under 50ms", () =
 // before the tier gate. Swept over seeds 0..49 on every tier to catch any
 // seed-dependent regression, not just the reviewer's reported seeds.
 test("the four reviewer-reported slow decks finish under 50ms over seeds 0..49", () => {
-  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
-  const seedStrings = [
-    "(G3) D4 F4 F#4 B4 F#5 G5 A#5",
-    "(A3) E4 G4 G#4 A4 C5 D#5 E5 A5",
-    "(B3) F4 F#4 A4 B4 C5 D5 F5 F#5 A5 B5 C6 D6",
-    "(G#3) E4 G4 G#4 A4 C5 D#5 G#5"
-  ];
-  for (const s of seedStrings) {
-    const parsed = full.core.parseSeed(s, {});
-    assert.equal(parsed.ok, true, `reviewer seed did not parse: ${s}`);
-    const built = full.select.build(parsed.value);
-    assert.equal(built.ok, true, `reviewer seed did not build: ${s}`);
-    const deck = built.value;
+  const { full, reviewer } = generated();
+  for (const { string: s, deck } of reviewer) {
     for (const tier of ["basic", "intermediate", "advanced"]) {
       for (let seed = 0; seed < 50; seed += 1) {
         const t0 = Date.now();
@@ -986,7 +1119,7 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
   const homeAnchorIdx = I.homeAnchor(pygmy, anchorsList);
   const ctx = { anchorsList, home, homeAnchorIdx };
   for (const tier of ["intermediate", "advanced"]) {
-    const pool = I.tierPool(pygmy, tier);
+    const pool = I.tierPool(pygmy, tier, anchorsList);
     const startSet = I.tierStartSet(pygmy, tier, pool);
     for (const len of TIER_LENGTHS[tier]) {
       function accept(seq) {
@@ -1001,6 +1134,154 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
       I.dfsFindAll(startSet, pool, len, accept, I.DFS_NODE_BUDGET, matrix, stats);
       assert.ok(stats.nodes <= I.DFS_NODE_BUDGET,
         `pygmy ${tier} length ${len}: dfsFindAll visited ${stats.nodes} nodes, over the ${I.DFS_NODE_BUDGET} budget`);
+    }
+  }
+});
+
+/* -------------------------------------------------------------- D3 step 5 */
+
+// The DFS fallback's completion and budget boundary (D3 §9.1(c)). The older
+// ceiling test above (stats.nodes <= DFS_NODE_BUDGET) holds whenever the
+// budget guards exist, so it cannot see the connectivity or identical-card
+// prune go missing: a search that loses a prune just fills the whole budget.
+// These tests use a search that COMPLETES under the budget with the prunes and
+// does not complete without them: the reviewer deck
+// "(G3) D4 F4 F#4 B4 F#5 G5 A#5" at ADVANCED length 4 visits 13,605 nodes
+// (found 10,468) of the 15,000 budget; without the matrix prune it truncates
+// at 15,000 with 9,130 found, without the identical-card prune with 8,842.
+// HEADROOM: the margin is 9%. A red result here means the prunes or the budget
+// moved so that a real generated deck the reviewer found no longer completes;
+// it is not a stale deck.
+const DFS_COMPLETE_NODES = 13605;
+
+function dfsRun(E, deck, tier, len, budget) {
+  const I = E.sequence._internal;
+  const matrix = I.buildConnectMatrix(deck);
+  const anchorsList = E.sequence.anchors(deck);
+  const ctx = { anchorsList, home: I.homePc(deck), homeAnchorIdx: I.homeAnchor(deck, anchorsList) };
+  const pool = I.tierPool(deck, tier, anchorsList);
+  const startSet = I.tierStartSet(deck, tier, pool);
+  const accept = I.makeAccept(deck, tier, matrix, null, ctx);
+  const stats = {};
+  const found = host(I.dfsFindAll(startSet, pool, len, accept, budget, matrix, stats));
+  const brute = [];
+  const seq = new Array(len);
+  (function walk(depth) {
+    if (depth === len) {
+      if (accept(seq)) brute.push(seq.slice());
+      return;
+    }
+    for (const c of (depth === 0 ? startSet : pool)) {
+      seq[depth] = c;
+      walk(depth + 1);
+    }
+  })(0);
+  const key = (list) => list.map((q) => q.join(",")).sort();
+  return { stats: host(stats), found, foundKeys: key(found), bruteKeys: key(brute) };
+}
+
+test("the DFS fallback completes and finds the exact exhaustive set", () => {
+  const { full, reviewer } = generated();
+  const cases = [
+    ["reviewer deck 0 ADVANCED L4", reviewer[0].deck, "advanced", 4],
+    ["hijaz INTERMEDIATE L3", HIJAZ, "intermediate", 3],
+    ["pygmy INTERMEDIATE L3", PYGMY, "intermediate", 3],
+    ["amara INTERMEDIATE L3", AMARA, "intermediate", 3]
+  ];
+  const budget = full.sequence._internal.DFS_NODE_BUDGET;
+  for (const [label, deck, tier, len] of cases) {
+    const run = dfsRun(full, deck, tier, len, budget);
+    assert.ok(run.stats.nodes <= budget, `${label}: ${run.stats.nodes} nodes, over the ${budget} budget`);
+    assert.strictEqual(run.stats.truncated, false, `${label}: the search was truncated at ${run.stats.nodes} nodes`);
+    assert.ok(run.bruteKeys.length > 0, `${label}: brute force found nothing, so the case proves nothing`);
+    assert.deepStrictEqual(run.foundKeys, run.bruteKeys, `${label}: DFS set differs from brute force`);
+  }
+});
+
+test("the DFS budget truncates exactly at the boundary", () => {
+  const { full, reviewer } = generated();
+  const deck = reviewer[0].deck;
+  const exact = dfsRun(full, deck, "advanced", 4, DFS_COMPLETE_NODES);
+  assert.strictEqual(exact.stats.nodes, DFS_COMPLETE_NODES);
+  assert.strictEqual(exact.stats.truncated, false, "finishing on the last allowed node is complete, not truncated");
+  assert.deepStrictEqual(exact.foundKeys, exact.bruteKeys);
+  const short = dfsRun(full, deck, "advanced", 4, DFS_COMPLETE_NODES - 1);
+  assert.strictEqual(short.stats.truncated, true, "one node short of the full search must report truncation");
+  assert.ok(short.stats.nodes <= DFS_COMPLETE_NODES - 1,
+    `${short.stats.nodes} nodes visited under a budget of ${DFS_COMPLETE_NODES - 1}`);
+  assert.ok(short.foundKeys.length < exact.foundKeys.length);
+});
+
+/* -------------------------------------------------------------- D3 step 2 */
+
+// D-14 (owner): "Starting chords always allowed". Every BASIC anchor is in the
+// INTERMEDIATE pool, LOW/HIGH register or not, so BASIC nests inside
+// INTERMEDIATE on every deck. The nesting probe behind this (46 of 1,894 decks
+// broke it on main) covered 3 + 11 + 1880 = 1,894 decks: the 3 built-ins, the 11
+// synthetic_scales.json rows that build (the other 9 are deliberate parse/build
+// rejects; 3 of the 11 are the built-ins again), and 1,880 random generated
+// decks. This test covers the first two groups plus the sweep and the two
+// register fixtures; none of the synthetic or sweep decks has a register-labelled
+// anchor, so REGISTER_ANCHOR_DECK and REGISTER_HOME_DECK carry the case.
+test("every BASIC anchor is in the INTERMEDIATE pool on every deck", () => {
+  const fx = generated();
+  const E = engine();
+  const decks = [
+    ["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA],
+    ...fx.synthetic.map((r) => [r.label, r.deck]),
+    ...fx.sweep.map((r) => [r.label, r.deck]),
+    ["REGISTER_ANCHOR_DECK", fx.registerAnchor],
+    ["REGISTER_HOME_DECK", fx.registerHome]
+  ];
+  assert.strictEqual(fx.synthetic.length, 11, "11 of the 20 synthetic rows build");
+  for (const [label, deck] of decks) {
+    const anchorsList = host(E.sequence.anchors(deck));
+    const pool = host(E.sequence._internal.tierPool(deck, "intermediate", anchorsList));
+    for (const idx of anchorsList) {
+      assert.ok(pool.includes(idx),
+        `${label}: BASIC anchor ${idx} [${deck.chords[idx].main}${deck.chords[idx].sup || ""} ${deck.chords[idx].subtitle}] is missing from the INTERMEDIATE pool`);
+    }
+  }
+});
+
+test("INTERMEDIATE deals a register-labelled anchor", () => {
+  const { full, registerAnchor, registerHome } = generated();
+  const S = full.sequence;
+  assert.strictEqual(S.tierOf(registerAnchor, [0, 14, 8]), "intermediate",
+    "A -> C (HIGH VOICING anchor) -> A#dim connects and every card is an anchor or plain");
+
+  let prev = null;
+  let containing = 0;
+  for (let seed = 0; seed < 500; seed += 1) {
+    const deal = S.pick(registerAnchor, S.mulberry32(seed), prev, "intermediate");
+    assert.ok(deal.chords, `seed ${seed} dealt nothing (${deal.reason})`);
+    assert.strictEqual(S.tierOf(registerAnchor, deal.chords), "intermediate",
+      `seed ${seed} dealt ${JSON.stringify(deal.chords)} which is not intermediate`);
+    if (deal.chords.includes(14)) containing += 1;
+    prev = deal.chords;
+  }
+  assert.ok(containing > 0, "no INTERMEDIATE deal in 500 contained the HIGH VOICING anchor 14");
+
+  const homeAnchorIdx = S._internal.homeAnchor(registerHome, S.anchors(registerHome));
+  assert.strictEqual(homeAnchorIdx, 2, "REGISTER_HOME_DECK's home anchor is chord 2");
+  prev = null;
+  let startsOnHome = 0;
+  for (let seed = 0; seed < 500; seed += 1) {
+    const deal = S.pick(registerHome, S.mulberry32(seed), prev, "intermediate");
+    assert.ok(deal.chords, `home deck seed ${seed} dealt nothing (${deal.reason})`);
+    assert.strictEqual(S.tierOf(registerHome, deal.chords), "intermediate");
+    if (deal.chords[0] === 2) startsOnHome += 1;
+    prev = deal.chords;
+  }
+  assert.ok(startsOnHome > 0, "no INTERMEDIATE deal started on the register-labelled home anchor");
+});
+
+test("no built-in anchor is a register-labelled anchor, so the exemption is a no-op there", () => {
+  const E = engine();
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const idx of host(E.sequence.anchors(deck))) {
+      assert.ok(!/\b(LOW|HIGH) VOICING\b/.test(deck.chords[idx].subtitle || ""),
+        `${id} anchor ${idx} carries a LOW/HIGH subtitle`);
     }
   }
 });

@@ -1,0 +1,16 @@
+# kills: tierOf returns null for a sequence ADVANCED can never deal
+# classifyTier's ADVANCED upper bound removed, so a 7-chord sequence ADVANCED
+# never deals is labelled "advanced"
+# suite: node --test --test-name-pattern ^tierOf.returns.null.for.a.sequence.ADVANCED.can.never.deal$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -386,7 +386,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
+       return "intermediate";
+     }
+-    if (n >= 4 && n <= 6) return "advanced";
++    if (n >= 4) return "advanced";
+     return null;
+   }
+ 
