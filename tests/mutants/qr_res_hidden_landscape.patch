@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -302,6 +302,7 @@ a.mode{text-decoration:none}
+@@ -262,6 +262,7 @@ a.mode{text-decoration:none}
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
    #settings-panel > .panel-group{width:auto}
 +  #settings-panel > .panel-group:last-child{display:none}
-   /* Bounce 5 real-font sweep: measured against FALLBACK-font heights, where mode S's #panel-seq-note
-      ("7 different ways to play chords: Watch on YouTube") wraps to 2 lines
-      at this breakpoint's narrowest columns (e.g. 926px wide at 4 columns,
+   .tierbar .t-full{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
+     clip:rect(0 0 0 0); white-space:nowrap}
+   .tierbar .t-abbr{position:static; width:auto; height:auto; margin:0; overflow:visible; clip:auto}
