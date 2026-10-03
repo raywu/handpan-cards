@@ -1,0 +1,15 @@
+# kills: INTERMEDIATE deals a register-labelled anchor
+# intermediateGate's D-14 anchor exemption removed, so a register-labelled
+# anchor is rejected by the gate again and [A, C-HIGH, A#dim] classifies null
+# suite: node --test --test-name-pattern ^INTERMEDIATE.deals.a.register.labelled.anchor$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -345,7 +345,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (chordRootPc(deck, seq[0]) !== home) return false;
+     if (hasForbiddenRepeat(deck, seq, true)) return false;
+     for (var i = 0; i < seq.length; i += 1) {
+-      if (anchorsList.indexOf(seq[i]) >= 0) continue;
+       if (deck.chords[seq[i]].fields.length > 4) return false;
+       if (chordRegister(deck, seq[i]) !== "") return false;
+     }
