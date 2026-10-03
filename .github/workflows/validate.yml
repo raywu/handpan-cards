@@ -216,3 +216,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then BASE=origin/main; else BASE=HEAD^1; fi
           node tools/probe/panel_fit.js --base "$BASE" --font "${{ matrix.font }}"
+      - name: TEMP DIAG main metrics on this runner
+        run: |
+          git show 655a45c:index.html > /tmp/main.html
+          echo "DIAGJSON $(node tools/probe/zz_diag_measure.js /tmp/main.html "$(cat tools/probe/zz_cells.json)")"
