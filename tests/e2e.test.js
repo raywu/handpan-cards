@@ -8447,6 +8447,151 @@ function run() {
   });
 
   /* ---------------------------------------------------------------- *
+   * progression rail scroll continuity (D2 follow-up). Real fonts, NO forced
+   * reduced motion: the lurch only exists with smooth scrolling on.
+   * ---------------------------------------------------------------- */
+  describe("progression rail scroll continuity", () => {
+    let rb = null;
+    before(async () => {
+      rb = await launch({ realFonts: true });
+      assert.ok(rb);
+      await rb.goto(URL);
+      await rb.eval(`return document.fonts.ready.then(() => true);`);
+    });
+    after(async () => { if (rb) await rb.close(); });
+
+    const sampleFrames = (action) => `
+      const rail = () => document.querySelector("#count .seq-rail");
+      ${action};
+      const out = [];
+      return new Promise((res) => {
+        const t0 = performance.now();
+        const tick = () => {
+          out.push(rail().scrollLeft);
+          if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out);
+        };
+        tick();
+      });`;
+
+    async function dealSixChordRail() {
+      await rb.setViewport(380, 740, true);
+      await rb.settle();
+      await rb.eval(`
+        selectDeck("hijaz");
+        const d = deck();
+        const longest = d.chords.map((c, i) => [i, (c.main + (c.sup || "")).length])
+          .sort((a, c) => c[1] - a[1] || a[0] - c[0]).slice(0, 6).map((x) => x[0]);
+        tier = "advanced"; mode = "S";
+        seq = { chords: longest, style: "together" };
+        order = seq.chords.slice(); idx = 0; flipped = false;
+        document.getElementById("foot").classList.add("seq");
+        render();
+        return true;`);
+      await rb.settle();
+      const m = await rb.eval(`
+        const r = document.querySelector("#count .seq-rail");
+        return { sw: r.scrollWidth, cw: r.clientWidth, reduced: matchMedia("(prefers-reduced-motion: reduce)").matches };`);
+      assert.ok(!m.reduced, "this test needs default motion");
+      assert.ok(m.sw > m.cw + 40, `the rail must overflow to exercise the scroll: ${JSON.stringify(m)}`);
+    }
+
+    test("rail scroll: a flip leaves scrollLeft untouched, with no frame at 0",
+      async () => {
+        await dealSixChordRail();
+        await rb.eval(`step(-1); return true;`);
+        await rb.eval(`return new Promise((r) => setTimeout(r, 900));`);
+        const settled = await rb.eval(`return document.querySelector("#count .seq-rail").scrollLeft;`);
+        assert.ok(settled > 20, `last chord must scroll the rail: ${settled}`);
+        const frames = await rb.eval(sampleFrames(`flip()`));
+        assert.ok(frames.length > 10, "sampled frames");
+        assert.ok(Math.min(...frames) >= settled - 0.5,
+          `a flip must not move the rail (settled ${settled}): ${frames.map((f) => Math.round(f)).join(",")}`);
+      });
+
+    const settleScroll = `
+      return new Promise((res) => {
+        let last = -1, same = 0;
+        const tick = () => {
+          const v = document.querySelector("#count .seq-rail").scrollLeft;
+          same = v === last ? same + 1 : 0; last = v;
+          if (same >= 8) res(v); else requestAnimationFrame(tick);
+        };
+        tick();
+      });`;
+    const currentInView = `
+      const rail = document.querySelector("#count .seq-rail");
+      const rr = rail.getBoundingClientRect(), cr = rail.querySelector("b").getBoundingClientRect();
+      return { idx, left: rail.scrollLeft, inView: cr.left >= rr.left - 0.5 && cr.right <= rr.right + 0.5 };`;
+    const settledAtLast = async () => {
+      await rb.eval(`step(-1); return true;`);
+      return rb.eval(settleScroll);
+    };
+
+    test("rail scroll: stepping scrolls on from the old position to a chord that was off-screen",
+      async () => {
+        await dealSixChordRail();
+        const start = await settledAtLast();
+        assert.ok(start > 20, `the last chord must scroll the rail: ${start}`);
+        const frames = await rb.eval(sampleFrames(`step(1)`));
+        assert.ok(frames[0] > 0 && frames[0] <= start + 0.5,
+          `stepping must scroll on from the old position (start ${start}): ${frames.map((f) => Math.round(f)).join(",")}`);
+        for (let i = 1; i < frames.length; i++) {
+          assert.ok(frames[i] <= frames[i - 1] + 0.5, `no frame may move away from the target: ${frames.map((f) => Math.round(f)).join(",")}`);
+        }
+        const m = await rb.eval(currentInView);
+        assert.strictEqual(m.idx, 0);
+        assert.ok(m.inView, `the current chord (idx ${m.idx}) must be in view after stepping`);
+      });
+
+    test("rail scroll: a flip inside the smooth-scroll window still ends with the current chord in view",
+      async () => {
+        for (const gap of [0, 90, 200]) {
+          await dealSixChordRail();
+          await rb.eval(`step(-1); return new Promise((r) => setTimeout(() => { flip(); r(true); }, ${gap}));`);
+          await rb.eval(settleScroll);
+          const m = await rb.eval(currentInView);
+          assert.ok(m.inView, `gap ${gap}ms: chord ${m.idx} is out of view at scrollLeft ${m.left}`);
+          assert.ok(m.left > 20, `gap ${gap}ms: scrollLeft ${m.left}`);
+        }
+      });
+
+    test("rail scroll: a new deal starts at the first chord with scrollLeft 0",
+      async () => {
+        await dealSixChordRail();
+        const settled = await settledAtLast();
+        assert.ok(settled > 20);
+        const frames = await rb.eval(sampleFrames(`
+          seq = { chords: seq.chords.slice(), style: "together" };
+          order = seq.chords.slice(); idx = 0; flipped = false; render()`));
+        assert.deepStrictEqual(frames.filter((f) => f !== 0), [],
+          `a new deal must never show the old scroll: ${frames.map((f) => Math.round(f)).join(",")}`);
+      });
+
+    test("rail scroll: under reduced motion a flip right after a step ends in view and a settled flip does not move",
+      async () => {
+        await dealSixChordRail();
+        await rb.send("Emulation.setEmulatedMedia", {
+          media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+        });
+        try {
+          assert.strictEqual(await rb.eval(`return matchMedia("(prefers-reduced-motion: reduce)").matches;`), true,
+            "the reduced-motion emulation must have taken effect");
+          const stepFrames = await rb.eval(sampleFrames(`step(-1)`));
+          const settled = await rb.eval(settleScroll);
+          assert.ok(settled > 20, `the last chord must scroll the rail: ${settled}`);
+          assert.ok(stepFrames.every((f) => Math.abs(f - settled) <= 0.5),
+            `a step under reduced motion must land instantly (settled ${settled}): ${stepFrames.map((f) => Math.round(f)).join(",")}`);
+          const m = await rb.eval(currentInView);
+          assert.ok(m.inView, JSON.stringify(m));
+          const frames = await rb.eval(sampleFrames(`flip()`));
+          assert.ok(Math.min(...frames) >= settled - 0.5, frames.join(","));
+        } finally {
+          await rb.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+        }
+      });
+  });
+
+  /* ---------------------------------------------------------------- *
    * difficulty - docs/plans/2026-10-02-sequence-difficulty.md
    * ---------------------------------------------------------------- */
   describe("difficulty", () => {
