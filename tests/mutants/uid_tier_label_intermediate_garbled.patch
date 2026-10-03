@@ -1,8 +1,7 @@
-# kills: the empty-tier message uses the tier button's own spelling (intermediate)
+# kills: a NO_TIER_SEQUENCE deck shows a message naming the selected tier
 # suite: node --test --test-name-pattern a.NO_TIER_SEQUENCE.deck.shows.a.message.naming.the.selected.tier tests/e2e.test.js
 # D2 reviewer fix. TIER_LABEL.intermediate is changed, so the empty-tier message no longer matches the button.
 diff --git a/index.html b/index.html
-index a1695ef..cdcb17e 100644
 --- a/index.html
 +++ b/index.html
 @@ -7084,7 +7084,7 @@ function linesHTML(d, ch) {
