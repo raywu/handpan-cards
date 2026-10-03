@@ -195,6 +195,8 @@ What already exists: `connects`, `anchors`, `homeAnchor`, `mulberry32` and the v
 | A-6 | E-4 parity oracle | Golden fixture before engine edit | Only oracle a basic-routing mutant cannot pass |
 | A-7 | E-2, E-5, E-6, E-7, E-8 | Fix as stated | Each a concrete break with one obvious fix |
 
+auto-decision (AFK), 2026-10-02: the shipped panel deviates from D-8 and D-9 as written, both under the panel-fit budget forced by owner decision "Fix layout before merge" (bounce 5, reviewer FAIL #4). D-8 specified its own `.panel-group` with a "Difficulty" heading; the shipped `#panel-tier-group` has no heading and reads as part of Practice instead - a 5th panel-group (with its own heading row) was the proximate cause of the 110/129-cell landscape-grid overflow regression bounce 5 fixed, and removing the heading's own line keeps the group's height down without touching the tier buttons themselves. D-9 specified a `@container tier (min-width:348px)` switch between a single column (narrow) and an equal-width row (wide); the shipped `.tierbar` is `display:flex; flex-wrap:wrap` unconditionally (index.html's own comment at the markup site: "D-9's container-query design was dropped for plain flex-wrap"), which is narrower in its tightest wrap (three buttons wrapping individually, not jumping straight to a full single column) and was cheaper to fit inside the same budget. Rationale is panel-fit space, not a design objection to either D-8 or D-9 - this is a budget-driven simplification, not a reconsideration of the design pass's reasoning. Not changed unilaterally: see D2's bounce-5 report for an opinion on whether to reinstate either piece now that the fit crisis is resolved.
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |

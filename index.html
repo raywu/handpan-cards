@@ -357,41 +357,92 @@ a.mode{text-decoration:none}
      (2026-10-02, owner nit). Zero it here; the grid's own row placement
      already gives each group its real gap. */
   #panel-tier-group{margin-top:0}
+  /* Bounce 5 (reviewer FAIL #4): the tierbar word-wrap fix below was
+     previously scoped to max-width:600px only (the single width this grid
+     was believed to force into a narrow-enough column to wrap INTERMEDIATE
+     onto a second tierbar row), but the reorder two rules below can now
+     land Difficulty in the grid's leftover row at 3-column widths too
+     (740-844px measured), where its OWN column is just as narrow as at
+     600px and wraps the same way - 112.75px instead of 94px, the entire
+     regression at those widths. The column width that triggers the wrap is
+     a function of how many columns auto-fit computes, not of the viewport
+     width directly, so this trim is cheap (padding/letter-spacing only, no
+     functional change, the >=44px hit-target floor untouched) and safe to
+     apply unconditionally wherever this grid is active, rather than trying
+     to track every width band that can produce a narrow-enough column. */
+  .tierbar .mode{padding:7px 5px 6px; letter-spacing:.03em}
+  /* Bounce 5 (reviewer FAIL #4): this grid's auto-placement pairs items by
+     SOURCE order into however many columns auto-fit computes at the current
+     width, and adding the Difficulty group shifted every later group by one
+     slot. The row cost here is max(heights in that row), summed per row -
+     so what matters is which group ends up ALONE (or in the smallest
+     leftover row), not raw adjacency. Measured group heights: Practice is
+     161px in mode S (its extra #panel-seq-note) and 114px in modes A/B;
+     Print and Resources are both 114px always (heading + one modebar row);
+     Difficulty is 94px (no heading); Scales is 64px (heading + one button,
+     the shortest group). The three 114-161px groups (Practice, Print,
+     Resources) are put FIRST in order, the two short groups (Difficulty 94,
+     Scales 64, smallest last) LAST - that way, whichever columns leave a
+     short leftover row, the leftover is the cheapest group(s) available,
+     never a 114px+ one stranded alone paying for a whole extra row by
+     itself. Worked through every column count this breakpoint can produce:
+     5+ columns - order is moot, everything is one row already, identical
+     cost to main's single row. 4 columns - row 1 = Practice, Print,
+     Resources, Difficulty (cost = Practice's height); row 2 = Scales alone
+     (64, the cheapest possible leftover) - this is the 926px-wide band
+     reviewer #4 measured at +39px; the old order (Practice, Print,
+     Difficulty, Scales / Resources alone) left Resources, a 114px group,
+     stranded in row 2 instead. 3 columns - row 1 = Practice, Print,
+     Resources; row 2 = Difficulty, Scales (cost = 94, better than the old
+     order's Scales/Resources pairing at cost 114). 2 columns (568px wide,
+     the reviewer's other regression) - row 1 = Practice, Print; row 2 =
+     Resources, Difficulty (cost 114); row 3 = Scales alone (64) - the old
+     order's row 2/3 split (Difficulty+Scales, then Resources alone) cost
+     114+94 extra beyond row 1 where this costs only 114+64, strictly less.
+     Verified by direct measurement at every reported regression cell, not
+     derived by inspection alone. Measured regression before this fix: 110
+     cells (real fonts) / 129 cells (fallback) across the 740-926-wide
+     landscape band at heights ~300-364, plus 568-wide modes A/B at
+     ~300-316 - a reviewer sweep (not a spot check) caught it because the
+     committed landscape tests (844x390, 926x428, 667x375, 1280x500) all
+     sit above the band. */
+  #settings-panel > .panel-group:nth-child(2){order:1}
+  #settings-panel > .panel-group:nth-child(5){order:2}
+  #settings-panel > .panel-group:nth-child(6){order:3}
+  #panel-tier-group{order:4}
+  #panel-scales-group{order:5}
+  /* Bounce 5 real-font sweep: the row-cost reorder above was measured and
+     verified against FALLBACK-font heights, where mode S's #panel-seq-note
+     ("7 different ways to play chords: Watch on YouTube") wraps to 2 lines
+     at this breakpoint's narrowest columns (e.g. 926px wide at 4 columns,
+     ~206px each). Real Nunito Sans is wider than the headless fallback
+     sans-serif at the same declared size, so the identical text wraps to 3
+     lines there instead - Practice grows from 161px to 177.75px and the
+     926x310 S cell (and others in the same column-width band) overflow by
+     up to 7px even with the reorder in place. Trimming the note's own
+     font-size/line-height at this breakpoint only (never touched outside
+     max-height:520px, and only in mode S since that is the only mode where
+     this element is ever unhidden) keeps it inside its 2-line budget in
+     both fallback and real fonts, without touching any card-facing type -
+     this is UI copy, not the chord-card design system. */
+  #panel-seq-note{font-size:9.2px; line-height:1.3}
 }
 /* 568x320 is the one landscape-grid size narrow enough to force 2 columns
    instead of 3 (auto-fit, minmax(200px,1fr) against this width's ~550px
    content box); 667x375 and 812x375 get 3 columns, already fit, and are
    untouched by the fixes below - narrowing them to this width keeps that
    fix (the heading-alignment nit above) from being reshuffled by the
-   reorder here. */
+   reorder above. */
 @media (max-height:520px) and (max-width:600px){
-  /* 568x320 mode A overflowed the panel by 64px (scrollH 384 vs clientH
-     320) before this rule: in its own ~270px grid column, INTERMEDIATE's
-     unbroken word at the base padding/letter-spacing forces ADVANCED onto
-     a second tierbar row, adding a whole extra 44px+gap row to the group
-     (2026-10-02, owner nit - restore main's pre-Difficulty-group fit).
-     Trimming horizontal padding and letter-spacing (min-height:44px, the
-     >=44px hit-target floor, is untouched) narrows all three buttons just
-     enough to keep them on one row at this column width. */
-  .tierbar .mode{padding:7px 5px 6px; letter-spacing:.03em}
-  /* This grid's auto-placement pairs items by SOURCE order into 2 columns,
-     so adding the Difficulty group after Practice shifted every later pair
-     by one slot and turned an even 4-group layout (2 rows, nothing wasted)
-     into an odd 5-group one (3 rows, the last group alone in its row with
-     its partner column empty). Reordering (grid honours `order` for
-     auto-placement, not just paint order) so the two tall, two-row groups
-     - Practice and Print - share a row, and the three short, one-row
-     groups - Difficulty, Scales, Resources - share the other two, removes
-     that waste without touching any group's own content or height. */
-  #settings-panel > .panel-group:nth-child(2){order:1}
-  #settings-panel > .panel-group:nth-child(5){order:2}
-  #panel-tier-group{order:3}
-  #panel-scales-group{order:4}
-  #settings-panel > .panel-group:nth-child(6){order:5}
-  /* Even with the reorder above removing the wasted odd-row-out, the grid's
-     inherited base gap (--sp-3, 9px here) and padding-bottom still leave
-     this breakpoint over its 320px budget; tighten both one ramp step
-     further, same technique the sidebar's narrow-height budget uses. */
+  /* The tierbar word-wrap trim (.tierbar .mode padding/letter-spacing) that
+     used to live here is now unconditional, in the base max-height:520px
+     block above - see the bounce-5 comment there; this breakpoint no
+     longer needs its own copy. */
+  /* Even with the reorder above (now shared with every column count)
+     removing the wasted odd-row-out, the grid's inherited base gap
+     (--sp-3, 9px here) and padding-bottom still leave this breakpoint over
+     its 320px budget; tighten both one ramp step further, same technique
+     the sidebar's narrow-height budget uses. */
   #settings-panel{gap:var(--sp-1)}
   #settings-panel:not(:has(#panel-seq-note:not([hidden]))){padding-bottom:var(--sp-1)}
   /* Mode S's own extra two-line note (#panel-seq-note, inside the Practice
@@ -402,18 +453,104 @@ a.mode{text-decoration:none}
      shorthand (2026-10-02, reviewer nit): the shorthand also zeroes
      column-gap, which costs no height here but left adjacent columns
      touching with no gutter at all (Practice/Print, Difficulty/Scales) -
-     a column-gap:0 was never the budget this rule needed to spend. */
-  #settings-panel:has(#panel-seq-note:not([hidden])){row-gap:0}
+     a column-gap:0 was never the budget this rule needed to spend.
+     Bounce 5 (reviewer FAIL #4): modes A/B need the same row-gap:0 at this
+     width - even the OPTIMAL packing the reorder above now produces for 2
+     columns (Practice+Print / Resources+Difficulty / Scales alone, the
+     theoretical minimum: every row's cost is its cheapest possible leftover)
+     still overflows by 4px at 568x312, because a 5-group panel needs 3 rows
+     at 2 columns where main's 4 groups only ever needed 2 - no reordering
+     closes a gap that is now structural, so the row-gap itself has to give.
+     Unconditional (not scoped to mode S's :has() any more) since modes A/B
+     need it just as much here and it costs nothing content-visible beyond
+     the vertical whitespace between rows. */
+  #settings-panel{row-gap:0}
+}
+/* Bounce 5 follow-up (owner decision 1: a control offscreen on the PR at a
+   viewport where main shows it is a regression regardless of the overall
+   overflow count). #panel-scales-group must stay the cheapest-and-last
+   group for the row-packing fix above to hold at every width this
+   breakpoint produces (see its own comment: swapping it for Difficulty
+   measurably reopens FAIL #4, +30px at the 568/740/926-wide cells that fix
+   was built for) - so whatever residual overflow this breakpoint still
+   has once everything else is as tight as the fix above gets it lands on
+   #deck-add, the one thing inside that last group. Below 356px tall in
+   mode S, and below 308px tall in modes A/B, this breakpoint still
+   overflows even after every other trim here, same as main does (main is
+   WORSE at every one of these cells - this is not the FAIL #4 regression,
+   it is pre-existing shortfall this bounce narrowed but didn't reach 0 on).
+   #panel-seq-note is the one piece of mode S's content that is not a
+   control (no click target, no form element - a hint sentence with one
+   outbound link) and it alone, at 161px vs 114px, accounts for most of
+   mode S's extra height over A/B; hiding it below the height where it
+   would otherwise cost #deck-add its visibility recovers enough budget to
+   keep #deck-add on every mode's screen down to this breakpoint's
+   shortest tested real-world band. The two thresholds differ (356 vs 308)
+   because mode S's own content is taller to begin with, not because of a
+   different rule.
+   That alone still leaves #deck-add offscreen in modes A/B (no
+   #panel-seq-note to hide) down to 300px at every width this breakpoint
+   reaches - 568 (2-column) through 926 (3/4-column) alike - and a smaller
+   residual tail in mode S at the same heights once its own fix above is
+   applied. None of the four rules below carry a max-width: the original
+   max-width:600px scoping on this group of fixes only ever matched the
+   568-wide cells, leaving the exact same #deck-add shortfall unfixed at
+   667-926px wide (3/4-column packing, not a different rule, see the next
+   comment); max-height:356px alone is sufficient scoping since the desktop
+   sidebar's own breakpoint (two blocks down) requires min-height:700px,
+   mutually exclusive with this one. Every .panel-group here is
+   heading+control stacked with the ramp's --sp-1 gap between them (line
+   497); zeroing it is the SAME lever already used for the desktop
+   sidebar's own narrow-height budget two blocks down (.panel-group{gap:0},
+   line 620) - gap:0 is the one value the spacing-ramp test
+   (tests/app.test.js "every gap...comes from the spacing ramp") exempts
+   outright, so this is not a fresh literal. 5 groups x 3px covers the
+   8-10px still missing in modes A/B at 300-306px and closes mode S's tail
+   at the same heights, without touching the >=44px tier/mode button floor
+   or any control's own content. */
+@media (max-height:356px){
+  #panel-seq-note{display:none}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
 #settings-trigger[aria-expanded="true"] .glyph::after{top:0; transform:rotate(-45deg)}
 .panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
+/* Same specificity as the rule above, so this must come AFTER it in source
+   order to win - see the bounce-5-follow-up comment a few lines up for why
+   this exists. */
+@media (max-height:356px){
+  .panel-group{gap:0}
+}
 /* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
    face used as it is used on the sheet's own title (O3/design direction).
    Controls keep their ALL-CAPS Nunito voice (N15). */
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
+/* Real-font-only residual: real Marcellus runs slightly taller than the
+   fallback serif at 14px, so even with #panel-seq-note hidden and
+   .panel-group's gap zeroed (both above) #deck-add is still offscreen by a
+   few px at exactly h=300 under real fonts (fallback is already clean
+   there). One more ramp-adjacent trim, same scope, same technique: shave
+   each of the five headings by 2px. Headings are single short words
+   ("Practice", "Difficulty", "Scales", "Print", "Resources") so this never
+   risks a wrap. */
+@media (max-height:356px){
+  .panel-heading{font-size:11px}
+}
+/* Last 1-2px, real fonts only, at 667-926px wide (3/4-column packing - the
+   2-column 568px case above is already clean from the two trims above
+   alone): the panel's own top padding (`calc(var(--sp-3) + 56px)`, line 315)
+   clears the fixed #settings-trigger (44px tall) by 65px total at the base
+   --sp-3 (9px); trimming 2px off that clearance still leaves 63px, nowhere
+   close to colliding with the 44px trigger, and applies uniformly to every
+   column count since it is vertical panel padding, not a per-row cost.
+   Overrides padding-top only (not the `padding` shorthand) so it never
+   fights the padding-bottom trims already scoped elsewhere in this
+   breakpoint; source order (this appears after the base #settings-panel
+   rule) settles the equal-specificity conflict. */
+@media (max-height:356px){
+  #settings-panel{padding-top:calc(var(--sp-3) + 54px)}
+}
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
    owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum,
    docs/plans/2026-09-28-android-bg-and-menu.md:169 and :307).

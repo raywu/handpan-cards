@@ -6931,6 +6931,35 @@ function run() {
       // is the one correct wait - a fixed sleep would be timing-dependent and
       // settle() only waits on WAAPI/CSS animations, not font loading.
       await rb.eval(`return document.fonts.ready.then(() => true);`);
+      // Nit 2 (bounce 5): document.fonts.ready resolves once the browser's
+      // font-matching settles, even if every @font-face it tried to match
+      // failed to load and it fell back to a system font silently - a broken
+      // Fetch-domain interception in launch({ realFonts: true }) would pass
+      // this `before` hook and then every test below would quietly measure
+      // FALLBACK metrics while believing it was testing real fonts, which is
+      // exactly the gap reviewer FAIL #4 exploited (a fallback-font pass does
+      // not establish a real-font pass; see probe4.js in the bounce-5
+      // investigation). Assert the three families this app ships
+      // (Marcellus, Bitter, Nunito Sans) actually matched, so an interception
+      // break fails loudly here instead of silently degrading every test in
+      // this describe block.
+      // check() alone only reports what the page already needed to render -
+      // 700-weight Bitter is not necessarily on screen yet at this point, so
+      // force each face to load before asking whether it matched, same as
+      // check() would eventually report once something on the page used it.
+      const fc = await rb.eval(`
+        const specs = ["14px Marcellus", "400 14px Bitter", "700 14px Bitter",
+          "400 14px 'Nunito Sans'", "600 14px 'Nunito Sans'"];
+        return Promise.all(specs.map(s => document.fonts.load(s))).then(() => ({
+          marcellus: document.fonts.check(specs[0]),
+          bitter: document.fonts.check(specs[1]),
+          bitterBold: document.fonts.check(specs[2]),
+          nunito: document.fonts.check(specs[3]),
+          nunitoSemi: document.fonts.check(specs[4]),
+        }));
+      `);
+      assert.ok(fc.marcellus && fc.bitter && fc.bitterBold && fc.nunito && fc.nunitoSemi,
+        `real-font interception did not actually load every family this app ships: ${JSON.stringify(fc)}`);
     });
     after(async () => { if (rb) await rb.close(); });
 
@@ -7005,6 +7034,70 @@ function run() {
           `320x568 mode S (real fonts): the panel (${m.scrollH}px) overflows its own box ` +
           `(${m.clientH}px) by ${m.scrollH - m.clientH}px`);
         assert.ok(m.resVisible, "320x568 mode S (real fonts): the Resources links are not all rendered");
+      });
+
+    // Bounce 5 (reviewer FAIL #4): adding the Difficulty panel-group shifted
+    // the landscape grid's auto-fit column packing, stranding a 114px+ tall
+    // group alone in the leftover row at several widths and forcing an extra
+    // row entirely at 568px wide - a regression invisible to every landscape
+    // test above (844x390, 926x428, 667x375, 1280x500 all sit above this
+    // band). The reviewer's full sweep (6,471 cells/font) found 110
+    // regressions real-font / 129 fallback, all inside this band; these are
+    // the band edges, in real fonts, where it bit hardest. Confirmed RED at
+    // b3fdcf9 (pre-fix) and GREEN after the order/tierbar-wrap/row-gap/
+    // panel-seq-note fixes in index.html's base max-height:520px block.
+    //
+    // Bounce 5 follow-up (owner decision 1): the fix above still left
+    // #deck-add offscreen at this breakpoint's shortest tested heights
+    // (300-306px) in every mode, at every width from 568 through 926 -
+    // #panel-scales-group is pinned cheapest-and-last by the fix above (see
+    // its own comment), so any residual overflow always lands on the one
+    // control inside it, and `main` shows #deck-add at every one of these
+    // cells even where it overflows worse overall (sacrificing
+    // print-paper-select or the Resources links instead) - so this was a
+    // regression under owner decision 1 regardless of the formal
+    // over>1-and-not-on-main count. Fixed by hiding #panel-seq-note (mode S
+    // only; already covered above), zeroing .panel-group's own heading-to-
+    // control gap, trimming .panel-heading's font-size, and trimming
+    // #settings-panel's top padding by 2px - all inside the same
+    // max-height:356px block, all width-unscoped (the original max-width:600
+    // scoping on this group of rules only matched 568px wide and silently
+    // left 667-926px unfixed). The 568/667/740/926-wide 300px cases below are
+    // the exact cells that were red before that follow-up.
+    test("the landscape panel has no vertical scroll and no offscreen control at the bounce-5 band edges (REAL fonts)",
+      async () => {
+        const cases = [
+          [740, 360, "S"], [740, 340, "S"], [812, 330, "S"], [926, 310, "S"],
+          [740, 304, "A"], [844, 304, "B"], [568, 312, "A"],
+          [568, 300, "A"], [568, 300, "S"], [667, 300, "S"], [740, 300, "S"],
+          [926, 300, "S"],
+        ];
+        for (const [w, h, mode] of cases) {
+          await rb.setViewport(w, h, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.clear(); localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))});`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.settle();
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+            { label: "panel open" });
+          await rb.settle();
+          const m = await rb.eval(`
+            const p = document.getElementById("settings-panel");
+            const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+            return {
+              over: p.scrollHeight - p.clientHeight,
+              off: ctrls.filter(e => {
+                const k = e.getBoundingClientRect();
+                return k.left < -0.5 || k.top < -0.5 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5;
+              }).map(e => e.id || e.textContent.trim()),
+            };
+          `);
+          const label = `${w}x${h} mode ${mode} (real fonts)`;
+          assert.ok(m.over <= 1, `${label}: the panel overflows its own box by ${m.over}px`);
+          assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
+        }
       });
   });
 
