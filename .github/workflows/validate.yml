@@ -208,7 +208,7 @@ jobs:
       # The acceptance oracle for the settings panel (docs/plans/2026-10-02-
       # difficulty-d2-replan.md section 4.3): every width 320-1300 in every
       # height band the stylesheet's own media queries define, modes A/B/S,
-      # base vs this commit. Expected RED on PR #203 from step 1 until step 7.
+      # base vs this commit. Green on PR #203 since step 6; a red here is a real regression.
       # Base is origin/main on a pull request and the first parent on main. When
       # index.html is byte-identical to the base it says so and passes: that is
       # the only non-measuring pass.
@@ -216,8 +216,3 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then BASE=origin/main; else BASE=HEAD^1; fi
           node tools/probe/panel_fit.js --base "$BASE" --font "${{ matrix.font }}"
-      - name: TEMP DIAG main metrics on this runner
-        run: |
-          git show 655a45c:index.html > /tmp/main.html
-          echo "DIAGJSON $(node tools/probe/zz_diag_measure.js /tmp/main.html "$(cat tools/probe/zz_cells.json)")"
-          echo "DIAGCAND $(node tools/probe/zz_diag_measure.js index.html "$(cat tools/probe/zz_cells.json)")"
