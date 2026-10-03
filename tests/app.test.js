@@ -4514,3 +4514,224 @@ test("every built-in card face still matches the committed digest of card_face_v
     );
   }
 });
+
+/* ------------------------------------------------------------ panel fit judge
+ * The acceptance oracle of docs/plans/2026-10-02-difficulty-d2-replan.md section
+ * 4.3 / 4.3.1. These tests exercise the JUDGE only (pure functions over
+ * synthetic cells); the browser measuring lives in tools/probe/panel_fit.js and
+ * is run by the CLI and the `panel fit` CI job. Test names contain "panel fit"
+ * so `--test-name-pattern panel.fit` selects exactly this group.
+ */
+describe("panel fit judge", () => {
+  const pf = require("../tools/probe/panel_fit.js");
+
+  const ctl = (bottom, over = {}) => ({ exists: true, rendered: true, disabled: false, bottom, ...over });
+  const KEYS = ["modeA", "modeB", "modeS", "deck-add"];
+  function cell(over = {}) {
+    const controls = {};
+    for (const k of KEYS) controls[k] = ctl(100);
+    return {
+      needed: 400, avail: 500, modal: true,
+      overflowX: { panel: 0, doc: 0 },
+      controls,
+      stops: [{ key: "settings-trigger", disabled: false, rendered: true },
+        ...KEYS.map((k) => ({ key: k, disabled: false, rendered: true }))],
+      ...over,
+    };
+  }
+  const withControl = (c, key, v) => ({ ...c, controls: { ...c.controls, [key]: v } });
+  const ref = KEYS.slice();
+  const judge = (b, c, extra = {}) => pf.judgeCell({ base: b, cand: c, refRendered: ref, ...extra });
+
+  test("panel fit: identical cells produce no offender in any rule", () => {
+    const r = judge(cell(), cell());
+    for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) {
+      assert.deepStrictEqual([r[k].fail, r[k].reported], [[], []], k);
+    }
+  });
+
+  test("panel fit rule 1: needed height beyond max(base, avail) + 1 fails, within it passes", () => {
+    const b = cell({ needed: 520, avail: 500 });
+    assert.strictEqual(judge(b, cell({ needed: 521, avail: 500 })).rule1.fail.length, 0, "equal to base + 1");
+    assert.strictEqual(judge(b, cell({ needed: 521.5, avail: 500 })).rule1.fail.length, 1, "base + 1.5");
+    const fits = cell({ needed: 400, avail: 500 });
+    assert.strictEqual(judge(fits, cell({ needed: 501, avail: 500 })).rule1.fail.length, 0, "avail + 1");
+    assert.strictEqual(judge(fits, cell({ needed: 502, avail: 500 })).rule1.fail.length, 1, "avail + 2");
+  });
+
+  test("panel fit rule 2: a control unrendered on the candidate fails, whether or not the base fits", () => {
+    const gone = withControl(cell(), "deck-add", ctl(100, { rendered: false }));
+    assert.strictEqual(judge(cell(), gone).rule2.fail.length, 1);
+    const baseOver = cell({ needed: 700, avail: 500 });
+    assert.strictEqual(judge(baseOver, withControl(baseOver, "deck-add", ctl(100, { rendered: false }))).rule2.fail.length, 1);
+  });
+
+  test("panel fit rule 2: a control pushed below max(base bottom, avail) + 0.5 fails", () => {
+    const b = cell();
+    assert.strictEqual(judge(b, withControl(b, "deck-add", ctl(500.5))).rule2.fail.length, 0, "at avail + 0.5");
+    assert.strictEqual(judge(b, withControl(b, "deck-add", ctl(500.6))).rule2.fail.length, 1, "past avail + 0.5");
+    const low = withControl(cell(), "deck-add", ctl(900));
+    assert.strictEqual(judge(low, withControl(low, "deck-add", ctl(900.4))).rule2.fail.length, 0, "base was already lower than avail");
+  });
+
+  test("panel fit rule 2: where the base itself overflows the offender is reported or failed by the OD-8 constant alone", () => {
+    const b = withControl(cell({ needed: 700, avail: 500 }), "deck-add", ctl(600));
+    const c = withControl(b, "deck-add", ctl(650));
+    const strict = judge(b, c, { od8FailBaseOverflow: true });
+    const lax = judge(b, c, { od8FailBaseOverflow: false });
+    assert.deepStrictEqual([strict.rule2.fail.length, strict.rule2.reported.length], [1, 0], "OD-8 = fail");
+    assert.deepStrictEqual([lax.rule2.fail.length, lax.rule2.reported.length], [0, 1], "OD-8 = report");
+  });
+
+  test("panel fit rule 2: the OD-8 constant ships as fail (owner ruling 2026-10-02)", () => {
+    assert.strictEqual(pf.OD8_FAIL_BASE_OVERFLOW, true);
+  });
+
+  test("panel fit rule 3: a candidate-only control below the fold fails where the base fits, is reported where it does not", () => {
+    const b = cell();
+    const c = withControl(cell(), "tier-select", ctl(600));
+    const fit = judge(b, c);
+    assert.strictEqual(fit.rule3.fail.length, 1);
+    const bOver = cell({ needed: 800, avail: 500 });
+    const over = judge(bOver, withControl(bOver, "tier-select", ctl(600)));
+    assert.deepStrictEqual([over.rule3.fail.length, over.rule3.reported.length], [0, 1]);
+    assert.strictEqual(judge(b, withControl(cell(), "tier-select", ctl(500.4))).rule3.fail.length, 0, "inside avail + 0.5");
+  });
+
+  test("panel fit rule 3: a candidate-only control is not also charged to rule 2", () => {
+    const r = judge(cell(), withControl(cell(), "tier-select", ctl(600)));
+    assert.strictEqual(r.rule2.fail.length, 0);
+  });
+
+  test("panel fit rule 4: more horizontal overflow on the candidate fails, on the panel or on the document", () => {
+    assert.strictEqual(judge(cell(), cell({ overflowX: { panel: 1, doc: 0 } })).rule4.fail.length, 1);
+    assert.strictEqual(judge(cell(), cell({ overflowX: { panel: 0, doc: 3 } })).rule4.fail.length, 1);
+    const b = cell({ overflowX: { panel: 4, doc: 4 } });
+    assert.strictEqual(judge(b, cell({ overflowX: { panel: 4, doc: 2 } })).rule4.fail.length, 0, "no worse than base");
+  });
+
+  test("panel fit rule 5: the rendered set must equal the reference cell's set for the mode", () => {
+    const hidden = withControl(cell(), "modeS", ctl(100, { rendered: false }));
+    assert.strictEqual(judge(cell(), hidden).rule5.fail.length, 1, "one control unrendered");
+    const extra = withControl(cell(), "tier-select", ctl(100));
+    assert.strictEqual(judge(cell(), extra).rule5.fail.length, 1, "one control that the reference does not render");
+    assert.strictEqual(judge(cell(), cell()).rule5.fail.length, 0);
+  });
+
+  test("panel fit rule 5: a control that does not exist on the candidate is not counted as rendered", () => {
+    const gone = withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 });
+    assert.strictEqual(judge(cell(), gone).rule5.fail.length, 1);
+  });
+
+  test("panel fit rule 6: a stop that is disabled or has no client rects fails", () => {
+    const c1 = cell({ stops: [...cell().stops, { key: "seq-source-link", disabled: false, rendered: false }] });
+    assert.strictEqual(judge(cell(), c1).rule6.fail.length, 1, "unrendered stop");
+    const c2 = cell({ stops: [...cell().stops, { key: "tier-select", disabled: true, rendered: true }] });
+    assert.strictEqual(judge(cell(), c2).rule6.fail.length, 1, "disabled stop");
+  });
+
+  test("panel fit rule 6: a rendered enabled control missing from the stop list fails, and a disabled one need not be listed", () => {
+    const missing = cell({ stops: cell().stops.filter((s) => s.key !== "deck-add") });
+    assert.strictEqual(judge(cell(), missing).rule6.fail.length, 1);
+    const dis = withControl(cell(), "modeB", ctl(100, { disabled: true }));
+    const stops = cell().stops.filter((s) => s.key !== "modeB");
+    assert.strictEqual(judge(cell(), { ...dis, stops }).rule6.fail.length, 0);
+  });
+
+  test("panel fit rule 6: the trigger is owed in the modal and unrendered in the sidebar", () => {
+    const noTrigger = cell({ stops: cell().stops.filter((s) => s.key !== "settings-trigger") });
+    assert.strictEqual(judge(cell(), noTrigger).rule6.fail.length, 1, "modal omits the trigger");
+    const side = cell({ modal: false, stops: noTrigger.stops });
+    assert.strictEqual(judge(cell(), side).rule6.fail.length, 0, "sidebar without the trigger is correct");
+    const sideListed = cell({ modal: false, stops: [{ key: "settings-trigger", disabled: false, rendered: false }, ...noTrigger.stops] });
+    assert.strictEqual(judge(cell(), sideListed).rule6.fail.length, 1, "sidebar listing the unrendered trigger fails");
+  });
+
+  test("panel fit rule 6 is judged on the candidate only", () => {
+    const bad = cell({ stops: [...cell().stops, { key: "seq-source-link", disabled: false, rendered: false }] });
+    assert.strictEqual(judge(bad, cell()).rule6.fail.length, 0);
+  });
+
+  test("panel fit font mode: real needs five loaded faces, fallback needs none", () => {
+    const loaded = (n) => ({ size: n, faces: Array.from({ length: n }, () => ({ status: "loaded" })) });
+    assert.doesNotThrow(() => pf.checkFontMode("fallback", loaded(0)));
+    assert.throws(() => pf.checkFontMode("fallback", loaded(5)), /fallback.*5/i);
+    assert.throws(() => pf.checkFontMode("real", loaded(0)), /real.*0/i);
+    assert.throws(() => pf.checkFontMode("real", { size: 5, faces: [...loaded(4).faces, { status: "unloaded" }] }), /unloaded/);
+    assert.throws(() => pf.checkFontMode("sideways", loaded(0)), /font mode/i);
+  });
+
+  test("panel fit font mode: real faces must be the five files in tools/fonts", () => {
+    const want = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"], ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
+    const mk = (list) => ({ size: list.length, faces: list.map(([family, weight]) => ({ family, weight, status: "loaded" })) });
+    assert.doesNotThrow(() => pf.checkFontMode("real", mk(want)));
+    const wrong = want.map((w, i) => (i === 4 ? ["Nunito Sans", "700"] : w));
+    assert.throws(() => pf.checkFontMode("real", mk(wrong)), /Nunito Sans/);
+  });
+
+  test("panel fit grammar: accepts the forms the stylesheet uses and types the edges", () => {
+    const p = pf.parseCondition("screen and (min-width: 640px) and (min-height: 700px)");
+    assert.deepStrictEqual(p.queries, [[{ axis: "width", min: true, px: 640 }, { axis: "height", min: true, px: 700 }]]);
+    assert.deepStrictEqual(pf.parseCondition("(max-height: 520px)").queries, [[{ axis: "height", min: false, px: 520 }]]);
+    assert.deepStrictEqual(pf.parseCondition("(max-width: 600px), (max-height: 300px)").queries.length, 2);
+  });
+
+  test("panel fit grammar: min-X: N starts a band at N, max-X: N at N + 1", () => {
+    const edges = pf.edgeStarts([
+      pf.parseCondition("(min-width: 640px) and (min-height: 700px)"),
+      pf.parseCondition("(max-height: 520px)"),
+    ]);
+    assert.deepStrictEqual(edges, { width: [640], height: [521, 700] });
+  });
+
+  test("panel fit grammar: bands cut the domain at the typed edges", () => {
+    assert.deepStrictEqual(pf.bands([521, 700], 320, 1100), [[320, 520], [521, 699], [700, 1100]]);
+    assert.deepStrictEqual(pf.bands([], 320, 1100), [[320, 1100]]);
+    assert.deepStrictEqual(pf.bands([320, 2000], 320, 1100), [[320, 1100]], "edges outside the open interval cut nothing");
+  });
+
+  test("panel fit grammar: rejects range syntax, relative units, orientation and anything unparsed", () => {
+    for (const bad of ["(width >= 640px)", "(max-height: 30em)", "(orientation: landscape)",
+      "(min-aspect-ratio: 1/1)", "(min-resolution: 2dppx)", "(max-width: calc(600px + 1px))",
+      "(max-width: 600.5px)", "(min-width: 640px) or (min-height: 700px)", "not all and (max-width: 600px)",
+      "(min-width: 640px) and (hover: hover)"]) {
+      assert.throws(() => pf.parseCondition(bad), /unsupported|cannot|grammar/i, bad);
+    }
+  });
+
+  test("panel fit grammar: print is kept out of the edge list, and a purely non-dimensional condition is reported, not swept", () => {
+    assert.deepStrictEqual(pf.parseCondition("print"), { print: true, text: "print" });
+    assert.deepStrictEqual(pf.parseCondition("(prefers-reduced-motion: reduce)"),
+      { other: true, text: "(prefers-reduced-motion: reduce)" });
+    assert.deepStrictEqual(pf.edgeStarts([pf.parseCondition("print")]), { width: [], height: [] });
+  });
+
+  test("panel fit walk: a sheet is skipped only when it is cross-origin and unreadable", () => {
+    const boom = () => { throw Object.assign(new Error("denied"), { name: "SecurityError" }); };
+    assert.strictEqual(pf.sheetDisposition({ href: "https://fonts.googleapis.com/css2", rules: boom }, "http://127.0.0.1:1/index.html"), "skip");
+    assert.throws(() => pf.sheetDisposition({ href: null, rules: boom }, "http://127.0.0.1:1/index.html"), /inline|same-origin|SecurityError/i);
+    assert.throws(() => pf.sheetDisposition({ href: "http://127.0.0.1:1/x.css", rules: boom }, "http://127.0.0.1:1/index.html"), /SecurityError/);
+    assert.strictEqual(pf.sheetDisposition({ href: null, rules: () => [] }, "http://127.0.0.1:1/index.html"), "read");
+  });
+
+  test("panel fit walk: an at-rule the oracle has no model for exits non-zero", () => {
+    assert.throws(() => pf.checkRuleKind("CSSContainerRule", true), /container/i);
+    assert.throws(() => pf.checkRuleKind("CSSSupportsRule", true), /supports/i);
+    assert.doesNotThrow(() => pf.checkRuleKind("CSSSupportsRule", false));
+    assert.doesNotThrow(() => pf.checkRuleKind("CSSMediaRule", true));
+  });
+
+  test("panel fit invariance: the whole measurement vector must match, not needed alone", () => {
+    const v = (over = {}) => ({ needed: 400, overflowX: { panel: 0, doc: 0 }, rendered: ["a", "b"], bottoms: { a: 10, b: 20 }, ...over });
+    assert.strictEqual(pf.vectorsEqual(v(), v({ needed: 400.4 })), true);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ needed: 401 })), false);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ bottoms: { a: 10, b: 21 } })), false, "a control moved while the total did not");
+    assert.strictEqual(pf.vectorsEqual(v(), v({ rendered: ["a"] })), false);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ overflowX: { panel: 2, doc: 0 } })), false);
+  });
+
+  test("panel fit report: a run with skipped cells or an unreadable base is a failure of the run itself", () => {
+    assert.throws(() => pf.assertRunComplete({ skipped: 1, skipReasons: ["x"] }), /skipped/i);
+    assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
+  });
+});

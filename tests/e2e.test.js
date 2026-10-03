@@ -6943,23 +6943,23 @@ function run() {
       // (Marcellus, Bitter, Nunito Sans) actually matched, so an interception
       // break fails loudly here instead of silently degrading every test in
       // this describe block.
-      // check() alone only reports what the page already needed to render -
-      // 700-weight Bitter is not necessarily on screen yet at this point, so
-      // force each face to load before asking whether it matched, same as
-      // check() would eventually report once something on the page used it.
-      const fc = await rb.eval(`
+      // ER-1 (D2 re-plan): document.fonts.check(spec) returns TRUE when no
+      // @font-face is registered at all (document.fonts.size 0, every load()
+      // resolving to an empty list), so the check() assertion that stood here
+      // could not fail in the one situation it exists to catch - a broken
+      // interception that leaves every family on its fallback. Assert the
+      // registry instead: five faces, every one loaded, and the families and
+      // weights are exactly the five files in tools/fonts. checkFontMode is the
+      // same function the panel-fit oracle runs, so the two cannot disagree.
+      const fonts = await rb.eval(`
         const specs = ["14px Marcellus", "400 14px Bitter", "700 14px Bitter",
           "400 14px 'Nunito Sans'", "600 14px 'Nunito Sans'"];
         return Promise.all(specs.map(s => document.fonts.load(s))).then(() => ({
-          marcellus: document.fonts.check(specs[0]),
-          bitter: document.fonts.check(specs[1]),
-          bitterBold: document.fonts.check(specs[2]),
-          nunito: document.fonts.check(specs[3]),
-          nunitoSemi: document.fonts.check(specs[4]),
+          size: document.fonts.size,
+          faces: [...document.fonts].map(f => ({ family: f.family, weight: f.weight, status: f.status })),
         }));
       `);
-      assert.ok(fc.marcellus && fc.bitter && fc.bitterBold && fc.nunito && fc.nunitoSemi,
-        `real-font interception did not actually load every family this app ships: ${JSON.stringify(fc)}`);
+      require("../tools/probe/panel_fit.js").checkFontMode("real", fonts);
     });
     after(async () => { if (rb) await rb.close(); });
 
