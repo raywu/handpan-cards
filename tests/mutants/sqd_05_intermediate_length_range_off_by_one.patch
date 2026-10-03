@@ -5,10 +5,10 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -313,7 +313,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -341,7 +341,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    }
-
-   function intermediateGate(deck, seq, home) {
+ 
+   function intermediateGate(deck, seq, home, anchorsList) {
 -    if (seq.length !== 3 && seq.length !== 4) return false;
 +    if (seq.length !== 3 && seq.length !== 4 && seq.length !== 5) return false;
      if (chordRootPc(deck, seq[0]) !== home) return false;
