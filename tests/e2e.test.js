@@ -8184,6 +8184,10 @@ function run() {
         let st = await tierState();
         assert.strictEqual(st.basic.disabled, false, "tier buttons must be enabled in mode S");
         assert.strictEqual(st.noteHidden, true, "the greyed-state note must be hidden in mode S");
+        // A stop is a rendered control (R-2) and the drawer closes when the mode
+        // button is pressed: let the close finish, then reopen before reading.
+        await b.settle();
+        await openSettingsPanel();
         const stopsS = await b.eval(`return window.panelStops().map(e => e.id);`);
         assert.ok(stopsS.includes("tier-basic") && stopsS.includes("tier-intermediate")
           && stopsS.includes("tier-advanced"), "enabled tier buttons must join the Tab trap in mode S");
@@ -8197,7 +8201,6 @@ function run() {
         assert.deepStrictEqual(describedByS, [null, null, null],
           "tier buttons must not carry aria-describedby in mode S");
 
-        await openSettingsPanel();
         await b.click("#modeA");
         await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
           { label: "mode A to take effect" });
