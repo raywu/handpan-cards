@@ -62,6 +62,7 @@ brief PR #207 was run from (that lane had no written plan, which is hurdle H3).
   CI-log fix about 21 mutants plus two test files on `tests/suite_health.py`.
   Recommendation to the owner: run P and H later as their own small workstream,
   or drop them.
+- Owner, 2026-10-03: lane P dropped; lane H runs; D3 reviewer nits left.
 
 ## 4. Lanes
 

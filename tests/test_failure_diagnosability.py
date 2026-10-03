@@ -19,6 +19,7 @@ file plants in the suite's output itself.
 """
 import glob
 import io
+import json
 import os
 import contextlib
 import shutil
@@ -382,6 +383,115 @@ class InlineEngineReportsReinjectionFailures(unittest.TestCase):
                              + str(ctx.exception))
         finally:
             shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _tap_with_one_failure_in_the_middle(name="the rail stays put", lines=1500):
+    """A TAP stream far longer than the excerpt window, whose only failure sits
+    in the middle - the shape of ff0ea50 attempt 1, where the name was elided."""
+    def oks(lo, hi):
+        return "".join(f"ok {i} - passing test number {i}\n" for i in range(lo, hi))
+    return (oks(1, lines) + f"not ok {lines} - {name}\n"
+            "  ---\n  duration_ms: 3\n  failureType: 'testCodeFailure'\n"
+            "  error: |-\n    expected the rail at 0 but found 41\n"
+            "    second line of the diagnostic\n  code: 'ERR_ASSERTION'\n  ...\n"
+            + oks(lines + 1, 2 * lines) + f"# tests {2 * lines}\n# fail 1\n")
+
+
+def _emit_js_over(tap, failed=1):
+    path = "tests/fake_diag.test.js"
+    abs_fake = os.path.join(paths.ROOT, "tests", "fake_diag.test.js")
+    probe = mock.Mock(stdout="null", stderr="")
+    buf = io.StringIO()
+    tmp = tempfile.mkdtemp()
+    outfile = os.path.join(tmp, "js.json")
+    try:
+        with mock.patch.object(suite_health.subprocess, "run", return_value=probe), \
+                mock.patch.object(suite_health.glob, "glob", return_value=[abs_fake]), \
+                mock.patch.object(suite_health, "run_node_file",
+                                  return_value=(2001, failed, 0, 0, 1, tap)), \
+                contextlib.redirect_stdout(buf):
+            suite_health.emit_js(outfile)
+        with open(outfile) as fh:
+            data = json.load(fh)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return buf.getvalue(), data["files"][path], path
+
+
+class FailingTestNamesSurviveTheExcerpt(unittest.TestCase):
+    """H4 (2026-10-03): excerpt() elides the middle of a long TAP stream, and
+    the failing test's name was inside it. The name and its first diagnostic
+    line travel in their own bounded list."""
+
+    def test_a_failure_in_the_middle_of_60k_characters_is_named_in_the_log(self):
+        tap = _tap_with_one_failure_in_the_middle()
+        self.assertGreater(len(tap), 60000)
+        self.assertNotIn("the rail stays put", suite_health.excerpt(tap),
+                         "fixture is not testing the elided middle")
+        out, entry, _ = _emit_js_over(tap)
+        self.assertIn("the rail stays put", out)
+        self.assertIn("expected the rail at 0 but found 41", out)
+        self.assertNotIn("second line of the diagnostic", out)
+
+    def test_the_artifact_entry_carries_the_list(self):
+        _, entry, _ = _emit_js_over(_tap_with_one_failure_in_the_middle())
+        self.assertEqual(len(entry["failing_tests"]), 1)
+        self.assertIn("the rail stays put", entry["failing_tests"][0])
+
+    def test_verify_names_the_failing_test_from_the_artifact(self):
+        _, entry, path = _emit_js_over(_tap_with_one_failure_in_the_middle())
+        data = {"have_browser": True, "probe_problem": None, "found": [path],
+                "files": {path: entry}}
+        with mock.patch.object(suite_health, "FLOORS", {path: 0}), \
+                mock.patch.object(suite_health, "JS_FILES", [path]), \
+                mock.patch.object(suite_health, "exists", lambda p: True):
+            problems = suite_health.verify_js(data)
+        self.assertTrue(any("the rail stays put" in p for p in problems), problems)
+
+    def test_the_failing_list_is_bounded(self):
+        many = "".join(f"not ok {i} - failing {i} " + "n" * 900 + "\n"
+                       f"  ---\n  error: 'e{i} " + "d" * 900 + "'\n  ...\n"
+                       for i in range(1, 80))
+        out, entry, _ = _emit_js_over(many, failed=79)
+        listed = entry["failing_tests"]
+        self.assertLessEqual(len(listed), suite_health.FAILING_MAX_ENTRIES)
+        self.assertTrue(all(len(e) <= suite_health.FAILING_ENTRY_CHARS for e in listed))
+        self.assertEqual(entry["failing_tests_omitted"], 79 - len(listed))
+        self.assertLess(len(out), 20000)
+
+    def test_a_suite_summary_line_is_not_listed_as_a_test(self):
+        tap = ("not ok 1 - suite\n  ---\n  failureType: 'subtestsFailed'\n"
+               "  error: '1 subtest failed'\n  ...\n")
+        _, entry, _ = _emit_js_over(tap)
+        self.assertEqual(entry.get("failing_tests", []), [])
+
+    def test_a_skip_marker_is_not_a_failure(self):
+        _, entry, _ = _emit_js_over("not ok 1 - later # TODO\nnot ok 2 - boom\n")
+        self.assertEqual(len(entry["failing_tests"]), 1)
+        self.assertIn("boom", entry["failing_tests"][0])
+
+    def test_python_failures_are_named_outside_the_excerpt(self):
+        class Boom(unittest.TestCase):
+            def test_the_named_one(self):
+                self.fail("DIAG_FIRST_LINE_9d2\n" + "y" * 200000)
+
+        suite = unittest.TestSuite([Boom("test_the_named_one")])
+        tmp = tempfile.mkdtemp()
+        outfile = os.path.join(tmp, "py.json")
+        buf = io.StringIO()
+        try:
+            with mock.patch.object(unittest.TestLoader, "discover",
+                                   lambda self, **kw: suite), \
+                    contextlib.redirect_stdout(buf):
+                suite_health.emit_python(outfile)
+            with open(outfile) as fh:
+                data = json.load(fh)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        self.assertEqual(len(data["failing_tests"]), 1)
+        self.assertIn("test_the_named_one", data["failing_tests"][0])
+        self.assertIn("test_the_named_one", buf.getvalue())
+        self.assertIn("DIAG_FIRST_LINE_9d2", buf.getvalue())
 
 
 if __name__ == "__main__":
