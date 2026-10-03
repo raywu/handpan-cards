@@ -1,0 +1,19 @@
+# kills: test_a_failure_in_the_middle_of_60k_characters_is_named_in_the_log
+# suite: python3 -m unittest tests.test_failure_diagnosability.FailingTestNamesSurviveTheExcerpt.test_a_failure_in_the_middle_of_60k_characters_is_named_in_the_log
+# H4 (2026-10-03). emit_js stops printing the separate failing-test list, so a
+# lone failure in the middle of a long TAP stream is named nowhere in the CI log
+# again: excerpt() elides it, and the list was the only other place it lived.
+# Targeted header (one test): verified clean 1 test / OK, mutant 1 test / 1 failure.
+# Body generated per tests/CONTRACT.md rule 4.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -679,8 +679,6 @@ def emit_js(outfile):
+             continue
+         print(f"  {path}: ran {entry['total']}, failed {entry['failed']}, "
+               f"skipped {entry['skipped']}")
+-        print_failing(entry.get("failing_tests", []),
+-                      entry.get("failing_tests_omitted", 0), indent="    ")
+         if entry.get("output_excerpt"):
+             print(entry["output_excerpt"])
+     return 1 if any_red else 0
