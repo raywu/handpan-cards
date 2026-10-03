@@ -1099,6 +1099,80 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
   }
 });
 
+/* -------------------------------------------------------------- D3 step 5 */
+
+// The DFS fallback's completion and budget boundary (D3 §9.1(c)). The older
+// ceiling test above (stats.nodes <= DFS_NODE_BUDGET) holds whenever the
+// budget guards exist, so it cannot see the connectivity or identical-card
+// prune go missing: a search that loses a prune just fills the whole budget.
+// These tests use a search that COMPLETES under the budget with the prunes and
+// does not complete without them: the reviewer deck
+// "(G3) D4 F4 F#4 B4 F#5 G5 A#5" at ADVANCED length 4 visits 13,605 nodes
+// (found 10,468) of the 15,000 budget; without the matrix prune it truncates
+// at 15,000 with 9,130 found, without the identical-card prune with 8,842.
+// HEADROOM: the margin is 9%. A red result here means the prunes or the budget
+// moved so that a real generated deck the reviewer found no longer completes;
+// it is not a stale deck.
+const DFS_COMPLETE_NODES = 13605;
+
+function dfsRun(E, deck, tier, len, budget) {
+  const I = E.sequence._internal;
+  const matrix = I.buildConnectMatrix(deck);
+  const anchorsList = E.sequence.anchors(deck);
+  const ctx = { anchorsList, home: I.homePc(deck), homeAnchorIdx: I.homeAnchor(deck, anchorsList) };
+  const pool = I.tierPool(deck, tier, anchorsList);
+  const startSet = I.tierStartSet(deck, tier, pool);
+  const accept = I.makeAccept(deck, tier, matrix, null, ctx);
+  const stats = {};
+  const found = host(I.dfsFindAll(startSet, pool, len, accept, budget, matrix, stats));
+  const brute = [];
+  const seq = new Array(len);
+  (function walk(depth) {
+    if (depth === len) {
+      if (accept(seq)) brute.push(seq.slice());
+      return;
+    }
+    for (const c of (depth === 0 ? startSet : pool)) {
+      seq[depth] = c;
+      walk(depth + 1);
+    }
+  })(0);
+  const key = (list) => list.map((q) => q.join(",")).sort();
+  return { stats: host(stats), found, foundKeys: key(found), bruteKeys: key(brute) };
+}
+
+test("the DFS fallback completes and finds the exact exhaustive set", () => {
+  const { full, reviewer } = generated();
+  const cases = [
+    ["reviewer deck 0 ADVANCED L4", reviewer[0].deck, "advanced", 4],
+    ["hijaz INTERMEDIATE L3", HIJAZ, "intermediate", 3],
+    ["pygmy INTERMEDIATE L3", PYGMY, "intermediate", 3],
+    ["amara INTERMEDIATE L3", AMARA, "intermediate", 3]
+  ];
+  const budget = full.sequence._internal.DFS_NODE_BUDGET;
+  for (const [label, deck, tier, len] of cases) {
+    const run = dfsRun(full, deck, tier, len, budget);
+    assert.ok(run.stats.nodes <= budget, `${label}: ${run.stats.nodes} nodes, over the ${budget} budget`);
+    assert.strictEqual(run.stats.truncated, false, `${label}: the search was truncated at ${run.stats.nodes} nodes`);
+    assert.ok(run.bruteKeys.length > 0, `${label}: brute force found nothing, so the case proves nothing`);
+    assert.deepStrictEqual(run.foundKeys, run.bruteKeys, `${label}: DFS set differs from brute force`);
+  }
+});
+
+test("the DFS budget truncates exactly at the boundary", () => {
+  const { full, reviewer } = generated();
+  const deck = reviewer[0].deck;
+  const exact = dfsRun(full, deck, "advanced", 4, DFS_COMPLETE_NODES);
+  assert.strictEqual(exact.stats.nodes, DFS_COMPLETE_NODES);
+  assert.strictEqual(exact.stats.truncated, false, "finishing on the last allowed node is complete, not truncated");
+  assert.deepStrictEqual(exact.foundKeys, exact.bruteKeys);
+  const short = dfsRun(full, deck, "advanced", 4, DFS_COMPLETE_NODES - 1);
+  assert.strictEqual(short.stats.truncated, true, "one node short of the full search must report truncation");
+  assert.ok(short.stats.nodes <= DFS_COMPLETE_NODES - 1,
+    `${short.stats.nodes} nodes visited under a budget of ${DFS_COMPLETE_NODES - 1}`);
+  assert.ok(short.foundKeys.length < exact.foundKeys.length);
+});
+
 /* -------------------------------------------------------------- D3 step 2 */
 
 // D-14 (owner): "Starting chords always allowed". Every BASIC anchor is in the

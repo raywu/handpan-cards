@@ -446,23 +446,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // which sequences are found - it only lets the same node budget reach
   // deeper into the space that can actually be accepted (perf review on PR
   // #202, item 4).
-  // `stats`, when passed, gets its `.nodes` set to the final visited-node
-  // count on return - a deterministic, hardware-independent way to prove
+  // `stats`, when passed, gets `.truncated` set to true iff a node was actually
+  // refused for lack of budget (a search that finishes on exactly its last
+  // allowed node is complete, not truncated), and its `.nodes` set to the final
+  // visited-node count on return - a deterministic, hardware-independent way to prove
   // the DFS never exceeds `budget` (used by the perf regression test
   // instead of a wall-clock timing, which varies with the runner).
   function dfsFindAll(startSet, pool, len, accept, budget, matrix, stats) {
     var found = [];
     var nodes = 0;
+    var truncated = false;
     var seq = new Array(len);
     function rec(depth) {
-      if (nodes >= budget) return;
+      if (nodes >= budget) {
+        truncated = true;
+        return;
+      }
       nodes += 1;
       if (depth === len) {
         if (accept(seq)) found.push(seq.slice());
         return;
       }
       var options = depth === 0 ? startSet : pool;
-      for (var i = 0; i < options.length && nodes < budget; i += 1) {
+      for (var i = 0; i < options.length; i += 1) {
         var candidate = options[i];
         if (depth > 0) {
           var prevChord = seq[depth - 1];
@@ -474,7 +480,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     rec(0);
-    if (stats) stats.nodes = nodes;
+    if (stats) {
+      stats.nodes = nodes;
+      stats.truncated = truncated;
+    }
     return found;
   }
 
