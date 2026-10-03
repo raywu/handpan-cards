@@ -91,6 +91,8 @@ Each decision records the AFK auto-pick and why. "Owner" marks decisions already
 
 ### D2 - app
 
+> **Re-planned 2026-10-02 after the fifth review FAIL:** see `docs/plans/2026-10-02-difficulty-d2-replan.md`; where the two disagree, that document governs D2.
+
 - **Owns:** `index.html` outside every `<!-- engine:... -->` region and outside the `const DECKS` line; `tests/e2e.test.js`; `tests/app.test.js`; new `tests/mutants/uid_*.patch`; refreshes of ANY `tests/mutants/*.patch` whose anchor the app edit moves (`refresh_mutants.py --check` over the whole directory, not one prefix).
 - **Never touches:** `src/engine/*`, engine regions, `data/decks.json`, `tests/mutation_check.sh`.
 - **Branch:** `claude/difficulty-d2-app`. Spawned from main after D1 merges.
