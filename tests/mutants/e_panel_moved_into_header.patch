@@ -65,11 +65,11 @@
 # and reverting) since the tool's removed-lines anchor can drop the diff
 # body on a patch this large - the same failure mode as the 2026-10-02
 # refresh above.
-# Refreshed 2026-10-03 (D2 step 4): regenerated whole, the Practice group lost #modeS and the tier group.
+# Refreshed 2026-10-03 (D2 step 4): regenerated whole by hand against the two-heading Practice group (RP-22).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1029,6 +1029,70 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1031,6 +1031,71 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -77,12 +77,13 @@ diff --git a/index.html b/index.html
 +<div id="settings-panel" aria-labelledby="settings-title" hidden>
 +  <h2 id="settings-title" class="sr-only">Settings</h2>
 +  <div class="panel-group">
-+    <h3 class="panel-heading">Practice</h3>
++    <h3 class="panel-heading">Flash cards</h3>
 +    <div class="modebar">
 +      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 +      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
 +    </div>
-+    <div class="tierbar" role="group" aria-label="Chord progression">
++    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
++    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
 +      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
 +      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
 +      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
@@ -140,7 +141,7 @@ diff --git a/index.html b/index.html
  </header>
  
  <main>
-@@ -1234,70 +1298,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1236,71 +1301,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -148,12 +149,13 @@ diff --git a/index.html b/index.html
 -<div id="settings-panel" aria-labelledby="settings-title" hidden>
 -  <h2 id="settings-title" class="sr-only">Settings</h2>
 -  <div class="panel-group">
--    <h3 class="panel-heading">Practice</h3>
+-    <h3 class="panel-heading">Flash cards</h3>
 -    <div class="modebar">
 -      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 -      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
 -    </div>
--    <div class="tierbar" role="group" aria-label="Chord progression">
+-    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+-    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
 -      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
 -      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
 -      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>

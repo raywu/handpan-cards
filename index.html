@@ -195,9 +195,9 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
 /* .modebar no longer lives in the header (menu-shell, 2026-09-28): the
-   NAME->NOTES / NOTES->NAME toggle moved into the settings panel's "Practice"
-   group, so this rule only ever lays out that panel group now. Kept under the
-   same class/selector because #modeA/#modeB and their tests are anchored on
+   NAME->NOTES / NOTES->NAME toggle moved into the settings panel's
+   "Flash cards" group, so this rule only ever lays out that panel group
+   now. Kept under the same class/selector because #modeA/#modeB and their tests are anchored on
    it and moved with the controls (IDs are kept). */
 .modebar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center; margin-top:0}
 /* The sequence-mode source credit and link, shown only while mode is S
@@ -207,11 +207,13 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
-/* The three tier buttons (EASY / MEDIUM / HARD) are the second row of the
-   Practice group, where #modeS used to be. margin-top reproduces the gap main
-   has between the group's two .modebar rows. Internal tier values and ids
+/* The three tier buttons (EASY / MEDIUM / HARD) sit under the "Chord
+   progression" heading, the second half of the Practice group, where #modeS
+   used to be. The heading's margin-top is twice its margin-bottom, the gap
+   main had between the group's two button rows. Internal tier values and ids
    stay basic / intermediate / advanced. */
-.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2); margin-top:calc(var(--sp-2) - var(--sp-1))}
+.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+#panel-prog-heading{margin-top:var(--sp-1)}
 .tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
@@ -1238,12 +1240,13 @@ footer.seq{row-gap:var(--sp-1)}
 <div id="settings-panel" aria-labelledby="settings-title" hidden>
   <h2 id="settings-title" class="sr-only">Settings</h2>
   <div class="panel-group">
-    <h3 class="panel-heading">Practice</h3>
+    <h3 class="panel-heading">Flash cards</h3>
     <div class="modebar">
       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
     </div>
-    <div class="tierbar" role="group" aria-label="Chord progression">
+    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
       <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
       <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
       <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
