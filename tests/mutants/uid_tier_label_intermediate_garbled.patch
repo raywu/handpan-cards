@@ -1,0 +1,15 @@
+# kills: a NO_TIER_SEQUENCE deck shows a message naming the selected tier
+# suite: node --test --test-name-pattern a.NO_TIER_SEQUENCE.deck.shows.a.message.naming.the.selected.tier tests/e2e.test.js
+# D2 reviewer fix. TIER_LABEL.intermediate is changed, so the empty-tier message no longer matches the button.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7084,7 +7084,7 @@ function linesHTML(d, ch) {
+ // that tier) gets a tier-named message naming the selected difficulty by its
+ // button's own all-caps spelling; NO_HOME_CHORD/TOO_FEW_CHORDS (both basic-only
+ // reasons - the deck itself can't support a progression) keep the original copy.
+-const TIER_LABEL = { basic: "EASY", intermediate: "MEDIUM", advanced: "HARD" };
++const TIER_LABEL = { basic: "EASY", intermediate: "MEDIUMM", advanced: "HARD" };
+ function renderSeqEmpty() {
+   const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
+     ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`

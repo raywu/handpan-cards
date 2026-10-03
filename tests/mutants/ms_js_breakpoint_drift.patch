@@ -14,12 +14,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8129,7 +8129,7 @@ let panelOpen = false;
+@@ -8607,7 +8607,7 @@ let panelOpen = false;
  // in markup. At/above it the trigger is display:none, so openPanel() is never
  // reached by a click and the modal state above is never applied; the panel is
  // simply always visible as a static sidebar (CSS only).
 -const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 +const desktopMQ = window.matchMedia("(min-width:1100px) and (min-height:700px)");
  function panelStops() {
-   const seqNote = document.getElementById("panel-seq-note");
-   const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),

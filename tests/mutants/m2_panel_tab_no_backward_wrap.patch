@@ -16,9 +16,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7909,7 +7909,7 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
- // different lists.
+@@ -8736,7 +8736,7 @@ const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
  function cycleTabStops(stops, e) {
+   if (!stops.length) return;
    const i = stops.indexOf(document.activeElement);
 -  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
 +  const next = e.shiftKey ? (i < 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);

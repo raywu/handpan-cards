@@ -1,0 +1,17 @@
+# kills: D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail
+# suite: node --test --test-name-pattern ^D.12..the.rail.never.wraps.and.the.current.chord.stays.in.view tests/e2e.test.js
+# (owner decision 2026-10-02, "Scroll, one line") - the rail must never wrap
+# to a second line, at any sequence length or viewport. This mutant restores
+# the pre-D-12 wrapping behaviour (flex-wrap:wrap).
+# D-12 supersedes the earlier wrap-to-a-second-line design (see the CSS
+# comment above .seq-rail in index.html). A long ADVANCED rail must overflow
+# and scroll horizontally instead of wrapping; this mutant flips flex-wrap
+# back to "wrap", which the new e2e test's "oneLine" assertion catches the
+# first time a rail is wider than its box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -803,2 +803,2 @@
+-.seq-rail{display:flex; flex-wrap:nowrap; justify-content:center; justify-content:safe center;
++.seq-rail{display:flex; flex-wrap:wrap; justify-content:center; justify-content:safe center;
+   column-gap:.35em; width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}

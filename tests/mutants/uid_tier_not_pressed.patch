@@ -1,0 +1,14 @@
+# kills: exactly one of the five practice buttons is pressed, and mode and tier survive a reload
+# suite: node --test --test-name-pattern exactly.one.of.the.five.practice.buttons.is.pressed..and.mode.and.tier.survive.a.reload tests/app.test.js
+# D2 step 4. syncTierUI() stops writing aria-pressed on the tier buttons, so a lit tier never reads as pressed (replaces sqe_mode_not_pressed).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8680,7 +8680,6 @@ function syncTierUI() {
+     const el = document.getElementById("tier-" + t);
+     const on = mode === "S" && tier === t;
+     el.classList.toggle("on", on);
+-    el.setAttribute("aria-pressed", on ? "true" : "false");
+   }
+ }
+ // Tapping a tier enters progression at that tier (one tap) and ALWAYS deals

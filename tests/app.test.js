@@ -662,7 +662,7 @@ test("selecting a deck persists its id, custom decks included", () => {
 
   // and a mode change while a custom deck is showing keeps that deck.
   app.run('setMode("B")');
-  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B", printPaper: "letter" });
+  assert.deepStrictEqual(JSON.parse(app.store.hpfc), { deck: id, mode: "B", tier: "basic", printPaper: "letter" });
 });
 
 /* --------------------------------------------- 14. pan() honours geom.ext */
@@ -2655,10 +2655,23 @@ test("every gap in the app comes from the spacing ramp, never a fresh literal", 
   // And nothing reintroduces the one-value rhythm the owner reported ("there is
   // not enough spacing between each ui component" - every gap in the chrome and
   // the whole sheet was the same 9px). gap:0 is allowed: #scale-swatches butts
-  // its 44px targets together on purpose.
-  const bad = [...css.matchAll(/gap:\s*([^;}]+)/g)]
-    .map((m) => m[1].trim())
-    .filter((v) => v !== "0" && !v.startsWith("var(--sp-"));
+  // its 44px targets together on purpose. .seq-rail's column-gap:.35em (D-12)
+  // is a different measurement domain from the ramp entirely - it is
+  // text-flow spacing between chord units, proportional to the rail's own
+  // font size, the same role letter-spacing already plays elsewhere in the
+  // app, not a px-fixed gap between UI chrome components - so it is exempt
+  // the same way gap:0 is, not a literal the ramp forgot. The exemption is
+  // tied to that one selector, not to em-valued gaps in general, so a new
+  // selector reaching for an em gap still has to justify itself here.
+  const bad = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .flatMap((m) => {
+      const selector = m[1].trim();
+      return [...m[2].matchAll(/gap:\s*([^;}]+)/g)].map((g) => ({ selector, value: g[1].trim() }));
+    })
+    .filter(({ selector, value }) =>
+      value !== "0" && !value.startsWith("var(--sp-") &&
+      !(selector.endsWith(".seq-rail") && value === ".35em"))
+    .map(({ value }) => value);
   assert.deepStrictEqual(bad, [],
     `these gaps bypass the ramp: ${JSON.stringify(bad)}`);
 });
@@ -3720,7 +3733,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
     assert.ok(!/<select/.test(html), "the card header must carry no select");
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
   for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
@@ -3930,7 +3943,7 @@ test("the paper control drives the page box, not just the filename", () => {
  * closePanel() ("After an action": a PDF build closes the panel). */
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 2000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
   assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
@@ -4003,18 +4016,54 @@ test("stored mode \"S\" reads back; unrecognised stored modes read as \"A\"", ()
   }
 });
 
-test("#modeS has aria-pressed, exactly one mode button is pressed, and mode survives a reload", () => {
-  const app = boot();
-  app.run('setMode("S")');
-  assert.strictEqual(app.els.modeS.getAttribute("aria-pressed"), "true");
-  assert.strictEqual(app.els.modeA.getAttribute("aria-pressed"), "false");
-  assert.strictEqual(app.els.modeB.getAttribute("aria-pressed"), "false");
-  assert.ok(app.els.modeS.classList.contains("on"));
-  assert.ok(!app.els.modeA.classList.contains("on"));
+const FIVE = ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"];
+function assertOneOfFive(app, want, label) {
+  for (const id of FIVE) {
+    const el = app.els[id];
+    assert.strictEqual(el.getAttribute("aria-pressed"), id === want ? "true" : "false", `${label}: ${id} aria-pressed`);
+    assert.strictEqual(el.classList.contains("on"), id === want, `${label}: ${id} .on`);
+    assert.ok(!el.disabled, `${label}: ${id} is never disabled`);
+  }
+}
 
+test("exactly one of the five practice buttons is pressed, and mode and tier survive a reload", () => {
+  const app = boot();
+  assertOneOfFive(app, "modeA", "boot");
+  app.run('setMode("B")');
+  assertOneOfFive(app, "modeB", "B");
+  app.run('setTier("advanced")');
+  assertOneOfFive(app, "tier-advanced", "advanced");
+  app.run('setMode("S")');
+  assertOneOfFive(app, "tier-advanced", "setMode S keeps the tier lit");
+  app.run('setMode("A")');
+  assertOneOfFive(app, "modeA", "A unlights every tier");
+  assert.strictEqual(app.get("tier"), "advanced", "the remembered tier is kept while unlit");
+
+  app.run('setTier("intermediate")');
   const again = boot({ storage: { hpfc: app.store.hpfc } });
   assert.strictEqual(again.get("mode"), "S");
-  assert.strictEqual(again.els.modeS.getAttribute("aria-pressed"), "true");
+  assertOneOfFive(again, "tier-intermediate", "reload");
+  for (const stored of [{ mode: "A", tier: "advanced" }, { mode: "S", tier: "nonsense" }, { mode: "S" }]) {
+    const b = boot({ storage: { hpfc: JSON.stringify({ deck: "hijaz", ...stored }) } });
+    assertOneOfFive(b, stored.mode === "A" ? "modeA" : "tier-" + (stored.tier === "advanced" ? "advanced" : "basic"),
+      JSON.stringify(stored));
+  }
+});
+
+test("setTier enters progression at that tier, deals exactly once with prev cleared, and saves both", () => {
+  for (const from of ["A", "B", "S"]) {
+    const app = boot({ random: () => 0 });
+    app.run(`setMode("${from}")`);
+    app.run('globalThis.__calls = []; const o = HPE.sequence.pick; HPE.sequence.pick = (d, r, p, t) => { __calls.push([p, t]); return o(d, r, p, t); };');
+    app.run('setTier("intermediate")');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(app.get("__calls"))), [[null, "intermediate"]], `from ${from}: one pick, prev null`);
+    assert.strictEqual(app.get("mode"), "S");
+    assert.strictEqual(app.get("tier"), "intermediate");
+    const saved = JSON.parse(app.store.hpfc);
+    assert.strictEqual(saved.mode, "S");
+    assert.strictEqual(saved.tier, "intermediate");
+    assert.strictEqual(app.els["panel-seq-note"].hidden, false);
+  }
 });
 
 test("sequence mode: prev/next/arrows stay within the sequence and wrap, answer face shows first", () => {
@@ -4157,15 +4206,18 @@ test("the live region names the current chord and its position: \"<name>, chord 
 
 test("the rail's chord labels are set via textContent, never innerHTML", () => {
   // E6: renderSeqRail() must never innerHTML chord data into the DOM.
+  // D-12: each chord is now one .seq-unit (an optional separator text node
+  // plus one labelled name node), not an alternating flat pair of siblings.
   const app = boot({ random: () => 0 });
   app.run('setMode("S")');
   const d = app.currentDeck();
   const seq = app.get("seq");
   const rail = app.els.count.children[0];
-  const labelNodes = rail.children.filter((_, i) => i % 2 === 0);
-  assert.strictEqual(labelNodes.length, seq.chords.length);
+  assert.strictEqual(rail.children.length, seq.chords.length, "one .seq-unit per chord");
+  const labelNodes = rail.children.map((unit) => unit.children[unit.children.length - 1]);
   seq.chords.forEach((ci, i) => {
     const ch = d.chords[ci];
+    assert.strictEqual(labelNodes[i].className, "seq-chord");
     assert.strictEqual(labelNodes[i].textContent, `${ch.main}${ch.sup || ""}`);
   });
 });
@@ -4497,4 +4549,377 @@ test("every built-in card face still matches the committed digest of card_face_v
       (e.stdout ? e.stdout.toString() : "") + (e.stderr ? e.stderr.toString() : "")
     );
   }
+});
+
+/* ------------------------------------------------------------ panel fit judge
+ * The acceptance oracle of docs/plans/2026-10-02-difficulty-d2-replan.md section
+ * 4.3 / 4.3.1. These tests exercise the JUDGE only (pure functions over
+ * synthetic cells); the browser measuring lives in tools/probe/panel_fit.js and
+ * is run by the CLI and the `panel fit` CI job. Test names contain "panel fit"
+ * so `--test-name-pattern panel.fit` selects exactly this group.
+ */
+describe("panel fit judge", () => {
+  const pf = require("../tools/probe/panel_fit.js");
+
+  const ctl = (bottom, over = {}) => ({ exists: true, rendered: true, disabled: false, bottom, ...over });
+  const KEYS = ["modeA", "modeB", "modeS", "deck-add"];
+  function cell(over = {}) {
+    const controls = {};
+    for (const k of KEYS) controls[k] = ctl(100);
+    return {
+      needed: 400, avail: 500, modal: true,
+      overflowX: { panel: 0, doc: 0 },
+      controls,
+      stops: [{ key: "settings-trigger", disabled: false, rendered: true },
+        ...KEYS.map((k) => ({ key: k, disabled: false, rendered: true }))],
+      ...over,
+    };
+  }
+  const withControl = (c, key, v) => ({ ...c, controls: { ...c.controls, [key]: v } });
+  const ref = KEYS.slice();
+  const judge = (b, c, extra = {}) => pf.judgeCell({ base: b, cand: c, refRendered: ref, ...extra });
+
+  test("panel fit: identical cells produce no offender in any rule", () => {
+    const r = judge(cell(), cell());
+    for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) {
+      assert.deepStrictEqual([r[k].fail, r[k].reported], [[], []], k);
+    }
+  });
+
+  test("panel fit rule 1: needed height beyond max(base, avail) + 1 fails, within it passes", () => {
+    const b = cell({ needed: 520, avail: 500 });
+    assert.strictEqual(judge(b, cell({ needed: 521, avail: 500 })).rule1.fail.length, 0, "equal to base + 1");
+    assert.strictEqual(judge(b, cell({ needed: 521.5, avail: 500 })).rule1.fail.length, 1, "base + 1.5");
+    const fits = cell({ needed: 400, avail: 500 });
+    assert.strictEqual(judge(fits, cell({ needed: 501, avail: 500 })).rule1.fail.length, 0, "avail + 1");
+    assert.strictEqual(judge(fits, cell({ needed: 502, avail: 500 })).rule1.fail.length, 1, "avail + 2");
+  });
+
+  test("panel fit rule 2: a control unrendered on the candidate fails, whether or not the base fits", () => {
+    const gone = withControl(cell(), "deck-add", ctl(100, { rendered: false }));
+    assert.strictEqual(judge(cell(), gone).rule2.fail.length, 1);
+    const baseOver = cell({ needed: 700, avail: 500 });
+    assert.strictEqual(judge(baseOver, withControl(baseOver, "deck-add", ctl(100, { rendered: false }))).rule2.fail.length, 1);
+  });
+
+  test("panel fit rule 2: a control pushed below max(base bottom, avail) + 0.5 fails", () => {
+    const b = cell();
+    assert.strictEqual(judge(b, withControl(b, "deck-add", ctl(500.5))).rule2.fail.length, 0, "at avail + 0.5");
+    assert.strictEqual(judge(b, withControl(b, "deck-add", ctl(500.6))).rule2.fail.length, 1, "past avail + 0.5");
+    const low = withControl(cell(), "deck-add", ctl(900));
+    assert.strictEqual(judge(low, withControl(low, "deck-add", ctl(900.4))).rule2.fail.length, 0, "base was already lower than avail");
+  });
+
+  test("panel fit rule 2: where the base itself overflows the offender is reported or failed by the OD-8 constant alone", () => {
+    const b = withControl(cell({ needed: 700, avail: 500 }), "deck-add", ctl(600));
+    const c = withControl(b, "deck-add", ctl(650));
+    const strict = judge(b, c, { od8FailBaseOverflow: true });
+    const lax = judge(b, c, { od8FailBaseOverflow: false });
+    assert.deepStrictEqual([strict.rule2.fail.length, strict.rule2.reported.length], [1, 0], "OD-8 = fail");
+    assert.deepStrictEqual([lax.rule2.fail.length, lax.rule2.reported.length], [0, 1], "OD-8 = report");
+  });
+
+  test("panel fit rule 2: the OD-8 constant ships as report (owner answer 2026-10-03)", () => {
+    assert.strictEqual(pf.OD8_FAIL_BASE_OVERFLOW, false);
+  });
+
+  test("panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design", () => {
+    const lacks = (key) => {
+      const c = cell();
+      delete c.controls[key];
+      return c;
+    };
+    assert.strictEqual(judge(cell(), lacks("deck-add")).rule2.fail.length, 1, "deleted by accident");
+    const baseOver = cell({ needed: 700, avail: 500 });
+    const candOver = cell({ needed: 700, avail: 500 });
+    delete candOver.controls["deck-add"];
+    assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
+    assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS"]);
+    const noS = judge(cell(), lacks("modeS"));
+    assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
+    assert.strictEqual(noS.rule2.reported.length, 0);
+    assert.deepStrictEqual(noS.removed, ["modeS"], "removal is listed so the report can name it");
+    assert.deepStrictEqual(judge(cell(), cell()).removed, []);
+  });
+
+  test("panel fit rule 3: a candidate-only control below the fold fails where the base fits, is reported where it does not", () => {
+    const b = cell();
+    const c = withControl(cell(), "tier-select", ctl(600));
+    const fit = judge(b, c);
+    assert.strictEqual(fit.rule3.fail.length, 1);
+    const bOver = cell({ needed: 800, avail: 500 });
+    const over = judge(bOver, withControl(bOver, "tier-select", ctl(600)));
+    assert.deepStrictEqual([over.rule3.fail.length, over.rule3.reported.length], [0, 1]);
+    assert.strictEqual(judge(b, withControl(cell(), "tier-select", ctl(500.4))).rule3.fail.length, 0, "inside avail + 0.5");
+  });
+
+  test("panel fit rule 3: a candidate-only control is not also charged to rule 2", () => {
+    const r = judge(cell(), withControl(cell(), "tier-select", ctl(600)));
+    assert.strictEqual(r.rule2.fail.length, 0);
+  });
+
+  test("panel fit rule 4: more horizontal overflow on the candidate fails, on the panel or on the document", () => {
+    assert.strictEqual(judge(cell(), cell({ overflowX: { panel: 1, doc: 0 } })).rule4.fail.length, 1);
+    assert.strictEqual(judge(cell(), cell({ overflowX: { panel: 0, doc: 3 } })).rule4.fail.length, 1);
+    const b = cell({ overflowX: { panel: 4, doc: 4 } });
+    assert.strictEqual(judge(b, cell({ overflowX: { panel: 4, doc: 2 } })).rule4.fail.length, 0, "no worse than base");
+  });
+
+  test("panel fit rule 5: the rendered set must equal the reference cell's set for the mode", () => {
+    const hidden = withControl(cell(), "modeS", ctl(100, { rendered: false }));
+    assert.strictEqual(judge(cell(), hidden).rule5.fail.length, 1, "one control unrendered");
+    const extra = withControl(cell(), "tier-select", ctl(100));
+    assert.strictEqual(judge(cell(), extra).rule5.fail.length, 1, "one control that the reference does not render");
+    assert.strictEqual(judge(cell(), cell()).rule5.fail.length, 0);
+  });
+
+  test("panel fit rule 5: a control that does not exist on the candidate is not counted as rendered", () => {
+    const gone = withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 });
+    assert.strictEqual(judge(cell(), gone).rule5.fail.length, 1);
+  });
+
+  test("panel fit rule 6: a stop that is disabled or has no client rects fails", () => {
+    const c1 = cell({ stops: [...cell().stops, { key: "seq-source-link", disabled: false, rendered: false }] });
+    assert.strictEqual(judge(cell(), c1).rule6.fail.length, 1, "unrendered stop");
+    const c2 = cell({ stops: [...cell().stops, { key: "tier-select", disabled: true, rendered: true }] });
+    assert.strictEqual(judge(cell(), c2).rule6.fail.length, 1, "disabled stop");
+  });
+
+  test("panel fit rule 6: a rendered enabled control missing from the stop list fails, and a disabled one need not be listed", () => {
+    const missing = cell({ stops: cell().stops.filter((s) => s.key !== "deck-add") });
+    assert.strictEqual(judge(cell(), missing).rule6.fail.length, 1);
+    const dis = withControl(cell(), "modeB", ctl(100, { disabled: true }));
+    const stops = cell().stops.filter((s) => s.key !== "modeB");
+    assert.strictEqual(judge(cell(), { ...dis, stops }).rule6.fail.length, 0);
+  });
+
+  test("panel fit rule 6: the trigger is owed in the modal and unrendered in the sidebar", () => {
+    const noTrigger = cell({ stops: cell().stops.filter((s) => s.key !== "settings-trigger") });
+    assert.strictEqual(judge(cell(), noTrigger).rule6.fail.length, 1, "modal omits the trigger");
+    const side = cell({ modal: false, stops: noTrigger.stops });
+    assert.strictEqual(judge(cell(), side).rule6.fail.length, 0, "sidebar without the trigger is correct");
+    const sideListed = cell({ modal: false, stops: [{ key: "settings-trigger", disabled: false, rendered: false }, ...noTrigger.stops] });
+    assert.strictEqual(judge(cell(), sideListed).rule6.fail.length, 1, "sidebar listing the unrendered trigger fails");
+  });
+
+  test("panel fit rule 6 is judged on the candidate only", () => {
+    const bad = cell({ stops: [...cell().stops, { key: "seq-source-link", disabled: false, rendered: false }] });
+    assert.strictEqual(judge(bad, cell()).rule6.fail.length, 0);
+  });
+
+  test("panel fit font mode: real needs five loaded faces, fallback needs none", () => {
+    const loaded = (n) => ({ size: n, faces: Array.from({ length: n }, () => ({ status: "loaded" })) });
+    assert.doesNotThrow(() => pf.checkFontMode("fallback", loaded(0)));
+    assert.throws(() => pf.checkFontMode("fallback", loaded(5)), /fallback.*5/i);
+    assert.throws(() => pf.checkFontMode("real", loaded(0)), /real.*0/i);
+    assert.throws(() => pf.checkFontMode("real", { size: 5, faces: [...loaded(4).faces, { status: "unloaded" }] }), /unloaded/);
+    assert.throws(() => pf.checkFontMode("sideways", loaded(0)), /font mode/i);
+  });
+
+  test("panel fit font mode: real faces must be the five files in tools/fonts", () => {
+    const want = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"], ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
+    const mk = (list) => ({ size: list.length, faces: list.map(([family, weight]) => ({ family, weight, status: "loaded" })) });
+    assert.doesNotThrow(() => pf.checkFontMode("real", mk(want)));
+    const wrong = want.map((w, i) => (i === 4 ? ["Nunito Sans", "700"] : w));
+    assert.throws(() => pf.checkFontMode("real", mk(wrong)), /Nunito Sans/);
+  });
+
+  test("panel fit grammar: accepts the forms the stylesheet uses and types the edges", () => {
+    const p = pf.parseCondition("screen and (min-width: 640px) and (min-height: 700px)");
+    assert.deepStrictEqual(p.queries, [[{ axis: "width", min: true, px: 640 }, { axis: "height", min: true, px: 700 }]]);
+    assert.deepStrictEqual(pf.parseCondition("(max-height: 520px)").queries, [[{ axis: "height", min: false, px: 520 }]]);
+    assert.deepStrictEqual(pf.parseCondition("(max-width: 600px), (max-height: 300px)").queries.length, 2);
+  });
+
+  test("panel fit grammar: min-X: N starts a band at N, max-X: N at N + 1", () => {
+    const edges = pf.edgeStarts([
+      pf.parseCondition("(min-width: 640px) and (min-height: 700px)"),
+      pf.parseCondition("(max-height: 520px)"),
+    ]);
+    assert.deepStrictEqual(edges, { width: [640], height: [521, 700] });
+  });
+
+  test("panel fit grammar: bands cut the domain at the typed edges", () => {
+    assert.deepStrictEqual(pf.bands([521, 700], 320, 1100), [[320, 520], [521, 699], [700, 1100]]);
+    assert.deepStrictEqual(pf.bands([], 320, 1100), [[320, 1100]]);
+    assert.deepStrictEqual(pf.bands([320, 2000], 320, 1100), [[320, 1100]], "edges outside the open interval cut nothing");
+  });
+
+  test("panel fit grammar: rejects range syntax, relative units, orientation and anything unparsed", () => {
+    for (const bad of ["(width >= 640px)", "(max-height: 30em)", "(orientation: landscape)",
+      "(min-aspect-ratio: 1/1)", "(min-resolution: 2dppx)", "(max-width: calc(600px + 1px))",
+      "(max-width: 600.5px)", "(min-width: 640px) or (min-height: 700px)", "not all and (max-width: 600px)",
+      "(min-width: 640px) and (hover: hover)"]) {
+      assert.throws(() => pf.parseCondition(bad), /unsupported|cannot|grammar/i, bad);
+    }
+  });
+
+  test("panel fit grammar: print is kept out of the edge list, and a purely non-dimensional condition is reported, not swept", () => {
+    assert.deepStrictEqual(pf.parseCondition("print"), { print: true, text: "print" });
+    assert.deepStrictEqual(pf.parseCondition("(prefers-reduced-motion: reduce)"),
+      { other: true, text: "(prefers-reduced-motion: reduce)" });
+    assert.deepStrictEqual(pf.edgeStarts([pf.parseCondition("print")]), { width: [], height: [] });
+  });
+
+  test("panel fit walk: a sheet is skipped only when it is cross-origin and unreadable", () => {
+    const boom = () => { throw Object.assign(new Error("denied"), { name: "SecurityError" }); };
+    assert.strictEqual(pf.sheetDisposition({ href: "https://fonts.googleapis.com/css2", rules: boom }, "http://127.0.0.1:1/index.html"), "skip");
+    assert.throws(() => pf.sheetDisposition({ href: null, rules: boom }, "http://127.0.0.1:1/index.html"), /inline|same-origin|SecurityError/i);
+    assert.throws(() => pf.sheetDisposition({ href: "http://127.0.0.1:1/x.css", rules: boom }, "http://127.0.0.1:1/index.html"), /SecurityError/);
+    assert.strictEqual(pf.sheetDisposition({ href: null, rules: () => [] }, "http://127.0.0.1:1/index.html"), "read");
+  });
+
+  test("panel fit walk: an at-rule the oracle has no model for exits non-zero", () => {
+    assert.throws(() => pf.checkRuleKind("CSSContainerRule", true), /container/i);
+    assert.throws(() => pf.checkRuleKind("CSSSupportsRule", true), /supports/i);
+    assert.doesNotThrow(() => pf.checkRuleKind("CSSSupportsRule", false));
+    assert.doesNotThrow(() => pf.checkRuleKind("CSSMediaRule", true));
+  });
+
+  test("panel fit invariance: the whole measurement vector must match, not needed alone", () => {
+    const v = (over = {}) => ({ needed: 400, overflowX: { panel: 0, doc: 0 }, rendered: ["a", "b"], bottoms: { a: 10, b: 20 }, ...over });
+    assert.strictEqual(pf.vectorsEqual(v(), v({ needed: 400.4 })), true);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ needed: 401 })), false);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ bottoms: { a: 10, b: 21 } })), false, "a control moved while the total did not");
+    assert.strictEqual(pf.vectorsEqual(v(), v({ rendered: ["a"] })), false);
+    assert.strictEqual(pf.vectorsEqual(v(), v({ overflowX: { panel: 2, doc: 0 } })), false);
+  });
+
+  test("panel fit report: a run with skipped cells or an unreadable base is a failure of the run itself", () => {
+    assert.throws(() => pf.assertRunComplete({ skipped: 1, skipReasons: ["x"] }), /skipped/i);
+    assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
+  });
+
+  test("panel fit: the heading allowance is 24", () => {
+    assert.strictEqual(pf.HEADING_ALLOWANCE_PX, 24);
+    assert.strictEqual(pf.headingAllowance(false, true), 24, "base lacks the heading, candidate has it");
+    assert.strictEqual(pf.headingAllowance(false, false), 0, "neither has it");
+    assert.strictEqual(pf.headingAllowance(true, true), 0, "both have it: the allowance expires once main has the heading");
+    assert.strictEqual(pf.headingAllowance(true, false), 0, "only the base has it");
+  });
+
+  test("panel fit rule 1: with the heading allowance a candidate up to 24px over a fitting base passes, and beyond it fails", () => {
+    const b = cell({ needed: 500, avail: 500 });
+    const withA = (c) => judge(b, c, { allowance: 24 }).rule1.fail.length;
+    assert.strictEqual(withA(cell({ needed: 525, avail: 500 })), 0, "base + 24 + the 1px tolerance");
+    assert.strictEqual(withA(cell({ needed: 526, avail: 500 })), 1, "one pixel beyond the tolerance");
+    assert.strictEqual(withA(cell({ needed: 526, avail: 530 })), 0, "a candidate that fits is unconstrained");
+    assert.strictEqual(judge(b, cell({ needed: 524, avail: 500 })).rule1.fail.length, 1, "no allowance by default");
+  });
+
+  test("panel fit rule 2: controls after the second heading may sit one allowance lower, modeA and modeB may not", () => {
+    const b = withControl(withControl(cell(), "deck-add", ctl(500)), "modeA", ctl(500));
+    const push = (key, bottom) => judge(b, withControl(b, key, ctl(bottom)), { allowance: 24 }).rule2.fail.length;
+    assert.strictEqual(push("deck-add", 524.5), 0, "base bottom + 24 + the 0.5 tolerance");
+    assert.strictEqual(push("deck-add", 524.6), 1, "past it");
+    assert.strictEqual(push("modeA", 500.5), 0, "modeA stays where main has it, plus the tolerance");
+    assert.strictEqual(push("modeA", 500.6), 1, "modeA gets no allowance");
+    assert.strictEqual(push("modeB", 500.5), 0, "modeB: max(base bottom, avail) + the tolerance");
+    assert.strictEqual(push("modeB", 500.6), 1, "modeB gets no allowance either");
+    assert.deepStrictEqual(pf.ALLOWANCE_EXEMPT, ["modeA", "modeB"]);
+  });
+
+  test("panel fit rule 3 takes no heading allowance", () => {
+    const b = cell();
+    const c = (bottom) => withControl(cell(), "tier-basic", ctl(bottom));
+    assert.strictEqual(judge(b, c(500.5), { allowance: 24 }).rule3.fail.length, 0, "inside avail + 0.5");
+    assert.strictEqual(judge(b, c(500.6), { allowance: 24 }).rule3.fail.length, 1, "past it, with the allowance on");
+  });
+
+  test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
+    const b = cell({ needed: 373.8, avail: 320 });
+    const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
+    const t = pf.thresholdCell(b, c, 320, 520);
+    assert.strictEqual(t.base.avail, 373, "the first integer with needed <= avail + 1");
+    assert.strictEqual(t.cand.avail, 373, "the candidate is raised by the same amount");
+    assert.strictEqual(t.height, 373);
+    assert.strictEqual(t.base.needed, 373.8, "nothing else moves");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 300, avail: 320 }), c, 320, 520), null, "the base fits at the band's lowest height");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 900, avail: 320 }), c, 320, 520), null, "the base fits nowhere in the band");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 840.9, avail: 320 }), c, 320, 520), null, "the threshold is past the band's top");
+  });
+
+  test("panel fit: viewports where the candidate overflows and the base fits are counted per row, from the threshold", () => {
+    const b = cell({ needed: 373.8, avail: 320 });
+    const c = cell({ needed: 395.8, avail: 320 });
+    const o = pf.overflowViewports(b, c, 320, 520);
+    assert.strictEqual(o.count, 22, "heights 373..394");
+    assert.strictEqual(o.height, 373);
+    assert.ok(Math.abs(o.scroll - 22.8) < 1e-9, "needed - avail at the threshold");
+    assert.deepStrictEqual(pf.overflowViewports(cell({ needed: 300, avail: 320 }), cell({ needed: 300, avail: 320 }), 320, 520), { count: 0, height: null, scroll: 0 });
+    assert.strictEqual(pf.overflowViewports(cell({ needed: 300, avail: 320 }), cell({ needed: 330, avail: 320 }), 320, 520).count, 9, "base fits at the band's lowest height: 320..328");
+  });
+
+  test("panel fit: a run that measured any cell with a scrollbar gutter fails", () => {
+    const run = (over = {}) => {
+      const rules = {};
+      for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) rules[k] = { fail: 0, reported: 0 };
+      return { rules, invarianceFailureCount: 0, gutterCells: 0, ...over };
+    };
+    assert.strictEqual(pf.failed(run()), false);
+    assert.strictEqual(pf.failed(run({ gutterCells: 1 })), true);
+    assert.match(pf.gutterMessage(352, 320, "A", 15), /scrollbar takes layout space at 352x320 mode A \(15 px\): the measurement environment is not neutral/);
+  });
+
+  test("panel fit: a run with invariance failures and every rule at 0 fails", () => {
+    const rules = {};
+    for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) rules[k] = { fail: 0, reported: 0 };
+    assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 0, gutterCells: 0 }), false);
+    assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 1, gutterCells: 0 }), true);
+  });
+});
+
+describe("tab stops follow rendering", () => {
+  test("getClientRects follows the hidden property", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    const el = app.els["modeA"];
+    el.hidden = true;
+    assert.strictEqual(el.getClientRects().length, 0);
+    el.hidden = false;
+    assert.strictEqual(el.getClientRects().length, 1);
+  });
+
+  test("getClientRects follows the hidden attribute, and the two are one state", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    const el = app.els["modeA"];
+    el.setAttribute("hidden", "");
+    assert.strictEqual(el.getClientRects().length, 0);
+    assert.strictEqual(el.hidden, true);
+    el.removeAttribute("hidden");
+    assert.strictEqual(el.getClientRects().length, 1);
+    el.hidden = true;
+    assert.strictEqual(el.hasAttribute("hidden"), true);
+  });
+
+  test("getClientRects is empty under a hidden ancestor named by the shipped markup", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    app.els["panel-seq-note"].hidden = false;
+    assert.strictEqual(app.els["seq-source-link"].getClientRects().length, 1);
+    app.els["panel-seq-note"].hidden = true;
+    assert.strictEqual(app.els["seq-source-link"].getClientRects().length, 0,
+      "a link inside a hidden paragraph still has client rects");
+  });
+
+  test("getClientRects follows the parent of a created-then-appended child", () => {
+    const app = boot();
+    const parent = app.get("document.createElement('div')");
+    const child = app.get("document.createElement('button')");
+    assert.strictEqual(child.getClientRects().length, 1);
+    parent.appendChild(child);
+    parent.hidden = true;
+    assert.strictEqual(child.getClientRects().length, 0);
+    parent.removeChild(child);
+    assert.strictEqual(child.getClientRects().length, 1);
+  });
+
+  test("Tab with no stops neither throws nor swallows the key", () => {
+    const app = boot();
+    let prevented = false;
+    app.get("cycleTabStops")([], { shiftKey: false, preventDefault() { prevented = true; } });
+    assert.strictEqual(prevented, false);
+  });
 });

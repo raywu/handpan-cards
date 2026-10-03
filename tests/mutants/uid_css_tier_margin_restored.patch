@@ -1,0 +1,15 @@
+# kills: the panel meets its budget at every derived edge in portrait, in both font modes
+# suite: node --test --test-name-pattern the.panel.meets.its.budget.at.every.derived.edge.in.portrait..in.both.font.modes tests/e2e.test.js
+# D2 step 9 (7.1b). The tier bar gets its old margin-top back; one --sp-1 over budget, inside the oracle's allowance.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -212,7 +212,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    used to be. The heading's margin-top is twice its margin-bottom, the gap
+    main had between the group's two button rows. Internal tier values and ids
+    stay basic / intermediate / advanced. */
+-.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
++.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2); margin-top:calc(var(--sp-2) - var(--sp-1))}
+ #panel-prog-heading{margin-top:var(--sp-1)}
+ .tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an

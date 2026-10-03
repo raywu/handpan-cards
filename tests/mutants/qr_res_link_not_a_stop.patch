@@ -11,15 +11,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7945,10 +7945,7 @@ function panelStops() {
-   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-           document.getElementById("modeS"), ...seqLink,
+@@ -8613,10 +8613,7 @@ function panelStops() {
+           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
+           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
            document.getElementById("deck-add"),
 -          ...settingsPanel.querySelectorAll(".prints button, .prints select"),
 -          // Eng review amendment 1: the three Resources links join the Tab
 -          // trap after the print controls, in DOM order.
 -          ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
 +          ...settingsPanel.querySelectorAll(".prints button, .prints select")]
-     .filter(el => el && !el.disabled);
+     .filter(isStop);
  }
  function openPanel() {

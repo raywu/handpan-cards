@@ -1,0 +1,15 @@
+# kills: both headings are h3.panel-heading on one line, styled as the Scales heading, with twice the gap above the second as below it
+# suite: node --test --test-name-pattern both.headings.are.h3.panel-heading.on.one.line..styled.as.the.Scales.heading..with.twice.the.gap.above.the.second.as.below.it tests/e2e.test.js
+# D2 step 9 (7.1b). The second heading gets its own font-size.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -213,7 +213,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    main had between the group's two button rows. Internal tier values and ids
+    stay basic / intermediate / advanced. */
+ .tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+-#panel-prog-heading{margin-top:var(--sp-1)}
++#panel-prog-heading{margin-top:var(--sp-1); font-size:12px}
+ .tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+    oversized overlay): the link is the one Tab stop in .panel-note. */

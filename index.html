@@ -195,15 +195,11 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
   border-radius:999px; border:1.5px solid var(--dga);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--dgb) 55%, transparent)}
 /* .modebar no longer lives in the header (menu-shell, 2026-09-28): the
-   NAME->NOTES / NOTES->NAME toggle moved into the settings panel's "Practice"
-   group, so this rule only ever lays out that panel group now. Kept under the
-   same class/selector because #modeA/#modeB and their tests are anchored on
+   NAME->NOTES / NOTES->NAME toggle moved into the settings panel's
+   "Flash cards" group, so this rule only ever lays out that panel group
+   now. Kept under the same class/selector because #modeA/#modeB and their tests are anchored on
    it and moved with the controls (IDs are kept). */
 .modebar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center; margin-top:0}
-/* #modeS ("CHORD PROGRESSION") takes the full second row: three buttons don't
-   fit one row of the 320px panel (each existing one is ~118px wide). Plan
-   §2 Part B, S2 lane. */
-#modeS{flex:1 0 100%}
 /* The sequence-mode source credit and link, shown only while mode is S
    (toggled via the .hidden property in setMode(), reflected by the global
    [hidden]{display:none !important} rule). Reuses Nunito Sans and the
@@ -211,6 +207,14 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
+/* The three tier buttons (EASY / MEDIUM / HARD) sit under the "Chord
+   progression" heading, the second half of the Practice group, where #modeS
+   used to be. The heading's margin-top is twice its margin-bottom, the gap
+   main had between the group's two button rows. Internal tier values and ids
+   stay basic / intermediate / advanced. */
+.tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+#panel-prog-heading{margin-top:var(--sp-1)}
+.tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
 #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
@@ -230,9 +234,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 a.mode{text-decoration:none}
 .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
 /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
-   ragged pair sat side by side. #modeS's own flex:1 0 100% above wins on
-   specificity (an id beats this class pair), so the full-row button is
-   untouched. */
+   ragged pair sat side by side. */
 .modebar .mode{flex:1 1 0}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
@@ -569,8 +571,11 @@ button.nav:active{background:#2e281e}
 /* Acceptance 4: the rail is larger and centred. */
 .count{grid-row:1; grid-column:1/-1; font:600 11px/1 "Nunito Sans"; letter-spacing:.12em;
   color:#c4bcab; text-align:center}
-.count.seq{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
-  font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
+/* D-12: the rail is always one line (.seq-rail below is flex-wrap:nowrap;
+   a rail too wide for its track scrolls horizontally instead of wrapping).
+   min-width:0 lets the flex rail shrink inside the grid track instead of
+   forcing #count wider than its column. */
+.count.seq{min-width:0; font:400 20px/1.3 Marcellus, serif; letter-spacing:.02em; color:#c4bcab}
 /* The rail's current chord: an ink colour readable on #1a1815 at AA, with the
    deck's root colour carried as an underline instead of the text's own ink -
    O3/D10: the old ink-coloured approach failed AA on more than one deck's
@@ -579,6 +584,38 @@ button.nav:active{background:#2e281e}
    underline do that work instead. */
 .seq-rail b{font-weight:400; color:#f1ece1; text-decoration:underline;
   text-decoration-color:var(--root); text-underline-offset:3px}
+/* D-12 (owner decision 2026-10-02, "Scroll, one line" - supersedes the
+   earlier wrap-to-a-second-line design): .seq-rail never wraps, regardless of
+   sequence length or viewport. A long ADVANCED sequence instead overflows
+   its own box and scrolls horizontally - card and footer DIMENSIONS stay
+   identical to BASIC at every viewport, because a rail that never wraps
+   never grows a second row. Each "-> name" pair stays grouped into one
+   .seq-unit (renderSeqRail) with white-space:nowrap so a separator is never
+   orphaned from the name it precedes. width:100% makes .seq-rail fill
+   #count's grid-column track (not shrink-to-fit, which would let it spill
+   past the track instead of scrolling within it); justify-content:safe center
+   keeps a short BASIC rail centred exactly as before. Plain `center` (no
+   `safe`) was tried first and measured broken: when flex content overflows,
+   an unsafe `center` splits the overflow evenly onto BOTH sides, but
+   scrollLeft cannot go negative - so the left-side overflow this produces is
+   permanently unreachable, not merely unscrolled-to, and idx 0 of a long
+   ADVANCED rail rendered partly off the left edge with no way to scroll to
+   it (measured: rail.left 135.5 vs its own first chord's rect.left 79.67 at
+   667x375, scrollLeft stuck at 0). `safe center` is the CSS Box Alignment
+   fallback built for exactly this: it centres only while centring doesn't
+   overflow, and falls back to start-alignment (everything reachable from
+   scrollLeft 0) the moment it would. The scrollbar is hidden (rail scrolling
+   is driven by renderSeqRail's own scrollIntoView call, not by the user
+   hunting for a visible bar) but the element is still a real,
+   keyboard/wheel/touch scrollable region. A browser without `safe` support
+   ignores the whole `safe center` value rather than falling back to plain
+   centring, so the plain `justify-content:center` declaration goes first:
+   a `safe`-aware browser overrides it with the second declaration, and one
+   without just keeps the first. */
+.seq-rail{display:flex; flex-wrap:nowrap; justify-content:center; justify-content:safe center;
+  column-gap:.35em; width:100%; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+.seq-rail::-webkit-scrollbar{display:none; height:0}
+.seq-unit{white-space:nowrap}
 /* The mode-S style line: a static paragraph in the footer, never on the card
    (O2/D1-D9). Grid-column:1/-1 gives it its own full-width row below the
    controls; it is [hidden] outside mode S, so no extra row or gap is
@@ -1203,11 +1240,16 @@ footer.seq{row-gap:var(--sp-1)}
 <div id="settings-panel" aria-labelledby="settings-title" hidden>
   <h2 id="settings-title" class="sr-only">Settings</h2>
   <div class="panel-group">
-    <h3 class="panel-heading">Practice</h3>
+    <h3 class="panel-heading">Flash cards</h3>
     <div class="modebar">
       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
+    </div>
+    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
+      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
+      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
+      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
     </div>
     <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
          wording plus one outbound link to Moritz.handpan's video. -->
@@ -6370,6 +6412,9 @@ let storedDeck = deckId;              // built-in or custom:; see save()
 // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
 // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
 let mode   = ["A", "B", "S"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
+// Difficulty (sequence-difficulty plan D-7): type-guarded like mode, so a
+// corrupted/future value reads back as "basic" rather than propagating.
+let tier = ["basic", "intermediate", "advanced"].includes(store.tier) ? store.tier : "basic";
 let shuffled = false;
 let order = [], idx = 0, flipped = false;
 // The current sequence in mode S: {chords:[chordIndex,...], style:"<id>"} or
@@ -6404,6 +6449,7 @@ const save = () => {
     const next = (base && typeof base === "object" && !Array.isArray(base)) ? base : {};
     next.deck = storedDeck;
     next.mode = mode;
+    next.tier = tier;
     next.printPaper = printPaper;
     localStorage.setItem(STORE_KEY, JSON.stringify(next));
   } catch (e) {}
@@ -7034,10 +7080,19 @@ function linesHTML(d, ch) {
 // and clears the live count region. Checked BEFORE the `!order.length` guard
 // below, which stays unchanged (f6_render_empty_order_guard) and still
 // covers A/B on a genuinely empty deck.
+// D-6: NO_TIER_SEQUENCE (intermediate/advanced couldn't find a sequence at
+// that tier) gets a tier-named message naming the selected difficulty by its
+// button's own all-caps spelling; NO_HOME_CHORD/TOO_FEW_CHORDS (both basic-only
+// reasons - the deck itself can't support a progression) keep the original copy.
+const TIER_LABEL = { basic: "EASY", intermediate: "MEDIUM", advanced: "HARD" };
 function renderSeqEmpty() {
-  const msg = `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
-    + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
-    + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
+  const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
+    ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
+      + `This scale has no ${TIER_LABEL[tier]} progressions. `
+      + `Pick another difficulty or another scale.</div></div>`
+    : `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
+      + `This scale doesn&rsquo;t have enough simple chords to make a progression. `
+      + `Pick another scale, or switch to NAME &rarr; NOTES in the menu.</div></div>`;
   document.getElementById("front").innerHTML = msg;
   document.getElementById("back").innerHTML = msg;
   const countEmpty = document.getElementById("count");
@@ -7065,22 +7120,49 @@ function renderSeqRail(d) {
   rail.className = "seq-rail";
   rail.setAttribute("aria-hidden", "true");
   const curCh = d.chords[seq.chords[idx]];
+  // D-12: each "-> name" pair is one .seq-unit (CSS white-space:nowrap) so the
+  // rail's own horizontal scroll never splits a separator from the name it
+  // precedes (eng E-7: this also changes what the rail's child count means -
+  // callers that need the number of CHORDS count .seq-chord elements, not
+  // rail.children).
+  let curNode = null;
   seq.chords.forEach((ci, i) => {
-    if (i > 0) {
-      const sep = document.createElement("span");
-      sep.textContent = " → ";
-      rail.appendChild(sep);
-    }
+    const unit = document.createElement("span");
+    unit.className = "seq-unit";
+    if (i > 0) unit.appendChild(document.createTextNode(" → "));
     const c = d.chords[ci];
     const node = document.createElement(i === idx ? "b" : "span");
+    node.className = "seq-chord";
     node.textContent = c.main + (c.sup || "");
-    rail.appendChild(node);
+    unit.appendChild(node);
+    rail.appendChild(unit);
+    if (i === idx) curNode = node;
   });
   const live = document.createElement("span");
   live.className = "sr-only";
   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
   countEl.appendChild(rail);
   countEl.appendChild(live);
+  // D-12: keep the current chord in view on every advance/back/redeal -
+  // render() is the only caller of renderSeqRail, and render() is in turn
+  // the only path step()/shuffle/redeal use to show a new current chord, so
+  // wiring the scroll here (rather than at each call site) covers all three.
+  // block:'nearest' is a no-op here, not a guarantee against page scroll:
+  // the rail only scrolls horizontally (overflow-x:auto), so in the vertical
+  // axis the nearest scrollable ancestor "nearest" could walk up to is the
+  // page itself. It never fires in practice because the current chord's row
+  // never moves vertically across a render - that comes from the layout, not
+  // from this option. inline:'center' is the one doing real work - it is
+  // what keeps a long ADVANCED rail's current chord inside the rail's
+  // visible width instead of scrolled off to one side. Honours
+  // prefers-reduced-motion the same way the swipe-gesture code already does.
+  if (curNode) {
+    curNode.scrollIntoView({
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }
 }
 function render() {
   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
@@ -7169,7 +7251,7 @@ function setOrder() {
   // whole deck. `seq.chords` (when set) is passed back as `prev` so a re-roll
   // never repeats it (HPE.sequence.pick's own no-repeat rule, S1 test 5/9).
   if (mode === "S") {
-    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords);
+    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords, tier);
     order = seq.chords ? seq.chords.slice() : [];
     idx = 0; flipped = false;
     return;
@@ -8264,7 +8346,12 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
 // itself - which controls, in what order, filtered for the current mode -
 // stays caller-side, since the sheet and the panel compute genuinely
 // different lists.
+// A stop is a control the page renders and the user can operate. Rendering is
+// asked of the browser (a control inside a hidden ancestor, or unrendered by
+// CSS, has no client rects), never of a hand-kept mode table.
+const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
 function cycleTabStops(stops, e) {
+  if (!stops.length) return;
   const i = stops.indexOf(document.activeElement);
   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
   e.preventDefault();
@@ -8283,7 +8370,7 @@ sheet.addEventListener("keydown", e => {
                  editingId ? degSel : null,
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
-    .filter(el => el && !el.disabled);
+    .filter(isStop);
   cycleTabStops(stops, e);
 });
 
@@ -8349,16 +8436,15 @@ let panelOpen = false;
 // simply always visible as a static sidebar (CSS only).
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
-  const seqNote = document.getElementById("panel-seq-note");
-  const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-          document.getElementById("modeS"), ...seqLink,
+          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
+          document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
           document.getElementById("deck-add"),
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the three Resources links join the Tab
           // trap after the print controls, in DOM order.
           ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
-    .filter(el => el && !el.disabled);
+    .filter(isStop);
 }
 function openPanel() {
   settingsPanel.removeAttribute("hidden");
@@ -8414,7 +8500,30 @@ document.getElementById("print-paper-select").value = printPaper;
 
 document.getElementById("modeA").onclick = () => { setMode("A"); closePanel(); };
 document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); };
-document.getElementById("modeS").onclick = () => { setMode("S"); closePanel(); };
+// A tier is lit iff mode is S and it is the current tier; setMode() is the
+// only caller besides setTier(), so leaving progression unlights all three.
+function syncTierUI() {
+  for (const t of ["basic", "intermediate", "advanced"]) {
+    const el = document.getElementById("tier-" + t);
+    const on = mode === "S" && tier === t;
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+}
+// Tapping a tier enters progression at that tier (one tap) and ALWAYS deals
+// exactly once, even on the lit tier: setMode() re-deals only on an A/B<->S
+// transition, so from S the deal is made here first. `seq` is cleared so
+// `prev` is empty: a tier switch must never reject a sequence merely because
+// the previous tier dealt the same chords.
+function setTier(t) {
+  tier = t; seq = null;
+  if (mode === "S") setOrder();
+  setMode("S");
+  closePanel();
+}
+document.getElementById("tier-basic").onclick = () => setTier("basic");
+document.getElementById("tier-intermediate").onclick = () => setTier("intermediate");
+document.getElementById("tier-advanced").onclick = () => setTier("advanced");
 // Acceptance 5: icon-only in mode S, no visible text - the label moves to
 // aria-label so the control is still named for assistive tech.
 const REFRESH_ICON_SVG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" '
@@ -8424,11 +8533,12 @@ function setMode(m) {
   const wasS = mode === "S";
   mode = m; flipped = false; save();
   // .on is a colour; aria-pressed is the state. Both, always together.
-  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"], ["modeS", m === "S"]]) {
+  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
     const el = document.getElementById(id);
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", on ? "true" : "false");
   }
+  syncTierUI();
   const seqNote = document.getElementById("panel-seq-note");
   seqNote.hidden = m !== "S";
   document.getElementById("foot").classList.toggle("seq", m === "S");

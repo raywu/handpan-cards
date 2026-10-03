@@ -1,0 +1,40 @@
+# kills: D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail
+# suite: node --test --test-name-pattern ^D.12..the.rail.never.wraps.and.the.current.chord.stays.in.view tests/e2e.test.js
+# (owner decision 2026-10-02, "Scroll, one line") - the current chord must be
+# scrolled into view inside the rail on every advance/back/redeal. This
+# mutant removes renderSeqRail's scrollIntoView call entirely.
+# Without this call, a long ADVANCED rail leaves the current chord wherever
+# the browser's default (unscrolled) layout puts it - for anything past the
+# first screenful, that is off to the right (or, with justify-content:safe
+# center, partly off either side), never kept in view across an advance. The
+# new e2e test's "curInRail" assertion (current chord's rect fully inside the
+# rail's own visible rect) catches this the first time idx moves off-screen.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7357,24 +7357,5 @@
+   countEl.appendChild(live);
+-  // D-12: keep the current chord in view on every advance/back/redeal -
+-  // render() is the only caller of renderSeqRail, and render() is in turn
+-  // the only path step()/shuffle/redeal use to show a new current chord, so
+-  // wiring the scroll here (rather than at each call site) covers all three.
+-  // block:'nearest' is a no-op here, not a guarantee against page scroll:
+-  // the rail only scrolls horizontally (overflow-x:auto), so in the vertical
+-  // axis the nearest scrollable ancestor "nearest" could walk up to is the
+-  // page itself. It never fires in practice because the current chord's row
+-  // never moves vertically across a render - that comes from the layout, not
+-  // from this option. inline:'center' is the one doing real work - it is
+-  // what keeps a long ADVANCED rail's current chord inside the rail's
+-  // visible width instead of scrolled off to one side. Honours
+-  // prefers-reduced-motion the same way the swipe-gesture code already does.
+-  if (curNode) {
+-    curNode.scrollIntoView({
+-      behavior: reducedMotion.matches ? "auto" : "smooth",
+-      block: "nearest",
+-      inline: "center",
+-    });
+-  }
++  void curNode;
+ }
+ function render() {
+   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }

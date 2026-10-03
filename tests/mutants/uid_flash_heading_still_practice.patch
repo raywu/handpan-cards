@@ -1,0 +1,15 @@
+# kills: the practice group has a Flash cards heading and a Chord progression heading, in both states
+# suite: node --test --test-name-pattern the.practice.group.has.a.Flash.cards.heading.and.a.Chord.progression.heading..in.both.states tests/e2e.test.js
+# D2 step 9 (7.1b). The first heading keeps its old text.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1240,7 +1240,7 @@ footer.seq{row-gap:var(--sp-1)}
+ <div id="settings-panel" aria-labelledby="settings-title" hidden>
+   <h2 id="settings-title" class="sr-only">Settings</h2>
+   <div class="panel-group">
+-    <h3 class="panel-heading">Flash cards</h3>
++    <h3 class="panel-heading">Practice</h3>
+     <div class="modebar">
+       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>

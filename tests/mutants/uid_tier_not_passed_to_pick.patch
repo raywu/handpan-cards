@@ -1,0 +1,18 @@
+# kills: on a user-added scale, the selected tier is passed to pick and the dealt progression matches it
+# suite: node --test --test-name-pattern ^on.a.user-added.scale,.the.selected.tier.is.passed.to.pick.and.the.dealt.progression.matches.it$ tests/e2e.test.js
+# D-7/D-11: setOrder() must forward the selected tier into HPE.sequence.pick
+# so the dealt progression actually matches the pressed button. Dropping the
+# argument silently falls back to pick's "basic" default regardless of the
+# selected tier.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7481,7 +7481,7 @@ function setOrder() {
+   // whole deck. `seq.chords` (when set) is passed back as `prev` so a re-roll
+   // never repeats it (HPE.sequence.pick's own no-repeat rule, S1 test 5/9).
+   if (mode === "S") {
+-    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords, tier);
++    seq = HPE.sequence.pick(deck(), Math.random, seq && seq.chords);
+     order = seq.chords ? seq.chords.slice() : [];
+     idx = 0; flipped = false;
+     return;

@@ -186,3 +186,33 @@ jobs:
             exit 1
           fi
           echo "all $(wc -l <expected.txt) mutants accounted for across 4 shards"
+
+  panel-fit:
+    name: panel fit (${{ matrix.font }})
+    runs-on: ubuntu-latest
+    # ER-11. Measured locally at ~15 s per font; the limit is generous because
+    # CI time was unmeasured when this was written (plan 4.3). If a run ever
+    # nears it, split by class - never by thinning widths.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        font: [real, fallback]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # The acceptance oracle for the settings panel (docs/plans/2026-10-02-
+      # difficulty-d2-replan.md section 4.3): every width 320-1300 in every
+      # height band the stylesheet's own media queries define, modes A/B/S,
+      # base vs this commit. Green on PR #203 since step 6; a red here is a real regression.
+      # Base is origin/main on a pull request and the first parent on main. When
+      # index.html is byte-identical to the base it says so and passes: that is
+      # the only non-measuring pass.
+      - name: Panel fit against the base, ${{ matrix.font }} fonts
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then BASE=origin/main; else BASE=HEAD^1; fi
+          node tools/probe/panel_fit.js --base "$BASE" --font "${{ matrix.font }}"

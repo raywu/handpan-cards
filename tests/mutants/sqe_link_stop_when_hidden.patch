@@ -8,15 +8,19 @@
 # guard, so #seq-source-link stays a Tab stop even in modes A/B where the
 # credit paragraph (and the link inside it) is hidden - a keyboard user can
 # Tab onto an invisible, unreachable-by-sight link.
+# Refreshed 2026-10-02 (D2 re-plan step 2, R-2): the seqNote.hidden special
+# case this mutant used to drop is deleted; the same fault is now panelStops()
+# filtering on !disabled only, so the hidden credit paragraph's link is a stop
+# again. The killing test is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8132,7 +8132,7 @@ let panelOpen = false;
- const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
- function panelStops() {
-   const seqNote = document.getElementById("panel-seq-note");
--  const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
-+  const seqLink = seqNote ? [document.getElementById("seq-source-link")] : [];
-   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-           document.getElementById("modeS"), ...seqLink,
-           document.getElementById("deck-add"),
+@@ -8828,7 +8828,7 @@ function panelStops() {
+           // Eng review amendment 1: the three Resources links join the Tab
+           // trap after the print controls, in DOM order.
+           ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
+-    .filter(isStop);
++    .filter(el => el && !el.disabled);
+ }
+ function openPanel() {
+   settingsPanel.removeAttribute("hidden");

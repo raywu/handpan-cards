@@ -48,8 +48,11 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "settings-trigger", "settings-scrim", "settings-panel", "settings-title",
   "print-paper-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
-  "modeS", "panel-seq-note", "seq-source-link",
-  "seq-style", "seq-style-name", "seq-style-tip", "foot"];
+  "panel-seq-note", "seq-source-link",
+  "seq-style", "seq-style-name", "seq-style-tip", "foot",
+  // sequence-difficulty D2: the three tier buttons of the five-button Practice
+  // group (they replaced "modeS" and the Difficulty group).
+  "tier-basic", "tier-intermediate", "tier-advanced"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {
@@ -68,7 +71,25 @@ function makeElement(id, tag = "div") {
     children: [], listeners: {}, dataset: {}, attributes: attrs,
     // Assigning innerHTML replaces the children in a browser; the stub does the
     // same, so a rebuilt list (buildChips) has exactly the nodes it appended.
-    set innerHTML(v) { this._html = v; this.children.length = 0; }, get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = v;
+      for (const c of this.children) c.parentNode = null;
+      this.children.length = 0;
+    }, get innerHTML() { return this._html; },
+    // One hidden state: the property and the attribute are the same thing in a
+    // browser, and getClientRects() below reads it.
+    set hidden(v) { if (v) attrs.hidden = ""; else delete attrs.hidden; },
+    get hidden() { return "hidden" in attrs; },
+    parentNode: null,
+    // The nearest id'd ancestor in the shipped markup (boot() fills it in);
+    // dynamically created nodes use parentNode from appendChild instead.
+    _markupParent: null,
+    // Rendered iff neither the element nor any ancestor is hidden. The stub has
+    // no layout, so "rendered" is one rect; CSS never reaches this realm.
+    getClientRects() {
+      for (let n = this; n; n = n.parentNode || n._markupParent) if (n.hidden) return [];
+      return [{}];
+    },
     set textContent(v) { this._text = v; }, get textContent() { return this._text; },
     setAttribute(k, v) {
       attrs[k] = String(v);
@@ -98,16 +119,21 @@ function makeElement(id, tag = "div") {
       if (i >= 0) l.splice(i, 1);
     },
     dispatchEvent(ev) { for (const fn of this.listeners[ev && ev.type] || []) fn(ev); return true; },
-    appendChild(c) { this.children.push(c); return c; },
+    appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
     removeChild(c) {
       const i = this.children.indexOf(c);
       if (i >= 0) this.children.splice(i, 1);
+      c.parentNode = null;
       return c;
     },
     remove() {},
     // focus() is rebound per boot (see bindFocus) so document.activeElement
     // tracks it; the standalone default keeps makeElement usable on its own.
     focus() {}, blur() {},
+    // No-op: jsdom-less stub has no scroll container or layout, so there is
+    // nothing to scroll. renderSeqRail() (D-12) calls this unconditionally
+    // on every render in sequence mode; without a stub it throws.
+    scrollIntoView() {},
     // clicks is counted so a test can tell a created-and-abandoned <a> from
     // one the app actually activated; a real anchor click is the whole of the
     // download on every platform but iOS.
@@ -197,6 +223,30 @@ function boot(opts = {}) {
   for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
     if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
   }
+  // Ancestry from a tag-stack walk of the shipped markup, so a control inside a
+  // hidden container has no client rects without a hand-kept table.
+  {
+    const VOID = new Set(["input", "br", "img", "meta", "link", "hr", "source", "wbr", "area", "col"]);
+    const body = html.replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+    const stack = [];
+    for (const [, close, tag, attrText, selfClose] of
+        body.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)) {
+      const name = tag.toLowerCase();
+      if (close) {
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].tag === name) { stack.length = i; break; }
+        }
+        continue;
+      }
+      const id = /\bid="([^"]+)"/.exec(attrText);
+      if (id && els[id[1]]) {
+        const up = [...stack].reverse().find((f) => f.id && els[f.id]);
+        if (up) els[id[1]]._markupParent = els[up.id];
+      }
+      if (!VOID.has(name) && !selfClose) stack.push({ tag: name, id: id && id[1] });
+    }
+  }
   const created = [];
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
@@ -280,6 +330,12 @@ function boot(opts = {}) {
     document: {
       getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
       createElement: (tag) => { const e = bindFocus(makeElement("dyn", tag || "div")); created.push(e); return e; },
+      // D-12 (sequence-difficulty): renderSeqRail() groups a separator and a
+      // chord name into one unit with a real text node between them, so the
+      // stub needs a minimal one too - just enough to be appendChild'd and
+      // read back by nodeType/textContent, nothing a real Text node does
+      // beyond that.
+      createTextNode: (text) => ({ nodeType: 3, textContent: String(text) }),
       get activeElement() { return focusState.active; },
       querySelector: (sel) => queryAll(sel)[0] || null,
       querySelectorAll: (sel) => queryAll(sel),

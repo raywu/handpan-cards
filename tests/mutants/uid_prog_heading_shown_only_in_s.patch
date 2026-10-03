@@ -1,0 +1,14 @@
+# kills: the practice group has a Flash cards heading and a Chord progression heading, in both states
+# suite: node --test --test-name-pattern the.practice.group.has.a.Flash.cards.heading.and.a.Chord.progression.heading..in.both.states tests/e2e.test.js
+# D2 step 9 (7.1b). setMode() hides the second heading outside progression.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8541,6 +8541,7 @@ function setMode(m) {
+   syncTierUI();
+   const seqNote = document.getElementById("panel-seq-note");
+   seqNote.hidden = m !== "S";
++  document.getElementById("panel-prog-heading").hidden = m !== "S";
+   document.getElementById("foot").classList.toggle("seq", m === "S");
+   document.getElementById("seq-style").hidden = m !== "S";
+   const shuffleBtn = document.getElementById("shuffle");

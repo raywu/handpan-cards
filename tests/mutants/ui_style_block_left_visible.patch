@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7952,7 +7952,6 @@ function setMode(m) {
+@@ -8715,7 +8715,6 @@ function setMode(m) {
    const seqNote = document.getElementById("panel-seq-note");
    seqNote.hidden = m !== "S";
    document.getElementById("foot").classList.toggle("seq", m === "S");

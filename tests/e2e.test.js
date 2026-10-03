@@ -143,6 +143,9 @@ function run() {
     b.eval(`return [...document.querySelectorAll("#decks .chip:not(#deck-add)")]
               .map(c => ({ text: c.textContent.trim(), on: c.classList.contains("on") }));`);
 
+  // The panel has no "mode S" button any more: progression is entered by
+  // tapping a tier, so a test that walks A, B and S taps EASY for S.
+  const modeBtn = (m) => (m === "S" ? "tier-basic" : "mode" + m);
   const stored = () =>
     b.eval(`try { return JSON.parse(localStorage.getItem("hpfc") || "null"); }
             catch (e) { return null; }`);
@@ -1350,6 +1353,158 @@ function run() {
         `landed on idx ${last.stopIdx} instead: ${JSON.stringify({ lastStop, last })}`);
     });
 
+  // D2 re-plan step 2 (R-2): a stop is a control the page RENDERS. Both
+  // helpers drive real Tab/Shift+Tab events.
+  async function tabKey(shift) {
+    for (const type of ["keyDown", "keyUp"]) {
+      await b.send("Input.dispatchKeyEvent", {
+        type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+        modifiers: shift ? 8 : 0,
+      });
+    }
+  }
+  const stopTag = () => b.eval(`
+    const a = document.activeElement;
+    return a && a.hasAttribute("data-stop-idx") ? a.getAttribute("data-stop-idx") : (a && a.id) || (a ? "n" + [...document.querySelectorAll("*")].indexOf(a) : null);`);
+
+  test("a panel control unrendered by CSS is never a Tab stop, and Tab still cycles",
+    async () => {
+      for (const hide of ["#seq-source-link", "#deck-add"]) {
+        await freshLoad();
+        await openSettingsPanel();
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").classList.contains("on")`, { label: "mode S" });
+        if (await b.eval(`return document.getElementById("settings-panel").hidden;`)) {
+          await openSettingsPanel();
+        }
+        await b.eval(`const s = document.createElement("style"); s.id = "inj";
+          s.textContent = ${JSON.stringify(hide + "{display:none !important}")};
+          document.head.appendChild(s); return true;`);
+        const rendered = await b.eval(
+          `return document.querySelector(${JSON.stringify(hide)}).getClientRects().length;`);
+        assert.strictEqual(rendered, 0, `${hide} is still rendered after the injected rule`);
+        const ids = await b.eval(`
+          window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));
+          return window.panelStops().map(e => e.id);`);
+        assert.ok(!ids.includes(hide.slice(1)), `panelStops() lists the unrendered ${hide}`);
+        const n = ids.length;
+        await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+        const fwd = [];
+        for (let i = 0; i < n; i++) { await tabKey(false); fwd.push(await stopTag()); }
+        assert.deepStrictEqual(fwd, [...Array(n).keys()].map((i) => String((i + 1) % n)),
+          `${hide}: forward Tab did not cycle every stop once and wrap: ${JSON.stringify(fwd)}`);
+        const back = [];
+        for (let i = 0; i < n; i++) { await tabKey(true); back.push(await stopTag()); }
+        assert.deepStrictEqual(back, [...Array(n).keys()].map((i) => String((n - 1 - i) % n)),
+          `${hide}: Shift+Tab did not cycle every stop once and wrap: ${JSON.stringify(back)}`);
+      }
+    });
+
+  test("a sheet control unrendered by CSS is never a Tab stop, and Tab still cycles",
+    async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#deck-add");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "sheet open" });
+      await b.eval(`const s = document.createElement("style");
+        s.textContent = "#scale-mirror-l{display:none !important}";
+        document.head.appendChild(s);
+        document.getElementById("scale-back").focus(); return true;`);
+      const seen = [];
+      let prev = await stopTag();
+      for (let i = 0; i < 12; i++) {
+        await tabKey(false);
+        const now = await stopTag();
+        assert.notStrictEqual(now, prev,
+          `Tab stuck on #${prev} (an unrendered stop swallowed it): ${JSON.stringify(seen)}`);
+        seen.push(now);
+        prev = now;
+      }
+      assert.ok(!seen.includes("scale-mirror-l"), "focus landed on the unrendered #scale-mirror-l");
+      assert.ok(seen.includes("scale-mirror-r"), `Tab never reached #scale-mirror-r: ${JSON.stringify(seen)}`);
+      assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
+    });
+
+  test("Tab from outside the stop list enters the panel cycle", async () => {
+    await freshLoad();
+    await openSettingsPanel();
+    const ids = await b.eval(`
+      window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));
+      document.activeElement.blur();
+      return { n: window.panelStops().length, active: document.activeElement === document.body };`);
+    assert.strictEqual(ids.active, true, "could not park focus outside the stop list");
+    await tabKey(false);
+    assert.strictEqual(await stopTag(), "0", "Tab from outside did not land on the first stop");
+    await b.eval(`document.activeElement.blur(); return true;`);
+    await tabKey(true);
+    assert.strictEqual(await stopTag(), String(ids.n - 1),
+      "Shift+Tab from outside did not land on the last stop");
+  });
+
+  // D2 re-plan step 3 (R-1): CSS never unrenders a panel control. The rendered
+  // set is a function of mode alone; only the `hidden` attribute setMode()
+  // writes, and the panel being closed, take a control out of the panel.
+  test("no stylesheet rule unrenders a panel control", async () => {
+    await freshLoad();
+    const offenders = await b.eval(`
+      const panel = document.getElementById("settings-panel");
+      const inside = [...panel.querySelectorAll("*")];
+      const hides = (st) => st.display === "none" || st.visibility === "hidden" ||
+        st.contentVisibility === "hidden";
+      const split = (s) => { const out = []; let d = 0, cur = "";
+        for (const ch of s) { if (ch === "(" || ch === "[") d++; if (ch === ")" || ch === "]") d--;
+          if (ch === "," && d === 0) { out.push(cur); cur = ""; } else cur += ch; }
+        out.push(cur); return out; };
+      const out = [];
+      const walk = (rules, chain) => {
+        for (const r of rules) {
+          if (r.constructor.name === "CSSStyleRule") {
+            if (hides(r.style)) {
+              for (const sel of split(r.selectorText)) {
+                const t = sel.trim();
+                if (t.includes("[hidden]") || /::|:(before|after)\b/.test(t)) continue;
+                let hit = false;
+                for (const el of inside) { try { if (el.matches(t)) { hit = true; break; } } catch (e) { hit = true; break; } }
+                if (hit) out.push((chain.length ? chain.join(" | ") + " | " : "") + t + "{" + r.style.cssText + "}");
+              }
+            }
+          } else if (r.cssRules && r.constructor.name !== "CSSKeyframesRule") {
+            walk(r.cssRules, chain.concat([r.conditionText || r.constructor.name]));
+          }
+        }
+      };
+      for (const sheet of document.styleSheets) {
+        let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+        walk(rules, []);
+      }
+      return out;`);
+    assert.deepStrictEqual(offenders, [],
+      "a stylesheet rule unrenders a panel control, so its reachability would depend on the viewport");
+  });
+
+  // D2 re-plan step 3: a ratchet over the CSSOM, never committed red. The
+  // dimensional media conditions that can reach the panel (modes A, B and S
+  // unioned, `print` and non-dimensional conditions excluded) are a literal
+  // list: adding one means editing it here, in view of the reviewer. The walk
+  // is the oracle's own (tools/probe/panel_fit.js), so the two cannot drift.
+  test("the panel's media conditions are exactly the listed ones", async () => {
+    const { WALK_FN, parseCondition } = require("../tools/probe/panel_fit.js");
+    await freshLoad();
+    const seen = new Set();
+    for (const mode of ["A", "B", "S"]) {
+      await b.eval(`setMode(${JSON.stringify(mode)}); return true;`);
+      const r = await b.eval(`return (${WALK_FN})(location.href);`);
+      assert.deepStrictEqual(r.problems, [], "a container or supports rule contains a panel rule");
+      for (const c of r.conditions) seen.add(c);
+    }
+    const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
+    assert.deepStrictEqual(dimensional, [
+      "(max-height: 520px)",
+      "(min-width: 1024px) and (min-height: 700px)",
+      "(min-width: 640px) and (min-height: 700px)",
+    ].sort());
+  });
+
   // M2, 2026-09-28 (same review gap as above). panelBackground is
   // [main, footer, #decks] - NOT header, because #settings-trigger itself
   // must stay reachable to close the panel it opened.
@@ -1426,16 +1581,28 @@ function run() {
     }
   });
 
+  // D2 step 6b (H-9): the second heading ("Chord progression") costs H + g, and at
+  // 667x375 in progression the panel now needs 18.75px more than it has under the
+  // fallback fonts this harness loads (main needed 373.75 of 375 and fit). That
+  // one cell leaves the fits assertion and is asserted on its own, two-sided:
+  // scroll equals main's pinned needed + H + g - the panel's height, within 1px,
+  // and nothing but the Resources links is below the fold. Every other cell keeps
+  // the fit assertion unchanged.
+  // macOS fallback fonts measure 373.75; the Linux CI runner's measure 371.75
+  // (its 16px headings against macOS's 17px). Both read from origin/main 655a45c.
+  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 371.75 : 373.75;
+
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
       await freshLoad();
       try {
+        assert.strictEqual(await b.eval(`return document.fonts.size;`), 0, "this cell's literal is the fallback-font one");
         for (const [vw, vh] of [[320, 568], [844, 390], [926, 428], [667, 375], [1280, 500]]) {
           await b.setViewport(vw, vh, vw < vh);
           await b.settle();
           for (const mode of ["A", "B", "S"]) {
             await openSettingsPanel();
-            await b.click(`#mode${mode}`);
+            await b.click(`#${modeBtn(mode)}`);
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
               { label: `panel to close after selecting mode ${mode}` });
             await openSettingsPanel();
@@ -1458,6 +1625,7 @@ function run() {
               };
             `);
             const label = `${vw}x${vh} mode ${mode}`;
+            const scrolls = vw === 667 && vh === 375 && mode === "S";
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
             // A hidden Resources group would silently vanish from `ctrls`
             // (the `offsetParent` filter above) and pass every other
@@ -1467,11 +1635,23 @@ function run() {
               ["res-dingandtones", "res-handpaner", "res-trainingcards"],
               `${label}: the Resources links are not all visible/measured`);
             assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
-            assert.ok(m.scrollH <= m.clientH + 1,
-              `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+            if (scrolls) {
+              const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
+                return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
+              const want = MAIN_NEEDED_667x375_S_FALLBACK + hg - m.clientH;
+              assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
+                `${label}: the panel scrolls by ${m.scrollH - m.clientH}px, expected main's spare used up plus H + g = ${want}px`);
+              assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
+                `${label}: only the Resources links may be below the fold`);
+            } else {
+              assert.ok(m.scrollH <= m.clientH + 1,
+                `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+              assert.deepStrictEqual(m.offscreen.slice().sort(), [],
+                `${label}: controls off screen`);
+            }
             assert.ok(m.scrollW <= m.clientW + 1,
               `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
-            assert.deepStrictEqual(m.offscreen, [], `${label}: controls off screen`);
             assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X trigger`);
             assert.deepStrictEqual(m.short, [], `${label}: controls under the 44px target`);
             await b.key("Escape", "Escape", 27);
@@ -1543,7 +1723,7 @@ function run() {
         await b.setViewport(1024, 700, false);
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
-          await b.click(`#mode${mode}`);
+          await b.click(`#${modeBtn(mode)}`);
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
@@ -1581,7 +1761,7 @@ function run() {
         await b.setViewport(1024, 700, false);
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
-          await b.click(`#mode${mode}`);
+          await b.click(`#${modeBtn(mode)}`);
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
@@ -1595,9 +1775,76 @@ function run() {
             };
           `);
           const label = `1024x700 mode ${mode}`;
-          assert.ok(m.scrollH <= m.clientH + 1,
-            `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+          if (mode === "S") {
+            // D2 step 6b (H-9): progression at 1024x700 needed 673.75 (macOS; 669.75 on the Linux runner) of 688 on
+            // main (fallback fonts, which this harness loads) and now needs the
+            // second heading's H + g more, so it scrolls by exactly that much
+            // less main's spare: two-sided within 1px, and every control is
+            // still reachable by scrolling (its bottom is inside scrollHeight).
+            const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
+              return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
+            const mainNeeded = process.platform === "linux" ? 669.75 : 673.75;
+            const want = mainNeeded + hg - m.clientH;
+            assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+            assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
+              `${label}: the sidebar scrolls by ${m.scrollH - m.clientH}px, expected ${want}px`);
+            const unreachable = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const top = p.getBoundingClientRect().top - p.scrollTop;
+              return [...p.querySelectorAll("button, a")].filter(e => e.getClientRects().length)
+                .filter(e => e.getBoundingClientRect().bottom - top > p.scrollHeight + 0.5).map(e => e.id);`);
+            assert.deepStrictEqual(unreachable, [], `${label}: a control lies beyond the scrollable height`);
+          } else {
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+          }
           assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  // Reviewer FAIL #2 (2026-10-02): the sidebar's narrow-height budget
+  // (index.html's "narrow-height budget" comment above max-height:745px)
+  // was measured for modes A/B only and left a gap at viewport heights the
+  // original two tests above never sampled - 1024x700 is the one height
+  // they check, and the gap sits strictly above it. A height sweep (every
+  // integer 700-900 at 1024 and 1280 wide, modes A/B/S) found: modes A/B
+  // overflow NOWHERE in that whole range; mode S overflows 746-757px, worst
+  // at 746 (+12px, res-trainingcards pushed offscreen), and is clean again
+  // at 758+. This test samples that worst height (746), the coordinator's
+  // named regression point (750), and a point past the old bound but still
+  // inside the gap (757, the last still-overflowing height) at both
+  // 1024 and 1280 wide, in all three modes - modes A/B are included so a
+  // future fix that over-corrects for mode S and reintroduces an A/B
+  // regression is also caught.
+  test("the desktop sidebar has no vertical scroll at 1024x746/750/757 and 1280x746 (reviewer FAIL #2 mode-S gap), in modes A, B and S",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [w, h] of [[1024, 746], [1024, 750], [1024, 757], [1280, 746]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const mode of ["A", "B", "S"]) {
+            await b.click(`#${modeBtn(mode)}`);
+            await b.settle();
+            const m = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+              return {
+                scrollH: p.scrollHeight, clientH: p.clientHeight,
+                resVisible: resIds.every(id => {
+                  const el = document.getElementById(id);
+                  return el && el.getClientRects().length > 0;
+                }),
+              };
+            `);
+            const label = `${w}x${h} mode ${mode}`;
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically by ${m.scrollH - m.clientH}px`);
+            assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+          }
         }
       } finally {
         await b.setViewport(900, 900, false);
@@ -2851,7 +3098,7 @@ function run() {
         // so it is measured here, with the panel open, alongside the other
         // panel-only controls.
         const inPanel = await probeTargets(
-          ["#settings-trigger", "#modeA", "#modeB", "#modeS", "#deck-add",
+          ["#settings-trigger", "#modeA", "#modeB", "#tier-basic", "#tier-intermediate", "#tier-advanced", "#deck-add",
            "#settings-panel .prints button", "#settings-panel .prints select"]);
         const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
@@ -6376,6 +6623,39 @@ function run() {
       }
     });
 
+    // The sidebar-tightening query (index.html's "narrow-height budget" rule,
+    // max-height:745px) exists for 1024x700 alone, which has no spare room
+    // once the Difficulty group's forced two-row tier bar is counted;
+    // 1280x800 is outside that bound and must keep the panel's default,
+    // untightened spacing - the same values it had before this lane's work:
+    // panel gap/padding from the base --sp-3/--sp-4 ramp at >=640px width/
+    // >=700px height, and each .panel-group's own heading-to-control gap
+    // from its untightened --sp-1.
+    test("at 1280x800 the sidebar keeps its default (untightened) spacing", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const m = await b.eval(`
+          const panel = document.getElementById("settings-panel");
+          const cs = getComputedStyle(panel);
+          const headings = [...panel.querySelectorAll(".panel-heading")];
+          const practiceHeading = headings.find(h => h.textContent.trim() === "Flash cards");
+          const modeA = document.getElementById("modeA");
+          return {
+            gap: cs.gap, padding: cs.padding,
+            headingToControlGap: modeA.getBoundingClientRect().top - practiceHeading.getBoundingClientRect().bottom,
+          };
+        `);
+        assert.strictEqual(m.gap, "20px", "1280x800: panel gap must equal the untightened --sp-3 ramp value");
+        assert.strictEqual(m.padding, "28px 20px", "1280x800: panel padding must equal the untightened --sp-4/--sp-3 ramp values");
+        assert.ok(Math.abs(m.headingToControlGap - 6) <= 1,
+          `1280x800: heading-to-control gap should be the untightened .panel-group --sp-1 (6px), got ${m.headingToControlGap}`);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
     test("at 1280x800, ArrowRight steps the counter and Enter flips the card", async () => {
       await freshLoad();
       try {
@@ -6828,6 +7108,204 @@ function run() {
     });
   });
 
+  // Reviewer FAIL #3 (bounce 4): every test above measures FALLBACK font
+  // metrics - launch()'s default blocks fonts.googleapis.com/gstatic.com
+  // outright (see tests/helpers/cdp.js's comment) so runs are deterministic
+  // offline, but that means the panel-fit math above was only ever verified
+  // against a generic serif/sans-serif, never the real Marcellus/Bitter/
+  // Nunito Sans the app actually ships. A SEPARATE browser (`rb`), launched
+  // with `{ realFonts: true }`, serves the TTFs already checked into
+  // tools/fonts/ as local @font-face data URIs instead - no network, no
+  // second hop to fonts.gstatic.com. Kept to its own describe/before/after
+  // rather than swapping the shared `b` so the rest of the suite keeps
+  // measuring the fast, deterministic fallback metrics it was written
+  // against; only the handful of cells reviewer #3 actually measured with
+  // real fonts are re-checked here.
+  describe("real fonts (reviewer FAIL #3 panel overflow)", () => {
+    let rb = null;
+    before(async () => {
+      rb = await launch({ realFonts: true });
+      assert.ok(rb, "browser found by findBrowser() but launch({ realFonts: true }) returned null");
+      await rb.goto(URL);
+      // Fonts load async even once request-intercepted; document.fonts.ready
+      // is the one correct wait - a fixed sleep would be timing-dependent and
+      // settle() only waits on WAAPI/CSS animations, not font loading.
+      await rb.eval(`return document.fonts.ready.then(() => true);`);
+      // Nit 2 (bounce 5): document.fonts.ready resolves once the browser's
+      // font-matching settles, even if every @font-face it tried to match
+      // failed to load and it fell back to a system font silently - a broken
+      // Fetch-domain interception in launch({ realFonts: true }) would pass
+      // this `before` hook and then every test below would quietly measure
+      // FALLBACK metrics while believing it was testing real fonts, which is
+      // exactly the gap reviewer FAIL #4 exploited (a fallback-font pass does
+      // not establish a real-font pass; see probe4.js in the bounce-5
+      // investigation). Assert the three families this app ships
+      // (Marcellus, Bitter, Nunito Sans) actually matched, so an interception
+      // break fails loudly here instead of silently degrading every test in
+      // this describe block.
+      // ER-1 (D2 re-plan): document.fonts.check(spec) returns TRUE when no
+      // @font-face is registered at all (document.fonts.size 0, every load()
+      // resolving to an empty list), so the check() assertion that stood here
+      // could not fail in the one situation it exists to catch - a broken
+      // interception that leaves every family on its fallback. Assert the
+      // registry instead: five faces, every one loaded, and the families and
+      // weights are exactly the five files in tools/fonts. checkFontMode is the
+      // same function the panel-fit oracle runs, so the two cannot disagree.
+      const fonts = await rb.eval(`
+        const specs = ["14px Marcellus", "400 14px Bitter", "700 14px Bitter",
+          "400 14px 'Nunito Sans'", "600 14px 'Nunito Sans'"];
+        return Promise.all(specs.map(s => document.fonts.load(s))).then(() => ({
+          size: document.fonts.size,
+          faces: [...document.fonts].map(f => ({ family: f.family, weight: f.weight, status: f.status })),
+        }));
+      `);
+      require("../tools/probe/panel_fit.js").checkFontMode("real", fonts);
+    });
+    after(async () => { if (rb) await rb.close(); });
+
+    async function panelOverflow(w, h, mode, mobile) {
+      await rb.setViewport(w, h, mobile);
+      await rb.settle();
+      if (mobile) {
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+          { label: "panel open" });
+      }
+      await rb.click(`#${modeBtn(mode)}`);
+      if (mobile) {
+        await rb.waitFor(`document.getElementById("settings-panel").hidden === true`,
+          { label: "panel close after mode" });
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+          { label: "panel reopen" });
+      }
+      await rb.settle();
+      const m = await rb.eval(`
+        const p = document.getElementById("settings-panel");
+        const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        return {
+          scrollH: p.scrollHeight, clientH: p.clientHeight,
+          resVisible: resIds.every(id => {
+            const el = document.getElementById(id);
+            return el && el.getClientRects().length > 0;
+          }),
+        };
+      `);
+      if (mobile) {
+        await rb.click("#settings-trigger");
+        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display === "none"`,
+          { label: "panel close for next case" });
+      }
+      return m;
+    }
+
+    // The desktop sidebar cells reviewer #3 measured with real fonts:
+    // 1024/1280 wide, heights 746-760 (overflow +16px->+2px under the OLD
+    // max-height:745px bound), plus the three named width/height pairs that
+    // showed +12px at the same underlying cause (the bound never reached
+    // real fonts' own 762px exact-fit). Widened to 765px, every one of these
+    // is a real-font exact fit (0px overflow) - see index.html's "narrow-
+    // height budget" comment for the measurement this bound is now based on.
+    test("the desktop sidebar has no vertical scroll under REAL fonts at the heights reviewer #3 measured",
+      async () => {
+        const cases = [
+          [1024, 746], [1024, 750], [1024, 754], [1024, 758], [1024, 760],
+          [1280, 746], [1280, 750], [1366, 750], [1536, 750],
+        ];
+        for (const [w, h] of cases) {
+          for (const mode of ["A", "B"]) {
+            const m = await panelOverflow(w, h, mode, false);
+            const label = `${w}x${h} mode ${mode} (real fonts)`;
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) by ${m.scrollH - m.clientH}px`);
+            assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
+          }
+        }
+      });
+
+    // 320x568 mode S: reviewer #3 measured +4px under real fonts (the last
+    // Resources link ending at 572 against a 568px box) - a different,
+    // narrower-viewport breakpoint from the sidebar cells above (the
+    // full-screen portrait panel, not the fixed sidebar).
+    test("the 320x568 full-screen panel has no vertical scroll under REAL fonts in mode S",
+      async () => {
+        const m = await panelOverflow(320, 568, "S", true);
+        assert.ok(m.scrollH <= m.clientH + 1,
+          `320x568 mode S (real fonts): the panel (${m.scrollH}px) overflows its own box ` +
+          `(${m.clientH}px) by ${m.scrollH - m.clientH}px`);
+        assert.ok(m.resVisible, "320x568 mode S (real fonts): the Resources links are not all rendered");
+      });
+
+    // Bounce 5 (reviewer FAIL #4): adding the Difficulty panel-group shifted
+    // the landscape grid's auto-fit column packing, stranding a 114px+ tall
+    // group alone in the leftover row at several widths and forcing an extra
+    // row entirely at 568px wide - a regression invisible to every landscape
+    // test above (844x390, 926x428, 667x375, 1280x500 all sit above this
+    // band). The reviewer's full sweep (6,471 cells/font) found 110
+    // regressions real-font / 129 fallback, all inside this band; these are
+    // the band edges, in real fonts, where it bit hardest. Confirmed RED at
+    // b3fdcf9 (pre-fix) and GREEN after the order/tierbar-wrap/row-gap/
+    // panel-seq-note fixes in index.html's base max-height:520px block.
+    //
+    // D2 re-plan step 3 (R-1): the "Bounce 5 follow-up" trims that used to
+    // follow here - four max-height:356px blocks, one of which unrendered
+    // #panel-seq-note - are deleted, because CSS never unrenders a panel
+    // control (T-R1). The cells at 300-306px that only those trims reached
+    // are no longer asserted here; the `panel fit` oracle (tools/probe/
+    // panel_fit.js) reports that band until step 6 reworks the landscape
+    // layout. What remains are the band edges the base block still holds.
+    test("the landscape panel has no vertical scroll and no offscreen control at the bounce-5 band edges (REAL fonts)",
+      async () => {
+        // D2 step 6b (H-9): the second heading costs H + g (18 + 3 here, real
+        // fonts), so 740x340 S and 568x312 A now scroll. Each case carries main's
+        // needed height as a literal (origin/main, same measuring function); a
+        // case whose main-needed + H + g exceeds the panel by more than the 1px
+        // tolerance must scroll by exactly that much (two-sided, within 1px)
+        // with every control still reachable by scrolling; the others keep the
+        // original assertion (no scroll, nothing offscreen).
+        const cases = [
+          [740, 360, "S", 328.25], [740, 340, "S", 328.25], [812, 330, "S", 310], [926, 310, "S", 251.75],
+          [568, 312, "A", 313],
+        ];
+        for (const [w, h, mode, mainNeeded] of cases) {
+          await rb.setViewport(w, h, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.clear(); localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))});`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.settle();
+          await rb.click("#settings-trigger");
+          await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
+            { label: "panel open" });
+          await rb.settle();
+          const m = await rb.eval(`
+            const p = document.getElementById("settings-panel");
+            const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+            const hd = document.getElementById("panel-prog-heading");
+            return {
+              over: p.scrollHeight - p.clientHeight, clientH: p.clientHeight,
+              hg: hd.getBoundingClientRect().height + parseFloat(getComputedStyle(hd).marginTop),
+              reach: ctrls.filter(e => e.getBoundingClientRect().bottom - (p.getBoundingClientRect().top - p.scrollTop) > p.scrollHeight + 0.5).map(e => e.id),
+              off: ctrls.filter(e => {
+                const k = e.getBoundingClientRect();
+                return k.left < -0.5 || k.top < -0.5 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5;
+              }).map(e => e.id || e.textContent.trim()),
+            };
+          `);
+          const label = `${w}x${h} mode ${mode} (real fonts)`;
+          const want = mainNeeded + m.hg - m.clientH;
+          if (want > 1) {
+            assert.ok(m.over > 0, `${label}: the cell must really scroll (two-sided)`);
+            assert.ok(Math.abs(m.over - want) <= 1, `${label}: the panel scrolls by ${m.over}px, expected ${want}px`);
+            assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
+          } else {
+            assert.ok(m.over <= 1, `${label}: the panel overflows its own box by ${m.over}px`);
+            assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
+          }
+        }
+      });
+  });
+
   // Lane S2: "CHORD PROGRESSION" mode's app-side wiring. See
   // docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8
   // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
@@ -6836,25 +7314,25 @@ function run() {
     async function enterSeqMode() {
       await freshLoad();
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
     }
 
-    test("selecting CHORD PROGRESSION presses #modeS exclusively, shows the credit note, and survives a reload",
+    test("selecting a tier presses it exclusively, shows the credit note, and survives a reload",
       async () => {
         await enterSeqMode();
         const st = await b.eval(`return {
           a: document.getElementById("modeA").getAttribute("aria-pressed"),
           b: document.getElementById("modeB").getAttribute("aria-pressed"),
-          s: document.getElementById("modeS").getAttribute("aria-pressed"),
+          s: document.getElementById("tier-basic").getAttribute("aria-pressed"),
           noteHidden: document.getElementById("panel-seq-note").hidden,
         };`);
         assert.deepStrictEqual(st, { a: "false", b: "false", s: "true", noteHidden: false });
         const before = await stored();
         assert.strictEqual(before.mode, "S", "mode S was not saved under \"hpfc\"");
         await navigate();
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to survive a reload" });
       });
 
@@ -6939,8 +7417,8 @@ function run() {
       for (const [baseMode, turnShuffleOn] of [["A", false], ["B", true]]) {
         await freshLoad();
         await openSettingsPanel();
-        await b.click(`#mode${baseMode}`);
-        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+        await b.click(`#${modeBtn(baseMode)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(baseMode)}").getAttribute("aria-pressed") === "true"`,
           { label: `mode ${baseMode} to take effect` });
         if (turnShuffleOn) {
           await b.click("#shuffle");
@@ -6950,8 +7428,8 @@ function run() {
         assert.strictEqual(before.on, turnShuffleOn, `mode ${baseMode} Shuffle .on before entering S`);
 
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         const seqRail = await railText();
         assert.ok(seqRail, "entering S must draw a sequence and render the rail");
@@ -6968,8 +7446,8 @@ function run() {
         assert.ok(seen.size > 1, "New progression in S must redraw a different sequence at least once");
 
         await openSettingsPanel();
-        await b.click(`#mode${baseMode}`);
-        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+        await b.click(`#${modeBtn(baseMode)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(baseMode)}").getAttribute("aria-pressed") === "true"`,
           { label: `mode ${baseMode} to take effect again` });
         const after = await shuffleState();
         assert.deepStrictEqual(after, before,
@@ -6980,7 +7458,7 @@ function run() {
     test("a persisted mode \"S\" boots straight into a sequence, not the empty-sequence message", async () => {
       await enterSeqMode();
       await navigate(); // reload
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to survive a reload" });
       const m = await b.eval(`return {
         rail: document.querySelector("#count .seq-rail")?.textContent ?? null,
@@ -7007,7 +7485,10 @@ function run() {
     // panel" test above), and
     // returns the ids visited, stopping once focus wraps back to the trigger
     // or after `max` presses.
-    async function driveTabCycle(reverse, max = 14) {
+    // D-8 added three more panelStops() (the tier buttons) between the
+    // sequence link and #deck-add, pushing the mode-S cycle past the old
+    // default of 14 presses before it wraps back to the trigger.
+    async function driveTabCycle(reverse, max = 20) {
       await b.eval(`window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));`);
       const describe = () => b.eval(`
         const a = document.activeElement;
@@ -7025,7 +7506,7 @@ function run() {
     test("the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible",
       async () => {
         await enterSeqMode();
-        // Selecting a mode closes the panel (closePanel() in #modeS's own
+        // Selecting a mode closes the panel (closePanel() in a tier button's own
         // onclick) - reopen it to measure the link's rendered, visible size.
         await openSettingsPanel();
         const link = await b.eval(`
@@ -7060,8 +7541,8 @@ function run() {
         assert.ok(backS.some((s) => s.id === "seq-source-link"),
           `backward Tab never reached #seq-source-link in mode S: ${JSON.stringify(backS)}`);
 
-        // Switch back to A: the note (and the link) hide. #modeS itself
-        // always remains a stop, but the now-hidden link must never be
+        // Switch back to A: the note (and the link) hide. The three tier buttons
+        // always remain stops, but the now-hidden link must never be
         // landed on by a real Tab cycle in either direction, in modes A
         // or B. The panel is still open from backS above; close it first so
         // each iteration can reopen it cleanly before its mode click
@@ -7072,8 +7553,8 @@ function run() {
           { label: "panel to close before the A/B loop" });
         for (const mode of ["A", "B"]) {
           await openSettingsPanel();
-          await b.click(`#mode${mode}`);
-          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
             { label: `mode ${mode} to take effect` });
           if (mode === "A") {
             const noteHidden = await b.eval(
@@ -7086,7 +7567,8 @@ function run() {
             `forward Tab never wrapped back to the trigger in mode ${mode}: ${JSON.stringify(fwd)}`);
           assert.ok(!fwd.some((s) => s.id === "seq-source-link"),
             `forward Tab landed on hidden #seq-source-link in mode ${mode}: ${JSON.stringify(fwd)}`);
-          assert.ok(fwd.some((s) => s.id === "modeS"), `#modeS is always a stop in mode ${mode}`);
+          assert.ok(["tier-basic", "tier-intermediate", "tier-advanced"].every((id) => fwd.some((s) => s.id === id)),
+            `the three tier buttons are always stops in mode ${mode}`);
           await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
           const back = await driveTabCycle(true);
           assert.strictEqual(back[back.length - 1].isTrigger, true,
@@ -7098,6 +7580,295 @@ function run() {
             { label: `panel to close after mode ${mode}` });
         }
       });
+
+    // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
+    // exclusive practice buttons. There is no #modeS and no disabled state.
+    const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
+      "tier-advanced", "deck-add", "", "", "print-paper-select", "res-handpaner", "res-dingandtones",
+      "res-trainingcards"];
+    const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
+    const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
+    const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
+      .map(id => { const el = document.getElementById(id);
+        return [id, el.getAttribute("aria-pressed"), el.classList.contains("on"), el.disabled]; });`);
+    const assertExactlyOne = (five, want, label) => {
+      for (const [id, pressed, on, disabled] of five) {
+        assert.strictEqual(pressed, id === want ? "true" : "false", `${label}: ${id} aria-pressed`);
+        assert.strictEqual(on, id === want, `${label}: ${id} .on`);
+        assert.strictEqual(disabled, false, `${label}: ${id} must never be disabled`);
+      }
+    };
+    async function cycleIds() {
+      await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+      const seen = await driveTabCycle(false, 20);
+      const back = (await (async () => {
+        await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+        return driveTabCycle(true, 20);
+      })());
+      return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
+    }
+
+    test("Tab cycles exactly the thirteen flash-card stops in the modal at every viewport class", async () => {
+      for (const [w, h, m] of MODAL_VIEWPORTS) {
+        await freshLoad();
+        await b.setViewport(w, h, m);
+        await b.settle();
+        for (const mode of ["A", "B"]) {
+          await openSettingsPanel();
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
+            { label: `mode ${mode}` });
+          await openSettingsPanel();
+          const { fwd, back } = await cycleIds();
+          assert.deepStrictEqual(fwd.slice(0, -1), FLASH_STOPS, `${w}x${h} ${mode}: forward Tab order`);
+          assert.strictEqual(fwd[fwd.length - 1], "settings-trigger");
+          assert.deepStrictEqual(back.slice(0, -1), [FLASH_STOPS[0], ...FLASH_STOPS.slice(1).reverse()],
+            `${w}x${h} ${mode}: Shift+Tab is the exact reverse`);
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+        }
+      }
+      await b.setViewport(900, 900, false);
+    });
+
+    test("Tab cycles exactly the fourteen progression stops in the modal at every viewport class", async () => {
+      for (const [w, h, m] of MODAL_VIEWPORTS) {
+        await freshLoad();
+        await b.setViewport(w, h, m);
+        await b.settle();
+        await openSettingsPanel();
+        await b.click("#tier-intermediate");
+        await b.waitFor(`document.getElementById("tier-intermediate").getAttribute("aria-pressed") === "true"`,
+          { label: "progression" });
+        await openSettingsPanel();
+        const { fwd, back } = await cycleIds();
+        assert.deepStrictEqual(fwd.slice(0, -1), PROG_STOPS, `${w}x${h}: forward Tab order`);
+        assert.deepStrictEqual(back.slice(0, -1), [PROG_STOPS[0], ...PROG_STOPS.slice(1).reverse()],
+          `${w}x${h}: Shift+Tab is the exact reverse`);
+        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+      }
+      await b.setViewport(900, 900, false);
+    });
+
+    test("the sidebar's native Tab order is the panel's DOM order", async () => {
+      try {
+        for (const [w, h] of [[1024, 700], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const prog of [false, true]) {
+            if (prog) { await b.click("#tier-advanced"); await b.settle(); }
+            const ids = await b.eval(`return [...document.getElementById("settings-panel")
+              .querySelectorAll("button, a[href], select")].filter(el => !el.disabled && el.getClientRects().length > 0)
+              .map(el => el.id || "");`);
+            assert.deepStrictEqual(ids, (prog ? PROG_STOPS : FLASH_STOPS).slice(1), `${w}x${h} prog=${prog}`);
+            const panelStops = await b.eval(`return window.panelStops().map(e => e.id || "");`);
+            assert.deepStrictEqual(panelStops, ids, `${w}x${h} prog=${prog}: panelStops agrees`);
+          }
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("a flash-card button unlights every tier and leaves the stored tier alone", async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#tier-advanced");
+      await b.waitFor(`document.getElementById("tier-advanced").getAttribute("aria-pressed") === "true"`, { label: "advanced" });
+      for (const m of ["A", "B"]) {
+        await openSettingsPanel();
+        await b.click(`#${modeBtn(m)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(m)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${m}` });
+        assertExactlyOne(await pressedFive(), `mode${m}`, `after ${m}`);
+        assert.strictEqual((await stored()).tier, "advanced", "hpfc.tier must be unchanged by a flash-card press");
+        assert.strictEqual((await stored()).mode, m);
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "settings-trigger", "focus returns to the trigger");
+      }
+    });
+
+    test("in the sidebar a button press re-states all five and keeps focus", async () => {
+      try {
+        for (const [w, h] of [[1024, 700], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const [id, want] of [["#tier-intermediate", "tier-intermediate"], ["#modeB", "modeB"], ["#tier-basic", "tier-basic"]]) {
+            await b.click(id);
+            await b.settle();
+            assertExactlyOne(await pressedFive(), want, `${w}x${h} ${id}`);
+            assert.strictEqual(await b.eval(`return document.activeElement.id;`), id.slice(1), "focus stays on the pressed button");
+            assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`), true);
+          }
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("tapping a tier from a flash-card mode enters progression at that tier in one tap and closes the panel", async () => {
+      await freshLoad();
+      for (const [m, t] of [["A", "intermediate"], ["B", "advanced"]]) {
+        await openSettingsPanel();
+        await b.click(`#${modeBtn(m)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(m)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${m}` });
+        await b.eval(`window.__picks = []; window.__origPick = HPE.sequence.pick; const o = window.__origPick;
+          HPE.sequence.pick = (d, r, p, t) => { window.__picks.push([p, t]); return o(d, r, p, t); }; return true;`);
+        await openSettingsPanel();
+        await b.click(`#tier-${t}`);
+        await b.waitFor(`document.getElementById("tier-${t}").getAttribute("aria-pressed") === "true"`, { label: t });
+        const r = await b.eval(`return { picks: window.__picks, hidden: document.getElementById("settings-panel").hidden,
+          note: document.getElementById("panel-seq-note").hidden, active: document.activeElement.id };`);
+        assert.deepStrictEqual(r.picks, [[null, t]], "exactly one pick call, at the tapped tier, with prev cleared");
+        assert.strictEqual(r.hidden, true);
+        assert.strictEqual(r.note, false);
+        assert.strictEqual(r.active, "settings-trigger");
+        assertExactlyOne(await pressedFive(), `tier-${t}`, `tap ${t} from ${m}`);
+        const st = await stored();
+        assert.strictEqual(st.mode, "S");
+        assert.strictEqual(st.tier, t);
+        await b.eval(`HPE.sequence.pick = window.__origPick; delete window.__picks; return true;`);
+      }
+    });
+
+    test("the practice group has a Flash cards heading and a Chord progression heading, in both states", async () => {
+      for (const mode of ["A", "S"]) {
+        await freshLoad();
+        await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, tier: "basic" }))}); return true;`);
+        await navigate();
+        await openSettingsPanel();
+        const r = await b.eval(`
+          const panel = document.getElementById("settings-panel");
+          const group = document.querySelector("#settings-panel > .panel-group");
+          const all = [...panel.querySelectorAll("h3")];
+          const inGroup = [...group.querySelectorAll(".panel-heading")];
+          const pos = (el) => [...group.querySelectorAll("*")].indexOf(el);
+          const second = document.getElementById("panel-prog-heading");
+          return {
+            h3Count: all.length, h3Texts: all.map((h) => h.textContent.trim()),
+            groupHeadings: inGroup.map((h) => [h.tagName, h.className, h.textContent.trim()]),
+            order: second ? [pos(inGroup[0]) < pos(document.getElementById("modeA")), pos(document.getElementById("modeB")) < pos(second), pos(second) < pos(document.getElementById("tier-basic"))] : null,
+            secondRendered: !!second && second.getClientRects().length > 0,
+            stops: [inGroup.map((h) => h.tabIndex)],
+          };`);
+        assert.deepStrictEqual(r.groupHeadings, [["H3", "panel-heading", "Flash cards"], ["H3", "panel-heading", "Chord progression"]], `mode ${mode}`);
+        assert.deepStrictEqual(r.order, [true, true, true], `mode ${mode}: Flash cards before modeA, Chord progression between modeB and the tiers`);
+        assert.strictEqual(r.secondRendered, true, `mode ${mode}: the second heading renders in both states`);
+        assert.strictEqual(r.h3Count, 5, `mode ${mode}: five h3 in all`);
+        assert.ok(!r.h3Texts.includes("Practice"), `mode ${mode}: no heading is named Practice`);
+        assert.ok(r.stops[0].every((t) => t === -1), `mode ${mode}: a heading is a Tab stop`);
+      }
+    });
+
+    describe("T-HEAD: the two headings in both font modes", () => {
+      const fontsFor = {};
+      before(async () => {
+        const pf = require("../tools/probe/panel_fit.js");
+        for (const fm of ["fallback", "real"]) {
+          const br = await launch({ realFonts: fm === "real" });
+          assert.ok(br);
+          await pf.prepareBrowser(br, URL);
+          pf.checkFontMode(fm, await br.eval(`return window.__pf.fonts();`));
+          fontsFor[fm] = br;
+        }
+      });
+      after(async () => { for (const br of Object.values(fontsFor)) await br.close(); });
+
+      const probe = `
+        const hs = [...document.querySelector("#settings-panel > .panel-group").querySelectorAll(".panel-heading")];
+        const scales = document.querySelector("#panel-scales-group .panel-heading");
+        const style = (el) => { const c = getComputedStyle(el); return [c.fontFamily, c.fontSize, c.fontWeight, c.color, c.letterSpacing, c.textTransform].join("|"); };
+        const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
+          return new Set([...r.getClientRects()].map((k) => Math.round(k.top))).size; };
+        const second = document.getElementById("panel-prog-heading");
+        const modebar = document.querySelector(".modebar"), tierbar = document.querySelector(".tierbar");
+        return {
+          texts: hs.map((h) => h.textContent.trim()), tags: hs.map((h) => h.tagName),
+          lines: hs.map(lines), same: hs.map((h) => style(h) === style(scales)),
+          above: second.getBoundingClientRect().top - modebar.getBoundingClientRect().bottom,
+          below: tierbar.getBoundingClientRect().top - second.getBoundingClientRect().bottom,
+          inside: second.getBoundingClientRect().right <= document.getElementById("settings-panel").getBoundingClientRect().right,
+        };`;
+
+      test("both headings are h3.panel-heading on one line, styled as the Scales heading, with twice the gap above the second as below it", async () => {
+        for (const [fm, br] of Object.entries(fontsFor)) {
+          for (const [w, h] of [[320, 568], [568, 320], [1024, 700]]) {
+            await br.setViewport(w, h, false);
+            await br.settle();
+            await br.eval(`window.__pf.one("A"); return true;`);
+            const r = await br.eval(probe);
+            const where = `${fm} ${w}x${h}`;
+            assert.deepStrictEqual(r.texts, ["Flash cards", "Chord progression"], where);
+            assert.deepStrictEqual(r.tags, ["H3", "H3"], where);
+            assert.deepStrictEqual(r.lines, [1, 1], where + ": each heading is one line of text");
+            assert.deepStrictEqual(r.same, [true, true], where + ": no new label style");
+            assert.ok(Math.abs(r.above - 2 * r.below) <= 0.5, `${where}: gap above ${r.above}, below ${r.below}`);
+            assert.ok(r.inside, where);
+          }
+        }
+      });
+
+      test("a heading that wraps is seen as wrapping (the one-line check can fail)", async () => {
+        const br = fontsFor.fallback;
+        await br.setViewport(320, 568, false);
+        await br.settle();
+        await br.eval(`window.__pf.one("A"); document.getElementById("panel-prog-heading").style.width = "40px"; return true;`);
+        const r = await br.eval(probe);
+        await br.eval(`document.getElementById("panel-prog-heading").style.width = ""; return true;`);
+        assert.ok(r.lines[1] > 1, "a narrowed 'Chord progression' must report more than one line");
+      });
+    });
+
+    test("the tier buttons are named as drawn and grouped under the Chord progression heading", async () => {
+      const cases = [[380, 740, true, false], [568, 320, true, true], [1280, 800, false, true]];
+      try {
+        for (const [w, h, m] of cases) {
+          await freshLoad();
+          await b.setViewport(w, h, m);
+          await b.settle();
+          await openSettingsPanel();
+          await b.send("Accessibility.enable", {});
+          const { nodes } = await b.send("Accessibility.getFullAXTree", {});
+          const byId = new Map(nodes.map((n) => [n.nodeId, n]));
+          const btns = nodes.filter((n) => n.role && n.role.value === "button" && !n.ignored
+            && ["EASY", "MEDIUM", "HARD"].includes((n.name && n.name.value || "").trim()));
+          assert.deepStrictEqual(btns.map((n) => n.name.value.trim()).sort(), ["EASY", "HARD", "MEDIUM"], `${w}x${h}: tier names`);
+          const src = await b.eval(`const g = document.querySelector(".tierbar");
+            return { labelledby: g.getAttribute("aria-labelledby"), label: g.getAttribute("aria-label"),
+              heading: document.getElementById("panel-prog-heading") && document.getElementById("panel-prog-heading").textContent.trim() };`);
+          assert.deepStrictEqual(src, { labelledby: "panel-prog-heading", label: null, heading: "Chord progression" },
+            `${w}x${h}: the group's name must come from the visible heading, not from a second string`);
+          for (const n of btns) {
+            assert.ok(!n.description || !n.description.value, `${w}x${h}: ${n.name.value} has a description`);
+            const parent = byId.get(n.parentId);
+            assert.ok(parent && parent.role.value === "group" && parent.name && parent.name.value === "Chord progression",
+              `${w}x${h}: tier buttons sit in a group named Chord progression`);
+          }
+          const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
+            const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("exactly one of the five practice buttons is pressed at boot, after every press, and after a reload", async () => {
+      await freshLoad();
+      assertExactlyOne(await pressedFive(), "modeA", "boot");
+      for (const [id, want] of [["tier-advanced", "tier-advanced"], ["modeB", "modeB"], ["tier-basic", "tier-basic"], ["modeA", "modeA"]]) {
+        await openSettingsPanel();
+        await b.click(`#${id}`);
+        await b.settle();
+        assertExactlyOne(await pressedFive(), want, `after ${id}`);
+        await navigate();
+        await b.waitFor(`document.getElementById("${want}").getAttribute("aria-pressed") === "true"`, { label: "reload" });
+        assertExactlyOne(await pressedFive(), want, `reload after ${id}`);
+      }
+      for (const [stored_, want] of [[{ mode: "S", tier: "advanced" }, "tier-advanced"], [{ mode: "A", tier: "advanced" }, "modeA"],
+        [{ mode: "S", tier: "nonsense" }, "tier-basic"], [{ mode: "S" }, "tier-basic"]]) {
+        await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify(stored_))}); return true;`);
+        await navigate();
+        await b.waitFor(`document.getElementById("${want}").getAttribute("aria-pressed") === "true"`, { label: JSON.stringify(stored_) });
+        assertExactlyOne(await pressedFive(), want, JSON.stringify(stored_));
+      }
+    });
 
     // Acceptance 7: "#count is one line at 320x568 for the longest built-in
     // rail". Anchors are triad, sus4, dim or 5 only, so re-rolling repeatedly
@@ -7112,8 +7883,8 @@ function run() {
         await b.setViewport(320, 568, true);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         try {
           let sawThreeChord = false;
@@ -7140,7 +7911,7 @@ function run() {
               const firstTop = kids[0].getBoundingClientRect().top;
               const lastTop = kids[kids.length - 1].getBoundingClientRect().top;
               return {
-                text: rail.textContent, segments: rail.children.length,
+                text: rail.textContent, chordUnits: rail.querySelectorAll(".seq-chord").length,
                 oneLine: Math.abs(firstTop - lastTop) <= 1,
                 // "one line at 320x568" means the rail fits fully - no ellipsis
                 // truncation needed - not merely that #count's own box (which
@@ -7150,7 +7921,7 @@ function run() {
                 overlapsPrev: overlaps(cr, pr), overlapsNext: overlaps(cr, nr),
               };
             `);
-            const chordCount = Math.ceil((m.segments + 1) / 2);
+            const chordCount = m.chordUnits;
             if (chordCount === 3) sawThreeChord = true;
             assert.ok(m.oneLine, `rail "${m.text}" wrapped to more than one line at 320x568`);
             assert.ok(m.fitsWithoutEllipsis, `rail "${m.text}" overflows #count and needs the ellipsis fallback at 320x568`);
@@ -7177,8 +7948,8 @@ function run() {
         await b.setViewport(320, 568, true);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
         await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
@@ -7215,6 +7986,129 @@ function run() {
         }
       });
 
+    // D-12 (owner decision 2026-10-02, "Scroll, one line" - supersedes the
+    // wrap-to-a-second-line design the two tests above were written against):
+    // the rail never wraps, at any sequence length, and keeps the current
+    // chord in view by scrolling horizontally instead. Picks the longest
+    // ADVANCED rail ANY built-in deck can draw, by actual rendered pixel
+    // width (not chord count or character count, which can rank two
+    // candidates differently once per-glyph kerning is in play) - sampling
+    // pick() directly rather than re-rolling through the UI, since the UI
+    // path cannot target "longest" without re-implementing pick()'s own
+    // selection logic here (same reasoning as Acceptance 7 above).
+    async function pickLongestAdvancedRail() {
+      return b.eval(`
+        const measure = (text) => {
+          const c = document.createElement("canvas");
+          const ctx = c.getContext("2d");
+          ctx.font = "400 20px Marcellus, serif";
+          return ctx.measureText(text).width;
+        };
+        let best = null;
+        for (const d of DECKS) {
+          for (let i = 0; i < 60; i++) {
+            const picked = HPE.sequence.pick(d, Math.random, null, "advanced");
+            if (!picked || !picked.chords) continue;
+            const text = picked.chords.map(ci => {
+              const c = d.chords[ci];
+              return c.main + (c.sup || "");
+            }).join(" → ");
+            const w = measure(text);
+            if (!best || w > best.w) best = { deckId: d.id, chords: picked.chords, text, w };
+          }
+        }
+        return best;
+      `);
+    }
+    const D12_VIEWPORTS = [[667, 375], [844, 390], [320, 568], [380, 740]];
+    test("D-12: the rail never wraps and the current chord stays in view, for the longest built-in ADVANCED rail",
+      async () => {
+        const longest = await pickLongestAdvancedRail();
+        assert.ok(longest && longest.chords && longest.chords.length >= 3,
+          `could not find a usable ADVANCED sequence to test against: ${JSON.stringify(longest)}`);
+        for (const [w, h] of D12_VIEWPORTS) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await b.send("Emulation.setEmulatedMedia", {
+            media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+          });
+          try {
+            await b.eval(`
+              selectDeck(${JSON.stringify(longest.deckId)});
+              tier = "advanced"; mode = "S";
+              seq = { chords: ${JSON.stringify(longest.chords)}, style: "together" };
+              order = seq.chords.slice(); idx = 0; flipped = false;
+              document.getElementById("foot").classList.add("seq");
+              render();
+              return true;
+            `);
+            for (let step = 0; step <= longest.chords.length; step++) {
+              const m = await b.eval(`
+                const rail = document.querySelector("#count .seq-rail");
+                const cur = rail.querySelector(".seq-chord > b, b.seq-chord") || rail.querySelector("b");
+                const rr = rail.getBoundingClientRect(), cr = cur.getBoundingClientRect();
+                const kids = Array.from(rail.children);
+                const docEl = document.documentElement;
+                return {
+                  oneLine: Math.abs(kids[0].getBoundingClientRect().top - kids[kids.length - 1].getBoundingClientRect().top) <= 1,
+                  curInRail: cr.left >= rr.left - 0.5 && cr.right <= rr.right + 0.5,
+                  noBodyHScroll: docEl.scrollWidth <= docEl.clientWidth + 1,
+                  idx, text: rail.textContent,
+                };
+              `);
+              assert.ok(m.oneLine, `${w}x${h} step ${step}: rail "${m.text}" wrapped to more than one line`);
+              assert.ok(m.curInRail, `${w}x${h} step ${step}: current chord is not fully inside the rail's visible box ("${m.text}")`);
+              assert.ok(m.noBodyHScroll, `${w}x${h} step ${step}: page has horizontal scroll`);
+              await b.eval(`step(1); return true;`);
+              await b.settle();
+            }
+          } finally {
+            await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+            await b.setViewport(900, 900, false);
+          }
+        }
+      });
+
+    test("D-12: BASIC and ADVANCED footer/card dimensions are identical at the four rail viewports",
+      async () => {
+        const longest = await pickLongestAdvancedRail();
+        for (const [w, h] of D12_VIEWPORTS) {
+          await freshLoad();
+          await b.setViewport(w, h, w < h);
+          await b.settle();
+          await openSettingsPanel();
+          await b.click("#tier-basic");
+          await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+            { label: "mode S to take effect" });
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
+          await b.settle();
+          const rectsOf = (sel) => `(() => {
+            const r = document.querySelector("${sel}").getBoundingClientRect();
+            return { w: r.width, h: r.height };
+          })()`;
+          const basic = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
+          await b.eval(`
+            selectDeck(${JSON.stringify(longest.deckId)});
+            tier = "advanced";
+            seq = { chords: ${JSON.stringify(longest.chords)}, style: "together" };
+            order = seq.chords.slice(); idx = 0; flipped = false;
+            render();
+            return true;
+          `);
+          await b.settle();
+          const advanced = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
+          for (const box of ["footer", "card"]) {
+            for (const k of ["w", "h"]) {
+              assert.ok(Math.abs(basic[box][k] - advanced[box][k]) <= 0.5,
+                `${w}x${h} ${box}.${k}: BASIC ${basic[box][k]} vs the longest ADVANCED rail ${advanced[box][k]}`);
+            }
+          }
+          await b.setViewport(900, 900, false);
+        }
+      });
+
     // Acceptance 7 (revised, O1/O5): switching from A to S at a fixed viewport
     // must keep the header exactly where it was and the footer's LEFT EDGE
     // and WIDTH fixed - only its height may grow, and only by the style block
@@ -7243,8 +8137,8 @@ function run() {
           };`);
           await assertCardFits(`at ${w}x${h} in mode A`);
           await openSettingsPanel();
-          await b.click("#modeS");
-          await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          await b.click("#tier-basic");
+          await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
             { label: "mode S to take effect" });
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7285,8 +8179,8 @@ function run() {
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
           await openSettingsPanel();
-          await b.click(`#mode${mode}`);
-          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
             { label: `mode ${mode} to take effect` });
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7374,8 +8268,8 @@ function run() {
         await b.setViewport(w, h, w < h);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
         await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7430,8 +8324,8 @@ function run() {
       await b.setViewport(380, 700, true);
       await b.settle();
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
       for (const deckId of ["hijaz", "pygmy", "amara"]) {
         await b.eval(`selectDeck(${JSON.stringify(deckId)}); return true;`);
@@ -7493,12 +8387,13 @@ function run() {
           const m = await b.eval(`
             const ra = document.getElementById("modeA").getBoundingClientRect();
             const rb = document.getElementById("modeB").getBoundingClientRect();
-            const rs = document.getElementById("modeS").getBoundingClientRect();
-            return { wa: ra.width, wb: rb.width, la: ra.left, ls: rs.left, rbRight: rb.right, rsRight: rs.right };
+            const rl = document.getElementById("tier-basic").getBoundingClientRect();
+            const rr = document.getElementById("tier-advanced").getBoundingClientRect();
+            return { wa: ra.width, wb: rb.width, la: ra.left, ls: rl.left, rbRight: rb.right, rsRight: rr.right };
           `);
           assert.ok(Math.abs(m.wa - m.wb) <= 1, `${w}x${h}: #modeA width ${m.wa} vs #modeB width ${m.wb}`);
-          assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #modeS left ${m.ls}`);
-          assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #modeS right ${m.rsRight}`);
+          assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #tier-basic left ${m.ls}`);
+          assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #tier-advanced right ${m.rsRight}`);
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
             { label: "panel to close" });
@@ -7530,8 +8425,8 @@ function run() {
         await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
           { label: "the generated deck chip" });
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         const m = await b.eval(`return {
           front: document.getElementById("front").innerHTML,
@@ -7549,6 +8444,198 @@ function run() {
         await b.settle();
       });
 
+  });
+
+  /* ---------------------------------------------------------------- *
+   * difficulty - docs/plans/2026-10-02-sequence-difficulty.md
+   * ---------------------------------------------------------------- */
+  describe("difficulty", () => {
+    async function enterSeqMode() {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to take effect" });
+    }
+    const tierState = () => b.eval(`return Object.fromEntries(["basic", "intermediate", "advanced"].map(t => {
+      const el = document.getElementById("tier-" + t);
+      return [t, { on: el.classList.contains("on"), pressed: el.getAttribute("aria-pressed") }];
+    }));`);
+
+    // D-7/D-11: clicking a tier presses it exclusively, persists across a
+    // reload, deals a progression that actually classifies at that tier (or
+    // shows the D-6 empty message), and closes the mobile panel.
+    test("clicking a tier presses it exclusively, persists, re-deals at that tier, and closes the panel",
+      async () => {
+        await enterSeqMode();
+        for (const t of ["advanced", "intermediate", "basic"]) {
+          await openSettingsPanel();
+          await b.click(`#tier-${t}`);
+          await b.waitFor(`document.getElementById("tier-${t}").getAttribute("aria-pressed") === "true"`,
+            { label: `tier ${t} to take effect` });
+          const st = await tierState();
+          for (const other of ["basic", "intermediate", "advanced"]) {
+            assert.strictEqual(st[other].pressed, other === t ? "true" : "false",
+              `tier ${t}: ${other} aria-pressed`);
+          }
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
+            { label: `clicking tier ${t} to close the mobile settings panel` });
+          const before = await stored();
+          assert.strictEqual(before.tier, t, `tier ${t} was not saved under "hpfc"`);
+          const check = await b.eval(`
+            if (!seq || !seq.chords) return { empty: true, reason: seq && seq.reason };
+            return { empty: false, tierOf: HPE.sequence.tierOf(deck(), seq.chords) };
+          `);
+          if (!check.empty) assert.strictEqual(check.tierOf, t, `dealt progression at tier ${t} classified as ${check.tierOf}`);
+          await navigate();
+          await b.waitFor(`document.getElementById("tier-${t}").getAttribute("aria-pressed") === "true"`,
+            { label: `tier ${t} to survive a reload` });
+        }
+      });
+
+    // D-11 reviewer nit: a click on the ALREADY-pressed tier is not a no-op -
+    // it must still redraw a (possibly different) progression.
+    test("clicking the already-pressed tier still re-deals", async () => {
+      await enterSeqMode();
+      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
+      const seen = new Set([await railText()]);
+      for (let i = 0; i < 8; i++) {
+        await openSettingsPanel();
+        await b.click("#tier-basic"); // already pressed - basic is the boot default
+        await b.settle();
+        seen.add(await railText());
+      }
+      assert.ok(seen.size > 1, "re-clicking the pressed tier must eventually redraw a different sequence");
+    });
+
+    // D-11 reviewer nit: `prev` is cleared on a tier change, so the new tier's
+    // sequence is never rejected merely because the OLD tier happened to deal
+    // the identical chord indices. Asserted directly against the argument
+    // HPE.sequence.pick() receives, rather than against pick()'s output,
+    // because output-shape assertions here (sequence vs. reason) are true
+    // whether or not `seq = null;` runs in setTier() - pick() almost always
+    // returns one or the other regardless of `prev`.
+    test("a tier change clears prev before the next pick() call",
+      async () => {
+        await enterSeqMode();
+        const result = await b.eval(`
+          const calls = [];
+          const origPick = HPE.sequence.pick;
+          HPE.sequence.pick = (d, rng, prev, t) => {
+            calls.push(prev);
+            return origPick(d, rng, prev, t);
+          };
+          try {
+            setTier("advanced");
+          } finally {
+            HPE.sequence.pick = origPick;
+          }
+          return { prevArg: calls[0] };
+        `);
+        assert.strictEqual(result.prevArg, null,
+          "setTier must clear seq before setOrder() calls pick, so pick's prev argument is null");
+      });
+
+    // hpfc.tier is TYPE-guarded exactly like hpfc.mode (D-7): a corrupted or
+    // future value reads back as "basic", and writing it never drops a
+    // sibling key already in the shared "hpfc" object.
+    test("a corrupted hpfc.tier reads back as basic and sibling hpfc keys survive a tier write", async () => {
+      await freshLoad();
+      await b.eval(`
+        const raw = JSON.parse(localStorage.getItem("hpfc") || "{}");
+        raw.tier = "nonsense"; raw.someSiblingFeature = "keep-me";
+        localStorage.setItem("hpfc", JSON.stringify(raw));
+        return true;
+      `);
+      await navigate();
+      const afterLoad = await b.eval(`return typeof tier === "string" ? tier : null;`);
+      assert.strictEqual(afterLoad, "basic", "a corrupted hpfc.tier must read back as basic");
+      await openSettingsPanel();
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+        { label: "mode S to take effect" });
+      await openSettingsPanel();
+      await b.click("#tier-intermediate");
+      await b.settle();
+      const after = await stored();
+      assert.strictEqual(after.tier, "intermediate");
+      assert.strictEqual(after.someSiblingFeature, "keep-me", "an unrelated hpfc key must survive a tier write");
+    });
+
+    // D-6: NO_TIER_SEQUENCE (intermediate/advanced found nothing) gets a
+    // tier-named message; the pre-existing NO_HOME_CHORD/TOO_FEW_CHORDS copy
+    // (both basic-only reasons) is unchanged - covered by the existing
+    // "unsupported deck" test in the "sequence mode" describe above.
+    test("a NO_TIER_SEQUENCE deck shows a message naming the selected tier", async () => {
+      await enterSeqMode();
+      for (const t of ["basic", "intermediate", "advanced"]) {
+        const m = await b.eval(`
+          tier = ${JSON.stringify(t)};
+          seq = { chords: null, reason: "NO_TIER_SEQUENCE" };
+          render();
+          return {
+            front: document.getElementById("front").innerHTML,
+            back: document.getElementById("back").innerHTML,
+            button: document.getElementById("tier-${t}").textContent.trim()
+          };
+        `);
+        assert.strictEqual(m.front, m.back);
+        assert.match(m.button, /^(EASY|MEDIUM|HARD)$/);
+        assert.ok(m.front.includes(`no ${m.button} progressions`),
+          `the empty message for ${t} must use the button's own spelling "${m.button}"`);
+        assert.doesNotMatch(m.front, /BASIC|INTERMEDIATE|ADVANCED/);
+        assert.doesNotMatch(m.front, /doesn.t have enough simple chords/,
+          "NO_TIER_SEQUENCE must not reuse the NO_HOME_CHORD/TOO_FEW_CHORDS copy");
+      }
+    });
+
+    // Owner request (2026-10-02): the difficulty engine must apply to
+    // custom/user-added scales too, not only the three built-ins. Generates a
+    // scale via the scale sheet (same pattern as the "unsupported deck" e2e
+    // test), then confirms every tier's dealt progression on that deck is
+    // either correctly classified or reports the D-6 empty reason.
+    test("on a user-added scale, the selected tier is passed to pick and the dealt progression matches it",
+      async () => {
+        await freshLoad();
+        await openSettingsPanel();
+        await b.click("#deck-add");
+        await b.waitFor(`getComputedStyle(document.getElementById("scale-box")).display !== "none"`,
+          { label: "the scale sheet to open" });
+        await b.eval(`
+          const box = document.getElementById("scale-box");
+          box.value = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+          box.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        `);
+        await b.click("#scale-generate");
+        await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
+          { label: "the generated deck chip" });
+        await openSettingsPanel();
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+          { label: "mode S to take effect" });
+        for (const t of ["basic", "intermediate", "advanced"]) {
+          await openSettingsPanel();
+          await b.click(`#tier-${t}`);
+          await b.waitFor(`document.getElementById("tier-${t}").getAttribute("aria-pressed") === "true"`,
+            { label: `tier ${t} to take effect` });
+          const check = await b.eval(`
+            return {
+              deckIsCustom: deckId.startsWith("custom:"),
+              empty: !(seq && seq.chords),
+              reason: seq && seq.reason,
+              tierOf: (seq && seq.chords) ? HPE.sequence.tierOf(deck(), seq.chords) : null,
+            };
+          `);
+          assert.ok(check.deckIsCustom, "the generated deck must be the active deck");
+          if (check.empty) {
+            assert.ok(["NO_HOME_CHORD", "TOO_FEW_CHORDS", "NO_TIER_SEQUENCE"].includes(check.reason),
+              `tier ${t} on the custom deck: unexpected empty reason ${check.reason}`);
+          } else {
+            assert.strictEqual(check.tierOf, t, `tier ${t} on the custom deck dealt a ${check.tierOf} progression`);
+          }
+        }
+      });
   });
 
   /* ---------------------------------------------------------------- *
@@ -8318,8 +9405,8 @@ function run() {
         { label: "2-card order to advance again" });
 
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
       await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
       await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
@@ -9464,4 +10551,171 @@ function run() {
     });
   });
 
+
+
+  describe("panel fit measures a neutral scrollbar environment (F-18)", () => {
+    test("panel fit measures the same panel with and without a classic scrollbar", async () => {
+      const pf = require("../tools/probe/panel_fit.js");
+      const cb = await launch({});
+      assert.ok(cb);
+      try {
+        await pf.prepareBrowser(cb, URL);
+        const css = `#settings-panel::-webkit-scrollbar{width:15px}`;
+        const vectors = {};
+        for (const withBar of [false, true]) {
+          await cb.eval(`
+            document.getElementById("pf-classic")?.remove();
+            ${withBar ? `const st = document.createElement("style"); st.id = "pf-classic"; st.textContent = ${JSON.stringify(css)}; document.head.appendChild(st);` : ""}
+            return true;`);
+          for (const [w, h] of [[352, 320], [352, 520]]) {
+            await cb.setViewport(w, h, false);
+            const [cell] = await cb.eval(`return window.__pf.cell(["A"]);`);
+            assert.strictEqual(cell.gutter, 0, `${w}x${h} withBar=${withBar}: the scrollbar takes no layout width`);
+            vectors[`${w}x${h} ${withBar}`] = pf.vectorOf(cell);
+          }
+        }
+        for (const [w, h] of [[352, 320], [352, 520]]) {
+          assert.ok(pf.vectorsEqual(vectors[`${w}x${h} false`], vectors[`${w}x${h} true`]), `${w}x${h}: same vector with and without the classic scrollbar`);
+        }
+      } finally { await cb.close(); }
+    });
+  });
+
+  // D2 step 6b/6c (H-8, H-9; ER-28, ER-31): T-LABEL and T-EDGE, restored from
+  // b8aaf6c^ without the abbreviation clause. T-EDGE's tables are main's own
+  // numbers as literals, measured on origin/main (655a45c) with the oracle's
+  // measuring function, so the test does not drift when main gains the heading.
+  // Per cell and mode: needed = main + H + g within 0.5px (or main + 0 where
+  // L_DELTA says the heading costs `needed` nothing), the first panel group
+  // equals main's group + H + g, and each other group equals main's. H is the
+  // second heading's height and g its computed margin-top; H + g must not
+  // exceed the oracle's HEADING_ALLOWANCE_PX.
+  describe("tier row (T-LABEL, T-EDGE)", () => {
+    const pf = require("../tools/probe/panel_fit.js");
+    const fonts = {};
+    before(async () => {
+      for (const fm of ["fallback", "real"]) {
+        const br = await launch({ realFonts: fm === "real" });
+        assert.ok(br, "no browser for " + fm);
+        await pf.prepareBrowser(br, URL);
+        pf.checkFontMode(fm, await br.eval(`return window.__pf.fonts();`));
+        fonts[fm] = br;
+      }
+    });
+    after(async () => { for (const br of Object.values(fonts)) await br.close(); });
+
+    const MAIN_NEEDED_P = {"fallback":{"639x521":[438,438,486],"639x699":[438,438,486],"639x700":[438,438,486],"639x701":[438,438,486],"640x521":[438,438,486],"640x699":[438,438,486],"640x700":[480,480,530],"640x701":[480,480,530],"641x521":[438,438,486],"641x699":[438,438,486],"641x700":[480,480,530],"641x701":[480,480,530],"1023x521":[438,438,486],"1023x699":[438,438,486],"1023x700":[480,480,530],"1023x701":[480,480,530],"1024x521":[438,438,486],"1024x699":[438,438,486],"1025x521":[438,438,486],"1025x699":[438,438,486],"320x568":[490,490,538],"380x740":[438,438,486],"768x1024":[480,480,530]},"real":{"639x521":[442,442,490],"639x699":[442,442,490],"639x700":[442,442,490],"639x701":[442,442,490],"640x521":[442,442,490],"640x699":[442,442,490],"640x700":[484,484,534],"640x701":[484,484,534],"641x521":[442,442,490],"641x699":[442,442,490],"641x700":[484,484,534],"641x701":[484,484,534],"1023x521":[442,442,490],"1023x699":[442,442,490],"1023x700":[484,484,534],"1023x701":[484,484,534],"1024x521":[442,442,490],"1024x699":[442,442,490],"1025x521":[442,442,490],"1025x699":[442,442,490],"320x568":[494,494,542],"380x740":[442,442,490],"768x1024":[484,484,534]},"fallback-linux":{"639x521":[434,434,482],"639x699":[434,434,482],"639x700":[434,434,482],"639x701":[434,434,482],"640x521":[434,434,482],"640x699":[434,434,482],"640x700":[476,476,526],"640x701":[476,476,526],"641x521":[434,434,482],"641x699":[434,434,482],"641x700":[476,476,526],"641x701":[476,476,526],"1023x521":[434,434,482],"1023x699":[434,434,482],"1023x700":[476,476,526],"1023x701":[476,476,526],"1024x521":[434,434,482],"1024x699":[434,434,482],"1025x521":[434,434,482],"1025x699":[434,434,482],"320x568":[486,486,534],"380x740":[434,434,482],"768x1024":[476,476,526]}};
+    const MAIN_GROUPS_P = {"fallback":{"639x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x700":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x701":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"640x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"641x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"641x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"641x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"641x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1023x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1023x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1023x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1023x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1024x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1024x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1025x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1025x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"320x568":[[117,65,117,65],[117,65,117,65],[165,65,117,65]],"380x740":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"768x1024":[[123,67,67,67],[123,67,67,67],[173,67,67,67]]},"real":{"639x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x700":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x701":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"640x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"641x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"641x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"641x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"641x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1023x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1023x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1023x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1023x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1024x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1024x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1025x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1025x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"320x568":[[118,66,118,66],[118,66,118,66],[166,66,118,66]],"380x740":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"768x1024":[[124,68,68,68],[124,68,68,68],[174,68,68,68]]},"fallback-linux":{"639x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"639x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"639x700":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"639x701":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"640x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"640x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"640x700":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"640x701":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"641x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"641x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"641x700":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"641x701":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"1023x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"1023x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"1023x700":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"1023x701":[[122,66,66,66],[122,66,66,66],[172,66,66,66]],"1024x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"1024x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"1025x521":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"1025x699":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"320x568":[[116,64,116,64],[116,64,116,64],[164,64,116,64]],"380x740":[[116,64,64,64],[116,64,64,64],[164,64,64,64]],"768x1024":[[122,66,66,66],[122,66,66,66],[172,66,66,66]]}};
+    const MAIN_NEEDED_L = {"fallback":{"320x320":[457,457,504],"320x375":[457,457,504],"320x519":[457,457,504],"320x520":[457,457,504],"427x320":[361,361,423.75],"427x375":[361,361,423.75],"427x519":[361,361,423.75],"427x520":[361,361,423.75],"568x320":[311,311,358],"568x375":[311,311,358],"568x519":[311,311,358],"568x520":[311,311,358],"640x320":[361,361,373.75],"640x375":[361,361,373.75],"640x519":[361,361,373.75],"640x520":[361,361,373.75],"641x320":[361,361,373.75],"641x375":[361,361,373.75],"641x519":[361,361,373.75],"641x520":[361,361,373.75],"1023x320":[188,188,235],"1023x375":[188,188,235],"1023x519":[188,188,235],"1023x520":[188,188,235],"1024x320":[188,188,235],"1024x375":[188,188,235],"1024x519":[188,188,235],"1024x520":[188,188,235],"1280x320":[188,188,235],"1280x375":[188,188,235],"1280x519":[188,188,235],"1280x520":[188,188,235]},"real":{"320x320":[461,461,508],"320x375":[461,461,508],"320x519":[461,461,508],"320x520":[461,461,508],"427x320":[363,363,425.75],"427x375":[363,363,425.75],"427x519":[363,363,425.75],"427x520":[363,363,425.75],"568x320":[313,313,360],"568x375":[313,313,360],"568x519":[313,313,360],"568x520":[313,313,360],"640x320":[363,363,375.75],"640x375":[363,363,375.75],"640x519":[363,363,375.75],"640x520":[363,363,375.75],"641x320":[363,363,375.75],"641x375":[363,363,375.75],"641x519":[363,363,375.75],"641x520":[363,363,375.75],"1023x320":[189,189,236],"1023x375":[189,189,236],"1023x519":[189,189,236],"1023x520":[189,189,236],"1024x320":[189,189,236],"1024x375":[189,189,236],"1024x519":[189,189,236],"1024x520":[189,189,236],"1280x320":[189,189,236],"1280x375":[189,189,236],"1280x519":[189,189,236],"1280x520":[189,189,236]},"fallback-linux":{"320x320":[453,453,500],"320x375":[453,453,500],"320x519":[453,453,500],"320x520":[453,453,500],"427x320":[359,359,421.75],"427x375":[359,359,421.75],"427x519":[359,359,421.75],"427x520":[359,359,421.75],"568x320":[309,309,356],"568x375":[309,309,356],"568x519":[309,309,356],"568x520":[309,309,356],"640x320":[359,359,371.75],"640x375":[359,359,371.75],"640x519":[359,359,371.75],"640x520":[359,359,371.75],"641x320":[359,359,371.75],"641x375":[359,359,371.75],"641x519":[359,359,371.75],"641x520":[359,359,371.75],"1023x320":[187,187,234],"1023x375":[187,187,234],"1023x519":[187,187,234],"1023x520":[187,187,234],"1024x320":[187,187,234],"1024x375":[187,187,234],"1024x519":[187,187,234],"1024x520":[187,187,234],"1280x320":[187,187,234],"1280x375":[187,187,234],"1280x519":[187,187,234],"1280x520":[187,187,234]}};
+    const MAIN_GROUPS_L = {"fallback":{"320x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"427x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"568x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"640x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"1023x320":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x375":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x519":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x520":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x320":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x375":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x519":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x520":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1280x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]]},"real":{"320x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"427x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"568x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"640x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"1023x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]]},"fallback-linux":{"320x320":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"320x375":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"320x519":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"320x520":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"427x320":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"427x375":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"427x519":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"427x520":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"568x320":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"568x375":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"568x519":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"568x520":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"640x320":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"640x375":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"640x519":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"640x520":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"641x320":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"641x375":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"641x519":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"641x520":[[113,63,163,113],[113,63,163,113],[175.75,63,163,113]],"1023x320":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1023x375":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1023x519":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1023x520":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1024x320":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1024x375":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1024x519":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1024x520":[[113,63,113,65.5],[113,63,113,65.5],[160,63,113,65.5]],"1280x320":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"1280x375":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"1280x519":[[113,63,113,63],[113,63,113,63],[160,63,113,63]],"1280x520":[[113,63,113,63],[113,63,113,63],[160,63,113,63]]}};
+    const MAIN_NEEDED_S = {"fallback":{"1024x700":[608,608,673.75],"1024x701":[608,608,673.75],"1025x700":[608,608,673.75],"1025x701":[608,608,673.75],"1280x800":[608,608,673.75],"1280x740":[608,608,673.75]},"real":{"1024x700":[612,612,677.75],"1024x701":[612,612,677.75],"1025x700":[612,612,677.75],"1025x701":[612,612,677.75],"1280x800":[612,612,677.75],"1280x740":[612,612,677.75]},"fallback-linux":{"1024x700":[604,604,669.75],"1024x701":[604,604,669.75],"1025x700":[604,604,669.75],"1025x701":[604,604,669.75],"1280x800":[604,604,669.75],"1280x740":[604,604,669.75]}};
+    const MAIN_GROUPS_S = {"fallback":{"1024x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1024x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x800":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x740":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]]},"real":{"1024x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1024x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x800":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x740":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]]},"fallback-linux":{"1024x700":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1024x701":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1025x700":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1025x701":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1280x800":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1280x740":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]]}};
+    const L_DELTA = {"fallback":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]},"real":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]},"fallback-linux":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]}};
+
+    // The fallback fonts are the platform's own: the tables above carry macOS
+    // ("fallback") and the Linux CI runner ("fallback-linux", measured on the
+    // runner from origin/main 655a45c). The real fonts are the checked-in TTFs and
+    // measure identically on both, so "real" has one table.
+    const tableKey = (fm) => (fm === "fallback" && process.platform === "linux" ? "fallback-linux" : fm);
+    const isLandscape = (w, h) => h <= 520;
+    const isSidebar = (w, h) => w >= 1024 && h >= 700;
+
+    const labelProbe = `
+      const bar = document.querySelector(".tierbar");
+      return { barW: bar.clientWidth, rows: ["tier-basic", "tier-intermediate", "tier-advanced"].map((id) => {
+        const el = document.getElementById(id);
+        const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+        const rg = document.createRange(); rg.selectNodeContents(el);
+        return { id, top: r.top, w: r.width, h: r.height, sw: el.scrollWidth, cw: el.clientWidth,
+          content: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+          text: el.textContent.trim(), textW: rg.getBoundingClientRect().width };
+      }) };`;
+
+    test("every tier label fits its button with 2px to spare, in one row, in both font modes", async () => {
+      const cells = [[320, 568], [380, 740], [768, 1024], [427, 320], [568, 320], [640, 320], [667, 375],
+                     [860, 400], [1024, 700], [1280, 800]];
+      const barWidth = { "320x568": 292, "427x320": 200, "1024x700": 199 };
+      const full = { "tier-basic": "EASY", "tier-intermediate": "MEDIUM", "tier-advanced": "HARD" };
+      const states = [["A", null], ["B", null], ["S", "basic"], ["S", "intermediate"], ["S", "advanced"]];
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [w, h] of cells) {
+          await br.setViewport(w, h, false);
+          await br.settle();
+          for (const [mode, t] of states) {
+            const where = `${fm} ${w}x${h} mode ${mode}${t ? " tier " + t : ""}`;
+            const r = await br.eval(`
+              ${t ? `tier = ${JSON.stringify(t)};` : ""}
+              window.__pf.one(${JSON.stringify(mode)});
+              ${labelProbe}`);
+            if (barWidth[w + "x" + h]) assert.strictEqual(r.barW, barWidth[w + "x" + h], where + ": the tier bar width moved");
+            assert.strictEqual(new Set(r.rows.map((x) => Math.round(x.top * 10))).size, 1, where + ": the tier buttons are not on one row");
+            for (const x of r.rows) {
+              assert.ok(x.sw <= x.cw, where + ": " + x.id + " scrolls horizontally (" + x.sw + " > " + x.cw + ")");
+              assert.strictEqual(x.text, full[x.id], where + ": " + x.id + " draws the wrong string");
+              assert.ok(x.textW <= x.content - 2, where + ": " + x.id + " label " + x.textW + "px has under 2px to spare in " + x.content + "px");
+              assert.ok(Math.abs(x.h - 44) < 0.5, where + ": " + x.id + " is " + x.h + "px tall");
+              assert.ok(x.w >= 44, where + ": " + x.id + " is " + x.w + "px wide");
+            }
+          }
+        }
+      }
+    });
+
+    test("the tier row stays on one row under a 15px classic scrollbar at 1024x700 in progression", async () => {
+      for (const [fm, br] of Object.entries(fonts)) {
+        await br.setViewport(1024, 700, false);
+        await br.settle();
+        await br.eval(`const st = document.createElement("style"); st.id = "pf-classic";
+          st.textContent = "#settings-panel::-webkit-scrollbar{width:15px}"; document.head.appendChild(st); return true;`);
+        try {
+          const r = await br.eval(`window.__pf.one("S"); ${labelProbe}`);
+          assert.strictEqual(new Set(r.rows.map((x) => Math.round(x.top * 10))).size, 1, fm + ": one row under the classic scrollbar");
+          for (const x of r.rows) assert.ok(x.sw <= x.cw, `${fm}: ${x.id} scrolls horizontally under the classic scrollbar (${x.sw} > ${x.cw})`);
+        } finally {
+          await br.eval(`document.getElementById("pf-classic").remove(); return true;`);
+        }
+      }
+    });
+
+    const edgeTest = (needed, groups, belongs, label, delta) => test(`the panel meets its budget at every derived edge in ${label}, in both font modes`, async () => {
+      let n = 0;
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [key, want] of Object.entries(needed[tableKey(fm)])) {
+          const [w, h] = key.split("x").map(Number);
+          assert.ok(belongs(w, h), key + " is not in " + label);
+          await br.setViewport(w, h, false);
+          await br.settle();
+          const got = await br.eval(`
+            return ["A", "B", "S"].map((m) => {
+              const c = window.__pf.one(m);
+              const ph = document.getElementById("panel-prog-heading");
+              return { needed: c.needed,
+                groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
+                sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
+                hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
+            });`);
+          ["A", "B", "S"].forEach((m, i) => {
+            n++;
+            const where = `${fm} ${key} mode ${m}`;
+            const g = got[i];
+            assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
+            assert.ok(g.sp1 > 0, where + ": --sp-1 unreadable");
+            assert.strictEqual(g.mt, g.sp1, `${where}: the second heading's margin-top is ${g.mt}px, --sp-1 is ${g.sp1}px`);
+            assert.ok(g.hg <= pf.HEADING_ALLOWANCE_PX, `${where}: H + g = ${g.hg} exceeds the oracle's allowance`);
+            const d = delta ? delta[tableKey(fm)][key][i] : 1;
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"}`);
+            const wantG = groups[tableKey(fm)][key][i];
+            assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - wantG[k]) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px`);
+          });
+        }
+      }
+      assert.ok(n > 0);
+    });
+    edgeTest(MAIN_NEEDED_P, MAIN_GROUPS_P, (w, h) => !isLandscape(w, h) && !isSidebar(w, h), "portrait");
+    edgeTest(MAIN_NEEDED_L, MAIN_GROUPS_L, isLandscape, "landscape", L_DELTA);
+    edgeTest(MAIN_NEEDED_S, MAIN_GROUPS_S, isSidebar, "the sidebar");
+  });
 }

@@ -1,0 +1,15 @@
+# kills: the panel meets its budget at every derived edge in landscape, in both font modes
+# suite: node --test --test-name-pattern the.panel.meets.its.budget.at.every.derived.edge.in.landscape..in.both.font.modes tests/e2e.test.js
+# D2 step 9 (7.1b). The second heading's margin-top is --sp-2; invisible to needed at 640 wide in flash state, seen in the group height.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -213,7 +213,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    main had between the group's two button rows. Internal tier values and ids
+    stay basic / intermediate / advanced. */
+ .tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+-#panel-prog-heading{margin-top:var(--sp-1)}
++#panel-prog-heading{margin-top:var(--sp-2)}
+ .tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+    oversized overlay): the link is the one Tab stop in .panel-note. */
