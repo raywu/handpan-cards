@@ -4735,3 +4735,57 @@ describe("panel fit judge", () => {
     assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
   });
 });
+
+describe("tab stops follow rendering", () => {
+  test("getClientRects follows the hidden property", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    const el = app.els["modeA"];
+    el.hidden = true;
+    assert.strictEqual(el.getClientRects().length, 0);
+    el.hidden = false;
+    assert.strictEqual(el.getClientRects().length, 1);
+  });
+
+  test("getClientRects follows the hidden attribute, and the two are one state", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    const el = app.els["modeA"];
+    el.setAttribute("hidden", "");
+    assert.strictEqual(el.getClientRects().length, 0);
+    assert.strictEqual(el.hidden, true);
+    el.removeAttribute("hidden");
+    assert.strictEqual(el.getClientRects().length, 1);
+    el.hidden = true;
+    assert.strictEqual(el.hasAttribute("hidden"), true);
+  });
+
+  test("getClientRects is empty under a hidden ancestor named by the shipped markup", () => {
+    const app = boot();
+    app.els["settings-panel"].hidden = false;
+    app.els["panel-seq-note"].hidden = false;
+    assert.strictEqual(app.els["seq-source-link"].getClientRects().length, 1);
+    app.els["panel-seq-note"].hidden = true;
+    assert.strictEqual(app.els["seq-source-link"].getClientRects().length, 0,
+      "a link inside a hidden paragraph still has client rects");
+  });
+
+  test("getClientRects follows the parent of a created-then-appended child", () => {
+    const app = boot();
+    const parent = app.get("document.createElement('div')");
+    const child = app.get("document.createElement('button')");
+    assert.strictEqual(child.getClientRects().length, 1);
+    parent.appendChild(child);
+    parent.hidden = true;
+    assert.strictEqual(child.getClientRects().length, 0);
+    parent.removeChild(child);
+    assert.strictEqual(child.getClientRects().length, 1);
+  });
+
+  test("Tab with no stops neither throws nor swallows the key", () => {
+    const app = boot();
+    let prevented = false;
+    app.get("cycleTabStops")([], { shiftKey: false, preventDefault() { prevented = true; } });
+    assert.strictEqual(prevented, false);
+  });
+});

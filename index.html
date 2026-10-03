@@ -8729,7 +8729,12 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
 // itself - which controls, in what order, filtered for the current mode -
 // stays caller-side, since the sheet and the panel compute genuinely
 // different lists.
+// A stop is a control the page renders and the user can operate. Rendering is
+// asked of the browser (a control inside a hidden ancestor, or unrendered by
+// CSS, has no client rects), never of a hand-kept mode table.
+const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
 function cycleTabStops(stops, e) {
+  if (!stops.length) return;
   const i = stops.indexOf(document.activeElement);
   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
   e.preventDefault();
@@ -8748,7 +8753,7 @@ sheet.addEventListener("keydown", e => {
                  editingId ? degSel : null,
                  mirrorL, mirrorR, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
-    .filter(el => el && !el.disabled);
+    .filter(isStop);
   cycleTabStops(stops, e);
 });
 
@@ -8814,10 +8819,8 @@ let panelOpen = false;
 // simply always visible as a static sidebar (CSS only).
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
-  const seqNote = document.getElementById("panel-seq-note");
-  const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-          document.getElementById("modeS"), ...seqLink,
+          document.getElementById("modeS"), document.getElementById("seq-source-link"),
           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
           document.getElementById("tier-advanced"),
           document.getElementById("deck-add"),
@@ -8825,7 +8828,7 @@ function panelStops() {
           // Eng review amendment 1: the three Resources links join the Tab
           // trap after the print controls, in DOM order.
           ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
-    .filter(el => el && !el.disabled);
+    .filter(isStop);
 }
 function openPanel() {
   settingsPanel.removeAttribute("hidden");

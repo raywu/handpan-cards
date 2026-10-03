@@ -71,7 +71,25 @@ function makeElement(id, tag = "div") {
     children: [], listeners: {}, dataset: {}, attributes: attrs,
     // Assigning innerHTML replaces the children in a browser; the stub does the
     // same, so a rebuilt list (buildChips) has exactly the nodes it appended.
-    set innerHTML(v) { this._html = v; this.children.length = 0; }, get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = v;
+      for (const c of this.children) c.parentNode = null;
+      this.children.length = 0;
+    }, get innerHTML() { return this._html; },
+    // One hidden state: the property and the attribute are the same thing in a
+    // browser, and getClientRects() below reads it.
+    set hidden(v) { if (v) attrs.hidden = ""; else delete attrs.hidden; },
+    get hidden() { return "hidden" in attrs; },
+    parentNode: null,
+    // The nearest id'd ancestor in the shipped markup (boot() fills it in);
+    // dynamically created nodes use parentNode from appendChild instead.
+    _markupParent: null,
+    // Rendered iff neither the element nor any ancestor is hidden. The stub has
+    // no layout, so "rendered" is one rect; CSS never reaches this realm.
+    getClientRects() {
+      for (let n = this; n; n = n.parentNode || n._markupParent) if (n.hidden) return [];
+      return [{}];
+    },
     set textContent(v) { this._text = v; }, get textContent() { return this._text; },
     setAttribute(k, v) {
       attrs[k] = String(v);
@@ -101,10 +119,11 @@ function makeElement(id, tag = "div") {
       if (i >= 0) l.splice(i, 1);
     },
     dispatchEvent(ev) { for (const fn of this.listeners[ev && ev.type] || []) fn(ev); return true; },
-    appendChild(c) { this.children.push(c); return c; },
+    appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
     removeChild(c) {
       const i = this.children.indexOf(c);
       if (i >= 0) this.children.splice(i, 1);
+      c.parentNode = null;
       return c;
     },
     remove() {},
@@ -203,6 +222,30 @@ function boot(opts = {}) {
   // STARTS hidden has to see what the browser sees rather than `undefined`.
   for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
     if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
+  }
+  // Ancestry from a tag-stack walk of the shipped markup, so a control inside a
+  // hidden container has no client rects without a hand-kept table.
+  {
+    const VOID = new Set(["input", "br", "img", "meta", "link", "hr", "source", "wbr", "area", "col"]);
+    const body = html.replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+    const stack = [];
+    for (const [, close, tag, attrText, selfClose] of
+        body.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)) {
+      const name = tag.toLowerCase();
+      if (close) {
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].tag === name) { stack.length = i; break; }
+        }
+        continue;
+      }
+      const id = /\bid="([^"]+)"/.exec(attrText);
+      if (id && els[id[1]]) {
+        const up = [...stack].reverse().find((f) => f.id && els[f.id]);
+        if (up) els[id[1]]._markupParent = els[up.id];
+      }
+      if (!VOID.has(name) && !selfClose) stack.push({ tag: name, id: id && id[1] });
+    }
   }
   const created = [];
   const store = { ...(opts.storage || {}) };

@@ -1350,6 +1350,94 @@ function run() {
         `landed on idx ${last.stopIdx} instead: ${JSON.stringify({ lastStop, last })}`);
     });
 
+  // D2 re-plan step 2 (R-2): a stop is a control the page RENDERS. Both
+  // helpers drive real Tab/Shift+Tab events.
+  async function tabKey(shift) {
+    for (const type of ["keyDown", "keyUp"]) {
+      await b.send("Input.dispatchKeyEvent", {
+        type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+        modifiers: shift ? 8 : 0,
+      });
+    }
+  }
+  const stopTag = () => b.eval(`
+    const a = document.activeElement;
+    return a && a.hasAttribute("data-stop-idx") ? a.getAttribute("data-stop-idx") : (a && a.id) || (a ? "n" + [...document.querySelectorAll("*")].indexOf(a) : null);`);
+
+  test("a panel control unrendered by CSS is never a Tab stop, and Tab still cycles",
+    async () => {
+      for (const hide of ["#seq-source-link", "#deck-add"]) {
+        await freshLoad();
+        await openSettingsPanel();
+        await b.click("#modeS");
+        await b.waitFor(`document.getElementById("modeS").classList.contains("on")`, { label: "mode S" });
+        if (await b.eval(`return document.getElementById("settings-panel").hidden;`)) {
+          await openSettingsPanel();
+        }
+        await b.eval(`const s = document.createElement("style"); s.id = "inj";
+          s.textContent = ${JSON.stringify(hide + "{display:none !important}")};
+          document.head.appendChild(s); return true;`);
+        const rendered = await b.eval(
+          `return document.querySelector(${JSON.stringify(hide)}).getClientRects().length;`);
+        assert.strictEqual(rendered, 0, `${hide} is still rendered after the injected rule`);
+        const ids = await b.eval(`
+          window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));
+          return window.panelStops().map(e => e.id);`);
+        assert.ok(!ids.includes(hide.slice(1)), `panelStops() lists the unrendered ${hide}`);
+        const n = ids.length;
+        await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+        const fwd = [];
+        for (let i = 0; i < n; i++) { await tabKey(false); fwd.push(await stopTag()); }
+        assert.deepStrictEqual(fwd, [...Array(n).keys()].map((i) => String((i + 1) % n)),
+          `${hide}: forward Tab did not cycle every stop once and wrap: ${JSON.stringify(fwd)}`);
+        const back = [];
+        for (let i = 0; i < n; i++) { await tabKey(true); back.push(await stopTag()); }
+        assert.deepStrictEqual(back, [...Array(n).keys()].map((i) => String((n - 1 - i) % n)),
+          `${hide}: Shift+Tab did not cycle every stop once and wrap: ${JSON.stringify(back)}`);
+      }
+    });
+
+  test("a sheet control unrendered by CSS is never a Tab stop, and Tab still cycles",
+    async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#deck-add");
+      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "sheet open" });
+      await b.eval(`const s = document.createElement("style");
+        s.textContent = "#scale-mirror-l{display:none !important}";
+        document.head.appendChild(s);
+        document.getElementById("scale-back").focus(); return true;`);
+      const seen = [];
+      let prev = await stopTag();
+      for (let i = 0; i < 12; i++) {
+        await tabKey(false);
+        const now = await stopTag();
+        assert.notStrictEqual(now, prev,
+          `Tab stuck on #${prev} (an unrendered stop swallowed it): ${JSON.stringify(seen)}`);
+        seen.push(now);
+        prev = now;
+      }
+      assert.ok(!seen.includes("scale-mirror-l"), "focus landed on the unrendered #scale-mirror-l");
+      assert.ok(seen.includes("scale-mirror-r"), `Tab never reached #scale-mirror-r: ${JSON.stringify(seen)}`);
+      assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
+    });
+
+  test("Tab from outside the stop list enters the panel cycle", async () => {
+    await freshLoad();
+    await openSettingsPanel();
+    const ids = await b.eval(`
+      window.panelStops().forEach((el, i) => el.setAttribute("data-stop-idx", i));
+      document.activeElement.blur();
+      return { n: window.panelStops().length, active: document.activeElement === document.body };`);
+    assert.strictEqual(ids.active, true, "could not park focus outside the stop list");
+    await tabKey(false);
+    assert.strictEqual(await stopTag(), "0", "Tab from outside did not land on the first stop");
+    await b.eval(`document.activeElement.blur(); return true;`);
+    await tabKey(true);
+    assert.strictEqual(await stopTag(), String(ids.n - 1),
+      "Shift+Tab from outside did not land on the last stop");
+  });
+
   // M2, 2026-09-28 (same review gap as above). panelBackground is
   // [main, footer, #decks] - NOT header, because #settings-trigger itself
   // must stay reachable to close the panel it opened.
