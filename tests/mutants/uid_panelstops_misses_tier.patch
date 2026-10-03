@@ -1,0 +1,15 @@
+# kills: Tab cycles exactly the fourteen progression stops in the modal at every viewport class
+# suite: node --test --test-name-pattern Tab.cycles.exactly.the.fourteen.progression.stops tests/e2e.test.js
+# D2 step 4. panelStops() drops #tier-basic, so a keyboard user tabbing the panel skips the BASIC button (replaces sqe_panelstops_misses_modeS, #modeS is gone).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8610,7 +8610,7 @@ let panelOpen = false;
+ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
+ function panelStops() {
+   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+-          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
++          document.getElementById("tier-intermediate"),
+           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
+           document.getElementById("deck-add"),
+           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
