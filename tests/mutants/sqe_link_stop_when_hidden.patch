@@ -13,7 +13,6 @@
 # filtering on !disabled only, so the hidden credit paragraph's link is a stop
 # again. The killing test is unchanged.
 diff --git a/index.html b/index.html
-index ff0cbc2..0bf513d 100644
 --- a/index.html
 +++ b/index.html
 @@ -8828,7 +8828,7 @@ function panelStops() {

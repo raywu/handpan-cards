@@ -15,7 +15,6 @@
 # Refreshed 2026-10-02 (D2 re-plan step 2, R-2) for context only: panelStops()
 # lost its seqLink special case; the removed #modeS entry is unchanged.
 diff --git a/index.html b/index.html
-index ff0cbc2..cd8b241 100644
 --- a/index.html
 +++ b/index.html
 @@ -8820,7 +8820,7 @@ let panelOpen = false;
