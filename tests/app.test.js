@@ -4575,6 +4575,13 @@ describe("panel fit judge", () => {
       ...over,
     };
   }
+  test("a cell that was never measured is counted as skipped and fails the run", () => {
+    assert.strictEqual(pf.isMeasured(cell()), true);
+    for (const bad of [undefined, null, {}, { needed: 400 }]) assert.strictEqual(pf.isMeasured(bad), false);
+    assert.throws(() => pf.assertRunComplete({ skipped: 1, skipReasons: ["320x568 S: no measurement"] }), /1 cells skipped: 320x568 S/);
+    assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
+  });
+
   const withControl = (c, key, v) => ({ ...c, controls: { ...c.controls, [key]: v } });
   const ref = KEYS.slice();
   const judge = (b, c, extra = {}) => pf.judgeCell({ base: b, cand: c, refRendered: ref, ...extra });

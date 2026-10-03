@@ -196,6 +196,10 @@ function vectorOf(cell) {
   return { needed: cell.needed, overflowX: cell.overflowX, rendered, bottoms };
 }
 
+function isMeasured(cell) {
+  return !!cell && typeof cell === "object" && !!cell.controls && typeof cell.controls === "object";
+}
+
 function assertRunComplete({ skipped, skipReasons }) {
   if (skipped) throw new PanelFitError(`${skipped} cells skipped: ${(skipReasons || []).join("; ")}`);
 }
@@ -596,8 +600,12 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
     const vecB = new Map(), vecC = new Map();
     cellList.forEach(([w, h], i) => {
       MODES.forEach((m, mi) => {
-        report.cells++;
         const id = cellId(w, h, m);
+        if (!isMeasured(mb[i][mi]) || !isMeasured(mc[i][mi])) {
+          report.skipped++; report.skipReasons.push(`${id}: no measurement`);
+          return;
+        }
+        report.cells++;
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
         countGutter(mb[i][mi], w, h, m); countGutter(mc[i][mi], w, h, m);
         const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance });
@@ -797,7 +805,7 @@ async function main(argv) {
 
 module.exports = {
   OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, thresholdCell,
-  overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
+  overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete, isMeasured,
   checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
 };
