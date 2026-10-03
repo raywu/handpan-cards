@@ -10,11 +10,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -338,7 +338,6 @@ a.mode{text-decoration:none}
+@@ -330,7 +330,6 @@ a.mode{text-decoration:none}
    /* [hidden]{display:none !important} (line 456) otherwise wins over the
       rule above at equal !important weight (it has none, so this needs its
       own) - this is the one declaration that actually has to beat it. */
 -  #settings-panel[hidden]{display:flex !important}
-   .tierbar .t-full{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
-     clip:rect(0 0 0 0); white-space:nowrap}
-   .tierbar .t-abbr{position:static; width:auto; height:auto; margin:0; overflow:visible; clip:auto}
+ }
+ /* ---- landscape: the header is ONE row ---------------------------------
+    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
