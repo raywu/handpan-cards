@@ -1,0 +1,15 @@
+# kills: the tier buttons are named as drawn and grouped under the Chord progression heading
+# suite: node --test --test-name-pattern the.tier.buttons.are.named.as.drawn.and.grouped.under.the.Chord.progression.heading tests/e2e.test.js
+# D2 step 9 (7.1b). The tier group is named by a second copy of the string.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1246,7 +1246,7 @@ footer.seq{row-gap:var(--sp-1)}
+       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+     </div>
+     <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+-    <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
++    <div class="tierbar" role="group" aria-label="Chord progression">
+       <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
+       <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
+       <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>

@@ -10674,6 +10674,8 @@ function run() {
               const ph = document.getElementById("panel-prog-heading");
               return { needed: c.needed,
                 groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                mt: ph ? parseFloat(getComputedStyle(ph).marginTop) : null,
+                sp1: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")),
                 hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
             });`);
           ["A", "B", "S"].forEach((m, i) => {
@@ -10681,6 +10683,8 @@ function run() {
             const where = `${fm} ${key} mode ${m}`;
             const g = got[i];
             assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
+            assert.ok(g.sp1 > 0, where + ": --sp-1 unreadable");
+            assert.strictEqual(g.mt, g.sp1, `${where}: the second heading's margin-top is ${g.mt}px, --sp-1 is ${g.sp1}px`);
             assert.ok(g.hg <= pf.HEADING_ALLOWANCE_PX, `${where}: H + g = ${g.hg} exceeds the oracle's allowance`);
             const d = delta ? delta[fm][key][i] : 1;
             assert.ok(Math.abs(g.needed - (want[i] + d * g.hg)) <= 0.5,

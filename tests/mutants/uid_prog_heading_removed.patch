@@ -1,0 +1,14 @@
+# kills: the practice group has a Flash cards heading and a Chord progression heading, in both states
+# suite: node --test --test-name-pattern the.practice.group.has.a.Flash.cards.heading.and.a.Chord.progression.heading..in.both.states tests/e2e.test.js
+# D2 step 9 (7.1b). The second heading is deleted from the markup.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1245,7 +1245,6 @@ footer.seq{row-gap:var(--sp-1)}
+       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
+       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
+     </div>
+-    <h3 class="panel-heading" id="panel-prog-heading">Chord progression</h3>
+     <div class="tierbar" role="group" aria-labelledby="panel-prog-heading">
+       <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
+       <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>

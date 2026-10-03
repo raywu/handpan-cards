@@ -1,0 +1,15 @@
+# kills: panel fit rule 2: controls after the second heading may sit one allowance lower, modeA and modeB may not
+# suite: node --test --test-name-pattern panel.fit.rule.2..controls.after.the.second.heading.may.sit.one.allowance.lower..modeA.and.modeB.may.not tests/app.test.js
+# D2 step 9 (7.1b). ALLOWANCE_EXEMPT is emptied.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -49,7 +49,7 @@ const FIT_TOL = 1, CTRL_TOL = 0.5, EQ_TOL = 0.5;
+ // position half) tolerate that much growth; rule 3 never does. modeA and modeB sit
+ // above the second heading, so they are exempt from rule 2's allowance.
+ const HEADING_ALLOWANCE_PX = 24;
+-const ALLOWANCE_EXEMPT = ["modeA", "modeB"];
++const ALLOWANCE_EXEMPT = [];
+ function headingAllowance(baseHas, candHas) {
+   return !baseHas && candHas ? HEADING_ALLOWANCE_PX : 0;
+ }

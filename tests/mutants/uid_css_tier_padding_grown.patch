@@ -1,0 +1,15 @@
+# kills: every tier label fits its button with 2px to spare, in one row, in both font modes
+# suite: node --test --test-name-pattern every.tier.label.fits.its.button.with.2px.to.spare..in.one.row..in.both.font.modes tests/e2e.test.js
+# D2 step 9 (7.1b). The tier buttons' inline padding grows from 6px to 14px; the label no longer fits with 2px spare.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -214,7 +214,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+    stay basic / intermediate / advanced. */
+ .tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+ #panel-prog-heading{margin-top:var(--sp-1)}
+-.tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
++.tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:14px; white-space:nowrap}
+ /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
+    oversized overlay): the link is the one Tab stop in .panel-note. */
+ #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
