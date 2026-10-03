@@ -143,6 +143,9 @@ function run() {
     b.eval(`return [...document.querySelectorAll("#decks .chip:not(#deck-add)")]
               .map(c => ({ text: c.textContent.trim(), on: c.classList.contains("on") }));`);
 
+  // The panel has no "mode S" button any more: progression is entered by
+  // tapping a tier, so a test that walks A, B and S taps BASIC for S.
+  const modeBtn = (m) => (m === "S" ? "tier-basic" : "mode" + m);
   const stored = () =>
     b.eval(`try { return JSON.parse(localStorage.getItem("hpfc") || "null"); }
             catch (e) { return null; }`);
@@ -1369,8 +1372,8 @@ function run() {
       for (const hide of ["#seq-source-link", "#deck-add"]) {
         await freshLoad();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").classList.contains("on")`, { label: "mode S" });
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").classList.contains("on")`, { label: "mode S" });
         if (await b.eval(`return document.getElementById("settings-panel").hidden;`)) {
           await openSettingsPanel();
         }
@@ -1591,7 +1594,7 @@ function run() {
           await b.settle();
           for (const mode of ["A", "B", "S"]) {
             await openSettingsPanel();
-            await b.click(`#mode${mode}`);
+            await b.click(`#${modeBtn(mode)}`);
             await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
               { label: `panel to close after selecting mode ${mode}` });
             await openSettingsPanel();
@@ -1700,7 +1703,7 @@ function run() {
         await b.setViewport(1024, 700, false);
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
-          await b.click(`#mode${mode}`);
+          await b.click(`#${modeBtn(mode)}`);
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
@@ -1738,7 +1741,7 @@ function run() {
         await b.setViewport(1024, 700, false);
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
-          await b.click(`#mode${mode}`);
+          await b.click(`#${modeBtn(mode)}`);
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
@@ -1783,7 +1786,7 @@ function run() {
           await b.setViewport(w, h, false);
           await b.settle();
           for (const mode of ["A", "B", "S"]) {
-            await b.click(`#mode${mode}`);
+            await b.click(`#${modeBtn(mode)}`);
             await b.settle();
             const m = await b.eval(`
               const p = document.getElementById("settings-panel");
@@ -3054,7 +3057,7 @@ function run() {
         // so it is measured here, with the panel open, alongside the other
         // panel-only controls.
         const inPanel = await probeTargets(
-          ["#settings-trigger", "#modeA", "#modeB", "#modeS", "#deck-add",
+          ["#settings-trigger", "#modeA", "#modeB", "#tier-basic", "#tier-intermediate", "#tier-advanced", "#deck-add",
            "#settings-panel .prints button", "#settings-panel .prints select"]);
         const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
@@ -7127,7 +7130,7 @@ function run() {
         await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
           { label: "panel open" });
       }
-      await rb.click(`#mode${mode}`);
+      await rb.click(`#${modeBtn(mode)}`);
       if (mobile) {
         await rb.waitFor(`document.getElementById("settings-panel").hidden === true`,
           { label: "panel close after mode" });
@@ -7253,25 +7256,25 @@ function run() {
     async function enterSeqMode() {
       await freshLoad();
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
     }
 
-    test("selecting CHORD PROGRESSION presses #modeS exclusively, shows the credit note, and survives a reload",
+    test("selecting a tier presses it exclusively, shows the credit note, and survives a reload",
       async () => {
         await enterSeqMode();
         const st = await b.eval(`return {
           a: document.getElementById("modeA").getAttribute("aria-pressed"),
           b: document.getElementById("modeB").getAttribute("aria-pressed"),
-          s: document.getElementById("modeS").getAttribute("aria-pressed"),
+          s: document.getElementById("tier-basic").getAttribute("aria-pressed"),
           noteHidden: document.getElementById("panel-seq-note").hidden,
         };`);
         assert.deepStrictEqual(st, { a: "false", b: "false", s: "true", noteHidden: false });
         const before = await stored();
         assert.strictEqual(before.mode, "S", "mode S was not saved under \"hpfc\"");
         await navigate();
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to survive a reload" });
       });
 
@@ -7356,8 +7359,8 @@ function run() {
       for (const [baseMode, turnShuffleOn] of [["A", false], ["B", true]]) {
         await freshLoad();
         await openSettingsPanel();
-        await b.click(`#mode${baseMode}`);
-        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+        await b.click(`#${modeBtn(baseMode)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(baseMode)}").getAttribute("aria-pressed") === "true"`,
           { label: `mode ${baseMode} to take effect` });
         if (turnShuffleOn) {
           await b.click("#shuffle");
@@ -7367,8 +7370,8 @@ function run() {
         assert.strictEqual(before.on, turnShuffleOn, `mode ${baseMode} Shuffle .on before entering S`);
 
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         const seqRail = await railText();
         assert.ok(seqRail, "entering S must draw a sequence and render the rail");
@@ -7385,8 +7388,8 @@ function run() {
         assert.ok(seen.size > 1, "New progression in S must redraw a different sequence at least once");
 
         await openSettingsPanel();
-        await b.click(`#mode${baseMode}`);
-        await b.waitFor(`document.getElementById("mode${baseMode}").getAttribute("aria-pressed") === "true"`,
+        await b.click(`#${modeBtn(baseMode)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(baseMode)}").getAttribute("aria-pressed") === "true"`,
           { label: `mode ${baseMode} to take effect again` });
         const after = await shuffleState();
         assert.deepStrictEqual(after, before,
@@ -7397,7 +7400,7 @@ function run() {
     test("a persisted mode \"S\" boots straight into a sequence, not the empty-sequence message", async () => {
       await enterSeqMode();
       await navigate(); // reload
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to survive a reload" });
       const m = await b.eval(`return {
         rail: document.querySelector("#count .seq-rail")?.textContent ?? null,
@@ -7445,7 +7448,7 @@ function run() {
     test("the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible",
       async () => {
         await enterSeqMode();
-        // Selecting a mode closes the panel (closePanel() in #modeS's own
+        // Selecting a mode closes the panel (closePanel() in a tier button's own
         // onclick) - reopen it to measure the link's rendered, visible size.
         await openSettingsPanel();
         const link = await b.eval(`
@@ -7480,8 +7483,8 @@ function run() {
         assert.ok(backS.some((s) => s.id === "seq-source-link"),
           `backward Tab never reached #seq-source-link in mode S: ${JSON.stringify(backS)}`);
 
-        // Switch back to A: the note (and the link) hide. #modeS itself
-        // always remains a stop, but the now-hidden link must never be
+        // Switch back to A: the note (and the link) hide. The three tier buttons
+        // always remain stops, but the now-hidden link must never be
         // landed on by a real Tab cycle in either direction, in modes A
         // or B. The panel is still open from backS above; close it first so
         // each iteration can reopen it cleanly before its mode click
@@ -7492,8 +7495,8 @@ function run() {
           { label: "panel to close before the A/B loop" });
         for (const mode of ["A", "B"]) {
           await openSettingsPanel();
-          await b.click(`#mode${mode}`);
-          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
             { label: `mode ${mode} to take effect` });
           if (mode === "A") {
             const noteHidden = await b.eval(
@@ -7506,7 +7509,8 @@ function run() {
             `forward Tab never wrapped back to the trigger in mode ${mode}: ${JSON.stringify(fwd)}`);
           assert.ok(!fwd.some((s) => s.id === "seq-source-link"),
             `forward Tab landed on hidden #seq-source-link in mode ${mode}: ${JSON.stringify(fwd)}`);
-          assert.ok(fwd.some((s) => s.id === "modeS"), `#modeS is always a stop in mode ${mode}`);
+          assert.ok(["tier-basic", "tier-intermediate", "tier-advanced"].every((id) => fwd.some((s) => s.id === id)),
+            `the three tier buttons are always stops in mode ${mode}`);
           await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
           const back = await driveTabCycle(true);
           assert.strictEqual(back[back.length - 1].isTrigger, true,
@@ -7518,6 +7522,202 @@ function run() {
             { label: `panel to close after mode ${mode}` });
         }
       });
+
+    // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
+    // exclusive practice buttons. There is no #modeS and no disabled state.
+    const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
+      "tier-advanced", "deck-add", "", "", "print-paper-select", "res-handpaner", "res-dingandtones",
+      "res-trainingcards"];
+    const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
+    const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
+    const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
+      .map(id => { const el = document.getElementById(id);
+        return [id, el.getAttribute("aria-pressed"), el.classList.contains("on"), el.disabled]; });`);
+    const assertExactlyOne = (five, want, label) => {
+      for (const [id, pressed, on, disabled] of five) {
+        assert.strictEqual(pressed, id === want ? "true" : "false", `${label}: ${id} aria-pressed`);
+        assert.strictEqual(on, id === want, `${label}: ${id} .on`);
+        assert.strictEqual(disabled, false, `${label}: ${id} must never be disabled`);
+      }
+    };
+    async function cycleIds() {
+      await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+      const seen = await driveTabCycle(false, 20);
+      const back = (await (async () => {
+        await b.eval(`document.getElementById("settings-trigger").focus(); return true;`);
+        return driveTabCycle(true, 20);
+      })());
+      return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
+    }
+
+    test("Tab cycles exactly the thirteen flash-card stops in the modal at every viewport class", async () => {
+      for (const [w, h, m] of MODAL_VIEWPORTS) {
+        await freshLoad();
+        await b.setViewport(w, h, m);
+        await b.settle();
+        for (const mode of ["A", "B"]) {
+          await openSettingsPanel();
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
+            { label: `mode ${mode}` });
+          await openSettingsPanel();
+          const { fwd, back } = await cycleIds();
+          assert.deepStrictEqual(fwd.slice(0, -1), FLASH_STOPS, `${w}x${h} ${mode}: forward Tab order`);
+          assert.strictEqual(fwd[fwd.length - 1], "settings-trigger");
+          assert.deepStrictEqual(back.slice(0, -1), [FLASH_STOPS[0], ...FLASH_STOPS.slice(1).reverse()],
+            `${w}x${h} ${mode}: Shift+Tab is the exact reverse`);
+          await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+          await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+        }
+      }
+      await b.setViewport(900, 900, false);
+    });
+
+    test("Tab cycles exactly the fourteen progression stops in the modal at every viewport class", async () => {
+      for (const [w, h, m] of MODAL_VIEWPORTS) {
+        await freshLoad();
+        await b.setViewport(w, h, m);
+        await b.settle();
+        await openSettingsPanel();
+        await b.click("#tier-intermediate");
+        await b.waitFor(`document.getElementById("tier-intermediate").getAttribute("aria-pressed") === "true"`,
+          { label: "progression" });
+        await openSettingsPanel();
+        const { fwd, back } = await cycleIds();
+        assert.deepStrictEqual(fwd.slice(0, -1), PROG_STOPS, `${w}x${h}: forward Tab order`);
+        assert.deepStrictEqual(back.slice(0, -1), [PROG_STOPS[0], ...PROG_STOPS.slice(1).reverse()],
+          `${w}x${h}: Shift+Tab is the exact reverse`);
+        await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+      }
+      await b.setViewport(900, 900, false);
+    });
+
+    test("the sidebar's native Tab order is the panel's DOM order", async () => {
+      try {
+        for (const [w, h] of [[1024, 700], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const prog of [false, true]) {
+            if (prog) { await b.click("#tier-advanced"); await b.settle(); }
+            const ids = await b.eval(`return [...document.getElementById("settings-panel")
+              .querySelectorAll("button, a[href], select")].filter(el => !el.disabled && el.getClientRects().length > 0)
+              .map(el => el.id || "");`);
+            assert.deepStrictEqual(ids, (prog ? PROG_STOPS : FLASH_STOPS).slice(1), `${w}x${h} prog=${prog}`);
+            const panelStops = await b.eval(`return window.panelStops().map(e => e.id || "");`);
+            assert.deepStrictEqual(panelStops, ids, `${w}x${h} prog=${prog}: panelStops agrees`);
+          }
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("a flash-card button unlights every tier and leaves the stored tier alone", async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click("#tier-advanced");
+      await b.waitFor(`document.getElementById("tier-advanced").getAttribute("aria-pressed") === "true"`, { label: "advanced" });
+      for (const m of ["A", "B"]) {
+        await openSettingsPanel();
+        await b.click(`#${modeBtn(m)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(m)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${m}` });
+        assertExactlyOne(await pressedFive(), `mode${m}`, `after ${m}`);
+        assert.strictEqual((await stored()).tier, "advanced", "hpfc.tier must be unchanged by a flash-card press");
+        assert.strictEqual((await stored()).mode, m);
+        await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel closes" });
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "settings-trigger", "focus returns to the trigger");
+      }
+    });
+
+    test("in the sidebar a button press re-states all five and keeps focus", async () => {
+      try {
+        for (const [w, h] of [[1024, 700], [1280, 800]]) {
+          await freshLoad();
+          await b.setViewport(w, h, false);
+          await b.settle();
+          for (const [id, want] of [["#tier-intermediate", "tier-intermediate"], ["#modeB", "modeB"], ["#tier-basic", "tier-basic"]]) {
+            await b.click(id);
+            await b.settle();
+            assertExactlyOne(await pressedFive(), want, `${w}x${h} ${id}`);
+            assert.strictEqual(await b.eval(`return document.activeElement.id;`), id.slice(1), "focus stays on the pressed button");
+            assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display !== "none";`), true);
+          }
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("tapping a tier from a flash-card mode enters progression at that tier in one tap and closes the panel", async () => {
+      await freshLoad();
+      for (const [m, t] of [["A", "intermediate"], ["B", "advanced"]]) {
+        await openSettingsPanel();
+        await b.click(`#${modeBtn(m)}`);
+        await b.waitFor(`document.getElementById("${modeBtn(m)}").getAttribute("aria-pressed") === "true"`, { label: `mode ${m}` });
+        await b.eval(`window.__picks = []; window.__origPick = HPE.sequence.pick; const o = window.__origPick;
+          HPE.sequence.pick = (d, r, p, t) => { window.__picks.push([p, t]); return o(d, r, p, t); }; return true;`);
+        await openSettingsPanel();
+        await b.click(`#tier-${t}`);
+        await b.waitFor(`document.getElementById("tier-${t}").getAttribute("aria-pressed") === "true"`, { label: t });
+        const r = await b.eval(`return { picks: window.__picks, hidden: document.getElementById("settings-panel").hidden,
+          note: document.getElementById("panel-seq-note").hidden, active: document.activeElement.id };`);
+        assert.deepStrictEqual(r.picks, [[null, t]], "exactly one pick call, at the tapped tier, with prev cleared");
+        assert.strictEqual(r.hidden, true);
+        assert.strictEqual(r.note, false);
+        assert.strictEqual(r.active, "settings-trigger");
+        assertExactlyOne(await pressedFive(), `tier-${t}`, `tap ${t} from ${m}`);
+        const st = await stored();
+        assert.strictEqual(st.mode, "S");
+        assert.strictEqual(st.tier, t);
+        await b.eval(`HPE.sequence.pick = window.__origPick; delete window.__picks; return true;`);
+      }
+    });
+
+    test("the tier buttons are named in full where the label is abbreviated, and grouped as Chord progression", async () => {
+      const cases = [[380, 740, true, false], [568, 320, true, true], [1280, 800, false, true]];
+      try {
+        for (const [w, h, m] of cases) {
+          await freshLoad();
+          await b.setViewport(w, h, m);
+          await b.settle();
+          await openSettingsPanel();
+          await b.send("Accessibility.enable", {});
+          const { nodes } = await b.send("Accessibility.getFullAXTree", {});
+          const byId = new Map(nodes.map((n) => [n.nodeId, n]));
+          const btns = nodes.filter((n) => n.role && n.role.value === "button" && !n.ignored
+            && ["BASIC", "INTERMEDIATE", "ADVANCED"].includes((n.name && n.name.value || "").trim()));
+          assert.deepStrictEqual(btns.map((n) => n.name.value.trim()).sort(), ["ADVANCED", "BASIC", "INTERMEDIATE"], `${w}x${h}: tier names`);
+          for (const n of btns) {
+            assert.ok(!n.description || !n.description.value, `${w}x${h}: ${n.name.value} has a description`);
+            const parent = byId.get(n.parentId);
+            assert.ok(parent && parent.role.value === "group" && parent.name && parent.name.value === "Chord progression",
+              `${w}x${h}: tier buttons sit in a group named Chord progression`);
+          }
+          const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
+            const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("exactly one of the five practice buttons is pressed at boot, after every press, and after a reload", async () => {
+      await freshLoad();
+      assertExactlyOne(await pressedFive(), "modeA", "boot");
+      for (const [id, want] of [["tier-advanced", "tier-advanced"], ["modeB", "modeB"], ["tier-basic", "tier-basic"], ["modeA", "modeA"]]) {
+        await openSettingsPanel();
+        await b.click(`#${id}`);
+        await b.settle();
+        assertExactlyOne(await pressedFive(), want, `after ${id}`);
+        await navigate();
+        await b.waitFor(`document.getElementById("${want}").getAttribute("aria-pressed") === "true"`, { label: "reload" });
+        assertExactlyOne(await pressedFive(), want, `reload after ${id}`);
+      }
+      for (const [stored_, want] of [[{ mode: "S", tier: "advanced" }, "tier-advanced"], [{ mode: "A", tier: "advanced" }, "modeA"],
+        [{ mode: "S", tier: "nonsense" }, "tier-basic"], [{ mode: "S" }, "tier-basic"]]) {
+        await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify(stored_))}); return true;`);
+        await navigate();
+        await b.waitFor(`document.getElementById("${want}").getAttribute("aria-pressed") === "true"`, { label: JSON.stringify(stored_) });
+        assertExactlyOne(await pressedFive(), want, JSON.stringify(stored_));
+      }
+    });
 
     // Acceptance 7: "#count is one line at 320x568 for the longest built-in
     // rail". Anchors are triad, sus4, dim or 5 only, so re-rolling repeatedly
@@ -7532,8 +7732,8 @@ function run() {
         await b.setViewport(320, 568, true);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         try {
           let sawThreeChord = false;
@@ -7597,8 +7797,8 @@ function run() {
         await b.setViewport(320, 568, true);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
         await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
@@ -7727,8 +7927,8 @@ function run() {
           await b.setViewport(w, h, w < h);
           await b.settle();
           await openSettingsPanel();
-          await b.click("#modeS");
-          await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          await b.click("#tier-basic");
+          await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
             { label: "mode S to take effect" });
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
@@ -7786,8 +7986,8 @@ function run() {
           };`);
           await assertCardFits(`at ${w}x${h} in mode A`);
           await openSettingsPanel();
-          await b.click("#modeS");
-          await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+          await b.click("#tier-basic");
+          await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
             { label: "mode S to take effect" });
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7828,8 +8028,8 @@ function run() {
         await b.settle();
         for (const mode of ["A", "B", "S"]) {
           await openSettingsPanel();
-          await b.click(`#mode${mode}`);
-          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
+          await b.click(`#${modeBtn(mode)}`);
+          await b.waitFor(`document.getElementById("${modeBtn(mode)}").getAttribute("aria-pressed") === "true"`,
             { label: `mode ${mode} to take effect` });
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7917,8 +8117,8 @@ function run() {
         await b.setViewport(w, h, w < h);
         await b.settle();
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
         await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
@@ -7973,8 +8173,8 @@ function run() {
       await b.setViewport(380, 700, true);
       await b.settle();
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
       for (const deckId of ["hijaz", "pygmy", "amara"]) {
         await b.eval(`selectDeck(${JSON.stringify(deckId)}); return true;`);
@@ -8036,12 +8236,13 @@ function run() {
           const m = await b.eval(`
             const ra = document.getElementById("modeA").getBoundingClientRect();
             const rb = document.getElementById("modeB").getBoundingClientRect();
-            const rs = document.getElementById("modeS").getBoundingClientRect();
-            return { wa: ra.width, wb: rb.width, la: ra.left, ls: rs.left, rbRight: rb.right, rsRight: rs.right };
+            const rl = document.getElementById("tier-basic").getBoundingClientRect();
+            const rr = document.getElementById("tier-advanced").getBoundingClientRect();
+            return { wa: ra.width, wb: rb.width, la: ra.left, ls: rl.left, rbRight: rb.right, rsRight: rr.right };
           `);
           assert.ok(Math.abs(m.wa - m.wb) <= 1, `${w}x${h}: #modeA width ${m.wa} vs #modeB width ${m.wb}`);
-          assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #modeS left ${m.ls}`);
-          assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #modeS right ${m.rsRight}`);
+          assert.ok(Math.abs(m.la - m.ls) <= 1, `${w}x${h}: #modeA left ${m.la} vs #tier-basic left ${m.ls}`);
+          assert.ok(Math.abs(m.rbRight - m.rsRight) <= 1, `${w}x${h}: #modeB right ${m.rbRight} vs #tier-advanced right ${m.rsRight}`);
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`,
             { label: "panel to close" });
@@ -8073,8 +8274,8 @@ function run() {
         await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
           { label: "the generated deck chip" });
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         const m = await b.eval(`return {
           front: document.getElementById("front").innerHTML,
@@ -8101,127 +8302,14 @@ function run() {
     async function enterSeqMode() {
       await freshLoad();
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
     }
-    const tierState = () => b.eval(`return {
-      basic: { on: document.getElementById("tier-basic").classList.contains("on"),
-        pressed: document.getElementById("tier-basic").getAttribute("aria-pressed"),
-        disabled: document.getElementById("tier-basic").disabled },
-      intermediate: { on: document.getElementById("tier-intermediate").classList.contains("on"),
-        pressed: document.getElementById("tier-intermediate").getAttribute("aria-pressed"),
-        disabled: document.getElementById("tier-intermediate").disabled },
-      advanced: { on: document.getElementById("tier-advanced").classList.contains("on"),
-        pressed: document.getElementById("tier-advanced").getAttribute("aria-pressed"),
-        disabled: document.getElementById("tier-advanced").disabled },
-      noteHidden: document.getElementById("panel-tier-note").hidden,
-    };`);
-
-    // D-8/D-10: always visible, always present in the panel markup, in every
-    // mode - only the disabled state (checked below) ever changes.
-    test("the Difficulty group is present and visible in modes A, B and S", async () => {
-      await freshLoad();
-      await openSettingsPanel();
-      for (const m of ["A", "B", "S"]) {
-        await b.click(`#mode${m}`);
-        await b.waitFor(`document.getElementById("mode${m}").getAttribute("aria-pressed") === "true"`,
-          { label: `mode ${m} to take effect` });
-        await openSettingsPanel();
-        const hidden = await b.eval(
-          `return getComputedStyle(document.getElementById("panel-tier-group")).display === "none";`);
-        assert.strictEqual(hidden, false, `Difficulty group must be visible in mode ${m}`);
-      }
-    });
-
-    // D-9: a three-across row once the group's own container is wide enough
-    // (mobile portrait). Narrower columns (the landscape grid and the
-    // desktop sidebar, both tested below) do NOT fall to a single column -
-    // INTERMEDIATE's unbroken word forces a 2+1 wrap instead (BASIC and
-    // INTERMEDIATE share a row, ADVANCED wraps onto its own row alone). The
-    // `row` assertion below only tells row-of-three apart from not-row-of-
-    // three; it does not distinguish that 2+1 wrap from a true single
-    // column, both of which read `row: false`.
-    test("the Difficulty group matches the Practice group's width and switches from a row to a column layout",
-      async () => {
-        // Narrow single-column viewports keep the three tier buttons on one
-        // row. The landscape grid (812x375) and the desktop sidebar
-        // (1280x800) are both narrower settings-group columns (~270-370px),
-        // and INTERMEDIATE's unbroken word forces ADVANCED to wrap onto its
-        // own row inside .tierbar at that width - "row" is false at both.
-        const expectRow = { "380x740": true, "320x640": true, "812x375": false, "1280x800": false };
-        for (const [w, h, landscape] of [[380, 740, false], [320, 640, false], [812, 375, true], [1280, 800, false]]) {
-          await freshLoad();
-          await b.setViewport(w, h, landscape);
-          await b.settle();
-          await openSettingsPanel();
-          const m = await b.eval(`
-            const practice = document.getElementById("modeA").closest(".panel-group");
-            const tierGroup = document.getElementById("panel-tier-group");
-            const pr = practice.getBoundingClientRect(), tr = tierGroup.getBoundingClientRect();
-            const basic = document.getElementById("tier-basic").getBoundingClientRect();
-            const inter = document.getElementById("tier-intermediate").getBoundingClientRect();
-            const adv = document.getElementById("tier-advanced").getBoundingClientRect();
-            return {
-              widthsMatch: Math.abs(pr.width - tr.width) <= 1,
-              row: Math.abs(basic.top - inter.top) <= 1 && Math.abs(inter.top - adv.top) <= 1,
-              basicH: basic.height, interH: inter.height, advH: adv.height,
-            };
-          `);
-          assert.ok(m.widthsMatch, `${w}x${h}: Difficulty group width must equal the Practice group's`);
-          assert.strictEqual(m.row, expectRow[`${w}x${h}`], `${w}x${h}: tier-button row layout`);
-          assert.ok(m.basicH >= 44 && m.interH >= 44 && m.advH >= 44,
-            `${w}x${h}: every tier button must be a >=44px tall hit target`);
-          await b.setViewport(900, 900, false);
-        }
-      });
-
-    // D-10: greyed and inert everywhere except mode S. The remembered tier
-    // stays visibly pressed even while the group is disabled.
-    test("the tier buttons are disabled and out of the Tab order in modes A and B, enabled only in S",
-      async () => {
-        await enterSeqMode();
-        let st = await tierState();
-        assert.strictEqual(st.basic.disabled, false, "tier buttons must be enabled in mode S");
-        assert.strictEqual(st.noteHidden, true, "the greyed-state note must be hidden in mode S");
-        // A stop is a rendered control (R-2) and the drawer closes when the mode
-        // button is pressed: let the close finish, then reopen before reading.
-        await b.settle();
-        await openSettingsPanel();
-        const stopsS = await b.eval(`return window.panelStops().map(e => e.id);`);
-        assert.ok(stopsS.includes("tier-basic") && stopsS.includes("tier-intermediate")
-          && stopsS.includes("tier-advanced"), "enabled tier buttons must join the Tab trap in mode S");
-        // B2 (reviewer FAIL #3): a hidden idref still contributes its text to
-        // the accessible description, so the live mode-S buttons must not
-        // carry aria-describedby="panel-tier-note" at all - otherwise a
-        // screen reader announces "Pick CHORD PROGRESSION to change this."
-        // on buttons that already work.
-        const describedByS = await b.eval(`return ["tier-basic", "tier-intermediate", "tier-advanced"]
-          .map(id => document.getElementById(id).getAttribute("aria-describedby"));`);
-        assert.deepStrictEqual(describedByS, [null, null, null],
-          "tier buttons must not carry aria-describedby in mode S");
-
-        await b.click("#modeA");
-        await b.waitFor(`document.getElementById("modeA").getAttribute("aria-pressed") === "true"`,
-          { label: "mode A to take effect" });
-        await openSettingsPanel();
-        st = await tierState();
-        assert.strictEqual(st.basic.disabled, true);
-        assert.strictEqual(st.intermediate.disabled, true);
-        assert.strictEqual(st.advanced.disabled, true);
-        assert.strictEqual(st.basic.on, true, "the remembered tier stays visibly pressed while greyed out");
-        assert.strictEqual(st.noteHidden, false, "the greyed-state note must be visible outside mode S");
-        const opacity = await b.eval(
-          `return getComputedStyle(document.getElementById("tier-intermediate")).opacity;`);
-        assert.ok(Number(opacity) < 1, "a disabled tier button must read visually greyed out");
-        const stopsA = await b.eval(`return window.panelStops().map(e => e.id);`);
-        assert.ok(!stopsA.includes("tier-basic") && !stopsA.includes("tier-intermediate")
-          && !stopsA.includes("tier-advanced"), "disabled tier buttons must not join the Tab trap");
-        const describedByA = await b.eval(`return ["tier-basic", "tier-intermediate", "tier-advanced"]
-          .map(id => document.getElementById(id).getAttribute("aria-describedby"));`);
-        assert.deepStrictEqual(describedByA, ["panel-tier-note", "panel-tier-note", "panel-tier-note"],
-          "disabled tier buttons outside mode S must carry aria-describedby=panel-tier-note");
-      });
+    const tierState = () => b.eval(`return Object.fromEntries(["basic", "intermediate", "advanced"].map(t => {
+      const el = document.getElementById("tier-" + t);
+      return [t, { on: el.classList.contains("on"), pressed: el.getAttribute("aria-pressed") }];
+    }));`);
 
     // D-7/D-11: clicking a tier presses it exclusively, persists across a
     // reload, deals a progression that actually classifies at that tier (or
@@ -8312,8 +8400,8 @@ function run() {
       const afterLoad = await b.eval(`return typeof tier === "string" ? tier : null;`);
       assert.strictEqual(afterLoad, "basic", "a corrupted hpfc.tier must read back as basic");
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
       await openSettingsPanel();
       await b.click("#tier-intermediate");
@@ -8363,8 +8451,8 @@ function run() {
         await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
           { label: "the generated deck chip" });
         await openSettingsPanel();
-        await b.click("#modeS");
-        await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+        await b.click("#tier-basic");
+        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
           { label: "mode S to take effect" });
         for (const t of ["basic", "intermediate", "advanced"]) {
           await openSettingsPanel();
@@ -8386,60 +8474,6 @@ function run() {
           } else {
             assert.strictEqual(check.tierOf, t, `tier ${t} on the custom deck dealt a ${check.tierOf} progression`);
           }
-        }
-      });
-
-    // 2026-10-02 panel-fit bounce: the Difficulty group's collapsed top
-    // margin must never eat into the gap BELOW it too (it used to, via a
-    // symmetric negative margin-bottom hardcoded to a ramp step that desynced
-    // from the panel's actual gap once a narrower media query tightened it -
-    // see "#panel-tier-group" in the CSS). No tier button may ever overlap
-    // another panel element, and the gap from the last tier button down to
-    // the next heading must be at least as big as the panel's own ordinary
-    // group-to-group gap (minus 1px slack), i.e. a real group boundary, not
-    // a squeezed or negative one.
-    test("the Difficulty group never overlaps the next panel element, and its gap to the next heading is a real group gap",
-      async () => {
-        for (const [w, h, mode] of [[1024, 700, "S"], [320, 568, "S"], [1024, 700, "A"]]) {
-          await freshLoad();
-          await b.setViewport(w, h, w < h);
-          await b.settle();
-          await openSettingsPanel();
-          await b.click(`#mode${mode}`);
-          await b.waitFor(`document.getElementById("mode${mode}").getAttribute("aria-pressed") === "true"`,
-            { label: `mode ${mode} to take effect` });
-          await openSettingsPanel();
-          const m = await b.eval(`
-            const rect = el => el.getBoundingClientRect();
-            const hit = (a, k) => a.left < k.right && a.right > k.left && a.top < k.bottom && a.bottom > k.top;
-            const panel = document.getElementById("settings-panel");
-            const panelEls = [...panel.querySelectorAll("*")].filter(el =>
-              !document.getElementById("panel-tier-group").contains(el) && el !== document.getElementById("panel-tier-group"));
-            const tierBtns = ["tier-basic", "tier-intermediate", "tier-advanced"].map(id => rect(document.getElementById(id)));
-            const overlaps = [];
-            for (const br of tierBtns) for (const el of panelEls) {
-              if (hit(br, rect(el))) overlaps.push(el.tagName + (el.id ? "#" + el.id : "") + (el.className ? "." + el.className : ""));
-            }
-            const headings = [...panel.querySelectorAll(".panel-heading")].map(h => ({ text: h.textContent.trim(), r: rect(h) }));
-            const scalesHeading = headings.find(h => h.text === "Scales");
-            const lastBtnBottom = Math.max(...tierBtns.map(r => r.bottom));
-            const gapToScales = scalesHeading ? scalesHeading.r.top - lastBtnBottom : null;
-            // Reference gap: between the two groups that are NOT the tier
-            // group - Scales heading top vs the end of the Difficulty group's
-            // own predecessor chain is unavailable without another collapsed
-            // margin to compare against, so use the gap already measured
-            // elsewhere in this deck: the Print group's heading vs the
-            // Scales group's own bottom edge, both ordinary (uncollapsed)
-            // group boundaries.
-            const scalesGroup = document.getElementById("panel-scales-group");
-            const printHeading = headings.find(h => h.text === "Print this deck");
-            const ordinaryGap = printHeading ? printHeading.r.top - rect(scalesGroup).bottom : null;
-            return { overlaps, gapToScales, ordinaryGap };
-          `);
-          assert.deepStrictEqual(m.overlaps, [],
-            `${w}x${h} mode ${mode}: a tier button overlaps another panel element: ${JSON.stringify(m.overlaps)}`);
-          assert.ok(m.gapToScales >= m.ordinaryGap - 1,
-            `${w}x${h} mode ${mode}: gap to Scales heading (${m.gapToScales}) must be >= the panel's ordinary group gap (${m.ordinaryGap}) minus 1px`);
         }
       });
   });
@@ -9211,8 +9245,8 @@ function run() {
         { label: "2-card order to advance again" });
 
       await openSettingsPanel();
-      await b.click("#modeS");
-      await b.waitFor(`document.getElementById("modeS").getAttribute("aria-pressed") === "true"`,
+      await b.click("#tier-basic");
+      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
         { label: "mode S to take effect" });
       await b.eval(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); return true;`);
       await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });

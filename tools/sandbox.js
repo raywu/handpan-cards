@@ -48,11 +48,11 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "settings-trigger", "settings-scrim", "settings-panel", "settings-title",
   "print-paper-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
-  "modeS", "panel-seq-note", "seq-source-link",
+  "panel-seq-note", "seq-source-link",
   "seq-style", "seq-style-name", "seq-style-tip", "foot",
-  // sequence-difficulty D2: the always-visible Difficulty selector, additive
-  // like every entry above it.
-  "tier-basic", "tier-intermediate", "tier-advanced", "panel-tier-note"];
+  // sequence-difficulty D2: the three tier buttons of the five-button Practice
+  // group (they replaced "modeS" and the Difficulty group).
+  "tier-basic", "tier-intermediate", "tier-advanced"];
 
 /** Permanently extend the served id list (for later boots in this process). */
 function registerIds(...ids) {

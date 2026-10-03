@@ -4016,18 +4016,54 @@ test("stored mode \"S\" reads back; unrecognised stored modes read as \"A\"", ()
   }
 });
 
-test("#modeS has aria-pressed, exactly one mode button is pressed, and mode survives a reload", () => {
-  const app = boot();
-  app.run('setMode("S")');
-  assert.strictEqual(app.els.modeS.getAttribute("aria-pressed"), "true");
-  assert.strictEqual(app.els.modeA.getAttribute("aria-pressed"), "false");
-  assert.strictEqual(app.els.modeB.getAttribute("aria-pressed"), "false");
-  assert.ok(app.els.modeS.classList.contains("on"));
-  assert.ok(!app.els.modeA.classList.contains("on"));
+const FIVE = ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"];
+function assertOneOfFive(app, want, label) {
+  for (const id of FIVE) {
+    const el = app.els[id];
+    assert.strictEqual(el.getAttribute("aria-pressed"), id === want ? "true" : "false", `${label}: ${id} aria-pressed`);
+    assert.strictEqual(el.classList.contains("on"), id === want, `${label}: ${id} .on`);
+    assert.ok(!el.disabled, `${label}: ${id} is never disabled`);
+  }
+}
 
+test("exactly one of the five practice buttons is pressed, and mode and tier survive a reload", () => {
+  const app = boot();
+  assertOneOfFive(app, "modeA", "boot");
+  app.run('setMode("B")');
+  assertOneOfFive(app, "modeB", "B");
+  app.run('setTier("advanced")');
+  assertOneOfFive(app, "tier-advanced", "advanced");
+  app.run('setMode("S")');
+  assertOneOfFive(app, "tier-advanced", "setMode S keeps the tier lit");
+  app.run('setMode("A")');
+  assertOneOfFive(app, "modeA", "A unlights every tier");
+  assert.strictEqual(app.get("tier"), "advanced", "the remembered tier is kept while unlit");
+
+  app.run('setTier("intermediate")');
   const again = boot({ storage: { hpfc: app.store.hpfc } });
   assert.strictEqual(again.get("mode"), "S");
-  assert.strictEqual(again.els.modeS.getAttribute("aria-pressed"), "true");
+  assertOneOfFive(again, "tier-intermediate", "reload");
+  for (const stored of [{ mode: "A", tier: "advanced" }, { mode: "S", tier: "nonsense" }, { mode: "S" }]) {
+    const b = boot({ storage: { hpfc: JSON.stringify({ deck: "hijaz", ...stored }) } });
+    assertOneOfFive(b, stored.mode === "A" ? "modeA" : "tier-" + (stored.tier === "advanced" ? "advanced" : "basic"),
+      JSON.stringify(stored));
+  }
+});
+
+test("setTier enters progression at that tier, deals exactly once with prev cleared, and saves both", () => {
+  for (const from of ["A", "B", "S"]) {
+    const app = boot({ random: () => 0 });
+    app.run(`setMode("${from}")`);
+    app.run('globalThis.__calls = []; const o = HPE.sequence.pick; HPE.sequence.pick = (d, r, p, t) => { __calls.push([p, t]); return o(d, r, p, t); };');
+    app.run('setTier("intermediate")');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(app.get("__calls"))), [[null, "intermediate"]], `from ${from}: one pick, prev null`);
+    assert.strictEqual(app.get("mode"), "S");
+    assert.strictEqual(app.get("tier"), "intermediate");
+    const saved = JSON.parse(app.store.hpfc);
+    assert.strictEqual(saved.mode, "S");
+    assert.strictEqual(saved.tier, "intermediate");
+    assert.strictEqual(app.els["panel-seq-note"].hidden, false);
+  }
 });
 
 test("sequence mode: prev/next/arrows stay within the sequence and wrap, answer face shows first", () => {

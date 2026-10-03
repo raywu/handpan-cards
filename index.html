@@ -214,10 +214,6 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    same class/selector because #modeA/#modeB and their tests are anchored on
    it and moved with the controls (IDs are kept). */
 .modebar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center; margin-top:0}
-/* #modeS ("CHORD PROGRESSION") takes the full second row: three buttons don't
-   fit one row of the 320px panel (each existing one is ~118px wide). Plan
-   §2 Part B, S2 lane. */
-#modeS{flex:1 0 100%}
 /* The sequence-mode source credit and link, shown only while mode is S
    (toggled via the .hidden property in setMode(), reflected by the global
    [hidden]{display:none !important} rule). Reuses Nunito Sans and the
@@ -225,56 +221,16 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
-/* Difficulty selector (D-9/D-10, amended during D2 implementation per the
-   owner decision "Fix layout before merge", 2026-10-02). D-9's own
-   container-query column/row toggle was measured and
-   rejected: the 240px desktop sidebar (content box ~199px) cannot fit three
-   equal-width buttons on one row even at zero padding (INTERMEDIATE's bare
-   label alone is wider than the whole sidebar), so "row >=348px, else a
-   FULL-WIDTH COLUMN" put three stacked 44px buttons in the sidebar and blew
-   the pre-existing no-scroll budget by over 100px in every mode - not a
-   rounding error, a hard impossibility at this width. flex-wrap:wrap with
-   flex:1 1 0 (the exact .modebar .mode pattern already used by Resources
-   for the identical problem, see its own comment above) wraps the SAME
-   fixed left-to-right order onto as many lines as the content needs: one
-   line at >=348px (unchanged from D-9's row), two at the mobile panel and
-   the sidebar. It is still deterministic per width (unlike the rejected
-   grid auto-fit) and never overflows horizontally, unlike an unwrapped
-   flex row sized by content. Disabled buttons reuse the repo's existing
-   precedent (.prints button:disabled, #scale-generate:disabled): opacity:.5,
-   no :active feedback (.mode:active is not ANDed with :enabled so a
-   disabled button never gets it - disabled elements do not receive pointer
-   events that trigger :active in the first place). No new colour, typeface
-   or label style. */
+/* The three tier buttons (BASIC / INTERMEDIATE / ADVANCED) sit in the Practice
+   group's second row, under NAME -> NOTES / NOTES -> NAME. Both label strings
+   are always rendered: .t-full is the accessible name, .t-abbr (aria-hidden)
+   is the short form drawn in the layout classes where the full word does not
+   fit. The default is clipped, never display:none, so the panel's rendered
+   control set does not depend on CSS (R-1). */
 .tierbar{display:flex; flex-wrap:wrap; gap:var(--sp-2); justify-content:center}
 .tierbar .mode{flex:1 1 0}
-.tierbar .mode:disabled{opacity:.5; cursor:default}
-/* D-8 reads Difficulty "as part of the mode choice", directly after Practice
-   - so the two groups sit closer together than the panel's other, unrelated
-   group-to-group gaps (sp-3): only the TOP margin collapses the gap above
-   the tier group, cancelling exactly the panel's own current `gap:` via
-   `--panel-gap` (see its definition at :root) so the two never drift out of
-   sync. The gap BELOW the tier group, to the next ("Scales") heading, is
-   the panel's ordinary, uncollapsed gap, same as every other pair of
-   groups - same as every reader expects a group boundary to look.
-
-   2026-10-02 panel-fit bounce (supersedes the original D-9 design below):
-   the margin-bottom used to cancel that gap too, on the theory that it
-   "claws back real vertical budget" the 1024x700/1280x800 sidebar needed
-   (the tier buttons alone are a forced-floor 100px - two rows, since
-   INTERMEDIATE's single unbroken word has no narrower min-content, so
-   three buttons cannot share one row in a 199px content box; see the
-   .tierbar comment above). In practice it did the opposite of "claws back
-   budget" the moment a narrower-viewport media query tightened the panel's
-   actual `gap:` underneath it without correspondingly shrinking this
-   margin: the margin kept subtracting the WIDER, untightened amount and
-   drew the Difficulty group's bottom edge and the "Scales" heading on top
-   of each other at 1024x700 (screenshot evidence), and flush with zero gap
-   at 320x568 - neither of which is an acceptable group boundary. The
-   vertical budget this used to buy back is now recovered instead by the
-   dedicated height-gated query below (see its own comment), which is the
-   only place still allowed to trade the ramp down a step for room. */
-#panel-tier-group{margin-top:calc(-1 * var(--panel-gap)); margin-bottom:0}
+.tierbar .t-abbr{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
 #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
@@ -294,9 +250,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
 a.mode{text-decoration:none}
 .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
 /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
-   ragged pair sat side by side. #modeS's own flex:1 0 100% above wins on
-   specificity (an id beats this class pair), so the full-row button is
-   untouched. */
+   ragged pair sat side by side. */
 .modebar .mode{flex:1 1 0}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
@@ -348,84 +302,13 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
-  /* The collapsed top margin on #panel-tier-group (above) only makes sense
-     in the single-column flow it was written for, where it cancels the
-     gap ABOVE it against the group immediately preceding it in document
-     order. In this grid, groups sit in independent columns/rows, so that
-     same negative margin instead lifts the Difficulty group 9px clear off
-     its own grid row, overlapping whatever sits above it in that column
-     (2026-10-02, owner nit). Zero it here; the grid's own row placement
-     already gives each group its real gap. */
-  #panel-tier-group{margin-top:0}
-  /* Bounce 5 follow-up correction: an earlier version of this fix moved the
-     tierbar word-wrap trim (.tierbar .mode padding/letter-spacing, below in
-     the max-width:600px block) out to unconditional here, reasoning that
-     the reorder could land Difficulty in a narrow leftover column at
-     740-844px widths too. Verified wrong: the reorder two rules below is
-     sufficient on its own at every width this breakpoint produces (740-926,
-     both real and fallback fonts, over=0 at every previously-regressed
-     cell with the trim scoped back down) - the trim was never load-bearing
-     there. Worse, applying it unconditionally also reaches 812px wide,
-     392px tall and NARROWER (the committed D-9 test's own landscape-grid
-     cell, 812x375), where the trim's whole point - letting INTERMEDIATE's
-     word fit without forcing ADVANCED onto its own tierbar row - collapses
-     the 2+1 wrap that test asserts must stay a wrap (row:false) in that
-     column width, a real behavior change with no equivalent test case in
-     the reviewer's settings-panel-overflow sweep to catch it. The trim
-     stays exactly where it always was: scoped to max-width:600px, the one
-     band (568px wide, 2 columns) where fallback-font measurement shows it
-     is still load-bearing (removing it there reopens FAIL #4 up to 40px,
-     #deck-add offscreen, in fallback fonts specifically - real fonts do not
-     need it even at 568px, but fallback does). */
-  /* Bounce 5 (reviewer FAIL #4): this grid's auto-placement pairs items by
-     SOURCE order into however many columns auto-fit computes at the current
-     width, and adding the Difficulty group shifted every later group by one
-     slot. The row cost here is max(heights in that row), summed per row -
-     so what matters is which group ends up ALONE (or in the smallest
-     leftover row), not raw adjacency. Measured group heights: Practice is
-     161px in mode S (its extra #panel-seq-note) and 114px in modes A/B;
-     Print and Resources are both 114px always (heading + one modebar row);
-     Difficulty is 94px (no heading); Scales is 64px (heading + one button,
-     the shortest group). The three 114-161px groups (Practice, Print,
-     Resources) are put FIRST in order, the two short groups (Difficulty 94,
-     Scales 64, smallest last) LAST - that way, whichever columns leave a
-     short leftover row, the leftover is the cheapest group(s) available,
-     never a 114px+ one stranded alone paying for a whole extra row by
-     itself. Worked through every column count this breakpoint can produce:
-     5+ columns - order is moot, everything is one row already, identical
-     cost to main's single row. 4 columns - row 1 = Practice, Print,
-     Resources, Difficulty (cost = Practice's height); row 2 = Scales alone
-     (64, the cheapest possible leftover) - this is the 926px-wide band
-     reviewer #4 measured at +39px; the old order (Practice, Print,
-     Difficulty, Scales / Resources alone) left Resources, a 114px group,
-     stranded in row 2 instead. 3 columns - row 1 = Practice, Print,
-     Resources; row 2 = Difficulty, Scales (cost = 94, better than the old
-     order's Scales/Resources pairing at cost 114). 2 columns (568px wide,
-     the reviewer's other regression) - row 1 = Practice, Print; row 2 =
-     Resources, Difficulty (cost 114); row 3 = Scales alone (64) - the old
-     order's row 2/3 split (Difficulty+Scales, then Resources alone) cost
-     114+94 extra beyond row 1 where this costs only 114+64, strictly less.
-     Verified by direct measurement at every reported regression cell, not
-     derived by inspection alone. Measured regression before this fix: 110
-     cells (real fonts) / 129 cells (fallback) across the 740-926-wide
-     landscape band at heights ~300-364, plus 568-wide modes A/B at
-     ~300-316 - a reviewer sweep (not a spot check) caught it because the
-     committed landscape tests (844x390, 926x428, 667x375, 1280x500) all
-     sit above the band. */
-  #settings-panel > .panel-group:nth-child(2){order:1}
-  #settings-panel > .panel-group:nth-child(5){order:2}
-  #settings-panel > .panel-group:nth-child(6){order:3}
-  #panel-tier-group{order:4}
-  #panel-scales-group{order:5}
-  /* Bounce 5 real-font sweep: the row-cost reorder above was measured and
-     verified against FALLBACK-font heights, where mode S's #panel-seq-note
+  /* Bounce 5 real-font sweep: measured against FALLBACK-font heights, where mode S's #panel-seq-note
      ("7 different ways to play chords: Watch on YouTube") wraps to 2 lines
      at this breakpoint's narrowest columns (e.g. 926px wide at 4 columns,
      ~206px each). Real Nunito Sans is wider than the headless fallback
      sans-serif at the same declared size, so the identical text wraps to 3
-     lines there instead - Practice grows from 161px to 177.75px and the
-     926x310 S cell (and others in the same column-width band) overflow by
-     up to 7px even with the reorder in place. Trimming the note's own
+     lines there instead and the 926x310 S cell (and others in the same
+     column-width band) overflow by up to 7px. Trimming the note's own
      font-size/line-height at this breakpoint only (never touched outside
      max-height:520px, and only in mode S since that is the only mode where
      this element is ever unhidden) keeps it inside its 2-line budget in
@@ -1535,7 +1418,11 @@ footer.seq{row-gap:var(--sp-1)}
     <div class="modebar">
       <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
+    </div>
+    <div class="tierbar" role="group" aria-label="Chord progression">
+      <button class="mode" id="tier-basic" type="button" aria-pressed="false"><span class="t-full">BASIC</span><span class="t-abbr" aria-hidden="true">BASIC</span></button>
+      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"><span class="t-full">INTERMEDIATE</span><span class="t-abbr" aria-hidden="true">INT.</span></button>
+      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"><span class="t-full">ADVANCED</span><span class="t-abbr" aria-hidden="true">ADV.</span></button>
     </div>
     <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
          wording plus one outbound link to Moritz.handpan's video. -->
@@ -1544,27 +1431,6 @@ footer.seq{row-gap:var(--sp-1)}
       <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
          target="_blank" rel="noopener">Watch on YouTube</a>
     </p>
-  </div>
-  <!-- Difficulty (D-8/D-9/D-10): always visible, no own heading - reads as
-       part of Practice above it (see "#panel-tier-group" CSS comment for the
-       margin/gap rationale and the panel-fit history). D-9's container-query
-       design was dropped for plain flex-wrap (see ".tierbar" CSS) - the
-       240px sidebar can't fit 3 buttons at any width, so there is no
-       row/column threshold to express. Buttons start `disabled` (D-10: mode
-       A is boot default); setMode() toggles disabled/.on/aria-pressed like
-       the mode buttons. panel-tier-note is wired via aria-describedby on
-       each button, not the group (not announced on a non-interactive
-       container). -->
-  <div class="panel-group" id="panel-tier-group">
-    <div class="tierbar">
-      <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
-        aria-describedby="panel-tier-note" disabled>BASIC</button>
-      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"
-        aria-describedby="panel-tier-note" disabled>INTERMEDIATE</button>
-      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"
-        aria-describedby="panel-tier-note" disabled>ADVANCED</button>
-    </div>
-    <p class="panel-note" id="panel-tier-note">Pick CHORD PROGRESSION to change this.</p>
   </div>
   <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
        own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -8744,9 +8610,8 @@ let panelOpen = false;
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-          document.getElementById("modeS"), document.getElementById("seq-source-link"),
           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
-          document.getElementById("tier-advanced"),
+          document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
           document.getElementById("deck-add"),
           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
           // Eng review amendment 1: the three Resources links join the Tab
@@ -8808,26 +8673,25 @@ document.getElementById("print-paper-select").value = printPaper;
 
 document.getElementById("modeA").onclick = () => { setMode("A"); closePanel(); };
 document.getElementById("modeB").onclick = () => { setMode("B"); closePanel(); };
-document.getElementById("modeS").onclick = () => { setMode("S"); closePanel(); };
-// D-11 (reviewer nits): a tier click ALWAYS re-deals, even when the clicked
-// button is already pressed - unlike setMode()'s guarded setOrder() call,
-// which only re-deals on an actual A/B<->S transition. `seq` is cleared
-// before setOrder() so `prev` is empty: a tier switch must never reject a
-// sequence merely because the PREVIOUS tier happened to deal the same chords.
+// A tier is lit iff mode is S and it is the current tier; setMode() is the
+// only caller besides setTier(), so leaving progression unlights all three.
 function syncTierUI() {
-  for (const [id, on] of [["tier-basic", tier === "basic"], ["tier-intermediate", tier === "intermediate"],
-    ["tier-advanced", tier === "advanced"]]) {
-    const el = document.getElementById(id);
+  for (const t of ["basic", "intermediate", "advanced"]) {
+    const el = document.getElementById("tier-" + t);
+    const on = mode === "S" && tier === t;
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", on ? "true" : "false");
   }
 }
+// Tapping a tier enters progression at that tier (one tap) and ALWAYS deals
+// exactly once, even on the lit tier: setMode() re-deals only on an A/B<->S
+// transition, so from S the deal is made here first. `seq` is cleared so
+// `prev` is empty: a tier switch must never reject a sequence merely because
+// the previous tier dealt the same chords.
 function setTier(t) {
-  tier = t; save();
-  syncTierUI();
-  seq = null;
-  setOrder();
-  render();
+  tier = t; seq = null;
+  if (mode === "S") setOrder();
+  setMode("S");
   closePanel();
 }
 document.getElementById("tier-basic").onclick = () => setTier("basic");
@@ -8842,28 +8706,14 @@ function setMode(m) {
   const wasS = mode === "S";
   mode = m; flipped = false; save();
   // .on is a colour; aria-pressed is the state. Both, always together.
-  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"], ["modeS", m === "S"]]) {
+  for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
     const el = document.getElementById(id);
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", on ? "true" : "false");
   }
+  syncTierUI();
   const seqNote = document.getElementById("panel-seq-note");
   seqNote.hidden = m !== "S";
-  // D-10: the Difficulty group is always visible, but its three buttons are
-  // only live in mode S - greyed out and out of the Tab order everywhere
-  // else. The remembered tier's .on/aria-pressed state is untouched by a mode
-  // switch, so switching back to S shows the same choice as before.
-  for (const id of ["tier-basic", "tier-intermediate", "tier-advanced"]) {
-    const tierBtn = document.getElementById(id);
-    tierBtn.disabled = m !== "S";
-    // B2 (reviewer FAIL #3): a hidden idref still contributes its text to the
-    // accessible description, so the attribute must come OFF while the
-    // buttons are live (mode S) - otherwise mode-S screen-reader users hear
-    // "Pick CHORD PROGRESSION to change this." on buttons that already work.
-    if (m === "S") tierBtn.removeAttribute("aria-describedby");
-    else tierBtn.setAttribute("aria-describedby", "panel-tier-note");
-  }
-  document.getElementById("panel-tier-note").hidden = m === "S";
   document.getElementById("foot").classList.toggle("seq", m === "S");
   document.getElementById("seq-style").hidden = m !== "S";
   const shuffleBtn = document.getElementById("shuffle");
@@ -9241,7 +9091,7 @@ sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncShee
 // looks for it.
 restoreScales();
 const wantedDeck = deckId;
-deckId = deck().id; storedDeck = deckId; syncTierUI(); setOrder(); buildChips(); setMode(mode);
+deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
 // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or
 // renamed deck and falls back SILENTLY, as it always has. A missing custom: id
 // means the user's own saved scale is gone - deleted, or dropped as corrupt -
