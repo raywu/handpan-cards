@@ -482,91 +482,15 @@ a.mode{text-decoration:none}
      the vertical whitespace between rows. */
   #settings-panel{row-gap:0}
 }
-/* Bounce 5 follow-up (owner decision 1: a control offscreen on the PR at a
-   viewport where main shows it is a regression regardless of the overall
-   overflow count). #panel-scales-group must stay the cheapest-and-last
-   group for the row-packing fix above to hold at every width this
-   breakpoint produces (see its own comment: swapping it for Difficulty
-   measurably reopens FAIL #4, +30px at the 568/740/926-wide cells that fix
-   was built for) - so whatever residual overflow this breakpoint still
-   has once everything else is as tight as the fix above gets it lands on
-   #deck-add, the one thing inside that last group. Below 356px tall in
-   mode S, and below 308px tall in modes A/B, this breakpoint still
-   overflows even after every other trim here, same as main does (main is
-   WORSE at every one of these cells - this is not the FAIL #4 regression,
-   it is pre-existing shortfall this bounce narrowed but didn't reach 0 on).
-   #panel-seq-note is the one piece of mode S's content that is not a
-   control (no click target, no form element - a hint sentence with one
-   outbound link) and it alone, at 161px vs 114px, accounts for most of
-   mode S's extra height over A/B; hiding it below the height where it
-   would otherwise cost #deck-add its visibility recovers enough budget to
-   keep #deck-add on every mode's screen down to this breakpoint's
-   shortest tested real-world band. The two thresholds differ (356 vs 308)
-   because mode S's own content is taller to begin with, not because of a
-   different rule.
-   That alone still leaves #deck-add offscreen in modes A/B (no
-   #panel-seq-note to hide) down to 300px at every width this breakpoint
-   reaches - 568 (2-column) through 926 (3/4-column) alike - and a smaller
-   residual tail in mode S at the same heights once its own fix above is
-   applied. None of the four rules below carry a max-width: the original
-   max-width:600px scoping on this group of fixes only ever matched the
-   568-wide cells, leaving the exact same #deck-add shortfall unfixed at
-   667-926px wide (3/4-column packing, not a different rule, see the next
-   comment); max-height:356px alone is sufficient scoping since the desktop
-   sidebar's own breakpoint (two blocks down) requires min-height:700px,
-   mutually exclusive with this one. Every .panel-group here is
-   heading+control stacked with the ramp's --sp-1 gap between them (line
-   497); zeroing it is the SAME lever already used for the desktop
-   sidebar's own narrow-height budget two blocks down (.panel-group{gap:0},
-   line 620) - gap:0 is the one value the spacing-ramp test
-   (tests/app.test.js "every gap...comes from the spacing ramp") exempts
-   outright, so this is not a fresh literal. 5 groups x 3px covers the
-   8-10px still missing in modes A/B at 300-306px and closes mode S's tail
-   at the same heights, without touching the >=44px tier/mode button floor
-   or any control's own content. */
-@media (max-height:356px){
-  #panel-seq-note{display:none}
-}
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
 #settings-trigger[aria-expanded="true"] .glyph::after{top:0; transform:rotate(-45deg)}
 .panel-group{display:flex; flex-direction:column; gap:var(--sp-1)}
-/* Same specificity as the rule above, so this must come AFTER it in source
-   order to win - see the bounce-5-follow-up comment a few lines up for why
-   this exists. */
-@media (max-height:356px){
-  .panel-group{gap:0}
-}
 /* Group headings: Marcellus at 14px in #c4bcab, sentence case - the display
    face used as it is used on the sheet's own title (O3/design direction).
    Controls keep their ALL-CAPS Nunito voice (N15). */
 .panel-heading{font-family:Marcellus, serif; font-weight:400; font-size:14px;
   color:#c4bcab; margin:0}
-/* Real-font-only residual: real Marcellus runs slightly taller than the
-   fallback serif at 14px, so even with #panel-seq-note hidden and
-   .panel-group's gap zeroed (both above) #deck-add is still offscreen by a
-   few px at exactly h=300 under real fonts (fallback is already clean
-   there). One more ramp-adjacent trim, same scope, same technique: shave
-   each of the five headings by 2px. Headings are single short words
-   ("Practice", "Difficulty", "Scales", "Print", "Resources") so this never
-   risks a wrap. */
-@media (max-height:356px){
-  .panel-heading{font-size:11px}
-}
-/* Last 1-2px, real fonts only, at 667-926px wide (3/4-column packing - the
-   2-column 568px case above is already clean from the two trims above
-   alone): the panel's own top padding (`calc(var(--sp-3) + 56px)`, line 315)
-   clears the fixed #settings-trigger (44px tall) by 65px total at the base
-   --sp-3 (9px); trimming 2px off that clearance still leaves 63px, nowhere
-   close to colliding with the 44px trigger, and applies uniformly to every
-   column count since it is vertical panel padding, not a per-row cost.
-   Overrides padding-top only (not the `padding` shorthand) so it never
-   fights the padding-bottom trims already scoped elsewhere in this
-   breakpoint; source order (this appears after the base #settings-panel
-   rule) settles the equal-specificity conflict. */
-@media (max-height:356px){
-  #settings-panel{padding-top:calc(var(--sp-3) + 54px)}
-}
 /* Desktop: the panel becomes an always-visible sidebar, not a modal (M3,
    owner follow-up 2026-09-28; verdict and reasons in the plan's O6/addendum,
    docs/plans/2026-09-28-android-bg-and-menu.md:169 and :307).

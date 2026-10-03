@@ -1438,6 +1438,74 @@ function run() {
       "Shift+Tab from outside did not land on the last stop");
   });
 
+  // D2 re-plan step 3 (R-1): CSS never unrenders a panel control. The rendered
+  // set is a function of mode alone; only the `hidden` attribute setMode()
+  // writes, and the panel being closed, take a control out of the panel.
+  test("no stylesheet rule unrenders a panel control", async () => {
+    await freshLoad();
+    const offenders = await b.eval(`
+      const panel = document.getElementById("settings-panel");
+      const inside = [...panel.querySelectorAll("*")];
+      const hides = (st) => st.display === "none" || st.visibility === "hidden" ||
+        st.contentVisibility === "hidden";
+      const split = (s) => { const out = []; let d = 0, cur = "";
+        for (const ch of s) { if (ch === "(" || ch === "[") d++; if (ch === ")" || ch === "]") d--;
+          if (ch === "," && d === 0) { out.push(cur); cur = ""; } else cur += ch; }
+        out.push(cur); return out; };
+      const out = [];
+      const walk = (rules, chain) => {
+        for (const r of rules) {
+          if (r.constructor.name === "CSSStyleRule") {
+            if (hides(r.style)) {
+              for (const sel of split(r.selectorText)) {
+                const t = sel.trim();
+                if (t.includes("[hidden]") || /::|:(before|after)\b/.test(t)) continue;
+                let hit = false;
+                for (const el of inside) { try { if (el.matches(t)) { hit = true; break; } } catch (e) { hit = true; break; } }
+                if (hit) out.push((chain.length ? chain.join(" | ") + " | " : "") + t + "{" + r.style.cssText + "}");
+              }
+            }
+          } else if (r.cssRules && r.constructor.name !== "CSSKeyframesRule") {
+            walk(r.cssRules, chain.concat([r.conditionText || r.constructor.name]));
+          }
+        }
+      };
+      for (const sheet of document.styleSheets) {
+        let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+        walk(rules, []);
+      }
+      return out;`);
+    assert.deepStrictEqual(offenders, [],
+      "a stylesheet rule unrenders a panel control, so its reachability would depend on the viewport");
+  });
+
+  // D2 re-plan step 3: a ratchet over the CSSOM, never committed red. The
+  // dimensional media conditions that can reach the panel (modes A, B and S
+  // unioned, `print` and non-dimensional conditions excluded) are a literal
+  // list: adding one means editing it here, in view of the reviewer. The walk
+  // is the oracle's own (tools/probe/panel_fit.js), so the two cannot drift.
+  test("the panel's media conditions are exactly the listed ones", async () => {
+    const { WALK_FN, parseCondition } = require("../tools/probe/panel_fit.js");
+    await freshLoad();
+    const seen = new Set();
+    for (const mode of ["A", "B", "S"]) {
+      await b.eval(`setMode(${JSON.stringify(mode)}); return true;`);
+      const r = await b.eval(`return (${WALK_FN})(location.href);`);
+      assert.deepStrictEqual(r.problems, [], "a container or supports rule contains a panel rule");
+      for (const c of r.conditions) seen.add(c);
+    }
+    const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
+    assert.deepStrictEqual(dimensional, [
+      "(max-height: 520px)",
+      "(max-height: 520px) and (max-width: 600px)",
+      "(min-height: 521px) and (max-height: 575px)",
+      "(min-width: 1024px) and (min-height: 700px)",
+      "(min-width: 1024px) and (min-height: 700px) and (max-height: 761px)",
+      "(min-width: 1024px) and (min-height: 700px) and (max-height: 765px)",
+      "(min-width: 640px) and (min-height: 700px)",
+    ].sort());
+  });
+
   // M2, 2026-09-28 (same review gap as above). panelBackground is
   // [main, footer, #decks] - NOT header, because #settings-trigger itself
   // must stay reachable to close the panel it opened.
@@ -7135,30 +7203,18 @@ function run() {
     // b3fdcf9 (pre-fix) and GREEN after the order/tierbar-wrap/row-gap/
     // panel-seq-note fixes in index.html's base max-height:520px block.
     //
-    // Bounce 5 follow-up (owner decision 1): the fix above still left
-    // #deck-add offscreen at this breakpoint's shortest tested heights
-    // (300-306px) in every mode, at every width from 568 through 926 -
-    // #panel-scales-group is pinned cheapest-and-last by the fix above (see
-    // its own comment), so any residual overflow always lands on the one
-    // control inside it, and `main` shows #deck-add at every one of these
-    // cells even where it overflows worse overall (sacrificing
-    // print-paper-select or the Resources links instead) - so this was a
-    // regression under owner decision 1 regardless of the formal
-    // over>1-and-not-on-main count. Fixed by hiding #panel-seq-note (mode S
-    // only; already covered above), zeroing .panel-group's own heading-to-
-    // control gap, trimming .panel-heading's font-size, and trimming
-    // #settings-panel's top padding by 2px - all inside the same
-    // max-height:356px block, all width-unscoped (the original max-width:600
-    // scoping on this group of rules only matched 568px wide and silently
-    // left 667-926px unfixed). The 568/667/740/926-wide 300px cases below are
-    // the exact cells that were red before that follow-up.
+    // D2 re-plan step 3 (R-1): the "Bounce 5 follow-up" trims that used to
+    // follow here - four max-height:356px blocks, one of which unrendered
+    // #panel-seq-note - are deleted, because CSS never unrenders a panel
+    // control (T-R1). The cells at 300-306px that only those trims reached
+    // are no longer asserted here; the `panel fit` oracle (tools/probe/
+    // panel_fit.js) reports that band until step 6 reworks the landscape
+    // layout. What remains are the band edges the base block still holds.
     test("the landscape panel has no vertical scroll and no offscreen control at the bounce-5 band edges (REAL fonts)",
       async () => {
         const cases = [
           [740, 360, "S"], [740, 340, "S"], [812, 330, "S"], [926, 310, "S"],
-          [740, 304, "A"], [844, 304, "B"], [568, 312, "A"],
-          [568, 300, "A"], [568, 300, "S"], [667, 300, "S"], [740, 300, "S"],
-          [926, 300, "S"],
+          [568, 312, "A"],
         ];
         for (const [w, h, mode] of cases) {
           await rb.setViewport(w, h, true);
