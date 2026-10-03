@@ -207,17 +207,12 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
    (N20). */
 .panel-note{font:400 10.5px/1.5 "Nunito Sans"; color:#a79d8b; margin:0}
 .panel-note a{color:#c4bcab}
-/* The three tier buttons (BASIC / INTERMEDIATE / ADVANCED) are the second row
-   of the Practice group, where #modeS used to be. margin-top reproduces the
-   gap main has between the group's two .modebar rows. Both label strings are
-   always rendered: .t-full is the accessible name, .t-abbr (aria-hidden) the
-   short form. The short form is clipped by default; the two blocks below
-   (max-height:520px, and the desktop sidebar) swap them by clipping, never by
-   display:none, so the panel's rendered control set does not depend on CSS. */
+/* The three tier buttons (EASY / MEDIUM / HARD) are the second row of the
+   Practice group, where #modeS used to be. margin-top reproduces the gap main
+   has between the group's two .modebar rows. Internal tier values and ids
+   stay basic / intermediate / advanced. */
 .tierbar{display:flex; flex-wrap:nowrap; gap:var(--sp-2); margin-top:calc(var(--sp-2) - var(--sp-1))}
 .tierbar .mode{flex:1 1 auto; min-width:0; padding-inline:6px; white-space:nowrap}
-.tierbar .t-abbr{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
-  clip:rect(0 0 0 0); white-space:nowrap}
 /* Same 44px-target reasoning as .mode/.shuffle above (min-height, not an
    oversized overlay): the link is the one Tab stop in .panel-note. */
 #seq-source-link{display:inline-flex; align-items:center; min-height:44px}
@@ -262,9 +257,6 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
-  .tierbar .t-full{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
-    clip:rect(0 0 0 0); white-space:nowrap}
-  .tierbar .t-abbr{position:static; width:auto; height:auto; margin:0; overflow:visible; clip:auto}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
@@ -339,9 +331,6 @@ a.mode{text-decoration:none}
      rule above at equal !important weight (it has none, so this needs its
      own) - this is the one declaration that actually has to beat it. */
   #settings-panel[hidden]{display:flex !important}
-  .tierbar .t-full{position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden;
-    clip:rect(0 0 0 0); white-space:nowrap}
-  .tierbar .t-abbr{position:static; width:auto; height:auto; margin:0; overflow:visible; clip:auto}
 }
 /* ---- landscape: the header is ONE row ---------------------------------
    Queue row 245, owner decision. Held sideways, an iPhone 14 is 390px tall
@@ -1255,9 +1244,9 @@ footer.seq{row-gap:var(--sp-1)}
       <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
     </div>
     <div class="tierbar" role="group" aria-label="Chord progression">
-      <button class="mode" id="tier-basic" type="button" aria-pressed="false"><span class="t-full">BASIC</span><span class="t-abbr" aria-hidden="true">BASIC</span></button>
-      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"><span class="t-full">INTERMEDIATE</span><span class="t-abbr" aria-hidden="true">INT.</span></button>
-      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"><span class="t-full">ADVANCED</span><span class="t-abbr" aria-hidden="true">ADV.</span></button>
+      <button class="mode" id="tier-basic" type="button" aria-pressed="false">EASY</button>
+      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false">MEDIUM</button>
+      <button class="mode" id="tier-advanced" type="button" aria-pressed="false">HARD</button>
     </div>
     <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
          wording plus one outbound link to Moritz.handpan's video. -->

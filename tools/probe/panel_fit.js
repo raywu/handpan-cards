@@ -488,7 +488,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
     // Labels (ER-10) and the reference cell.
     await cand.browsers[0].setViewport(320, 568, false);
     report.labelWidths = await cand.browsers[0].eval(`
-      return window.__pf.labelWidths(["INTERMEDIATE", "ADVANCED", "BASIC", "INT.", "ADV.", "NAME \u2192 NOTES"]);`);
+      return window.__pf.labelWidths(["MEDIUM", "HARD", "EASY", "NAME \u2192 NOTES"]);`);
     const [refCell] = await cand.measure([REF_CELL]);
     const refRendered = refCell.map((c) => Object.keys(c.controls).filter((k) => c.controls[k].rendered));
 
