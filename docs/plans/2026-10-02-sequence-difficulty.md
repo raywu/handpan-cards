@@ -1,7 +1,8 @@
 # Sequence difficulty tiers
 
-- **Goal:** after the lanes below merge, `HPE.sequence.pick` deals BASIC, INTERMEDIATE or ADVANCED chord progressions per the tier rules on every deck, generated decks included, and the settings panel shows an always-visible DIFFICULTY selector that is live in CHORD PROGRESSION mode and greyed out and inert in every other mode. BASIC deals exactly what it deals today.
+- **Goal:** after the lanes below merge, `HPE.sequence.pick` deals BASIC, INTERMEDIATE or ADVANCED chord progressions per the tier rules on every deck, generated decks included, and the settings panel shows a "Chord progression" heading over an EASY / MEDIUM / HARD selector, always visible and always live: tapping a tier enters CHORD PROGRESSION at that tier (see D-0 as reversed). BASIC deals exactly what it deals today.
 - **Date:** 2026-10-02
+- **RN-5 overtaken (reviewer fix):** the D2 replan's RN-5, "empty-tier message: no change", was overtaken by the EASY / MEDIUM / HARD rename. D-6's message now names the tier by the button's own spelling (`TIER_LABEL` in `index.html`: EASY, MEDIUM, HARD), pinned against the buttons' visible text by the NO_TIER_SEQUENCE e2e test.
 - **Base:** `main` @ `61b01c2` (merge of PR #200). Every file:line below was read at that SHA.
 - **Shape:** /swarm, two lanes, serialised: D1 (engine) then D2 (app region of `index.html`). D2 spawns when D1 merges. **Amended 2026-10-02:** a follow-up lane D3 (engine hardening, §9) spawns only after D2 merges - D2 and D3 both refresh `tests/mutants/`, so running them in parallel would conflict there.
 - **Spec (binding):** Part 2 "Tier rules" and "Score axes" of the Pygmy Progression Tiers doc, https://claude.ai/code/artifact/f14b7860-bf38-4c6d-b579-f54f9535b405 (rev 56). Parts 3a/3b (I1-I8, A1-A6) and the Hijaz/Amara examples are the golden fixtures.
