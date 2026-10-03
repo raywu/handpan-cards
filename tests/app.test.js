@@ -4790,6 +4790,84 @@ describe("panel fit judge", () => {
     assert.throws(() => pf.assertRunComplete({ skipped: 1, skipReasons: ["x"] }), /skipped/i);
     assert.doesNotThrow(() => pf.assertRunComplete({ skipped: 0, skipReasons: [] }));
   });
+
+  test("panel fit: the heading allowance is 24", () => {
+    assert.strictEqual(pf.HEADING_ALLOWANCE_PX, 24);
+    assert.strictEqual(pf.headingAllowance(false, true), 24, "base lacks the heading, candidate has it");
+    assert.strictEqual(pf.headingAllowance(false, false), 0, "neither has it");
+    assert.strictEqual(pf.headingAllowance(true, true), 0, "both have it: the allowance expires once main has the heading");
+    assert.strictEqual(pf.headingAllowance(true, false), 0, "only the base has it");
+  });
+
+  test("panel fit rule 1: with the heading allowance a candidate up to 24px over a fitting base passes, and beyond it fails", () => {
+    const b = cell({ needed: 500, avail: 500 });
+    const withA = (c) => judge(b, c, { allowance: 24 }).rule1.fail.length;
+    assert.strictEqual(withA(cell({ needed: 525, avail: 500 })), 0, "base + 24 + the 1px tolerance");
+    assert.strictEqual(withA(cell({ needed: 526, avail: 500 })), 1, "one pixel beyond the tolerance");
+    assert.strictEqual(withA(cell({ needed: 526, avail: 530 })), 0, "a candidate that fits is unconstrained");
+    assert.strictEqual(judge(b, cell({ needed: 524, avail: 500 })).rule1.fail.length, 1, "no allowance by default");
+  });
+
+  test("panel fit rule 2: controls after the second heading may sit one allowance lower, modeA and modeB may not", () => {
+    const b = withControl(withControl(cell(), "deck-add", ctl(500)), "modeA", ctl(500));
+    const push = (key, bottom) => judge(b, withControl(b, key, ctl(bottom)), { allowance: 24 }).rule2.fail.length;
+    assert.strictEqual(push("deck-add", 524.5), 0, "base bottom + 24 + the 0.5 tolerance");
+    assert.strictEqual(push("deck-add", 524.6), 1, "past it");
+    assert.strictEqual(push("modeA", 500.5), 0, "modeA stays where main has it, plus the tolerance");
+    assert.strictEqual(push("modeA", 500.6), 1, "modeA gets no allowance");
+    assert.strictEqual(push("modeB", 500.5), 0, "modeB: max(base bottom, avail) + the tolerance");
+    assert.strictEqual(push("modeB", 500.6), 1, "modeB gets no allowance either");
+    assert.deepStrictEqual(pf.ALLOWANCE_EXEMPT, ["modeA", "modeB"]);
+  });
+
+  test("panel fit rule 3 takes no heading allowance", () => {
+    const b = cell();
+    const c = (bottom) => withControl(cell(), "tier-basic", ctl(bottom));
+    assert.strictEqual(judge(b, c(500.5), { allowance: 24 }).rule3.fail.length, 0, "inside avail + 0.5");
+    assert.strictEqual(judge(b, c(500.6), { allowance: 24 }).rule3.fail.length, 1, "past it, with the allowance on");
+  });
+
+  test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
+    const b = cell({ needed: 373.8, avail: 320 });
+    const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
+    const t = pf.thresholdCell(b, c, 320, 520);
+    assert.strictEqual(t.base.avail, 373, "the first integer with needed <= avail + 1");
+    assert.strictEqual(t.cand.avail, 373, "the candidate is raised by the same amount");
+    assert.strictEqual(t.height, 373);
+    assert.strictEqual(t.base.needed, 373.8, "nothing else moves");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 300, avail: 320 }), c, 320, 520), null, "the base fits at the band's lowest height");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 900, avail: 320 }), c, 320, 520), null, "the base fits nowhere in the band");
+    assert.strictEqual(pf.thresholdCell(cell({ needed: 840.9, avail: 320 }), c, 320, 520), null, "the threshold is past the band's top");
+  });
+
+  test("panel fit: viewports where the candidate overflows and the base fits are counted per row, from the threshold", () => {
+    const b = cell({ needed: 373.8, avail: 320 });
+    const c = cell({ needed: 395.8, avail: 320 });
+    const o = pf.overflowViewports(b, c, 320, 520);
+    assert.strictEqual(o.count, 22, "heights 373..394");
+    assert.strictEqual(o.height, 373);
+    assert.ok(Math.abs(o.scroll - 22.8) < 1e-9, "needed - avail at the threshold");
+    assert.deepStrictEqual(pf.overflowViewports(cell({ needed: 300, avail: 320 }), cell({ needed: 300, avail: 320 }), 320, 520), { count: 0, height: null, scroll: 0 });
+    assert.strictEqual(pf.overflowViewports(cell({ needed: 300, avail: 320 }), cell({ needed: 330, avail: 320 }), 320, 520).count, 9, "base fits at the band's lowest height: 320..328");
+  });
+
+  test("panel fit: a run that measured any cell with a scrollbar gutter fails", () => {
+    const run = (over = {}) => {
+      const rules = {};
+      for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) rules[k] = { fail: 0, reported: 0 };
+      return { rules, invarianceFailureCount: 0, gutterCells: 0, ...over };
+    };
+    assert.strictEqual(pf.failed(run()), false);
+    assert.strictEqual(pf.failed(run({ gutterCells: 1 })), true);
+    assert.match(pf.gutterMessage(352, 320, "A", 15), /scrollbar takes layout space at 352x320 mode A \(15 px\): the measurement environment is not neutral/);
+  });
+
+  test("panel fit: a run with invariance failures and every rule at 0 fails", () => {
+    const rules = {};
+    for (const k of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) rules[k] = { fail: 0, reported: 0 };
+    assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 0, gutterCells: 0 }), false);
+    assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 1, gutterCells: 0 }), true);
+  });
 });
 
 describe("tab stops follow rendering", () => {

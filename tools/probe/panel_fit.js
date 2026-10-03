@@ -43,6 +43,17 @@ const REF_CELL = [380, 740];
 const MODES = ["A", "B", "S"];
 const FIT_TOL = 1, CTRL_TOL = 0.5, EQ_TOL = 0.5;
 
+// The cost of the second Practice heading ("Chord progression"), a judge PARAMETER
+// rather than a constant of the rules: 24 only while the base lacks
+// #panel-prog-heading and the candidate has it, 0 otherwise. Rules 1 and 2 (the
+// position half) tolerate that much growth; rule 3 never does. modeA and modeB sit
+// above the second heading, so they are exempt from rule 2's allowance.
+const HEADING_ALLOWANCE_PX = 24;
+const ALLOWANCE_EXEMPT = ["modeA", "modeB"];
+function headingAllowance(baseHas, candHas) {
+  return !baseHas && candHas ? HEADING_ALLOWANCE_PX : 0;
+}
+
 const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
   ["Nunito Sans", "400"], ["Nunito Sans", "600"]];
 
@@ -59,14 +70,14 @@ function present(c, key) {
 
 // One cell, both roots. Pure: the synthetic-cell tests in tests/app.test.js drive
 // exactly this function.
-function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FAIL_BASE_OVERFLOW, id = "" }) {
+function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FAIL_BASE_OVERFLOW, id = "", allowance = 0 }) {
   const out = { removed: [] };
   for (const r of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) out[r] = { fail: [], reported: [] };
   const avail = c.avail;
   const baseFits = b.needed <= b.avail + FIT_TOL;
 
   // 1 fit
-  if (c.needed > Math.max(b.needed, avail) + FIT_TOL) {
+  if (c.needed > Math.max(b.needed + allowance, avail) + FIT_TOL) {
     out.rule1.fail.push(offender(id, `${c.needed.toFixed(1)} / ${b.needed.toFixed(1)} / ${avail.toFixed(1)}`));
   }
 
@@ -79,7 +90,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
       if (!bc.rendered) continue;
       if (!cc.rendered) {
         out.rule2.fail.push(offender(id, `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`));
-      } else if (cc.bottom > Math.max(bc.bottom, avail) + CTRL_TOL) {
+      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance), avail) + CTRL_TOL) {
         const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`);
         if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
         else out.rule2.reported.push(o);
@@ -125,6 +136,47 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
   for (const k of owed) if (!listed.has(k)) out.rule6.fail.push(offender(id, `${k} is rendered and enabled but not a stop`));
 
   return out;
+}
+
+// The lowest height in a band [lo, hi] at which the base fits, as a synthetic cell:
+// avail rises 1:1 with the viewport height inside a band, so both records are the
+// measured ones with avail raised by d. Null when the base fits at lo already or
+// fits nowhere in the band.
+function thresholdCell(b, c, lo, hi) {
+  const d = Math.ceil(b.needed - FIT_TOL - b.avail);
+  if (d <= 0 || lo + d > hi) return null;
+  return { base: { ...b, avail: b.avail + d }, cand: { ...c, avail: c.avail + d }, height: lo + d };
+}
+
+// Viewports (integer heights in the band) where the base fits and the candidate
+// does not, and the largest candidate shortfall, taken at the threshold height.
+function overflowViewports(b, c, lo, hi) {
+  let count = 0, height = null, scroll = 0;
+  for (let h = lo; h <= hi; h++) {
+    const a = b.avail + (h - lo);
+    if (b.needed <= a + FIT_TOL && c.needed > a + FIT_TOL) {
+      count++;
+      if (height === null) { height = h; scroll = c.needed - a; }
+    }
+  }
+  return { count, height, scroll };
+}
+
+function gutterMessage(w, h, mode, px) {
+  return `scrollbar takes layout space at ${w}x${h} mode ${mode} (${px} px): the measurement environment is not neutral`;
+}
+
+// Classic scrollbars take layout width on Linux CI and on a Mac with a mouse; the
+// measurement must not depend on them (F-18).
+async function neutraliseScrollbars(b) {
+  await b.send("Emulation.setScrollbarsHidden", { hidden: true });
+}
+
+async function prepareBrowser(b, url) {
+  await neutraliseScrollbars(b);
+  await b.setViewport(1000, 800, false);
+  await b.goto(url);
+  await b.eval(`window.__pf = ${MEASURE_SRC}; return true;`);
 }
 
 function vectorsEqual(a, b) {
@@ -346,6 +398,7 @@ const MEASURE_SRC = `
     const de = document.documentElement;
     return {
       needed, avail: panel.clientHeight, modal, controls, stops,
+      gutter: panel.offsetWidth - panel.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth),
       overflowX: { panel: panel.scrollWidth - panel.clientWidth, doc: de.scrollWidth - de.clientWidth },
     };
   };
@@ -359,6 +412,28 @@ const MEASURE_SRC = `
       const specs = ["14px Marcellus", "400 14px Bitter", "700 14px Bitter", "400 14px 'Nunito Sans'", "600 14px 'Nunito Sans'"];
       await Promise.all(specs.map((s) => document.fonts.load(s)));
       return { size: document.fonts.size, faces: [...document.fonts].map((f) => ({ family: f.family, weight: f.weight, status: f.status })) };
+    },
+    hasProgHeading: () => !!document.getElementById("panel-prog-heading"),
+    spare: (m) => {
+      setMode(m);
+      ensureOpen();
+      const heads = [...panel.querySelectorAll(".panel-heading")].filter((h) => h.getClientRects().length);
+      const sp1 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-1")) || null;
+      const tiers = {};
+      for (const id of ["tier-basic", "tier-intermediate", "tier-advanced"]) {
+        const el = document.getElementById(id);
+        if (!el || !el.getClientRects().length) { tiers[id] = null; continue; }
+        const cs = getComputedStyle(el);
+        const rg = document.createRange();
+        rg.selectNodeContents(el);
+        tiers[id] = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - rg.getBoundingClientRect().width;
+      }
+      const ph = document.getElementById("panel-prog-heading");
+      return {
+        headings: heads.map((h) => ({ text: h.textContent.trim(), height: h.getBoundingClientRect().height })),
+        gap: ph && ph.getClientRects().length ? parseFloat(getComputedStyle(ph).marginTop) : null,
+        sp1, tiers,
+      };
     },
     labelWidths: (labels) => {
       const ref = getComputedStyle(document.getElementById("modeA"));
@@ -413,9 +488,7 @@ class Root {
     for (let i = 0; i < this.workers; i++) {
       const b = await launch({ realFonts: this.fontMode === "real" });
       if (!b) throw new PanelFitError("no browser found (set CHROME_BIN)");
-      await b.setViewport(1000, 800, false);
-      await b.goto(this.url);
-      await b.eval(`window.__pf = ${MEASURE_SRC}; return true;`);
+      await prepareBrowser(b, this.url);
       this.browsers.push(b);
     }
     const fonts = await this.browsers[0].eval(`return window.__pf.fonts();`);
@@ -466,6 +539,8 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
   const ruleNames = ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"];
   for (const r of ruleNames) report.rules[r] = { fail: 0, reported: 0, first: [], firstReported: [] };
   const extra = { rule6Sidebar: 0, rule5Short: 0, rule6Short: 0, rule12Cells: [] };
+  report.gutterCells = 0; report.gutterFirst = [];
+  report.threshold = { cells: 0, viewports: 0, maxScroll: 0, maxScrollAt: null };
   try {
     await Promise.all([base.start(), cand.start()]);
 
@@ -483,12 +558,23 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
       crossOriginSheetsSkipped: [...new Set([...wb.skippedSheets, ...wc.skippedSheets])],
     };
     const hBands = bands(startsAll.height, H_LO, H_HI);
+    const [baseHas, candHas] = await Promise.all([base, cand].map((r) => r.browsers[0].eval(`return window.__pf.hasProgHeading();`)));
+    const allowance = headingAllowance(baseHas, candHas);
+    report.allowance = allowance; report.allowanceWhy = allowance ? "base has no #panel-prog-heading, candidate has" : "";
+    const countGutter = (rec, w, h, m) => {
+      if (rec.gutter > 0.5) { report.gutterCells++; if (report.gutterFirst.length < 5) report.gutterFirst.push(gutterMessage(w, h, m, rec.gutter)); }
+    };
     const wLo = widthRange ? widthRange[0] : W_LO, wHi = widthRange ? widthRange[1] : W_HI;
 
     // Labels (ER-10) and the reference cell.
     await cand.browsers[0].setViewport(320, 568, false);
     report.labelWidths = await cand.browsers[0].eval(`
       return window.__pf.labelWidths(["MEDIUM", "HARD", "EASY", "NAME \u2192 NOTES"]);`);
+    report.spare = [];
+    for (const [w, h] of [[320, 568], [427, 320], [1024, 700]]) {
+      await cand.browsers[0].setViewport(w, h, false);
+      report.spare.push({ w, h, ...(await cand.browsers[0].eval(`return window.__pf.spare("A");`)) });
+    }
     const [refCell] = await cand.measure([REF_CELL]);
     const refRendered = refCell.map((c) => Object.keys(c.controls).filter((k) => c.controls[k].rendered));
 
@@ -513,7 +599,8 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         report.cells++;
         const id = cellId(w, h, m);
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
-        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id });
+        countGutter(mb[i][mi], w, h, m); countGutter(mc[i][mi], w, h, m);
+        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance });
         for (const k of j.removed) report.removed[k] = (report.removed[k] || 0) + 1;
         for (const rn of ruleNames) {
           const R = report.rules[rn];
@@ -527,6 +614,21 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
           if (j.rule6.fail.length) extra.rule6Short++;
         }
         if (j.rule1.fail.length || j.rule2.fail.length) extra.rule12Cells.push([w, h, m]);
+
+        const row = rows.find((r) => r.lo === h);
+        const t = thresholdCell(mb[i][mi], mc[i][mi], row.lo, row.hi);
+        if (t) {
+          report.threshold.cells++;
+          const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance });
+          for (const rn of ["rule1", "rule2", "rule3"]) {
+            const R = report.rules[rn];
+            R.fail += jt[rn].fail.length; R.reported += jt[rn].reported.length;
+            for (const o of jt[rn].fail) if (R.first.length < 10) R.first.push(`${o.cell}: ${o.msg}`);
+          }
+        }
+        const ov = overflowViewports(mb[i][mi], mc[i][mi], row.lo, row.hi);
+        report.threshold.viewports += ov.count;
+        if (ov.scroll > report.threshold.maxScroll) { report.threshold.maxScroll = ov.scroll; report.threshold.maxScrollAt = `${w}x${ov.height} mode ${m}`; }
       });
     });
 
@@ -556,6 +658,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
       pts.forEach(([w, h], i) => {
         MODES.forEach((m, mi) => {
           report.invariance++;
+          countGutter(ib[i][mi], w, h, m); countGutter(ic[i][mi], w, h, m);
           for (const [name, got, map] of [["base", ib, vecB], ["candidate", ic, vecC]]) {
             if (!vectorsEqual(vectorOf(got[i][mi]), map.get(cellId(w, r.lo, m)))) {
               failures.push(`height-dependent layout inside a band: ${name}, band ${r.lo}-${r.hi}, ${w}x${h} vs ${w}x${r.lo}, mode ${m}`);
@@ -614,6 +717,16 @@ function printReport(r, out) {
   for (const [k, v] of Object.entries(rangesOf(r.rule12Cells))) p(`    h${k}: ${v}`);
   p(`rule 6 failing in sidebar cells (expected on main and 0ea790d): ${r.extra.rule6Sidebar}`);
   p(`mode S at h <= 356: rule 5 failing cells ${r.extra.rule5Short}, rule 6 failing cells ${r.extra.rule6Short}`);
+  p(`heading allowance: ${r.allowance}${r.allowanceWhy ? ` (${r.allowanceWhy})` : ""}`);
+  p(`HEADING_ALLOWANCE_PX: ${HEADING_ALLOWANCE_PX}`);
+  p(`viewports where the candidate overflows and the base fits: ${r.threshold.viewports} (threshold cells judged: ${r.threshold.cells})`);
+  p(`largest candidate shortfall at a threshold height: ${r.threshold.maxScroll.toFixed(1)} px${r.threshold.maxScrollAt ? ` at ${r.threshold.maxScrollAt}` : ""}`);
+  p(`cells with a scrollbar gutter: ${r.gutterCells}`);
+  for (const f of r.gutterFirst) p(`    ${f}`);
+  for (const s of r.spare) {
+    const tiers = Object.entries(s.tiers).map(([k, v]) => `${k.replace("tier-", "")}=${v === null ? "-" : v.toFixed(2)}`).join(" ");
+    p(`at ${s.w}x${s.h}: in-button label spare (px) ${tiers}; headings ${s.headings.map((h) => `${h.text} ${h.height.toFixed(2)}`).join(", ") || "-"}; --sp-1 ${s.sp1}; gap above progression heading ${s.gap}`);
+  }
   p(`invariance failures: ${r.invarianceFailureCount}`);
   for (const f of r.invarianceFailures) p(`    ${f}`);
   p(`rendered label widths at 320 wide (px): ${Object.entries(r.labelWidths).map(([k, v]) => `${k}=${v.toFixed(2)}`).join("  ")}`);
@@ -644,7 +757,7 @@ function rangesOf(cells) {
 
 function failed(r) {
   const ks = ["rule1", "rule3", "rule4", "rule5", "rule6", "rule2"];
-  return ks.some((k) => r.rules[k].fail > 0) || r.invarianceFailureCount > 0;
+  return ks.some((k) => r.rules[k].fail > 0) || r.invarianceFailureCount > 0 || r.gutterCells > 0;
 }
 
 function parseArgs(argv) {
@@ -683,7 +796,8 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, thresholdCell,
+  overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
 };

@@ -10388,4 +10388,32 @@ function run() {
   });
 
 
+
+  describe("panel fit measures a neutral scrollbar environment (F-18)", () => {
+    test("panel fit measures the same panel with and without a classic scrollbar", async () => {
+      const pf = require("../tools/probe/panel_fit.js");
+      const cb = await launch({});
+      assert.ok(cb);
+      try {
+        await pf.prepareBrowser(cb, URL);
+        const css = `#settings-panel::-webkit-scrollbar{width:15px}`;
+        const vectors = {};
+        for (const withBar of [false, true]) {
+          await cb.eval(`
+            document.getElementById("pf-classic")?.remove();
+            ${withBar ? `const st = document.createElement("style"); st.id = "pf-classic"; st.textContent = ${JSON.stringify(css)}; document.head.appendChild(st);` : ""}
+            return true;`);
+          for (const [w, h] of [[352, 320], [352, 520]]) {
+            await cb.setViewport(w, h, false);
+            const [cell] = await cb.eval(`return window.__pf.cell(["A"]);`);
+            assert.strictEqual(cell.gutter, 0, `${w}x${h} withBar=${withBar}: the scrollbar takes no layout width`);
+            vectors[`${w}x${h} ${withBar}`] = pf.vectorOf(cell);
+          }
+        }
+        for (const [w, h] of [[352, 320], [352, 520]]) {
+          assert.ok(pf.vectorsEqual(vectors[`${w}x${h} false`], vectors[`${w}x${h} true`]), `${w}x${h}: same vector with and without the classic scrollbar`);
+        }
+      } finally { await cb.close(); }
+    });
+  });
 }
