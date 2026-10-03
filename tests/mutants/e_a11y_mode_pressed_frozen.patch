@@ -8,14 +8,15 @@
 # Refreshed 2026-09-29 (lane S2): setMode() grew a third ["modeS", m === "S"]
 # entry in the same loop and several statements after it - only the line
 # number and surrounding context moved, the mutation is identical.
+# Refreshed 2026-10-03 (D2 step 4): setMode() loop is A/B only; syncTierUI() carries its own aria-pressed (uid_tier_not_pressed).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8201,7 +8201,6 @@ function setMode(m) {
-   for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"], ["modeS", m === "S"]]) {
+@@ -8709,7 +8709,6 @@ function setMode(m) {
+   for (const [id, on] of [["modeA", m === "A"], ["modeB", m === "B"]]) {
      const el = document.getElementById(id);
      el.classList.toggle("on", on);
 -    el.setAttribute("aria-pressed", on ? "true" : "false");
    }
+   syncTierUI();
    const seqNote = document.getElementById("panel-seq-note");
-   seqNote.hidden = m !== "S";

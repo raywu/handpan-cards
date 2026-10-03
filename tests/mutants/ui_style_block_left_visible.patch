@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8573,7 +8573,6 @@ function setMode(m) {
-   }
-   document.getElementById("panel-tier-note").hidden = m === "S";
+@@ -8715,7 +8715,6 @@ function setMode(m) {
+   const seqNote = document.getElementById("panel-seq-note");
+   seqNote.hidden = m !== "S";
    document.getElementById("foot").classList.toggle("seq", m === "S");
 -  document.getElementById("seq-style").hidden = m !== "S";
    const shuffleBtn = document.getElementById("shuffle");

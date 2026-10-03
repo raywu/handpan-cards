@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -335,6 +335,7 @@ a.mode{text-decoration:none}
+@@ -302,6 +302,7 @@ a.mode{text-decoration:none}
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
    #settings-panel > .panel-group{width:auto}
 +  #settings-panel > .panel-group:last-child{display:none}
-   /* The collapsed top margin on #panel-tier-group (above) only makes sense
-      in the single-column flow it was written for, where it cancels the
-      gap ABOVE it against the group immediately preceding it in document
+   /* Bounce 5 real-font sweep: measured against FALLBACK-font heights, where mode S's #panel-seq-note
+      ("7 different ways to play chords: Watch on YouTube") wraps to 2 lines
+      at this breakpoint's narrowest columns (e.g. 926px wide at 4 columns,

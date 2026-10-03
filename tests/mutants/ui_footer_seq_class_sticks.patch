@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8784,7 +8784,7 @@ function setMode(m) {
-     else tierBtn.setAttribute("aria-describedby", "panel-tier-note");
-   }
-   document.getElementById("panel-tier-note").hidden = m === "S";
+@@ -8714,7 +8714,7 @@ function setMode(m) {
+   syncTierUI();
+   const seqNote = document.getElementById("panel-seq-note");
+   seqNote.hidden = m !== "S";
 -  document.getElementById("foot").classList.toggle("seq", m === "S");
 +  document.getElementById("foot").classList.add("seq");
    document.getElementById("seq-style").hidden = m !== "S";

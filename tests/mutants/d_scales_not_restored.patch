@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8947,7 +8947,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncShee
+@@ -9089,7 +9089,6 @@ sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncShee
  // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
  // deck that was selected last session is in the registry by the time deck()
  // looks for it.
 -restoreScales();
  const wantedDeck = deckId;
- deckId = deck().id; storedDeck = deckId; syncTierUI(); setOrder(); buildChips(); setMode(mode);
+ deckId = deck().id; storedDeck = deckId; setOrder(); buildChips(); setMode(mode);
  // Two fallbacks, deliberately different. An unknown BUILT-IN id is a stale or

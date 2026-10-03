@@ -65,9 +65,11 @@
 # and reverting) since the tool's removed-lines anchor can drop the diff
 # body on a patch this large - the same failure mode as the 2026-10-02
 # refresh above.
+# Refreshed 2026-10-03 (D2 step 4): regenerated whole, the Practice group lost #modeS and the tier group.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1110,6 +1110,87 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1205,6 +1205,70 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -79,7 +81,11 @@
 +    <div class="modebar">
 +      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 +      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
-+      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
++    </div>
++    <div class="tierbar" role="group" aria-label="Chord progression">
++      <button class="mode" id="tier-basic" type="button" aria-pressed="false"><span class="t-full">BASIC</span><span class="t-abbr" aria-hidden="true">BASIC</span></button>
++      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"><span class="t-full">INTERMEDIATE</span><span class="t-abbr" aria-hidden="true">INT.</span></button>
++      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"><span class="t-full">ADVANCED</span><span class="t-abbr" aria-hidden="true">ADV.</span></button>
 +    </div>
 +    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
 +         wording plus one outbound link to Moritz.handpan's video. -->
@@ -88,27 +94,6 @@
 +      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
 +         target="_blank" rel="noopener">Watch on YouTube</a>
 +    </p>
-+  </div>
-+  <!-- Difficulty (D-8/D-9/D-10): always visible, no own heading - reads as
-+       part of Practice above it (see "#panel-tier-group" CSS comment for the
-+       margin/gap rationale and the panel-fit history). D-9's container-query
-+       design was dropped for plain flex-wrap (see ".tierbar" CSS) - the
-+       240px sidebar can't fit 3 buttons at any width, so there is no
-+       row/column threshold to express. Buttons start `disabled` (D-10: mode
-+       A is boot default); setMode() toggles disabled/.on/aria-pressed like
-+       the mode buttons. panel-tier-note is wired via aria-describedby on
-+       each button, not the group (not announced on a non-interactive
-+       container). -->
-+  <div class="panel-group" id="panel-tier-group">
-+    <div class="tierbar">
-+      <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
-+        aria-describedby="panel-tier-note" disabled>BASIC</button>
-+      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"
-+        aria-describedby="panel-tier-note" disabled>INTERMEDIATE</button>
-+      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"
-+        aria-describedby="panel-tier-note" disabled>ADVANCED</button>
-+    </div>
-+    <p class="panel-note" id="panel-tier-note">Pick CHORD PROGRESSION to change this.</p>
 +  </div>
 +  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
 +       own "Scales" group, .mode-styled like the panel's other buttons. The id
@@ -155,7 +140,7 @@
  </header>
  
  <main>
-@@ -1315,87 +1396,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1410,70 +1474,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -167,7 +152,11 @@
 -    <div class="modebar">
 -      <button class="mode on" id="modeA" aria-pressed="true">NAME &rarr; NOTES</button>
 -      <button class="mode" id="modeB" aria-pressed="false">NOTES &rarr; NAME</button>
--      <button class="mode" id="modeS" aria-pressed="false">CHORD PROGRESSION</button>
+-    </div>
+-    <div class="tierbar" role="group" aria-label="Chord progression">
+-      <button class="mode" id="tier-basic" type="button" aria-pressed="false"><span class="t-full">BASIC</span><span class="t-abbr" aria-hidden="true">BASIC</span></button>
+-      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"><span class="t-full">INTERMEDIATE</span><span class="t-abbr" aria-hidden="true">INT.</span></button>
+-      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"><span class="t-full">ADVANCED</span><span class="t-abbr" aria-hidden="true">ADV.</span></button>
 -    </div>
 -    <!-- Shown only in mode S (setMode() toggles .hidden). O6/Part C: our own
 -         wording plus one outbound link to Moritz.handpan's video. -->
@@ -176,27 +165,6 @@
 -      <a id="seq-source-link" href="https://www.youtube.com/shorts/YcmgdgZTpHc"
 -         target="_blank" rel="noopener">Watch on YouTube</a>
 -    </p>
--  </div>
--  <!-- Difficulty (D-8/D-9/D-10): always visible, no own heading - reads as
--       part of Practice above it (see "#panel-tier-group" CSS comment for the
--       margin/gap rationale and the panel-fit history). D-9's container-query
--       design was dropped for plain flex-wrap (see ".tierbar" CSS) - the
--       240px sidebar can't fit 3 buttons at any width, so there is no
--       row/column threshold to express. Buttons start `disabled` (D-10: mode
--       A is boot default); setMode() toggles disabled/.on/aria-pressed like
--       the mode buttons. panel-tier-note is wired via aria-describedby on
--       each button, not the group (not announced on a non-interactive
--       container). -->
--  <div class="panel-group" id="panel-tier-group">
--    <div class="tierbar">
--      <button class="mode on" id="tier-basic" type="button" aria-pressed="true"
--        aria-describedby="panel-tier-note" disabled>BASIC</button>
--      <button class="mode" id="tier-intermediate" type="button" aria-pressed="false"
--        aria-describedby="panel-tier-note" disabled>INTERMEDIATE</button>
--      <button class="mode" id="tier-advanced" type="button" aria-pressed="false"
--        aria-describedby="panel-tier-note" disabled>ADVANCED</button>
--    </div>
--    <p class="panel-note" id="panel-tier-note">Pick CHORD PROGRESSION to change this.</p>
 -  </div>
 -  <!-- M2, 2026-09-28: "+ Add a scale" moved out of the deck strip and into its
 -       own "Scales" group, .mode-styled like the panel's other buttons. The id
