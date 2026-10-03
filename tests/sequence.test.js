@@ -947,24 +947,63 @@ function generated() {
   return generatedFixtures;
 }
 
-test("generated decks: every tier returns a sequence or a reason, never throws, under 50ms", () => {
-  const { full, sweep } = generated();
-  for (const row of sweep) {
+test("generated decks: every tier deals its own tier, in range and connected, under 50ms", () => {
+  const { full, sweep, reviewer, registerAnchor, registerHome } = generated();
+  const rows = [
+    ...sweep.map((r) => ({ label: r.label, deck: r.deck })),
+    ...reviewer.map((r, i) => ({ label: `reviewer deck ${i}`, deck: r.deck })),
+    { label: "REGISTER_ANCHOR_DECK", deck: registerAnchor },
+    { label: "REGISTER_HOME_DECK", deck: registerHome }
+  ];
+  assert.strictEqual(rows.length, 37 + 4 + 2, "the sweep is 37 decks + 4 reviewer decks + 2 register decks");
+  const LENGTHS = { basic: [2, 3], intermediate: [3, 4], advanced: [4, 5, 6] };
+  const S = full.sequence;
+  const noHomeRows = new Set();
+  const reasons = {};
+  for (const row of rows) {
     const deck = row.deck;
+    const homeAnchorIdx = S._internal.homeAnchor(deck, S.anchors(deck));
     for (const tier of ["basic", "intermediate", "advanced"]) {
-      const t0 = Date.now();
-      let result;
-      assert.doesNotThrow(() => {
-        result = tier === "basic"
-          ? full.sequence.pick(deck, full.sequence.mulberry32(1), null)
-          : full.sequence.pick(deck, full.sequence.mulberry32(1), null, tier);
-      }, `${row.label} ${tier} threw`);
-      const dt = Date.now() - t0;
-      assert.ok(dt < 50, `${row.label} ${tier} took ${dt}ms`);
-      assert.ok(result.chords || typeof result.reason === "string",
-        `${row.label} ${tier} returned neither chords nor a reason`);
+      let prev = null;
+      for (let seed = 0; seed < 5; seed += 1) {
+        const t0 = Date.now();
+        let result;
+        assert.doesNotThrow(() => {
+          result = tier === "basic"
+            ? S.pick(deck, S.mulberry32(seed), prev)
+            : S.pick(deck, S.mulberry32(seed), prev, tier);
+        }, `${row.label} ${tier} seed ${seed} threw`);
+        const dt = Date.now() - t0;
+        assert.ok(dt < 50, `${row.label} ${tier} seed ${seed} took ${dt}ms`);
+        if (!result.chords) {
+          assert.strictEqual(result.reason, "NO_HOME_CHORD",
+            `${row.label} ${tier} seed ${seed} returned ${result.reason}, not a deal`);
+          assert.strictEqual(homeAnchorIdx, null,
+            `${row.label} ${tier} seed ${seed}: NO_HOME_CHORD on a deck that has a home anchor`);
+          noHomeRows.add(row.label);
+          reasons[tier] = (reasons[tier] || 0) + 1;
+          continue;
+        }
+        const chords = host(result.chords);
+        assert.strictEqual(homeAnchorIdx === null, false,
+          `${row.label} ${tier} seed ${seed}: dealt on a deck with no home anchor`);
+        assert.strictEqual(S.tierOf(deck, chords), tier,
+          `${row.label} ${tier} seed ${seed} dealt ${JSON.stringify(chords)} which tierOf calls ${S.tierOf(deck, chords)}`);
+        assert.ok(LENGTHS[tier].includes(chords.length),
+          `${row.label} ${tier} seed ${seed} dealt length ${chords.length}`);
+        for (let i = 0; i < chords.length; i += 1) {
+          const next = chords[(i + 1) % chords.length];
+          assert.notStrictEqual(chords[i], next, `${row.label} ${tier} seed ${seed}: identical neighbours at ${i}`);
+          assert.ok(connectsRef(deck, chords[i], next),
+            `${row.label} ${tier} seed ${seed}: ${chords[i]} -> ${next} does not connect`);
+        }
+        prev = chords;
+      }
     }
   }
+  assert.strictEqual(noHomeRows.size, 3, `NO_HOME_CHORD rows: ${[...noHomeRows].join(", ")}`);
+  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 15 },
+    "exactly 3 rows x 5 seeds per tier carry NO_HOME_CHORD");
 });
 
 test("a deck forcing the DFS fallback on every length finishes under 50ms", () => {
