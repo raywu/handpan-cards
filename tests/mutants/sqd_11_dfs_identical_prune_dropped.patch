@@ -1,0 +1,15 @@
+# kills: the DFS fallback completes and finds the exact exhaustive set
+# dfsFindAll's identical-neighbour prune removed, so the search wastes its
+# budget on repeated cards and truncates before it completes
+# suite: node --test --test-name-pattern ^the.DFS.fallback.completes.and.finds.the.exact.exhaustive.set$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -472,7 +472,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         var candidate = options[i];
+         if (depth > 0) {
+           var prevChord = seq[depth - 1];
+-          if (candidate === prevChord) continue;
+           if (matrix && !matrix[prevChord][candidate]) continue;
+         }
+         seq[depth] = candidate;

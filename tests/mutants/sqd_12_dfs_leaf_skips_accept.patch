@@ -1,0 +1,16 @@
+# kills: generated decks: every tier deals its own tier, in range and connected, under 50ms
+# dfsFindAll's leaf no longer asks accept, so a fallback deal can be any
+# sequence, valid or not
+# suite: node --test --test-name-pattern ^generated.decks..every.tier.deals.its.own.tier..in.range.and.connected..under.50ms$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -464,7 +464,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       }
+       nodes += 1;
+       if (depth === len) {
+-        if (accept(seq)) found.push(seq.slice());
++        found.push(seq.slice());
+         return;
+       }
+       var options = depth === 0 ? startSet : pool;

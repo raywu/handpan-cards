@@ -6075,7 +6075,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // D-4: a card is LOW/HIGH iff its subtitle matches this exactly. Applies
   // identically to built-in and generated decks (HPE.select.build / naming.js
-  // pass voicingClass straight into subtitle() on both).
+  // pass voicingClass straight into subtitle() on both). D-14 (owner,
+  // "Starting chords always allowed"): INTERMEDIATE excludes LOW/HIGH cards
+  // EXCEPT the BASIC anchors, which are always admitted, so BASIC nests inside
+  // INTERMEDIATE on every deck; see intermediateGate and tierPool.
   function chordRegister(deck, i) {
     var sub = deck.chords[i].subtitle || "";
     if ((/\b(LOW|HIGH) VOICING\b/).test(sub)) return "register";
@@ -6120,11 +6123,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return true;
   }
 
-  function intermediateGate(deck, seq, home) {
+  function intermediateGate(deck, seq, home, anchorsList) {
     if (seq.length !== 3 && seq.length !== 4) return false;
     if (chordRootPc(deck, seq[0]) !== home) return false;
     if (hasForbiddenRepeat(deck, seq, true)) return false;
     for (var i = 0; i < seq.length; i += 1) {
+      if (anchorsList.indexOf(seq[i]) >= 0) continue;
       if (deck.chords[seq[i]].fields.length > 4) return false;
       if (chordRegister(deck, seq[i]) !== "") return false;
     }
@@ -6143,11 +6147,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // INTERMEDIATE's, and defaulting to ADVANCED is equivalent to "must use at
   // least one thing the tier below forbids": the only way to fail a lower
   // gate while passing the next is to use something the lower tier
-  // disallows. ADVANCED's own catch-all (no gate of its own) applies to any
-  // length >= 3, since 3 is the shortest length any non-BASIC tier deals in
-  // (intermediate's {3,4}); a length-2 sequence that fails BASIC's gate has
-  // nowhere left to fall through to - length 2 is exclusively a BASIC shape -
-  // so it classifies null rather than "advanced", and so does length <=1.
+  // disallows. ADVANCED's own catch-all (no gate of its own) applies only to
+  // lengths 4..6, the lengths ADVANCED deals (TIER_LENGTHS.advanced). Any other
+  // length that fails the lower gates is a sequence no tier can deal, so it
+  // classifies null rather than "advanced": length 3 that fails INTERMEDIATE
+  // (D-15), length 2 that fails BASIC (length 2 is exclusively a BASIC shape),
+  // length <= 1, and length >= 7 (A-13).
   // basicGate/intermediateGate each already reject on length internally
   // (their own first line) - classifyTier does not re-check length before
   // calling them. A redundant outer length pre-filter here would short-
@@ -6161,10 +6166,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (basicGate(deck, chords, ctx.anchorsList, ctx.homeAnchorIdx)) {
       return "basic";
     }
-    if (intermediateGate(deck, chords, ctx.home)) {
+    if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
       return "intermediate";
     }
-    if (n >= 3) return "advanced";
+    if (n >= 4 && n <= 6) return "advanced";
     return null;
   }
 
@@ -6184,11 +6189,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return classifyTier(deck, chords, ctx);
   }
 
-  function tierPool(deck, tier) {
+  function tierPool(deck, tier, anchorsList) {
     var n = deck.chords.length;
     var out = [];
     for (var i = 0; i < n; i += 1) {
-      if (tier === "advanced" ||
+      if (tier === "advanced" || anchorsList.indexOf(i) >= 0 ||
           (deck.chords[i].fields.length <= 4 && chordRegister(deck, i) === "")) {
         out.push(i);
       }
@@ -6224,23 +6229,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // which sequences are found - it only lets the same node budget reach
   // deeper into the space that can actually be accepted (perf review on PR
   // #202, item 4).
-  // `stats`, when passed, gets its `.nodes` set to the final visited-node
-  // count on return - a deterministic, hardware-independent way to prove
+  // `stats`, when passed, gets `.truncated` set to true iff a node was actually
+  // refused for lack of budget (a search that finishes on exactly its last
+  // allowed node is complete, not truncated), and its `.nodes` set to the final
+  // visited-node count on return - a deterministic, hardware-independent way to prove
   // the DFS never exceeds `budget` (used by the perf regression test
   // instead of a wall-clock timing, which varies with the runner).
   function dfsFindAll(startSet, pool, len, accept, budget, matrix, stats) {
     var found = [];
     var nodes = 0;
+    var truncated = false;
     var seq = new Array(len);
     function rec(depth) {
-      if (nodes >= budget) return;
+      if (nodes >= budget) {
+        truncated = true;
+        return;
+      }
       nodes += 1;
       if (depth === len) {
         if (accept(seq)) found.push(seq.slice());
         return;
       }
       var options = depth === 0 ? startSet : pool;
-      for (var i = 0; i < options.length && nodes < budget; i += 1) {
+      for (var i = 0; i < options.length; i += 1) {
         var candidate = options[i];
         if (depth > 0) {
           var prevChord = seq[depth - 1];
@@ -6252,26 +6263,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     rec(0);
-    if (stats) stats.nodes = nodes;
+    if (stats) {
+      stats.nodes = nodes;
+      stats.truncated = truncated;
+    }
     return found;
   }
 
-  // One attempt at a fixed length: up to 512 uniform random draws, then the
-  // bounded DFS fallback. `empty` is true only when the fallback (whether it
-  // completed or hit the node budget) found literally nothing, per D-2 "a
-  // search that hits the budget ... reports the length empty only if it
-  // found nothing".
-  function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
-    var pool = tierPool(deck, tier);
-    var startSet = tierStartSet(deck, tier, pool);
-    if (!startSet.length || !pool.length) return { seq: null, empty: true };
-
-    // Cheapest checks first, classifyTier (the expensive one, even with a
-    // shared ctx) last - `excludeSeq`/identical-card/connectivity are O(1)
-    // per pair and reject the overwhelming majority of candidates before
-    // classifyTier's gate functions ever run (perf review on PR #202,
-    // item 3).
-    function accept(seq) {
+  // The acceptance predicate shared by the sampler, the DFS fallback and the
+  // tests that reconstruct the fallback path. Cheapest checks first,
+  // classifyTier (the expensive one, even with a shared ctx) last -
+  // `excludeSeq`/identical-card/connectivity are O(1) per pair and reject the
+  // overwhelming majority of candidates before classifyTier's gate functions
+  // ever run (perf review on PR #202, item 3).
+  function makeAccept(deck, tier, matrix, excludeSeq, ctx) {
+    return function accept(seq) {
       if (excludeSeq && sameSequence(seq, excludeSeq)) return false;
       for (var i = 0; i < seq.length; i += 1) {
         var next = seq[(i + 1) % seq.length];
@@ -6282,7 +6288,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (!matrix[seq[i]][next]) return false;
       }
       return classifyTier(deck, seq, ctx) === tier;
-    }
+    };
+  }
+
+  // One attempt at a fixed length: up to 512 uniform random draws, then the
+  // bounded DFS fallback. `empty` is true only when the fallback (whether it
+  // completed or hit the node budget) found literally nothing, per D-2 "a
+  // search that hits the budget ... reports the length empty only if it
+  // found nothing".
+  function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
+    var pool = tierPool(deck, tier, ctx.anchorsList);
+    var startSet = tierStartSet(deck, tier, pool);
+    if (!startSet.length || !pool.length) return { seq: null, empty: true };
+
+    var accept = makeAccept(deck, tier, matrix, excludeSeq, ctx);
 
     for (var attempt = 0; attempt < 512; attempt += 1) {
       var seq = [startSet[draw(rng, startSet.length)]];
@@ -6375,6 +6394,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     _internal: {
       DFS_NODE_BUDGET: DFS_NODE_BUDGET,
       dfsFindAll: dfsFindAll,
+      makeAccept: makeAccept,
       tierPool: tierPool,
       tierStartSet: tierStartSet,
       buildConnectMatrix: buildConnectMatrix,

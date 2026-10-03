@@ -1,0 +1,16 @@
+# kills: every BASIC anchor is in the INTERMEDIATE pool on every deck
+# tierPool's D-14 anchor exemption removed, so a register-labelled BASIC
+# anchor is missing from the INTERMEDIATE pool and BASIC no longer nests
+# suite: node --test --test-name-pattern ^every.BASIC.anchor.is.in.the.INTERMEDIATE.pool.on.every.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -410,7 +410,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var n = deck.chords.length;
+     var out = [];
+     for (var i = 0; i < n; i += 1) {
+-      if (tier === "advanced" || anchorsList.indexOf(i) >= 0 ||
++      if (tier === "advanced" ||
+           (deck.chords[i].fields.length <= 4 && chordRegister(deck, i) === "")) {
+         out.push(i);
+       }
