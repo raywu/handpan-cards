@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8463,10 +8463,7 @@ function panelStops() {
+@@ -8824,10 +8824,7 @@ function panelStops() {
            document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"),
            document.getElementById("deck-add"),
@@ -20,6 +20,6 @@ diff --git a/index.html b/index.html
 -          // trap after the print controls, in DOM order.
 -          ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
 +          ...settingsPanel.querySelectorAll(".prints button, .prints select")]
-     .filter(el => el && !el.disabled);
+     .filter(isStop);
  }
  function openPanel() {

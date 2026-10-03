@@ -3,13 +3,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7924,8 +7924,7 @@ sheet.addEventListener("keydown", e => {
+@@ -8751,8 +8751,7 @@ sheet.addEventListener("keydown", e => {
                   editingId ? moveL : null, editingId ? moveR : null,
                   editingId ? resetBtn : null,
                   editingId ? degSel : null,
 -                 mirrorL, mirrorR, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
 +                 mirrorL, mirrorR, ...swatches.children, genBtn]
-     .filter(el => el && !el.disabled);
+     .filter(isStop);
    cycleTabStops(stops, e);
  });

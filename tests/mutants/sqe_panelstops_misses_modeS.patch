@@ -12,15 +12,18 @@
 # panelStops() now also appends the three Resources links after the print
 # controls; the removed line (dropping #modeS) and the mutation itself are
 # unchanged.
+# Refreshed 2026-10-02 (D2 re-plan step 2, R-2) for context only: panelStops()
+# lost its seqLink special case; the removed #modeS entry is unchanged.
 diff --git a/index.html b/index.html
+index ff0cbc2..cd8b241 100644
 --- a/index.html
 +++ b/index.html
-@@ -8459,7 +8459,7 @@ function panelStops() {
-   const seqNote = document.getElementById("panel-seq-note");
-   const seqLink = (seqNote && !seqNote.hidden) ? [document.getElementById("seq-source-link")] : [];
+@@ -8820,7 +8820,7 @@ let panelOpen = false;
+ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
+ function panelStops() {
    return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
--          document.getElementById("modeS"), ...seqLink,
-+          ...seqLink,
+-          document.getElementById("modeS"), document.getElementById("seq-source-link"),
++          document.getElementById("seq-source-link"),
            document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"),
            document.getElementById("deck-add"),
