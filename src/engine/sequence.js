@@ -364,11 +364,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // INTERMEDIATE's, and defaulting to ADVANCED is equivalent to "must use at
   // least one thing the tier below forbids": the only way to fail a lower
   // gate while passing the next is to use something the lower tier
-  // disallows. ADVANCED's own catch-all (no gate of its own) applies to any
-  // length >= 3, since 3 is the shortest length any non-BASIC tier deals in
-  // (intermediate's {3,4}); a length-2 sequence that fails BASIC's gate has
-  // nowhere left to fall through to - length 2 is exclusively a BASIC shape -
-  // so it classifies null rather than "advanced", and so does length <=1.
+  // disallows. ADVANCED's own catch-all (no gate of its own) applies only to
+  // lengths 4..6, the lengths ADVANCED deals (TIER_LENGTHS.advanced). Any other
+  // length that fails the lower gates is a sequence no tier can deal, so it
+  // classifies null rather than "advanced": length 3 that fails INTERMEDIATE
+  // (D-15), length 2 that fails BASIC (length 2 is exclusively a BASIC shape),
+  // length <= 1, and length >= 7 (A-13).
   // basicGate/intermediateGate each already reject on length internally
   // (their own first line) - classifyTier does not re-check length before
   // calling them. A redundant outer length pre-filter here would short-
@@ -385,7 +386,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
       return "intermediate";
     }
-    if (n >= 3) return "advanced";
+    if (n >= 4 && n <= 6) return "advanced";
     return null;
   }
 
