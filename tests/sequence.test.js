@@ -853,8 +853,33 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
 
 /* -------------------------------------------------------------- D1 step 6 */
 
-test("generated decks: every tier returns a sequence or a reason, never throws, under 50ms", () => {
-  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
+/* -------------------------------------------------------------- D3 shared fixtures */
+
+// Built once, on first use, and shared by every test below (D3 N4): building
+// ~65 generated decks per test would repeat the work the sweep, the nesting
+// test and the register tests each need. A failed build asserts at first use,
+// so one bad row fails the test that needed it, not the whole file.
+const FULL_ENGINE_MODULES = ["core", "voicing", "layout", "naming", "select", "sequence"];
+const REGISTER_ANCHOR_SEED = "(A2) C3 E3 G#3 A#3 C4 E4 G4 G#4 A4 A#4 C#5 | G#2 E3 F3 G3";
+const REGISTER_HOME_SEED = "(A#2) D3 E3 F#3 G3 A3 A#3 D#4 F4 A#4 C5 | F2 A#2 D#3 E3 F4";
+const REVIEWER_SEEDS = [
+  "(G3) D4 F4 F#4 B4 F#5 G5 A#5",
+  "(A3) E4 G4 G#4 A4 C5 D#5 E5 A5",
+  "(B3) F4 F#4 A4 B4 C5 D5 F5 F#5 A5 B5 C6 D6",
+  "(G#3) E4 G4 G#4 A4 C5 D#5 G#5"
+];
+
+let generatedFixtures = null;
+function generated() {
+  if (generatedFixtures) return generatedFixtures;
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  function buildDeck(str) {
+    const parsed = full.core.parseSeed(str, {});
+    assert.equal(parsed.ok, true, `fixture seed did not parse: ${str} (${parsed.code})`);
+    const built = full.select.build(parsed.value);
+    assert.equal(built.ok, true, `fixture seed did not build: ${str}`);
+    return built.value;
+  }
   const scales = JSON.parse(
     fs.readFileSync(path.join(ROOT, "tests", "fixtures", "synthetic_scales.json"), "utf8"));
   function fixtureRow(name) {
@@ -873,26 +898,40 @@ test("generated decks: every tier returns a sequence or a reason, never throws, 
     const parts = splitSeed(str);
     const top = parts.top.slice(0, nTop);
     const bottom = parts.bottom.slice(0, nBottom);
-    let s = `${parts.ding} ${top.join(" ")}`;
-    if (bottom.length) s += ` | ${bottom.join(" ")}`;
-    const parsed = full.core.parseSeed(s);
-    assert.equal(parsed.ok, true, `sweep seed did not parse: ${s} (${parsed.code})`);
-    return { string: s, seed: parsed.value };
+    let seedString = `${parts.ding} ${top.join(" ")}`;
+    if (bottom.length) seedString += ` | ${bottom.join(" ")}`;
+    return seedString;
   }
   const sweep = [];
   for (let n = 5; n <= 19; n += 1) {
     const topHeavy = Math.min(n, 13);
-    sweep.push({ n, label: `top-heavy N=${n}`, ...seedOf(NINETEEN, topHeavy, n - topHeavy) });
+    sweep.push({ n, label: `top-heavy N=${n}`, string: seedOf(NINETEEN, topHeavy, n - topHeavy) });
     const nBottom = Math.min(6, Math.floor(n / 3));
     const nTop = Math.min(13, n - nBottom);
-    sweep.push({ n, label: `mixed N=${n}`, ...seedOf(NINETEEN, nTop, n - nTop) });
-    if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, ...seedOf(TWELVE, n, 0) });
+    sweep.push({ n, label: `mixed N=${n}`, string: seedOf(NINETEEN, nTop, n - nTop) });
+    if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, string: seedOf(TWELVE, n, 0) });
   }
+  const synthetic = scales
+    .map((row) => ({ name: row.name, parsed: full.core.parseSeed(row.string, {}) }))
+    .filter((r) => r.parsed.ok)
+    .map((r) => ({ label: r.name, built: full.select.build(r.parsed.value) }))
+    .filter((r) => r.built.ok)
+    .map((r) => ({ label: r.label, deck: r.built.value }));
+  generatedFixtures = {
+    full,
+    synthetic,
+    sweep: sweep.map((row) => ({ ...row, deck: buildDeck(row.string) })),
+    reviewer: REVIEWER_SEEDS.map((str) => ({ label: str, string: str, deck: buildDeck(str) })),
+    registerAnchor: buildDeck(REGISTER_ANCHOR_SEED),
+    registerHome: buildDeck(REGISTER_HOME_SEED)
+  };
+  return generatedFixtures;
+}
 
+test("generated decks: every tier returns a sequence or a reason, never throws, under 50ms", () => {
+  const { full, sweep } = generated();
   for (const row of sweep) {
-    const built = full.select.build(row.seed);
-    if (!built.ok) continue;
-    const deck = built.value;
+    const deck = row.deck;
     for (const tier of ["basic", "intermediate", "advanced"]) {
       const t0 = Date.now();
       let result;
@@ -944,19 +983,8 @@ test("a deck forcing the DFS fallback on every length finishes under 50ms", () =
 // before the tier gate. Swept over seeds 0..49 on every tier to catch any
 // seed-dependent regression, not just the reviewer's reported seeds.
 test("the four reviewer-reported slow decks finish under 50ms over seeds 0..49", () => {
-  const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
-  const seedStrings = [
-    "(G3) D4 F4 F#4 B4 F#5 G5 A#5",
-    "(A3) E4 G4 G#4 A4 C5 D#5 E5 A5",
-    "(B3) F4 F#4 A4 B4 C5 D5 F5 F#5 A5 B5 C6 D6",
-    "(G#3) E4 G4 G#4 A4 C5 D#5 G#5"
-  ];
-  for (const s of seedStrings) {
-    const parsed = full.core.parseSeed(s, {});
-    assert.equal(parsed.ok, true, `reviewer seed did not parse: ${s}`);
-    const built = full.select.build(parsed.value);
-    assert.equal(built.ok, true, `reviewer seed did not build: ${s}`);
-    const deck = built.value;
+  const { full, reviewer } = generated();
+  for (const { string: s, deck } of reviewer) {
     for (const tier of ["basic", "intermediate", "advanced"]) {
       for (let seed = 0; seed < 50; seed += 1) {
         const t0 = Date.now();
@@ -1048,6 +1076,80 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
       I.dfsFindAll(startSet, pool, len, accept, I.DFS_NODE_BUDGET, matrix, stats);
       assert.ok(stats.nodes <= I.DFS_NODE_BUDGET,
         `pygmy ${tier} length ${len}: dfsFindAll visited ${stats.nodes} nodes, over the ${I.DFS_NODE_BUDGET} budget`);
+    }
+  }
+});
+
+/* -------------------------------------------------------------- D3 step 2 */
+
+// D-14 (owner): "Starting chords always allowed". Every BASIC anchor is in the
+// INTERMEDIATE pool, LOW/HIGH register or not, so BASIC nests inside
+// INTERMEDIATE on every deck. The nesting probe behind this (46 of 1,894 decks
+// broke it on main) covered 3 + 11 + 1880 = 1,894 decks: the 3 built-ins, the 11
+// synthetic_scales.json rows that build (the other 9 are deliberate parse/build
+// rejects; 3 of the 11 are the built-ins again), and 1,880 random generated
+// decks. This test covers the first two groups plus the sweep and the two
+// register fixtures; none of the synthetic or sweep decks has a register-labelled
+// anchor, so REGISTER_ANCHOR_DECK and REGISTER_HOME_DECK carry the case.
+test("every BASIC anchor is in the INTERMEDIATE pool on every deck", () => {
+  const fx = generated();
+  const E = engine();
+  const decks = [
+    ["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA],
+    ...fx.synthetic.map((r) => [r.label, r.deck]),
+    ...fx.sweep.map((r) => [r.label, r.deck]),
+    ["REGISTER_ANCHOR_DECK", fx.registerAnchor],
+    ["REGISTER_HOME_DECK", fx.registerHome]
+  ];
+  assert.strictEqual(fx.synthetic.length, 11, "11 of the 20 synthetic rows build");
+  for (const [label, deck] of decks) {
+    const anchorsList = host(E.sequence.anchors(deck));
+    const pool = host(E.sequence._internal.tierPool(deck, "intermediate", anchorsList));
+    for (const idx of anchorsList) {
+      assert.ok(pool.includes(idx),
+        `${label}: BASIC anchor ${idx} [${deck.chords[idx].main}${deck.chords[idx].sup || ""} ${deck.chords[idx].subtitle}] is missing from the INTERMEDIATE pool`);
+    }
+  }
+});
+
+test("INTERMEDIATE deals a register-labelled anchor", () => {
+  const { full, registerAnchor, registerHome } = generated();
+  const S = full.sequence;
+  assert.strictEqual(S.tierOf(registerAnchor, [0, 14, 8]), "intermediate",
+    "A -> C (HIGH VOICING anchor) -> A#dim connects and every card is an anchor or plain");
+
+  let prev = null;
+  let containing = 0;
+  for (let seed = 0; seed < 500; seed += 1) {
+    const deal = S.pick(registerAnchor, S.mulberry32(seed), prev, "intermediate");
+    assert.ok(deal.chords, `seed ${seed} dealt nothing (${deal.reason})`);
+    assert.strictEqual(S.tierOf(registerAnchor, deal.chords), "intermediate",
+      `seed ${seed} dealt ${JSON.stringify(deal.chords)} which is not intermediate`);
+    if (deal.chords.includes(14)) containing += 1;
+    prev = deal.chords;
+  }
+  assert.ok(containing > 0, "no INTERMEDIATE deal in 500 contained the HIGH VOICING anchor 14");
+
+  const homeAnchorIdx = S._internal.homeAnchor(registerHome, S.anchors(registerHome));
+  assert.strictEqual(homeAnchorIdx, 2, "REGISTER_HOME_DECK's home anchor is chord 2");
+  prev = null;
+  let startsOnHome = 0;
+  for (let seed = 0; seed < 500; seed += 1) {
+    const deal = S.pick(registerHome, S.mulberry32(seed), prev, "intermediate");
+    assert.ok(deal.chords, `home deck seed ${seed} dealt nothing (${deal.reason})`);
+    assert.strictEqual(S.tierOf(registerHome, deal.chords), "intermediate");
+    if (deal.chords[0] === 2) startsOnHome += 1;
+    prev = deal.chords;
+  }
+  assert.ok(startsOnHome > 0, "no INTERMEDIATE deal started on the register-labelled home anchor");
+});
+
+test("no built-in anchor is a register-labelled anchor, so the exemption is a no-op there", () => {
+  const E = engine();
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    for (const idx of host(E.sequence.anchors(deck))) {
+      assert.ok(!/\b(LOW|HIGH) VOICING\b/.test(deck.chords[idx].subtitle || ""),
+        `${id} anchor ${idx} carries a LOW/HIGH subtitle`);
     }
   }
 });
