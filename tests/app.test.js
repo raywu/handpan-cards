@@ -4583,8 +4583,28 @@ describe("panel fit judge", () => {
     assert.deepStrictEqual([lax.rule2.fail.length, lax.rule2.reported.length], [0, 1], "OD-8 = report");
   });
 
-  test("panel fit rule 2: the OD-8 constant ships as fail (owner ruling 2026-10-02)", () => {
-    assert.strictEqual(pf.OD8_FAIL_BASE_OVERFLOW, true);
+  test("panel fit rule 2: the OD-8 constant ships as report (owner answer 2026-10-03)", () => {
+    assert.strictEqual(pf.OD8_FAIL_BASE_OVERFLOW, false);
+  });
+
+  test("panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design", () => {
+    const lacks = (key) => {
+      const c = cell();
+      delete c.controls[key];
+      return c;
+    };
+    assert.strictEqual(judge(cell(), lacks("deck-add")).rule2.fail.length, 1, "deleted by accident");
+    const baseOver = cell({ needed: 700, avail: 500 });
+    const candOver = cell({ needed: 700, avail: 500 });
+    delete candOver.controls["deck-add"];
+    assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
+    assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS"]);
+    const noS = judge(cell(), lacks("modeS"));
+    assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
+    assert.strictEqual(noS.rule2.reported.length, 0);
+    assert.deepStrictEqual(noS.removed, ["modeS"], "removal is listed so the report can name it");
+    assert.deepStrictEqual(judge(cell(), cell()).removed, []);
   });
 
   test("panel fit rule 3: a candidate-only control below the fold fails where the base fits, is reported where it does not", () => {

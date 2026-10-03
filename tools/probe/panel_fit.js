@@ -25,10 +25,17 @@ const REPO = path.resolve(__dirname, "..", "..");
 /* ------------------------------------------------------------------ constants */
 
 // Owner ruling 2026-10-02 (plan section 4.3, rule 2): a control offscreen on the
-// candidate where the base shows it is a regression EVEN WHERE THE BASE ITSELF
-// OVERFLOWS. OD-8 asks whether that second count should be reported instead.
-// This is the one switch; change it only with the owner's answer recorded.
-const OD8_FAIL_BASE_OVERFLOW = true;
+// candidate where the base shows it is a regression. OD-8, answered by the owner
+// 2026-10-03: where the base ITSELF overflows, a control that sits lower on the
+// candidate is reported, not failed. The constant governs POSITION only; a control
+// the candidate does not render, or lacks, fails whatever it says (ER-25).
+const OD8_FAIL_BASE_OVERFLOW = false;
+
+// Controls the base renders and the candidate deliberately lacks (ER-16, RP-19).
+// Any other control the base renders and the candidate lacks fails rule 2: the
+// judge walks the candidate's controls, so an accidental deletion is otherwise
+// invisible to it.
+const REMOVED_BY_DESIGN = ["modeS"];
 
 const W_LO = 320, W_HI = 1300, H_LO = 320, H_HI = 1100;
 const SIDEBAR_WIDTHS = [1024, 1025, 1100, 1280, 1300, 1440, 1920];
@@ -53,7 +60,7 @@ function present(c, key) {
 // One cell, both roots. Pure: the synthetic-cell tests in tests/app.test.js drive
 // exactly this function.
 function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FAIL_BASE_OVERFLOW, id = "" }) {
-  const out = {};
+  const out = { removed: [] };
   for (const r of ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"]) out[r] = { fail: [], reported: [] };
   const avail = c.avail;
   const baseFits = b.needed <= b.avail + FIT_TOL;
@@ -70,13 +77,10 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
       // 2 control (a control the base renders)
       const bc = b.controls[key];
       if (!bc.rendered) continue;
-      let bad = null;
-      if (!cc.rendered) bad = `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`;
-      else if (cc.bottom > Math.max(bc.bottom, avail) + CTRL_TOL) {
-        bad = `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`;
-      }
-      if (bad) {
-        const o = offender(id, bad);
+      if (!cc.rendered) {
+        out.rule2.fail.push(offender(id, `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`));
+      } else if (cc.bottom > Math.max(bc.bottom, avail) + CTRL_TOL) {
+        const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`);
         if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
         else out.rule2.reported.push(o);
       }
@@ -85,6 +89,13 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
       const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs avail ${avail.toFixed(1)}`);
       (baseFits ? out.rule3.fail : out.rule3.reported).push(o);
     }
+  }
+
+  // 2 control, the other direction: rendered on the base, absent from the candidate
+  for (const key of Object.keys(b.controls)) {
+    if (!present(b, key) || !b.controls[key].rendered || present(c, key)) continue;
+    if (REMOVED_BY_DESIGN.includes(key)) { out.removed.push(key); continue; }
+    out.rule2.fail.push(offender(id, `${key} is rendered on the base and absent from the candidate`));
   }
 
   // 4 horizontal
@@ -451,7 +462,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
   const t0 = Date.now();
   const base = new Root("base", baseHtml, fontMode, workers);
   const cand = new Root("candidate", candHtml, fontMode, workers);
-  const report = { font: fontMode, skipped: 0, skipReasons: [], cells: 0, invariance: 0, rules: {}, edges: {} };
+  const report = { font: fontMode, skipped: 0, skipReasons: [], cells: 0, invariance: 0, rules: {}, removed: {}, edges: {} };
   const ruleNames = ["rule1", "rule2", "rule3", "rule4", "rule5", "rule6"];
   for (const r of ruleNames) report.rules[r] = { fail: 0, reported: 0, first: [], firstReported: [] };
   const extra = { rule6Sidebar: 0, rule5Short: 0, rule6Short: 0, rule12Cells: [] };
@@ -503,6 +514,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         const id = cellId(w, h, m);
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
         const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id });
+        for (const k of j.removed) report.removed[k] = (report.removed[k] || 0) + 1;
         for (const rn of ruleNames) {
           const R = report.rules[rn];
           R.fail += j[rn].fail.length; R.reported += j[rn].reported.length;
@@ -597,6 +609,7 @@ function printReport(r, out) {
     for (const f of R.first) p(`    ${f}`);
     for (const f of R.firstReported) p(`    (reported) ${f}`);
   }
+  p(`controls removed by design (cells): ${Object.entries(r.removed).map(([k, v]) => `${k}=${v}`).join(", ") || "none"}`);
   p("rule 1/2 failing width ranges per band row and mode:");
   for (const [k, v] of Object.entries(rangesOf(r.rule12Cells))) p(`    h${k}: ${v}`);
   p(`rule 6 failing in sidebar cells (expected on main and 0ea790d): ${r.extra.rule6Sidebar}`);
@@ -670,7 +683,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
 };
 
