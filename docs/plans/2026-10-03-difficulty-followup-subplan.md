@@ -37,9 +37,9 @@ brief PR #207 was run from (that lane had no written plan, which is hurdle H3).
 ## 3. Decisions
 
 - **S-1. Split.** The rail fix ships alone. The probe work becomes its own lane
-  with a bounded criterion. (Alternatives rejected: one more patch on #207, which
-  is the pattern the owner's rule forbids; dropping the probe work, which leaves
-  main with a guard that crashes instead of reporting.)
+  with a bounded criterion. (Alternative rejected: one more patch on #207, which
+  is the pattern the owner's rule forbids. Whether the probe work runs at all is
+  S-7.)
 - **S-2. Rail lane carries no new code.** Its diff is the rail subset of
   `9f4f61c`, byte for byte. Nothing in it is redesigned.
 - **S-3. Probe: validate at one choke point, not at each use.** Every value
@@ -50,8 +50,9 @@ brief PR #207 was run from (that lane had no written plan, which is hurdle H3).
 - **S-5. H4 is fixed at the source of the blindness, not guessed at.** The
   failing test's name must survive into the CI log. No retry logic, no test
   changes on speculation.
-- **S-6. PR #207 is closed unmerged** once lane R's PR is open, with a comment
-  linking it and this plan. Its branch is kept (no deletion of unmerged work;
+- **S-6. PR #207 is superseded, not merged.** It gets a comment linking lane R's
+  PR and this plan. Closing it is the owner's click (closing a PR is not in the
+  AFK grant). Its branch is kept (no deletion of unmerged work;
   lane P starts from its probe files).
 - **S-7. Only lane R runs now. Lanes P and H are specified here and wait for the
   owner's go** (added after eng review, ER-1..ER-8 below). They are developer
@@ -96,8 +97,14 @@ outside engine regions); the "progression rail scroll continuity" describe in
   current chord. Verify: the five rail e2e tests, in CI.
 - R4. The six mutants apply and are killed. Verify: CI mutation gate;
   `node --test tests/mutation_harness.test.js`.
-- R5. CI 11/11 at the pushed head. If `js suites` is red, the failing test's
-  name and message are captured before any rerun.
+- R5. CI 11/11 at the pushed head, and `js suites (unit + e2e)` green on four
+  consecutive attempts at that SHA (the first run plus three reruns of that job).
+  This is the answer to H4 for this lane: the five rail tests are the only new
+  e2e code, the one unexplained red was the only rerun in the last 60 runs, and
+  every local repeat so far was on macOS, not the Linux runner. The CI log cannot
+  name a failing test today (lane H), so a red attempt is NOT rerun to green:
+  it stops the lane and goes to the owner with the choice of running lane H
+  first.
 
 **Non-goals.** Raising the `tests/e2e.test.js` FLOORS row in
 `tests/suite_health.py` for the five new tests (verbatim from `9f4f61c`, which
@@ -119,7 +126,7 @@ only of the eight `tests/mutants/uid_fit_*.patch` that patch the probe.
   go through it.
 - Contract: `result` is an array with one row per requested cell; each row is an
   array of exactly `MODES.length` entries; each entry is a measured cell or a
-  hole. Anything that is not an array of rows throws
+  hole. A non-array, or an array containing a defined non-array row, throws
   `PanelFitError("malformed measurement: ...")`. A missing row, a short row and a
   `null`/`undefined`/partial entry are all holes: rows are returned padded to
   `MODES.length` with `null`, so a hole has exactly one representation.
@@ -128,7 +135,11 @@ only of the eight `tests/mutants/uid_fit_*.patch` that patch the probe.
   `overflowViewports`, and matching what the page-side measurer returns:
   `controls` (object; each entry has boolean `rendered` and, when rendered, a
   finite `bottom`), finite `needed` and `avail`, `overflowX` with finite `panel`
-  and `doc`, `stops` (array), finite `gutter`, boolean `modal`.
+  and `doc`, `stops` (array), finite `gutter`, boolean `modal`. This field list
+  was read from the code by the eng review and has not been run: the lane's
+  first step is to confirm it against a real complete run (P1 fails if the
+  validator rejects anything the shipped measurer returns) and to correct the
+  list here, in the plan, if it is wrong.
 - The reference cell requires zero holes and throws the existing "reference cell
   ... was not measured" error. Sweep and invariance count each hole as skipped.
 - `assertRunComplete` stays before the invariance pass and at the end.
@@ -197,9 +208,15 @@ any rail mutant. Making the page-side measurer return holes.
 
 - Each PR: CI green at a head SHA equal to the lane's local tip, then a fresh
   independent reviewer at that SHA. The reviewer brief quotes this plan's
-  acceptance list verbatim and adds no criteria of its own (H3).
-- A reviewer FAIL on lane R for anything other than R1-R5: stop and interview
-  the owner; the diff has already been measured twice.
+  acceptance list verbatim and I add no pass/fail rules of my own to it (H3).
+  The reviewer is not muzzled: it still runs the full `/review`, and a FAIL is
+  valid for an unmet written criterion, a boundary violation, or a concrete
+  defect a user or a CI run would hit, including a regression versus main.
+  Robustness of developer tooling against inputs the shipped code cannot produce
+  is a nit unless a written criterion covers it.
+- Any reviewer FAIL on lane R, or a red R5 attempt: stop and interview the
+  owner. No bounce. This diff has been measured by two reviewers, and a third
+  failure of this work means the plan is wrong, not the patch.
 - A reviewer FAIL on lane P or H: one bounce if the failing case is inside P1-P7; a
   case outside the written acceptance is a plan gap, recorded and brought to the owner, not patched.
 - Merge order is free. The second PR merges `origin/main` only if GitHub reports
@@ -238,3 +255,30 @@ Verdict: lane R clear to execute; lane P not ready as first written. Folded in:
   `assertRunComplete`); five `measure()` calls, not four.
 - Not run by the review: any test, probe run or mutation check; the outside
   voice (codex) pass.
+
+## 8. Second read (2026-10-03, at the owner's request, after the eng review)
+
+Checked the plan against the code and the three review reports. Changes made:
+
+- R5 was unsatisfiable: it required naming a failing test that the CI log
+  cannot name. Replaced with four consecutive green `js suites` attempts on the
+  runner, and a red attempt stops the lane.
+- The gate said nothing about a lane R FAIL inside R1-R5. Now any FAIL stops.
+- "The reviewer adds no criteria" read as if the reviewer could not report a
+  real bug. Reworded: it constrains my brief, not the reviewer's findings.
+- S-6 had me closing #207; that is outside the AFK grant.
+- S-1 rejected "dropping the probe work" while S-7 defers it; reconciled.
+- The measured-cell field list is marked as read, not run.
+
+Confirmed sound, by measurement: lane R's tree was built from `origin/main`
+plus the eight owned paths at `9f4f61c`; the `index.html` and `tests/e2e.test.js`
+diffs are identical to #207's (R1); 8 files change (R2); `refresh_mutants.py`
+refreshed 0 of 582; `inline_engine.py --check`, `sync_decks.py --check`,
+`validate.py` pass; `tests/app.test.js` + `tests/mutation_harness.test.js` 295/295.
+
+Residual risks the plan does not remove:
+- Nothing here has been tested on WebKit or a real device; smooth-scroll
+  behaviour on iOS Safari is inferred.
+- If the one CI red was a rail test with a low flake rate, four attempts can
+  miss it. Lane H is what makes the next red diagnosable.
+- Lanes P and H are specified from reading, not from a spike.
