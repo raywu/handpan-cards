@@ -7,8 +7,8 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -538,8 +538,7 @@ def emit_python(outfile):
-           f"unexpected successes {data['unexpected_successes']}")
+@@ -617,8 +617,7 @@ def emit_python(outfile):
+                   data.get("failing_tests_omitted", 0))
      if data["output_excerpt"]:
          print(data["output_excerpt"])
 -    return 1 if (data["failures"] or data["errors"]
