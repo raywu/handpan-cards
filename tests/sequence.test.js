@@ -539,8 +539,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   ]);
   assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 2, 1]), "intermediate",
     "sus (pos1) resolving forward into its root chord (pos2) should be intermediate");
-  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), "advanced",
-    "the same pair in the other order does not resolve and should be advanced");
+  assert.strictEqual(E.sequence.tierOf(resolveDeck, [0, 1, 2]), null,
+    "the same pair in the other order does not resolve; at length 3 that is not dealable by any tier, so null");
 
   // The 4-note cap: a >4-field chord anywhere in the sequence pushes it to
   // advanced even with no repeat and a home start.
@@ -555,8 +555,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
     { main: "Em9", sup: "", fields: [7, 8, 9, 10, 11], roots: [7] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), "advanced",
-    "a 5-field chord should push the sequence past intermediate's 4-note cap (root E avoids confounding with Dm's repeated D root)");
+  assert.strictEqual(E.sequence.tierOf(capDeck, [0, 1, 2]), null,
+    "a 5-field chord should push the sequence past intermediate's 4-note cap, and length 3 is not ADVANCED, so null (root E avoids confounding with Dm's repeated D root)");
 
   // Nit (perf review on PR #202): a length-2 sequence is exclusively a BASIC
   // shape - neither intermediate ({3,4}) nor advanced ({4,5,6}) ever deal a
@@ -587,8 +587,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
     { main: "Em", sup: "", subtitle: "- LOW VOICING", fields: [10, 11, 12], roots: [10] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 2, 3]), "advanced",
-    "a LOW VOICING card should exclude the sequence from intermediate");
+  assert.strictEqual(E.sequence.tierOf(registerDeck, [0, 2, 3]), null,
+    "a LOW VOICING card should exclude the sequence from intermediate, and length 3 is not ADVANCED, so null");
 
   // The sus-resolve exception must check the WRAP pair (last position back to
   // first), not just forward-adjacent positions in array order.
@@ -625,6 +625,25 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   ]);
   assert.strictEqual(E.sequence.tierOf(lengthDeck, [0, 1, 2, 3, 4]), "advanced",
     "a 5-chord sequence is outside intermediate's {3,4} length range even with no other violation");
+});
+
+test("tierOf returns null for a sequence ADVANCED can never deal", () => {
+  const E = engine();
+  // ADVANCED deals lengths 4..6 only (TIER_LENGTHS), so a connecting
+  // 3-chord or 7-chord sequence belongs to no tier. Pygmy's golden ADVANCED
+  // cards pin both ends of the range: A1 has 4 chords, A5 has 6.
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A1), "advanced", "4 chords");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A5), "advanced", "6 chords");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, [5, 22, 23]), null, "3 chords that fail INTERMEDIATE");
+  const seven = [...PYGMY_ADVANCED.A5, 0];
+  assert.strictEqual(seven.length, 7);
+  const I = E.sequence._internal;
+  const matrix = I.buildConnectMatrix(PYGMY);
+  for (let i = 0; i < seven.length; i += 1) {
+    const next = seven[(i + 1) % seven.length];
+    assert.ok(seven[i] !== next && matrix[seven[i]][next], `seven-chord fixture breaks at ${i}`);
+  }
+  assert.strictEqual(E.sequence.tierOf(PYGMY, seven), null, "7 chords connect but ADVANCED never deals 7");
 });
 
 /* -------------------------------------------------------------- D1 step 3 */
