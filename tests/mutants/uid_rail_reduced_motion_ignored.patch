@@ -1,0 +1,15 @@
+# kills: rail scroll: under reduced motion a flip right after a step ends in view and a settled flip does not move
+# suite: node --test --test-name-pattern ^rail.scroll..under.reduced.motion.a.flip.right.after.a.step.ends.in.view.and.a.settled.flip.does.not.move tests/e2e.test.js
+# The scroll-to-current ignores prefers-reduced-motion and always animates when it carries a position.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7188,7 +7188,7 @@ function renderSeqRail(d) {
+   // prefers-reduced-motion the same way the swipe-gesture code already does.
+   if (curNode) {
+     curNode.scrollIntoView({
+-      behavior: reducedMotion.matches || !sameDeal ? "auto" : "smooth",
++      behavior: !sameDeal ? "auto" : "smooth",
+       block: "nearest",
+       inline: "center",
+     });

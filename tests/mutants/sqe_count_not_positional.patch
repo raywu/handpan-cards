@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7316,7 +7316,7 @@ function renderSeqRail(d) {
+@@ -7145,7 +7145,7 @@ function renderSeqRail(d) {
    });
    const live = document.createElement("span");
    live.className = "sr-only";
@@ -14,4 +14,4 @@ diff --git a/index.html b/index.html
 +  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx} of ${seq.chords.length}`;
    countEl.appendChild(rail);
    countEl.appendChild(live);
-   // D-12: keep the current chord in view on every advance/back/redeal -
+   railEl = rail;

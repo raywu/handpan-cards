@@ -7131,8 +7131,12 @@ function renderSeqEmpty() {
 // never innerHTML (§8 E6): a chord `main`/`sup` containing markup must render
 // as literal text, not be parsed. The rail's visible text is aria-hidden; a
 // visually-hidden sibling carries the accessible "<name>, chord N of M".
+let railSeq = null, railEl = null;
 function renderSeqRail(d) {
   const countEl = document.getElementById("count");
+  const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
+  const keepLeft = sameDeal ? railEl.scrollLeft : 0;
+  railSeq = seq;
   countEl.classList.add("seq");
   countEl.textContent = "";
   while (countEl.children.length) countEl.removeChild(countEl.children[0]);
@@ -7163,6 +7167,12 @@ function renderSeqRail(d) {
   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
   countEl.appendChild(rail);
   countEl.appendChild(live);
+  railEl = rail;
+  // The rebuilt rail starts at scrollLeft 0; carry the old position over so a
+  // re-render does not lurch to 0. The scroll-to-current below always runs, so a
+  // flip inside a step's smooth scroll still ends on the current chord; once the
+  // chord is centred it is a no-op, and after a manual scroll it re-centres.
+  if (keepLeft) rail.scrollLeft = keepLeft;
   // D-12: keep the current chord in view on every advance/back/redeal -
   // render() is the only caller of renderSeqRail, and render() is in turn
   // the only path step()/shuffle/redeal use to show a new current chord, so
@@ -7178,7 +7188,7 @@ function renderSeqRail(d) {
   // prefers-reduced-motion the same way the swipe-gesture code already does.
   if (curNode) {
     curNode.scrollIntoView({
-      behavior: reducedMotion.matches ? "auto" : "smooth",
+      behavior: reducedMotion.matches || !sameDeal ? "auto" : "smooth",
       block: "nearest",
       inline: "center",
     });

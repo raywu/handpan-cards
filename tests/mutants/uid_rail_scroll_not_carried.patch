@@ -1,0 +1,16 @@
+# kills: rail scroll: a flip leaves scrollLeft untouched, with no frame at 0
+# suite: node --test --test-name-pattern ^rail.scroll..a.flip.leaves.scrollLeft.untouched tests/e2e.test.js
+# D2 follow-up. The rebuilt rail starts at scrollLeft 0; dropping the carry-over
+# restores the lurch on every flip of an overflowing rail.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7152,7 +7152,7 @@ function renderSeqRail(d) {
+   // re-render does not lurch to 0. The scroll-to-current below always runs, so a
+   // flip inside a step's smooth scroll still ends on the current chord; once the
+   // chord is centred it is a no-op, and after a manual scroll it re-centres.
+-  if (keepLeft) rail.scrollLeft = keepLeft;
++  if (false) rail.scrollLeft = keepLeft;
+   // D-12: keep the current chord in view on every advance/back/redeal -
+   // render() is the only caller of renderSeqRail, and render() is in turn
+   // the only path step()/shuffle/redeal use to show a new current chord, so
