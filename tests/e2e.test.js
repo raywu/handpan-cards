@@ -1581,10 +1581,20 @@ function run() {
     }
   });
 
+  // D2 step 6b (H-9): the second heading ("Chord progression") costs H + g, and at
+  // 667x375 in progression the panel now needs 18.75px more than it has under the
+  // fallback fonts this harness loads (main needed 373.75 of 375 and fit). That
+  // one cell leaves the fits assertion and is asserted on its own, two-sided:
+  // scroll equals main's pinned needed + H + g - the panel's height, within 1px,
+  // and nothing but the Resources links is below the fold. Every other cell keeps
+  // the fit assertion unchanged.
+  const MAIN_NEEDED_667x375_S_FALLBACK = 373.75;
+
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
       await freshLoad();
       try {
+        assert.strictEqual(await b.eval(`return document.fonts.size;`), 0, "this cell's literal is the fallback-font one");
         for (const [vw, vh] of [[320, 568], [844, 390], [926, 428], [667, 375], [1280, 500]]) {
           await b.setViewport(vw, vh, vw < vh);
           await b.settle();
@@ -1613,6 +1623,7 @@ function run() {
               };
             `);
             const label = `${vw}x${vh} mode ${mode}`;
+            const scrolls = vw === 667 && vh === 375 && mode === "S";
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
             // A hidden Resources group would silently vanish from `ctrls`
             // (the `offsetParent` filter above) and pass every other
@@ -1622,12 +1633,23 @@ function run() {
               ["res-dingandtones", "res-handpaner", "res-trainingcards"],
               `${label}: the Resources links are not all visible/measured`);
             assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
-            assert.ok(m.scrollH <= m.clientH + 1,
-              `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+            if (scrolls) {
+              const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
+                return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
+              const want = MAIN_NEEDED_667x375_S_FALLBACK + hg - m.clientH;
+              assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
+                `${label}: the panel scrolls by ${m.scrollH - m.clientH}px, expected main's spare used up plus H + g = ${want}px`);
+              assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
+                `${label}: only the Resources links may be below the fold`);
+            } else {
+              assert.ok(m.scrollH <= m.clientH + 1,
+                `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+              assert.deepStrictEqual(m.offscreen.slice().sort(), [],
+                `${label}: controls off screen`);
+            }
             assert.ok(m.scrollW <= m.clientW + 1,
               `${label}: panel content (${m.scrollW}px) overflows its own box (${m.clientW}px) horizontally`);
-            assert.deepStrictEqual(m.offscreen.slice().sort(), [],
-              `${label}: controls off screen`);
             assert.deepStrictEqual(m.underTrigger, [], `${label}: controls under the X trigger`);
             assert.deepStrictEqual(m.short, [], `${label}: controls under the 44px target`);
             await b.key("Escape", "Escape", 27);
@@ -1751,8 +1773,28 @@ function run() {
             };
           `);
           const label = `1024x700 mode ${mode}`;
-          assert.ok(m.scrollH <= m.clientH + 1,
-            `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+          if (mode === "S") {
+            // D2 step 6b (H-9): progression at 1024x700 needed 673.75 of 688 on
+            // main (fallback fonts, which this harness loads) and now needs the
+            // second heading's H + g more, so it scrolls by exactly that much
+            // less main's spare: two-sided within 1px, and every control is
+            // still reachable by scrolling (its bottom is inside scrollHeight).
+            const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
+              return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
+            const want = 673.75 + hg - m.clientH;
+            assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+            assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
+              `${label}: the sidebar scrolls by ${m.scrollH - m.clientH}px, expected ${want}px`);
+            const unreachable = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const top = p.getBoundingClientRect().top - p.scrollTop;
+              return [...p.querySelectorAll("button, a")].filter(e => e.getClientRects().length)
+                .filter(e => e.getBoundingClientRect().bottom - top > p.scrollHeight + 0.5).map(e => e.id);`);
+            assert.deepStrictEqual(unreachable, [], `${label}: a control lies beyond the scrollable height`);
+          } else {
+            assert.ok(m.scrollH <= m.clientH + 1,
+              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+          }
           assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
         }
       } finally {
@@ -6595,7 +6637,7 @@ function run() {
           const panel = document.getElementById("settings-panel");
           const cs = getComputedStyle(panel);
           const headings = [...panel.querySelectorAll(".panel-heading")];
-          const practiceHeading = headings.find(h => h.textContent.trim() === "Practice");
+          const practiceHeading = headings.find(h => h.textContent.trim() === "Flash cards");
           const modeA = document.getElementById("modeA");
           return {
             gap: cs.gap, padding: cs.padding,
@@ -7211,11 +7253,18 @@ function run() {
     // layout. What remains are the band edges the base block still holds.
     test("the landscape panel has no vertical scroll and no offscreen control at the bounce-5 band edges (REAL fonts)",
       async () => {
+        // D2 step 6b (H-9): the second heading costs H + g (18 + 3 here, real
+        // fonts), so 740x340 S and 568x312 A now scroll. Each case carries main's
+        // needed height as a literal (origin/main, same measuring function); a
+        // case whose main-needed + H + g exceeds the panel by more than the 1px
+        // tolerance must scroll by exactly that much (two-sided, within 1px)
+        // with every control still reachable by scrolling; the others keep the
+        // original assertion (no scroll, nothing offscreen).
         const cases = [
-          [740, 360, "S"], [740, 340, "S"], [812, 330, "S"], [926, 310, "S"],
-          [568, 312, "A"],
+          [740, 360, "S", 328.25], [740, 340, "S", 328.25], [812, 330, "S", 310], [926, 310, "S", 251.75],
+          [568, 312, "A", 313],
         ];
-        for (const [w, h, mode] of cases) {
+        for (const [w, h, mode, mainNeeded] of cases) {
           await rb.setViewport(w, h, true);
           await rb.goto(URL);
           await rb.eval(`localStorage.clear(); localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode }))});`);
@@ -7229,8 +7278,11 @@ function run() {
           const m = await rb.eval(`
             const p = document.getElementById("settings-panel");
             const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
+            const hd = document.getElementById("panel-prog-heading");
             return {
-              over: p.scrollHeight - p.clientHeight,
+              over: p.scrollHeight - p.clientHeight, clientH: p.clientHeight,
+              hg: hd.getBoundingClientRect().height + parseFloat(getComputedStyle(hd).marginTop),
+              reach: ctrls.filter(e => e.getBoundingClientRect().bottom - (p.getBoundingClientRect().top - p.scrollTop) > p.scrollHeight + 0.5).map(e => e.id),
               off: ctrls.filter(e => {
                 const k = e.getBoundingClientRect();
                 return k.left < -0.5 || k.top < -0.5 || k.right > innerWidth + 0.5 || k.bottom > innerHeight + 0.5;
@@ -7238,8 +7290,15 @@ function run() {
             };
           `);
           const label = `${w}x${h} mode ${mode} (real fonts)`;
-          assert.ok(m.over <= 1, `${label}: the panel overflows its own box by ${m.over}px`);
-          assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
+          const want = mainNeeded + m.hg - m.clientH;
+          if (want > 1) {
+            assert.ok(m.over > 0, `${label}: the cell must really scroll (two-sided)`);
+            assert.ok(Math.abs(m.over - want) <= 1, `${label}: the panel scrolls by ${m.over}px, expected ${want}px`);
+            assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
+          } else {
+            assert.ok(m.over <= 1, `${label}: the panel overflows its own box by ${m.over}px`);
+            assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
+          }
         }
       });
   });
@@ -7667,7 +7726,95 @@ function run() {
       }
     });
 
-    test("the tier buttons are named in full where the label is abbreviated, and grouped as Chord progression", async () => {
+    test("the practice group has a Flash cards heading and a Chord progression heading, in both states", async () => {
+      for (const mode of ["A", "S"]) {
+        await freshLoad();
+        await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode, tier: "basic" }))}); return true;`);
+        await navigate();
+        await openSettingsPanel();
+        const r = await b.eval(`
+          const panel = document.getElementById("settings-panel");
+          const group = document.querySelector("#settings-panel > .panel-group");
+          const all = [...panel.querySelectorAll("h3")];
+          const inGroup = [...group.querySelectorAll(".panel-heading")];
+          const pos = (el) => [...group.querySelectorAll("*")].indexOf(el);
+          const second = document.getElementById("panel-prog-heading");
+          return {
+            h3Count: all.length, h3Texts: all.map((h) => h.textContent.trim()),
+            groupHeadings: inGroup.map((h) => [h.tagName, h.className, h.textContent.trim()]),
+            order: second ? [pos(inGroup[0]) < pos(document.getElementById("modeA")), pos(document.getElementById("modeB")) < pos(second), pos(second) < pos(document.getElementById("tier-basic"))] : null,
+            secondRendered: !!second && second.getClientRects().length > 0,
+            stops: [inGroup.map((h) => h.tabIndex)],
+          };`);
+        assert.deepStrictEqual(r.groupHeadings, [["H3", "panel-heading", "Flash cards"], ["H3", "panel-heading", "Chord progression"]], `mode ${mode}`);
+        assert.deepStrictEqual(r.order, [true, true, true], `mode ${mode}: Flash cards before modeA, Chord progression between modeB and the tiers`);
+        assert.strictEqual(r.secondRendered, true, `mode ${mode}: the second heading renders in both states`);
+        assert.strictEqual(r.h3Count, 5, `mode ${mode}: five h3 in all`);
+        assert.ok(!r.h3Texts.includes("Practice"), `mode ${mode}: no heading is named Practice`);
+        assert.ok(r.stops[0].every((t) => t === -1), `mode ${mode}: a heading is a Tab stop`);
+      }
+    });
+
+    describe("T-HEAD: the two headings in both font modes", () => {
+      const fontsFor = {};
+      before(async () => {
+        const pf = require("../tools/probe/panel_fit.js");
+        for (const fm of ["fallback", "real"]) {
+          const br = await launch({ realFonts: fm === "real" });
+          assert.ok(br);
+          await pf.prepareBrowser(br, URL);
+          pf.checkFontMode(fm, await br.eval(`return window.__pf.fonts();`));
+          fontsFor[fm] = br;
+        }
+      });
+      after(async () => { for (const br of Object.values(fontsFor)) await br.close(); });
+
+      const probe = `
+        const hs = [...document.querySelector("#settings-panel > .panel-group").querySelectorAll(".panel-heading")];
+        const scales = document.querySelector("#panel-scales-group .panel-heading");
+        const style = (el) => { const c = getComputedStyle(el); return [c.fontFamily, c.fontSize, c.fontWeight, c.color, c.letterSpacing, c.textTransform].join("|"); };
+        const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
+          return new Set([...r.getClientRects()].map((k) => Math.round(k.top))).size; };
+        const second = document.getElementById("panel-prog-heading");
+        const modebar = document.querySelector(".modebar"), tierbar = document.querySelector(".tierbar");
+        return {
+          texts: hs.map((h) => h.textContent.trim()), tags: hs.map((h) => h.tagName),
+          lines: hs.map(lines), same: hs.map((h) => style(h) === style(scales)),
+          above: second.getBoundingClientRect().top - modebar.getBoundingClientRect().bottom,
+          below: tierbar.getBoundingClientRect().top - second.getBoundingClientRect().bottom,
+          inside: second.getBoundingClientRect().right <= document.getElementById("settings-panel").getBoundingClientRect().right,
+        };`;
+
+      test("both headings are h3.panel-heading on one line, styled as the Scales heading, with twice the gap above the second as below it", async () => {
+        for (const [fm, br] of Object.entries(fontsFor)) {
+          for (const [w, h] of [[320, 568], [568, 320], [1024, 700]]) {
+            await br.setViewport(w, h, false);
+            await br.settle();
+            await br.eval(`window.__pf.one("A"); return true;`);
+            const r = await br.eval(probe);
+            const where = `${fm} ${w}x${h}`;
+            assert.deepStrictEqual(r.texts, ["Flash cards", "Chord progression"], where);
+            assert.deepStrictEqual(r.tags, ["H3", "H3"], where);
+            assert.deepStrictEqual(r.lines, [1, 1], where + ": each heading is one line of text");
+            assert.deepStrictEqual(r.same, [true, true], where + ": no new label style");
+            assert.ok(Math.abs(r.above - 2 * r.below) <= 0.5, `${where}: gap above ${r.above}, below ${r.below}`);
+            assert.ok(r.inside, where);
+          }
+        }
+      });
+
+      test("a heading that wraps is seen as wrapping (the one-line check can fail)", async () => {
+        const br = fontsFor.fallback;
+        await br.setViewport(320, 568, false);
+        await br.settle();
+        await br.eval(`window.__pf.one("A"); document.getElementById("panel-prog-heading").style.width = "40px"; return true;`);
+        const r = await br.eval(probe);
+        await br.eval(`document.getElementById("panel-prog-heading").style.width = ""; return true;`);
+        assert.ok(r.lines[1] > 1, "a narrowed 'Chord progression' must report more than one line");
+      });
+    });
+
+    test("the tier buttons are named as drawn and grouped under the Chord progression heading", async () => {
       const cases = [[380, 740, true, false], [568, 320, true, true], [1280, 800, false, true]];
       try {
         for (const [w, h, m] of cases) {
@@ -7681,6 +7828,11 @@ function run() {
           const btns = nodes.filter((n) => n.role && n.role.value === "button" && !n.ignored
             && ["EASY", "MEDIUM", "HARD"].includes((n.name && n.name.value || "").trim()));
           assert.deepStrictEqual(btns.map((n) => n.name.value.trim()).sort(), ["EASY", "HARD", "MEDIUM"], `${w}x${h}: tier names`);
+          const src = await b.eval(`const g = document.querySelector(".tierbar");
+            return { labelledby: g.getAttribute("aria-labelledby"), label: g.getAttribute("aria-label"),
+              heading: document.getElementById("panel-prog-heading") && document.getElementById("panel-prog-heading").textContent.trim() };`);
+          assert.deepStrictEqual(src, { labelledby: "panel-prog-heading", label: null, heading: "Chord progression" },
+            `${w}x${h}: the group's name must come from the visible heading, not from a second string`);
           for (const n of btns) {
             assert.ok(!n.description || !n.description.value, `${w}x${h}: ${n.name.value} has a description`);
             const parent = byId.get(n.parentId);
@@ -10415,5 +10567,134 @@ function run() {
         }
       } finally { await cb.close(); }
     });
+  });
+
+  // D2 step 6b/6c (H-8, H-9; ER-28, ER-31): T-LABEL and T-EDGE, restored from
+  // b8aaf6c^ without the abbreviation clause. T-EDGE's tables are main's own
+  // numbers as literals, measured on origin/main (655a45c) with the oracle's
+  // measuring function, so the test does not drift when main gains the heading.
+  // Per cell and mode: needed = main + H + g within 0.5px (or main + 0 where
+  // L_DELTA says the heading costs `needed` nothing), the first panel group
+  // equals main's group + H + g, and each other group equals main's. H is the
+  // second heading's height and g its computed margin-top; H + g must not
+  // exceed the oracle's HEADING_ALLOWANCE_PX.
+  describe("tier row (T-LABEL, T-EDGE)", () => {
+    const pf = require("../tools/probe/panel_fit.js");
+    const fonts = {};
+    before(async () => {
+      for (const fm of ["fallback", "real"]) {
+        const br = await launch({ realFonts: fm === "real" });
+        assert.ok(br, "no browser for " + fm);
+        await pf.prepareBrowser(br, URL);
+        pf.checkFontMode(fm, await br.eval(`return window.__pf.fonts();`));
+        fonts[fm] = br;
+      }
+    });
+    after(async () => { for (const br of Object.values(fonts)) await br.close(); });
+
+    const MAIN_NEEDED_P = {"fallback":{"639x521":[438,438,486],"639x699":[438,438,486],"639x700":[438,438,486],"639x701":[438,438,486],"640x521":[438,438,486],"640x699":[438,438,486],"640x700":[480,480,530],"640x701":[480,480,530],"641x521":[438,438,486],"641x699":[438,438,486],"641x700":[480,480,530],"641x701":[480,480,530],"1023x521":[438,438,486],"1023x699":[438,438,486],"1023x700":[480,480,530],"1023x701":[480,480,530],"1024x521":[438,438,486],"1024x699":[438,438,486],"1025x521":[438,438,486],"1025x699":[438,438,486],"320x568":[490,490,538],"380x740":[438,438,486],"768x1024":[480,480,530]},"real":{"639x521":[442,442,490],"639x699":[442,442,490],"639x700":[442,442,490],"639x701":[442,442,490],"640x521":[442,442,490],"640x699":[442,442,490],"640x700":[484,484,534],"640x701":[484,484,534],"641x521":[442,442,490],"641x699":[442,442,490],"641x700":[484,484,534],"641x701":[484,484,534],"1023x521":[442,442,490],"1023x699":[442,442,490],"1023x700":[484,484,534],"1023x701":[484,484,534],"1024x521":[442,442,490],"1024x699":[442,442,490],"1025x521":[442,442,490],"1025x699":[442,442,490],"320x568":[494,494,542],"380x740":[442,442,490],"768x1024":[484,484,534]}};
+    const MAIN_GROUPS_P = {"fallback":{"639x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x700":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"639x701":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"640x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"640x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"641x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"641x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"641x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"641x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1023x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1023x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1023x700":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1023x701":[[123,67,67,67],[123,67,67,67],[173,67,67,67]],"1024x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1024x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1025x521":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"1025x699":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"320x568":[[117,65,117,65],[117,65,117,65],[165,65,117,65]],"380x740":[[117,65,65,65],[117,65,65,65],[165,65,65,65]],"768x1024":[[123,67,67,67],[123,67,67,67],[173,67,67,67]]},"real":{"639x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x700":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"639x701":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"640x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"640x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"641x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"641x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"641x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"641x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1023x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1023x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1023x700":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1023x701":[[124,68,68,68],[124,68,68,68],[174,68,68,68]],"1024x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1024x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1025x521":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"1025x699":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"320x568":[[118,66,118,66],[118,66,118,66],[166,66,118,66]],"380x740":[[118,66,66,66],[118,66,66,66],[166,66,66,66]],"768x1024":[[124,68,68,68],[124,68,68,68],[174,68,68,68]]}};
+    const MAIN_NEEDED_L = {"fallback":{"320x320":[457,457,504],"320x375":[457,457,504],"320x519":[457,457,504],"320x520":[457,457,504],"427x320":[361,361,423.75],"427x375":[361,361,423.75],"427x519":[361,361,423.75],"427x520":[361,361,423.75],"568x320":[311,311,358],"568x375":[311,311,358],"568x519":[311,311,358],"568x520":[311,311,358],"640x320":[361,361,373.75],"640x375":[361,361,373.75],"640x519":[361,361,373.75],"640x520":[361,361,373.75],"641x320":[361,361,373.75],"641x375":[361,361,373.75],"641x519":[361,361,373.75],"641x520":[361,361,373.75],"1023x320":[188,188,235],"1023x375":[188,188,235],"1023x519":[188,188,235],"1023x520":[188,188,235],"1024x320":[188,188,235],"1024x375":[188,188,235],"1024x519":[188,188,235],"1024x520":[188,188,235],"1280x320":[188,188,235],"1280x375":[188,188,235],"1280x519":[188,188,235],"1280x520":[188,188,235]},"real":{"320x320":[461,461,508],"320x375":[461,461,508],"320x519":[461,461,508],"320x520":[461,461,508],"427x320":[363,363,425.75],"427x375":[363,363,425.75],"427x519":[363,363,425.75],"427x520":[363,363,425.75],"568x320":[313,313,360],"568x375":[313,313,360],"568x519":[313,313,360],"568x520":[313,313,360],"640x320":[363,363,375.75],"640x375":[363,363,375.75],"640x519":[363,363,375.75],"640x520":[363,363,375.75],"641x320":[363,363,375.75],"641x375":[363,363,375.75],"641x519":[363,363,375.75],"641x520":[363,363,375.75],"1023x320":[189,189,236],"1023x375":[189,189,236],"1023x519":[189,189,236],"1023x520":[189,189,236],"1024x320":[189,189,236],"1024x375":[189,189,236],"1024x519":[189,189,236],"1024x520":[189,189,236],"1280x320":[189,189,236],"1280x375":[189,189,236],"1280x519":[189,189,236],"1280x520":[189,189,236]}};
+    const MAIN_GROUPS_L = {"fallback":{"320x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"320x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"427x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"427x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"568x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"568x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"640x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"640x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x320":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x375":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x519":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"641x520":[[114,64,164,114],[114,64,164,114],[176.75,64,164,114]],"1023x320":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x375":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x519":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1023x520":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x320":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x375":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x519":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1024x520":[[114,64,114,66.5],[114,64,114,66.5],[161,64,114,66.5]],"1280x320":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x375":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x519":[[114,64,114,64],[114,64,114,64],[161,64,114,64]],"1280x520":[[114,64,114,64],[114,64,114,64],[161,64,114,64]]},"real":{"320x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"320x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"427x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"427x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"568x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"568x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"640x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"640x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x320":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x375":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x519":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"641x520":[[115,65,165,115],[115,65,165,115],[177.75,65,165,115]],"1023x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1023x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1024x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x320":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x375":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x519":[[115,65,115,65],[115,65,115,65],[162,65,115,65]],"1280x520":[[115,65,115,65],[115,65,115,65],[162,65,115,65]]}};
+    const MAIN_NEEDED_S = {"fallback":{"1024x700":[608,608,673.75],"1024x701":[608,608,673.75],"1025x700":[608,608,673.75],"1025x701":[608,608,673.75],"1280x800":[608,608,673.75],"1280x740":[608,608,673.75]},"real":{"1024x700":[612,612,677.75],"1024x701":[612,612,677.75],"1025x700":[612,612,677.75],"1025x701":[612,612,677.75],"1280x800":[612,612,677.75],"1280x740":[612,612,677.75]}};
+    const MAIN_GROUPS_S = {"fallback":{"1024x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1024x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x800":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x740":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]]},"real":{"1024x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1024x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x800":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x740":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]]}};
+    const L_DELTA = {"fallback":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]},"real":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]}};
+
+    const isLandscape = (w, h) => h <= 520;
+    const isSidebar = (w, h) => w >= 1024 && h >= 700;
+
+    const labelProbe = `
+      const bar = document.querySelector(".tierbar");
+      return { barW: bar.clientWidth, rows: ["tier-basic", "tier-intermediate", "tier-advanced"].map((id) => {
+        const el = document.getElementById(id);
+        const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+        const rg = document.createRange(); rg.selectNodeContents(el);
+        return { id, top: r.top, w: r.width, h: r.height, sw: el.scrollWidth, cw: el.clientWidth,
+          content: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+          text: el.textContent.trim(), textW: rg.getBoundingClientRect().width };
+      }) };`;
+
+    test("every tier label fits its button with 2px to spare, in one row, in both font modes", async () => {
+      const cells = [[320, 568], [380, 740], [768, 1024], [427, 320], [568, 320], [640, 320], [667, 375],
+                     [860, 400], [1024, 700], [1280, 800]];
+      const barWidth = { "320x568": 292, "427x320": 200, "1024x700": 199 };
+      const full = { "tier-basic": "EASY", "tier-intermediate": "MEDIUM", "tier-advanced": "HARD" };
+      const states = [["A", null], ["B", null], ["S", "basic"], ["S", "intermediate"], ["S", "advanced"]];
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [w, h] of cells) {
+          await br.setViewport(w, h, false);
+          await br.settle();
+          for (const [mode, t] of states) {
+            const where = `${fm} ${w}x${h} mode ${mode}${t ? " tier " + t : ""}`;
+            const r = await br.eval(`
+              ${t ? `tier = ${JSON.stringify(t)};` : ""}
+              window.__pf.one(${JSON.stringify(mode)});
+              ${labelProbe}`);
+            if (barWidth[w + "x" + h]) assert.strictEqual(r.barW, barWidth[w + "x" + h], where + ": the tier bar width moved");
+            assert.strictEqual(new Set(r.rows.map((x) => Math.round(x.top * 10))).size, 1, where + ": the tier buttons are not on one row");
+            for (const x of r.rows) {
+              assert.ok(x.sw <= x.cw, where + ": " + x.id + " scrolls horizontally (" + x.sw + " > " + x.cw + ")");
+              assert.strictEqual(x.text, full[x.id], where + ": " + x.id + " draws the wrong string");
+              assert.ok(x.textW <= x.content - 2, where + ": " + x.id + " label " + x.textW + "px has under 2px to spare in " + x.content + "px");
+              assert.ok(Math.abs(x.h - 44) < 0.5, where + ": " + x.id + " is " + x.h + "px tall");
+              assert.ok(x.w >= 44, where + ": " + x.id + " is " + x.w + "px wide");
+            }
+          }
+        }
+      }
+    });
+
+    test("the tier row stays on one row under a 15px classic scrollbar at 1024x700 in progression", async () => {
+      for (const [fm, br] of Object.entries(fonts)) {
+        await br.setViewport(1024, 700, false);
+        await br.settle();
+        await br.eval(`const st = document.createElement("style"); st.id = "pf-classic";
+          st.textContent = "#settings-panel::-webkit-scrollbar{width:15px}"; document.head.appendChild(st); return true;`);
+        try {
+          const r = await br.eval(`window.__pf.one("S"); ${labelProbe}`);
+          assert.strictEqual(new Set(r.rows.map((x) => Math.round(x.top * 10))).size, 1, fm + ": one row under the classic scrollbar");
+          for (const x of r.rows) assert.ok(x.sw <= x.cw, `${fm}: ${x.id} scrolls horizontally under the classic scrollbar (${x.sw} > ${x.cw})`);
+        } finally {
+          await br.eval(`document.getElementById("pf-classic").remove(); return true;`);
+        }
+      }
+    });
+
+    const edgeTest = (needed, groups, belongs, label, delta) => test(`the panel meets its budget at every derived edge in ${label}, in both font modes`, async () => {
+      let n = 0;
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [key, want] of Object.entries(needed[fm])) {
+          const [w, h] = key.split("x").map(Number);
+          assert.ok(belongs(w, h), key + " is not in " + label);
+          await br.setViewport(w, h, false);
+          await br.settle();
+          const got = await br.eval(`
+            return ["A", "B", "S"].map((m) => {
+              const c = window.__pf.one(m);
+              const ph = document.getElementById("panel-prog-heading");
+              return { needed: c.needed,
+                groups: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
+                hg: ph ? ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) : null };
+            });`);
+          ["A", "B", "S"].forEach((m, i) => {
+            n++;
+            const where = `${fm} ${key} mode ${m}`;
+            const g = got[i];
+            assert.ok(g.hg !== null, where + ": there is no #panel-prog-heading");
+            assert.ok(g.hg <= pf.HEADING_ALLOWANCE_PX, `${where}: H + g = ${g.hg} exceeds the oracle's allowance`);
+            const d = delta ? delta[fm][key][i] : 1;
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"}`);
+            const wantG = groups[fm][key][i];
+            assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - wantG[k]) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px`);
+          });
+        }
+      }
+      assert.ok(n > 0);
+    });
+    edgeTest(MAIN_NEEDED_P, MAIN_GROUPS_P, (w, h) => !isLandscape(w, h) && !isSidebar(w, h), "portrait");
+    edgeTest(MAIN_NEEDED_L, MAIN_GROUPS_L, isLandscape, "landscape", L_DELTA);
+    edgeTest(MAIN_NEEDED_S, MAIN_GROUPS_S, isSidebar, "the sidebar");
   });
 }
