@@ -220,3 +220,4 @@ jobs:
         run: |
           git show 655a45c:index.html > /tmp/main.html
           echo "DIAGJSON $(node tools/probe/zz_diag_measure.js /tmp/main.html "$(cat tools/probe/zz_cells.json)")"
+          echo "DIAGCAND $(node tools/probe/zz_diag_measure.js index.html "$(cat tools/probe/zz_cells.json)")"
