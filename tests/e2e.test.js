@@ -8568,16 +8568,25 @@ function run() {
     // "unsupported deck" test in the "sequence mode" describe above.
     test("a NO_TIER_SEQUENCE deck shows a message naming the selected tier", async () => {
       await enterSeqMode();
-      const m = await b.eval(`
-        tier = "advanced";
-        seq = { chords: null, reason: "NO_TIER_SEQUENCE" };
-        render();
-        return { front: document.getElementById("front").innerHTML, back: document.getElementById("back").innerHTML };
-      `);
-      assert.strictEqual(m.front, m.back);
-      assert.match(m.front, /ADVANCED/, "the empty message must name the selected tier");
-      assert.doesNotMatch(m.front, /doesn.t have enough simple chords/,
-        "NO_TIER_SEQUENCE must not reuse the NO_HOME_CHORD/TOO_FEW_CHORDS copy");
+      for (const t of ["basic", "intermediate", "advanced"]) {
+        const m = await b.eval(`
+          tier = ${JSON.stringify(t)};
+          seq = { chords: null, reason: "NO_TIER_SEQUENCE" };
+          render();
+          return {
+            front: document.getElementById("front").innerHTML,
+            back: document.getElementById("back").innerHTML,
+            button: document.getElementById("tier-${t}").textContent.trim()
+          };
+        `);
+        assert.strictEqual(m.front, m.back);
+        assert.match(m.button, /^(EASY|MEDIUM|HARD)$/);
+        assert.ok(m.front.includes(`no ${m.button} progressions`),
+          `the empty message for ${t} must use the button's own spelling "${m.button}"`);
+        assert.doesNotMatch(m.front, /BASIC|INTERMEDIATE|ADVANCED/);
+        assert.doesNotMatch(m.front, /doesn.t have enough simple chords/,
+          "NO_TIER_SEQUENCE must not reuse the NO_HOME_CHORD/TOO_FEW_CHORDS copy");
+      }
     });
 
     // Owner request (2026-10-02): the difficulty engine must apply to

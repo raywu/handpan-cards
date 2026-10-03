@@ -7084,7 +7084,7 @@ function linesHTML(d, ch) {
 // that tier) gets a tier-named message naming the selected difficulty by its
 // button's own all-caps spelling; NO_HOME_CHORD/TOO_FEW_CHORDS (both basic-only
 // reasons - the deck itself can't support a progression) keep the original copy.
-const TIER_LABEL = { basic: "BASIC", intermediate: "INTERMEDIATE", advanced: "ADVANCED" };
+const TIER_LABEL = { basic: "EASY", intermediate: "MEDIUM", advanced: "HARD" };
 function renderSeqEmpty() {
   const msg = (seq && seq.reason === "NO_TIER_SEQUENCE")
     ? `<div class="lines"><div class="hint" style="text-transform:none; letter-spacing:normal">`
