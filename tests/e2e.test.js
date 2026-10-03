@@ -144,7 +144,7 @@ function run() {
               .map(c => ({ text: c.textContent.trim(), on: c.classList.contains("on") }));`);
 
   // The panel has no "mode S" button any more: progression is entered by
-  // tapping a tier, so a test that walks A, B and S taps BASIC for S.
+  // tapping a tier, so a test that walks A, B and S taps EASY for S.
   const modeBtn = (m) => (m === "S" ? "tier-basic" : "mode" + m);
   const stored = () =>
     b.eval(`try { return JSON.parse(localStorage.getItem("hpfc") || "null"); }
