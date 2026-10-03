@@ -292,7 +292,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // D-4: a card is LOW/HIGH iff its subtitle matches this exactly. Applies
   // identically to built-in and generated decks (HPE.select.build / naming.js
-  // pass voicingClass straight into subtitle() on both).
+  // pass voicingClass straight into subtitle() on both). D-14 (owner,
+  // "Starting chords always allowed"): INTERMEDIATE excludes LOW/HIGH cards
+  // EXCEPT the BASIC anchors, which are always admitted, so BASIC nests inside
+  // INTERMEDIATE on every deck; see intermediateGate and tierPool.
   function chordRegister(deck, i) {
     var sub = deck.chords[i].subtitle || "";
     if ((/\b(LOW|HIGH) VOICING\b/).test(sub)) return "register";
@@ -337,11 +340,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return true;
   }
 
-  function intermediateGate(deck, seq, home) {
+  function intermediateGate(deck, seq, home, anchorsList) {
     if (seq.length !== 3 && seq.length !== 4) return false;
     if (chordRootPc(deck, seq[0]) !== home) return false;
     if (hasForbiddenRepeat(deck, seq, true)) return false;
     for (var i = 0; i < seq.length; i += 1) {
+      if (anchorsList.indexOf(seq[i]) >= 0) continue;
       if (deck.chords[seq[i]].fields.length > 4) return false;
       if (chordRegister(deck, seq[i]) !== "") return false;
     }
@@ -378,7 +382,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (basicGate(deck, chords, ctx.anchorsList, ctx.homeAnchorIdx)) {
       return "basic";
     }
-    if (intermediateGate(deck, chords, ctx.home)) {
+    if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
       return "intermediate";
     }
     if (n >= 3) return "advanced";
@@ -401,11 +405,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return classifyTier(deck, chords, ctx);
   }
 
-  function tierPool(deck, tier) {
+  function tierPool(deck, tier, anchorsList) {
     var n = deck.chords.length;
     var out = [];
     for (var i = 0; i < n; i += 1) {
-      if (tier === "advanced" ||
+      if (tier === "advanced" || anchorsList.indexOf(i) >= 0 ||
           (deck.chords[i].fields.length <= 4 && chordRegister(deck, i) === "")) {
         out.push(i);
       }
@@ -479,7 +483,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // search that hits the budget ... reports the length empty only if it
   // found nothing".
   function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
-    var pool = tierPool(deck, tier);
+    var pool = tierPool(deck, tier, ctx.anchorsList);
     var startSet = tierStartSet(deck, tier, pool);
     if (!startSet.length || !pool.length) return { seq: null, empty: true };
 

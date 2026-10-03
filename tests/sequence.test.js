@@ -1061,7 +1061,7 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
   const homeAnchorIdx = I.homeAnchor(pygmy, anchorsList);
   const ctx = { anchorsList, home, homeAnchorIdx };
   for (const tier of ["intermediate", "advanced"]) {
-    const pool = I.tierPool(pygmy, tier);
+    const pool = I.tierPool(pygmy, tier, anchorsList);
     const startSet = I.tierStartSet(pygmy, tier, pool);
     for (const len of TIER_LENGTHS[tier]) {
       function accept(seq) {
