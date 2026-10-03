@@ -357,20 +357,26 @@ a.mode{text-decoration:none}
      (2026-10-02, owner nit). Zero it here; the grid's own row placement
      already gives each group its real gap. */
   #panel-tier-group{margin-top:0}
-  /* Bounce 5 (reviewer FAIL #4): the tierbar word-wrap fix below was
-     previously scoped to max-width:600px only (the single width this grid
-     was believed to force into a narrow-enough column to wrap INTERMEDIATE
-     onto a second tierbar row), but the reorder two rules below can now
-     land Difficulty in the grid's leftover row at 3-column widths too
-     (740-844px measured), where its OWN column is just as narrow as at
-     600px and wraps the same way - 112.75px instead of 94px, the entire
-     regression at those widths. The column width that triggers the wrap is
-     a function of how many columns auto-fit computes, not of the viewport
-     width directly, so this trim is cheap (padding/letter-spacing only, no
-     functional change, the >=44px hit-target floor untouched) and safe to
-     apply unconditionally wherever this grid is active, rather than trying
-     to track every width band that can produce a narrow-enough column. */
-  .tierbar .mode{padding:7px 5px 6px; letter-spacing:.03em}
+  /* Bounce 5 follow-up correction: an earlier version of this fix moved the
+     tierbar word-wrap trim (.tierbar .mode padding/letter-spacing, below in
+     the max-width:600px block) out to unconditional here, reasoning that
+     the reorder could land Difficulty in a narrow leftover column at
+     740-844px widths too. Verified wrong: the reorder two rules below is
+     sufficient on its own at every width this breakpoint produces (740-926,
+     both real and fallback fonts, over=0 at every previously-regressed
+     cell with the trim scoped back down) - the trim was never load-bearing
+     there. Worse, applying it unconditionally also reaches 812px wide,
+     392px tall and NARROWER (the committed D-9 test's own landscape-grid
+     cell, 812x375), where the trim's whole point - letting INTERMEDIATE's
+     word fit without forcing ADVANCED onto its own tierbar row - collapses
+     the 2+1 wrap that test asserts must stay a wrap (row:false) in that
+     column width, a real behavior change with no equivalent test case in
+     the reviewer's settings-panel-overflow sweep to catch it. The trim
+     stays exactly where it always was: scoped to max-width:600px, the one
+     band (568px wide, 2 columns) where fallback-font measurement shows it
+     is still load-bearing (removing it there reopens FAIL #4 up to 40px,
+     #deck-add offscreen, in fallback fonts specifically - real fonts do not
+     need it even at 568px, but fallback does). */
   /* Bounce 5 (reviewer FAIL #4): this grid's auto-placement pairs items by
      SOURCE order into however many columns auto-fit computes at the current
      width, and adding the Difficulty group shifted every later group by one
@@ -434,10 +440,20 @@ a.mode{text-decoration:none}
    fix (the heading-alignment nit above) from being reshuffled by the
    reorder above. */
 @media (max-height:520px) and (max-width:600px){
-  /* The tierbar word-wrap trim (.tierbar .mode padding/letter-spacing) that
-     used to live here is now unconditional, in the base max-height:520px
-     block above - see the bounce-5 comment there; this breakpoint no
-     longer needs its own copy. */
+  /* 568x320 mode A overflowed the panel by 64px (scrollH 384 vs clientH
+     320) before this rule: in its own ~270px grid column, INTERMEDIATE's
+     unbroken word at the base padding/letter-spacing forces ADVANCED onto
+     a second tierbar row, adding a whole extra 44px+gap row to the group
+     (2026-10-02, owner nit - restore main's pre-Difficulty-group fit).
+     Trimming horizontal padding and letter-spacing (min-height:44px, the
+     >=44px hit-target floor, is untouched) narrows all three buttons just
+     enough to keep them on one row at this column width. Bounce-5 follow-up
+     correction (see the base max-height:520px block's comment on
+     #panel-tier-group above): a brief detour made this unconditional, on
+     the mistaken belief it was also needed at 740-844px wide; it stays
+     scoped here, the one band (568px wide, fallback fonts) where it is
+     actually load-bearing. */
+  .tierbar .mode{padding:7px 5px 6px; letter-spacing:.03em}
   /* Even with the reorder above (now shared with every column count)
      removing the wasted odd-row-out, the grid's inherited base gap
      (--sp-3, 9px here) and padding-bottom still leave this breakpoint over
