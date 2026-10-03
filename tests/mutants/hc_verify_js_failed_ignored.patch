@@ -9,7 +9,7 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -680,11 +680,6 @@ def verify_js(data):
+@@ -778,11 +778,6 @@ def verify_js(data):
          total_counted += total
          if total < floor:
              problems.append(f"{path}: only {total} tests ran, floor is {floor}")
@@ -18,6 +18,6 @@ diff --git a/tests/suite_health.py b/tests/suite_health.py
 -        # non-zero exit code (F2, 2026-10-01).
 -        if failed or cancelled or returncode:
 -            problems.append(f"{path}: suite is not green")
+             for name in entry.get("failing_tests", [])[:FAILING_MAX_ENTRIES]:
+                 problems.append(f"{path}: FAILED: {str(name)[:FAILING_ENTRY_CHARS]}")
          if skipped:
-             browser_skips = entry.get("browser_skips", 0)
-             if have_browser or browser_skips < skipped:

@@ -40,7 +40,7 @@ FLOORS = {
     "tests/test_print.py": 40,
     "tests/test_render_agreement.py": 24,
     "tests/test_fixture_integrity.py": 6,
-    "tests/test_failure_diagnosability.py": 11,
+    "tests/test_failure_diagnosability.py": 18,
     "tests/test_readme_currency.py": 6,
     "tests/test_suite_health.py": 18,
     "tests/test_font_subset.py": 7,
@@ -49,7 +49,7 @@ FLOORS = {
     "tests/test_pdf_parity.py": 11,
     # node
     "tests/app.test.js": 193,
-    "tests/e2e.test.js": 190,
+    "tests/e2e.test.js": 251,
     "tests/harness.test.js": 9,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 49,
@@ -206,6 +206,65 @@ def excerpt(out):
     return (out[:EXCERPT_HEAD]
             + f"\n... [{elided} characters elided] ...\n"
             + out[-EXCERPT_TAIL:])
+
+
+# excerpt() elides the middle of a long stream, and the middle is where a lone
+# failure's name can sit (H4: ff0ea50 attempt 1, `ran 256, failed 1`, name
+# unrecoverable). The failing tests are therefore listed on their own, with
+# their own caps: at most FAILING_MAX_ENTRIES tests, each at most
+# FAILING_ENTRY_CHARS characters (the name, then the first diagnostic line).
+# The count of those left off is recorded, so a truncated list says so.
+FAILING_MAX_ENTRIES = 20
+FAILING_ENTRY_CHARS = 300
+
+_TAP_NOT_OK = re.compile(r"^\s*not ok \d+ - (.*)$")
+_TAP_ANY_RESULT = re.compile(r"^\s*(?:not )?ok \d+\b|^\s*# Subtest:")
+_TAP_DIRECTIVE = re.compile(r"\s+# (?:SKIP|TODO)\b.*$", re.I)
+
+
+def _entry(name, detail):
+    text = name if not detail else f"{name} -- {detail}"
+    if len(text) > FAILING_ENTRY_CHARS:
+        text = text[:FAILING_ENTRY_CHARS - 3] + "..."
+    return text
+
+
+def failing_tests(tap):
+    """-> (entries, omitted): every `not ok` test in a TAP stream as
+    "name -- first diagnostic line", bounded by FAILING_MAX_ENTRIES and
+    FAILING_ENTRY_CHARS. A suite-level `not ok` that only reports that a
+    subtest failed is skipped: the failing subtest is already listed."""
+    lines = tap.splitlines()
+    found = []
+    for i, line in enumerate(lines):
+        m = _TAP_NOT_OK.match(line)
+        if not m or _TAP_DIRECTIVE.search(m.group(1)):
+            continue
+        name = m.group(1).strip()
+        detail = ""
+        subtests_only = False
+        for j in range(i + 1, len(lines)):
+            nxt = lines[j]
+            if _TAP_ANY_RESULT.match(nxt):
+                break
+            if "failureType: 'subtestsFailed'" in nxt:
+                subtests_only = True
+            em = re.match(r"^\s*(?:error|message):\s*(.*)$", nxt)
+            if em and not detail:
+                detail = em.group(1).strip()
+                if detail in ("|", "|-", "|+", ">", ">-"):
+                    detail = next((l.strip() for l in lines[j + 1:j + 6]
+                                   if l.strip()), "")
+        if not subtests_only:
+            found.append(_entry(name, detail))
+    return found[:FAILING_MAX_ENTRIES], max(0, len(found) - FAILING_MAX_ENTRIES)
+
+
+def print_failing(entries, omitted, indent="  "):
+    for e in entries:
+        print(f"{indent}FAILED: {e}")
+    if omitted:
+        print(f"{indent}... and {omitted} more failing test(s) not listed")
 
 
 # A timed-out suite is SIGTERMed first, and only then SIGKILLed. The suite's own
@@ -452,6 +511,7 @@ def check_node():
         if failed or cancelled or returncode:
             print(f"--- {path}: failed={failed} cancelled={cancelled} "
                   f"exit={returncode}, its own output follows ---")
+            print_failing(*failing_tests(out))
             print(excerpt(out))
             print(f"--- end of {path} output ---")
             problems.append(f"{path}: suite is not green")
@@ -502,6 +562,12 @@ def check_node():
 # path a developer invokes directly with no CI plumbing at all.
 
 
+def _last_line(traceback_text):
+    """The assertion message is the traceback's last non-blank line."""
+    lines = [l.strip() for l in traceback_text.splitlines() if l.strip()]
+    return lines[-1] if lines else ""
+
+
 def collect_python():
     """Run every python suite once; return raw per-file data, no FLOORS applied."""
     loader = unittest.TestLoader()
@@ -512,7 +578,11 @@ def collect_python():
     runner = unittest.TextTestRunner(verbosity=0, stream=captured,
                                      resultclass=PerFileResult)
     result = runner.run(suite)
+    bad = [(t, tb) for t, tb in result.failures + result.errors]
+    listed = [_entry(str(t), _last_line(tb)) for t, tb in bad]
     return {
+        "failing_tests": listed[:FAILING_MAX_ENTRIES],
+        "failing_tests_omitted": max(0, len(listed) - FAILING_MAX_ENTRIES),
         "total_run": result.testsRun,
         "by_module": result.by_module,
         "skipped": [str(s[0]) for s in result.skipped],
@@ -543,6 +613,8 @@ def emit_python(outfile):
     print(f"python: ran {data['total_run']}, skipped {len(data['skipped'])}, "
           f"failures {data['failures']}, errors {data['errors']}, "
           f"unexpected successes {data['unexpected_successes']}")
+    print_failing(data.get("failing_tests", []),
+                  data.get("failing_tests_omitted", 0))
     if data["output_excerpt"]:
         print(data["output_excerpt"])
     return 1 if (data["failures"] or data["errors"]
@@ -577,6 +649,7 @@ def collect_js():
         # reads this artifact instead of re-running node, can see it too.
         if failed or cancelled or returncode:
             entry["output_excerpt"] = excerpt(out)
+            entry["failing_tests"], entry["failing_tests_omitted"] = failing_tests(out)
             any_red = True
         files[path] = entry
     return {
@@ -606,6 +679,8 @@ def emit_js(outfile):
             continue
         print(f"  {path}: ran {entry['total']}, failed {entry['failed']}, "
               f"skipped {entry['skipped']}")
+        print_failing(entry.get("failing_tests", []),
+                      entry.get("failing_tests_omitted", 0), indent="    ")
         if entry.get("output_excerpt"):
             print(entry["output_excerpt"])
     return 1 if any_red else 0
@@ -708,6 +783,8 @@ def verify_js(data):
         # non-zero exit code (F2, 2026-10-01).
         if failed or cancelled or returncode:
             problems.append(f"{path}: suite is not green")
+            for name in entry.get("failing_tests", [])[:FAILING_MAX_ENTRIES]:
+                problems.append(f"{path}: FAILED: {str(name)[:FAILING_ENTRY_CHARS]}")
         if skipped:
             browser_skips = entry.get("browser_skips", 0)
             if have_browser or browser_skips < skipped:
