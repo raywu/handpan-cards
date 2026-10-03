@@ -11,7 +11,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1080,7 +1080,7 @@ button.nav:active{background:#2e281e}
+@@ -1237,7 +1237,7 @@ footer.seq{row-gap:var(--sp-1)}
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
  <div id="settings-scrim" hidden></div>
@@ -19,4 +19,4 @@ diff --git a/index.html b/index.html
 +<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
    <h2 id="settings-title" class="sr-only">Settings</h2>
    <div class="panel-group">
-     <h3 class="panel-heading">Practice</h3>
+     <h3 class="panel-heading">Flash cards</h3>
