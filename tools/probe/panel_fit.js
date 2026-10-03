@@ -685,6 +685,7 @@ async function main(argv) {
 module.exports = {
   OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
+  MEASURE_SRC, Root, readRoot,
 };
 
 if (require.main === module) {

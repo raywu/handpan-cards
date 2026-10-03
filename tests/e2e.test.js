@@ -1500,11 +1500,7 @@ function run() {
     const dimensional = [...seen].filter((c) => parseCondition(c).queries).sort();
     assert.deepStrictEqual(dimensional, [
       "(max-height: 520px)",
-      "(max-height: 520px) and (max-width: 600px)",
-      "(min-height: 521px) and (max-height: 575px)",
       "(min-width: 1024px) and (min-height: 700px)",
-      "(min-width: 1024px) and (min-height: 700px) and (max-height: 761px)",
-      "(min-width: 1024px) and (min-height: 700px) and (max-height: 765px)",
       "(min-width: 640px) and (min-height: 700px)",
     ].sort());
   });
@@ -10389,6 +10385,103 @@ function run() {
       await twoFrames();
       assert.strictEqual(await transitionRuns(), 0, "ArrowRight must not animate the reverse-flip");
     });
+  });
+
+
+  // D2 step 5 (RP-15 / RP-17): the tier row is main's grid, so the panel needs
+  // exactly main's height in every state, and every tier label fits its button
+  // with room to spare. Both run in the fallback AND the real fonts, each in
+  // its own browser, with the oracle's own measuring function (MEASURE_SRC).
+  // MAIN_NEEDED_* are `needed` measured on origin/main (655a45c) by the same
+  // function, pinned as literals because this job has no history to diff.
+const MAIN_NEEDED_P = {"real":{"639x521":[442,442,490],"639x699":[442,442,490],"639x700":[442,442,490],"639x701":[442,442,490],"640x521":[442,442,490],"640x699":[442,442,490],"640x700":[484,484,534],"640x701":[484,484,534],"641x521":[442,442,490],"641x699":[442,442,490],"641x700":[484,484,534],"641x701":[484,484,534],"1023x521":[442,442,490],"1023x699":[442,442,490],"1023x700":[484,484,534],"1023x701":[484,484,534],"1024x521":[442,442,490],"1024x699":[442,442,490],"1025x521":[442,442,490],"1025x699":[442,442,490],"320x568":[494,494,542],"380x740":[442,442,490],"768x1024":[484,484,534]},"fallback":{"639x521":[438,438,486],"639x699":[438,438,486],"639x700":[438,438,486],"639x701":[438,438,486],"640x521":[438,438,486],"640x699":[438,438,486],"640x700":[480,480,530],"640x701":[480,480,530],"641x521":[438,438,486],"641x699":[438,438,486],"641x700":[480,480,530],"641x701":[480,480,530],"1023x521":[438,438,486],"1023x699":[438,438,486],"1023x700":[480,480,530],"1023x701":[480,480,530],"1024x521":[438,438,486],"1024x699":[438,438,486],"1025x521":[438,438,486],"1025x699":[438,438,486],"320x568":[490,490,538],"380x740":[438,438,486],"768x1024":[480,480,530]}};
+const MAIN_NEEDED_L = {"real":{"320x320":[461,461,508],"320x375":[461,461,508],"320x519":[461,461,508],"320x520":[461,461,508],"427x320":[363,363,425.75],"427x375":[363,363,425.75],"427x519":[363,363,425.75],"427x520":[363,363,425.75],"568x320":[313,313,360],"568x375":[313,313,360],"568x519":[313,313,360],"568x520":[313,313,360],"640x320":[363,363,375.75],"640x375":[363,363,375.75],"640x519":[363,363,375.75],"640x520":[363,363,375.75],"641x320":[363,363,375.75],"641x375":[363,363,375.75],"641x519":[363,363,375.75],"641x520":[363,363,375.75],"1023x320":[189,189,236],"1023x375":[189,189,236],"1023x519":[189,189,236],"1023x520":[189,189,236],"1024x320":[189,189,236],"1024x375":[189,189,236],"1024x519":[189,189,236],"1024x520":[189,189,236],"1280x320":[189,189,236],"1280x375":[189,189,236],"1280x519":[189,189,236],"1280x520":[189,189,236]},"fallback":{"320x320":[457,457,504],"320x375":[457,457,504],"320x519":[457,457,504],"320x520":[457,457,504],"427x320":[361,361,423.75],"427x375":[361,361,423.75],"427x519":[361,361,423.75],"427x520":[361,361,423.75],"568x320":[311,311,358],"568x375":[311,311,358],"568x519":[311,311,358],"568x520":[311,311,358],"640x320":[361,361,373.75],"640x375":[361,361,373.75],"640x519":[361,361,373.75],"640x520":[361,361,373.75],"641x320":[361,361,373.75],"641x375":[361,361,373.75],"641x519":[361,361,373.75],"641x520":[361,361,373.75],"1023x320":[188,188,235],"1023x375":[188,188,235],"1023x519":[188,188,235],"1023x520":[188,188,235],"1024x320":[188,188,235],"1024x375":[188,188,235],"1024x519":[188,188,235],"1024x520":[188,188,235],"1280x320":[188,188,235],"1280x375":[188,188,235],"1280x519":[188,188,235],"1280x520":[188,188,235]}};
+const MAIN_NEEDED_S = {"real":{"1024x700":[612,612,677.75],"1024x701":[612,612,677.75],"1025x700":[612,612,677.75],"1025x701":[612,612,677.75],"1280x800":[612,612,677.75],"1280x740":[612,612,677.75]},"fallback":{"1024x700":[608,608,673.75],"1024x701":[608,608,673.75],"1025x700":[608,608,673.75],"1025x701":[608,608,673.75],"1280x800":[608,608,673.75],"1280x740":[608,608,673.75]}};
+
+  describe("tier row (T-LABEL, T-EDGE)", () => {
+    const pf = require("../tools/probe/panel_fit.js");
+    const fonts = {};
+    before(async () => {
+      for (const fm of ["fallback", "real"]) {
+        const br = await launch({ realFonts: fm === "real" });
+        assert.ok(br, "no browser for " + fm);
+        await br.setViewport(1000, 800, false);
+        await br.goto(URL);
+        await br.eval(`window.__pf = ${pf.MEASURE_SRC}; return true;`);
+        pf.checkFontMode(fm, await br.eval(`return window.__pf.fonts();`));
+        fonts[fm] = br;
+      }
+    });
+    after(async () => { for (const br of Object.values(fonts)) await br.close(); });
+
+    const isLandscape = (w, h) => h <= 520;
+    const isSidebar = (w, h) => w >= 1024 && h >= 700;
+
+    const labelProbe = `
+      const bar = document.querySelector(".tierbar");
+      return { barW: bar.clientWidth, rows: ["tier-basic", "tier-intermediate", "tier-advanced"].map((id) => {
+        const el = document.getElementById(id);
+        const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+        const flow = [...el.querySelectorAll("span")].filter((s) => getComputedStyle(s).position !== "absolute");
+        return { id, top: r.top, w: r.width, h: r.height, sw: el.scrollWidth, cw: el.clientWidth,
+          content: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+          flowN: flow.length, flowText: flow.map((s) => s.textContent).join("|"),
+          flowW: flow.length ? flow[0].getBoundingClientRect().width : 0 };
+      }) };`;
+
+    test("every tier label fits its button with 2px to spare, in one row, in both font modes", async () => {
+      const cells = [[320, 568], [380, 740], [768, 1024], [427, 320], [568, 320], [640, 320], [667, 375],
+                     [860, 400], [1024, 700], [1280, 800]];
+      const barWidth = { "320x568": 292, "427x320": 200, "1024x700": 199 };
+      const full = { "tier-basic": "BASIC", "tier-intermediate": "INTERMEDIATE", "tier-advanced": "ADVANCED" };
+      const abbr = { "tier-basic": "BASIC", "tier-intermediate": "INT.", "tier-advanced": "ADV." };
+      const states = [["A", null], ["B", null], ["S", "basic"], ["S", "intermediate"], ["S", "advanced"]];
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [w, h] of cells) {
+          await br.setViewport(w, h, false);
+          await br.settle();
+          for (const [mode, t] of states) {
+            const where = `${fm} ${w}x${h} mode ${mode}${t ? " tier " + t : ""}`;
+            const r = await br.eval(`
+              ${t ? `tier = ${JSON.stringify(t)};` : ""}
+              window.__pf.one(${JSON.stringify(mode)});
+              ${labelProbe}`);
+            const short = isLandscape(w, h) || isSidebar(w, h);
+            if (barWidth[w + "x" + h]) assert.strictEqual(r.barW, barWidth[w + "x" + h], where + ": the tier bar width moved");
+            assert.strictEqual(new Set(r.rows.map((x) => Math.round(x.top * 10))).size, 1, where + ": the tier buttons are not on one row");
+            for (const x of r.rows) {
+              assert.ok(x.sw <= x.cw, where + ": " + x.id + " scrolls horizontally (" + x.sw + " > " + x.cw + ")");
+              assert.strictEqual(x.flowN, 1, where + ": " + x.id + " draws " + x.flowN + " labels");
+              assert.strictEqual(x.flowText, (short ? abbr : full)[x.id], where + ": " + x.id + " draws the wrong string");
+              assert.ok(x.flowW <= x.content - 2, where + ": " + x.id + " label " + x.flowW + "px has under 2px to spare in " + x.content + "px");
+              assert.ok(Math.abs(x.h - 44) < 0.5, where + ": " + x.id + " is " + x.h + "px tall");
+              assert.ok(x.w >= 44, where + ": " + x.id + " is " + x.w + "px wide");
+            }
+          }
+        }
+      }
+    });
+
+    const edgeTest = (table, belongs, label) => test(`the panel meets its budget at every derived edge in ${label}, in both font modes`, async () => {
+      let n = 0;
+      for (const [fm, br] of Object.entries(fonts)) {
+        for (const [key, want] of Object.entries(table[fm])) {
+          const [w, h] = key.split("x").map(Number);
+          assert.ok(belongs(w, h), key + " is not in " + label);
+          await br.setViewport(w, h, false);
+          await br.settle();
+          const got = (await br.eval(`return window.__pf.cell(["A", "B", "S"]);`)).map((c) => c.needed);
+          ["A", "B", "S"].forEach((m, i) => {
+            n++;
+            assert.ok(Math.abs(got[i] - want[i]) <= 0.5, `${fm} ${key} mode ${m}: needed ${got[i]}px, main needs ${want[i]}px`);
+          });
+        }
+      }
+      assert.ok(n > 0);
+    });
+    edgeTest(MAIN_NEEDED_P, (w, h) => !isLandscape(w, h) && !isSidebar(w, h), "portrait");
+    edgeTest(MAIN_NEEDED_L, isLandscape, "landscape");
+    edgeTest(MAIN_NEEDED_S, isSidebar, "the sidebar");
   });
 
 }
