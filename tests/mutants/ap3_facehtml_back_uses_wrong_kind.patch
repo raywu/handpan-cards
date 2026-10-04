@@ -1,0 +1,15 @@
+# kills: AP3-1 faceHTML is the only answer-template builder
+# suite: node --test --test-name-pattern ^AP3-1.faceHTML.is.the.only.answer-template.builder$ tests/app.test.js
+# Mode A's back asks faceHTML for mode B's answer face, so the template is no longer the one answer builder.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7345,7 +7345,7 @@ function render() {
+     renderSeqRail(d);
+   } else if (mode === "A") {
+     front.innerHTML = faceHTML(d, ch, n, "question");
+-    back.innerHTML = faceHTML(d, ch, n, "answer");
++    back.innerHTML = faceHTML(d, ch, n, "answerB");
+   } else {
+     front.innerHTML = faceHTML(d, ch, n, "questionB");
+     back.innerHTML = faceHTML(d, ch, n, "answerB");

@@ -1,6 +1,6 @@
-# kills: rail scroll: a new deal starts at the first chord with scrollLeft 0
-# suite: node --test --test-name-pattern ^rail.scroll..a.new.deal.starts.at.the.first.chord.with.scrollLeft.0 tests/e2e.test.js
-# sameDeal ignores the sequence identity, so a new deal inherits the old rail's scrollLeft instead of starting at 0.
+# kills: AP3-4 the rail keeps its scroll across a re-render of the same deal and resets on a new one
+# suite: node --test --test-name-pattern ^AP3-4.the.rail.keeps.its.scroll.across.a.re-render.of.the.same.deal.and.resets.on.a.new.one$ tests/app.test.js
+# railDiff stops comparing the deal, so a new deal inherits the old scroll position.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

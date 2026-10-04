@@ -6767,7 +6767,7 @@ function selectDeck(id) {
 }
 
 /* ---------------- helpers ---------------- */
-const pc = (d, f) => d.fields[f][2] % 12;
+const pc = (d, f) => HPE.core.pc(d.fields[f][2]);
 function chordSets(d, ch) {
   const pcs = new Set(ch.fields.map(f => pc(d, f)));
   const rpc = pc(d, ch.roots[0]);
@@ -6836,6 +6836,26 @@ function labelRatio(zone) {
 function labelSize(r, zone) { return r * labelRatio(zone); }
 function numSize(rNote) { return rNote * NUM_RATIO; }
 
+/* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
+ * chordSets()'s {blue, green}; C is the deck's colours. */
+function panField(sets, C, x, y, r, id, isBottom) {
+  const st = sets.blue.has(id) ? "root" : sets.green.has(id) ? "tone" : isBottom ? "offb" : "off";
+  let out = "";
+  if (st === "offb")
+    out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#9e9e9e" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+  else
+    out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#000" stroke-width="1.1"/>`;
+  if (st === "root" || st === "tone") {
+    out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.24}"/>`;
+    out += `<circle cx="${x}" cy="${y}" r="${r*0.74}" fill="none" stroke="#000" stroke-width="0.9"/>`;
+  }
+  return out;
+}
+function panLabel(x, y, name, oct, fs, col) {
+  return `<text x="${x}" y="${y + fs*0.34}" text-anchor="middle" fill="${col}"
+      font-family="Nunito Sans, sans-serif" font-size="${fs}">${esc(name)}<tspan
+      font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
+}
 /* ---------------- SVG pan ---------------- */
 /* The scale page selects a note by TAPPING THE PAN, so pan() can emit an
  * optional layer of transparent hit targets over the fields it already drew.
@@ -6855,7 +6875,8 @@ function pan(d, ch, opts) {
   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
   // uses: no chord has been chosen there, so every field draws in its
   // unlit state. The card path always passes a chord and is unaffected.
-  const { blue, green } = ch ? chordSets(d, ch) : { blue: new Set(), green: new Set() };
+  const sets = ch ? chordSets(d, ch) : { blue: new Set(), green: new Set() };
+  const { blue, green } = sets;
   const C = d.colors;
   const hasBottom = !!g.bottom;
   // Generated decks carry the solver's own extent (ENGINE-SPEC section 11);
@@ -6876,25 +6897,6 @@ function pan(d, ch, opts) {
   if (g.inner_ring)
     s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
 
-  function field(x, y, r, id, isBottom) {
-    const st = blue.has(id) ? "root" : green.has(id) ? "tone" : isBottom ? "offb" : "off";
-    let out = "";
-    if (st === "offb")
-      out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#9e9e9e" stroke-width="1.2" stroke-dasharray="3 3"/>`;
-    else
-      out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#000" stroke-width="1.1"/>`;
-    if (st === "root" || st === "tone") {
-      out += `<circle cx="${x}" cy="${y}" r="${r*0.87}" fill="none" stroke="${st==="root"?C.root:C.tone}" stroke-width="${r*0.24}"/>`;
-      out += `<circle cx="${x}" cy="${y}" r="${r*0.74}" fill="none" stroke="#000" stroke-width="0.9"/>`;
-    }
-    return out;
-  }
-  function label(x, y, name, oct, fs, col) {
-    return `<text x="${x}" y="${y + fs*0.34}" text-anchor="middle" fill="${col}"
-      font-family="Nunito Sans, sans-serif" font-size="${fs}">${esc(name)}<tspan
-      font-size="${fs*0.66}" dy="${fs*0.18}">${oct}</tspan></text>`;
-  }
-
   const numFs = numSize(R * g.r_note);
   // The ding has no slot in the layout correction, so it is not selectable and
   // is not counted in the "position N of M" a screen reader reads out.
@@ -6904,17 +6906,17 @@ function pan(d, ch, opts) {
     const [name, oct, , zone, ang, lab] = d.fields[fid];
     if (zone === "ding") {
       const dy = (g.ding_dy || 0) * R, rr = R * g.r_ding;
-      s += field(0, dy, rr, id, false);
-      s += label(0, dy, name, oct, labelSize(rr, zone), "#242424");
+      s += panField(sets, C, 0, dy, rr, id, false);
+      s += panLabel(0, dy, name, oct, labelSize(rr, zone), "#242424");
       continue;
     }
     const isB = zone === "bottom";
     const orb = R * (isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
     const rr  = R * (isB ? g.r_bnote : g.r_note);
     const [x, y] = P(orb, ang);
-    s += field(x, y, rr, id, isB);
+    s += panField(sets, C, x, y, rr, id, isB);
     const lit = blue.has(id) || green.has(id);
-    s += label(x, y, name, oct, labelSize(rr, zone),
+    s += panLabel(x, y, name, oct, labelSize(rr, zone),
                isB && !lit ? "#8a8a8a" : "#242424");
     // numbers
     let nr, col, fs = numFs;
@@ -7208,14 +7210,15 @@ function renderSeqEmpty() {
 // as literal text, not be parsed. The rail's visible text is aria-hidden; a
 // visually-hidden sibling carries the accessible "<name>, chord N of M".
 let railSeq = null, railEl = null;
-function renderSeqRail(d) {
+// railDiff: is this render the same deal as the rail on screen, and where was
+// it scrolled to? Reads the module lets; writes none.
+function railDiff() {
   const countEl = document.getElementById("count");
   const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
-  const keepLeft = sameDeal ? railEl.scrollLeft : 0;
-  railSeq = seq;
-  countEl.classList.add("seq");
-  countEl.textContent = "";
-  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
+  return { sameDeal, keepLeft: sameDeal ? railEl.scrollLeft : 0 };
+}
+// railBuild: the rail, its live region and the current chord's node.
+function railBuild(d) {
   const rail = document.createElement("span");
   rail.className = "seq-rail";
   rail.setAttribute("aria-hidden", "true");
@@ -7241,6 +7244,16 @@ function renderSeqRail(d) {
   const live = document.createElement("span");
   live.className = "sr-only";
   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
+  return { rail, live, curNode };
+}
+function renderSeqRail(d) {
+  const countEl = document.getElementById("count");
+  const { sameDeal, keepLeft } = railDiff();
+  railSeq = seq;
+  countEl.classList.add("seq");
+  countEl.textContent = "";
+  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
+  const { rail, live, curNode } = railBuild(d);
   countEl.appendChild(rail);
   countEl.appendChild(live);
   railEl = rail;
@@ -7270,8 +7283,33 @@ function renderSeqRail(d) {
     });
   }
 }
+// One builder for every card face render() shows. `kind` names the face; the
+// answer template (header + diagram + lines) is written once here and serves
+// mode A's back and mode S's front.
+function faceHTML(d, ch, n, kind) {
+  switch (kind) {
+    case "answer":
+      return headerHTML(d, ch, n) +
+        `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
+    case "question":
+      return headerHTML(d, ch, n) +
+        `<div class="prompt">${nameHTML(ch, true)}
+     <div class="hint">Tap to reveal the notes</div></div>`;
+    case "backS":
+      return headerHTML(d, ch, n) +
+        `<div class="prompt">${nameHTML(ch, true)}</div>`;
+    case "questionB":
+      return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+        `<div class="diagwrap">${pan(d, ch)}</div>
+     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
+    default:
+      return headerHTML(d, ch, n) +
+        `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
+  }
+}
 function render() {
-  if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
+  const inSeq = mode === "S";
+  if (inSeq && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
   if (!order.length) return;
   const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
   document.documentElement.style.setProperty("--root", d.colors.root);
@@ -7290,42 +7328,29 @@ function render() {
   // consts produced for that mode; card_face_v1.json (finding 0) pins every
   // deck x card x mode x face combination, so a text drift here cannot pass
   // silently.
-  if (mode === "S") {
+  const front = document.getElementById("front"), back = document.getElementById("back");
+  if (inSeq) {
     // §8 E5: the front face is mode A's `answer` face, byte for byte - no
     // chord name, no hint. The name lives on the back; the style name/tip no
     // longer live on the card at all - they moved to the static #seq-style
     // paragraph in the footer, filled here via textContent (never innerHTML;
     // style copy is our own string data, but the pattern matches
     // renderSeqRail's "DOM nodes and textContent only" rule).
-    const answer = headerHTML(d, ch, n) +
-      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
-    const backS = headerHTML(d, ch, n) +
-      `<div class="prompt">${nameHTML(ch, true)}</div>`;
-    document.getElementById("front").innerHTML = answer;
-    document.getElementById("back").innerHTML = backS;
+    front.innerHTML = faceHTML(d, ch, n, "answer");
+    back.innerHTML = faceHTML(d, ch, n, "backS");
     document.getElementById("seq-style-name").textContent = styleName;
     document.getElementById("seq-style-tip").textContent = styleTip;
     document.getElementById("seq-style").hidden = false;
     renderSeqRail(d);
   } else if (mode === "A") {
-    const question = headerHTML(d, ch, n) +
-      `<div class="prompt">${nameHTML(ch, true)}
-     <div class="hint">Tap to reveal the notes</div></div>`;
-    const answer = headerHTML(d, ch, n) +
-      `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
-    document.getElementById("front").innerHTML = question;
-    document.getElementById("back").innerHTML  = answer;
+    front.innerHTML = faceHTML(d, ch, n, "question");
+    back.innerHTML = faceHTML(d, ch, n, "answer");
   } else {
-    const questionB = headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
-      `<div class="diagwrap">${pan(d, ch)}</div>
-     <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
-    const answerB = headerHTML(d, ch, n) +
-      `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
-    document.getElementById("front").innerHTML = questionB;
-    document.getElementById("back").innerHTML  = answerB;
+    front.innerHTML = faceHTML(d, ch, n, "questionB");
+    back.innerHTML = faceHTML(d, ch, n, "answerB");
   }
-  if (mode !== "S") {
+  if (!inSeq) {
     document.getElementById("count").classList.remove("seq");
     document.getElementById("count").textContent = `${idx + 1} / ${order.length}`;
   }
@@ -7599,7 +7624,13 @@ function buildDegrees(selected) {
 function layoutIds(fields) {
   const of = (z) => Object.keys(fields).filter((id) => fields[id][3] === z)
     .sort((a, b) => Number(a) - Number(b));
-  return [...of("rim"), ...of("inner"), ...of("bottom")];
+  const byZone = { rim: of("rim"), inner: of("inner"), bottom: of("bottom") };
+  return slotZones(fields).map((z) => byZone[z].shift());
+}
+/** The zone of every slot, from the engine's own slot order. */
+function slotZones(fields) {
+  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
+  return HPE.layout.slotOrder({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") });
 }
 const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
 /** at[slot] = the field sitting in that slot - the inverse of an order. */
@@ -7620,14 +7651,10 @@ function setLayoutOrder(next) {
 const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
 /** The half-open slot range of the zone a slot belongs to. */
 function zoneBlock(fields, slot) {
-  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
-  const rim = count("rim");
-  const inner = count("inner");
-  const n = layoutIds(fields).length;
-  for (const [a, b] of [[0, rim], [rim, rim + inner], [rim + inner, n]]) {
-    if (slot >= a && slot < b) return [a, b];
-  }
-  return [0, 0];
+  const zones = slotZones(fields);
+  const zone = zones[slot];
+  if (zone === undefined) return [0, 0];
+  return [zones.indexOf(zone), zones.lastIndexOf(zone) + 1];
 }
 const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
 

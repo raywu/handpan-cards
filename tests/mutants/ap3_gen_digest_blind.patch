@@ -1,0 +1,15 @@
+# kills: AP3-0 generated faces and rail DOM match the committed digest
+# suite: node --test --test-name-pattern ^AP3-0.generated.faces.and.rail.DOM.match.the.committed.digest$ tests/app.test.js
+# The --gen check stops reporting mismatches, so a drifted generated face or rail passes.
+diff --git a/tools/regen_card_fixture.js b/tools/regen_card_fixture.js
+--- a/tools/regen_card_fixture.js
++++ b/tools/regen_card_fixture.js
+@@ -223,7 +223,7 @@ function diffGen(expected, actual) {
+ function mainGen(htmlPath, check) {
+   const gen = buildGen(htmlPath);
+   if (check) {
+-    const problems = diffGen(JSON.parse(fs.readFileSync(GEN_DEST, "utf8")), gen);
++    const problems = diffGen(JSON.parse(fs.readFileSync(GEN_DEST, "utf8")), gen).slice(0, 0);
+     if (problems.length) {
+       console.error(`gen_face_v1.json is stale against ${htmlPath} (${problems.length} mismatch(es)):`);
+       for (const p of problems) console.error("  " + p);

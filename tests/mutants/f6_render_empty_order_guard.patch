@@ -11,10 +11,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6909,7 +6909,6 @@ function renderSeqRail(d) {
- }
+@@ -7310,7 +7310,6 @@ function faceHTML(d, ch, n, kind) {
  function render() {
-   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
+   const inSeq = mode === "S";
+   if (inSeq && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
 -  if (!order.length) return;
    const d = deck(), n = order[idx] + 1, ch = d.chords[order[idx]];
    document.documentElement.style.setProperty("--root", d.colors.root);

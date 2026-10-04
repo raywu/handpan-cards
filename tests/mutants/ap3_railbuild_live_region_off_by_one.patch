@@ -1,8 +1,6 @@
 # kills: the live region names the current chord and its position: "<name>, chord N of M"
-# suite: node --test --test-name-pattern ^the.live.region.names.the.current.chord.and.its.position....name...chord.N.of.M.$ tests/app.test.js
-# Lane S2. renderSeqRail()'s sr-only live region drops the +1 off `idx`, so a
-# screen reader announces the current chord's position as 0-based ("chord 0
-# of 3" on the first chord) instead of the 1-based count shown in the rail.
+# suite: node --test --test-name-pattern ^the.live.region.names.the.current.chord.and.its.position tests/app.test.js
+# railBuild numbers the live region from 0.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2020,7 +2020,7 @@ function selectDeck(id) {
+@@ -6767,7 +6767,7 @@ function selectDeck(id) {
  }
  
  /* ---------------- helpers ---------------- */
--const pc = (d, f) => d.fields[f][2] % 12;
+-const pc = (d, f) => HPE.core.pc(d.fields[f][2]);
 +const pc = (d, f) => d.fields[f][2];
  function chordSets(d, ch) {
    const pcs = new Set(ch.fields.map(f => pc(d, f)));

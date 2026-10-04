@@ -5259,3 +5259,91 @@ test("AP2-4 setMode and shuffle produce the same label", () => {
   app.run(`setMode("A")`);
   assert.deepStrictEqual(label(), clicked, "leaving S restores the text label");
 });
+
+test("AP3-0 generated faces and rail DOM match the committed digest", () => {
+  const { execFileSync } = require("node:child_process");
+  const tool = path.join(ROOT, "tools", "regen_card_fixture.js");
+  const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "gen_face_v1.json"), "utf8"));
+  const digests = Object.values(fixture.decks).flatMap((d) => Object.values(d.A).map((c) => c.front));
+  assert.ok(new Set(digests).size > 5, "the fixture distinguishes generated decks");
+  assert.notStrictEqual(fixture.rails.basic, fixture.rails.advanced, "the two rails differ");
+  try {
+    execFileSync(process.execPath, [tool, "--gen", "--check"], { stdio: "pipe" });
+  } catch (e) {
+    assert.fail("gen_face_v1.json is stale:\n" + (e.stdout || "") + (e.stderr || ""));
+  }
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.ok(html.includes("Tap to reveal the notes"));
+  const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "ap3-0-"));
+  const drifted = path.join(dir, "index.html");
+  fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
+  assert.throws(
+    () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
+    /Command failed/, "a drifted generated face must fail the check");
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test("AP3-1 faceHTML is the only answer-template builder", () => {
+  const app = boot({ random: () => 0 });
+  app.run(`var __calls = []; var __real = faceHTML;
+    faceHTML = function (d, ch, n, kind) { __calls.push(kind); return __real.apply(this, arguments); };
+    var __pan = pan; var __pans = 0; pan = function () { __pans += 1; return __pan.apply(this, arguments); };`);
+  const seen = {};
+  for (const mode of ["A", "B", "S"]) {
+    app.run(`mode = ${JSON.stringify(mode)}; setOrder(); idx = 0; __calls.length = 0; __pans = 0; render();`);
+    seen[mode] = { calls: plain(app.get("__calls")), pans: app.get("__pans"), front: app.els.front._html, back: app.els.back._html };
+  }
+  assert.deepStrictEqual(seen.A.calls, ["question", "answer"]);
+  assert.deepStrictEqual(seen.B.calls, ["questionB", "answerB"]);
+  assert.deepStrictEqual(seen.S.calls, ["answer", "backS"]);
+  for (const mode of ["A", "B", "S"]) assert.strictEqual(seen[mode].pans, 1, `${mode} builds the pan once`);
+  assert.ok(seen.A.back.includes("diagwrap") && seen.A.back.includes('class="lines"'));
+  assert.ok(seen.S.front.includes("diagwrap") && !seen.S.front.includes("prompt"));
+  assert.ok(seen.B.back.includes("prompt") && seen.B.back.includes('class="lines"'));
+});
+
+test("AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales", () => {
+  const app = boot();
+  let parsed = 0;
+  for (const sc of SCALES) {
+    const fields = app.get(`(function () {
+      var r = HPE.core.parseSeed(${JSON.stringify(sc.string)}, { palette: palette, mirror: mirror });
+      return r.ok ? r.value.fields : null;
+    })()`);
+    if (!fields) continue;
+    parsed += 1;
+    const zoneOf = (id) => fields[id][3];
+    const count = (z) => Object.keys(fields).filter((id) => zoneOf(id) === z).length;
+    const expected = plain(app.get(
+      `HPE.layout.slotOrder(${JSON.stringify({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") })})`));
+    const ids = plain(app.get(`layoutIds(${JSON.stringify(fields)})`));
+    assert.deepStrictEqual(ids.map(zoneOf), expected, `${sc.name}: zone order`);
+    for (const z of ["rim", "inner", "bottom"]) {
+      const run = ids.filter((id) => zoneOf(id) === z).map(Number);
+      assert.deepStrictEqual(run, run.slice().sort((a, b) => a - b), `${sc.name}: ${z} ids ascend`);
+    }
+    expected.forEach((z, slot) => {
+      const first = expected.indexOf(z), last = expected.lastIndexOf(z) + 1;
+      assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${slot})`)), [first, last],
+        `${sc.name}: zoneBlock(${slot})`);
+    });
+    assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${expected.length})`)), [0, 0]);
+  }
+  assert.ok(parsed >= 11, `parsed ${parsed} scales`);
+});
+
+test("AP3-4 the rail keeps its scroll across a re-render of the same deal and resets on a new one", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const first = app.els.count.children[0];
+  first.scrollLeft = 120;
+  app.run("render()");
+  const again = app.els.count.children[0];
+  assert.notStrictEqual(again, first, "the rail is rebuilt");
+  assert.strictEqual(again.scrollLeft, 120, "same deal carries the scroll position");
+  app.run(`seq = { chords: seq.chords.slice(), style: seq.style }; render()`);
+  assert.strictEqual(app.els.count.children[0].scrollLeft || 0, 0, "a new deal starts at 0");
+  assert.strictEqual(app.els.count.children.length, 2, "rail plus live region");
+  assert.strictEqual(app.els.count.children[1].className, "sr-only");
+  assert.ok(app.els.count.classList.contains("seq"));
+});

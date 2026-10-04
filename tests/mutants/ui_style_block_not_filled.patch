@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6759,8 +6759,6 @@ function render() {
-       `<div class="prompt">${nameHTML(ch, true)}</div>`;
-     document.getElementById("front").innerHTML = answer;
-     document.getElementById("back").innerHTML = backS;
+@@ -7339,8 +7339,6 @@ function render() {
+     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
+     front.innerHTML = faceHTML(d, ch, n, "answer");
+     back.innerHTML = faceHTML(d, ch, n, "backS");
 -    document.getElementById("seq-style-name").textContent = styleName;
 -    document.getElementById("seq-style-tip").textContent = styleTip;
      document.getElementById("seq-style").hidden = false;
