@@ -1,0 +1,18 @@
+# kills: US-3 wheel is ignored mid-flight
+# suite: node --test --test-name-pattern ^US-3.wheel.is.ignored.mid-flight$ tests/app.test.js
+# A wheel gesture arriving during a live fly-out is no longer skipped, so 
+# trackpad momentum right after a flight starts a second fly-out and 
+# double-steps.
+diff --git a/index.html b/index.html
+index dae8f7b..3dd8409 100644
+--- a/index.html
++++ b/index.html
+@@ -8877,7 +8877,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+     // is open is skipped for its whole duration (the flag persists until
+     // the 160ms gap, not just for this event), so wheel momentum arriving
+     // right after a flight lands cannot start a fresh gesture and double-step.
+-    const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
++    const skip = !!(drag || panelOpen || sheetOpen || !order.length);
+     wheel = { sx: 0, sy: 0, axis: null, fired: false, skip, timer: null };
+   }
+   if (wheel.timer) clearTimeout(wheel.timer);

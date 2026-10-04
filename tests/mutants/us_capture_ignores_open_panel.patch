@@ -1,0 +1,17 @@
+# kills: US-3 an open panel blocks the capture pointerdown
+# suite: node --test --test-name-pattern ^US-3.an.open.panel.blocks.the.capture.pointerdown$ tests/app.test.js
+# The mid-flight capture pointerdown forgets the panel guard, so a press with 
+# the settings panel open grabs the card behind it.
+diff --git a/index.html b/index.html
+index dae8f7b..7bd5838 100644
+--- a/index.html
++++ b/index.html
+@@ -8921,7 +8921,7 @@ document.addEventListener("pointerdown", e => {
+     // a focused control would otherwise have its own click eaten.
+     setEatClick(inside && e.button === 0);
+     land();
+-    if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
++    if (inside && !drag && e.isPrimary && e.button === 0 && !sheetOpen && order.length) {
+       startDrag(e);
+     }
+   } else {

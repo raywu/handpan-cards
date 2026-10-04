@@ -1,0 +1,16 @@
+# kills: US-1 every app surface name resolves
+# suite: node --test --test-name-pattern ^US-1.every.app.surface.name.resolves$ tests/app.test.js
+# The fixture names a binding the app does not declare, as after a rename that 
+# forgot the fixture. Evaluating it throws ReferenceError inside the test.
+diff --git a/tests/fixtures/app_surface_v1.json b/tests/fixtures/app_surface_v1.json
+index c6957fb..0f4e9d3 100644
+--- a/tests/fixtures/app_surface_v1.json
++++ b/tests/fixtures/app_surface_v1.json
+@@ -2,6 +2,7 @@
+   "_what": "Bare names the unit and e2e suites read through app.get / app.run / b.eval, each a top-level declaration in index.html.",
+   "_why": "A rename of any of these would leave the tests that read it throwing ReferenceError deep inside an unrelated assertion. This pins the surface before the app-side refactor lanes move code. It asserts only that evaluating the name does not throw a ReferenceError, NOT that it is defined: scene is legitimately undefined in the default boot.",
+   "names": [
++    "usBogusSurfaceName",
+     "CUSTOM",
+     "DECKS",
+     "HPE",

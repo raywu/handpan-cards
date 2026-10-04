@@ -1,0 +1,17 @@
+# kills: US-3 a fast flick past threshold flies out
+# suite: node --test --test-name-pattern ^US-3.a.fast.flick.past.threshold.flies.out$ tests/app.test.js
+# release() never computes a release velocity, so a short fast flick (15px, 
+# under the 18px drag threshold) reads as a slow drag and springs back.
+diff --git a/index.html b/index.html
+index dae8f7b..516db7c 100644
+--- a/index.html
++++ b/index.html
+@@ -8752,7 +8752,7 @@ function release(e, cancelled, pushPoint = true) {
+   let vx = 0;
+   if (pts.length >= 2) {
+     const span = pts[pts.length - 1].t - pts[0].t;
+-    if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
++    if (false) vx = (pts[pts.length - 1].x - pts[0].x) / span;
+   }
+   const dx = drag.last;
+   const dy = drag.lastY;
