@@ -881,3 +881,27 @@ test("an over-cap pan is still TOO_MANY_RIM, order or no order", () => {
     assert.equal(res.code, "TOO_MANY_RIM");
   }
 });
+
+test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
+  const core = HPE.core;
+  const angles = (seed, zone, options) => {
+    const solved = HPE.layout.solve(core.parseSeed(seed).value, options);
+    assert.equal(solved.ok, true);
+    return Object.keys(solved.value.fields)
+      .filter((id) => solved.value.fields[id][3] === zone)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((id) => solved.value.fields[id][4]);
+  };
+  const host = (v) => JSON.parse(JSON.stringify(v));
+
+  assert.deepEqual(host(HPE.layout.rimAngles(9)), [290, 250, 330, 210, 10, 170, 50, 130, 90]);
+  assert.deepEqual(host(HPE.layout.bottomAngles(6)), [300, 240, 0, 180, 60, 120]);
+  assert.deepEqual(host(HPE.layout.innerAngles(2)), [128, 52]);
+
+  const mirroredEight = [270, 225, 315, 180, 0, 135, 45, 90];
+  assert.deepEqual(angles("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", "rim", { mirror: true }), mirroredEight);
+  assert.deepEqual(angles("(D3) A3 C4 D4 E4 F4 G4 A4 C5", "rim", { mirror: true }), mirroredEight);
+  assert.deepEqual(
+    angles("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5", "bottom"),
+    [300, 240, 0, 180, 60, 120]);
+});

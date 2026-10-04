@@ -803,3 +803,10 @@ test("ET-1 engine corpus matches", () => {
   const stale = run("--fixture", tmp);
   assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
 });
+
+test("ET-2 fifthName", () => {
+  const cases = [["C", "", "G"], ["D", "b", "Ab"], ["B", "", "F#"], ["F", "b", "Cb"], ["A", "#", "E#"]];
+  for (const [letter, accidental, fifth] of cases) {
+    assert.equal(core.fifthName(letter, accidental), fifth, `${letter}${accidental}`);
+  }
+});
