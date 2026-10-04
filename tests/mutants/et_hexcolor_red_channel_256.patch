@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^ET-2.hexColor/bankers$ tests/pdfcards.test.js
+# kills: ET-2 hexColor/bankers
+# The red channel is divided by 256, so no colour can reach full red and print palettes drift from the app.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -64,7 +64,7 @@ HPE.pdfdeck = (function () {
+   function hexColor(value) {
+     var s = String(value).replace(/^#/, "");
+     if (s.length !== 6) throw new Error("not a #RRGGBB colour: " + value);
+-    return [parseInt(s.slice(0, 2), 16) / 255.0,
++    return [parseInt(s.slice(0, 2), 16) / 256.0,
+             parseInt(s.slice(2, 4), 16) / 255.0,
+             parseInt(s.slice(4, 6), 16) / 255.0];
+   }

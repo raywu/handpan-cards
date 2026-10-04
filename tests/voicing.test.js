@@ -589,3 +589,15 @@ test("choose rejects a pitch class the pan does not carry, with a spec code", ()
   assert.ok(!noRoot.reason.includes("<X>"),
     `reason must not contain a literal substitution placeholder: ${noRoot.reason}`);
 });
+
+test("ET-2 reduceIntervals", () => {
+  const host = (v) => JSON.parse(JSON.stringify(v));
+  assert.deepEqual(host(V.reduceIntervals([7, 0, 4, 0])), [0, 4, 7], "dedupe and sort");
+  assert.deepEqual(host(V.reduceIntervals([0, 4, 7, 10, 14, 17, 21])), [0, 4, 7, 10, 17, 21],
+    "7 notes: the lowest extension (the 9) goes first");
+  assert.deepEqual(host(V.reduceIntervals([0, 4, 7, 10, 14, 17, 21, 23])), [0, 4, 7, 10, 21, 23],
+    "8 notes: the 9 then the 11 go, the 13 stays");
+  assert.deepEqual(host(V.reduceIntervals([0, 2, 4, 5, 7, 9, 11])), [0, 2, 4, 5, 7, 9, 11],
+    "a chord tone is never dropped, even past six notes");
+  assert.throws(() => V.reduceIntervals([0, 4, 12]), /repeats a pitch class/);
+});

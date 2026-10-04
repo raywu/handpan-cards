@@ -313,3 +313,18 @@ test("fromGenerated throws when geom.ext is missing, rather than silently defaul
     /geom\.ext/,
     "fromGenerated must throw, not fall back to a default R");
 });
+
+test("ET-2 hexColor/bankers", () => {
+  const { bankers, hexColor } = HPE.pdfdeck;
+  assert.strictEqual(bankers(1.05, 1), 1.1, "the double nearest 1.05 is above the tie");
+  assert.strictEqual(bankers(0.25, 1), 0.2, "exact tie rounds to the even digit");
+  assert.strictEqual(bankers(0.35, 1), 0.3, "the double nearest 0.35 is below the tie");
+  assert.strictEqual(bankers(2.5, 0), 2);
+  assert.strictEqual(bankers(3.5, 0), 4);
+  assert.strictEqual(bankers(-2.5, 0), -2);
+  assert.strictEqual(bankers(0.125, 2), 0.12);
+  assert.deepEqual(JSON.parse(JSON.stringify(hexColor("#ff8000"))), [1, 128 / 255, 0]);
+  assert.deepEqual(JSON.parse(JSON.stringify(hexColor("0B7B75"))), [11 / 255, 123 / 255, 117 / 255],
+    "the leading # is optional");
+  assert.throws(() => hexColor("#fff"), /not a #RRGGBB colour/);
+});
