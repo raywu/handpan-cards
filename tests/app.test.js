@@ -5331,3 +5331,19 @@ test("AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales", () =>
   }
   assert.ok(parsed >= 11, `parsed ${parsed} scales`);
 });
+
+test("AP3-4 the rail keeps its scroll across a re-render of the same deal and resets on a new one", () => {
+  const app = boot({ random: () => 0 });
+  app.run('setMode("S")');
+  const first = app.els.count.children[0];
+  first.scrollLeft = 120;
+  app.run("render()");
+  const again = app.els.count.children[0];
+  assert.notStrictEqual(again, first, "the rail is rebuilt");
+  assert.strictEqual(again.scrollLeft, 120, "same deal carries the scroll position");
+  app.run(`seq = { chords: seq.chords.slice(), style: seq.style }; render()`);
+  assert.strictEqual(app.els.count.children[0].scrollLeft || 0, 0, "a new deal starts at 0");
+  assert.strictEqual(app.els.count.children.length, 2, "rail plus live region");
+  assert.strictEqual(app.els.count.children[1].className, "sr-only");
+  assert.ok(app.els.count.classList.contains("seq"));
+});

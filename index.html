@@ -7210,14 +7210,15 @@ function renderSeqEmpty() {
 // as literal text, not be parsed. The rail's visible text is aria-hidden; a
 // visually-hidden sibling carries the accessible "<name>, chord N of M".
 let railSeq = null, railEl = null;
-function renderSeqRail(d) {
+// railDiff: is this render the same deal as the rail on screen, and where was
+// it scrolled to? Reads the module lets; writes none.
+function railDiff() {
   const countEl = document.getElementById("count");
   const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
-  const keepLeft = sameDeal ? railEl.scrollLeft : 0;
-  railSeq = seq;
-  countEl.classList.add("seq");
-  countEl.textContent = "";
-  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
+  return { sameDeal, keepLeft: sameDeal ? railEl.scrollLeft : 0 };
+}
+// railBuild: the rail, its live region and the current chord's node.
+function railBuild(d) {
   const rail = document.createElement("span");
   rail.className = "seq-rail";
   rail.setAttribute("aria-hidden", "true");
@@ -7243,6 +7244,16 @@ function renderSeqRail(d) {
   const live = document.createElement("span");
   live.className = "sr-only";
   live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
+  return { rail, live, curNode };
+}
+function renderSeqRail(d) {
+  const countEl = document.getElementById("count");
+  const { sameDeal, keepLeft } = railDiff();
+  railSeq = seq;
+  countEl.classList.add("seq");
+  countEl.textContent = "";
+  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
+  const { rail, live, curNode } = railBuild(d);
   countEl.appendChild(rail);
   countEl.appendChild(live);
   railEl = rail;
