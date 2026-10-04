@@ -67,14 +67,14 @@ if (builtinId) {
                          "' in data/decks.json\n");
     process.exit(2);
   }
-  const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const HPE = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
   writeDeck(HPE, HPE.pdfdeck.fromBuiltin(deck, deck.print));
 } else {
   let buf = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (d) => { buf += d; });
   process.stdin.on("end", () => {
-    const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
+    const HPE = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
     writeDeck(HPE, HPE.pdfdeck.fromGenerated(JSON.parse(buf)));
   });
 }

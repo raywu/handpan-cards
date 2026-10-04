@@ -1,0 +1,17 @@
+# kills: EG-2 pdfcards takes pc/isDing from core at use time
+# suite: node --test --test-reporter=tap --test-name-pattern ^EG.2.pdfcards.takes.pc.isDing.from.core.at.use.time$ tests/pdfcards.test.js
+# EG-2: core is captured when pdfcards loads instead of when a card draws, so loading before core breaks.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -22,8 +22,9 @@
+ HPE.pdfcards = (function () {
+   "use strict";
+ 
++  var EAGER_CORE = HPE.core;
+   function core() {
+-    return HPE.core;
++    return EAGER_CORE;
+   }
+ 
+   var BLACK = [0, 0, 0];
