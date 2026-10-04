@@ -4282,45 +4282,51 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Object.prototype.toString.call(value) === "[object Array]";
   }
 
-  function solve(seedOrFields, options) {
-    var source = fieldsOf(seedOrFields);
-    var zones = collect(source);
+  /* The solved slot of every non-ding field, in the order collect() yields
+   * them: rim slots, then inner, then bottom. `readOrder` permutes over
+   * exactly this sequence. */
+  function slotOrder(zoneCounts) {
+    var out = [];
+    var i;
+    for (i = 0; i < zoneCounts.rim; i += 1) out.push("rim");
+    for (i = 0; i < zoneCounts.inner; i += 1) out.push("inner");
+    for (i = 0; i < zoneCounts.bottom; i += 1) out.push("bottom");
+    return out;
+  }
 
-    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
-    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
-    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+  function countsOf(zones) {
+    return { rim: zones.rim.length, inner: zones.inner.length, bottom: zones.bottom.length };
+  }
 
-    var seedOptions = (seedOrFields && seedOrFields.options) || {};
-    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+  function mirrored(list, mirror) {
+    var out = [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      out.push(round(mirror ? norm(180 - list[i]) : list[i], 1));
+    }
+    return out;
+  }
 
-    var hasRim = zones.rim.length > 0;
-    var hasInner = zones.inner.length > 0;
-    var hasBottom = zones.bottom.length > 0;
+  /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
+  function placeZones(counts, mirror) {
+    return {
+      rims: mirrored(rimAngles(counts.rim), mirror),
+      inners: mirrored(innerAngles(counts.inner), mirror),
+      bottoms: mirrored(bottomAngles(counts.bottom), mirror)
+    };
+  }
 
-    var wanted = readOrder(
-      (options && "order" in options) ? options.order : seedOptions.order,
-      zones.rim.length + zones.inner.length + zones.bottom.length);
-    if (!wanted.ok) return wanted;
+  function geometry(counts, placed) {
+    var rims = placed.rims;
+    var inners = placed.inners;
+    var bottoms = placed.bottoms;
+    var hasRim = counts.rim > 0;
+    var hasInner = counts.inner > 0;
+    var hasBottom = counts.bottom > 0;
 
     var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
     var innerOrb = hasInner ? INNER_ORB : 0;
     var bottomOrb = hasBottom ? BOTTOM_ORB : 0;
-
-    var rims = rimAngles(zones.rim.length);
-    var inners = innerAngles(zones.inner.length);
-    var bottoms = bottomAngles(zones.bottom.length);
-
-    function finish(list) {
-      var out = [];
-      var i;
-      for (i = 0; i < list.length; i += 1) {
-        out.push(round(mirror ? norm(180 - list[i]) : list[i], 1));
-      }
-      return out;
-    }
-    rims = finish(rims);
-    inners = finish(inners);
-    bottoms = finish(bottoms);
 
     /* r_note: the largest circle that keeps every top field clear of every
      * other top field and of the ding, never larger than the built-in max.
@@ -4375,7 +4381,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     var ext = round(reach + EXT_PAD, 4);
 
-    var geom = {
+    return {
       rim: round(rimOrb, 4),
       inner: round(innerOrb, 4),
       bottom: round(bottomOrb, 4),
@@ -4393,38 +4399,64 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rim_num_out: rimNumOut,
       ext: ext
     };
+  }
 
-    /* The correction is applied LAST, to the field-to-slot assignment only.
-     * The SET of solved angles is unchanged - order says who sits where, not
-     * where the seats are - so every geom value computed above is untouched
-     * and mirror, which reflects the ANGLES, composes with it either way. */
-    if (wanted.value) {
-      var slots = rims.concat(inners, bottoms);
-      var moved = [];
-      var nRim = rims.length;
-      var nInner = inners.length;
-      for (i = 0; i < wanted.value.length; i += 1) moved.push(slots[wanted.value[i]]);
-      rims = moved.slice(0, nRim);
-      inners = moved.slice(nRim, nRim + nInner);
-      bottoms = moved.slice(nRim + nInner);
-    }
+  /* The correction is applied LAST, to the field-to-slot assignment only.
+   * The SET of solved angles is unchanged - order says who sits where, not
+   * where the seats are - so every geom value is untouched and mirror, which
+   * reflects the ANGLES, composes with it either way. */
+  function reseat(counts, placed, order) {
+    var slots = placed.rims.concat(placed.inners, placed.bottoms);
+    var layout = slotOrder(counts);
+    var out = { rims: [], inners: [], bottoms: [] };
+    var key = { rim: "rims", inner: "inners", bottom: "bottoms" };
+    for (var i = 0; i < order.length; i += 1) out[key[layout[i]]].push(slots[order[i]]);
+    return out;
+  }
 
+  /* Merge: copy the source fields and write each zone's angle into slot 4. */
+  function merge(source, zones, placed) {
     var fields = {};
     var id;
+    var i;
     for (id in source) {
       if (!Object.prototype.hasOwnProperty.call(source, id)) continue;
       fields[id] = source[id].slice();
     }
     for (i = 0; i < zones.ding.length; i += 1) fields[zones.ding[i]][4] = null;
-    for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = rims[i];
-    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = inners[i];
-    for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = bottoms[i];
+    for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = placed.rims[i];
+    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = placed.inners[i];
+    for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
+    return fields;
+  }
 
-    return { ok: true, value: { geom: geom, fields: fields } };
+  function solve(seedOrFields, options) {
+    var source = fieldsOf(seedOrFields);
+    var zones = collect(source);
+
+    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
+    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
+    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+
+    var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+
+    var counts = countsOf(zones);
+    var wanted = readOrder(
+      (options && "order" in options) ? options.order : seedOptions.order,
+      counts.rim + counts.inner + counts.bottom);
+    if (!wanted.ok) return wanted;
+
+    var placed = placeZones(counts, mirror);
+    var geom = geometry(counts, placed);
+    if (wanted.value) placed = reseat(counts, placed, wanted.value);
+
+    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
   }
 
   HPE.layout = {
     solve: solve,
+    slotOrder: slotOrder,
     rimAngles: rimAngles,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
