@@ -21,11 +21,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var STYLES = ["together", "arpeggio", "three-over-two", "three-three-two",
                 "paradiddle", "groove", "freestyle"];
 
-  // Length buckets are tried in this order when both exist. The order is
-  // otherwise immaterial to the 50/50 draw (the index into the surviving
-  // bucket list is still drawn uniformly), so this is a free implementation
-  // choice, not a documented rule.
-  var LENGTH_ORDER = [3, 2];
+  // EASY length buckets (R1, docs/plans/2026-10-04-easy-tier-amy.md): 2, 3
+  // or 4 chords, drawn evenly among the buckets that survive the prev filter.
+  // The order is otherwise immaterial to the draw (the index into the
+  // surviving bucket list is still drawn uniformly), so this is a free
+  // implementation choice, not a documented rule.
+  var LENGTH_ORDER = [4, 3, 2];
 
   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
   // truncated search draws uniformly from what it found so far and reports
@@ -174,32 +175,41 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
-  // sequences(deck, length): every length-2 or length-3 sequence starting on
-  // the home anchor, visiting distinct roots, connecting every consecutive
-  // pair (C2) and, at length 3, looping back to the start. Returns [] when
-  // there is no home anchor or no sequence of that length - callers that need
-  // to tell those two apart use anchors()/homeAnchor directly (pick() does).
+  // sequences(deck, length): every EASY sequence of 2, 3 or 4 chords (R1-R4,
+  // R7-R8 of docs/plans/2026-10-04-easy-tier-amy.md): anchors only, one per
+  // root (anchors() already holds one card per root, so distinct indices are
+  // distinct roots), starting on ANY anchor, connecting every consecutive pair
+  // (C2) and the last chord back to the first. Rotations are distinct
+  // sequences. Enumeration order: starts in anchor-list order, then each
+  // later position in anchor-list order, so the home-start subset is the
+  // pre-R2 golden order. Returns [] when there is no home anchor (R2 keeps
+  // the NO_HOME_CHORD refusal ahead of everything) or no sequence of that
+  // length - callers that need to tell those apart use anchors()/homeAnchor
+  // directly (pick() does).
   function sequences(deck, length) {
-    if (length !== 2 && length !== 3) {
-      throw new Error("HPE.sequence.sequences: length must be 2 or 3");
+    if (length !== 2 && length !== 3 && length !== 4) {
+      throw new Error("HPE.sequence.sequences: length must be 2, 3 or 4");
     }
     var anchorsList = anchors(deck);
-    var home = homeAnchor(deck, anchorsList);
-    if (home === null) return [];
-    var others = anchorsList.filter(function (idx) { return idx !== home; });
+    if (homeAnchor(deck, anchorsList) === null) return [];
     var out = [];
-    if (length === 2) {
-      others.forEach(function (idx) {
-        if (connects(deck, home, idx)) out.push([home, idx]);
+    var seq = [];
+    function rec() {
+      var last = seq[seq.length - 1];
+      if (seq.length === length) {
+        if (connects(deck, last, seq[0])) out.push(seq.slice());
+        return;
+      }
+      anchorsList.forEach(function (idx) {
+        if (seq.indexOf(idx) >= 0 || !connects(deck, last, idx)) return;
+        seq.push(idx);
+        rec();
+        seq.pop();
       });
-      return out;
     }
-    others.forEach(function (b) {
-      if (!connects(deck, home, b)) return;
-      others.forEach(function (c) {
-        if (c === b) return;
-        if (connects(deck, b, c) && connects(deck, c, home)) out.push([home, b, c]);
-      });
+    anchorsList.forEach(function (start) {
+      seq = [start];
+      rec();
     });
     return out;
   }
@@ -253,29 +263,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // pools that remain non-empty; there is no rejection loop. A `prev`
   // containing an index outside the deck is ignored. If excluding `prev`
   // would empty every pool although at least one existed before, the
-  // exclusion is skipped instead of returning nothing - the sequence just
-  // shown is also the only one this deck can offer.
+  // exclusion is skipped instead of returning nothing (unreachable since
+  // R8 - every sequence has a rotation - but kept as a guard).
   //
-  // This is BASIC's untouched code path (D-1): pick(deck, rng, prev) and
-  // pick(deck, rng, prev, "basic") both resolve here, byte-identical in
-  // output and rng consumption to the pre-tier implementation.
+  // pick(deck, rng, prev) and pick(deck, rng, prev, "basic") both resolve
+  // here. The pre-tier byte-identical pin (D-1 of the 2026-10-02 plan) was
+  // lifted on 2026-10-04 and re-pinned to this EASY tier's own golden.
   function pickBasic(deck, rng, prev) {
     var home = homeOrRefuse(deck);
     if (home.refusal) return home.refusal;
-    var pools = { 2: sequences(deck, 2), 3: sequences(deck, 3) };
-    if (!pools[2].length && !pools[3].length) {
-      return { chords: null, reason: "TOO_FEW_CHORDS" };
-    }
+    var pools = {};
+    var any = false;
+    LENGTH_ORDER.forEach(function (len) {
+      pools[len] = sequences(deck, len);
+      if (pools[len].length) any = true;
+    });
+    if (!any) return { chords: null, reason: "TOO_FEW_CHORDS" };
 
     var prevOk = prevValid(deck, prev);
 
-    var filtered = { 2: pools[2], 3: pools[3] };
+    var filtered = pools;
     if (prevOk) {
-      filtered = {
-        2: pools[2].filter(function (seq) { return !sameSequence(seq, prev); }),
-        3: pools[3].filter(function (seq) { return !sameSequence(seq, prev); })
-      };
-      if (!filtered[2].length && !filtered[3].length) filtered = pools;
+      filtered = {};
+      var anyLeft = false;
+      LENGTH_ORDER.forEach(function (len) {
+        filtered[len] = pools[len].filter(function (seq) { return !sameSequence(seq, prev); });
+        if (filtered[len].length) anyLeft = true;
+      });
+      if (!anyLeft) filtered = pools;
     }
 
     var available = [];
@@ -349,9 +364,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return false;
   }
 
-  function basicGate(deck, seq, anchorsList, homeAnchorIdx) {
-    if (seq.length !== 2 && seq.length !== 3) return false;
-    if (seq[0] !== homeAnchorIdx) return false;
+  // R6: EASY = 2..4 anchors with distinct roots, any start (the wrap-to-first
+  // and consecutive-connect rules live in makeAccept / sequences()).
+  function basicGate(deck, seq, anchorsList) {
+    if (seq.length < 2 || seq.length > 4) return false;
     if (hasForbiddenRepeat(deck, seq, false)) return false;
     for (var i = 0; i < seq.length; i += 1) {
       if (anchorsList.indexOf(seq[i]) < 0) return false;
@@ -359,9 +375,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return true;
   }
 
+  // R5: MEDIUM starts on a home-rooted card OR any anchor.
   function intermediateGate(deck, seq, home, anchorsList) {
     if (seq.length !== 3 && seq.length !== 4) return false;
-    if (chordRootPc(deck, seq[0]) !== home) return false;
+    if (chordRootPc(deck, seq[0]) !== home && anchorsList.indexOf(seq[0]) < 0) return false;
     if (hasForbiddenRepeat(deck, seq, true)) return false;
     for (var i = 0; i < seq.length; i += 1) {
       if (anchorsList.indexOf(seq[i]) >= 0) continue;
@@ -399,7 +416,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // an earlier draft of this function added such a pre-filter.
   function classifyTier(deck, chords, ctx) {
     var n = chords.length;
-    if (basicGate(deck, chords, ctx.anchorsList, ctx.homeAnchorIdx)) {
+    if (basicGate(deck, chords, ctx.anchorsList)) {
       return "basic";
     }
     if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
@@ -437,10 +454,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  function tierStartSet(deck, tier, pool) {
+  // R5: INTERMEDIATE's start set is every home-rooted pool card plus every
+  // anchor (all anchors are in the pool per D-14); ADVANCED is unchanged.
+  function tierStartSet(deck, tier, pool, anchorsList) {
     if (tier === "advanced") return pool;
     var home = homePc(deck);
-    return pool.filter(function (i) { return chordRootPc(deck, i) === home; });
+    return pool.filter(function (i) {
+      return chordRootPc(deck, i) === home || anchorsList.indexOf(i) >= 0;
+    });
   }
 
   function buildConnectMatrix(deck) {
@@ -534,7 +555,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // found nothing".
   function attemptLength(deck, rng, tier, len, matrix, excludeSeq, ctx) {
     var pool = tierPool(deck, tier, ctx.anchorsList);
-    var startSet = tierStartSet(deck, tier, pool);
+    var startSet = tierStartSet(deck, tier, pool, ctx.anchorsList);
     if (!startSet.length || !pool.length) return { seq: null, empty: true };
 
     var accept = makeAccept(deck, tier, matrix, excludeSeq, ctx);

@@ -7472,7 +7472,7 @@ function run() {
         const seqRail = await railText();
         assert.ok(seqRail, "entering S must draw a sequence and render the rail");
         const chordCount = seqRail.split(" → ").length;
-        assert.ok(chordCount === 2 || chordCount === 3, `entering S must give an order of length 2 or 3, got ${chordCount}`);
+        assert.ok(chordCount >= 2 && chordCount <= 4, `entering S must give an order of length 2, 3 or 4, got ${chordCount}`);
 
         // New progression in S must never touch `shuffled` - re-roll a few times.
         const seen = new Set([seqRail]);
