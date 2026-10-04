@@ -224,6 +224,28 @@ function run() {
   // killed mutant as a survivor. Once navigation is gone it is gone for the
   // run: hand the first failure straight to every later test.
   let navDead = null;
+  const WALK_RULES = `
+    const walk = (rules, visit) => {
+      for (const r of Array.from(rules)) {
+        if (r.cssRules && r.cssRules.length) walk(r.cssRules, visit);
+        visit(r);
+      }
+    };
+    const walkSheets = (visit) => {
+      for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules, visit); } catch (e) {} }
+    };`;
+  async function enterSeqMode() {
+    await freshLoad();
+    await openSettingsPanel();
+    await b.click("#tier-basic");
+    await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+      { label: "mode S to take effect" });
+  }
+  const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
+  const rectsOf = (sel) => `(() => {
+    const r = document.querySelector("${sel}").getBoundingClientRect();
+    return { l: r.left, t: r.top, w: r.width, h: r.height };
+  })()`;
   async function waitElapsed(ms, label) {
     await b.eval(`window.__waitMark = performance.now(); return true;`);
     await b.waitFor(`performance.now() - window.__waitMark >= ${ms}`, { label, timeout: ms + 5000 });
@@ -3771,18 +3793,15 @@ function run() {
         // The assertion message prints the collected list for exactly this
         // reason: an empty one is a broken sweep, not a clean app.
         const actives = [];
-        const walk = (rules) => {
-          for (const r of Array.from(rules)) {
-            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-            if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
-            // A declaration that changes nothing is not feedback.
-            if (!r.style || r.style.length === 0) continue;
-            for (const one of r.selectorText.split(",")) {
-              actives.push(one.trim().replace(/:active\\b/g, ""));
-            }
+        ${WALK_RULES}
+        walkSheets((r) => {
+          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) return;
+          // A declaration that changes nothing is not feedback.
+          if (!r.style || r.style.length === 0) return;
+          for (const one of r.selectorText.split(",")) {
+            actives.push(one.trim().replace(/:active\\b/g, ""));
           }
-        };
-        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+        });
 
         const name = (el) => el.id ? "#" + el.id
           : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
@@ -3829,20 +3848,17 @@ function run() {
     await freshLoad();
     const found = await b.eval(`
       const out = [];
-      const walk = (rules) => {
-        for (const r of Array.from(rules)) {
-          if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
-          if (!r.style || r.style.length === 0) continue;
-          for (const one of r.selectorText.split(",")) {
-            const sel = one.trim().replace(/:active\\b/g, "");
-            let hits = false;
-            try { hits = document.querySelector(".shuffle").matches(sel); } catch (e) {}
-            if (hits) out.push({ sel: one.trim(), opacity: r.style.opacity, color: r.style.color });
-          }
+      ${WALK_RULES}
+      walkSheets((r) => {
+        if (!r.selectorText || !/:active\\b/.test(r.selectorText)) return;
+        if (!r.style || r.style.length === 0) return;
+        for (const one of r.selectorText.split(",")) {
+          const sel = one.trim().replace(/:active\\b/g, "");
+          let hits = false;
+          try { hits = document.querySelector(".shuffle").matches(sel); } catch (e) {}
+          if (hits) out.push({ sel: one.trim(), opacity: r.style.opacity, color: r.style.color });
         }
-      };
-      for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+      });
       return out;
     `);
     assert.ok(found.length > 0,
@@ -3887,15 +3903,12 @@ function run() {
     try {
       const decl = await b.eval(`
         const out = [];
-        const walk = (rules) => {
-          for (const r of Array.from(rules)) {
-            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-            if (!r.selectorText || !/(^|,)\\s*body\\s*($|,)/.test(r.selectorText)) continue;
-            out.push(r.style.padding || [r.style.paddingTop, r.style.paddingRight,
-              r.style.paddingBottom, r.style.paddingLeft].join(" "));
-          }
-        };
-        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+        ${WALK_RULES}
+        walkSheets((r) => {
+          if (!r.selectorText || !/(^|,)\\s*body\\s*($|,)/.test(r.selectorText)) return;
+          out.push(r.style.padding || [r.style.paddingTop, r.style.paddingRight,
+            r.style.paddingBottom, r.style.paddingLeft].join(" "));
+        });
         return out.join(" | ");
       `);
       for (const edge of ["top", "right", "bottom", "left"]) {
@@ -7350,13 +7363,6 @@ function run() {
   // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
   // stub can check (see tests/app.test.js) stays there.
   describe("sequence mode", () => {
-    async function enterSeqMode() {
-      await freshLoad();
-      await openSettingsPanel();
-      await b.click("#tier-basic");
-      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
-        { label: "mode S to take effect" });
-    }
 
     test("selecting a tier presses it exclusively, shows the credit note, and survives a reload",
       async () => {
@@ -7385,7 +7391,6 @@ function run() {
         assert.ok(!info.frontHasHint, "S mode's front face must carry no hint line");
         assert.ok(info.frontHasDiagram, "S mode's front face must show the diagram");
         // Step forward all the way around and confirm it wraps to the first chord.
-        const railText = () => b.eval(`return document.querySelector("#count .seq-rail").textContent;`);
         const before = await railText();
         for (let i = 0; i < 5; i++) {
           await b.click("#next");
@@ -7451,7 +7456,6 @@ function run() {
         text: document.getElementById("shuffle").textContent,
         on: document.getElementById("shuffle").classList.contains("on"),
       };`);
-      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
 
       for (const [baseMode, turnShuffleOn] of [["A", false], ["B", true]]) {
         await freshLoad();
@@ -8123,10 +8127,6 @@ function run() {
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
           await b.settle();
-          const rectsOf = (sel) => `(() => {
-            const r = document.querySelector("${sel}").getBoundingClientRect();
-            return { w: r.width, h: r.height };
-          })()`;
           const basic = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
           await b.eval(`
             selectDeck(${JSON.stringify(longest.deckId)});
@@ -8162,10 +8162,6 @@ function run() {
     const E3_VIEWPORTS = [[390, 844], [390, 745], [380, 700], [320, 568], [844, 390], [667, 375], [1280, 500]];
     test("switching to mode S keeps the header and footer width fixed and grows the footer only by the style block",
       async () => {
-        const rectsOf = (sel) => `(() => {
-          const r = document.querySelector("${sel}").getBoundingClientRect();
-          return { l: r.left, t: r.top, w: r.width, h: r.height };
-        })()`;
         for (const [w, h] of E3_VIEWPORTS) {
           await freshLoad();
           await b.setViewport(w, h, w < h);
@@ -8639,13 +8635,6 @@ function run() {
    * difficulty - docs/plans/2026-10-02-sequence-difficulty.md
    * ---------------------------------------------------------------- */
   describe("difficulty", () => {
-    async function enterSeqMode() {
-      await freshLoad();
-      await openSettingsPanel();
-      await b.click("#tier-basic");
-      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
-        { label: "mode S to take effect" });
-    }
     const tierState = () => b.eval(`return Object.fromEntries(["basic", "intermediate", "advanced"].map(t => {
       const el = document.getElementById("tier-" + t);
       return [t, { on: el.classList.contains("on"), pressed: el.getAttribute("aria-pressed") }];
@@ -8686,7 +8675,6 @@ function run() {
     // it must still redraw a (possibly different) progression.
     test("clicking the already-pressed tier still re-deals", async () => {
       await enterSeqMode();
-      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
       const seen = new Set([await railText()]);
       for (let i = 0; i < 8; i++) {
         await openSettingsPanel();
@@ -9806,9 +9794,7 @@ function run() {
           assert.ok(g.represses < 3, "drag to register the move (re-pressed 3 times)");
           assert.strictEqual(await b.eval(`return drag;`), null, "drag to register the move (drag still live)");
           g.represses++;
-          await b.armPendingSettle();
-          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
-          b.settleAfterRealRelease();
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 }));
           await b.finishAnimations();
           await b.waitForPendingSettle();
           g.t0 = await press();
@@ -10607,9 +10593,7 @@ function run() {
           await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
           await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 40, y: box.y, buttons: 1, pointerType: "pen" });
           await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 180, y: box.y, buttons: 1, pointerType: "pen" });
-          await b.armPendingSettle();
-          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x - 180, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
-          b.settleAfterRealRelease();
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x - 180, y: box.y, button: "left", clickCount: 1, pointerType: "pen" }));
           const seenPointerType = await b.eval(`return window.__seenPointerType;`);
           if (seenPointerType === "pen") {
             await b.waitFor(`window.__anims.length >= 1`, { label: "the pen out animation to be recorded" });
