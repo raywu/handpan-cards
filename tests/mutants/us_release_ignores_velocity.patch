@@ -3,7 +3,6 @@
 # release() never computes a release velocity, so a short fast flick (15px, 
 # under the 18px drag threshold) reads as a slow drag and springs back.
 diff --git a/index.html b/index.html
-index dae8f7b..516db7c 100644
 --- a/index.html
 +++ b/index.html
 @@ -8752,7 +8752,7 @@ function release(e, cancelled, pushPoint = true) {

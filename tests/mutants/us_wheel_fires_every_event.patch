@@ -3,7 +3,6 @@
 # A wheel gesture no longer latches after it commits, so every further event of 
 # the same gesture starts another fly-out and the deck steps more than once.
 diff --git a/index.html b/index.html
-index dae8f7b..798a427 100644
 --- a/index.html
 +++ b/index.html
 @@ -8888,7 +8888,6 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {

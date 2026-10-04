@@ -4,7 +4,6 @@
 # trackpad momentum right after a flight starts a second fly-out and 
 # double-steps.
 diff --git a/index.html b/index.html
-index dae8f7b..3dd8409 100644
 --- a/index.html
 +++ b/index.html
 @@ -8877,7 +8877,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {

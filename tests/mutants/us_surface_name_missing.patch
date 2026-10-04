@@ -3,7 +3,6 @@
 # The fixture names a binding the app does not declare, as after a rename that 
 # forgot the fixture. Evaluating it throws ReferenceError inside the test.
 diff --git a/tests/fixtures/app_surface_v1.json b/tests/fixtures/app_surface_v1.json
-index c6957fb..0f4e9d3 100644
 --- a/tests/fixtures/app_surface_v1.json
 +++ b/tests/fixtures/app_surface_v1.json
 @@ -2,6 +2,7 @@

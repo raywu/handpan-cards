@@ -3,7 +3,6 @@
 # The mid-flight capture pointerdown forgets the panel guard, so a press with 
 # the settings panel open grabs the card behind it.
 diff --git a/index.html b/index.html
-index dae8f7b..7bd5838 100644
 --- a/index.html
 +++ b/index.html
 @@ -8921,7 +8921,7 @@ document.addEventListener("pointerdown", e => {

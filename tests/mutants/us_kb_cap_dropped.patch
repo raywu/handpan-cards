@@ -3,7 +3,6 @@
 # applyKbOffset lifts the sheet but never caps its height, so a tall sheet runs 
 # under the visible viewport's top edge when the keyboard is up.
 diff --git a/index.html b/index.html
-index dae8f7b..a04e586 100644
 --- a/index.html
 +++ b/index.html
 @@ -7956,7 +7956,7 @@ function applyKbOffset() {

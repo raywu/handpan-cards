@@ -4,7 +4,6 @@
 # card.parentElement` is undefined and every swipe test silently runs against 
 # nothing.
 diff --git a/tools/sandbox.js b/tools/sandbox.js
-index 6d61360..c076096 100644
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
 @@ -157,7 +157,6 @@ function addLayout(el) {

@@ -3,7 +3,6 @@
 # The drag commit distance drops to the slop radius, so a slow 15px drag commits 
 # instead of springing back.
 diff --git a/index.html b/index.html
-index dae8f7b..0066df1 100644
 --- a/index.html
 +++ b/index.html
 @@ -8647,7 +8647,7 @@ function swipeDecision(dx, dy, vx) {
