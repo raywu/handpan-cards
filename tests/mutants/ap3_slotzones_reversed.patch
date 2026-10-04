@@ -1,0 +1,15 @@
+# kills: AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales
+# suite: node --test --test-name-pattern ^AP3-3.layoutIds.equals.engine.slotOrder.on.all.20.synthetic.scales$ tests/app.test.js
+# slotZones hands layoutIds the zones in the wrong order, so slots land on the wrong fields.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7630,7 +7630,7 @@ function layoutIds(fields) {
+ /** The zone of every slot, from the engine's own slot order. */
+ function slotZones(fields) {
+   const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
+-  return HPE.layout.slotOrder({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") });
++  return HPE.layout.slotOrder({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") }).reverse();
+ }
+ const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
+ /** at[slot] = the field sitting in that slot - the inverse of an order. */

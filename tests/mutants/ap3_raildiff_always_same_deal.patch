@@ -1,0 +1,15 @@
+# kills: AP3-4 the rail keeps its scroll across a re-render of the same deal and resets on a new one
+# suite: node --test --test-name-pattern ^AP3-4.the.rail.keeps.its.scroll.across.a.re-render.of.the.same.deal.and.resets.on.a.new.one$ tests/app.test.js
+# railDiff stops comparing the deal, so a new deal inherits the old scroll position.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7214,7 +7214,7 @@ let railSeq = null, railEl = null;
+ // it scrolled to? Reads the module lets; writes none.
+ function railDiff() {
+   const countEl = document.getElementById("count");
+-  const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
++  const sameDeal = !!railEl && countEl.children[0] === railEl;
+   return { sameDeal, keepLeft: sameDeal ? railEl.scrollLeft : 0 };
+ }
+ // railBuild: the rail, its live region and the current chord's node.

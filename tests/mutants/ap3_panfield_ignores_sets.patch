@@ -1,0 +1,15 @@
+# kills: pan() draws one circle per field, two more per lit field, plus the chrome
+# suite: node --test --test-name-pattern ^pan...draws.one.circle.per.field..two.more.per.lit.field..plus.the.chrome$ tests/app.test.js
+# The hoisted panField reads only the root set, so tone fields never light.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6839,7 +6839,7 @@ function numSize(rNote) { return rNote * NUM_RATIO; }
+ /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
+  * chordSets()'s {blue, green}; C is the deck's colours. */
+ function panField(sets, C, x, y, r, id, isBottom) {
+-  const st = sets.blue.has(id) ? "root" : sets.green.has(id) ? "tone" : isBottom ? "offb" : "off";
++  const st = sets.blue.has(id) ? "root" : false ? "tone" : isBottom ? "offb" : "off";
+   let out = "";
+   if (st === "offb")
+     out += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#9e9e9e" stroke-width="1.2" stroke-dasharray="3 3"/>`;

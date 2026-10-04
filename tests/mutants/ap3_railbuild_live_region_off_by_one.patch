@@ -1,0 +1,15 @@
+# kills: the live region names the current chord and its position: "<name>, chord N of M"
+# suite: node --test --test-name-pattern ^the.live.region.names.the.current.chord.and.its.position tests/app.test.js
+# railBuild numbers the live region from 0.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7243,7 +7243,7 @@ function railBuild(d) {
+   });
+   const live = document.createElement("span");
+   live.className = "sr-only";
+-  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
++  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx} of ${seq.chords.length}`;
+   return { rail, live, curNode };
+ }
+ function renderSeqRail(d) {
