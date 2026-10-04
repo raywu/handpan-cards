@@ -4145,7 +4145,7 @@ test("sequence mode: prev/next/arrows stay within the sequence and wrap, answer 
   app.run('setMode("S")');
   const seq = app.get("seq");
   const n = seq.chords.length;
-  assert.ok(n === 2 || n === 3, "pick() must return a 2- or 3-chord sequence");
+  assert.ok(n >= 2 && n <= 4, "pick() must return a 2-, 3- or 4-chord sequence");
   assert.strictEqual(app.get("idx"), 0);
   // E5: the front face is mode A's answer face byte for byte - the diagram,
   // not the chord name.
@@ -4233,7 +4233,7 @@ test("switching deck, generating a deck and deleting a deck each draw a new sequ
   assert.strictEqual(app.get("mode"), "S");
   assert.notStrictEqual(app.deckId(), gen.value.id, "the deleted deck must no longer be selected");
   const drawn = JSON.stringify(arr(app.get("seq").chords));
-  const valid = app.get("[...HPE.sequence.sequences(deck(), 2), ...HPE.sequence.sequences(deck(), 3)]").map((q) => JSON.stringify(arr(q)));
+  const valid = app.get("[...HPE.sequence.sequences(deck(), 2), ...HPE.sequence.sequences(deck(), 3), ...HPE.sequence.sequences(deck(), 4)]").map((q) => JSON.stringify(arr(q)));
   assert.ok(valid.includes(drawn), `the fallback deck's sequence ${drawn} must be one of its own sequences`);
   assert.deepStrictEqual(arr(app.get("order")), arr(app.get("seq").chords), "order must follow the fallback deck's sequence");
 });

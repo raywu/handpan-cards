@@ -18,7 +18,7 @@
  * card x mode A, B and S x face (front, back). Mode S does not have a
  * "card index" of its own - a sequence is a walk over SOME of the deck's
  * chords in a particular order - so S is covered by every sequence
- * HPE.sequence.sequences(deck, 2|3) can produce for that deck (the complete,
+ * HPE.sequence.sequences(deck, 2|3|4) can produce for that deck (the complete,
  * deterministic set - not a random draw), at every position in each one.
  *
  * Usage:
@@ -59,7 +59,7 @@ function bootFromHtml(htmlPath) {
 }
 
 /** Every sequence HPE.sequence.sequences(deck, length) can produce, for
- *  length 2 and 3 together - the complete, order-independent set, not one
+ *  length 2, 3 and 4 together - the complete, order-independent set, not one
  *  random draw. [] when the deck has no home anchor or no sequence at all
  *  (render() shows the "not enough simple chords" face instead; that face
  *  carries no card index or mode-A/B content to diverge, so it is not
@@ -69,7 +69,7 @@ function bootFromHtml(htmlPath) {
 function sequencesFor(app, deckIndex) {
   const expr = `(function(){
     var d = DECKS[${deckIndex}];
-    return (HPE.sequence.sequences(d, 2) || []).concat(HPE.sequence.sequences(d, 3) || []);
+    return (HPE.sequence.sequences(d, 2) || []).concat(HPE.sequence.sequences(d, 3) || [], HPE.sequence.sequences(d, 4) || []);
   })()`;
   return app.get(expr);
 }
@@ -269,7 +269,7 @@ function main() {
   }
 
   const out = {
-    _what: "sha256(face innerHTML) truncated to 16 hex, for every BUILT-IN deck x card x mode (A, B, S) x face (front, back). S is keyed `<sequence index>.<position>` over every sequence HPE.sequence.sequences(deck, 2|3) can produce, not a random draw.",
+    _what: "sha256(face innerHTML) truncated to 16 hex, for every BUILT-IN deck x card x mode (A, B, S) x face (front, back). S is keyed `<sequence index>.<position>` over every sequence HPE.sequence.sequences(deck, 2|3|4) can produce, not a random draw.",
     _why: "finding 0 / R-1 (quality-refactor plan, 2026-09-30): the pre-existing pan_render_v1.json pins the diagram only; header, note line, number line and badges had no oracle, so a render refactor (finding 18, 13) could change them silently. Generated from e8f9be8 (git show e8f9be8:index.html), the plan's reference commit - a deliberate face change regenerates this file in the same commit and says why.",
     _regen: "node tools/regen_card_fixture.js [--html PATH]",
     decks,
