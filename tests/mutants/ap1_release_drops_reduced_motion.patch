@@ -1,0 +1,16 @@
+# kills: AP1-2 releaseDecision table
+# suite: node --test --test-name-pattern ^AP1-2.releaseDecision.table$ tests/app.test.js
+# releaseDecision under reduced motion drops the committed dir, so a
+# committing swipe rests without stepping the card.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8823,7 +8823,7 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, mouse, reduced
+   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
+   if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
+   const eatClick = moved && !cancelled;
+-  if (reducedMotion) return { kind: "rest", dir, eatClick };
++  if (reducedMotion) return { kind: "rest", dir: 0, eatClick };
+   return { kind: dir ? "fly" : "spring", dir, eatClick };
+ }
+ // `pushPoint` is false on the lpc-as-release path (a mouse release that

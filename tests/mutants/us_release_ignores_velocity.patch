@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8752,7 +8752,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8842,7 +8842,7 @@ function release(e, cancelled, pushPoint = true) {
    let vx = 0;
    if (pts.length >= 2) {
      const span = pts[pts.length - 1].t - pts[0].t;
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +    if (false) vx = (pts[pts.length - 1].x - pts[0].x) / span;
    }
    const dx = drag.last;
-   const dy = drag.lastY;
+   const mouse = pointerType === "mouse";

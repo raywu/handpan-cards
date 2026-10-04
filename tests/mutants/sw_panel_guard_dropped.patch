@@ -11,24 +11,25 @@
 # the swipe-only lane's index.html edits (swipeDecision gained a dy
 # parameter and drag/y0/lastY tracking); the mutation itself is unchanged.
 # Context-refreshed 2026-09-30 (desktop-swipe lane): hunk context updated for release()/lpc/wheel refactor (setEatClick, flyOut/springBack, pushPoint); the mutation itself is unchanged.
+# Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8217,7 +8217,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8847,7 +8847,7 @@ function release(e, cancelled, pushPoint = true) {
    const dx = drag.last;
-   const dy = drag.lastY;
-   const moved = drag.moved;
--  const blocked = cancelled || panelOpen || sheetOpen;
-+  const blocked = cancelled || sheetOpen;
-   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
+   const mouse = pointerType === "mouse";
+   const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
+-    blocked: cancelled || panelOpen || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
++    blocked: cancelled || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
    drag = null;
-   // Q9: !moved implies |dx| <= SWIPE_SLOP_PX, so swipeDecision already
-@@ -8284,7 +8284,7 @@ function startDrag(e) {
-   card.setPointerCapture(e.pointerId);
+   if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
+   if (d.kind === "rest") {
+@@ -8890,7 +8890,7 @@ function startDrag(e) {
+   try { card.setPointerCapture(e.pointerId); } catch {}
+ }
+ function canStartGesture(e, state) {
+-  return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;
++  return !state.drag && e.isPrimary && e.button === 0 && !state.sheetOpen && state.orderLength > 0;
  }
  card.addEventListener("pointerdown", e => {
--  if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
-+  if (drag || !e.isPrimary || e.button !== 0 || sheetOpen || !order.length) return;
-   startDrag(e);
- });
- card.addEventListener("pointermove", swipeMove);
+   if (!canStartGesture(e, { drag, panelOpen, sheetOpen, orderLength: order.length })) return;

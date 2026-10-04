@@ -5066,3 +5066,47 @@ test("US-4 applyKbOffset writes the keyboard inset", () => {
   assert.strictEqual(surf.style.transform, "");
   assert.strictEqual(surf.style.maxHeight, "");
 });
+
+/* ------------------------------------------------ AP1-1 / AP1-2: gesture guard and release decision */
+test("AP1-1 canStartGesture guard table", () => {
+  const app = boot({ layout: true });
+  const base = { drag: null, panelOpen: false, sheetOpen: false, orderLength: 3 };
+  const ev = { isPrimary: true, button: 0 };
+  const can = (e, s) => app.get(`canStartGesture(${JSON.stringify(e)}, ${JSON.stringify(s)})`);
+  const rows = [
+    ["all clear", ev, base, true],
+    ["a live drag", ev, { ...base, drag: { id: 1 } }, false],
+    ["a non-primary pointer", { ...ev, isPrimary: false }, base, false],
+    ["a non-main button", { ...ev, button: 2 }, base, false],
+    ["the middle button", { ...ev, button: 1 }, base, false],
+    ["the panel open", ev, { ...base, panelOpen: true }, false],
+    ["the sheet open", ev, { ...base, sheetOpen: true }, false],
+    ["an empty deck", ev, { ...base, orderLength: 0 }, false],
+    ["a one-card deck", ev, { ...base, orderLength: 1 }, true],
+  ];
+  for (const [name, e, s, want] of rows) assert.strictEqual(can(e, s), want, name);
+});
+
+test("AP1-2 releaseDecision table", () => {
+  const app = boot({ layout: true });
+  const rd = (o) => plain(app.get(`releaseDecision(${JSON.stringify({
+    dx: 0, dy: 0, vx: 0, moved: true, cancelled: false, blocked: false, mouse: false, reducedMotion: false, ...o,
+  })})`));
+  const rows = [
+    ["fast flick left", { dx: -15, vx: -0.9 }, { kind: "fly", dir: 1, eatClick: true }],
+    ["fast flick right", { dx: 15, vx: 0.9 }, { kind: "fly", dir: -1, eatClick: true }],
+    ["slow short drag", { dx: -15, vx: 0 }, { kind: "spring", dir: 0, eatClick: true }],
+    ["long slow drag", { dx: -40, vx: 0 }, { kind: "fly", dir: 1, eatClick: true }],
+    ["out and back", { dx: 0, dy: 0, vx: 0 }, { kind: "spring", dir: 0, eatClick: true }],
+    ["vertical-dominant drag", { dx: 20, dy: 25, vx: 0.9 }, { kind: "spring", dir: 0, eatClick: true }],
+    ["never left the slop", { dx: 4, moved: false }, { kind: "rest", dir: 0, eatClick: false }],
+    ["cancelled", { dx: -40, vx: -0.9, cancelled: true, blocked: true }, { kind: "spring", dir: 0, eatClick: false }],
+    ["cancelled without moving", { dx: 0, moved: false, cancelled: true, blocked: true }, { kind: "rest", dir: 0, eatClick: false }],
+    ["blocked by an open panel", { dx: -40, vx: -0.9, blocked: true }, { kind: "spring", dir: 0, eatClick: true }],
+    ["mouse flick", { dx: -40, vx: -0.9, mouse: true }, { kind: "fly", dir: 1, eatClick: true }],
+    ["reduced motion commit", { dx: -40, vx: -0.9, reducedMotion: true }, { kind: "rest", dir: 1, eatClick: true }],
+    ["reduced motion short drag", { dx: -15, reducedMotion: true }, { kind: "rest", dir: 0, eatClick: true }],
+    ["reduced motion tap", { dx: 3, moved: false, reducedMotion: true }, { kind: "rest", dir: 0, eatClick: false }],
+  ];
+  for (const [name, o, want] of rows) assert.deepStrictEqual(rd(o), want, name);
+});
