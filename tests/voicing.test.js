@@ -599,5 +599,5 @@ test("ET-2 reduceIntervals", () => {
     "8 notes: the 9 then the 11 go, the 13 stays");
   assert.deepEqual(host(V.reduceIntervals([0, 2, 4, 5, 7, 9, 11])), [0, 2, 4, 5, 7, 9, 11],
     "a chord tone is never dropped, even past six notes");
-  assert.throws(() => V.reduceIntervals([0, 4, 12]), TypeError, "a repeated pitch class");
+  assert.throws(() => V.reduceIntervals([0, 4, 12]), /repeats a pitch class/);
 });
