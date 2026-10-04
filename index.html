@@ -2551,6 +2551,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 HPE.pdfcards = (function () {
   "use strict";
 
+  function core() {
+    return HPE.core;
+  }
+
   var BLACK = [0, 0, 0];
   var WHITE = [1, 1, 1];
 
@@ -2866,7 +2870,7 @@ HPE.pdfcards = (function () {
 
     function state(i, bottom) {
       if (roots.indexOf(i) >= 0) {
-        return spec[i][3] === "ding" ? "ding-root" : "root";
+        return core().isDing(spec[i]) ? "ding-root" : "root";
       }
       if (active.indexOf(i) >= 0) return "on";
       return bottom ? "off-bottom" : "off";
@@ -2965,16 +2969,16 @@ HPE.pdfcards = (function () {
     var main = chord[0], sup = chord[1], subtitle = chord[2];
     var fields = chord[3], roots = chord[4];
     var spec = deck.spec;
-    var rootPc = ((spec[roots[0]][2] % 12) + 12) % 12;
+    var rootPc = core().pc(spec[roots[0]][2]);
     var pcs = fields.map(function (f) {
-      return ((spec[f][2] % 12) + 12) % 12;
+      return core().pc(spec[f][2]);
     });
     var every = fieldOrder(spec).map(Number);
     var activeAll = every.filter(function (k) {
-      return pcs.indexOf(((spec[k][2] % 12) + 12) % 12) >= 0;
+      return pcs.indexOf(core().pc(spec[k][2])) >= 0;
     });
     var rootsAll = every.filter(function (k) {
-      return ((spec[k][2] % 12) + 12) % 12 === rootPc;
+      return core().pc(spec[k][2]) === rootPc;
     });
     var ga = (deck.grad || [null, null])[0];
     duoFrame(c, x, y, CW, CH, undefined, undefined, ga);
