@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -245,7 +245,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -300,7 +300,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        reach = Math.max(reach, bottomOrb + rBnote);
        reach = Math.max(reach, bottomOrb + rBnote + nOut + fNum * LABEL_REACH);
      }
 -    var ext = round(reach + EXT_PAD, 4);
 +    var ext = 1.06;
  
-     var geom = {
+     return {
        rim: round(rimOrb, 4),

@@ -1361,4 +1361,6 @@ test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
 
   const late = loadEngine(["sequence", "core"]);
   assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
+  assert.deepEqual(host(late.sequence.anchors(AMARA)), host(E.sequence.anchors(AMARA)),
+    "core must be read when anchors runs, not when sequence loads");
 });

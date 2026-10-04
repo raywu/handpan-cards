@@ -1,0 +1,15 @@
+# kills: EG-4 parseSeed keeps the last token of every run
+# suite: node --test --test-name-pattern ^EG.4.parseSeed.keeps.the.last.token.of.every.run$ tests/core.test.js
+# EG-4: tokenize drops the last top-shell token.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -338,7 +338,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         bar = b;
+       }
+     }
+-    var topTokens = bar < 0 ? rest : rest.slice(0, bar);
++    var topTokens = (bar < 0 ? rest : rest.slice(0, bar)).slice(0, -1);
+     var bottomTokens = bar < 0 ? [] : rest.slice(bar + 1);
+     if (bar >= 0 && bottomTokens.length === 0) return badNote("|");
+ 
