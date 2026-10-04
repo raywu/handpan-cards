@@ -150,7 +150,7 @@ Common to every lane:
   - `tests/app.test.js` (new tests at file end; the 3028 strengthening)
   - `tests/fixtures/app_surface_v1.json`
   - new `tests/mutants/us_*.patch`
-- **Exception (named):** US may ADD new patches under `tests/mutants/` whose `+++ b/` is `index.html`, to kill its new swipe/wheel tests. It edits no existing `index.html` patch and no line of `index.html` itself (rule 6 holds: the PR diff never touches `index.html`). Those six patches anchor inside 8629-8942, so AP1 inherits them (its strand count is 64 + 6).
+- **Exception (named):** US may ADD new patches under `tests/mutants/` whose `+++ b/` is `index.html`, to kill its new swipe/wheel tests. It edits no existing `index.html` patch and no line of `index.html` itself (rule 6 holds: the PR diff never touches `index.html`). Five of those six patches anchor inside 8629-8942, so AP1 inherits them (its strand count is 64 + 5); the sixth, `us_kb_cap_dropped.patch`, anchors at `applyKbOffset` ~7956 and is AP2's (A18, US-N1).
 - **Never touches:** `index.html`, `src/`, `e2e.test.js`, `cdp.js`.
 - **Steps:**
   1. "US-1 every app surface name resolves". The fixture lists the names read through `app.get`/`app.run`/`b.eval`, harvested once by a scratch script that is not committed. The test asserts that evaluating each bare name in a default boot throws no `ReferenceError`. It does NOT assert the value is defined: `scene` is legitimately `undefined` in the default boot (`scene = card.parentElement`, 8638), so a `typeof` check would be red on today's code (outside voice).
@@ -288,7 +288,7 @@ Common to every lane:
 - **Goal:** F7, F8, F16.
 - **Non-goals:** any change to focus order (the Tab-stop lists stay hand-written, R4); history/popstate semantics (`sheetRoute` 8006, popstate 8115); the delete-arm flow.
 - **Owns:**
-  - `index.html` 7969-8600 outside generated regions
+  - `index.html` 7922-8600 outside generated regions (extended from 7969 by A18 so `us_kb_cap_dropped.patch` at `applyKbOffset` 7922-7962 has an owner)
   - `tests/app.test.js` (new tests at file end)
   - `tests/mutants/` patches whose every `+++ b/` is `index.html` and whose removed lines are in that range
 - **Never touches:** 8629-8942 (AP1's region), CSS, markup, engine regions, `e2e.test.js`.
@@ -406,6 +406,10 @@ Expected strand counts, from the hunk survey:
 | A14 | AMENDED by R5 (eng review): the `b_*` data mutants' `index.html` hunk is re-anchored by the app lane in range; their `data/decks.json` hunk stays byte-identical. Other multi-file patches are re-cut by the lane owning all their targets. | Let the app lane edit them freely | No lane owns `data/`, so the original rule had no owner for the 11 `b_*` patches. |
 | A15 | 2026-10-04: main went red at c63b468 on `tests/test_readme_currency.py` (598 patches on disk vs README "536", 90% floor). Restated README.md:127 to 598 in #217 as a lane-less hotfix PR, reviewed and merged before any further lane. The stated count now sits at the test's ceiling: any lane that REMOVES a patch must restate it. | Fold the README edit into the next lane PR | Every open and future PR was red on the same test; no lane owns README.md. |
 | A16 | 2026-10-04: EX (#213) and EG (#218) were re-merged onto main by the orchestrator (semantic-coupling rule, section 6, after ET and US merged fixtures; then again after #217) rather than bounced to the lanes. | Ask each lane to re-merge | A plain `git merge origin/main` with no conflicts; CI was taken at the new heads. |
+| A17 | 2026-10-04: EG's EG-2b hand-off (pdfcards lazy-core half of EG-2) accepted as a queue row rather than bouncing #218. The real blockers are the loaders `tools/pdf_build.js:70,77`, `tests/pdf_builtin.test.js:18` and `tests/test_render_agreement.py:629`, not `tests/pdfcards.test.js` as the PR body says. | Bounce EG to widen its Owns | The loaders are outside EG's Owns; widening a lane mid-flight is a scope change the plan reserves for the owner. |
+| A18 | 2026-10-04: AP2's `index.html` range is extended from 7969-8600 to 7922-8600 so `tests/mutants/us_kb_cap_dropped.patch` (anchors at `applyKbOffset`, 7922-7962) has an owner (US-N1). AP2's brief states it. | Leave 7922-7968 unowned | An unowned patch that a later lane strands has no one to re-anchor it; AP3's range (6680-7560) is further away. |
+| A19 | 2026-10-04: AP1-a (#221, steps 1-2) and AP1-b (step 3) run SERIALLY; AP1-b branched from main after #221 merged. | Parallel from the same base | Both re-anchor the same `index.html` mutant patches in the swipe/wheel section; parallel runs would conflict on every one of them. |
+| A20 | 2026-10-04: EB (#220) received a second reviewer FAIL at 50c9f96 (the 50 ms touch-decay sleep at `e2e.test.js:9258` became an unbounded `waitFor`; a `? 400 : 150` decay mutant passes at head and fails on main). Per the standing contingency rule the bounce stopped; a sub-plan (`docs/plans/2026-10-04-eb-timing-bounds-subplan.md`) classifies all 16 conversions, is eng-reviewed, and is executed by a fresh lane agent then a fresh reviewer. | Bounce EB a third time | Two FAILs on the same class of defect (timing bounds dropped) means the fix must be systematic, not per site. |
 
 Queue rows produced during execution (EX step 2, US-3 cuts, mutant hand-offs) are appended here.
 
@@ -420,6 +424,7 @@ Queue rows produced during execution (EX step 2, US-3 cuts, mutant hand-offs) ar
 | ET-N1 | ET review | `engine_corpus_v1.json` records `layout.solve` geom only (not per-field angles) and `select.build` main/sup/fields/roots (not subtitles); it is not an angle or subtitle oracle. | EG reviewer (briefed) |
 | EG-2b | EG report | pdfcards `pc`/`isDing` dedupe (pdfcards.js 340/350/439-448) cut: `tools/pdf_build.js`, `tests/pdf_builtin.test.js`, `tests/pdfcards.test.js` load no core module and are outside EG's Owns. Needs "core" added to those loaders first. | unassigned |
 | EG-3 | EG report | `select.warning` left as `{code, reason}`: `core.err` returns `{ok:false, code, reason}`, so routing would add `ok:false` to every `deck.warnings` entry (A11). Recorded by "EG-3 warning shape equals core.err shape" in `tests/select.test.js`. | none |
+| AP1-Q1 | AP1-a (#221) report and review | EX-Q1..Q3 are fixed: `startDrag` wraps `card.setPointerCapture` in try/catch. The three `KNOWN_UNCAUGHT` rows at `tests/e2e.test.js:111-115` are now inert (`expectUncaught` only filters, so they would mask a regression of that throw). Delete them from an `e2e.test.js`-owning lane (EB, or FL2). The catch is a catch-all; narrowing to `NotFoundError` is a nit. | EB / FL2 |
 
 Status: drafted 2026-10-03; eng-reviewed 2026-10-03 (ledger R1-R6 below), approved; execution started 2026-10-03 under AFK.
 
