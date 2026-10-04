@@ -10558,7 +10558,8 @@ function run() {
           await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
           await b.waitFor(`window.__anims.length >= 1`, { label: "the out animation to be recorded" });
           const out = (await recordedAnims())[0];
-          assert.ok(out.timing.duration <= 320, `duration ${out.timing.duration} must not exceed SWIPE_MOMENTUM_MAX_MS`);
+          assert.ok(out.timing.duration >= 140 && out.timing.duration <= 320,
+            `duration ${out.timing.duration} out of [SWIPE_MOMENTUM_MIN_MS 140, SWIPE_MOMENTUM_MAX_MS 320]`);
           const replayed = await replaySpeed(out);
           assert.ok(replayed < 0, "a leftward commit must start moving left");
           assert.ok(Math.abs(replayed) >= 0.9 * 1.5 && Math.abs(replayed) <= 1.1 * 1.5,
