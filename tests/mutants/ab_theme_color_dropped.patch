@@ -12,5 +12,5 @@ diff --git a/index.html b/index.html
       autofill) before the app's own CSS has painted anything. -->
 -<meta name="theme-color" content="#1a1815">
  <meta name="color-scheme" content="dark">
- <title>Handpan Chord Flashcards</title>
- <link rel="preconnect" href="https://fonts.googleapis.com">
+ <title>Handpan Chords</title>
+ <meta name="description" content="Learn handpan chords and play chord progressions in your scale. Flashcards show each chord lit on your pan: drill it, then connect chords into progressions.">

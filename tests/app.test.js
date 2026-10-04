@@ -3999,6 +3999,80 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
 
+/* Name, description, favicon and link preview - docs/plans/2026-10-04-name-and-
+ * favicon.md section 4. The head is never parsed by the sandbox, so these read
+ * the raw file like the theme-color test above. */
+
+function headHtml() {
+  return fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+}
+
+function metaContent(html, attr, name) {
+  const re = new RegExp(`<meta\\s+${attr}="${name}"\\s+content="([^"]*)">`);
+  const m = re.exec(html);
+  assert.ok(m, `no <meta ${attr}="${name}"> in the head`);
+  return m[1];
+}
+
+function linkHref(html, rel, extra = "") {
+  const re = new RegExp(`<link\\s+rel="${rel}"${extra}[^>]*\\shref="([^"]*)"`);
+  const m = re.exec(html);
+  assert.ok(m, `no <link rel="${rel}"${extra}> in the head`);
+  return m[1];
+}
+
+test("the visible name is one string: title, h1, og:title and twitter:title", () => {
+  const html = headHtml();
+  const title = /<title>([^<]*)<\/title>/.exec(html);
+  assert.ok(title, "no <title>");
+  const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
+  assert.ok(h1, "no <h1>");
+  assert.strictEqual(title[1], "Handpan Chords");
+  assert.strictEqual(h1[1], title[1], "the h1 differs from the tab title");
+  assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
+  assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
+});
+
+test("the description says progressions early, equals og:description and fits 120..160", () => {
+  const html = headHtml();
+  const desc = metaContent(html, "name", "description");
+  assert.strictEqual(metaContent(html, "property", "og:description"), desc);
+  assert.ok(desc.length >= 120 && desc.length <= 160,
+    `description is ${desc.length} characters, outside 120..160`);
+  const cut = desc.slice(0, 110);
+  assert.ok(/progressions/.test(cut),
+    `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
+});
+
+test("the favicon is an inline SVG data URI drawing the Amara Dm card", () => {
+  const html = headHtml();
+  const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
+  assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
+  const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
+  assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
+  const circles = svg.match(/<circle\b[^>]*>/g) || [];
+  assert.strictEqual(circles.length, 11, "the icon should draw 11 circles");
+  const fills = (hex) => circles.filter((c) => new RegExp(`fill='${hex}'`, "i").test(c)).length;
+  assert.strictEqual(fills("#0B7B75"), 1, "exactly one teal (root) field");
+  assert.strictEqual(fills("#DD8F00"), 2, "exactly two amber (tone) fields");
+  assert.ok(!/<(text|linearGradient|radialGradient|filter)\b/.test(svg), "no text, gradients or filters");
+});
+
+test("the touch icon and the preview image exist and are named once", () => {
+  const html = headHtml();
+  const touch = linkHref(html, "apple-touch-icon");
+  assert.strictEqual(touch, "apple-touch-icon.png");
+  assert.strictEqual(linkHref(html, "icon", `\\s+type="image/png"`), touch,
+    "the PNG rel=icon must reuse apple-touch-icon.png");
+  assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
+  const og = metaContent(html, "property", "og:image");
+  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
+  assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
+  assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
+  assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
+  assert.strictEqual(metaContent(html, "property", "og:image:height"), "630");
+});
+
 /* ================================================================ Lane S2
  * "CHORD PROGRESSION" mode: app-side wiring for HPE.sequence.pick(). See
  * docs/plans/2026-09-29-chord-sequence-mode.md sections 3 (S2 row) and 8

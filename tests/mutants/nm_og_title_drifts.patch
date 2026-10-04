@@ -1,0 +1,17 @@
+# kills: the visible name is one string: title, h1, og:title and twitter:title
+# suite: node --test --test-name-pattern ^the.visible.name.is.one.string.*$ tests/app.test.js
+# The link-preview title drifts back to the old page name while the tab and
+# h1 say "Handpan Chords". A shared link would then preview under a different
+# name from the page it opens - the split-name state this lane exists to end.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -23,7 +23,7 @@
+ <link rel="canonical" href="https://handpan.raywu.org/">
+ <meta property="og:type" content="website">
+ <meta property="og:url" content="https://handpan.raywu.org/">
+-<meta property="og:title" content="Handpan Chords">
++<meta property="og:title" content="Handpan Chord Cards">
+ <meta property="og:description" content="Learn handpan chords and play chord progressions in your scale. Flashcards show each chord lit on your pan: drill it, then connect chords into progressions.">
+ <meta property="og:image" content="https://handpan.raywu.org/og.png">
+ <meta property="og:image:width" content="1200">
