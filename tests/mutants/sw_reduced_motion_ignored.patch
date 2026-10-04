@@ -9,23 +9,15 @@
 # shorter than before, but the mutation itself (dropping the whole
 # reduced-motion branch, including the `if (dir) step(dir); return;` that
 # makes the swipe commit instantly) is unchanged.
+# Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8284,16 +8284,6 @@ function release(e, cancelled, pushPoint = true) {
-   // click can arrive a tick or more after this runs - touch/pen keep the
-   // immediate decay, since their synthesized click (if any) follows at once.
-   if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
--  if (reducedMotion.matches) {
--    // Was its own scene.style.transform/willChange reset, byte-for-byte the
--    // same as swipeRest() - re-implemented, not duplicated-by-reference, so a
--    // future rest-state change here could drift from the other four sites
--    // that already call swipeRest() (finding 13, quality-refactor plan
--    // 2026-09-30).
--    swipeRest();
--    if (dir) step(dir);
--    return;
--  }
-   if (!dir) { springBack(dx); return; }
-   flyOut(dir, dx, pointerType === "mouse" ? vx : null);
+@@ -8823,7 +8823,6 @@ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, mouse, reduced
+   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
+   if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
+   const eatClick = moved && !cancelled;
+-  if (reducedMotion) return { kind: "rest", dir, eatClick };
+   return { kind: dir ? "fly" : "spring", dir, eatClick };
  }
+ // `pushPoint` is false on the lpc-as-release path (a mouse release that
