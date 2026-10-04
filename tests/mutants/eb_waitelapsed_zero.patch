@@ -1,0 +1,16 @@
+# kills: card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips
+# suite: node --test --test-name-pattern ^card.swipe:.a.click.more.than.400ms.after.a.committing.mouse.drag.is.not.eaten.and.flips$ tests/e2e.test.js
+# Zeroes the page-side timer inside waitElapsed: the 400ms eatClick decay has not
+# run when the assertion fires, so eatClick is still true and main's check fails.
+diff --git a/tests/e2e.test.js b/tests/e2e.test.js
+--- a/tests/e2e.test.js
++++ b/tests/e2e.test.js
+@@ -247,7 +247,7 @@ function run() {
+     return { l: r.left, t: r.top, w: r.width, h: r.height };
+   })()`;
+   async function waitElapsed(ms, label) {
+-    await b.eval(`return new Promise((r) => setTimeout(r, ${ms}));`);
++    await b.eval(`return new Promise((r) => setTimeout(r, 0));`);
+   }
+   async function navigate(target) {
+     if (navDead) throw navDead;
