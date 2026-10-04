@@ -126,9 +126,10 @@ are a step apart. Any two diatonic triads of a seven-note scale satisfy one of
 those (triads a third apart share two tones, a fourth/fifth apart share one, a
 step apart pass the root clause, a tritone apart share one). Measured on the
 anchors: Pygmy admits all 42 ordered pairs, Amara all 20, Hijaz 28 of 30 (only
-D° <-> F#sus4 is refused: a major third apart, no shared tone). On the
-built-in decks the root-motion rule constrains nothing; the EASY pool is shaped
-entirely by length, start-on-home, one-anchor-per-root and distinct roots.
+D° <-> F#sus4 is refused: a major third apart, no shared tone). On Pygmy and
+Amara the root-motion rule constrains nothing; on Hijaz it removes only the
+two length-3 loops through D° and F#sus4 (20 -> 18). Otherwise the EASY pool
+is shaped by length, start-on-home, one-anchor-per-root and distinct roots.
 
 Amy's 28 consecutive root motions (within each progression, no wrap):
 
@@ -142,7 +143,8 @@ Amy's 28 consecutive root motions (within each progression, no wrap):
 Note for the owner: the interview framed Amy as "3rds/4ths/5ths"; by count
 she is step-heavy (A4 and A9 are pure step walks). Our rule admits all three
 classes equally, so the profile difference is not a filter difference. It is
-a distribution difference: EASY picks uniformly among admitted sequences,
+a distribution difference: EASY picks a length first, then uniformly among
+that length's admitted sequences (section 5 gives the length-first odds),
 while Amy's set favours stepwise walks and a return to home.
 
 ## 7. Video 2: chord vocabulary (owner to fill)
