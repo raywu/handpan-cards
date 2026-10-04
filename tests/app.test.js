@@ -4923,3 +4923,21 @@ describe("tab stops follow rendering", () => {
     assert.strictEqual(prevented, false);
   });
 });
+
+/* ------------------------------------------------ US: unit-test surface */
+
+test("US-1 every app surface name resolves", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { names } = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "app_surface_v1.json"), "utf8"));
+  assert.ok(names.length > 0, "the surface fixture lists no names");
+  const app = boot();
+  for (const name of names) {
+    try {
+      app.get(name);
+    } catch (e) {
+      assert.notStrictEqual(e.name, "ReferenceError", `${name} no longer resolves`);
+    }
+  }
+});
