@@ -9985,7 +9985,7 @@ function run() {
       await expectCount(`2 / ${n}`, "the drag should have committed");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "the committing drag must arm eatClick right after landing");
-      await b.waitFor(`eatClick === false`, { label: "eatClick's own decay" });
+      await b.waitFor(`eatClick === false`, { label: "eatClick's own decay (the 400ms window)", timeout: 1000 });
       assert.strictEqual(await b.eval(`return eatClick;`), false,
         "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
@@ -10176,7 +10176,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelGesture([[20, 0], [20, 0]]);
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
         const xf = await sceneXform();
@@ -10191,7 +10191,7 @@ function run() {
         const xf = await sceneXform();
         assert.strictEqual(xf.none, false, "a wheel event under threshold must apply a follow transform");
         assert.ok(xf.m41 < 0, `deltaX>0 (sx>0) must move the card to translateX<0, got ${xf.m41}`);
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
       });
 
@@ -10207,7 +10207,7 @@ function run() {
         // statically (safe regardless of playback progress, same pattern as
         // the fly-out/enter keyframe reads above).
         await b.waitFor(`wheel === null && scene.getAnimations().length > 0`,
-          { label: "the gesture to end and springBack() to start" });
+          { label: "the gesture to end and springBack() to start", timeout: 1000 });
         const first = await b.eval(`
           const a = document.querySelector(".scene").getAnimations()[0];
           const kf = a.effect.getKeyframes();
@@ -10250,7 +10250,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
         const xf = await sceneXform();
@@ -10263,7 +10263,7 @@ function run() {
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
-        await b.waitFor(`wheel === null`, { label: "the first gesture's 160ms gap to end it" });
+        await b.waitFor(`wheel === null`, { label: "the first gesture's 160ms gap to end it", timeout: 1000 });
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
@@ -10305,7 +10305,7 @@ function run() {
           }));
           return true;
         `);
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
       });
@@ -10331,7 +10331,7 @@ function run() {
         // new trackpad gesture arriving as momentum while the previous
         // card is still flying out must not be allowed to commit a second
         // step on top of it.
-        await b.waitFor(`flight !== null && wheel === null`, { label: "the first gesture to end mid-flight" });
+        await b.waitFor(`flight !== null && wheel === null`, { label: "the first gesture to end mid-flight", timeout: 1000 });
         assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
           "the first gesture must have ended via its own gap timer while its flight is still mid-air");
         await wheelAt(100, 0);
@@ -10346,7 +10346,7 @@ function run() {
         // overlapping animation on .scene is the observable symptom.
         assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
           "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
       });
