@@ -7,15 +7,16 @@
 # fast flick restarts the card from a standstill instead of continuing at the
 # speed it was released - the replayed start speed sits at 0, not the live
 # release speed this test measures.
+# Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8295,7 +8295,7 @@ function release(e, cancelled, pushPoint = true) {
-     return;
-   }
-   if (!dir) { springBack(dx); return; }
--  flyOut(dir, dx, pointerType === "mouse" ? vx : null);
-+  flyOut(dir, dx, null);
+@@ -8854,7 +8854,7 @@ function release(e, cancelled, pushPoint = true) {
+     swipeRest();
+     if (d.dir) step(d.dir);
+   } else if (d.kind === "spring") springBack(dx);
+-  else flyOut(d.dir, dx, mouse ? vx : null);
++  else flyOut(d.dir, dx, null);
  }
  function swipeMove(e) {
    if (!drag || e.pointerId !== drag.id) return;

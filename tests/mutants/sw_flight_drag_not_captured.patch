@@ -15,11 +15,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8281,7 +8281,6 @@ function swipeMove(e) {
+@@ -8887,7 +8887,6 @@ function swipeMove(e) {
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
--  card.setPointerCapture(e.pointerId);
+-  try { card.setPointerCapture(e.pointerId); } catch {}
  }
- card.addEventListener("pointerdown", e => {
-   if (drag || !e.isPrimary || e.button !== 0 || panelOpen || sheetOpen || !order.length) return;
+ function canStartGesture(e, state) {
+   return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;

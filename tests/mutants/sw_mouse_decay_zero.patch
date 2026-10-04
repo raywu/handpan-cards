@@ -6,15 +6,16 @@
 # - before the 450ms wait - requires eatClick still true at that point; a
 # zero-length decay has already fired its setTimeout(0) by then, so the
 # assertion sees `false` where it expects `true`.
+# Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8236,7 +8236,7 @@ function release(e, cancelled, pushPoint = true) {
-   // 0) ahead of pointerup/click on a real mouse release, so the trailing
-   // click can arrive a tick or more after this runs - touch/pen keep the
-   // immediate decay, since their synthesized click (if any) follows at once.
--  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 400 : 0);
-+  if (moved && !cancelled) setEatClick(true, pointerType === "mouse" ? 0 : 0);
-   if (reducedMotion.matches) {
-     // Was its own scene.style.transform/willChange reset, byte-for-byte the
-     // same as swipeRest() - re-implemented, not duplicated-by-reference, so a
+@@ -8849,7 +8849,7 @@ function release(e, cancelled, pushPoint = true) {
+   const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
+     blocked: cancelled || panelOpen || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
+   drag = null;
+-  if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
++  if (d.eatClick) setEatClick(true, mouse ? 0 : 0);
+   if (d.kind === "rest") {
+     swipeRest();
+     if (d.dir) step(d.dir);

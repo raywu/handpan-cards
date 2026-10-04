@@ -2,15 +2,16 @@
 # suite: node --test --test-name-pattern ^US-3.an.open.panel.blocks.the.capture.pointerdown$ tests/app.test.js
 # The mid-flight capture pointerdown forgets the panel guard, so a press with 
 # the settings panel open grabs the card behind it.
+# Re-cut 2026-10-03 (AP1-a): release() now executes releaseDecision() and both pointerdown sites call canStartGesture(); the mutation is re-expressed on the new site, intent unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8921,7 +8921,7 @@ document.addEventListener("pointerdown", e => {
+@@ -8990,7 +8990,7 @@ document.addEventListener("pointerdown", e => {
      // a focused control would otherwise have its own click eaten.
      setEatClick(inside && e.button === 0);
      land();
--    if (inside && !drag && e.isPrimary && e.button === 0 && !panelOpen && !sheetOpen && order.length) {
-+    if (inside && !drag && e.isPrimary && e.button === 0 && !sheetOpen && order.length) {
+-    if (inside && canStartGesture(e, { drag, panelOpen, sheetOpen, orderLength: order.length })) {
++    if (inside && canStartGesture(e, { drag, panelOpen: false, sheetOpen, orderLength: order.length })) {
        startDrag(e);
      }
    } else {
