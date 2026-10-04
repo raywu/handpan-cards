@@ -1,0 +1,16 @@
+# kills: every sequence starts on an anchor and every step connects, including back to the first chord
+# R3 - a sequence no longer requires its last chord to connect back to the
+# first
+# suite: node --test --test-name-pattern ^every.sequence.starts.on.an.anchor.and.every.step.connects..including.back.to.the.first.chord$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -207,7 +207,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var used = new Array(n);
+     function rec() {
+       var last = seq[seq.length - 1];
+-      if (seq.length >= 2 && adj[last][seq[0]]) {
++      if (seq.length >= 2) {
+         pools[seq.length].push(seq.map(function (k) { return anchorsList[k]; }));
+       }
+       if (seq.length === 4) return;

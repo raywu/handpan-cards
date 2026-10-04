@@ -5,8 +5,8 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -345,7 +345,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (chordRootPc(deck, seq[0]) !== home) return false;
+@@ -381,7 +381,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (chordRootPc(deck, seq[0]) !== home && anchorsList.indexOf(seq[0]) < 0) return false;
      if (hasForbiddenRepeat(deck, seq, true)) return false;
      for (var i = 0; i < seq.length; i += 1) {
 -      if (anchorsList.indexOf(seq[i]) >= 0) continue;

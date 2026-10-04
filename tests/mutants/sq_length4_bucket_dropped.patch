@@ -1,0 +1,16 @@
+# kills: length is drawn 2, 3 or 4 evenly, and style evenly over seven
+# R1 - the length-4 bucket is dropped from EASY's draw, so pick never
+# deals a four-chord sequence
+# suite: node --test --test-name-pattern ^length.is.drawn.2..3.or.4.evenly..and.style.evenly.over.seven$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -26,7 +26,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // The order is otherwise immaterial to the draw (the index into the
+   // surviving bucket list is still drawn uniformly), so this is a free
+   // implementation choice, not a documented rule.
+-  var LENGTH_ORDER = [4, 3, 2];
++  var LENGTH_ORDER = [3, 2];
+ 
+   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
+   // truncated search draws uniformly from what it found so far and reports
