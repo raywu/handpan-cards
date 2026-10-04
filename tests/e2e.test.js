@@ -247,8 +247,7 @@ function run() {
     return { l: r.left, t: r.top, w: r.width, h: r.height };
   })()`;
   async function waitElapsed(ms, label) {
-    await b.eval(`window.__waitMark = performance.now(); return true;`);
-    await b.waitFor(`performance.now() - window.__waitMark >= ${ms}`, { label, timeout: ms + 5000 });
+    await b.eval(`return new Promise((r) => setTimeout(r, ${ms}));`);
   }
   async function navigate(target) {
     if (navDead) throw navDead;
@@ -9255,7 +9254,7 @@ function run() {
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
-      await b.waitFor(`eatClick === false`, { label: "the touch swipe's eatClick decay" });
+      await waitElapsed(50, "the touch swipe's eatClick decay");
       await b.eval(`document.getElementById("next").focus(); return true;`);
       await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
       await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -10064,8 +10063,7 @@ function run() {
       // fly-out and land it for real before the tap), tap the card - the
       // document capture-phase pointerdown's `if (flight)` branch lands it
       // and reassigns eatClick with no decay.
-      await b.waitFor(`flight !== null && scene.getAnimations()[0]?.currentTime >= 60`,
-        { label: "the fly-out to be ~60ms in" });
+      await waitElapsed(100, "the tap to land mid fly-out");
       const stillMidFlight = await b.eval(`return flight !== null;`);
       assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
       // Check eatClickTimer right after the bare pointerdown, before the
@@ -10176,7 +10174,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelGesture([[20, 0], [20, 0]]);
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
+        await waitElapsed(250, "the 160ms gap to fire");
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
         const xf = await sceneXform();
@@ -10206,8 +10204,7 @@ function run() {
         // and springBack()'s WAAPI animation is created - read its keyframes
         // statically (safe regardless of playback progress, same pattern as
         // the fly-out/enter keyframe reads above).
-        await b.waitFor(`wheel === null && scene.getAnimations().length > 0`,
-          { label: "the gesture to end and springBack() to start", timeout: 1000 });
+        await waitElapsed(250, "the gesture to end and springBack() to start");
         const first = await b.eval(`
           const a = document.querySelector(".scene").getAnimations()[0];
           const kf = a.effect.getKeyframes();
@@ -10332,7 +10329,7 @@ function run() {
         // new trackpad gesture arriving as momentum while the previous
         // card is still flying out must not be allowed to commit a second
         // step on top of it.
-        await b.waitFor(`flight !== null && wheel === null`, { label: "the first gesture to end mid-flight", timeout: 1000 });
+        await waitElapsed(180, "the first gesture to end mid-flight");
         assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
           "the first gesture must have ended via its own gap timer while its flight is still mid-air");
         await wheelAt(100, 0);
