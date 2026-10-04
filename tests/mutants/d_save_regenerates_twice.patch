@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3472,6 +3472,7 @@ function runGenerate() {
+@@ -8241,6 +8241,7 @@ function runGenerate() {
    // deck"), nor on an options-only edit or an unchanged re-save (the id does
    // not move), nor on a field edit to a scale no other deck holds.
    let taken = null;
 +  generateDeck(String(scaleBox.value || ""), sheetOptions());
-   const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
-     if (!wasId) return null;
-     const id = HPE.core.deckId(seed.fields);
+   let res;
+   // Restores readonly and the label ONLY. genBtn.disabled is deliberately not
+   // here: a refused seed stays disabled until syncParseState re-enables it on

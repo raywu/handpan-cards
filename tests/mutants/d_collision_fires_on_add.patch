@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3546,7 +3546,6 @@ function runGenerate() {
-   // not move), nor on a field edit to a scale no other deck holds.
-   let taken = null;
-   const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
--    if (!wasId) return null;
-     const id = HPE.core.deckId(seed.fields);
-     if (id === wasId || !CUSTOM[id]) return null;
-     taken = CUSTOM[id];
+@@ -8247,7 +8247,6 @@ function runGenerate() {
+   // the next parseable input.
+   try {
+     res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+-      if (!wasId) return null;
+       const id = HPE.core.deckId(seed.fields);
+       if (id === wasId || !CUSTOM[id]) return null;
+       taken = CUSTOM[id];

@@ -1,0 +1,16 @@
+# kills: AP2-2 setInert applies each caller's own background set
+# suite: node --test --test-name-pattern ^AP2-2.setInert.applies.each.caller.s.own.background.set$ tests/app.test.js
+# openPanel inerts the sheet's set instead of its own, taking the header and
+# settings panel out from under the trigger that must close it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8567,7 +8567,7 @@ function openPanel() {
+   settingsScrim.removeAttribute("hidden");
+   settingsPanel.setAttribute("role", "dialog");
+   settingsPanel.setAttribute("aria-modal", "true");
+-  setInert(true, panelBackground);
++  setInert(true, background);
+ }
+ function closePanel() {
+   if (!panelOpen) return;

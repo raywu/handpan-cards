@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8714,7 +8714,7 @@ function setMode(m) {
+@@ -8669,7 +8669,7 @@ function setMode(m) {
    syncTierUI();
    const seqNote = document.getElementById("panel-seq-note");
    seqNote.hidden = m !== "S";
 -  document.getElementById("foot").classList.toggle("seq", m === "S");
 +  document.getElementById("foot").classList.add("seq");
    document.getElementById("seq-style").hidden = m !== "S";
-   const shuffleBtn = document.getElementById("shuffle");
-   if (m === "S") {
+   syncShuffleLabel();
+   if (wasS !== (m === "S")) setOrder();

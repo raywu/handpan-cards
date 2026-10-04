@@ -23,8 +23,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7749,33 +7749,6 @@
-   for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
+@@ -8580,33 +8580,6 @@ function closePanel() {
+   setInert(false, panelBackground);
    settingsTrigger.focus();
  }
 -// If the viewport crosses the breakpoint while the panel is open in its

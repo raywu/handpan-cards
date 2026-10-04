@@ -7,10 +7,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7966,7 +7966,7 @@ function setMode(m) {
-     shuffleBtn.classList.toggle("on", shuffled);
-     shuffleBtn.classList.remove("reroll");
-   }
+@@ -8672,7 +8672,7 @@ function setMode(m) {
+   document.getElementById("foot").classList.toggle("seq", m === "S");
+   document.getElementById("seq-style").hidden = m !== "S";
+   syncShuffleLabel();
 -  if (wasS !== (m === "S")) setOrder();
 +  if (false) setOrder();
    render();

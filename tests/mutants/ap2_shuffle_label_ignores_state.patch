@@ -1,0 +1,16 @@
+# kills: AP2-4 setMode and shuffle produce the same label
+# suite: node --test --test-name-pattern ^AP2-4.setMode.and.shuffle.produce.the.same.label$ tests/app.test.js
+# syncShuffleLabel always writes the off text, so a click and a mode change
+# disagree about the label.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8651,7 +8651,7 @@ function syncShuffleLabel() {
+     shuffleBtn.classList.remove("on");
+     shuffleBtn.classList.add("reroll");
+   } else {
+-    shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
++    shuffleBtn.textContent = "Shuffle: off";
+     shuffleBtn.removeAttribute("aria-label");
+     shuffleBtn.classList.toggle("on", shuffled);
+     shuffleBtn.classList.remove("reroll");
