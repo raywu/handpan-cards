@@ -3444,12 +3444,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- parseSeed -------------------------------------------------------- */
 
-  function parseSeed(input, options) {
-    if (typeof input !== "string") return badNote(String(input));
-
-    var opts = readOptions(options);
-    if (!opts.ok) return opts;
-
+  // Steps 1-3: tokens, ding, bar and inner-mark splits, lexing. Notes come
+  // back without midi/octave; validate() places them.
+  function tokenize(input) {
     var tokens = input.split(/\s+/).filter(function (t) { return t !== ""; });
 
     // 1. Ding counting, before every other rule (D13).
@@ -3512,7 +3509,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         lists[l][1].push(note);
       }
     }
+    return ok({ dingNote: dingNote, dingMidi: dingMidi, topNotes: topNotes,
+                bottomNotes: bottomNotes, rimCount: rimCount });
+  }
 
+  // Steps 4-6: octave inference, MIDI range, ordering, caps, the fifth.
+  function validate(parsed) {
+    var dingNote = parsed.dingNote;
+    var dingMidi = parsed.dingMidi;
+    var topNotes = parsed.topNotes;
+    var bottomNotes = parsed.bottomNotes;
+    var rimCount = parsed.rimCount;
     // 4. Octave inference, MIDI range and the strict-ascending rule. The ding
     //    counts as the element before the first top note.
     var seen = {};
@@ -3576,7 +3583,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         "<fifth of X>": fifthName(dingNote.letter, dingNote.accidental)
       });
     }
+    return ok(parsed);
+  }
 
+  // Step 7: the field map.
+  function assemble(parsed, options) {
+    var dingNote = parsed.dingNote;
+    var dingMidi = parsed.dingMidi;
+    var topNotes = parsed.topNotes;
+    var bottomNotes = parsed.bottomNotes;
+    var rimCount = parsed.rimCount;
+    var n;
     // 7. Build the field map (section 4: ids, labels, zones).
     var fields = {};
     fields["0"] = [spell(dingNote.letter, dingNote.accidental), dingNote.octave,
@@ -3596,7 +3613,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
     }
 
-    return ok({ fields: fields, options: opts.value });
+    return ok({ fields: fields, options: options });
+  }
+
+  function parseSeed(input, options) {
+    if (typeof input !== "string") return badNote(String(input));
+
+    var opts = readOptions(options);
+    if (!opts.ok) return opts;
+
+    var tokenized = tokenize(input);
+    if (!tokenized.ok) return tokenized;
+    var validated = validate(tokenized.value);
+    if (!validated.ok) return validated;
+    return assemble(validated.value, opts.value);
   }
 
   /* ---- section 12: the canonical string and the deck id ----------------- */
@@ -3759,7 +3789,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   function pitchClass(midi) {
-    return ((midi % 12) + 12) % 12;
+    return core().pc(midi);
   }
 
   function pcName(pc) {
@@ -4252,45 +4282,51 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Object.prototype.toString.call(value) === "[object Array]";
   }
 
-  function solve(seedOrFields, options) {
-    var source = fieldsOf(seedOrFields);
-    var zones = collect(source);
+  /* The solved slot of every non-ding field, in the order collect() yields
+   * them: rim slots, then inner, then bottom. `readOrder` permutes over
+   * exactly this sequence. */
+  function slotOrder(zoneCounts) {
+    var out = [];
+    var i;
+    for (i = 0; i < zoneCounts.rim; i += 1) out.push("rim");
+    for (i = 0; i < zoneCounts.inner; i += 1) out.push("inner");
+    for (i = 0; i < zoneCounts.bottom; i += 1) out.push("bottom");
+    return out;
+  }
 
-    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
-    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
-    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+  function countsOf(zones) {
+    return { rim: zones.rim.length, inner: zones.inner.length, bottom: zones.bottom.length };
+  }
 
-    var seedOptions = (seedOrFields && seedOrFields.options) || {};
-    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+  function mirrored(list, mirror) {
+    var out = [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      out.push(round(mirror ? norm(180 - list[i]) : list[i], 1));
+    }
+    return out;
+  }
 
-    var hasRim = zones.rim.length > 0;
-    var hasInner = zones.inner.length > 0;
-    var hasBottom = zones.bottom.length > 0;
+  /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
+  function placeZones(counts, mirror) {
+    return {
+      rims: mirrored(rimAngles(counts.rim), mirror),
+      inners: mirrored(innerAngles(counts.inner), mirror),
+      bottoms: mirrored(bottomAngles(counts.bottom), mirror)
+    };
+  }
 
-    var wanted = readOrder(
-      (options && "order" in options) ? options.order : seedOptions.order,
-      zones.rim.length + zones.inner.length + zones.bottom.length);
-    if (!wanted.ok) return wanted;
+  function geometry(counts, placed) {
+    var rims = placed.rims;
+    var inners = placed.inners;
+    var bottoms = placed.bottoms;
+    var hasRim = counts.rim > 0;
+    var hasInner = counts.inner > 0;
+    var hasBottom = counts.bottom > 0;
 
     var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
     var innerOrb = hasInner ? INNER_ORB : 0;
     var bottomOrb = hasBottom ? BOTTOM_ORB : 0;
-
-    var rims = rimAngles(zones.rim.length);
-    var inners = innerAngles(zones.inner.length);
-    var bottoms = bottomAngles(zones.bottom.length);
-
-    function finish(list) {
-      var out = [];
-      var i;
-      for (i = 0; i < list.length; i += 1) {
-        out.push(round(mirror ? norm(180 - list[i]) : list[i], 1));
-      }
-      return out;
-    }
-    rims = finish(rims);
-    inners = finish(inners);
-    bottoms = finish(bottoms);
 
     /* r_note: the largest circle that keeps every top field clear of every
      * other top field and of the ding, never larger than the built-in max.
@@ -4345,7 +4381,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     var ext = round(reach + EXT_PAD, 4);
 
-    var geom = {
+    return {
       rim: round(rimOrb, 4),
       inner: round(innerOrb, 4),
       bottom: round(bottomOrb, 4),
@@ -4363,38 +4399,64 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rim_num_out: rimNumOut,
       ext: ext
     };
+  }
 
-    /* The correction is applied LAST, to the field-to-slot assignment only.
-     * The SET of solved angles is unchanged - order says who sits where, not
-     * where the seats are - so every geom value computed above is untouched
-     * and mirror, which reflects the ANGLES, composes with it either way. */
-    if (wanted.value) {
-      var slots = rims.concat(inners, bottoms);
-      var moved = [];
-      var nRim = rims.length;
-      var nInner = inners.length;
-      for (i = 0; i < wanted.value.length; i += 1) moved.push(slots[wanted.value[i]]);
-      rims = moved.slice(0, nRim);
-      inners = moved.slice(nRim, nRim + nInner);
-      bottoms = moved.slice(nRim + nInner);
-    }
+  /* The correction is applied LAST, to the field-to-slot assignment only.
+   * The SET of solved angles is unchanged - order says who sits where, not
+   * where the seats are - so every geom value is untouched and mirror, which
+   * reflects the ANGLES, composes with it either way. */
+  function reseat(counts, placed, order) {
+    var slots = placed.rims.concat(placed.inners, placed.bottoms);
+    var layout = slotOrder(counts);
+    var out = { rims: [], inners: [], bottoms: [] };
+    var key = { rim: "rims", inner: "inners", bottom: "bottoms" };
+    for (var i = 0; i < order.length; i += 1) out[key[layout[i]]].push(slots[order[i]]);
+    return out;
+  }
 
+  /* Merge: copy the source fields and write each zone's angle into slot 4. */
+  function merge(source, zones, placed) {
     var fields = {};
     var id;
+    var i;
     for (id in source) {
       if (!Object.prototype.hasOwnProperty.call(source, id)) continue;
       fields[id] = source[id].slice();
     }
     for (i = 0; i < zones.ding.length; i += 1) fields[zones.ding[i]][4] = null;
-    for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = rims[i];
-    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = inners[i];
-    for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = bottoms[i];
+    for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = placed.rims[i];
+    for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = placed.inners[i];
+    for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
+    return fields;
+  }
 
-    return { ok: true, value: { geom: geom, fields: fields } };
+  function solve(seedOrFields, options) {
+    var source = fieldsOf(seedOrFields);
+    var zones = collect(source);
+
+    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
+    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
+    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+
+    var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+
+    var counts = countsOf(zones);
+    var wanted = readOrder(
+      (options && "order" in options) ? options.order : seedOptions.order,
+      counts.rim + counts.inner + counts.bottom);
+    if (!wanted.ok) return wanted;
+
+    var placed = placeZones(counts, mirror);
+    var geom = geometry(counts, placed);
+    if (wanted.value) placed = reseat(counts, placed, wanted.value);
+
+    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
   }
 
   HPE.layout = {
     solve: solve,
+    slotOrder: slotOrder,
     rimAngles: rimAngles,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
@@ -5041,7 +5103,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var all = ids(fields);
     for (var i = 0; i < all.length; i += 1) {
       var record = fields[String(all[i])];
-      if (record[3] === "ding") continue;
+      if (isDing(record)) continue;
       if (pc(record[2]) === pc(rootPc)) list.push(all[i]);
     }
     list.sort(function (a, b) {
@@ -5060,7 +5122,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function dingMidi(fields) {
     var all = ids(fields);
     for (var i = 0; i < all.length; i += 1) {
-      if (fields[all[i]][3] === "ding") return fields[all[i]][2];
+      if (isDing(fields[all[i]])) return fields[all[i]][2];
     }
     throw new Error("select: deck has no ding field");
   }
@@ -5834,8 +5896,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // case, not realistic use.
   var DFS_NODE_BUDGET = 15000;
 
+  function core() {
+    return HPE.core;
+  }
+
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return core().pc(n);
   }
 
   function field(deck, id) {
@@ -5853,7 +5919,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function homePc(deck) {
     for (var id in deck.fields) {
       if (Object.prototype.hasOwnProperty.call(deck.fields, id) &&
-          deck.fields[id][3] === "ding") {
+          core().isDing(deck.fields[id])) {
         return pc(deck.fields[id][2]);
       }
     }
@@ -5982,6 +6048,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  function prevValid(deck, prev) {
+    return Array.isArray(prev) && prev.length > 0 &&
+      prev.every(function (idx) {
+        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
+      });
+  }
+
+  // {anchorsList, homeAnchorIdx, refusal}: refusal is the NO_HOME_CHORD deal
+  // when the deck has no home anchor, else null.
+  function homeOrRefuse(deck) {
+    var anchorsList = anchors(deck);
+    var homeAnchorIdx = homeAnchor(deck, anchorsList);
+    return {
+      anchorsList: anchorsList,
+      homeAnchorIdx: homeAnchorIdx,
+      refusal: homeAnchorIdx === null ? { chords: null, reason: "NO_HOME_CHORD" } : null
+    };
+  }
+
   function sameSequence(a, b) {
     if (!a || !b || a.length !== b.length) return false;
     for (var i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return false;
@@ -6019,22 +6104,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // pick(deck, rng, prev, "basic") both resolve here, byte-identical in
   // output and rng consumption to the pre-tier implementation.
   function pickBasic(deck, rng, prev) {
-    var anchorsList = anchors(deck);
-    if (homeAnchor(deck, anchorsList) === null) {
-      return { chords: null, reason: "NO_HOME_CHORD" };
-    }
+    var home = homeOrRefuse(deck);
+    if (home.refusal) return home.refusal;
     var pools = { 2: sequences(deck, 2), 3: sequences(deck, 3) };
     if (!pools[2].length && !pools[3].length) {
       return { chords: null, reason: "TOO_FEW_CHORDS" };
     }
 
-    var prevValid = Array.isArray(prev) && prev.length > 0 &&
-      prev.every(function (idx) {
-        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
-      });
+    var prevOk = prevValid(deck, prev);
 
     var filtered = { 2: pools[2], 3: pools[3] };
-    if (prevValid) {
+    if (prevOk) {
       filtered = {
         2: pools[2].filter(function (seq) { return !sameSequence(seq, prev); }),
         3: pools[3].filter(function (seq) { return !sameSequence(seq, prev); })
@@ -6342,15 +6422,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var lengths = TIER_LENGTHS[tier];
     var ctx = { anchorsList: anchorsList, home: homePc(deck), homeAnchorIdx: homeAnchorIdx };
 
-    var prevValid = Array.isArray(prev) && prev.length > 0 &&
-      prev.every(function (idx) {
-        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
-      });
+    var prevOk = prevValid(deck, prev);
 
     // Phase 1: exclude prev, mirroring BASIC's E4 rule.
-    var found = drawFromLengths(deck, rng, tier, lengths, matrix, prevValid ? prev : null, ctx);
+    var found = drawFromLengths(deck, rng, tier, lengths, matrix, prevOk ? prev : null, ctx);
     // Phase 2: prev may be the only sequence this tier has - include it.
-    if (!found && prevValid) {
+    if (!found && prevOk) {
       found = drawFromLengths(deck, rng, tier, lengths, matrix, null, ctx);
     }
     if (!found) {
@@ -6371,12 +6448,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (t === "basic") {
       return pickBasic(deck, rng, prev);
     }
-    var anchorsList = anchors(deck);
-    var homeAnchorIdx = homeAnchor(deck, anchorsList);
-    if (homeAnchorIdx === null) {
-      return { chords: null, reason: "NO_HOME_CHORD" };
-    }
-    return pickTiered(deck, rng, prev, t, anchorsList, homeAnchorIdx);
+    var home = homeOrRefuse(deck);
+    if (home.refusal) return home.refusal;
+    return pickTiered(deck, rng, prev, t, home.anchorsList, home.homeAnchorIdx);
   }
 
   HPE.sequence = {
@@ -6401,7 +6475,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       classifyTier: classifyTier,
       homePc: homePc,
       homeAnchor: homeAnchor,
-      sameSequence: sameSequence
+      sameSequence: sameSequence,
+      prevValid: prevValid,
+      homeOrRefuse: homeOrRefuse
     }
   };
 })(HPE);

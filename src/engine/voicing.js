@@ -33,7 +33,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   function pitchClass(midi) {
-    return ((midi % 12) + 12) % 12;
+    return core().pc(midi);
   }
 
   function pcName(pc) {

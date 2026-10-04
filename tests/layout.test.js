@@ -905,3 +905,34 @@ test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
     angles("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5", "bottom"),
     [300, 240, 0, 180, 60, 120]);
 });
+
+/* ------------------------------------------------------------- EG-5 */
+
+test("EG-5 slotOrder matches solve's emitted field order on the corpus", () => {
+  const corpus = JSON.parse(fs.readFileSync(
+    path.join(FIXTURES, "engine_corpus_v1.json"), "utf8")).corpus.synthetic;
+  let checked = 0;
+  for (const row of corpus) {
+    if (!row.parse.ok) continue;
+    const fields = row.parse.fields;
+    const solved = HPE.layout.solve(fields);
+    if (!solved.ok) continue;
+    const rank = { rim: 0, inner: 1, bottom: 2 };
+    const ids = Object.keys(fields)
+      .filter((id) => fields[id][3] !== "ding")
+      .sort((a, b) => rank[fields[a][3]] - rank[fields[b][3]] || Number(a) - Number(b));
+    const counts = { rim: 0, inner: 0, bottom: 0 };
+    for (const id of ids) counts[fields[id][3]] += 1;
+    assert.deepEqual(plain(HPE.layout.slotOrder(counts)), ids.map((id) => fields[id][3]), row.name);
+
+    const reversed = ids.map((_, i) => ids.length - 1 - i);
+    const back = HPE.layout.solve(fields, { order: reversed });
+    assert.equal(back.ok, true, row.name);
+    ids.forEach((id, i) => {
+      assert.equal(back.value.fields[id][4], solved.value.fields[ids[reversed[i]]][4],
+        `${row.name}: field ${id} takes slot ${reversed[i]}`);
+    });
+    checked += 1;
+  }
+  assert.ok(checked >= 10, `only ${checked} corpus rows checked`);
+});

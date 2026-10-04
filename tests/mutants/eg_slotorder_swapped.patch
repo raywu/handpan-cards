@@ -1,0 +1,16 @@
+# kills: EG-5 slotOrder matches solve's emitted field order on the corpus
+# suite: node --test --test-name-pattern ^EG.5.slotOrder.matches.solve.s.emitted.field.order.on.the.corpus$ tests/layout.test.js
+# EG-5: slotOrder lists inner slots before rim slots, so a corrected order seats fields in the wrong zone.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -209,8 +209,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function slotOrder(zoneCounts) {
+     var out = [];
+     var i;
+-    for (i = 0; i < zoneCounts.rim; i += 1) out.push("rim");
+     for (i = 0; i < zoneCounts.inner; i += 1) out.push("inner");
++    for (i = 0; i < zoneCounts.rim; i += 1) out.push("rim");
+     for (i = 0; i < zoneCounts.bottom; i += 1) out.push("bottom");
+     return out;
+   }

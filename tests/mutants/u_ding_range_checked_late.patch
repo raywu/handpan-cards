@@ -4,7 +4,7 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -330,7 +330,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -327,7 +327,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      // A ding written without an octave is octave 3 (all three built-ins).
      if (dingNote.octave === null) dingNote.octave = 3;
      var dingMidi = midiFromName(dingNote.letter, dingNote.accidental, dingNote.octave);
@@ -12,10 +12,10 @@ diff --git a/src/engine/core.js b/src/engine/core.js
  
      // 2. Split the rest on the bar, which must stand alone.
      var rest = tokens.slice(1);
-@@ -375,6 +374,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       }
-     }
- 
+@@ -382,6 +381,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var topNotes = parsed.topNotes;
+     var bottomNotes = parsed.bottomNotes;
+     var rimCount = parsed.rimCount;
 +    if (dingMidi < 0 || dingMidi > 127) return outOfRange(dingNote, dingMidi);
 +
      // 4. Octave inference, MIDI range and the strict-ascending rule. The ding

@@ -268,7 +268,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var all = ids(fields);
     for (var i = 0; i < all.length; i += 1) {
       var record = fields[String(all[i])];
-      if (record[3] === "ding") continue;
+      if (isDing(record)) continue;
       if (pc(record[2]) === pc(rootPc)) list.push(all[i]);
     }
     list.sort(function (a, b) {
@@ -287,7 +287,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function dingMidi(fields) {
     var all = ids(fields);
     for (var i = 0; i < all.length; i += 1) {
-      if (fields[all[i]][3] === "ding") return fields[all[i]][2];
+      if (isDing(fields[all[i]])) return fields[all[i]][2];
     }
     throw new Error("select: deck has no ding field");
   }

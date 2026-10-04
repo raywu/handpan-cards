@@ -1,0 +1,17 @@
+# kills: EG-2 sequence and voicing take pc/isDing from core at use time
+# suite: node --test --test-name-pattern ^EG.2.sequence.and.voicing.take.pc.isDing.from.core.at.use.time$ tests/sequence.test.js
+# EG-2: core is captured when sequence loads instead of when it is used, so loading before core breaks.
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -51,8 +51,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // case, not realistic use.
+   var DFS_NODE_BUDGET = 15000;
+ 
++  var EAGER_CORE = HPE.core;
+   function core() {
+-    return HPE.core;
++    return EAGER_CORE;
+   }
+ 
+   function pc(n) {
