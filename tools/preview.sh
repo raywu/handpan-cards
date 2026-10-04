@@ -41,7 +41,7 @@ fi
 LAN=$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || true)
 echo "  local:  http://localhost:$PORT/"
 [ -n "$LAN" ] && echo "  phone:  http://$LAN:$PORT/"
-echo "  (Pages serves main only; merge to publish at http://handpan.raywu.org/)"
+echo "  (Pages serves main only; merge to publish at https://handpan.raywu.org/)"
 python3 -m http.server "$PORT" --bind 0.0.0.0 --directory "$SERVE_DIR" &
 SERVER=$!
 wait "$SERVER"
