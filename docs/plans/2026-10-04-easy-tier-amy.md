@@ -270,6 +270,20 @@ bounce budgeted.
   `sq_home_not_first` / `sq_loop_not_checked` mutants were renamed to
   `sq_start_not_anchor` / `sq_wrap_not_checked`; the golden tests were renamed
   to say "EASY golden fixture" / "tier golden fixture".
+- Perf fix at execution (2026-10-04, commit `d639e95`): CI run 37232221226
+  at `777e882` timed out `tests/sequence.test.js` at the 180 s suite limit
+  (73 s locally against main's 49.5 s), because `pickBasic` enumerated three
+  per-length DFS pools per deal with `connects()` recomputed at every node.
+  `basicPools` builds the anchor adjacency once and emits every 2-, 3- and
+  4-chord cycle from one DFS; `sequences()` and `pickBasic` both read it.
+  Pool contents and order are unchanged (goldens and face digests byte-
+  identical), so this is inside the lane's engine ownership and changes no
+  rule. The two mutants whose hunks targeted the removed DFS
+  (`sq_start_not_anchor`, `sq_wrap_not_checked`) were re-anchored on
+  `basicPools` and are still killed by the named test. Alternative not
+  taken: raise `NODE_SUITE_TIMEOUT`, which would hide the regression.
+- Main gained `c1f145d` (`tools/preview.sh` only) during the lane; merged
+  into the branch as `c3bafea`, no overlap with the ownership list.
 
 ## Eng review (2026-10-04, `/plan-eng-review`, HEAD `01915a6`)
 
