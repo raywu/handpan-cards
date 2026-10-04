@@ -256,6 +256,20 @@ bounce budgeted.
   get today disappears.
 - R8 rotations distinct. Alternative not taken: canonical loop with a random
   rotation at deal time (same reachability, smaller pool, more code).
+- Ownership widened at execution (2026-10-04): `tests/app.test.js` pins mode S
+  face digests (`tests/fixtures/card_face_v1.json`, `gen_face_v1.json`) that
+  `tools/regen_card_fixture.js` enumerates over `sequences(deck, 2|3)`, and
+  two app tests pinned EASY to 2 or 3 chords. Under R1 those went red in CI,
+  so the lane also owns: the fixture tool's enumeration extended to length 4
+  (comments updated), both digests regenerated (mode A and B digests checked
+  byte-identical to main; only mode S keys changed and grew), and the two app
+  assertions widened to 2 to 4. Alternative not taken: leave them red for a
+  separate lane, which would block merge. No other app or `tools/*` change.
+- The eval fixture for the five-card DFS deck gave `Dm` four fields as `Dm7`
+  so chord 0 is the only legal MEDIUM start under R5; the old
+  `sq_home_not_first` / `sq_loop_not_checked` mutants were renamed to
+  `sq_start_not_anchor` / `sq_wrap_not_checked`; the golden tests were renamed
+  to say "EASY golden fixture" / "tier golden fixture".
 
 ## Eng review (2026-10-04, `/plan-eng-review`, HEAD `01915a6`)
 
