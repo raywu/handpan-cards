@@ -108,11 +108,7 @@ function run() {
   // Known uncaught page exceptions, one scoped expectation per test, each
   // naming its queue row in docs/plans/2026-10-03-complexity-refactor.md
   // section 9. There is no global allow-list: a new exception fails its test.
-  const KNOWN_UNCAUGHT = [
-    [/^card swipe: a tap during the fly-out lands it once and never flips the wrong card$/, /setPointerCapture/, "EX-Q1"],
-    [/^card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag$/, /setPointerCapture/, "EX-Q2"],
-    [/^card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back$/, /setPointerCapture/, "EX-Q3"],
-  ];
+  const KNOWN_UNCAUGHT = [];
 
   afterEach((t) => {
     for (const [name, pattern] of KNOWN_UNCAUGHT) if (name.test(t.name)) expectUncaught(pattern);
