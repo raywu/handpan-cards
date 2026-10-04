@@ -123,10 +123,15 @@ teal, two amber) on BOTH Chrome's dark strip (`#202124`) and a light one
 (`#dee1e6`); verified on real PyMuPDF rasters at 16 and 32 px,
 `strip-dark-v2.png` and `strip-light-v2.png` in the Approved Mockups below.
 
-That is the D minor card of the D Amara deck, the first card of the first
-built-in deck the app shows, drawn with the app's own highlighting rule (root
-colour on the root, tone colour on the others). It is the product's own
-diagram, not a generic icon. ONE SVG, no `sizes="16x16"` second icon (§9,
+That is the D minor card of the D Amara deck, in the app's root/tone colours
+(root teal, tones amber). The icon lights the three VOICING fields only (D4,
+F4, A4); the app's pitch-class-complete rule would also light the ding D3 and
+A3, which does not read at 16 px (reviewer nit 2, 2026-10-04; the
+implementation was always the §3.3 table). The "first card the app shows"
+rationale that stood here and in N5 was wrong: the app boots on Hijaz
+(`DECKS[0]`); Amara Dm was kept because it is the deck whose palette is the
+site's own (reviewer nit 3). It is the product's own diagram, not a generic
+icon. ONE SVG, no `sizes="16x16"` second icon (§9,
 decision N13): Chromium ignores `sizes` on SVG icons and takes the last one,
 so a second inline SVG is a second source to keep in sync for one browser
 family's benefit, and the thicker-stroke single SVG already reads at 16 px.
@@ -310,7 +315,7 @@ that still meets §1; never widen scope.
 | N2 | Icon lives ONLY as the data URI in `index.html`; `make_icons.py` reads it from there | one source, no second sync step, and the app stays a single file |
 | N3 | PyMuPDF for rasterising, not ImageMagick or cairosvg | already a CI dependency; the local `magick` is not in CI |
 | N4 | `og:description` equals `description` | one string, one test asserting equality, no drift |
-| N5 | The favicon is Amara's Dm card specifically | the first card the app shows; a product-true diagram, not a generic pan |
+| N5 | The favicon is Amara's Dm card specifically | a product-true diagram in the site's own teal/amber, not a generic pan (the original "first card the app shows" reason was wrong: the app boots on Hijaz; corrected 2026-10-04, §3.3) |
 | N6 | No favicon.ico, no manifest | ico is legacy-only; manifest is parked PWA scope |
 | N7 | gstack upgrade prompt: "Not now" (snoozed 24 h) | an upgrade mid-review changes the procedure under the review |
 | N8 | D1: skip `/office-hours` before the eng review | the owner interview already fixed name, icon and scope |
@@ -334,8 +339,34 @@ that still meets §1; never widen scope.
   two amber); the 180 px touch icon and `og.png` match the Approved Mockups;
   the 630x630 centre crop of `og.png` shows the whole icon and all three text
   lines. No SVG or layout change was needed.
-- Step 7: `tests/app.test.js` grew 264 -> 268; FLOORS row restated from the CI
-  js-results artifact (see PR).
+- Step 7: `tests/app.test.js` grew 264 -> 268; FLOORS row restated at 268
+  and confirmed against the CI js-results artifact of run 37218169795
+  (`files["tests/app.test.js"].total` = 268). PR #230, head `6a6a1b6`.
+- N21 (auto-decision): the first CI attempt at `6a6a1b6` failed ONE e2e test,
+  "card swipe: a mouse drag commits without flipping ..." (a timed two-step
+  mouse drag landed as a spring-back). The diff does not touch the swipe
+  code, the last six runs on main were green, and the repo rule for a lone
+  unrelated failure is to re-run the failed jobs at the same SHA first. The
+  rerun was green on every job; the `nm_` mutants were killed in the shard
+  reports and the aggregate mutation gate passed on both attempts.
+- §6 post-merge (2026-10-04, merge commit `9a305c3`): Pages built `9a305c3`.
+  `/browse` (gstack headless driver; Aside not installed) on
+  https://handpan.raywu.org/ read `document.title` "Handpan Chords", h1
+  "Handpan Chords", three icon links (SVG data URI `rel=icon`, PNG
+  `rel=icon` 180x180 and `apple-touch-icon`, both at
+  `/apple-touch-icon.png`), `og:image` as the absolute
+  `https://handpan.raywu.org/og.png`, the N17 description, and no console
+  errors. `apple-touch-icon.png` and `og.png` serve 200 `image/png`; the
+  touch icon renders the Dm triad pan of §3.3. A headless browser has no
+  tab strip, so the favicon is confirmed by the served links and rasters,
+  not by a tab screenshot.
+- Reviewer nits (PR #230, PASS_WITH_NITS at `6a6a1b6`): nit 2 (§3.3 said
+  the icon followed the pitch-class rule; it lights the three voicing fields
+  only) and nit 3 (the "first card the app shows" rationale was wrong; the
+  app boots on Hijaz) are corrected in §3.3, N5 and the `index.html` head
+  comment in the follow-up PR. Nit 1 (`make_icons.check()` has no text-band
+  region for the `og.png` copy) and nit 4 (icon link order, unverified) are
+  left open for the owner.
 
 ## 8. Engineering review
 
