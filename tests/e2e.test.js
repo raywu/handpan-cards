@@ -224,6 +224,31 @@ function run() {
   // killed mutant as a survivor. Once navigation is gone it is gone for the
   // run: hand the first failure straight to every later test.
   let navDead = null;
+  const WALK_RULES = `
+    const walk = (rules, visit) => {
+      for (const r of Array.from(rules)) {
+        if (r.cssRules && r.cssRules.length) walk(r.cssRules, visit);
+        visit(r);
+      }
+    };
+    const walkSheets = (visit) => {
+      for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules, visit); } catch (e) {} }
+    };`;
+  async function enterSeqMode() {
+    await freshLoad();
+    await openSettingsPanel();
+    await b.click("#tier-basic");
+    await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
+      { label: "mode S to take effect" });
+  }
+  const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
+  const rectsOf = (sel) => `(() => {
+    const r = document.querySelector("${sel}").getBoundingClientRect();
+    return { l: r.left, t: r.top, w: r.width, h: r.height };
+  })()`;
+  async function waitElapsed(ms, label) {
+    await b.eval(`return new Promise((r) => setTimeout(r, ${ms}));`);
+  }
   async function navigate(target) {
     if (navDead) throw navDead;
     let last = null;
@@ -3767,18 +3792,15 @@ function run() {
         // The assertion message prints the collected list for exactly this
         // reason: an empty one is a broken sweep, not a clean app.
         const actives = [];
-        const walk = (rules) => {
-          for (const r of Array.from(rules)) {
-            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-            if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
-            // A declaration that changes nothing is not feedback.
-            if (!r.style || r.style.length === 0) continue;
-            for (const one of r.selectorText.split(",")) {
-              actives.push(one.trim().replace(/:active\\b/g, ""));
-            }
+        ${WALK_RULES}
+        walkSheets((r) => {
+          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) return;
+          // A declaration that changes nothing is not feedback.
+          if (!r.style || r.style.length === 0) return;
+          for (const one of r.selectorText.split(",")) {
+            actives.push(one.trim().replace(/:active\\b/g, ""));
           }
-        };
-        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+        });
 
         const name = (el) => el.id ? "#" + el.id
           : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
@@ -3825,20 +3847,17 @@ function run() {
     await freshLoad();
     const found = await b.eval(`
       const out = [];
-      const walk = (rules) => {
-        for (const r of Array.from(rules)) {
-          if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-          if (!r.selectorText || !/:active\\b/.test(r.selectorText)) continue;
-          if (!r.style || r.style.length === 0) continue;
-          for (const one of r.selectorText.split(",")) {
-            const sel = one.trim().replace(/:active\\b/g, "");
-            let hits = false;
-            try { hits = document.querySelector(".shuffle").matches(sel); } catch (e) {}
-            if (hits) out.push({ sel: one.trim(), opacity: r.style.opacity, color: r.style.color });
-          }
+      ${WALK_RULES}
+      walkSheets((r) => {
+        if (!r.selectorText || !/:active\\b/.test(r.selectorText)) return;
+        if (!r.style || r.style.length === 0) return;
+        for (const one of r.selectorText.split(",")) {
+          const sel = one.trim().replace(/:active\\b/g, "");
+          let hits = false;
+          try { hits = document.querySelector(".shuffle").matches(sel); } catch (e) {}
+          if (hits) out.push({ sel: one.trim(), opacity: r.style.opacity, color: r.style.color });
         }
-      };
-      for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+      });
       return out;
     `);
     assert.ok(found.length > 0,
@@ -3883,15 +3902,12 @@ function run() {
     try {
       const decl = await b.eval(`
         const out = [];
-        const walk = (rules) => {
-          for (const r of Array.from(rules)) {
-            if (r.cssRules && r.cssRules.length) walk(r.cssRules);
-            if (!r.selectorText || !/(^|,)\\s*body\\s*($|,)/.test(r.selectorText)) continue;
-            out.push(r.style.padding || [r.style.paddingTop, r.style.paddingRight,
-              r.style.paddingBottom, r.style.paddingLeft].join(" "));
-          }
-        };
-        for (const s of Array.from(document.styleSheets)) { try { walk(s.cssRules); } catch (e) {} }
+        ${WALK_RULES}
+        walkSheets((r) => {
+          if (!r.selectorText || !/(^|,)\\s*body\\s*($|,)/.test(r.selectorText)) return;
+          out.push(r.style.padding || [r.style.paddingTop, r.style.paddingRight,
+            r.style.paddingBottom, r.style.paddingLeft].join(" "));
+        });
         return out.join(" | ");
       `);
       for (const edge of ["top", "right", "bottom", "left"]) {
@@ -7346,13 +7362,6 @@ function run() {
   // (E1-E9). Only browser-only behaviour lives here - anything the sandbox
   // stub can check (see tests/app.test.js) stays there.
   describe("sequence mode", () => {
-    async function enterSeqMode() {
-      await freshLoad();
-      await openSettingsPanel();
-      await b.click("#tier-basic");
-      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
-        { label: "mode S to take effect" });
-    }
 
     test("selecting a tier presses it exclusively, shows the credit note, and survives a reload",
       async () => {
@@ -7381,7 +7390,6 @@ function run() {
         assert.ok(!info.frontHasHint, "S mode's front face must carry no hint line");
         assert.ok(info.frontHasDiagram, "S mode's front face must show the diagram");
         // Step forward all the way around and confirm it wraps to the first chord.
-        const railText = () => b.eval(`return document.querySelector("#count .seq-rail").textContent;`);
         const before = await railText();
         for (let i = 0; i < 5; i++) {
           await b.click("#next");
@@ -7447,7 +7455,6 @@ function run() {
         text: document.getElementById("shuffle").textContent,
         on: document.getElementById("shuffle").classList.contains("on"),
       };`);
-      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
 
       for (const [baseMode, turnShuffleOn] of [["A", false], ["B", true]]) {
         await freshLoad();
@@ -8119,10 +8126,6 @@ function run() {
           await b.eval(`document.getElementById("settings-scrim")?.click(); return true;`).catch(() => {});
           await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close" });
           await b.settle();
-          const rectsOf = (sel) => `(() => {
-            const r = document.querySelector("${sel}").getBoundingClientRect();
-            return { w: r.width, h: r.height };
-          })()`;
           const basic = await b.eval(`return { footer: ${rectsOf("footer")}, card: ${rectsOf("#card")} };`);
           await b.eval(`
             selectDeck(${JSON.stringify(longest.deckId)});
@@ -8158,10 +8161,6 @@ function run() {
     const E3_VIEWPORTS = [[390, 844], [390, 745], [380, 700], [320, 568], [844, 390], [667, 375], [1280, 500]];
     test("switching to mode S keeps the header and footer width fixed and grows the footer only by the style block",
       async () => {
-        const rectsOf = (sel) => `(() => {
-          const r = document.querySelector("${sel}").getBoundingClientRect();
-          return { l: r.left, t: r.top, w: r.width, h: r.height };
-        })()`;
         for (const [w, h] of E3_VIEWPORTS) {
           await freshLoad();
           await b.setViewport(w, h, w < h);
@@ -8534,7 +8533,12 @@ function run() {
       async () => {
         await dealSixChordRail();
         await rb.eval(`step(-1); return true;`);
-        await rb.eval(`return new Promise((r) => setTimeout(r, 900));`);
+        await rb.waitFor(`(() => {
+          const s = document.querySelector("#count .seq-rail").scrollLeft;
+          const stable = s > 20 && window.__railScroll === s;
+          window.__railScroll = s;
+          return stable;
+        })()`, { label: "the rail's scroll to rest past 20px" });
         const settled = await rb.eval(`return document.querySelector("#count .seq-rail").scrollLeft;`);
         assert.ok(settled > 20, `last chord must scroll the rail: ${settled}`);
         const frames = await rb.eval(sampleFrames(`flip()`));
@@ -8630,13 +8634,6 @@ function run() {
    * difficulty - docs/plans/2026-10-02-sequence-difficulty.md
    * ---------------------------------------------------------------- */
   describe("difficulty", () => {
-    async function enterSeqMode() {
-      await freshLoad();
-      await openSettingsPanel();
-      await b.click("#tier-basic");
-      await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
-        { label: "mode S to take effect" });
-    }
     const tierState = () => b.eval(`return Object.fromEntries(["basic", "intermediate", "advanced"].map(t => {
       const el = document.getElementById("tier-" + t);
       return [t, { on: el.classList.contains("on"), pressed: el.getAttribute("aria-pressed") }];
@@ -8677,7 +8674,6 @@ function run() {
     // it must still redraw a (possibly different) progression.
     test("clicking the already-pressed tier still re-deals", async () => {
       await enterSeqMode();
-      const railText = () => b.eval(`return document.querySelector("#count .seq-rail")?.textContent ?? null;`);
       const seen = new Set([await railText()]);
       for (let i = 0; i < 8; i++) {
         await openSettingsPanel();
@@ -9258,7 +9254,7 @@ function run() {
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await waitElapsed(50, "the touch swipe's eatClick decay");
       await b.eval(`document.getElementById("next").focus(); return true;`);
       await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
       await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -9797,9 +9793,9 @@ function run() {
           assert.ok(g.represses < 3, "drag to register the move (re-pressed 3 times)");
           assert.strictEqual(await b.eval(`return drag;`), null, "drag to register the move (drag still live)");
           g.represses++;
-          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 }));
           await b.finishAnimations();
-          await new Promise(r => setTimeout(r, 150 * g.represses));
+          await b.waitForPendingSettle();
           g.t0 = await press();
           g.id = await b.eval(`return drag ? drag.id : null;`);
           assert.ok(g.id !== null, "a real mouse re-press must start a drag");
@@ -9988,7 +9984,7 @@ function run() {
       await expectCount(`2 / ${n}`, "the drag should have committed");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "the committing drag must arm eatClick right after landing");
-      await new Promise((r) => setTimeout(r, 450));
+      await waitElapsed(450, "the 400ms eatClick window to pass");
       assert.strictEqual(await b.eval(`return eatClick;`), false,
         "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
@@ -10021,7 +10017,7 @@ function run() {
         "setEatClick(true, ...) must arm eatClick");
       // A second release lands partway through the first decay window and
       // re-arms eatClick with its OWN fresh 400ms timer.
-      await new Promise((r) => setTimeout(r, DECAY_MS / 2));
+      await waitElapsed(DECAY_MS / 2, "half the first decay window to pass");
       await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
       // Wait past the FIRST decay's deadline (400ms after the first call,
       // i.e. 200ms after the second) but comfortably before the second
@@ -10029,7 +10025,7 @@ function run() {
       // timer from the first call were not cancelled when the second call
       // re-armed, it would fire in this window and clear the re-armed
       // eatClick early.
-      await new Promise((r) => setTimeout(r, DECAY_MS / 2 + 100));
+      await waitElapsed(DECAY_MS / 2 + 100, "the first decay's deadline to pass");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "a stale decay timer from an earlier setEatClick cleared a re-armed eatClick");
     });
@@ -10067,7 +10063,7 @@ function run() {
       // fly-out and land it for real before the tap), tap the card - the
       // document capture-phase pointerdown's `if (flight)` branch lands it
       // and reassigns eatClick with no decay.
-      await new Promise((r) => setTimeout(r, 100));
+      await waitElapsed(100, "the tap to land mid fly-out");
       const stillMidFlight = await b.eval(`return flight !== null;`);
       assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
       // Check eatClickTimer right after the bare pointerdown, before the
@@ -10126,7 +10122,7 @@ function run() {
       });
       // Real wall-clock gap so this first sample ages out of the 100ms
       // trailing window by the time the final move/lpc pair fires.
-      await new Promise((r) => setTimeout(r, 150));
+      await waitElapsed(150, "the first sample to age out of the trailing window");
       // The final real sample: a short drag (|dx| well under
       // SWIPE_COMMIT_PX) landing just before the lpc event, so it is still
       // inside the trailing window - exactly the point a stale pushed
@@ -10178,7 +10174,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelGesture([[20, 0], [20, 0]]);
-        await new Promise((r) => setTimeout(r, 250));
+        await waitElapsed(250, "the 160ms gap to fire");
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
         const xf = await sceneXform();
@@ -10193,7 +10189,7 @@ function run() {
         const xf = await sceneXform();
         assert.strictEqual(xf.none, false, "a wheel event under threshold must apply a follow transform");
         assert.ok(xf.m41 < 0, `deltaX>0 (sx>0) must move the card to translateX<0, got ${xf.m41}`);
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
       });
 
@@ -10208,7 +10204,7 @@ function run() {
         // and springBack()'s WAAPI animation is created - read its keyframes
         // statically (safe regardless of playback progress, same pattern as
         // the fly-out/enter keyframe reads above).
-        await new Promise((r) => setTimeout(r, 250));
+        await waitElapsed(250, "the gesture to end and springBack() to start");
         const first = await b.eval(`
           const a = document.querySelector(".scene").getAnimations()[0];
           const kf = a.effect.getKeyframes();
@@ -10251,7 +10247,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
         const xf = await sceneXform();
@@ -10264,7 +10260,8 @@ function run() {
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
-        await new Promise((r) => setTimeout(r, 220)); // past the 160ms gesture gap
+        await waitElapsed(220, "the 160ms gesture gap to pass");
+        assert.strictEqual(await b.eval(`return wheel === null;`), true, "the 160ms gap must have ended the first gesture");
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
@@ -10306,7 +10303,7 @@ function run() {
           }));
           return true;
         `);
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
       });
@@ -10332,7 +10329,7 @@ function run() {
         // new trackpad gesture arriving as momentum while the previous
         // card is still flying out must not be allowed to commit a second
         // step on top of it.
-        await new Promise((r) => setTimeout(r, 180));
+        await waitElapsed(180, "the first gesture to end mid-flight");
         assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
           "the first gesture must have ended via its own gap timer while its flight is still mid-air");
         await wheelAt(100, 0);
@@ -10347,7 +10344,7 @@ function run() {
         // overlapping animation on .scene is the observable symptom.
         assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
           "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
       });
@@ -10545,7 +10542,8 @@ function run() {
           await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
           await b.waitFor(`window.__anims.length >= 1`, { label: "the out animation to be recorded" });
           const out = (await recordedAnims())[0];
-          assert.ok(out.timing.duration <= 320, `duration ${out.timing.duration} must not exceed SWIPE_MOMENTUM_MAX_MS`);
+          assert.ok(out.timing.duration >= 140 && out.timing.duration <= 320,
+            `duration ${out.timing.duration} out of [SWIPE_MOMENTUM_MIN_MS 140, SWIPE_MOMENTUM_MAX_MS 320]`);
           const replayed = await replaySpeed(out);
           assert.ok(replayed < 0, "a leftward commit must start moving left");
           assert.ok(Math.abs(replayed) >= 0.9 * 1.5 && Math.abs(replayed) <= 1.1 * 1.5,
@@ -10593,9 +10591,7 @@ function run() {
           await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
           await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 40, y: box.y, buttons: 1, pointerType: "pen" });
           await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x - 180, y: box.y, buttons: 1, pointerType: "pen" });
-          await b.armPendingSettle();
-          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x - 180, y: box.y, button: "left", clickCount: 1, pointerType: "pen" });
-          b.settleAfterRealRelease();
+          await b.releasing(() => b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x - 180, y: box.y, button: "left", clickCount: 1, pointerType: "pen" }));
           const seenPointerType = await b.eval(`return window.__seenPointerType;`);
           if (seenPointerType === "pen") {
             await b.waitFor(`window.__anims.length >= 1`, { label: "the pen out animation to be recorded" });

@@ -330,9 +330,7 @@ class Browser {
         await this.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dx, dy), timestamp: t0 + ms / 1000 });
       }
       if (release) {
-        await this.armPendingSettle();
-        await this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 });
-        this.settleAfterRealRelease();
+        await this.releasing(() => this.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + last[1] / 1000 }));
       }
     } else {
       const p0 = at(0, 0);
@@ -343,9 +341,7 @@ class Browser {
       }
       if (release) {
         const p = at(last[0], last[2]);
-        await this.armPendingSettle();
-        await this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 });
-        this.settleAfterRealRelease();
+        await this.releasing(() => this.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1, timestamp: t0 + last[1] / 1000 }));
       }
     }
   }
@@ -379,6 +375,13 @@ class Browser {
       if (c) c.addEventListener("lostpointercapture", () => { window.__cdpLpcSeen = true; }, { once: true });
       return true;
     `).catch(() => {});
+  }
+  // Arm, dispatch the real release, then defer the capture drain: the one
+  // ordering every real release needs (arm BEFORE the event, drain after).
+  async releasing(dispatchRelease) {
+    await this.armPendingSettle();
+    await dispatchRelease();
+    this.settleAfterRealRelease();
   }
   settleAfterRealRelease() {
     this._pendingSettle = this.deferPendingSettle();
