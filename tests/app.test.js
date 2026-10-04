@@ -5282,3 +5282,22 @@ test("AP3-0 generated faces and rail DOM match the committed digest", () => {
     /Command failed/, "a drifted generated face must fail the check");
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("AP3-1 faceHTML is the only answer-template builder", () => {
+  const app = boot({ random: () => 0 });
+  app.run(`var __calls = []; var __real = faceHTML;
+    faceHTML = function (d, ch, n, kind) { __calls.push(kind); return __real.apply(this, arguments); };
+    var __pan = pan; var __pans = 0; pan = function () { __pans += 1; return __pan.apply(this, arguments); };`);
+  const seen = {};
+  for (const mode of ["A", "B", "S"]) {
+    app.run(`mode = ${JSON.stringify(mode)}; setOrder(); idx = 0; __calls.length = 0; __pans = 0; render();`);
+    seen[mode] = { calls: plain(app.get("__calls")), pans: app.get("__pans"), front: app.els.front._html, back: app.els.back._html };
+  }
+  assert.deepStrictEqual(seen.A.calls, ["question", "answer"]);
+  assert.deepStrictEqual(seen.B.calls, ["questionB", "answerB"]);
+  assert.deepStrictEqual(seen.S.calls, ["answer", "backS"]);
+  for (const mode of ["A", "B", "S"]) assert.strictEqual(seen[mode].pans, 1, `${mode} builds the pan once`);
+  assert.ok(seen.A.back.includes("diagwrap") && seen.A.back.includes('class="lines"'));
+  assert.ok(seen.S.front.includes("diagwrap") && !seen.S.front.includes("prompt"));
+  assert.ok(seen.B.back.includes("prompt") && seen.B.back.includes('class="lines"'));
+});
