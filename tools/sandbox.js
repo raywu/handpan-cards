@@ -142,6 +142,55 @@ function makeElement(id, tag = "div") {
   };
 }
 
+/**
+ * Opt-in layout surface (boot({layout:true})): the members the swipe, wheel and
+ * keyboard-inset code reads off an element. The stub has no layout engine, so
+ * every number here is a fixed, documented fiction - a 360x520 card box - and
+ * the animation is a record, not a clock: it never finishes by itself. A test
+ * settles it with finish(). The default boot gets none of this.
+ */
+const CARD_BOX = { left: 0, top: 0, right: 360, bottom: 520, width: 360, height: 520 };
+function addLayout(el) {
+  el.getBoundingClientRect = () => ({ ...CARD_BOX });
+  el.offsetWidth = CARD_BOX.width;
+  el.offsetHeight = CARD_BOX.height;
+  el.scrollLeft = 0;
+  el.isConnected = true;
+  el._anims = [];
+  Object.defineProperty(el, "parentElement", { get() { return this.parentNode || null; }, configurable: true });
+  el.animate = (keyframes, options) => {
+    let settle, fail;
+    const finished = new Promise((res, rej) => { settle = res; fail = rej; });
+    finished.catch(() => {});
+    const anim = {
+      keyframes, options, finished, state: "running",
+      cancel() { if (this.state === "running") { this.state = "idle"; fail(new Error("AbortError")); } },
+      finish() { if (this.state === "running") { this.state = "finished"; settle(this); } },
+    };
+    el._anims.push(anim);
+    return anim;
+  };
+  el.getAnimations = () => el._anims.filter((a) => a.state === "running");
+  el.setPointerCapture = (id) => { el._captured = id; };
+  el.releasePointerCapture = () => { el._captured = undefined; };
+  el.contains = (other) => {
+    for (let n = other; n; n = n.parentNode) if (n === el) return true;
+    return false;
+  };
+  el.closest = (sel) => {
+    const parts = String(sel).split(",").map((x) => x.trim());
+    for (let n = el; n; n = n.parentNode) {
+      for (const p of parts) {
+        if (p.startsWith("#") ? n.id === p.slice(1)
+          : p.startsWith(".") ? n.classList.contains(p.slice(1))
+          : n.tagName === p.toUpperCase()) return n;
+      }
+    }
+    return null;
+  };
+  return el;
+}
+
 function makeLocation(href) {
   const state = { url: new URL(href) };
   const loc = {
@@ -205,10 +254,22 @@ function boot(opts = {}) {
   const bindFocus = (el) => {
     el.focus = () => { focusState.active = el; };
     el.blur = () => { if (focusState.active === el) focusState.active = null; };
-    return el;
+    return opts.layout ? addLayout(el) : el;
   };
   const served = [...ELEMENT_IDS, ...(opts.extraIds || [])];
   for (const id of served) els[id] = bindFocus(makeElement(id));
+  // Layout boot: #card sits inside a .scene, #scale-sheet has its surface child
+  // (the real one is sheet.firstElementChild) and <main> exists for the wheel
+  // listener. Default boot gets none of these, so `scene` stays undefined there.
+  const layoutMain = opts.layout ? bindFocus(makeElement("main", "main")) : null;
+  if (opts.layout) {
+    const sceneEl = bindFocus(makeElement("scene"));
+    sceneEl.classList.add("scene");
+    sceneEl.appendChild(els.card);
+    layoutMain.appendChild(sceneEl);
+    els["scale-sheet"].appendChild(bindFocus(makeElement("sheetsurf")));
+    Object.defineProperty(els["scale-sheet"], "firstElementChild", { get() { return this.children[0] || null; } });
+  }
   // Real placeholders, read out of the shipped markup rather than restated
   // here. showPlaceholderPan() draws the seed the placeholder shows, so a stub
   // with no placeholder would silently exercise the empty-string path and
@@ -255,7 +316,7 @@ function boot(opts = {}) {
   const mathStub = Object.create(Math);
   if (opts.random) mathStub.random = opts.random;
 
-  const all = () => [...Object.values(els), docEl, ...created];
+  const all = () => [...Object.values(els), docEl, ...(layoutMain ? [layoutMain] : []), ...created];
   const match = (el, sel) => {
     if (sel.startsWith("#")) return el.id === sel.slice(1);
     if (sel.startsWith(".")) return el.classList.contains(sel.slice(1));
@@ -343,6 +404,9 @@ function boot(opts = {}) {
       get body() { return docEl; },
       addEventListener(t, fn) { (this._l = this._l || {}), (this._l[t] = this._l[t] || []).push(fn); },
       removeEventListener() {},
+      // Runs the listeners addEventListener stored, by event type. There are no
+      // capture/bubble phases: a test that needs ordering dispatches in order.
+      dispatchEvent(ev) { for (const fn of this._l[ev && ev.type] || []) fn(ev); return true; },
       _l: {},
     },
     location, history,
@@ -390,6 +454,19 @@ function boot(opts = {}) {
       addEventListener() {}, removeEventListener() {},
     }),
   };
+  if (opts.layout) {
+    sandbox.innerHeight = opts.innerHeight === undefined ? 800 : opts.innerHeight;
+    sandbox.requestAnimationFrame = (fn) => sandbox.setTimeout(fn, 16);
+    if (opts.visualViewport) {
+      const vvl = {};
+      sandbox.visualViewport = {
+        height: 0, offsetTop: 0, scale: 1, ...opts.visualViewport,
+        addEventListener(t, fn) { (vvl[t] = vvl[t] || []).push(fn); },
+        removeEventListener() {},
+        dispatchEvent(ev) { for (const fn of vvl[ev && ev.type] || []) fn(ev); return true; },
+      };
+    }
+  }
   const printCalls = [];
   sandbox.print = () => { printCalls.push(sandbox.innerWidth); };
   // Window-level listeners. The app registers `popstate` on the window (the

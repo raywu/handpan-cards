@@ -1,0 +1,15 @@
+# kills: US-3 one wheel gesture over WHEEL_COMMIT_PX steps once
+# suite: node --test --test-name-pattern ^US-3.one.wheel.gesture.over.WHEEL_COMMIT_PX.steps.once$ tests/app.test.js
+# A wheel gesture no longer latches after it commits, so every further event of 
+# the same gesture starts another fly-out and the deck steps more than once.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8888,7 +8888,6 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+   if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+   if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+   e.preventDefault();
+-  if (wheel.fired) return;
+   wheel.sx += dx;
+   // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
+   // next card, content follows the fingers (plan: docs/plans/2026-09-30-
