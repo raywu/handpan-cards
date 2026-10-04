@@ -11,7 +11,7 @@ per-deck coverage; deliverable is this doc plus the chat table.
 
 Everything in sections 4-6 was computed against the shipped engine
 (`src/engine/sequence.js` at main `01915a6`) and `data/decks.json` by the
-probe in section 8, not reasoned by hand.
+probe in section 10, not reasoned by hand.
 
 ## 1. Sources
 
@@ -83,11 +83,11 @@ on that root. "~" marks a substitute card.
 
 | id | Amy | Pygmy (F minor / Ab major) | Amara (D minor / F major) | Hijaz (from C#) |
 |---|---|---|---|---|
-| A1 | i VI III VII | Fm Db Ab Eb: MEDIUM (length 4) | Dm Bb F C: GAP (no Bb) | GAP (no C#m, A, E) |
-| A2 | i v VI VII | Fm Cm Db Eb: MEDIUM (length 4) | Dm Am Bb C: GAP (no Bb) | GAP (no C#m, A) |
-| A3 | i III VII iv | Fm Ab Eb Bbm: MEDIUM (length 4) | Dm F C ~Gsus4: MEDIUM (length 4; Gm has no card) | GAP (no C#m, E) |
-| A4 | i VII VI v | Fm Eb Db Cm: MEDIUM (length 4) | Dm C Bb Am: GAP (no Bb) | GAP (no C#m, A) |
-| A5 | i VII v VI | Fm Eb Cm Db: MEDIUM (length 4) | Dm C Am Bb: GAP (no Bb) | GAP (no C#m, A) |
+| A1 | i VI III VII | Fm Db Ab Eb: MEDIUM (length 4) | Dm Bb F C: GAP (no Bb) | GAP (no A, no E) |
+| A2 | i v VI VII | Fm Cm Db Eb: MEDIUM (length 4) | Dm Am Bb C: GAP (no Bb) | GAP (no A) |
+| A3 | i III VII iv | Fm Ab Eb Bbm: MEDIUM (length 4) | Dm F C ~Gsus4: MEDIUM (length 4; Gm has no card) | GAP (no E) |
+| A4 | i VII VI v | Fm Eb Db Cm: MEDIUM (length 4) | Dm C Bb Am: GAP (no Bb) | GAP (no A) |
+| A5 | i VII v VI | Fm Eb Cm Db: MEDIUM (length 4) | Dm C Am Bb: GAP (no Bb) | GAP (no A) |
 | A6 | I IV V | Ab Db Eb: NONE (starts on Ab, not home; length 3 has no non-home tier) | F Bb C: GAP (no Bb) | C# ~F#sus4 ~G#°: EASY, with two substitutes |
 | A7 | I V vi IV | Ab Eb Fm Db: HARD only (start not home) | F C Dm Bb: GAP (no Bb) | GAP (no Bbm) |
 | A8 | I vi IV V | Ab Fm Db Eb: HARD only (start not home) | F Dm Bb C: GAP (no Bb) | GAP (no Bbm) |
@@ -95,7 +95,7 @@ on that root. "~" marks a substitute card.
 | A10 | ii V I | Bbm Eb Ab: NONE (start not home; length 3) | ~Gsus4 C F: NONE (start not home; length 3) | GAP (no Ebm) |
 
 Per-deck coverage (every chord available as an exact card): Pygmy 10 of 10.
-Amara 0 of 10 exact (1 of 10 with a substitute). Hijaz 0 of 10 exact (1 of 10
+Amara 0 of 10 exact (2 of 10 with a substitute: A3 and A10, Gsus4 for Gm). Hijaz 0 of 10 exact (1 of 10
 with substitutes).
 
 Reachable at EASY: Pygmy 0 of 10, Amara 0 of 10, Hijaz 1 of 10 (A6, with
@@ -109,7 +109,7 @@ Reachable at any tier: Pygmy 8 of 10 (5 MEDIUM, 3 HARD), Amara 1 of 10
 MEDIUM draws a length (3 or 4) uniformly, then one sequence uniformly from
 that length's pool (random sampling, DFS fallback). The length-4 pools:
 
-| deck | MEDIUM length-4 sequences | of which triads only | odds of one specific A-row per deal |
+| deck | MEDIUM length-4 sequences | of which anchor-only (sus4 anchors included) | odds of one specific A-row per deal |
 |---|---|---|---|
 | Pygmy | 41,012 | 120 | 1 in 82,024 |
 | Amara | 7,800 | 24 | 1 in 15,600 |
@@ -135,8 +135,8 @@ Amy's 28 consecutive root motions (within each progression, no wrap):
 | class | count | where |
 |---|---|---|
 | step (1-2 semitones) | 13 | A2 x2, A4 x3, A5 x2, A6, A7, A8, A9 x3 |
-| third (3-4) | 7 | A1, A3, A5, A7, A8 x2 |
-| fourth / fifth (5, 7) | 8 | A1 x2, A2, A3 x2, A6, A7, A10 x2 |
+| third (3-4) | 6 | A1, A3, A5, A7, A8 x2 |
+| fourth / fifth (5, 7) | 9 | A1 x2, A2, A3 x2, A6, A7, A10 x2 |
 | tritone | 0 | |
 
 Note for the owner: the interview framed Amy as "3rds/4ths/5ths"; by count
@@ -147,17 +147,30 @@ while Amy's set favours stepwise walks and a return to home.
 
 ## 7. Video 2: chord vocabulary (owner to fill)
 
-Amy's second video is about extended chords, not progressions. One row,
-owner-supplied; the "our cards" column is filled from `data/decks.json` once
-the list arrives.
+Video 2 is "Make Your Chords Way More Interesting | Extended Handpan
+Tutorial" (Amy Naylor - Handpan Connect, 2025-12-22, 8:01). Chapters: 0:00
+introduction and basics; 1:05 understanding inversions; 2:51 applying bottom
+notes; 5:46 practice challenge. By its chapters it is about INVERSIONS and
+BOTTOM NOTES on an extended pan, not a list of chord symbols.
 
-| extended chord type Amy demonstrates | applied to a progression? | Pygmy cards | Amara cards | Hijaz cards |
+Transcript status (2026-10-04): not obtainable from this environment. The only
+caption track is English auto-generated; its URL returns a 0-byte body, the
+InnerTube player endpoint answers "Precondition check failed" or
+LOGIN_REQUIRED for every client, and the watch page's own transcript panel
+opens empty for the same reason (YouTube's bot gate on a headless session).
+The description, chapter titles and comments name no chords. Filling the row
+needs the owner to watch the video, or a signed-in browser / yt-dlp for the
+auto captions.
+
+| technique or chord type Amy demonstrates | applied to a progression? | Pygmy cards | Amara cards | Hijaz cards |
 |---|---|---|---|---|
 | (owner) | (owner) | | | |
 
 Card types we ship today, for reference: sus4, 7sus4, maj7sus4, m7, maj7,
 dom7, 7b9, m9, maj9, madd9, m11, 6/9, m6/9, m7b5, °7, power chords (full
-list in section 8's probe output; `tools/decks.py` prints it too).
+list in section 10's probe output). Inversions and bottom-note voicings are
+already card concepts here: Pygmy's LOW VOICING cards and its bottom-shell
+badge are exactly "applying bottom notes".
 
 ## 8. The evaluation prompt (reusable)
 
@@ -220,7 +233,7 @@ empirically. Report counts, not impressions. Do not propose engine changes.
 | first chord | always the home anchor | seven of ten start on the tonic; A9 starts on IV, A10 on ii, and on a minor pan the whole major set starts away from home |
 | key | home key only | half the set is in the relative major of the same pan |
 | chord quality | one anchor per root; sus4 / dim / power stand in when no triad exists | plain major and minor triads only |
-| root motion | share a tone or step; admits every diatonic pair | 13 steps, 7 thirds, 8 fourths/fifths of 28 |
+| root motion | share a tone or step; admits every diatonic pair | 13 steps, 6 thirds, 9 fourths/fifths of 28 |
 | loop | length 3 must close back to home | every progression is played as a loop; A10 is pitched as an ending |
 | result on Pygmy | 0 of 10 at EASY; 5 at MEDIUM (about 1 in 82,000 per deal), 3 at HARD, 2 never | all ten playable, every chord is a card |
 | result on Amara | 0 of 10 at EASY; 1 at MEDIUM with Gsus4 for Gm; 8 need Bb, which the pan does not have | Amy's own pan has Bb |
@@ -231,8 +244,13 @@ The gaps, in order of weight: (1) length, EASY stops at 3 and Amy lives at 4;
 minor pan and A9/A10 on every pan; (3) MEDIUM's pool is card-based rather
 than triad-based, so the four-chord triad progressions exist there only
 nominally; (4) Amara has no Bb, which is a pan fact, not an engine fact.
-Nothing here is an engine change proposal; the owner decides whether any of
-these becomes a lane.
+The ranking orders CAUSES of unreachability; it is not a fourth evaluation
+axis (length distribution was excluded from the axes in the interview).
+Owner decision (2026-10-04 interview): gaps (1) and (2) become one serial
+follow-up lane, planned in `docs/plans/2026-10-04-easy-tier-amy.md`:
+EASY deals 2, 3 or 4 evenly; EASY and MEDIUM may start on any anchor; the
+D-1 byte-identical BASIC pin from `2026-10-02-sequence-difficulty.md` is
+lifted and re-pinned. Gap (3) is not taken up. No named presets.
 
 ## 10. Reproduction
 
