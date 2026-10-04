@@ -5301,3 +5301,33 @@ test("AP3-1 faceHTML is the only answer-template builder", () => {
   assert.ok(seen.S.front.includes("diagwrap") && !seen.S.front.includes("prompt"));
   assert.ok(seen.B.back.includes("prompt") && seen.B.back.includes('class="lines"'));
 });
+
+test("AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales", () => {
+  const app = boot();
+  let parsed = 0;
+  for (const sc of SCALES) {
+    const fields = app.get(`(function () {
+      var r = HPE.core.parseSeed(${JSON.stringify(sc.string)}, { palette: palette, mirror: mirror });
+      return r.ok ? r.value.fields : null;
+    })()`);
+    if (!fields) continue;
+    parsed += 1;
+    const zoneOf = (id) => fields[id][3];
+    const count = (z) => Object.keys(fields).filter((id) => zoneOf(id) === z).length;
+    const expected = plain(app.get(
+      `HPE.layout.slotOrder(${JSON.stringify({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") })})`));
+    const ids = plain(app.get(`layoutIds(${JSON.stringify(fields)})`));
+    assert.deepStrictEqual(ids.map(zoneOf), expected, `${sc.name}: zone order`);
+    for (const z of ["rim", "inner", "bottom"]) {
+      const run = ids.filter((id) => zoneOf(id) === z).map(Number);
+      assert.deepStrictEqual(run, run.slice().sort((a, b) => a - b), `${sc.name}: ${z} ids ascend`);
+    }
+    expected.forEach((z, slot) => {
+      const first = expected.indexOf(z), last = expected.lastIndexOf(z) + 1;
+      assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${slot})`)), [first, last],
+        `${sc.name}: zoneBlock(${slot})`);
+    });
+    assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${expected.length})`)), [0, 0]);
+  }
+  assert.ok(parsed >= 11, `parsed ${parsed} scales`);
+});

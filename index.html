@@ -6767,7 +6767,7 @@ function selectDeck(id) {
 }
 
 /* ---------------- helpers ---------------- */
-const pc = (d, f) => d.fields[f][2] % 12;
+const pc = (d, f) => HPE.core.pc(d.fields[f][2]);
 function chordSets(d, ch) {
   const pcs = new Set(ch.fields.map(f => pc(d, f)));
   const rpc = pc(d, ch.roots[0]);
@@ -7613,7 +7613,13 @@ function buildDegrees(selected) {
 function layoutIds(fields) {
   const of = (z) => Object.keys(fields).filter((id) => fields[id][3] === z)
     .sort((a, b) => Number(a) - Number(b));
-  return [...of("rim"), ...of("inner"), ...of("bottom")];
+  const byZone = { rim: of("rim"), inner: of("inner"), bottom: of("bottom") };
+  return slotZones(fields).map((z) => byZone[z].shift());
+}
+/** The zone of every slot, from the engine's own slot order. */
+function slotZones(fields) {
+  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
+  return HPE.layout.slotOrder({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") });
 }
 const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
 /** at[slot] = the field sitting in that slot - the inverse of an order. */
@@ -7634,14 +7640,10 @@ function setLayoutOrder(next) {
 const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
 /** The half-open slot range of the zone a slot belongs to. */
 function zoneBlock(fields, slot) {
-  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
-  const rim = count("rim");
-  const inner = count("inner");
-  const n = layoutIds(fields).length;
-  for (const [a, b] of [[0, rim], [rim, rim + inner], [rim + inner, n]]) {
-    if (slot >= a && slot < b) return [a, b];
-  }
-  return [0, 0];
+  const zones = slotZones(fields);
+  const zone = zones[slot];
+  if (zone === undefined) return [0, 0];
+  return [zones.indexOf(zone), zones.lastIndexOf(zone) + 1];
 }
 const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
 
