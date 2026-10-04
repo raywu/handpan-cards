@@ -1,8 +1,9 @@
 # kills: card swipe (wheel): deltaX under 80px does nothing and leaves no transform
 # suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.under.80px.does.nothing.and.leaves.no.transform$ tests/e2e.test.js
-# Drops the springBack(w.sx) call in wheelGestureEnd: a sub-threshold
-# wheel gesture that never committed leaves the scene's follow transform
-# and willChange hint in place forever instead of settling back to rest.
+# Drops the `else if (end === "spring") springBack(-w.sx);` branch of
+# wheelGestureEnd(): a sub-threshold wheel gesture that never committed
+# leaves the scene's follow transform and willChange hint in place forever
+# instead of settling back to rest.
 # Context-refreshed 2026-10-01 (desktop-swipe lane, bounce 2/2): F3 fix
 # changed the call to springBack(-w.sx) and added explanatory comment lines
 # above it; the mutation (drop the call entirely) is unchanged.

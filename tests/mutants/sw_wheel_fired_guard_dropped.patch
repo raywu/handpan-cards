@@ -1,9 +1,10 @@
 # kills: card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture
 # suite: node --test --test-name-pattern ^card.swipe..wheel...deltaX.past.80px.advances.the.deck.exactly.once.per.gesture$ tests/e2e.test.js
-# Inverts the wheel.fired guard (checks !wheel.fired instead of
-# wheel.fired) so the gesture accumulator never runs after the first
-# event: the deck never advances at all, instead of advancing exactly
-# once per gesture.
+# Inverts the listener's `d.kind === "hold"` early return (the latch that
+# wheelDecision() raises once wheel.fired is set) to `d.kind !== "hold"`, so
+# every event that is not a hold returns before it can accumulate or commit:
+# the deck never advances at all, instead of advancing exactly once per
+# gesture.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

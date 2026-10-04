@@ -1,6 +1,7 @@
 # kills: card swipe (wheel): a sub-threshold gesture's spring-back starts exactly where the follow transform left off
 # suite: node --test --test-name-pattern ^card.swipe..wheel...a.sub.threshold.gesture.s.spring.back.starts.exactly.where.the.follow.transform.left.off$ tests/e2e.test.js
-# Restores the F3 bug: springBack(w.sx) instead of springBack(-w.sx). The
+# Restores the F3 bug: springBack(w.sx) instead of springBack(-w.sx) in
+# wheelGestureEnd(). The
 # live follow transform during the gesture is swipeXf(-w.sx), so the
 # spring-back's first keyframe (swipeXf(dx)) ends up mirrored - opposite
 # translateX and rotate - from where the card actually was, producing a

@@ -1,6 +1,6 @@
 # kills: card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis
 # suite: node --test --test-name-pattern ^card.swipe..wheel...the.axis.lock.holds.for.the.whole.gesture.even.once.later.deltas.favour.the.other.axis$ tests/e2e.test.js
-# Drops the `wheel.axis === null` guard so the axis is recomputed on
+# Drops the `w.axis === null` guard in wheelDecision() so the axis is recomputed on
 # every wheel event instead of locked at gesture start: a later event
 # whose dy dominates flips an already-horizontal gesture to vertical and
 # stops it from committing.

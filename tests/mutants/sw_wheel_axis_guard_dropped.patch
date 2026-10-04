@@ -1,7 +1,8 @@
 # kills: card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed
 # suite: node --test --test-name-pattern ^card.swipe..wheel...a.vertical-dominant.wheel.does.nothing.and.is.not.preventDefault-ed$ tests/e2e.test.js
-# Drops the `if (wheel.axis !== "x") return;` guard: a vertical-dominant
-# wheel gesture is now preventDefault-ed and processed as a swipe too.
+# Drops the `if (axis !== "x") return { kind: "pass", ... }` line in
+# wheelDecision(): a vertical-dominant wheel gesture is no longer passed
+# through, so it is preventDefault-ed and processed as a swipe too.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

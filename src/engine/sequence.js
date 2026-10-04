@@ -10,7 +10,8 @@
  * This module reads only `deck.fields` (id -> [name, octave, midi, zone,
  * angle, label]) and `deck.chords[].{fields, roots}` - the same shape for a
  * built-in deck (data/decks.json) and a generated one (HPE.select.build's
- * output) - and depends on no other engine module.
+ * output). It reads `HPE.core` lazily, at use time (see `core()` below), so
+ * core must be loaded before any function here runs but not before this file.
  */
 var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
