@@ -879,3 +879,15 @@ test("ET-2 noThirds", () => {
   assert.equal(select.noThirds(fieldsOf("(C3) G3 B3 C4")), false,
     "G has B (a major 3rd) above it and nothing else does");
 });
+
+/* ------------------------------------------------------------- EG-3 */
+
+test("EG-3 warning shape equals core.err shape", () => {
+  const warning = host(select.build(seedOf("(C3) G3 D4 G4 D5")).warnings[0]);
+  const error = host(core.err("NO_THIRDS"));
+  assert.deepEqual(Object.keys(warning), ["code", "reason"]);
+  assert.equal(error.ok, false, "core.err carries ok:false, a warning does not");
+  const { ok, ...errorWithoutOk } = error;
+  assert.deepEqual(warning, errorWithoutOk,
+    "same code and reason, but not the same shape: routing through core.err would add ok:false to every warning");
+});
