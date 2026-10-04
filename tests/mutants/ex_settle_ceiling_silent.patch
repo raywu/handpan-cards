@@ -1,0 +1,15 @@
+# kills: EX-3 settle reports a ceiling hit
+# suite: node --test --test-name-pattern=^EX-3.settle tests/harness.test.js
+# Drops the ceiling notice, so a non-strict settle() gives up on a never-ending
+# animation silently again.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -225,7 +225,6 @@ class Browser {
+       if (Date.now() > deadline) {
+         const msg = `E2E-SETTLE-CEILING ${n} animation(s) still running after 500ms`;
+         if (this.strictSettle !== false) throw new Error(msg);
+-        process.stderr.write(msg + "\n");
+         return;
+       }
+       await new Promise((r) => setTimeout(r, 20));

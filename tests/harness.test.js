@@ -13,7 +13,7 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, Browser } = require("./helpers/cdp.js");
+const { launch, findBrowser, Browser, takeExceptions } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 
@@ -73,6 +73,7 @@ function run() {
     const b = Object.create(Browser.prototype);
     let calls = 0;
     b.eval = async () => { calls++; return calls === 1 ? null : 1; }; // never clears
+    b.strictSettle = false;
     const t0 = Date.now();
     await b.settle();
     const elapsed = Date.now() - t0;
@@ -533,5 +534,64 @@ function run() {
       killUnder(tmp);
       fs.rmSync(tmp, { recursive: true, force: true });
     }
+  });
+  /* ------------------------------------------------------------------ *
+   * EX-1 / EX-3 (complexity refactor 2026-10-03, lane EX): an exception the
+   * app throws on its own must reach the test that caused it, and a settle()
+   * that gave up at its ceiling must say so.
+   * ------------------------------------------------------------------ */
+
+  const THROWER =
+    "data:text/html," + encodeURIComponent(
+      "<button id=b onclick=\"throw new Error('EX1-click')\">x</button>" +
+      "<button id=d onclick=\"setTimeout(()=>{throw new Error('EX1-delayed')},30)\">y</button>");
+
+  async function loadThrower(br) {
+    await br.send("Page.navigate", { url: THROWER });
+    await br.waitFor("document.getElementById('b')", { label: "thrower page" });
+  }
+
+  test("EX-1 an uncaught handler exception is reported", async () => {
+    takeExceptions();
+    const a = await launch();
+    const c = await launch();
+    try {
+      await loadThrower(a);
+      await loadThrower(c);
+      await a.eval("document.getElementById('b').click();");
+      await c.eval("document.getElementById('d').click();");
+      const deadline = Date.now() + 5000;
+      let seen = [];
+      while (Date.now() < deadline) {
+        seen = seen.concat(takeExceptions());
+        if (seen.some((t) => /EX1-click/.test(t)) && seen.some((t) => /EX1-delayed/.test(t))) break;
+        await new Promise((r) => setTimeout(r, 40));
+      }
+      assert.ok(seen.some((t) => /EX1-click/.test(t)), `first instance's throw missing: ${JSON.stringify(seen)}`);
+      assert.ok(seen.some((t) => /EX1-delayed/.test(t)), `second instance's setTimeout throw missing: ${JSON.stringify(seen)}`);
+    } finally {
+      await a.close();
+      await c.close();
+    }
+  });
+
+  test("EX-3 settle reports a ceiling hit", async () => {
+    const b = await launch();
+    const lines = [];
+    const orig = process.stderr.write;
+    b.strictSettle = false;
+    try {
+      await b.send("Page.navigate", { url: "data:text/html," + encodeURIComponent(
+        "<div id=a style='width:10px;height:10px;background:red'></div>" +
+        "<script>document.getElementById('a').animate([{opacity:0},{opacity:1}],{duration:1e9})</script>") });
+      await b.waitFor("document.getElementById('a')", { label: "animated page" });
+      process.stderr.write = function (chunk, ...rest) { lines.push(String(chunk)); return true; };
+      await b.settle();
+    } finally {
+      process.stderr.write = orig;
+      await b.close();
+    }
+    assert.ok(lines.some((l) => /E2E-SETTLE-CEILING/.test(l)),
+      `settle() hit its 500ms ceiling silently; stderr was ${JSON.stringify(lines)}`);
   });
 }

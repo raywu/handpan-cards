@@ -12,12 +12,12 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, describe, before, after } = require("node:test");
+const { test, describe, before, after, afterEach } = require("node:test");
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, APP_READY_EXPR } = require("./helpers/cdp.js");
+const { launch, findBrowser, APP_READY_EXPR, peekExceptions, expectUncaught, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
@@ -103,6 +103,41 @@ function run() {
   after(async () => {
     if (b) await b.close();
     if (server) await new Promise((r) => server.close(r));
+  });
+
+  // Known uncaught page exceptions, one scoped expectation per test, each
+  // naming its queue row in docs/plans/2026-10-03-complexity-refactor.md
+  // section 9. There is no global allow-list: a new exception fails its test.
+  const KNOWN_UNCAUGHT = [
+    [/^card swipe: a tap during the fly-out lands it once and never flips the wrong card$/, /setPointerCapture/, "EX-Q1"],
+    [/^card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag$/, /setPointerCapture/, "EX-Q2"],
+    [/^card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back$/, /setPointerCapture/, "EX-Q3"],
+  ];
+
+  afterEach((t) => {
+    for (const [name, pattern] of KNOWN_UNCAUGHT) if (name.test(t.name)) expectUncaught(pattern);
+    assertNoUncaught();
+  });
+
+  test("EX-4 sentinel: the uncaught guard is armed", async () => {
+    const throwFromClick = (label) => b.eval(
+      "const x = document.createElement('button');" +
+      `x.onclick = () => { throw new Error('EX-4 sentinel ${label}'); };` +
+      "x.click();");
+    const recorded = async (label) => {
+      const deadline = Date.now() + 5000;
+      while (!peekExceptions().some((e) => e.includes("EX-4 sentinel " + label))) {
+        assert.ok(Date.now() < deadline, `the registry never recorded the ${label} throw`);
+        await new Promise((r) => setTimeout(r, 40));
+      }
+    };
+    await throwFromClick("unexpected");
+    await recorded("unexpected");
+    assert.throws(() => assertNoUncaught(), /EX-4 sentinel unexpected/);
+    expectUncaught(/EX-4 sentinel expected/);
+    await throwFromClick("expected");
+    await recorded("expected");
+    assertNoUncaught();
   });
 
   async function waitForServer() {

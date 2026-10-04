@@ -106,6 +106,31 @@ function installReaper() {
   }
 }
 
+// Every Browser instance in the process reports page exceptions here, because
+// on() keeps one handler per method and the e2e describes launch their own
+// instances. Drained by takeExceptions().
+const EXCEPTIONS = [];
+function takeExceptions() {
+  return EXCEPTIONS.splice(0, EXCEPTIONS.length);
+}
+function peekExceptions() {
+  return EXCEPTIONS.slice();
+}
+// Per-test scoped expectations (never a global allow-list): each names a known
+// uncaught exception that one test is allowed to throw. Drained with the
+// exceptions in assertNoUncaught().
+const EXPECTED = [];
+function expectUncaught(pattern) {
+  EXPECTED.push(pattern);
+}
+function assertNoUncaught() {
+  const expected = EXPECTED.splice(0, EXPECTED.length);
+  const unexpected = takeExceptions().filter((t) => !expected.some((re) => re.test(t)));
+  if (unexpected.length) {
+    throw new Error("E2E-UNCAUGHT " + unexpected.map((t) => t.split("\n")[0]).join(" | "));
+  }
+}
+
 class Browser {
   constructor(proc, ws, profileDir, entry) {
     this.proc = proc; this.ws = ws; this.profileDir = profileDir;
@@ -197,7 +222,12 @@ class Browser {
     for (;;) {
       const n = await this.eval(`return document.getAnimations().length;`);
       if (n === 0) return;
-      if (Date.now() > deadline) return;
+      if (Date.now() > deadline) {
+        const msg = `E2E-SETTLE-CEILING ${n} animation(s) still running after 500ms`;
+        if (this.strictSettle !== false) throw new Error(msg);
+        process.stderr.write(msg + "\n");
+        return;
+      }
       await new Promise((r) => setTimeout(r, 20));
     }
   }
@@ -517,6 +547,10 @@ async function launchOnce(opts = {}) {
     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
     b.sessionId = sessionId;
+    b.on("Runtime.exceptionThrown", (params) => {
+      const d = params.exceptionDetails || {};
+      EXCEPTIONS.push(String((d.exception && d.exception.description) || d.text || "uncaught exception"));
+    });
     await b.send("Page.enable");
     await b.send("Runtime.enable");
     if (opts.realFonts) {
@@ -569,4 +603,4 @@ async function launch(opts = {}) {
 // Browser and APP_READY_EXPR are exported for tests/harness.test.js's
 // self-tests of settle() and the shared readiness predicate, not for e2e
 // journeys - those only ever get a Browser instance from launch().
-module.exports = { launch, findBrowser, Browser, APP_READY_EXPR };
+module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };

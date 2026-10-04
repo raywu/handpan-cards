@@ -1,0 +1,18 @@
+# kills: EX-1 an uncaught handler exception is reported
+# suite: node --test --test-name-pattern=^EX-1.an.uncaught tests/harness.test.js
+# Removes the Runtime.exceptionThrown subscription, so no page exception ever
+# reaches the registry and the guard is silent.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -528,10 +528,6 @@ async function launchOnce(opts = {}) {
+     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
+     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
+     b.sessionId = sessionId;
+-    b.on("Runtime.exceptionThrown", (params) => {
+-      const d = params.exceptionDetails || {};
+-      EXCEPTIONS.push(String((d.exception && d.exception.description) || d.text || "uncaught exception"));
+-    });
+     await b.send("Page.enable");
+     await b.send("Runtime.enable");
+     if (opts.realFonts) {

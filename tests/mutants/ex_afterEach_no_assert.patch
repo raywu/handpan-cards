@@ -1,0 +1,16 @@
+# kills: EX-4 sentinel: the uncaught guard is armed
+# suite: node --test --test-name-pattern=EX-4.sentinel tests/e2e.test.js
+# Makes assertNoUncaught a no-op, so the afterEach hook never fails a test for an
+# uncaught page exception; the sentinel's own unexpected-exception check is gone.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -126,7 +126,7 @@ function expectUncaught(pattern) {
+ function assertNoUncaught() {
+   const expected = EXPECTED.splice(0, EXPECTED.length);
+   const unexpected = takeExceptions().filter((t) => !expected.some((re) => re.test(t)));
+-  if (unexpected.length) {
++  if (false) {
+     throw new Error("E2E-UNCAUGHT " + unexpected.map((t) => t.split("\n")[0]).join(" | "));
+   }
+ }
