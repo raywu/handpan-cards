@@ -13,6 +13,6 @@ diff --git a/index.html b/index.html
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
 -  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-   card.setPointerCapture(e.pointerId);
+   try { card.setPointerCapture(e.pointerId); } catch {}
  }
  function canStartGesture(e, state) {

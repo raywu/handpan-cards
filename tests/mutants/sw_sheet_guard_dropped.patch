@@ -28,7 +28,7 @@ diff --git a/index.html b/index.html
    if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
    if (d.kind === "rest") {
 @@ -8890,7 +8890,7 @@ function startDrag(e) {
-   card.setPointerCapture(e.pointerId);
+   try { card.setPointerCapture(e.pointerId); } catch {}
  }
  function canStartGesture(e, state) {
 -  return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;
