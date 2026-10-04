@@ -224,6 +224,10 @@ function run() {
   // killed mutant as a survivor. Once navigation is gone it is gone for the
   // run: hand the first failure straight to every later test.
   let navDead = null;
+  async function waitElapsed(ms, label) {
+    await b.eval(`window.__waitMark = performance.now(); return true;`);
+    await b.waitFor(`performance.now() - window.__waitMark >= ${ms}`, { label, timeout: ms + 5000 });
+  }
   async function navigate(target) {
     if (navDead) throw navDead;
     let last = null;
@@ -8534,7 +8538,12 @@ function run() {
       async () => {
         await dealSixChordRail();
         await rb.eval(`step(-1); return true;`);
-        await rb.eval(`return new Promise((r) => setTimeout(r, 900));`);
+        await rb.waitFor(`(() => {
+          const s = document.querySelector("#count .seq-rail").scrollLeft;
+          const stable = s > 20 && window.__railScroll === s;
+          window.__railScroll = s;
+          return stable;
+        })()`, { label: "the rail's scroll to rest past 20px" });
         const settled = await rb.eval(`return document.querySelector("#count .seq-rail").scrollLeft;`);
         assert.ok(settled > 20, `last chord must scroll the rail: ${settled}`);
         const frames = await rb.eval(sampleFrames(`flip()`));
@@ -9258,7 +9267,7 @@ function run() {
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await b.waitFor(`eatClick === false`, { label: "the touch swipe's eatClick decay" });
       await b.eval(`document.getElementById("next").focus(); return true;`);
       await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
       await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -9797,9 +9806,11 @@ function run() {
           assert.ok(g.represses < 3, "drag to register the move (re-pressed 3 times)");
           assert.strictEqual(await b.eval(`return drag;`), null, "drag to register the move (drag still live)");
           g.represses++;
+          await b.armPendingSettle();
           await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
+          b.settleAfterRealRelease();
           await b.finishAnimations();
-          await new Promise(r => setTimeout(r, 150 * g.represses));
+          await b.waitForPendingSettle();
           g.t0 = await press();
           g.id = await b.eval(`return drag ? drag.id : null;`);
           assert.ok(g.id !== null, "a real mouse re-press must start a drag");
@@ -9988,7 +9999,7 @@ function run() {
       await expectCount(`2 / ${n}`, "the drag should have committed");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "the committing drag must arm eatClick right after landing");
-      await new Promise((r) => setTimeout(r, 450));
+      await b.waitFor(`eatClick === false`, { label: "eatClick's own decay" });
       assert.strictEqual(await b.eval(`return eatClick;`), false,
         "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
@@ -10021,7 +10032,7 @@ function run() {
         "setEatClick(true, ...) must arm eatClick");
       // A second release lands partway through the first decay window and
       // re-arms eatClick with its OWN fresh 400ms timer.
-      await new Promise((r) => setTimeout(r, DECAY_MS / 2));
+      await waitElapsed(DECAY_MS / 2, "half the first decay window to pass");
       await b.eval(`window.setEatClick(true, ${DECAY_MS}); return true;`);
       // Wait past the FIRST decay's deadline (400ms after the first call,
       // i.e. 200ms after the second) but comfortably before the second
@@ -10029,7 +10040,7 @@ function run() {
       // timer from the first call were not cancelled when the second call
       // re-armed, it would fire in this window and clear the re-armed
       // eatClick early.
-      await new Promise((r) => setTimeout(r, DECAY_MS / 2 + 100));
+      await waitElapsed(DECAY_MS / 2 + 100, "the first decay's deadline to pass");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "a stale decay timer from an earlier setEatClick cleared a re-armed eatClick");
     });
@@ -10067,7 +10078,8 @@ function run() {
       // fly-out and land it for real before the tap), tap the card - the
       // document capture-phase pointerdown's `if (flight)` branch lands it
       // and reassigns eatClick with no decay.
-      await new Promise((r) => setTimeout(r, 100));
+      await b.waitFor(`flight !== null && scene.getAnimations()[0]?.currentTime >= 60`,
+        { label: "the fly-out to be ~60ms in" });
       const stillMidFlight = await b.eval(`return flight !== null;`);
       assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
       // Check eatClickTimer right after the bare pointerdown, before the
@@ -10126,7 +10138,7 @@ function run() {
       });
       // Real wall-clock gap so this first sample ages out of the 100ms
       // trailing window by the time the final move/lpc pair fires.
-      await new Promise((r) => setTimeout(r, 150));
+      await waitElapsed(150, "the first sample to age out of the trailing window");
       // The final real sample: a short drag (|dx| well under
       // SWIPE_COMMIT_PX) landing just before the lpc event, so it is still
       // inside the trailing window - exactly the point a stale pushed
@@ -10178,7 +10190,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelGesture([[20, 0], [20, 0]]);
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "under-threshold deltaX must not step");
         const xf = await sceneXform();
@@ -10193,7 +10205,7 @@ function run() {
         const xf = await sceneXform();
         assert.strictEqual(xf.none, false, "a wheel event under threshold must apply a follow transform");
         assert.ok(xf.m41 < 0, `deltaX>0 (sx>0) must move the card to translateX<0, got ${xf.m41}`);
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
         await b.finishAnimations();
       });
 
@@ -10208,7 +10220,8 @@ function run() {
         // and springBack()'s WAAPI animation is created - read its keyframes
         // statically (safe regardless of playback progress, same pattern as
         // the fly-out/enter keyframe reads above).
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && scene.getAnimations().length > 0`,
+          { label: "the gesture to end and springBack() to start" });
         const first = await b.eval(`
           const a = document.querySelector(".scene").getAnimations()[0];
           const kf = a.effect.getKeyframes();
@@ -10251,7 +10264,7 @@ function run() {
         await freshLoad();
         const n = (await decksMeta())[0].chords;
         await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a ctrl+wheel pinch-zoom gesture must never navigate");
         const xf = await sceneXform();
@@ -10264,7 +10277,7 @@ function run() {
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
-        await new Promise((r) => setTimeout(r, 220)); // past the 160ms gesture gap
+        await b.waitFor(`wheel === null`, { label: "the first gesture's 160ms gap to end it" });
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
@@ -10306,7 +10319,7 @@ function run() {
           }));
           return true;
         `);
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
         await b.finishAnimations();
         assert.strictEqual(await countText(), `1 / ${n}`, "a wheel gesture must do nothing while the panel is open");
       });
@@ -10332,7 +10345,7 @@ function run() {
         // new trackpad gesture arriving as momentum while the previous
         // card is still flying out must not be allowed to commit a second
         // step on top of it.
-        await new Promise((r) => setTimeout(r, 180));
+        await b.waitFor(`flight !== null && wheel === null`, { label: "the first gesture to end mid-flight" });
         assert.strictEqual(await b.eval(`return flight !== null && wheel === null;`), true,
           "the first gesture must have ended via its own gap timer while its flight is still mid-air");
         await wheelAt(100, 0);
@@ -10347,7 +10360,7 @@ function run() {
         // overlapping animation on .scene is the observable symptom.
         assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
           "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
-        await new Promise((r) => setTimeout(r, 250));
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle" });
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
       });
