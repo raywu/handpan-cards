@@ -1,16 +1,16 @@
 # kills: every sequence starts on an anchor and every step connects, including back to the first chord
-# R2 - sequences() starts on every CARD of the deck, not only the anchors,
+# R2 - sequences() enumerates over every CARD of the deck, not only the anchors,
 # so a non-anchor chord can open an EASY sequence
 # suite: node --test --test-name-pattern ^every.sequence.starts.on.an.anchor.and.every.step.connects..including.back.to.the.first.chord$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -207,7 +207,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         seq.pop();
-       });
+@@ -235,7 +235,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      }
--    anchorsList.forEach(function (start) {
-+    deck.chords.forEach(function (_, start) {
-       seq = [start];
-       rec();
-     });
+     var anchorsList = anchors(deck);
+     if (homeAnchor(deck, anchorsList) === null) return [];
+-    return basicPools(deck, anchorsList)[length];
++    return basicPools(deck, deck.chords.map(function (_, i) { return i; }))[length];
+   }
+ 
+   function prevValid(deck, prev) {

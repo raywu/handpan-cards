@@ -6057,32 +6057,56 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // the NO_HOME_CHORD refusal ahead of everything) or no sequence of that
   // length - callers that need to tell those apart use anchors()/homeAnchor
   // directly (pick() does).
+  // One DFS over the anchor-only connection graph collects every loop of
+  // length 2, 3 and 4 at once: {2: [...], 3: [...], 4: [...]}. Within one
+  // length the order is exactly what a per-length walk produces (starts in
+  // anchor-list order, extensions in anchor-list order), so the EASY golden
+  // is independent of this sharing. connects() is evaluated once per anchor
+  // pair, not once per visited node - EASY picks pay this per deal.
+  function basicPools(deck, anchorsList) {
+    var pools = { 2: [], 3: [], 4: [] };
+    var n = anchorsList.length;
+    var adj = new Array(n);
+    var i, j;
+    for (i = 0; i < n; i += 1) {
+      adj[i] = new Array(n);
+      for (j = 0; j < n; j += 1) {
+        adj[i][j] = i !== j && connects(deck, anchorsList[i], anchorsList[j]);
+      }
+    }
+    var seq = [];
+    var used = new Array(n);
+    function rec() {
+      var last = seq[seq.length - 1];
+      if (seq.length >= 2 && adj[last][seq[0]]) {
+        pools[seq.length].push(seq.map(function (k) { return anchorsList[k]; }));
+      }
+      if (seq.length === 4) return;
+      for (var k = 0; k < n; k += 1) {
+        if (used[k] || !adj[last][k]) continue;
+        used[k] = true;
+        seq.push(k);
+        rec();
+        seq.pop();
+        used[k] = false;
+      }
+    }
+    for (i = 0; i < n; i += 1) {
+      for (j = 0; j < n; j += 1) used[j] = false;
+      used[i] = true;
+      seq = [i];
+      rec();
+    }
+    return pools;
+  }
+
   function sequences(deck, length) {
     if (length !== 2 && length !== 3 && length !== 4) {
       throw new Error("HPE.sequence.sequences: length must be 2, 3 or 4");
     }
     var anchorsList = anchors(deck);
     if (homeAnchor(deck, anchorsList) === null) return [];
-    var out = [];
-    var seq = [];
-    function rec() {
-      var last = seq[seq.length - 1];
-      if (seq.length === length) {
-        if (connects(deck, last, seq[0])) out.push(seq.slice());
-        return;
-      }
-      anchorsList.forEach(function (idx) {
-        if (seq.indexOf(idx) >= 0 || !connects(deck, last, idx)) return;
-        seq.push(idx);
-        rec();
-        seq.pop();
-      });
-    }
-    anchorsList.forEach(function (start) {
-      seq = [start];
-      rec();
-    });
-    return out;
+    return basicPools(deck, anchorsList)[length];
   }
 
   function prevValid(deck, prev) {
@@ -6143,10 +6167,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function pickBasic(deck, rng, prev) {
     var home = homeOrRefuse(deck);
     if (home.refusal) return home.refusal;
-    var pools = {};
+    var pools = basicPools(deck, home.anchorsList);
     var any = false;
     LENGTH_ORDER.forEach(function (len) {
-      pools[len] = sequences(deck, len);
       if (pools[len].length) any = true;
     });
     if (!any) return { chords: null, reason: "TOO_FEW_CHORDS" };
