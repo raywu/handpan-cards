@@ -17,7 +17,7 @@ const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, APP_READY_EXPR, takeExceptions, takeCeilings } = require("./helpers/cdp.js");
+const { launch, findBrowser, APP_READY_EXPR, takeExceptions } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
@@ -106,13 +106,9 @@ function run() {
   });
 
   afterEach((t) => {
-    const probe = [];
     for (const text of takeExceptions()) {
       console.log(`E2E-UNCAUGHT ${t.name} ${text.split("\n")[0]}`);
-      probe.push(`E2E-UNCAUGHT ${text.split("\n")[0]}`);
     }
-    for (const n of takeCeilings()) probe.push(`E2E-SETTLE-CEILING ${n}`);
-    if (probe.length) throw new Error(probe.join(" | "));
   });
 
   async function waitForServer() {

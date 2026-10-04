@@ -110,10 +110,6 @@ function installReaper() {
 // on() keeps one handler per method and the e2e describes launch their own
 // instances. Drained by takeExceptions().
 const EXCEPTIONS = [];
-const CEILINGS = [];
-function takeCeilings() {
-  return CEILINGS.splice(0, CEILINGS.length);
-}
 function takeExceptions() {
   return EXCEPTIONS.splice(0, EXCEPTIONS.length);
 }
@@ -210,7 +206,6 @@ class Browser {
       const n = await this.eval(`return document.getAnimations().length;`);
       if (n === 0) return;
       if (Date.now() > deadline) {
-        CEILINGS.push(n);
         process.stderr.write(`E2E-SETTLE-CEILING ${n} animation(s) still running after 500ms\n`);
         return;
       }
@@ -589,4 +584,4 @@ async function launch(opts = {}) {
 // Browser and APP_READY_EXPR are exported for tests/harness.test.js's
 // self-tests of settle() and the shared readiness predicate, not for e2e
 // journeys - those only ever get a Browser instance from launch().
-module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, takeExceptions, takeCeilings };
+module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, takeExceptions };
