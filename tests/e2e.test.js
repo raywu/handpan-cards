@@ -9985,7 +9985,7 @@ function run() {
       await expectCount(`2 / ${n}`, "the drag should have committed");
       assert.strictEqual(await b.eval(`return eatClick;`), true,
         "the committing drag must arm eatClick right after landing");
-      await b.waitFor(`eatClick === false`, { label: "eatClick's own decay (the 400ms window)", timeout: 1000 });
+      await waitElapsed(450, "the 400ms eatClick window to pass");
       assert.strictEqual(await b.eval(`return eatClick;`), false,
         "eatClick must have decayed back to false on its own well past the 400ms window");
       await b.click("#card");
@@ -10263,7 +10263,8 @@ function run() {
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
-        await b.waitFor(`wheel === null`, { label: "the first gesture's 160ms gap to end it", timeout: 1000 });
+        await waitElapsed(220, "the 160ms gesture gap to pass");
+        assert.strictEqual(await b.eval(`return wheel === null;`), true, "the 160ms gap must have ended the first gesture");
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`3 / ${n}`, "a later, separate gesture should commit again");
