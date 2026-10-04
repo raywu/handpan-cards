@@ -2,7 +2,6 @@
 # kills: ET-1 engine corpus matches
 # --check exits 0 on a stale corpus, so a refactor that changes parseSeed, layout.solve or select.build output passes the oracle unnoticed.
 diff --git a/tools/regen_engine_corpus.js b/tools/regen_engine_corpus.js
-index 0f14059..1d23090 100644
 --- a/tools/regen_engine_corpus.js
 +++ b/tools/regen_engine_corpus.js
 @@ -108,7 +108,7 @@ function main() {

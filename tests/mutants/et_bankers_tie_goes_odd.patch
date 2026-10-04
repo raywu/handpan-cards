@@ -2,7 +2,6 @@
 # kills: ET-2 hexColor/bankers
 # Exact ties round to the odd digit, the opposite of Python, so print geometry R moves 0.1 pt.
 diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
-index a2b6b6e..8f802a2 100644
 --- a/src/engine/pdfdeck.js
 +++ b/src/engine/pdfdeck.js
 @@ -54,7 +54,7 @@ HPE.pdfdeck = (function () {

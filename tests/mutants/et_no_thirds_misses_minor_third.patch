@@ -2,7 +2,6 @@
 # kills: ET-2 noThirds
 # noThirds ignores minor thirds, so Amara reports NO_THIRDS and every card is stamped NO 3RDS ON THIS PAN.
 diff --git a/src/engine/select.js b/src/engine/select.js
-index c122773..93737a4 100644
 --- a/src/engine/select.js
 +++ b/src/engine/select.js
 @@ -522,7 +522,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};

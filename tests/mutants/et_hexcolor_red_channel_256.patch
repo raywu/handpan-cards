@@ -2,7 +2,6 @@
 # kills: ET-2 hexColor/bankers
 # The red channel is divided by 256, so no colour can reach full red and print palettes drift from the app.
 diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
-index a2b6b6e..ee2d0da 100644
 --- a/src/engine/pdfdeck.js
 +++ b/src/engine/pdfdeck.js
 @@ -64,7 +64,7 @@ HPE.pdfdeck = (function () {

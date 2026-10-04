@@ -2,7 +2,6 @@
 # kills: ET-2 reduceIntervals
 # reduceIntervals drops the 11 before the 9 when a chord implies more than six notes.
 diff --git a/src/engine/voicing.js b/src/engine/voicing.js
-index 1666b69..cf0f480 100644
 --- a/src/engine/voicing.js
 +++ b/src/engine/voicing.js
 @@ -114,7 +114,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
