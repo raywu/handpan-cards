@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^ET-2.fifthName$ tests/core.test.js
+# kills: ET-2 fifthName
+# fifthName spells every fifth a semitone flat (C->Gb, B->F), so NO_FIFTH reasons name the wrong note.
+diff --git a/src/engine/core.js b/src/engine/core.js
+index 95b7e23..870a29f 100644
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -103,7 +103,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function fifthName(letter, accidental) {
+     var up = LETTERS.charAt((LETTERS.indexOf(letter) + 4) % 7);
+     var natural = ((SEMITONES[up] - SEMITONES[letter]) % 12 + 12) % 12;
+-    return up + accidentalString(ACCIDENTAL[accidental || ""] + (7 - natural));
++    return up + accidentalString(ACCIDENTAL[accidental || ""] + (6 - natural));
+   }
+ 
+   function ok(value) {
