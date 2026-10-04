@@ -5110,3 +5110,36 @@ test("AP1-2 releaseDecision table", () => {
   ];
   for (const [name, o, want] of rows) assert.deepStrictEqual(rd(o), want, name);
 });
+
+test("AP1-3 wheelDecision table", () => {
+  const app = boot({ layout: true });
+  const wd = (w, e) => plain(app.get(`wheelDecision(${JSON.stringify({
+    sx: 0, sy: 0, axis: null, fired: false, skip: false, ...w,
+  })}, ${JSON.stringify({ deltaX: 0, deltaY: 0, deltaMode: 0, innerHeight: 800, ...e })})`));
+  const rows = [
+    ["skipped gesture", { skip: true }, { deltaX: 200 }, { kind: "skip", axis: null, sx: 0, dir: 0 }],
+    ["first event horizontal claims x", {}, { deltaX: 20, deltaY: 5 }, { kind: "follow", axis: "x", sx: 20, dir: 0 }],
+    ["first event vertical claims y", {}, { deltaX: 5, deltaY: 20 }, { kind: "pass", axis: "y", sx: 0, dir: 0 }],
+    ["zero delta claims nothing", {}, {}, { kind: "pass", axis: null, sx: 0, dir: 0 }],
+    ["axis y stays y", { axis: "y" }, { deltaX: 200 }, { kind: "pass", axis: "y", sx: 0, dir: 0 }],
+    ["accumulates on x", { axis: "x", sx: 30 }, { deltaX: 20 }, { kind: "follow", axis: "x", sx: 50, dir: 0 }],
+    ["exactly at the threshold does not commit", { axis: "x", sx: 60 }, { deltaX: 20 }, { kind: "follow", axis: "x", sx: 80, dir: 0 }],
+    ["one past the threshold commits forward", { axis: "x", sx: 60 }, { deltaX: 21 }, { kind: "commit", axis: "x", sx: 81, dir: 1 }],
+    ["backward commit", { axis: "x", sx: -60 }, { deltaX: -21 }, { kind: "commit", axis: "x", sx: -81, dir: -1 }],
+    ["already fired holds", { axis: "x", sx: 90, fired: true }, { deltaX: 50 }, { kind: "hold", axis: "x", sx: 90, dir: 0 }],
+    ["line deltas scale by 16", {}, { deltaX: 6, deltaMode: 1 }, { kind: "commit", axis: "x", sx: 96, dir: 1 }],
+    ["page deltas scale by innerHeight", {}, { deltaX: 1, deltaMode: 2, innerHeight: 600 }, { kind: "commit", axis: "x", sx: 600, dir: 1 }],
+    ["pixel deltas are unscaled", {}, { deltaX: 6, deltaMode: 0 }, { kind: "follow", axis: "x", sx: 6, dir: 0 }],
+  ];
+  for (const [name, w, e, want] of rows) assert.deepStrictEqual(wd(w, e), want, name);
+});
+
+test("AP1-3 wheelEndDecision table", () => {
+  const app = boot({ layout: true });
+  const end = (o) => app.get(`wheelEndDecision(${JSON.stringify({ skip: false, fired: false, reducedMotion: false, ...o })})`);
+  assert.strictEqual(end({}), "spring");
+  assert.strictEqual(end({ reducedMotion: true }), "rest");
+  assert.strictEqual(end({ fired: true }), "none");
+  assert.strictEqual(end({ skip: true }), "none");
+  assert.strictEqual(end({ fired: true, reducedMotion: true }), "none");
+});

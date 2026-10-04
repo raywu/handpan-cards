@@ -8,8 +8,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8251,7 +8251,6 @@ function wheelGestureEnd() {
-   springBack(-w.sx);
+@@ -8963,7 +8963,6 @@ function wheelGestureEnd() {
+   else if (end === "spring") springBack(-w.sx);
  }
  if (wheelMain) wheelMain.addEventListener("wheel", e => {
 -  if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture

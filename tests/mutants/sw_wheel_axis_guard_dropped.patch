@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8257,7 +8257,6 @@ wheelMain.addEventListener("wheel", e => {
-   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-   const dx = e.deltaX * scale, dy = e.deltaY * scale;
-   if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
--  if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
-   e.preventDefault();
-   if (wheel.fired) return;
-   wheel.sx += dx;
+@@ -8936,7 +8936,6 @@ function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
+   const scale = deltaMode === 1 ? 16 : deltaMode === 2 ? innerHeight : 1;
+   const dx = deltaX * scale, dy = deltaY * scale;
+   const axis = w.axis === null && (dx !== 0 || dy !== 0) ? (Math.abs(dx) > Math.abs(dy) ? "x" : "y") : w.axis;
+-  if (axis !== "x") return { kind: "pass", axis, sx: w.sx, dir: 0 };
+   if (w.fired) return { kind: "hold", axis, sx: w.sx, dir: 0 };
+   const sx = w.sx + dx;
+   // sx > 0 means the fingers moved right-to-left (positive deltaX) -> next

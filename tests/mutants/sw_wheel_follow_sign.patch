@@ -7,11 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8280,6 +8280,6 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
-     else flyOut(dir, -effDx);
+@@ -8989,7 +8989,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+     else flyOut(d.dir, -d.sx);
    } else if (!reducedMotion.matches) {
      scene.style.willChange = "transform";
--    scene.style.transform = swipeXf(-effDx);
-+    scene.style.transform = swipeXf(effDx);
+-    scene.style.transform = swipeXf(-d.sx);
++    scene.style.transform = swipeXf(d.sx);
    }
  }, { passive: false });
+ 

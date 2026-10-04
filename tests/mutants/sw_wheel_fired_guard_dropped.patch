@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8264,7 +8264,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
-   if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-   if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+@@ -8981,7 +8981,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
+   wheel.axis = d.axis;
+   if (d.kind === "skip" || d.kind === "pass") return; // vertical-dominant: never claimed, never preventDefault-ed
    e.preventDefault();
--  if (wheel.fired) return;
-+  if (!wheel.fired) return;
-   wheel.sx += dx;
-   // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
-   // next card, content follows the fingers (plan: docs/plans/2026-09-30-
+-  if (d.kind === "hold") return;
++  if (d.kind !== "hold") return;
+   wheel.sx = d.sx;
+   if (d.kind === "commit") {
+     wheel.fired = true;

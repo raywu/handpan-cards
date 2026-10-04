@@ -8,12 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8248,7 +8248,7 @@ function wheelGestureEnd() {
+@@ -8960,7 +8960,7 @@ function wheelGestureEnd() {
    // listener below); springBack's own first keyframe is swipeXf(dx), so it
    // must take -w.sx too, or the spring-back starts mirrored (opposite
    // translateX and rotate) from where the card actually was.
--  springBack(-w.sx);
-+  springBack(w.sx);
+-  else if (end === "spring") springBack(-w.sx);
++  else if (end === "spring") springBack(w.sx);
  }
  if (wheelMain) wheelMain.addEventListener("wheel", e => {
    if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
