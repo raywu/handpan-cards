@@ -17,7 +17,7 @@ const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, APP_READY_EXPR, takeExceptions } = require("./helpers/cdp.js");
+const { launch, findBrowser, APP_READY_EXPR, peekExceptions, expectUncaught, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
@@ -105,9 +105,30 @@ function run() {
     if (server) await new Promise((r) => server.close(r));
   });
 
+  // Known uncaught page exceptions, one scoped expectation per test, each
+  // naming its queue row in docs/plans/2026-10-03-complexity-refactor.md
+  // section 9. There is no global allow-list: a new exception fails its test.
+  const KNOWN_UNCAUGHT = [
+    [/^card swipe: a tap during the fly-out lands it once and never flips the wrong card$/, /setPointerCapture/, "EX-Q1"],
+    [/^card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag$/, /setPointerCapture/, "EX-Q2"],
+    [/^card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back$/, /setPointerCapture/, "EX-Q3"],
+  ];
+
   afterEach((t) => {
-    for (const text of takeExceptions()) {
-      console.log(`E2E-UNCAUGHT ${t.name} ${text.split("\n")[0]}`);
+    for (const [name, pattern] of KNOWN_UNCAUGHT) if (name.test(t.name)) expectUncaught(pattern);
+    assertNoUncaught();
+  });
+
+  test("EX-4 sentinel: the uncaught guard is armed", async () => {
+    expectUncaught(/EX-4 sentinel/);
+    await b.eval(
+      "const x = document.createElement('button');" +
+      "x.onclick = () => { throw new Error('EX-4 sentinel'); };" +
+      "x.click();");
+    const deadline = Date.now() + 5000;
+    while (!peekExceptions().some((e) => /EX-4 sentinel/.test(e))) {
+      assert.ok(Date.now() < deadline, "the registry never recorded the sentinel throw");
+      await new Promise((r) => setTimeout(r, 40));
     }
   });
 

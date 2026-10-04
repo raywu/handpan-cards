@@ -73,6 +73,7 @@ function run() {
     const b = Object.create(Browser.prototype);
     let calls = 0;
     b.eval = async () => { calls++; return calls === 1 ? null : 1; }; // never clears
+    b.strictSettle = false;
     const t0 = Date.now();
     await b.settle();
     const elapsed = Date.now() - t0;
@@ -578,6 +579,7 @@ function run() {
     const b = await launch();
     const lines = [];
     const orig = process.stderr.write;
+    b.strictSettle = false;
     try {
       await b.send("Page.navigate", { url: "data:text/html," + encodeURIComponent(
         "<div id=a style='width:10px;height:10px;background:red'></div>" +
