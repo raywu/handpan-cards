@@ -12,7 +12,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7153,26 +7153,7 @@ function renderSeqRail(d) {
+@@ -7262,26 +7262,7 @@ function renderSeqRail(d) {
    // flip inside a step's smooth scroll still ends on the current chord; once the
    // chord is centred it is a no-op, and after a manual scroll it re-centres.
    if (keepLeft) rail.scrollLeft = keepLeft;
@@ -38,5 +38,5 @@ diff --git a/index.html b/index.html
 -  }
 +  void curNode;
  }
- function render() {
-   if (mode === "S" && (!seq || !seq.chords)) { renderSeqEmpty(); return; }
+ // One builder for every card face render() shows. `kind` names the face; the
+ // answer template (header + diagram + lines) is written once here and serves

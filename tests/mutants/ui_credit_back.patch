@@ -6,13 +6,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6756,7 +6756,8 @@ function render() {
-       `<div class="diagwrap">${pan(d, ch)}</div>` + linesHTML(d, ch);
-     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
-     const backS = headerHTML(d, ch, n) +
--      `<div class="prompt">${nameHTML(ch, true)}</div>`;
-+      `<div class="prompt">${nameHTML(ch, true)}</div>`
-+      + `<div class="hint">Style from Moritz.handpan</div>`;
-     document.getElementById("front").innerHTML = answer;
-     document.getElementById("back").innerHTML = backS;
-     document.getElementById("seq-style-name").textContent = styleName;
+@@ -7297,7 +7297,8 @@ function faceHTML(d, ch, n, kind) {
+      <div class="hint">Tap to reveal the notes</div></div>`;
+     case "backS":
+       return headerHTML(d, ch, n) +
+-        `<div class="prompt">${nameHTML(ch, true)}</div>`;
++        `<div class="prompt">${nameHTML(ch, true)}</div>`
++        + `<div class="hint">Style from Moritz.handpan</div>`;
+     case "questionB":
+       return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+         `<div class="diagwrap">${pan(d, ch)}</div>

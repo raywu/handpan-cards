@@ -5,13 +5,14 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6680,6 +6680,8 @@ function render() {
-     const [styleName, styleTip] = SEQ_STYLE_COPY[seq.style];
-     const backS = headerHTML(d, ch, n) +
--      `<div class="prompt">${nameHTML(ch, true)}</div>`;
-+      `<div class="prompt">${nameHTML(ch, true)}</div>`
-+      + `<div class="style-name">${styleName}</div>`
-+      + `<div class="style-tip">${styleTip}</div>`;
-     document.getElementById("front").innerHTML = answer;
-     document.getElementById("back").innerHTML = backS;
-     document.getElementById("seq-style-name").textContent = styleName;
+@@ -7297,7 +7297,9 @@ function faceHTML(d, ch, n, kind) {
+      <div class="hint">Tap to reveal the notes</div></div>`;
+     case "backS":
+       return headerHTML(d, ch, n) +
+-        `<div class="prompt">${nameHTML(ch, true)}</div>`;
++        `<div class="prompt">${nameHTML(ch, true)}</div>`
++        + `<div class="style-name">${SEQ_STYLE_COPY[seq.style][0]}</div>`
++        + `<div class="style-tip">${SEQ_STYLE_COPY[seq.style][1]}</div>`;
+     case "questionB":
+       return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
+         `<div class="diagwrap">${pan(d, ch)}</div>

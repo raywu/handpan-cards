@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7145,7 +7145,7 @@ function renderSeqRail(d) {
+@@ -7243,7 +7243,7 @@ function railBuild(d) {
    });
    const live = document.createElement("span");
    live.className = "sr-only";
 -  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx + 1} of ${seq.chords.length}`;
 +  live.textContent = `${curCh.main}${curCh.sup || ""}, chord ${idx} of ${seq.chords.length}`;
-   countEl.appendChild(rail);
-   countEl.appendChild(live);
-   railEl = rail;
+   return { rail, live, curNode };
+ }
+ function renderSeqRail(d) {

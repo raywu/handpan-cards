@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3721,7 +3721,7 @@
+@@ -6834,7 +6834,7 @@ function labelRatio(zone) {
         : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
  }
  function labelSize(r, zone) { return r * labelRatio(zone); }
 -function numSize(rNote) { return rNote * NUM_RATIO; }
 +function numSize(rNote) { return rNote * NUM_RATIO * 1.1; }
  
- /* ---------------- SVG pan ---------------- */
- /* The scale page selects a note by TAPPING THE PAN, so pan() can emit an
+ /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
+  * chordSets()'s {blue, green}; C is the deck's colours. */

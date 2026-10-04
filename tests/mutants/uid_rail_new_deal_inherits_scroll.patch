@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7114,7 +7114,7 @@ function renderSeqEmpty() {
- let railSeq = null, railEl = null;
- function renderSeqRail(d) {
+@@ -7214,7 +7214,7 @@ let railSeq = null, railEl = null;
+ // it scrolled to? Reads the module lets; writes none.
+ function railDiff() {
    const countEl = document.getElementById("count");
 -  const sameDeal = !!railEl && railSeq === seq && countEl.children[0] === railEl;
 +  const sameDeal = !!railEl && countEl.children[0] === railEl;
-   const keepLeft = sameDeal ? railEl.scrollLeft : 0;
-   railSeq = seq;
-   countEl.classList.add("seq");
+   return { sameDeal, keepLeft: sameDeal ? railEl.scrollLeft : 0 };
+ }
+ // railBuild: the rail, its live region and the current chord's node.
