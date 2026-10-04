@@ -51,8 +51,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // case, not realistic use.
   var DFS_NODE_BUDGET = 15000;
 
+  function core() {
+    return HPE.core;
+  }
+
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return core().pc(n);
   }
 
   function field(deck, id) {
@@ -70,7 +74,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function homePc(deck) {
     for (var id in deck.fields) {
       if (Object.prototype.hasOwnProperty.call(deck.fields, id) &&
-          deck.fields[id][3] === "ding") {
+          core().isDing(deck.fields[id])) {
         return pc(deck.fields[id][2]);
       }
     }

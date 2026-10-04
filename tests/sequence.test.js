@@ -140,7 +140,7 @@ const ANCHORS_1BASED = {
 };
 
 function engine() {
-  return loadEngine(["sequence"]);
+  return loadEngine(["core", "sequence"]);
 }
 
 // The engine runs in its own node:vm realm, so the values it returns are
@@ -1335,4 +1335,30 @@ test("EG-1 sequence pickers share one validity rule", () => {
   const ok = I.homeOrRefuse(HIJAZ);
   assert.equal(ok.refusal, null);
   assert.equal(typeof ok.homeAnchorIdx, "number");
+});
+
+/* ------------------------------------------------------------- EG-2 */
+
+test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
+  const E = loadEngine(["core", "voicing", "sequence"]);
+  let pcCalls = 0;
+  let dingCalls = 0;
+  const realPc = E.core.pc;
+  const realDing = E.core.isDing;
+  E.core.pc = (n) => { pcCalls += 1; return realPc(n); };
+  E.core.isDing = (rec) => { dingCalls += 1; return realDing(rec); };
+
+  E.sequence.anchors(AMARA);
+  assert.ok(pcCalls > 0, "sequence.anchors never reached core.pc");
+  pcCalls = 0;
+  E.sequence._internal.homePc(AMARA);
+  assert.ok(pcCalls > 0 && dingCalls > 0, "sequence.homePc skipped core.pc/core.isDing");
+
+  pcCalls = 0;
+  const rootPc = realPc(AMARA.fields["1"][2]);
+  E.voicing.choose(AMARA.fields, rootPc, [0, 3, 7]);
+  assert.ok(pcCalls > 0, "voicing.choose never reached core.pc");
+
+  const late = loadEngine(["sequence", "core"]);
+  assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
 });
