@@ -1,0 +1,15 @@
+# kills: AP1-3 wheelDecision table
+# suite: node --test --test-name-pattern ^AP1-3.wheelDecision.table$ tests/app.test.js
+# wheelDecision commits at exactly the threshold instead of one past it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8942,7 +8942,7 @@ function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
+   // sx > 0 means the fingers moved right-to-left (positive deltaX) -> next
+   // card, content follows the fingers (plan: docs/plans/2026-09-30-
+   // desktop-swipe.md). Before the threshold the card follows -sx.
+-  if (Math.abs(sx) > WHEEL_COMMIT_PX) return { kind: "commit", axis, sx, dir: sx > 0 ? 1 : -1 };
++  if (Math.abs(sx) >= WHEEL_COMMIT_PX) return { kind: "commit", axis, sx, dir: sx > 0 ? 1 : -1 };
+   return { kind: "follow", axis, sx, dir: 0 };
+ }
+ // Pure: what the 160ms gap does to a finished gesture: none | rest | spring.
