@@ -4941,3 +4941,22 @@ test("US-1 every app surface name resolves", () => {
     }
   }
 });
+
+test("US-2 layout boot gives the card a scene", () => {
+  const app = boot({ layout: true });
+  assert.ok(app.get("scene"), "no scene in a layout boot");
+  assert.strictEqual(app.get("scene === card.parentElement"), true);
+  assert.deepStrictEqual(plainRect(app.get("card.getBoundingClientRect()")),
+    { left: 0, top: 0, right: 360, bottom: 520, width: 360, height: 520 });
+  const a = app.get("scene.animate([{opacity:0},{opacity:1}], {duration: 10})");
+  assert.strictEqual(typeof a.cancel, "function");
+  assert.ok(a.finished instanceof Promise || typeof a.finished.then === "function");
+  assert.strictEqual(app.get("scene.getAnimations().length"), 1);
+  a.cancel();
+  assert.strictEqual(app.get("scene.getAnimations().length"), 0);
+  assert.strictEqual(app.get("typeof window.visualViewport"), "undefined");
+  assert.strictEqual(boot().get("typeof scene"), "undefined", "the default boot must stay layout-free");
+  assert.strictEqual(boot({ layout: true, visualViewport: { height: 400 } }).get("window.visualViewport.height"), 400);
+});
+
+function plainRect(r) { return JSON.parse(JSON.stringify(r)); }
