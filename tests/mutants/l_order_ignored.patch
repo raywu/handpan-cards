@@ -5,12 +5,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -324,7 +324,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-      * The SET of solved angles is unchanged - order says who sits where, not
-      * where the seats are - so every geom value computed above is untouched
-      * and mirror, which reflects the ANGLES, composes with it either way. */
--    if (wanted.value) {
-+    if (false) {
-       var slots = rims.concat(inners, bottoms);
-       var moved = [];
-       var nRim = rims.length;
+@@ -370,7 +370,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+     var placed = placeZones(counts, mirror);
+     var geom = geometry(counts, placed);
+-    if (wanted.value) placed = reseat(counts, placed, wanted.value);
++    if (false) placed = reseat(counts, placed, wanted.value);
+ 
+     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
+   }

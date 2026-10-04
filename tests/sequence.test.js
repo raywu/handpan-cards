@@ -140,7 +140,7 @@ const ANCHORS_1BASED = {
 };
 
 function engine() {
-  return loadEngine(["sequence"]);
+  return loadEngine(["core", "sequence"]);
 }
 
 // The engine runs in its own node:vm realm, so the values it returns are
@@ -1297,4 +1297,70 @@ test("the app exposes HPE.sequence", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(/<!-- engine:sequence begin/.test(html),
     "index.html has no inlined engine:sequence region - run tools/inline_engine.py");
+});
+
+/* ------------------------------------------------------------- EG-1 */
+
+test("EG-1 sequence pickers share one validity rule", () => {
+  const E = engine();
+  const I = E.sequence._internal;
+  assert.equal(typeof I.prevValid, "function");
+  assert.equal(typeof I.homeOrRefuse, "function");
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    const n = deck.chords.length;
+    const invalid = [undefined, null, "abc", [], [n], [-1], [0, "1"], [0, n + 3]];
+    const valid = [[0], [0, 1], [n - 1]];
+    for (const prev of invalid) assert.equal(I.prevValid(deck, prev), false, `${id} ${JSON.stringify(prev)}`);
+    for (const prev of valid) assert.equal(I.prevValid(deck, prev), true, `${id} ${JSON.stringify(prev)}`);
+    for (const tier of ["basic", "intermediate", "advanced"]) {
+      for (let seed = 0; seed < 20; seed += 1) {
+        const base = host(E.sequence.pick(deck, E.sequence.mulberry32(seed), null, tier));
+        for (const prev of invalid) {
+          const got = host(E.sequence.pick(deck, E.sequence.mulberry32(seed), prev, tier));
+          assert.deepEqual(got, base, `${id} ${tier} seed ${seed} prev ${JSON.stringify(prev)}`);
+        }
+        if (base.chords) {
+          const again = host(E.sequence.pick(deck, E.sequence.mulberry32(seed), base.chords, tier));
+          if (again.chords && E.sequence.pick(deck, E.sequence.mulberry32(seed), base.chords, tier).chords) {
+            assert.notDeepEqual(again.chords, base.chords, `${id} ${tier} seed ${seed} repeated prev`);
+          }
+        }
+      }
+    }
+  }
+  const noHome = { fields: { 1: ["A", 3, 57, "rim", 0, "A"] }, chords: [] };
+  const refused = I.homeOrRefuse(noHome);
+  assert.equal(refused.refusal.reason, "NO_HOME_CHORD");
+  assert.equal(refused.refusal.chords, null);
+  const ok = I.homeOrRefuse(HIJAZ);
+  assert.equal(ok.refusal, null);
+  assert.equal(typeof ok.homeAnchorIdx, "number");
+});
+
+/* ------------------------------------------------------------- EG-2 */
+
+test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
+  const E = loadEngine(["core", "voicing", "sequence"]);
+  let pcCalls = 0;
+  let dingCalls = 0;
+  const realPc = E.core.pc;
+  const realDing = E.core.isDing;
+  E.core.pc = (n) => { pcCalls += 1; return realPc(n); };
+  E.core.isDing = (rec) => { dingCalls += 1; return realDing(rec); };
+
+  E.sequence.anchors(AMARA);
+  assert.ok(pcCalls > 0, "sequence.anchors never reached core.pc");
+  pcCalls = 0;
+  E.sequence._internal.homePc(AMARA);
+  assert.ok(pcCalls > 0 && dingCalls > 0, "sequence.homePc skipped core.pc/core.isDing");
+
+  pcCalls = 0;
+  const rootPc = realPc(AMARA.fields["1"][2]);
+  E.voicing.choose(AMARA.fields, rootPc, [0, 3, 7]);
+  assert.ok(pcCalls > 0, "voicing.choose never reached core.pc");
+
+  const late = loadEngine(["sequence", "core"]);
+  assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
+  assert.deepEqual(host(late.sequence.anchors(AMARA)), host(E.sequence.anchors(AMARA)),
+    "core must be read when anchors runs, not when sequence loads");
 });

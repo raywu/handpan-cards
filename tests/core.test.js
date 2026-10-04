@@ -810,3 +810,31 @@ test("ET-2 fifthName", () => {
     assert.equal(core.fifthName(letter, accidental), fifth, `${letter}${accidental}`);
   }
 });
+
+/* ------------------------------------------------------------- EG-4 */
+
+test("EG-4 parseSeed keeps the last token of every run", () => {
+  const top = parsed("(D3) A3 C4 D4 E4");
+  assert.deepEqual(Object.keys(top.fields).length, 5);
+  assert.equal(top.fields["4"][0], "E");
+
+  const bar = parsed("(D3) A3 C4 D4 | F2 G2");
+  assert.equal(bar.fields["3"][0], "D");
+  assert.equal(bar.fields["101"][0], "F");
+  assert.equal(bar.fields["102"][0], "G");
+  assert.equal(bar.fields["102"][3], "bottom");
+
+  const split = parsed("(D3) A3 C4 / D4 E4");
+  assert.deepEqual(host(["1", "2", "3", "4"].map((id) => split.fields[id][3])),
+    ["rim", "rim", "inner", "inner"]);
+  assert.equal(split.fields["4"][0], "E");
+});
+
+test("EG-4 parseSeed reports the first failing stage, in tokenize, place, cap, fifth order", () => {
+  const code = (str) => core.parseSeed(str).code;
+  assert.equal(code("A3 C4 | |"), "NO_DING");
+  assert.equal(code("(D3) A3 | |"), "BAD_NOTE");
+  assert.equal(code("(D3) A3 Zz"), "BAD_NOTE");
+  assert.equal(code("(D3) C4 E4"), "NO_FIFTH");
+  assert.equal(code("(D3) Zz A3"), "BAD_NOTE");
+});

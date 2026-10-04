@@ -51,8 +51,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // case, not realistic use.
   var DFS_NODE_BUDGET = 15000;
 
+  function core() {
+    return HPE.core;
+  }
+
   function pc(n) {
-    return ((n % 12) + 12) % 12;
+    return core().pc(n);
   }
 
   function field(deck, id) {
@@ -70,7 +74,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function homePc(deck) {
     for (var id in deck.fields) {
       if (Object.prototype.hasOwnProperty.call(deck.fields, id) &&
-          deck.fields[id][3] === "ding") {
+          core().isDing(deck.fields[id])) {
         return pc(deck.fields[id][2]);
       }
     }
@@ -199,6 +203,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  function prevValid(deck, prev) {
+    return Array.isArray(prev) && prev.length > 0 &&
+      prev.every(function (idx) {
+        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
+      });
+  }
+
+  // {anchorsList, homeAnchorIdx, refusal}: refusal is the NO_HOME_CHORD deal
+  // when the deck has no home anchor, else null.
+  function homeOrRefuse(deck) {
+    var anchorsList = anchors(deck);
+    var homeAnchorIdx = homeAnchor(deck, anchorsList);
+    return {
+      anchorsList: anchorsList,
+      homeAnchorIdx: homeAnchorIdx,
+      refusal: homeAnchorIdx === null ? { chords: null, reason: "NO_HOME_CHORD" } : null
+    };
+  }
+
   function sameSequence(a, b) {
     if (!a || !b || a.length !== b.length) return false;
     for (var i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return false;
@@ -236,22 +259,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // pick(deck, rng, prev, "basic") both resolve here, byte-identical in
   // output and rng consumption to the pre-tier implementation.
   function pickBasic(deck, rng, prev) {
-    var anchorsList = anchors(deck);
-    if (homeAnchor(deck, anchorsList) === null) {
-      return { chords: null, reason: "NO_HOME_CHORD" };
-    }
+    var home = homeOrRefuse(deck);
+    if (home.refusal) return home.refusal;
     var pools = { 2: sequences(deck, 2), 3: sequences(deck, 3) };
     if (!pools[2].length && !pools[3].length) {
       return { chords: null, reason: "TOO_FEW_CHORDS" };
     }
 
-    var prevValid = Array.isArray(prev) && prev.length > 0 &&
-      prev.every(function (idx) {
-        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
-      });
+    var prevOk = prevValid(deck, prev);
 
     var filtered = { 2: pools[2], 3: pools[3] };
-    if (prevValid) {
+    if (prevOk) {
       filtered = {
         2: pools[2].filter(function (seq) { return !sameSequence(seq, prev); }),
         3: pools[3].filter(function (seq) { return !sameSequence(seq, prev); })
@@ -559,15 +577,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var lengths = TIER_LENGTHS[tier];
     var ctx = { anchorsList: anchorsList, home: homePc(deck), homeAnchorIdx: homeAnchorIdx };
 
-    var prevValid = Array.isArray(prev) && prev.length > 0 &&
-      prev.every(function (idx) {
-        return typeof idx === "number" && idx >= 0 && idx < deck.chords.length;
-      });
+    var prevOk = prevValid(deck, prev);
 
     // Phase 1: exclude prev, mirroring BASIC's E4 rule.
-    var found = drawFromLengths(deck, rng, tier, lengths, matrix, prevValid ? prev : null, ctx);
+    var found = drawFromLengths(deck, rng, tier, lengths, matrix, prevOk ? prev : null, ctx);
     // Phase 2: prev may be the only sequence this tier has - include it.
-    if (!found && prevValid) {
+    if (!found && prevOk) {
       found = drawFromLengths(deck, rng, tier, lengths, matrix, null, ctx);
     }
     if (!found) {
@@ -588,12 +603,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (t === "basic") {
       return pickBasic(deck, rng, prev);
     }
-    var anchorsList = anchors(deck);
-    var homeAnchorIdx = homeAnchor(deck, anchorsList);
-    if (homeAnchorIdx === null) {
-      return { chords: null, reason: "NO_HOME_CHORD" };
-    }
-    return pickTiered(deck, rng, prev, t, anchorsList, homeAnchorIdx);
+    var home = homeOrRefuse(deck);
+    if (home.refusal) return home.refusal;
+    return pickTiered(deck, rng, prev, t, home.anchorsList, home.homeAnchorIdx);
   }
 
   HPE.sequence = {
@@ -618,7 +630,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       classifyTier: classifyTier,
       homePc: homePc,
       homeAnchor: homeAnchor,
-      sameSequence: sameSequence
+      sameSequence: sameSequence,
+      prevValid: prevValid,
+      homeOrRefuse: homeOrRefuse
     }
   };
 })(HPE);

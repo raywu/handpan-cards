@@ -306,12 +306,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- parseSeed -------------------------------------------------------- */
 
-  function parseSeed(input, options) {
-    if (typeof input !== "string") return badNote(String(input));
-
-    var opts = readOptions(options);
-    if (!opts.ok) return opts;
-
+  // Steps 1-3: tokens, ding, bar and inner-mark splits, lexing. Notes come
+  // back without midi/octave; validate() places them.
+  function tokenize(input) {
     var tokens = input.split(/\s+/).filter(function (t) { return t !== ""; });
 
     // 1. Ding counting, before every other rule (D13).
@@ -374,7 +371,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         lists[l][1].push(note);
       }
     }
+    return ok({ dingNote: dingNote, dingMidi: dingMidi, topNotes: topNotes,
+                bottomNotes: bottomNotes, rimCount: rimCount });
+  }
 
+  // Steps 4-6: octave inference, MIDI range, ordering, caps, the fifth.
+  function validate(parsed) {
+    var dingNote = parsed.dingNote;
+    var dingMidi = parsed.dingMidi;
+    var topNotes = parsed.topNotes;
+    var bottomNotes = parsed.bottomNotes;
+    var rimCount = parsed.rimCount;
     // 4. Octave inference, MIDI range and the strict-ascending rule. The ding
     //    counts as the element before the first top note.
     var seen = {};
@@ -438,7 +445,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         "<fifth of X>": fifthName(dingNote.letter, dingNote.accidental)
       });
     }
+    return ok(parsed);
+  }
 
+  // Step 7: the field map.
+  function assemble(parsed, options) {
+    var dingNote = parsed.dingNote;
+    var dingMidi = parsed.dingMidi;
+    var topNotes = parsed.topNotes;
+    var bottomNotes = parsed.bottomNotes;
+    var rimCount = parsed.rimCount;
+    var n;
     // 7. Build the field map (section 4: ids, labels, zones).
     var fields = {};
     fields["0"] = [spell(dingNote.letter, dingNote.accidental), dingNote.octave,
@@ -458,7 +475,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
     }
 
-    return ok({ fields: fields, options: opts.value });
+    return ok({ fields: fields, options: options });
+  }
+
+  function parseSeed(input, options) {
+    if (typeof input !== "string") return badNote(String(input));
+
+    var opts = readOptions(options);
+    if (!opts.ok) return opts;
+
+    var tokenized = tokenize(input);
+    if (!tokenized.ok) return tokenized;
+    var validated = validate(tokenized.value);
+    if (!validated.ok) return validated;
+    return assemble(validated.value, opts.value);
   }
 
   /* ---- section 12: the canonical string and the deck id ----------------- */

@@ -6,9 +6,9 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -224,7 +224,7 @@
+@@ -271,7 +271,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var filtered = { 2: pools[2], 3: pools[3] };
-     if (prevValid) {
+     if (prevOk) {
        filtered = {
 -        2: pools[2].filter(function (seq) { return !sameSequence(seq, prev); }),
 +        2: pools[2],

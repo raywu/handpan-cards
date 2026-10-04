@@ -5,13 +5,13 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -546,9 +546,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -600,9 +600,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      if (TIERS.indexOf(t) < 0) {
        throw new Error("HPE.sequence.pick: unknown tier");
      }
 -    if (t === "basic") {
 -      return pickBasic(deck, rng, prev);
 -    }
-     var anchorsList = anchors(deck);
-     var homeAnchorIdx = homeAnchor(deck, anchorsList);
-     if (homeAnchorIdx === null) {
+     var home = homeOrRefuse(deck);
+     if (home.refusal) return home.refusal;
+     return pickTiered(deck, rng, prev, t, home.anchorsList, home.homeAnchorIdx);
