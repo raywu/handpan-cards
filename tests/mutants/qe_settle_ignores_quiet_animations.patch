@@ -6,11 +6,11 @@
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -181,7 +181,6 @@ class Browser {
+@@ -204,7 +204,6 @@ class Browser {
      const deadline = Date.now() + 500;
      for (;;) {
        const n = await this.eval(`return document.getAnimations().length;`);
 -      if (n === 0) return;
-       if (Date.now() > deadline) return;
-       await new Promise((r) => setTimeout(r, 20));
-     }
+       if (Date.now() > deadline) {
+         process.stderr.write(`E2E-SETTLE-CEILING ${n} animation(s) still running after 500ms\n`);
+         return;
