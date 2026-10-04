@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^ET-1.engine.corpus.matches$ tests/core.test.js
+# kills: ET-1 engine corpus matches
+# --check exits 0 on a stale corpus, so a refactor that changes parseSeed, layout.solve or select.build output passes the oracle unnoticed.
+diff --git a/tools/regen_engine_corpus.js b/tools/regen_engine_corpus.js
+--- a/tools/regen_engine_corpus.js
++++ b/tools/regen_engine_corpus.js
+@@ -108,7 +108,7 @@ function main() {
+     if (problems.length) {
+       console.error(`engine_corpus_v1.json is stale (${problems.length} mismatch(es)):`);
+       for (const p of problems.slice(0, 40)) console.error("  " + p);
+-      process.exit(1);
++      process.exit(0);
+     }
+     console.log(`engine_corpus_v1.json matches: ${corpus.synthetic.length} synthetic, ` +
+       `${Object.keys(corpus.malformed).length} malformed, ${corpus.notFromParseSeed.length} not from parseSeed`);

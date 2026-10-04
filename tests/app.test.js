@@ -4923,3 +4923,146 @@ describe("tab stops follow rendering", () => {
     assert.strictEqual(prevented, false);
   });
 });
+
+/* ------------------------------------------------ US: unit-test surface */
+
+test("US-1 every app surface name resolves", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { names } = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "fixtures", "app_surface_v1.json"), "utf8"));
+  assert.ok(names.length > 0, "the surface fixture lists no names");
+  const app = boot();
+  for (const name of names) {
+    try {
+      app.get(name);
+    } catch (e) {
+      assert.notStrictEqual(e.name, "ReferenceError", `${name} no longer resolves`);
+    }
+  }
+});
+
+test("US-2 layout boot gives the card a scene", () => {
+  const app = boot({ layout: true });
+  assert.ok(app.get("scene"), "no scene in a layout boot");
+  assert.strictEqual(app.get("scene === card.parentElement"), true);
+  assert.deepStrictEqual(plainRect(app.get("card.getBoundingClientRect()")),
+    { left: 0, top: 0, right: 360, bottom: 520, width: 360, height: 520 });
+  const a = app.get("scene.animate([{opacity:0},{opacity:1}], {duration: 10})");
+  assert.strictEqual(typeof a.cancel, "function");
+  assert.ok(a.finished instanceof Promise || typeof a.finished.then === "function");
+  assert.strictEqual(app.get("scene.getAnimations().length"), 1);
+  a.cancel();
+  assert.strictEqual(app.get("scene.getAnimations().length"), 0);
+  assert.strictEqual(app.get("typeof window.visualViewport"), "undefined");
+  assert.strictEqual(boot().get("typeof scene"), "undefined", "the default boot must stay layout-free");
+  assert.strictEqual(boot({ layout: true, visualViewport: { height: 400 } }).get("window.visualViewport.height"), 400);
+});
+
+function plainRect(r) { return JSON.parse(JSON.stringify(r)); }
+
+/* ------------------------------------------------ US-3 / US-4: swipe, wheel, keyboard inset
+ * Synthetic pointer and wheel events in a layout boot. Thresholds come from
+ * the e2e "card swipe" expectations (a 15px drag commits only when it is a
+ * fling; a wheel gesture commits past 80px of accumulated deltaX), never from
+ * the SWIPE_* / WHEEL_* constants. The sandbox dispatch has no capture/bubble
+ * phases, so each event is sent straight to the element the listener is on.
+ */
+const settle = () => new Promise((r) => setImmediate(r));
+
+function swipeRig() {
+  const app = boot({ layout: true });
+  const ptr = (type, x, t, extra = {}) => ({
+    type, pointerId: 1, isPrimary: true, button: 0, buttons: 1, pointerType: "touch",
+    clientX: x, clientY: 260, timeStamp: t, target: app.els.card,
+    preventDefault() {}, stopPropagation() {}, ...extra,
+  });
+  const onCard = (type, x, t) => app.els.card.dispatchEvent(ptr(type, x, t));
+  const mainEl = () => app.get("document.querySelector('main')");
+  const wheelEv = (dx) => mainEl().dispatchEvent({
+    type: "wheel", deltaX: dx, deltaY: 0, deltaMode: 0, ctrlKey: false, preventDefault() {},
+  });
+  const scene = () => app.get("scene");
+  const running = () => scene()._anims.filter((a) => a.state === "running");
+  const idx = () => app.get("idx");
+  return { app, ptr, onCard, wheelEv, scene, running, idx };
+}
+
+test("US-3 a fast flick past threshold flies out", async () => {
+  const { onCard, running, idx } = swipeRig();
+  onCard("pointerdown", 100, 0);
+  onCard("pointermove", 85, 25);
+  onCard("pointerup", 85, 26);
+  assert.strictEqual(running().length, 1, "a committed flick must start the fly-out");
+  assert.strictEqual(idx(), 0, "the deck only steps once the fly-out lands");
+  running()[0].finish();
+  await settle();
+  assert.strictEqual(idx(), 1, "swiping left deals the next card");
+});
+
+test("US-3 a slow short drag springs back", async () => {
+  const { app, onCard, running, idx } = swipeRig();
+  onCard("pointerdown", 100, 0);
+  onCard("pointermove", 88, 300);
+  onCard("pointermove", 85, 600);
+  onCard("pointerup", 85, 601);
+  assert.strictEqual(running().length, 1, "a sub-threshold release still animates back to rest");
+  running()[0].finish();
+  await settle();
+  assert.strictEqual(idx(), 0, "a slow 15px drag must not change the card");
+  assert.strictEqual(app.get("scene.style.transform"), "");
+});
+
+test("US-3 an open panel blocks the capture pointerdown", async () => {
+  const { app, ptr, onCard, running, idx } = swipeRig();
+  const docDown = () => app.sandbox.document.dispatchEvent(ptr("pointerdown", 180, 1000));
+  const flick = () => { onCard("pointerdown", 100, 0); onCard("pointermove", 85, 25); onCard("pointerup", 85, 26); };
+
+  flick();
+  assert.strictEqual(running().length, 1);
+  docDown();
+  assert.strictEqual(idx(), 1, "a press mid-flight lands the pending fly-out");
+  assert.strictEqual(app.get("drag !== null"), true, "with nothing open the press grabs the card");
+  onCard("pointercancel", 180, 1001);
+
+  flick();
+  app.run("panelOpen = true");
+  docDown();
+  assert.strictEqual(idx(), 2, "the pending fly-out still lands");
+  assert.strictEqual(app.get("drag"), null, "an open panel must not let the press start a drag");
+});
+
+test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
+  const { app, wheelEv, running, idx } = swipeRig();
+  for (const dx of [30, 30, 30, 30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "past 80px accumulated the card flies out, once");
+  running()[0].finish();
+  await settle();
+  app.flushTimers();
+  assert.strictEqual(idx(), 1);
+});
+
+test("US-3 wheel is ignored mid-flight", async () => {
+  const { app, wheelEv, running, idx } = swipeRig();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1);
+  app.flushTimers();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "a second gesture during the flight starts nothing");
+  running()[0].finish();
+  await settle();
+  app.flushTimers();
+  assert.strictEqual(idx(), 1, "the second gesture must not double-step");
+});
+
+test("US-4 applyKbOffset writes the keyboard inset", () => {
+  const app = boot({ layout: true, innerHeight: 800, visualViewport: { height: 400, offsetTop: 0, scale: 1 } });
+  const surf = app.els["scale-sheet"].firstElementChild;
+  assert.ok(surf, "the layout boot must give the sheet its surface child");
+  app.run("openScaleSheet()");
+  assert.strictEqual(surf.style.transform, "translateY(-400px)", "lifted by the keyboard's height");
+  assert.strictEqual(surf.style.maxHeight, "392px", "capped to the visible height less the 8px margin");
+  app.run("closeScaleSheet()");
+  assert.strictEqual(surf.style.transform, "");
+  assert.strictEqual(surf.style.maxHeight, "");
+});

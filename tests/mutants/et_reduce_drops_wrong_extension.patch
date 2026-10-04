@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^ET-2.reduceIntervals$ tests/voicing.test.js
+# kills: ET-2 reduceIntervals
+# reduceIntervals drops the 11 before the 9 when a chord implies more than six notes.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -114,7 +114,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     while (ivs.length > MAX_NOTES) {
+       var lowestExtension = -1;
+       for (var j = 0; j < ivs.length; j += 1) {
+-        if (ivs[j] >= OCTAVE) { lowestExtension = j; break; }
++        if (ivs[j] >= OCTAVE + 5) { lowestExtension = j; break; }
+       }
+       if (lowestExtension === -1) break;
+       ivs.splice(lowestExtension, 1);

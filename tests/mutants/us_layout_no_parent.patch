@@ -1,0 +1,16 @@
+# kills: US-2 layout boot gives the card a scene
+# suite: node --test --test-name-pattern ^US-2.layout.boot.gives.the.card.a.scene$ tests/app.test.js
+# A layout-boot element no longer answers parentElement, so `scene = 
+# card.parentElement` is undefined and every swipe test silently runs against 
+# nothing.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -157,7 +157,6 @@ function addLayout(el) {
+   el.scrollLeft = 0;
+   el.isConnected = true;
+   el._anims = [];
+-  Object.defineProperty(el, "parentElement", { get() { return this.parentNode || null; }, configurable: true });
+   el.animate = (keyframes, options) => {
+     let settle, fail;
+     const finished = new Promise((res, rej) => { settle = res; fail = rej; });

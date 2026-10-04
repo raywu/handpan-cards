@@ -1,0 +1,16 @@
+# kills: US-4 applyKbOffset writes the keyboard inset
+# suite: node --test --test-name-pattern ^US-4.applyKbOffset.writes.the.keyboard.inset$ tests/app.test.js
+# applyKbOffset lifts the sheet but never caps its height, so a tall sheet runs 
+# under the visible viewport's top edge when the keyboard is up.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7956,7 +7956,7 @@ function applyKbOffset() {
+    * as well, which fires at frame rate while a zoomed page is panned, and each
+    * unconditional style write forces a style recalc for no reason. */
+   const t = off > 0 ? `translateY(-${off}px)` : "";
+-  const m = cap > 0 ? `${cap}px` : "";
++  const m = "";
+   if (sheetSurf.style.transform !== t) sheetSurf.style.transform = t;
+   if (sheetSurf.style.maxHeight !== m) sheetSurf.style.maxHeight = m;
+ }

@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^ET-2.hexColor/bankers$ tests/pdfcards.test.js
+# kills: ET-2 hexColor/bankers
+# Exact ties round to the odd digit, the opposite of Python, so print geometry R moves 0.1 pt.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -54,7 +54,7 @@ HPE.pdfdeck = (function () {
+     } else {
+       // An exact tie: the even digit wins, which is the half of Python's rule
+       // Math.round does not have.
+-      up = (Number(whole[whole.length - 1]) % 2) === 1;
++      up = (Number(whole[whole.length - 1]) % 2) === 0;
+     }
+     var n = Number(whole) + (up ? 1 : 0);
+     var out = n / Math.pow(10, d);

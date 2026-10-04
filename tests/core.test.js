@@ -785,3 +785,28 @@ test("core.utf8Bytes encodes ASCII, two-byte and astral (surrogate-pair) charact
   assert.deepEqual(host(core.utf8Bytes("°")), [0xc2, 0xb0]); // degree sign
   assert.deepEqual(host(core.utf8Bytes("\u{1f600}")), [0xf0, 0x9f, 0x98, 0x80]); // astral
 });
+
+test("ET-1 engine corpus matches", () => {
+  const { spawnSync } = require("node:child_process");
+  const os = require("node:os");
+  const tool = path.join(ROOT, "tools", "regen_engine_corpus.js");
+  const fixture = path.join(ROOT, "tests", "fixtures", "engine_corpus_v1.json");
+  const run = (...args) => spawnSync(process.execPath, [tool, "--check", ...args], { encoding: "utf8" });
+
+  const clean = run();
+  assert.equal(clean.status, 0, clean.stderr);
+
+  const tampered = JSON.parse(fs.readFileSync(fixture, "utf8"));
+  tampered.corpus.synthetic[0].layout.geom.r_note += 0.001;
+  const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "et1-")), "tampered.json");
+  fs.writeFileSync(tmp, JSON.stringify(tampered));
+  const stale = run("--fixture", tmp);
+  assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
+});
+
+test("ET-2 fifthName", () => {
+  const cases = [["C", "", "G"], ["D", "b", "Ab"], ["B", "", "F#"], ["F", "b", "Cb"], ["A", "#", "E#"]];
+  for (const [letter, accidental, fifth] of cases) {
+    assert.equal(core.fifthName(letter, accidental), fifth, `${letter}${accidental}`);
+  }
+});
