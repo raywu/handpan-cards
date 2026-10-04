@@ -105,9 +105,9 @@ function run() {
     if (server) await new Promise((r) => server.close(r));
   });
 
-  // Known uncaught page exceptions, one scoped expectation per test, each
-  // naming its queue row in docs/plans/2026-10-03-complexity-refactor.md
-  // section 9. There is no global allow-list: a new exception fails its test.
+  // Empty since #226. A row is [/test name regex/, /message pattern/] and masks
+  // ONE named test; there is no global allow-list, so a new uncaught exception
+  // fails its test.
   const KNOWN_UNCAUGHT = [];
 
   afterEach((t) => {
@@ -10356,6 +10356,24 @@ function run() {
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "an axis locked to x at gesture start must keep stepping off dx alone");
       });
+
+      test("card swipe (wheel): under reduced motion a sub-threshold wheel gesture rests the card after the gap", async () => {
+        await freshLoad();
+        try {
+          await wheelAt(20, 0);
+          const follow = await sceneXform();
+          assert.strictEqual(follow.none, false, "motion on: a sub-threshold wheel event must apply a follow transform");
+          await b.send("Emulation.setEmulatedMedia", {
+            media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+          });
+          assert.strictEqual(await b.eval(`return matchMedia("(prefers-reduced-motion: reduce)").matches;`), true);
+          await waitElapsed(250, "the gesture to end and swipeRest() to fire");
+          assert.strictEqual((await sceneXform()).none, true, "swipeRest() must clear the follow transform");
+          assert.strictEqual((await sceneStyle()).willChange, "", "swipeRest() must clear willChange");
+        } finally {
+          await b.send("Emulation.setEmulatedMedia", { media: "", features: [] });
+        }
+      });
     });
 
     /* ---------------------------------------------------------------- *
@@ -10720,6 +10738,31 @@ function run() {
       assert.strictEqual(await cardFlipped(), false, "ArrowRight must reset the flip");
       await twoFrames();
       assert.strictEqual(await transitionRuns(), 0, "ArrowRight must not animate the reverse-flip");
+    });
+
+    test("card swipe: startDrag swallows only NotFoundError from setPointerCapture", async () => {
+      await freshLoad();
+      const press = (error) => b.eval(`
+        const card = document.getElementById("card");
+        window.__captureCalls = 0;
+        card.setPointerCapture = () => { window.__captureCalls++; throw ${error}; };
+        const init = { pointerId: 998, pointerType: "mouse", isPrimary: true, button: 0, clientX: 0, bubbles: true };
+        card.dispatchEvent(new PointerEvent("pointerdown", init));
+        card.dispatchEvent(new PointerEvent("pointerup", init));
+        return window.__captureCalls;
+      `);
+      expectUncaught(/co probe/);
+      assert.strictEqual(await press(`new TypeError("co probe")`), 1);
+      const deadline = Date.now() + 5000;
+      while (!peekExceptions().some((x) => /co probe/.test(x)) && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      assert.ok(peekExceptions().some((x) => /co probe/.test(x)), "a non-NotFoundError must propagate out of startDrag");
+      await b.waitFor(`drag === null`, { label: "the first gesture to release", timeout: 1000 });
+      const before = peekExceptions().length;
+      assert.strictEqual(await press(`new DOMException("x", "NotFoundError")`), 1);
+      await b.eval(`return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));`);
+      assert.strictEqual(peekExceptions().length, before, "NotFoundError must be swallowed");
     });
   });
 

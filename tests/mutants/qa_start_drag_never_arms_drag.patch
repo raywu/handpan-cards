@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8886,7 +8886,6 @@ function swipeMove(e) {
+@@ -8924,7 +8924,6 @@ function swipeMove(e) {
  // caller-side, since the two sites gate on different conditions.
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
 -  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-   try { card.setPointerCapture(e.pointerId); } catch {}
+   // NotFoundError: a synthetic or already-released pointer id has nothing to capture.
+   try { card.setPointerCapture(e.pointerId); } catch (err) { if (err.name !== "NotFoundError") throw err; }
  }
- function canStartGesture(e, state) {

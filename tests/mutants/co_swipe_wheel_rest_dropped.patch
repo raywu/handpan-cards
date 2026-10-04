@@ -1,0 +1,17 @@
+# kills: card swipe (wheel): under reduced motion a sub-threshold wheel gesture rests the card after the gap
+# suite: node --test --test-name-pattern ^card.swipe.\(wheel\):.under.reduced.motion.a.sub-threshold.wheel.gesture.rests.the.card.after.the.gap$ tests/e2e.test.js
+# wheelGestureEnd() no longer calls swipeRest() when the gesture ends under
+# reduced motion; the empty branch keeps the following `else if` parseable.
+# The follow transform set before the emulation flipped is then never cleared.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8994,7 +8994,7 @@ function wheelGestureEnd() {
+   const w = wheel;
+   wheel = null;
+   const end = wheelEndDecision({ skip: w.skip, fired: w.fired, reducedMotion: reducedMotion.matches });
+-  if (end === "rest") swipeRest();
++  if (end === "rest") { }
+   // The follow transform during the gesture is swipeXf(-w.sx) (see the
+   // listener below); springBack's own first keyframe is swipeXf(dx), so it
+   // must take -w.sx too, or the spring-back starts mirrored (opposite

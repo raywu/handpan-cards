@@ -15,7 +15,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8847,7 +8847,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -8885,7 +8885,7 @@ function release(e, cancelled, pushPoint = true) {
    const dx = drag.last;
    const mouse = pointerType === "mouse";
    const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
@@ -24,8 +24,8 @@ diff --git a/index.html b/index.html
    drag = null;
    if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
    if (d.kind === "rest") {
-@@ -8890,7 +8890,7 @@ function startDrag(e) {
-   try { card.setPointerCapture(e.pointerId); } catch {}
+@@ -8929,7 +8929,7 @@ function startDrag(e) {
+   try { card.setPointerCapture(e.pointerId); } catch (err) { if (err.name !== "NotFoundError") throw err; }
  }
  function canStartGesture(e, state) {
 -  return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;

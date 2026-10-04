@@ -11,7 +11,7 @@
 //   const fs = require("fs");
 //   const { loadEngine } = require("./tests/helpers/engine.js");
 //   const DECKS = JSON.parse(fs.readFileSync("data/decks.json", "utf8"));
-//   const E = loadEngine(["sequence"]);
+//   const E = loadEngine(["core", "sequence"]);
 //   const out = {};
 //   for (const id of ["hijaz", "pygmy", "amara"]) {
 //     const deck = DECKS.find((d) => d.id === id);
@@ -46,7 +46,7 @@
 //   const fs = require("fs");
 //   const { loadEngine } = require("./tests/helpers/engine.js");
 //   const DECKS = JSON.parse(fs.readFileSync("data/decks.json", "utf8"));
-//   const E = loadEngine(["sequence"]);
+//   const E = loadEngine(["core", "sequence"]);
 //   const out = {};
 //   for (const id of ["hijaz", "pygmy", "amara"]) {
 //     const deck = DECKS.find((d) => d.id === id);

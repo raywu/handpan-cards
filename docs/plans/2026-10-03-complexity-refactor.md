@@ -1,5 +1,7 @@
 # Complexity refactor + test hardening (2026-10-03)
 
+Status: EXECUTION COMPLETE 2026-10-04 at 9d2ccb5; close-out in `2026-10-04-close-out.md`.
+
 Base: `main` at `e3fe4a5` (CI green). Line numbers are at that commit and drift; every reference also names a symbol.
 Execution: `/swarm`, AFK armed. Template for lane blocks: `docs/plans/2026-10-01-post-refactor-triage.md`.
 Accept convention (from the triage plan): a step with no separate Accept line is accepted when its Verify passes and its TDD test was seen red first.
@@ -417,14 +419,14 @@ Queue rows produced during execution (EX step 2, US-3 cuts, mutant hand-offs) ar
 
 | Row | Source | Finding | Likely owner |
 |---|---|---|---|
-| EX-Q1 | EX step 2, CI run 37164644382 | e2e "card swipe: a tap during the fly-out lands it once and never flips the wrong card" throws uncaught `NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.` Masked by `KNOWN_UNCAUGHT` in `tests/e2e.test.js`. | AP1 (guard the `setPointerCapture` call in the capture path, or the test uses a live pointer id) |
-| EX-Q2 | EX step 2, same run | e2e "card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", same `setPointerCapture` NotFoundError, masked the same way. | AP1 |
-| EX-Q3 | EX step 2, same run | e2e "card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", same `setPointerCapture` NotFoundError, masked the same way. | AP1 |
+| EX-Q1 | EX step 2, CI run 37164644382 | e2e "card swipe: a tap during the fly-out lands it once and never flips the wrong card" throws uncaught `NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.` Masked by `KNOWN_UNCAUGHT` in `tests/e2e.test.js`. Fixed by #221 (try/catch in `startDrag`); mask rows deleted in #226 (A22). | AP1 (guard the `setPointerCapture` call in the capture path, or the test uses a live pointer id) |
+| EX-Q2 | EX step 2, same run | e2e "card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", same `setPointerCapture` NotFoundError, masked the same way. Fixed by #221 (try/catch in `startDrag`); mask rows deleted in #226 (A22). | AP1 |
+| EX-Q3 | EX step 2, same run | e2e "card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", same `setPointerCapture` NotFoundError, masked the same way. Fixed by #221 (try/catch in `startDrag`); mask rows deleted in #226 (A22). | AP1 |
 | EX-SETTLE | EX step 4 | Zero `E2E-SETTLE-CEILING` hits in runs 37164644382 and 37165282685; `settle()` now throws at its ceiling (`b.strictSettle = false` opts out). | none |
 | US-N1 | US review | `tests/mutants/us_kb_cap_dropped.patch` anchors at `applyKbOffset` (~index.html:7956), outside AP1's 8629-8942, so AP2 inherits it; the other five `us_*` index.html patches are AP1's. | AP2 |
 | US-N2 | US report | `tools/sandbox.js` layout-only extras beyond the step 2 list: `#scale-sheet` sheetsurf child, `firstElementChild`, `innerHeight`, `finish()`/`state` on animation records; `document.dispatchEvent` is present in every boot. No growth in dispatch, selectors or `querySelectorAll` (R3 held). | none |
 | ET-N1 | ET review | `engine_corpus_v1.json` records `layout.solve` geom only (not per-field angles) and `select.build` main/sup/fields/roots (not subtitles); it is not an angle or subtitle oracle. | EG reviewer (briefed) |
-| EG-2b | EG report | pdfcards `pc`/`isDing` dedupe (pdfcards.js 340/350/439-448) cut: `tools/pdf_build.js`, `tests/pdf_builtin.test.js`, `tests/pdfcards.test.js` load no core module and are outside EG's Owns. Needs "core" added to those loaders first. | unassigned |
+| EG-2b | EG report | pdfcards `pc`/`isDing` dedupe (pdfcards.js 340/350/439-448) cut: `tools/pdf_build.js`, `tests/pdf_builtin.test.js`, `tests/pdfcards.test.js` load no core module and are outside EG's Owns. Needs "core" added to those loaders first. | Owner: lane EG2B of `docs/plans/2026-10-04-close-out.md` |
 | EG-3 | EG report | `select.warning` left as `{code, reason}`: `core.err` returns `{ok:false, code, reason}`, so routing would add `ok:false` to every `deck.warnings` entry (A11). Recorded by "EG-3 warning shape equals core.err shape" in `tests/select.test.js`. | none |
 | AP1-Q1 | AP1-a (#221) report and review | EX-Q1..Q3 are fixed: `startDrag` wraps `card.setPointerCapture` in try/catch. The three `KNOWN_UNCAUGHT` rows at `tests/e2e.test.js:111-115` are now inert (`expectUncaught` only filters, so they would mask a regression of that throw). Delete them from an `e2e.test.js`-owning lane (EB, or FL2). The catch is a catch-all; narrowing to `NotFoundError` is a nit. | FL2 (done: rows deleted in the FL2 close-out, A22) |
 

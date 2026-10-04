@@ -5859,7 +5859,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  * This module reads only `deck.fields` (id -> [name, octave, midi, zone,
  * angle, label]) and `deck.chords[].{fields, roots}` - the same shape for a
  * built-in deck (data/decks.json) and a generated one (HPE.select.build's
- * output) - and depends on no other engine module.
+ * output). It reads `HPE.core` lazily, at use time (see `core()` below), so
+ * core must be loaded before any function here runs but not before this file.
  */
 var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
@@ -8929,7 +8930,8 @@ function swipeMove(e) {
 function startDrag(e) {
   scene.getAnimations().forEach(a => a.cancel());
   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
-  try { card.setPointerCapture(e.pointerId); } catch {}
+  // NotFoundError: a synthetic or already-released pointer id has nothing to capture.
+  try { card.setPointerCapture(e.pointerId); } catch (err) { if (err.name !== "NotFoundError") throw err; }
 }
 function canStartGesture(e, state) {
   return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;
