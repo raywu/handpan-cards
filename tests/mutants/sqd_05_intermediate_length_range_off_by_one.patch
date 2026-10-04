@@ -5,12 +5,12 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -341,7 +341,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   }
+@@ -377,7 +377,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
+   // R5: MEDIUM starts on a home-rooted card OR any anchor.
    function intermediateGate(deck, seq, home, anchorsList) {
 -    if (seq.length !== 3 && seq.length !== 4) return false;
 +    if (seq.length !== 3 && seq.length !== 4 && seq.length !== 5) return false;
-     if (chordRootPc(deck, seq[0]) !== home) return false;
+     if (chordRootPc(deck, seq[0]) !== home && anchorsList.indexOf(seq[0]) < 0) return false;
      if (hasForbiddenRepeat(deck, seq, true)) return false;
      for (var i = 0; i < seq.length; i += 1) {

@@ -1,0 +1,16 @@
+# kills: every sequence starts on an anchor and every step connects, including back to the first chord
+# R2 - sequences() starts on every CARD of the deck, not only the anchors,
+# so a non-anchor chord can open an EASY sequence
+# suite: node --test --test-name-pattern ^every.sequence.starts.on.an.anchor.and.every.step.connects..including.back.to.the.first.chord$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -207,7 +207,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         seq.pop();
+       });
+     }
+-    anchorsList.forEach(function (start) {
++    deck.chords.forEach(function (_, start) {
+       seq = [start];
+       rec();
+     });
