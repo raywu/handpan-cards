@@ -5259,3 +5259,26 @@ test("AP2-4 setMode and shuffle produce the same label", () => {
   app.run(`setMode("A")`);
   assert.deepStrictEqual(label(), clicked, "leaving S restores the text label");
 });
+
+test("AP3-0 generated faces and rail DOM match the committed digest", () => {
+  const { execFileSync } = require("node:child_process");
+  const tool = path.join(ROOT, "tools", "regen_card_fixture.js");
+  const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, "tests", "fixtures", "gen_face_v1.json"), "utf8"));
+  const digests = Object.values(fixture.decks).flatMap((d) => Object.values(d.A).map((c) => c.front));
+  assert.ok(new Set(digests).size > 5, "the fixture distinguishes generated decks");
+  assert.notStrictEqual(fixture.rails.basic, fixture.rails.advanced, "the two rails differ");
+  try {
+    execFileSync(process.execPath, [tool, "--gen", "--check"], { stdio: "pipe" });
+  } catch (e) {
+    assert.fail("gen_face_v1.json is stale:\n" + (e.stdout || "") + (e.stderr || ""));
+  }
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.ok(html.includes("Tap to reveal the notes"));
+  const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "ap3-0-"));
+  const drifted = path.join(dir, "index.html");
+  fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
+  assert.throws(
+    () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
+    /Command failed/, "a drifted generated face must fail the check");
+  fs.rmSync(dir, { recursive: true, force: true });
+});

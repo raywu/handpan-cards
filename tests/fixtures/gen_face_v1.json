@@ -1,0 +1,333 @@
+{
+  "_what": "sha256/16 of (a) the front and back face innerHTML of the first three cards of every ok synthetic_scales.json deck, generated, in modes A and B; (b) a structural serialisation of #count after render() in mode S for a basic and an advanced sequence on Amara (HPE.sequence.pick with rng () => 0).",
+  "_why": "AP3-0 (complexity refactor 2026-10-03): card_face_v1.json hashes built-in faces only and nothing hashed the rail DOM. Taken from main fe63803 before any AP3 refactor commit.",
+  "_regen": "node tools/regen_card_fixture.js --gen [--html PATH]",
+  "decks": {
+    "builtin hijaz": {
+      "A": {
+        "0": {
+          "front": "4c572d60ef08fe9a",
+          "back": "030ced4f2ae6a9a4"
+        },
+        "1": {
+          "front": "06611b551be51257",
+          "back": "1888835a92ad9e49"
+        },
+        "2": {
+          "front": "f7c10a67d3ffa016",
+          "back": "a9dcb6aa4c94e7aa"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "c19598d6de2aa6c3",
+          "back": "1e46e38d6d614e1a"
+        },
+        "1": {
+          "front": "1dede11292e3fc71",
+          "back": "763c229656abd3c7"
+        },
+        "2": {
+          "front": "a44937b165222bb8",
+          "back": "e1314851c111fd6b"
+        }
+      }
+    },
+    "builtin pygmy": {
+      "A": {
+        "0": {
+          "front": "eadcd5bf6e89f426",
+          "back": "2497cf2cffd3bf2c"
+        },
+        "1": {
+          "front": "164bed0495fa1d6f",
+          "back": "98c2b5a00ce87332"
+        },
+        "2": {
+          "front": "12fed42f077de00a",
+          "back": "b098dbdaf432d2ef"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "7ec8981e8571dc57",
+          "back": "5aed112c395a5015"
+        },
+        "1": {
+          "front": "364f71ea1b645809",
+          "back": "81316a6b4605736c"
+        },
+        "2": {
+          "front": "dc4d390fb96d2017",
+          "back": "a3d1bff3b2549e9f"
+        }
+      }
+    },
+    "builtin amara": {
+      "A": {
+        "0": {
+          "front": "9151db9446e038d5",
+          "back": "79987122c86e313c"
+        },
+        "1": {
+          "front": "892c1a6c9c546249",
+          "back": "6775f123a2bca39a"
+        },
+        "2": {
+          "front": "9cf3e6fb8e99aff1",
+          "back": "2be3a1191e0eede2"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "9d8afd170aecc41f",
+          "back": "418d707472a18e6d"
+        },
+        "1": {
+          "front": "d3caec3b048cea70",
+          "back": "d3585b482da4db9d"
+        },
+        "2": {
+          "front": "c812593e3be8d753",
+          "back": "c98f654c12d053e6"
+        }
+      }
+    },
+    "twelve note pan": {
+      "A": {
+        "0": {
+          "front": "6c45197c1ee8dc6c",
+          "back": "449dbffef05e4945"
+        },
+        "1": {
+          "front": "1148712fb35bd35d",
+          "back": "2e29500867c1937a"
+        },
+        "2": {
+          "front": "f737b8c3d516af2e",
+          "back": "db0822942305506e"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "627b4f0a1b933c71",
+          "back": "9e72f092d1770f6c"
+        },
+        "1": {
+          "front": "fea3cec6e19f001b",
+          "back": "8d4f271e0f4dd2b4"
+        },
+        "2": {
+          "front": "7a10a3bc7593abac",
+          "back": "2871f0c6c2774b07"
+        }
+      }
+    },
+    "nineteen field maximum": {
+      "A": {
+        "0": {
+          "front": "4c898b4c969e5497",
+          "back": "3a2943383bd285de"
+        },
+        "1": {
+          "front": "2d5412452787a2ec",
+          "back": "7e72d651ab49dd65"
+        },
+        "2": {
+          "front": "04372c2d2ca6d32b",
+          "back": "1e4532739e07ec2c"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "b8d30c5720dba8fc",
+          "back": "4e6f8ce720fc869e"
+        },
+        "1": {
+          "front": "61fe118f06142fd6",
+          "back": "7966a1b0d16ae549"
+        },
+        "2": {
+          "front": "9c211e71c4ca23c9",
+          "back": "a3a892a24576b531"
+        }
+      }
+    },
+    "octatonic diminished": {
+      "A": {
+        "0": {
+          "front": "a90106f958d4e6ac",
+          "back": "198bbb0a2388a8bb"
+        },
+        "1": {
+          "front": "0abc84c391cb8657",
+          "back": "92ecbb9d2b38e77b"
+        },
+        "2": {
+          "front": "ddf71354fc329860",
+          "back": "5197bd94e06b2f9a"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "839909593f9ea375",
+          "back": "e94387a9827883e7"
+        },
+        "1": {
+          "front": "f334394fbdedc9b0",
+          "back": "4ff1d548adfc5fc2"
+        },
+        "2": {
+          "front": "525278864e5c267b",
+          "back": "30844d741813b524"
+        }
+      }
+    },
+    "augmented hexatonic": {
+      "A": {
+        "0": {
+          "front": "9412006b00ede026",
+          "back": "b9d5931b6a9aec1c"
+        },
+        "1": {
+          "front": "2f3219d549c0ec9a",
+          "back": "573b9d2517fac4ac"
+        },
+        "2": {
+          "front": "022f58ab8aee972a",
+          "back": "7d23919f0dbeac1d"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "27da0cc0148c78d2",
+          "back": "8d103886c9bbd7b3"
+        },
+        "1": {
+          "front": "835e4f65ef1d04bc",
+          "back": "0b11486cd0b964d2"
+        },
+        "2": {
+          "front": "c115c709a0c2c2fb",
+          "back": "a119d88a080a352c"
+        }
+      }
+    },
+    "three pitch classes": {
+      "A": {
+        "0": {
+          "front": "ac1a8ccbc789802c",
+          "back": "80462385cf8429f2"
+        },
+        "1": {
+          "front": "1010852c6faa7400",
+          "back": "87a38d4e4cd17674"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "a0353a23ec70971b",
+          "back": "b8e2b1a5b18891b6"
+        },
+        "1": {
+          "front": "d4c362280cb215c7",
+          "back": "a561d8d6448fb19c"
+        }
+      }
+    },
+    "omitted ding octave": {
+      "A": {
+        "0": {
+          "front": "9151db9446e038d5",
+          "back": "79987122c86e313c"
+        },
+        "1": {
+          "front": "892c1a6c9c546249",
+          "back": "6775f123a2bca39a"
+        },
+        "2": {
+          "front": "9cf3e6fb8e99aff1",
+          "back": "2be3a1191e0eede2"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "9d8afd170aecc41f",
+          "back": "418d707472a18e6d"
+        },
+        "1": {
+          "front": "d3caec3b048cea70",
+          "back": "d3585b482da4db9d"
+        },
+        "2": {
+          "front": "c812593e3be8d753",
+          "back": "c98f654c12d053e6"
+        }
+      }
+    },
+    "ding pitch class absent from top shell": {
+      "A": {
+        "0": {
+          "front": "603479381fa4da4a",
+          "back": "830e2485b8f116e2"
+        },
+        "1": {
+          "front": "bf805ab52a88b59e",
+          "back": "8377aa29682bc111"
+        },
+        "2": {
+          "front": "c3bb19543e33ab2d",
+          "back": "3ec4d10a195074bb"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "06cefc2b667e0ae4",
+          "back": "35c8dc8fee2de772"
+        },
+        "1": {
+          "front": "6eb211508479c27f",
+          "back": "23eeb86a090ca843"
+        },
+        "2": {
+          "front": "6e70ecaf9394d689",
+          "back": "3f8fda7b9b665800"
+        }
+      }
+    },
+    "bottom notes after bar": {
+      "A": {
+        "0": {
+          "front": "9151db9446e038d5",
+          "back": "f4757c606488006f"
+        },
+        "1": {
+          "front": "892c1a6c9c546249",
+          "back": "f6ff42f0d81a2074"
+        },
+        "2": {
+          "front": "9cf3e6fb8e99aff1",
+          "back": "7870f654079529f6"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "3927eeea92bffe4c",
+          "back": "418d707472a18e6d"
+        },
+        "1": {
+          "front": "df1aee241ec27ffe",
+          "back": "d3585b482da4db9d"
+        },
+        "2": {
+          "front": "784c07376247c583",
+          "back": "c98f654c12d053e6"
+        }
+      }
+    }
+  },
+  "rails": {
+    "basic": "d90c6e01b2bfbf6b",
+    "advanced": "144a58bf9ebf410c"
+  }
+}
