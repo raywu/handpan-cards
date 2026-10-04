@@ -404,8 +404,22 @@ Expected strand counts, from the hunk survey:
 | A12 | The engine corpus covers parseSeed + solve + select.build over the existing 20 synthetic strings plus malformed tokens. | Reuse `golden_decks_v4.json` as EG's oracle | v4 is a frozen data corpus that only `test_fixture_integrity.py` reads by sha; it does not snapshot engine output. |
 | A13 | Prefixes are `ex_`, `us_`, `et_`, `eg_`, `eb_`, `ap1_`, `ap2_`, `ap3_`. | Reuse `e_`/`u_` | All are unused at e3fe4a5, so no collision with the 47 prefixes in use. |
 | A14 | AMENDED by R5 (eng review): the `b_*` data mutants' `index.html` hunk is re-anchored by the app lane in range; their `data/decks.json` hunk stays byte-identical. Other multi-file patches are re-cut by the lane owning all their targets. | Let the app lane edit them freely | No lane owns `data/`, so the original rule had no owner for the 11 `b_*` patches. |
+| A15 | 2026-10-04: main went red at c63b468 on `tests/test_readme_currency.py` (598 patches on disk vs README "536", 90% floor). Restated README.md:127 to 598 in #217 as a lane-less hotfix PR, reviewed and merged before any further lane. The stated count now sits at the test's ceiling: any lane that REMOVES a patch must restate it. | Fold the README edit into the next lane PR | Every open and future PR was red on the same test; no lane owns README.md. |
+| A16 | 2026-10-04: EX (#213) and EG (#218) were re-merged onto main by the orchestrator (semantic-coupling rule, section 6, after ET and US merged fixtures; then again after #217) rather than bounced to the lanes. | Ask each lane to re-merge | A plain `git merge origin/main` with no conflicts; CI was taken at the new heads. |
 
 Queue rows produced during execution (EX step 2, US-3 cuts, mutant hand-offs) are appended here.
+
+| Row | Source | Finding | Likely owner |
+|---|---|---|---|
+| EX-Q1 | EX step 2, CI run 37164644382 | e2e "card swipe: a tap during the fly-out lands it once and never flips the wrong card" throws uncaught `NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.` Masked by `KNOWN_UNCAUGHT` in `tests/e2e.test.js`. | AP1 (guard the `setPointerCapture` call in the capture path, or the test uses a live pointer id) |
+| EX-Q2 | EX step 2, same run | e2e "card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", same `setPointerCapture` NotFoundError, masked the same way. | AP1 |
+| EX-Q3 | EX step 2, same run | e2e "card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", same `setPointerCapture` NotFoundError, masked the same way. | AP1 |
+| EX-SETTLE | EX step 4 | Zero `E2E-SETTLE-CEILING` hits in runs 37164644382 and 37165282685; `settle()` now throws at its ceiling (`b.strictSettle = false` opts out). | none |
+| US-N1 | US review | `tests/mutants/us_kb_cap_dropped.patch` anchors at `applyKbOffset` (~index.html:7956), outside AP1's 8629-8942, so AP2 inherits it; the other five `us_*` index.html patches are AP1's. | AP2 |
+| US-N2 | US report | `tools/sandbox.js` layout-only extras beyond the step 2 list: `#scale-sheet` sheetsurf child, `firstElementChild`, `innerHeight`, `finish()`/`state` on animation records; `document.dispatchEvent` is present in every boot. No growth in dispatch, selectors or `querySelectorAll` (R3 held). | none |
+| ET-N1 | ET review | `engine_corpus_v1.json` records `layout.solve` geom only (not per-field angles) and `select.build` main/sup/fields/roots (not subtitles); it is not an angle or subtitle oracle. | EG reviewer (briefed) |
+| EG-2b | EG report | pdfcards `pc`/`isDing` dedupe (pdfcards.js 340/350/439-448) cut: `tools/pdf_build.js`, `tests/pdf_builtin.test.js`, `tests/pdfcards.test.js` load no core module and are outside EG's Owns. Needs "core" added to those loaders first. | unassigned |
+| EG-3 | EG report | `select.warning` left as `{code, reason}`: `core.err` returns `{ok:false, code, reason}`, so routing would add `ok:false` to every `deck.warnings` entry (A11). Recorded by "EG-3 warning shape equals core.err shape" in `tests/select.test.js`. | none |
 
 Status: drafted 2026-10-03; eng-reviewed 2026-10-03 (ledger R1-R6 below), approved; execution started 2026-10-03 under AFK.
 
