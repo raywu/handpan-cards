@@ -8085,11 +8085,20 @@ function sheetRoute() { return editingId ? EDIT_ROUTE + editingId : ADD_ROUTE; }
 // something that still needs popping", which only we know.
 let sheetRouted = false;
 
+/** Make one caller's own background set inert (or live again). The sheet and
+ *  the panel pass different sets on purpose - see `background` and
+ *  `panelBackground`. */
+function setInert(on, targets) {
+  for (const el of targets) {
+    el.inert = on;
+    if (on) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden");
+  }
+}
 function showSheet(opener) {
   sheetOpener = opener || addChip;
   sheet.removeAttribute("hidden");
   sheetOpen = true;
-  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+  setInert(true, background);
   resyncSheet(true);
   applyKbOffset();
   history.pushState({ scalePage: true }, "", sheetRoute());
@@ -8103,44 +8112,37 @@ function showSheet(opener) {
   // from there walks the page the way it looks.
   backBtn.focus();
 }
-// The create path. Everything is reset, so an Edit never leaks its seed, its
-// palette or its mirror into the next "+ ADD".
-function openScaleSheet(opener) {
-  editingId = null;
+/** Put every sheet field and session let in the state one open mode wants.
+ *  `edit` is the deck being edited, or null for the create path, which clears
+ *  identity and options so an Edit never leaks into the next "+ ADD". */
+function resetSheetState(edit) {
+  editingId = edit ? edit.id : null;
   // A fresh session: a refusal from whatever was last edited must not leak
   // into this one (queue row 115) - showSheet() itself is not allowed to
   // clear it, since it is one of the seven non-seed callers.
   refusal = null;
-  setSheetMode(false);
-  scaleBox.value = "";
-  nameBox.value = "";
-  nameDirty = false;
-  palette = 0;
+  setSheetMode(!!edit);
+  nameBox.value = edit ? edit.name : "";
+  nameDirty = false;                                 // prefilled, not typed
+  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+  palette = edit ? edit.options.palette : 0;
   buildSwatches();
-  setMirror(false);
-  layoutOrder = null;
+  setMirror(edit ? !!edit.options.mirror : false);
+  if (edit) buildDegrees(edit.options.parent);
+  // The correction is a seed option like the others, so Edit shows the one the
+  // deck already carries and RESET is what clears it.
+  layoutOrder = edit && Array.isArray(edit.options.order) ? edit.options.order.slice() : null;
   layoutSel = 0;
+}
+// The create path.
+function openScaleSheet(opener) {
+  resetSheetState(null);
   showSheet(opener);
 }
 // The Edit path [design-review 7A]: the SAME sheet, prefilled from the deck
 // already in the registry.
 function openEditSheet(d, opener) {
-  editingId = d.id;
-  // Same reset as openScaleSheet(): a new Edit session starts with no
-  // standing refusal from whatever the sheet last showed (queue row 115).
-  refusal = null;
-  setSheetMode(true);
-  nameBox.value = d.name;
-  nameDirty = false;                                 // prefilled, not typed
-  scaleBox.value = HPE.core.formatSeed(d.fields);     // 8A: the canonical string
-  palette = d.options.palette;
-  buildSwatches();
-  setMirror(!!d.options.mirror);
-  buildDegrees(d.options.parent);
-  // The correction is a seed option like the others, so Edit shows the one the
-  // deck already carries and RESET is what clears it.
-  layoutOrder = Array.isArray(d.options.order) ? d.options.order.slice() : null;
-  layoutSel = 0;
+  resetSheetState(d);
   showSheet(opener);
   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
   // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
@@ -8172,7 +8174,7 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   editingId = null;
-  for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
+  setInert(false, background);
   (sheetOpener || addChip).focus();
   sheetOpener = null;
 }
@@ -8239,16 +8241,22 @@ function runGenerate() {
   // deck"), nor on an options-only edit or an unchanged re-save (the id does
   // not move), nor on a field edit to a scale no other deck holds.
   let taken = null;
-  const res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
-    if (!wasId) return null;
-    const id = HPE.core.deckId(seed.fields);
-    if (id === wasId || !CUSTOM[id]) return null;
-    taken = CUSTOM[id];
-    return { ok: false };
-  });
-
-  scaleBox.removeAttribute("readonly");
-  genBtn.textContent = label;
+  let res;
+  // Restores readonly and the label ONLY. genBtn.disabled is deliberately not
+  // here: a refused seed stays disabled until syncParseState re-enables it on
+  // the next parseable input.
+  try {
+    res = generateDeck(String(scaleBox.value || ""), sheetOptions(), (seed) => {
+      if (!wasId) return null;
+      const id = HPE.core.deckId(seed.fields);
+      if (id === wasId || !CUSTOM[id]) return null;
+      taken = CUSTOM[id];
+      return { ok: false };
+    });
+  } finally {
+    scaleBox.removeAttribute("readonly");
+    genBtn.textContent = label;
+  }
   if (taken) {
     // UI copy, like the delete fallback above it - NOT an engine reason. The
     // section 2 code enum is closed and has no code for "that scale is taken",
@@ -8256,13 +8264,13 @@ function runGenerate() {
     scaleBox.classList.add("bad");
     refusal = "Another deck already uses this scale.";
     showRefusal(refusal);
-    return;
+    return refusal;
   }
   if (!res.ok) {
     scaleBox.classList.add("bad");
     refusal = res.reason;
     showRefusal(refusal);
-    return;
+    return refusal;
   }
   const d = res.value;
   // "Edit means edit" (queue row 73). D14 could not keep the id across a field
@@ -8516,8 +8524,7 @@ document.getElementById("next").onclick = () => step(1);
 document.getElementById("shuffle").onclick = function () {
   if (mode === "S") { setOrder(); render(); return; }
   shuffled = !shuffled; setOrder(); render();
-  this.textContent = "Shuffle: " + (shuffled ? "on" : "off");
-  this.classList.toggle("on", shuffled);
+  syncShuffleLabel();
 };
 /* ---------------- settings panel ---------------- */
 // Body-level markup (settings-panel.html region, above): a body-level
@@ -8560,7 +8567,7 @@ function openPanel() {
   settingsScrim.removeAttribute("hidden");
   settingsPanel.setAttribute("role", "dialog");
   settingsPanel.setAttribute("aria-modal", "true");
-  for (const el of panelBackground) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+  setInert(true, panelBackground);
 }
 function closePanel() {
   if (!panelOpen) return;
@@ -8570,7 +8577,7 @@ function closePanel() {
   settingsTrigger.setAttribute("aria-expanded", "false");
   settingsPanel.removeAttribute("role");
   settingsPanel.removeAttribute("aria-modal");
-  for (const el of panelBackground) { el.inert = false; el.removeAttribute("aria-hidden"); }
+  setInert(false, panelBackground);
   settingsTrigger.focus();
 }
 // If the viewport crosses the breakpoint while the panel is open in its
@@ -8635,6 +8642,21 @@ document.getElementById("tier-advanced").onclick = () => setTier("advanced");
 const REFRESH_ICON_SVG = '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" '
   + 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
   + '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
+/** The one writer of the shuffle button's face, for `mode` and `shuffled`. */
+function syncShuffleLabel() {
+  const shuffleBtn = document.getElementById("shuffle");
+  if (mode === "S") {
+    shuffleBtn.innerHTML = REFRESH_ICON_SVG;
+    shuffleBtn.setAttribute("aria-label", "New progression");
+    shuffleBtn.classList.remove("on");
+    shuffleBtn.classList.add("reroll");
+  } else {
+    shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
+    shuffleBtn.removeAttribute("aria-label");
+    shuffleBtn.classList.toggle("on", shuffled);
+    shuffleBtn.classList.remove("reroll");
+  }
+}
 function setMode(m) {
   const wasS = mode === "S";
   mode = m; flipped = false; save();
@@ -8649,18 +8671,7 @@ function setMode(m) {
   seqNote.hidden = m !== "S";
   document.getElementById("foot").classList.toggle("seq", m === "S");
   document.getElementById("seq-style").hidden = m !== "S";
-  const shuffleBtn = document.getElementById("shuffle");
-  if (m === "S") {
-    shuffleBtn.innerHTML = REFRESH_ICON_SVG;
-    shuffleBtn.setAttribute("aria-label", "New progression");
-    shuffleBtn.classList.remove("on");
-    shuffleBtn.classList.add("reroll");
-  } else {
-    shuffleBtn.textContent = "Shuffle: " + (shuffled ? "on" : "off");
-    shuffleBtn.removeAttribute("aria-label");
-    shuffleBtn.classList.toggle("on", shuffled);
-    shuffleBtn.classList.remove("reroll");
-  }
+  syncShuffleLabel();
   if (wasS !== (m === "S")) setOrder();
   render();
 }

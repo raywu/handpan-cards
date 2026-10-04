@@ -5143,3 +5143,119 @@ test("AP1-3 wheelEndDecision table", () => {
   assert.strictEqual(end({ skip: true }), "none");
   assert.strictEqual(end({ fired: true, reducedMotion: true }), "none");
 });
+
+/* ------------------------------------------------ AP2: sheet, panel, runGenerate, setMode */
+const SHEET_LETS = "[editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode]";
+const sheetLets = (app) => plain(app.get(SHEET_LETS));
+
+test("AP2-1 sheet open leaves the expected state per mode", () => {
+  const app = boot({ layout: true });
+  const id = app.generate(AMARA_STRING, { palette: 3, mirror: true, name: "Mine" }).value.id;
+  app.run(`CUSTOM[${JSON.stringify(id)}].options.order = [1, 0, 2, 3, 4, 5, 6, 7]`);
+  const edit = () => app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
+  const dirty = () => app.run(`refusal = "stale"; nameDirty = true; palette = 5; mirror = true; layoutOrder = [7, 6, 5, 4, 3, 2, 1, 0]; layoutSel = 4;`);
+  const create = { editingId: null, refusal: null, nameDirty: false, palette: 0, mirror: false, layoutOrder: null, layoutSel: 0, mode: "A" };
+  const edited = { editingId: id, refusal: null, nameDirty: false, palette: 3, mirror: true, layoutOrder: [1, 0, 2, 3, 4, 5, 6, 7], layoutSel: 0, mode: "A" };
+  const asObject = (a) => { const [editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode] = a; return { editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode }; };
+  const state = () => asObject(sheetLets(app));
+  const boxes = () => plain(app.get(`[scaleBox.value, nameBox.value, genBtn.textContent]`));
+
+  dirty();
+  app.run("openScaleSheet()");
+  assert.deepStrictEqual(state(), create, "scale open clears identity and options");
+  assert.deepStrictEqual(boxes(), ["", "", "GENERATE CARDS"]);
+  app.run("closeScaleSheet()");
+
+  dirty();
+  edit();
+  assert.deepStrictEqual(state(), edited, "edit open restores the deck's identity and options");
+  assert.deepStrictEqual(boxes(), [app.get("HPE.core.formatSeed(CUSTOM[" + JSON.stringify(id) + "].fields)"), app.get(`CUSTOM[${JSON.stringify(id)}].name`), "SAVE CHANGES"]);
+  app.run("closeScaleSheet()");
+
+  app.run("openScaleSheet()");
+  assert.deepStrictEqual(state(), create, "edit -> create leaks nothing");
+  app.run("closeScaleSheet()");
+  edit();
+  assert.deepStrictEqual(state(), edited, "create -> edit restores again");
+  app.run("closeScaleSheet()");
+  assert.strictEqual(app.get("typeof resetSheetState"), "function");
+});
+
+test("AP2-2 setInert applies each caller's own background set", () => {
+  const app = boot({ layout: true });
+  const ids = (expr) => plain(app.get(`${expr}.map(e => e.id)`));
+  const inertIds = () => plain(app.get(`[...new Set([...background, ...panelBackground])].filter(e => e.inert).map(e => e.id)`));
+  assert.deepStrictEqual(ids("background"), ["settings-panel", "main"], "the sheet's set");
+  assert.deepStrictEqual(ids("panelBackground"), ["main", "decks"], "the panel's set");
+  assert.deepStrictEqual(inertIds(), []);
+
+  app.run("openScaleSheet()");
+  assert.deepStrictEqual(inertIds().sort(), ["main", "settings-panel"], "the sheet inerts its own set only");
+  assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), "true");
+  app.run("closeScaleSheet()");
+  assert.deepStrictEqual(inertIds(), [], "closing the sheet frees exactly what it took");
+  assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), null);
+
+  app.run("openPanel()");
+  assert.deepStrictEqual(inertIds().sort(), ["decks", "main"], "the panel inerts its own set only");
+  assert.strictEqual(app.get("panelBackground[1].getAttribute('aria-hidden')"), "true");
+  app.run("closePanel()");
+  assert.deepStrictEqual(inertIds(), []);
+  assert.strictEqual(app.get("panelBackground[1].getAttribute('aria-hidden')"), null);
+
+  app.run("setInert(true, [panelBackground[1]])");
+  assert.deepStrictEqual(inertIds(), ["decks"], "setInert takes the set as an argument");
+  app.run("setInert(false, [panelBackground[1]])");
+  assert.deepStrictEqual(inertIds(), []);
+});
+
+test("AP2-3 a refused generate restores readonly and the label and leaves the button disabled until the seed changes", () => {
+  const app = boot({ layout: true });
+  const a = app.generate(AMARA_STRING).value.id;
+  const b = app.generate(scale("builtin hijaz")).value.id;
+  assert.notStrictEqual(a, b);
+  app.run(`openEditSheet(CUSTOM[${JSON.stringify(b)}])`);
+  app.type(AMARA_STRING);
+  assert.strictEqual(app.get("genBtn.disabled"), false, "a parseable seed enables SAVE");
+  app.run("runGenerate()");
+  assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false, "readonly restored");
+  assert.strictEqual(app.get("genBtn.textContent"), "SAVE CHANGES", "label restored");
+  assert.strictEqual(app.get("genBtn.disabled"), true, "a refused seed stays disabled");
+  assert.strictEqual(app.get("refusal"), "Another deck already uses this scale.");
+  assert.strictEqual(app.get("scaleBox.classList.contains('bad')"), true);
+  app.type(scale("builtin hijaz"));
+  assert.strictEqual(app.get("genBtn.disabled"), false, "changing the seed re-enables it");
+  assert.strictEqual(app.get("refusal"), null);
+});
+
+test("AP2-3 a throwing generate still restores readonly and the label and leaves the button disabled", () => {
+  const app = boot({ layout: true });
+  app.run("openScaleSheet()");
+  app.type(AMARA_STRING);
+  app.run(`generateDeck = () => { throw new Error("boom"); }`);
+  assert.throws(() => app.run("runGenerate()"), /boom/);
+  assert.strictEqual(app.get("scaleBox.hasAttribute('readonly')"), false);
+  assert.strictEqual(app.get("genBtn.textContent"), "GENERATE CARDS");
+  assert.strictEqual(app.get("genBtn.disabled"), true);
+});
+
+test("AP2-4 setMode and shuffle produce the same label", () => {
+  const app = boot({ layout: true });
+  const label = () => plain(app.get(`[shuffleBtn.textContent, shuffleBtn.classList.contains("on"), shuffleBtn.classList.contains("reroll"), shuffleBtn.getAttribute("aria-label")]`));
+  app.run(`var shuffleBtn = document.getElementById("shuffle")`);
+  app.run(`setMode("A")`);
+  assert.deepStrictEqual(label(), ["Shuffle: off", false, false, null]);
+  app.run(`shuffleBtn.onclick()`);
+  const clicked = label();
+  assert.deepStrictEqual(clicked, ["Shuffle: on", true, false, null]);
+  app.run(`setMode("B")`);
+  assert.deepStrictEqual(label(), clicked, "setMode writes what the click wrote");
+  app.run(`syncShuffleLabel()`);
+  assert.deepStrictEqual(label(), clicked, "syncShuffleLabel is that one writer");
+  app.run(`setMode("S")`);
+  assert.deepStrictEqual(label().slice(1), [false, true, "New progression"]);
+  app.run(`syncShuffleLabel()`);
+  assert.deepStrictEqual(label().slice(1), [false, true, "New progression"], "mode S is the icon, whatever shuffled says");
+  app.run(`setMode("A")`);
+  assert.deepStrictEqual(label(), clicked, "leaving S restores the text label");
+});

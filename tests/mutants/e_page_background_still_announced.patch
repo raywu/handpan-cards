@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4753,7 +4753,7 @@ function showSheet(opener) {
+@@ -8098,7 +8098,7 @@ function showSheet(opener) {
    sheetOpener = opener || addChip;
    sheet.removeAttribute("hidden");
    sheetOpen = true;
--  for (const el of background) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+-  setInert(true, background);
 +  for (const el of background) { el.inert = true; }
    resyncSheet(true);
    applyKbOffset();

@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8541,6 +8541,7 @@ function setMode(m) {
+@@ -8669,6 +8669,7 @@ function setMode(m) {
    syncTierUI();
    const seqNote = document.getElementById("panel-seq-note");
    seqNote.hidden = m !== "S";
 +  document.getElementById("panel-prog-heading").hidden = m !== "S";
    document.getElementById("foot").classList.toggle("seq", m === "S");
    document.getElementById("seq-style").hidden = m !== "S";
-   const shuffleBtn = document.getElementById("shuffle");
+   syncShuffleLabel();

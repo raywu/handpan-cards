@@ -10,12 +10,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5032,7 +5032,7 @@ function runGenerate() {
+@@ -8263,7 +8263,7 @@ function runGenerate() {
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
      refusal = "Another deck already uses this scale.";
 -    showRefusal(refusal);
 +    say(refusal, "err");
-     return;
+     return refusal;
    }
    if (!res.ok) {

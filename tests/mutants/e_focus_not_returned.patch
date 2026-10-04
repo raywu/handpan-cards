@@ -12,10 +12,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4787,7 +4787,8 @@ function hideSheet() {
+@@ -8175,7 +8175,8 @@ function hideSheet() {
    }
    editingId = null;
-   for (const el of background) { el.inert = false; el.removeAttribute("aria-hidden"); }
+   setInert(false, background);
 -  (sheetOpener || addChip).focus();
 +
 +
