@@ -21,8 +21,8 @@ probe in section 10, not reasoned by hand.
 - Video 2: https://youtu.be/0hMIUnA5-OI, "Make Your Chords Way More
   Interesting | Extended Handpan Tutorial" (8:02). No transcript could be
   pulled (YouTube returns an empty caption body without a proof-of-origin
-  token; no yt-dlp on the machine). The owner supplies its chord list; see
-  section 7.
+  token; no yt-dlp on the machine). Section 7 records what could be
+  recovered from the chapter list and description.
 
 ## 2. The ten progressions (Roman numerals, confirmed qualities)
 
@@ -116,8 +116,8 @@ that length's pool (random sampling, DFS fallback). The length-4 pools:
 | Hijaz | 4,369 | 48 | 1 in 8,738 |
 
 3,000 MEDIUM deals per deck produced none of Amy's progressions. The pool is
-card-based: 99.7% of Pygmy's length-4 MEDIUM sequences include at least one
-sus4, power, 7th or extension card. Amy's ten are plain triads throughout.
+card-based: 99.7% of Pygmy's length-4 MEDIUM sequences contain at least one
+non-anchor card (a sus4, power, 7th, extension or register voicing). Amy's ten are plain triads throughout.
 
 ## 6. Root-motion profile
 
@@ -148,7 +148,7 @@ while Amy's set favours stepwise walks and a return to home.
 ## 7. Video 2: chord vocabulary (owner to fill)
 
 Video 2 is "Make Your Chords Way More Interesting | Extended Handpan
-Tutorial" (Amy Naylor - Handpan Connect, 2025-12-22, 8:01). Chapters: 0:00
+Tutorial" (Amy Naylor - Handpan Connect, 2025-12-22, 8:02). Chapters: 0:00
 introduction and basics; 1:05 understanding inversions; 2:51 applying bottom
 notes; 5:46 practice challenge. By its chapters it is about INVERSIONS and
 BOTTOM NOTES on an extended pan, not a list of chord symbols.
@@ -230,7 +230,7 @@ empirically. Report counts, not impressions. Do not propose engine changes.
 | dimension | our EASY generator | Amy's ten |
 |---|---|---|
 | length | 2 or 3 chords | 3 or 4; eight of ten are 4 |
-| first chord | always the home anchor | seven of ten start on the tonic; A9 starts on IV, A10 on ii, and on a minor pan the whole major set starts away from home |
+| first chord | always the home anchor | eight of ten start on the tonic; A9 starts on IV, A10 on ii, and on a minor pan the whole major set starts away from home |
 | key | home key only | half the set is in the relative major of the same pan |
 | chord quality | one anchor per root; sus4 / dim / power stand in when no triad exists | plain major and minor triads only |
 | root motion | share a tone or step; admits every diatonic pair | 13 steps, 6 thirds, 9 fourths/fifths of 28 |
