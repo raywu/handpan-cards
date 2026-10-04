@@ -6,9 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7956,7 +7956,6 @@ function setMode(m) {
+@@ -8647,7 +8647,6 @@ function syncShuffleLabel() {
    const shuffleBtn = document.getElementById("shuffle");
-   if (m === "S") {
+   if (mode === "S") {
      shuffleBtn.innerHTML = REFRESH_ICON_SVG;
 -    shuffleBtn.setAttribute("aria-label", "New progression");
      shuffleBtn.classList.remove("on");

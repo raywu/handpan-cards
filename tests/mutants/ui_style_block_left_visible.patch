@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8715,7 +8715,6 @@ function setMode(m) {
+@@ -8670,7 +8670,6 @@ function setMode(m) {
    const seqNote = document.getElementById("panel-seq-note");
    seqNote.hidden = m !== "S";
    document.getElementById("foot").classList.toggle("seq", m === "S");
 -  document.getElementById("seq-style").hidden = m !== "S";
-   const shuffleBtn = document.getElementById("shuffle");
-   if (m === "S") {
-     shuffleBtn.innerHTML = REFRESH_ICON_SVG;
+   syncShuffleLabel();
+   if (wasS !== (m === "S")) setOrder();
+   render();

@@ -1,0 +1,15 @@
+# kills: AP2-1 sheet open leaves the expected state per mode
+# suite: node --test --test-name-pattern ^AP2-1.sheet.open.leaves.the.expected.state.per.mode$ tests/app.test.js
+# resetSheetState forgets layoutSel, so the selected pan slot of a previous
+# session leaks into the next open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8132,7 +8132,6 @@ function resetSheetState(edit) {
+   // The correction is a seed option like the others, so Edit shows the one the
+   // deck already carries and RESET is what clears it.
+   layoutOrder = edit && Array.isArray(edit.options.order) ? edit.options.order.slice() : null;
+-  layoutSel = 0;
+ }
+ // The create path.
+ function openScaleSheet(opener) {

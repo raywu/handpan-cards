@@ -13,11 +13,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7705,7 +7705,7 @@ function openPanel() {
+@@ -8567,7 +8567,7 @@ function openPanel() {
    settingsScrim.removeAttribute("hidden");
    settingsPanel.setAttribute("role", "dialog");
    settingsPanel.setAttribute("aria-modal", "true");
--  for (const el of panelBackground) { el.inert = true; el.setAttribute("aria-hidden", "true"); }
+-  setInert(true, panelBackground);
 +  for (const el of panelBackground) { el.setAttribute("aria-hidden", "true"); }
  }
  function closePanel() {

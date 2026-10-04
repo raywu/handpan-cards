@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4577,7 +4577,7 @@
+@@ -8110,7 +8110,7 @@ function showSheet(opener) {
    // to BACK. A button, so no keyboard opens; a real tab stop, so it does not
    // need a tabindex that outlives the page; and first in reading order, so Tab
    // from there walks the page the way it looks.
 -  backBtn.focus();
 +  scaleBox.focus();
  }
- // The create path. Everything is reset, so an Edit never leaks its seed, its
- // palette or its mirror into the next "+ ADD".
+ /** Put every sheet field and session let in the state one open mode wants.
+  *  `edit` is the deck being edited, or null for the create path, which clears

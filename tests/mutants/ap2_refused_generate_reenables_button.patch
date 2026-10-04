@@ -1,0 +1,15 @@
+# kills: AP2-3 a refused generate restores readonly and the label and leaves the button disabled until the seed changes
+# suite: node --test --test-name-pattern ^AP2-3.a.refused.generate.restores.readonly.and.the.label.and.leaves.the.button.disabled.until.the.seed.changes$ tests/app.test.js
+# The finally block re-enables GENERATE, so a refused seed can be resubmitted
+# unchanged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8256,6 +8256,7 @@ function runGenerate() {
+   } finally {
+     scaleBox.removeAttribute("readonly");
+     genBtn.textContent = label;
++    genBtn.disabled = false;
+   }
+   if (taken) {
+     // UI copy, like the delete fallback above it - NOT an engine reason. The

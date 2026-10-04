@@ -3,13 +3,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3476,8 +3476,7 @@ function runGenerate() {
-     if (!wasId) return null;
-     const id = HPE.core.deckId(seed.fields);
-     if (id === wasId || !CUSTOM[id]) return null;
--    taken = CUSTOM[id];
--    return { ok: false };
-+    return null;
-   });
- 
-   scaleBox.removeAttribute("readonly");
+@@ -8250,8 +8250,7 @@ function runGenerate() {
+       if (!wasId) return null;
+       const id = HPE.core.deckId(seed.fields);
+       if (id === wasId || !CUSTOM[id]) return null;
+-      taken = CUSTOM[id];
+-      return { ok: false };
++      return null;
+     });
+   } finally {
+     scaleBox.removeAttribute("readonly");
