@@ -120,16 +120,24 @@ function run() {
   });
 
   test("EX-4 sentinel: the uncaught guard is armed", async () => {
-    expectUncaught(/EX-4 sentinel/);
-    await b.eval(
+    const throwFromClick = (label) => b.eval(
       "const x = document.createElement('button');" +
-      "x.onclick = () => { throw new Error('EX-4 sentinel'); };" +
+      `x.onclick = () => { throw new Error('EX-4 sentinel ${label}'); };` +
       "x.click();");
-    const deadline = Date.now() + 5000;
-    while (!peekExceptions().some((e) => /EX-4 sentinel/.test(e))) {
-      assert.ok(Date.now() < deadline, "the registry never recorded the sentinel throw");
-      await new Promise((r) => setTimeout(r, 40));
-    }
+    const recorded = async (label) => {
+      const deadline = Date.now() + 5000;
+      while (!peekExceptions().some((e) => e.includes("EX-4 sentinel " + label))) {
+        assert.ok(Date.now() < deadline, `the registry never recorded the ${label} throw`);
+        await new Promise((r) => setTimeout(r, 40));
+      }
+    };
+    await throwFromClick("unexpected");
+    await recorded("unexpected");
+    assert.throws(() => assertNoUncaught(), /EX-4 sentinel unexpected/);
+    expectUncaught(/EX-4 sentinel expected/);
+    await throwFromClick("expected");
+    await recorded("expected");
+    assertNoUncaught();
   });
 
   async function waitForServer() {
