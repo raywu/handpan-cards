@@ -12,12 +12,12 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, describe, before, after } = require("node:test");
+const { test, describe, before, after, afterEach } = require("node:test");
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { launch, findBrowser, APP_READY_EXPR } = require("./helpers/cdp.js");
+const { launch, findBrowser, APP_READY_EXPR, takeExceptions } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
 // Loopback only, and by default port 0 - the OS hands out a free port, so two
@@ -103,6 +103,12 @@ function run() {
   after(async () => {
     if (b) await b.close();
     if (server) await new Promise((r) => server.close(r));
+  });
+
+  afterEach((t) => {
+    for (const text of takeExceptions()) {
+      console.log(`E2E-UNCAUGHT ${t.name} ${text.split("\n")[0]}`);
+    }
   });
 
   async function waitForServer() {
