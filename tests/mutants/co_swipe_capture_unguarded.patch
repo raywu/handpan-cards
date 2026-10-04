@@ -1,0 +1,19 @@
+# kills: card swipe: a tap during the fly-out lands it once and never flips the wrong card
+# suite: node --test --test-name-pattern ^card.swipe:.a.tap.during.the.fly-out.lands.it.once.and.never.flips.the.wrong.card$ tests/e2e.test.js
+# startDrag() calls setPointerCapture with no try/catch. The test's synthetic
+# pointer id has no active pointer, so the call throws NotFoundError; the
+# uncaught page exception fails the test through assertNoUncaught (one of the
+# three swipe tests that were masked before #221 guarded the call).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8925,8 +8925,7 @@ function swipeMove(e) {
+ function startDrag(e) {
+   scene.getAnimations().forEach(a => a.cancel());
+   drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
+-  // NotFoundError: a synthetic or already-released pointer id has nothing to capture.
+-  try { card.setPointerCapture(e.pointerId); } catch (err) { if (err.name !== "NotFoundError") throw err; }
++  card.setPointerCapture(e.pointerId);
+ }
+ function canStartGesture(e, state) {
+   return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;
