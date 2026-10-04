@@ -7,12 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8256,7 +8256,7 @@ wheelMain.addEventListener("wheel", e => {
-   if (wheel.skip) return;
-   const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-   const dx = e.deltaX * scale, dy = e.deltaY * scale;
--  if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-+  if (dx !== 0 || dy !== 0) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-   if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
-   e.preventDefault();
-   if (wheel.fired) return;
+@@ -8935,7 +8935,7 @@ function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
+   if (w.skip) return { kind: "skip", axis: w.axis, sx: w.sx, dir: 0 };
+   const scale = deltaMode === 1 ? 16 : deltaMode === 2 ? innerHeight : 1;
+   const dx = deltaX * scale, dy = deltaY * scale;
+-  const axis = w.axis === null && (dx !== 0 || dy !== 0) ? (Math.abs(dx) > Math.abs(dy) ? "x" : "y") : w.axis;
++  const axis = (dx !== 0 || dy !== 0) ? (Math.abs(dx) > Math.abs(dy) ? "x" : "y") : w.axis;
+   if (axis !== "x") return { kind: "pass", axis, sx: w.sx, dir: 0 };
+   if (w.fired) return { kind: "hold", axis, sx: w.sx, dir: 0 };
+   const sx = w.sx + dx;
