@@ -3,7 +3,6 @@
 # Drops the ceiling notice, so settle() gives up on a never-ending animation
 # silently again.
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
-index dca9eb1..da6b267 100644
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
 @@ -206,7 +206,6 @@ class Browser {

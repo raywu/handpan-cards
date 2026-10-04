@@ -3,7 +3,6 @@
 # Removes the Runtime.exceptionThrown subscription, so no page exception ever
 # reaches the registry and the guard is silent.
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
-index dca9eb1..2fba604 100644
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
 @@ -528,10 +528,6 @@ async function launchOnce(opts = {}) {
