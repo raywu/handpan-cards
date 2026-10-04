@@ -8927,17 +8927,40 @@ const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
 // guarded accordingly; the e2e suite drives a real browser where it resolves.
 const wheelMain = document.querySelector("main");
 let wheel = null; // { sx, sy, axis, fired, skip, timer }
+// Pure: one wheel event against the live gesture `w`. kind: skip (gesture is
+// skipped for its whole duration) | pass (vertical-dominant, never claimed) |
+// hold (claimed, already fired) | follow (accumulate, card tracks the
+// fingers) | commit (threshold crossed). deltaMode 1 is lines, 2 is pages.
+function wheelDecision(w, { deltaX, deltaY, deltaMode, innerHeight }) {
+  if (w.skip) return { kind: "skip", axis: w.axis, sx: w.sx, dir: 0 };
+  const scale = deltaMode === 1 ? 16 : deltaMode === 2 ? innerHeight : 1;
+  const dx = deltaX * scale, dy = deltaY * scale;
+  const axis = w.axis === null && (dx !== 0 || dy !== 0) ? (Math.abs(dx) > Math.abs(dy) ? "x" : "y") : w.axis;
+  if (axis !== "x") return { kind: "pass", axis, sx: w.sx, dir: 0 };
+  if (w.fired) return { kind: "hold", axis, sx: w.sx, dir: 0 };
+  const sx = w.sx + dx;
+  // sx > 0 means the fingers moved right-to-left (positive deltaX) -> next
+  // card, content follows the fingers (plan: docs/plans/2026-09-30-
+  // desktop-swipe.md). Before the threshold the card follows -sx.
+  if (Math.abs(sx) > WHEEL_COMMIT_PX) return { kind: "commit", axis, sx, dir: sx > 0 ? 1 : -1 };
+  return { kind: "follow", axis, sx, dir: 0 };
+}
+// Pure: what the 160ms gap does to a finished gesture: none | rest | spring.
+function wheelEndDecision({ skip, fired, reducedMotion }) {
+  if (skip || fired) return "none";
+  return reducedMotion ? "rest" : "spring";
+}
 function wheelGestureEnd() {
   if (!wheel) return;
   const w = wheel;
   wheel = null;
-  if (w.skip || w.fired) return;
-  if (reducedMotion.matches) { swipeRest(); return; }
+  const end = wheelEndDecision({ skip: w.skip, fired: w.fired, reducedMotion: reducedMotion.matches });
+  if (end === "rest") swipeRest();
   // The follow transform during the gesture is swipeXf(-w.sx) (see the
   // listener below); springBack's own first keyframe is swipeXf(dx), so it
   // must take -w.sx too, or the spring-back starts mirrored (opposite
   // translateX and rotate) from where the card actually was.
-  springBack(-w.sx);
+  else if (end === "spring") springBack(-w.sx);
 }
 if (wheelMain) wheelMain.addEventListener("wheel", e => {
   if (e.ctrlKey) return; // pinch-zoom, not a swipe gesture
@@ -8951,26 +8974,22 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
   }
   if (wheel.timer) clearTimeout(wheel.timer);
   wheel.timer = setTimeout(wheelGestureEnd, WHEEL_GESTURE_GAP_MS);
-  if (wheel.skip) return;
-  const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-  const dx = e.deltaX * scale, dy = e.deltaY * scale;
-  if (wheel.axis === null && (dx !== 0 || dy !== 0)) wheel.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-  if (wheel.axis !== "x") return; // vertical-dominant: never claimed, never preventDefault-ed
+  const d = wheelDecision(wheel, {
+    deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode,
+    innerHeight: window.innerHeight,
+  });
+  wheel.axis = d.axis;
+  if (d.kind === "skip" || d.kind === "pass") return; // vertical-dominant: never claimed, never preventDefault-ed
   e.preventDefault();
-  if (wheel.fired) return;
-  wheel.sx += dx;
-  // wheel.sx > 0 means the fingers moved right-to-left (positive deltaX) ->
-  // next card, content follows the fingers (plan: docs/plans/2026-09-30-
-  // desktop-swipe.md). Before the threshold the card follows -sx.
-  const effDx = wheel.sx;
-  if (Math.abs(wheel.sx) > WHEEL_COMMIT_PX) {
+  if (d.kind === "hold") return;
+  wheel.sx = d.sx;
+  if (d.kind === "commit") {
     wheel.fired = true;
-    const dir = effDx > 0 ? 1 : -1;
-    if (reducedMotion.matches) step(dir);
-    else flyOut(dir, -effDx);
+    if (reducedMotion.matches) step(d.dir);
+    else flyOut(d.dir, -d.sx);
   } else if (!reducedMotion.matches) {
     scene.style.willChange = "transform";
-    scene.style.transform = swipeXf(-effDx);
+    scene.style.transform = swipeXf(-d.sx);
   }
 }, { passive: false });
 
