@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-03",
+  "window": "7d",
+  "metrics": {
+    "commits": 389,
+    "contributors": 1,
+    "prs_merged": 77,
+    "insertions": 58126,
+    "deletions": 11066,
+    "net_loc": 47060,
+    "logical_sloc_added": 46931,
+    "test_loc": 41062,
+    "test_ratio": 0.70,
+    "active_days": 7,
+    "sessions": 32,
+    "deep_sessions": 14,
+    "avg_session_minutes": 90,
+    "loc_per_session_hour": 1200,
+    "feat_pct": 0.05,
+    "fix_pct": 0.15,
+    "peak_hour": 17,
+    "ai_assisted_commits": 304
+  },
+  "authors": {
+    "Ray Wu": { "commits": 389, "insertions": 58126, "deletions": 11066, "test_ratio": 0.70, "top_area": "tests/" }
+  },
+  "streak_days": 7,
+  "user_streak_days": 7,
+  "tweetable": "Week of Sep 27: 389 commits (solo), 58.1k LOC, 70% tests, 77 PRs, peak: 5pm | Streak: 7d",
+  "test_health": {
+    "total_test_files": 15,
+    "regression_test_commits": 0,
+    "test_files_changed": 10
+  },
+  "backlog": {
+    "total_open": 5,
+    "p0_p1": 0,
+    "p2": 4,
+    "completed_this_period": 0,
+    "added_this_period": 0
+  },
+  "focus": "complexity refactor swarm 2026-10-03/04, PRs #212-#226"
+}

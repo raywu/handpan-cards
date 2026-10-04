@@ -15,7 +15,7 @@ const path = require("node:path");
 
 const { loadEngine } = require("./helpers/engine.js");
 
-const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
+const HPE = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
 const ROOT = path.join(__dirname, "..");
 
 const CANONICAL = JSON.parse(

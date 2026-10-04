@@ -626,7 +626,7 @@ class PdfEmitterGeometryTest(unittest.TestCase):
         out = subprocess.run(
             ["node", "-e",
              "const {loadEngine}=require('./tools/engine_loader.js');"
-             "const H=loadEngine(['fontdata','pdf','pdfdeck','pdfcards']);"
+             "const H=loadEngine(['core','fontdata','pdf','pdfdeck','pdfcards']);"
              "process.stdout.write(JSON.stringify({geom:H.pdfcards.GEOM,"
              "paper:H.pdfcards.PAPER,slots:H.pdfcards.slots('letter'),"
              "warn:H.pdfcards.CARD_WARNINGS}));"],

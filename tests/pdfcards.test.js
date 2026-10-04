@@ -5,7 +5,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 const { loadEngine } = require("./helpers/engine.js");
 
-const HPE = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards"]);
+const HPE = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
 const P = HPE.pdfcards;
 
 // A page that records what it was asked to draw instead of writing bytes, so
@@ -327,4 +327,26 @@ test("ET-2 hexColor/bankers", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(hexColor("0B7B75"))), [11 / 255, 123 / 255, 117 / 255],
     "the leading # is optional");
   assert.throws(() => hexColor("#fff"), /not a #RRGGBB colour/);
+});
+
+/* ------------------------------------------------------------- EG-2 */
+
+test("EG-2 pdfcards takes pc/isDing from core at use time", () => {
+  const E = loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  let pcCalls = 0;
+  let dingCalls = 0;
+  const realPc = E.core.pc;
+  const realDing = E.core.isDing;
+  E.core.pc = (n) => { pcCalls += 1; return realPc(n); };
+  E.core.isDing = (rec) => { dingCalls += 1; return realDing(rec); };
+
+  const deck = fixture();
+  const bytes = Buffer.from(E.pdfcards.build(deck, { variant: "shop" })).toString("latin1");
+  assert.ok(pcCalls > 0, "pdfcards never reached core.pc");
+  assert.ok(dingCalls > 0, "pdfcards never reached core.isDing");
+
+  const late = loadEngine(["fontdata", "pdf", "pdfdeck", "pdfcards", "core"]); // EG-2: index.html order
+  const lateBytes = Buffer.from(late.pdfcards.build(deck, { variant: "shop" })).toString("latin1");
+  assert.equal(lateBytes, bytes,
+    "core must be read when a card draws, not when pdfcards loads");
 });

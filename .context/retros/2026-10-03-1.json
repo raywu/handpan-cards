@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-03",
+  "window": "7d",
+  "metrics": {
+    "commits": 312,
+    "contributors": 1,
+    "prs_merged": 63,
+    "insertions": 49051,
+    "deletions": 10131,
+    "net_loc": 38920,
+    "logical_sloc_added": 38564,
+    "test_loc": 33678,
+    "test_ratio": 0.68,
+    "active_days": 7,
+    "sessions": 31,
+    "deep_sessions": 13,
+    "avg_session_minutes": 86,
+    "loc_per_session_hour": 1100,
+    "feat_pct": 0.06,
+    "fix_pct": 0.19,
+    "peak_hour": 1,
+    "ai_assisted_commits": 243
+  },
+  "authors": {
+    "Ray Wu": { "commits": 312, "insertions": 49051, "deletions": 10131, "test_ratio": 0.68, "top_area": "tests/" }
+  },
+  "streak_days": 7,
+  "user_streak_days": 7,
+  "tweetable": "Week of Sep 27: 312 commits (solo), 49.1k LOC, 68% tests, 63 PRs, peak: 1am | Streak: 7d",
+  "test_health": {
+    "total_test_files": 15,
+    "regression_test_commits": 0,
+    "test_files_changed": 8
+  },
+  "backlog": {
+    "total_open": 5,
+    "p0_p1": 0,
+    "p2": 0,
+    "completed_this_period": 0,
+    "added_this_period": 0
+  }
+}
