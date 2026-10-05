@@ -299,6 +299,12 @@ this by attaching per-instrument images.
   CHORD_ONLY omits the title card, so that is the only place a warning
   survives the split. The title card still carries the engine's full reason
   string via `decks._blurb`.
+- **Menu Resources** (2026-10-05): the settings panel's Resources group has two
+  `.modebar` rows - three sites, then two Amy Naylor videos (`AMY: PROGRESSIONS`,
+  `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
+  labels wrap inside their boxes). They are links only, never on a deck or card,
+  and join `panelStops()` through `a.mode[id^="res-"]`. The CI `panel-fit`
+  oracle allows `res-*` controls 64px of growth and nothing else.
 - **Card copy is English-only.** The bilingual German/English subtitles
   inherited from the reference deck (DUR/MOLL/VERMINDERT etc.) were
   rewritten to English; useful qualifiers and equivalences kept

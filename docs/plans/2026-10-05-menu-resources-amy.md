@@ -216,8 +216,8 @@ Amy link is 142px wide with a 140px client box; `AMY: PROGRESSIONS` is about
 the 44px box (Range rects = 2) in fallback and real fonts. The row height does
 not grow (44px) but the label is two lines. They are one line at 380x700
 (172px links) and at 768x1024 (204px links), in both font modes. In the
-1024x700 sidebar they are one line each, but the two links do NOT share a row
-(see stop 2's height cost): each takes its own full-width line. In the 844x390
+1024x700 sidebar (stacked in the first measurement; AD7 put them on one row with
+class `duo`, see the re-measured section) they wrap to two or three lines. In the 844x390
 landscape cell they wrap to two lines (131.7px links). The two links are equal
 width wherever they share a line (142/142 at 320, 172/172 at 380, 204/204 at
 768, 131.66/131.67 at 844x390 landscape); `min-width:0` was not needed.
@@ -237,15 +237,15 @@ allowance (a judge parameter like `HEADING_ALLOWANCE_PX`), (b) drop O1 and fit
 the row without scrolling (not achievable at 320x568 S, 1024x700 and the
 landscape cells below), (c) accept the red job.
 
-**The 1024x700 sidebar costs 106px, not 52.** At the 208px group width the
-two Amy links stack, one per line (each full width, one text line), so
-Resources grows by 106 in every sidebar cell, against 47-49.5 in the phone
-and landscape cells (one row plus one gap). Consequences in the sidebar:
-modes A and B, which fit on main at 1024x700 and from 1024x746 up to 1366x750
-in real fonts, now scroll at 1024x700 (+49 fallback / +54 real) and, in real
-fonts, at the 746/750 sidebar heights (+3 to +14); mode S scrolls by 58-120
-at every sidebar height up to 800 (res-amy-bottom, and both Amy links at
-1024x700, below the fold).
+**The 1024x700 sidebar (re-measured under AD7, replacing the earlier 106px
+figure).** With class `duo` the two Amy links share one row in the 208px
+sidebar group, so Resources grows by 60.375px (one row, gap and the
+two-to-three-line label height), against 47-48px in the phone and landscape
+cells. Each Amy link is 93.5px wide there, equal width, with 2- and 3-line
+labels that stay inside their boxes. The 106px figure belonged to the
+stacked layout that AD7 removed; the tables below carry the AD7 numbers.
+Modes A and B now scroll only at 1024x700 (+3 fallback, +8 real) and mode S
+scrolls at the sidebar heights up to 800 (12-69 fallback, 17-74 real).
 
 **C2 check.** Newly scrolling cells (main over <= 1, candidate over > 1): 95
 (cell x mode x font) across the 80 viewports. In none of them is a control
@@ -271,55 +271,43 @@ below the fold, except the rows that already scrolled on main.
 
 fallback fonts (macOS), cells the fit tests assert; over = scrollHeight - clientHeight:
 
-| cell | mode | main over | now over | needed delta | Resources group delta | below the fold now |
-|---|---|---|---|---|---|---|
-| 320x568 | S | 0 | 39 | +48 | +48 | res-amy-progressions, res-amy-bottom |
-| 667x375 | A | 0 | 6 | +49.5 | +49.5 | - |
-| 667x375 | B | 0 | 6 | +49.5 | +49.5 | - |
-| 667x375 | S | 19 | 68 | +49.5 | +49.5 | res-trainingcards, res-amy-progressions, res-amy-bottom |
-| 1024x700 | A | 0 | 49 | +106 | +106 | res-amy-bottom |
-| 1024x700 | B | 0 | 49 | +106 | +106 | res-amy-bottom |
-| 1024x700 | S | 9 | 115 | +106 | +106 | res-amy-progressions, res-amy-bottom |
-| 1024x746 | A | 0 | 3 | +106 | +106 | - |
-| 1024x746 | B | 0 | 3 | +106 | +106 | - |
-| 1024x746 | S | 0 | 69 | +106 | +106 | res-amy-bottom |
-| 1024x750 | S | 0 | 65 | +106 | +106 | res-amy-bottom |
-| 1024x757 | S | 0 | 58 | +106 | +106 | res-amy-bottom |
-| 1280x746 | A | 0 | 3 | +106 | +106 | - |
-| 1280x746 | B | 0 | 3 | +106 | +106 | - |
-| 1280x746 | S | 0 | 69 | +106 | +106 | res-amy-bottom |
-| 740x360 | S | 0 | 18 | +47 | +47 | res-amy-progressions, res-amy-bottom |
-| 740x340 | S | 0 | 38 | +47 | +47 | res-amy-progressions, res-amy-bottom |
-| 812x330 | S | 0 | 45 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| cell | mode | main over | now over | needed delta | below the fold now |
+|---|---|---|---|---|---|
+| 320x568 | S | 0 | 39 | +48 | res-amy-progressions, res-amy-bottom |
+| 667x375 | A | 0 | 3 | +47 | - |
+| 667x375 | B | 0 | 3 | +47 | - |
+| 667x375 | S | 19 | 66 | +47 | res-trainingcards, res-amy-progressions, res-amy-bottom |
+| 1024x700 | A | 0 | 3 | +60.375 | - |
+| 1024x700 | B | 0 | 3 | +60.375 | - |
+| 1024x700 | S | 9 | 69 | +60.375 | res-amy-progressions, res-amy-bottom |
+| 1024x746 | A | 0 | 0 | +60.375 | - |
+| 1024x746 | S | 0 | 23 | +60.375 | - |
+| 1024x750 | S | 0 | 19 | +60.375 | - |
+| 1024x757 | S | 0 | 12 | +60.375 | - |
+| 1280x746 | S | 0 | 23 | +60.375 | - |
+| 740x360 | S | 0 | 18 | +47 | res-amy-progressions, res-amy-bottom |
+| 740x340 | S | 0 | 38 | +47 | res-amy-progressions, res-amy-bottom |
+| 812x330 | S | 0 | 45 | +47 | res-amy-progressions, res-amy-bottom |
 
 real fonts (macOS), cells the fit tests assert; over = scrollHeight - clientHeight:
 
-| cell | mode | main over | now over | needed delta | Resources group delta | below the fold now |
-|---|---|---|---|---|---|---|
-| 320x568 | S | 0 | 44 | +48 | +48 | res-amy-progressions, res-amy-bottom |
-| 667x375 | A | 0 | 9 | +49.5 | +49.5 | - |
-| 667x375 | B | 0 | 9 | +49.5 | +49.5 | - |
-| 667x375 | S | 22 | 71 | +49.5 | +49.5 | res-trainingcards, res-amy-progressions, res-amy-bottom |
-| 1024x700 | A | 0 | 54 | +106 | +106 | res-amy-bottom |
-| 1024x700 | B | 0 | 54 | +106 | +106 | res-amy-bottom |
-| 1024x700 | S | 14 | 120 | +106 | +106 | res-amy-progressions, res-amy-bottom |
-| 1024x746 | A | 0 | 8 | +106 | +106 | - |
-| 1024x746 | B | 0 | 8 | +106 | +106 | - |
-| 1024x746 | S | 0 | 74 | +106 | +106 | res-amy-bottom |
-| 1024x750 | A | 0 | 4 | +106 | +106 | - |
-| 1024x750 | B | 0 | 4 | +106 | +106 | - |
-| 1024x750 | S | 0 | 70 | +106 | +106 | res-amy-bottom |
-| 1024x757 | S | 0 | 63 | +106 | +106 | res-amy-bottom |
-| 1280x746 | A | 0 | 8 | +106 | +106 | - |
-| 1280x746 | B | 0 | 8 | +106 | +106 | - |
-| 1280x746 | S | 0 | 74 | +106 | +106 | res-amy-bottom |
-| 1366x750 | A | 0 | 4 | +106 | +106 | - |
-| 1366x750 | B | 0 | 4 | +106 | +106 | - |
-| 1536x750 | A | 0 | 4 | +106 | +106 | - |
-| 1536x750 | B | 0 | 4 | +106 | +106 | - |
-| 740x360 | S | 0 | 36 | +47 | +47 | res-amy-progressions, res-amy-bottom |
-| 740x340 | S | 9 | 56 | +47 | +47 | res-amy-progressions, res-amy-bottom |
-| 812x330 | S | 1 | 48 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| cell | mode | main over | now over | needed delta | below the fold now |
+|---|---|---|---|---|---|
+| 320x568 | S | 0 | 44 | +48 | res-amy-progressions, res-amy-bottom |
+| 667x375 | A | 0 | 6 | +47 | - |
+| 667x375 | B | 0 | 6 | +47 | - |
+| 667x375 | S | 22 | 69 | +47 | res-trainingcards, res-amy-progressions, res-amy-bottom |
+| 1024x700 | A | 0 | 8 | +60.375 | - |
+| 1024x700 | B | 0 | 8 | +60.375 | - |
+| 1024x700 | S | 14 | 74 | +60.375 | res-amy-progressions, res-amy-bottom |
+| 1024x746 | A | 0 | 0 | +60.375 | - |
+| 1024x746 | S | 0 | 28 | +60.375 | - |
+| 1024x750 | S | 0 | 24 | +60.375 | - |
+| 1024x757 | S | 0 | 17 | +60.375 | - |
+| 1280x746 | S | 0 | 28 | +60.375 | - |
+| 740x360 | S | 0 | 36 | +47 | res-amy-progressions, res-amy-bottom |
+| 740x340 | S | 9 | 56 | +47 | res-amy-progressions, res-amy-bottom |
+| 812x330 | S | 1 | 48 | +47 | res-amy-progressions, res-amy-bottom |
 
 Not run: the Linux fallback-font numbers (CI runner), so the `fallback-linux`
 rows of the T-EDGE tables would be derived from CI messages, not measured here.

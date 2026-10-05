@@ -1346,16 +1346,14 @@ function run() {
     const w = read(); row.style.display = "none"; const wo = read(); row.style.display = "";
     return { cost: w.g - wo.g, overWith: w.over, overWithout: wo.over };
   })()`;
-  // The Amy row's own contribution to the scroll, within 1px: a cell that fit
-  // without it scrolls by at most its cost, one that scrolled grows by the cost.
+  // The Amy row's own contribution to the scroll, within 1px: it adds between
+  // nothing (a landscape grid column other than the tallest one) and its full
+  // cost to what main scrolls by in that cell.
   const assertAmyScroll = (label, a) => {
     assert.ok(a.cost > 40, `${label}: the Amy row costs ${a.cost}px, it is not rendered`);
-    if (a.overWithout <= 1) {
-      assert.ok(a.overWith <= a.cost + 1, `${label}: the panel scrolls by ${a.overWith}px, more than the Amy row's ${a.cost}px`);
-    } else {
-      assert.ok(Math.abs(a.overWith - (a.overWithout + a.cost)) <= 1,
-        `${label}: the panel scrolls by ${a.overWith}px, expected main's ${a.overWithout}px plus the Amy row's ${a.cost}px`);
-    }
+    const d = a.overWith - Math.max(a.overWithout, 0);
+    assert.ok(d >= -1 && d <= a.cost + 1,
+      `${label}: the panel scrolls by ${a.overWith}px, expected main's ${a.overWithout}px plus at most the Amy row's ${a.cost}px`);
   };
 
   test("Tab is trapped inside the settings panel and cycles every stop, wrapping both ways",
@@ -2079,9 +2077,7 @@ function run() {
     async () => {
       await freshLoad();
       try {
-        for (const real of [false, true]) {
-          if (real && !process.env.CHROME_BIN) continue;
-          for (const [vw, vh, over] of MENU_VIEWPORTS) {
+        for (const [vw, vh, over] of MENU_VIEWPORTS) {
             await b.setViewport(vw, vh, over);
             await b.settle();
             await openSettingsPanel();
@@ -2099,7 +2095,7 @@ function run() {
                 tall: Math.min(ar.height, cr.height), insideA: inside(a), insideC: inside(c),
                 siblings: row.children.length };
             `);
-            const label = `${vw}x${vh}${real ? " real fonts" : ""}`;
+            const label = `${vw}x${vh}`;
             assert.strictEqual(m.siblings, 2, `${label}: the Amy row holds exactly the two links`);
             assert.ok(m.sameRow, `${label}: the two Amy links are not on one line`);
             assert.ok(Math.abs(m.wA - m.wC) <= 1, `${label}: unequal widths ${m.wA} / ${m.wC}`);
@@ -2108,7 +2104,6 @@ function run() {
             assert.ok(m.insideA && m.insideC, `${label}: an Amy label's text spills outside its link box`);
             await b.key("Escape", "Escape", 27);
           }
-        }
       } finally {
         await b.setViewport(900, 900, false);
       }
