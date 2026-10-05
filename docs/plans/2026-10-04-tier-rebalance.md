@@ -918,16 +918,31 @@ Every deviation from sections 0-13 and every decision the lane took alone.
     because the module it patches is lane-owned.
 12. **Verify command path.** Section 8 says `bash tools/mutation_check.sh`;
     the script is `tests/mutation_check.sh`.
-13. **Durations and the S1 HARD cut.** `node --test tests/sequence.test.js`
-    on main was 52,823 ms for 36 tests (the brief's baseline). With every
-    S1 tier at 3,000 draws this branch measured 78,164 ms once and then
-    84,288 / 84,777 ms for 43 tests: +31.9 s, over R3's +30 s budget. Main
-    re-measured in the same session at 55,987 ms, so part of the gap is
-    machine load, but the budget is stated against 52,823, so R3's
-    prescribed remedy was applied: S1 draws HARD 1,000 times
-    (`SHAPE_HARD_N`; BASIC and MEDIUM stay at 3,000, the test name is
-    unchanged so mutant `# suite:` headers still select it). After the cut:
-    79,733 ms for 43 tests (+26.9 s). HARD goes through public `pick()`
-    per deal; at N = 1,000 the HARD length band (+-3 pp at 33.3%) is 2 SE
-    wide, deterministic under the fixed seed, and green on all three decks;
-    `sqr_13` (S1's only HARD-specific mutant) is still killed.
+13. **Durations, and why S1 needs no cut.** `node --test
+    tests/sequence.test.js` on main was 52,823 ms for 36 tests (the brief's
+    baseline; 55,987 ms re-measured in this session). The first push (df815d5)
+    measured 84.3-84.8 s locally with every S1 tier at 3,000 draws, so S1's
+    HARD draws were cut to 1,000 per R3's remedy (79,733 ms). CI then showed
+    that was not enough: in run 37268618336 `tests/sequence.test.js` TIMED OUT
+    at `suite_health.py`'s 180 s wall clock (CI runs this suite ~2.4x slower
+    than local: main's whole js step was 253 s against ~120 s for the other
+    suites), and the mutation gate's clean-tree baseline failed "generated
+    decks: every tier deals its own tier ... under 50ms" with `mixed N=18
+    intermediate seed 0 took 58ms`. Locally a MEDIUM pick on the 17-19 field
+    sweep decks cost 15-25 ms, almost all of it in `field()`:
+    `deck.fields[String(id)]` calls the global `String`, and under `node:vm`
+    (`tools/engine_loader.js`) every global lookup goes through the context's
+    interceptor. R-10 enumerates MEDIUM per pick, so this cost now landed on
+    every deal. The fix is `deck.fields[id]`, which is the same lookup (a
+    property key is converted with ToString either way) and needs no global
+    call. With it the 19-field MEDIUM enumeration drops from ~23 ms to
+    ~6-12 ms, and the whole suite runs in 21,903 ms for 43 tests, under main's
+    baseline. The S1 cut was therefore REVERTED: S1 draws all three tiers
+    3,000 times, as section 2 specifies. No other plan count changed.
+14. **`sqd_12_dfs_leaf_skips_accept` re-pointed.** Its suite was the
+    generated-deck tier test. Under the broad R-7 gate the HARD sampler's
+    512 random draws always find a deal on those decks, so the DFS fallback
+    is never reached there and the mutant survived (local gate and CI shard
+    3/4). It now names "the DFS fallback completes and finds the exact
+    exhaustive set", which kills it by an assertion ("DFS set differs from
+    brute force"). The patch body is unchanged.

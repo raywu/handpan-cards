@@ -1862,16 +1862,12 @@ function shapeRun(E, deck, n, hardN) {
 }
 
 const SHAPE_N = 3000;
-// HARD runs through the public pick() per deal, so S1 draws it 1,000 times,
-// not 3,000: plan R3's runtime budget (+30 s over main) was otherwise blown
-// (plan section 14).
-const SHAPE_HARD_N = 1000;
 let builtinShapeRuns = null;
 function builtinShapes() {
   if (!builtinShapeRuns) {
     const E = engine();
     builtinShapeRuns = {};
-    for (const deck of [HIJAZ, PYGMY, AMARA]) builtinShapeRuns[deck.id] = shapeRun(E, deck, SHAPE_N, SHAPE_HARD_N);
+    for (const deck of [HIJAZ, PYGMY, AMARA]) builtinShapeRuns[deck.id] = shapeRun(E, deck, SHAPE_N);
   }
   return builtinShapeRuns;
 }

@@ -5948,8 +5948,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return core().pc(n);
   }
 
+  // A property key is converted to a string anyway, so the lookup needs no
+  // String(): that global call cost ~3x on the MEDIUM enumeration under
+  // node:vm, enough to push a 19-field deck's pick past 50ms in CI.
   function field(deck, id) {
-    return deck.fields[String(id)];
+    return deck.fields[id];
   }
 
   function fieldPc(deck, id) {

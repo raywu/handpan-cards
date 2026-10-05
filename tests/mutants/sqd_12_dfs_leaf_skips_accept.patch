@@ -1,7 +1,9 @@
-# kills: generated decks: every tier deals its own tier, in range and connected, under 50ms
+# kills: the DFS fallback completes and finds the exact exhaustive set
 # dfsFindAll's leaf no longer asks accept, so a fallback deal can be any
-# sequence, valid or not
-# suite: node --test --test-name-pattern ^generated.decks..every.tier.deals.its.own.tier..in.range.and.connected..under.50ms$ tests/sequence.test.js
+# sequence, valid or not. (Re-pointed: under the broad R-7 gate the
+# generated-deck tier test's random draws always succeed, so it never
+# reaches the fallback - plan section 14.)
+# suite: node --test --test-name-pattern ^the.DFS.fallback.completes.and.finds.the.exact.exhaustive.set$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
