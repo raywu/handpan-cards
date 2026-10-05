@@ -428,6 +428,15 @@ Auto-decisions taken under AFK (owner may reverse any of them):
   O2 labels `AMY: PROGRESSIONS` and `AMY: BOTTOM NOTES`; O3 the 420px cap
   stays. All three are reversible in a follow-up PR.
 
+- AD6. HOLD, 2026-10-05. The lane stopped after step 1 (section 8). Two
+  findings need the owner and are not auto-decided: both Amy labels wrap to
+  two lines at 320px, and the merge-blocking `panel-fit` CI job fails under
+  O1 (its rule 3 rejects a new control below the fold). Passing it means
+  either changing that oracle, which is outside the lane's ownership and
+  loosens a merge gate, or dropping the row. Section 8 also shows the
+  sidebar stacks the two links, costing 106px instead of the estimated 52.
+  Conservative branch taken: no code change, no PR, wait for the owner.
+
 NOT in scope: the 420px cap (O3) unless the owner says so; select text
 alignment in the widened paper select; the tier row's content weighting;
 any `TODOS.md` item (none concerns the menu).
