@@ -1,0 +1,23 @@
+# kills: S1: every tier's shape sits in its section 2 band over 3,000 draws on each built-in deck
+# R-5 - a colour family is weighted by its number of cards, not equally,
+# so Pygmy deals mostly sus/power colour cards
+# suite: node --test --test-name-pattern ^S1..every.tier.s.shape.sits.in.its.section.2.band.over.3.000.draws.on.each.built-in.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -435,7 +435,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var MEDIUM_LEVELS = [
+     ["length", function (value) { return MEDIUM_LENGTH_WEIGHT[value]; }],
+     ["kind", function (value) { return MEDIUM_KIND_WEIGHT[value]; }],
+-    ["family", function () { return 1; }],
++    ["family", function (value, cells) {
++      var cards = [];
++      cells.forEach(function (c) {
++        if (c.family !== value) return;
++        c.seqs.forEach(function (s) { s.forEach(function (i) { if (cards.indexOf(i) < 0) cards.push(i); }); });
++      });
++      return cards.length;
++    }],
+     ["side", function (value) { return MEDIUM_SIDE_WEIGHT[value]; }]
+   ];
+ 

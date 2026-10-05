@@ -1,0 +1,16 @@
+# kills: tierOf returns null for a sequence ADVANCED can never deal
+# R-4 - intermediateGate's at-most-one-colour-card cap is dropped, so a
+# two-colour sequence classifies MEDIUM instead of HARD
+# suite: node --test --test-name-pattern ^tierOf.returns.null.for.a.sequence.ADVANCED.can.never.deal$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -562,7 +562,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (chordRegister(deck, seq[i]) !== "") return false;
+       colour += 1;
+     }
+-    return colour <= 1;
++    return true;
+   }
+ 
+   // R-7 (owner, 2026-10-04 "broaden HARD everywhere"): HARD = length 4..6

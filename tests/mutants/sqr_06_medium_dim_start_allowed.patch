@@ -1,0 +1,16 @@
+# kills: built-in INTERMEDIATE/ADVANCED deals match the tier golden fixture
+# R-4 - a diminished anchor may open a MEDIUM sequence, so Pygmy G° and the
+# Hijaz dim anchors add MEDIUM cells and the dealt sequence changes
+# suite: node --test --test-name-pattern ^built-in.INTERMEDIATE.ADVANCED.deals.match.the.tier.golden.fixture$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -543,7 +543,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // R-4: MEDIUM starts on a non-diminished anchor or on any card rooted on
+   // home (the card rule below still has to admit it).
+   function intermediateStart(deck, i, ctx) {
+-    if (ctx.anchorsList.indexOf(i) >= 0 && ctx.dimAnchors.indexOf(i) < 0) return true;
++    if (ctx.anchorsList.indexOf(i) >= 0) return true;
+     return chordRootPc(deck, i) === ctx.home;
+   }
+ 

@@ -1,16 +1,18 @@
 # kills: every sequence starts on an anchor and every step connects, including back to the first chord
-# R2 - sequences() enumerates over every CARD of the deck, not only the anchors,
-# so a non-anchor chord can open an EASY sequence
+# R-1 - BASIC's vocabulary is every CARD of the deck, not only the anchors,
+# so a non-anchor chord can enter an EASY sequence
 # suite: node --test --test-name-pattern ^every.sequence.starts.on.an.anchor.and.every.step.connects..including.back.to.the.first.chord$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -235,7 +235,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -286,9 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         if (chordRootPc(deck, i) === relative) starts.push(i);
+       });
      }
-     var anchorsList = anchors(deck);
-     if (homeAnchor(deck, anchorsList) === null) return [];
--    return basicPools(deck, anchorsList)[length];
-+    return basicPools(deck, deck.chords.map(function (_, i) { return i; }))[length];
-   }
- 
-   function prevValid(deck, prev) {
+-    var vocab = anchorsList.filter(function (i) {
+-      return i === homeAnchorIdx || triads.indexOf(i) >= 0;
+-    });
++    var vocab = deck.chords.map(function (_, i) { return i; });
+     var pools = basicLoops(deck, vocab, starts);
+     if (loopCount(pools) < MIN_BASIC_POOL) {
+       vocab = anchorsList;

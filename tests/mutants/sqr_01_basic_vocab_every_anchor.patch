@@ -1,0 +1,16 @@
+# kills: sequences match the approved golden table on every built-in deck
+# R-1 - BASIC's vocabulary admits every anchor (sus, dim, power) instead of
+# the home anchor plus the major/minor triads
+# suite: node --test --test-name-pattern ^sequences.match.the.approved.golden.table.on.every.built-in.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -287,7 +287,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       });
+     }
+     var vocab = anchorsList.filter(function (i) {
+-      return i === homeAnchorIdx || triads.indexOf(i) >= 0;
++      return true;
+     });
+     var pools = basicLoops(deck, vocab, starts);
+     if (loopCount(pools) < MIN_BASIC_POOL) {

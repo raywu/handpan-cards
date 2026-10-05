@@ -1,10 +1,10 @@
 # kills: EG-1 sequence pickers share one validity rule
-# suite: node --test --test-name-pattern ^EG.1.sequence.pickers.share.one.validity.rule$ tests/sequence.test.js
+# suite: node --test --test-name-pattern ^EG-1.sequence.pickers.share.one.validity.rule$ tests/sequence.test.js
 # EG-1: prevValid is inverted, so both pickers exclude an invalid prev and ignore a valid one.
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -204,10 +204,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -341,10 +341,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    }
  
    function prevValid(deck, prev) {
@@ -16,4 +16,4 @@ diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 +      }));
    }
  
-   // {anchorsList, homeAnchorIdx, refusal}: refusal is the NO_HOME_CHORD deal
+   function sameSequence(a, b) {

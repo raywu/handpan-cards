@@ -1,0 +1,15 @@
+# kills: S1: every tier's shape sits in its section 2 band over 3,000 draws on each built-in deck
+# R-5 - MEDIUM's start-side weights are equal, so the home start rises to ~50%
+# suite: node --test --test-name-pattern ^S1..every.tier.s.shape.sits.in.its.section.2.band.over.3.000.draws.on.each.built-in.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -31,7 +31,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var BASIC_SIDE_WEIGHT = { home: 0.8, relative: 0.2 };
+   var MEDIUM_LENGTH_WEIGHT = { 3: 0.6, 4: 0.4 };
+   var MEDIUM_KIND_WEIGHT = { pure: 1 / 3, colour: 2 / 3 };
+-  var MEDIUM_SIDE_WEIGHT = { home: 0.4, other: 0.6 };
++  var MEDIUM_SIDE_WEIGHT = { home: 0.5, other: 0.5 };
+   var COLOUR_FAMILIES = ["seventh", "susPower", "other"];
+ 
+   // R-3: a BASIC pool of fewer than this many loops (lengths 2-4 together)

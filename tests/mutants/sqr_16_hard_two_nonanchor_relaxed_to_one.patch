@@ -1,0 +1,16 @@
+# kills: tierOf returns null for a sequence ADVANCED can never deal
+# R-7 - hardGate's non-anchor branch accepts ONE non-anchor card, so the
+# one-colour five-chord fixture classifies "advanced" instead of null
+# suite: node --test --test-name-pattern ^tierOf.returns.null.for.a.sequence.ADVANCED.can.never.deal$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -583,7 +583,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       nonAnchor += 1;
+       if (isRegister || deck.chords[seq[i]].fields.length > 4) extended = true;
+     }
+-    if (!extended && nonAnchor < 2) return false;
++    if (!extended && nonAnchor < 1) return false;
+     return register * 3 <= seq.length;
+   }
+ 
