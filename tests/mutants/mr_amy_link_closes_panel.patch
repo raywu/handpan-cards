@@ -1,0 +1,15 @@
+# kills: Resources links activate on click and on Enter, to the right href, without closing the panel or changing mode/card
+# suite: node --test --test-name-pattern Resources.links.activate.on.click.and.on.Enter tests/e2e.test.js
+# menu-resources AD7. #res-amy-bottom closes the panel on click (an onclick like the print buttons), against amendment 3.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1334,7 +1334,7 @@ footer.seq{row-gap:var(--sp-1)}
+          aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
+          target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
+       <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
+-         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
++         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)" onclick="closePanel()"
+          target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
+     </div>
+   </div>

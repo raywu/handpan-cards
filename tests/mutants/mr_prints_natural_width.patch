@@ -1,0 +1,14 @@
+# kills: every row of the settings panel is flush: each visual line spans the row from edge to edge
+# suite: node --test --test-name-pattern every.row.of.the.settings.panel.is.flush tests/e2e.test.js
+# menu-resources AD7. Drops flex:1 1 auto from the Print row, so its buttons keep their natural widths and the lines end ragged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -550,7 +550,6 @@ main{overflow-x:clip}
+   letter-spacing:.08em; color:#c4bcab; background:#211d16; border:1px solid #433b2c;
+   border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
+   white-space:nowrap; -webkit-appearance:none; appearance:none}
+-.prints button, .prints select{flex:1 1 auto}
+ .prints button, .prints select{text-align:center; text-align-last:center}
+ .prints button:hover, .prints button:focus-visible,
+ .prints select:hover, .prints select:focus-visible{background:#2a251c}

@@ -12,4 +12,4 @@ diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
 +  return HEADING_ALLOWANCE_PX;
  }
  
- const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
+ // AD7 (docs/plans/2026-10-05-menu-resources-amy.md): the second Resources row costs

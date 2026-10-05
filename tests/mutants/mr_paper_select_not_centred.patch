@@ -1,0 +1,14 @@
+# kills: every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value
+# suite: node --test --test-name-pattern every.button.and.link.in.the.settings.panel.centres.its.label tests/e2e.test.js
+# menu-resources AD8. Drops text-align / text-align-last from the print controls, so the paper select shows LETTER start-aligned.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -551,7 +551,6 @@ main{overflow-x:clip}
+   border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
+   white-space:nowrap; -webkit-appearance:none; appearance:none}
+ .prints button, .prints select{flex:1 1 auto}
+-.prints button, .prints select{text-align:center; text-align-last:center}
+ .prints button:hover, .prints button:focus-visible,
+ .prints select:hover, .prints select:focus-visible{background:#2a251c}
+ .prints button:active, .prints select:active{color:#f1ece1}

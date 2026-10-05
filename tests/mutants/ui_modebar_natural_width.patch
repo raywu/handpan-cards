@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -251,7 +251,6 @@ a.mode{text-decoration:none}
+@@ -257,7 +257,6 @@ a.mode{text-decoration:none}
  .mode.on{background:#f1ece1; color:#272219; border-color:#f1ece1}
  /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
     ragged pair sat side by side. */
 -.modebar .mode{flex:1 1 0}
- #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
- .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
-   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
+ /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
+ #settings-panel .mode{text-align:center}
+ /* The two Amy links share ONE row on every viewport, wrapping their labels

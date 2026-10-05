@@ -12,8 +12,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1242,7 +1242,7 @@ footer.seq{row-gap:var(--sp-1)}
-          rows - stacked overflowed the 320x568 fit test by 18px. -->
+@@ -1323,7 +1323,7 @@ footer.seq{row-gap:var(--sp-1)}
+          boxes) the two Amy Naylor videos. -->
      <div class="modebar">
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 -         target="_blank" rel="noopener">HANDPANER</a>

@@ -1320,6 +1320,42 @@ function run() {
   // and only this list matters. "+ ADD A SCALE" (#deck-add) sits between the
   // mode buttons and the print controls in DOM order and must be one of the
   // stops.
+  // Resources menu links in DOM order: row one (three links), row two (the two
+  // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
+  // list of Resources ids in this file derives from here.
+  const RESOURCES = [
+    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
+    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
+    { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
+      aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
+    { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
+      aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
+  ];
+  const RES_IDS = RESOURCES.map((r) => r.id);
+  const RES_IDS_JS = JSON.stringify(RES_IDS);
+
+  // AD7: the panel with and without the Amy row, so a cell that scrolls is
+  // asserted against what main (no Amy row) does there, on this platform and
+  // these fonts: cost is the Resources group's growth, overWith / overWithout
+  // the panel's scroll amount in each state.
+  const AMY_ROW_JS = `(() => {
+    const row = document.getElementById("res-amy-progressions").parentElement;
+    const g = row.closest(".panel-group"), p = document.getElementById("settings-panel");
+    const read = () => ({ over: p.scrollHeight - p.clientHeight, g: g.getBoundingClientRect().height });
+    const w = read(); row.style.display = "none"; const wo = read(); row.style.display = "";
+    return { cost: w.g - wo.g, overWith: w.over, overWithout: wo.over };
+  })()`;
+  // The Amy row's own contribution to the scroll, within 1px: it adds between
+  // nothing (a landscape grid column other than the tallest one) and its full
+  // cost to what main scrolls by in that cell.
+  const assertAmyScroll = (label, a) => {
+    assert.ok(a.cost > 40, `${label}: the Amy row costs ${a.cost}px, it is not rendered`);
+    const d = a.overWith - Math.max(a.overWithout, 0);
+    assert.ok(d >= -1 && d <= a.cost + 1,
+      `${label}: the panel scrolls by ${a.overWith}px, expected main's ${a.overWithout}px plus at most the Amy row's ${a.cost}px`);
+  };
+
   test("Tab is trapped inside the settings panel and cycles every stop, wrapping both ways",
     async () => {
       await freshLoad();
@@ -1363,9 +1399,9 @@ function run() {
       assert.ok(ids.includes("modeB"), `Tab never reached #modeB: ${JSON.stringify(seen)}`);
       assert.ok(ids.includes("deck-add"),
         `Tab never reached + ADD A SCALE: ${JSON.stringify(seen)}`);
-      // Eng review amendment 1: the three Resources links join panelStops()
-      // after the print controls, so a forward Tab cycle must reach all three.
-      for (const id of ["res-handpaner", "res-dingandtones", "res-trainingcards"]) {
+      // Eng review amendment 1: the Resources links join panelStops()
+      // after the print controls, so a forward Tab cycle must reach all five.
+      for (const id of RES_IDS) {
         assert.ok(ids.includes(id), `Tab never reached #${id}: ${JSON.stringify(seen)}`);
       }
       // #deck-add opens the scale sheet dialog, exactly what the old strip
@@ -1681,25 +1717,30 @@ function run() {
               };
             `);
             const label = `${vw}x${vh} mode ${mode}`;
+            const amy = await b.eval(`return ${AMY_ROW_JS};`);
             const scrolls = vw === 667 && vh === 375 && mode === "S";
+            const newlyScrolls = !scrolls && amy.overWith > 1;
             assert.deepStrictEqual(m.rect, [0, 0, vw, vh], `${label}: the panel must cover the viewport`);
             // A hidden Resources group would silently vanish from `ctrls`
             // (the `offsetParent` filter above) and pass every other
             // assertion here vacuously, so require all three ids to actually
             // be present and measured at every size/mode.
-            assert.deepStrictEqual(m.resIds.slice().sort(),
-              ["res-dingandtones", "res-handpaner", "res-trainingcards"],
+            assert.deepStrictEqual(m.resIds.slice().sort(), RES_IDS.slice().sort(),
               `${label}: the Resources links are not all visible/measured`);
+            assertAmyScroll(label, amy);
             assert.strictEqual(m.noteShown, mode === "S", `${label}: the credit note shows only in mode S`);
             if (scrolls) {
               const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
                 return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
               const want = MAIN_NEEDED_667x375_S_FALLBACK + hg - m.clientH;
-              assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
-                `${label}: the panel scrolls by ${m.scrollH - m.clientH}px, expected main's spare used up plus H + g = ${want}px`);
+              assert.ok(Math.abs(amy.overWithout - want) <= 1,
+                `${label}: without the Amy row the panel scrolls by ${amy.overWithout}px, expected main's spare used up plus H + g = ${want}px`);
               assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
               assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
                 `${label}: only the Resources links may be below the fold`);
+            } else if (newlyScrolls) {
+              assert.deepStrictEqual(m.offscreen.filter((id) => !id.startsWith("res-")), [],
+                `${label}: only the Resources links may be below the fold once the Amy row makes the panel scroll`);
             } else {
               assert.ok(m.scrollH <= m.clientH + 1,
                 `${label}: panel content (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
@@ -1725,13 +1766,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  const RESOURCES = [
-    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER" },
-    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES" },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC" },
-  ];
-
-  test("the settings panel has exactly one Resources group with the three outbound links", async () => {
+  test("the settings panel has exactly one Resources group with its five outbound links in two rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1739,23 +1774,31 @@ function run() {
         .filter(h => h.textContent.trim() === "Resources");
       const group = headings[0] ? headings[0].closest(".panel-group") : null;
       const links = group ? [...group.querySelectorAll("a")] : [];
+      const rows = group ? [...group.querySelectorAll(".modebar")] : [];
       return {
         headingCount: headings.length,
+        rowSizes: rows.map(r => r.querySelectorAll("a").length),
+        rowOf: links.map(a => rows.indexOf(a.closest(".modebar"))),
         links: links.map(a => ({
           id: a.id, href: a.getAttribute("href"), target: a.getAttribute("target"),
           rel: a.getAttribute("rel"), label: a.textContent.trim(),
+          aria: a.getAttribute("aria-label"), onclick: a.getAttribute("onclick"),
           className: a.className,
           textDecoration: getComputedStyle(a).textDecorationLine,
         })),
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.strictEqual(m.links.length, 3, `expected 3 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [3, 2], "expected two rows holding three then two links");
+    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
+      assert.strictEqual(m.rowOf[i], expected.row, `link ${i} sits in the wrong row: ${JSON.stringify(link)}`);
       assert.strictEqual(link.href, expected.href, `link ${i} href mismatch: ${JSON.stringify(link)}`);
       assert.strictEqual(link.label, expected.label, `link ${i} label mismatch: ${JSON.stringify(link)}`);
+      if (expected.aria) assert.strictEqual(link.aria, expected.aria, `link ${i} aria-label mismatch: ${JSON.stringify(link)}`);
+      assert.strictEqual(link.onclick, null, `link ${i} must not close the panel or run script: ${JSON.stringify(link)}`);
       assert.strictEqual(link.target, "_blank", `link ${i} must open in a new tab: ${JSON.stringify(link)}`);
       assert.match(link.rel, /\bnoopener\b/, `link ${i} rel must contain noopener: ${JSON.stringify(link)}`);
       assert.match(link.className, /\bmode\b/, `link ${i} must reuse .mode styling: ${JSON.stringify(link)}`);
@@ -1783,7 +1826,7 @@ function run() {
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
-            const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+            const resIds = ${RES_IDS_JS};
             return {
               scrollH: p.scrollHeight, clientH: p.clientHeight,
               scrollW: p.scrollWidth, clientW: p.clientWidth,
@@ -1821,7 +1864,7 @@ function run() {
           await b.settle();
           const m = await b.eval(`
             const p = document.getElementById("settings-panel");
-            const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+            const resIds = ${RES_IDS_JS};
             return {
               scrollH: p.scrollHeight, clientH: p.clientHeight,
               resVisible: resIds.every(id => {
@@ -1831,6 +1874,8 @@ function run() {
             };
           `);
           const label = `1024x700 mode ${mode}`;
+          const amy = await b.eval(`return ${AMY_ROW_JS};`);
+          assertAmyScroll(label, amy);
           if (mode === "S") {
             // D2 step 6b (H-9): progression at 1024x700 needed 673.75 (macOS; 669.75 on the Linux runner) of 688 on
             // main (fallback fonts, which this harness loads) and now needs the
@@ -1842,8 +1887,8 @@ function run() {
             const mainNeeded = process.platform === "linux" ? 669.75 : 673.75;
             const want = mainNeeded + hg - m.clientH;
             assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
-            assert.ok(Math.abs((m.scrollH - m.clientH) - want) <= 1,
-              `${label}: the sidebar scrolls by ${m.scrollH - m.clientH}px, expected ${want}px`);
+            assert.ok(Math.abs(amy.overWithout - want) <= 1,
+              `${label}: without the Amy row the sidebar scrolls by ${amy.overWithout}px, expected ${want}px`);
             const unreachable = await b.eval(`
               const p = document.getElementById("settings-panel");
               const top = p.getBoundingClientRect().top - p.scrollTop;
@@ -1851,8 +1896,14 @@ function run() {
                 .filter(e => e.getBoundingClientRect().bottom - top > p.scrollHeight + 0.5).map(e => e.id);`);
             assert.deepStrictEqual(unreachable, [], `${label}: a control lies beyond the scrollable height`);
           } else {
-            assert.ok(m.scrollH <= m.clientH + 1,
-              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically`);
+            // Modes A and B fit on main; the Amy row is the only thing that may
+            // make them scroll, and every control stays reachable by scrolling.
+            const unreachable = await b.eval(`
+              const p = document.getElementById("settings-panel");
+              const top = p.getBoundingClientRect().top - p.scrollTop;
+              return [...p.querySelectorAll("button, a")].filter(e => e.getClientRects().length)
+                .filter(e => e.getBoundingClientRect().bottom - top > p.scrollHeight + 0.5).map(e => e.id);`);
+            assert.deepStrictEqual(unreachable, [], `${label}: a control lies beyond the scrollable height`);
           }
           assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
         }
@@ -1875,7 +1926,7 @@ function run() {
   // 1024 and 1280 wide, in all three modes - modes A/B are included so a
   // future fix that over-corrects for mode S and reintroduces an A/B
   // regression is also caught.
-  test("the desktop sidebar has no vertical scroll at 1024x746/750/757 and 1280x746 (reviewer FAIL #2 mode-S gap), in modes A, B and S",
+  test("the desktop sidebar has no vertical scroll beyond the Amy row at 1024x746/750/757 and 1280x746 (reviewer FAIL #2 mode-S gap), in modes A, B and S",
     async () => {
       await freshLoad();
       try {
@@ -1887,7 +1938,7 @@ function run() {
             await b.settle();
             const m = await b.eval(`
               const p = document.getElementById("settings-panel");
-              const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+              const resIds = ${RES_IDS_JS};
               return {
                 scrollH: p.scrollHeight, clientH: p.clientHeight,
                 resVisible: resIds.every(id => {
@@ -1897,8 +1948,16 @@ function run() {
               };
             `);
             const label = `${w}x${h} mode ${mode}`;
-            assert.ok(m.scrollH <= m.clientH + 1,
-              `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically by ${m.scrollH - m.clientH}px`);
+            // The Amy row is the only thing that may make the sidebar scroll
+            // here (mode S, measured); modes A and B keep fitting.
+            const amy = await b.eval(`return ${AMY_ROW_JS};`);
+            assert.ok(amy.overWithout <= 1,
+              `${label}: without the Amy row the sidebar overflows by ${amy.overWithout}px (reviewer FAIL #2 regressed)`);
+            assertAmyScroll(label, amy);
+            if (mode !== "S") {
+              assert.ok(m.scrollH <= m.clientH + 1,
+                `${label}: the sidebar (${m.scrollH}px) overflows its own box (${m.clientH}px) vertically by ${m.scrollH - m.clientH}px`);
+            }
             assert.ok(m.resVisible, `${label}: the Resources links are not all rendered in the sidebar`);
           }
         }
@@ -1971,6 +2030,148 @@ function run() {
       };`);
       assert.strictEqual(after.modeA, before.modeA, "a Resources link changed the practice mode");
       assert.strictEqual(after.front, before.front, "a Resources link changed the displayed card");
+    });
+
+  const MENU_VIEWPORTS = [[320, 568, true], [380, 700, true], [768, 1024, false], [844, 390, true], [1024, 700, false]];
+  const ROW_JS = `(() => {
+    const p = document.getElementById("settings-panel");
+    return [...p.querySelectorAll(".modebar, .prints")].filter(r => r.offsetParent).map(r => {
+      const cs = getComputedStyle(r), rr = r.getBoundingClientRect();
+      const kids = [...r.children].filter(k => k.offsetParent);
+      const lines = [];
+      for (const k of kids) {
+        const kr = k.getBoundingClientRect();
+        let l = lines.find(x => Math.abs(x.top - kr.top) < 4);
+        if (!l) { l = { top: kr.top, items: [] }; lines.push(l); }
+        l.items.push({ id: k.id || k.textContent.trim().slice(0, 12), left: kr.left, right: kr.right, width: kr.width });
+      }
+      return { cls: r.className, left: rr.left + parseFloat(cs.paddingLeft), right: rr.right - parseFloat(cs.paddingRight), lines };
+    });
+  })()`;
+
+  test("every row of the settings panel is flush: each visual line spans the row from edge to edge",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, over] of MENU_VIEWPORTS) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const rows = await b.eval(`return ${ROW_JS};`);
+          assert.ok(rows.length >= 4, `${vw}x${vh}: expected the panel's rows to be measured, got ${rows.length}`);
+          for (const r of rows) {
+            for (const l of r.lines) {
+              const first = Math.min(...l.items.map((i) => i.left)), last = Math.max(...l.items.map((i) => i.right));
+              assert.ok(Math.abs(first - r.left) <= 1 && Math.abs(last - r.right) <= 1,
+                `${vw}x${vh}: a line of .${r.cls} is not flush: ${JSON.stringify(l.items)} in [${r.left}, ${r.right}]`);
+            }
+          }
+          await b.key("Escape", "Escape", 27);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("the two Amy links share one row at equal width, spanning it, and every label stays inside its box",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, over] of MENU_VIEWPORTS) {
+            await b.setViewport(vw, vh, over);
+            await b.settle();
+            await openSettingsPanel();
+            const m = await b.eval(`
+              const a = document.getElementById("res-amy-progressions"), c = document.getElementById("res-amy-bottom");
+              const row = a.parentElement, rr = row.getBoundingClientRect(), cs = getComputedStyle(row);
+              const ar = a.getBoundingClientRect(), cr = c.getBoundingClientRect();
+              const inside = (el) => {
+                const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
+                return [...g.getClientRects()].every(t => t.left >= k.left - 0.5 && t.right <= k.right + 0.5 && t.top >= k.top - 0.5 && t.bottom <= k.bottom + 0.5);
+              };
+              return { sameRow: Math.abs(ar.top - cr.top) < 2, wA: ar.width, wC: cr.width,
+                left: Math.min(ar.left, cr.left), right: Math.max(ar.right, cr.right),
+                rowL: rr.left + parseFloat(cs.paddingLeft), rowR: rr.right - parseFloat(cs.paddingRight),
+                tall: Math.min(ar.height, cr.height), insideA: inside(a), insideC: inside(c),
+                siblings: row.children.length };
+            `);
+            const label = `${vw}x${vh}`;
+            assert.strictEqual(m.siblings, 2, `${label}: the Amy row holds exactly the two links`);
+            assert.ok(m.sameRow, `${label}: the two Amy links are not on one line`);
+            assert.ok(Math.abs(m.wA - m.wC) <= 1, `${label}: unequal widths ${m.wA} / ${m.wC}`);
+            assert.ok(Math.abs(m.left - m.rowL) <= 1 && Math.abs(m.right - m.rowR) <= 1, `${label}: the Amy links do not span their row`);
+            assert.ok(m.tall >= 44, `${label}: an Amy link is under the 44px target`);
+            assert.ok(m.insideA && m.insideC, `${label}: an Amy label's text spills outside its link box`);
+            await b.key("Escape", "Escape", 27);
+          }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("#seq-source-link and the Amy links are each a panel stop exactly once, and Amy carries no onclick",
+    async () => {
+      await freshLoad();
+      await openSettingsPanel();
+      await b.click(`#${modeBtn("S")}`);
+      await b.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: "panel to close after selecting mode S" });
+      await openSettingsPanel();
+      const m = await b.eval(`
+        const stops = window.panelStops();
+        return { ids: stops.map(e => e.id).filter(Boolean),
+          onclick: ["res-amy-progressions", "res-amy-bottom"].map(id => document.getElementById(id).getAttribute("onclick")) };
+      `);
+      for (const id of RES_IDS) assert.strictEqual(m.ids.filter((x) => x === id).length, 1, `#${id} must be a panel stop exactly once`);
+      assert.strictEqual(m.ids.filter((x) => x === "seq-source-link").length, 1, "#seq-source-link must be a panel stop exactly once in mode S");
+      assert.deepStrictEqual(m.onclick, [null, null]);
+    });
+
+  // AD8 (owner: "All buttons should center text"). Every visible button and
+  // link in the panel, per line of its label: the text rect sits centred in the
+  // control's box within 1px. #seq-source-link is excluded: it is inline text in
+  // a note paragraph, not a boxed control. A <select>'s shown value is not a text
+  // node, so no Range can measure it: for the select this asserts only the
+  // computed text-align / text-align-last, which proves the CSS asks for a
+  // centred value (and Chrome honours it), not the rendered pixel position.
+  test("every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, over] of [[320, 568, true], [380, 700, true], [1024, 700, false]]) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            const ctrls = [...p.querySelectorAll("button, a")].filter(e => e.offsetParent && e.id !== "seq-source-link");
+            const bad = [];
+            for (const e of ctrls) {
+              const k = e.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(e);
+              const lines = [];
+              for (const t of g.getClientRects()) {
+                if (t.width < 1) continue;
+                let l = lines.find(x => Math.abs(x.top - t.top) < 4);
+                if (!l) { l = { top: t.top, left: t.left, right: t.right }; lines.push(l); }
+                l.left = Math.min(l.left, t.left); l.right = Math.max(l.right, t.right);
+              }
+              for (const l of lines) {
+                const d = (l.left - k.left) - (k.right - l.right);
+                if (Math.abs(d) > 2) bad.push((e.id || e.textContent.trim()) + " off by " + (d / 2).toFixed(2));
+              }
+            }
+            const sel = getComputedStyle(document.getElementById("print-paper-select"));
+            return { n: ctrls.length, bad, ta: sel.textAlign, tal: sel.textAlignLast };
+          `);
+          const label = `${vw}x${vh}`;
+          assert.ok(m.n >= 12, `${label}: expected the panel's buttons and links to be measured, got ${m.n}`);
+          assert.deepStrictEqual(m.bad, [], `${label}: labels not centred in their controls`);
+          assert.strictEqual(m.ta, "center", `${label}: the paper select text-align`);
+          assert.strictEqual(m.tal, "center", `${label}: the paper select text-align-last`);
+          await b.key("Escape", "Escape", 27);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
     });
 
   test("the paper choice survives a reload", async () => {
@@ -6946,7 +7147,7 @@ function run() {
         const probe = await probeTargets(
           ["#modeA", "#modeB", "#deck-add",
            "#settings-panel .prints button", "#settings-panel .prints select",
-           "#res-handpaner", "#res-dingandtones", "#res-trainingcards"]);
+           ...RES_IDS.map((id) => "#" + id)]);
         const short = probe.filter((p) => !p.missing && p.h < 44);
         const stolen = probe.filter((p) => !p.missing && p.bad.length);
         assert.deepStrictEqual(probe.filter((p) => p.missing), []);
@@ -7229,9 +7430,10 @@ function run() {
       await rb.settle();
       const m = await rb.eval(`
         const p = document.getElementById("settings-panel");
-        const resIds = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        const resIds = ${RES_IDS_JS};
         return {
           scrollH: p.scrollHeight, clientH: p.clientHeight,
+          amy: ${AMY_ROW_JS},
           resVisible: resIds.every(id => {
             const el = document.getElementById(id);
             return el && el.getClientRects().length > 0;
@@ -7274,12 +7476,12 @@ function run() {
     // Resources link ending at 572 against a 568px box) - a different,
     // narrower-viewport breakpoint from the sidebar cells above (the
     // full-screen portrait panel, not the fixed sidebar).
-    test("the 320x568 full-screen panel has no vertical scroll under REAL fonts in mode S",
+    test("the 320x568 full-screen panel has no vertical scroll beyond the Amy row under REAL fonts in mode S",
       async () => {
         const m = await panelOverflow(320, 568, "S", true);
-        assert.ok(m.scrollH <= m.clientH + 1,
-          `320x568 mode S (real fonts): the panel (${m.scrollH}px) overflows its own box ` +
-          `(${m.clientH}px) by ${m.scrollH - m.clientH}px`);
+        assert.ok(m.amy.overWithout <= 1,
+          `320x568 mode S (real fonts): without the Amy row the panel overflows by ${m.amy.overWithout}px`);
+        assertAmyScroll("320x568 mode S (real fonts)", m.amy);
         assert.ok(m.resVisible, "320x568 mode S (real fonts): the Resources links are not all rendered");
       });
 
@@ -7330,7 +7532,7 @@ function run() {
             const ctrls = [...p.querySelectorAll("button, select, a")].filter(e => e.offsetParent);
             const hd = document.getElementById("panel-prog-heading");
             return {
-              over: p.scrollHeight - p.clientHeight, clientH: p.clientHeight,
+              over: p.scrollHeight - p.clientHeight, clientH: p.clientHeight, amy: ${AMY_ROW_JS},
               hg: hd.getBoundingClientRect().height + parseFloat(getComputedStyle(hd).marginTop),
               reach: ctrls.filter(e => e.getBoundingClientRect().bottom - (p.getBoundingClientRect().top - p.scrollTop) > p.scrollHeight + 0.5).map(e => e.id),
               off: ctrls.filter(e => {
@@ -7341,12 +7543,16 @@ function run() {
           `);
           const label = `${w}x${h} mode ${mode} (real fonts)`;
           const want = mainNeeded + m.hg - m.clientH;
-          if (want > 1) {
-            assert.ok(m.over > 0, `${label}: the cell must really scroll (two-sided)`);
-            assert.ok(Math.abs(m.over - want) <= 1, `${label}: the panel scrolls by ${m.over}px, expected ${want}px`);
+          assertAmyScroll(label, m.amy);
+          assert.ok(Math.abs(m.amy.overWithout - Math.max(0, want)) <= 1,
+            `${label}: without the Amy row the panel scrolls by ${m.amy.overWithout}px, expected ${Math.max(0, want)}px`);
+          if (m.over > 1) {
             assert.deepStrictEqual(m.reach, [], `${label}: a control lies beyond the scrollable height`);
+            if (m.amy.overWithout <= 1) {
+              assert.deepStrictEqual(m.off.filter((id) => !id.startsWith("res-")), [],
+                `${label}: only the Resources links may be below the fold once the Amy row makes the cell scroll`);
+            }
           } else {
-            assert.ok(m.over <= 1, `${label}: the panel overflows its own box by ${m.over}px`);
             assert.deepStrictEqual(m.off, [], `${label}: controls offscreen: ${JSON.stringify(m.off)}`);
           }
         }
@@ -7622,8 +7828,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "", "", "print-paper-select", "res-handpaner", "res-dingandtones",
-      "res-trainingcards"];
+      "tier-advanced", "deck-add", "", "", "print-paper-select", ...RES_IDS];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -7646,7 +7851,7 @@ function run() {
       return { fwd: seen.map((x) => x.id || ""), back: back.map((x) => x.id || "") };
     }
 
-    test("Tab cycles exactly the thirteen flash-card stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the fifteen flash-card stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -7669,7 +7874,7 @@ function run() {
       await b.setViewport(900, 900, false);
     });
 
-    test("Tab cycles exactly the fourteen progression stops in the modal at every viewport class", async () => {
+    test("Tab cycles exactly the sixteen progression stops in the modal at every viewport class", async () => {
       for (const [w, h, m] of MODAL_VIEWPORTS) {
         await freshLoad();
         await b.setViewport(w, h, m);
@@ -10826,6 +11031,11 @@ function run() {
     const MAIN_NEEDED_S = {"fallback":{"1024x700":[608,608,673.75],"1024x701":[608,608,673.75],"1025x700":[608,608,673.75],"1025x701":[608,608,673.75],"1280x800":[608,608,673.75],"1280x740":[608,608,673.75]},"real":{"1024x700":[612,612,677.75],"1024x701":[612,612,677.75],"1025x700":[612,612,677.75],"1025x701":[612,612,677.75],"1280x800":[612,612,677.75],"1280x740":[612,612,677.75]},"fallback-linux":{"1024x700":[604,604,669.75],"1024x701":[604,604,669.75],"1025x700":[604,604,669.75],"1025x701":[604,604,669.75],"1280x800":[604,604,669.75],"1280x740":[604,604,669.75]}};
     const MAIN_GROUPS_S = {"fallback":{"1024x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1024x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x700":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1025x701":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x800":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]],"1280x740":[[123,67,179,123],[123,67,179,123],[188.75,67,179,123]]},"real":{"1024x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1024x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x700":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1025x701":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x800":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]],"1280x740":[[124,68,180,124],[124,68,180,124],[189.75,68,180,124]]},"fallback-linux":{"1024x700":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1024x701":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1025x700":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1025x701":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1280x800":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]],"1280x740":[[122,66,178,122],[122,66,178,122],[187.75,66,178,122]]}};
     const L_DELTA = {"fallback":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]},"real":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]},"fallback-linux":{"320x320":[1,1,1],"320x375":[1,1,1],"320x519":[1,1,1],"320x520":[1,1,1],"427x320":[1,1,1],"427x375":[1,1,1],"427x519":[1,1,1],"427x520":[1,1,1],"568x320":[1,1,1],"568x375":[1,1,1],"568x519":[1,1,1],"568x520":[1,1,1],"640x320":[0,0,1],"640x375":[0,0,1],"640x519":[0,0,1],"640x520":[0,0,1],"641x320":[0,0,1],"641x375":[0,0,1],"641x519":[0,0,1],"641x520":[0,0,1],"1023x320":[1,1,1],"1023x375":[1,1,1],"1023x519":[1,1,1],"1023x520":[1,1,1],"1024x320":[1,1,1],"1024x375":[1,1,1],"1024x519":[1,1,1],"1024x520":[1,1,1],"1280x320":[1,1,1],"1280x375":[1,1,1],"1280x519":[1,1,1],"1280x520":[1,1,1]}};
+    // AD7 (docs/plans/2026-10-05-menu-resources-amy.md section 8): the Amy row costs each cell
+    // [needed, Resources group] extra, measured with the oracle's own measuring function
+    // against main + the heading, per font mode, A/B/S. "fallback-linux" is the macOS
+    // numbers until the first CI run's failure output replaces them.
+    const AMY_DELTA = {"fallback":{"639x521":[[48,48],[48,48],[48,48]],"639x699":[[48,48],[48,48],[48,48]],"639x700":[[48,48],[48,48],[48,48]],"639x701":[[48,48],[48,48],[48,48]],"640x521":[[48,48],[48,48],[48,48]],"640x699":[[48,48],[48,48],[48,48]],"640x700":[[50,50],[50,50],[50,50]],"640x701":[[50,50],[50,50],[50,50]],"641x521":[[48,48],[48,48],[48,48]],"641x699":[[48,48],[48,48],[48,48]],"641x700":[[50,50],[50,50],[50,50]],"641x701":[[50,50],[50,50],[50,50]],"1023x521":[[48,48],[48,48],[48,48]],"1023x699":[[48,48],[48,48],[48,48]],"1023x700":[[50,50],[50,50],[50,50]],"1023x701":[[50,50],[50,50],[50,50]],"1024x521":[[48,48],[48,48],[48,48]],"1024x699":[[48,48],[48,48],[48,48]],"1025x521":[[48,48],[48,48],[48,48]],"1025x699":[[48,48],[48,48],[48,48]],"320x568":[[48,48],[48,48],[48,48]],"380x740":[[48,48],[48,48],[48,48]],"768x1024":[[50,50],[50,50],[50,50]],"320x320":[[47,47],[47,47],[47,47]],"320x375":[[47,47],[47,47],[47,47]],"320x519":[[47,47],[47,47],[47,47]],"320x520":[[47,47],[47,47],[47,47]],"427x320":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x375":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x519":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x520":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"568x320":[[0,47],[0,47],[0,47]],"568x375":[[0,47],[0,47],[0,47]],"568x519":[[0,47],[0,47],[0,47]],"568x520":[[0,47],[0,47],[0,47]],"640x320":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x375":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x519":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x520":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x320":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x375":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x519":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x520":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"1023x320":[[0,47],[0,47],[0,47]],"1023x375":[[0,47],[0,47],[0,47]],"1023x519":[[0,47],[0,47],[0,47]],"1023x520":[[0,47],[0,47],[0,47]],"1024x320":[[0,47],[0,47],[0,47]],"1024x375":[[0,47],[0,47],[0,47]],"1024x519":[[0,47],[0,47],[0,47]],"1024x520":[[0,47],[0,47],[0,47]],"1280x320":[[0,47],[0,47],[0,47]],"1280x375":[[0,47],[0,47],[0,47]],"1280x519":[[0,47],[0,47],[0,47]],"1280x520":[[0,47],[0,47],[0,47]],"1024x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1024x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x800":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x740":[[60.375,60.375],[60.375,60.375],[60.375,60.375]]},"real":{"639x521":[[48,48],[48,48],[48,48]],"639x699":[[48,48],[48,48],[48,48]],"639x700":[[48,48],[48,48],[48,48]],"639x701":[[48,48],[48,48],[48,48]],"640x521":[[48,48],[48,48],[48,48]],"640x699":[[48,48],[48,48],[48,48]],"640x700":[[50,50],[50,50],[50,50]],"640x701":[[50,50],[50,50],[50,50]],"641x521":[[48,48],[48,48],[48,48]],"641x699":[[48,48],[48,48],[48,48]],"641x700":[[50,50],[50,50],[50,50]],"641x701":[[50,50],[50,50],[50,50]],"1023x521":[[48,48],[48,48],[48,48]],"1023x699":[[48,48],[48,48],[48,48]],"1023x700":[[50,50],[50,50],[50,50]],"1023x701":[[50,50],[50,50],[50,50]],"1024x521":[[48,48],[48,48],[48,48]],"1024x699":[[48,48],[48,48],[48,48]],"1025x521":[[48,48],[48,48],[48,48]],"1025x699":[[48,48],[48,48],[48,48]],"320x568":[[48,48],[48,48],[48,48]],"380x740":[[48,48],[48,48],[48,48]],"768x1024":[[50,50],[50,50],[50,50]],"320x320":[[47,47],[47,47],[47,47]],"320x375":[[47,47],[47,47],[47,47]],"320x519":[[47,47],[47,47],[47,47]],"320x520":[[47,47],[47,47],[47,47]],"427x320":[[0,47],[0,47],[0,47]],"427x375":[[0,47],[0,47],[0,47]],"427x519":[[0,47],[0,47],[0,47]],"427x520":[[0,47],[0,47],[0,47]],"568x320":[[0,47],[0,47],[0,47]],"568x375":[[0,47],[0,47],[0,47]],"568x519":[[0,47],[0,47],[0,47]],"568x520":[[0,47],[0,47],[0,47]],"640x320":[[47,47],[47,47],[47,47]],"640x375":[[47,47],[47,47],[47,47]],"640x519":[[47,47],[47,47],[47,47]],"640x520":[[47,47],[47,47],[47,47]],"641x320":[[47,47],[47,47],[47,47]],"641x375":[[47,47],[47,47],[47,47]],"641x519":[[47,47],[47,47],[47,47]],"641x520":[[47,47],[47,47],[47,47]],"1023x320":[[0,47],[0,47],[0,47]],"1023x375":[[0,47],[0,47],[0,47]],"1023x519":[[0,47],[0,47],[0,47]],"1023x520":[[0,47],[0,47],[0,47]],"1024x320":[[0,47],[0,47],[0,47]],"1024x375":[[0,47],[0,47],[0,47]],"1024x519":[[0,47],[0,47],[0,47]],"1024x520":[[0,47],[0,47],[0,47]],"1280x320":[[0,47],[0,47],[0,47]],"1280x375":[[0,47],[0,47],[0,47]],"1280x519":[[0,47],[0,47],[0,47]],"1280x520":[[0,47],[0,47],[0,47]],"1024x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1024x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x800":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x740":[[60.375,60.375],[60.375,60.375],[60.375,60.375]]},"fallback-linux":{"639x521":[[48,48],[48,48],[48,48]],"639x699":[[48,48],[48,48],[48,48]],"639x700":[[48,48],[48,48],[48,48]],"639x701":[[48,48],[48,48],[48,48]],"640x521":[[48,48],[48,48],[48,48]],"640x699":[[48,48],[48,48],[48,48]],"640x700":[[50,50],[50,50],[50,50]],"640x701":[[50,50],[50,50],[50,50]],"641x521":[[48,48],[48,48],[48,48]],"641x699":[[48,48],[48,48],[48,48]],"641x700":[[50,50],[50,50],[50,50]],"641x701":[[50,50],[50,50],[50,50]],"1023x521":[[48,48],[48,48],[48,48]],"1023x699":[[48,48],[48,48],[48,48]],"1023x700":[[50,50],[50,50],[50,50]],"1023x701":[[50,50],[50,50],[50,50]],"1024x521":[[48,48],[48,48],[48,48]],"1024x699":[[48,48],[48,48],[48,48]],"1025x521":[[48,48],[48,48],[48,48]],"1025x699":[[48,48],[48,48],[48,48]],"320x568":[[48,48],[48,48],[48,48]],"380x740":[[48,48],[48,48],[48,48]],"768x1024":[[50,50],[50,50],[50,50]],"320x320":[[47,47],[47,47],[47,47]],"320x375":[[47,47],[47,47],[47,47]],"320x519":[[47,47],[47,47],[47,47]],"320x520":[[47,47],[47,47],[47,47]],"427x320":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x375":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x519":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"427x520":[[7.375,57.375],[7.375,57.375],[7.375,57.375]],"568x320":[[0,47],[0,47],[0,47]],"568x375":[[0,47],[0,47],[0,47]],"568x519":[[0,47],[0,47],[0,47]],"568x520":[[0,47],[0,47],[0,47]],"640x320":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x375":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x519":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"640x520":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x320":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x375":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x519":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"641x520":[[57.375,57.375],[57.375,57.375],[57.375,57.375]],"1023x320":[[0,47],[0,47],[0,47]],"1023x375":[[0,47],[0,47],[0,47]],"1023x519":[[0,47],[0,47],[0,47]],"1023x520":[[0,47],[0,47],[0,47]],"1024x320":[[0,47],[0,47],[0,47]],"1024x375":[[0,47],[0,47],[0,47]],"1024x519":[[0,47],[0,47],[0,47]],"1024x520":[[0,47],[0,47],[0,47]],"1280x320":[[0,47],[0,47],[0,47]],"1280x375":[[0,47],[0,47],[0,47]],"1280x519":[[0,47],[0,47],[0,47]],"1280x520":[[0,47],[0,47],[0,47]],"1024x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1024x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x700":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1025x701":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x800":[[60.375,60.375],[60.375,60.375],[60.375,60.375]],"1280x740":[[60.375,60.375],[60.375,60.375],[60.375,60.375]]}};
 
     // The fallback fonts are the platform's own: the tables above carry macOS
     // ("fallback") and the Linux CI runner ("fallback-linux", measured on the
@@ -10919,11 +11129,12 @@ function run() {
             assert.strictEqual(g.mt, g.sp1, `${where}: the second heading's margin-top is ${g.mt}px, --sp-1 is ${g.sp1}px`);
             assert.ok(g.hg <= pf.HEADING_ALLOWANCE_PX, `${where}: H + g = ${g.hg} exceeds the oracle's allowance`);
             const d = delta ? delta[tableKey(fm)][key][i] : 1;
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"}`);
+            const [amyNeeded, amyRes] = AMY_DELTA[tableKey(fm)][key][i];
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded}`);
             const wantG = groups[tableKey(fm)][key][i];
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - wantG[k]) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px`);
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + (k === 3 ? amyRes : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${k === 3 ? amyRes : 0}`);
           });
         }
       }

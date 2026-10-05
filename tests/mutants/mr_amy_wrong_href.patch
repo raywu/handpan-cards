@@ -1,0 +1,15 @@
+# kills: the settings panel has exactly one Resources group with its five outbound links in two rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.five.outbound.links.in.two.rows$ tests/e2e.test.js
+# menu-resources AD7. #res-amy-progressions points at the wrong video.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1330,7 +1330,7 @@ footer.seq{row-gap:var(--sp-1)}
+          target="_blank" rel="noopener">HTC</a>
+     </div>
+     <div class="modebar duo">
+-      <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
++      <a class="mode" id="res-amy-progressions" href="https://youtu.be/0hMIUnA5-OI"
+          aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
+          target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
+       <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"

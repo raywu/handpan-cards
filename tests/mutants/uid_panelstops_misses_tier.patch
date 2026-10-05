@@ -1,5 +1,5 @@
-# kills: Tab cycles exactly the fourteen progression stops in the modal at every viewport class
-# suite: node --test --test-name-pattern Tab.cycles.exactly.the.fourteen.progression.stops tests/e2e.test.js
+# kills: Tab cycles exactly the sixteen progression stops in the modal at every viewport class
+# suite: node --test --test-name-pattern Tab.cycles.exactly.the.sixteen.progression.stops tests/e2e.test.js
 # D2 step 4. panelStops() drops #tier-basic, so a keyboard user tabbing the panel skips the BASIC button (replaces sqe_panelstops_misses_modeS, #modeS is gone).
 diff --git a/index.html b/index.html
 --- a/index.html
