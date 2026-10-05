@@ -1,6 +1,6 @@
 # Amy Naylor videos in Resources, and flush menu rows
 
-Status: DRAFT 2026-10-05, eng-reviewed (section 7a). Not started. Execution waits for the owner's go.
+Status: DRAFT 2026-10-05, eng-reviewed (section 7a). Execution started 2026-10-05 (AD5).
 Lane: `claude/menu-resources`, single serial lane, own worktree, base
 origin/main `efb682c`. One lane because every change lands in `index.html`
 and `tests/e2e.test.js`; there is no file-ownership boundary to split on.
@@ -302,8 +302,11 @@ Auto-decisions taken under AFK (owner may reverse any of them):
 - AD3. Outside voice (Codex): run automatically as the review's standard step; findings C1-C4 accepted because each is a factual gap, none changes scope.
 - AD4. Scope: accepted as drafted, one serial lane. No reduction offered;
   the three goals share two files.
-- O1, O2, O3 are NOT auto-decided. They change what the owner sees and the
-  lane does not start without the owner's go.
+- AD5. Owner said "Continue" on 2026-10-05 after reading the plan summary
+  and its three open decisions. Read as the go to execute. O1, O2 and O3
+  take their recommended options under AFK: O1 the panel may scroll per C2;
+  O2 labels `AMY: PROGRESSIONS` and `AMY: BOTTOM NOTES`; O3 the 420px cap
+  stays. All three are reversible in a follow-up PR.
 
 NOT in scope: the 420px cap (O3) unless the owner says so; select text
 alignment in the widened paper select; the tier row's content weighting;
@@ -337,6 +340,5 @@ Parallelization: none. One lane, two files.
 | CEO Review | `/plan-ceo-review` | Scope and strategy | 0 | not run | not needed for a bounded UI change |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | not run | optional; O2 labels and O3 cap are the design calls |
 
-UNRESOLVED: O1 (scroll at tight sizes), O2 (labels), O3 (420px cap) wait
-for the owner. VERDICT: eng review cleared, execution gated on the owner's
-go and O1-O3.
+UNRESOLVED: none. O1-O3 taken as recommended under AFK (AD5). VERDICT: eng
+review cleared, execution started 2026-10-05.
