@@ -1970,7 +1970,10 @@ test("S2: 300 public pick() deals per tier classify as their tier and keep the s
 // M-1..M-5 on one deck's shape run. `strictHome` adds M > H on the home-start
 // rate (TR-6: asserted on Pygmy and Amara only). Every measured deck deals
 // HARD under the broad R-7 (TR-7 superseded); S3 asserts that.
-function assertMonotonic(E, label, deck, run, strictHome) {
+// `expectRegister` adds the one side of M-3 that can fail (B = M = 0 <= H): a
+// deck whose HARD deals are measured to carry non-anchor register cards must
+// show H > 0. Eligibility is stated per deck by the caller, not derived.
+function assertMonotonic(E, label, deck, run, strictHome, expectRegister) {
   const I = E.sequence._internal;
   const B = run.basic;
   const M = run.intermediate;
@@ -1994,7 +1997,7 @@ function assertMonotonic(E, label, deck, run, strictHome) {
   assert.ok(B.home > M.home, `${label} M-5: BASIC home ${B.home} !> MEDIUM ${M.home}`);
   assert.ok(M.meanLen < H.meanLen, `${label} M-1: MEDIUM ${M.meanLen} !< HARD ${H.meanLen}`);
   assert.ok(M.nonAnchor < H.nonAnchor, `${label} M-2: MEDIUM ${M.nonAnchor} !< HARD ${H.nonAnchor}`);
-  assert.ok(H.nonAnchorRegister >= 0, `${label} M-3: HARD`);
+  if (expectRegister) assert.ok(H.nonAnchorRegister > 0, `${label} M-3: HARD deals no non-anchor register card`);
   assert.ok(B.home > H.home, `${label} M-5: BASIC home ${B.home} !> HARD ${H.home}`);
   if (strictHome) assert.ok(M.home > H.home, `${label} M-5: MEDIUM home ${M.home} !> HARD ${H.home}`);
 }
@@ -2002,9 +2005,11 @@ function assertMonotonic(E, label, deck, run, strictHome) {
 test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sweep deck", () => {
   const E = engine();
   const runs = builtinShapes();
-  assertMonotonic(E, "hijaz", HIJAZ, runs.hijaz, false);
-  assertMonotonic(E, "pygmy", PYGMY, runs.pygmy, true);
-  assertMonotonic(E, "amara", AMARA, runs.amara, true);
+  // Pygmy is the one deck whose HARD deals carry non-anchor register cards
+  // (tier-rebalance section 2: 20.3% of HARD chords).
+  assertMonotonic(E, "hijaz", HIJAZ, runs.hijaz, false, false);
+  assertMonotonic(E, "pygmy", PYGMY, runs.pygmy, true, true);
+  assertMonotonic(E, "amara", AMARA, runs.amara, true, false);
 
   const { full, sweep, reviewer, registerAnchor, registerHome } = generated();
   const rows = [
@@ -2018,7 +2023,7 @@ test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sw
     const S = full.sequence;
     if (S._internal.homeAnchor(row.deck, S.anchors(row.deck)) === null) continue;
     const run = shapeRun(full, row.deck, 300);
-    assertMonotonic(full, row.label, row.deck, run, false);
+    assertMonotonic(full, row.label, row.deck, run, false, false);
     measured += 1;
   }
   assert.strictEqual(measured, 37 + 4 + 2 - 3, "every sweep deck with a home anchor is measured");

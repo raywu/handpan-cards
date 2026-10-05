@@ -1,0 +1,16 @@
+# kills: S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sweep deck
+# M-3 - hardGate refuses every register card, so Pygmy's HARD deals carry no
+# non-anchor register card and H's register share falls to 0
+# suite: node --test --test-name-pattern ^S3..difficulty.is.monotonic..M-1..M-5..on.every.built-in.deck.and.every.sweep.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -587,7 +587,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (isRegister || deck.chords[seq[i]].fields.length > 4) extended = true;
+     }
+     if (!extended && nonAnchor < 2) return false;
+-    return register * 3 <= seq.length;
++    return register === 0;
+   }
+ 
+   // classifyTier(deck, chords, ctx): BASIC, then MEDIUM, then HARD, then null
