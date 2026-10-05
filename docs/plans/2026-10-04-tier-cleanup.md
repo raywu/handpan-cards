@@ -180,6 +180,11 @@ Lane `claude/tier-cleanup`, 2026-10-04.
 8. **Engine diff.** `git diff 3c97d40 -- src/engine/sequence.js` changes
    comment lines only; `tests/fixtures/` is unchanged.
 9. **README.** Mutant count 646 -> 647, committed with `sqr_18`.
+10. **Local mutation gate is incomplete by design.** No `CHROME_BIN` in the
+    lane shell: 422/647 killed, 0 survived, 225 e2e mutants skipped (exit
+    5, "MUTATION GATE INCOMPLETE"). All 50 non-e2e `sq*` mutants and
+    `eg_prevvalid_inverted` are killed, `sqr_18` by S3. CI at the head SHA
+    is the verdict for the full 647.
 
 ## 7. Eng review record (2026-10-04, AFK auto-decisions)
 
