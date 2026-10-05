@@ -7,7 +7,7 @@ are restated in section 1). Every number below was measured by
 `scratchpad/rebalance_probe2.js` running the engine of a detached worktree at
 `6b40b85` (`tools/engine_loader.js`, `loadEngine(["core","sequence"])`,
 `data/decks.json`), 3,000 `pick()`-equivalent deals per tier per built-in
-deck with `mulberry32(7)` and no `prev`, 1,000 per row of the generated sweep.
+deck with `mulberry32(7)` and no `prev`, 300 per row of the generated sweep (TR-15).
 Reproduction: section 12.
 
 ## 0. Goal and non-goals
@@ -17,8 +17,8 @@ measurable axes), change `src/engine/sequence.js` until every deck deals
 that shape within tolerance, and make the three tiers monotonic on every
 axis per deck. BASIC becomes "truly basic" again (home start, short, major
 and minor triads only); Amy Naylor's tonic-start rows A1-A8 stay BASIC and
-her off-tonic rows A9-A10 move to MEDIUM; HARD stops being a catch-all and
-always contains an extended card.
+her off-tonic rows A9-A10 move to MEDIUM; HARD stops being a catch-all: it
+needs an extended card or two non-anchor cards (R-7 as amended).
 
 **Non-goals.** No named presets. No physical-reach axis (owner decision
 N30). No UI change: no markup, CSS or app JS outside the generated engine
@@ -177,7 +177,7 @@ card. A diminished anchor may appear at positions 2-4.
   on decks whose non-home start set is at least as large as the home-rooted
   set (Pygmy 6 vs 4, Amara 4 vs 5 after excluding Dm itself; Hijaz 2 vs 5).
   Hijaz's 26.7% still satisfies the monotonicity rule (B 100 > M 26.7 <
-  H 37.3 is the h! case of M-5: M > H is asserted on built-ins ONLY where
+  H 34.3 is the h! case of M-5: M > H is asserted on built-ins ONLY where
   it holds today, see M-5 and decision TR-6).
 - Pinned by: S1 (non-anchor 20%, pure 33%), tierOf goldens, Amy A9/A10;
   mutants `sqr_06` (dim start allowed), `sqr_07` (colour cap dropped: two
@@ -274,7 +274,7 @@ for the valid-progression check. R8 of PR #233 ("a sequence's rotations are
 distinct EASY sequences") is superseded: the loop set still contains every
 rotation, but only the rotations starting on home or the relative major
 are in the pool. The rotation test becomes "every rotation of a BASIC
-sequence that starts on home or the relative major is also in the pool".
+sequence that starts on home or the relative start is also in the pool".
 Alternative: keep `sequences()` as the all-anchor loop set and add a
 `basicPool()`; rejected because two public pool functions invite the
 fixture tool to enumerate the wrong one.
@@ -401,7 +401,7 @@ Hijaz BASIC under R-3 (same seed): `C# G#° D°` / `C# F#sus4 Bm D°` /
 
 ## 7. Monotonicity rules and tests (tests first)
 
-Per deck, over the shape run (3,000 draws per tier on built-ins, 1,000 on
+Per deck, over the shape run (3,000 draws per tier on built-ins, 300 (TR-15) on
 each sweep row that deals every tier):
 
 | axis | rule | measured range (sweep) | status |
@@ -410,7 +410,7 @@ each sweep row that deals every tier):
 | M-2 non-anchor share | B <= M < H, B = 0 | always | asserted everywhere |
 | M-3 register share among NON-ANCHOR chords | B = M = 0 <= H (non-decreasing, not strict: decks without register colour cards have H = 0). Measured over non-anchor chords only: a register-labelled ANCHOR is BASIC/MEDIUM vocabulary (R-1, D-14, `REGISTER_HOME`'s home anchor starts every BASIC deal there), so an all-chord register share is NOT zero on those decks; the probe's sweep flags them `r!` for exactly that reason (decision TR-13, eng review R2, codex P1) | `REGISTER_ANCHOR`/`REGISTER_HOME` rows: H 22.6 / 22.3 (all-chord) > 0; built-ins Amara/Hijaz H = 0 | asserted everywhere on the non-anchor measure, decision TR-12 (non-strict) |
 | M-4 vocabulary | cards(B) subset cards(M) subset cards(H) | by construction | asserted everywhere |
-| M-5 home-start rate | B > M and B > H everywhere; M > H on the built-in decks where it holds today (Pygmy 40.5 > 15.5, Amara 40.5 > 33.7); on Hijaz (26.7 vs 37.3) and on 19 sweep rows HARD's free start exceeds MEDIUM's (`top-heavy N=13`: H 40.6 vs M 31.2) | see left | decision TR-6: assert B > M and B > H per deck; assert M > H on Pygmy and Amara only. Alternative: give HARD a home-side weight below MEDIUM's (makes "home start free" false). Recorded for the owner. |
+| M-5 home-start rate | B > M and B > H everywhere; M > H on the built-in decks where it holds today (Pygmy 40.5 > 16.0, Amara 40.5 > 32.8); on Hijaz (26.7 vs 34.3) and on 19 sweep rows HARD's free start exceeds MEDIUM's (`top-heavy N=13`: H 40.6 vs M 31.2) | see left | decision TR-6: assert B > M and B > H per deck; assert M > H on Pygmy and Amara only. Alternative: give HARD a home-side weight below MEDIUM's (makes "home start free" false). Recorded for the owner. Owner decision 2026-10-04: leave as is, no HARD home-side weight. |
 
 Tests, all in `tests/sequence.test.js` unless named, written BEFORE the
 engine change and red on main for the stated reason:
@@ -422,8 +422,8 @@ engine change and red on main for the stated reason:
   assert every band of section 2. Red on main: `_internal.*Cells` missing.
 - **S2 shape (public path).** 300 `pick()` per tier per built-in deck with
   `prev` chained; every deal classifies as its tier via `tierOf`, lengths
-  within +-6 pp (SE 2.8 pp at N = 300), BASIC home start >= 70%, HARD
-  extended 100%. Red on main: BASIC home start 14.5%.
+  within +-6 pp (SE 2.8 pp at N = 300), BASIC home start >= 70%, every HARD
+  deal meets the R-7 predicate and the register bound. Red on main: BASIC home start 14.5%.
 - **S3 monotonicity.** M-1..M-5 per deck over the S1/S2 runs and over the
   sweep rows at 300 draws per tier (the sweep harness `generated()` at
   "generated decks: every tier deals its own tier"; 300 not 1,000, decision
@@ -494,11 +494,11 @@ unverifiable without it. One lane, `claude/tier-rebalance`, worktree
 
 | # | step | done when | verify |
 |---|---|---|---|
-| 1 | Write S1-S9 and the 15 mutants; commit red | tests fail for the stated reasons on `6b40b85`; `git apply --check` passes on every new mutant | `node --test tests/sequence.test.js` (red) |
+| 1 | Write S1-S9 and the 17 mutants; commit red | tests fail for the stated reasons on `6b40b85`; `git apply --check` passes on every new mutant | `node --test tests/sequence.test.js` (red) |
 | 2 | R-1..R-3, R-9 in `pickBasic`/`basicPools`/`sequences`; `python3 tools/inline_engine.py`; then `node tools/regen_card_fixture.js` (R-9 shrinks the mode S face digests the moment `sequences()` changes, so the regeneration belongs to this step, not step 5; eng review R5) | S1 BASIC, S6 A1-A8, S8 pool sizes green; `tests/app.test.js` green; mode A/B digests byte-identical to main | `node --test tests/sequence.test.js tests/app.test.js` |
 | 3 | R-4..R-6, R-10 (`mediumCells`, `drawMedium`, `colourFamily`, `MEDIUM_ENUM_BUDGET`); inline | S1 MEDIUM, S4, S6 A9/A10 green | same |
 | 4 | R-7, R-8 (`classifyTier` HARD gate, null); inline | S1 HARD, S7, tierOf null test green; S3 green | same + `tests/app.test.js` |
-| 5 | Re-capture goldens (S5), regenerate face digests (S9), re-anchor mutants | every suite green locally; `python3 tools/validate.py`; `python3 tools/inline_engine.py --check`; `bash tools/mutation_check.sh` kills all `sq*` mutants | full verify command |
+| 5 | Re-capture goldens (S5), regenerate face digests (S9), re-anchor mutants | every suite green locally; `python3 tools/validate.py`; `python3 tools/inline_engine.py --check`; `bash tests/mutation_check.sh` kills all `sq*` mutants | full verify command |
 | 6 | Push; CI at head SHA; FLOORS + README count from CI artifacts as a follow-up commit | CI green at the verified head | `gh run list --branch claude/tier-rebalance` |
 | 7 | Independent reviewer (brief below); merge under AFK rules; cleanup | PASS / PASS_WITH_NITS at the merged SHA | `gh pr view --json state,headRefOid` |
 
@@ -514,7 +514,7 @@ re-anchored `sq_*`/`sqd_*`); the `tests/sequence.test.js` FLOORS row in
 `data/decks.json`, `tools/regen_card_fixture.js`.
 
 **Verify command:**
-`node --test tests/sequence.test.js tests/app.test.js && python3 tools/validate.py && python3 tools/inline_engine.py --check && bash tools/mutation_check.sh`
+`node --test tests/sequence.test.js tests/app.test.js && python3 tools/validate.py && python3 tools/inline_engine.py --check && bash tests/mutation_check.sh`
 
 **Standing merge gates:** CI green at a head SHA verified against the local
 tip (`gh pr view <n> --json state,headRefOid`); the independent reviewer
@@ -532,7 +532,8 @@ classify BASIC and A9-A10 MEDIUM; on Amara and Hijaz every row that
 resolves exactly keeps the same tier as on Pygmy; no row that resolves on
 main regresses to NONE; A10 better than 1 in 2,000 and A9 better than 1 in
 10,000 per MEDIUM deal on Pygmy. (3) `tierOf` returns null for a 4-6 chord
-sequence that fails MEDIUM and contains no extended card. (4) Every
+sequence that fails MEDIUM and has no extended card and at most one
+non-anchor card (TR-5 as restated). (4) Every
 `tests/mutants/sq*.patch` is killed by the mutation gate at the head SHA.
 (5) `python3 tools/inline_engine.py --check` and `python3 tools/validate.py`
 pass; mode A and B face digests are byte-identical to main. (6) No file
@@ -580,7 +581,7 @@ the table and the Amy table re-measured.
 | TR-3 | MEDIUM start set | non-diminished anchor or home-rooted card | triad anchors only (Amara A10 -> NONE) |
 | TR-4 | colour families | susPower (`/sus/`, `/^[A-G][#b]?5$/`), seventh (`/7/`), other; equal share among non-empty | fold "other" into seventh |
 | TR-5 | HARD not a catch-all | 4-6 chord non-MEDIUM sequence with no extended card AND at most one non-anchor card -> `tierOf` null (owner, 2026-10-04) | keep catch-all |
-| TR-6 | home-start monotonicity | B > M and B > H per deck everywhere; M > H on Pygmy and Amara only | HARD home-side weight |
+| TR-6 | home-start monotonicity | B > M and B > H per deck everywhere; M > H on Pygmy and Amara only. Owner decision 2026-10-04: leave as is, no HARD home-side weight | HARD home-side weight |
 | TR-7 | deck with no extended card | SUPERSEDED (owner, 2026-10-04): HARD deals via the two-non-anchor branch on every deck | `NO_TIER_SEQUENCE` on such decks |
 | TR-8 | `sequences()` semantics | the dealt BASIC pool; R8 rotations superseded; face digests regenerated | all-anchor loop set + new `basicPool()` |
 | TR-9 | MEDIUM enumeration | once per `pick()`, no cache, `MEDIUM_ENUM_BUDGET = 60,000`; tests drive `_internal` cells | per-deck cache |

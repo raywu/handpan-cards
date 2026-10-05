@@ -23,7 +23,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // Tier shape constants (docs/plans/2026-10-04-tier-rebalance.md section 3).
   // BASIC (R-2): length 2/3/4 at 40/40/20, start on home 80% of the time and
-  // on the relative major 20%. MEDIUM (R-5): length 3/4 at 60/40, a pure-
+  // on the relative start 20%. MEDIUM (R-5): length 3/4 at 60/40, a pure-
   // anchor deal one time in three, the colour families at equal shares, a
   // home-rooted start 40%. Every weight is renormalised over the options
   // that have a non-empty cell (weightedDraw divides by the sum it is given).
@@ -261,9 +261,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   //   basicVocab   - R-1: the home anchor (whatever its shape, TR-1) plus
   //                  every major/minor triad anchor; R-3: every anchor when
   //                  that leaves fewer than MIN_BASIC_POOL loops;
-  //   basicStarts  - [home anchor] or [home anchor, relative-major anchor];
-  //                  the relative major is the triad anchor rooted 3
-  //                  semitones above a MINOR-triad home;
+  //   basicStarts  - [home anchor], plus, when the home anchor is a MINOR
+  //                  triad, every major OR minor triad anchor rooted a minor
+  //                  third (3 semitones) above home. That second start is
+  //                  the "relative" start everywhere in this file and its
+  //                  tests: on the built-in decks it is the relative major,
+  //                  but the rule does not require a major triad;
   //   basicCells   - the BASIC pool as (length, side) cells, lengths ascending
   //                  and home before relative; empty cells are left out.
   // A deck with no home anchor has no BASIC vocabulary, starts or cells.
@@ -326,9 +329,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // sequences(deck, length): the BASIC pool at that length (R-9) - every loop
-  // BASIC can deal, home starts first, then relative-major starts. Rotations
+  // BASIC can deal, home starts first, then relative starts. Rotations
   // are distinct sequences, but only the rotations that start on home or the
-  // relative major are in the pool. Returns [] when there is no home anchor
+  // relative start are in the pool. Returns [] when there is no home anchor
   // (NO_HOME_CHORD stays ahead of everything) or no sequence of that length -
   // callers that need to tell those apart use anchors()/homeAnchor directly
   // (pick() does).
@@ -531,7 +534,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   // R-1: BASIC = 2..4 BASIC-vocabulary cards with distinct roots, starting on
-  // the home anchor or the relative major (the wrap-to-first and consecutive-
+  // the home anchor or the relative start (the wrap-to-first and consecutive-
   // connect rules live in makeAccept / basicLoops).
   function basicGate(deck, seq, ctx) {
     if (seq.length < 2 || seq.length > 4) return false;

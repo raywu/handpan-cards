@@ -9,7 +9,7 @@
 // RE-CAPTURED on 2026-10-04 (docs/plans/2026-10-04-easy-tier-amy.md,
 // R1-R8: EASY lengths 2..4, any-anchor start), and RE-CAPTURED AGAIN on
 // 2026-10-04 for the tier rebalance (docs/plans/2026-10-04-tier-rebalance.md
-// R-1..R-3: triad-anchor vocabulary, home / relative-major start, weighted
+// R-1..R-3: triad-anchor vocabulary, home / relative start, weighted
 // length and side draws) from the engine of that lane, with this script (run
 // once, output committed, script itself not checked in):
 //
@@ -208,7 +208,7 @@ const EASY_POOL_SIZES = {
 
 test("sequences match the approved golden table on every built-in deck", () => {
   // R-9 (2026-10-04): sequences() is the BASIC pool - loops over the triad
-  // anchors starting on home or (minor home only) the relative major - so
+  // anchors starting on home or (minor home only) the relative start - so
   // the approved table is the home-start SUBSET of the pool, in the pool's
   // own order; the whole pool's size is the §4 table, and sequences(deck, 4)
   // exists.
@@ -243,7 +243,7 @@ test("sequences match the approved golden table on every built-in deck", () => {
 /* -------------------------------------------------------------- S1-3 */
 
 test("every sequence starts on an anchor and every step connects, including back to the first chord", () => {
-  // R-1/R-9 (2026-10-04): the start is the home anchor or the relative-major
+  // R-1/R-9 (2026-10-04): the start is the home anchor or the relative-start
   // anchor, every card is in the BASIC vocabulary (an anchor), roots are
   // distinct, every pair connects and the last chord wraps to the FIRST
   // chord at every length 2..4.
@@ -256,7 +256,7 @@ test("every sequence starts on an anchor and every step connects, including back
     const seen = new Set();
     for (const length of [2, 3, 4]) {
       for (const seq of host(E.sequence.sequences(deck, length))) {
-        assert.ok(starts.includes(seq[0]), `sequence ${seq} does not start on home or the relative major`);
+        assert.ok(starts.includes(seq[0]), `sequence ${seq} does not start on home or the relative start`);
         for (const idx of seq) assert.ok(anchorsList.includes(idx), `sequence ${seq} uses non-anchor ${idx}`);
         for (const idx of seq) assert.ok(vocab.includes(idx), `sequence ${seq} uses ${idx}, outside the BASIC vocabulary`);
         const roots = seq.map((i) => rootPc(deck, i));
@@ -280,7 +280,7 @@ test("every sequence starts on an anchor and every step connects, including back
   // (home,B,C) triple it offers already loops back), so it is the only thing
   // that would catch an implementation that dropped the loop-back check.
   // Under R-9 the pool holds only the home-start rotation (C major home, so
-  // no relative-major start): [home,B] at length 2; at length 3 and 4
+  // no relative start): [home,B] at length 2; at length 3 and 4
   // nothing, since no three anchors form a loop. (The triad-only pool is one
   // loop, under MIN_BASIC_POOL, so R-3 widens the vocabulary to every anchor
   // - which changes nothing here, since Fdim never loops.)
@@ -473,7 +473,7 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
 test("pick excludes prev before choosing a length", () => {
   // A synthetic deck where home, B and C are pairwise connected (home-B and
   // home-C by a shared tone, B-C by a shared tone), so under R-9 (home start;
-  // C major home has no relative-major start) sequences(deck,2) is both
+  // C major home has no relative start) sequences(deck,2) is both
   // home-start pairs and sequences(deck,3) both home-start permutations;
   // with three anchors there is no length-4 sequence. Two of each is enough
   // to exercise the exclusion-before-length-draw and no-rejection-loop
@@ -654,11 +654,11 @@ test("S6: Amy's rows - A1-A8 BASIC, A9-A10 MEDIUM on Pygmy; A3/A10 MEDIUM on Ama
   assert.strictEqual(Math.round(1 / mediumOdds(cells, a10cell)), 1083);
 });
 
-test("R-9: every rotation of a BASIC sequence that starts on home or the relative major is also in the pool", () => {
+test("R-9: every rotation of a BASIC sequence that starts on home or the relative start is also in the pool", () => {
   const E = engine();
   const pool = host(E.sequence.sequences(PYGMY, 4)).map((q) => q.join(","));
   assert.ok(pool.includes("0,37,8,43"), "Fm Db Ab Eb missing");
-  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-major rotation) missing");
+  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-start rotation) missing");
   assert.ok(!pool.includes("37,8,43,0"), "Db Ab Eb Fm starts off home");
   assert.ok(!pool.includes("43,0,37,8"), "Eb Fm Db Ab starts off home");
   for (const deck of [HIJAZ, PYGMY, AMARA]) {
@@ -670,7 +670,7 @@ test("R-9: every rotation of a BASIC sequence that starts on home or the relativ
         for (let r = 1; r < seq.length; r += 1) {
           const rot = [...seq.slice(r), ...seq.slice(0, r)];
           assert.strictEqual(keys.includes(rot.join(",")), starts.includes(rot[0]),
-            `${deck.id}: rotation ${rot} of ${seq} is in the pool iff it starts on home or the relative major`);
+            `${deck.id}: rotation ${rot} of ${seq} is in the pool iff it starts on home or the relative start`);
         }
       }
     }
@@ -1970,7 +1970,10 @@ test("S2: 300 public pick() deals per tier classify as their tier and keep the s
 // M-1..M-5 on one deck's shape run. `strictHome` adds M > H on the home-start
 // rate (TR-6: asserted on Pygmy and Amara only). Every measured deck deals
 // HARD under the broad R-7 (TR-7 superseded); S3 asserts that.
-function assertMonotonic(E, label, deck, run, strictHome) {
+// `expectRegister` adds the one side of M-3 that can fail (B = M = 0 <= H): a
+// deck whose HARD deals are measured to carry non-anchor register cards must
+// show H > 0. Eligibility is stated per deck by the caller, not derived.
+function assertMonotonic(E, label, deck, run, strictHome, expectRegister) {
   const I = E.sequence._internal;
   const B = run.basic;
   const M = run.intermediate;
@@ -1994,7 +1997,7 @@ function assertMonotonic(E, label, deck, run, strictHome) {
   assert.ok(B.home > M.home, `${label} M-5: BASIC home ${B.home} !> MEDIUM ${M.home}`);
   assert.ok(M.meanLen < H.meanLen, `${label} M-1: MEDIUM ${M.meanLen} !< HARD ${H.meanLen}`);
   assert.ok(M.nonAnchor < H.nonAnchor, `${label} M-2: MEDIUM ${M.nonAnchor} !< HARD ${H.nonAnchor}`);
-  assert.ok(H.nonAnchorRegister >= 0, `${label} M-3: HARD`);
+  if (expectRegister) assert.ok(H.nonAnchorRegister > 0, `${label} M-3: HARD deals no non-anchor register card`);
   assert.ok(B.home > H.home, `${label} M-5: BASIC home ${B.home} !> HARD ${H.home}`);
   if (strictHome) assert.ok(M.home > H.home, `${label} M-5: MEDIUM home ${M.home} !> HARD ${H.home}`);
 }
@@ -2002,9 +2005,11 @@ function assertMonotonic(E, label, deck, run, strictHome) {
 test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sweep deck", () => {
   const E = engine();
   const runs = builtinShapes();
-  assertMonotonic(E, "hijaz", HIJAZ, runs.hijaz, false);
-  assertMonotonic(E, "pygmy", PYGMY, runs.pygmy, true);
-  assertMonotonic(E, "amara", AMARA, runs.amara, true);
+  // Pygmy is the one deck whose HARD deals carry non-anchor register cards
+  // (tier-rebalance section 2: 20.3% of HARD chords).
+  assertMonotonic(E, "hijaz", HIJAZ, runs.hijaz, false, false);
+  assertMonotonic(E, "pygmy", PYGMY, runs.pygmy, true, true);
+  assertMonotonic(E, "amara", AMARA, runs.amara, true, false);
 
   const { full, sweep, reviewer, registerAnchor, registerHome } = generated();
   const rows = [
@@ -2018,7 +2023,7 @@ test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sw
     const S = full.sequence;
     if (S._internal.homeAnchor(row.deck, S.anchors(row.deck)) === null) continue;
     const run = shapeRun(full, row.deck, 300);
-    assertMonotonic(full, row.label, row.deck, run, false);
+    assertMonotonic(full, row.label, row.deck, run, false, false);
     measured += 1;
   }
   assert.strictEqual(measured, 37 + 4 + 2 - 3, "every sweep deck with a home anchor is measured");
