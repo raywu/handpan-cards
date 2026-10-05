@@ -57,7 +57,11 @@ minor pan WITH Bb, and her major set is in F major, the relative major.
   that root exists (sus4, dim or power chord). "Missing" = no card on that
   root at all.
 
-## 4. What the EASY generator can emit
+## 4. What the EASY generator can emit (pre-lane, superseded by section 11)
+
+Sections 4, 5 and 9 describe the engine BEFORE PR #233 (`claude/easy-tier-amy`,
+merged as main 71ba20d). They are kept as the baseline; section 11 holds the
+rerun against the merged engine.
 
 `pickBasic` (`src/engine/sequence.js`): length 2 or 3; first chord is the
 home anchor; one anchor per root (maj/min > sus4 > dim > power, at most three
@@ -203,10 +207,12 @@ Mapping:
 
 Axes, per deck, per row:
   A. EASY reachability: is the resolved card sequence in
-     HPE.sequence.sequences(deck, 2) or (deck, 3)? If not, list every
-     failing rule: length > 3; first chord not the home anchor; a repeated
+     HPE.sequence.sequences(deck, 2), (deck, 3) or (deck, 4)? If not, list
+     every failing rule: length > 4; first chord not an anchor; a repeated
      root; a card that is not an anchor; a consecutive pair (including the
-     wrap from last to first at length 3) that fails connects().
+     wrap from last to first at every length) that fails connects().
+     For an EASY verdict report odds 1 / (3 x pool size at the row's length).
+     (Rules as of PR #233; before it EASY was length 2-3, home-anchor start.)
   B. Tier reachability: HPE.sequence.tierOf(deck, cards) when every card
      resolves, plus the wrap-around connects() check makeAccept applies.
      Report EASY / MEDIUM / HARD / NONE / GAP.
@@ -263,3 +269,59 @@ calls `sequences`, `tierOf`, `buildConnectMatrix`, `anchors`, samples
 with `dfsFindAll` at a 5e7 node budget. HARD pools at length 6 exceed the
 node heap on Hijaz (28.9 million sequences) and were not counted for Pygmy or
 Amara; no verdict depends on them.
+
+Section 11 used a second probe (scratchpad `amy_eval2.js`, not committed):
+the same resolution and sampling, with axis A checked against
+`sequences(deck, 2|3|4)` and the current failing rules, and MEDIUM / HARD
+pools counted only where a row landed there (none did).
+
+## 11. Rerun after PR #233 (main 71ba20d, 2026-10-04)
+
+Section 8's prompt rerun against the merged EASY tier: lengths 2, 3 or 4
+drawn evenly; any anchor may start; every length wraps to its first chord.
+EASY pools (len 2 / 3 / 4): Hijaz 28 / 96 / 264, Pygmy 42 / 210 / 840,
+Amara 20 / 60 / 120. Odds = 1 / (3 x pool at the row's length).
+
+| id | Amy | Pygmy | Amara | Hijaz |
+|---|---|---|---|---|
+| A1 | i VI III VII | Fm Db Ab Eb: EASY, 1 in 2,520 | Dm Bb F C: GAP (no Bb) | GAP (no A, no E) |
+| A2 | i v VI VII | Fm Cm Db Eb: EASY, 1 in 2,520 | Dm Am Bb C: GAP (no Bb) | GAP (no A) |
+| A3 | i III VII iv | Fm Ab Eb Bbm: EASY, 1 in 2,520 | Dm F C ~Gsus4: EASY, 1 in 360 | GAP (no E) |
+| A4 | i VII VI v | Fm Eb Db Cm: EASY, 1 in 2,520 | Dm C Bb Am: GAP (no Bb) | GAP (no A) |
+| A5 | i VII v VI | Fm Eb Cm Db: EASY, 1 in 2,520 | Dm C Am Bb: GAP (no Bb) | GAP (no A) |
+| A6 | I IV V | Ab Db Eb: EASY, 1 in 630 | F Bb C: GAP (no Bb) | C# ~F#sus4 ~G#°: EASY, 1 in 288 |
+| A7 | I V vi IV | Ab Eb Fm Db: EASY, 1 in 2,520 | F C Dm Bb: GAP (no Bb) | GAP (no Bbm) |
+| A8 | I vi IV V | Ab Fm Db Eb: EASY, 1 in 2,520 | F Dm Bb C: GAP (no Bb) | GAP (no Bbm) |
+| A9 | IV iii ii I | Db Cm Bbm Ab: EASY, 1 in 2,520 | Bb Am ~Gsus4 F: GAP (no Bb) | GAP (no Ebm) |
+| A10 | ii V I | Bbm Eb Ab: EASY, 1 in 630 | ~Gsus4 C F: EASY, 1 in 180 | GAP (no Ebm) |
+
+Before and after:
+
+| deck | section 5 (pre-lane) | section 11 |
+|---|---|---|
+| Pygmy | 0 EASY, 5 MEDIUM, 3 HARD, 2 NONE | 10 EASY, all exact |
+| Amara | 0 EASY, 1 MEDIUM, 1 NONE, 8 GAP | 2 EASY (A3, A10, Gsus4 for Gm), 8 GAP |
+| Hijaz | 1 EASY (A6), 9 GAP | 1 EASY (A6), 9 GAP |
+
+Coverage is unchanged from section 5 (it depends on the pans, not the tier):
+Pygmy 10 exact; Amara 0 exact, 2 with a substitute, 8 missing Bb; Hijaz 0
+exact, 1 with substitutes, 9 missing (A, E, Bbm, Ebm).
+
+Axis D is unchanged from section 6 on the reference side (13 step, 6 third,
+9 fourth/fifth, 0 tritone of 28). Anchor pairs admitted by `connects()`,
+by class: Pygmy step 14, third 14, fourth/fifth 12, tritone 2, none refused;
+Amara step 6, third 6, fourth/fifth 8, none refused; Hijaz step 8, third 10,
+fourth/fifth 6, tritone 4, two thirds refused (D° <-> F#sus4).
+
+Sampling check, 3,000 `pick()` calls per tier per deck with `mulberry32(7)`,
+no refusals, EASY lengths 955 / 1,022 / 1,023:
+Pygmy EASY 840 distinct sequences, Amy hits A1 x3, A2, A3, A4, A6 x5, A10 x4;
+Amara EASY 200 distinct (the whole pool), hits A3 x9, A10 x18; Hijaz EASY 382
+distinct, hits A6 x9. MEDIUM and HARD: 0 hits on every deck, consistent with
+no row classifying there.
+
+What this says about the deferred MEDIUM question: no row lands in MEDIUM or
+HARD on any deck. Every row that resolves is EASY, and every miss is a pitch
+class the pan lacks (Bb on Amara; A, E, Bbm, Ebm on Hijaz), which no tier
+rule can reach. This reference list gives no measured target for "MEDIUM
+takes Amy's chords".
