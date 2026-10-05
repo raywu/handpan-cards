@@ -31,6 +31,8 @@ and `tests/e2e.test.js`; there is no file-ownership boundary to split on.
 - No engine, deck data, geometry or print-PDF change. No README change other
   than the mutant count.
 - Nothing from the ideas list.
+- No Amy label, tag or marking on any deck or card, in the app or in print
+  (owner, 2026-10-05). Amy appears only as the two Resources links.
 
 ## 2. Current state (anchors, not line numbers)
 
