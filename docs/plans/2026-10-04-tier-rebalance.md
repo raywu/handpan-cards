@@ -56,17 +56,17 @@ Band = the assertion in `tests/sequence.test.js` (section 7, test S1).
 
 | axis | BASIC target (band) | measured | MEDIUM target (band) | measured | HARD target (band) | measured |
 |---|---|---|---|---|---|---|
-| length distribution | 2/3/4 = 40/40/20 (each +-3 pp) | 40.9/39.7/19.4 on all three | 3/4 = 60/40 (+-3 pp) | 61.6/38.4, 61.6/38.4, 61.3/38.7 | 4/5/6 = 33/33/33 (+-3 pp) | 34.2/33.5/32.3, 33.6/33.7/32.6, 33.3/34.8/31.9 |
-| mean length | 2.8 | 2.79 x3 | 3.4 | 3.38, 3.38, 3.39 | 5.0 | 4.98, 4.99, 4.99 |
-| home-anchor start | 80% (+-3 pp); 100% when no secondary start | 81.6 / 81.6 / 100.0 | 40% (+-4 pp) on a deck with home-rooted colour cards | 40.5 / 40.5 / 26.7 (Hijaz: R-4 note) | free, no band; asserted only by the monotonicity rule | 15.5 / 33.7 / 37.3 |
-| non-anchor chords (of chords) | 0% exactly | 0.0 x3 | 20% (+-4 pp) | 19.6 / 19.6 / 19.5 | >= 60% | 80.7 / 81.7 / 73.3 |
+| length distribution | 2/3/4 = 40/40/20 (each +-3 pp) | 40.9/39.7/19.4 on all three | 3/4 = 60/40 (+-3 pp) | 61.6/38.4, 61.6/38.4, 61.3/38.7 | 4/5/6 = 33/33/33 (+-3 pp) | 33.3/33.2/33.4, 33.8/33.7/32.5, 33.1/33.8/33.1 |
+| mean length | 2.8 | 2.79 x3 | 3.4 | 3.38, 3.38, 3.39 | 5.0 | 5.00, 4.99, 5.00 |
+| home-anchor start | 80% (+-3 pp); 100% when no secondary start | 81.6 / 81.6 / 100.0 | 40% (+-4 pp) on a deck with home-rooted colour cards | 40.5 / 40.5 / 26.7 (Hijaz: R-4 note) | free, no band; monotonicity rule only | 16.0 / 32.8 / 34.3 |
+| non-anchor chords (of chords) | 0% exactly | 0.0 x3 | 20% (+-4 pp) | 19.6 / 19.6 / 19.5 | >= 60% | 80.2 / 79.2 / 70.4 |
 | pure-triad deals | 100% exactly | 100 x3 | 33% (+-4 pp) | 33.8 / 33.8 / 34.0 | 0% exactly | 0.0 x3 |
 | colour family split (of colour deals) | n/a | - | equal among non-empty families (+-4 pp each) | Pygmy 48.6 seventh / 51.4 susPower (no "other"); Amara 33.6/32.5/33.9; Hijaz 33.4/34.3/32.4 | not weighted; recorded only | - |
-| register voicings (of chords) | 0% exactly | 0 x3 | 0% exactly | 0 x3 | <= 33.4% (`registerCount*3 <= len` per deal) | 23.6 / 0.0 / 0.0 (today 40.3 on Pygmy) |
-| extended-card deals | 0% | 0 | 0% | 0 | 100% exactly | 100 x3 (today 94 / 71 / 49) |
-| diminished-anchor chords (of chords) | 0% exactly, except under the R-3 fallback | 0 / 0 / 39.0 (Hijaz fallback) | free, recorded | 11.6 / 0 / 32.8 | free | 2.9 / 0 / 12.7 |
+| register voicings (of chords) | 0% exactly | 0 x3 | 0% exactly | 0 x3 | <= 33.4% (`registerCount*3 <= len` per deal) | 20.3 / 0.0 / 0.0 (today 40.3 on Pygmy) |
+| extended-card deals | 0% | 0 | 0% | 0 | recorded, no share band; per deal the exact predicate is "(>= 1 extended) OR (>= 2 non-anchor)" | 84.3 / 69.0 / 47.0 (today 94 / 71 / 49) |
+| diminished-anchor chords (of chords) | 0% exactly, except under the R-3 fallback | 0 / 0 / 39.0 (Hijaz fallback) | free, recorded | 11.6 / 0 / 32.8 | free | 3.0 / 0.0 / 14.2 |
 | bottom-shell deals (Pygmy only) | recorded | 80.8 | recorded | 98.4 | recorded | 99.4 |
-| distinct deals in 3,000 | recorded | 164 / 30 / 71 | recorded | 1849 / 957 / 855 | recorded | 2999 / 2999 / 2990 |
+| distinct deals in 3,000 | recorded | 164 / 30 / 71 | recorded | 1849 / 957 / 855 | recorded | 3000 / 2999 / 2992 |
 
 **N and standard error.** At N = 3,000 the binomial SE of a share p is
 sqrt(p(1-p)/N): 0.9 pp at p = 0.4, 0.7 pp at p = 0.2, 0.3 pp at p = 0.03.
@@ -91,8 +91,21 @@ are 4 loops: `reviewer G3`/`G#3`, length 4 share there is 0 and the band is
 not applied). The home-start band is asserted on every deck with a home
 anchor. The MEDIUM family band applies only to families with a non-empty
 cell on that deck (Pygmy has no "other" cards; the probe's split is 48.6 /
-51.4 over two families, inside +-4 of 50/50). The register and extended
-bands are exact predicates per deal and apply everywhere HARD deals.
+51.4 over two families, inside +-4 of 50/50). The register bound and the
+"(>= 1 extended) OR (>= 2 non-anchor)" predicate are exact per deal and
+apply everywhere HARD deals.
+
+HARD columns re-measured 2026-10-04 under the owner decision "Broaden HARD
+everywhere" (R-7), probe `scratchpad/rebalance_probe4.js` with
+`HARD_RULE=broad`, N = 3,000, seed 7. Sampler: 0 fall-throughs of 512 draws
+on every built-in and custom deck. Custom decks (`parseSeed` +
+`select.build`), HARD: D Kurd 9 dealt 3000/3000, 0 extended cards, extended
+deals 0.0%, non-anchor 70.1%; C Major 9 dealt 3000/3000, 0 extended,
+non-anchor 69.5%; D Integral 8 dealt 3000/3000, extended deals 62.0%,
+non-anchor 77.3%. Sweep (300 draws/tier): HARD nulls 0 on every row;
+reviewer (G3)/(A3)/(G#3) now deal HARD (home 55.7/39.0/35.0, extended 0.0).
+Monotonicity flags identical to probe3 (h! on top-heavy and reviewer rows,
+as before).
 
 ## 3. Rules (R-1 .. R-10) and numbered decisions
 
@@ -212,38 +225,38 @@ colour card there is one of eleven; `reviewer G3` deals 21.2%).
   of the three decks (expected table in S4); mutant `sqr_12` (sus tested
   after 7: `C#7sus4` becomes seventh).
 
-**R-7 HARD gate (owner 5; decision TR-5).** A sequence is HARD iff: length
-4-6; not MEDIUM and not BASIC (classification order unchanged); at least
-one chord is EXTENDED, meaning a NON-ANCHOR card that has > 4 fields OR
-carries a register voicing (`!isAnchor && (fields > 4 || register)`, the
-probe's predicate verbatim; a register-labelled ANCHOR is not extended, it
-is MEDIUM vocabulary under D-14 and is counted only by the register bound
-below); and `registerCount * 3 <= length` over EVERY chord, anchors
-included (0 of 4, 1 of 4-5, 2 of 6). (Eng review R2, codex P1.) Otherwise
-`classifyTier` returns null. HARD keeps today's 512-draw sampler with the
-new accept (0 fallbacks to DFS in 9,000 built-in deals); start set is the
-pool; lengths drawn evenly among those not proven empty (D-3 unchanged).
-- TR-5 (owner 5, recorded as a numbered decision): a 4-6 chord sequence
-  that fails MEDIUM and has no extended card is dealt by no tier and
-  `tierOf` returns null, as D-15 already does for length 3. `sqd_09` and
-  `sqd_14` (catch-all bounds) are re-anchored on the new predicate.
-- Decision TR-7: a deck with NO extended card reports HARD empty through the
-  existing `NO_TIER_SEQUENCE` path (the app already shows the tier-named
-  message, `index.html` near the `NO_TIER_SEQUENCE` branch of the deal
-  function). The sweep has three such rows: `reviewer (G3)`, `(A3)`,
-  `(G#3)` (12 chords, 0 extended cards): 1,000/1,000 nulls on HARD. The
-  generated-deck test at `tests/sequence.test.js` "every tier deals its own
-  tier ... under 50ms" must list them as the exact HARD-empty set, the way
-  it lists the three `NO_HOME_CHORD` rows today. Alternative: fall back to
-  today's catch-all on such decks; rejected because it makes HARD's shape
-  deck-dependent, which is the thing this plan removes.
-- Measured: Pygmy register 23.6% of chords (today 40.3%), extended 100%;
-  Amara extended 100% (5 extended cards: Dm9 Dm11 F6/9 Fmaj9 C6/9); Hijaz
-  extended 100% (2 cards: C#7b9 Bm6/9, which start 26.1% of HARD deals).
-- Pinned by: S1 (extended 100%, register predicate), tierOf goldens;
-  mutants `sqr_13` (extended requirement dropped), `sqr_14` (register bound
-  dropped: Pygmy register share returns to ~40%), `sqr_15` (catch-all
-  restored for length 4-6).
+**R-7 HARD gate (owner 5; owner decision 2026-10-04 "Broaden HARD
+everywhere"; decision TR-5).** A sequence is HARD iff: length 4-6; not
+MEDIUM and not BASIC (classification order unchanged); AND (at least one
+chord is EXTENDED, meaning a NON-ANCHOR card that has > 4 fields OR carries a
+register voicing (`!isAnchor && (fields > 4 || register)`), OR at least TWO
+chords are non-anchor cards (`!isAnchor`, counted per position)); AND
+`registerCount * 3 <= length` over EVERY chord, anchors included (0 of 4, 1
+of 4-5, 2 of 6). A register-labelled ANCHOR is neither extended nor
+non-anchor; it is MEDIUM vocabulary under D-14 and is counted only by the
+register bound. (Eng review R2, codex P1.) Otherwise `classifyTier` returns
+null. HARD keeps today's 512-draw sampler with the new accept (0 fallbacks to
+DFS in 9,000 built-in deals); start set is the pool; lengths drawn evenly
+among those not proven empty (D-3 unchanged). The rule is the same on every
+deck, built-in or generated.
+- TR-5 (restated): a 4-6 chord sequence that fails MEDIUM, has no extended
+  card and has at most ONE non-anchor card is dealt by no tier and `tierOf`
+  returns null, as D-15 already does for length 3. `sqd_09` and `sqd_14`
+  (catch-all bounds) are re-anchored on the new predicate.
+- TR-7 (superseded by the owner, 2026-10-04): no deck reports HARD empty
+  because it lacks an extended card. A deck with no extended card deals HARD
+  from the two-non-anchor branch; HARD is empty only where no 4-6 sequence
+  meets the gate, which no sweep row does.
+- Measured: Pygmy register 20.3% of chords (today 40.3%), extended deals
+  84.3%; Amara extended deals 69.0% (5 extended cards: Dm9 Dm11 F6/9 Fmaj9
+  C6/9); Hijaz extended deals 47.0% (2 cards: C#7b9 Bm6/9).
+- Pinned by: S1 (per-deal predicate, register bound), S7, the S8 null test,
+  tierOf goldens; mutants `sqr_13` (register bound dropped: Pygmy register
+  share returns to ~40%), `sqr_14` (catch-all restored for length 4-6),
+  `sqr_15` (two-non-anchor branch dropped: S7 red, reviewer rows and Kurd go
+  HARD-empty), `sqr_16` (`>= 2` relaxed to `>= 1`: S8 null case red),
+  `sqr_17` (extended branch dropped: a fixed one-extended-card-plus-anchors
+  example stops classifying "advanced").
 
 **R-8 Classification order.** `classifyTier` stays BASIC, then MEDIUM, then
 HARD, then null; `tierOf` is the public wrapper. The tiers no longer nest
@@ -434,16 +447,22 @@ engine change and red on main for the stated reason:
   `sequences(PYGMY, len)`; A9, A10 `tierOf === "intermediate"` and present in
   `mediumCells(PYGMY)`; Amara A3/A10 MEDIUM, Hijaz A6 BASIC (substitute
   rows); odds computed from cell sizes and asserted at the TR-10 bounds.
-- **S7 HARD-empty decks.** The generated-deck test lists `reviewer (G3)`,
-  `(A3)`, `(G#3)` as exactly the rows returning `NO_TIER_SEQUENCE` on
-  "advanced" (every seed), alongside the three `NO_HOME_CHORD` rows.
+- **S7 HARD on decks with no extended card.** The generated-deck test lists
+  ONLY the three `NO_HOME_CHORD` rows as null on "advanced"; `reviewer (G3)`,
+  `(A3)`, `(G#3)` (0 extended cards) deal HARD on every seed, and every
+  dealt sequence has >= 2 non-anchor cards. A custom-scale case builds D
+  Kurd 9 (`parseSeed` + `select.build`) and asserts HARD deals with 0
+  extended cards.
 - **S8 restated existing tests.** EASY pool sizes (28/96/264 etc. -> section
   4); "length is drawn 2, 3 or 4 evenly" and the 6,000-deal 3 pp test ->
   40/40/20; "tiers nest" -> R-8; "R8 rotations" -> R-9; "§2 migration table"
   -> the length-4 loop counts re-measured under the new gates (basic count
   = `sequences(deck, 4).length`, the rest by `tierOf`, including null);
-  "tierOf returns null for a sequence ADVANCED can never deal" extended
-  with a 4-chord two-colour no-extended sequence (TR-5); DFS budget tests
+  "tierOf returns null for a sequence ADVANCED can never deal" is extended
+  with BOTH: a 5-chord sequence with exactly ONE non-anchor, non-extended
+  card (null: one colour card, not MEDIUM by length, not HARD by the gate),
+  and a 4-chord sequence with TWO non-anchor non-extended cards (tierOf
+  "advanced", the positive side of the new branch) (TR-5); DFS budget tests
   gain the `MEDIUM_ENUM_BUDGET` bound (R-10) and keep `DFS_NODE_BUDGET` for
   HARD; "every BASIC anchor is in the INTERMEDIATE pool" unchanged;
   "INTERMEDIATE deals a register-labelled anchor" unchanged (D-14).
@@ -534,15 +553,11 @@ concrete failure scenario.
 - Risk: Hijaz MEDIUM home start 26.7% (R-4 note). The owner may prefer a
   higher home weight on decks with few non-dim anchors; the weight is one
   constant and the band test will show the effect.
-- Risk (product, flagged for the owner; eng review R1): under TR-5/TR-7 a
-  user-generated deck with no extended card (no non-anchor card over 4
-  fields and no register voicing; three of the sweep's reviewer rows, all
-  12-chord pans) has NO HARD tier: the HARD button shows the existing
-  `NO_TIER_SEQUENCE` message. Today such decks get a catch-all HARD. The
-  review kept TR-7 because the owner chose "Extended, register bounded" as
-  HARD's definition and a catch-all would make HARD deck-dependent again;
-  the alternative (catch-all only on decks with zero extended cards) is one
-  predicate in `classifyTier` if the owner wants it back.
+- Risk (product): under the broad gate the HARD extended-deal share on the
+  built-ins falls from today's 94 / 71 / 49 to 84.3 / 69.0 / 47.0 (Pygmy /
+  Amara / Hijaz), because two-colour-card sequences without an extended card
+  now qualify. Owner accepted this to give every deck, including D Kurd and
+  C Major customs, a HARD tier.
 - Risk: MEDIUM enumeration cost on phones (R-10): 19 ms in Node is an
   estimated 60-100 ms on a low-end phone per MEDIUM tap. Not measured; if a
   user reports lag on MEDIUM, TR-9's rejected per-deck cache is the fix.
@@ -564,12 +579,12 @@ the table and the Amy table re-measured.
 | TR-2 | BASIC tiny-pool fallback | `MIN_BASIC_POOL = 12`; widen to all anchors | refuse; or widen only when empty |
 | TR-3 | MEDIUM start set | non-diminished anchor or home-rooted card | triad anchors only (Amara A10 -> NONE) |
 | TR-4 | colour families | susPower (`/sus/`, `/^[A-G][#b]?5$/`), seventh (`/7/`), other; equal share among non-empty | fold "other" into seventh |
-| TR-5 | HARD not a catch-all | 4-6 chord non-MEDIUM sequence with no extended card -> `tierOf` null | keep catch-all |
+| TR-5 | HARD not a catch-all | 4-6 chord non-MEDIUM sequence with no extended card AND at most one non-anchor card -> `tierOf` null (owner, 2026-10-04) | keep catch-all |
 | TR-6 | home-start monotonicity | B > M and B > H per deck everywhere; M > H on Pygmy and Amara only | HARD home-side weight |
-| TR-7 | deck with no extended card | HARD -> `NO_TIER_SEQUENCE` (sweep G3/A3/G#3 listed in the test) | catch-all on such decks |
+| TR-7 | deck with no extended card | SUPERSEDED (owner, 2026-10-04): HARD deals via the two-non-anchor branch on every deck | `NO_TIER_SEQUENCE` on such decks |
 | TR-8 | `sequences()` semantics | the dealt BASIC pool; R8 rotations superseded; face digests regenerated | all-anchor loop set + new `basicPool()` |
 | TR-9 | MEDIUM enumeration | once per `pick()`, no cache, `MEDIUM_ENUM_BUDGET = 60,000`; tests drive `_internal` cells | per-deck cache |
-| TR-10 | A9 odds | accept 1 in 6,750; acceptance restated to "A9 better than 1 in 10,000" | raise 4/pure weight. The outside reviewer (codex P2) showed joint cell weights that meet the ORIGINAL 1-in-2,000 for both A9 and A10: put 27.3% of all MEDIUM draws on the 540-sequence `4/pure/other` cell and 6.7% on the 130-sequence `3/pure/other` cell (A9 ~1 in 1,978, A10 ~1 in 1,940, pure still 34%). Not adopted under AFK: it makes pure deals 80% length-4 and off-home, which cuts against owner decision 4 (lengths 60/40 inside every kind) for two Amy rows; recorded for the owner, one constant table to change |
+| TR-10 | A9 odds | accept 1 in 6,750; acceptance restated to "A9 better than 1 in 10,000" | raise 4/pure weight. The outside reviewer (codex P2) showed joint cell weights that meet the ORIGINAL 1-in-2,000 for both A9 and A10: put 27.3% of all MEDIUM draws on the 540-sequence `4/pure/other` cell and 6.7% on the 130-sequence `3/pure/other` cell (A9 ~1 in 1,978, A10 ~1 in 1,940, pure still 34%). Not adopted under AFK: it makes pure deals 80% length-4 and off-home, which cuts against owner decision 4 (lengths 60/40 inside every kind) for two Amy rows; recorded for the owner, one constant table to change. CONFIRMED by the owner 2026-10-04: keep 60/40 lengths, A9 1 in 6,750 |
 | TR-11 | substitute Amy rows | measured, must not be NONE, exempt from "same tier as Pygmy" | hold them to Pygmy's tier |
 | TR-12 | register monotonicity | non-decreasing (H may be 0 on decks without register cards) | strict |
 | TR-13 | M-3 measure | register share among NON-ANCHOR chords (register anchors are BASIC/MEDIUM vocabulary; all-chord share is non-zero on `REGISTER_HOME`) | all-chord share, and drop register anchors from BASIC/MEDIUM vocabulary (breaks D-14 and R-1) |
@@ -628,7 +643,9 @@ steps, no reduction.
   zero-extended decks (one predicate in `classifyTier`, M-4 then holds
   trivially on those decks).
 - State: auto-answered A. Accepted scope: section 9 risk added; TR-7
-  unchanged. History: raised by this review, not by codex.
+  unchanged. History: raised by this review, not by codex. Owner answered
+  D3 on 2026-10-04: broaden HARD everywhere (R-7 above). R1 is resolved; the
+  section 9 risk is restated.
 
 ### R2: register definitions were inconsistent (codex P1, second finding)
 - Finding: `[HIGH] (confidence: 10/10)` plan R-7 and M-3. R-7 said "non-anchor
@@ -691,7 +708,7 @@ steps, no reduction.
   TR-10** (recommended): the joint weights make pure deals 80% length-4 and
   off-home, against owner decision 4 (60/40 lengths inside every kind).
   Recorded in TR-10 for the owner; one constant table to change. State:
-  recorded, not applied.
+  recorded, not applied. Owner confirmed 2026-10-04.
 
 ### 13.2 Scope challenge
 1. Smallest change that meets the owner's five decisions: the seven rules
