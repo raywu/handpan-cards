@@ -66,10 +66,13 @@
 # body on a patch this large - the same failure mode as the 2026-10-02
 # refresh above.
 # Refreshed 2026-10-03 (D2 step 4): regenerated whole by hand against the two-heading Practice group (RP-22).
+# Refreshed 2026-10-05 (lane menu-resources): the Resources group gained its
+# second row (the two Amy links); the moved copy was regenerated from the
+# current element. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1031,6 +1031,71 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1058,6 +1058,83 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -118,16 +121,19 @@ diff --git a/index.html b/index.html
 +    </div>
 +  </div>
 +  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
-+       amendments 1-7): three outbound links, styled as .mode (no new colour
++       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): five
++       outbound links in two rows, styled as .mode (no new colour
 +       or typeface, N15). They deliberately carry no onclick - a link click
 +       must NOT call closePanel() (amendment 3), unlike the print buttons
 +       above: the user comes back from the new tab to the still-open menu.
 +       Joined into panelStops()/the Tab trap below (amendment 1). -->
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Resources</h3>
-+    <!-- Plan risk "no scroll budget", fallback 1: a .modebar-style row (same
-+         pattern as the Practice buttons) rather than three stacked 44px
-+         rows - stacked overflowed the 320x568 fit test by 18px. -->
++    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
++         pattern as the Practice buttons) rather than stacked 44px rows -
++         stacked overflowed the 320x568 fit test by 18px. Row one holds the
++         three sites, row two (class duo: one line, labels wrap inside their
++         boxes) the two Amy Naylor videos. -->
 +    <div class="modebar">
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 +         target="_blank" rel="noopener">HANDPANER</a>
@@ -136,12 +142,21 @@ diff --git a/index.html b/index.html
 +      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
 +         target="_blank" rel="noopener">HTC</a>
 +    </div>
++    <div class="modebar duo">
++      <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
++         aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
++         target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
++      <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
++         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
++         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
++    </div>
 +  </div>
 +</div>
++
  </header>
  
  <main>
-@@ -1236,71 +1301,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1263,82 +1340,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -190,16 +205,19 @@ diff --git a/index.html b/index.html
 -    </div>
 -  </div>
 -  <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
--       amendments 1-7): three outbound links, styled as .mode (no new colour
+-       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): five
+-       outbound links in two rows, styled as .mode (no new colour
 -       or typeface, N15). They deliberately carry no onclick - a link click
 -       must NOT call closePanel() (amendment 3), unlike the print buttons
 -       above: the user comes back from the new tab to the still-open menu.
 -       Joined into panelStops()/the Tab trap below (amendment 1). -->
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Resources</h3>
--    <!-- Plan risk "no scroll budget", fallback 1: a .modebar-style row (same
--         pattern as the Practice buttons) rather than three stacked 44px
--         rows - stacked overflowed the 320x568 fit test by 18px. -->
+-    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
+-         pattern as the Practice buttons) rather than stacked 44px rows -
+-         stacked overflowed the 320x568 fit test by 18px. Row one holds the
+-         three sites, row two (class duo: one line, labels wrap inside their
+-         boxes) the two Amy Naylor videos. -->
 -    <div class="modebar">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 -         target="_blank" rel="noopener">HANDPANER</a>
@@ -207,6 +225,14 @@ diff --git a/index.html b/index.html
 -         target="_blank" rel="noopener">DING &amp; TONES</a>
 -      <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
 -         target="_blank" rel="noopener">HTC</a>
+-    </div>
+-    <div class="modebar duo">
+-      <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
+-         aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
+-         target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
+-      <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
+-         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
+-         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 -    </div>
 -  </div>
 -</div>

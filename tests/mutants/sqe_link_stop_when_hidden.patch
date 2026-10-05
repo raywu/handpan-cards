@@ -16,9 +16,9 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -8828,7 +8828,7 @@ function panelStops() {
-           // Eng review amendment 1: the three Resources links join the Tab
-           // trap after the print controls, in DOM order.
-           ...settingsPanel.querySelectorAll("#res-handpaner, #res-dingandtones, #res-trainingcards")]
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')]
 -    .filter(isStop);
 +    .filter(el => el && !el.disabled);
  }
