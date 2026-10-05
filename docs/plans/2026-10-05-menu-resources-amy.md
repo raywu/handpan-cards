@@ -309,6 +309,12 @@ real fonts (macOS), cells the fit tests assert; over = scrollHeight - clientHeig
 | 740x340 | S | 9 | 56 | +47 | res-amy-progressions, res-amy-bottom |
 | 812x330 | S | 1 | 48 | +47 | res-amy-progressions, res-amy-bottom |
 
+AD8 shipped: `#settings-panel .mode{text-align:center}` (the duo rule's own
+centring removed) and `text-align:center; text-align-last:center` on the
+`.prints` controls. No height or width moved (the fit and T-EDGE tests pass
+unchanged, both font modes). `.mode` outside the panel (the Edit sheet, the
+trigger) is untouched because the rule is scoped to the panel.
+
 Not run: the Linux fallback-font numbers (CI runner), so the `fallback-linux`
 rows of the T-EDGE tables would be derived from CI messages, not measured here.
 

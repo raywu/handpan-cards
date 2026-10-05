@@ -1,0 +1,14 @@
+# kills: every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value
+# suite: node --test --test-name-pattern every.button.and.link.in.the.settings.panel.centres.its.label tests/e2e.test.js
+# menu-resources AD8. Drops the panel's .mode text-align:center, so a wrapped label (DING & TONES at 320) is left-aligned again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -259,7 +259,6 @@ a.mode{text-decoration:none}
+    ragged pair sat side by side. */
+ .modebar .mode{flex:1 1 0}
+ /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
+-#settings-panel .mode{text-align:center}
+ /* The two Amy links share ONE row on every viewport, wrapping their labels
+    inside the link box (menu-resources AD7); no other row takes this class. */
+ .modebar.duo{flex-wrap:nowrap}

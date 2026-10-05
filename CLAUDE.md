@@ -304,7 +304,8 @@ this by attaching per-instrument images.
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
   labels wrap inside their boxes). They are links only, never on a deck or card,
   and join `panelStops()` through `a.mode[id^="res-"]`. The CI `panel-fit`
-  oracle allows `res-*` controls 64px of growth and nothing else.
+  oracle allows `res-*` controls 64px of growth and nothing else. Every panel control centres its label, wrapped or not
+  (`#settings-panel .mode`, and the paper select's value).
 - **Card copy is English-only.** The bilingual German/English subtitles
   inherited from the reference deck (DUR/MOLL/VERMINDERT etc.) were
   rewritten to English; useful qualifiers and equivalences kept

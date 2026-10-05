@@ -11,6 +11,6 @@ diff --git a/index.html b/index.html
  /* A5 (audit): NAME->NOTES and NOTES->NAME were sized by their own text, so a
     ragged pair sat side by side. */
 -.modebar .mode{flex:1 1 0}
+ /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
+ #settings-panel .mode{text-align:center}
  /* The two Amy links share ONE row on every viewport, wrapping their labels
-    inside the link box (menu-resources AD7); no other row takes this class. */
- .modebar.duo{flex-wrap:nowrap}
