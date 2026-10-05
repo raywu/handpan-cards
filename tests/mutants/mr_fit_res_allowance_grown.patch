@@ -1,0 +1,15 @@
+# kills: panel fit: the Resources allowance is 64, owed only for a res- control the base lacks
+# suite: node --test --test-name-pattern panel.fit..the.Resources.allowance.is.64 tests/app.test.js
+# AD7 menu-resources. The constant is doubled.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -59,7 +59,7 @@ function headingAllowance(baseHas, candHas) {
+ // control the base lacks may grow that much. It reaches rule 1 and rule 3 for the
+ // NEW res- controls only: rule 2 and every non-Resources control are judged exactly
+ // as before, and the allowance expires when the base has the row.
+-const RES_ALLOWANCE_PX = 64;
++const RES_ALLOWANCE_PX = 128;
+ const isRes = (key) => key.startsWith("res-");
+ function resAllowance(baseControls, candControls) {
+   const added = Object.keys(candControls).some((k) => isRes(k) && !(k in baseControls));
