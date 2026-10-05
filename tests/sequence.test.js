@@ -9,7 +9,7 @@
 // RE-CAPTURED on 2026-10-04 (docs/plans/2026-10-04-easy-tier-amy.md,
 // R1-R8: EASY lengths 2..4, any-anchor start), and RE-CAPTURED AGAIN on
 // 2026-10-04 for the tier rebalance (docs/plans/2026-10-04-tier-rebalance.md
-// R-1..R-3: triad-anchor vocabulary, home / relative-major start, weighted
+// R-1..R-3: triad-anchor vocabulary, home / relative start, weighted
 // length and side draws) from the engine of that lane, with this script (run
 // once, output committed, script itself not checked in):
 //
@@ -208,7 +208,7 @@ const EASY_POOL_SIZES = {
 
 test("sequences match the approved golden table on every built-in deck", () => {
   // R-9 (2026-10-04): sequences() is the BASIC pool - loops over the triad
-  // anchors starting on home or (minor home only) the relative major - so
+  // anchors starting on home or (minor home only) the relative start - so
   // the approved table is the home-start SUBSET of the pool, in the pool's
   // own order; the whole pool's size is the §4 table, and sequences(deck, 4)
   // exists.
@@ -243,7 +243,7 @@ test("sequences match the approved golden table on every built-in deck", () => {
 /* -------------------------------------------------------------- S1-3 */
 
 test("every sequence starts on an anchor and every step connects, including back to the first chord", () => {
-  // R-1/R-9 (2026-10-04): the start is the home anchor or the relative-major
+  // R-1/R-9 (2026-10-04): the start is the home anchor or the relative-start
   // anchor, every card is in the BASIC vocabulary (an anchor), roots are
   // distinct, every pair connects and the last chord wraps to the FIRST
   // chord at every length 2..4.
@@ -256,7 +256,7 @@ test("every sequence starts on an anchor and every step connects, including back
     const seen = new Set();
     for (const length of [2, 3, 4]) {
       for (const seq of host(E.sequence.sequences(deck, length))) {
-        assert.ok(starts.includes(seq[0]), `sequence ${seq} does not start on home or the relative major`);
+        assert.ok(starts.includes(seq[0]), `sequence ${seq} does not start on home or the relative start`);
         for (const idx of seq) assert.ok(anchorsList.includes(idx), `sequence ${seq} uses non-anchor ${idx}`);
         for (const idx of seq) assert.ok(vocab.includes(idx), `sequence ${seq} uses ${idx}, outside the BASIC vocabulary`);
         const roots = seq.map((i) => rootPc(deck, i));
@@ -280,7 +280,7 @@ test("every sequence starts on an anchor and every step connects, including back
   // (home,B,C) triple it offers already loops back), so it is the only thing
   // that would catch an implementation that dropped the loop-back check.
   // Under R-9 the pool holds only the home-start rotation (C major home, so
-  // no relative-major start): [home,B] at length 2; at length 3 and 4
+  // no relative start): [home,B] at length 2; at length 3 and 4
   // nothing, since no three anchors form a loop. (The triad-only pool is one
   // loop, under MIN_BASIC_POOL, so R-3 widens the vocabulary to every anchor
   // - which changes nothing here, since Fdim never loops.)
@@ -473,7 +473,7 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
 test("pick excludes prev before choosing a length", () => {
   // A synthetic deck where home, B and C are pairwise connected (home-B and
   // home-C by a shared tone, B-C by a shared tone), so under R-9 (home start;
-  // C major home has no relative-major start) sequences(deck,2) is both
+  // C major home has no relative start) sequences(deck,2) is both
   // home-start pairs and sequences(deck,3) both home-start permutations;
   // with three anchors there is no length-4 sequence. Two of each is enough
   // to exercise the exclusion-before-length-draw and no-rejection-loop
@@ -654,11 +654,11 @@ test("S6: Amy's rows - A1-A8 BASIC, A9-A10 MEDIUM on Pygmy; A3/A10 MEDIUM on Ama
   assert.strictEqual(Math.round(1 / mediumOdds(cells, a10cell)), 1083);
 });
 
-test("R-9: every rotation of a BASIC sequence that starts on home or the relative major is also in the pool", () => {
+test("R-9: every rotation of a BASIC sequence that starts on home or the relative start is also in the pool", () => {
   const E = engine();
   const pool = host(E.sequence.sequences(PYGMY, 4)).map((q) => q.join(","));
   assert.ok(pool.includes("0,37,8,43"), "Fm Db Ab Eb missing");
-  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-major rotation) missing");
+  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-start rotation) missing");
   assert.ok(!pool.includes("37,8,43,0"), "Db Ab Eb Fm starts off home");
   assert.ok(!pool.includes("43,0,37,8"), "Eb Fm Db Ab starts off home");
   for (const deck of [HIJAZ, PYGMY, AMARA]) {
@@ -670,7 +670,7 @@ test("R-9: every rotation of a BASIC sequence that starts on home or the relativ
         for (let r = 1; r < seq.length; r += 1) {
           const rot = [...seq.slice(r), ...seq.slice(0, r)];
           assert.strictEqual(keys.includes(rot.join(",")), starts.includes(rot[0]),
-            `${deck.id}: rotation ${rot} of ${seq} is in the pool iff it starts on home or the relative major`);
+            `${deck.id}: rotation ${rot} of ${seq} is in the pool iff it starts on home or the relative start`);
         }
       }
     }
