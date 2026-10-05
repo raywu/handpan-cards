@@ -939,6 +939,11 @@ Every deviation from sections 0-13 and every decision the lane took alone.
     ~6-12 ms, and the whole suite runs in 21,903 ms for 43 tests, under main's
     baseline. The S1 cut was therefore REVERTED: S1 draws all three tiers
     3,000 times, as section 2 specifies. No other plan count changed.
+    Measured in CI at 801c01d (run 37269871209, green): the whole js step
+    (all 15 suites, e2e included) took ~119 s, against 253 s on main. The
+    mutation-gate shards took 4m15s, 4m26s, 5m28s and 5m49s (shard 3), every
+    clean-tree baseline was green with the 50 ms bound unchanged, and all 646
+    mutants were killed. `tests/sequence.test.js` ran 43 tests, 0 failed.
 14. **`sqd_12_dfs_leaf_skips_accept` re-pointed.** Its suite was the
     generated-deck tier test. Under the broad R-7 gate the HARD sampler's
     512 random draws always find a deal on those decks, so the DFS fallback
