@@ -446,6 +446,14 @@ Auto-decisions taken under AFK (owner may reverse any of them):
     (106px) predate this rule.
   - Play-test page: the "Amy's ten on this pan" block stays.
 
+- AD8. Owner instruction, 2026-10-05, after seeing screenshots of the PR
+  build: "All buttons should center text. Letter for example is not
+  centered." Every control in `#settings-panel` centres its label, on one
+  line or wrapped: the `.mode` buttons and links (a wrapped label such as
+  DING & TONES at 320 is left-aligned today), the `.prints` buttons, and
+  the paper `select`, whose shown value must be centred too. In scope for
+  this lane and this PR. No size, colour, typeface or row-height change.
+
 NOT in scope: the 420px cap (O3) unless the owner says so; select text
 alignment in the widened paper select; the tier row's content weighting;
 any `TODOS.md` item (none concerns the menu).
