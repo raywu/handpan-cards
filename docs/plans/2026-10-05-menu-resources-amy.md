@@ -1,6 +1,6 @@
 # Amy Naylor videos in Resources, and flush menu rows
 
-Status: DRAFT 2026-10-05. Not started. Execution waits for the owner's go.
+Status: DRAFT 2026-10-05, eng-reviewed (section 7a). Not started. Execution waits for the owner's go.
 Lane: `claude/menu-resources`, single serial lane, own worktree, base
 origin/main `efb682c`. One lane because every change lands in `index.html`
 and `tests/e2e.test.js`; there is no file-ownership boundary to split on.
@@ -201,3 +201,140 @@ All in `tests/e2e.test.js`. Red before any `index.html` change.
 ## 8. Execution notes
 
 (empty until the lane runs)
+
+## 7a. Eng review amendments (2026-10-05, /plan-eng-review)
+
+Binding on the lane. Where an amendment and sections 3-6 disagree, the
+amendment wins.
+
+- E1 (tests, P1). T1/T4/T5 undercount the hard-coded three-id sites in
+  `tests/e2e.test.js`. Every one of these must move to five ids, in DOM
+  order, in the red commit: the Tab-reach loop under "Eng review amendment
+  1"; the fit test's `resIds` deepStrictEqual and its `res-` offscreen
+  filter; the `RESOURCES` const and its count test; the three further
+  `resIds` blocks in the landscape, sidebar and "746" fit cells; the
+  `a[id^='res-']` click capture; the selector list ending
+  `#res-trainingcards`; `panelOverflow`'s `resIds`; and the expected
+  Tab-order array ending `"res-trainingcards"`. Step 2 starts with
+  `grep -n "res-" tests/e2e.test.js` and the commit message states the count
+  of sites changed. Prefer deriving the lists from `RESOURCES` over five more
+  literals.
+- E2 (mutants, P1). The refresh list is wider than `qr_res_*` and
+  `e_panel_moved_into_header`. Thirteen patches touch these anchors:
+  `e_a11y_both_faces_exposed`, `e_panel_moved_into_header`,
+  `e_menu_keys_leak_to_card`, `ms_js_breakpoint_drift`, `qr_res_link_inert`,
+  `qr_res_wrong_href`, `qr_res_link_not_a_stop`, `qr_res_no_noopener`,
+  `sqe_link_stop_when_hidden`, `u_ding_octave_dropped`,
+  `u_inner_mark_unprinted`, `u_bar_dropped`, `uid_panelstops_misses_tier`.
+  Run `git apply --check` on all thirteen after step 3. `qr_res_link_not_a_stop`
+  removes ids from `panelStops()` by name; with the 3.2 selector it must be
+  rewritten against the selector and still die for the right reason
+  (memory: hand-regenerated mutants drift).
+- E3 (design, P2). The `panelStops()` selector in 3.2 must not pick up
+  `#seq-source-link` (it is `a` but not `.mode` and has no `res-` id; it is
+  already listed by id earlier in the stop order). T5 asserts it appears
+  exactly once.
+- E4 (docs, P2). The HTML comments above the Resources group say "three
+  outbound links" and "Plan risk 'no scroll budget', fallback 1". Step 3
+  rewrites both to describe two rows and the O1 outcome. No new comment
+  elsewhere.
+- E5 (design, P2, closed by reading). Could the print row re-divide while a
+  PDF builds? No: `downloadDeckPDF` only toggles `disabled` on the row's
+  buttons (opacity .5) and never changes a label, so widths under
+  `flex:1 1 auto` do not move. T2 additionally asserts the row is still
+  flush with both buttons `disabled`.
+- E6 (tests, P2). T2's 0.5px tolerance is applied to
+  `getBoundingClientRect()` against the parent's content box (client box
+  minus computed padding), not `offsetWidth`, so fractional flex widths do
+  not flake. T2 skips `hidden` controls and rows with zero rendered controls.
+- E7 (tests, P2, superseded in part by C4). Real fonts. CI blocks web fonts, so a green T2/T3/T4 says
+  nothing about Marcellus/Nunito Sans metrics. The existing real-font cells
+  (`panelOverflow`) are the only real-font evidence; the lane adds the Amy
+  row's "two controls on one line at 320" assertion there as well, because a
+  wider real-font `AMY: BOTTOM NOTES` wrapping to two lines is the realistic
+  failure.
+- E8 (scope, P3). Section 2's widths (117/124/72, 329px) are estimates.
+  Step 1 replaces them with measured values in section 8; no assertion is
+  written from an estimate.
+- E9 (scope, P3). `.modebar` keeps `justify-content:center`; it is inert
+  under `flex:1 1 0` and is not touched.
+
+Outside voice (Codex, read-only, 2026-10-05). Four findings, the two P1s
+checked against the code and confirmed. All four are accepted:
+
+- C1 (tests, P1, confirmed). The T-EDGE tests (`edgeTest` with the
+  `MAIN_NEEDED_*` and `MAIN_GROUPS_*` tables, portrait, landscape and
+  sidebar) assert that panel groups 1-3 keep main's heights within 0.5px.
+  The Resources group grows by one row, so every cell fails regardless of
+  T4. Step 1 measures the new group heights and needed heights for every
+  cell and font mode through the same measuring function (`window.__pf`,
+  `tools/probe/panel_fit.js`); step 2 updates the tables in the red commit.
+  If the oracle itself hard-codes the Resources row, `tools/probe/` joins
+  the lane's ownership.
+- C2 (design, P1, confirmed). O1's contract "nothing but `res-*` below the
+  fold" is false for cells that already scroll: the real-font bounce-5 cases
+  (740x340 S, 568x312 A) scroll today with other controls below the fold and
+  assert "every control reachable by scrolling". O1 is restated: a cell that
+  scrolled on main keeps its existing reachability assertion with the new
+  measured amount; a cell that newly scrolls asserts the measured amount
+  within 1px and that only `res-*` links are below the fold. Step 1 lists
+  which cells are which. If a newly scrolling cell pushes a non-Resources
+  control below the fold, the lane stops for the owner.
+- C3 (tests, P2). `flex:1 1 0` still honours each link's automatic minimum
+  width, so `AMY: PROGRESSIONS` can hold its link wider than its sibling in
+  the 208px sidebar. T3's equal-width check also runs at 320x568, the
+  1024x700 sidebar and one landscape cell, fallback and real fonts. If it
+  fails, the fix is `min-width:0` on `.modebar .mode`, which is in scope.
+- C4 (tests, P2). E7's "two controls on one line" does not detect a label
+  that wraps inside its 44px box. E7 is replaced: each Amy link's text is a
+  single line (one client rect from a Range over its text node), asserted in
+  the real-font cells at 320 and in the sidebar. If the sidebar cannot hold
+  either label on one line, that is an O2 input for the owner, not a lane
+  decision.
+
+Auto-decisions taken under AFK (owner may reverse any of them):
+
+- AD1. gstack upgrade prompt (1.87.6.0 to 1.91.25.0): "Not now", snoozed 24h.
+- AD2. `/office-hours` design-doc prerequisite: skipped, the request is a
+  bounded UI change with stated acceptance.
+- AD3. Outside voice (Codex): run automatically as the review's standard step; findings C1-C4 accepted because each is a factual gap, none changes scope.
+- AD4. Scope: accepted as drafted, one serial lane. No reduction offered;
+  the three goals share two files.
+- O1, O2, O3 are NOT auto-decided. They change what the owner sees and the
+  lane does not start without the owner's go.
+
+NOT in scope: the 420px cap (O3) unless the owner says so; select text
+alignment in the widened paper select; the tier row's content weighting;
+any `TODOS.md` item (none concerns the menu).
+
+What already exists: `.modebar .mode{flex:1 1 0}` (equal flush rows, no new
+CSS for the Amy row); the 667x375 mode S "only Resources below the fold"
+assertion (the O1 pattern); `qr_res_*` mutants (templates for `mr_amy_*`);
+`panelOverflow` (real-font measurement).
+
+Failure modes:
+
+| failure | test | handled | visible |
+|---|---|---|---|
+| Amy label wraps to two lines under real fonts, row grows 44px+ | E7 | assertion | yes, taller row |
+| panel overflows a cell and a non-Resources control drops below the fold | T4 | assertion | yes |
+| new links missing from the Tab trap, focus escapes the panel | T5, `mr_stops_omit_amy` | assertion | keyboard users |
+| print row re-divides while a PDF builds | T2 disabled-state assertion | cannot happen today (E5) | would be visible |
+| stale mutant applies to nothing and "survives" | mutation gate in CI | E2 | CI red |
+
+No row is both untested and silent.
+
+Parallelization: none. One lane, two files.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|---|---|---|---|---|---|
+| Eng Review | `/plan-eng-review` | Architecture and tests (required) | 1 | ISSUES RESOLVED IN PLAN | 9 findings (2 P1, 5 P2, 2 P3), folded in as E1-E9; 0 critical gaps |
+| Outside Voice | Codex | Independent second opinion | 1 | ISSUES RESOLVED IN PLAN | 4 findings (2 P1, 2 P2), folded in as C1-C4 |
+| CEO Review | `/plan-ceo-review` | Scope and strategy | 0 | not run | not needed for a bounded UI change |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | not run | optional; O2 labels and O3 cap are the design calls |
+
+UNRESOLVED: O1 (scroll at tight sizes), O2 (labels), O3 (420px cap) wait
+for the owner. VERDICT: eng review cleared, execution gated on the owner's
+go and O1-O3.
