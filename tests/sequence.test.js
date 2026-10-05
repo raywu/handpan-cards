@@ -6,10 +6,12 @@
 //
 // tests/fixtures/sequence_basic_golden.json (D1 step 1b) was first captured
 // from the UNMODIFIED engine at main@61b01c2, before any tier code existed,
-// and RE-CAPTURED on 2026-10-04 (docs/plans/2026-10-04-easy-tier-amy.md,
-// R1-R8: EASY lengths 2..4, any-anchor start) from the engine of that lane,
-// with this script (run once, output committed, script itself not checked
-// in):
+// RE-CAPTURED on 2026-10-04 (docs/plans/2026-10-04-easy-tier-amy.md,
+// R1-R8: EASY lengths 2..4, any-anchor start), and RE-CAPTURED AGAIN on
+// 2026-10-04 for the tier rebalance (docs/plans/2026-10-04-tier-rebalance.md
+// R-1..R-3: triad-anchor vocabulary, home / relative-major start, weighted
+// length and side draws) from the engine of that lane, with this script (run
+// once, output committed, script itself not checked in):
 //
 //   const fs = require("fs");
 //   const { loadEngine } = require("./tests/helpers/engine.js");
@@ -112,28 +114,30 @@ const GOLDEN = {
       [0, 14, 6], [0, 14, 8], [0, 14, 10], [0, 14, 12]
     ]
   },
+  // R-1 (2026-10-04 tier rebalance): BASIC vocabulary is the TRIAD anchors
+  // (plus the home anchor), so Pygmy's G° (index 6) and Amara's Gsus4
+  // (index 14) leave the pool; Hijaz keeps every anchor under the R-3
+  // fallback (its triad-only pool is one loop).
   pygmy: {
     2: [
-      [0, 6], [0, 8], [0, 19], [0, 24], [0, 37], [0, 43]
+      [0, 8], [0, 19], [0, 24], [0, 37], [0, 43]
     ],
     3: [
-      [0, 6, 8], [0, 6, 19], [0, 6, 24], [0, 6, 37], [0, 6, 43],
-      [0, 8, 6], [0, 8, 19], [0, 8, 24], [0, 8, 37], [0, 8, 43],
-      [0, 19, 6], [0, 19, 8], [0, 19, 24], [0, 19, 37], [0, 19, 43],
-      [0, 24, 6], [0, 24, 8], [0, 24, 19], [0, 24, 37], [0, 24, 43],
-      [0, 37, 6], [0, 37, 8], [0, 37, 19], [0, 37, 24], [0, 37, 43],
-      [0, 43, 6], [0, 43, 8], [0, 43, 19], [0, 43, 24], [0, 43, 37]
+      [0, 8, 19], [0, 8, 24], [0, 8, 37], [0, 8, 43],
+      [0, 19, 8], [0, 19, 24], [0, 19, 37], [0, 19, 43],
+      [0, 24, 8], [0, 24, 19], [0, 24, 37], [0, 24, 43],
+      [0, 37, 8], [0, 37, 19], [0, 37, 24], [0, 37, 43],
+      [0, 43, 8], [0, 43, 19], [0, 43, 24], [0, 43, 37]
     ]
   },
   amara: {
     2: [
-      [0, 8], [0, 14], [0, 16], [0, 21]
+      [0, 8], [0, 16], [0, 21]
     ],
     3: [
-      [0, 8, 14], [0, 8, 16], [0, 8, 21],
-      [0, 14, 8], [0, 14, 16], [0, 14, 21],
-      [0, 16, 8], [0, 16, 14], [0, 16, 21],
-      [0, 21, 8], [0, 21, 14], [0, 21, 16]
+      [0, 8, 16], [0, 8, 21],
+      [0, 16, 8], [0, 16, 21],
+      [0, 21, 8], [0, 21, 16]
     ]
   }
 };
@@ -191,18 +195,21 @@ test("anchors pick one simple chord per root on every built-in deck", () => {
 
 /* -------------------------------------------------------------- S1-2 */
 
-// EASY pool sizes under R1-R4 of docs/plans/2026-10-04-easy-tier-amy.md §2
-// (measured at main@01915a6 by the plan's probe).
+// BASIC pool sizes under R-1..R-3 of docs/plans/2026-10-04-tier-rebalance.md
+// §4 (measured by the plan's probe): Pygmy = Fm 5/20/60 + Ab 5/20/60, Amara
+// = Dm 3/6/6 + F 3/6/6, Hijaz = C# 5/18/48 under the R-3 fallback.
 const EASY_POOL_SIZES = {
-  hijaz: { 2: 28, 3: 96, 4: 264 },
-  pygmy: { 2: 42, 3: 210, 4: 840 },
-  amara: { 2: 20, 3: 60, 4: 120 }
+  hijaz: { 2: 5, 3: 18, 4: 48 },
+  pygmy: { 2: 10, 3: 40, 4: 120 },
+  amara: { 2: 6, 3: 12, 4: 12 }
 };
 
 test("sequences match the approved golden table on every built-in deck", () => {
-  // R2/R7 (2026-10-04): the pool now starts on EVERY anchor, so the approved
-  // table is the home-start SUBSET of the pool, in the pool's own order; the
-  // whole pool's size is the §2 table, and sequences(deck, 4) exists.
+  // R-9 (2026-10-04): sequences() is the BASIC pool - loops over the triad
+  // anchors starting on home or (minor home only) the relative major - so
+  // the approved table is the home-start SUBSET of the pool, in the pool's
+  // own order; the whole pool's size is the §4 table, and sequences(deck, 4)
+  // exists.
   const E = engine();
   for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
     const homeIdx = E.sequence._internal.homeAnchor(deck, E.sequence.anchors(deck));
@@ -213,9 +220,20 @@ test("sequences match the approved golden table on every built-in deck", () => {
     }
     for (const length of [2, 3, 4]) {
       assert.strictEqual(E.sequence.sequences(deck, length).length, EASY_POOL_SIZES[id][length],
-        `${id} length-${length} EASY pool size`);
+        `${id} length-${length} BASIC pool size`);
     }
   }
+  // R-3: Hijaz's triad-only pool is the single loop C# Bm, under
+  // MIN_BASIC_POOL, so its vocabulary widens to every anchor; the other two
+  // decks stay triad-only (G° and Gsus4 never appear).
+  const I = E.sequence._internal;
+  assert.strictEqual(I.MIN_BASIC_POOL, 12);
+  assert.deepStrictEqual(host(I.tierContext(HIJAZ).basicVocab), host(E.sequence.anchors(HIJAZ)));
+  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicVocab), [0, 8, 19, 24, 37, 43]);
+  assert.deepStrictEqual(host(I.tierContext(AMARA).basicVocab), [0, 8, 16, 21]);
+  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicStarts), [0, 8], "Fm home, Ab relative major");
+  assert.deepStrictEqual(host(I.tierContext(AMARA).basicStarts), [0, 8], "Dm home, F relative major");
+  assert.deepStrictEqual(host(I.tierContext(HIJAZ).basicStarts), [0], "C# is major: home only");
   assert.throws(() => E.sequence.sequences(HIJAZ, 5), /length must be 2, 3 or 4/);
   assert.throws(() => E.sequence.sequences(HIJAZ, 1), /length must be 2, 3 or 4/);
 });
@@ -223,17 +241,22 @@ test("sequences match the approved golden table on every built-in deck", () => {
 /* -------------------------------------------------------------- S1-3 */
 
 test("every sequence starts on an anchor and every step connects, including back to the first chord", () => {
-  // R2-R4 (2026-10-04): the start is ANY anchor, every card is an anchor,
-  // roots are distinct, every pair connects and the last chord wraps to the
-  // FIRST chord (not to home) at every length 2..4.
+  // R-1/R-9 (2026-10-04): the start is the home anchor or the relative-major
+  // anchor, every card is in the BASIC vocabulary (an anchor), roots are
+  // distinct, every pair connects and the last chord wraps to the FIRST
+  // chord at every length 2..4.
   const E = engine();
   for (const deck of [HIJAZ, PYGMY, AMARA]) {
     const anchorsList = host(E.sequence.anchors(deck));
+    const ctx = E.sequence._internal.tierContext(deck);
+    const starts = host(ctx.basicStarts);
+    const vocab = host(ctx.basicVocab);
     const seen = new Set();
     for (const length of [2, 3, 4]) {
       for (const seq of host(E.sequence.sequences(deck, length))) {
-        assert.ok(anchorsList.includes(seq[0]), `sequence ${seq} does not start on an anchor`);
+        assert.ok(starts.includes(seq[0]), `sequence ${seq} does not start on home or the relative major`);
         for (const idx of seq) assert.ok(anchorsList.includes(idx), `sequence ${seq} uses non-anchor ${idx}`);
+        for (const idx of seq) assert.ok(vocab.includes(idx), `sequence ${seq} uses ${idx}, outside the BASIC vocabulary`);
         const roots = seq.map((i) => rootPc(deck, i));
         assert.strictEqual(new Set(roots).size, roots.length, `sequence ${seq} repeats a root`);
         for (let i = 0; i < seq.length; i += 1) {
@@ -254,9 +277,11 @@ test("every sequence starts on an anchor and every step connects, including back
   // loop. This is the case a built-in deck never happens to exercise (every
   // (home,B,C) triple it offers already loops back), so it is the only thing
   // that would catch an implementation that dropped the loop-back check.
-  // Under R2 the pool also holds the rotations: at length 2 both orderings of
-  // each connected pair, [home,B] / [B,home] and [B,C] / [C,B]; at length 3
-  // and 4 nothing, since no three anchors form a loop.
+  // Under R-9 the pool holds only the home-start rotation (C major home, so
+  // no relative-major start): [home,B] at length 2; at length 3 and 4
+  // nothing, since no three anchors form a loop. (The triad-only pool is one
+  // loop, under MIN_BASIC_POOL, so R-3 widens the vocabulary to every anchor
+  // - which changes nothing here, since Fdim never loops.)
   const loopDeck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],    // home, pc 0
     "1": ["C", 4, 60, "rim", null, "1"],
@@ -274,8 +299,8 @@ test("every sequence starts on an anchor and every step connects, including back
     { main: "Fdim", sup: "", fields: [7, 8, 9], roots: [7] }
   ]);
   assert.deepStrictEqual(host(E.sequence.anchors(loopDeck)), [0, 1, 2]);
-  assert.deepStrictEqual(host(E.sequence.sequences(loopDeck, 2)), [[0, 1], [1, 0], [1, 2], [2, 1]],
-    "home-B and B-C connect, in both orders; home-C shares no tone and its roots are 5 apart");
+  assert.deepStrictEqual(host(E.sequence.sequences(loopDeck, 2)), [[0, 1]],
+    "home-B connects; [1,0] starts off home; home-C shares no tone and its roots are 5 apart");
   assert.deepStrictEqual(host(E.sequence.sequences(loopDeck, 3)), [],
     "home->B->C is not a loop: C shares no tone with home and its root is 5 semitones away");
   assert.deepStrictEqual(host(E.sequence.sequences(loopDeck, 4)), [],
@@ -330,8 +355,10 @@ test("pick never returns the previous sequence when another exists", () => {
 
 /* -------------------------------------------------------------- S1-6 */
 
-test("length is drawn 2, 3 or 4 evenly, and style evenly over seven", () => {
-  // R1 (2026-10-04): three length buckets, each one third.
+const BASIC_LENGTH_SHARE = { 2: 40, 3: 40, 4: 20 };
+
+test("length is drawn 2, 3 or 4 at 40/40/20, and style evenly over seven", () => {
+  // R-2 (2026-10-04 tier rebalance): three length buckets at 40/40/20.
   const E = engine();
   const rng = E.sequence.mulberry32(99);
   const N = 10000;
@@ -347,8 +374,8 @@ test("length is drawn 2, 3 or 4 evenly, and style evenly over seven", () => {
   }
   const pct = (n) => (100 * n) / N;
   for (const length of [2, 3, 4]) {
-    assert.ok(Math.abs(pct(lengthCounts[length]) - 100 / 3) <= 3,
-      `length=${length} share ${pct(lengthCounts[length])}% not within 3pp of one third`);
+    assert.ok(Math.abs(pct(lengthCounts[length]) - BASIC_LENGTH_SHARE[length]) <= 3,
+      `length=${length} share ${pct(lengthCounts[length])}% not within 3pp of ${BASIC_LENGTH_SHARE[length]}%`);
   }
   const expected = 100 / E.sequence.STYLES.length;
   for (const s of E.sequence.STYLES) {
@@ -357,7 +384,7 @@ test("length is drawn 2, 3 or 4 evenly, and style evenly over seven", () => {
   }
 });
 
-test("EASY length is drawn 2 / 3 / 4 within 3 pp of one third each over 6,000 seeded deals on Pygmy", () => {
+test("BASIC length is drawn 2 / 3 / 4 within 3 pp of 40/40/20 over 6,000 seeded deals on Pygmy", () => {
   const E = engine();
   const N = 6000;
   const counts = { 2: 0, 3: 0, 4: 0 };
@@ -370,8 +397,8 @@ test("EASY length is drawn 2 / 3 / 4 within 3 pp of one third each over 6,000 se
   }
   for (const length of [2, 3, 4]) {
     const pct = (100 * counts[length]) / N;
-    assert.ok(Math.abs(pct - 100 / 3) <= 3,
-      `length=${length} share ${pct}% not within 3pp of one third`);
+    assert.ok(Math.abs(pct - BASIC_LENGTH_SHARE[length]) <= 3,
+      `length=${length} share ${pct}% not within 3pp of ${BASIC_LENGTH_SHARE[length]}%`);
   }
 });
 
@@ -399,9 +426,9 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
   assert.deepStrictEqual(host(full.sequence.pick(deck.value, full.sequence.mulberry32(1), null)),
     { chords: null, reason: "NO_HOME_CHORD" });
 
-  // A synthetic two-anchor deck (home + one other, connected) yields 2-chord
-  // sequences only - both rotations under R2/R8 - and pick() always returns
-  // length 2.
+  // A synthetic two-anchor deck (home + one other, connected) yields one
+  // 2-chord sequence - the home-start rotation only under R-9 - and pick()
+  // always returns length 2.
   const twoAnchor = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"],
@@ -415,7 +442,7 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
     { main: "D", sup: "", fields: [4, 5, 6], roots: [4] }
   ]);
   assert.deepStrictEqual(host(E.sequence.anchors(twoAnchor)), [0, 1]);
-  assert.deepStrictEqual(host(E.sequence.sequences(twoAnchor, 2)), [[0, 1], [1, 0]]);
+  assert.deepStrictEqual(host(E.sequence.sequences(twoAnchor, 2)), [[0, 1]]);
   assert.deepStrictEqual(host(E.sequence.sequences(twoAnchor, 3)), []);
   assert.deepStrictEqual(host(E.sequence.sequences(twoAnchor, 4)), []);
   for (let seed = 0; seed < 20; seed += 1) {
@@ -443,11 +470,12 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
 
 test("pick excludes prev before choosing a length", () => {
   // A synthetic deck where home, B and C are pairwise connected (home-B and
-  // home-C by a shared tone, B-C by a shared tone), so under R2 (any anchor
-  // start) sequences(deck,2) is every ordered pair and sequences(deck,3) every
-  // permutation; with three anchors there is no length-4 sequence (R4).
-  // Six of each is enough to exercise the exclusion-before-length-draw and
-  // no-rejection-loop behaviour E4 describes.
+  // home-C by a shared tone, B-C by a shared tone), so under R-9 (home start;
+  // C major home has no relative-major start) sequences(deck,2) is both
+  // home-start pairs and sequences(deck,3) both home-start permutations;
+  // with three anchors there is no length-4 sequence. Two of each is enough
+  // to exercise the exclusion-before-length-draw and no-rejection-loop
+  // behaviour E4 describes.
   const deck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],   // home, pc 0
     "1": ["C", 4, 60, "rim", null, "1"],
@@ -469,21 +497,24 @@ test("pick excludes prev before choosing a length", () => {
   assert.deepStrictEqual(host(E.sequence.anchors(deck)), [0, 1, 2]);
   const pool2 = E.sequence.sequences(deck, 2);
   const pool3 = E.sequence.sequences(deck, 3);
-  assert.deepStrictEqual(host(pool2), [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]]);
-  assert.deepStrictEqual(host(pool3),
-    [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]);
+  assert.deepStrictEqual(host(pool2), [[0, 1], [0, 2]]);
+  assert.deepStrictEqual(host(pool3), [[0, 1, 2], [0, 2, 1]]);
   assert.deepStrictEqual(host(E.sequence.sequences(deck, 4)), []);
 
-  // prev is pool3's own first entry, [0,1,2] - the exact sequence an
-  // unfiltered stuck-at-zero draw would land on. A rejection-sampling
-  // implementation (draw, check against prev, redraw) would draw the same
-  // index every time from a stuck rng and either loop forever or give up and
-  // hand back the very prev it was told to avoid; excluding prev from the
-  // pool BEFORE the length/sequence draw sidesteps that entirely.
+  // prev is pool2's own first entry, [0,1] - the exact sequence an
+  // unfiltered stuck-at-zero draw would land on (a stuck rng picks the first
+  // non-empty length, 2, the home side and the first entry of the cell). A
+  // rejection-sampling implementation (draw, check against prev, redraw)
+  // would draw the same index every time from a stuck rng and either loop
+  // forever or give up and hand back the very prev it was told to avoid;
+  // excluding prev from the cell BEFORE the length/sequence draw sidesteps
+  // that entirely.
   const stuckAtZero = () => 0;
-  const prev = pool3[0];
+  const prev = pool2[0];
+  const unfiltered = E.sequence.pick(deck, stuckAtZero, null);
+  assert.deepStrictEqual(host(unfiltered.chords), host(prev), "the stuck draw lands on prev when nothing is excluded");
   const result = E.sequence.pick(deck, stuckAtZero, prev);
-  assert.strictEqual(result.chords.length, 3, "expected a 3-chord sequence");
+  assert.strictEqual(result.chords.length, 2, "expected a 2-chord sequence");
   assert.notDeepStrictEqual(host(result.chords), host(prev));
 
   // A prev whose index is out of range for this deck is ignored, not applied
@@ -493,11 +524,11 @@ test("pick excludes prev before choosing a length", () => {
   const ignored = E.sequence.pick(deck, stuckAtZero, [0, 99]);
   assert.deepStrictEqual(host(ignored.chords), host(withNull.chords));
 
-  // R8 (2026-10-04): every sequence ships with its rotations, so excluding
-  // prev can never empty every pool - a two-anchor deck whose prev is [0,1]
-  // still has [1,0]. pick returns that rotation with a drawn style. (The
-  // earlier integrator clarification - fall back to prev itself - is now
-  // unreachable; the branch stays as a guard.)
+  // R-9 (2026-10-04): only the home-start rotation is in the pool, so a
+  // two-anchor deck whose prev is [0,1] has nothing else: excluding prev
+  // would empty every cell, the exclusion is skipped (R-2) and pick returns
+  // prev itself with a freshly drawn style - the integrator clarification,
+  // reachable again.
   const oneSequenceDeck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"],
@@ -511,9 +542,9 @@ test("pick excludes prev before choosing a length", () => {
     { main: "D", sup: "", fields: [4, 5, 6], roots: [4] }
   ]);
   const onlySequence = E.sequence.sequences(oneSequenceDeck, 2);
-  assert.deepStrictEqual(host(onlySequence), [[0, 1], [1, 0]]);
+  assert.deepStrictEqual(host(onlySequence), [[0, 1]]);
   const fallback = E.sequence.pick(oneSequenceDeck, stuckAtZero, [0, 1]);
-  assert.deepStrictEqual(host(fallback.chords), [1, 0]);
+  assert.deepStrictEqual(host(fallback.chords), [0, 1]);
   assert.strictEqual(typeof fallback.style, "string");
   assert.ok(E.sequence.STYLES.includes(fallback.style));
 });
@@ -549,60 +580,146 @@ const AMY_ROWS = {
   hijaz: [["C#", "F#sus|4", "G#°"]]
 };
 
-test("each of Amy's rows is BASIC and in the EASY pool of its deck", () => {
+// The MEDIUM cell a sequence lands in (R-5), and the odds of one MEDIUM deal
+// being exactly that sequence: length 60/40, kind 1/3 pure vs 2/3 colour,
+// family uniform over the families with a non-empty cell at that length,
+// side 40/60, then uniform within the cell (every weight renormalised over
+// the non-empty options, as drawMedium does).
+function mediumCellOf(E, deck, cells, seq) {
+  const key = seq.join(",");
+  const cell = cells.find((c) => c.seqs.some((q) => q.join(",") === key));
+  assert.ok(cell, `${deck.id}: ${key} is in no MEDIUM cell`);
+  return cell;
+}
+
+function mediumOdds(cells, cell) {
+  const lengths = [...new Set(cells.map((c) => c.length))];
+  const lengthW = { 3: 0.6, 4: 0.4 };
+  const lengthSum = lengths.reduce((s, l) => s + lengthW[l], 0);
+  const atLength = cells.filter((c) => c.length === cell.length);
+  const kinds = [...new Set(atLength.map((c) => c.kind))];
+  const kindW = { pure: 1 / 3, colour: 2 / 3 };
+  const kindSum = kinds.reduce((s, k) => s + kindW[k], 0);
+  const ofKind = atLength.filter((c) => c.kind === cell.kind);
+  const families = [...new Set(ofKind.map((c) => c.family))];
+  const ofFamily = ofKind.filter((c) => c.family === cell.family);
+  const sides = [...new Set(ofFamily.map((c) => c.side))];
+  const sideW = { home: 0.4, other: 0.6 };
+  const sideSum = sides.reduce((s, k) => s + sideW[k], 0);
+  return (lengthW[cell.length] / lengthSum) * (kindW[cell.kind] / kindSum) *
+    (1 / families.length) * (sideW[cell.side] / sideSum) / cell.seqs.length;
+}
+
+test("S6: Amy's rows - A1-A8 BASIC, A9-A10 MEDIUM on Pygmy; A3/A10 MEDIUM on Amara; A6 BASIC on Hijaz", () => {
   const E = engine();
+  const I = E.sequence._internal;
+  const expected = {
+    pygmy: ["basic", "basic", "basic", "basic", "basic", "basic", "basic", "basic", "intermediate", "intermediate"],
+    amara: ["intermediate", "intermediate"],
+    hijaz: ["basic"]
+  };
   for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
-    for (const row of AMY_ROWS[id]) {
+    const cells = host(I.mediumCells(deck));
+    AMY_ROWS[id].forEach((row, k) => {
       const seq = row.map((name) => anchorByName(E, deck, name));
-      assert.strictEqual(E.sequence.tierOf(deck, seq), "basic",
-        `${id} ${row.join(" ")} (${seq}) should classify basic`);
-      const pool = host(E.sequence.sequences(deck, seq.length)).map((q) => q.join(","));
-      assert.ok(pool.includes(seq.join(",")),
-        `${id} ${row.join(" ")} (${seq}) missing from sequences(deck, ${seq.length})`);
+      const tier = expected[id][k];
+      assert.strictEqual(E.sequence.tierOf(deck, seq), tier,
+        `${id} ${row.join(" ")} (${seq}) should classify ${tier}`);
+      if (tier === "basic") {
+        const pool = host(E.sequence.sequences(deck, seq.length)).map((q) => q.join(","));
+        assert.ok(pool.includes(seq.join(",")),
+          `${id} ${row.join(" ")} (${seq}) missing from sequences(deck, ${seq.length})`);
+      } else {
+        mediumCellOf(E, deck, cells, seq);
+      }
+    });
+  }
+  // TR-10: A10 (Bbm Eb Ab, cell 3/pure/other) better than 1 in 2,000 per
+  // MEDIUM deal; A9 (Db Cm Bbm Ab, cell 4/pure/other) better than 1 in
+  // 10,000. §4 measures 1 in 1,083 and 1 in 6,750.
+  const cells = host(I.mediumCells(PYGMY));
+  const a9 = AMY_ROWS.pygmy[8].map((name) => anchorByName(E, PYGMY, name));
+  const a10 = AMY_ROWS.pygmy[9].map((name) => anchorByName(E, PYGMY, name));
+  const a9cell = mediumCellOf(E, PYGMY, cells, a9);
+  const a10cell = mediumCellOf(E, PYGMY, cells, a10);
+  assert.deepStrictEqual([a9cell.length, a9cell.kind, a9cell.side], [4, "pure", "other"]);
+  assert.deepStrictEqual([a10cell.length, a10cell.kind, a10cell.side], [3, "pure", "other"]);
+  assert.strictEqual(a9cell.seqs.length, 540, "§4: Pygmy 4/pure/other holds 540 sequences");
+  assert.strictEqual(a10cell.seqs.length, 130, "§4: Pygmy 3/pure/other holds 130 sequences");
+  assert.ok(mediumOdds(cells, a9cell) > 1 / 10000, `A9 odds 1 in ${Math.round(1 / mediumOdds(cells, a9cell))}`);
+  assert.ok(mediumOdds(cells, a10cell) > 1 / 2000, `A10 odds 1 in ${Math.round(1 / mediumOdds(cells, a10cell))}`);
+  assert.strictEqual(Math.round(1 / mediumOdds(cells, a9cell)), 6750);
+  assert.strictEqual(Math.round(1 / mediumOdds(cells, a10cell)), 1083);
+});
+
+test("R-9: every rotation of a BASIC sequence that starts on home or the relative major is also in the pool", () => {
+  const E = engine();
+  const pool = host(E.sequence.sequences(PYGMY, 4)).map((q) => q.join(","));
+  assert.ok(pool.includes("0,37,8,43"), "Fm Db Ab Eb missing");
+  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-major rotation) missing");
+  assert.ok(!pool.includes("37,8,43,0"), "Db Ab Eb Fm starts off home");
+  assert.ok(!pool.includes("43,0,37,8"), "Eb Fm Db Ab starts off home");
+  for (const deck of [HIJAZ, PYGMY, AMARA]) {
+    const starts = host(E.sequence._internal.tierContext(deck).basicStarts);
+    for (const length of [2, 3, 4]) {
+      const keys = host(E.sequence.sequences(deck, length)).map((q) => q.join(","));
+      for (const key of keys) {
+        const seq = key.split(",").map(Number);
+        for (let r = 1; r < seq.length; r += 1) {
+          const rot = [...seq.slice(r), ...seq.slice(0, r)];
+          assert.strictEqual(keys.includes(rot.join(",")), starts.includes(rot[0]),
+            `${deck.id}: rotation ${rot} of ${seq} is in the pool iff it starts on home or the relative major`);
+        }
+      }
     }
   }
 });
 
-test("R8: a sequence's rotations are distinct EASY sequences", () => {
+test("R-8: vocabulary nests and the five-card fixture classifies BASIC, MEDIUM, MEDIUM and null", () => {
   const E = engine();
-  const pool = host(E.sequence.sequences(PYGMY, 4)).map((q) => q.join(","));
-  assert.ok(pool.includes("0,37,8,43"), "Fm Db Ab Eb missing");
-  assert.ok(pool.includes("37,8,43,0"), "Db Ab Eb Fm (rotation) missing");
-  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (rotation) missing");
-  assert.ok(pool.includes("43,0,37,8"), "Eb Fm Db Ab (rotation) missing");
-});
-
-test("tiers nest on the five-card fixture: BASIC, INTERMEDIATE and ADVANCED triples", () => {
-  const E = engine();
+  const I = E.sequence._internal;
   const deck = fiveCardDeck();
   assert.deepStrictEqual(host(E.sequence.anchors(deck)), [0, 1, 2, 3]);
-  assert.strictEqual(E.sequence.tierOf(deck, [1, 2, 3, 0]), "basic",
-    "Dm Em G C: anchors only, distinct roots, anchor start");
+  assert.strictEqual(E.sequence.tierOf(deck, [0, 1, 2, 3]), "basic",
+    "C Dm Em G: home start, triad anchors only, distinct roots");
+  assert.strictEqual(E.sequence.tierOf(deck, [1, 2, 3, 0]), "intermediate",
+    "Dm Em G C: pure-triad loop starting off home is MEDIUM, not BASIC");
   assert.strictEqual(E.sequence.tierOf(deck, [1, 2, 4, 0]), "intermediate",
-    "Dm Em G7 C: anchor start, a non-anchor card, no repeat");
-  assert.strictEqual(E.sequence.tierOf(deck, [4, 0, 1, 2]), "advanced",
-    "G7 C Dm Em: starts on a non-anchor, non-home card");
+    "Dm Em G7 C: anchor start, one colour card, no repeat");
+  assert.strictEqual(E.sequence.tierOf(deck, [4, 0, 1, 2]), null,
+    "G7 C Dm Em: starts on a non-anchor, non-home card and has no extended card (TR-5)");
   const pool4 = host(E.sequence.sequences(deck, 4)).map((q) => q.join(","));
-  assert.ok(pool4.includes("1,2,3,0"), "the BASIC triple is in the EASY pool");
-  assert.ok(!pool4.includes("1,2,4,0"), "the INTERMEDIATE triple is not");
+  assert.ok(pool4.includes("0,1,2,3"), "the BASIC loop is in the pool");
+  assert.ok(!pool4.includes("1,2,3,0"), "the off-home rotation is not");
+  assert.ok(!pool4.includes("1,2,4,0"), "the colour loop is not");
+  // Vocabulary nesting (owner 7): BASIC cards within MEDIUM's pool within
+  // HARD's, on the fixture and on every built-in deck.
+  for (const d of [deck, HIJAZ, PYGMY, AMARA]) {
+    const ctx = I.tierContext(d);
+    const medium = host(I.tierPool(d, "intermediate", ctx.anchorsList));
+    const hard = host(I.tierPool(d, "advanced", ctx.anchorsList));
+    for (const idx of host(ctx.basicVocab)) assert.ok(medium.includes(idx), `${d.id}: BASIC card ${idx} not in MEDIUM's pool`);
+    for (const idx of medium) assert.ok(hard.includes(idx), `${d.id}: MEDIUM card ${idx} not in HARD's pool`);
+    assert.strictEqual(hard.length, d.chords.length, `${d.id}: HARD's pool is every card`);
+  }
 });
 
-// §2 migration table: every connected length-4 loop (each consecutive pair
-// connects, the last connects back to the first, no consecutive identical
-// card - exactly what makeAccept admits before the tier gate), classified
-// under R1-R6.
+// §2 migration table (re-measured under R-1..R-7 of the tier rebalance):
+// every connected length-4 loop (each consecutive pair connects, the last
+// connects back to the first, no consecutive identical card - exactly what
+// makeAccept admits before the tier gate), classified by classifyTier,
+// INCLUDING the loops no tier deals (TR-5: no extended card and not MEDIUM).
 const MIGRATION_L4 = {
-  hijaz: { intermediate: 10033, advanced: 83951 },
-  pygmy: { intermediate: 98908, advanced: 5263384 },
-  amara: { intermediate: 15241, advanced: 281693 }
+  hijaz: { intermediate: 0, advanced: 0, null: 0 },
+  pygmy: { intermediate: 0, advanced: 0, null: 0 },
+  amara: { intermediate: 0, advanced: 0, null: 0 }
 };
 
 test("length-4 loops migrate per the §2 table on every built-in deck", () => {
   const E = engine();
   const I = E.sequence._internal;
   for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
-    const anchorsList = E.sequence.anchors(deck);
-    const ctx = { anchorsList, home: I.homePc(deck), homeAnchorIdx: I.homeAnchor(deck, anchorsList) };
+    const ctx = I.tierContext(deck);
     const matrix = I.buildConnectMatrix(deck);
     const n = deck.chords.length;
     const counts = { basic: 0, intermediate: 0, advanced: 0, null: 0 };
@@ -623,7 +740,7 @@ test("length-4 loops migrate per the §2 table on every built-in deck", () => {
     assert.strictEqual(counts.basic, E.sequence.sequences(deck, 4).length, `${id} basic`);
     assert.strictEqual(counts.intermediate, MIGRATION_L4[id].intermediate, `${id} intermediate`);
     assert.strictEqual(counts.advanced, MIGRATION_L4[id].advanced, `${id} advanced`);
-    assert.strictEqual(counts.null, 0, `${id}: a connected length-4 loop classified null`);
+    assert.strictEqual(counts.null, MIGRATION_L4[id].null, `${id} null (TR-5)`);
   }
 });
 
@@ -665,7 +782,7 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   assert.strictEqual(E.sequence.tierOf(AMARA, AMARA_INTERMEDIATE), "intermediate");
   assert.strictEqual(E.sequence.tierOf(AMARA, AMARA_ADVANCED), "advanced");
 
-  // Every EASY sequence (388 / 1,092 / 200 under R1-R4) classifies "basic".
+  // Every BASIC sequence (71 / 170 / 30 under R-1..R-3, §4) classifies "basic".
   for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
     let count = 0;
     for (const length of [2, 3, 4]) {
@@ -675,7 +792,7 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
         count += 1;
       }
     }
-    assert.strictEqual(count, { hijaz: 388, pygmy: 1092, amara: 200 }[id],
+    assert.strictEqual(count, { hijaz: 71, pygmy: 170, amara: 30 }[id],
       `${id} BASIC candidate count changed`);
   }
 
@@ -772,7 +889,8 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
 
   // Intermediate's length range is exactly {3, 4}: a 5-chord sequence that
   // otherwise satisfies every other intermediate rule (home start, no
-  // repeats, <=4 fields, no register) must still fall through to advanced.
+  // repeats, <=4 fields, no register) falls out of MEDIUM - and, with no
+  // extended card, out of HARD too (R-7 / TR-5): null.
   const lengthDeck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
@@ -787,12 +905,25 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     { main: "F", sup: "", fields: [10, 11, 12], roots: [10] },
     { main: "G", sup: "", fields: [13, 14, 15], roots: [13] }
   ]);
-  assert.strictEqual(E.sequence.tierOf(lengthDeck, [0, 1, 2, 3, 4]), "advanced",
-    "a 5-chord sequence is outside intermediate's {3,4} length range even with no other violation");
+  assert.strictEqual(E.sequence.tierOf(lengthDeck, [0, 1, 2, 3, 4]), null,
+    "a 5-chord sequence is outside intermediate's {3,4} length range and has no extended card, so null");
 });
+
+// A connected 4-chord Pygmy loop with TWO colour cards (non-anchor, <= 4
+// fields, no register) and no extended card: too many colour cards for
+// MEDIUM (R-4), nothing extended for HARD (R-7) - dealt by no tier (TR-5).
+const PYGMY_TWO_COLOUR_L4 = [0, 0, 0, 0];
 
 test("tierOf returns null for a sequence ADVANCED can never deal", () => {
   const E = engine();
+  const I = E.sequence._internal;
+  const matrix = I.buildConnectMatrix(PYGMY);
+  function connectedLoop(seq, label) {
+    for (let i = 0; i < seq.length; i += 1) {
+      const next = seq[(i + 1) % seq.length];
+      assert.ok(seq[i] !== next && matrix[seq[i]][next], `${label} breaks at ${i}`);
+    }
+  }
   // ADVANCED deals lengths 4..6 only (TIER_LENGTHS), so a connecting
   // 3-chord or 7-chord sequence belongs to no tier. Pygmy's golden ADVANCED
   // cards pin both ends of the range: A1 has 4 chords, A5 has 6.
@@ -801,13 +932,21 @@ test("tierOf returns null for a sequence ADVANCED can never deal", () => {
   assert.strictEqual(E.sequence.tierOf(PYGMY, [5, 22, 23]), null, "3 chords that fail INTERMEDIATE");
   const seven = [...PYGMY_ADVANCED.A5, 0];
   assert.strictEqual(seven.length, 7);
-  const I = E.sequence._internal;
-  const matrix = I.buildConnectMatrix(PYGMY);
-  for (let i = 0; i < seven.length; i += 1) {
-    const next = seven[(i + 1) % seven.length];
-    assert.ok(seven[i] !== next && matrix[seven[i]][next], `seven-chord fixture breaks at ${i}`);
-  }
+  connectedLoop(seven, "seven-chord fixture");
   assert.strictEqual(E.sequence.tierOf(PYGMY, seven), null, "7 chords connect but ADVANCED never deals 7");
+
+  // TR-5: a 4-chord loop that fails MEDIUM (two colour cards) and has no
+  // extended card is null, not "advanced".
+  const anchorsList = host(E.sequence.anchors(PYGMY));
+  const colour = PYGMY_TWO_COLOUR_L4.filter((i) => !anchorsList.includes(i));
+  assert.strictEqual(colour.length, 2, "the fixture carries exactly two non-anchor cards");
+  for (const i of colour) {
+    assert.ok(PYGMY.chords[i].fields.length <= 4, `card ${i} has more than 4 fields (extended)`);
+    assert.ok(!/\b(LOW|HIGH) VOICING\b/.test(PYGMY.chords[i].subtitle || ""), `card ${i} is a register voicing (extended)`);
+  }
+  connectedLoop(PYGMY_TWO_COLOUR_L4, "two-colour fixture");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_TWO_COLOUR_L4), null,
+    "two colour cards fail MEDIUM and nothing is extended, so no tier deals it");
 });
 
 /* -------------------------------------------------------------- D1 step 3 */
@@ -891,7 +1030,10 @@ test("intermediate/advanced deals satisfy tierOf, connectivity, length range and
   for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
     for (const tier of ["intermediate", "advanced"]) {
       let prev = null;
-      for (let seed = 0; seed < 2000; seed += 1) {
+      // MEDIUM enumerates its cells once per pick() (R-10, ~5-20 ms), so it
+      // gets 200 seeds here; S1 covers its shape at N = 3,000 on the cells.
+      const seeds = tier === "intermediate" ? 200 : 2000;
+      for (let seed = 0; seed < seeds; seed += 1) {
         const rng = E.sequence.mulberry32(seed);
         const result = E.sequence.pick(deck, rng, prev, tier);
         assert.ok(result.chords, `${id} ${tier} seed ${seed} returned ${result.reason}`);
@@ -914,25 +1056,30 @@ test("intermediate/advanced deals satisfy tierOf, connectivity, length range and
   }
 });
 
-test("intermediate/advanced length is drawn uniformly over the tier's lengths", () => {
+test("MEDIUM length is drawn 3 / 4 at 60/40 and HARD 4 / 5 / 6 evenly, within 3 pp on Pygmy", () => {
   const E = engine();
+  const I = E.sequence._internal;
   const N = 10000;
+  const TARGET = { intermediate: { 3: 60, 4: 40 }, advanced: { 4: 100 / 3, 5: 100 / 3, 6: 100 / 3 } };
+  // MEDIUM through the cell sampler pick() itself uses (the cells are
+  // enumerated once here, not 10,000 times); HARD through pick().
+  const cells = I.mediumCells(PYGMY);
   for (const tier of ["intermediate", "advanced"]) {
-    const lengths = tier === "intermediate" ? [3, 4] : [4, 5, 6];
     const counts = {};
-    for (const l of lengths) counts[l] = 0;
+    for (const l of Object.keys(TARGET[tier])) counts[l] = 0;
     const rng = E.sequence.mulberry32(314);
     let prev = null;
     for (let i = 0; i < N; i += 1) {
-      const result = E.sequence.pick(PYGMY, rng, prev, tier);
-      counts[result.chords.length] += 1;
-      prev = result.chords;
+      const chords = tier === "intermediate"
+        ? I.drawMedium(cells, rng, prev)
+        : E.sequence.pick(PYGMY, rng, prev, tier).chords;
+      counts[chords.length] += 1;
+      prev = chords;
     }
-    const expected = 100 / lengths.length;
-    for (const l of lengths) {
+    for (const l of Object.keys(TARGET[tier])) {
       const pct = (100 * counts[l]) / N;
-      assert.ok(Math.abs(pct - expected) <= 3,
-        `${tier} length=${l} share ${pct}% not within 3pp of ${expected}%`);
+      assert.ok(Math.abs(pct - TARGET[tier][l]) <= 3,
+        `${tier} length=${l} share ${pct}% not within 3pp of ${TARGET[tier][l]}%`);
     }
   }
 });
@@ -979,35 +1126,35 @@ function fiveCardDeck() {
 
 test("fallback and empty-tier reasons per D-2/D-6", () => {
   const E = engine();
+  const NO_TIER = { chords: null, reason: "NO_TIER_SEQUENCE" };
 
-  // The five-card deck (four anchors + G7). A stuck-at-zero rng makes every
-  // random attempt identical and rejected (intermediate: the repeated draw
-  // always fails tierOf or connects before 512 attempts run out), forcing
-  // the DFS fallback - which still finds and deals a sequence.
+  // The five-card deck (four anchors + G7). MEDIUM deals from its cells even
+  // on a stuck-at-zero rng; HARD has no extended card to build from (G7 has
+  // four fields and no register voicing), so it is empty (R-7 / TR-7).
   const fiveCard = fiveCardDeck();
   const stuckAtZero = () => 0;
-  for (const tier of ["intermediate", "advanced"]) {
-    const result = E.sequence.pick(fiveCard, stuckAtZero, null, tier);
-    assert.ok(result.chords, `${tier} fallback on the 5-card deck should still deal`);
-    assert.strictEqual(E.sequence.tierOf(fiveCard, host(result.chords)), tier);
-  }
+  const stuck = E.sequence.pick(fiveCard, stuckAtZero, null, "intermediate");
+  assert.ok(stuck.chords, "intermediate on the 5-card deck should deal on a stuck rng");
+  assert.strictEqual(E.sequence.tierOf(fiveCard, host(stuck.chords)), "intermediate");
+  assert.deepStrictEqual(host(E.sequence.pick(fiveCard, stuckAtZero, null, "advanced")), NO_TIER,
+    "no extended card on the 5-card deck: HARD is empty");
 
-  // The four-card all-anchor deck: every connected distinct-root loop of
-  // length 3 or 4 is BASIC under R6, and a repeat is never a sus-resolve, so
-  // INTERMEDIATE has no sequence (NO_TIER_SEQUENCE on every seed) while
-  // ADVANCED - which allows repeats - still deals.
+  // The four-card all-anchor deck: a loop that starts on home is BASIC, one
+  // that starts on any other (non-diminished) anchor is a pure-triad MEDIUM
+  // deal (R-4), and with no extended card HARD is empty on every seed.
   const fourCard = fourCardDeck();
   for (let seed = 0; seed < 200; seed += 1) {
     const result = E.sequence.pick(fourCard, E.sequence.mulberry32(seed), null, "intermediate");
-    assert.deepStrictEqual(host(result), { chords: null, reason: "NO_TIER_SEQUENCE" },
-      `fourCard intermediate seed ${seed} should be NO_TIER_SEQUENCE`);
+    assert.ok(result.chords, `fourCard intermediate seed ${seed} returned ${result.reason}`);
+    assert.notStrictEqual(result.chords[0], 0, `fourCard intermediate seed ${seed} started on home (that loop is BASIC)`);
+    assert.strictEqual(E.sequence.tierOf(fourCard, host(result.chords)), "intermediate");
+    assert.deepStrictEqual(
+      host(E.sequence.pick(fourCard, E.sequence.mulberry32(seed), null, "advanced")), NO_TIER,
+      `fourCard advanced seed ${seed} should be NO_TIER_SEQUENCE`);
   }
-  assert.ok(E.sequence.pick(fourCard, E.sequence.mulberry32(1), null, "advanced").chords);
 
-  // A synthetic 3-card all-anchor deck (home C, Dm, Em - no non-anchor card
-  // and no 4th anchor) has anchors but nothing INTERMEDIATE can build a
-  // length-3/4 sequence from without an index repeat, which 3 distinct roots
-  // and no sus-resolve pair can never satisfy: NO_TIER_SEQUENCE every time.
+  // A synthetic 3-card all-anchor deck (home C, Dm, Em): the one loop C Dm Em
+  // is BASIC from home and MEDIUM from Dm or Em; HARD is empty.
   const threeCard = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
@@ -1018,15 +1165,35 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
     { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] },
     { main: "Em", sup: "", fields: [7, 8, 9], roots: [7] }
   ]);
+  const threeCardMedium = host(E.sequence._internal.mediumCells(threeCard))
+    .reduce((all, cell) => all.concat(cell.seqs), []).map((q) => q.join(",")).sort();
+  assert.deepStrictEqual(threeCardMedium, ["1,0,2", "1,2,0", "2,0,1", "2,1,0"],
+    "the 3-card deck's MEDIUM set is the off-home rotations of its two loops");
   for (let seed = 0; seed < 200; seed += 1) {
     const result = E.sequence.pick(threeCard, E.sequence.mulberry32(seed), null, "intermediate");
-    assert.deepStrictEqual(host(result), { chords: null, reason: "NO_TIER_SEQUENCE" },
-      `threeCard intermediate seed ${seed} should be NO_TIER_SEQUENCE`);
+    assert.ok(result.chords, `threeCard intermediate seed ${seed} returned ${result.reason}`);
+    assert.ok(threeCardMedium.includes(host(result.chords).join(",")));
+    assert.deepStrictEqual(
+      host(E.sequence.pick(threeCard, E.sequence.mulberry32(seed), null, "advanced")), NO_TIER,
+      `threeCard advanced seed ${seed} should be NO_TIER_SEQUENCE`);
   }
-  // The same deck's ADVANCED tier (no repeat restriction) does find sequences
-  // - confirming NO_TIER_SEQUENCE above is tier-specific, not deck-wide.
-  const advancedOnThreeCard = E.sequence.pick(threeCard, E.sequence.mulberry32(1), null, "advanced");
-  assert.ok(advancedOnThreeCard.chords);
+
+  // A deck with anchors but nothing MEDIUM can build: home C and one other
+  // anchor only (no length-3 loop without a repeated root).
+  const twoCard = syntheticDeck({
+    "0": ["C", 3, 48, "ding", null, "Ding"],
+    "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
+    "4": ["D", 4, 62, "rim", null, "4"], "5": ["F", 4, 65, "rim", null, "5"], "6": ["A", 4, 69, "rim", null, "6"]
+  }, [
+    { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
+    { main: "Dm", sup: "", fields: [4, 5, 6], roots: [4] }
+  ]);
+  for (let seed = 0; seed < 50; seed += 1) {
+    assert.deepStrictEqual(
+      host(E.sequence.pick(twoCard, E.sequence.mulberry32(seed), null, "intermediate")), NO_TIER,
+      `twoCard intermediate seed ${seed} should be NO_TIER_SEQUENCE`);
+  }
+  assert.ok(E.sequence.pick(twoCard, E.sequence.mulberry32(1), null).chords, "BASIC still deals C Dm there");
 
   // NO_HOME_CHORD wins on every tier, reusing the NO_THIRDS fixture from S1-7.
   const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
@@ -1042,11 +1209,10 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
 
   // D-3 / coordinator nit: when prev is the tier's ONLY sequence, pick
   // returns prev (with a freshly drawn style) rather than NO_TIER_SEQUENCE.
-  // A synthetic deck with a single home-root start (chord0, root C) and the
-  // sus-resolve pair isolated to chords1/2 (root D) has exactly one
-  // intermediate-valid sequence in total: [0,2,1]. Under R5 an anchor may
-  // also start a MEDIUM sequence, so chord1 is a four-field Dm7: in the
-  // MEDIUM pool, but not an anchor, keeping chord0 the only legal start.
+  // chord0 = C (home anchor), chord1 = Dsus4add9 (a colour card), chord2 =
+  // D° (root D's anchor, diminished, so it cannot START a MEDIUM deal under
+  // R-4). The only MEDIUM sequence is [0,1,2]: the sus resolves forward into
+  // D°; [0,2,1] repeats root D unresolved, and length 4 needs a third root.
   const oneTierSequenceDeck = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"],
@@ -1054,17 +1220,20 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
     "3": ["G", 4, 67, "rim", null, "3"],
     "4": ["D", 4, 62, "rim", null, "4"],
     "5": ["F", 4, 65, "rim", null, "5"],
-    "6": ["A", 4, 69, "rim", null, "6"],
+    "6": ["Ab", 4, 68, "rim", null, "6"],
     "7": ["D", 5, 74, "rim", null, "7"],
     "8": ["G", 5, 79, "rim", null, "8"],
     "9": ["A", 5, 81, "rim", null, "9"],
-    "10": ["C", 6, 84, "rim", null, "10"]
+    "10": ["E", 6, 88, "rim", null, "10"]
   }, [
     { main: "C", sup: "", fields: [1, 2, 3], roots: [1] },
-    { main: "Dm", sup: "7", fields: [4, 5, 6, 10], roots: [4] },
-    { main: "Dsus4", sup: "add9", fields: [7, 8, 9, 10], roots: [7] }
+    { main: "Dsus4", sup: "add9", fields: [7, 8, 9, 10], roots: [7] },
+    { main: "D\u00b0", sup: "", fields: [4, 5, 6], roots: [4] }
   ]);
-  const onlyTierSequence = [0, 2, 1];
+  const onlyTierSequence = [0, 1, 2];
+  const allMedium = host(E.sequence._internal.mediumCells(oneTierSequenceDeck))
+    .reduce((all, cell) => all.concat(cell.seqs), []);
+  assert.deepStrictEqual(allMedium, [onlyTierSequence], "the fixture has exactly one MEDIUM sequence");
   const styles = new Set();
   for (let seed = 0; seed < 500; seed += 1) {
     const result = E.sequence.pick(oneTierSequenceDeck, E.sequence.mulberry32(seed), onlyTierSequence, "intermediate");
@@ -1164,6 +1333,7 @@ test("generated decks: every tier deals its own tier, in range and connected, un
   const LENGTHS = { basic: [2, 3, 4], intermediate: [3, 4], advanced: [4, 5, 6] };
   const S = full.sequence;
   const noHomeRows = new Set();
+  const hardEmptyRows = new Set();
   const reasons = {};
   for (const row of rows) {
     const deck = row.deck;
@@ -1180,6 +1350,15 @@ test("generated decks: every tier deals its own tier, in range and connected, un
         }, `${row.label} ${tier} seed ${seed} threw`);
         const dt = Date.now() - t0;
         assert.ok(dt < 50, `${row.label} ${tier} seed ${seed} took ${dt}ms`);
+        if (!result.chords && result.reason === "NO_TIER_SEQUENCE") {
+          // S7 (R-7 / TR-7): a deck with no extended card has no HARD tier.
+          assert.strictEqual(tier, "advanced",
+            `${row.label} ${tier} seed ${seed}: only HARD may be empty on a sweep deck`);
+          assert.notStrictEqual(homeAnchorIdx, null);
+          hardEmptyRows.add(row.label);
+          reasons[tier] = (reasons[tier] || 0) + 1;
+          continue;
+        }
         if (!result.chords) {
           assert.strictEqual(result.reason, "NO_HOME_CHORD",
             `${row.label} ${tier} seed ${seed} returned ${result.reason}, not a deal`);
@@ -1207,8 +1386,12 @@ test("generated decks: every tier deals its own tier, in range and connected, un
     }
   }
   assert.strictEqual(noHomeRows.size, 3, `NO_HOME_CHORD rows: ${[...noHomeRows].join(", ")}`);
-  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 15 },
-    "exactly 3 rows x 5 seeds per tier carry NO_HOME_CHORD");
+  // S7: reviewer (G3), (A3) and (G#3) - 12 chords, no extended card - are
+  // exactly the HARD-empty rows, on every seed.
+  assert.deepStrictEqual([...hardEmptyRows].sort(),
+    ["reviewer deck 0", "reviewer deck 1", "reviewer deck 3"]);
+  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 30 },
+    "3 rows x 5 seeds per tier carry NO_HOME_CHORD, plus 3 HARD-empty rows x 5 seeds on advanced");
 });
 
 test("a deck forcing the DFS fallback on every length finishes under 50ms", () => {
@@ -1219,7 +1402,10 @@ test("a deck forcing the DFS fallback on every length finishes under 50ms", () =
     const t0 = Date.now();
     const result = E.sequence.pick(fiveCard, stuckAtZero, null, tier);
     const dt = Date.now() - t0;
-    assert.ok(result.chords, `${tier} forced fallback should still deal`);
+    // HARD is empty on this deck (no extended card, R-7): every length runs
+    // the 512 draws and the DFS before reporting NO_TIER_SEQUENCE.
+    if (tier === "intermediate") assert.ok(result.chords, "intermediate should still deal");
+    else assert.strictEqual(result.reason, "NO_TIER_SEQUENCE");
     assert.ok(dt < 50, `${tier} forced fallback took ${dt}ms`);
   }
 });
@@ -1301,35 +1487,86 @@ test("Pygmy forced-fallback (stuck rng) finishes under 50ms for advanced and int
 // deck) at every length each tier actually draws, independent of rng,
 // JIT warmup or runner speed.
 test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier length", () => {
-  const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
-  const pygmy = DECKS.find((d) => d.id === "pygmy");
-  assert.ok(pygmy, "pygmy deck missing from data/decks.json");
   const E = engine();
   const I = E.sequence._internal;
-  const TIER_LENGTHS = { intermediate: [3, 4], advanced: [4, 5, 6] };
-  const matrix = I.buildConnectMatrix(pygmy);
-  const anchorsList = E.sequence.anchors(pygmy);
-  const home = I.homePc(pygmy);
-  const homeAnchorIdx = I.homeAnchor(pygmy, anchorsList);
-  const ctx = { anchorsList, home, homeAnchorIdx };
-  for (const tier of ["intermediate", "advanced"]) {
-    const pool = I.tierPool(pygmy, tier, anchorsList);
-    const startSet = I.tierStartSet(pygmy, tier, pool, anchorsList);
-    for (const len of TIER_LENGTHS[tier]) {
-      function accept(seq) {
-        for (let i = 0; i < seq.length; i += 1) {
-          const next = seq[(i + 1) % seq.length];
-          if (seq[i] === next) return false;
-          if (!matrix[seq[i]][next]) return false;
-        }
-        return I.classifyTier(pygmy, seq, ctx) === tier;
-      }
-      const stats = {};
-      I.dfsFindAll(startSet, pool, len, accept, I.DFS_NODE_BUDGET, matrix, stats);
-      assert.ok(stats.nodes <= I.DFS_NODE_BUDGET,
-        `pygmy ${tier} length ${len}: dfsFindAll visited ${stats.nodes} nodes, over the ${I.DFS_NODE_BUDGET} budget`);
-    }
+  const matrix = I.buildConnectMatrix(PYGMY);
+  const ctx = I.tierContext(PYGMY);
+  const pool = I.tierPool(PYGMY, "advanced", ctx.anchorsList);
+  const startSet = I.tierStartSet(PYGMY, "advanced", pool, ctx);
+  for (const len of [4, 5, 6]) {
+    const accept = I.makeAccept(PYGMY, "advanced", matrix, null, ctx);
+    const stats = {};
+    I.dfsFindAll(startSet, pool, len, accept, I.DFS_NODE_BUDGET, matrix, stats);
+    assert.ok(stats.nodes <= I.DFS_NODE_BUDGET,
+      `pygmy advanced length ${len}: dfsFindAll visited ${stats.nodes} nodes, over the ${I.DFS_NODE_BUDGET} budget`);
   }
+});
+
+// R-10 / TR-14: MEDIUM is enumerated once per pick() by a matrix-pruned DFS
+// with a BRANCH-LEVEL prune on the colour-card cap. The node counts are
+// asserted EXACTLY (lengths 3 and 4 summed, one node per rec entry): a lost
+// prune is a red here, not a slow pass - without the colour prune Pygmy's
+// length 4 alone is 221,520 nodes and the 60,000 budget truncates it.
+const MEDIUM_ENUM = {
+  pygmy: { nodes: 23646, total: 10442, pool: 30, starts: 10 },
+  amara: { nodes: 6892, total: 2072, pool: 20, starts: 10 },
+  hijaz: { nodes: 4518, total: 1394, pool: 17, starts: 7 }
+};
+
+test("MEDIUM enumeration visits exactly the section 4 node counts and finds the exhaustive set", () => {
+  const E = engine();
+  const I = E.sequence._internal;
+  assert.strictEqual(I.MEDIUM_ENUM_BUDGET, 60000);
+  for (const [id, deck] of [["hijaz", HIJAZ], ["pygmy", PYGMY], ["amara", AMARA]]) {
+    const stats = {};
+    const cells = host(I.mediumCells(deck, stats));
+    assert.strictEqual(stats.nodes, MEDIUM_ENUM[id].nodes, `${id} MEDIUM enumeration node count`);
+    assert.strictEqual(stats.truncated, false, `${id} MEDIUM enumeration was truncated`);
+    assert.ok(stats.nodes <= I.MEDIUM_ENUM_BUDGET);
+    const ctx = I.tierContext(deck);
+    const pool = host(I.tierPool(deck, "intermediate", ctx.anchorsList));
+    const startSet = host(I.tierStartSet(deck, "intermediate", pool, ctx));
+    assert.strictEqual(pool.length, MEDIUM_ENUM[id].pool, `${id} MEDIUM pool size`);
+    assert.strictEqual(startSet.length, MEDIUM_ENUM[id].starts, `${id} MEDIUM start-set size`);
+    const found = cells.reduce((all, cell) => all.concat(cell.seqs), []).map((q) => q.join(",")).sort();
+    assert.strictEqual(found.length, MEDIUM_ENUM[id].total, `${id} MEDIUM sequence count`);
+    assert.strictEqual(new Set(found).size, found.length, `${id}: a sequence sits in two cells`);
+    // Exhaustive reference: every connected loop of length 3 and 4 over the
+    // whole deck that classifyTier calls "intermediate" - no pool, no start
+    // set and no colour prune, so it cannot share a bug with the enumeration.
+    const matrix = I.buildConnectMatrix(deck);
+    const n = deck.chords.length;
+    const brute = [];
+    for (const len of [3, 4]) {
+      const seq = new Array(len);
+      (function walk(depth) {
+        if (depth === len) {
+          if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
+              I.classifyTier(deck, seq, ctx) === "intermediate") brute.push(seq.join(","));
+          return;
+        }
+        for (let c = 0; c < n; c += 1) {
+          if (depth > 0 && (c === seq[depth - 1] || !matrix[seq[depth - 1]][c])) continue;
+          seq[depth] = c;
+          walk(depth + 1);
+        }
+      })(0);
+    }
+    assert.deepStrictEqual(found, brute.sort(), `${id}: MEDIUM cells differ from the exhaustive set`);
+  }
+});
+
+test("MEDIUM enumeration reports truncation instead of dealing from a partial set", () => {
+  const E = engine();
+  const I = E.sequence._internal;
+  const stats = {};
+  I.mediumCells(PYGMY, stats, MEDIUM_ENUM.pygmy.nodes);
+  assert.strictEqual(stats.truncated, false, "finishing on the last allowed node is complete");
+  assert.strictEqual(stats.nodes, MEDIUM_ENUM.pygmy.nodes);
+  const short = {};
+  I.mediumCells(PYGMY, short, 1000);
+  assert.strictEqual(short.truncated, true);
+  assert.ok(short.nodes <= 1000);
 });
 
 /* -------------------------------------------------------------- D3 step 5 */
@@ -1351,10 +1588,9 @@ const DFS_COMPLETE_NODES = 13605;
 function dfsRun(E, deck, tier, len, budget) {
   const I = E.sequence._internal;
   const matrix = I.buildConnectMatrix(deck);
-  const anchorsList = E.sequence.anchors(deck);
-  const ctx = { anchorsList, home: I.homePc(deck), homeAnchorIdx: I.homeAnchor(deck, anchorsList) };
-  const pool = I.tierPool(deck, tier, anchorsList);
-  const startSet = I.tierStartSet(deck, tier, pool, anchorsList);
+  const ctx = I.tierContext(deck);
+  const pool = I.tierPool(deck, tier, ctx.anchorsList);
+  const startSet = I.tierStartSet(deck, tier, pool, ctx);
   const accept = I.makeAccept(deck, tier, matrix, null, ctx);
   const stats = {};
   const found = host(I.dfsFindAll(startSet, pool, len, accept, budget, matrix, stats));
@@ -1478,6 +1714,296 @@ test("no built-in anchor is a register-labelled anchor, so the exemption is a no
         `${id} anchor ${idx} carries a LOW/HIGH subtitle`);
     }
   }
+});
+
+/* ================================================================
+ * Tier rebalance (docs/plans/2026-10-04-tier-rebalance.md §2, §7)
+ * ================================================================ */
+
+const REGISTER_RE = /\b(LOW|HIGH) VOICING\b/;
+
+// Everything S1-S3 measure about a run of deals, computed from the deck data
+// alone (anchors() aside) so it cannot share a bug with the gates.
+function shapeOf(E, deck, deals) {
+  const I = E.sequence._internal;
+  const anchorsList = host(E.sequence.anchors(deck));
+  const home = I.homePc(deck);
+  const isAnchor = (i) => anchorsList.includes(i);
+  const isReg = (i) => REGISTER_RE.test(deck.chords[i].subtitle || "");
+  const isExtended = (i) => !isAnchor(i) && (deck.chords[i].fields.length > 4 || isReg(i));
+  const isDim = (i) => {
+    const r = rootPc(deck, i);
+    return [...new Set(chordPcs(deck, i).map((p) => pc(p - r)))].sort((a, b) => a - b).join(",") === "0,3,6";
+  };
+  const out = {
+    n: deals.length, lengths: {}, families: {}, colourDeals: 0, registerBoundBroken: 0,
+    distinct: new Set(deals.map((q) => q.join(","))).size
+  };
+  let chords = 0, homeStart = 0, nonAnchor = 0, nonAnchorReg = 0, pure = 0, extended = 0, dimAnchor = 0, reg = 0;
+  for (const q of deals) {
+    out.lengths[q.length] = (out.lengths[q.length] || 0) + 1;
+    if (rootPc(deck, q[0]) === home) homeStart += 1;
+    const colour = q.filter((i) => !isAnchor(i));
+    chords += q.length;
+    nonAnchor += colour.length;
+    nonAnchorReg += colour.filter(isReg).length;
+    reg += q.filter(isReg).length;
+    dimAnchor += q.filter((i) => isAnchor(i) && isDim(i)).length;
+    if (colour.length === 0) pure += 1;
+    if (q.some(isExtended)) extended += 1;
+    if (q.filter(isReg).length * 3 > q.length) out.registerBoundBroken += 1;
+    if (colour.length === 1 && !isExtended(colour[0])) {
+      const fam = I.colourFamily(deck, colour[0]);
+      out.colourDeals += 1;
+      out.families[fam] = (out.families[fam] || 0) + 1;
+    }
+  }
+  const share = (x, of) => (of ? (100 * x) / of : 0);
+  for (const l of Object.keys(out.lengths)) out.lengths[l] = share(out.lengths[l], out.n);
+  for (const f of Object.keys(out.families)) out.families[f] = share(out.families[f], out.colourDeals);
+  out.meanLen = out.n ? chords / out.n : 0;
+  out.home = share(homeStart, out.n);
+  out.nonAnchor = share(nonAnchor, chords);
+  out.nonAnchorRegister = share(nonAnchorReg, nonAnchor);
+  out.register = share(reg, chords);
+  out.dimAnchor = share(dimAnchor, chords);
+  out.pure = share(pure, out.n);
+  out.extended = share(extended, out.n);
+  return out;
+}
+
+// One shape run: n deals per tier, mulberry32(7), a fresh rng per (deck,
+// tier). BASIC and MEDIUM go through the cell samplers pick() itself uses,
+// on cells enumerated ONCE (R-10); HARD goes through pick(). A tier with
+// nothing to deal returns null.
+function shapeRun(E, deck, n, hardN) {
+  const S = E.sequence;
+  const I = S._internal;
+  function run(count, drawOne) {
+    const deals = [];
+    let prev = null;
+    for (let k = 0; k < count; k += 1) {
+      const q = drawOne(prev);
+      if (!q) return null;
+      deals.push(host(q));
+      prev = q;
+    }
+    return shapeOf(E, deck, deals);
+  }
+  const basicCells = I.basicCells(deck);
+  const mediumCells = I.mediumCells(deck);
+  const rngB = S.mulberry32(7);
+  const rngM = S.mulberry32(7);
+  const rngH = S.mulberry32(7);
+  return {
+    basicCells: host(basicCells),
+    mediumCells: host(mediumCells),
+    basic: run(n, (prev) => I.drawBasic(basicCells, rngB, prev)),
+    intermediate: run(n, (prev) => I.drawMedium(mediumCells, rngM, prev)),
+    advanced: run(hardN === undefined ? n : hardN, () => S.pick(deck, rngH, null, "advanced").chords)
+  };
+}
+
+const SHAPE_N = 3000;
+let builtinShapeRuns = null;
+function builtinShapes() {
+  if (!builtinShapeRuns) {
+    const E = engine();
+    builtinShapeRuns = {};
+    for (const deck of [HIJAZ, PYGMY, AMARA]) builtinShapeRuns[deck.id] = shapeRun(E, deck, SHAPE_N);
+  }
+  return builtinShapeRuns;
+}
+
+function within(actual, target, band, label) {
+  assert.ok(Math.abs(actual - target) <= band,
+    `${label}: ${actual.toFixed(1)}% is not within ${band} pp of ${target.toFixed(1)}%`);
+}
+
+test("S1: every tier's shape sits in its section 2 band over 3,000 draws on each built-in deck", () => {
+  const runs = builtinShapes();
+  for (const id of ["hijaz", "pygmy", "amara"]) {
+    const { basic, intermediate, advanced, mediumCells } = runs[id];
+
+    // BASIC (R-1..R-3).
+    within(basic.lengths[2], 40, 3, `${id} BASIC length 2`);
+    within(basic.lengths[3], 40, 3, `${id} BASIC length 3`);
+    within(basic.lengths[4], 20, 3, `${id} BASIC length 4`);
+    if (id === "hijaz") assert.strictEqual(basic.home, 100, "hijaz BASIC has no secondary start");
+    else within(basic.home, 80, 3, `${id} BASIC home start`);
+    assert.strictEqual(basic.nonAnchor, 0, `${id} BASIC non-anchor chords`);
+    assert.strictEqual(basic.pure, 100, `${id} BASIC pure-triad deals`);
+    assert.strictEqual(basic.register, 0, `${id} BASIC register chords`);
+    assert.strictEqual(basic.extended, 0, `${id} BASIC extended deals`);
+    if (id === "hijaz") {
+      // R-3 fallback: the triad-only pool is one loop, so every anchor plays.
+      assert.ok(basic.dimAnchor > 0, "hijaz BASIC deals its diminished anchors under the R-3 fallback");
+      assert.ok(basic.distinct >= 60, `hijaz BASIC dealt only ${basic.distinct} distinct sequences of 71`);
+    } else {
+      assert.strictEqual(basic.dimAnchor, 0, `${id} BASIC diminished-anchor chords`);
+    }
+
+    // MEDIUM (R-4..R-6).
+    within(intermediate.lengths[3], 60, 3, `${id} MEDIUM length 3`);
+    within(intermediate.lengths[4], 40, 3, `${id} MEDIUM length 4`);
+    if (id !== "hijaz") within(intermediate.home, 40, 4, `${id} MEDIUM home start`);
+    within(intermediate.nonAnchor, 20, 4, `${id} MEDIUM non-anchor chords`);
+    within(intermediate.pure, 100 / 3, 4, `${id} MEDIUM pure-triad deals`);
+    assert.strictEqual(intermediate.register, 0, `${id} MEDIUM register chords`);
+    assert.strictEqual(intermediate.extended, 0, `${id} MEDIUM extended deals`);
+    const families = [...new Set(mediumCells.filter((c) => c.kind === "colour").map((c) => c.family))].sort();
+    assert.deepStrictEqual(families,
+      id === "pygmy" ? ["seventh", "susPower"] : ["other", "seventh", "susPower"], `${id} colour families`);
+    assert.deepStrictEqual(Object.keys(intermediate.families).sort(), families);
+    for (const fam of families) {
+      within(intermediate.families[fam], 100 / families.length, 4, `${id} MEDIUM ${fam} share of colour deals`);
+    }
+
+    // HARD (R-7).
+    for (const len of [4, 5, 6]) within(advanced.lengths[len], 100 / 3, 3, `${id} HARD length ${len}`);
+    assert.ok(advanced.nonAnchor >= 60, `${id} HARD non-anchor chords ${advanced.nonAnchor.toFixed(1)}% under 60%`);
+    assert.strictEqual(advanced.pure, 0, `${id} HARD pure-triad deals`);
+    assert.strictEqual(advanced.extended, 100, `${id} HARD extended deals`);
+    assert.strictEqual(advanced.registerBoundBroken, 0, `${id} HARD deals over the register bound`);
+  }
+});
+
+test("S2: 300 public pick() deals per tier classify as their tier and keep the shape", () => {
+  const E = engine();
+  const TARGET = {
+    basic: { 2: 40, 3: 40, 4: 20 },
+    intermediate: { 3: 60, 4: 40 },
+    advanced: { 4: 100 / 3, 5: 100 / 3, 6: 100 / 3 }
+  };
+  for (const deck of [HIJAZ, PYGMY, AMARA]) {
+    for (const tier of ["basic", "intermediate", "advanced"]) {
+      const rng = E.sequence.mulberry32(7);
+      const deals = [];
+      let prev = null;
+      for (let k = 0; k < 300; k += 1) {
+        const result = tier === "basic"
+          ? E.sequence.pick(deck, rng, prev)
+          : E.sequence.pick(deck, rng, prev, tier);
+        assert.ok(result.chords, `${deck.id} ${tier} deal ${k} returned ${result.reason}`);
+        const chords = host(result.chords);
+        assert.strictEqual(E.sequence.tierOf(deck, chords), tier,
+          `${deck.id} ${tier} deal ${k} ${chords} classifies ${E.sequence.tierOf(deck, chords)}`);
+        assert.ok(!prev || chords.join(",") !== prev.join(","), `${deck.id} ${tier} deal ${k} repeats prev`);
+        deals.push(chords);
+        prev = chords;
+      }
+      const shape = shapeOf(E, deck, deals);
+      for (const len of Object.keys(TARGET[tier])) {
+        within(shape.lengths[len] || 0, TARGET[tier][len], 6, `${deck.id} ${tier} length ${len}`);
+      }
+      if (tier === "basic") {
+        assert.ok(shape.home >= 70, `${deck.id} BASIC home start ${shape.home.toFixed(1)}% under 70%`);
+      }
+      if (tier === "advanced") assert.strictEqual(shape.extended, 100, `${deck.id} HARD extended deals`);
+    }
+  }
+});
+
+// M-1..M-5 on one deck's shape run. `strictHome` adds M > H on the home-start
+// rate (TR-6: asserted on Pygmy and Amara only). A HARD-empty deck (R-7 /
+// TR-7) has no H row and only the B/M comparisons apply.
+function assertMonotonic(E, label, deck, run, strictHome) {
+  const I = E.sequence._internal;
+  const B = run.basic;
+  const M = run.intermediate;
+  const H = run.advanced;
+  assert.ok(B && M, `${label}: BASIC and MEDIUM must both deal`);
+  // M-1 mean length.
+  assert.ok(B.meanLen < M.meanLen, `${label} M-1: BASIC ${B.meanLen} !< MEDIUM ${M.meanLen}`);
+  // M-2 non-anchor share of chords.
+  assert.strictEqual(B.nonAnchor, 0, `${label} M-2: BASIC deals a non-anchor chord`);
+  assert.ok(B.nonAnchor <= M.nonAnchor, `${label} M-2: BASIC over MEDIUM`);
+  // M-3 register share among NON-ANCHOR chords (TR-13).
+  assert.strictEqual(B.nonAnchorRegister, 0, `${label} M-3: BASIC`);
+  assert.strictEqual(M.nonAnchorRegister, 0, `${label} M-3: MEDIUM`);
+  // M-4 vocabulary nests.
+  const ctx = I.tierContext(deck);
+  const medium = host(I.tierPool(deck, "intermediate", ctx.anchorsList));
+  const hard = host(I.tierPool(deck, "advanced", ctx.anchorsList));
+  for (const idx of host(ctx.basicVocab)) assert.ok(medium.includes(idx), `${label} M-4: BASIC card ${idx} not in MEDIUM`);
+  for (const idx of medium) assert.ok(hard.includes(idx), `${label} M-4: MEDIUM card ${idx} not in HARD`);
+  // M-5 home-start rate.
+  assert.ok(B.home > M.home, `${label} M-5: BASIC home ${B.home} !> MEDIUM ${M.home}`);
+  if (!H) return;
+  assert.ok(M.meanLen < H.meanLen, `${label} M-1: MEDIUM ${M.meanLen} !< HARD ${H.meanLen}`);
+  assert.ok(M.nonAnchor < H.nonAnchor, `${label} M-2: MEDIUM ${M.nonAnchor} !< HARD ${H.nonAnchor}`);
+  assert.ok(H.nonAnchorRegister >= 0, `${label} M-3: HARD`);
+  assert.ok(B.home > H.home, `${label} M-5: BASIC home ${B.home} !> HARD ${H.home}`);
+  if (strictHome) assert.ok(M.home > H.home, `${label} M-5: MEDIUM home ${M.home} !> HARD ${H.home}`);
+}
+
+test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sweep deck", () => {
+  const E = engine();
+  const runs = builtinShapes();
+  assertMonotonic(E, "hijaz", HIJAZ, runs.hijaz, false);
+  assertMonotonic(E, "pygmy", PYGMY, runs.pygmy, true);
+  assertMonotonic(E, "amara", AMARA, runs.amara, true);
+
+  const { full, sweep, reviewer, registerAnchor, registerHome } = generated();
+  const rows = [
+    ...sweep.map((r) => ({ label: r.label, deck: r.deck })),
+    ...reviewer.map((r, i) => ({ label: `reviewer deck ${i}`, deck: r.deck })),
+    { label: "REGISTER_ANCHOR_DECK", deck: registerAnchor },
+    { label: "REGISTER_HOME_DECK", deck: registerHome }
+  ];
+  const hardEmpty = [];
+  let measured = 0;
+  for (const row of rows) {
+    const S = full.sequence;
+    if (S._internal.homeAnchor(row.deck, S.anchors(row.deck)) === null) continue;
+    const run = shapeRun(full, row.deck, 300);
+    if (!run.advanced) hardEmpty.push(row.label);
+    assertMonotonic(full, row.label, row.deck, run, false);
+    measured += 1;
+  }
+  assert.strictEqual(measured, 37 + 4 + 2 - 3, "every sweep deck with a home anchor is measured");
+  assert.deepStrictEqual(hardEmpty, ["reviewer deck 0", "reviewer deck 1", "reviewer deck 3"]);
+});
+
+// S4 (R-6 / TR-4): the family of every colour card (non-anchor, <= 4 fields,
+// no register voicing) on the three built-in decks, by chord NAME.
+const COLOUR_FAMILIES = {
+  pygmy: {
+    susPower: ["F5", "Fsus4", "F7sus4", "Ab5", "Absus4", "Abmaj7sus4", "Bb5", "Bbsus4", "Bb7sus4",
+      "C5", "Csus4", "C7sus4", "Db5", "Eb5", "Ebsus4", "Eb7sus4"],
+    seventh: ["Fm7", "Gm7b5", "Abmaj7", "Bbm7", "Cm7", "Dbmaj7", "Eb7"],
+    other: []
+  },
+  amara: {
+    susPower: ["D5", "Dsus4", "D7sus4", "F5", "G5", "G7sus4", "A5", "Asus4", "A7sus4", "C5", "Csus4"],
+    seventh: ["Dm7", "Fmaj7", "Am7"],
+    other: ["Dmadd9"]
+  },
+  hijaz: {
+    susPower: ["C#5", "C#sus4", "C#7sus4", "F#5", "F#maj7sus4", "B5"],
+    seventh: ["C#7", "D°7", "G#m7b5"],
+    other: ["B°", "Bmadd9"]
+  }
+};
+
+test("S4: colourFamily names every built-in colour card's family (sus before 7)", () => {
+  const E = engine();
+  const I = E.sequence._internal;
+  const COUNT = { pygmy: 23, amara: 15, hijaz: 11 };
+  for (const deck of [HIJAZ, PYGMY, AMARA]) {
+    const anchorsList = host(E.sequence.anchors(deck));
+    const got = { susPower: [], seventh: [], other: [] };
+    let count = 0;
+    deck.chords.forEach((c, i) => {
+      if (anchorsList.includes(i) || c.fields.length > 4 || REGISTER_RE.test(c.subtitle || "")) return;
+      got[I.colourFamily(deck, i)].push(c.main + (c.sup || ""));
+      count += 1;
+    });
+    assert.strictEqual(count, COUNT[deck.id], `${deck.id} colour-card count`);
+    assert.deepStrictEqual(got, COLOUR_FAMILIES[deck.id], `${deck.id} colour families`);
+  }
+  assert.strictEqual(I.colourFamily(HIJAZ, HIJAZ.chords.findIndex((c) => c.main + (c.sup || "") === "C#7sus4")),
+    "susPower", "7sus4 is sus/power: the sus test runs before the 7 test");
 });
 
 /* -------------------------------------------------------------- S1-8 */
