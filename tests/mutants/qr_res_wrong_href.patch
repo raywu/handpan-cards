@@ -1,5 +1,5 @@
-# kills: the settings panel has exactly one Resources group with the three outbound links
-# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.the.three.outbound.links$ tests/e2e.test.js
+# kills: the settings panel has exactly one Resources group with its five outbound links in two rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.five.outbound.links.in.two.rows$ tests/e2e.test.js
 # R186-2 (docs/plans/2026-10-01-resources-menu.md:85-86). Drops the trailing
 # slash from #res-handpaner's href, so the link's href no longer matches the
 # exact URL the RESOURCES fixture expects.
