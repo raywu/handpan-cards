@@ -202,7 +202,127 @@ All in `tests/e2e.test.js`. Red before any `index.html` change.
 
 ## 8. Execution notes
 
-(empty until the lane runs)
+### Lane stopped after step 1 (2026-10-05): two stop conditions, owner decision needed
+
+Step 1 measured with the section 3.1 row, the section 3.3 rule and the 3.2
+selector applied in a scratch worktree (`git worktree add --detach`), through
+`window.__pf.one` (`tools/probe/panel_fit.js`), macOS, fallback and real
+fonts, 80 viewports x modes A/B/S x both roots (main vs candidate). Nothing in
+`index.html` or `tests/` was changed on the branch.
+
+**Stop 1 (C2/O2): the Amy labels are not one line at 320px.** At 320x568 each
+Amy link is 142px wide with a 140px client box; `AMY: PROGRESSIONS` is about
+127px of text plus the `.mode` padding, so both labels wrap to two lines inside
+the 44px box (Range rects = 2) in fallback and real fonts. The row height does
+not grow (44px) but the label is two lines. They are one line at 380x700
+(172px links) and at 768x1024 (204px links), in both font modes. In the
+1024x700 sidebar they are one line each, but the two links do NOT share a row
+(see stop 2's height cost): each takes its own full-width line. In the 844x390
+landscape cell they wrap to two lines (131.7px links). The two links are equal
+width wherever they share a line (142/142 at 320, 172/172 at 380, 204/204 at
+768, 131.66/131.67 at 844x390 landscape); `min-width:0` was not needed.
+
+**Stop 2 (O1 vs the CI panel-fit gate): `.github/workflows/validate.yml` job
+`panel-fit` fails by design.** That job runs `node tools/probe/panel_fit.js
+--base origin/main` and its rule 1 fails any cell where the candidate needs
+more than max(main needed, available) + 1px, and rule 3 fails a new control
+that renders below the fold where main fits. O1 chooses to let the panel
+scroll, so both rules fire. Run locally against this branch's tip (fallback
+fonts): `rule 3 new control: 3890 failing`, failing width ranges in every
+height band (h320, h521, h700), `panel fit: FAIL`. The oracle does not
+hard-code the Resources row, so this is not a C1 `tools/probe/` case; it is a
+policy conflict between O1 and a merge-blocking CI job that this lane does not
+own. Options for the owner: (a) allow the oracle an explicit Amy-row
+allowance (a judge parameter like `HEADING_ALLOWANCE_PX`), (b) drop O1 and fit
+the row without scrolling (not achievable at 320x568 S, 1024x700 and the
+landscape cells below), (c) accept the red job.
+
+**The 1024x700 sidebar costs 106px, not 52.** At the 208px group width the
+two Amy links stack, one per line (each full width, one text line), so
+Resources grows by 106 in every sidebar cell, against 47-49.5 in the phone
+and landscape cells (one row plus one gap). Consequences in the sidebar:
+modes A and B, which fit on main at 1024x700 and from 1024x746 up to 1366x750
+in real fonts, now scroll at 1024x700 (+49 fallback / +54 real) and, in real
+fonts, at the 746/750 sidebar heights (+3 to +14); mode S scrolls by 58-120
+at every sidebar height up to 800 (res-amy-bottom, and both Amy links at
+1024x700, below the fold).
+
+**C2 check.** Newly scrolling cells (main over <= 1, candidate over > 1): 95
+(cell x mode x font) across the 80 viewports. In none of them is a control
+other than a `res-*` link below the fold. Cells that already scrolled on main keep their scroll where the
+tallest grid column does not contain the Resources group (568x312 A, 568x320,
+427x320, 427x375) and gain the group's growth where it does (667x375 S,
+740x340 S real, 812x330 S real).
+
+**Print row natural widths** (button, button, select), measured on main at
+380x700: fallback 118.36 + 130.37 + 72.00, real 113.89 + 128.63 + 68.00 (plus
+two 8px gaps = about 320px, so one line at 380 and wrapping at 320 and in the
+sidebar, as the plan estimated). With `flex:1 1 auto` the row is flush: at
+380x700 one line spanning 14 to 366; at 320x568 two lines (two buttons, then
+the select) each spanning 14 to 306; in the sidebar three lines each spanning
+805 to 1004; at 768x1024 one line 174 to 594; at 844x390 two lines. The group
+content box edges equal the first/last control edges to 0.01px in all of them.
+
+**Fit cells the tests assert that change** (main over -> candidate over, px;
+cells not listed keep the same scroll as on main, which is 0 except where the
+section 3.4 precedent already scrolled). Needed/group deltas for every cell
+are in the scratch measurements; every row below leaves only `res-*` links
+below the fold, except the rows that already scrolled on main.
+
+fallback fonts (macOS), cells the fit tests assert; over = scrollHeight - clientHeight:
+
+| cell | mode | main over | now over | needed delta | Resources group delta | below the fold now |
+|---|---|---|---|---|---|---|
+| 320x568 | S | 0 | 39 | +48 | +48 | res-amy-progressions, res-amy-bottom |
+| 667x375 | A | 0 | 6 | +49.5 | +49.5 | - |
+| 667x375 | B | 0 | 6 | +49.5 | +49.5 | - |
+| 667x375 | S | 19 | 68 | +49.5 | +49.5 | res-trainingcards, res-amy-progressions, res-amy-bottom |
+| 1024x700 | A | 0 | 49 | +106 | +106 | res-amy-bottom |
+| 1024x700 | B | 0 | 49 | +106 | +106 | res-amy-bottom |
+| 1024x700 | S | 9 | 115 | +106 | +106 | res-amy-progressions, res-amy-bottom |
+| 1024x746 | A | 0 | 3 | +106 | +106 | - |
+| 1024x746 | B | 0 | 3 | +106 | +106 | - |
+| 1024x746 | S | 0 | 69 | +106 | +106 | res-amy-bottom |
+| 1024x750 | S | 0 | 65 | +106 | +106 | res-amy-bottom |
+| 1024x757 | S | 0 | 58 | +106 | +106 | res-amy-bottom |
+| 1280x746 | A | 0 | 3 | +106 | +106 | - |
+| 1280x746 | B | 0 | 3 | +106 | +106 | - |
+| 1280x746 | S | 0 | 69 | +106 | +106 | res-amy-bottom |
+| 740x360 | S | 0 | 18 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| 740x340 | S | 0 | 38 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| 812x330 | S | 0 | 45 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+
+real fonts (macOS), cells the fit tests assert; over = scrollHeight - clientHeight:
+
+| cell | mode | main over | now over | needed delta | Resources group delta | below the fold now |
+|---|---|---|---|---|---|---|
+| 320x568 | S | 0 | 44 | +48 | +48 | res-amy-progressions, res-amy-bottom |
+| 667x375 | A | 0 | 9 | +49.5 | +49.5 | - |
+| 667x375 | B | 0 | 9 | +49.5 | +49.5 | - |
+| 667x375 | S | 22 | 71 | +49.5 | +49.5 | res-trainingcards, res-amy-progressions, res-amy-bottom |
+| 1024x700 | A | 0 | 54 | +106 | +106 | res-amy-bottom |
+| 1024x700 | B | 0 | 54 | +106 | +106 | res-amy-bottom |
+| 1024x700 | S | 14 | 120 | +106 | +106 | res-amy-progressions, res-amy-bottom |
+| 1024x746 | A | 0 | 8 | +106 | +106 | - |
+| 1024x746 | B | 0 | 8 | +106 | +106 | - |
+| 1024x746 | S | 0 | 74 | +106 | +106 | res-amy-bottom |
+| 1024x750 | A | 0 | 4 | +106 | +106 | - |
+| 1024x750 | B | 0 | 4 | +106 | +106 | - |
+| 1024x750 | S | 0 | 70 | +106 | +106 | res-amy-bottom |
+| 1024x757 | S | 0 | 63 | +106 | +106 | res-amy-bottom |
+| 1280x746 | A | 0 | 8 | +106 | +106 | - |
+| 1280x746 | B | 0 | 8 | +106 | +106 | - |
+| 1280x746 | S | 0 | 74 | +106 | +106 | res-amy-bottom |
+| 1366x750 | A | 0 | 4 | +106 | +106 | - |
+| 1366x750 | B | 0 | 4 | +106 | +106 | - |
+| 1536x750 | A | 0 | 4 | +106 | +106 | - |
+| 1536x750 | B | 0 | 4 | +106 | +106 | - |
+| 740x360 | S | 0 | 36 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| 740x340 | S | 9 | 56 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+| 812x330 | S | 1 | 48 | +47 | +47 | res-amy-progressions, res-amy-bottom |
+
+Not run: the Linux fallback-font numbers (CI runner), so the `fallback-linux`
+rows of the T-EDGE tables would be derived from CI messages, not measured here.
 
 ## 7a. Eng review amendments (2026-10-05, /plan-eng-review)
 
