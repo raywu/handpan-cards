@@ -2126,6 +2126,54 @@ function run() {
       assert.deepStrictEqual(m.onclick, [null, null]);
     });
 
+  // AD8 (owner: "All buttons should center text"). Every visible button and
+  // link in the panel, per line of its label: the text rect sits centred in the
+  // control's box within 1px. #seq-source-link is excluded: it is inline text in
+  // a note paragraph, not a boxed control. A <select>'s shown value is not a text
+  // node, so no Range can measure it: for the select this asserts only the
+  // computed text-align / text-align-last, which proves the CSS asks for a
+  // centred value (and Chrome honours it), not the rendered pixel position.
+  test("every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, over] of [[320, 568, true], [380, 700, true], [1024, 700, false]]) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(`
+            const p = document.getElementById("settings-panel");
+            const ctrls = [...p.querySelectorAll("button, a")].filter(e => e.offsetParent && e.id !== "seq-source-link");
+            const bad = [];
+            for (const e of ctrls) {
+              const k = e.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(e);
+              const lines = [];
+              for (const t of g.getClientRects()) {
+                if (t.width < 1) continue;
+                let l = lines.find(x => Math.abs(x.top - t.top) < 4);
+                if (!l) { l = { top: t.top, left: t.left, right: t.right }; lines.push(l); }
+                l.left = Math.min(l.left, t.left); l.right = Math.max(l.right, t.right);
+              }
+              for (const l of lines) {
+                const d = (l.left - k.left) - (k.right - l.right);
+                if (Math.abs(d) > 2) bad.push((e.id || e.textContent.trim()) + " off by " + (d / 2).toFixed(2));
+              }
+            }
+            const sel = getComputedStyle(document.getElementById("print-paper-select"));
+            return { n: ctrls.length, bad, ta: sel.textAlign, tal: sel.textAlignLast };
+          `);
+          const label = `${vw}x${vh}`;
+          assert.ok(m.n >= 12, `${label}: expected the panel's buttons and links to be measured, got ${m.n}`);
+          assert.deepStrictEqual(m.bad, [], `${label}: labels not centred in their controls`);
+          assert.strictEqual(m.ta, "center", `${label}: the paper select text-align`);
+          assert.strictEqual(m.tal, "center", `${label}: the paper select text-align-last`);
+          await b.key("Escape", "Escape", 27);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
   test("the paper choice survives a reload", async () => {
     await freshLoad();
     await openSettingsPanel();
