@@ -871,8 +871,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // HARD per D-2/D-3/D-6 with the R-7 gate: the 512-draw sampler, then the
   // bounded DFS. NO_HOME_CHORD is checked by the caller (pick) before this
-  // runs, so it keeps priority on every tier. A deck with no extended card
-  // has no HARD tier (TR-7) and reports NO_TIER_SEQUENCE.
+  // runs, so it keeps priority on every tier. A deck where no 4-6 sequence
+  // meets the gate (no non-anchor card at all) reports NO_TIER_SEQUENCE.
   function pickTiered(deck, rng, prev, tier, ctx) {
     var matrix = buildConnectMatrix(deck);
     var lengths = TIER_LENGTHS[tier];

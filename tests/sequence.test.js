@@ -35,7 +35,7 @@
 //       });
 //     }
 //   }
-//   fs.writeFileSync("tests/fixtures/sequence_basic_golden.json", JSON.stringify(out));
+//   fs.writeFileSync("tests/fixtures/sequence_basic_golden.json", JSON.stringify(out, null, 2) + "\n");
 //
 // This fixture is the EASY-parity oracle (eng E-4): comparing pick-vs-pick
 // after an engine edit would pass a mutant that routes BOTH the
@@ -46,9 +46,11 @@
 //
 // tests/fixtures/sequence_tier_golden.json (D3 step 1) was first captured
 // from the UNMODIFIED engine at main@486813c, before any D3 edit, and
-// RE-CAPTURED on 2026-10-04 (R5: MEDIUM may start on any anchor) with this
-// script (run once, output committed, script itself not checked in). `prev`
-// is chained from the previous deal:
+// RE-CAPTURED on 2026-10-04 (R5: MEDIUM may start on any anchor), and
+// RE-CAPTURED AGAIN on 2026-10-04 for the tier rebalance
+// (docs/plans/2026-10-04-tier-rebalance.md R-4..R-7: MEDIUM cells, broad HARD
+// gate) with this script (run once, output committed, script itself not
+// checked in). `prev` is chained from the previous deal:
 //
 //   const fs = require("fs");
 //   const { loadEngine } = require("./tests/helpers/engine.js");
@@ -708,11 +710,13 @@ test("R-8: vocabulary nests and the five-card fixture classifies BASIC, MEDIUM, 
 // every connected length-4 loop (each consecutive pair connects, the last
 // connects back to the first, no consecutive identical card - exactly what
 // makeAccept admits before the tier gate), classified by classifyTier,
-// INCLUDING the loops no tier deals (TR-5: no extended card and not MEDIUM).
+// INCLUDING the loops no tier deals (TR-5 under the broad R-7: no extended
+// card and at most one non-anchor card, or over the register bound).
+// Measured in plan §14 (the plan itself names no figures).
 const MIGRATION_L4 = {
-  hijaz: { intermediate: 0, advanced: 0, null: 0 },
-  pygmy: { intermediate: 0, advanced: 0, null: 0 },
-  amara: { intermediate: 0, advanced: 0, null: 0 }
+  hijaz: { intermediate: 1092, advanced: 88228, null: 4880 },
+  pygmy: { intermediate: 8900, advanced: 2542250, null: 2811862 },
+  amara: { intermediate: 1548, advanced: 291994, null: 3500 }
 };
 
 test("length-4 loops migrate per the §2 table on every built-in deck", () => {
@@ -751,14 +755,19 @@ test("length-4 loops migrate per the §2 table on every built-in deck", () => {
 // Part 3a/3b of the Pygmy Progression Tiers doc (artifact
 // f14b7860-bf38-4c6d-b579-f54f9535b405, rev 56), 1-based "#N" card numbers
 // converted to 0-based chord indices. These are the golden fixtures step 2
-// names; tierOf is asserted against them directly (D1 step 2/3).
-const PYGMY_INTERMEDIATE = {
-  I1: [0, 30, 24], I2: [4, 41, 50], I3: [0, 48, 50], I4: [4, 23, 35],
-  I5: [0, 7, 35], I6: [0, 43, 37, 30], I7: [4, 16, 41, 50], I8: [2, 0, 21, 19]
-};
-const PYGMY_ADVANCED = {
-  A1: [36, 51, 38, 0], A2: [23, 50, 16, 41], A3: [5, 17, 25, 0],
-  A4: [49, 51, 15, 16], A5: [5, 22, 23, 7, 33, 35], A6: [25, 38, 44, 38]
+// names. Tier rebalance (plan §14, S5): re-captured under R-1..R-10, each row
+// with the rule that moved it. The I/A names are the doc's, not the tiers.
+const PYGMY_TIER_GOLDEN = {
+  I1: [[0, 30, 24], "intermediate"],
+  // Length 3 with two or three colour cards: over MEDIUM's one-colour cap
+  // (R-4), and HARD starts at length 4 (R-7).
+  I2: [[4, 41, 50], null], I3: [[0, 48, 50], null], I4: [[4, 23, 35], null], I5: [[0, 7, 35], null],
+  I6: [[0, 43, 37, 30], "intermediate"],
+  // Length 4 with two or more colour cards: HARD's two-non-anchor branch.
+  I7: [[4, 16, 41, 50], "advanced"], I8: [[2, 0, 21, 19], "advanced"],
+  A2: [[23, 50, 16, 41], "advanced"], A5: [[5, 22, 23, 7, 33, 35], "advanced"],
+  // Two or more LOW/HIGH voicings in four chords: over the register bound.
+  A1: [[36, 51, 38, 0], null], A3: [[5, 17, 25, 0], null], A4: [[49, 51, 15, 16], null], A6: [[25, 38, 44, 38], null]
 };
 const HIJAZ_INTERMEDIATE = [0, 6, 2];
 const HIJAZ_ADVANCED = [14, 13, 3, 5];
@@ -769,13 +778,9 @@ const AMARA_ADVANCED = [10, 20, 15, 24];
 
 test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
   const E = engine();
-  for (const [name, seq] of Object.entries(PYGMY_INTERMEDIATE)) {
-    assert.strictEqual(E.sequence.tierOf(PYGMY, seq), "intermediate",
-      `Pygmy ${name} ${seq} should classify intermediate`);
-  }
-  for (const [name, seq] of Object.entries(PYGMY_ADVANCED)) {
-    assert.strictEqual(E.sequence.tierOf(PYGMY, seq), "advanced",
-      `Pygmy ${name} ${seq} should classify advanced`);
+  for (const [name, [seq, tier]] of Object.entries(PYGMY_TIER_GOLDEN)) {
+    assert.strictEqual(E.sequence.tierOf(PYGMY, seq), tier,
+      `Pygmy ${name} ${seq} should classify ${tier}`);
   }
   assert.strictEqual(E.sequence.tierOf(HIJAZ, HIJAZ_INTERMEDIATE), "intermediate");
   assert.strictEqual(E.sequence.tierOf(HIJAZ, HIJAZ_ADVANCED), "advanced");
@@ -909,10 +914,18 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
     "a 5-chord sequence is outside intermediate's {3,4} length range and has no extended card, so null");
 });
 
-// A connected 4-chord Pygmy loop with TWO colour cards (non-anchor, <= 4
-// fields, no register) and no extended card: too many colour cards for
-// MEDIUM (R-4), nothing extended for HARD (R-7) - dealt by no tier (TR-5).
-const PYGMY_TWO_COLOUR_L4 = [0, 0, 0, 0];
+// TR-5 / S8 (the broad R-7): three connected Pygmy loops built from anchors
+// plus colour cards (non-anchor, <= 4 fields, no register) or one extended
+// card, one per branch of the HARD gate.
+// Fm G° Ab Bbm Csus4: ONE colour card in five chords - not MEDIUM by length,
+// not HARD (nothing extended, fewer than two non-anchor cards): null.
+const PYGMY_ONE_COLOUR_L5 = [0, 6, 8, 19, 30];
+// Fm G° Ab5 Bb5: TWO colour cards, nothing extended - over MEDIUM's cap and
+// HARD by the two-non-anchor branch.
+const PYGMY_TWO_COLOUR_L4 = [0, 6, 11, 20];
+// Fm Fm9 G° Ab: ONE extended card (Fm9, five fields) plus anchors - HARD by
+// the extended branch alone.
+const PYGMY_ONE_EXTENDED_L4 = [0, 5, 6, 8];
 
 test("tierOf returns null for a sequence ADVANCED can never deal", () => {
   const E = engine();
@@ -925,28 +938,34 @@ test("tierOf returns null for a sequence ADVANCED can never deal", () => {
     }
   }
   // ADVANCED deals lengths 4..6 only (TIER_LENGTHS), so a connecting
-  // 3-chord or 7-chord sequence belongs to no tier. Pygmy's golden ADVANCED
-  // cards pin both ends of the range: A1 has 4 chords, A5 has 6.
-  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A1), "advanced", "4 chords");
-  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ADVANCED.A5), "advanced", "6 chords");
+  // 3-chord or 7-chord sequence belongs to no tier. Pygmy's golden rows pin
+  // both ends of the range: A2 has 4 chords, A5 has 6.
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_TIER_GOLDEN.A2[0]), "advanced", "4 chords");
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_TIER_GOLDEN.A5[0]), "advanced", "6 chords");
   assert.strictEqual(E.sequence.tierOf(PYGMY, [5, 22, 23]), null, "3 chords that fail INTERMEDIATE");
-  const seven = [...PYGMY_ADVANCED.A5, 0];
+  const seven = [...PYGMY_TIER_GOLDEN.A5[0], 0];
   assert.strictEqual(seven.length, 7);
   connectedLoop(seven, "seven-chord fixture");
   assert.strictEqual(E.sequence.tierOf(PYGMY, seven), null, "7 chords connect but ADVANCED never deals 7");
 
-  // TR-5: a 4-chord loop that fails MEDIUM (two colour cards) and has no
-  // extended card is null, not "advanced".
   const anchorsList = host(E.sequence.anchors(PYGMY));
-  const colour = PYGMY_TWO_COLOUR_L4.filter((i) => !anchorsList.includes(i));
-  assert.strictEqual(colour.length, 2, "the fixture carries exactly two non-anchor cards");
-  for (const i of colour) {
-    assert.ok(PYGMY.chords[i].fields.length <= 4, `card ${i} has more than 4 fields (extended)`);
-    assert.ok(!/\b(LOW|HIGH) VOICING\b/.test(PYGMY.chords[i].subtitle || ""), `card ${i} is a register voicing (extended)`);
+  const isRegister = (i) => /\b(LOW|HIGH) VOICING\b/.test(PYGMY.chords[i].subtitle || "");
+  const isExtended = (i) => !anchorsList.includes(i) && (PYGMY.chords[i].fields.length > 4 || isRegister(i));
+  function shape(seq, label, nonAnchor, extended) {
+    connectedLoop(seq, label);
+    assert.strictEqual(seq.filter((i) => !anchorsList.includes(i)).length, nonAnchor, `${label}: non-anchor cards`);
+    assert.strictEqual(seq.filter(isExtended).length, extended, `${label}: extended cards`);
+    assert.ok(!seq.some(isRegister), `${label}: carries a register voicing`);
   }
-  connectedLoop(PYGMY_TWO_COLOUR_L4, "two-colour fixture");
-  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_TWO_COLOUR_L4), null,
-    "two colour cards fail MEDIUM and nothing is extended, so no tier deals it");
+  shape(PYGMY_ONE_COLOUR_L5, "one-colour five-chord fixture", 1, 0);
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ONE_COLOUR_L5), null,
+    "one colour card in five chords: not MEDIUM by length, not HARD by the gate (TR-5)");
+  shape(PYGMY_TWO_COLOUR_L4, "two-colour fixture", 2, 0);
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_TWO_COLOUR_L4), "advanced",
+    "two colour cards fail MEDIUM and qualify HARD by the two-non-anchor branch");
+  shape(PYGMY_ONE_EXTENDED_L4, "one-extended fixture", 1, 1);
+  assert.strictEqual(E.sequence.tierOf(PYGMY, PYGMY_ONE_EXTENDED_L4), "advanced",
+    "one extended card plus anchors qualifies HARD by the extended branch");
 });
 
 /* -------------------------------------------------------------- D1 step 3 */
@@ -1129,19 +1148,25 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
   const NO_TIER = { chords: null, reason: "NO_TIER_SEQUENCE" };
 
   // The five-card deck (four anchors + G7). MEDIUM deals from its cells even
-  // on a stuck-at-zero rng; HARD has no extended card to build from (G7 has
-  // four fields and no register voicing), so it is empty (R-7 / TR-7).
+  // on a stuck-at-zero rng. G7 is not extended (four fields, no register),
+  // but it is a non-anchor card, so a sequence that plays it at two
+  // positions is HARD by the two-non-anchor branch (broad R-7; TR-7
+  // superseded): HARD deals there too, through the DFS fallback.
   const fiveCard = fiveCardDeck();
   const stuckAtZero = () => 0;
   const stuck = E.sequence.pick(fiveCard, stuckAtZero, null, "intermediate");
   assert.ok(stuck.chords, "intermediate on the 5-card deck should deal on a stuck rng");
   assert.strictEqual(E.sequence.tierOf(fiveCard, host(stuck.chords)), "intermediate");
-  assert.deepStrictEqual(host(E.sequence.pick(fiveCard, stuckAtZero, null, "advanced")), NO_TIER,
-    "no extended card on the 5-card deck: HARD is empty");
+  const stuckHard = host(E.sequence.pick(fiveCard, stuckAtZero, null, "advanced"));
+  assert.ok(stuckHard.chords, `advanced on the 5-card deck returned ${stuckHard.reason}`);
+  assert.strictEqual(E.sequence.tierOf(fiveCard, stuckHard.chords), "advanced");
+  assert.ok(stuckHard.chords.filter((i) => i === 4).length >= 2,
+    "the only non-anchor card is G7, so a HARD deal plays it at least twice");
 
   // The four-card all-anchor deck: a loop that starts on home is BASIC, one
   // that starts on any other (non-diminished) anchor is a pure-triad MEDIUM
-  // deal (R-4), and with no extended card HARD is empty on every seed.
+  // deal (R-4), and with no non-anchor card at all HARD is empty on every
+  // seed (neither branch of R-7 can fire).
   const fourCard = fourCardDeck();
   for (let seed = 0; seed < 200; seed += 1) {
     const result = E.sequence.pick(fourCard, E.sequence.mulberry32(seed), null, "intermediate");
@@ -1154,7 +1179,8 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
   }
 
   // A synthetic 3-card all-anchor deck (home C, Dm, Em): the one loop C Dm Em
-  // is BASIC from home and MEDIUM from Dm or Em; HARD is empty.
+  // is BASIC from home and MEDIUM from Dm or Em; HARD is empty (no non-anchor
+  // card).
   const threeCard = syntheticDeck({
     "0": ["C", 3, 48, "ding", null, "Ding"],
     "1": ["C", 4, 60, "rim", null, "1"], "2": ["E", 4, 64, "rim", null, "2"], "3": ["G", 4, 67, "rim", null, "3"],
@@ -1333,8 +1359,11 @@ test("generated decks: every tier deals its own tier, in range and connected, un
   const LENGTHS = { basic: [2, 3, 4], intermediate: [3, 4], advanced: [4, 5, 6] };
   const S = full.sequence;
   const noHomeRows = new Set();
-  const hardEmptyRows = new Set();
   const reasons = {};
+  // S7: the reviewer rows (G3), (A3), (G#3) carry no extended card, so every
+  // HARD deal there comes from the two-non-anchor branch (broad R-7).
+  const NO_EXTENDED_ROWS = ["reviewer deck 0", "reviewer deck 1", "reviewer deck 3"];
+  const twoNonAnchorDeals = {};
   for (const row of rows) {
     const deck = row.deck;
     const homeAnchorIdx = S._internal.homeAnchor(deck, S.anchors(deck));
@@ -1350,15 +1379,6 @@ test("generated decks: every tier deals its own tier, in range and connected, un
         }, `${row.label} ${tier} seed ${seed} threw`);
         const dt = Date.now() - t0;
         assert.ok(dt < 50, `${row.label} ${tier} seed ${seed} took ${dt}ms`);
-        if (!result.chords && result.reason === "NO_TIER_SEQUENCE") {
-          // S7 (R-7 / TR-7): a deck with no extended card has no HARD tier.
-          assert.strictEqual(tier, "advanced",
-            `${row.label} ${tier} seed ${seed}: only HARD may be empty on a sweep deck`);
-          assert.notStrictEqual(homeAnchorIdx, null);
-          hardEmptyRows.add(row.label);
-          reasons[tier] = (reasons[tier] || 0) + 1;
-          continue;
-        }
         if (!result.chords) {
           assert.strictEqual(result.reason, "NO_HOME_CHORD",
             `${row.label} ${tier} seed ${seed} returned ${result.reason}, not a deal`);
@@ -1381,17 +1401,53 @@ test("generated decks: every tier deals its own tier, in range and connected, un
           assert.ok(connectsRef(deck, chords[i], next),
             `${row.label} ${tier} seed ${seed}: ${chords[i]} -> ${next} does not connect`);
         }
+        if (tier === "advanced" && NO_EXTENDED_ROWS.includes(row.label)) {
+          const anchorsList = host(S.anchors(deck));
+          assert.ok(!deck.chords.some((c, i) => !anchorsList.includes(i) &&
+            (c.fields.length > 4 || /\b(LOW|HIGH) VOICING\b/.test(c.subtitle || ""))),
+          `${row.label} carries an extended card`);
+          assert.ok(chords.filter((i) => !anchorsList.includes(i)).length >= 2,
+            `${row.label} seed ${seed} dealt ${JSON.stringify(chords)} with fewer than two non-anchor cards`);
+          twoNonAnchorDeals[row.label] = (twoNonAnchorDeals[row.label] || 0) + 1;
+        }
         prev = chords;
       }
     }
   }
   assert.strictEqual(noHomeRows.size, 3, `NO_HOME_CHORD rows: ${[...noHomeRows].join(", ")}`);
-  // S7: reviewer (G3), (A3) and (G#3) - 12 chords, no extended card - are
-  // exactly the HARD-empty rows, on every seed.
-  assert.deepStrictEqual([...hardEmptyRows].sort(),
-    ["reviewer deck 0", "reviewer deck 1", "reviewer deck 3"]);
-  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 30 },
-    "3 rows x 5 seeds per tier carry NO_HOME_CHORD, plus 3 HARD-empty rows x 5 seeds on advanced");
+  // S7: no sweep row is HARD-empty (TR-7 superseded); the only empty tiers
+  // are the three NO_HOME_CHORD rows, on every tier and seed.
+  assert.deepStrictEqual(reasons, { basic: 15, intermediate: 15, advanced: 15 },
+    "3 NO_HOME_CHORD rows x 5 seeds per tier, and nothing else");
+  assert.deepStrictEqual(twoNonAnchorDeals,
+    { "reviewer deck 0": 5, "reviewer deck 1": 5, "reviewer deck 3": 5 },
+    "the no-extended reviewer rows deal HARD on every seed");
+});
+
+// S7 custom-scale case: D Kurd 9 has no extended card at all, and HARD still
+// deals there, every deal through the two-non-anchor branch.
+test("S7: a custom D Kurd 9 deck deals HARD with no extended card", () => {
+  const { full } = generated();
+  const S = full.sequence;
+  const parsed = full.core.parseSeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", {});
+  assert.equal(parsed.ok, true);
+  const built = full.select.build(parsed.value);
+  assert.equal(built.ok, true);
+  const deck = built.value;
+  const anchorsList = host(S.anchors(deck));
+  const extended = deck.chords.filter((c, i) => !anchorsList.includes(i) &&
+    (c.fields.length > 4 || /\b(LOW|HIGH) VOICING\b/.test(c.subtitle || "")));
+  assert.strictEqual(extended.length, 0, "D Kurd 9 has no extended card");
+  let prev = null;
+  for (let seed = 0; seed < 50; seed += 1) {
+    const result = S.pick(deck, S.mulberry32(seed), prev, "advanced");
+    assert.ok(result.chords, `D Kurd 9 HARD seed ${seed} returned ${result.reason}`);
+    const chords = host(result.chords);
+    assert.strictEqual(S.tierOf(deck, chords), "advanced");
+    assert.ok(chords.filter((i) => !anchorsList.includes(i)).length >= 2,
+      `D Kurd 9 seed ${seed} dealt ${JSON.stringify(chords)} with fewer than two non-anchor cards`);
+    prev = chords;
+  }
 });
 
 test("a deck forcing the DFS fallback on every length finishes under 50ms", () => {
@@ -1402,10 +1458,10 @@ test("a deck forcing the DFS fallback on every length finishes under 50ms", () =
     const t0 = Date.now();
     const result = E.sequence.pick(fiveCard, stuckAtZero, null, tier);
     const dt = Date.now() - t0;
-    // HARD is empty on this deck (no extended card, R-7): every length runs
-    // the 512 draws and the DFS before reporting NO_TIER_SEQUENCE.
-    if (tier === "intermediate") assert.ok(result.chords, "intermediate should still deal");
-    else assert.strictEqual(result.reason, "NO_TIER_SEQUENCE");
+    // A stuck rng never draws a second G7, so HARD runs the 512 draws and
+    // falls to the DFS, which finds the two-G7 sequences (broad R-7).
+    assert.ok(result.chords, `${tier} should deal (got ${result.reason})`);
+    assert.strictEqual(E.sequence.tierOf(fiveCard, host(result.chords)), tier);
     assert.ok(dt < 50, `${tier} forced fallback took ${dt}ms`);
   }
 });
@@ -1736,7 +1792,7 @@ function shapeOf(E, deck, deals) {
     return [...new Set(chordPcs(deck, i).map((p) => pc(p - r)))].sort((a, b) => a - b).join(",") === "0,3,6";
   };
   const out = {
-    n: deals.length, lengths: {}, families: {}, colourDeals: 0, registerBoundBroken: 0,
+    n: deals.length, lengths: {}, families: {}, colourDeals: 0, registerBoundBroken: 0, hardGateBroken: 0,
     distinct: new Set(deals.map((q) => q.join(","))).size
   };
   let chords = 0, homeStart = 0, nonAnchor = 0, nonAnchorReg = 0, pure = 0, extended = 0, dimAnchor = 0, reg = 0;
@@ -1752,6 +1808,7 @@ function shapeOf(E, deck, deals) {
     if (colour.length === 0) pure += 1;
     if (q.some(isExtended)) extended += 1;
     if (q.filter(isReg).length * 3 > q.length) out.registerBoundBroken += 1;
+    if (!q.some(isExtended) && colour.length < 2) out.hardGateBroken += 1;
     if (colour.length === 1 && !isExtended(colour[0])) {
       const fam = I.colourFamily(deck, colour[0]);
       out.colourDeals += 1;
@@ -1863,7 +1920,10 @@ test("S1: every tier's shape sits in its section 2 band over 3,000 draws on each
     for (const len of [4, 5, 6]) within(advanced.lengths[len], 100 / 3, 3, `${id} HARD length ${len}`);
     assert.ok(advanced.nonAnchor >= 60, `${id} HARD non-anchor chords ${advanced.nonAnchor.toFixed(1)}% under 60%`);
     assert.strictEqual(advanced.pure, 0, `${id} HARD pure-triad deals`);
-    assert.strictEqual(advanced.extended, 100, `${id} HARD extended deals`);
+    // Broad R-7: per deal "(>= 1 extended) OR (>= 2 non-anchor)", exactly.
+    // The extended-deal share itself is recorded, not banded (plan §2).
+    assert.strictEqual(advanced.hardGateBroken, 0, `${id} HARD deals with neither an extended card nor two non-anchor cards`);
+    assert.ok(advanced.extended > 0, `${id} HARD dealt no extended card`);
     assert.strictEqual(advanced.registerBoundBroken, 0, `${id} HARD deals over the register bound`);
   }
 });
@@ -1899,20 +1959,23 @@ test("S2: 300 public pick() deals per tier classify as their tier and keep the s
       if (tier === "basic") {
         assert.ok(shape.home >= 70, `${deck.id} BASIC home start ${shape.home.toFixed(1)}% under 70%`);
       }
-      if (tier === "advanced") assert.strictEqual(shape.extended, 100, `${deck.id} HARD extended deals`);
+      if (tier === "advanced") {
+        assert.strictEqual(shape.hardGateBroken, 0, `${deck.id} HARD deals outside the broad R-7 predicate`);
+        assert.strictEqual(shape.registerBoundBroken, 0, `${deck.id} HARD deals over the register bound`);
+      }
     }
   }
 });
 
 // M-1..M-5 on one deck's shape run. `strictHome` adds M > H on the home-start
-// rate (TR-6: asserted on Pygmy and Amara only). A HARD-empty deck (R-7 /
-// TR-7) has no H row and only the B/M comparisons apply.
+// rate (TR-6: asserted on Pygmy and Amara only). Every measured deck deals
+// HARD under the broad R-7 (TR-7 superseded); S3 asserts that.
 function assertMonotonic(E, label, deck, run, strictHome) {
   const I = E.sequence._internal;
   const B = run.basic;
   const M = run.intermediate;
   const H = run.advanced;
-  assert.ok(B && M, `${label}: BASIC and MEDIUM must both deal`);
+  assert.ok(B && M && H, `${label}: BASIC, MEDIUM and HARD must all deal`);
   // M-1 mean length.
   assert.ok(B.meanLen < M.meanLen, `${label} M-1: BASIC ${B.meanLen} !< MEDIUM ${M.meanLen}`);
   // M-2 non-anchor share of chords.
@@ -1929,7 +1992,6 @@ function assertMonotonic(E, label, deck, run, strictHome) {
   for (const idx of medium) assert.ok(hard.includes(idx), `${label} M-4: MEDIUM card ${idx} not in HARD`);
   // M-5 home-start rate.
   assert.ok(B.home > M.home, `${label} M-5: BASIC home ${B.home} !> MEDIUM ${M.home}`);
-  if (!H) return;
   assert.ok(M.meanLen < H.meanLen, `${label} M-1: MEDIUM ${M.meanLen} !< HARD ${H.meanLen}`);
   assert.ok(M.nonAnchor < H.nonAnchor, `${label} M-2: MEDIUM ${M.nonAnchor} !< HARD ${H.nonAnchor}`);
   assert.ok(H.nonAnchorRegister >= 0, `${label} M-3: HARD`);
@@ -1951,18 +2013,15 @@ test("S3: difficulty is monotonic (M-1..M-5) on every built-in deck and every sw
     { label: "REGISTER_ANCHOR_DECK", deck: registerAnchor },
     { label: "REGISTER_HOME_DECK", deck: registerHome }
   ];
-  const hardEmpty = [];
   let measured = 0;
   for (const row of rows) {
     const S = full.sequence;
     if (S._internal.homeAnchor(row.deck, S.anchors(row.deck)) === null) continue;
     const run = shapeRun(full, row.deck, 300);
-    if (!run.advanced) hardEmpty.push(row.label);
     assertMonotonic(full, row.label, row.deck, run, false);
     measured += 1;
   }
   assert.strictEqual(measured, 37 + 4 + 2 - 3, "every sweep deck with a home anchor is measured");
-  assert.deepStrictEqual(hardEmpty, ["reviewer deck 0", "reviewer deck 1", "reviewer deck 3"]);
 });
 
 // S4 (R-6 / TR-4): the family of every colour card (non-anchor, <= 4 fields,
