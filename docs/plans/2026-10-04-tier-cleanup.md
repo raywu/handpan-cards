@@ -139,7 +139,47 @@ independent reviewer PASS or PASS_WITH_NITS at that SHA; merge with
 
 ## 6. Execution notes
 
-(filled in by the lane)
+Lane `claude/tier-cleanup`, 2026-10-04.
+
+1. **C3 proof.** `sqr_18` applied at `3c97d40` test code: S3 passes (1 pass,
+   0 fail), so the mutant survives the old assertion. With the new
+   `expectRegister` argument S3 fails on the mutant with `pygmy M-3: HARD
+   deals no non-anchor register card` and passes on the clean tree. Test
+   count stays 43; the FLOORS row is untouched.
+2. **C1, T1 row not edited (deviation).** The section 1 table names "8 step
+   1, T1 row". The step 1 row of section 8 now says 17. The T1 row is in
+   section 13.10 (Implementation Tasks) of the tier-rebalance plan, and
+   section 1 also says section 13 is history and is not rewritten, "15
+   mutants" included. The two instructions conflict; the lane took the
+   conservative reading and left 13.10 at "15 `sqr_*` mutants".
+3. **C1, both verify-command spots.** `bash tools/mutation_check.sh` occurs
+   twice in section 8 (the step 5 row and the Verify command line); both
+   now say `tests/`. The mention in section 14 note 12 is history and stays.
+4. **C1, M-5 MEDIUM figures.** Checked against section 2 (40.5 / 40.5 /
+   26.7, Pygmy / Amara / Hijaz): they match, so only the HARD figures
+   changed (15.5 -> 16.0, 33.7 -> 32.8, 37.3 -> 34.3).
+5. **C1, section 3 test-name quote.** Only the quoted R-9 test name was
+   changed to "relative start" (A5). The R-1 prose ("the relative-major
+   anchor") and the `sqr_02` gloss in section 3 are not in the table and
+   stay.
+6. **C2, what still says "relative major".** `src/engine/sequence.js`: the
+   one definition in the `basicStarts` comment. `tests/sequence.test.js`:
+   the two deck-specific messages ("Fm home, Ab relative major", "Dm home,
+   F relative major"). The Pygmy message "Ab Eb Fm Db (relative-major
+   rotation) missing" became "relative-start rotation", as section 2
+   offers. The `sqr_02_relative_major_start_dropped.patch` file name and
+   its header comment are unchanged: acceptance criterion 3 covers the
+   engine and the sequence tests, and renaming a mutant is not in scope.
+7. **C2, mutants.** The definition comment grew by 3 lines, so later hunks
+   sit at an offset of 3 or 6 lines; no context line of any patch changed.
+   `python3 tools/refresh_mutants.py` on the committed tree: "refreshed 0
+   patch(es); 647 already fresh". `git apply --check` passes on all 647
+   patches (every `sq*`, `eg_prevvalid_inverted.patch`, and every patch
+   that names `src/engine/sequence.js` or `index.html`). No hand rewrite
+   was needed. No `# suite:` header names the renamed test.
+8. **Engine diff.** `git diff 3c97d40 -- src/engine/sequence.js` changes
+   comment lines only; `tests/fixtures/` is unchanged.
+9. **README.** Mutant count 646 -> 647, committed with `sqr_18`.
 
 ## 7. Eng review record (2026-10-04, AFK auto-decisions)
 
