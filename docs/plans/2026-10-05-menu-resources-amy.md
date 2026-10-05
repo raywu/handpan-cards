@@ -437,6 +437,27 @@ Auto-decisions taken under AFK (owner may reverse any of them):
   sidebar stacks the two links, costing 106px instead of the estimated 52.
   Conservative branch taken: no code change, no PR, wait for the owner.
 
+- AD7. RESUMED, 2026-10-05. The owner answered an interview after AD6.
+  These are owner decisions, not auto-decisions, and they supersede AD6,
+  the section 5 ownership list and the "no new CSS rule" limit:
+  - Row vs CI: keep the new row. The `panel-fit` oracle gets a narrow
+    allowance for `res-*` links only, modelled on its existing
+    `HEADING_ALLOWANCE_PX`. Lane ownership extends to `tools/probe/` and
+    its tests for that allowance alone. Every non-Resources control must
+    still pass rules 1 and 3 unchanged.
+  - Labels: `AMY: PROGRESSIONS` and `AMY: BOTTOM NOTES` stay. A two-line
+    wrap is accepted wherever it happens. C4's single-line assertion is
+    dropped; assert instead that the label text stays inside its link box.
+  - Sidebar: the two Amy links share one row there too. This needs a
+    scoped rule on the Amy row only (a `duo` class on that `.modebar`:
+    `flex-wrap:nowrap`, and on its `.mode` children `min-width:0`, centred
+    text, a line-height that suits wrapped labels, `padding-inline:6px`).
+    No other row changes. A throwaway build with this rule measured the
+    sidebar row at 54px tall with two links of 94px, and one-line labels
+    at 320 and 380. The lane re-measures; section 8's sidebar numbers
+    (106px) predate this rule.
+  - Play-test page: the "Amy's ten on this pan" block stays.
+
 NOT in scope: the 420px cap (O3) unless the owner says so; select text
 alignment in the widened paper select; the tier row's content weighting;
 any `TODOS.md` item (none concerns the menu).
@@ -469,5 +490,5 @@ Parallelization: none. One lane, two files.
 | CEO Review | `/plan-ceo-review` | Scope and strategy | 0 | not run | not needed for a bounded UI change |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | not run | optional; O2 labels and O3 cap are the design calls |
 
-UNRESOLVED: none. O1-O3 taken as recommended under AFK (AD5). VERDICT: eng
-review cleared, execution started 2026-10-05.
+UNRESOLVED: none. O1-O3 and the step-1 findings settled by the owner (AD7).
+VERDICT: eng review cleared, execution resumed 2026-10-05.
