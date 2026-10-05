@@ -4901,6 +4901,44 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(500.6), { allowance: 24 }).rule3.fail.length, 1, "past it, with the allowance on");
   });
 
+  test("panel fit: the Resources allowance is 64, owed only for a res- control the base lacks", () => {
+    assert.strictEqual(pf.RES_ALLOWANCE_PX, 64);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.resAllowance(keys("res-a"), keys("res-a", "res-amy-bottom")), 64, "a new res- key");
+    assert.strictEqual(pf.resAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.resAllowance(keys("res-a"), keys("res-a", "deck-add2")), 0, "a new control outside Resources earns nothing");
+    assert.strictEqual(pf.resAllowance(keys("res-amy-bottom"), keys("res-amy-bottom")), 0, "the allowance expires once main has the row");
+  });
+
+    test("panel fit rule 1: a new res- control earns the Resources allowance and nothing else does", () => {
+    const b = cell({ needed: 500, avail: 500 });
+    const withRes = (needed) => judge(b, withControl(cell({ needed, avail: 500 }), "res-amy-bottom", ctl(400))).rule1.fail.length;
+    assert.strictEqual(withRes(565), 0, "base + 64 + the 1px tolerance");
+    assert.strictEqual(withRes(566), 1, "one pixel beyond");
+    assert.strictEqual(judge(b, withControl(cell({ needed: 520, avail: 500 }), "tier-basic", ctl(400))).rule1.fail.length, 1, "a new non-res control earns no allowance");
+    assert.strictEqual(judge(b, cell({ needed: 520, avail: 500 })).rule1.fail.length, 1, "no new control at all");
+  });
+
+  test("panel fit rule 3: a new res- control may sit below avail within the Resources allowance, any other new control may not", () => {
+    const b = cell({ needed: 500, avail: 500 });
+    const res = (bottom) => judge(b, withControl(cell({ needed: 560, avail: 500 }), "res-amy-bottom", ctl(bottom))).rule3.fail.length;
+    assert.strictEqual(res(500.5), 0, "inside avail");
+    assert.strictEqual(res(560), 0, "below avail, inside the allowance");
+    assert.strictEqual(res(564.5), 0, "base needed + 64 + the 0.5 tolerance");
+    assert.strictEqual(res(564.6), 1, "past the allowance");
+    assert.strictEqual(judge(b, withControl(cell({ needed: 560, avail: 500 }), "tier-basic", ctl(501))).rule3.fail.length, 1, "a non-res new control below avail still fails");
+    const both = withControl(withControl(cell({ needed: 560, avail: 500 }), "res-amy-bottom", ctl(540)), "tier-basic", ctl(540));
+    assert.strictEqual(judge(b, both).rule3.fail.length, 1, "with a res- control present, the non-res one is still judged exactly");
+  });
+
+  test("panel fit rule 2: the Resources allowance does not move any existing control", () => {
+    const b = withControl(cell(), "deck-add", ctl(500));
+    const c = (bottom) => withControl(withControl(cell(), "res-amy-bottom", ctl(400)), "deck-add", ctl(bottom));
+    assert.strictEqual(judge(b, c(500.5)).rule2.fail.length, 0);
+    assert.strictEqual(judge(b, c(500.6)).rule2.fail.length, 1, "deck-add gets no Resources allowance");
+    assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
+  });
+
   test("panel fit: the threshold cell is the lowest height in the band where the base fits", () => {
     const b = cell({ needed: 373.8, avail: 320 });
     const c = cell({ needed: 395.8, avail: 320, overflowX: { panel: 0, doc: 0 } });
