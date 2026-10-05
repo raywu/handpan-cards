@@ -1,0 +1,16 @@
+# kills: S7: a custom D Kurd 9 deck deals HARD with no extended card
+# R-7 - hardGate's two-non-anchor branch is dropped, so a deck with no
+# extended card (D Kurd 9) goes HARD-empty
+# suite: node --test --test-name-pattern ^S7..a.custom.D.Kurd.9.deck.deals.HARD.with.no.extended.card$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -583,7 +583,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       nonAnchor += 1;
+       if (isRegister || deck.chords[seq[i]].fields.length > 4) extended = true;
+     }
+-    if (!extended && nonAnchor < 2) return false;
++    if (!extended) return false;
+     return register * 3 <= seq.length;
+   }
+ 

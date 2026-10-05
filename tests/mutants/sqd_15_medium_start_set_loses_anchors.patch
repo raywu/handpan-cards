@@ -1,16 +1,16 @@
 # kills: built-in INTERMEDIATE/ADVANCED deals match the tier golden fixture
-# R5 - tierStartSet drops the anchors from INTERMEDIATE's start set, so
-# the DFS fallback can only open on a home-rooted card again
-# suite: node --test --test-name-pattern ^built.in.INTERMEDIATE.ADVANCED.deals.match.the.tier.golden.fixture$ tests/sequence.test.js
+# R-4 - tierStartSet drops the anchors from INTERMEDIATE's start set, so
+# the MEDIUM enumeration can only open on a home-rooted card
+# suite: node --test --test-name-pattern ^built-in.INTERMEDIATE.ADVANCED.deals.match.the.tier.golden.fixture$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -460,7 +460,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -640,7 +640,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function tierStartSet(deck, tier, pool, ctx) {
      if (tier === "advanced") return pool;
-     var home = homePc(deck);
      return pool.filter(function (i) {
--      return chordRootPc(deck, i) === home || anchorsList.indexOf(i) >= 0;
-+      return chordRootPc(deck, i) === home;
+-      return intermediateStart(deck, i, ctx);
++      return chordRootPc(deck, i) === ctx.home;
      });
    }
  

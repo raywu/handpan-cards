@@ -1,0 +1,16 @@
+# kills: S4: colourFamily names every built-in colour card's family (sus before 7)
+# R-6 - the 7 test runs before the sus test, so C#7sus4 becomes a seventh
+# suite: node --test --test-name-pattern ^S4..colourFamily.names.every.built-in.colour.card.s.family..sus.before.7.$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -482,8 +482,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // resolve rule. "other" is add9, 6, 6/9 and a non-anchor diminished triad.
+   function colourFamily(deck, i) {
+     var name = chordName(deck, i);
+-    if ((/sus/).test(name) || (/^[A-G][#b]?5$/).test(name)) return "susPower";
+     if ((/7/).test(name)) return "seventh";
++    if ((/sus/).test(name) || (/^[A-G][#b]?5$/).test(name)) return "susPower";
+     return "other";
+   }
+ 

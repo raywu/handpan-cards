@@ -836,3 +836,98 @@ OUTSIDE COVERAGE: codex reviewed the full plan body up to the 30 KB cap
 VERDICT: READY TO IMPLEMENT (one serial lane, section 8).
 
 NO UNRESOLVED DECISIONS
+
+## 14. Execution notes (lane `claude/tier-rebalance`, 2026-10-04)
+
+Every deviation from sections 0-13 and every decision the lane took alone.
+
+1. **Resumed from a WIP commit.** The first lane agent hit a rate limit and
+   left `616e7c3` ("wip(sequence): tier rebalance steps 1-3 in progress").
+   This lane audited that WIP against R-1..R-10 and the amended R-7 and built
+   on top with new commits; no history was rewritten. The WIP engine already
+   implemented every rule; the audit fixed one stale comment (`pickTiered`
+   still described the superseded TR-7) and restated the tests (item 3 on).
+2. **MIGRATION_L4 (S8 "section 2 migration table").** The plan gives no
+   numbers; measured by full enumeration of connected length-4 loops and
+   asserted as measured (basic = `sequences(deck, 4).length`):
+
+   | deck | intermediate | advanced | null |
+   |---|---|---|---|
+   | Hijaz | 1,092 | 88,228 | 4,880 |
+   | Pygmy | 8,900 | 2,542,250 | 2,811,862 |
+   | Amara | 1,548 | 291,994 | 3,500 |
+
+3. **Pygmy tier-doc fixtures re-classified (S5).** On main I1-I8 were all
+   "intermediate" and A1-A6 all "advanced". Under the new rules: I1, I6 stay
+   intermediate; I2-I5 (length 3 with two or three colour cards, over
+   R-4's one-colour cap, and HARD starts at length 4) are null; I7, I8
+   (length 4, two or more colour cards) are advanced by the two-non-anchor
+   branch; A2, A5 stay advanced; A1, A3, A4, A6 (two or more LOW/HIGH
+   voicings in four chords) are null by the register bound. Asserted as
+   measured; each group carries its reason in a comment.
+4. **S8 fixtures.** Three connected Pygmy loops, one per branch of the gate,
+   each with its shape (non-anchor and extended counts, no register card)
+   asserted before its tier: `[0, 6, 8, 19, 30]` Fm G° Ab Bbm Csus4 (one
+   colour card, null), `[0, 6, 11, 20]` Fm G° Ab5 Bb5 (two colour cards,
+   advanced), `[0, 5, 6, 8]` Fm Fm9 G° Ab (one extended card, advanced; the
+   fixed example `sqr_17` names).
+5. **Five-card deck now deals HARD.** The "fallback and empty-tier reasons"
+   test used to assert HARD empty on the four-anchors-plus-G7 deck (TR-7).
+   Under the broad gate a deal that plays G7 at two positions is HARD; the
+   test now asserts a stuck-rng HARD deal classifies "advanced" and plays G7
+   at least twice. The four-card and three-card all-anchor decks stay
+   HARD-empty (no non-anchor card).
+6. **S7 / generated decks.** The generated-deck test's null list is the
+   three `NO_HOME_CHORD` rows only; reviewer (G3)/(A3)/(G#3) deal HARD with
+   >= 2 non-anchor cards on every seed; a new test builds D Kurd 9 and
+   asserts HARD deals with 0 extended cards.
+7. **Face digests.** `card_face_v1.json`: only mode S keys changed; mode A
+   and B byte-identical to main. `gen_face_v1.json`: its decks are
+   unchanged, but `rails.basic` (one BASIC sequence rail) changed, so it was
+   regenerated with the tool's own `node tools/regen_card_fixture.js --gen`
+   (tool untouched). Section 7 S9 named only the default invocation.
+8. **Golden format.** `sequence_basic_golden.json` is written pretty-printed
+   (2-space indent, trailing newline) as on main; the capture snippet at the
+   top of the suite now says so, so a re-capture does not minify it.
+9. **Mutants: 17 `sqr_*`, not 15.** The broad-gate amendment replaced
+   `sqr_13..15` with `sqr_13..17` (one per branch); section 7 and step 1
+   still say 15. Killing tests where the plan named none: `sqr_01` the
+   sequences golden table; `sqr_06` the tier golden fixture (MEDIUM's
+   dim-chord share is "free, recorded", so S1 has no band that sees a dim
+   start); `sqr_07`, `sqr_14`, `sqr_16`, `sqr_17` the TR-5 null test;
+   `sqr_04/05/08/09/11/13` S1. Every kill was checked to be an assertion,
+   not a crash.
+10. **More mutants re-anchored than section 7 lists.** `refresh_mutants.py`
+    re-anchored `sq_wrap_not_checked`, `sqd_01`, `sqd_02`, `sqd_05`,
+    `sqd_07`; hand-rewritten against the current code (the tool reported
+    UNFIXABLE): `sq_length4_bucket_dropped` (now drops the length-4 BASIC
+    cells; its `# suite:` named a renamed test), `sq_prev_rejection_loop`
+    (`withoutPrev`), `sq_start_not_anchor` (BASIC vocabulary = every card),
+    `sqd_04`, `sqd_06`, `sqd_09`, `sqd_14`, `sqd_15`, `sqd_16` (its old
+    killing test was renamed; it now names the tier golden test, as
+    `sqd_15` does). `sq_rng_ignored` still applied and needed nothing.
+    `sqd_06` now routes "basic" to `pickMedium`: falling through to
+    `pickTiered` as before would throw on `TIER_LENGTHS.basic`, a
+    wrong-reason kill.
+11. **`eg_prevvalid_inverted.patch` (outside `sq*`).** It mutates
+    `prevValid` in `src/engine/sequence.js`, which moved; the refresh tool
+    called its anchor AMBIGUOUS and `git apply --check` failed, which would
+    have reddened the mutation gate. Regenerated against the current
+    `prevValid` with the same headers and the same mutation. This is the one
+    file this lane touched outside the section 8 ownership list, and only
+    because the module it patches is lane-owned.
+12. **Verify command path.** Section 8 says `bash tools/mutation_check.sh`;
+    the script is `tests/mutation_check.sh`.
+13. **Durations and the S1 HARD cut.** `node --test tests/sequence.test.js`
+    on main was 52,823 ms for 36 tests (the brief's baseline). With every
+    S1 tier at 3,000 draws this branch measured 78,164 ms once and then
+    84,288 / 84,777 ms for 43 tests: +31.9 s, over R3's +30 s budget. Main
+    re-measured in the same session at 55,987 ms, so part of the gap is
+    machine load, but the budget is stated against 52,823, so R3's
+    prescribed remedy was applied: S1 draws HARD 1,000 times
+    (`SHAPE_HARD_N`; BASIC and MEDIUM stay at 3,000, the test name is
+    unchanged so mutant `# suite:` headers still select it). After the cut:
+    79,733 ms for 43 tests (+26.9 s). HARD goes through public `pick()`
+    per deal; at N = 1,000 the HARD length band (+-3 pp at 33.3%) is 2 SE
+    wide, deterministic under the fixed seed, and green on all three decks;
+    `sqr_13` (S1's only HARD-specific mutant) is still killed.

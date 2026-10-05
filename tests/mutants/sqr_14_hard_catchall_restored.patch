@@ -1,7 +1,6 @@
 # kills: tierOf returns null for a sequence ADVANCED can never deal
-# classifyTier's HARD branch is back to a catch-all for any length >= 3, so
-# an undealable 3-chord, 7-chord or gate-failing sequence is labelled
-# "advanced" again
+# R-7/TR-5 - every 4-6 chord sequence that fails BASIC and MEDIUM is
+# "advanced" again, gate or no gate
 # suite: node --test --test-name-pattern ^tierOf.returns.null.for.a.sequence.ADVANCED.can.never.deal$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
@@ -11,7 +10,7 @@ diff --git a/src/engine/sequence.js b/src/engine/sequence.js
        return "intermediate";
      }
 -    if (hardGate(deck, chords, ctx)) {
-+    if (chords.length >= 3) {
++    if (chords.length >= 4 && chords.length <= 6) {
        return "advanced";
      }
      return null;

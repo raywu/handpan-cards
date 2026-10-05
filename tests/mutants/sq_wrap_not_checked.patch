@@ -5,12 +5,12 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -207,7 +207,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -217,7 +217,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var used = new Array(n);
-     function rec() {
+     function rec(s) {
        var last = seq[seq.length - 1];
 -      if (seq.length >= 2 && adj[last][seq[0]]) {
 +      if (seq.length >= 2) {
-         pools[seq.length].push(seq.map(function (k) { return anchorsList[k]; }));
+         pools[seq.length][s].push(seq.map(function (k) { return vocab[k]; }));
        }
        if (seq.length === 4) return;

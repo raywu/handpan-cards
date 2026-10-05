@@ -1,0 +1,16 @@
+# kills: S6: Amy's rows - A1-A8 BASIC, A9-A10 MEDIUM on Pygmy; A3/A10 MEDIUM on Amara; A6 BASIC on Hijaz
+# R-1 - the relative-major start is never added, so BASIC opens on home only
+# and A6-A8 leave BASIC on Pygmy
+# suite: node --test --test-name-pattern ^S6..Amy.s.rows.-.A1-A8.BASIC..A9-A10.MEDIUM.on.Pygmy..A3.A10.MEDIUM.on.Amara..A6.BASIC.on.Hijaz$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -283,7 +283,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (chordShape(deck, homeAnchorIdx).key === "0,3,7") {
+       var relative = pc(ctx.home + 3);
+       triads.forEach(function (i) {
+-        if (chordRootPc(deck, i) === relative) starts.push(i);
++        if (chordRootPc(deck, i) === relative) return;
+       });
+     }
+     var vocab = anchorsList.filter(function (i) {

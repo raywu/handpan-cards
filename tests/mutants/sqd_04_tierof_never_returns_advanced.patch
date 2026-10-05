@@ -1,17 +1,16 @@
 # kills: tierOf classifies the golden fixtures and every BASIC sequence
-# tierOf's ADVANCED catch-all is routed to "intermediate" instead, so a
-# sequence that uses something only ADVANCED permits is never classified
-# ADVANCED
+# classifyTier's HARD branch is routed to "intermediate" instead, so a
+# sequence that only HARD admits is never classified ADVANCED
 # suite: node --test --test-name-pattern ^tierOf.classifies.the.golden.fixtures.and.every.BASIC.sequence$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -386,7 +386,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (intermediateGate(deck, chords, ctx.home, ctx.anchorsList)) {
+@@ -608,7 +608,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        return "intermediate";
      }
--    if (n >= 4 && n <= 6) return "advanced";
-+    if (n >= 4 && n <= 6) return "intermediate";
+     if (hardGate(deck, chords, ctx)) {
+-      return "advanced";
++      return "intermediate";
+     }
      return null;
    }
- 

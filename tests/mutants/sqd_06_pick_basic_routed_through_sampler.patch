@@ -1,17 +1,18 @@
 # kills: pick(..., undefined) and pick(..., "basic") reproduce the EASY golden fixture
-# pick's early "basic" branch to pickBasic removed, so a basic-tier request
-# falls through to the tiered rejection sampler instead
+# pick's "basic" branch is routed to the MEDIUM cell sampler instead of
+# pickBasic, so a basic-tier request deals from the wrong cells (re-anchored:
+# falling through to pickTiered would crash on TIER_LENGTHS.basic, a
+# wrong-reason kill)
 # suite: node --test --test-name-pattern ^pick......undefined..and.pick.......basic...reproduce.the.EASY.golden.fixture$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -600,9 +600,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (TIERS.indexOf(t) < 0) {
-       throw new Error("HPE.sequence.pick: unknown tier");
+@@ -903,7 +903,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var ctx = homeOrRefuse(deck);
+     if (ctx.refusal) return ctx.refusal;
+     if (t === "basic") {
+-      return pickBasic(deck, rng, prev, ctx);
++      return pickMedium(deck, rng, prev, ctx);
      }
--    if (t === "basic") {
--      return pickBasic(deck, rng, prev);
--    }
-     var home = homeOrRefuse(deck);
-     if (home.refusal) return home.refusal;
-     return pickTiered(deck, rng, prev, t, home.anchorsList, home.homeAnchorIdx);
+     if (t === "intermediate") {
+       return pickMedium(deck, rng, prev, ctx);

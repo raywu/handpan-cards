@@ -1,0 +1,15 @@
+# kills: length is drawn 2, 3 or 4 at 40/40/20, and style evenly over seven
+# R-2 - BASIC's length weights are uniform, so the 4-chord share is ~33% not 20%
+# suite: node --test --test-name-pattern ^length.is.drawn.2..3.or.4.at.40.40.20..and.style.evenly.over.seven$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -27,7 +27,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // anchor deal one time in three, the colour families at equal shares, a
+   // home-rooted start 40%. Every weight is renormalised over the options
+   // that have a non-empty cell (weightedDraw divides by the sum it is given).
+-  var BASIC_LENGTH_WEIGHT = { 2: 0.4, 3: 0.4, 4: 0.2 };
++  var BASIC_LENGTH_WEIGHT = { 2: 1, 3: 1, 4: 1 };
+   var BASIC_SIDE_WEIGHT = { home: 0.8, relative: 0.2 };
+   var MEDIUM_LENGTH_WEIGHT = { 3: 0.6, 4: 0.4 };
+   var MEDIUM_KIND_WEIGHT = { pure: 1 / 3, colour: 2 / 3 };

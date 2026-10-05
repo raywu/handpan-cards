@@ -1,0 +1,16 @@
+# kills: S1: every tier's shape sits in its section 2 band over 3,000 draws on each built-in deck
+# R-7 - hardGate's registerCount * 3 <= length bound is dropped, so Pygmy's
+# HARD register share returns to ~40%
+# suite: node --test --test-name-pattern ^S1..every.tier.s.shape.sits.in.its.section.2.band.over.3.000.draws.on.each.built-in.deck$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -584,7 +584,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       if (isRegister || deck.chords[seq[i]].fields.length > 4) extended = true;
+     }
+     if (!extended && nonAnchor < 2) return false;
+-    return register * 3 <= seq.length;
++    return true;
+   }
+ 
+   // classifyTier(deck, chords, ctx): BASIC, then MEDIUM, then HARD, then null
