@@ -50,7 +50,7 @@ FLOORS = {
     "tests/test_icons.py": 4,
     # node
     "tests/app.test.js": 272,
-    "tests/e2e.test.js": 262,
+    "tests/e2e.test.js": 263,
     "tests/harness.test.js": 11,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 53,
