@@ -1,0 +1,15 @@
+# kills: the settings panel has exactly one Resources group with its five outbound links in two rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.five.outbound.links.in.two.rows$ tests/e2e.test.js
+# menu-resources AD7. The Amy row's wrapper is not a .modebar, so the group is left with one row and the Amy links lose their layout.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1329,7 +1329,7 @@ footer.seq{row-gap:var(--sp-1)}
+       <a class="mode" id="res-trainingcards" href="https://svenkirchhofer.de/handpan-training-cards/"
+          target="_blank" rel="noopener">HTC</a>
+     </div>
+-    <div class="modebar duo">
++    <div>
+       <a class="mode" id="res-amy-progressions" href="https://youtu.be/-BD13QhFJ-M"
+          aria-label="Amy Naylor: ten handpan chord progressions (YouTube)"
+          target="_blank" rel="noopener">AMY: PROGRESSIONS</a>
