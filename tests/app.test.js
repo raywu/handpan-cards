@@ -5024,6 +5024,21 @@ describe("SB sandbox contract", () => {
     assert.ok(res.value.startsWith(app.sandbox.location.origin + app.sandbox.location.pathname));
     assert.ok(!res.value.startsWith("undefined"));
   });
+
+  test("SB-6 diffGen reports an extra card, an extra rail and a missing mode", () => {
+    const { diffGen } = require("../tools/regen_card_fixture.js");
+    const face = { front: "f", back: "b" };
+    const fixture = () => ({ decks: { d: { A: { 0: face }, B: { 0: face } } }, rails: { basic: "r" } });
+    const extraCard = fixture();
+    extraCard.decks.d.A[1] = face;
+    const extraRail = fixture();
+    extraRail.rails.advanced = "r";
+    const missingMode = fixture();
+    delete missingMode.decks.d.B;
+    for (const actual of [extraCard, extraRail, missingMode]) {
+      assert.strictEqual(diffGen(fixture(), actual).length, 1);
+    }
+  });
 });
 
 describe("tab stops follow rendering", () => {
