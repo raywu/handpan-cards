@@ -1,0 +1,15 @@
+# kills: SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE
+# suite: node --test --test-name-pattern ^SB-5.Tab.in.an.empty.ADD.sheet.never.lands.on.the.disabled.GENERATE$ tests/app.test.js
+# isStop stops excluding disabled controls, so Tab lands on a disabled GENERATE.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8853,7 +8853,7 @@ scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDe
+ // A stop is a control the page renders and the user can operate. Rendering is
+ // asked of the browser (a control inside a hidden ancestor, or unrendered by
+ // CSS, has no client rects), never of a hand-kept mode table.
+-const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
++const isStop = el => !!el && el.getClientRects().length > 0;
+ function cycleTabStops(stops, e) {
+   if (!stops.length) return;
+   const i = stops.indexOf(document.activeElement);

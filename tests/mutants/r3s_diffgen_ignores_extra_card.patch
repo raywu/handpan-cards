@@ -1,0 +1,15 @@
+# kills: SB-6 diffGen reports an extra card, an extra rail and a missing mode
+# suite: node --test --test-name-pattern ^SB-6.diffGen.reports.an.extra.card..an.extra.rail.and.a.missing.mode$ tests/app.test.js
+# diffGen stops reporting a card the current render has and the fixture lacks.
+diff --git a/tools/regen_card_fixture.js b/tools/regen_card_fixture.js
+--- a/tools/regen_card_fixture.js
++++ b/tools/regen_card_fixture.js
+@@ -200,7 +200,7 @@ function buildGen(htmlPath) {
+ }
+ 
+ function diffGen(expected, actual) {
+-  const problems = diffAll(expected.decks, actual.decks).map((p) => `gen ${p}`);
++  const problems = diffAll(expected.decks, actual.decks).filter((p) => !p.includes("missing from fixture")).map((p) => `gen ${p}`);
+   for (const t of new Set([...Object.keys(expected.rails), ...Object.keys(actual.rails)])) {
+     if (expected.rails[t] !== actual.rails[t]) problems.push(`rail ${t}: fixture ${expected.rails[t]} != current ${actual.rails[t]}`);
+   }
