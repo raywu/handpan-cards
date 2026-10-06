@@ -541,7 +541,7 @@ function run() {
     );
   });
 
-  /* Q14: #card's own keydown handler (index.html:7506-7509) treats a focused
+  /* Q14: #card's own keydown handler (the card.addEventListener keydown handler in index.html) treats a focused
      Enter or Space as "flip", same as a click - untested anywhere else, since
      every other keydown test in this file exists to prove a DESCENDANT
      control's Enter/Space does NOT bubble into a flip. This is the positive
@@ -2569,7 +2569,7 @@ function run() {
     }
   });
 
-  /* Q1: the share-URL inbound flow (index.html:7573-7574) had no e2e test -
+  /* Q1: the share-URL inbound flow (the location.hash SHARE_PREFIX branch at boot in index.html) had no e2e test -
      openShare() itself is unit-tested against the sandbox (app.test.js), but
      the sandbox never navigates, so a boot-order regression on a real
      `location.hash` would stay green everywhere else. There is no
@@ -5079,7 +5079,7 @@ function run() {
   test("clearing the seed box then tapping a pan note still chooses it while DELETE is armed (queue row 117)", async () => {
     /* Same hazard as row 91's pan-tap test, one branch over: syncParseState's
        EMPTY-seed branch has its own `if (paint) showPlaceholderPan();` guard
-       at index.html:4578, load-bearing on its own. Clearing the box paints
+       in index.html's syncParseState, load-bearing on its own. Clearing the box paints
        the placeholder pan once (paint: true, from the input event); disarming
        DELETE on the very next tap must NOT repaint it again, or the .panhit
        the finger landed on is replaced before the click arrives. */
@@ -9455,7 +9455,6 @@ function run() {
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
-      await waitElapsed(50, "the touch swipe's eatClick decay");
       await b.eval(`document.getElementById("next").focus(); return true;`);
       await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
       await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -10259,12 +10258,11 @@ function run() {
       });
       const armed = await b.eval(`return eatClickTimer !== null && flight !== null;`);
       assert.strictEqual(armed, true, "a committing mouse drag must arm a decay timer and be mid-flight");
-      // ~100ms into the ~400ms decay window (and well inside the 220ms
+      // The flight is still in the air here (inside the 220ms
       // fly-out - do NOT poll countText here, that would wait out the
       // fly-out and land it for real before the tap), tap the card - the
       // document capture-phase pointerdown's `if (flight)` branch lands it
       // and reassigns eatClick with no decay.
-      await waitElapsed(100, "the tap to land mid fly-out");
       const stillMidFlight = await b.eval(`return flight !== null;`);
       assert.strictEqual(stillMidFlight, true, "the tap must land during the fly-out, not after it already landed itself");
       // Check eatClickTimer right after the bare pointerdown, before the
@@ -10511,6 +10509,7 @@ function run() {
 
       test("card swipe (wheel): momentum wheel events after a committed gesture lands do not step again", async () => {
         await freshLoad();
+        await installFlyoutPauseHook();
         const n = (await decksMeta())[0].chords;
         // The committing leg crosses the threshold and starts the 220ms
         // fly-out; the deck count already reads the committed value even
@@ -10545,8 +10544,8 @@ function run() {
         // overlapping animation on .scene is the observable symptom.
         assert.strictEqual(await b.eval(`return scene.getAnimations().length;`), 1,
           "a new gesture arriving mid-flight must not start a second, overlapping fly-out animation");
-        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
+        await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await expectCount(`2 / ${n}`, "momentum arriving mid-flight must not advance the deck a second time");
       });
 
