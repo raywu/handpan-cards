@@ -2109,6 +2109,65 @@ function run() {
       }
     });
 
+  test("TR-1: the three site links are equal in width on every line they share, and every label stays inside its box",
+    async () => {
+      await freshLoad();
+      const MEASURE = `
+        const ids = ["res-handpaner", "res-dingandtones", "res-trainingcards"];
+        const els = ids.map(id => document.getElementById(id));
+        const inside = (el) => {
+          const k = el.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(el);
+          return [...g.getClientRects()].every(t => t.left >= k.left - 0.5 && t.right <= k.right + 0.5 && t.top >= k.top - 0.5 && t.bottom <= k.bottom + 0.5);
+        };
+        const lines = [];
+        for (const el of els) {
+          const r = el.getBoundingClientRect();
+          let l = lines.find(x => Math.abs(x.top - r.top) <= 2);
+          if (!l) { l = { top: r.top, widths: [] }; lines.push(l); }
+          l.widths.push(r.width);
+        }
+        return { siblings: els[0].parentElement.children.length, lines: lines.map(l => l.widths),
+          tall: Math.min(...els.map(e => e.getBoundingClientRect().height)),
+          inside: els.map(inside), spill: els.map(e => e.scrollWidth - e.clientWidth) };
+      `;
+      try {
+        for (const [vw, vh, over] of MENU_VIEWPORTS.filter(([, h]) => h > 520)) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(MEASURE);
+          const label = `${vw}x${vh}`;
+          assert.strictEqual(m.siblings, 3, `${label}: the first Resources row holds exactly three links`);
+          const shape = JSON.stringify(m.lines.map((w) => w.length));
+          const want = vw === 1024 && vh === 700 ? "[2,1]" : "[3]";
+          assert.strictEqual(shape, want, `${label}: line shape ${shape}, wanted ${want}: ${JSON.stringify(m.lines)}`);
+          for (const w of m.lines) {
+            assert.ok(Math.max(...w) - Math.min(...w) <= 1, `${label}: unequal widths on one line: ${JSON.stringify(w)}`);
+          }
+          assert.ok(m.tall >= 44, `${label}: a site link is under the 44px target`);
+          assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
+          await b.key("Escape", "Escape", 27);
+        }
+        for (const [vw, vh, over] of [[640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true]]) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const m = await b.eval(MEASURE);
+          const label = `${vw}x${vh}`;
+          assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
+          assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
+          await b.settle();
+          const base = await b.eval(MEASURE);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
+          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
+          await b.key("Escape", "Escape", 27);
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
   test("#seq-source-link and the Amy links are each a panel stop exactly once, and Amy carries no onclick",
     async () => {
       await freshLoad();
