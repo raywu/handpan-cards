@@ -5292,7 +5292,7 @@ test("AP1-1 canStartGesture guard table", () => {
 test("AP1-2 releaseDecision table", () => {
   const app = boot({ layout: true });
   const rd = (o) => plain(app.get(`releaseDecision(${JSON.stringify({
-    dx: 0, dy: 0, vx: 0, moved: true, cancelled: false, blocked: false, mouse: false, reducedMotion: false, ...o,
+    dx: 0, dy: 0, vx: 0, moved: true, cancelled: false, blocked: false, reducedMotion: false, ...o,
   })})`));
   const rows = [
     ["fast flick left", { dx: -15, vx: -0.9 }, { kind: "fly", dir: 1, eatClick: true }],
@@ -5305,7 +5305,7 @@ test("AP1-2 releaseDecision table", () => {
     ["cancelled", { dx: -40, vx: -0.9, cancelled: true, blocked: true }, { kind: "spring", dir: 0, eatClick: false }],
     ["cancelled without moving", { dx: 0, moved: false, cancelled: true, blocked: true }, { kind: "rest", dir: 0, eatClick: false }],
     ["blocked by an open panel", { dx: -40, vx: -0.9, blocked: true }, { kind: "spring", dir: 0, eatClick: true }],
-    ["mouse flick", { dx: -40, vx: -0.9, mouse: true }, { kind: "fly", dir: 1, eatClick: true }],
+    ["mouse flick", { dx: -40, vx: -0.9 }, { kind: "fly", dir: 1, eatClick: true }],
     ["reduced motion commit", { dx: -40, vx: -0.9, reducedMotion: true }, { kind: "rest", dir: 1, eatClick: true }],
     ["reduced motion short drag", { dx: -15, reducedMotion: true }, { kind: "rest", dir: 0, eatClick: true }],
     ["reduced motion tap", { dx: 3, moved: false, reducedMotion: true }, { kind: "rest", dir: 0, eatClick: false }],
@@ -5316,7 +5316,7 @@ test("AP1-2 releaseDecision table", () => {
 test("AP1-3 wheelDecision table", () => {
   const app = boot({ layout: true });
   const wd = (w, e) => plain(app.get(`wheelDecision(${JSON.stringify({
-    sx: 0, sy: 0, axis: null, fired: false, skip: false, ...w,
+    sx: 0, axis: null, fired: false, skip: false, ...w,
   })}, ${JSON.stringify({ deltaX: 0, deltaY: 0, deltaMode: 0, innerHeight: 800, ...e })})`));
   const rows = [
     ["skipped gesture", { skip: true }, { deltaX: 200 }, { kind: "skip", axis: null, sx: 0, dir: 0 }],
