@@ -120,7 +120,7 @@ README section "Optional: Claude Code follow-up prompt" and `tests/CONTRACT.md` 
 | PY-4 | `assertRepoUntouched` asserts a path prefix, not the repo | sha256 snapshot of the six PDFs | green + one-off red proof | `tests.test_pdf_build` | PG-4 | Named for a guarantee it does not give |
 | PY-7 | `test_pdf_emitter` leaks its temp dir | `shutil.rmtree` in `tearDownClass` | n/a | suite stays 7 OK | PG-5 | One line |
 | GATE-D1..D3, PY-D1, D2, D3, D5 | Unused exports, attribute, `**kw`, recorder methods, constant, imports | Delete | green characterisation | owning suites | PG-6 | Dead code; strand 0 |
-| GATE-6 (part), GATE-D10 (part), PY-6, GATE-D5 docstring | Stale line refs and counts in comments | Text | n/a | n/a | PG-7 | Rides with the lane |
+| GATE-6 (part), GATE-D10 (part), PY-6 | Stale line refs and counts in comments | Text | n/a | n/a | PG-7 | Rides with the lane |
 | UNIT-D13 / APP-D3, UNIT-D12 / APP-D4 | Count-clearing loops; announce fallback | Delete | SB-1, SB-3 | unit suites, fixtures | AP-1 | Dead in a browser |
 | APP-D1 / UNIT-D14, APP-D2 / UNIT-D15 | Card keydown guard with no live target; `.prints` bubble stop with no bubble listener | Delete | green characterisation | three named e2e tests | AP-2 | Dead since the menu-shell change |
 | APP-4, APP-D5, APP-D6 | `releaseDecision` param `mouse`, `wheel.sy`: never read | Delete | green characterisation | two table tests | AP-3 | Dead; table rows currently imply `mouse` matters |
@@ -221,7 +221,7 @@ Verdict is the verify file's. "Planner" marks a row the planner re-ran or re-rea
 | GATE-9, GATE-D4 | CONFIRMED, oracle wrong; slot kept by decision | Deferred / kept |
 | GATE-10 | CONFIRMED | Row raised in CL-1; `verify_js` extension deferred |
 | GATE-D1, GATE-D2, GATE-D3 | CONFIRMED | PG-6 |
-| GATE-D5 | CONFIRMED | Stale docstring sentence in PG-7; the flag itself owner-gated, Q9b |
+| GATE-D5 | CONFIRMED | Not touched this pass: the stale sentence is the `check_only()` docstring in `tools/regen_data_mutants.py`, which no lane owns; the flag itself is owner-gated, Q9b |
 | GATE-D6, GATE-D7, GATE-D8 | CONFIRMED | Kept by decision (legacy aggregates, `validate_floors`, `KNOWN_NON_UNIQUE_ANCHORS` each have a mutant or a contract line) |
 | GATE-D9 | CONFIRMED, BEHAVIOUR-BEARING | Kept: documented as deliberate |
 | GATE-D10 | UNDECIDED in part | Two confirmed items in PG-7; the rest deferred |
@@ -323,6 +323,14 @@ Intersections and their order:
   paste it in the PR body, then `git apply -R`. `# suite:` patterns use `.` for every space and punctuation mark,
   no quotes. Cap: 40 patch files per PR.
 - Deliver by PR. The PR body carries every "paste in PR body" item from the lane's Accept lines.
+- Cuts and the reviewer's checks. Every "Reviewer must check" line, every expected test count and every mutant
+  table in a lane block is written for the lane with NO cut taken. When a lane takes a cut or a STOP branch that
+  its own block names, and says which one in the PR body, a check that depends on the cut step is read with that
+  step removed: its tests, its mutants and its pasted evidence are not expected, and each expected count drops by
+  what the step would have added (the PR body states the resulting numbers). A cut the block does not name is
+  still a failure. Evidence a lane block places under one step but which covers the whole lane stays required
+  after that step is cut; today that is PF's forced old-vs-new probe run, required whenever any of PF-1, PF-2 or
+  PF-3 ships.
 - On any error, make the smallest change that still serves the step. If a STOP condition fires, take the cut
   written there and say so in the PR body. Never widen scope.
 
@@ -453,7 +461,7 @@ SB-6 (UNIT-10)
 
 SB-7 (UNIT-9 part)
 - Change: `tests/app.test.js` line 5 "59 cards" becomes "96 cards"; in `tools/sandbox.js` rewrite the comment above
-  `innerWidth` and the one above `sandbox.print` so neither says the app calls `window.print()` or listens for
+  `innerWidth` and the JSDoc that begins "Fire a window-level event the app listens for" so neither says the app calls `window.print()` or listens for
   `afterprint`. Text only.
 - Verify: `TAP tests/app.test.js` still `# tests 279`.
 
@@ -516,13 +524,14 @@ EN-1 (ENG-1)
 - Change: replace the two literal NUL bytes in that test's input string with the escape `\0\0` (the string becomes `"1\0\0"`).
 - Forces: none.
 - Accept: `file tests/share.test.js` no longer says `data`; `git grep -c CAPS -- tests/share.test.js` and plain
-  `grep -c CAPS tests/share.test.js` print the same number (pasted in PR body); suite count unchanged.
+  `grep -c CAPS tests/share.test.js` print the same number (pasted in PR body; they already agree at BASE, so the
+  `file` line is the check that discriminates); suite count unchanged.
 - Verify: `TAP tests/share.test.js` expects `# tests 51`, `# fail 0`.
   `TAP --test-name-pattern '^decode.never.throws.on.hostile.input$' tests/share.test.js` expects `# tests 1`, `# pass 1`.
 - Stale text: none. STOP: none (one-line change; if the count differs, revert and report).
 
 EN-2 (ENG-2, ENG-D1..D13, D16, D17)
-- First commit: none new. Characterisation: the eleven engine suites, `tests/app.test.js`, `tests/preview.test.js`,
+- First commit: none new. Characterisation: the ten engine suites named in Verify, `tests/app.test.js`, `tests/preview.test.js`,
   `python3 tools/validate.py`, all GREEN at BASE (Appendix A). No new test: a test for "this export is absent"
   would pin dead surface in reverse. Modes not covered by the characterisation: none known; the app consumes 18
   `HPE.x.y` names, none of them removed.
@@ -735,7 +744,8 @@ PG-2 (GATE-3)
 - Change: `test_a_killed_suites_own_output_reaches_the_excerpt` runs inside a private temp root: create
   `tempfile.mkdtemp()`, create two decoy directories `hpfc-prof-decoy1` and `hpfc-prof-decoy2` in it, set
   `tempfile.tempdir` and `os.environ["TMPDIR"]` to it, restore both and remove the root in `addCleanup`. The
-  existing `before == after` assertion is kept unchanged; add one assertion that both decoys still exist.
+  existing `before == after` assertion is kept unchanged; add two assertions: `_hpfc_profile_dirs()` returns exactly the two
+  decoys, and both decoys still exist after the run.
 - Forces: none.
 - Accept: the test passes with a live Chrome running on the machine (worker starts none; the property is "reads only
   its own root": shown by `_hpfc_profile_dirs()` returning exactly the two decoys, asserted in the test). No
@@ -793,7 +803,7 @@ PG-6 (GATE-D1, D2, D3; PY-D1, D2, D3, D5)
   `python3 -m unittest tests.test_gen_deck` `Ran 17 tests`, `OK`.
 - STOP: a removed recorder method that a test turns out to call is restored individually and listed.
 
-PG-7 (GATE-6 part, GATE-D10 part, GATE-D5 docstring, PY-6)
+PG-7 (GATE-6 part, GATE-D10 part, PY-6)
 - Change, text only. Every fix replaces a line number with the function or marker name, and keeps the line count
   of the comment where a mutant targets the file (22 patches target `tests/suite_health.py`):
   - `tests/suite_health.py`, `tests/test_suite_health.py`: `cdp.js:289` becomes "the spawn in `launchOnce`
@@ -803,7 +813,8 @@ PG-7 (GATE-6 part, GATE-D10 part, GATE-D5 docstring, PY-6)
   - `tests/mutation_check.sh`: `(line 27)` becomes "(the `shopt -s nullglob` at the top)".
   - `tools/validate.py` docstring `Checks 2-4` becomes `Checks 2-5`. `tools/inline_engine.py` `core first` wording
     matches the real module order. `tests/test_print.py` five `59 cards` become `96 cards`.
-    `tests/test_deck_data.py` `regen_data_mutants.py:158` becomes the name of the assertion's function.
+    `tests/test_deck_data.py` `regen_data_mutants.py:158` becomes "the mutant definitions in
+    `tools/regen_data_mutants.py`", with no line number.
   - `tools/decks.py` `GENERATED_OMITTED["blank_cards"]`: "asks for 9" becomes "asks for 7" (the value in
     `data/decks.json` is 7). This is a reason string in the print generator, not card copy; no PDF text changes.
 - Forces: `tests/mutants/c_gen_omitted_vacuous.patch` carries that string: refresh it.
@@ -818,7 +829,7 @@ PG-7 (GATE-6 part, GATE-D10 part, GATE-D5 docstring, PY-6)
 helpers; their evidence is the one-off red proof in the PR body, because a mutant that redirects a build into the
 repo would dirty tracked PDFs inside the gate (auto-decision 6). Cap 40.
 
-**Split size and cut.** About 90 lines removed, 60 added, 14 files. Cut order: PG-7 comment fixes outside
+**Split size and cut.** About 90 lines removed, 60 added, 16 files. Cut order: PG-7 comment fixes outside
 `tools/decks.py`, then PG-6.
 
 **Reviewer must check.**
@@ -845,7 +856,7 @@ Any visual change, any copy change, any change inside an engine region or the DE
   comment containing `--sep now has NO consumer`; the comments containing `fit_note shrinks anything that truly overflows`,
   `` (`:4954`) ``, and the orphaned JSDoc tail above `const PAN_HIT_MIN_PX = 44;`.
 - `tests/app.test.js`: tests `AP1-2 releaseDecision table` and `AP1-3 wheelDecision table` (fixture keys only).
-- `tests/mutants/`: the 17 patches listed under Mutants (refresh or re-cut).
+- `tests/mutants/`: the 18 patches listed under Mutants (refresh or re-cut).
 
 **Never touches.** `tools/sandbox.js`, `src/engine/`, `tests/e2e.test.js`, `tests/helpers/`, `tools/probe/`, FLOORS,
 README, `data/`, any `r3s_` patch unless `refresh_mutants.py` reports it stranded by this diff.
@@ -920,7 +931,8 @@ AP-5 (APP-D10, `--sep`)
 - Change: remove ` --sep:#8a8a8a;` from the `:root` line and delete the CSS comment sentence beginning "Note the
   consequence: --sep now has NO consumer" through its end. In the part of that comment that stays, reword the
   three remaining mentions ("Was var(--sep)", "--sep resolves to", "Retuning --sep") to past tense and say once
-  that the token was removed in this pass. The rule `.hdr .l .num{color:#757575; ...}` under it is not touched.
+  that the token was removed in this pass. Keep the literal `var(--sep)` exactly once in the reworded comment (the
+  "Was var(--sep)" mention); the Accept below counts it. The rule `.hdr .l .num{color:#757575; ...}` under it is not touched.
   No other token changes.
 - Accept: `git grep -n -a -F -e '--sep:' -- index.html` prints nothing (no definition);
   `git grep -n -a -F -e 'var(--sep)' -- index.html` prints exactly one line, inside that comment (no consumer);
@@ -1043,6 +1055,7 @@ PF-3 (UNIT-5, invariance widths)
   Run the probe with its default workers and run no other Chrome-driving command meanwhile; this is the probe,
   not the e2e suite. The pair's verdict (PASS or FAIL) is irrelevant;
   only old equals new matters.
+  This run is evidence for the whole lane, not only PF-3: if PF-3 is cut, the lane still runs it for PF-1 and PF-2.
   (Outside review O1: the earlier Accept compared CI job logs that measure zero cells on this PR.)
 - Verify: same command, `# tests 42`, `# fail 0`. `TAP tests/app.test.js` expects main's count + 3 (282), `# fail 0`.
 - STOP: if the extraction needs `Browser` or page state as a parameter, it is not pure: cut PF-3, keep PF-1 and PF-2.
@@ -1096,13 +1109,15 @@ containing `tests/helpers/sandbox.js`; `tests/mutants/` refreshes caused by the 
 
 CL-1 (X-2, GATE-10 row; FLOORS)
 - Change: download main's `js-results` and `python-results` artifacts from the CI run at main's head
-  (`gh run download <run-id> -n js-results -n python-results`). Set each FLOORS row to that file's `total`
+  (two single-artifact downloads into one directory, as CI does:
+  `gh run download <run-id> -n python-results -D <dl>` then `gh run download <run-id> -n js-results -D <dl>`; one
+  call with two `-n` nests each file in a subdirectory named after its artifact, and the Verify paths below miss). Set each FLOORS row to that file's `total`
   (JS) or `by_module` count (python). Expected: `tests/app.test.js` 282, `tests/harness.test.js` 13,
   `tests/pdfcards.test.js` 16, others unchanged; a lane that took a cut changes these, which is why the artifact is the source, not this plan.
 - Forces: patches that carry a FLOORS row as context (22 target the file): refresh.
 - Accept: CI `suite health` green; no row lowered (`git diff` shows only equal or higher numbers).
 - Verify: `python3 tests/suite_health.py --verify <dl>/python-results.json <dl>/js-results.json`, where `<dl>` is the
-  directory the two artifacts of main's CI run were downloaded to, exits 0 (`--verify` reads the two files and runs nothing);
+  directory the two artifacts of main's CI run were downloaded to, exits 0 with `<dl>` holding both JSON files directly (`--verify` reads the two files and runs nothing);
   `python3 -m unittest tests.test_suite_health` `Ran 30 tests`, `OK`.
 - STOP: an artifact total LOWER than a current floor means a test vanished: stop and report; do not lower the row.
 
@@ -1128,7 +1143,7 @@ CL-4 (APP-6 part, UNIT-9 part)
 - Verify: `python3 -m unittest tests.test_readme_currency` `Ran 11 tests`, `OK`.
 
 **Mutants.** New: none. Refresh only. Cap 40.
-**Split size and cut.** About 110 lines of prose removed, 10 numbers changed. No cut; CL-3 and CL-4 can be dropped without affecting Done-when.
+**Split size and cut.** About 110 lines of prose removed, a handful of numbers changed. No cut; CL-3 and CL-4 can be dropped without affecting Done-when.
 **Reviewer must check.** Every FLOORS number against the artifact file attached to the PR; README count against the
 directory listing at the head SHA; no row lowered.
 
@@ -1143,7 +1158,7 @@ directory listing at the head SHA; no row lowered.
 | `r3h` | HX | 2 |
 | `r3p` | PF | 3 |
 
-- Strand counts by lane: SB 0 certain (up to 4 by offset), EN 0, HX 0, PG 1, AP 17, PF up to 12, CL offsets only.
+- Strand counts by lane: SB 0 certain (up to 4 by offset), EN 0, HX 0, PG 1, AP 18, PF up to 12, CL offsets only.
 - Refresh procedure: section 4.3. `tools/refresh_mutants.py` needs a clean tree apart from the lane's committed
   change, rewrites every stranded patch in the directory, and the lane keeps only the ones its diff stranded.
 - Multi-file or cross-lane patches and their owner:
@@ -1210,7 +1225,7 @@ ambiguous mutant anchors (Q7), the six stub guards (Q2), the eight unprobed `wai
 | EN | 0 expected | 0 |
 | HX | 2 new | 0 e2e; under 1 s of harness; minus 0.15 s of waits |
 | PG | 1 certain, up to 6 | 0 |
-| AP | 17 | 0 |
+| AP | 18 | 0 |
 | PF | up to 15 (3 new + 12) | 0 |
 | CL | refresh only, under 10 expected | 0 |
 
@@ -1645,6 +1660,17 @@ re-cuts (18 stranded, not 17); PG no longer cites a `check_only` docstring that 
 `--verify` is written with its two artifact paths. Smaller corrections from the same review are applied in place
 (PG-5 import, SB-5 ordering and precondition, EN-2 parameter folding, counts of `waitElapsed` sites and of patches
 on `tests/mutation_check.sh`, PF real-font evidence, go status).
+
+A second independent review (head `378252c`) also returned FAIL, on two points: CL-1's download command nested the
+artifacts where its Verify line could not find them (now two single-artifact downloads into one directory), and the
+unconditional reviewer checks contradicted cuts the lane blocks themselves allow (now one rule in section 4.3, and
+PF's probe run is lane-level). Its non-blocking notes are applied too (AP count 18 everywhere, GATE-D5 no longer
+credited to PG-7, AP-5 keeps one `var(--sep)` literal, SB-7 and PG-2 wording, count slips).
+
+Auto-decision 11 (2026-10-05, integrator): section 6 gate 5 parks a lane after two FAILs and asks for a reviewed
+sub-plan. Wave 0 is the plan itself, both FAILs were text defects with no code behind them, and a review of the
+corrected plan is the reviewed sub-plan that gate asks for. So the plan goes to a third fresh reviewer once. A
+third FAIL stops wave 0 and goes to the owner.
 
 ## Decision ledger
 
