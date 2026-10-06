@@ -1,5 +1,6 @@
-# kills: the sidebar's first Resources line is exactly two equal links, HTC below (line shape [2,1] at 1024x700)
-# suite: node --test --test-name-pattern ^TR-1 tests/e2e.test.js
+# kills: TR-1: the three site links are equal in width on every line they share, and every label stays inside its box
+# suite: node --test --test-name-pattern TR-1:.the.three.site.links.are.equal.in.width.on.every.line.they.share..and.every.label.stays.inside.its.box tests/e2e.test.js
+# the sidebar's first Resources line is exactly two equal links, HTC below (line shape [2,1] at 1024x700).
 # TR-2. Removes the sidebar flex-basis:40% rule: all three links sit on one unequal line at 1024x700.
 diff --git a/index.html b/index.html
 --- a/index.html

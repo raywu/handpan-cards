@@ -1,5 +1,6 @@
-# kills: the three site links split their row equally at 320x568 (HANDPANER cannot shrink under its default padding)
-# suite: node --test --test-name-pattern ^TR-1 tests/e2e.test.js
+# kills: TR-1: the three site links are equal in width on every line they share, and every label stays inside its box
+# suite: node --test --test-name-pattern TR-1:.the.three.site.links.are.equal.in.width.on.every.line.they.share..and.every.label.stays.inside.its.box tests/e2e.test.js
+# the three site links split their row equally at 320x568 (HANDPANER cannot shrink under its default padding).
 # TR-2. Removes the trio padding-inline rule: HANDPANER keeps its 97.8px content-plus-padding minimum, so 320x568 draws 97.8 / 89.1 / 89.1.
 diff --git a/index.html b/index.html
 --- a/index.html
