@@ -5009,6 +5009,12 @@ describe("SB sandbox contract", () => {
     }
     assert.deepStrictEqual(problems, []);
   });
+
+  test("SB-3 the announcer is a markup node, not one the app created", () => {
+    const app = boot();
+    assert.ok(app.announcer());
+    assert.ok(!app.created.includes(app.announcer()));
+  });
 });
 
 describe("tab stops follow rendering", () => {
