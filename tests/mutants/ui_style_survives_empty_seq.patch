@@ -6,8 +6,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6613,7 +6613,6 @@ function renderSeqEmpty() {
-   while (countEmpty.children.length) countEmpty.removeChild(countEmpty.children[0]);
+@@ -7512,7 +7512,6 @@ function renderSeqEmpty() {
+   const countEmpty = document.getElementById("count");
    countEmpty.textContent = "";
    countEmpty.classList.remove("seq");
 -  document.getElementById("seq-style").hidden = true;

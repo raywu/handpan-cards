@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8844,7 +8844,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -9182,7 +9182,7 @@ function release(e, cancelled, pushPoint = true) {
      const span = pts[pts.length - 1].t - pts[0].t;
      if (span > 0) vx = (pts[pts.length - 1].x - pts[0].x) / span;
    }
@@ -17,4 +17,4 @@ diff --git a/index.html b/index.html
 +  const dx = e.clientX - drag.x0;
    const mouse = pointerType === "mouse";
    const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
-     blocked: cancelled || panelOpen || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
+     blocked: cancelled || panelOpen || sheetOpen, reducedMotion: reducedMotion.matches });

@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -21,7 +21,6 @@
+@@ -46,7 +46,6 @@
  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
  <style>
  :root{
 -  color-scheme:dark;
-   --ink:#242424; --sep:#8a8a8a; --paper:#ffffff;
+   --ink:#242424; --paper:#ffffff;
    --table:#1a1815; --table2:#26221c;
    --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;

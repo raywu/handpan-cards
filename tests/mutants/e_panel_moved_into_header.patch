@@ -69,10 +69,11 @@
 # Refreshed 2026-10-05 (lane menu-resources): the Resources group gained its
 # second row (the two Amy links); the moved copy was regenerated from the
 # current element. The mutation itself is unchanged.
+# Re-cut 2026-10-05 (refactor pass 3, AP-2): the .prints tag lost its onclick; the moved copy follows it. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1058,6 +1058,83 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1059,6 +1059,82 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -109,7 +110,7 @@ diff --git a/index.html b/index.html
 +  </div>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Print this deck</h3>
-+    <div class="prints" onclick="event.stopPropagation()">
++    <div class="prints">
 +      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
 +      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
 +      <!-- The paper choice keeps the panel open (design direction, "After an
@@ -152,11 +153,10 @@ diff --git a/index.html b/index.html
 +    </div>
 +  </div>
 +</div>
-+
  </header>
  
  <main>
-@@ -1263,82 +1340,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1264,82 +1340,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -193,7 +193,7 @@ diff --git a/index.html b/index.html
 -  </div>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Print this deck</h3>
--    <div class="prints" onclick="event.stopPropagation()">
+-    <div class="prints">
 -      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
 -      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
 -      <!-- The paper choice keeps the panel open (design direction, "After an

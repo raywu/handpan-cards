@@ -13,7 +13,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7847,10 +7847,7 @@ function step(dir) {
+@@ -8836,10 +8836,7 @@ function step(dir) {
    if (!order.length) return;
    idx = (idx + dir + order.length) % order.length;
    // N40/OV2: suppress .card's reverse-flip transition across every reset.
@@ -23,4 +23,4 @@ diff --git a/index.html b/index.html
 -  card.style.transition = "";
  }
  card.addEventListener("click", flip);
- // Bound to #card, so it fires for keys that BUBBLE from any descendant.
+ // #card holds no controls (the e2e test that no control lives inside the card pins that).

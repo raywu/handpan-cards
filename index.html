@@ -47,7 +47,7 @@
 <style>
 :root{
   color-scheme:dark;
-  --ink:#242424; --sep:#8a8a8a; --paper:#ffffff;
+  --ink:#242424; --paper:#ffffff;
   --table:#1a1815; --table2:#26221c;
   --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;
   --card-w:min(88vw, 46vh, 420px);
@@ -526,14 +526,12 @@ main{overflow-x:clip}
   padding:11px 13px 0; color:var(--ink)}
 .hdr .l{font:600 9px/1.5 "Nunito Sans"; letter-spacing:.12em; color:var(--ink)}
 /* Was var(--sep) (#8a8a8a), 3.45:1 on the paper. #757575 is 4.61:1.
-   Fixed here rather than by darkening the token: --sep resolves to the same
+   Fixed here rather than by darkening the token: --sep resolved to the same
    #8a8a8a the DIAGRAM uses for a receded bottom-shell label, but the diagram
    does not READ the token - it hardcodes the literal "#8a8a8a" in JS (search
-   for it below, in the label() call). Retuning --sep would therefore have
+   for it below, in the label() call). Retuning --sep would have
    silently split one grey into two rather than moved both, and the diagram's
-   grey is ground truth. Note the consequence: --sep now has NO consumer at
-   all, in CSS or in JS. It is a dead token, left in place only because
-   removing it is a restyle beyond these three rows. */
+   grey is ground truth. The token was removed in this pass.  */
 .hdr .l .num{color:#757575; font-weight:400}
 .hdr .l .deg{color:var(--root); font-weight:600; letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans"; letter-spacing:.11em; color:var(--ink);
@@ -1299,7 +1297,7 @@ footer.seq{row-gap:var(--sp-1)}
   </div>
   <div class="panel-group">
     <h3 class="panel-heading">Print this deck</h3>
-    <div class="prints" onclick="event.stopPropagation()">
+    <div class="prints">
       <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
       <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
       <!-- The paper choice keeps the panel open (design direction, "After an
@@ -7143,8 +7141,8 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
    +12.5% in the ding with its rim, inner and bottom fields unchanged. Print
    grows 5% on top of each of those. The per-zone table is in CLAUDE.md under
    "Where the ratios come from, and what actually changed".
-   Safe above the solver's budget because ring clearance is computed from
-   f_num alone, and fit_note shrinks anything that truly overflows. */
+   Safe above the solver's budget because in the app the field circle itself
+   bounds a name; ext comes from f_num on generated decks only. */
 const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
       LABEL_RATIO_BNOTE = 0.8232, NUM_RATIO = 0.64;
 function labelRatio(zone) {
@@ -7299,12 +7297,6 @@ function panHitRadii(ext, sizePx, minPx, pts) {
   });
 }
 
-/** Size an inserted interactive pan's hit layer from its MEASURED box.
- *
- *  Idempotent: each target's own drawn radius is read back from data-r, never
- *  from the `r` a previous pass wrote, so running again on resize or an
- *  orientation change cannot compound. A layer that has not been laid out yet
- *  measures zero and is left with its rendered radii rather than zeroed. */
 /* The hit-target floor, in CSS pixels: the platform minimum for a touch target.
  * A floor and not a promise - panHitRadii caps every target at half the
  * distance to its nearest neighbour, so on a pan with 17 selectable fields at
@@ -7312,6 +7304,12 @@ function panHitRadii(ext, sizePx, minPx, pts) {
  * that laps its neighbour selects the WRONG note, which is worse than a small
  * one. */
 const PAN_HIT_MIN_PX = 44;
+/** Size an inserted interactive pan's hit layer from its MEASURED box.
+ *
+ *  Idempotent: each target's own drawn radius is read back from data-r, never
+ *  from the `r` a previous pass wrote, so running again on resize or an
+ *  orientation change cannot compound. A layer that has not been laid out yet
+ *  measures zero and is left with its rendered radii rather than zeroed. */
 function sizePanHits(svg, minPx) {
   if (!svg || !svg.getAttribute) return;
   const ext = Number(svg.getAttribute("data-ext"));
@@ -7512,7 +7510,6 @@ function renderSeqEmpty() {
   document.getElementById("front").innerHTML = msg;
   document.getElementById("back").innerHTML = msg;
   const countEmpty = document.getElementById("count");
-  while (countEmpty.children.length) countEmpty.removeChild(countEmpty.children[0]);
   countEmpty.textContent = "";
   countEmpty.classList.remove("seq");
   document.getElementById("seq-style").hidden = true;
@@ -7570,7 +7567,6 @@ function renderSeqRail(d) {
   railSeq = seq;
   countEl.classList.add("seq");
   countEl.textContent = "";
-  while (countEl.children.length) countEl.removeChild(countEl.children[0]);
   const { rail, live, curNode } = railBuild(d);
   countEl.appendChild(rail);
   countEl.appendChild(live);
@@ -7810,9 +7806,7 @@ const rotR      = document.getElementById("scale-rot-r");
 const moveL     = document.getElementById("scale-move-l");
 const moveR     = document.getElementById("scale-move-r");
 const resetBtn  = document.getElementById("scale-layout-reset");
-// The practice screen's own live region; created if the markup lost it, so the
-// success message is never announced into nothing.
-const announce = document.querySelector(".announce") || document.createElement("div");
+const announce = document.querySelector(".announce");
 announce.className = "announce";
 
 // The landmarks behind the sheet. inert while it is open, so the modal really
@@ -8290,7 +8284,7 @@ function updateParse() {
  *  which can change what a seed hashes to (queue row 115). A standing
  *  collision refusal is the registry's veto, not the parser's, so calling
  *  updateParse() from any of them silently drops a refusal the user has not
- *  addressed. Mirrors disarmDelete()'s own guard (`:4954`), which is why
+ *  addressed. Mirrors disarmDelete()'s own guard (in `disarmDelete`), which is why
  *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
 function resyncSheet(paint) {
   if (refusal) { showRefusal(refusal); return; }
@@ -8400,7 +8394,6 @@ function setSheetMode(edit) {
   if (edit) {
     previewBox.setAttribute("role", "group");
     previewBox.setAttribute("tabindex", "0");
-    previewBox.setAttribute("aria-label", PAN_NAMES[panState] + "." + PAN_EDIT_HINT);
   } else {
     previewBox.setAttribute("role", "img");
     previewBox.removeAttribute("tabindex");
@@ -8849,19 +8842,8 @@ function step(dir) {
   card.style.transition = "";
 }
 card.addEventListener("click", flip);
-// Bound to #card, so it fires for keys that BUBBLE from any descendant.
-// Originally guarded Enter/Space on a focused print button or the paper
-// <select> from flipping the card instead of activating - but since the
-// menu-shell change (2026-09-28, see headerHTML()'s own comment) .prints
-// lives in the settings panel, not inside #card, so neither element is a
-// descendant this handler ever sees: the target check below has no live
-// target today. Left in place (2026-09-30 quality-refactor finding 9,
-// owner-gated: see docs/plans/2026-09-30-quality-refactor.md:97 G5)
-// rather than removed, since #card carries
-// no controls at all right now and a future one could make it relevant
-// again.
+// #card holds no controls (the e2e test that no control lives inside the card pins that).
 card.addEventListener("keydown", e => {
-  if (e.target && e.target.closest && e.target.closest("button, select")) return;
   if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
 });
 document.getElementById("prev").onclick = () => step(-1);
@@ -9175,7 +9157,7 @@ function flyOut(dir, dx, vx = null) {
 // trailing click to suppress, so eatClick is never armed for it. An
 // out-and-back drag ends at zero displacement yet moved, so it still eats
 // the trailing click.
-function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, mouse, reducedMotion }) {
+function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion }) {
   const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
   if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
   const eatClick = moved && !cancelled;
@@ -9203,7 +9185,7 @@ function release(e, cancelled, pushPoint = true) {
   const dx = drag.last;
   const mouse = pointerType === "mouse";
   const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
-    blocked: cancelled || panelOpen || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
+    blocked: cancelled || panelOpen || sheetOpen, reducedMotion: reducedMotion.matches });
   drag = null;
   if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
   if (d.kind === "rest") {
@@ -9283,7 +9265,7 @@ const WHEEL_COMMIT_PX = 80, WHEEL_GESTURE_GAP_MS = 160;
 // querySelector("main") above - and the listener registration below is
 // guarded accordingly; the e2e suite drives a real browser where it resolves.
 const wheelMain = document.querySelector("main");
-let wheel = null; // { sx, sy, axis, fired, skip, timer }
+let wheel = null; // { sx, axis, fired, skip, timer }
 // Pure: one wheel event against the live gesture `w`. kind: skip (gesture is
 // skipped for its whole duration) | pass (vertical-dominant, never claimed) |
 // hold (claimed, already fired) | follow (accumulate, card tracks the
@@ -9327,7 +9309,7 @@ if (wheelMain) wheelMain.addEventListener("wheel", e => {
     // the 160ms gap, not just for this event), so wheel momentum arriving
     // right after a flight lands cannot start a fresh gesture and double-step.
     const skip = !!(flight || drag || panelOpen || sheetOpen || !order.length);
-    wheel = { sx: 0, sy: 0, axis: null, fired: false, skip, timer: null };
+    wheel = { sx: 0, axis: null, fired: false, skip, timer: null };
   }
   if (wheel.timer) clearTimeout(wheel.timer);
   wheel.timer = setTimeout(wheelGestureEnd, WHEEL_GESTURE_GAP_MS);
