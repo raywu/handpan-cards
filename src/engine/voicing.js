@@ -313,7 +313,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     choose: choose,
     rootField: rootField,
     isLegal: isLegal,
-    reduceIntervals: reduceIntervals,
-    MAX_NOTES: MAX_NOTES
+    reduceIntervals: reduceIntervals
   };
 })(HPE);

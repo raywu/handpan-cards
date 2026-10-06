@@ -948,7 +948,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       classifyTier: classifyTier,
       homePc: homePc,
       homeAnchor: homeAnchor,
-      sameSequence: sameSequence,
       prevValid: prevValid,
       homeOrRefuse: homeOrRefuse
     }

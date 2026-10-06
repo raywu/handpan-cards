@@ -600,7 +600,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX },
     // Finding 10 (2026-09-30 quality-refactor plan): the shared copies of
     // helpers every other module used to reimplement. `pc` is `pitchClass`
     // under the short name the other modules already called it by.

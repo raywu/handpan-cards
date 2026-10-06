@@ -34,11 +34,10 @@ const ENGINE_DIR = path.join(ROOT, "src", "engine");
 /**
  * Load engine modules, in order, into ONE vm context.
  * @param {string[]|string} names e.g. ["core", "voicing"] or "core"
- * @param {object} [extraGlobals] merged into the context before loading
  * @returns {object} the shared HPE namespace, with `_context` attached
  */
-function loadEngine(names, extraGlobals = {}) {
-  const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+function loadEngine(names) {
+  const list = Array.isArray(names) ? names : [names];
   if (!list.length) throw new Error("loadEngine: name at least one engine module");
 
   const sandbox = {
@@ -47,7 +46,6 @@ function loadEngine(names, extraGlobals = {}) {
     // `instanceof` for values the engine built). Same list as sandbox.js.
     console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
     btoa, atob,
-    ...extraGlobals,
   };
   vm.createContext(sandbox);
 
@@ -70,4 +68,4 @@ function loadEngine(names, extraGlobals = {}) {
   return ns;
 }
 
-module.exports = { loadEngine, ENGINE_DIR };
+module.exports = { loadEngine };
