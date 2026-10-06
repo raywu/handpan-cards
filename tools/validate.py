@@ -102,16 +102,16 @@ def main():
     run_check("1b", "tools/decks.py deck dicts == data/decks.json", check_1b, failures)
 
     # 2. every card's root pitch class is in its voicing and no pitch class
-    # is doubled. Highlighting is asserted elsewhere: "every voicing field is
-    # lit" for every card by the tests/app.test.js test "pan() draws one circle
-    # per field, two more per lit field, plus the chrome"; root/tone non-overlap
-    # is structural in the app (chordSets assigns each pitch class to root or
-    # tone in one if/else) and is asserted for one card by "chordSets: Amara C
-    # major has two root-coloured fields (C4 + C5)"; the root/tone role of every
-    # field on all 96 cards is pinned app-against-print by
-    # tests.test_render_agreement test_highlighting_agrees, and print's
-    # never-both by tests.test_print
-    # test_state_selects_root_or_tone_colour_but_never_both.
+    # is doubled. Highlighting is asserted elsewhere: which fields are lit, and
+    # the root/tone role of each, is pinned per field on all 96 cards,
+    # app-against-print, by tests.test_render_agreement
+    # test_highlighting_agrees; the tests/app.test.js test "pan() draws one
+    # circle per field, two more per lit field, plus the chrome" pins the NUMBER
+    # of lit fields pan() draws on every card; root/tone non-overlap is
+    # structural in the app (chordSets assigns each pitch class to root or tone
+    # in one if/else) and is asserted for one card by "chordSets: Amara C major
+    # has two root-coloured fields (C4 + C5)"; print's never-both is
+    # tests.test_print test_state_selects_root_or_tone_colour_but_never_both.
     counted = {}
 
     def check_2():
