@@ -52,8 +52,8 @@ test("R, cy, title, credit, legend_lines and colours carry through unchanged", (
 });
 
 test("blank_cards reaches the top level through the overlay flatten", () => {
-  // Reviewer nit from W1a: print.blank_cards is nested, but
-  // src/engine/pdfcards.js:557 reads the top-level `deck.blank_cards`.
+  // print.blank_cards is nested, but
+  // src/engine/pdfcards.js reads the top-level `deck.blank_cards`.
   // fromBuiltin has no dedicated lift for this key - the generic
   // `Object.keys(overlay).forEach(k => out[k] = overlay[k])` flatten already
   // copies every overlay key, `blank_cards` included, onto `out`. A flatten

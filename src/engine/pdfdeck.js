@@ -218,11 +218,7 @@ HPE.pdfdeck = (function () {
   // arrays JSON carries them as - no hexColor() conversion, unlike
   // fromGenerated, which starts from a "#RRGGBB" string.
   function fromBuiltin(deck, overlay) {
-    var spec = { _geom: {} };
-    Object.keys(deck.geom).forEach(function (k) { spec._geom[k] = deck.geom[k]; });
-    Object.keys(deck.fields).forEach(function (fid) {
-      spec[String(parseInt(fid, 10))] = deck.fields[fid].slice();
-    });
+    var spec = specFrom(deck);
 
     var chords = deck.chords.map(function (c) {
       return [c.main, c.sup, c.subtitle, c.fields.slice(), c.roots.slice()];
@@ -274,13 +270,6 @@ HPE.pdfdeck = (function () {
         .replace(/\d+(?=\s*CHORDS)/g, String(chords.length));
       out.blurb = lines;
     }
-
-    // Reviewer nit from W1a: `print.blank_cards` is nested, but
-    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. No
-    // dedicated lift is needed - the generic overlay flatten above
-    // (`Object.keys(overlay).forEach(...)`) already copies `blank_cards`
-    // (and every other overlay key) onto `out`, so Pygmy's 7 blank cards
-    // reach the top level without a special case.
 
     return out;
   }
