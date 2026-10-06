@@ -1,0 +1,15 @@
+# kills: SB-2 every served id is in the markup and is looked up by the app
+# suite: node --test --test-name-pattern ^SB-2.every.served.id.is.in.the.markup.and.is.looked.up.by.the.app$ tests/app.test.js
+# An id the markup carries but the app never looks up is served, so the served list grows an entry nothing reads.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -40,7 +40,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
+   "scale-preview",
+   // Stage 2: the page header. The sheet became a full-screen page, so it has a
+   // BACK control and a visible title where the drawer had neither.
+-  "scale-back", "scale-title",
++  "scale-back", "scale-title", "settings-title",
+   // Lane M1: the settings panel that now hosts the mode toggle and print
+   // controls, plus its header trigger and scrim.
+   "settings-trigger", "settings-scrim", "settings-panel",

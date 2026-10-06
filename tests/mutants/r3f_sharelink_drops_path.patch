@@ -1,0 +1,15 @@
+# kills: SB-4 shareLink starts with the location origin and path
+# suite: node --test --test-name-pattern ^SB-4.shareLink.starts.with.the.location.origin.and.path$ tests/app.test.js
+# shareLink builds from the origin alone, so the page path is dropped from every share link.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6972,7 +6972,7 @@ const SHARE_PREFIX = "#s=";
+ function shareLink(d) {
+   const res = HPE.share.encode(seedOf(d));
+   return res.ok
+-    ? { ok: true, value: location.origin + location.pathname + SHARE_PREFIX + res.value }
++    ? { ok: true, value: location.origin + SHARE_PREFIX + res.value }
+     : res;
+ }
+ // The app's ONE entry point for an untrusted share string. It rejects rather
