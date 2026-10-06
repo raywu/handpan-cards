@@ -1,15 +1,16 @@
-# suite: node --test --test-name-pattern ^D8..numerals.are.minor.relative.only.when.the.pan.has.a.minor.third$ tests/naming.test.js
-# kills: D8: numerals are minor-relative only when the pan has a minor third
-# Numerals are always major-relative, so Pygmy's III and VII gain flats.
+# kills: NU-1 outside the parent a minor third on the pan picks sharp over flat
+# suite: node --test --test-name-pattern ^NU.1.outside.the.parent.a.minor.third.on.the.pan.picks.sharp.over.flat$ tests/naming.test.js
+# The pan is always read as major-relative, so a pitch class outside the
+# parent with a step on both sides reads flat even over a minor third.
 diff --git a/src/engine/naming.js b/src/engine/naming.js
 --- a/src/engine/naming.js
 +++ b/src/engine/naming.js
-@@ -254,7 +254,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var tonic = pc(tonicPc);
-     // D8: minor-relative numerals when the PAN carries a minor third above the
-     // tonic, major-relative with flats otherwise.
+@@ -269,7 +269,7 @@
+     // Only an out-of-parent pitch class reads this: with a parent step on both
+     // sides it takes `#` when the PAN carries a minor third above the tonic,
+     // `b` otherwise.
 -    var minorRelative = member(pan, pc(tonic + 3));
 +    var minorRelative = false;
-     var parent = parentPcs(parentIndex, tonic);
+     var intervals = PARENTS[parentIndex].intervals;
      var out = {};
      for (var i = 0; i < pan.length; i += 1) {

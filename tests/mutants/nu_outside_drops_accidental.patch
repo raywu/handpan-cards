@@ -1,0 +1,16 @@
+# kills: NU-1 no two pitch classes on one pan share a label
+# suite: node --test --test-name-pattern ^NU.1.no.two.pitch.classes.on.one.pan.share.a.label$ tests/naming.test.js
+# A pitch class outside the parent loses its accidental, so it prints the
+# same numeral as the parent step beside it: two roots, one label.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -138,7 +138,7 @@
+         ? {accidental: "#", roman: ROMAN[below]}
+         : {accidental: "b", roman: ROMAN[above]};
+     }
+-    if (above >= 0) return {accidental: "b", roman: ROMAN[above]};
++    if (above >= 0) return {accidental: "", roman: ROMAN[above]};
+     return {accidental: "#", roman: ROMAN[below]};
+   }
+ 

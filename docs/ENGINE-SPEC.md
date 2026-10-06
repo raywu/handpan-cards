@@ -659,7 +659,7 @@ deck.
   `tests/fixtures/divergence_v1.json` as Phase 2 overrides, NOT as matches of
   the `qualities.json` table, and lane C's naming exit excludes them.
 
-## 10. Degrees: numerals (D8) and case (D10)
+## 10. Degrees: numerals (step of the parent, 2026-10-05) and case (D10)
 
 Verified against all three built-ins under the fixed list order of
 `parents.json`. Distance is counted in pan pitch classes outside the parent:
@@ -672,15 +672,29 @@ Verified against all three built-ins under the fixed list order of
 
 - DECIDED(D8, D10, D13) The tonic is the ding pitch class. The ding is
   mandatory, so there is no fallback.
-- DECIDED(D8) Degree NUMERALS are mode-aware: minor-relative (`III`, `VII`) for
-  scales with a minor third, major-relative with flats (`bIII`, `bVII`)
-  otherwise.
+- DECIDED(owner 2026-10-05, superseding D8) Degree NUMERALS count the steps of
+  the PARENT scale, 1 to 7: a root that is step N of the parent reads as roman
+  N and never carries an accidental. The owner's words: "Drop the flats",
+  "Yes, no flats anywhere", "No accidentals at all". The numeral says which
+  step, the case and `°` say which quality (D10); nothing else is in a label.
+  Before this decision numerals were read against the major or natural minor
+  scale and carried its accidentals (old D8).
 - DECIDED(D10) Degree CASE comes from stacked thirds over a 7-note PARENT
   scale, not from the pan alone: a minor third above the degree root gives
   lowercase, a major third uppercase, a diminished fifth adds the `°` suffix.
-- DECIDED(D8, D10) Frozen degree exceptions, two-sided: D Amara ships `bIII` /
-  `bVII` (D8) and `IV` where stacked thirds derive `iv` (D10). D Amara is
-  declared Aeolian.
+- DECIDED(owner 2026-10-05) There are no frozen degree exceptions: every
+  built-in label is the engine's output for that deck's seed, and
+  `tests/naming.test.js` asserts all 18. D Amara is declared Aeolian (D10).
+  The built-in labels, keyed by note name:
+
+  | deck | labels |
+  |---|---|
+  | Hijaz | C# `I`, D `II`, F `iii°`, F# `iv`, G# `v°`, B `vii` |
+  | Pygmy | F `i`, G `ii°`, Ab `III`, Bb `iv`, C `v`, Db `VI`, Eb `VII` |
+  | Amara | D `i`, F `III`, G `iv`, A `v`, C `VII` |
+
+  History: until 2026-10-05 Hijaz shipped `bII` and `bvii` (old D8), and Amara
+  shipped `bIII`, `bVII` and `IV` as recorded exceptions to the engine's output.
 - DECIDED(swarm-2026-09-08) Parent inference candidates are the 11 entries of
   `tests/fixtures/parents.json` in this FIXED list order: Ionian, Aeolian,
   Dorian, Phrygian, Lydian, Mixolydian, Locrian, harmonic minor, melodic minor,
@@ -699,25 +713,23 @@ Verified against all three built-ins under the fixed list order of
   select-level `NO_THIRDS` warning fires (no root on the pan has a third), every
   degree numeral is UPPERCASE and the D10 stacked-thirds case rule is NOT
   applied, even though a parent was inferred; `NO_THIRDS` overrides D10.
-- DECIDED(owner-review 2026-09-08, amending swarm-2026-09-08) Numerals are
-  read against the D8 REFERENCE scale (major, or natural minor for a
-  minor-relative scale), not against the parent, in two cases that this
-  document previously stated differently:
-  (a) IN-PARENT degree: the numeral is the parent's degree INDEX and the
-  accidental is the offset against the reference degree of the SAME index.
-  So a Phrygian second reads `bII` (not `#I`), a Locrian second `bII` and its
-  fifth `bV`, a Lydian fourth `#IV`. Over the fixed `parents.json` table that
-  offset is always -1, 0 or +1, so a single accidental always suffices.
-  (b) OUTSIDE-PARENT pitch class: it is named from the REFERENCE-scale degree
-  it is one semitone away from, by the same rule (`bN` below, `#N` above; when
-  both apply, `b` for a major-relative scale, `#` otherwise). This differs from
-  a reading based on the nearest PARENT degree, and the difference is visible
-  only under a manual parent override.
-  Both readings reproduce 14 of the 17 built-in degree labels and leave
-  D Amara's three frozen exceptions exactly as recorded (`bVII`, `bIII` and
-  `IV`, where the engine derives `VII`, `III` and `iv`).
-  Its case follows the stacked-thirds rule applied over the PAN pitch classes
-  (uppercase when no third is available), unless `NO_THIRDS` applies. In that
+- DECIDED(owner 2026-10-05, superseding owner-review 2026-09-08) Two cases:
+  (a) IN-PARENT degree: the numeral is the parent's degree INDEX and there is
+  no accidental. A Phrygian second reads `II`, a Locrian fifth `V`, a Lydian
+  fourth `iv°`.
+  (b) OUTSIDE-PARENT pitch class (generated decks only; no built-in has one):
+  it is named from the PARENT step one semitone away, `#N` from the step
+  below or `bN` from the step above. When a step lies on both sides, `#` if
+  the pan carries a minor third above the tonic, `b` otherwise. Every parent
+  in `parents.json` has at most three semitones between adjacent steps, so
+  one of the two always exists. An outside pitch class therefore always
+  carries an accidental and an in-parent one never does, and no two pitch
+  classes of one pan share a label (asserted over 2048 pans x 11 parents in
+  `tests/naming.test.js`). DEFAULT[owner-review]: the owner has not decided
+  this case; the whole rule is `outsideNumeral` in `src/engine/naming.js`.
+  An outside pitch class's case follows the stacked-thirds rule applied over
+  the PAN pitch classes (uppercase when no third is available), unless
+  `NO_THIRDS` applies. In that
   pan-level case rule the `°` suffix is suppressed when a perfect fifth above
   the degree is also on the pan: `°` marks a degree whose ONLY available fifth
   is diminished. [recorded owner-review 2026-09-08; shipped behaviour]

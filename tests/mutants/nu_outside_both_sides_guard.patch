@@ -1,0 +1,18 @@
+# kills: NU-1 numeral: outside the parent with a step on one side only
+# suite: node --test --test-name-pattern ^NU.1.numeral..outside.the.parent.with.a.step.on.one.side.only$ tests/naming.test.js
+# The both-sides test of outsideNumeral forgets the step above, so a pitch
+# class with a step below only takes the minor-relative tie-break: harmonic
+# minor offset 9 on a major-relative pan reads a flat of a step that is not
+# there.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -133,7 +133,7 @@
+   function outsideNumeral(offset, parentIntervals, minorRelative) {
+     var below = indexOfPc(parentIntervals, pc(offset - 1));
+     var above = indexOfPc(parentIntervals, pc(offset + 1));
+-    if (below >= 0 && above >= 0) {
++    if (below >= 0) {
+       return minorRelative
+         ? {accidental: "#", roman: ROMAN[below]}
+         : {accidental: "b", roman: ROMAN[above]};

@@ -1,0 +1,16 @@
+# kills: NU-1 numeral: outside the parent with a step on one side only
+# suite: node --test --test-name-pattern ^NU.1.numeral..outside.the.parent.with.a.step.on.one.side.only$ tests/naming.test.js
+# The step-below-only branch of outsideNumeral reads the step ABOVE, which
+# does not exist there, so harmonic minor offset 9 loses its numeral.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -139,7 +139,7 @@
+         : {accidental: "b", roman: ROMAN[above]};
+     }
+     if (above >= 0) return {accidental: "b", roman: ROMAN[above]};
+-    return {accidental: "#", roman: ROMAN[below]};
++    return {accidental: "b", roman: ROMAN[above]};
+   }
+ 
+   /* ---- section 9: chord name and subtitle -------------------------------- */

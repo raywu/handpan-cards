@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "decks": [
     {
       "id": "hijaz",
@@ -13,10 +13,10 @@
       },
       "degrees": {
         "1": "I",
-        "2": "bII",
+        "2": "II",
         "6": "iv",
         "8": "v\u00b0",
-        "11": "bvii",
+        "11": "vii",
         "5": "iii\u00b0"
       },
       "geom": {
@@ -1249,9 +1249,9 @@
       "degrees": {
         "2": "i",
         "9": "v",
-        "7": "IV",
-        "0": "bVII",
-        "5": "bIII"
+        "7": "iv",
+        "0": "VII",
+        "5": "III"
       },
       "geom": {
         "rim": 0.745,
@@ -1683,5 +1683,5 @@
       "maker_string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
     }
   ],
-  "sha256": "d9fe93bd3c8cbbe366498cdd4c2101af6c9d262964f72624319af346b929861e"
+  "sha256": "050d476260a4fffe7b3ff1457fb76aaaed2d2058afb4e3923ba165deaf3a49e6"
 }

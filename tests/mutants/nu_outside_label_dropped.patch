@@ -1,0 +1,16 @@
+# kills: NU-1 no two pitch classes on one pan share a label
+# suite: node --test --test-name-pattern ^NU.1.no.two.pitch.classes.on.one.pan.share.a.label$ tests/naming.test.js
+# Under NO_THIRDS a pitch class outside the parent gets no label at all, so
+# every card rooted on it prints an empty degree. No label is duplicated, so
+# only the check that every pan pitch class is labelled sees it.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -275,6 +275,7 @@
+     for (var i = 0; i < pan.length; i += 1) {
+       var degreePc = pan[i];
+       var num = numeral(pc(degreePc - tonic), intervals, minorRelative);
++      if (noThirds && num.accidental) continue;
+       var casing;
+       if (noThirds) {
+         // NO_THIRDS overrides D10: every numeral uppercase, no stacked thirds.
