@@ -73,7 +73,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1063,6 +1063,83 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1067,6 +1067,83 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -133,8 +133,8 @@ diff --git a/index.html b/index.html
 +    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
 +         pattern as the Practice buttons) rather than stacked 44px rows -
 +         stacked overflowed the 320x568 fit test by 18px. Row one holds the
-+         three sites (class trio: equal widths, two equal on line one in the
-+         sidebar), row two (class duo: one line, labels wrap inside their
++         three sites (class trio: equal widths above the landscape grid, two
++         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
 +         boxes) the two Amy Naylor videos. -->
 +    <div class="modebar trio">
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
@@ -157,7 +157,7 @@ diff --git a/index.html b/index.html
  </header>
  
  <main>
-@@ -1268,83 +1345,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1272,83 +1349,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -217,8 +217,8 @@ diff --git a/index.html b/index.html
 -    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
 -         pattern as the Practice buttons) rather than stacked 44px rows -
 -         stacked overflowed the 320x568 fit test by 18px. Row one holds the
--         three sites (class trio: equal widths, two equal on line one in the
--         sidebar), row two (class duo: one line, labels wrap inside their
+-         three sites (class trio: equal widths above the landscape grid, two
+-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
 -         boxes) the two Amy Naylor videos. -->
 -    <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"

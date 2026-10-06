@@ -1,16 +1,17 @@
 # kills: TR-1: the three site links are equal in width on every line they share, and every label stays inside its box
 # suite: node --test --test-name-pattern TR-1:.the.three.site.links.are.equal.in.width.on.every.line.they.share..and.every.label.stays.inside.its.box tests/e2e.test.js
-# TR-5. Removes the trio padding-inline rule: HANDPANER keeps its 97.8px minimum, so 320x568 draws 97.8 / 89.1 / 89.1.
+# TR-5. Removes the min-height:521px guard: landscape phones take the padding trim, so 640x360 no longer matches the row without the trio class.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -268,9 +268,6 @@ a.mode{text-decoration:none}
+@@ -268,9 +268,7 @@ a.mode{text-decoration:none}
     shrink to a third without ever going under its own content (no min-width:0).
     Not in the landscape panel grid (max-height:520px), whose budget tests pin
     the old row heights. */
 -@media (min-height:521px){
 -  .modebar.trio .mode{padding-inline:4px}
 -}
++.modebar.trio .mode{padding-inline:4px}
  #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
  .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
    overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
