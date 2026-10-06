@@ -544,6 +544,28 @@ class Root {
 
 function cellId(w, h, mode) { return `${w}x${h} ${mode}`; }
 
+function tallyJudgement(report, j, ruleNames, collectReported) {
+  for (const rn of ruleNames) {
+    const R = report.rules[rn];
+    R.fail += j[rn].fail.length; R.reported += j[rn].reported.length;
+    for (const o of j[rn].fail) if (R.first.length < 10) R.first.push(`${o.cell}: ${o.msg}`);
+    if (collectReported) for (const o of j[rn].reported) if (R.firstReported.length < 10) R.firstReported.push(`${o.cell}: ${o.msg}`);
+  }
+}
+
+function tallyGutter(report, rec, w, h, m) {
+  if (rec.gutter > 0.5) { report.gutterCells++; if (report.gutterFirst.length < 5) report.gutterFirst.push(gutterMessage(w, h, m, rec.gutter)); }
+}
+
+function invarianceWidths({ ws, starts, wLo, wHi, side, differs }) {
+  const set = new Set();
+  for (const w of ws) if (w % 16 === 0) set.add(w);
+  for (const s of starts) for (const d of [-1, 0, 1]) if (s + d >= wLo && s + d <= wHi) set.add(s + d);
+  for (let k = 1; k < ws.length; k++) if (differs(ws[k], ws[k - 1])) { set.add(ws[k]); set.add(ws[k - 1]); }
+  if (side) for (const w of SIDEBAR_WIDTHS) set.add(w);
+  return [...set].sort((a, b) => a - b);
+}
+
 async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, workers, log, widthRange }) {
   const t0 = Date.now();
   const base = new Root("base", baseHtml, fontMode, workers);
@@ -574,9 +596,6 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
     const [baseHas, candHas] = await Promise.all([base, cand].map((r) => r.browsers[0].eval(`return window.__pf.hasProgHeading();`)));
     const allowance = headingAllowance(baseHas, candHas);
     report.allowance = allowance; report.allowanceWhy = allowance ? "base has no #panel-prog-heading, candidate has" : "";
-    const countGutter = (rec, w, h, m) => {
-      if (rec.gutter > 0.5) { report.gutterCells++; if (report.gutterFirst.length < 5) report.gutterFirst.push(gutterMessage(w, h, m, rec.gutter)); }
-    };
     const wLo = widthRange ? widthRange[0] : W_LO, wHi = widthRange ? widthRange[1] : W_HI;
 
     // Labels (ER-10) and the reference cell.
@@ -612,15 +631,10 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         report.cells++;
         const id = cellId(w, h, m);
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
-        countGutter(mb[i][mi], w, h, m); countGutter(mc[i][mi], w, h, m);
+        tallyGutter(report, mb[i][mi], w, h, m); tallyGutter(report, mc[i][mi], w, h, m);
         const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance });
         for (const k of j.removed) report.removed[k] = (report.removed[k] || 0) + 1;
-        for (const rn of ruleNames) {
-          const R = report.rules[rn];
-          R.fail += j[rn].fail.length; R.reported += j[rn].reported.length;
-          for (const o of j[rn].fail) if (R.first.length < 10) R.first.push(`${o.cell}: ${o.msg}`);
-          for (const o of j[rn].reported) if (R.firstReported.length < 10) R.firstReported.push(`${o.cell}: ${o.msg}`);
-        }
+        tallyJudgement(report, j, ruleNames, true);
         if (j.rule6.fail.length && !mc[i][mi].modal) extra.rule6Sidebar++;
         if (h <= 356 && m === "S") {
           if (j.rule5.fail.length) extra.rule5Short++;
@@ -633,11 +647,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         if (t) {
           report.threshold.cells++;
           const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance });
-          for (const rn of ["rule1", "rule2", "rule3"]) {
-            const R = report.rules[rn];
-            R.fail += jt[rn].fail.length; R.reported += jt[rn].reported.length;
-            for (const o of jt[rn].fail) if (R.first.length < 10) R.first.push(`${o.cell}: ${o.msg}`);
-          }
+          tallyJudgement(report, jt, ["rule1", "rule2", "rule3"], false);
         }
         const ov = overflowViewports(mb[i][mi], mc[i][mi], row.lo, row.hi);
         report.threshold.viewports += ov.count;
@@ -650,28 +660,20 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
     const startsW = startsAll.width;
     for (const r of rows) {
       if (r.lo === r.hi) continue;
-      const set = new Set();
       const ws = r.ws.filter((w) => !(r.side && w >= 1024));
-      for (const w of ws) if (w % 16 === 0) set.add(w);
-      for (const s of startsW) for (const d of [-1, 0, 1]) if (s + d >= wLo && s + d <= wHi) set.add(s + d);
       const modeVec = (map, w, mi) => map.get(cellId(w, r.lo, MODES[mi]));
-      for (let k = 1; k < ws.length; k++) {
-        const w = ws[k], p = ws[k - 1];
-        for (let mi = 0; mi < MODES.length; mi++) {
-          const differs = !vectorsEqual(modeVec(vecB, w, mi), modeVec(vecB, p, mi)) || !vectorsEqual(modeVec(vecC, w, mi), modeVec(vecC, p, mi));
-          if (differs) { set.add(w); set.add(p); }
-        }
-      }
-      if (r.side) for (const w of SIDEBAR_WIDTHS) set.add(w);
+      const differs = (w, p) => MODES.some((_, mi) =>
+        !vectorsEqual(modeVec(vecB, w, mi), modeVec(vecB, p, mi)) || !vectorsEqual(modeVec(vecC, w, mi), modeVec(vecC, p, mi)));
+      const set = invarianceWidths({ ws, starts: startsW, wLo, wHi, side: r.side, differs });
       const mid = Math.floor((r.lo + r.hi) / 2);
       const tops = [...new Set([mid, r.hi])].filter((h) => h !== r.lo);
       const pts = [];
-      for (const w of [...set].sort((a, b) => a - b)) for (const h of tops) pts.push([w, h]);
+      for (const w of set) for (const h of tops) pts.push([w, h]);
       const [ib, ic] = await Promise.all([base.measure(pts), cand.measure(pts)]);
       pts.forEach(([w, h], i) => {
         MODES.forEach((m, mi) => {
           report.invariance++;
-          countGutter(ib[i][mi], w, h, m); countGutter(ic[i][mi], w, h, m);
+          tallyGutter(report, ib[i][mi], w, h, m); tallyGutter(report, ic[i][mi], w, h, m);
           for (const [name, got, map] of [["base", ib, vecB], ["candidate", ic, vecC]]) {
             if (!vectorsEqual(vectorOf(got[i][mi]), map.get(cellId(w, r.lo, m)))) {
               failures.push(`height-dependent layout inside a band: ${name}, band ${r.lo}-${r.hi}, ${w}x${h} vs ${w}x${r.lo}, mode ${m}`);
@@ -811,7 +813,7 @@ async function main(argv) {
 module.exports = {
   OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
-  checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
+  tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
 };
 

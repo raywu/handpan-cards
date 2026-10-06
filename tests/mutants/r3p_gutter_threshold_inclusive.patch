@@ -1,0 +1,15 @@
+# kills: PF-2 tallyGutter counts a cell over half a pixel and keeps the first five
+# suite: node --test --test-name-pattern ^PF-2.tallyGutter.counts.a.cell.over.half.a.pixel.and.keeps.the.first.five$ tests/app.test.js
+# R3 PF-2. The gutter threshold becomes inclusive.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -554,7 +554,7 @@ function tallyJudgement(report, j, ruleNames, collectReported) {
+ }
+ 
+ function tallyGutter(report, rec, w, h, m) {
+-  if (rec.gutter > 0.5) { report.gutterCells++; if (report.gutterFirst.length < 5) report.gutterFirst.push(gutterMessage(w, h, m, rec.gutter)); }
++  if (rec.gutter >= 0.5) { report.gutterCells++; if (report.gutterFirst.length < 5) report.gutterFirst.push(gutterMessage(w, h, m, rec.gutter)); }
+ }
+ 
+ function invarianceWidths({ ws, starts, wLo, wHi, side, differs }) {
