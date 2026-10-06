@@ -53,6 +53,16 @@ cannot hold their labels there.
   link keeps its content minimum, so a label can never spill. Cost, accepted: rows under about 258px stay unequal as
   on main, and 640x360, 667x375 and 896x414 change from main's two-plus-one to one unequal line (83.8 / 52.7 /
   52.7). A container query would be exact but is a new mechanism in this file; not taken.
+- D5 (orchestrator, 2026-10-06, after CI run 37439884952 at c25668c; the owner may overturn it). The padding rule
+  applies only above the landscape panel grid: it sits inside `@media (min-height:521px)`. Reason: under D4 the
+  landscape row changed its line count at several sizes (640x360 scroll 58 to 11, 667x375 3 to 0), and three e2e
+  panel-budget oracles and the `qr_res_hidden_landscape` baseline pin main's exact landscape heights. Re-pinning
+  them is a wider change than this task. Cost, accepted: every landscape phone, 844x390 included, keeps main's
+  unequal row byte for byte. Supersedes, where they conflict: the goal's "every `MENU_VIEWPORTS` cell" (now every
+  cell taller than 520px, and the sidebar's first line), D4's cost sentence (no landscape cell changes), TR-1's
+  equality at 844x390 (that cell moves to the containment-only loop), STOP A (no landscape margin is left to
+  watch; a fallback-font inequality at a portrait cell is still report-and-stop), and reviewer check 3's "equal at
+  844x390" (now: 844x390 measures as on main).
 - D3. This plan ships as the lane branch's first commit, committed by the orchestrator. The lane does not edit it.
 
 ## 4. Non-goals
@@ -140,7 +150,21 @@ clause; `CLAUDE.md` is a non-goal here and the edit is owner-gated.
 
 **Split size and cut.** About 5 lines of app code, one test, three patches. Nothing may be cut.
 
-## 6. Eng review
+## 6. Amendment for D5 (lane steps)
+
+- TR-4, test first: in TR-1, move `[844,390]` from the equality loop to the containment-only loop and add an
+  assertion there that the landscape cells' three widths and line shape equal what the same page gives with the
+  `trio` class removed from the row (toggle the class in the page and re-measure; no pinned numbers). This fails on
+  c25668c at 640x360.
+- TR-5: wrap `.modebar.trio .mode{padding-inline:4px}` in `@media (min-height:521px)`; the sidebar rule is
+  unchanged. Accept: TR-1 and the four tests named in TR-2 pass; the three budget tests that were red in run
+  37439884952 pass when run one at a time by name; `node tools/probe/panel_fit.js` PASS.
+- Mutants: the three `tr_*` patches are re-cut against the new CSS and still die on TR-1; add
+  `tr_trio_landscape_unguarded.patch` (removes the media guard), killed by TR-4's landscape assertion. README count
+  682. Refresh any stranded patch as in TR-3.
+- `tests/e2e.test.js` outside the TR-1 test stays untouched.
+
+## 7. Eng review
 
 Fresh agent, 2026-10-06: NOT_READY on the first draft (one blocker: `min-width:0` spilled HANDPANER in landscape),
 ten findings, all folded in (D4, the mandatory sidebar rule, the mutant set, the TR-1 line shape and containment
