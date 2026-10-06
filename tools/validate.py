@@ -7,8 +7,8 @@ for data, and the only thing that catches a hand-edit or a merge resolved
 inside that line. Check 1b is a GUARD ON THE ADAPTER in tools/decks.py: the
 deck dicts are derived from the same canonical file, so they cannot drift by
 construction, and what 1b actually catches is a print-only overlay key
-shadowing a canonical one. Checks 2-4 cover the highlighting invariants, the
-German card copy, and engine-region drift.
+shadowing a canonical one. Checks 2-5 cover the highlighting invariants, the
+German card copy, engine-region drift, and the fontdata subsets.
 
 Needs reportlab (for the Color class in decks.py) but NOT the tools/fonts
 TTFs: hifi is stubbed out before decks.py is imported, since it is only

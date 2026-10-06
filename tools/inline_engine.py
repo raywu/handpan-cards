@@ -21,8 +21,8 @@ module name so the regions are greppable and the tool is idempotent:
     <!-- engine:core end -->
 
 The engine files are plain scripts attaching to a shared `var HPE`, so they
-inline with no wrapper changes. MODULES is the load order: core first, because
-every other module reads HPE.core.
+inline with no wrapper changes. MODULES is the load order: core precedes the
+modules that read HPE.core.
 """
 import os
 import re

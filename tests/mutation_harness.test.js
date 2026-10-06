@@ -373,7 +373,7 @@ test("childEnv scrubs GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE even when passed as e
  * a commit.
  *
  * Nothing reads the line. The sweep applies patches with plain `git apply`
- * (tests/mutation_check.sh:242) and reverts with `git apply -R` (:265) -
+ * (the `git apply` and `git apply -R` calls in tests/mutation_check.sh) -
  * neither `--3way` nor `--index`, the only two modes that resolve a preimage
  * blob by hash. The mode bits are equally inert: every mutated path already
  * exists and no patch changes a file mode. So the line carries no information
@@ -1194,7 +1194,7 @@ test("no mutant patch outside the tracked exceptions rides a non-unique anchor",
 });
 
 /* M179-8 (2026-10-01 post-refactor triage), first fixture: the Finding 12
- * non-unique-anchor lint's own hunksOf() (above, line ~533) parses a hunk's
+ * non-unique-anchor lint's own hunksOf() (above) parses a hunk's
  * preimage by scanning for " "/"-"/blank-prefixed lines. A context line that
  * is empty in the FILE can be written by git as a bare "" (an editor that
  * strips trailing whitespace does this - see tests/CONTRACT.md's "bare blank

@@ -14,7 +14,7 @@ There are three shapes, because Chrome is the second one:
 
 1. IN GROUP. The plain case - killing node's process group reaches it.
 2. IN ITS OWN SESSION, with a parent that reaps it on SIGTERM. This is the
-   real topology: tests/helpers/cdp.js:289 spawns Chrome `detached: true`,
+   real topology: the spawn in `launchOnce` (tests/helpers/cdp.js) spawns Chrome `detached: true`,
    which is setsid(2), so the browser leads its OWN group and a kill of
    node's group never reaches it. What does reach it is cdp.js's own SIGTERM
    reaper (tests/helpers/cdp.js:79-100), which kills the browser group and
@@ -109,7 +109,7 @@ sleep 100
 
 
 # Shape 4: the survivor is in its OWN session, so killpg cannot reach it at all,
-# and it holds the pipes. Chrome's real topology again (cdp.js:289 spawns it
+# and it holds the pipes. Chrome's real topology again (the spawn in `launchOnce` in cdp.js spawns it
 # detached, inheriting stdio), but here nothing reaps it, so BOTH drains run out
 # the clock. That makes it the only shape where the suite's own output cannot be
 # recovered by a later read - if the drain discards TimeoutExpired's partial
