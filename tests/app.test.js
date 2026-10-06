@@ -4993,6 +4993,22 @@ describe("SB sandbox contract", () => {
     assert.strictEqual(parent.children.length, 0);
     assert.strictEqual(child.parentNode, null);
   });
+
+  test("SB-2 every served id is in the markup and is looked up by the app", () => {
+    const fs = require("node:fs");
+    const { ELEMENT_IDS, APP } = require("../tools/sandbox.js");
+    const html = fs.readFileSync(APP, "utf8");
+    const markup = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+    const inMarkup = new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+    const code = html.slice(html.indexOf("const DECKS"));
+    const looked = new Set([...code.matchAll(/(?:getElementById|\$)\("([^"]+)"\)/g)].map((m) => m[1]));
+    const problems = [];
+    for (const id of ELEMENT_IDS) {
+      if (!inMarkup.has(id)) problems.push(`${id} is served but not in the markup`);
+      if (!looked.has(id)) problems.push(`${id} is served but the app never looks it up`);
+    }
+    assert.deepStrictEqual(problems, []);
+  });
 });
 
 describe("tab stops follow rendering", () => {
