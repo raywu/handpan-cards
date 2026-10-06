@@ -9455,6 +9455,8 @@ function run() {
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
+      // One page-side macrotask hop: lets the setTimeout(0) eatClick decay queued at release fire. No real delay.
+      await waitElapsed(0, "the touch swipe's eatClick decay");
       await b.eval(`document.getElementById("next").focus(); return true;`);
       await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
       await b.send("Input.dispatchKeyEvent", { type: "char", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
