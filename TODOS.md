@@ -39,30 +39,6 @@ real resize, so e2e drives the whole path against the shipped file.
 
 ## Scale engine
 
-### Part B: root-instance enumeration in select.build
-
-**What:** Generate one candidate voicing per root-field instance via `choose(fields, rootPc, ivs, {rootId})`, rank and cap them, and give alternates the HIGH/LOW VOICING subtitle rule.
-
-**Why:** Under the current rule the enumeration already reproduces 60/61 shipped cards (all six hand-authored Pygmy alternates and Hijaz Bm HIGH VOICING) but over-generates (pygmy 51 vs 27). The owner asked for a generalized engine that produces a useful, comprehensive set without hand data.
-
-**Context:** Gated on the trigger-aware cluster rule landing (`docs/plans/2026-09-15-trigger-aware-cluster-rule.md`, Part B section lists the four owner decisions needed first: ranking/cap, subtitle rule, built-in vs generated decks, spec section 7 rewrite). Hook point `src/engine/select.js:239-262 voice()`.
-
-**Effort:** L
-**Priority:** P2
-**Depends on:** Nothing. Part A merged 2026-09-16 (PR 67). All five owner decisions taken 2026-09-16 and recorded in the plan's Part B section: built-in decks are in scope with Amara as the exactness gate, home card is the lowest non-bottom-shell root instance, an alternate survives only if a non-root tone moves AND register class changes, cap 3 per name, Hijaz `Bm - HIGH VOICING` is deleted. Measured under those rules: amara 16/16 exact, hijaz 17, pygmy 36. Ready to plan.
-
-### Pygmy title-card blurb says 25 CHORDS
-
-**What:** `tools/decks.py:124` blurb still reads "25 CHORDS"; Pygmy ships 27 since the Cm7/Eb7 LOW VOICING cards. Fix the cause, not the string: make the three built-in decks derive their count the way generated decks already do, via `_blurb` (`tools/decks.py:365`, called at `:443` as `_blurb(spec, len(chords), warnings)`), instead of hardcoding the whole blurb text.
-
-**Why:** A hardcoded count goes stale on every deck-data change and nothing catches it. Hijaz (`:52`, "18 CHORDS") is correct today by luck; Amara carries no count at all, so the three built-ins are already inconsistent with each other and with the generated path.
-
-**Context:** Found during the 2026-09-15 eng review; deliberately left out of the trigger-aware PR to keep that diff to the rule change. The built-in blurbs carry pan-specific note lines that `_blurb` does not produce, so this is not a straight swap: either extend `_blurb` to accept a custom prefix, or keep the hand-written lines and append a derived count line. Add a test that asserts each built-in deck's printed count equals `len(chords)` (see the existing generated title-card text test row). Requires a PDF rebuild.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** None
-
 ### Python oracle lacks a tie-break when a pitch appears in two zones
 
 **What:** `tests/test_deck_data.py:338` picks a tone's highest lower instance with `max(instances(f, True), key=midi)`. When one MIDI exists as both a top-shell and a bottom-shell field, `max` returns whichever the enumeration happened to reach first. Fix: `key=lambda g: (midi(g), zone(g) != "bottom")`, which matches the engine's top-first tie-break.
