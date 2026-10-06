@@ -5,7 +5,7 @@
 diff --git a/tools/decks.py b/tools/decks.py
 --- a/tools/decks.py
 +++ b/tools/decks.py
-@@ -21,6 +21,14 @@ from reportlab.lib.colors import Color
+@@ -23,6 +23,14 @@ from reportlab.lib.colors import Color
  # instead of slipping through.
  
  GENERATED_OMITTED = {
@@ -18,5 +18,5 @@ diff --git a/tools/decks.py b/tools/decks.py
 +        "says nothing and would excuse the next real gap."
 +    ),
      "blank_cards": (
-         "Padding preference, not deck data: PYGMY asks for 9 write-your-own "
+         "Padding preference, not deck data: PYGMY asks for 7 write-your-own "
          "cards so its last sheet comes out full. hifi.build already pads to a "
