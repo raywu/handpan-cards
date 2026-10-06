@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1331,7 +1331,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1329,7 +1329,7 @@ footer.seq{row-gap:var(--sp-1)}
           three sites (class trio: equal widths above the landscape grid, two
           equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
           boxes) the two Amy Naylor videos. -->

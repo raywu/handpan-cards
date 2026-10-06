@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -319,7 +319,6 @@ a.mode{text-decoration:none}
+@@ -317,7 +317,6 @@ a.mode{text-decoration:none}
     shows without JS ever clearing `hidden`. */
  @media (min-width:1024px) and (min-height:700px){
    #settings-trigger, #settings-scrim{display:none}
