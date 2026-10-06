@@ -23,9 +23,7 @@ const vm = require("node:vm");
 const APP = path.join(__dirname, "..", "index.html");
 
 // Ids getElementById will serve. getElementById stays STRICT - an unknown id
-// throws, so a typo in the app is a loud failure, not a silent null - but the
-// list is extensible: push through registerIds(), or pass opts.extraIds for one
-// boot only.
+// throws, so a typo in the app is a loud failure, not a silent null.
 // The scale-sheet ids of ENGINE-SPEC section 15 are served from Phase 3 on, so
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
@@ -54,12 +52,6 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // group (they replaced "modeS" and the Difficulty group).
   "tier-basic", "tier-intermediate", "tier-advanced"];
 
-/** Permanently extend the served id list (for later boots in this process). */
-function registerIds(...ids) {
-  for (const id of ids.flat()) if (!ELEMENT_IDS.includes(id)) ELEMENT_IDS.push(id);
-  return ELEMENT_IDS;
-}
-
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 
@@ -67,7 +59,7 @@ function makeElement(id, tag = "div") {
   const attrs = {};
   return {
     id, tagName: String(tag).toUpperCase(),
-    _html: "", _text: "", value: "", checked: false,
+    _html: "", _text: "", value: "",
     children: [], listeners: {}, dataset: {}, attributes: attrs,
     // Assigning innerHTML replaces the children in a browser; the stub does the
     // same, so a rebuilt list (buildChips) has exactly the nodes it appended.
@@ -117,11 +109,6 @@ function makeElement(id, tag = "div") {
     set className(v) { this.classList._set = new Set(String(v).split(/\s+/).filter(Boolean)); },
     style: { _props: {}, setProperty(k, v) { this._props[k] = v; } },
     addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); },
-    removeEventListener(t, fn) {
-      const l = this.listeners[t] || [];
-      const i = l.indexOf(fn);
-      if (i >= 0) l.splice(i, 1);
-    },
     dispatchEvent(ev) { for (const fn of this.listeners[ev && ev.type] || []) fn(ev); return true; },
     appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
     removeChild(c) {
@@ -130,7 +117,6 @@ function makeElement(id, tag = "div") {
       c.parentNode = null;
       return c;
     },
-    remove() {},
     // focus() is rebound per boot (see bindFocus) so document.activeElement
     // tracks it; the standalone default keeps makeElement usable on its own.
     focus() {}, blur() {},
@@ -142,7 +128,7 @@ function makeElement(id, tag = "div") {
     // one the app actually activated; a real anchor click is the whole of the
     // download on every platform but iOS.
     clicks: 0, click() { this.clicks++; if (this.onclick) this.onclick.call(this); },
-    onclick: null, oninput: null, onchange: null,
+    onclick: null, onchange: null,
   };
 }
 
@@ -176,7 +162,6 @@ function addLayout(el) {
   };
   el.getAnimations = () => el._anims.filter((a) => a.state === "running");
   el.setPointerCapture = (id) => { el._captured = id; };
-  el.releasePointerCapture = () => { el._captured = undefined; };
   el.contains = (other) => {
     for (let n = other; n; n = n.parentNode) if (n === el) return true;
     return false;
@@ -207,12 +192,7 @@ function makeLocation(href) {
     get origin() { return state.url.origin; },
     get pathname() { return state.url.pathname; },
     set pathname(v) { state.url.pathname = v; },
-    get host() { return state.url.host; },
-    get protocol() { return state.url.protocol; },
     toString() { return state.url.href; },
-    assign(v) { this.href = v; },
-    replace(v) { this.href = v; },
-    reload() {},
   };
   return loc;
 }
@@ -223,8 +203,6 @@ function makeLocation(href) {
  *   throwOnStorage - make localStorage throw, exercising the private-mode guard
  *   random         - deterministic replacement for Math.random
  *   href           - initial location (default "https://example.test/index.html")
- *   extraIds       - extra element ids served by getElementById, this boot only
- *   syncTimers     - run setTimeout callbacks immediately instead of queueing
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  */
@@ -260,8 +238,7 @@ function boot(opts = {}) {
     el.blur = () => { if (focusState.active === el) focusState.active = null; };
     return opts.layout ? addLayout(el) : el;
   };
-  const served = [...ELEMENT_IDS, ...(opts.extraIds || [])];
-  for (const id of served) els[id] = bindFocus(makeElement(id));
+  for (const id of ELEMENT_IDS) els[id] = bindFocus(makeElement(id));
   // Layout boot: #card sits inside a .scene, #scale-sheet has its surface child
   // (the real one is sheet.firstElementChild) and <main> exists for the wheel
   // listener. Default boot gets none of these, so `scene` stays undefined there.
@@ -337,8 +314,8 @@ function boot(opts = {}) {
     return all().filter((el) => parts.some((p) => match(el, p)));
   };
 
-  // Timers: queued by default so a recurring timer cannot hang a unit test.
-  // flushTimers() drains the queue in due order; opts.syncTimers runs inline.
+  // Timers: queued so a recurring timer cannot hang a unit test.
+  // flushTimers() drains the queue in due order.
   const timers = new Map();
   let nextTimer = 1;
 
@@ -362,7 +339,6 @@ function boot(opts = {}) {
     // history entry, and a unit test asserts the call. The browser's answering
     // popstate is fired explicitly by the harness's popstate() helper.
     back() { historyCalls.push({ type: "back" }); },
-    forward() {}, go() {},
   };
 
   // Blob and the object-URL registry. The PDF emitter hands the browser its
@@ -420,29 +396,21 @@ function boot(opts = {}) {
       _l: {},
     },
     location, history,
-    // Event, so app code can fire the real thing (`new Event("input")`) rather
-    // than reaching past its own listeners - the stub's dispatchEvent already
-    // dispatches by `type`.
     URL: SandboxURL, Blob: SandboxBlob,
-    URLSearchParams, Event, TextEncoder, TextDecoder, structuredClone, btoa, atob,
+    TextEncoder, btoa, atob,
     setTimeout(fn, ms, ...args) {
-      if (opts.syncTimers) { fn(...args); return 0; }
       const id = nextTimer++;
       timers.set(id, { fn, ms: ms || 0, args, seq: id });
       return id;
     },
     clearTimeout(id) { timers.delete(id); },
-    setInterval() { return 0; },
-    clearInterval() {},
-    queueMicrotask: (fn) => fn(),
     // Only host-realm globals a vm context lacks are injected. Never Array,
     // Object, Error and friends: a context has its own, and importing the host
     // ones would make `x instanceof Array` false for values the code built.
     console, Math: mathStub,
-    // The print sheet reads the viewport ONCE, at the CTA (AC-B5b), and then
-    // calls window.print(). Both are window-level in the browser, so the stub
-    // serves them here; printCalls records the invocations a test asserts on.
-    innerWidth: opts.innerWidth === undefined ? 1024 : opts.innerWidth,
+    // printCalls records the invocations of window.print() a test asserts on;
+    // the app itself no longer calls it, so a test can prove it never does.
+    innerWidth: 1024,
     // The print sheet also reads the platform, because iOS Safari ignores
     // `@page` and enforces a page box of its own. Default to a desktop UA so
     // existing tests keep the width-driven layout; `userAgent` overrides it.
@@ -466,7 +434,6 @@ function boot(opts = {}) {
   };
   if (opts.layout) {
     sandbox.innerHeight = opts.innerHeight === undefined ? 800 : opts.innerHeight;
-    sandbox.requestAnimationFrame = (fn) => sandbox.setTimeout(fn, 16);
     if (opts.visualViewport) {
       const vvl = {};
       sandbox.visualViewport = {
@@ -507,9 +474,7 @@ function boot(opts = {}) {
   }
 
   return {
-    els, store, docEl, sandbox, created, location, history, blocks, flushTimers,
-    /** Serve one more element id from this boot on. */
-    registerId: (id) => (els[id] = els[id] || makeElement(id)),
+    els, store, sandbox, created, location, history, blocks, flushTimers,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
     run: (stmt) => vm.runInContext(stmt, sandbox),
@@ -580,15 +545,7 @@ function boot(opts = {}) {
     popstate: () => {
       for (const fn of winListeners.popstate || []) fn({ type: "popstate", state: history.state });
     },
-    /** Fire a window-level event the app listens for. `afterprint` is the one
-     *  that matters: window.print() returns immediately on iOS Safari, so the
-     *  print sheet is torn down on the event rather than in a finally, and a
-     *  test has no other way to reach the listener - winListeners is closed
-     *  over and not exposed. */
-    fireWindow: (type) => {
-      for (const fn of winListeners[type] || []) fn({ type });
-    },
   };
 }
 
-module.exports = { boot, makeElement, makeLocation, registerIds, plain, ELEMENT_IDS, APP };
+module.exports = { boot, plain, ELEMENT_IDS, APP };
