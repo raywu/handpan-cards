@@ -15,7 +15,7 @@
 //     which it must create defensively on first use:
 //
 //         var HPE = (typeof HPE !== "undefined") ? HPE : {};
-//         HPE.core = { pc, midiOf, parseSeed, formatSeed, deckId };
+//         HPE.core = { pc, midiFromName, parseSeed, formatSeed, deckId };
 //
 //     (`var`, not `const`: `var` lands on the vm's global object, so later
 //     scripts and index.html's own inline block both see it.)
@@ -43,7 +43,7 @@ function loadEngine(names) {
   const sandbox = {
     // Only host-realm globals a vm context lacks (a context brings its own
     // Array/Object/Error/JSON/Math; importing the host ones would break
-    // `instanceof` for values the engine built). Same list as sandbox.js.
+    // `instanceof` for values the engine built).
     console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
     btoa, atob,
   };

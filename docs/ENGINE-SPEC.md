@@ -861,8 +861,9 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
   every `layout.solve` caller and the localStorage restore path).
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
-  `CompressionStream`, `btoa` or `TextEncoder`, so the engine may not depend on
-  them.
+  `CompressionStream`, so the engine may not depend on it. The test realm
+  (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and
+  `TextDecoder`, so the test realm is not a guard for those.
 
 ## 15. UI element ids
 
