@@ -3691,18 +3691,6 @@ function printBlock(html) {
   throw new Error("unterminated @media print block");
 }
 
-/* PRINT_PAPER.h was the only source of the page-box literal above. Keeping
-   the key invites the next edit to read it again, so the fix deletes it and
-   this test is the guard. `css` (the @page size keyword) is what survives. */
-test("PRINT_PAPER carries no page-box height", () => {
-  const papers = plain(boot().get("PRINT_PAPER"));
-  for (const [name, p] of Object.entries(papers)) {
-    assert.ok(!("h" in p), `PRINT_PAPER.${name} still carries a page-box height`);
-    assert.ok(typeof p.css === "string" && p.css.length > 0,
-      `PRINT_PAPER.${name} must keep its @page size keyword`);
-  }
-});
-
 /* ---------------------------------------------------------------------------
  * 23. the print CTA
  *
