@@ -1,0 +1,16 @@
+# kills: NU-1 a step of the parent reads as that step numeral with no accidental
+# suite: node --test --test-name-pattern ^NU.1.a.step.of.the.parent.reads.as.that.step.numeral.with.no.accidental$ tests/naming.test.js
+# A step of the parent carries a flat again on a pan with no minor third
+# over the tonic, so Hijaz D reads bII: the pre-2026-10-05 look.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -117,7 +117,7 @@
+    * touching the accidental. */
+   function numeral(offset, parentIntervals, minorRelative) {
+     var at = indexOfPc(parentIntervals, offset);
+-    if (at >= 0) return {accidental: "", roman: ROMAN[at]};
++    if (at >= 0) return {accidental: minorRelative ? "" : "b", roman: ROMAN[at]};
+     return outsideNumeral(offset, parentIntervals, minorRelative);
+   }
+ 

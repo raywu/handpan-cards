@@ -1,0 +1,15 @@
+# kills: D8 in-parent: a chromatic parent degree is numbered by its degree index
+# suite: node --test --test-name-pattern ^D8.in.parent..a.chromatic.parent.degree.is.numbered.by.its.degree.index$ tests/naming.test.js
+# A step of the parent is no longer recognised as one and is named like a
+# pitch class outside the parent, so F Phrygian Gb reads #I instead of II.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -117,7 +117,6 @@
+    * touching the accidental. */
+   function numeral(offset, parentIntervals, minorRelative) {
+     var at = indexOfPc(parentIntervals, offset);
+-    if (at >= 0) return {accidental: "", roman: ROMAN[at]};
+     return outsideNumeral(offset, parentIntervals, minorRelative);
+   }
+ 

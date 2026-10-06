@@ -1,0 +1,16 @@
+# kills: NU-1 every built-in degree label is the engine output with no exception
+# suite: node --test --test-name-pattern ^NU.1.every.built.in.degree.label.is.the.engine.output.with.no.exception$ tests/naming.test.js
+# Step numerals are counted against Ionian whatever the parent is, so Hijaz
+# D and B are outside the scale they are counted in and read bII and bvii.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -270,7 +270,7 @@
+     // sides it takes `#` when the PAN carries a minor third above the tonic,
+     // `b` otherwise.
+     var minorRelative = member(pan, pc(tonic + 3));
+-    var intervals = PARENTS[parentIndex].intervals;
++    var intervals = PARENTS[0].intervals;
+     var out = {};
+     for (var i = 0; i < pan.length; i += 1) {
+       var degreePc = pan[i];

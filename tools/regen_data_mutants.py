@@ -62,7 +62,7 @@ MUTANTS = {
     "b_degree_missing": (
         ["# kills: test_degrees_cover_chord_roots",
          "# suite: python3 -m unittest -k test_degrees_cover_chord_roots tests.test_deck_data",
-         "# Amara loses the IV degree, leaving G5 and Gsus4 without a scale degree."],
+         "# Amara loses the iv degree, leaving G5 and Gsus4 without a scale degree."],
         [],
         lambda D: next(x for x in D if x["id"] == "amara")["degrees"].pop("7"),
     ),
