@@ -2131,7 +2131,7 @@ function run() {
           inside: els.map(inside), spill: els.map(e => e.scrollWidth - e.clientWidth) };
       `;
       try {
-        for (const [vw, vh, over] of MENU_VIEWPORTS) {
+        for (const [vw, vh, over] of MENU_VIEWPORTS.filter(([, h]) => h > 520)) {
           await b.setViewport(vw, vh, over);
           await b.settle();
           await openSettingsPanel();
@@ -2148,7 +2148,7 @@ function run() {
           assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
           await b.key("Escape", "Escape", 27);
         }
-        for (const [vw, vh, over] of [[640, 360, true], [667, 375, true], [932, 430, true]]) {
+        for (const [vw, vh, over] of [[640, 360, true], [667, 375, true], [844, 390, true], [932, 430, true]]) {
           await b.setViewport(vw, vh, over);
           await b.settle();
           await openSettingsPanel();
@@ -2156,6 +2156,11 @@ function run() {
           const label = `${vw}x${vh}`;
           assert.deepStrictEqual(m.spill, [0, 0, 0], `${label}: a site link's content overflows its box`);
           assert.ok(m.inside.every(Boolean), `${label}: a site label's text spills outside its link box`);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.remove("trio");`);
+          await b.settle();
+          const base = await b.eval(MEASURE);
+          await b.eval(`document.getElementById("res-handpaner").parentElement.classList.add("trio");`);
+          assert.deepStrictEqual(m.lines, base.lines, `${label}: the landscape row differs from the same row without the trio class`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
