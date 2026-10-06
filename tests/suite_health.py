@@ -183,7 +183,7 @@ def check_python():
 # a browser that never reports ready, a server socket that never binds - used to
 # hang this script forever and burn a whole CI job with no log. Every node suite
 # therefore runs under a wall clock. The slowest suite measured locally is the
-# e2e one at ~5s, so this is ~35x headroom; it matches the SUITE_TIMEOUT that
+# e2e one, and this leaves it wide headroom; it matches the SUITE_TIMEOUT that
 # tests/mutation_check.sh already uses, and NODE_SUITE_TIMEOUT overrides it.
 NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "180"))
 
@@ -269,7 +269,7 @@ def print_failing(entries, omitted, indent="  "):
 
 
 # A timed-out suite is SIGTERMed first, and only then SIGKILLed. The suite's own
-# process group is not the whole tree: tests/helpers/cdp.js:289 spawns Chrome
+# process group is not the whole tree: the spawn in `launchOnce` (tests/helpers/cdp.js) spawns Chrome
 # `detached: true`, i.e. setsid(2), so the browser leads its OWN group and a
 # killpg of node's group never reaches it. What does reach it is cdp.js's
 # SIGTERM/SIGINT/SIGHUP reaper (tests/helpers/cdp.js:79-100), which kills the

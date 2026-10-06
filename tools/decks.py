@@ -24,7 +24,7 @@ from reportlab.lib.colors import Color
 
 GENERATED_OMITTED = {
     "blank_cards": (
-        "Padding preference, not deck data: PYGMY asks for 9 write-your-own "
+        "Padding preference, not deck data: PYGMY asks for 7 write-your-own "
         "cards so its last sheet comes out full. hifi.build already pads to a "
         "multiple of 9 with blanks, and how many spare cards a person wants "
         "is not derivable from a scale, so a generated deck asks for none."
@@ -397,7 +397,6 @@ def from_generated(payload):
 
 
 if __name__ == "__main__":
-    import os
     OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     n1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_Cards_Letter.pdf"), HIJAZ)
     n2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_Cards_Letter.pdf"), PYGMY)

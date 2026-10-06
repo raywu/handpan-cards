@@ -552,7 +552,7 @@ class CanonicalSourceTest(unittest.TestCase):
         # 2026-09-16: default 8567 bytes == the committed payload;
         # ensure_ascii=False gives 8542 and compact separators 7398, either of
         # which rewrites the whole line and breaks the identical assertion in
-        # tools/regen_data_mutants.py:158.
+        # the mutant definitions in tools/regen_data_mutants.py.
         html = open(paths.INDEX_HTML, encoding="utf-8").read()
         m = re.search(r"^const DECKS = (\[.*\]);$", html, re.M)
         self.assertIsNotNone(m, "DECKS JSON not found in index.html")

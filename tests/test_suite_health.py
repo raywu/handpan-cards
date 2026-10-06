@@ -14,7 +14,7 @@ There are three shapes, because Chrome is the second one:
 
 1. IN GROUP. The plain case - killing node's process group reaches it.
 2. IN ITS OWN SESSION, with a parent that reaps it on SIGTERM. This is the
-   real topology: tests/helpers/cdp.js:289 spawns Chrome `detached: true`,
+   real topology: the spawn in `launchOnce` (tests/helpers/cdp.js) spawns Chrome `detached: true`,
    which is setsid(2), so the browser leads its OWN group and a kill of
    node's group never reaches it. What does reach it is cdp.js's own SIGTERM
    reaper (tests/helpers/cdp.js:79-100), which kills the browser group and
@@ -109,7 +109,7 @@ sleep 100
 
 
 # Shape 4: the survivor is in its OWN session, so killpg cannot reach it at all,
-# and it holds the pipes. Chrome's real topology again (cdp.js:289 spawns it
+# and it holds the pipes. Chrome's real topology again (the spawn in `launchOnce` in cdp.js spawns it
 # detached, inheriting stdio), but here nothing reaps it, so BOTH drains run out
 # the clock. That makes it the only shape where the suite's own output cannot be
 # recovered by a later read - if the drain discards TimeoutExpired's partial
@@ -145,9 +145,13 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             old_path = os.environ.get("PATH", "")
             old_pid_file_env = os.environ.get("GRANDCHILD_PID_FILE")
             old_timeout = suite_health.NODE_TIMEOUT
+            old_grace = suite_health.GROUP_TERM_GRACE
+            old_drain = suite_health.DRAIN_TIMEOUT
             os.environ["PATH"] = tmp + os.pathsep + old_path
             os.environ["GRANDCHILD_PID_FILE"] = grandchild_pid_file
             suite_health.NODE_TIMEOUT = 2
+            suite_health.GROUP_TERM_GRACE = 2
+            suite_health.DRAIN_TIMEOUT = 1
 
             # Captures the Popen run_node_file creates internally, so a test
             # can assert it was reaped and its pipes closed (row 108) - the
@@ -173,6 +177,8 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
                 else:
                     os.environ["GRANDCHILD_PID_FILE"] = old_pid_file_env
                 suite_health.NODE_TIMEOUT = old_timeout
+                suite_health.GROUP_TERM_GRACE = old_grace
+                suite_health.DRAIN_TIMEOUT = old_drain
 
             self.last_proc = captured[-1] if captured else None
             with open(grandchild_pid_file) as f:
@@ -241,10 +247,32 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         # could change is suite_health.py itself reaching into tmpdir (e.g. an
         # age-based sweep, which row 98 explicitly rules out as unsafe: it can
         # delete a concurrent run's LIVE profile).
+        root = tempfile.mkdtemp()
+        old_tempdir = tempfile.tempdir
+        old_tmpdir = os.environ.get("TMPDIR")
+
+        def restore_tmp():
+            tempfile.tempdir = old_tempdir
+            if old_tmpdir is None:
+                os.environ.pop("TMPDIR", None)
+            else:
+                os.environ["TMPDIR"] = old_tmpdir
+            shutil.rmtree(root, ignore_errors=True)
+
+        self.addCleanup(restore_tmp)
+        decoys = {os.path.join(root, "hpfc-prof-decoy1"),
+                  os.path.join(root, "hpfc-prof-decoy2")}
+        for decoy in decoys:
+            os.mkdir(decoy)
+        tempfile.tempdir = root
+        os.environ["TMPDIR"] = root
         before = self._hpfc_profile_dirs()
+        self.assertEqual(before, decoys)
         result, pid = self.drive_timeout(FAKE_NODE_UNREACHABLE_HOLDER)
         self.addCleanup(self.reap, pid)
         after = self._hpfc_profile_dirs()
+        self.assertEqual(after, decoys)
+        self.assertTrue(all(os.path.isdir(d) for d in decoys))
         self.assertEqual(
             before, after,
             "the kill path changed the set of hpfc-prof-* profile dirs in "

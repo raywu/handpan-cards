@@ -9,6 +9,7 @@ PDFs, so a page the emitter writes is held to the parser the print pipeline is
 held to.
 """
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -92,6 +93,7 @@ class PdfEmitterTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.doc.close()
+        shutil.rmtree(cls.tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":

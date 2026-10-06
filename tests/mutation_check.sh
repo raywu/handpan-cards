@@ -120,7 +120,7 @@ SUITE_LOG=$(mktemp -t mutation_suite_log.XXXXXX)
 trap 'rm -f "$SUITE_LOG"' EXIT
 run_suite() {   # $* = command string, deliberately word-split
   # set -f (noglob), scoped to just this command: nullglob is on shell-wide
-  # (line 27), and unquoted $* word-splitting would otherwise let it silently
+  # (the `shopt -s nullglob` at the top), and unquoted $* word-splitting would otherwise let it silently
   # drop or expand a header word containing '*', '?' or '[' that matches no
   # file. Restored immediately after so nothing else in the script is affected.
   set -f

@@ -86,23 +86,6 @@ def _mul(m, n):
             e * A + f * C + E, e * B + f * D + F)
 
 
-class _Path(object):
-    def roundRect(self, *a, **k):
-        pass
-
-    def rect(self, *a, **k):
-        pass
-
-    def moveTo(self, *a, **k):
-        pass
-
-    def lineTo(self, *a, **k):
-        pass
-
-    def close(self, *a, **k):
-        pass
-
-
 class RecordingCanvas(object):
     """Stand-in for a reportlab canvas that records the marks it is asked for.
 
@@ -158,24 +141,6 @@ class RecordingCanvas(object):
     def setDash(self, *a, **k):
         self._dash = tuple(a) if a else None
 
-    def setLineCap(self, *a):
-        pass
-
-    def setLineJoin(self, *a):
-        pass
-
-    def setTitle(self, *a):
-        pass
-
-    def beginPath(self):
-        return _Path()
-
-    def clipPath(self, *a, **k):
-        pass
-
-    def drawPath(self, *a, **k):
-        pass
-
     # -- marks
     def _device(self, x, y):
         a, b, c, d, e, f = self._ctm
@@ -203,9 +168,6 @@ class RecordingCanvas(object):
     def drawCentredString(self, x, y, text, *a, **k):
         self._text(x, y, text, "c")
 
-    def drawRightString(self, x, y, text, *a, **k):
-        self._text(x, y, text, "r")
-
     def circle(self, x, y, r, stroke=1, fill=0):
         px, py = self._device(x, y)
         self.circles.append(dict(x=px, y=py, r=r, stroke=stroke, fill=fill,
@@ -215,9 +177,6 @@ class RecordingCanvas(object):
 
     def line(self, x1, y1, x2, y2):
         self.lines.append((self._device(x1, y1), self._device(x2, y2)))
-
-    def rect(self, x, y, w, h, stroke=1, fill=0):
-        pass
 
     def roundRect(self, x, y, w, h, r, stroke=1, fill=0):
         pass
@@ -251,7 +210,7 @@ def render_chord_card(deck, index, chord, x=0.0, y=0.0):
 
 
 def every_card():
-    """(deck, 1-based index, chord) for all 59 cards."""
+    """(deck, 1-based index, chord) for all 96 cards."""
     for deck in ALL_DECKS:
         for i, chord in enumerate(deck["chords"]):
             yield deck, i + 1, chord
@@ -361,7 +320,7 @@ class FitTest(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# call-site width budgets, across all 59 cards
+# call-site width budgets, across all 96 cards
 # --------------------------------------------------------------------------
 class CardWidthBudgetTest(unittest.TestCase):
     """The budgets the card layout promises, checked against drawn ink.
@@ -391,7 +350,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], 0.0,
             "a drawn subtitle overran the %.0f%% header budget (%.2f pt). "
-            "Worst case of all 59 cards: %s / %r drawn %.2f pt, slack "
+            "Worst case of all 96 cards: %s / %r drawn %.2f pt, slack "
             "%.2f pt" % (self.SUBTITLE_BUDGET * 100,
                          SPEC_CARD_W * self.SUBTITLE_BUDGET,
                          worst[1], worst[2], worst[3], worst[0]))
@@ -416,7 +375,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreater(
             worst[0], 0.0,
             "the header subtitle overlapped the deck name. Worst case of all "
-            "59 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
+            "96 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
 
     def test_all_drawn_card_text_stays_inside_the_card(self):
         worst = None
@@ -436,7 +395,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], MIN_TEXT_MARGIN,
             "drawn text came within %.2f pt of the card edge (minimum %.2f). "
-            "Worst case of all 59 cards: %s / %s / %r"
+            "Worst case of all 96 cards: %s / %s / %r"
             % (worst[0], MIN_TEXT_MARGIN, worst[1], worst[2], worst[3]))
 
 

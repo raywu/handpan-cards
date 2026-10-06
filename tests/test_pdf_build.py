@@ -11,6 +11,7 @@ The last test is the staleness gate: the six PDFs committed in the repo root
 must match a fresh build, so deck data cannot change without the printed
 sheets being regenerated.
 """
+import hashlib
 import os
 import re
 import shutil
@@ -237,6 +238,7 @@ class BuiltDecksTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="handpan-print-")
+        cls.pdfs_before = cls._repo_pdf_hashes()
         cls.built = {}
         cls.returned = {}
         for key, deck, chords_only, _pages in JOBS:
@@ -252,8 +254,18 @@ class BuiltDecksTest(unittest.TestCase):
             doc.close()
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
+    @staticmethod
+    def _repo_pdf_hashes():
+        out = {}
+        for name in sorted(paths.PDFS.values()):
+            with open(os.path.join(paths.ROOT, name), "rb") as fh:
+                out[name] = hashlib.sha256(fh.read()).hexdigest()
+        return out
+
     def assertRepoUntouched(self):
         self.assertTrue(self.tmp.startswith(tempfile.gettempdir()))
+        self.assertEqual(self._repo_pdf_hashes(), self.pdfs_before,
+                         "the build rewrote a committed PDF in the repo root")
 
 
 class BuildTest(BuiltDecksTest):
