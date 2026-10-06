@@ -2,7 +2,7 @@
 //
 // Scope: only what tools/boot_sim.js does NOT already assert. boot_sim covers the
 // boot order guard, every card in both modes rendering, <svg> presence, deck
-// colours in CSS vars + markup, shuffle toggling, absence of German, 59 cards.
+// colours in CSS vars + markup, shuffle toggling, absence of German, 96 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
 // "instrument layouts", "app data model") or from user-observable behaviour, never
