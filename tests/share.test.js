@@ -252,7 +252,7 @@ test("truncating or extending a valid string is rejected", () => {
 });
 
 test("decode never throws on hostile input", () => {
-  for (const bad of [undefined, null, 42, {}, [], "\n\n\n", "1  "]) {
+  for (const bad of [undefined, null, 42, {}, [], "\n\n\n", "1\0\0"]) {
     let r;
     assert.doesNotThrow(() => { r = share.decode(bad); },
       `decode threw on ${JSON.stringify(bad)}`);

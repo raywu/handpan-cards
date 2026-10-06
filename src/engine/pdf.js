@@ -101,10 +101,10 @@ HPE.pdf = (function () {
     return this.op(num(r) + " " + num(g) + " " + num(b) + " rg");
   };
   Page.prototype.setLineWidth = function (w) { return this.op(num(w) + " w"); };
-  Page.prototype.setDash = function (on, off, phase) {
+  Page.prototype.setDash = function (on, off) {
     if (on === 0 || on === null || on === undefined) return this.op("[] 0 d");
     return this.op("[" + num(on) + " " + num(off === undefined ? on : off) +
-                   "] " + num(phase || 0) + " d");
+                   "] " + num(0) + " d");
   };
 
   Page.prototype.save = function () { return this.op("q"); };
@@ -164,26 +164,6 @@ HPE.pdf = (function () {
     return this.op(mode || "S");
   };
 
-  // Start and sweep in math-convention degrees, matching the instrument
-  // geometry the rest of the repo is written in.
-  Page.prototype.arc = function (cx, cy, r, start, sweep) {
-    var steps = Math.max(1, Math.ceil(Math.abs(sweep) / 90));
-    var seg = (sweep / steps) * Math.PI / 180;
-    var a = start * Math.PI / 180;
-    var k = (4 / 3) * Math.tan(seg / 4);
-    this.op(num(cx + r * Math.cos(a)) + " " + num(cy + r * Math.sin(a)) + " m");
-    for (var i = 0; i < steps; i++) {
-      var b = a + seg;
-      this.curve(cx + r * (Math.cos(a) - k * Math.sin(a)),
-                 cy + r * (Math.sin(a) + k * Math.cos(a)),
-                 cx + r * (Math.cos(b) + k * Math.sin(b)),
-                 cy + r * (Math.sin(b) - k * Math.cos(b)),
-                 cx + r * Math.cos(b), cy + r * Math.sin(b));
-      a = b;
-    }
-    return this.op("S");
-  };
-
   Page.prototype.text = function (x, y, s, face, size) {
     var body = escapeText(String(s));
     var id = this.doc.useFace(face);
@@ -191,10 +171,6 @@ HPE.pdf = (function () {
     this.op("BT /F" + id + " " + num(size) + " Tf 1 0 0 1 " + num(x) + " " +
             num(y) + " Tm (" + body + ") Tj ET");
     return this;
-  };
-
-  Page.prototype.stringWidth = function (s, face, size) {
-    return stringWidth(s, face, size);
   };
 
   function Doc(w, h) {
@@ -205,9 +181,8 @@ HPE.pdf = (function () {
     this.faceOrder = [];
   }
 
-  Doc.prototype.page = function (w, h) {
-    var p = new Page(this, w === undefined ? this.w : w,
-                     h === undefined ? this.h : h);
+  Doc.prototype.page = function () {
+    var p = new Page(this, this.w, this.h);
     this.pages.push(p);
     return p;
   };
@@ -321,8 +296,6 @@ HPE.pdf = (function () {
 
   return {
     doc: function (w, h) { return new Doc(w, h); },
-    stringWidth: stringWidth,
-    escapeText: escapeText,
-    num: num
+    stringWidth: stringWidth
   };
 }());

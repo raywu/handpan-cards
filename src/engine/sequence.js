@@ -334,7 +334,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // relative start are in the pool. Returns [] when there is no home anchor
   // (NO_HOME_CHORD stays ahead of everything) or no sequence of that length -
   // callers that need to tell those apart use anchors()/homeAnchor directly
-  // (pick() does).
+  // (pick() calls homeOrRefuse(deck)).
   function sequences(deck, length) {
     if (length !== 2 && length !== 3 && length !== 4) {
       throw new Error("HPE.sequence.sequences: length must be 2, 3 or 4");
@@ -948,7 +948,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       classifyTier: classifyTier,
       homePc: homePc,
       homeAnchor: homeAnchor,
-      sameSequence: sameSequence,
       prevValid: prevValid,
       homeOrRefuse: homeOrRefuse
     }

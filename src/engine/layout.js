@@ -381,7 +381,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     rimAngles: rimAngles,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX },
     GEOM_KEYS: [
       "rim", "inner", "bottom", "r_ding", "ding_dy", "r_note", "r_bnote",
       "inner_ring", "f_ding", "f_note", "f_bnote", "f_num", "n_in", "n_out",

@@ -356,7 +356,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // The LINE COUNT is the same in both - only what may stand here changes.
     var delta = readDeltaLine(lines[2], version);
     if (delta === undefined) return badNote(text);
-    if (carry) carry.order = delta;
+    carry.order = delta;
 
     var options = readOptionsLine(lines[1]);
     if (options === null) return badNote(text);

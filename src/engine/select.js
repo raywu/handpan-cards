@@ -617,11 +617,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     candidates: candidates,
     collapse: collapse,
     voice: voice,
-    rank: rank,
-    order: order,
     noThirds: noThirds,
     autoName: autoName,
-    PALETTES: PALETTES,
-    TIERS: TIERS
+    PALETTES: PALETTES
   };
 })(HPE);

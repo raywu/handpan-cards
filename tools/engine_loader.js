@@ -15,7 +15,7 @@
 //     which it must create defensively on first use:
 //
 //         var HPE = (typeof HPE !== "undefined") ? HPE : {};
-//         HPE.core = { pc, midiOf, parseSeed, formatSeed, deckId };
+//         HPE.core = { pc, midiFromName, parseSeed, formatSeed, deckId };
 //
 //     (`var`, not `const`: `var` lands on the vm's global object, so later
 //     scripts and index.html's own inline block both see it.)
@@ -34,20 +34,18 @@ const ENGINE_DIR = path.join(ROOT, "src", "engine");
 /**
  * Load engine modules, in order, into ONE vm context.
  * @param {string[]|string} names e.g. ["core", "voicing"] or "core"
- * @param {object} [extraGlobals] merged into the context before loading
  * @returns {object} the shared HPE namespace, with `_context` attached
  */
-function loadEngine(names, extraGlobals = {}) {
-  const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+function loadEngine(names) {
+  const list = Array.isArray(names) ? names : [names];
   if (!list.length) throw new Error("loadEngine: name at least one engine module");
 
   const sandbox = {
     // Only host-realm globals a vm context lacks (a context brings its own
     // Array/Object/Error/JSON/Math; importing the host ones would break
-    // `instanceof` for values the engine built). Same list as sandbox.js.
+    // `instanceof` for values the engine built).
     console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
     btoa, atob,
-    ...extraGlobals,
   };
   vm.createContext(sandbox);
 
@@ -70,4 +68,4 @@ function loadEngine(names, extraGlobals = {}) {
   return ns;
 }
 
-module.exports = { loadEngine, ENGINE_DIR };
+module.exports = { loadEngine };

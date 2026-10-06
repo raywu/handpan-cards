@@ -2041,10 +2041,10 @@ HPE.pdf = (function () {
     return this.op(num(r) + " " + num(g) + " " + num(b) + " rg");
   };
   Page.prototype.setLineWidth = function (w) { return this.op(num(w) + " w"); };
-  Page.prototype.setDash = function (on, off, phase) {
+  Page.prototype.setDash = function (on, off) {
     if (on === 0 || on === null || on === undefined) return this.op("[] 0 d");
     return this.op("[" + num(on) + " " + num(off === undefined ? on : off) +
-                   "] " + num(phase || 0) + " d");
+                   "] " + num(0) + " d");
   };
 
   Page.prototype.save = function () { return this.op("q"); };
@@ -2104,26 +2104,6 @@ HPE.pdf = (function () {
     return this.op(mode || "S");
   };
 
-  // Start and sweep in math-convention degrees, matching the instrument
-  // geometry the rest of the repo is written in.
-  Page.prototype.arc = function (cx, cy, r, start, sweep) {
-    var steps = Math.max(1, Math.ceil(Math.abs(sweep) / 90));
-    var seg = (sweep / steps) * Math.PI / 180;
-    var a = start * Math.PI / 180;
-    var k = (4 / 3) * Math.tan(seg / 4);
-    this.op(num(cx + r * Math.cos(a)) + " " + num(cy + r * Math.sin(a)) + " m");
-    for (var i = 0; i < steps; i++) {
-      var b = a + seg;
-      this.curve(cx + r * (Math.cos(a) - k * Math.sin(a)),
-                 cy + r * (Math.sin(a) + k * Math.cos(a)),
-                 cx + r * (Math.cos(b) + k * Math.sin(b)),
-                 cy + r * (Math.sin(b) - k * Math.cos(b)),
-                 cx + r * Math.cos(b), cy + r * Math.sin(b));
-      a = b;
-    }
-    return this.op("S");
-  };
-
   Page.prototype.text = function (x, y, s, face, size) {
     var body = escapeText(String(s));
     var id = this.doc.useFace(face);
@@ -2131,10 +2111,6 @@ HPE.pdf = (function () {
     this.op("BT /F" + id + " " + num(size) + " Tf 1 0 0 1 " + num(x) + " " +
             num(y) + " Tm (" + body + ") Tj ET");
     return this;
-  };
-
-  Page.prototype.stringWidth = function (s, face, size) {
-    return stringWidth(s, face, size);
   };
 
   function Doc(w, h) {
@@ -2145,9 +2121,8 @@ HPE.pdf = (function () {
     this.faceOrder = [];
   }
 
-  Doc.prototype.page = function (w, h) {
-    var p = new Page(this, w === undefined ? this.w : w,
-                     h === undefined ? this.h : h);
+  Doc.prototype.page = function () {
+    var p = new Page(this, this.w, this.h);
     this.pages.push(p);
     return p;
   };
@@ -2261,9 +2236,7 @@ HPE.pdf = (function () {
 
   return {
     doc: function (w, h) { return new Doc(w, h); },
-    stringWidth: stringWidth,
-    escapeText: escapeText,
-    num: num
+    stringWidth: stringWidth
   };
 }());
 </script>
@@ -2490,11 +2463,7 @@ HPE.pdfdeck = (function () {
   // arrays JSON carries them as - no hexColor() conversion, unlike
   // fromGenerated, which starts from a "#RRGGBB" string.
   function fromBuiltin(deck, overlay) {
-    var spec = { _geom: {} };
-    Object.keys(deck.geom).forEach(function (k) { spec._geom[k] = deck.geom[k]; });
-    Object.keys(deck.fields).forEach(function (fid) {
-      spec[String(parseInt(fid, 10))] = deck.fields[fid].slice();
-    });
+    var spec = specFrom(deck);
 
     var chords = deck.chords.map(function (c) {
       return [c.main, c.sup, c.subtitle, c.fields.slice(), c.roots.slice()];
@@ -2546,13 +2515,6 @@ HPE.pdfdeck = (function () {
         .replace(/\d+(?=\s*CHORDS)/g, String(chords.length));
       out.blurb = lines;
     }
-
-    // Reviewer nit from W1a: `print.blank_cards` is nested, but
-    // src/engine/pdfcards.js reads the top-level `deck.blank_cards`. No
-    // dedicated lift is needed - the generic overlay flatten above
-    // (`Object.keys(overlay).forEach(...)`) already copies `blank_cards`
-    // (and every other overlay key) onto `out`, so Pygmy's 7 blank cards
-    // reach the top level without a special case.
 
     return out;
   }
@@ -3172,8 +3134,8 @@ HPE.pdfcards = (function () {
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
-      tw: tw, fit: fit, noteW: noteW, labelSize: labelSize,
-      numSize: numSize, fitNote: fitNote, cardWarnings: cardWarnings
+      tw: tw, fit: fit, labelSize: labelSize,
+      numSize: numSize, fitNote: fitNote
     }
   };
 }());
@@ -3783,7 +3745,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX, top: TOP_MAX },
     // Finding 10 (2026-09-30 quality-refactor plan): the shared copies of
     // helpers every other module used to reimplement. `pc` is `pitchClass`
     // under the short name the other modules already called it by.
@@ -4114,8 +4075,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     choose: choose,
     rootField: rootField,
     isLegal: isLegal,
-    reduceIntervals: reduceIntervals,
-    MAX_NOTES: MAX_NOTES
+    reduceIntervals: reduceIntervals
   };
 })(HPE);
 </script>
@@ -4505,7 +4465,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     rimAngles: rimAngles,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
-    CAPS: { rim: RIM_MAX, inner: INNER_MAX, bottom: BOTTOM_MAX },
     GEOM_KEYS: [
       "rim", "inner", "bottom", "r_ding", "ding_dy", "r_note", "r_bnote",
       "inner_ring", "f_ding", "f_note", "f_bnote", "f_num", "n_in", "n_out",
@@ -5497,12 +5456,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     candidates: candidates,
     collapse: collapse,
     voice: voice,
-    rank: rank,
-    order: order,
     noThirds: noThirds,
     autoName: autoName,
-    PALETTES: PALETTES,
-    TIERS: TIERS
+    PALETTES: PALETTES
   };
 })(HPE);
 </script>
@@ -5867,7 +5823,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // The LINE COUNT is the same in both - only what may stand here changes.
     var delta = readDeltaLine(lines[2], version);
     if (delta === undefined) return badNote(text);
-    if (carry) carry.order = delta;
+    carry.order = delta;
 
     var options = readOptionsLine(lines[1]);
     if (options === null) return badNote(text);
@@ -6224,7 +6180,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // relative start are in the pool. Returns [] when there is no home anchor
   // (NO_HOME_CHORD stays ahead of everything) or no sequence of that length -
   // callers that need to tell those apart use anchors()/homeAnchor directly
-  // (pick() does).
+  // (pick() calls homeOrRefuse(deck)).
   function sequences(deck, length) {
     if (length !== 2 && length !== 3 && length !== 4) {
       throw new Error("HPE.sequence.sequences: length must be 2, 3 or 4");
@@ -6838,7 +6794,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       classifyTier: classifyTier,
       homePc: homePc,
       homeAnchor: homeAnchor,
-      sameSequence: sameSequence,
       prevValid: prevValid,
       homeOrRefuse: homeOrRefuse
     }

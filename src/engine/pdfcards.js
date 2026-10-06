@@ -602,8 +602,8 @@ HPE.pdfcards = (function () {
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
-      tw: tw, fit: fit, noteW: noteW, labelSize: labelSize,
-      numSize: numSize, fitNote: fitNote, cardWarnings: cardWarnings
+      tw: tw, fit: fit, labelSize: labelSize,
+      numSize: numSize, fitNote: fitNote
     }
   };
 }());
