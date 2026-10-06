@@ -1,0 +1,15 @@
+# kills: HX-4 waitFor names the last evaluation error when it times out
+# suite: node --test --test-name-pattern=^HX-4.waitFor.names.the.last.evaluation.error.when.it.times.out$ tests/harness.test.js
+# Never appends the last evaluation error to the timeout message.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -207,7 +207,7 @@ class Browser {
+     for (;;) {
+       if (await this.eval(`return !!(${expr});`).catch((e) => { lastError = e; return false; })) return true;
+       if (Date.now() > deadline) {
+-        const detail = lastError ? " (last error: " + (lastError.message || lastError) + ")" : "";
++        const detail = "";
+         throw new Error("timed out waiting for " + label + detail);
+       }
+       await new Promise((r) => setTimeout(r, 40));

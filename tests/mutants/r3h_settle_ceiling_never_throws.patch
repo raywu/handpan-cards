@@ -1,0 +1,14 @@
+# kills: HX-3 settle rejects at its ceiling unless strictSettle is off
+# suite: node --test --test-name-pattern=^HX-3.settle.rejects.at.its.ceiling.unless.strictSettle.is.off$ tests/harness.test.js
+# Removes the strict-mode throw, so a stuck animation at the ceiling is silently tolerated again.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -228,7 +228,6 @@ class Browser {
+       if (n === 0) return;
+       if (Date.now() > deadline) {
+         const msg = `E2E-SETTLE-CEILING ${n} animation(s) still running after 500ms`;
+-        if (this.strictSettle !== false) throw new Error(msg);
+         process.stderr.write(msg + "\n");
+         return;
+       }
