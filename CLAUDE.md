@@ -339,6 +339,14 @@ pitch classes (midi % 12), never stored.
 - **Verification style:** invariant checks over all 96 cards (every voicing
   field lit; every root field root-coloured; no root/tone overlap) plus a
   DOM-stubbed boot simulation caught real bugs; keep both when refactoring.
+  The card checks no longer live in `tools/validate.py`, whose check 2 now
+  covers only the root pitch class and doubled pitch classes. They live in
+  four tests: `tests/app.test.js` "pan() draws one circle per field, two more
+  per lit field, plus the chrome" (every voicing field lit);
+  `tests.test_render_agreement` `test_highlighting_agrees` (the root/tone role
+  of every field, app against print); `tests.test_print`
+  `test_state_selects_root_or_tone_colour_but_never_both`; and `tests/app.test.js`
+  "chordSets: Amara C major has two root-coloured fields (C4 + C5)".
 
 ## Print pipeline (tools/)
 
