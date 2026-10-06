@@ -6,10 +6,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1322,7 +1322,7 @@ footer.seq{row-gap:var(--sp-1)}
-          three sites, row two (class duo: one line, labels wrap inside their
+@@ -1328,7 +1328,7 @@ footer.seq{row-gap:var(--sp-1)}
+          sidebar), row two (class duo: one line, labels wrap inside their
           boxes) the two Amy Naylor videos. -->
-     <div class="modebar">
+     <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com"
           target="_blank" rel="noopener">HANDPANER</a>
