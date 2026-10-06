@@ -64,6 +64,11 @@ class RecordingCanvas:
         self.circles.append({"x": x, "y": y, "r": r, "lw": self._lw,
                              "stroke": self._stroke, "dashed": self._dashed})
 
+    def rect(self, x, y, w, h, stroke=1, fill=0):
+        self.rects.append({"x": x, "y": y, "w": w, "h": h,
+                           "fill": self._fill if fill else None,
+                           "stroke": self._stroke if stroke else None})
+
     def roundRect(self, x, y, w, h, r, stroke=1, fill=0):
         self.rects.append({"x": x, "y": y, "w": w, "h": h,
                            "fill": self._fill if fill else None,
