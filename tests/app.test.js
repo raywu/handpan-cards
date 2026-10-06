@@ -4982,6 +4982,19 @@ describe("panel fit judge", () => {
   });
 });
 
+describe("SB sandbox contract", () => {
+  test("SB-1 assigning textContent drops the children of an element", () => {
+    const app = boot();
+    const parent = app.sandbox.document.createElement("div");
+    const child = app.sandbox.document.createElement("div");
+    parent.appendChild(child);
+    assert.strictEqual(parent.children.length, 1);
+    parent.textContent = "";
+    assert.strictEqual(parent.children.length, 0);
+    assert.strictEqual(child.parentNode, null);
+  });
+});
+
 describe("tab stops follow rendering", () => {
   test("getClientRects follows the hidden property", () => {
     const app = boot();
