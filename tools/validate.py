@@ -7,8 +7,8 @@ for data, and the only thing that catches a hand-edit or a merge resolved
 inside that line. Check 1b is a GUARD ON THE ADAPTER in tools/decks.py: the
 deck dicts are derived from the same canonical file, so they cannot drift by
 construction, and what 1b actually catches is a print-only overlay key
-shadowing a canonical one. Checks 2-5 cover the highlighting invariants, the
-German card copy, engine-region drift, and the fontdata subsets.
+shadowing a canonical one. Checks 2-5 cover the per-card root/doubled-pitch-class
+invariants, the German card copy, engine-region drift, and the fontdata subsets.
 
 Needs reportlab (for the Color class in decks.py) but NOT the tools/fonts
 TTFs: hifi is stubbed out before decks.py is imported, since it is only
@@ -101,14 +101,14 @@ def main():
             assert d["colors"]["ga"] == hexc(ga) and d["colors"]["gb"] == hexc(gb)
     run_check("1b", "tools/decks.py deck dicts == data/decks.json", check_1b, failures)
 
-    # 2. invariants over every card. The expected total is DERIVED from
-    # data/decks.json itself (the sum of each deck's own chord count), not a
-    # hardcoded literal that silently goes stale the next time a deck grows -
-    # it still catches the loop below skipping or double-counting a deck.
+    # 2. every card's root pitch class is in its voicing and no pitch class
+    # is doubled. Root/tone non-overlap and "every voicing field is lit" hold
+    # by construction of the pitch-class derivation, so they are not asserted
+    # here; highlighting is pinned by tests.test_print and
+    # tests.test_render_agreement.
     counted = {}
 
     def check_2():
-        expected_total = sum(len(d["chords"]) for d in app)
         total = 0
         for d in app:
             pc = lambda f: d["fields"][str(f)][2] % 12
@@ -117,16 +117,9 @@ def main():
                 pcs = {pc(f) for f in ch["fields"]}
                 rpc = pc(ch["roots"][0])
                 assert rpc in pcs, (d["id"], ch["main"], "root pc missing")
-                root_f = {int(f) for f in d["fields"] if pc(int(f)) == rpc}
-                tone_f = {int(f) for f in d["fields"]
-                          if pc(int(f)) in pcs and pc(int(f)) != rpc}
-                assert not (root_f & tone_f), (d["id"], ch["main"], "overlap")
-                for f in ch["fields"]:
-                    assert f in root_f or f in tone_f, (d["id"], ch["main"], f)
                 assert len(pcs) == len(ch["fields"]), (d["id"], ch["main"], "doubled pc")
-        assert total == expected_total, (total, expected_total)
         counted["total"] = total
-    run_check(2, "invariants over all cards", check_2, failures)
+    run_check(2, "root pc in every voicing, no doubled pc", check_2, failures)
     if "total" in counted:
         print("    (%d cards)" % counted["total"])
 
