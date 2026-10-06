@@ -49,9 +49,9 @@ FLOORS = {
     "tests/test_pdf_parity.py": 11,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 272,
+    "tests/app.test.js": 282,
     "tests/e2e.test.js": 263,
-    "tests/harness.test.js": 11,
+    "tests/harness.test.js": 13,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 53,
     "tests/voicing.test.js": 16,
@@ -61,7 +61,7 @@ FLOORS = {
     "tests/share.test.js": 51,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
-    "tests/pdfcards.test.js": 15,
+    "tests/pdfcards.test.js": 16,
     "tests/mutation_harness.test.js": 52,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 43,
