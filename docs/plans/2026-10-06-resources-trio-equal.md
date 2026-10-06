@@ -63,6 +63,13 @@ cannot hold their labels there.
   equality at 844x390 (that cell moves to the containment-only loop), STOP A (no landscape margin is left to
   watch; a fallback-font inequality at a portrait cell is still report-and-stop), and reviewer check 3's "equal at
   844x390" (now: 844x390 measures as on main).
+- D6 (orchestrator, 2026-10-06, after CI run 37441102247 at ef41788). D5's guard is not a new media condition.
+  The e2e test `the panel's media conditions are exactly the listed ones` pins the panel's dimensional conditions
+  to three, and `(min-height:521px)` made a fourth. Instead the padding rule sits unguarded after the duo rule, as
+  in TR-2, and the existing landscape panel block `@media (max-height:520px)` (the one that holds the panel grid)
+  gains `.modebar.trio .mode{padding-inline:11px}`, restoring `.mode`'s own inline padding. D5's outcome is
+  unchanged: landscape rows measure as with no `trio` class, which TR-4 asserts. Lane Owns gains that one rule in
+  that block. `tr_trio_landscape_unguarded.patch` now removes that reset rule. That e2e test is not edited.
 - D3. This plan ships as the lane branch's first commit, committed by the orchestrator. The lane does not edit it.
 
 ## 4. Non-goals
