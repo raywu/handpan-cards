@@ -3691,18 +3691,6 @@ function printBlock(html) {
   throw new Error("unterminated @media print block");
 }
 
-/* PRINT_PAPER.h was the only source of the page-box literal above. Keeping
-   the key invites the next edit to read it again, so the fix deletes it and
-   this test is the guard. `css` (the @page size keyword) is what survives. */
-test("PRINT_PAPER carries no page-box height", () => {
-  const papers = plain(boot().get("PRINT_PAPER"));
-  for (const [name, p] of Object.entries(papers)) {
-    assert.ok(!("h" in p), `PRINT_PAPER.${name} still carries a page-box height`);
-    assert.ok(typeof p.css === "string" && p.css.length > 0,
-      `PRINT_PAPER.${name} must keep its @page size keyword`);
-  }
-});
-
 /* ---------------------------------------------------------------------------
  * 23. the print CTA
  *
@@ -5080,9 +5068,25 @@ describe("SB sandbox contract", () => {
     extraRail.rails.advanced = "r";
     const missingMode = fixture();
     delete missingMode.decks.d.B;
-    for (const actual of [extraCard, extraRail, missingMode]) {
-      assert.strictEqual(diffGen(fixture(), actual).length, 1);
-    }
+    const missingRail = fixture();
+    delete missingRail.rails.basic;
+    assert.deepStrictEqual(diffGen(fixture(), extraCard), ["gen d mode A card 1: missing from fixture"]);
+    assert.deepStrictEqual(diffGen(fixture(), extraRail), ["rail advanced: fixture undefined != current r"]);
+    assert.deepStrictEqual(diffGen(fixture(), missingMode), ["gen d mode B: missing from current render"]);
+    assert.deepStrictEqual(diffGen(fixture(), missingRail), ["rail basic: fixture r != current undefined"]);
+  });
+
+  test("FU-4 diffGen reports a deck or a mode that exists on one side only, even with no cards", () => {
+    const { diffGen } = require("../tools/regen_card_fixture.js");
+    const face = { front: "f", back: "b" };
+    const withEmptyMode = () => ({ decks: { d: { A: { 0: face }, B: {} } }, rails: {} });
+    const withoutMode = () => ({ decks: { d: { A: { 0: face } } }, rails: {} });
+    assert.deepStrictEqual(diffGen(withEmptyMode(), withoutMode()), ["gen d mode B: missing from current render"]);
+    assert.deepStrictEqual(diffGen(withoutMode(), withEmptyMode()), ["gen d mode B: missing from fixture"]);
+    const withEmptyDeck = () => ({ decks: { d: { A: { 0: face } }, e: {} }, rails: {} });
+    const withoutDeck = () => ({ decks: { d: { A: { 0: face } } }, rails: {} });
+    assert.deepStrictEqual(diffGen(withEmptyDeck(), withoutDeck()), ["gen e: missing from current render"]);
+    assert.deepStrictEqual(diffGen(withoutDeck(), withEmptyDeck()), ["gen e: missing from fixture"]);
   });
 });
 

@@ -1500,6 +1500,22 @@ test("every mutant patch's # kills: line is actually selected by its # suite: co
       `selected=${JSON.stringify(v.selected)}`).join("\n"));
 });
 
+test("FU-6 no two mutant patches share a diff body and a selected test", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const seen = new Map();
+  const pairs = [];
+  for (const name of fs.readdirSync(dir).filter((n) => n.endsWith(".patch")).sort()) {
+    const lines = fs.readFileSync(path.join(dir, name), "utf8").split("\n");
+    const kills = lines.find((l) => l.startsWith("# kills:")) || "";
+    const body = lines.filter((l) => !/^(#|index |@@)/.test(l)).join("\n");
+    const key = `${kills}\n${body}`;
+    if (seen.has(key)) pairs.push(`${seen.get(key)} / ${name}`);
+    else seen.set(key, name);
+  }
+  assert.deepStrictEqual(pairs, [],
+    "these mutant patches change the same lines and are judged by the same test; delete the later one");
+});
+
 // --- Finding 4 (2026-09-30 quality refactor): MUTANT_SHARD -------------------
 //
 // The mutation gate is the CI critical path (~14.5 min). tests/shard_mutants.js

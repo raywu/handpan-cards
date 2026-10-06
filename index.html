@@ -7337,10 +7337,9 @@ function sizePanHits(svg, minPx) {
  *  Letter's 279.4mm, nowhere near the ~97mm a third card row plus its gutter
  *  would need, so paper size and row count are orthogonal controls.
  */
-/* No page-box height here. iOS Safari ignores @page entirely, so the paper
-   height is a number we cannot know; asserting it made every sheet paginate
-   across two physical pages. Only the size keyword survives. */
-const PRINT_PAPER = { letter: { css: "letter" }, a4: { css: "A4" } };
+/* The valid paper names, nothing more. iOS Safari ignores @page entirely, so
+   the paper height is a number we cannot know and none is kept here. */
+const PRINT_PAPER = { letter: true, a4: true };
 
 /** True for every iOS/iPadOS Safari, which ignores the `@page` at-rule
  *  outright - size, orientation and `margin:0` alike - and enforces a page

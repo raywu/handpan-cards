@@ -124,7 +124,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 669 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 672 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -174,21 +174,3 @@ do not "correct"):
 - Highlighting is pitch-class complete (every instance of a chord's
   pitch classes lights up, ding included), matching the verified
   convention of the original D Amara reference deck.
-
-## Optional: Claude Code follow-up prompt
-
-If you want to grow this into a bigger app, start a Claude Code session in
-the repo and use:
-
-> This repo contains index.html, a self-contained handpan chord flashcard
-> app (vanilla JS, embedded JSON deck data for three handpans, SVG pan
-> diagrams). Keep the single-file, no-build architecture and the existing
-> visual system (Marcellus / Bitter / Nunito Sans, per-deck palettes,
-> single-colour root-frame borders, poker-card aspect). Add: (1) spaced repetition - grade each
-> card "again / good / easy" after flipping, schedule with a simple SM-2,
-> persist per-deck progress in localStorage with an export/import JSON
-> button; (2) a practice-stats view per deck; (3) PWA support (manifest +
-> service worker) so it works offline and installs to the home screen;
-> (4) an audio toggle that plays the chord tones with WebAudio sine/triangle
-> voices pitched from each card's MIDI numbers, arpeggiated low-to-high.
-> Test on a 380px viewport. Do not alter deck data or diagram geometry.

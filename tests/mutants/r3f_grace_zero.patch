@@ -1,0 +1,15 @@
+# kills: test_a_grandchild_in_its_own_session_is_reaped_by_its_parent
+# suite: python3 -m unittest -k test_a_grandchild_in_its_own_session_is_reaped_by_its_parent tests.test_suite_health
+# The shipped kill-path grace is zero, so the reaper gets no budget before the group is killed outright.
+diff --git a/tests/suite_health.py b/tests/suite_health.py
+--- a/tests/suite_health.py
++++ b/tests/suite_health.py
+@@ -277,7 +277,7 @@ def print_failing(entries, omitted, indent="  "):
+ # outright defeats that reaper and leaves an orphan Chrome plus an hpfc-prof
+ # directory behind for every timeout - the starvation queue row 69 is about.
+ # Grace is the reaper's whole budget: it only signals and rmdirs.
+-GROUP_TERM_GRACE = 10
++GROUP_TERM_GRACE = 0
+ 
+ # Draining after the kill is bounded too. The pipes were inherited by the whole
+ # tree, so anything that escaped the group still holds the write end and an

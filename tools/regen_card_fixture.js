@@ -123,12 +123,20 @@ function diffAll(expected, actual) {
   const problems = [];
   const deckIds = new Set([...Object.keys(expected), ...Object.keys(actual)]);
   for (const deckId of deckIds) {
-    const eDeck = expected[deckId] || {};
-    const aDeck = actual[deckId] || {};
+    const eDeck = expected[deckId];
+    const aDeck = actual[deckId];
+    if (!eDeck || !aDeck) {
+      problems.push(`${deckId}: ${!eDeck ? "missing from fixture" : "missing from current render"}`);
+      continue;
+    }
     const modes = new Set([...Object.keys(eDeck), ...Object.keys(aDeck)]);
     for (const mode of modes) {
-      const eMode = eDeck[mode] || {};
-      const aMode = aDeck[mode] || {};
+      const eMode = eDeck[mode];
+      const aMode = aDeck[mode];
+      if (!eMode || !aMode) {
+        problems.push(`${deckId} mode ${mode}: ${!eMode ? "missing from fixture" : "missing from current render"}`);
+        continue;
+      }
       const cards = new Set([...Object.keys(eMode), ...Object.keys(aMode)]);
       for (const card of cards) {
         const eCard = eMode[card];

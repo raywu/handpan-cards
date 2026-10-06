@@ -150,8 +150,6 @@ row is a failure - add a row (0 is a fine start). Node counts come from
   run then tests data that is no longer on disk. Any test or script that mutates
   and re-imports must set `PYTHONDONTWRITEBYTECODE=1` (or a fresh
   `PYTHONPYCACHEPREFIX`) and clear `__pycache__` between cycles.
-- `localStorage` key `hpfc` will be shared with spaced-repetition progress.
-  Assert subset semantics (`stored.deck === ...`), never deep equality.
 
 ## Verified data facts (do not "correct")
 

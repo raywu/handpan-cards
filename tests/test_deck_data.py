@@ -11,7 +11,7 @@ would be a mirror, and `tools/validate.py` already does that cross-check
 `hifi` into sys.modules).
 
 Highlighting derivation, root/tone non-overlap and "every voicing field is
-lit" belong to validate.py and are deliberately not repeated here.
+lit" are pinned by tests.test_print and tests.test_render_agreement, not here.
 """
 import json
 import os
