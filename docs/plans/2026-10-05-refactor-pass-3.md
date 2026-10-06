@@ -29,7 +29,7 @@ Done when all of the following hold at the final merge SHA on main:
    - `python3 tools/validate.py`, `node tools/boot_sim.js`, `python3 tools/refresh_mutants.py --check`
    - `python -W error::ResourceWarning tests/suite_health.py --emit-python artifacts/python-results.json`
    - `python3 tests/suite_health.py --emit-js artifacts/js-results.json`
-   - `python3 tests/suite_health.py --verify`
+   - `python3 tests/suite_health.py --verify artifacts/python-results.json artifacts/js-results.json` (`--verify` takes exactly two artifact paths; bare, it exits 2)
 2. `git diff e2d1af8 -- data/decks.json` is empty.
 3. `python3 tools/inline_engine.py --check` and `python3 tools/sync_decks.py --check` both print their `OK` line.
 4. Every row of the dead-code accounting (section 3.3) is in one of three states: removed, owner-gated with a
@@ -256,7 +256,7 @@ Enumeration command for every row: `git grep -n -a -w <name> e2d1af8 -- . ':!tes
 | `shareLink` | TEST-ONLY, mutant depends | `d_share_reason_composed` | kept |
 | Six stub guards (wheelMain, `applyKbOffset` / `hideSheet` sheetSurf, `.filter(Boolean)`, `previewBox.querySelector &&`, `a.closest &&`) | TEST-ONLY (taken only in the sandbox) | APP-1 experiments | owner-gated, Q2 |
 | Engine: `Page.prototype.arc`, `Page.prototype.stringWidth`, exports `pdf.escapeText`, `pdf.num`, `core.CAPS`, `layout.CAPS`, `voicing.MAX_NOTES`, `select.rank`, `select.order`, `select.TIERS`, `sequence.sameSequence`, `pdfcards.noteW`, `pdfcards.cardWarnings` | PROVEN DEAD | definition and export line only; app consumes 18 other `HPE.x.y` names | removed, EN-2 (internal functions stay) |
-| Engine: `setDash` param `phase`, `Doc.prototype.page` params `w`, `h`, `decodeSeed` `if (carry)` | PROVEN DEAD / UNREACHABLE | every caller enumerated by the verifier | removed, EN-2 |
+| Engine: `setDash` param `phase`, `Doc.prototype.page` params `w`, `h` (each with its body reads folded to the no-argument value: `num(phase || 0)` to `num(0)`, `w === undefined ? this.w : w` to `this.w`, likewise `h`), `decodeSeed` `if (carry)` | PROVEN DEAD / UNREACHABLE | every caller enumerated by the verifier | removed, EN-2 |
 | `tools/engine_loader.js` `extraGlobals`, export `ENGINE_DIR`, `.filter(Boolean)` | PROVEN DEAD | all `loadEngine(` call sites pass one array argument | removed, EN-2 |
 | ENG-D14, D18, D20, D22 | KEPT-BY-DECISION | spec section 8, self-labelled guards, port rule | kept, Q13 |
 | `tests/shard_mutants.js` exports `suiteOf`, `shardFor`, `E2E_SUITE_MARKERS` | PROVEN DEAD | only `partition`, `isE2ESelecting`, `loadMutants` imported | export removed, PG-6 |
@@ -303,8 +303,8 @@ Intersections and their order:
 | SB | `tools/sandbox.js`: `us_layout_no_parent`. `tools/regen_card_fixture.js`: `ap3_gen_digest_blind`. `tests/app.test.js`: `d_caller_scan_blind_to_escapes`, `d_caller_scan_counts_lines` | up to 4 (line offsets; none carries a line SB changes) | 6 `r3s_` |
 | EN | `src/engine/*`: 150 patches | 0 expected (verifier: strand 0 after sync) | 0 |
 | HX | `tests/helpers/cdp.js`: 8. `tests/e2e.test.js`: `e_listen_error_never_settles`, `eb_waitelapsed_zero` | 0 expected (no patch carries a changed line) | 2 `r3h_` |
-| PG | `tests/shard_mutants.js`: `qe_shard_forgets_harness_suite`. `tests/test_pdf_parity.py`: `qd_p_sweep_iterates_seeds`. `tools/decks.py`: 7. `tests/suite_health.py`: 22. `tests/mutation_harness.test.js`: 2 | 1 certain (`c_gen_omitted_vacuous`) | 0 |
-| AP | `index.html`: 413 | 17 named in the AP block | 0 |
+| PG | `tests/shard_mutants.js`: `qe_shard_forgets_harness_suite`. `tests/test_pdf_parity.py`: `qd_p_sweep_iterates_seeds`. `tools/decks.py`: 7. `tests/suite_health.py`: 22. `tests/mutation_harness.test.js`: 2. `tests/mutation_check.sh`: 6 | 1 certain (`c_gen_omitted_vacuous`) | 0 |
+| AP | `index.html`: 413 | 18 named in the AP block | 0 |
 | PF | `tools/probe/panel_fit.js`: 12 (`mr_fit_*` x4, `uid_fit_*` x8) | up to 12 | 3 `r3p_` |
 | CL | `README.md`: `m_readme_card_count_stale`; `tests/suite_health.py`: 22 | 0 expected | 0 |
 
@@ -419,7 +419,10 @@ SB-5 (UNIT-4)
   `SB-5 Tab in the ADD sheet skips a control inside a hidden row`. Bodies: open the sheet with
   `app.run("openScaleSheet()")`, dispatch 30 (40) `keydown` Tab events on `app.els["scale-sheet"]`, collect
   `app.activeId()`; first asserts `scale-back` and `scale-box` were reached and `scale-generate` was not; second
-  sets `editingId = 'x'` first and asserts `scale-name` was never reached. GREEN at BASE; each goes red under one
+  sets `editingId = 'x'` AFTER `openScaleSheet()` returns (the open calls `resetSheetState(null)`, which nulls it),
+  asserts as a precondition that the `scale-name` row is hidden, then asserts `scale-name` was never reached. A
+  test whose precondition does not hold is vacuous: if the row cannot be hidden this way in the sandbox, cut the
+  second test and its mutant and say so in the PR body. GREEN at BASE; each goes red under one
   `isStop` mutation (verifier ran both).
 - Change: none to product code. New mutants (below).
 - Forces: none.
@@ -576,7 +579,7 @@ bounces: EN-3 out first, then the loader changes.
 
 **Goal.** One flaky timing margin widened, two dead waits gone, two harness contracts pinned.
 
-**Non-goals.** E2E-1, E2E-4, E2E-6, E2E-8. Any new e2e test. Any other `waitElapsed` site (nine others were not probed).
+**Non-goals.** E2E-1, E2E-4, E2E-6, E2E-8. Any new e2e test. Any other `waitElapsed` site (eight others were not probed).
 
 **Owns.**
 - `tests/e2e.test.js`: the three tests named in HX-1 and HX-2; the three comments containing
@@ -698,8 +701,7 @@ assertions. Any edit to FLOORS. Any change to `tests/suite_health.py` behaviour 
 - `tests/test_suite_health.py`: class `RunNodeFileTimeoutTest` (`drive_timeout`, `_hpfc_profile_dirs`,
   `test_a_killed_suites_own_output_reaches_the_excerpt`); the two comments containing `cdp.js:289`.
 - `tests/suite_health.py`: comments only: the one containing `~35x`, the one containing `cdp.js:289`.
-- `tests/shard_mutants.js`: the `module.exports` line. `tools/refresh_mutants.py`: class `Ambiguous`, function `git`,
-  the `check_only` docstring. `tests/mutation_harness.test.js`: the comments containing `mutation_check.sh:242` and
+- `tests/shard_mutants.js`: the `module.exports` line. `tools/refresh_mutants.py`: class `Ambiguous`, function `git`. `tests/mutation_harness.test.js`: the comments containing `mutation_check.sh:242` and
   `line ~533`. `tests/mutation_check.sh`: the comment containing `(line 27)`.
 - `tests/test_pdf_parity.py`: `_assert_vectors_match`. `tests/test_pdf_build.py`: class `BuiltDecksTest`.
   `tests/test_pdf_emitter.py`: `tearDownClass`. `tests/test_print.py`: classes `_Path`, `RecordingCanvas`, the five
@@ -774,7 +776,8 @@ PG-4 (PY-4)
 - STOP: none.
 
 PG-5 (PY-7)
-- Change: `tests/test_pdf_emitter.py` `tearDownClass` also runs `shutil.rmtree(cls.tmp, ignore_errors=True)` after `cls.doc.close()`.
+- Change: `tests/test_pdf_emitter.py` `tearDownClass` also runs `shutil.rmtree(cls.tmp, ignore_errors=True)` after `cls.doc.close()`;
+  add `import shutil` to the file's imports (it has none today).
 - Verify: `python3 -m unittest tests.test_pdf_emitter` expects `Ran 7 tests`, `OK`.
 
 PG-6 (GATE-D1, D2, D3; PY-D1, D2, D3, D5)
@@ -798,8 +801,6 @@ PG-7 (GATE-6 part, GATE-D10 part, GATE-D5 docstring, PY-6)
   - `tests/mutation_harness.test.js`: `mutation_check.sh:242` / `(:265)` become "the `git apply` and `git apply -R`
     calls in `tests/mutation_check.sh`"; `line ~533` becomes "`hunksOf`".
   - `tests/mutation_check.sh`: `(line 27)` becomes "(the `shopt -s nullglob` at the top)".
-  - `tools/refresh_mutants.py` `check_only` docstring: drop "CI runs it from the checkout root" only if the sentence
-    is about `regen_data_mutants`; otherwise leave.
   - `tools/validate.py` docstring `Checks 2-4` becomes `Checks 2-5`. `tools/inline_engine.py` `core first` wording
     matches the real module order. `tests/test_print.py` five `59 cards` become `96 cards`.
     `tests/test_deck_data.py` `regen_data_mutants.py:158` becomes the name of the assertion's function.
@@ -903,6 +904,7 @@ AP-3 (APP-4, APP-D5, APP-D6)
   refreshed and still killed (CI job `mutation gate`).
 - Verify: `TAP --test-name-pattern '^AP1-2.releaseDecision.table$' tests/app.test.js` `# tests 1`, `# pass 1`.
 - STOP: if more than 12 patches strand, or any needs a hand re-cut that changes what it mutates, cut AP-3 whole.
+  The two named hand re-cuts (`sw_panel_guard_dropped`, `sw_sheet_guard_dropped`) do not change what they mutate.
 
 AP-4 (APP-9, APP-D9)
 - First commit: none new. Characterisation: `tests/preview.test.js` (14, GREEN), whose tests read the pan's name
@@ -922,7 +924,8 @@ AP-5 (APP-D10, `--sep`)
   No other token changes.
 - Accept: `git grep -n -a -F -e '--sep:' -- index.html` prints nothing (no definition);
   `git grep -n -a -F -e 'var(--sep)' -- index.html` prints exactly one line, inside that comment (no consumer);
-  `ab_color_scheme_dropped` refreshed and still killed; both panel-fit jobs green.
+  `ab_color_scheme_dropped` refreshed and `e_contrast_card_greys` re-cut as in Mutants below, both still killed;
+  both panel-fit jobs green.
   (Eng review F1: the earlier Accept asked for zero `--sep` matches, which the Change as written could not reach.)
 - Verify: `CHROME TAP --test-name-pattern '^documentElement.computes.color.scheme..dark$' tests/e2e.test.js` `# tests 1`, `# pass 1`.
 - STOP: none.
@@ -936,14 +939,19 @@ AP-6 (APP-7)
 - Verify: `TAP tests/app.test.js` `# fail 0`; `python3 tools/refresh_mutants.py --check` prints "nothing to refresh" after the refresh commit.
 - STOP: if either patch needs a hand re-cut, skip (a) and list it as still stale.
 
-**Mutants.** Stranded (17, by fixed-string grep at BASE):
+**Mutants.** Stranded (18, by fixed-string grep at BASE):
 AP-1: `ui_style_survives_empty_seq`. AP-2: `f2_card_key_flip_dead`, `qe_print_button_enter_skips_closepanel`,
 `e_panel_moved_into_header` (carries the tag on its own `+`/`-` lines: hand re-cut, same mutation, same headers).
 AP-3: `sw_eatclick_armed_on_cancel`, `sw_jitter_hop_guard_dropped`, `sw_wheel_flight_guard_dropped`,
 `sw_wheel_panel_guard_dropped`, `us_wheel_ignores_flight`, `sw_cancel_from_event_x`, `sw_mouse_decay_too_long`,
-`sw_mouse_decay_zero`, `sw_panel_guard_dropped`, `sw_sheet_guard_dropped`. AP-5: `ab_color_scheme_dropped`.
+`sw_mouse_decay_zero`, `sw_panel_guard_dropped`, `sw_sheet_guard_dropped` (these last two carry `mouse,` on their
+own `-`/`+` lines, which `tools/refresh_mutants.py` cannot re-anchor: hand re-cut, dropping `mouse,` from both the
+`-` and the `+` line and nothing else, same headers). AP-5: `ab_color_scheme_dropped`, `e_contrast_card_greys`
+(its first hunk carries the deleted comment sentence as context and its `+` line reads the removed token: hand
+re-cut, context taken from the reworded comment, `+` line `.hdr .l .num{color:#8a8a8a; font-weight:400}`, the
+literal the token held, so the mutant draws the same grey as before; second hunk and headers unchanged).
 AP-6: `c_name_outgrows_its_field`, `r_app_drops_the_label_inflation`.
-New: none. 17 files against cap 40. `p_print_paper_height_restored` must still apply untouched.
+New: none. 18 files against cap 40. `p_print_paper_height_restored` must still apply untouched.
 
 The planner verified AP-1 by execution. AP-2 to AP-5 were each executed by an auditor and a verifier separately;
 nobody has run all of AP's edits together with a mutant refresh. That combined run is this lane's own first
@@ -954,7 +962,8 @@ local check before pushing.
 **Reviewer must check.**
 - `git diff <base> -- index.html` has no hunk inside an engine region or on the DECKS line; `git diff <base> -- data/decks.json` empty.
 - `announce.className = "announce";` is still present twice in `index.html`.
-- Each refreshed patch mutates the same thing as before (diff of each patch: context and offsets only, except `e_panel_moved_into_header`).
+- Each refreshed patch mutates the same thing as before (diff of each patch: context and offsets only, except the four hand re-cuts named in Mutants:
+  `e_panel_moved_into_header`, `sw_panel_guard_dropped`, `sw_sheet_guard_dropped`, `e_contrast_card_greys`).
 - No rendered text, colour, font or size changed: `tests/fixtures/card_face_v1.json` and `gen_face_v1.json` are not in the diff.
 - Real-font behaviour: nothing in this lane changes layout; CI `panel fit (real)` at the head SHA is the evidence, not a local run.
 
@@ -1023,14 +1032,16 @@ PF-3 (UNIT-5, invariance widths)
   1. `git worktree add --detach <scratch>/pf-old <merge-base with main>` (the unrefactored probe).
   2. In `<scratch>/pf-old`: `node tools/probe/panel_fit.js --base efb682c --candidate e2d1af8 --font fallback > <scratch>/old.txt`.
   3. In the lane worktree at its committed head: the same command `> <scratch>/new.txt`.
-  4. `diff <scratch>/old.txt <scratch>/new.txt` prints nothing, and `grep -c 'cells measured: 0' <scratch>/new.txt`
-     prints `0`. Paste the `cells measured:` line, every `rule ...:` line, the `invariance failures:` line and the
+  4. `diff <(grep -v 'wall time:' <scratch>/old.txt) <(grep -v 'wall time:' <scratch>/new.txt)` prints nothing
+     (the probe's `wall time: N s` line is a clock reading and differs run to run; it is the only line filtered),
+     and `grep -c '0 cells measured' <scratch>/new.txt` prints `0`. Paste the `cells measured:` line, every `rule ...:` line, the `invariance failures:` line and the
      final `panel fit:` line from `new.txt`.
   5. Repeat 2 to 4 with `--font real` when Google Fonts is reachable; if it is not, say so in the PR body.
   6. `git worktree remove --force <scratch>/pf-old`.
   `efb682c` and `e2d1af8` are main before and after PR #238, whose `index.html` differs by 33 lines in the
   settings panel, so every rule, the threshold pass, the gutter count and the invariance pass run on real cells.
-  One Chrome at a time; this is the probe, not the e2e suite. The pair's verdict (PASS or FAIL) is irrelevant;
+  Run the probe with its default workers and run no other Chrome-driving command meanwhile; this is the probe,
+  not the e2e suite. The pair's verdict (PASS or FAIL) is irrelevant;
   only old equals new matters.
   (Outside review O1: the earlier Accept compared CI job logs that measure zero cells on this PR.)
 - Verify: same command, `# tests 42`, `# fail 0`. `TAP tests/app.test.js` expects main's count + 3 (282), `# fail 0`.
@@ -1040,8 +1051,9 @@ PF-3 (UNIT-5, invariance widths)
 `uid_fit_allowance_exempt_emptied`, `_on_rule_3`, `_unconditional`, `uid_fit_gutter_unchecked`,
 `uid_fit_heading_allowance_grown`, `uid_fit_invariance_not_fatal`, `uid_fit_scrollbars_not_neutralised`,
 `uid_fit_threshold_not_judged`). `uid_fit_gutter_unchecked`, `uid_fit_threshold_not_judged` and
-`uid_fit_invariance_not_fatal` mutate code near or inside the moved blocks: re-cut each so it mutates the SAME
-expression in its new place, keeping headers. New prefix `r3p` (absent at BASE). 3 new; 15 files at most; cap 40.
+`uid_fit_invariance_not_fatal` mutate code near the moved blocks (`failed()` and `thresholdCell` themselves do not
+move): refresh each, and hand re-cut one only if the extraction moved the line it mutates, so that it mutates the
+SAME expression in its new place, keeping headers. New prefix `r3p` (absent at BASE). 3 new; 15 files at most; cap 40.
 
 | Patch | Mutation | `# suite:` | Expected `not ok` |
 |---|---|---|---|
@@ -1053,13 +1065,15 @@ expression in its new place, keeping headers. New prefix `r3p` (absent at BASE).
 
 **Reviewer must check.**
 - The existing 39 tests in `describe("panel fit judge")` are unchanged; `module.exports` only gained names.
-- The three re-cut `uid_fit_*` patches each still mutate the expression their `# kills:` line describes.
-- The PR body carries the forced old-vs-new probe run from PF-3 Accept: an empty `diff`, a non-zero
+- Every refreshed or re-cut `uid_fit_*` patch still mutates the expression their `# kills:` line describes.
+- The PR body carries the forced old-vs-new probe run from PF-3 Accept: an empty `diff` once the `wall time:` line is filtered from both sides, a non-zero
   `cells measured:` line, and the pasted rule, invariance and verdict lines. CI's two panel-fit jobs measure zero
   cells on this PR and prove nothing about it.
 - PF-1's test asserts `reported` is added with the flag both ways and `firstReported` only with it; PF-3's
   expected array contains 1440 and 1920 for a sidebar row.
-- Real-font evidence is CI's `panel fit (real)` at the head SHA; CI blocks web fonts for the unit suites, so no unit test stands in for it.
+- Real-font evidence is step 5 of the forced run (`--font real`) when Google Fonts was reachable. If it was not, the
+  PR body says so and there is no real-font evidence for this lane: CI's `panel fit (real)` measures zero cells on
+  this PR, and CI blocks web fonts for the unit suites.
 
 ---
 
@@ -1087,7 +1101,8 @@ CL-1 (X-2, GATE-10 row; FLOORS)
   `tests/pdfcards.test.js` 16, others unchanged; a lane that took a cut changes these, which is why the artifact is the source, not this plan.
 - Forces: patches that carry a FLOORS row as context (22 target the file): refresh.
 - Accept: CI `suite health` green; no row lowered (`git diff` shows only equal or higher numbers).
-- Verify: `python3 tests/suite_health.py --verify` against the downloaded artifacts exits 0;
+- Verify: `python3 tests/suite_health.py --verify <dl>/python-results.json <dl>/js-results.json`, where `<dl>` is the
+  directory the two artifacts of main's CI run were downloaded to, exits 0 (`--verify` reads the two files and runs nothing);
   `python3 -m unittest tests.test_suite_health` `Ran 30 tests`, `OK`.
 - STOP: an artifact total LOWER than a current floor means a test vanished: stop and report; do not lower the row.
 
@@ -1142,8 +1157,8 @@ directory listing at the head SHA; no row lowered.
 | `c_gen_omitted_vacuous` | `tools/decks.py` | PG |
 | any patch with a FLOORS row as context | `tests/suite_health.py` | CL |
 
-- The five `h_*` patches that patch `tests/mutation_check.sh` itself: PG edits one comment in that script. PG runs
-  `git apply --check` on all five after its change and refreshes any that fail.
+- The six patches that patch `tests/mutation_check.sh` itself (five `h_*` and `qe_harness_mutant_scored_survived`):
+  PG edits one comment in that script. PG runs `git apply --check` on all six after its change and refreshes any that fail.
 - The closing lane CL sets FLOORS and the README count from main's CI artifacts (`js-results` `files[].total`,
   `python-results` `by_module`), never from a local run.
 - A lone survivor in the mutation gate on a diff that does not touch its target: rerun the failed shard job at the
@@ -1185,7 +1200,7 @@ directory listing at the head SHA; no row lowered.
 | `tests/pdfcards.test.js` floor one below its count | 15 vs 16 | CL-1 |
 
 Still uncovered after this plan, on purpose: real-font overlap of the style line (Q6), warning wipe on disarm (Q4),
-ambiguous mutant anchors (Q7), the six stub guards (Q2), the nine unprobed `waitElapsed` sites.
+ambiguous mutant anchors (Q7), the six stub guards (Q2), the eight unprobed `waitElapsed` sites.
 
 ## 8. Per-lane budget and cost
 
@@ -1314,8 +1329,8 @@ Detached worktrees `wt-PLAN-1` and `wt-PLAN-2` at `e2d1af8`, both removed. No fu
 | `python3 -W error::ResourceWarning tests/suite_health.py --emit-python <file>` | 222 | `python: ran 222, skipped 0, failures 0, errors 0, unexpected successes 0`, exit 0 |
 | `node <S>/measure.js <worktree>` | n/a | reproduces `runFont` 35/159/7, `boot` 34/356/4, `<cb forEach>` 21, `diffGen` 13 |
 
-Not run by the planner, and why: `python3 tests/suite_health.py --emit-js` and `--verify` (run the full e2e
-suite; forbidden here; evidence is CI's `js suites (unit + e2e)` and `suite health` jobs on main at `e2d1af8`, both
+Not run by the planner, and why: `python3 tests/suite_health.py --emit-js` (runs the full e2e suite; forbidden
+here) and `--verify` (runs nothing itself, but needs the artifact `--emit-js` writes; evidence is CI's `js suites (unit + e2e)` and `suite health` jobs on main at `e2d1af8`, both
 green); `tests/mutation_check.sh` (forbidden; CI `mutation gate`); the `panel_fit.js` CLI (CI `panel fit (...)`).
 Also not run: the combined AP edits with a mutant refresh. One planner experiment (SB-1 + SB-3 + AP-1 together) ran
 and passed as quoted in the lanes; a second, wider one was not carried out.
@@ -1521,7 +1536,7 @@ step reuses the existing suites, `tools/refresh_mutants.py`, `tools/inline_engin
 | F3 | P2 (8/10) | PG-3, PG-4 | Red proofs edited the lane worktree and reverted with `git checkout --`, once over files PG never owns and once over PG's own uncommitted change. | Both proofs run in a throwaway `git worktree add --detach` and are removed after. |
 | F4 | P3 (7/10) | HX-2 | Two timing waits are deleted with only CI's mutation gate as proof; the gate cannot tell a kill for the wrong reason. | A differential probe at the lane head: apply each patch, paste the `not ok` line and message. |
 | F5 | P3 (8/10) | Section 4.1 | The plan did not say how the plan file itself reaches main, though briefs quote it. | Wave 0: a docs-only PR from `claude/rp3-plan` before any lane. |
-| O1 | P1 (9/10), outside | PF-3 Accept | PF never edits `index.html`, so on its PR `tools/probe/panel_fit.js` prints `index.html identical ... 0 cells measured` and both panel-fit jobs pass without calling `runFont`. The lane's main regression gate was vacuous. Confirmed at `tools/probe/panel_fit.js:797`. | Forced old-vs-new probe run on the fixed pair `efb682c` / `e2d1af8`, empty `diff` required. |
+| O1 | P1 (9/10), outside | PF-3 Accept | PF never edits `index.html`, so on its PR `tools/probe/panel_fit.js` prints `index.html identical ... 0 cells measured` and both panel-fit jobs pass without calling `runFont`. The lane's main regression gate was vacuous. Confirmed at `tools/probe/panel_fit.js:798`. | Forced old-vs-new probe run on the fixed pair `efb682c` / `e2d1af8`, empty `diff` required. |
 | O2 | P2 (9/10), outside | PF-3 test | "Sorted and in range" contradicts the probe: sidebar widths 1440 and 1920 lie above `W_HI = 1300` and are added unfiltered (`tools/probe/panel_fit.js:41`, `:665`). A lane following the contract could drop them. | Test renamed and rewritten; expected array must contain 1440 and 1920; mutant header updated. |
 | O3 | P2 (9/10), outside | PF-1, PF-2 tests | PF-1 said the flag suppresses `reported`; both loops add it and only `firstReported` differs (`tools/probe/panel_fit.js:620`, `:638`). PF-2 accepted `gutterFirst.length <= 5`, true for an empty list. | PF-1 asserts `reported` both ways, `firstReported` exactly, and accumulation; PF-2 asserts the five exact messages. |
 
@@ -1599,7 +1614,7 @@ declined while the owner is away).
 
 ### 12.8 Implementation tasks
 
-- **T1 (P1, human: ~15 min / CC: ~5 min)** Land this plan on main by a docs-only PR from `claude/rp3-plan`. Needs the owner's go.
+- **T1 (P1, human: ~15 min / CC: ~5 min)** Land this plan on main by a docs-only PR from `claude/rp3-plan`. The owner gave the go on 2026-10-05.
 - **T2 (P1, human: ~1 day / CC: ~40 min)** Lane SB, `claude/rp3-sandbox`.
 - **T3 (P1, human: ~1 day / CC: ~30 min)** Lane EN, `claude/rp3-engine`.
 - **T4 (P2, human: ~4 h / CC: ~30 min)** Lane HX, `claude/rp3-e2e`, with the HX-2 differential probe.
@@ -1620,6 +1635,16 @@ Each lane: independent `swarm-reviewer` at the head SHA, CI green at that SHA, t
 - Failure modes: 0 critical gaps left.
 - Parallelisation: 4 waves, at most 4 lanes in flight.
 - Lake score: 8 of 8 findings took the complete fix.
+
+### 12.10 Wave 0 review bounce (2026-10-05)
+
+The first independent review of the plan PR (head `81540d8`) returned FAIL on five text defects, each of which would
+have become a false FAIL in a later lane review. All are fixed in this revision: PF-3's diff now filters the probe's
+`wall time:` line; AP names `sw_panel_guard_dropped`, `sw_sheet_guard_dropped` and `e_contrast_card_greys` as hand
+re-cuts (18 stranded, not 17); PG no longer cites a `check_only` docstring that lives in a file it does not own;
+`--verify` is written with its two artifact paths. Smaller corrections from the same review are applied in place
+(PG-5 import, SB-5 ordering and precondition, EN-2 parameter folding, counts of `waitElapsed` sites and of patches
+on `tests/mutation_check.sh`, PF real-font evidence, go status).
 
 ## Decision ledger
 
@@ -1657,10 +1682,9 @@ irreversible; the plan's own owner questions Q1 to Q13 stay open and block no la
 - **OUTSIDE COVERAGE:** completed. Provider Codex CLI, read-only, run from the repo at `e2d1af8` against the plan
   with fixes F1 to F5 already in. Three findings, each verified against `tools/probe/panel_fit.js` and applied.
 - **CROSS-MODEL:** no disagreement. The outside review found the vacuous PF gate that the in-session review missed.
-- **VERDICT:** ENG REVIEW DONE, eight findings fixed in the plan. Ready to execute once the owner gives the go.
+- **VERDICT:** ENG REVIEW DONE, eight findings fixed in the plan. The owner gave the go on 2026-10-05.
 
 **UNRESOLVED DECISIONS:**
-- The owner's go to execute. Nothing has started; wave 0 (the plan's own docs PR) is the first step.
 - Owner questions Q1 to Q13 in section 10. Each has a recommendation and a "meanwhile"; none blocks a lane.
 - Auto-decision 1 in section 9 (PROVEN DEAD and UNREACHABLE code is removed without asking) is the planner's
   reading of "no dead code". Overturning it turns AP-1, AP-2, SB-4, EN-2 and PG-6 into owner questions.
