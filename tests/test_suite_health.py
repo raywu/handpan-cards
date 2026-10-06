@@ -145,9 +145,13 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
             old_path = os.environ.get("PATH", "")
             old_pid_file_env = os.environ.get("GRANDCHILD_PID_FILE")
             old_timeout = suite_health.NODE_TIMEOUT
+            old_grace = suite_health.GROUP_TERM_GRACE
+            old_drain = suite_health.DRAIN_TIMEOUT
             os.environ["PATH"] = tmp + os.pathsep + old_path
             os.environ["GRANDCHILD_PID_FILE"] = grandchild_pid_file
             suite_health.NODE_TIMEOUT = 2
+            suite_health.GROUP_TERM_GRACE = 2
+            suite_health.DRAIN_TIMEOUT = 1
 
             # Captures the Popen run_node_file creates internally, so a test
             # can assert it was reaped and its pipes closed (row 108) - the
@@ -173,6 +177,8 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
                 else:
                     os.environ["GRANDCHILD_PID_FILE"] = old_pid_file_env
                 suite_health.NODE_TIMEOUT = old_timeout
+                suite_health.GROUP_TERM_GRACE = old_grace
+                suite_health.DRAIN_TIMEOUT = old_drain
 
             self.last_proc = captured[-1] if captured else None
             with open(grandchild_pid_file) as f:
