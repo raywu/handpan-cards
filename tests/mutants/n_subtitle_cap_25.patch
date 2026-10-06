@@ -14,5 +14,5 @@ diff --git a/src/engine/naming.js b/src/engine/naming.js
 -  var SUBTITLE_MAX = 41;
 +  var SUBTITLE_MAX = 40;
  
-   /* ---- degree reference scales (D8) ------------------------------------- */
+   /* ---- degree numerals (section 10) -------------------------------------- */
  
