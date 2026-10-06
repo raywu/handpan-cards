@@ -5084,7 +5084,7 @@ describe("SB sandbox contract", () => {
     delete missingRail.rails.basic;
     assert.deepStrictEqual(diffGen(fixture(), extraCard), ["gen d mode A card 1: missing from fixture"]);
     assert.deepStrictEqual(diffGen(fixture(), extraRail), ["rail advanced: fixture undefined != current r"]);
-    assert.deepStrictEqual(diffGen(fixture(), missingMode), ["gen d mode B card 0: missing from current render"]);
+    assert.deepStrictEqual(diffGen(fixture(), missingMode), ["gen d mode B: missing from current render"]);
     assert.deepStrictEqual(diffGen(fixture(), missingRail), ["rail basic: fixture r != current undefined"]);
   });
 
