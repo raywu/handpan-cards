@@ -1,0 +1,21 @@
+# kills: FU-4 diffGen reports a deck or a mode that exists on one side only, even with no cards
+# suite: node --test --test-name-pattern ^FU-4.diffGen.reports.a.deck.or.a.mode.that.exists.on.one.side.only..even.with.no.cards$ tests/app.test.js
+# diffAll unions mode keys but defaults a missing mode to empty, so a mode with no cards on one side is not a problem.
+diff --git a/tools/regen_card_fixture.js b/tools/regen_card_fixture.js
+--- a/tools/regen_card_fixture.js
++++ b/tools/regen_card_fixture.js
+@@ -131,12 +131,8 @@ function diffAll(expected, actual) {
+     }
+     const modes = new Set([...Object.keys(eDeck), ...Object.keys(aDeck)]);
+     for (const mode of modes) {
+-      const eMode = eDeck[mode];
+-      const aMode = aDeck[mode];
+-      if (!eMode || !aMode) {
+-        problems.push(`${deckId} mode ${mode}: ${!eMode ? "missing from fixture" : "missing from current render"}`);
+-        continue;
+-      }
++      const eMode = eDeck[mode] || {};
++      const aMode = aDeck[mode] || {};
+       const cards = new Set([...Object.keys(eMode), ...Object.keys(aMode)]);
+       for (const card of cards) {
+         const eCard = eMode[card];
