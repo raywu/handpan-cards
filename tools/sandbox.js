@@ -313,6 +313,12 @@ function boot(opts = {}) {
     }
   }
   const created = [];
+  const markupNodes = [];
+  if (html.includes('<div class="announce"')) {
+    const node = bindFocus(makeElement("announce"));
+    node.className = "announce";
+    markupNodes.push(node);
+  }
   const store = { ...(opts.storage || {}) };
   const docEl = makeElement("root", "html");
 
@@ -320,7 +326,7 @@ function boot(opts = {}) {
   const mathStub = Object.create(Math);
   if (opts.random) mathStub.random = opts.random;
 
-  const all = () => [...Object.values(els), docEl, ...(layoutMain ? [layoutMain] : []), ...created];
+  const all = () => [...Object.values(els), docEl, ...(layoutMain ? [layoutMain] : []), ...markupNodes, ...created];
   const match = (el, sel) => {
     if (sel.startsWith("#")) return el.id === sel.slice(1);
     if (sel.startsWith(".")) return el.classList.contains(sel.slice(1));
