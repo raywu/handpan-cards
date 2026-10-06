@@ -36,7 +36,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
   "scale-delete-row", "scale-delete", "scale-del-note",
   // Phase 5 LAYOUT section, additive like the two before it.
-  "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
+  "scale-layout-row", "scale-rot-l", "scale-rot-r",
   "scale-move-l", "scale-move-r", "scale-layout-reset",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
@@ -45,7 +45,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-back", "scale-title",
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
-  "settings-trigger", "settings-scrim", "settings-panel", "settings-title",
+  "settings-trigger", "settings-scrim", "settings-panel",
   "print-paper-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "panel-seq-note", "seq-source-link",
