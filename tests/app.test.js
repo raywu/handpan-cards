@@ -5078,6 +5078,37 @@ describe("tab stops follow rendering", () => {
     app.get("cycleTabStops")([], { shiftKey: false, preventDefault() { prevented = true; } });
     assert.strictEqual(prevented, false);
   });
+
+  test("SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE", () => {
+    const app = boot();
+    app.run("openScaleSheet()");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    const seen = new Set();
+    for (let i = 0; i < 30; i += 1) {
+      app.els["scale-sheet"].dispatchEvent(
+        { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.add(app.activeId());
+    }
+    assert.ok(seen.has("scale-back"), "Tab never reached the BACK control");
+    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(!seen.has("scale-generate"), "Tab landed on the disabled GENERATE");
+  });
+
+  test("SB-5 Tab in the ADD sheet skips a control inside a hidden row", () => {
+    const app = boot();
+    app.run("openScaleSheet()");
+    app.run("editingId = 'x'");
+    assert.strictEqual(app.els["scale-name-row"].hidden, true);
+    assert.strictEqual(app.els["scale-name"].getClientRects().length, 0);
+    const seen = new Set();
+    for (let i = 0; i < 40; i += 1) {
+      app.els["scale-sheet"].dispatchEvent(
+        { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.add(app.activeId());
+    }
+    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(!seen.has("scale-name"), "Tab landed on a control inside a hidden row");
+  });
 });
 
 /* ------------------------------------------------ US: unit-test surface */
