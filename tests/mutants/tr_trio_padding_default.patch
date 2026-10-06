@@ -1,0 +1,14 @@
+# kills: the three site links split their row equally at 320x568 (HANDPANER cannot shrink under its default padding)
+# suite: node --test --test-name-pattern ^TR-1 tests/e2e.test.js
+# TR-2. Removes the trio padding-inline rule: HANDPANER keeps its 97.8px content-plus-padding minimum, so 320x568 draws 97.8 / 89.1 / 89.1.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -266,7 +266,6 @@ a.mode{text-decoration:none}
+ .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
+ /* The three site links split their row equally; the padding trim lets HANDPANER
+    shrink to a third without ever going under its own content (no min-width:0). */
+-.modebar.trio .mode{padding-inline:4px}
+ #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
+ .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
+   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}

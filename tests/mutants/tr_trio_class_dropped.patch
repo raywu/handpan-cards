@@ -1,0 +1,15 @@
+# kills: the three site links split their row equally (the row loses its trio class)
+# suite: node --test --test-name-pattern ^TR-1 tests/e2e.test.js
+# TR-2. The first Resources row goes back to class modebar, so no trio rule reaches it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1327,7 +1327,7 @@ footer.seq{row-gap:var(--sp-1)}
+          three sites (class trio: equal widths, two equal on line one in the
+          sidebar), row two (class duo: one line, labels wrap inside their
+          boxes) the two Amy Naylor videos. -->
+-    <div class="modebar trio">
++    <div class="modebar">
+       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
+          target="_blank" rel="noopener">HANDPANER</a>
+       <a class="mode" id="res-dingandtones" href="https://www.dingandtones.com/"

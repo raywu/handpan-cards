@@ -1,0 +1,14 @@
+# kills: the sidebar's first Resources line is exactly two equal links, HTC below (line shape [2,1] at 1024x700)
+# suite: node --test --test-name-pattern ^TR-1 tests/e2e.test.js
+# TR-2. Removes the sidebar flex-basis:40% rule: all three links sit on one unequal line at 1024x700.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -315,7 +315,6 @@ a.mode{text-decoration:none}
+    shows without JS ever clearing `hidden`. */
+ @media (min-width:1024px) and (min-height:700px){
+   #settings-trigger, #settings-scrim{display:none}
+-  .modebar.trio .mode{flex-basis:40%}
+   /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
+      lets header - and the deck-chip strip inside it - run out to
+      min(92vw,900px), which at >=1024px overruns the right edge and sits
