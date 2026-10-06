@@ -43,7 +43,7 @@ same print builders through this one module).
 diagram, the crop marks and the calibration bar, held glyph for glyph against
 the print pipeline by `tests/test_pdf_parity.py`).
 `src/engine/sequence.js` (chord-sequence mode: anchor selection and the
-connect rule that picks a home-rooted 2- or 3-chord loop).
+connect rule that picks a home-rooted loop of 2 to 6 chords, by tier).
 `docs/ENGINE-SPEC.md` is the spec; `docs/SCALE_ENGINE_PLAN.md` records the
 decisions behind it.
 
@@ -54,7 +54,7 @@ decisions behind it.
   and voicing. **Notes -> Name** reverses it (read the diagram, name the chord).
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
-- **+ ADD** (the first chip in the deck row) opens the scale sheet: type your
+- **+ ADD A SCALE** (in the menu, under Scales) opens the scale sheet: type your
   pan as a ding in brackets followed by the top notes, e.g.
   `(D) A C D E F G A C`, with any bottom notes after a `|`. The line under the
   box shows how the notes were read as you type; pick a palette and, if your
@@ -124,7 +124,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 658 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 669 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

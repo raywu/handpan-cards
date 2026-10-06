@@ -867,7 +867,7 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 
 ## 15. UI element ids
 
-The sandbox `ELEMENT_IDS` in `tests/helpers/sandbox.js` is the registry of
+The sandbox `ELEMENT_IDS` in `tools/sandbox.js` (re-exported by `tests/helpers/sandbox.js`) is the registry of
 record; e2e targets them. Phase 3 registered the nine below, and later phases
 have appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
 sheets); the rule is that phases APPEND, never renumber or rename.
