@@ -247,10 +247,32 @@ class RunNodeFileTimeoutTest(unittest.TestCase):
         # could change is suite_health.py itself reaching into tmpdir (e.g. an
         # age-based sweep, which row 98 explicitly rules out as unsafe: it can
         # delete a concurrent run's LIVE profile).
+        root = tempfile.mkdtemp()
+        old_tempdir = tempfile.tempdir
+        old_tmpdir = os.environ.get("TMPDIR")
+
+        def restore_tmp():
+            tempfile.tempdir = old_tempdir
+            if old_tmpdir is None:
+                os.environ.pop("TMPDIR", None)
+            else:
+                os.environ["TMPDIR"] = old_tmpdir
+            shutil.rmtree(root, ignore_errors=True)
+
+        self.addCleanup(restore_tmp)
+        decoys = {os.path.join(root, "hpfc-prof-decoy1"),
+                  os.path.join(root, "hpfc-prof-decoy2")}
+        for decoy in decoys:
+            os.mkdir(decoy)
+        tempfile.tempdir = root
+        os.environ["TMPDIR"] = root
         before = self._hpfc_profile_dirs()
+        self.assertEqual(before, decoys)
         result, pid = self.drive_timeout(FAKE_NODE_UNREACHABLE_HOLDER)
         self.addCleanup(self.reap, pid)
         after = self._hpfc_profile_dirs()
+        self.assertEqual(after, decoys)
+        self.assertTrue(all(os.path.isdir(d) for d in decoys))
         self.assertEqual(
             before, after,
             "the kill path changed the set of hpfc-prof-* profile dirs in "
