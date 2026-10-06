@@ -42,10 +42,10 @@ function host(value) {
  *
  * Section 9: the editorial built-in subtitles are recorded exceptions of the
  * fixture, not strings the engine generates; Hijaz's two hand-authored (NO 5)
- * cards are excluded from the naming exit entirely. Section 10: D Amara ships
- * three frozen degree exceptions. Every entry below is asserted to ACTUALLY
- * differ from what the engine produces, so an exception that stops being one
- * turns the suite red instead of quietly hiding a match.
+ * cards are excluded from the naming exit entirely. Every entry below is
+ * asserted to ACTUALLY differ from what the engine produces, so an exception
+ * that stops being one turns the suite red instead of quietly hiding a match.
+ * Section 10 has no exception list: every built-in degree label is derived.
  */
 
 // deck id + card index -> excluded entirely (section 9, hand-authored (NO 5)).
@@ -66,12 +66,15 @@ const SUBTITLE_EXCEPTIONS = [
   {deck: "pygmy", subtitle: "Eb DOMINANT 7 - LOW VOICING"}
 ];
 
-// deck id + pitch class -> the frozen degree label (section 10, D8 and D10).
-const DEGREE_EXCEPTIONS = [
-  {deck: "amara", pc: "5", label: "bIII"},   // D8: derived III
-  {deck: "amara", pc: "0", label: "bVII"},   // D8: derived VII
-  {deck: "amara", pc: "7", label: "IV"}      // D10: derived iv
-];
+// deck id -> pitch class -> degree label (section 10; owner decision
+// 2026-10-05). Every label is a step of the deck's parent, so none carries an
+// accidental, and the engine derives all 18: there is no exception list.
+const BUILTIN_DEGREES = {
+  hijaz: {"1": "I", "2": "II", "5": "iii°", "6": "iv", "8": "v°", "11": "vii"},
+  pygmy: {"5": "i", "7": "ii°", "8": "III", "10": "iv", "0": "v", "1": "VI",
+          "3": "VII"},
+  amara: {"2": "i", "5": "III", "7": "iv", "9": "v", "0": "VII"}
+};
 
 /* ------------------------------ helpers ---------------------------------- */
 
@@ -320,49 +323,89 @@ test("distance counts PAN pitch classes outside the parent, not the reverse", ()
 
 /* ========================= section 10: degrees =========================== */
 
-test("every built-in degree label is reproduced, modulo the frozen exceptions", () => {
+test("NU-1 every built-in degree label is the engine output with no exception", () => {
   let reproduced = 0;
-  const exceptionsSeen = [];
   for (const deck of golden.decks) {
     const pcs = deckPitchClasses(deck);
     const tonic = tonicOf(deck);
     const produced = host(naming.degrees(pcs, tonic, naming.inferParent(pcs, tonic)));
-    for (const key of Object.keys(deck.degrees)) {
-      const expected = deck.degrees[key];
-      const exception = DEGREE_EXCEPTIONS.find(
-        (x) => x.deck === deck.id && x.pc === key);
-      assert.ok(produced[key] !== undefined,
-        `${deck.id}: no degree produced for pitch class ${key}`);
-      if (exception) {
-        assert.equal(exception.label, expected, `${deck.id}: stale exception label`);
-        assert.notEqual(produced[key], expected,
-          `${deck.id}: pitch class ${key} is a recorded exception but the ` +
-          "engine now derives it - remove it from DEGREE_EXCEPTIONS");
-        exceptionsSeen.push(deck.id + " " + key);
-      } else {
-        assert.equal(produced[key], expected, `${deck.id}: pitch class ${key}`);
-        reproduced += 1;
-      }
+    const expected = BUILTIN_DEGREES[deck.id];
+    for (const key of Object.keys(expected)) {
+      assert.equal(produced[key], expected[key], `${deck.id}: pitch class ${key}`);
+      reproduced += 1;
     }
   }
-  assert.equal(exceptionsSeen.length, DEGREE_EXCEPTIONS.length);
-  // CLAUDE.md "Design system": 5 + 7 + 5 labels, less Amara's three exceptions.
-  assert.equal(reproduced, 14);
+  // 6 + 7 + 5 labels, every one derived.
+  assert.equal(reproduced, 18);
 });
 
-test("D8: numerals are minor-relative only when the pan has a minor third", () => {
+test("NU-1 a step of the parent reads as that step numeral with no accidental", () => {
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
+  // Every parent at every step, from tonic 0 and from a tonic that wraps.
+  for (const tonic of [0, 7]) {
+    host(naming.PARENTS).forEach((parent, index) => {
+      const pcs = parent.intervals.map((n) => (n + tonic) % 12);
+      const produced = host(naming.degrees(pcs, tonic, index));
+      parent.intervals.forEach((interval, step) => {
+        const label = produced[String((interval + tonic) % 12)];
+        assert.equal(label.replace("°", "").toUpperCase(), ROMAN[step],
+          `${parent.name} from ${tonic}: step ${step + 1} reads ${label}`);
+      });
+    });
+  }
+  // Hijaz has a major third over C# and Pygmy a minor third over F: neither
+  // changes a step numeral. D is step 2 and B step 7 of C# Phrygian dominant.
   const byDeck = {};
   for (const deck of golden.decks) {
     const pcs = deckPitchClasses(deck);
     byDeck[deck.id] = host(naming.degrees(pcs, tonicOf(deck),
       naming.inferParent(pcs, tonicOf(deck))));
   }
-  // Hijaz has a major third over C# (F = E#), so flats: D is bII, B is bvii.
-  assert.equal(byDeck.hijaz["2"], "bII");
-  assert.equal(byDeck.hijaz["11"], "bvii");
-  // Pygmy has Ab over F, so minor-relative: Ab is III and Eb is VII, no flats.
+  assert.equal(byDeck.hijaz["2"], "II");
+  assert.equal(byDeck.hijaz["11"], "vii");
   assert.equal(byDeck.pygmy["8"], "III");
   assert.equal(byDeck.pygmy["3"], "VII");
+});
+
+test("NU-1 outside the parent a minor third on the pan picks sharp over flat", () => {
+  const names = host(naming.PARENTS).map((p) => p.name);
+  // Gb is between steps 4 and 5 of both parents and outside both. C Aeolian
+  // carries Eb, a minor third over the tonic, so Gb is a raised 4; C Ionian
+  // does not, so Gb is a lowered 5.
+  const aeolian = [0, 2, 3, 5, 6, 7, 8, 10];
+  assert.equal(
+    host(naming.degrees(aeolian, 0, names.indexOf("Aeolian")))["6"], "#IV°");
+  const ionian = [0, 2, 4, 5, 6, 7, 9, 11];
+  assert.equal(
+    host(naming.degrees(ionian, 0, names.indexOf("Ionian")))["6"], "bv°");
+});
+
+test("NU-1 no two pitch classes on one pan share a label", () => {
+  // Every pan that holds its tonic (2048 of them) under every parent, with and
+  // without NO_THIRDS: 45056 label maps. A step never carries an accidental
+  // and a pitch class outside the parent always does, so none can collide.
+  let maps = 0;
+  for (let mask = 0; mask < 2048; mask += 1) {
+    const pan = [0];
+    for (let bit = 0; bit < 11; bit += 1) if (mask >> bit & 1) pan.push(bit + 1);
+    for (let index = 0; index < 11; index += 1) {
+      const intervals = host(naming.PARENTS)[index].intervals;
+      for (const noThirds of [false, true]) {
+        const produced = host(naming.degrees(pan, 0, index, {noThirds}));
+        const labels = Object.keys(produced).map((key) => produced[key]);
+        assert.deepEqual(Object.keys(produced).map(Number).sort((a, b) => a - b), pan);
+        assert.equal(new Set(labels).size, labels.length,
+          `pan ${pan} under parent ${index}: ${JSON.stringify(produced)}`);
+        for (const key of Object.keys(produced)) {
+          assert.equal(/^[b#]/.test(produced[key]),
+            !intervals.includes(Number(key)),
+            `pan ${pan} under parent ${index}: ${key} reads ${produced[key]}`);
+        }
+        maps += 1;
+      }
+    }
+  }
+  assert.equal(maps, 45056);
 });
 
 test("D10: case comes from stacked thirds over the parent", () => {
@@ -462,61 +505,72 @@ test("NO_THIRDS makes every numeral uppercase and drops D10", () => {
     host(naming.degrees(amaraPcs, amaraTonic, parent)));
 });
 
-test("numeral: offset 6 sits between two reference degrees, and minorRelative picks the branch (Q21)", () => {
-  // Section 10's "between two degrees" branch (naming.js:144 area): offset 6
-  // is a semitone above MINOR_REF's degree IV (5) and a semitone below
-  // MAJOR_REF's degree V (7) alike, so minorRelative alone decides which
-  // degree and which accidental sign the numeral takes.
-  assert.deepEqual(host(naming.numeral(6, true)), {accidental: "#", roman: "IV"});
-  assert.deepEqual(host(naming.numeral(6, false)), {accidental: "b", roman: "V"});
+test("NU-1 numeral: offset 6 sits between two parent steps, and minorRelative picks the branch", () => {
+  // Offset 6 is outside Ionian, a semitone above its step 4 (5) and a semitone
+  // below its step 5 (7), so minorRelative alone decides which step and which
+  // accidental the numeral takes.
+  const ionian = [0, 2, 4, 5, 7, 9, 11];
+  assert.deepEqual(host(naming.numeral(6, ionian, true)),
+    {accidental: "#", roman: "IV"});
+  assert.deepEqual(host(naming.numeral(6, ionian, false)),
+    {accidental: "b", roman: "V"});
 });
 
-/* ---- D8 as amended (coordination row 28): an IN-PARENT pitch class is
- * numbered by its PARENT-DEGREE INDEX, with the accidental read against the
- * D8 reference scale degree of that same index. A pitch class OUTSIDE the
- * parent keeps the section 10 bN/#N mechanism. The two readings disagree
- * wherever the parent's own degree sits a semitone off the reference degree
- * of the same index AND the reference scale has a degree the other side of
- * it - i.e. the chromatic degrees of Phrygian, Locrian, Lydian and friends.
+test("NU-1 numeral: outside the parent with a step on one side only", () => {
+  // Harmonic minor has three semitones between steps 6 (8) and 7 (11). Offset
+  // 9 has a step below it and none above: a raised 6. Offset 10 has a step
+  // above it and none below: a lowered 7. minorRelative does not enter.
+  const harmonicMinor = [0, 2, 3, 5, 7, 8, 11];
+  for (const minorRelative of [true, false]) {
+    assert.deepEqual(host(naming.numeral(9, harmonicMinor, minorRelative)),
+      {accidental: "#", roman: "VI"});
+    assert.deepEqual(host(naming.numeral(10, harmonicMinor, minorRelative)),
+      {accidental: "b", roman: "VII"});
+  }
+  // A step itself: the step numeral, whatever minorRelative says.
+  assert.deepEqual(host(naming.numeral(8, harmonicMinor, false)),
+    {accidental: "", roman: "VI"});
+});
+
+/* ---- An IN-PARENT pitch class is numbered by its PARENT-DEGREE INDEX and
+ * carries no accidental (owner decision 2026-10-05). A pitch class OUTSIDE the
+ * parent is named from the parent step a semitone away and always carries one.
  */
 
 test("D8 in-parent: a chromatic parent degree is numbered by its degree index", () => {
-  // F Phrygian, ding F: F Gb Ab Bb C Db Eb. Gb is parent degree 2, so bII -
-  // the reference-scale reading called it #I (one semitone above I).
+  // F Phrygian, ding F: F Gb Ab Bb C Db Eb. Gb is parent step 2, so II.
   const phrygian = [5, 6, 8, 10, 0, 1, 3];
   const produced = host(naming.degrees(phrygian, 5,
     naming.inferParent(phrygian, 5)));
   assert.equal(host(naming.PARENTS)[naming.inferParent(phrygian, 5)].name,
     "Phrygian");
-  assert.equal(produced["6"], "bII");
+  assert.equal(produced["6"], "II");
 
-  // C Locrian: Db is degree 2 (bII) and Gb is degree 5 (bV). The
-  // reference-scale reading called Gb #IV. The CASE is untouched by this rule
-  // and stays D10's: over Locrian, Gb stacks Bb and Db - a major third and a
-  // perfect fifth - so the label is uppercase with no degree sign.
+  // C Locrian: Db is step 2 (II) and Gb is step 5 (V). The CASE is D10's:
+  // over Locrian, Gb stacks Bb and Db - a major third and a perfect fifth -
+  // so the label is uppercase with no degree sign.
   const locrian = [0, 1, 3, 5, 6, 8, 10];
   const loc = host(naming.degrees(locrian, 0, naming.inferParent(locrian, 0)));
   assert.equal(host(naming.PARENTS)[naming.inferParent(locrian, 0)].name,
     "Locrian");
-  assert.equal(loc["1"], "bII");
-  assert.equal(loc["6"], "bV");
+  assert.equal(loc["1"], "II");
+  assert.equal(loc["6"], "V");
 
-  // C Lydian: F# is degree 4, so #IV - the reference-scale reading, with no
-  // minor third on the pan, flattened it to bV.
+  // C Lydian: F# is step 4, stacking a minor third and a diminished fifth.
   const lydian = [0, 2, 4, 6, 7, 9, 11];
   const lyd = host(naming.degrees(lydian, 0, naming.inferParent(lydian, 0)));
   assert.equal(host(naming.PARENTS)[naming.inferParent(lydian, 0)].name, "Lydian");
-  assert.equal(lyd["6"], "#iv°");
+  assert.equal(lyd["6"], "iv°");
 });
 
 test("the parent override can change a numeral when the degree index moves", () => {
-  // C Lydian's F# is degree 4 under Lydian (#iv°). Override to Ionian and F#
-  // falls OUTSIDE the parent, so section 10's bN/#N mechanism names it from
-  // the reference scale instead: between IV and V, major-relative, so bv°.
+  // C Lydian's F# is step 4 under Lydian (iv°). Override to Ionian and F#
+  // falls OUTSIDE the parent, so it is named from the steps beside it: between
+  // IV and V with no minor third on the pan, so bv°.
   const lydian = [0, 2, 4, 6, 7, 9, 11];
   const names = host(naming.PARENTS).map((p) => p.name);
   assert.equal(host(naming.degrees(lydian, 0, names.indexOf("Lydian")))["6"],
-    "#iv°");
+    "iv°");
   assert.equal(host(naming.degrees(lydian, 0, names.indexOf("Ionian")))["6"],
     "bv°");
 });
