@@ -4980,6 +4980,51 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 0, gutterCells: 0 }), false);
     assert.strictEqual(pf.failed({ rules, invarianceFailureCount: 1, gutterCells: 0 }), true);
   });
+
+  test("PF-1 tallyJudgement adds fails and reported and keeps the first ten messages", () => {
+    const fails = Array.from({ length: 12 }, (_, i) => ({ cell: `c${i}`, msg: `m${i}` }));
+    const reported = [{ cell: "r0", msg: "x0" }, { cell: "r1", msg: "x1" }];
+    const j = { a: { fail: fails, reported } };
+    const fresh = () => ({ rules: { a: { fail: 0, reported: 0, first: [], firstReported: [] } } });
+    const report = fresh();
+    pf.tallyJudgement(report, j, ["a"], true);
+    assert.strictEqual(report.rules.a.fail, 12);
+    assert.strictEqual(report.rules.a.reported, 2);
+    assert.strictEqual(report.rules.a.first.length, 10);
+    assert.strictEqual(report.rules.a.first[0], "c0: m0");
+    assert.deepStrictEqual(report.rules.a.firstReported, ["r0: x0", "r1: x1"]);
+    pf.tallyJudgement(report, j, ["a"], true);
+    assert.strictEqual(report.rules.a.fail, 24);
+    assert.strictEqual(report.rules.a.first.length, 10);
+    const quiet = fresh();
+    pf.tallyJudgement(quiet, j, ["a"], false);
+    assert.strictEqual(quiet.rules.a.reported, 2);
+    assert.strictEqual(quiet.rules.a.fail, 12);
+    assert.strictEqual(quiet.rules.a.firstReported.length, 0);
+  });
+
+  test("PF-2 tallyGutter counts a cell over half a pixel and keeps the first five", () => {
+    const report = { gutterCells: 0, gutterFirst: [] };
+    const gutters = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+    gutters.forEach((gutter) => pf.tallyGutter(report, { gutter }, 320, 568, "S"));
+    assert.strictEqual(report.gutterCells, 5);
+    assert.deepStrictEqual(report.gutterFirst, gutters.slice(2).map((g) => pf.gutterMessage(320, 568, "S", g)));
+    const before = report.gutterFirst.slice();
+    pf.tallyGutter(report, { gutter: 1.1 }, 320, 568, "S");
+    assert.strictEqual(report.gutterCells, 6);
+    assert.deepStrictEqual(report.gutterFirst, before);
+  });
+
+  test("PF-3 invarianceWidths keeps multiples of 16, both sides of a change, start neighbours in range and every sidebar width", () => {
+    const ws = [100, 112, 113, 128, 200];
+    const differs = (w, p) => w === 200 && p === 128;
+    const base = { ws, starts: [120], wLo: 100, wHi: 1300, differs };
+    assert.deepStrictEqual(pf.invarianceWidths({ ...base, side: true }),
+      [112, 119, 120, 121, 128, 200, 1024, 1025, 1100, 1280, 1300, 1440, 1920]);
+    assert.deepStrictEqual(pf.invarianceWidths({ ...base, side: false }), [112, 119, 120, 121, 128, 200]);
+    assert.deepStrictEqual(pf.invarianceWidths({ ws: [256], starts: [100, 300], wLo: 100, wHi: 300, side: false, differs: () => false }),
+      [100, 101, 256, 299, 300]);
+  });
 });
 
 describe("SB sandbox contract", () => {
