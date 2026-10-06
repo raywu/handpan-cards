@@ -6,9 +6,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8849,7 +8849,7 @@ function release(e, cancelled, pushPoint = true) {
+@@ -9187,7 +9187,7 @@ function release(e, cancelled, pushPoint = true) {
    const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
-     blocked: cancelled || panelOpen || sheetOpen, mouse, reducedMotion: reducedMotion.matches });
+     blocked: cancelled || panelOpen || sheetOpen, reducedMotion: reducedMotion.matches });
    drag = null;
 -  if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
 +  if (d.eatClick) setEatClick(true, mouse ? 4000 : 0);

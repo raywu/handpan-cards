@@ -13,8 +13,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8822,7 +8822,7 @@ function flyOut(dir, dx, vx = null) {
- function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, mouse, reducedMotion }) {
+@@ -9160,7 +9160,7 @@ function flyOut(dir, dx, vx = null) {
+ function releaseDecision({ dx, dy, vx, moved, cancelled, blocked, reducedMotion }) {
    const dir = blocked ? 0 : swipeDecision(dx, dy, vx);
    if (!dir && !moved) return { kind: "rest", dir: 0, eatClick: false };
 -  const eatClick = moved && !cancelled;

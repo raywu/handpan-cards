@@ -7,11 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1224,6 +1224,6 @@
+@@ -1298,7 +1298,7 @@ footer.seq{row-gap:var(--sp-1)}
    <div class="panel-group">
      <h3 class="panel-heading">Print this deck</h3>
-     <div class="prints" onclick="event.stopPropagation()">
+     <div class="prints">
 -      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
 +      <button type="button" onclick="downloadDeckPDF('full', this);">FULL DECK PDF</button>
        <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
        <!-- The paper choice keeps the panel open (design direction, "After an
+            action"): the next tap is a print button, not a new task. -->

@@ -8,10 +8,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3523,7 +3523,7 @@ const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+@@ -7143,7 +7143,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
     "Where the ratios come from, and what actually changed".
-    Safe above the solver's budget because ring clearance is computed from
-    f_num alone, and fit_note shrinks anything that truly overflows. */
+    Safe above the solver's budget because in the app the field circle itself
+    bounds a name; ext comes from f_num on generated decks only. */
 -const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
 +const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 1.60650,
        LABEL_RATIO_BNOTE = 0.8232, NUM_RATIO = 0.64;
