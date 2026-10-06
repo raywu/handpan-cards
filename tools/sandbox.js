@@ -90,7 +90,11 @@ function makeElement(id, tag = "div") {
       for (let n = this; n; n = n.parentNode || n._markupParent) if (n.hidden) return [];
       return [{}];
     },
-    set textContent(v) { this._text = v; }, get textContent() { return this._text; },
+    set textContent(v) {
+      this._text = v;
+      for (const c of this.children) c.parentNode = null;
+      this.children.length = 0;
+    }, get textContent() { return this._text; },
     setAttribute(k, v) {
       attrs[k] = String(v);
       if (k.startsWith("data-")) this.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = String(v);
