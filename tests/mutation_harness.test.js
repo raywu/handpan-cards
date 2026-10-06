@@ -1513,7 +1513,7 @@ test("FU-6 no two mutant patches share a diff body and a selected test", () => {
     else seen.set(key, name);
   }
   assert.deepStrictEqual(pairs, [],
-    "these mutant patches change the same lines and are judged by the same test; delete the later one");
+    "these mutant patches change the same lines and are judged by the same test; keep one of each pair");
 });
 
 // --- Finding 4 (2026-09-30 quality refactor): MUTANT_SHARD -------------------

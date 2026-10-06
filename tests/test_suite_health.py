@@ -35,9 +35,9 @@ There are three shapes, because Chrome is the second one:
 
 All three bound the WALL CLOCK of the timeout path. That bound is hygiene, not
 the oracle - what kills a regression here is assert_dead, and on shape 3 the
-marker assertion. Shape 2 kills its grandchild before the drain is entered, so
-nothing holds the pipes during it and the clock is unmoved by the drain's own
-bound; only shape 3 exercises that bound, and it does so by failing assert_dead
+marker assertion. Shape 2 kills its grandchild 0.3 s into the drain, well inside
+the grace, so nothing holds the pipes past it and the clock is unmoved by the
+drain's own bound; only shape 3 exercises that bound, and it does so by failing assert_dead
 long before 30s is in question.
 """
 import glob
@@ -72,11 +72,13 @@ sleep 100
 # does. `sleep & wait` rather than a foreground sleep because bash runs a trap
 # only after the current foreground command finishes, and `wait` is the one
 # that a signal interrupts.
+# The reaper needs real time (the sleep in the trap), so a zero grace can never
+# be enough.
 FAKE_NODE_DETACHED = """#!/bin/bash
 python3 -c 'import os, time; os.setsid(); time.sleep(100)' &
 gc=$!
 echo $gc > "$GRANDCHILD_PID_FILE"
-trap 'kill -KILL -$gc 2>/dev/null; exit 143' TERM
+trap 'sleep 0.3; kill -KILL -$gc 2>/dev/null; exit 143' TERM
 sleep 100 &
 wait $!
 """
