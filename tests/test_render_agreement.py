@@ -298,6 +298,13 @@ class BorderAgreementTest(unittest.TestCase):
                 "%s: print frame is drawn in %s, not the root colour %s"
                 % (deck_id, bands[0], root_hex))
 
+    def test_recording_canvas_records_plain_rects(self):
+        rec = RecordingCanvas()
+        rec.setFillColor("#123456")
+        rec.rect(1.0, 2.0, 30.0, 40.0, stroke=0, fill=1)
+        self.assertEqual(rec.rects, [{"x": 1.0, "y": 2.0, "w": 30.0, "h": 40.0,
+                                      "fill": "#123456", "stroke": None}])
+
     def test_app_frame_is_sourced_from_the_root_colour_token(self):
         app = render_app_border()
         self.assertNotIn(
