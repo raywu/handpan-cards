@@ -71,10 +71,9 @@ def strip_index_lines(diff_text):
 
 
 class Ambiguous(Exception):
-    def __init__(self, patch_name, file_path, count):
+    def __init__(self, patch_name, file_path):
         self.patch_name = patch_name
         self.file_path = file_path
-        self.count = count
 
 
 class Unfixable(Exception):
@@ -202,7 +201,7 @@ def splice_chunks(patch_name, file_path, lines, chunks):
                 idx = find_unique(lines, removed)
             except ValueError as e:
                 if str(e) == "ambiguous":
-                    raise Ambiguous(patch_name, file_path, "multiple")
+                    raise Ambiguous(patch_name, file_path)
                 raise Unfixable(patch_name, file_path)
             lines[idx:idx + len(removed)] = added
             continue
@@ -221,7 +220,7 @@ def splice_chunks(patch_name, file_path, lines, chunks):
             idx = find_unique(lines, anchor_lines)
         except ValueError as e:
             if str(e) == "ambiguous":
-                raise Ambiguous(patch_name, file_path, "multiple")
+                raise Ambiguous(patch_name, file_path)
             raise Unfixable(patch_name, file_path)
         at = idx + len(anchor_lines) if insert_after else idx
         lines[at:at] = added
@@ -260,9 +259,9 @@ def splice(patch_name, file_path, hunks):
     return full_path, new_text
 
 
-def git(args, **kw):
+def git(args):
     return subprocess.run(["git"] + args, cwd=ROOT, text=True,
-                           capture_output=True, check=False, **kw)
+                           capture_output=True, check=False)
 
 
 class GitStatusError(RuntimeError):

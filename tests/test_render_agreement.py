@@ -69,11 +69,6 @@ class RecordingCanvas:
                            "fill": self._fill if fill else None,
                            "stroke": self._stroke if stroke else None})
 
-    def rect(self, x, y, w, h, stroke=1, fill=0):
-        self.rects.append({"x": x, "y": y, "w": w, "h": h,
-                           "fill": self._fill if fill else None,
-                           "stroke": self._stroke if stroke else None})
-
     def setFont(self, name, size, *a, **k):
         self._font = name
         self._size = size

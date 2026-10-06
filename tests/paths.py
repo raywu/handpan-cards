@@ -3,7 +3,6 @@ import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
-FONTS = os.path.join(TOOLS, "fonts")
 INDEX_HTML = os.path.join(ROOT, "index.html")
 CANONICAL = os.path.join(ROOT, "data", "decks.json")
 

@@ -68,7 +68,7 @@ function shardFor(dir, index, total) {
   return partition(loadMutants(dir), total)[index];
 }
 
-module.exports = { suiteOf, isE2ESelecting, loadMutants, partition, shardFor, E2E_SUITE_MARKERS };
+module.exports = { isE2ESelecting, loadMutants, partition };
 
 if (require.main === module) {
   // CLI: node shard_mutants.js <i 1..N> <N> [mutants-dir]

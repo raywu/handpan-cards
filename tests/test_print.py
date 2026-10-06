@@ -86,23 +86,6 @@ def _mul(m, n):
             e * A + f * C + E, e * B + f * D + F)
 
 
-class _Path(object):
-    def roundRect(self, *a, **k):
-        pass
-
-    def rect(self, *a, **k):
-        pass
-
-    def moveTo(self, *a, **k):
-        pass
-
-    def lineTo(self, *a, **k):
-        pass
-
-    def close(self, *a, **k):
-        pass
-
-
 class RecordingCanvas(object):
     """Stand-in for a reportlab canvas that records the marks it is asked for.
 
@@ -158,24 +141,6 @@ class RecordingCanvas(object):
     def setDash(self, *a, **k):
         self._dash = tuple(a) if a else None
 
-    def setLineCap(self, *a):
-        pass
-
-    def setLineJoin(self, *a):
-        pass
-
-    def setTitle(self, *a):
-        pass
-
-    def beginPath(self):
-        return _Path()
-
-    def clipPath(self, *a, **k):
-        pass
-
-    def drawPath(self, *a, **k):
-        pass
-
     # -- marks
     def _device(self, x, y):
         a, b, c, d, e, f = self._ctm
@@ -203,9 +168,6 @@ class RecordingCanvas(object):
     def drawCentredString(self, x, y, text, *a, **k):
         self._text(x, y, text, "c")
 
-    def drawRightString(self, x, y, text, *a, **k):
-        self._text(x, y, text, "r")
-
     def circle(self, x, y, r, stroke=1, fill=0):
         px, py = self._device(x, y)
         self.circles.append(dict(x=px, y=py, r=r, stroke=stroke, fill=fill,
@@ -215,9 +177,6 @@ class RecordingCanvas(object):
 
     def line(self, x1, y1, x2, y2):
         self.lines.append((self._device(x1, y1), self._device(x2, y2)))
-
-    def rect(self, x, y, w, h, stroke=1, fill=0):
-        pass
 
     def roundRect(self, x, y, w, h, r, stroke=1, fill=0):
         pass

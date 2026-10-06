@@ -397,7 +397,6 @@ def from_generated(payload):
 
 
 if __name__ == "__main__":
-    import os
     OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     n1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_Cards_Letter.pdf"), HIJAZ)
     n2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_Cards_Letter.pdf"), PYGMY)
