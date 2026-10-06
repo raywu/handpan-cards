@@ -1,7 +1,7 @@
 // Minimal Chrome DevTools Protocol driver - zero dependencies.
 // Node 22 ships a global WebSocket, and a Chromium binary is already present on
 // CI runners and dev machines, so this replaces a full browser-automation
-// dependency with ~120 lines we own.
+// dependency with a small driver we own.
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -203,9 +203,13 @@ class Browser {
   // identity matrix immediately after a click.
   async waitFor(expr, { timeout = 5000, label = "condition" } = {}) {
     const deadline = Date.now() + timeout;
+    let lastError = null;
     for (;;) {
-      if (await this.eval(`return !!(${expr});`).catch(() => false)) return true;
-      if (Date.now() > deadline) throw new Error("timed out waiting for " + label);
+      if (await this.eval(`return !!(${expr});`).catch((e) => { lastError = e; return false; })) return true;
+      if (Date.now() > deadline) {
+        const detail = lastError ? " (last error: " + (lastError.message || lastError) + ")" : "";
+        throw new Error("timed out waiting for " + label + detail);
+      }
       await new Promise((r) => setTimeout(r, 40));
     }
   }
@@ -603,7 +607,7 @@ async function launch(opts = {}) {
   }
 }
 
-// Browser and APP_READY_EXPR are exported for tests/harness.test.js's
-// self-tests of settle() and the shared readiness predicate, not for e2e
-// journeys - those only ever get a Browser instance from launch().
+// Browser is exported for tests/harness.test.js's self-tests of settle() and
+// waitFor(); APP_READY_EXPR for tests/e2e.test.js's boot-readiness waits. e2e
+// journeys otherwise only get a Browser instance from launch().
 module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };

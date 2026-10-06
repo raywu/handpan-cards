@@ -594,4 +594,17 @@ function run() {
     assert.ok(lines.some((l) => /E2E-SETTLE-CEILING/.test(l)),
       `settle() hit its 500ms ceiling silently; stderr was ${JSON.stringify(lines)}`);
   });
+
+  test("HX-3 settle rejects at its ceiling unless strictSettle is off", async () => {
+    const b = Object.create(Browser.prototype);
+    let calls = 0;
+    b.eval = async () => { calls++; return calls === 1 ? null : 1; };
+    await assert.rejects(b.settle(), /E2E-SETTLE-CEILING/);
+  });
+
+  test("HX-4 waitFor names the last evaluation error when it times out", async () => {
+    const b = Object.create(Browser.prototype);
+    b.eval = async () => { throw new Error("boom"); };
+    await assert.rejects(b.waitFor("x", { timeout: 60, label: "L" }), /timed out waiting for L.*last error: .*boom/);
+  });
 }
