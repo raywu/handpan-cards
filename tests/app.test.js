@@ -5015,6 +5015,15 @@ describe("SB sandbox contract", () => {
     assert.ok(app.announcer());
     assert.ok(!app.created.includes(app.announcer()));
   });
+
+  test("SB-4 shareLink starts with the location origin and path", () => {
+    const app = boot();
+    const id = app.generate(AMARA_STRING).value.id;
+    const res = link(app, id);
+    assert.strictEqual(res.ok, true, res.reason);
+    assert.ok(res.value.startsWith(app.sandbox.location.origin + app.sandbox.location.pathname));
+    assert.ok(!res.value.startsWith("undefined"));
+  });
 });
 
 describe("tab stops follow rendering", () => {
