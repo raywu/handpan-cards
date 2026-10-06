@@ -1,0 +1,16 @@
+# kills: SB-3 the announcer is a markup node, not one the app created
+# suite: node --test --test-name-pattern ^SB-3.the.announcer.is.a.markup.node..not.one.the.app.created$ tests/app.test.js
+# The sandbox stops seeding the announce node, so the app creates its own fallback and the stub no longer
+# matches the shipped markup.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -291,7 +291,7 @@ function boot(opts = {}) {
+   }
+   const created = [];
+   const markupNodes = [];
+-  if (html.includes('<div class="announce"')) {
++  if (false && html.includes('<div class="announce"')) {
+     const node = bindFocus(makeElement("announce"));
+     node.className = "announce";
+     markupNodes.push(node);

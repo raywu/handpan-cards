@@ -2,7 +2,7 @@
 //
 // Scope: only what tools/boot_sim.js does NOT already assert. boot_sim covers the
 // boot order guard, every card in both modes rendering, <svg> presence, deck
-// colours in CSS vars + markup, shuffle toggling, absence of German, 59 cards.
+// colours in CSS vars + markup, shuffle toggling, absence of German, 96 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
 // "instrument layouts", "app data model") or from user-observable behaviour, never
@@ -4982,6 +4982,65 @@ describe("panel fit judge", () => {
   });
 });
 
+describe("SB sandbox contract", () => {
+  test("SB-1 assigning textContent drops the children of an element", () => {
+    const app = boot();
+    const parent = app.sandbox.document.createElement("div");
+    const child = app.sandbox.document.createElement("div");
+    parent.appendChild(child);
+    assert.strictEqual(parent.children.length, 1);
+    parent.textContent = "";
+    assert.strictEqual(parent.children.length, 0);
+    assert.strictEqual(child.parentNode, null);
+  });
+
+  test("SB-2 every served id is in the markup and is looked up by the app", () => {
+    const fs = require("node:fs");
+    const { ELEMENT_IDS, APP } = require("../tools/sandbox.js");
+    const html = fs.readFileSync(APP, "utf8");
+    const markup = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/g, "");
+    const inMarkup = new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+    const code = html.slice(html.indexOf("const DECKS"));
+    const looked = new Set([...code.matchAll(/(?:getElementById|\$)\("([^"]+)"\)/g)].map((m) => m[1]));
+    const problems = [];
+    for (const id of ELEMENT_IDS) {
+      if (!inMarkup.has(id)) problems.push(`${id} is served but not in the markup`);
+      if (!looked.has(id)) problems.push(`${id} is served but the app never looks it up`);
+    }
+    assert.deepStrictEqual(problems, []);
+  });
+
+  test("SB-3 the announcer is a markup node, not one the app created", () => {
+    const app = boot();
+    assert.ok(app.announcer());
+    assert.ok(!app.created.includes(app.announcer()));
+  });
+
+  test("SB-4 shareLink starts with the location origin and path", () => {
+    const app = boot();
+    const id = app.generate(AMARA_STRING).value.id;
+    const res = link(app, id);
+    assert.strictEqual(res.ok, true, res.reason);
+    assert.ok(res.value.startsWith(app.sandbox.location.origin + app.sandbox.location.pathname));
+    assert.ok(!res.value.startsWith("undefined"));
+  });
+
+  test("SB-6 diffGen reports an extra card, an extra rail and a missing mode", () => {
+    const { diffGen } = require("../tools/regen_card_fixture.js");
+    const face = { front: "f", back: "b" };
+    const fixture = () => ({ decks: { d: { A: { 0: face }, B: { 0: face } } }, rails: { basic: "r" } });
+    const extraCard = fixture();
+    extraCard.decks.d.A[1] = face;
+    const extraRail = fixture();
+    extraRail.rails.advanced = "r";
+    const missingMode = fixture();
+    delete missingMode.decks.d.B;
+    for (const actual of [extraCard, extraRail, missingMode]) {
+      assert.strictEqual(diffGen(fixture(), actual).length, 1);
+    }
+  });
+});
+
 describe("tab stops follow rendering", () => {
   test("getClientRects follows the hidden property", () => {
     const app = boot();
@@ -5033,6 +5092,37 @@ describe("tab stops follow rendering", () => {
     let prevented = false;
     app.get("cycleTabStops")([], { shiftKey: false, preventDefault() { prevented = true; } });
     assert.strictEqual(prevented, false);
+  });
+
+  test("SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE", () => {
+    const app = boot();
+    app.run("openScaleSheet()");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    const seen = new Set();
+    for (let i = 0; i < 30; i += 1) {
+      app.els["scale-sheet"].dispatchEvent(
+        { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.add(app.activeId());
+    }
+    assert.ok(seen.has("scale-back"), "Tab never reached the BACK control");
+    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(!seen.has("scale-generate"), "Tab landed on the disabled GENERATE");
+  });
+
+  test("SB-5 Tab in the ADD sheet skips a control inside a hidden row", () => {
+    const app = boot();
+    app.run("openScaleSheet()");
+    app.run("editingId = 'x'");
+    assert.strictEqual(app.els["scale-name-row"].hidden, true);
+    assert.strictEqual(app.els["scale-name"].getClientRects().length, 0);
+    const seen = new Set();
+    for (let i = 0; i < 40; i += 1) {
+      app.els["scale-sheet"].dispatchEvent(
+        { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+      seen.add(app.activeId());
+    }
+    assert.ok(seen.has("scale-box"), "Tab never reached the scale box");
+    assert.ok(!seen.has("scale-name"), "Tab landed on a control inside a hidden row");
   });
 });
 

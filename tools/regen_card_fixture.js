@@ -200,21 +200,8 @@ function buildGen(htmlPath) {
 }
 
 function diffGen(expected, actual) {
-  const problems = [];
-  for (const k of new Set([...Object.keys(expected.decks), ...Object.keys(actual.decks)])) {
-    const e = expected.decks[k], a = actual.decks[k];
-    if (!e || !a) { problems.push(`gen deck "${k}": ${!e ? "missing from fixture" : "missing from current render"}`); continue; }
-    for (const mode of ["A", "B"]) {
-      for (const c of Object.keys(e[mode])) {
-        for (const face of ["front", "back"]) {
-          if (!a[mode][c] || e[mode][c][face] !== a[mode][c][face]) {
-            problems.push(`gen deck "${k}" mode ${mode} card ${c} face ${face}: fixture ${e[mode][c][face]} != current ${a[mode][c] && a[mode][c][face]}`);
-          }
-        }
-      }
-    }
-  }
-  for (const t of Object.keys(expected.rails)) {
+  const problems = diffAll(expected.decks, actual.decks).map((p) => `gen ${p}`);
+  for (const t of new Set([...Object.keys(expected.rails), ...Object.keys(actual.rails)])) {
     if (expected.rails[t] !== actual.rails[t]) problems.push(`rail ${t}: fixture ${expected.rails[t]} != current ${actual.rails[t]}`);
   }
   return problems;
@@ -279,4 +266,6 @@ function main() {
     Object.keys(decks).map((k) => `${k} ${Object.keys(decks[k].A).length} cards`).join(", "));
 }
 
-main();
+module.exports = { diffAll, diffGen };
+
+if (require.main === module) main();

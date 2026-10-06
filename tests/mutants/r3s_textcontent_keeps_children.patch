@@ -1,0 +1,20 @@
+# kills: SB-1 assigning textContent drops the children of an element
+# suite: node --test --test-name-pattern ^SB-1.assigning.textContent.drops.the.children.of.an.element$ tests/app.test.js
+# The textContent setter stops clearing children, so a stub element keeps nodes a
+# browser would have dropped.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -82,11 +82,7 @@ function makeElement(id, tag = "div") {
+       for (let n = this; n; n = n.parentNode || n._markupParent) if (n.hidden) return [];
+       return [{}];
+     },
+-    set textContent(v) {
+-      this._text = v;
+-      for (const c of this.children) c.parentNode = null;
+-      this.children.length = 0;
+-    }, get textContent() { return this._text; },
++    set textContent(v) { this._text = v; }, get textContent() { return this._text; },
+     setAttribute(k, v) {
+       attrs[k] = String(v);
+       if (k.startsWith("data-")) this.dataset[k.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = String(v);
