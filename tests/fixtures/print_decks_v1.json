@@ -347,10 +347,10 @@
     ],
     "degrees": {
       "1": "I",
-      "2": "bII",
+      "2": "II",
       "6": "iv",
       "8": "v\u00b0",
-      "11": "bvii",
+      "11": "vii",
       "5": "iii\u00b0"
     },
     "has_bottom": false,
@@ -1736,9 +1736,9 @@
     "degrees": {
       "2": "i",
       "9": "v",
-      "7": "IV",
-      "0": "bVII",
-      "5": "bIII"
+      "7": "iv",
+      "0": "VII",
+      "5": "III"
     },
     "has_bottom": false,
     "title": "D Amara 9 - Chord Cards",

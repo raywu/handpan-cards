@@ -95,13 +95,15 @@ LAYOUTS = {
 # chord names, D10 amended), Amara 16 -> 25 (D11, fully re-ranked).
 CHORD_COUNTS = {"hijaz": 19, "pygmy": 52, "amara": 25}
 
-# CLAUDE.md > "Scale degrees per deck", keyed by note name.
+# docs/ENGINE-SPEC.md section 10, keyed by note name (owner decision
+# 2026-10-05: the step of the parent scale, case, the diminished mark, and no
+# accidental).
 DEGREES = {
-    "hijaz": {"C#": "I", "D": "bII", "F": "iii°", "F#": "iv", "G#": "v°",
-              "B": "bvii"},
+    "hijaz": {"C#": "I", "D": "II", "F": "iii°", "F#": "iv", "G#": "v°",
+              "B": "vii"},
     "pygmy": {"F": "i", "Ab": "III", "Bb": "iv", "C": "v", "Db": "VI",
               "Eb": "VII", "G": "ii°"},
-    "amara": {"D": "i", "A": "v", "G": "IV", "C": "bVII", "F": "bIII"},
+    "amara": {"D": "i", "A": "v", "G": "iv", "C": "VII", "F": "III"},
 }
 
 # Bottom notes used by each Pygmy voicing, in card order - the number the

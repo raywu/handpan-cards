@@ -1,4 +1,4 @@
-"""The frozen 96-card corpus (v4). Engine tests read this fixture, never the live DECKS.
+"""The frozen 96-card corpus (v5). Engine tests read this fixture, never the live DECKS.
 
 A deliberate deck-data change must bump the fixture version and regenerate the
 sha256 - it is never regenerated from the engine.
@@ -11,7 +11,7 @@ import unittest
 from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "fixtures", "golden_decks_v4.json")
+                       "fixtures", "golden_decks_v5.json")
 V3_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "fixtures", "golden_decks_v3.json")
 
@@ -29,10 +29,14 @@ TOP_ZONES = ("ding", "rim", "inner")
 # of change fails loudly rather than being regenerated silently - bumping the
 # version and the digest here, in the same PR that changes data/decks.json,
 # is the loud failure this fixture exists to force.
-EXPECTED_SHA256 = ("d9fe93bd3c8cbbe366498cdd4c2101af6c9d262964f72624319af346"
-                   "b929861e")
+#
+# 2026-10-06 (degree numerals, owner decision 2026-10-05): bumped v4 -> v5.
+# Five degree labels lost their accidental or changed case (Hijaz II and vii,
+# Amara III, iv and VII); no chord, field or geometry moved.
+EXPECTED_SHA256 = ("050d476260a4fffe7b3ff1457fb76aaaed2d2058afb4e3923ba165deaf3a"
+                   "49e6")
 
-# The v3 corpus's canonical-serialisation digest, pinned the same way as v4's
+# The v3 corpus's canonical-serialisation digest, pinned the same way as v5's
 # above (queue row 48: v3 was unpinned - its "sha256" key existed in the
 # fixture but nothing outside the fixture read it, so a coordinated rewrite of
 # both the content and its self-reported digest would have passed silently).
@@ -52,7 +56,7 @@ def chord_counts():
     return {d["id"]: len(d["chords"]) for d in paths.app_decks()}
 
 BUMP = ("Deck data changed. This fixture is frozen on purpose: bump it to "
-        "golden_decks_v4.json and regenerate sha256, do not edit in place.")
+        "golden_decks_v6.json and regenerate sha256, do not edit in place.")
 
 
 def load():
@@ -73,9 +77,9 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
                          "fixture content and its stored sha256 disagree. " + BUMP)
 
-    def test_sha256_is_the_pinned_v4_digest(self):
+    def test_sha256_is_the_pinned_v5_digest(self):
         self.assertEqual(load()["sha256"], EXPECTED_SHA256,
-                         "the v4 corpus digest changed. " + BUMP)
+                         "the v5 corpus digest changed. " + BUMP)
 
     def test_v3_sha256_matches_its_canonical_serialisation(self):
         doc = load_v3()
@@ -90,7 +94,7 @@ class TestFixtureSelfAssertion(unittest.TestCase):
 
     def test_shape_and_card_counts(self):
         doc = load()
-        self.assertEqual(doc["version"], 4)
+        self.assertEqual(doc["version"], 5)
         self.assertEqual(len(doc["decks"]), 3)
         counts = {d["id"]: len(d["chords"]) for d in doc["decks"]}
         self.assertEqual(counts, chord_counts())
