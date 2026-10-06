@@ -266,11 +266,8 @@ a.mode{text-decoration:none}
 .modebar.duo .mode{min-width:0; padding-inline:6px; line-height:1.25}
 /* The three site links split their row equally; the padding trim lets HANDPANER
    shrink to a third without ever going under its own content (no min-width:0).
-   Not in the landscape panel grid (max-height:520px), whose budget tests pin
-   the old row heights. */
-@media (min-height:521px){
-  .modebar.trio .mode{padding-inline:4px}
-}
+   The landscape panel grid (max-height:520px) below resets it to .mode's own. */
+.modebar.trio .mode{padding-inline:4px}
 #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
   overflow:hidden; white-space:nowrap; clip:rect(0 0 0 0)}
@@ -294,6 +291,7 @@ a.mode{text-decoration:none}
   #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
     align-content:start; align-items:start}
   #settings-panel > .panel-group{width:auto}
+  .modebar.trio .mode{padding-inline:11px}
 }
 #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
 #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}
