@@ -5087,6 +5087,19 @@ describe("SB sandbox contract", () => {
     assert.deepStrictEqual(diffGen(fixture(), missingMode), ["gen d mode B card 0: missing from current render"]);
     assert.deepStrictEqual(diffGen(fixture(), missingRail), ["rail basic: fixture r != current undefined"]);
   });
+
+  test("FU-4 diffGen reports a deck or a mode that exists on one side only, even with no cards", () => {
+    const { diffGen } = require("../tools/regen_card_fixture.js");
+    const face = { front: "f", back: "b" };
+    const withEmptyMode = () => ({ decks: { d: { A: { 0: face }, B: {} } }, rails: {} });
+    const withoutMode = () => ({ decks: { d: { A: { 0: face } } }, rails: {} });
+    assert.deepStrictEqual(diffGen(withEmptyMode(), withoutMode()), ["gen d mode B: missing from current render"]);
+    assert.deepStrictEqual(diffGen(withoutMode(), withEmptyMode()), ["gen d mode B: missing from fixture"]);
+    const withEmptyDeck = () => ({ decks: { d: { A: { 0: face } }, e: {} }, rails: {} });
+    const withoutDeck = () => ({ decks: { d: { A: { 0: face } } }, rails: {} });
+    assert.deepStrictEqual(diffGen(withEmptyDeck(), withoutDeck()), ["gen e: missing from current render"]);
+    assert.deepStrictEqual(diffGen(withoutDeck(), withEmptyDeck()), ["gen e: missing from fixture"]);
+  });
 });
 
 describe("tab stops follow rendering", () => {
