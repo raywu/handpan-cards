@@ -521,7 +521,7 @@ class ValidateScriptTest(unittest.TestCase):
 
     def test_validate_py_passes(self):
         """tools/validate.py cross-checks app JSON vs decks.py and the
-        highlighting invariants. Shelled out to: importing it stubs `hifi`
+        per-card root and doubled-pitch-class checks. Shelled out to: importing it stubs `hifi`
         into sys.modules for the whole process (CONTRACT traps).
 
         Bytecode caching is redirected to a throwaway directory. A .pyc is
