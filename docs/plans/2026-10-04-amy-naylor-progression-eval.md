@@ -384,7 +384,7 @@ contain it (checked against the BASIC cells and the MEDIUM cells).
 Axis A, the rules a resolved row fails for EASY (length 2-4, first chord on
 the home anchor or the relative-major triad, every chord a home or triad
 anchor, no repeated root, every pair and the wrap passing `connects()`). The
-wrap and every pair pass on all fifteen resolved rows; the only failures are:
+wrap and every pair pass on all twenty-five resolved rows; the only failures are:
 
 - Kurd 10 and Pygmy A9 and A10: the first chord (Bb or Gm on Kurd, Db or Bbm
   on Pygmy) is neither home nor the relative start (F or Ab).
@@ -491,9 +491,11 @@ and 8 GAP; Hijaz 1 EASY (A6) and 9 GAP.
 The decks now split cleanly into pans that hold the pitch classes (Kurd 10 and
 Pygmy: all ten exact) and pans that do not (Amara 9 and 10, Hijaz). Among
 pans that do, EASY reaches the eight progressions that start on home or the
-relative major, and MEDIUM the two that start elsewhere, at odds one to two
-orders of magnitude lower. Within MEDIUM, the exact odds are 1 in 1,083 for
-A10 and 1 in 6,750 for A9. The extra note on Amara 10 changes none of this.
+relative major, and MEDIUM the two that start elsewhere. MEDIUM is not
+uniformly rarer: the EASY rows sit at 1 in 250 (A6), 1 in 375 (A1 to A5) and
+1 in 1,500 (A7, A8), and the MEDIUM rows at 1 in 1,083 (A10) and 1 in 6,750
+(A9). So A10 at MEDIUM is dealt more often than A7 and A8 at EASY, and A9 is
+4.5 to 27 times rarer than any EASY row. The extra note on Amara 10 changes none of this.
 
 ### 12.8 Reproduction
 
