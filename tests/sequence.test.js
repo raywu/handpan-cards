@@ -1426,7 +1426,7 @@ test("generated decks: every tier deals its own tier, in range and connected, un
 
 // S7 custom-scale case: the augmented hexatonic seed (AD18) has no extended
 // card at all, and HARD still deals there, every deal through the two-non-anchor branch.
-test("S7: a custom D Kurd 9 deck deals HARD with no extended card", () => {
+test("S7: a custom augmented hexatonic deck deals HARD with no extended card", () => {
   const { full } = generated();
   const S = full.sequence;
   const parsed = full.core.parseSeed("(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4", {});
@@ -2147,4 +2147,112 @@ test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
   assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
   assert.deepEqual(host(late.sequence.anchors(AMARA)), host(E.sequence.anchors(AMARA)),
     "core must be read when anchors runs, not when sequence loads");
+});
+
+// Lane U1b (PR #254 review 1): with the deck cap gone, MEDIUM's enumeration
+// can run out of MEDIUM_ENUM_BUDGET on a pan with nine or more pitch classes.
+// A truncated enumeration is the same DFS prefix on every call, so the deal
+// must come from random walks instead.
+const TRUNCATING_SEEDS = [
+  "(C3) C#3 D3 Eb3 E3 F3 F#3 G3 Ab3 A3 Bb3 B3 C4",
+  "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | B3 C#4 F#4 G#4"
+];
+
+function truncatingDeck(str) {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const parsed = full.core.parseSeed(str, {});
+  assert.equal(parsed.ok, true, `fixture seed did not parse: ${str}`);
+  const built = full.select.build(parsed.value);
+  assert.equal(built.ok, true, `fixture seed did not build: ${str}`);
+  return { S: full.sequence, deck: built.value };
+}
+
+test("MEDIUM on a truncating pan does not open on one card", () => {
+  for (const str of TRUNCATING_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const stats = {};
+    I.mediumCells(deck, stats);
+    assert.strictEqual(stats.truncated, true, `${str} must truncate for this test to mean anything`);
+    const ctx = I.tierContext(deck);
+    const pool = I.tierPool(deck, "intermediate", ctx.anchorsList);
+    const startSet = host(I.tierStartSet(deck, "intermediate", pool, ctx));
+    const firstOfFour = new Set();
+    let prev = null;
+    for (let seed = 0; seed < 400; seed += 1) {
+      const result = S.pick(deck, S.mulberry32(seed), prev, "intermediate");
+      assert.ok(result.chords, `${str} seed ${seed} returned ${result.reason}`);
+      if (result.chords.length === 4) firstOfFour.add(result.chords[0]);
+      prev = result.chords;
+    }
+    assert.ok(firstOfFour.size * 2 >= startSet.length,
+      `${str}: length-4 deals opened on ${firstOfFour.size} of ${startSet.length} start cards`);
+  }
+});
+
+// Captured at 1576ef1 (before any sampling existed): chained 50 MEDIUM picks
+// per deck, mulberry32(0..49).
+const MEDIUM_COMPLETE_GOLDEN = {
+  hijaz: [[14,0,10],[14,12,8,10],[14,10,12,6],[14,8,12,6],[10,12,0,14],[10,4,8,14],[14,6,0],[14,0,12],[14,4,12],[14,8,4],[10,12,17],[14,10,3],[10,8,12],[0,7,8],[0,11,14],[10,8,16],[10,14,0,12],[10,0,14,8],[3,0,14],[14,12,10],[1,6,12,14],[4,6,8],[10,14,6,8],[10,14,0],[4,6,12],[10,9,14],[3,6,12],[14,10,8],[10,8,17],[10,14,12],[0,9,14,12],[0,10,15,6],[14,4,10],[1,12,8],[0,7,14,10],[10,12,15],[4,10,14,8],[10,7,14],[14,10,4,12],[3,8,6],[10,13,6,14],[14,10,12,3],[10,0,17,8],[10,0,12,8],[14,6,12,8],[0,12,17],[10,8,16],[14,0,10,12],[0,13,14,6],[0,15,6]],
+  pygmy: [[0,6,43],[43,37,0,19],[43,8,19,37],[0,37,6,19],[0,6,37,19],[8,19,43,7],[0,8,6],[24,43,8],[24,50,0],[37,23,8],[24,8,20],[43,6,21],[19,6,43],[0,6,41],[0,19,15],[19,4,8],[0,8,6,19],[0,6,19,24],[2,24,8],[43,37,19],[0,30,6,37],[0,37,23],[0,8,6,24],[0,6,37],[0,41,19],[19,11,6],[2,37,8],[0,37,6],[19,11,37],[0,6,37],[0,8,24,7],[0,27,19,6],[24,41,8],[0,37,33],[0,8,7,24],[19,48,43],[4,8,24,43],[8,50,37],[43,0,35,8],[2,43,24],[19,37,24,7],[43,6,19,39],[8,43,24,20],[0,6,8,43],[37,8,0,43],[0,37,48],[19,4,24],[24,37,8,19],[0,35,6,37],[0,43,22]],
+  amara: [[0,14,16],[21,16,8,14],[21,8,16,14],[0,16,21,14],[0,8,21,14],[8,14,20,21],[0,14,21],[16,8,0],[16,10,0],[21,0,20],[14,16,5],[21,8,19],[14,0,8],[0,8,20],[0,14,18],[8,21,17],[0,14,16,8],[0,8,14,21],[2,16,14],[21,16,14],[0,17,14,21],[0,21,20],[0,14,16,8],[0,14,8],[4,8,14],[14,0,18],[2,21,8],[0,16,14],[14,5,8],[0,14,16],[0,13,8,21],[5,14,21,8],[16,4,21],[0,21,3],[0,10,21,14],[14,8,5],[4,16,8,14],[8,21,20],[21,8,20,0],[3,0,8],[14,10,21,0],[21,8,16,13],[8,16,14,5],[0,8,14,21],[16,14,8,21],[5,14,21],[8,21,17],[16,0,14,21],[0,20,21,14],[5,16,8]],
+  kurd10: [[0,8,39],[39,32,0,18],[39,10,18,32],[0,32,8,18],[0,8,32,18],[10,18,39,9],[0,10,8],[27,39,10],[27,43,0],[32,22,10],[27,10,35],[39,8,20],[18,8,39],[0,8,34],[0,18,13],[18,2,10],[0,10,8,18],[0,8,18,27],[2,27,10],[39,32,18],[0,29,8,32],[0,32,22],[0,10,8,27],[0,8,32],[0,34,18],[18,11,8],[2,32,10],[0,32,8],[18,15,27],[0,8,32],[0,10,41,39],[0,27,44,18],[27,34,10],[0,32,30],[0,10,9,27],[27,0,35],[4,10,27,39],[10,43,32],[39,0,31,10],[2,39,27],[18,32,27,9],[39,8,18,33],[10,44,0,8],[0,8,10,39],[32,10,0,39],[0,39,15],[18,2,32],[27,32,10,18],[0,31,8,32],[0,44,8]],
+  amara10: [[0,15,17],[22,17,8,15],[22,8,17,15],[0,17,22,15],[0,8,22,15],[8,15,21,22],[0,15,22],[17,8,0],[17,10,0],[22,0,21],[15,25,0],[22,8,20],[15,0,8],[0,8,21],[0,15,19],[8,22,18],[0,15,17,8],[0,8,15,22],[2,17,15],[22,17,15],[0,18,15,22],[0,22,21],[0,15,17,8],[0,15,8],[4,8,15],[15,0,19],[2,22,8],[0,17,15],[15,5,22],[0,15,17],[0,14,8,22],[0,17,25,15],[17,4,22],[0,22,3],[0,10,22,15],[15,17,11],[4,17,8,15],[8,22,21],[22,8,21,0],[3,0,8],[15,10,22,0],[22,8,17,14],[8,25,0,17],[0,8,15,22],[17,15,8,22],[0,25,17],[8,22,18],[17,0,15,22],[0,21,22,15],[5,8,15]],
+};
+
+test("a deck that completes consumes no extra rng", () => {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const S = full.sequence;
+  const build = (str) => full.select.build(full.core.parseSeed(str, {}).value).value;
+  const decks = {
+    hijaz: HIJAZ,
+    pygmy: PYGMY,
+    amara: AMARA,
+    kurd10: build("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"),
+    amara10: build("(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5")
+  };
+  for (const [id, deck] of Object.entries(decks)) {
+    const stats = {};
+    S._internal.mediumCells(deck, stats);
+    assert.strictEqual(stats.truncated, false, `${id} must complete`);
+    const dealt = [];
+    let prev = null;
+    for (let seed = 0; seed < 50; seed += 1) {
+      const result = S.pick(deck, S.mulberry32(seed), prev, "intermediate");
+      dealt.push(host(result.chords));
+      prev = result.chords;
+    }
+    assert.deepStrictEqual(dealt, MEDIUM_COMPLETE_GOLDEN[id], `${id} MEDIUM deals`);
+  }
+});
+
+test("every sampled sequence is a MEDIUM sequence", () => {
+  for (const str of TRUNCATING_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const ctx = I.tierContext(deck);
+    const matrix = I.buildConnectMatrix(deck);
+    const stats = {};
+    const cells = I.mediumCells(deck, stats, undefined, S.mulberry32(7));
+    assert.strictEqual(stats.truncated, true);
+    assert.ok(stats.sampled >= 1, `${str}: only ${stats.sampled} distinct sequences sampled`);
+    let seen = 0;
+    for (const cell of host(cells)) {
+      for (const seq of cell.seqs) {
+        seen += 1;
+        assert.strictEqual(seq.length, cell.length);
+        assert.strictEqual(I.classifyTier(deck, seq, ctx), "intermediate", `${str}: ${JSON.stringify(seq)}`);
+        assert.ok(seq[seq.length - 1] !== seq[0] && matrix[seq[seq.length - 1]][seq[0]],
+          `${str}: ${JSON.stringify(seq)} does not close its loop`);
+      }
+    }
+    assert.strictEqual(seen, stats.sampled, `${str}: every filed sequence is counted once`);
+    let prev = null;
+    for (let seed = 0; seed < 100; seed += 1) {
+      const result = S.pick(deck, S.mulberry32(seed), prev, "intermediate");
+      assert.strictEqual(S.tierOf(deck, host(result.chords)), "intermediate",
+        `${str} seed ${seed} dealt ${JSON.stringify(host(result.chords))}`);
+      prev = result.chords;
+    }
+  }
 });
