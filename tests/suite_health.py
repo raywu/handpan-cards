@@ -65,6 +65,7 @@ FLOORS = {
     "tests/mutation_harness.test.js": 53,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 49,
+    "tests/scale.test.js": 12,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves

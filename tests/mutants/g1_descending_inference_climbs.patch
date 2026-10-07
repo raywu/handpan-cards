@@ -1,0 +1,16 @@
+# kills: the E Amara 20 example lands on exactly its twenty pitches
+# suite: node --test --test-name-pattern ^the.E.Amara.20.example.lands.on.exactly.its.twenty.pitches$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -691,8 +691,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var lo = low[n];
+       var m;
+       if (lo.octave === null) {
+-        m = midiFromName(lo.letter, lo.accidental, 9) + 24;
+-        while (m >= right.midi) m -= 12;
++        m = midiFromName(lo.letter, lo.accidental, 0);
++        while (m <= right.midi) m += 12;
+       } else {
+         m = midiFromName(lo.letter, lo.accidental, lo.octave);
+       }

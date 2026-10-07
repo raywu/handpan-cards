@@ -1,0 +1,14 @@
+# kills: every row of the grammar table parses to its fields
+# suite: node --test --test-name-pattern ^every.row.of.the.grammar.table.parses.to.its.fields$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -637,7 +637,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         if (rim === 0) return scaleBad("barEmpty");
+         zone = "inner";
+       } else if (item.kind === "bottom") {
+-        after.push({ note: item.note, zone: "bottom" });
++        after.push({ note: item.note, zone: zone });
+       } else {
+         after.push({ note: item.note, zone: zone });
+         if (zone === "rim") rim += 1; else inner += 1;

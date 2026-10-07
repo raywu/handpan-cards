@@ -1,0 +1,14 @@
+# kills: octave -1 lexes and round-trips
+# suite: node --test --test-name-pattern ^octave..1.lexes.and.round.trips$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -98,7 +98,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ 
+   var NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
+   // The scale grammar's note (plan section 4.1): octave -1 or 0 to 9.
+-  var SCALE_NOTE_RE = /^([A-G])(#|b)?(-1|[0-9])?$/;
++  var SCALE_NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
+   var INNER_MARK = "/";
+   var DEFAULT_OPTIONS = { palette: 0, parent: null, name: "", mirror: false };
+ 
