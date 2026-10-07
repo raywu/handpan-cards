@@ -1,14 +1,14 @@
 # suite: node --test --test-name-pattern ^a.twelfth.rim.field.solves$ tests/layout.test.js
 # kills: a twelfth rim field solves
-# the rim cap is restored in solve
+# The rim cap is restored in solve.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -454,6 +454,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -459,6 +459,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    function solve(seedOrFields, options) {
      var source = fieldsOf(seedOrFields);
      var zones = collect(source);
 +    if (zones.rim.length > 11) return err("TOO_MANY_RIM");
  
      var seedOptions = (seedOrFields && seedOrFields.options) || {};
-     var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+     var mirrors = resolveMirrors(options, seedOptions);

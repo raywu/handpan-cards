@@ -539,10 +539,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                        seedOptions.parent === null)
       ? naming().inferParent(panPcs, tonicPc)
       : seedOptions.parent;
-    var mirror = !!seedOptions.mirror;
+    var mirrors = layout().resolveMirrors({}, seedOptions);
+    var anchor = seedOptions.anchor === "between" ? "between" : "one";
     var paletteIndex = seedOptions.palette || 0;
 
-    var solved = layout().solve(fields, {mirror: mirror});
+    var solved = layout().solve(fields,
+      {mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: anchor});
     if (!solved.ok) return solved;      // propagated unchanged (section 1)
 
     var warnings = [];
@@ -564,7 +566,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var deck = {
       id: core().deckId(fields),
       name: seedOptions.name ? seedOptions.name : autoName(fields, parentIndex),
-      options: {palette: paletteIndex, mirror: mirror, parent: parentIndex},
+      options: {
+        palette: paletteIndex,
+        mirror: mirrors.top,
+        mirrorBottom: mirrors.bottom,
+        anchor: anchor,
+        parent: parentIndex
+      },
       colors: {
         root: palette.root,
         tone: palette.tone,

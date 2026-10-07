@@ -337,6 +337,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (typeof options.mirror !== "boolean") return badNote(options.mirror);
       out.mirror = options.mirror;
     }
+    // mirrorBottom and anchor are whitelisted and left ABSENT when not given:
+    // layout.resolveMirrors owns the default (a missing mirrorBottom takes the
+    // value of mirror), so a second default here would let the two disagree.
+    if (options.mirrorBottom !== undefined) {
+      if (typeof options.mirrorBottom !== "boolean") return badNote(options.mirrorBottom);
+      out.mirrorBottom = options.mirrorBottom;
+    }
+    if (options.anchor !== undefined) {
+      if (options.anchor !== "one" && options.anchor !== "between") return badNote(options.anchor);
+      out.anchor = options.anchor;
+    }
     return ok(out);
   }
 

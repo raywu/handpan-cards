@@ -1,14 +1,15 @@
-# suite: node --test --test-name-pattern ^an.odd.centred.rim.starts.at.bottom.centre.and.keeps.each.note.on.its.side$ tests/layout.test.js
-# kills: an odd centred rim starts at bottom centre and keeps each note on its side
+# suite: node --test --test-name-pattern ^odd.rim.notes.sit.right.and.even.left.at.every.count.from.2.to.24..both.anchors$ tests/layout.test.js
+# kills: odd rim notes sit right and even left at every count from 2 to 24, both anchors
+# Even rims keep the old direction: odd notes on the right only for odd counts.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -152,7 +152,7 @@
+@@ -149,7 +149,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var out = [];
      var i;
      for (i = 0; i < count; i += 1) {
 -      var sign = (i % 2 === 1) ? -1 : 1;
-+      var sign = (i % 2 === 1) ? 1 : -1;
-       out.push(norm(270 + sign * Math.ceil(i / 2) * step));
++      var sign = ((i % 2 === 1) !== (count % 2 === 0)) ? -1 : 1;
+       var magnitude = between ? Math.floor(i / 2) + 0.5 : Math.ceil(i / 2);
+       out.push(norm(270 + sign * magnitude * step));
      }
-     return out;

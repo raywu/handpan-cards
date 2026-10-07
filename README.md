@@ -126,7 +126,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 714 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 719 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -168,7 +168,7 @@ Layout notes (intentional, verified against the physical instruments -
 do not "correct"):
 
 - **F3 Low Pygmy top shell**: field 1 (G3) sits bottom-RIGHT, zig-zag
-  ascends right-first, Eb5 at top centre, F5/G5 inside beside the ding
+  runs the same way as the other decks (odd fields right, even left) with bottom centre between fields 1 and 2, Eb5 at top centre, F5/G5 inside beside the ding
   (10 left, 11 right).
 - **F3 Low Pygmy bottom notes** (U1-U6) are drawn as an outer ring in
   x-ray view (seen from above): U1 C3 lower-right, U2 Db3 lower-left,

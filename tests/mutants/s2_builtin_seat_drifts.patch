@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^the.solver.seats.every.built.in.field.where.its.diagram.has.it..from.the.deck.s.scale.string$ tests/layout.test.js
+# kills: the solver seats every built-in field where its diagram has it, from the deck's scale string
+# Anchor one steps with floor instead of ceil, drifting every off-axis rim seat.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -150,7 +150,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var i;
+     for (i = 0; i < count; i += 1) {
+       var sign = (i % 2 === 1) ? -1 : 1;
+-      var magnitude = between ? Math.floor(i / 2) + 0.5 : Math.ceil(i / 2);
++      var magnitude = between ? Math.floor(i / 2) + 0.5 : Math.floor(i / 2) + (i > 0 ? 0 : 0);
+       out.push(norm(270 + sign * magnitude * step));
+     }
+     return out;

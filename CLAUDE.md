@@ -86,13 +86,12 @@ no committed PDF; the app builds theirs in the browser.
 
 Angles are math-convention degrees (0 = right, 90 = up), y-up.
 
-**C# Hijaz / Orion 9** - Ding C#3 centre. Standard left-first zig-zag:
+**C# Hijaz / Orion 9** - Ding C#3 centre. Standard zig-zag, note 1 at bottom centre, odd-numbered notes on the right and even-numbered on the left:
 1 G#3 @270, 2 B3 @225, 3 C#4 @315, 4 D4 @180, 5 F4 @0, 6 F#4 @135,
 7 G#4 @45, 8 B4 @90. (F is functionally E#, the major third of C#.)
 
 **F3 Low Pygmy 18** - Ding F3, enlarged and offset toward the player
-(r=0.19R, dy=0.1425R below centre). Top rim is MIRRORED (right-first)
-zig-zag: 1 G3 @290 (bottom-right), 2 Ab3 @250, 3 C4 @330, 4 Eb4 @210,
+(r=0.19R, dy=0.1425R below centre). Top rim is the SAME zig-zag direction as Hijaz and Amara (odd notes right, even left); what differs is the anchor: bottom centre falls between notes 1 and 2: 1 G3 @290 (bottom-right), 2 Ab3 @250, 3 C4 @330, 4 Eb4 @210,
 5 F4 @10, 6 G4 @170, 7 Ab4 @50, 8 C5 @130, 9 Eb5 @90 (top centre).
 Inner pair beside the ding: 10 F5 @128 (left), 11 G5 @52 (right) - note
 the inner pair ascends OPPOSITE to the rim direction; that is the real
@@ -125,18 +124,7 @@ from below, so projected to top view their sequences typically run opposite
 the top zig-zag (mirror geometry). Notation systems (e.g. Notepan) handle
 this by attaching per-instrument images.
 
-**Generated layouts (2026-10-06, owner decisions).** The layout solver
-defaults to the Amara 9 arrangement: ding in the centre, lowest rim note at
-bottom centre (270). It moves the ding toward the player, Pygmy style, only
-when the seed has inner notes ("Only with inner notes") - whether written
-after a `/` or spilled there as top notes 12 and 13. With an odd number of
-rim notes no note sits at top centre; the two highest flank it. An even
-rim draws exactly as before. The mirror option means opposite hands on odd
-and even rims: unmirrored, an even rim puts note 2 on the right and an odd
-rim puts it on the left. That predates this change and was kept so saved
-and shared scales keep each note on its side ("Keep their sides"). Do not
-"fix" it without the owner. The three original decks are literal data and
-never pass through the solver; the two adopted decks are solver output stored as data.
+**Generated layouts.** One direction on every generated pan, odd or even rim: odd-numbered rim notes sit on the right, even-numbered on the left. Two ANCHORS, a per-deck option `anchor`: `one` (the default) puts note 1 at bottom centre (C# Hijaz 9, D Amara 9, D Kurd 10, D AMARA 10); `between` puts the bottom centre between notes 1 and 2 with note 1 on the right (F3 Low Pygmy). Older notes called these "left-first" and "mirrored (right-first)"; those words described the anchor, not two directions, and are retired. MIRROR reflects the rim and inner rings about the vertical axis and is the only thing that puts odd notes on the left; `mirrorBottom` reflects the bottom ring and, when absent, follows `mirror`. The anchor applies whether or not the pan has inner notes. Inner notes are only the notes typed after the inner bar: one sits at top centre, two at 128 and 52, more fan across the top half of the inner orbit, and they push the ding toward the player (0.1425, more when an inner index number would touch the ding). No inner notes means a centred ding. There are no note-count caps: a crowded pan draws smaller and carries the `SMALL_LABELS` warning, which ignores bottom octave digits; it is never refused. The solver seats every field of every built-in exactly where its diagram has it, from the deck's scale string and default options (`anchor: between` for Pygmy), except the Pygmy geometry keys that Lane P1 reconciles.
 
 ## Solver-generated layouts (not verified against an instrument)
 

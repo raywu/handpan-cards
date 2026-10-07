@@ -496,13 +496,61 @@ def canonical_deck(deck_id):
     return next(d for d in paths.canonical_decks() if d["id"] == deck_id)
 
 
+class MirrorFlagsTest(unittest.TestCase):
+    """Lane S2 (plan 20.5, AM-3, AM-9): one flag per shell, and --mirror is both."""
+
+    def angles(self, *flags):
+        fields = generate(PYGMY_MAKER, *flags)["deck"]["fields"]
+        out = {"rim": [], "inner": [], "bottom": []}
+        for key in sorted(fields, key=int):
+            zone, angle = fields[key][3], fields[key][4]
+            if zone in out:
+                out[zone].append(angle)
+        return out
+
+    @staticmethod
+    def reflect(angles):
+        return [round((180 - a) % 360, 1) for a in angles]
+
+    def test_mirror_top_alone_reflects_the_top_shell_and_not_the_bottom(self):
+        base, got = self.angles(), self.angles("--mirror-top")
+        self.assertEqual(got["rim"], self.reflect(base["rim"]))
+        self.assertEqual(got["inner"], self.reflect(base["inner"]))
+        self.assertEqual(got["bottom"], base["bottom"])
+
+    def test_mirror_bottom_alone_reflects_the_bottom_and_not_the_top(self):
+        base, got = self.angles(), self.angles("--mirror-bottom")
+        self.assertEqual(got["rim"], base["rim"])
+        self.assertEqual(got["inner"], base["inner"])
+        self.assertEqual(got["bottom"], self.reflect(base["bottom"]))
+
+    def test_mirror_equals_both_flags_in_either_order(self):
+        both = self.angles("--mirror")
+        self.assertEqual(both, self.angles("--mirror-top", "--mirror-bottom"))
+        self.assertEqual(both, self.angles("--mirror-bottom", "--mirror-top"))
+        base = self.angles()
+        self.assertEqual(both["rim"], self.reflect(base["rim"]))
+        self.assertEqual(both["bottom"], self.reflect(base["bottom"]))
+
+    def test_anchor_between_reaches_the_deck_options(self):
+        deck = generate(PYGMY_MAKER, "--anchor", "between")["deck"]
+        self.assertEqual(deck["options"]["anchor"], "between")
+        self.assertEqual(generate(PYGMY_MAKER)["deck"]["options"]["anchor"], "one")
+        self.assertNotEqual(run_gen(PYGMY_MAKER, "--anchor", "centre").returncode, 0)
+
+
 class UncappedBuiltinsTest(unittest.TestCase):
     """Lane U2: Amara 9 and Pygmy hold what the uncapped engine generates."""
 
     def test_amara_9_chords_equal_a_fresh_engine_run(self):
-        fresh = generate(AMARA_MAKER, "--mirror")["deck"]["chords"]
+        run = generate(AMARA_MAKER)["deck"]
+        fresh = run["chords"]
         got = canonical_deck("amara")["chords"]
         self.assertEqual(got, fresh)
+        shipped = canonical_deck("amara")["fields"]
+        self.assertEqual({k: v[4] for k, v in run["fields"].items() if k in shipped},
+                         {k: v[4] for k, v in shipped.items()},
+                         "the default seats are the shipped Amara 9 seats")
         self.assertEqual(len(got), 27)
         kept = [c for c in got if (c["main"], c["sup"]) not in
                 (("F", "add9"), ("C", "add9"))]

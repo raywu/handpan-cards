@@ -2373,17 +2373,17 @@
       "bottom": 1.15,
       "r_ding": 0.19,
       "ding_dy": 0.1425,
-      "r_note": 0.1468,
+      "r_note": 0.1516,
       "r_bnote": 0.1188,
       "inner_ring": 0,
       "f_ding": 0.114,
-      "f_note": 0.1123,
+      "f_note": 0.116,
       "f_bnote": 0.0931,
-      "f_num": 0.094,
+      "f_num": 0.097,
       "n_in": 0.052,
       "n_out": 0.068,
       "rim_num_out": true,
-      "ext": 1.4626
+      "ext": 1.4647
      }
     },
     "build": {

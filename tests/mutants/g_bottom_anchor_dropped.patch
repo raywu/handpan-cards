@@ -1,14 +1,15 @@
-# suite: node --test --test-name-pattern ^an.odd.centred.rim.starts.at.bottom.centre.and.keeps.each.note.on.its.side$ tests/layout.test.js
-# kills: an odd centred rim starts at bottom centre and keeps each note on its side
+# suite: node --test --test-name-pattern ^anchor.one.puts.note.1.at.270..anchor.between.straddles.270.with.note.1.on.the.right$ tests/layout.test.js
+# kills: anchor one puts note 1 at 270; anchor between straddles 270 with note 1 on the right
+# The anchor option is read and then ignored: every rim seats as anchor one.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -261,7 +261,7 @@
-   /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
-   function placeZones(counts, mirror) {
-     return {
--      rims: mirrored(isCentred(counts) ? rimAnglesFromBottom(counts.rim) : rimAngles(counts.rim), mirror),
-+      rims: mirrored(rimAngles(counts.rim), mirror),
-       inners: mirrored(innerAngles(counts.inner), mirror),
-       bottoms: mirrored(bottomAngles(counts.bottom), mirror)
-     };
+@@ -145,7 +145,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+    * with note 1 on the right (pygmy: 290, 250, 330, ... 90). */
+   function rimAngles(count, anchor) {
+     var step = count > 0 ? 360 / count : 0;
+-    var between = anchor === "between";
++    var between = false;
+     var out = [];
+     var i;
+     for (i = 0; i < count; i += 1) {
