@@ -277,6 +277,8 @@ pools counted only where a row landed there (none did).
 
 ## 11. Rerun after PR #233 (main 71ba20d, 2026-10-04)
 
+Superseded by section 12 (five decks, main d744071); the EASY rules and odds below describe the engine at 71ba20d only.
+
 Section 8's prompt rerun against the merged EASY tier: lengths 2, 3 or 4
 drawn evenly; any anchor may start; every length wraps to its first chord.
 EASY pools (len 2 / 3 / 4): Hijaz 28 / 96 / 264, Pygmy 42 / 210 / 840,
@@ -325,3 +327,215 @@ HARD on any deck. Every row that resolves is EASY, and every miss is a pitch
 class the pan lacks (Bb on Amara; A, E, Bbm, Ebm on Hijaz), which no tier
 rule can reach. This reference list gives no measured target for "MEDIUM
 takes Amy's chords".
+
+## 12. Rerun on five decks (main d744071, 2026-10-07)
+
+Section 8's prompt rerun by measurement against all five built-in decks, in
+the app's deck order: D Kurd 10 (`kurd`, 49 cards), D AMARA 10 (`amara10`, 29),
+D Amara 9 (`amara`, 27), C# Hijaz (`hijaz`, 19), F3 Low Pygmy 18 (`pygmy`, 53).
+Findings only; nothing here proposes an engine or deck change. The code names
+the tiers `basic` / `intermediate` / `advanced`; the buttons and this doc say
+EASY / MEDIUM / HARD.
+
+### 12.1 Result per deck
+
+Each cell is the resolved card sequence (`~` marks the engine's anchor standing
+in for a card of the wanted quality), the tier that can emit it, and the odds
+that one `pick()` of that tier deals exactly that sequence (prev = null).
+GAP names the roots no card on the deck has.
+
+| id | Amy | Kurd 10 | Amara 10 | Amara 9 | Hijaz | Pygmy |
+|---|---|---|---|---|---|---|
+| A1 | i VI III VII | Dm Bb F C: EASY, 1 in 375 | GAP (no Bb) | GAP (no Bb) | GAP (no A, no E) | Fm Db Ab Eb: EASY, 1 in 375 |
+| A2 | i v VI VII | Dm Am Bb C: EASY, 1 in 375 | GAP (no Bb) | GAP (no Bb) | GAP (no A) | Fm Cm Db Eb: EASY, 1 in 375 |
+| A3 | i III VII iv | Dm F C Gm: EASY, 1 in 375 | Dm F C ~Gsus4: MEDIUM, 1 in 337 | Dm F C ~Gsus4: MEDIUM, 1 in 337 | GAP (no E) | Fm Ab Eb Bbm: EASY, 1 in 375 |
+| A4 | i VII VI v | Dm C Bb Am: EASY, 1 in 375 | GAP (no Bb) | GAP (no Bb) | GAP (no A) | Fm Eb Db Cm: EASY, 1 in 375 |
+| A5 | i VII v VI | Dm C Am Bb: EASY, 1 in 375 | GAP (no Bb) | GAP (no Bb) | GAP (no A) | Fm Eb Cm Db: EASY, 1 in 375 |
+| A6 | I IV V | F Bb C: EASY, 1 in 250 | GAP (no Bb) | GAP (no Bb) | C# ~F#sus4 ~G#°: EASY, 1 in 45 | Ab Db Eb: EASY, 1 in 250 |
+| A7 | I V vi IV | F C Dm Bb: EASY, 1 in 1,500 | GAP (no Bb) | GAP (no Bb) | GAP (no Bbm) | Ab Eb Fm Db: EASY, 1 in 1,500 |
+| A8 | I vi IV V | F Dm Bb C: EASY, 1 in 1,500 | GAP (no Bb) | GAP (no Bb) | GAP (no Bbm) | Ab Fm Db Eb: EASY, 1 in 1,500 |
+| A9 | IV iii ii I | Bb Am Gm F: MEDIUM, 1 in 6,750 | GAP (no Bb) | GAP (no Bb) | GAP (no Ebm) | Db Cm Bbm Ab: MEDIUM, 1 in 6,750 |
+| A10 | ii V I | Gm C F: MEDIUM, 1 in 1,083 | ~Gsus4 C F: MEDIUM, 1 in 350 | ~Gsus4 C F: MEDIUM, 1 in 350 | GAP (no Ebm) | Bbm Eb Ab: MEDIUM, 1 in 1,083 |
+
+Hijaz is read as in section 3: minor rows from C# with the pan's major third
+(no C#m card, so C# stands in), major rows from C# as I. Its A1-A5 resolve
+with substitutes (C#, Bm, G#°, F#sus4) wherever a root exists, and the named
+gap is the root with no card at all.
+
+Headline counts, out of ten:
+
+| deck | exact | near (substitute) | GAP | EASY | MEDIUM | HARD |
+|---|---|---|---|---|---|---|
+| Kurd 10 | 10 | 0 | 0 | 8 (A1-A8) | 2 (A9, A10) | 0 |
+| Amara 10 | 0 | 2 (A3, A10) | 8 (Bb) | 0 | 2 | 0 |
+| Amara 9 | 0 | 2 (A3, A10) | 8 (Bb) | 0 | 2 | 0 |
+| Hijaz | 0 | 1 (A6) | 9 (A, E, Bbm, Ebm) | 1 (A6) | 0 | 0 |
+| Pygmy | 10 | 0 | 0 | 8 (A1-A8) | 2 (A9, A10) | 0 |
+
+Coverage, by axis E: Kurd 10 and Pygmy 10 exact; Amara 9 and Amara 10 0 exact,
+2 with a substitute (Gsus4 for Gm), 8 missing Bb; Hijaz 0 exact, 1 with
+substitutes, 9 missing (A, E, Bbm, Ebm). No row on any deck can be dealt by
+HARD: every row is made of anchors only, and HARD needs an extended card or
+two non-anchor cards. Where a row lands in a tier, no other tier's cells
+contain it (checked against the BASIC cells and the MEDIUM cells).
+
+### 12.2 Why the MEDIUM rows are not EASY
+
+Axis A, the rules a resolved row fails for EASY (length 2-4, first chord on
+the home anchor or the relative-major triad, every chord a home or triad
+anchor, no repeated root, every pair and the wrap passing `connects()`). The
+wrap and every pair pass on all fifteen resolved rows; the only failures are:
+
+- Kurd 10 and Pygmy A9 and A10: the first chord (Bb or Gm on Kurd, Db or Bbm
+  on Pygmy) is neither home nor the relative start (F or Ab).
+- Amara 9 and Amara 10 A3: Gsus4 is not in EASY's vocabulary (Dm, F, Am, C).
+- Amara 9 and Amara 10 A10: both of the above.
+
+EASY's vocabulary is the home anchor plus the triad anchors (Kurd Dm F Gm Am Bb
+C; Pygmy Fm Ab Bbm Cm Db Eb; Amara Dm F Am C). Hijaz has only two triad
+anchors (C#, Bm), whose loops fall under the 12-loop floor, so its vocabulary
+is all six anchors. EASY pools
+(length 2 / 3 / 4, 40 / 40 / 20 length weights, 80 / 20 home / relative start
+weights, uniform inside the cell): Kurd 10 / 40 / 120, Pygmy 10 / 40 / 120,
+Amara 6 / 12 / 12, Hijaz 5 / 18 / 48. A row's odds are P(length) x P(side) /
+cell size, so a length-4 home row on Kurd is 0.2 x 0.8 / 60 = 1 in 375; the
+section 8 formula 1 / (3 x pool) no longer describes the draw.
+
+MEDIUM odds come from the same exact calculation over its cells (length 3 / 4
+at 60 / 40, kind pure / colour at one third / two thirds, then colour family,
+then start side home / other at 40 / 60). All four MEDIUM row shapes here sit
+in a "pure" (all anchors) cell: Kurd and Pygmy A9 in the length-4 other-start
+cell of 540, A10 in the length-3 other-start cell of 130; Amara A3 in the
+length-4 home cell of 18, A10 in the length-3 other-start cell of 42.
+
+### 12.3 Root motion (axis D)
+
+Reference side unchanged from section 6: 13 step, 6 third, 9 fourth/fifth, 0
+tritone of 28. Anchor pairs `connects()` admits, ordered, by class (nothing
+refused unless stated): Kurd 10 step 14, third 14, fourth/fifth 12, tritone 2;
+Pygmy the same; Amara 9 and Amara 10 step 6, third 6, fourth/fifth 8; Hijaz
+step 8, third 10, fourth/fifth 6, tritone 4, two thirds refused (D deg <->
+F#sus4). The Hijaz, Pygmy and Amara 9 figures equal section 11's; Kurd 10 has
+Pygmy's seven-root shape (D E F G A Bb C against F G Ab Bb C Db Eb).
+
+### 12.4 Sampling check
+
+3,000 `pick()` calls per tier per deck, `mulberry32(7)`, a fresh generator per
+deck and tier, `prev = null` on every call (so no deal excludes the last).
+No refusals anywhere.
+
+| deck | EASY distinct (pool), lengths 2 / 3 / 4 | EASY hits | MEDIUM distinct (pool) | MEDIUM hits | HARD distinct | HARD hits |
+|---|---|---|---|---|---|---|
+| Kurd 10 | 159 (170), 1,197 / 1,234 / 569 | A1 11, A2 10, A3 8, A4 10, A5 9, A6 10, A7 4, A8 2 | 1,878 (12,342) | A10 5 | 3,000 | none |
+| Amara 10 | 30 (30), same lengths | none | 1,082 (2,264) | A3 4, A10 10 | 2,998 | none |
+| Amara 9 | 30 (30), same lengths | none | 1,082 (2,264) | A3 4, A10 10 | 2,998 | none |
+| Hijaz | 71 (71), same lengths | A6 65 | 839 (1,394) | none | 2,993 | none |
+| Pygmy | 159 (170), same lengths | same as Kurd | 1,701 (10,942) | A10 5 | 3,000 | none |
+
+The EASY length counts are the same on every deck (the same stream of
+draws reaches the same cells), which is also why Kurd and Pygmy hit the same
+rows the same number of times. Hits sit near the exact odds: Hijaz A6 expects
+66.7 and got 65; Kurd A10 expects 2.8 and got 5; Amara A3 and A10 expect 8.9
+and 8.6 and got 4 and 10. HARD lengths 4 / 5 / 6 split roughly evenly on every
+deck, with no row ever dealt, as the gate predicts.
+
+### 12.5 Changes since section 11
+
+Section 11 (main 71ba20d): Pygmy 10 EASY; Amara 2 EASY (A3, A10 with Gsus4)
+and 8 GAP; Hijaz 1 EASY (A6) and 9 GAP.
+
+- Pygmy: 8 EASY and 2 MEDIUM (A9, A10), all ten still exact. A9 and A10
+  moved down a tier. Their odds in their new tier are 1 in 6,750 and 1 in
+  1,083; the other eight rows' odds went from 1 in 2,520 / 1 in 630 to 1 in
+  375 / 1 in 250 / 1 in 1,500 (depends on length and start side).
+- Amara 9: the same two rows resolve (A3, A10, Gsus4 for Gm) and the same
+  eight are GAP on Bb, but both moved from EASY to MEDIUM (1 in 337 and 1 in
+  350, against 1 in 360 and 1 in 180 at EASY).
+- Hijaz: the same single row (A6), still EASY, now 1 in 45 (was 1 in 288);
+  the same nine gaps.
+- Cause: the tier rebalance, not the decks. EASY no longer starts on any
+  anchor: it starts on home or the relative-major triad and draws only from
+  home plus triad anchors, with 40 / 40 / 20 length and 80 / 20 side weights.
+  Section 11's EASY pools were 28 / 96 / 264, 42 / 210 / 840, 20 / 60 / 120
+  and are now smaller (above). Evidence: the current engine run on the
+  71ba20d decks (19, 52 and 25 cards) gives the same tier for every row, the
+  same odds, and the same EASY and MEDIUM hits as on today's decks.
+- The two Amara 9 cards (Fadd9, Cadd9) and the Pygmy changes (Fmadd9 added,
+  Fm9 revoiced) moved no row. They are not anchors and are not in any row;
+  every row's cell, cell size and odds are identical on the old and new data.
+  They changed what else MEDIUM can deal: Amara 9 distinct MEDIUM deals in
+  3,000 went from 972 to 1,082, Pygmy's from 1,828 to 1,701 (Fmadd9 opens a
+  third colour family that takes a share from the other two).
+- Method check: the 71ba20d engine and decks, run with these same steps,
+  reproduce section 11's sampling exactly (EASY lengths 955 / 1,022 / 1,023;
+  distinct 840 / 200 / 382; Pygmy hits A1 x3, A2, A3, A4, A6 x5, A10 x4;
+  Amara A3 x9, A10 x18; Hijaz A6 x9), with `prev = null`.
+
+### 12.6 What the added notes unlock
+
+- Kurd 10 (Bb3 on the pan): Bb is the root every Amara 9 GAP lacked. All eight
+  rows that needed it (A1, A2, A4, A5, A6, A7, A8, A9) now resolve exactly. A3
+  and A10 stay playable but exact: Gm replaces the Gsus4 stand-in, which also
+  moves A3 from MEDIUM to EASY. Net against Amara 9: 0 to 8 EASY, 2 to 2
+  MEDIUM, 8 GAP to 0.
+- Amara 10 (D5 added at the top): unlocks nothing. Its anchors, EASY cells and
+  MEDIUM cells equal Amara 9's, every row has the same card sequence, tier and
+  odds, and the 3,000-deal results for EASY and MEDIUM are identical. Its two
+  extra cards (Cadd9 and C6/9, HIGH VOICING) are register voicings, which
+  MEDIUM excludes and which do not touch any row. The pan's gap is still Bb.
+- Gaps by pitch class: Amara 9 and 10 lack Bb (A1, A2, A4-A9); Hijaz lacks A
+  (A1, A2, A4, A5), E (A1, A3), Bbm (A7, A8) and Ebm (A9, A10).
+
+### 12.7 What this says
+
+The decks now split cleanly into pans that hold the pitch classes (Kurd 10 and
+Pygmy: all ten exact) and pans that do not (Amara 9 and 10, Hijaz). Among
+pans that do, EASY reaches the eight progressions that start on home or the
+relative major, and MEDIUM the two that start elsewhere, at odds one to two
+orders of magnitude lower. Within MEDIUM, the exact odds are 1 in 1,083 for
+A10 and 1 in 6,750 for A9. The extra note on Amara 10 changes none of this.
+
+### 12.8 Reproduction
+
+Scratchpad probes, not committed, loading the engine through
+`tools/engine_loader.js`: `loadEngine(["core", "sequence"])`, with
+`data/decks.json` read directly.
+
+1. For each deck, `HPE.sequence.anchors(deck)` and `_internal.homePc /
+   homeAnchor`. Tonic: home for minor rows; for major rows home + 3 when the
+   home anchor's shape is the minor triad, else home. Resolve each numeral to
+   a card whose root pitch class matches and whose pitch classes are exactly
+   the wanted triad (LOW and HIGH VOICING excluded: exact); else the anchor on
+   that root (near, `~`); else GAP with the pitch class.
+2. `HPE.sequence.tierOf(deck, cards)` for the tier, plus the wrap check:
+   `_internal.buildConnectMatrix(deck)[a][b]` for every consecutive pair
+   including last to first, and no identical consecutive cards.
+3. Odds: `_internal.basicCells(deck)` and `_internal.mediumCells(deck, {})`
+   (full enumeration; the `stats` argument reported `truncated: false` on all
+   five decks, 4,518 to 28,438 nodes). For the cell holding the row, multiply
+   the renormalised weight at each level (BASIC: length, side; MEDIUM: length,
+   kind, family, side, with the weights in `src/engine/sequence.js`) and divide
+   by the cell's sequence count.
+4. Sampling: `HPE.sequence.pick(deck, mulberry32(7), null, tier)` 3,000 times
+   per tier per deck, one generator per deck and tier, and count exact matches.
+5. Axis D: over `anchors(deck)`, ordered pairs by `connects` (via the matrix)
+   grouped by shortest root distance (1-2 step, 3-4 third, 5 fourth/fifth, 6
+   tritone).
+6. To compare against section 11: `git archive 71ba20d src/engine
+   tools/engine_loader.js data/decks.json` into a scratch directory and run the
+   same probe against it (and against the current engine with that directory's
+   `decks.json`).
+
+Deviations from sections 8 and 10, as facts:
+
+- `sequences(deck, 2|3|4)` still exists and was used for the EASY pools; the
+  odds formula 1 / (3 x pool) no longer matches the draw (40 / 40 / 20 lengths,
+  80 / 20 start sides), so odds were computed from the cells instead.
+- Step C counted pools with `dfsFindAll` and a node budget. MEDIUM is now
+  dealt from enumerated cells, so the cells replace that count; `dfsFindAll`
+  was not used. No row classifies HARD, so HARD pools were not counted.
+- Rows were resolved to a card with exactly the triad's three pitch classes
+  instead of "same triad quality", and the Hijaz gap names are given in flats
+  (Bbm, Ebm) to match section 11.
+- Sampling was `prev = null` throughout. A chained run (each call fed the last
+  deal as `prev`) was not made.
