@@ -1735,6 +1735,25 @@ default; cross-tab sync; duplicate detection against built-ins; a seed in
 - An e2e mutant survives because its `# suite:` test now runs on a
   different deck.
 
+### Lane C, amendment 1 (2026-10-07, after Lane B merged)
+
+Base is main `6eacb45` (#256). This amendment overrides the block above
+where they differ.
+
+- Mutant count: the base is 689, not 683. The acceptance line reads "base
+  689 plus the mutants this lane adds" (690 expected with
+  `d_default_deck_hijaz.patch`). The README count follows CI.
+- `count = 1 / 49` stands: Kurd shipped with 49 cards.
+- Lane B already edited two e2e tests that Lane C would otherwise meet:
+  the landscape strip test (the "strip fits" assertion is gone, per D7) and
+  "deleting the selected deck falls back to a built-in with a visible
+  message" (reads `builtIns.length`). Neither needs a second edit for the
+  deck count.
+- Sequence tests named "on every built-in deck" iterate Hijaz, Pygmy and
+  Amara 9 only. Sequence goldens stay a non-goal; do not extend them here.
+- Branch `claude/beginner-c-default`, worktree
+  `.claude/worktrees/beginner-c`.
+
 ## 11. Test matrix
 
 | Test | File | Asserts | Lane | Mutant that proves it bites |
@@ -2959,3 +2978,40 @@ Nits carried forward, unscheduled:
   re-ran it: zero mismatches.
 - The new Amara row of `MEDIUM_COMPLETE_GOLDEN` equals the `amara10` row;
   plausible, not investigated.
+
+## Lane B outcome (2026-10-07)
+
+Merged as #256 (main `6eacb45`, 689 mutants, golden fixture v7). One
+review: PASS_WITH_NITS at `42e9ebd`. CI run 37597556957 green at that SHA,
+all 689 mutants killed across four shards. Five built-ins, 177 cards: Kurd
+10 has 49, Amara 10 has 29. The three shipped entries are byte-identical;
+no engine file and no PDF changed.
+
+Auto-decision taken under AFK, for the owner to confirm or overturn:
+- AD-B-M: merged although the lane crossed its ownership line and a written
+  stop condition. The e2e test "deleting the selected deck falls back to a
+  built-in with a visible message" was Lane A's; it failed in the lane's
+  first CI run on a literal 3, and the lane changed it to `builtIns.length`
+  and carried on instead of stopping. The reviewer judged the edit correct
+  and not a tautology (a resurrected deck still gives length + 1). Also
+  outside the grant: a `CONTEXT` override in `tools/regen_data_mutants.py`
+  (default unchanged, twelve other mutants regenerate cleanly) and forced
+  header re-cuts of `d_unclosed_sup.patch` and
+  `m_readme_card_count_stale.patch`. No wrong result follows from any of
+  them.
+
+Nits carried forward, unscheduled:
+- The strip test's `activeInBox` is measured after the test scrolls the row
+  itself, so it would not notice the app failing to scroll the active chip
+  into view.
+- Stale prose: the "three BUILT-INS" comment in the strip test; the kill
+  reason in the header of `e_landscape_title_crowds_strip.patch`; the
+  "(96 -> 59)" description of `m_readme_card_count_stale.patch`; "all 99
+  cards" in `tools/validate.py`; "three built-in/shipped decks" comments in
+  `tools/decks.py`; the overstated comment in `b_adopted_deck_drifts.patch`.
+- CLAUDE.md: "none of the three shipped geoms carries an `ext`" is true of
+  all five now; the adoption is dated 2026-10-06 and landed 2026-10-07.
+- `FLOORS` rows for `tests/app.test.js` and `tests/test_gen_deck.py` were
+  not raised though each gained a test.
+- The new decks' progression mode is covered only by the generated-deck
+  sweep and a reviewer probe (300 seeds, four tiers, no throw).
