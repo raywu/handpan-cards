@@ -1643,6 +1643,32 @@ shipped decks; sequence goldens; `print_decks_v1.json`; any PDF.
 - A test outside the Owns list fails.
 - `panel-fit` fails in CI.
 
+### Lane B, amendment 1 (2026-10-07, after Lane U2 merged)
+
+This amendment overrides the Lane B block above wherever the two disagree.
+The block was written before the owner raised Pygmy to 53 cards and before
+Lanes U1 and U2 landed. Only literals change; the goal, the procedure and
+the non-goals stand.
+
+- **Base:** main `8bc774d` (#255 merged). 99 cards in three decks, 687
+  mutants, golden fixture `golden_decks_v6.json`.
+- **Card total:** every 176 in the block reads 177 (99 + 49 + 29). That
+  covers TDD steps 2, 3, 4 and 7 and the two acceptance lines that quote
+  "(176 cards)" and "exercised 176 cards". "Rename the 98-card test" reads
+  "rename the 99-card test".
+- **validate.py output:** the count and "all checks passed" are printed on
+  different lines. Acceptance is both strings in the output, not one line.
+- **Mutant count:** not 683. It is the lane base's `ls tests/mutants | wc -l`
+  (687) plus what this lane adds (the block says two new `b_*`), so 689 if
+  nothing else is added. FLOORS and the README count come from CI.
+- **Deck sizes re-measured on this base:** Kurd 49 and Amara 10 29, both
+  with field angles 270, 230, 310, 190, 350, 150, 30, 110, 70, `ding_dy` 0
+  and `r_ding` 0.2. The stop condition on 49 and 29 stands.
+- **Shipped entries:** "byte-identical to `main`" means main at this base,
+  with Amara 9 at 27 cards and Pygmy at 53.
+- **Section 13 text:** apply it with the totals above; where it names 52,
+  96, 98 or 176, the figure follows this amendment.
+
 ### Lane C: Kurd as the cold-start default (no migration)
 
 Blocked on nothing but Lane B.
@@ -2894,3 +2920,42 @@ Nits carried forward, all unscheduled unless a lane is named:
 - A client-side PDF build of a 300-card custom deck was not checked.
 - Review 2's sixteen nits are in that review's report; nit 6 is owned by
   Lane U2 (amendment 1).
+
+## Lane U2 outcome (2026-10-07)
+
+Merged as #255 (main `8bc774d`, 687 mutants, golden fixture v6). One
+review: PASS_WITH_NITS at `ed698c9`. CI run 37592540344 green at that SHA,
+all 687 mutants killed across four shards. Amara 9 has 27 cards, Pygmy 53;
+four PDFs rebuilt; Hijaz untouched.
+
+Auto-decision taken under AFK, for the owner to confirm or overturn:
+- AD-U2-M: merged with one amendment line unmet. Amendment 1 said the Pygmy
+  rows of `tests/fixtures/divergence_v1.json` "are removed"; the lane left
+  the file untouched. The reviewer found the amendment's premise wrong: the
+  select test diffs the engine against the frozen `golden_decks_v3.json`,
+  not shipped data, so removing the three `extra` rows turns that test red.
+  Leaving them was right. Only the Fm9 override row could have gone; it is
+  still true against v3 and its note is stale. No wrong result follows.
+
+Deviations accepted by the reviewer: the S2 sample went from 300 to 1,200
+deals per tier with the 6 pp band unchanged; the S1 colour families are
+`other, seventh, susPower` on every deck.
+
+Nits carried forward, unscheduled:
+- The Fm9 row's note in `divergence_v1.json` is stale; section 14's
+  rollback note shares the wrong premise above.
+- The stored Pygmy `print.blurb` reads "25 CHORDS" and Amara's "16 CHORDS".
+  The printed blurb is derived at build and is correct (53 and 27).
+- Stale count comments: the header of `tests/app.test.js` ("96 cards"), a
+  "52 chords" comment in `tests/sequence.test.js`, and the description line
+  of `m_readme_card_count_stale.patch`.
+- `docs/ENGINE-SPEC.md` and `docs/SCALE_ENGINE_PLAN.md` still call Fm9's G5
+  the shipped exception.
+- `PYGMY_MAKER` in `tests/test_gen_deck.py` omits the `/`; both spellings
+  generate the shipped chords.
+- CLAUDE.md dates the Pygmy change 2026-10-07; the decisions are dated
+  2026-10-06.
+- The AD17 name-equivalence result was not recorded on the PR. The reviewer
+  re-ran it: zero mismatches.
+- The new Amara row of `MEDIUM_COMPLETE_GOLDEN` equals the `amara10` row;
+  plausible, not investigated.
