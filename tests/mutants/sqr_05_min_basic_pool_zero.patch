@@ -12,5 +12,5 @@ diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 -  var MIN_BASIC_POOL = 12;
 +  var MIN_BASIC_POOL = 0;
  
-   // R-10: MEDIUM is enumerated in full once per pick(). Largest measured
-   // search is 36,000 nodes (the 59-chord N=19 sweep decks; Pygmy 23,646), so
+   // R-10: MEDIUM is enumerated once per pick(). Every built-in deck, every
+   // preset and every pan of eight or fewer pitch classes finishes well inside

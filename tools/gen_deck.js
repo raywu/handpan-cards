@@ -39,8 +39,8 @@ const { loadEngine } = require("./engine_loader.js");
 
 // ---- presets: INLINED seed strings ----------------------------------------
 // Six scales that are common on real instruments, chosen to spread across the
-// engine's paths rather than to be a catalogue: three 25-chord decks and two
-// small ones (so a preset exercises both a 3-sheet and a 2-sheet print run),
+// engine's paths rather than to be a catalogue: decks from 13 to 49
+// chords (so a preset exercises both a short and a six-sheet print run),
 // a harmonic-minor parent alongside the aeolian ones, and sharp, flat and
 // natural spellings.  None of them duplicates a built-in deck.
 const PRESETS = [

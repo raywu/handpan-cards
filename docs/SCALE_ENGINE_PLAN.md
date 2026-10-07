@@ -103,7 +103,7 @@ diminished triads, all dim7 spellings but one, and `F#5`, and ships seven cards
 outside D1 (`C#7sus4`, `C#7b9`, `Bmadd9`, `Bm6/9`, `F#maj7sus4`, `Dmaj7`,
 `Dmaj7#11`). Pygmy omits four power chords and three sus4 and ships `Fm9`,
 `Fm11`, `Abmaj9`. Under D1 a 9-note pan yields 16-17 candidates and Pygmy 25,
-so the cap only bites beyond Pygmy's size. The extended and altered chords the
+so a cap (removed 2026-10-06, D16) would only have bitten beyond Pygmy's size. The extended and altered chords the
 owner added by hand are per-deck editorial overrides, committed as data.
 
 Two selection rules hold across all three decks and are mechanical: sus2
@@ -120,7 +120,7 @@ chord-name will assume otherwise.
 
 | # | Decision | Consequence for the engine |
 |---|---|---|
-| D1 | **Core drill deck, ~18-25 cards.** Triads, power chords, sus4, and 7ths (maj7/m7/dom7/m7b5/dim7). Extended chords only where the scale makes them obvious. | Sets the default quality vocabulary and the cap. [verified] Amara ships exactly this set. |
+| D1 | **Core drill deck, ~18-25 cards.** Superseded 2026-10-06: no cap. Triads, power chords, sus4, and 7ths (maj7/m7/dom7/m7b5/dim7). Extended chords only where the scale makes them obvious. | Sets the default quality vocabulary and the cap. [verified] Amara ships exactly this set. |
 | D2 | **Cluster rule, scoped to chord tones** (CLAUDE.md rule 3). When any non-root tone is forced below the root, every chord tone (3/5/7, sus 4th, 6-chord 6th) moves to its highest lower instance; a tone with no lower instance stays put; extensions named in the symbol (add9/9/b9/11/#11/13) keep their nearest instance above the root unless themselves forced; bottom-shell fields are ordinary instances. | One rule for built-ins and generated decks. The owner retrofitted Hijaz and Pygmy to it (6 cards net). Operative "forced" test is ANY non-root tone including extensions, as `test_deck_data.py` implements it (Fm11 is forced by its 11th). Amended 2026-09-15 (owner): the forced test gained a top-shell clause; five Pygmy cards were re-voiced (Fsus4, Fm11, Cm7, Eb, Eb7) and Amara/Hijaz are unchanged. See docs/plans/2026-09-15-trigger-aware-cluster-rule.md. |
 | D3 | **No custom-scale PDFs in v1.** App only; `tools/gen_deck.js` and the Python adapter are Phase 6. | The print card's limits (6-note voicings, 25-char subtitles) still bound the engine - see Rendering budgets. |
 | D4 | **Equivalence annotations are a per-card override field.** Built-ins keep exactly the two they ship, frozen as data; custom scales derive them mechanically under the m7/m7b5 -> X6/Xm6 definition. | No deck-data change, no PDF rebuild. The five unannotated eligible cards (Pygmy Gm7b5/Fm7/Cm7, Amara Dm7/Am7) are provenance, not bugs. |
@@ -251,9 +251,8 @@ comment when built.
   (HOME plus up to 2 alternates). `rank()` scores and orders by chord name
   using the HOME card's sort keys, so HOME/LOW/HIGH stay contiguous and
   home-first within a group - an alternate can never rank ahead of its own
-  home. The per-deck cap (`25 + max(0, fieldCount - 12)`) counts distinct
-  chord NAMES, not raw cards, so a name with alternates cannot evict other
-  names from the deck. The `overrides` array in `divergence_v1.json` still
+  home. The per-deck cap this paragraph once described (`25 + max(0, fieldCount - 12)`,
+  counting distinct chord NAMES) was removed 2026-10-06 (D16): no deck is trimmed. The `overrides` array in `divergence_v1.json` still
   exists, but only for cards the engine genuinely does not derive (Hijaz's
   hand-authored `Dmaj7`/`Dmaj7#11` NO-5 cards, and its `Bm - HIGH VOICING`
   alternate, deferred rather than reconciled) - the alternates this
@@ -421,7 +420,7 @@ in one Phase 2 owned file). Exit: a
 committed **divergence table** against the fixture, diffed by a test with no
 numeric expectation, and a two-sided exception test so the list can only shrink.
 Owns `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`,
-`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap (25 cards, DEFAULT[owner-review], stated in ENGINE-SPEC) bites on the
+`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap (25 cards, DEFAULT[owner-review], stated in ENGINE-SPEC; removed 2026-10-06, D16) bit on the
 synthetic 12-note pan, the ranking order and the sus2/6 dedup are
 asserted on a synthetic pan, each with a mutant. [eng-review 2, 2A]
 `select.build` returns `warnings[]` on ok results: `NO_THIRDS` when no root

@@ -57,14 +57,14 @@ FLOORS = {
     "tests/voicing.test.js": 16,
     "tests/layout.test.js": 58,
     "tests/naming.test.js": 35,
-    "tests/select.test.js": 51,
+    "tests/select.test.js": 46,
     "tests/share.test.js": 51,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
     "tests/pdfcards.test.js": 16,
     "tests/mutation_harness.test.js": 53,
     "tests/pdf_builtin.test.js": 13,
-    "tests/sequence.test.js": 43,
+    "tests/sequence.test.js": 49,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves

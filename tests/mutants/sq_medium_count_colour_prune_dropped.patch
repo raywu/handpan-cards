@@ -1,0 +1,15 @@
+# kills: the node count predicts truncation exactly
+# U1b - the node count lets a second colour card extend a prefix, so it overcounts and mispredicts truncation
+# suite: node --test --test-name-pattern ^the.node.count.predicts.truncation.exactly$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -699,7 +699,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+         for (var c = 0; c < pool.length; c += 1) {
+           var candidate = pool[c];
+           if (candidate === prev || !matrix[prev][candidate]) continue;
+-          if (isColour[candidate]) {
++          if (false) {
+             next[candidate][1] += from[0];
+             running += from[0];
+           } else {

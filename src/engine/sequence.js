@@ -38,11 +38,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // is not a practice tier, so BASIC's vocabulary widens to every anchor.
   var MIN_BASIC_POOL = 12;
 
-  // R-10: MEDIUM is enumerated in full once per pick(). Largest measured
-  // search is 36,000 nodes (the 59-chord N=19 sweep decks; Pygmy 23,646), so
-  // this leaves 1.7x headroom. Hitting it is a bug the tests pin, not a
-  // fallback: the cells would then hold a partial, order-biased set.
+  // R-10: MEDIUM is enumerated once per pick(). Every built-in deck, every
+  // preset and every pan of eight or fewer pitch classes finishes well inside
+  // this (Pygmy 23,646 nodes; the 59-chord N=19 sweep decks 36,000), but with
+  // the deck size cap gone (D16) a custom pan of nine or more pitch classes
+  // can need hundreds of thousands. Whether the DFS would run out is known
+  // exactly beforehand (mediumNodeCount), so a deal that would truncate never
+  // runs it: the fixed-order DFS prefix would open every length-4 deal on the
+  // same few cards, so the cells are filled by random walks (sampleMedium),
+  // drawn from the caller's rng, instead. Without an rng the DFS runs and
+  // truncates, as the shape tests expect.
   var MEDIUM_ENUM_BUDGET = 60000;
+
+  // Walk steps sampleMedium may take. A pick is bounded at 50ms
+  // (tests/sequence.test.js) and, with the DFS skipped, this is the whole
+  // cost of an over-budget pick; the figure keeps it no slower than the DFS
+  // it replaced on REGISTER_HOME_DECK.
+  var MEDIUM_WALK_BUDGET = 20000;
 
   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
   // truncated search draws uniformly from what it found so far and reports
@@ -662,6 +674,59 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return m;
   }
 
+  // The exact number of rec() entries mediumEnumerate's DFS makes over both
+  // lengths with an unbounded budget, by dynamic programming over (last card,
+  // colour used) with the DFS's three prunes: no repeated card, connected, no
+  // second colour card. Nothing is visited or classified, so it costs a few
+  // passes over the pool instead of the search. The DFS truncates exactly
+  // when this exceeds the budget.
+  function countMediumNodes(pool, startSet, isColour, matrix) {
+    var lengths = TIER_LENGTHS.intermediate;
+    var maxLength = Math.max.apply(null, lengths);
+    var width = matrix.length;
+    var ways = [];
+    var i;
+    for (i = 0; i < width; i += 1) ways.push([0, 0]);
+    for (i = 0; i < startSet.length; i += 1) ways[startSet[i]][isColour[startSet[i]] ? 1 : 0] += 1;
+    var prefixes = [0, startSet.length];
+    for (var depth = 2; depth <= maxLength; depth += 1) {
+      var next = [];
+      for (i = 0; i < width; i += 1) next.push([0, 0]);
+      var running = 0;
+      for (var prev = 0; prev < width; prev += 1) {
+        var from = ways[prev];
+        if (!from[0] && !from[1]) continue;
+        for (var c = 0; c < pool.length; c += 1) {
+          var candidate = pool[c];
+          if (candidate === prev || !matrix[prev][candidate]) continue;
+          if (isColour[candidate]) {
+            next[candidate][1] += from[0];
+            running += from[0];
+          } else {
+            next[candidate][0] += from[0];
+            next[candidate][1] += from[1];
+            running += from[0] + from[1];
+          }
+        }
+      }
+      ways = next;
+      prefixes.push(running);
+    }
+    var total = 0;
+    lengths.forEach(function (length) {
+      total += 1;
+      for (var d = 1; d <= length; d += 1) total += prefixes[d];
+    });
+    return total;
+  }
+
+  function mediumNodeCount(deck, ctx, matrix) {
+    var pool = tierPool(deck, "intermediate", ctx.anchorsList);
+    var startSet = tierStartSet(deck, "intermediate", pool, ctx);
+    var isColour = deck.chords.map(function (_, i) { return ctx.anchorsList.indexOf(i) < 0; });
+    return countMediumNodes(pool, startSet, isColour, matrix);
+  }
+
   // R-10 / TR-14: every MEDIUM sequence of length 3 and 4, found by one
   // matrix-pruned DFS over tierPool x tierStartSet and bucketed into the R-5
   // cells. On top of dfsFindAll's two prunes (identical card, connectivity)
@@ -674,7 +739,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // seqs}], non-empty cells only, in a fixed order: length, then pure before
   // colour, then COLOUR_FAMILIES order, then home before other. `stats`,
   // when passed, gets `.nodes` and `.truncated` exactly as dfsFindAll's does.
-  function mediumEnumerate(deck, ctx, matrix, budget, stats) {
+  function mediumEnumerate(deck, ctx, matrix, budget, stats, rng) {
     var pool = tierPool(deck, "intermediate", ctx.anchorsList);
     var startSet = tierStartSet(deck, "intermediate", pool, ctx);
     var isColour = deck.chords.map(function (_, i) { return ctx.anchorsList.indexOf(i) < 0; });
@@ -683,15 +748,22 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var truncated = false;
     var len;
     var seq;
-    function file() {
+    var recPool = pool;
+    var recStart = startSet;
+    var familyOf = [];
+    var pureFiled = 0;
+    function file(chords) {
       var family = "none";
-      for (var i = 0; i < len; i += 1) {
-        if (isColour[seq[i]]) family = colourFamily(deck, seq[i]);
+      for (var i = 0; i < chords.length; i += 1) {
+        if (!isColour[chords[i]]) continue;
+        if (familyOf[chords[i]] === undefined) familyOf[chords[i]] = colourFamily(deck, chords[i]);
+        family = familyOf[chords[i]];
       }
-      var side = chordRootPc(deck, seq[0]) === ctx.home ? "home" : "other";
-      var key = len + "/" + family + "/" + side;
+      if (family === "none") pureFiled += 1;
+      var side = chordRootPc(deck, chords[0]) === ctx.home ? "home" : "other";
+      var key = chords.length + "/" + family + "/" + side;
       if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(seq.slice());
+      buckets[key].push(chords.slice());
     }
     function rec(depth, colourUsed) {
       if (nodes >= budget) {
@@ -702,11 +774,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (depth === len) {
         if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
             classifyTier(deck, seq, ctx) === "intermediate") {
-          file();
+          file(seq);
         }
         return;
       }
-      var options = depth === 0 ? startSet : pool;
+      var options = depth === 0 ? recStart : recPool;
       for (var i = 0; i < options.length; i += 1) {
         var candidate = options[i];
         if (depth > 0) {
@@ -718,14 +790,33 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         rec(depth + 1, colourUsed || isColour[candidate]);
       }
     }
-    TIER_LENGTHS.intermediate.forEach(function (length) {
-      len = length;
-      seq = new Array(len);
-      rec(0, false);
-    });
-    if (stats) {
-      stats.nodes = nodes;
-      stats.truncated = truncated;
+    var predicted = countMediumNodes(pool, startSet, isColour, matrix);
+    if (predicted > budget && rng) {
+      // Pure cells exactly (the anchors alone are a small search), colour
+      // cells by stratified walks.
+      recPool = pool.filter(function (i) { return !isColour[i]; });
+      recStart = startSet.filter(function (i) { return !isColour[i]; });
+      TIER_LENGTHS.intermediate.forEach(function (length) {
+        len = length;
+        seq = new Array(len);
+        rec(0, false);
+      });
+      var sampled = pureFiled + sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
+      if (stats) {
+        stats.nodes = predicted;
+        stats.truncated = true;
+        stats.sampled = sampled;
+      }
+    } else {
+      TIER_LENGTHS.intermediate.forEach(function (length) {
+        len = length;
+        seq = new Array(len);
+        rec(0, false);
+      });
+      if (stats) {
+        stats.nodes = nodes;
+        stats.truncated = truncated;
+      }
     }
 
     var cells = [];
@@ -747,17 +838,107 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return cells;
   }
 
+  // The second pass of mediumEnumerate, run only when the DFS would run out
+  // of budget, and only for the COLOUR cells: the pure cells are enumerated
+  // exactly beforehand. Random walks over the same space: a start, then each
+  // next card uniformly from the candidates the DFS would have expanded (not
+  // the previous card, connected to it, no second colour card), closed and
+  // classified exactly as the DFS leaf does. The walks are stratified over
+  // (length, start side), round-robin, so neither side of a colour cell is
+  // left to chance; a walk that never meets a colour card belongs to the
+  // exact pass and is dropped. A node is a card placed, and the walks stop
+  // at MEDIUM_WALK_BUDGET. Each distinct sequence is filed once, through
+  // `file`; returns how many were. Draws from `rng`.
+  function sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file) {
+    var lengths = TIER_LENGTHS.intermediate;
+    var sides = [[], []];
+    startSet.forEach(function (i) {
+      sides[chordRootPc(deck, i) === ctx.home ? 0 : 1].push(i);
+    });
+    var strata = [];
+    lengths.forEach(function (length) {
+      sides.forEach(function (starts) {
+        if (starts.length) strata.push({ length: length, starts: starts });
+      });
+    });
+    var seen = {};
+    var onward = [];
+    var width = deck.chords.length;
+    var filed = 0;
+    var nodes = 0;
+    var walkBudget = MEDIUM_WALK_BUDGET;
+    // One rng() call yields several draws: each pick keeps the fraction of u
+    // it did not use, and a fresh value is fetched once fewer than 1024
+    // distinct values per outcome would remain, so no index is off by more
+    // than 0.1%. rng() is the dominant cost of a walk.
+    var u = 0;
+    var room = 0;
+    var turn = 0;
+    if (!strata.length) return 0;
+    while (nodes < walkBudget) {
+      var stratum = strata[turn % strata.length];
+      turn += 1;
+      var length = stratum.length;
+      var walk = [];
+      var colourUsed = false;
+      do {
+        var options = walk.length === 0 ? stratum.starts : null;
+        if (!options) {
+          var prevChord = walk[walk.length - 1];
+          if (!onward[prevChord]) {
+            onward[prevChord] = { all: [], pure: [] };
+            for (var i = 0; i < pool.length; i += 1) {
+              var candidate = pool[i];
+              if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
+              onward[prevChord].all.push(candidate);
+              if (!isColour[candidate]) onward[prevChord].pure.push(candidate);
+            }
+          }
+          options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
+        }
+        var n = options.length;
+        if (!n) break;
+        if (room < n * 1024) {
+          u = rng();
+          room = 4294967296;
+        }
+        u *= n;
+        var at = Math.floor(u);
+        if (at >= n) at = n - 1;
+        u -= at;
+        room /= n;
+        var next = options[at];
+        walk.push(next);
+        colourUsed = colourUsed || isColour[next];
+        nodes += 1;
+      } while (walk.length < length && nodes < walkBudget);
+      if (walk.length < length || !colourUsed) continue;
+      var key = length;
+      for (var k = 0; k < length; k += 1) key = key * width + walk[k];
+      if (seen[key]) continue;
+      if (walk[length - 1] !== walk[0] && matrix[walk[length - 1]][walk[0]] &&
+          classifyTier(deck, walk, ctx) === "intermediate") {
+        seen[key] = true;
+        file(walk);
+        filed += 1;
+      }
+    }
+    return filed;
+  }
+
   // The MEDIUM cells of a deck, for callers that draw many times from one
   // enumeration (the shape tests; pick() enumerates per call). `budget`
-  // defaults to MEDIUM_ENUM_BUDGET.
-  function mediumCells(deck, stats, budget) {
+  // defaults to MEDIUM_ENUM_BUDGET. Without `rng` the result is the
+  // deterministic DFS enumeration, truncated or not; with one, a truncated
+  // enumeration is replaced by the random-walk sample, as pick() does.
+  function mediumCells(deck, stats, budget, rng) {
     return mediumEnumerate(deck, tierContext(deck), buildConnectMatrix(deck),
-      budget === undefined ? MEDIUM_ENUM_BUDGET : budget, stats);
+      budget === undefined ? MEDIUM_ENUM_BUDGET : budget, stats, rng);
   }
 
   // MEDIUM per R-5. A deck whose MEDIUM set is empty reports NO_TIER_SEQUENCE.
   function pickMedium(deck, rng, prev, ctx) {
-    var cells = mediumEnumerate(deck, ctx, buildConnectMatrix(deck), MEDIUM_ENUM_BUDGET, null);
+    var cells = mediumEnumerate(deck, ctx, buildConnectMatrix(deck), MEDIUM_ENUM_BUDGET, null, rng);
     var chosen = drawMedium(cells, rng, prevValid(deck, prev) ? prev : null);
     if (!chosen) return { chords: null, reason: "NO_TIER_SEQUENCE" };
     var style = STYLES[draw(rng, STYLES.length)];
@@ -942,6 +1123,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       basicCells: basicCells,
       drawBasic: drawBasic,
       mediumCells: mediumCells,
+      mediumNodeCount: mediumNodeCount,
       drawMedium: drawMedium,
       colourFamily: colourFamily,
       buildConnectMatrix: buildConnectMatrix,

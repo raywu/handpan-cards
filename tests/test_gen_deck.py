@@ -51,15 +51,15 @@ SEED_NO_THIRDS = "(C3) G3 D4 G4 D5"
 # Pinned from a real build, NOT recomputed from the chord count: a count
 # derived from the deck under test would move with it and could not detect a
 # deck whose card list silently changed size.
-PAGES_TOP_ONLY_FULL = 3
-PAGES_TOP_ONLY_PRINT = 3
+PAGES_TOP_ONLY_FULL = 6
+PAGES_TOP_ONLY_PRINT = 6
 # Same convention, same reason: SEED_TOP_ONLY's card count, pinned from a real
 # build.  The blurb assertion below quotes this number as a LITERAL string.
 # Deriving the expected line from `len(deck["chords"])` would compare the deck
 # against itself - `_blurb` builds that line from the very same count - so a
 # selector that started yielding 24 chords for this seed would move both sides
 # together and the pin would still pass.  It did, until 2026-09-09.
-CHORDS_TOP_ONLY = 25
+CHORDS_TOP_ONLY = 49
 
 # The closed code enum of ENGINE-SPEC section 2.
 CODES = {"NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
@@ -404,7 +404,7 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         self.assertEqual(
             quiet["blurb"],
             ["D3  |  A3  Bb3  C4  D4  E4  F4  G4  A4",
-             "25 CHORDS - ONE CARD PER CHORD"],
+             "49 CHORDS - ONE CARD PER CHORD"],
             "an unwarned title card prints its notes and its deck size and "
             "nothing else - no extra line may appear on the quiet path")
 

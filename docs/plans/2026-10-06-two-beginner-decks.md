@@ -2502,3 +2502,266 @@ Nits carried forward, each with the lane that picks it up:
   `DEFAULT_DECK` is not in `DECKS`; `docs/SCALE_ENGINE_PLAN.md` quotes the
   old test title "falls back to the first deck"; PR #252's body predates its
   last two commits.
+
+## Lane E outcome (2026-10-06)
+
+Merged as #253 (main `028bcf1`, 685 mutants). Review 1 PASS_WITH_NITS at
+`c98ec55`. The lane wrote the implementation before the tests; the reviewer
+ran main's solver under the head tests and saw seven fail, so the tests do
+pin the change.
+
+Owner question raised by the review (OQ15): on a rim-only pan with 5, 7, 9
+or 11 rim notes the default RIGHT-FIRST button now draws note 2 on the left
+(Kurd: 1 at 270, 2 at 230). The mirror toggle's polarity is a non-goal here
+(D14). Stale wording sits in `docs/ENGINE-SPEC.md` section 13, the comment
+near the top of `src/engine/share.js`, the mirror control in `index.html`
+and one title in `tests/app.test.js`. The scale-syntax plan (drawer replaces
+ROTATE and MOVE) is the natural place to settle the labels.
+
+Nits carried forward, all unscheduled unless a lane is named:
+- Rim counts 1 to 3 are unpinned: `isCentred = inner === 0 && rim >= 4`
+  survives every suite. The shipped code is correct there.
+- The 9 rim + 2 bottom seed asserts only `ding_dy` and `r_ding`, not its
+  angles.
+- The "keeps its side" loop in `tests/layout.test.js` compares two test-side
+  constants after a literal `deepEqual`; `legacyOdd` recomputes main's
+  formula.
+- The `bottomAngles` comment in `src/engine/layout.js` now sits above
+  `rimAnglesFromBottom`.
+- Bare D12 to D15 in `src/engine/layout.js` and `docs/ENGINE-SPEC.md` do not
+  name this plan; the `docs/SCALE_ENGINE_PLAN.md` D12 row is marked
+  superseded as a whole though only the layout default is.
+- The CLAUDE.md paragraph (section 13 wording): "defaults to the Amara 9
+  arrangement" is loose (Amara 9's own seed still draws right-first without
+  the mirror), and "no note sits at top centre" holds only without inner
+  notes. Lane B owns CLAUDE.md next and may tighten both.
+- `docs/ENGINE-SPEC.md`: two notes change on an odd rim (note 1 moves onto
+  the axis, note N off it), not one.
+- The test title "the centred default reproduces the shipped Amara 9 and
+  Hijaz layouts" compares five geom keys only.
+- `isCentred(counts)` is called twice in `geometry()`.
+- Do not add mutants on the centred ding point, clearance or reach: ding
+  clearance never binds on a centred pan, so they are equivalent.
+- Existing defect, not this lane's: `reseat()` accepts an order that swaps a
+  rim note with a bottom note and can overlap fields. Only a hand-built
+  share link reaches it. The scale-syntax plan should refuse cross-zone
+  orders.
+
+## Lane U1 review and owner decisions (2026-10-06, after PR #254 review 1)
+
+**Review 1 of PR #254 at `1576ef1`: FAIL.** CI green. All eight lane
+deviations were judged acceptable. The failure is a regression outside the
+lane's ownership: with the cap gone, `mediumEnumerate` in
+`src/engine/sequence.js` reaches `MEDIUM_ENUM_BUDGET` (60000 nodes) on
+custom pans with nine or more pitch classes and returns a truncated set. The
+DFS walks `startSet` and `pool` in a fixed order, so the truncated set is
+the same prefix on every call. `pickMedium` passes `stats = null` and deals
+from it without a signal. Reviewer's measurements at the head: 485 of 1,664
+random valid seeds truncate, against 3 on `main`; 0 of 759 at eight pitch
+classes or fewer, 65 of 390 at nine, 228 of 323 at ten, 161 of 161 at
+eleven, 31 of 31 at twelve. `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | B3 C#4 F#4`
+builds 94 cards and truncates; on `main` it builds 25 and completes in
+34,677 nodes. On a chromatic seed every length-4 MEDIUM progression opens on
+one card. Not affected: the three built-ins, the presets, Kurd 10, Amara 9,
+Amara 10, generated Pygmy 18 (24,886 nodes).
+
+**Owner decisions, 2026-10-06 (binding):**
+- OQ-U2 CLOSED: "Fix the search". No bound on custom decks. Lane U1 gains
+  `src/engine/sequence.js` (block U1b below).
+- OQ-U1 CLOSED: Pygmy "Increase to 53" (Fmadd9 `[5,7,8,6]`).
+- OQ13 CLOSED: "Yes, add it". OQ14 CLOSED: "Accept it".
+- Pygmy Fm9: "Use the engine's". The shipped card `[5,7,8,9,11]` becomes
+  `[5,7,8,9,6]`. This is authorised deck data change; it belongs to Lane U2.
+- "Let's not make exceptions and keep engine output as sot": engine output
+  is the source of truth for the built-in decks. Lane U2's block is updated
+  for Fmadd9 and Fm9 before U2 is dispatched. Any change to Pygmy's stored
+  geometry is out of this plan (it needs the new solver of the scale-syntax
+  plan).
+
+### Lane U1b: MEDIUM search stays fair when it runs out of budget
+
+Same branch and PR as Lane U1 (`claude/beginner-u1-uncap`, #254).
+
+**Goal:** when `mediumEnumerate` truncates, `pickMedium` deals from a fair
+sample of the MEDIUM space instead of the fixed DFS prefix. A deck whose
+enumeration completes deals exactly as it does at `1576ef1`.
+
+**Owns (added to Lane U1's list):**
+- `src/engine/sequence.js`: `mediumEnumerate`, `mediumCells`, `pickMedium`,
+  the `MEDIUM_ENUM_BUDGET` comment block, and one new helper. The
+  `<!-- engine:sequence begin -->` region of `index.html`, written by
+  `python3 tools/inline_engine.py` only.
+- `tests/sequence.test.js`: new tests for this block, and the S7 title.
+- New mutants under `tests/mutants/` for the new code; `FLOORS` and the
+  README mutant count follow.
+- The review nits in files U1 already owns: `tests/select.test.js`
+  (`KURD_9` name, "after the trim" wording), the rank comment in
+  `src/engine/select.js`, the cap wording in `docs/SCALE_ENGINE_PLAN.md`,
+  the headroom comment in `sequence.js`.
+
+**Design (binding shape, details free):**
+- First pass unchanged: the deterministic DFS with `MEDIUM_ENUM_BUDGET`. It
+  consumes no rng. If it does not truncate, its cells are used as today.
+- Only if it truncates, a second pass fills the cells by random walks drawn
+  from the caller's `rng`: each walk picks a length from
+  `TIER_LENGTHS.intermediate`, a start uniformly from `startSet`, then each
+  next card uniformly from the candidates the DFS would have expanded (same
+  three prunes), and files the leaf through the same classification. It
+  stops at the same node budget. Duplicates are filed once.
+- `drawMedium` and the cell order are untouched.
+- `mediumCells(deck, stats, budget)` keeps its deterministic first-pass
+  result and reports `stats.truncated`, so the shape tests keep their
+  meaning.
+
+**TDD order (red first):**
+1. "MEDIUM on a truncating pan does not open on one card": on the chromatic
+   seed and on the eleven-pitch-class seed above, 200 seeded `pick` calls at
+   MEDIUM yield at least half of `startSet` as first cards. Red at
+   `1576ef1`.
+2. "a deck that completes consumes no extra rng": for the three built-ins,
+   Kurd 10 and Amara 10, a seeded run of 50 MEDIUM picks equals a literal
+   captured at `1576ef1`.
+3. "every sampled sequence is a MEDIUM sequence": each dealt progression on
+   the truncating seeds passes `classifyTier(...) === "intermediate"` and
+   the loop-closure check.
+4. Implement. `python3 tools/inline_engine.py`.
+5. Mutants: at least "second pass removed", "second pass runs on complete
+   decks", "second pass ignores the colour prune". Each `# kills:` names one
+   test above exactly.
+
+**Acceptance:**
+- Tests 1 to 3 green; every existing sequence test green without edits
+  other than the S7 title.
+- `git diff main -- data/decks.json` empty; no PDF changed.
+- Median `pickMedium` time on the chromatic seed is at most 2.5 times its
+  time at `1576ef1`, measured and stated in the lane report.
+- `python3 tools/inline_engine.py --check` and `python3 tools/validate.py`
+  pass. Mutant count is what CI reports; FLOORS and README match it.
+- CI green, including the e2e and mutation jobs.
+
+**Verify:** Lane U1's verify command.
+
+**Non-goals:** raising or removing `MEDIUM_ENUM_BUDGET`; `drawMedium`;
+BASIC and HARD dealing; `dfsFindAll`; any deck data; a warning shown to the
+user.
+
+**Stop conditions:** an existing sequence test needs an edit beyond the S7
+title; test 2 cannot hold; the time bound cannot hold.
+
+### Lane U1b, amendment 1 (2026-10-06, after CI run 37578451285)
+
+**Fact.** At `4ef5407` CI fails one existing test, "generated decks: every
+tier deals its own tier, in range and connected, under 50ms":
+`REGISTER_HOME_DECK intermediate seed 0 took 52ms`. That deck has 117 cards
+uncapped and truncates. Its cold MEDIUM pick is about 15 ms locally at
+`1576ef1` and about three times that in CI, so Lane U1 alone already left it
+near the bound. A second pass on top of a discarded 60,000-node DFS cannot
+fit. The lane stopped as instructed. The 50 ms test is not edited.
+
+**Auto-decision AD-U1b-1 (AFK, mine, owner can overturn).** Do not pay for
+a DFS whose result is thrown away. Replaces the first two bullets of the
+Design above:
+- Count the DFS's nodes exactly before running it, by a dynamic programme
+  over (depth, last card, colour used) on the connect matrix with the same
+  three prunes, for both lengths. It visits no sequence and classifies
+  nothing. The DFS truncates if and only if this count exceeds the budget.
+- Count within budget: run the DFS exactly as at `1576ef1`. No rng is
+  consumed.
+- Count over budget and an rng was passed: skip the DFS and fill the cells
+  by the random walks only. The walk budget is a named constant chosen so
+  that the cold MEDIUM pick on `REGISTER_HOME_DECK` is no slower than at
+  `1576ef1`, measured locally and stated in the report.
+- Count over budget and no rng (`mediumCells` from the shape tests): the
+  truncated DFS as today, `stats.truncated` true.
+
+**Added to the TDD order:** a test "the node count predicts truncation
+exactly": for the built-ins, Kurd 10, Amara 10, generated Pygmy 18 and the
+two truncating seeds, the count equals `stats.nodes` of an unbounded DFS
+(budget `Infinity`), and `count > MEDIUM_ENUM_BUDGET` equals
+`stats.truncated` at the default budget. One mutant for it (for example, the
+count ignores the colour prune).
+
+**Acceptance, replacing the 2.5x line:** cold and median MEDIUM pick on
+`REGISTER_HOME_DECK` and on the chromatic seed are no slower than at
+`1576ef1` (local medians, stated). The 50 ms test is green in CI unedited.
+
+The lane's four stated deviations stand, except that the "quarter budget"
+becomes the named walk-budget constant above.
+
+**Owner decisions, 2026-10-06 (second interview, binding):**
+- OQ10 CLOSED: "Leave as is". OQ11 CLOSED: "After Lane B" (docs-only task).
+- Numerals Q3 CLOSED: augmented `+` "Leave out".
+- Pygmy: "Yes, redraw it". The scale-syntax plan regenerates the shipped
+  Pygmy from its string under the new solver (seats unchanged, top circles
+  2.2% larger, PDFs rebuilt). Not in this plan.
+
+### Lane U1b, amendment 2 (2026-10-06, after PR #254 review 2)
+
+Review 2 at `2d1170d`: FAIL, one blocker. CI run 37579836302 was green.
+
+**Finding (reproduced by the main agent).** On a deck whose MEDIUM node
+count is over budget, `pick()` deals from the sampled cells, and uniform
+walks over a colour-dominated pool almost never produce an all-anchor walk.
+The pure cells come back empty or thin, and `drawMedium` renormalises over
+the non-empty cells. Measured through `pick()`, 1500 to 3000 deals:
+
+| seed | home start | pure-triad | pure and home |
+|---|---|---|---|
+| `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 \| B3 C#4 F#4 G#4` | 32.4 | 25.3 | 1.4 |
+| `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 \| B3 C#4 F#4` | 31.8 | 26.7 | 1.9 |
+| REGISTER_HOME_SEED | 33.9 | 28.8 | 4.3 |
+| the same decks, full enumeration (and `main`, capped) | 41.0 | 32.3 | 13.5 |
+
+The owner's MEDIUM bands (`docs/plans/2026-10-04-tier-rebalance.md`
+section 2) are home start 40% and pure-triad 33%, each within 4 pp. The lane
+built the walk as amendment 1 wrote it; the defect is in this plan.
+
+**Auto-decision AD-U1b-2 (AFK).** The owner answered OQ-U2 "Fix the search"
+and set the bands, so the skew is fixed, not accepted. The uniform walk is
+no longer binding. On the over-budget path with an rng:
+
+1. **Pure cells are filled exactly.** Enumerate the anchors-only sequences
+   with the DFS's own prunes. There are at most 12 anchors, so this is
+   small; it is counted with the existing node count restricted to anchors
+   and must stay inside `MEDIUM_ENUM_BUDGET`.
+2. **Only the colour cells are sampled**, and the sampling is stratified by
+   the cell's side (home start, other start) so neither side of a colour
+   cell is left to chance.
+3. `drawMedium` is still a non-goal. The fix is in how the cells are filled.
+
+The under-budget path and the no-rng path are unchanged.
+
+**Owns (unchanged from U1b, plus):** `tests/mutants/sqr_05_min_basic_pool_zero.patch`
+(the context-only refresh already on the branch).
+
+**TDD order (red first, each red at `2d1170d`):**
+1. `tests/sequence.test.js` "MEDIUM on an over-budget pan deals inside the
+   shape bands": for the eleven-pitch-class fixture and REGISTER_HOME_SEED,
+   deals taken through `HPE.sequence.pick` with a seeded rng give home start
+   within 4 pp of 40% and pure-triad within 4 pp of 33%. The sample size is
+   chosen so the test is stable; the band is not widened.
+2. "an over-budget pan fills every pure cell its anchors allow": the pure
+   cells of the sampled set equal the anchors-only enumeration.
+3. One mutant per new behaviour (pure cells not filled exactly; colour
+   sampling not stratified), each with its `# kills:` test.
+
+**Acceptance:**
+- The two new tests pass and were red at `2d1170d`.
+- Every existing sequence test passes unedited, including "generated decks:
+  every tier deals its own tier, in range and connected, under 50ms".
+- Decks that complete deal exactly as at `2d1170d` at the same rng position
+  (the existing golden and "consumes no extra rng" tests).
+- `python3 tools/inline_engine.py --check` and `python3 tools/validate.py`
+  exit 0. `data/decks.json` and all PDFs are unchanged.
+- CI green at the head SHA, all mutation shards included.
+
+**Verify:** `node --test tests/sequence.test.js && python3 tools/inline_engine.py --check && python3 tools/validate.py`
+
+**Non-goals:** `drawMedium`; the bands; the budget constants' values unless
+the 50 ms test requires it; review 2's nits (listed in the PR thread, not
+fixed in this lane).
+
+**Stop conditions:**
+- The bands cannot be met without changing `drawMedium` or a band.
+- The 50 ms test goes red.
+- Any under-budget deck deals differently.

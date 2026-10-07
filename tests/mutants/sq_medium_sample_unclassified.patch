@@ -1,0 +1,16 @@
+# kills: every sampled sequence is a MEDIUM sequence
+# U1b - the sampled leaf skips the full classification, so a loop another tier claims is filed in a MEDIUM cell
+# suite: node --test --test-name-pattern ^every.sampled.sequence.is.a.MEDIUM.sequence$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -916,8 +916,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var key = length;
+       for (var k = 0; k < length; k += 1) key = key * width + walk[k];
+       if (seen[key]) continue;
+-      if (walk[length - 1] !== walk[0] && matrix[walk[length - 1]][walk[0]] &&
+-          classifyTier(deck, walk, ctx) === "intermediate") {
++      if (walk[length - 1] !== walk[0] && matrix[walk[length - 1]][walk[0]]) {
+         seen[key] = true;
+         file(walk);
+         filed += 1;

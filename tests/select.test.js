@@ -91,11 +91,6 @@ function midiOf(deck, fieldId) {
   return deck.fields[String(fieldId)][2];
 }
 
-function capOf(deck) {
-  const fieldCount = Object.keys(deck.fields).length;
-  return 25 + Math.max(0, fieldCount - 12);
-}
-
 /* ---------------- section 11: the generated deck object ------------------ */
 
 const DECK_KEYS = ["id", "name", "options", "colors", "degrees", "geom",
@@ -261,7 +256,7 @@ test("degrees label every pan pitch class, tonic = the ding", () => {
   }
 });
 
-/* ---------------- section 8: candidates, collapse, cap ------------------- */
+/* ---------------- section 8: candidates, collapse, no trim ------------------- */
 
 const TWELVE = "(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4";
 
@@ -304,85 +299,19 @@ test("collapse's symmetric-root tie-break applies to a 2-member group, not just 
     "the tie-break must run for a 2-member symmetric group and prefer the tonic");
 });
 
-test("the cap bites on the 12-note pan: 27 candidates, 25 cards", () => {
-  // Section 8, as amended 2026-09-08: the cap is `25 + max(0, fieldCount - 12)`.
-  // The worked example's pan has exactly 12 fields, so the size-scaled cap
-  // still evaluates to 25 there and the example is unchanged by the amendment.
-  // This pair of assertions is the regression guard for that claim.
-  const seed = seedOf(TWELVE);
-  assert.equal(Object.keys(seed.fields).length, 12,
-    "section 8's worked example is a 12-field pan");
-  assert.equal(select.cap(seed.fields), 25,
-    "a 12-field pan caps at 25, exactly as before the amendment");
-  const deck = built(TWELVE);
-  // D1: the cap counts distinct chord NAMES, not raw cards. This 12-field pan
-  // repeats several roots (D, E, G, A), so some surviving names now carry a
-  // HOME card plus a HIGH-register alternate - the deck can therefore hold
-  // more than 25 cards while still capping at 25 distinct names.
-  const names = deck.chords.map(nameOf);
-  const distinctNames = new Set(names);
-  assert.equal(distinctNames.size, 25, "the deck is trimmed to 25 distinct names");
-  // Ranking drops the LOWEST-ranked candidates: within the extended tier, the
-  // two with the fewest top-shell tones, ties broken by root degree ascending -
-  // Amadd9 (degree 5) then Gadd9 (degree 4). Cadd9 (degree 1) survives.
-  assert.ok(!names.includes("Amadd9"), "Amadd9 is trimmed by the cap");
-  assert.ok(!names.includes("Gadd9"), "Gadd9 is trimmed by the cap");
-  assert.ok(names.includes("Cadd9"), "Cadd9 outranks both and survives");
-});
+const KURD_10 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const MAXIMUM = synthetic.find((r) => r.expect.ok && /maximum/.test(r.name));
 
-// Section 8's other two worked cap values: the built-in Pygmy pan and the
-// structural maximum of section 3.
-const PYGMY = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
-
-test("the cap scales with pan size: the 18-field Pygmy pan caps at 31", () => {
-  const seed = seedOf(PYGMY);
-  assert.equal(Object.keys(seed.fields).length, 18,
-    "the Pygmy pan is 1 ding + 11 top + 6 bottom = 18 fields");
-  assert.equal(select.cap(seed.fields), 31, "section 8: 25 + (18 - 12)");
-  // Section 8's rationale for the amendment names these three by name: they
-  // rank 27/28/29 under the unchanged ranking rule, are all on the instrument,
-  // and were evicted purely by the flat 25.
-  const names = built(PYGMY).chords.map(nameOf);
-  for (const name of ["Gm7b5", "Bbm7", "Cm7"]) {
-    assert.ok(names.includes(name),
-      `${name} ranks inside the size-scaled cap and must survive`);
-  }
-  // D1: the cap counts distinct chord NAMES; a name can carry a HOME card
-  // plus LOW/HIGH alternates, so raw card count is no longer bounded by 31.
-  const distinctNames = new Set(names);
-  assert.ok(distinctNames.size > 25,
-    "the size-scaled cap lets the Pygmy deck past the old flat 25");
-  assert.ok(distinctNames.size <= 31, "and never past its own cap");
-});
-
-test("the cap formula holds at the structural maximum", () => {
-  // Section 3's structural maximum is 1 ding + 11 rim + 2 inner + 6 bottom.
-  // synthetic_scales.json ships the largest legal pan; the cap there is
-  // whatever `25 + fieldCount - 12` says, with no separate ceiling.
-  const row = synthetic.find((r) => r.expect.ok && /maximum/.test(r.name));
-  assert.ok(row, "synthetic_scales.json ships a maximum-size entry");
-  const seed = seedOf(row.string);
-  const fieldCount = Object.keys(seed.fields).length;
-  assert.ok(fieldCount > 12,
-    `${row.name}: the maximum entry must be larger than the 12-field hinge`);
-  assert.equal(select.cap(seed.fields), 25 + fieldCount - 12,
-    `${row.name}: cap = 25 + fieldCount - 12`);
-});
-
-test("the cap counts EVERY field, bottom shell included", () => {
-  // Section 8: `fieldCount` counts ding, rim, inner and bottom alike. Two pans
-  // with the same top shell and different bottom shells get different caps.
-  const bare = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-  const withBottom = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3");
-  assert.equal(Object.keys(bare.fields).length, 9);
-  assert.equal(Object.keys(withBottom.fields).length, 11);
-  assert.equal(select.cap(bare.fields), 25, "a 9-field pan is under the hinge");
-  assert.equal(select.cap(withBottom.fields), 25,
-    "11 fields is still under the hinge, so the cap does not move");
-  // And the hinge itself never returns less than 25.
-  const tiny = seedOf("(C3) G3 D4 G4 D5");
-  assert.ok(Object.keys(tiny.fields).length < 12);
-  assert.equal(select.cap(tiny.fields), 25, "max(0, ...) floors the cap at 25");
+// D16: nothing trims a deck. Every ranked card of a seed is in the deck.
+test("no deck is trimmed: every ranked card of a seed is in the deck", () => {
+  const sizes = (str) => {
+    const deck = built(str);
+    return [deck.chords.length, new Set(deck.chords.map(nameOf)).size];
+  };
+  assert.deepEqual(sizes(KURD_10), [49, 49], "D Kurd 10");
+  assert.deepEqual(sizes(TWELVE), [35, 27], "the twelve-note pan");
+  assert.ok(MAXIMUM, "synthetic_scales.json ships a maximum-size entry");
+  assert.deepEqual(sizes(MAXIMUM.string), [74, 43], "the nineteen-field maximum");
 });
 
 test("canonical order: root degree, then tier, then the quality rank", () => {
@@ -391,13 +320,14 @@ test("canonical order: root degree, then tier, then the quality rank", () => {
   // This pan repeats the D/E/G/A pitch classes, so root-instance enumeration
   // (this plan) legitimately produces a HIGH-register alternate immediately
   // after several HOME cards - the group stays contiguous, and the deck's
-  // 32 raw cards still cap at 25 distinct NAMES (see the cap test above).
+  // 35 cards are all kept: nothing trims a deck (D16).
   assert.deepEqual(built(TWELVE).chords.map(nameOf), [
     "C", "C5", "Cmaj7", "Cadd9", "C6/9", "Cmaj9",
     "D5", "D5", "Dsus4", "Dsus4", "D7sus4",
     "Em", "Em", "E5", "E5", "Esus4", "Esus4", "E7sus4", "Em7",
-    "G", "G5", "Gsus4", "G6/9",
-    "Am", "A5", "Asus4", "A7sus4", "Am7", "Am9", "Am9", "Am11", "Am11"
+    "G", "G5", "Gsus4", "Gadd9", "G6/9",
+    "Am", "A5", "Asus4", "A7sus4", "Am7", "Amadd9", "Amadd9", "Am9", "Am9",
+    "Am11", "Am11"
   ]);
 });
 
@@ -459,27 +389,6 @@ test("no two chords in a deck share an identical fields list", () => {
         `${row.name}: two chords share the voicing ${key}`);
       seen.add(key);
     }
-  }
-});
-
-test("no generated deck exceeds its own size-scaled cap", () => {
-  for (const row of synthetic) {
-    if (!row.expect.ok) continue;
-    const seed = seedOf(row.string);
-    // Section 8's formula, spelled out here rather than read from the engine:
-    // the cap is 25 for a pan of at most 12 fields, +1 per field beyond that.
-    const fieldCount = Object.keys(seed.fields).length;
-    const cap = 25 + Math.max(0, fieldCount - 12);
-    assert.equal(select.cap(seed.fields), cap,
-      `${row.name}: cap for ${fieldCount} fields`);
-    const deck = built(row.string);
-    // D1: the cap counts distinct chord NAMES, not raw cards - a name that
-    // survives can still carry a HOME card plus LOW/HIGH alternates, so the
-    // raw card count is no longer bounded by the name cap.
-    const distinctNames = new Set(deck.chords.map(nameOf));
-    assert.ok(distinctNames.size <= cap,
-      `${row.name}: ${distinctNames.size} names over a cap of ${cap}`);
-    assert.ok(cap >= 25, `${row.name}: the cap never drops below 25`);
   }
 });
 
@@ -709,7 +618,7 @@ test("every card's roots[0] is a field of its own root pitch class", () => {
   }
 });
 
-/* ---------------- rank by name group, then cap by name (D1) --------------- */
+/* ---------------- rank by name group (D1) --------------- */
 
 test("a chord's cards are contiguous, home first", () => {
   for (const seed of ALL_SEEDS) {
@@ -753,15 +662,19 @@ test("within a chord's group, LOW precedes HIGH (class order, not just contiguit
   });
 });
 
-test("the deck cap counts chord NAMES, so alternates cannot evict a chord", () => {
+test("alternates sit beside their primary and none is dropped", () => {
   const deck = built(PYGMY_SEED);
   const names = new Set(deck.chords.map((c) => c.main + c.sup));
-  assert.ok(names.size <= capOf(deck), "distinct names stay inside the cap");
   assert.ok(deck.chords.length > names.size,
     "Pygmy does carry alternates, so this test is not vacuous");
+  for (const name of ["Cm", "C5", "Csus4"]) {
+    const cards = deck.chords.filter((c) => c.main + c.sup === name);
+    assert.deepEqual(cards.map((c) => voicingClassOf(c.subtitle)),
+      ["", "LOW", "HIGH"], `${name}: home, LOW and HIGH all present`);
+  }
 });
 
-test("no chord name is half-present after the trim", () => {
+test("no chord name is half-present", () => {
   for (const seed of ALL_SEEDS) {
     const deck = built(seed);
     const byName = new Map();
@@ -773,42 +686,6 @@ test("no chord name is half-present after the trim", () => {
       assert.ok(count >= 1 && count <= 3, `${seed}: ${n} has ${count} cards`);
     }
   }
-});
-
-// Every built-in stays under its own cap (Amara 25/25, Hijaz 19/25, Pygmy
-// 31/31), so none of the assertions above ever exercises the trim itself.
-// Find a synthetic scale whose untrimmed name count overflows its own cap, so
-// the trim is observed doing its job rather than being a no-op everywhere.
-function untrimmedNameCount(str) {
-  const seed = seedOf(str);
-  var list = select.candidates(seed.fields);
-  list = select.collapse(seed.fields, list, pcOf(seed));
-  list = host(select.voice(seed.fields, list));
-  return new Set(list.map((c) => c.root + "|" + c.suffix)).size;
-}
-
-function pcOf(seed) {
-  return ((seed.fields["0"][2] % 12) + 12) % 12;
-}
-
-const OVERFLOW = synthetic
-  .filter((row) => row.expect.ok)
-  .map((row) => ({row, deck: built(row.string)}))
-  .find((x) =>
-    new Set(x.deck.chords.map((c) => c.main + c.sup)).size === capOf(x.deck) &&
-    untrimmedNameCount(x.row.string) > capOf(x.deck));
-
-test("a deck that overflows its cap loses whole names, never half a name", () => {
-  assert.ok(OVERFLOW, "no synthetic scale overflows its cap - pick a denser one");
-  const {deck} = OVERFLOW;
-  const names = new Set(deck.chords.map((c) => c.main + c.sup));
-  assert.equal(names.size, capOf(deck), "the trim stops exactly at the cap");
-  for (const c of deck.chords) {
-    assert.ok(names.has(c.main + c.sup));
-  }
-  const homes = deck.chords.filter((c) => voicingClassOf(c.subtitle) === "");
-  assert.equal(homes.length, names.size,
-    "every surviving name kept its home card, not just an alternate");
 });
 
 /* ---------------- the acceptance gates (D2) -------------------------------- */
