@@ -6576,7 +6576,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var truncated = false;
     var len;
     var seq;
+    var recPool = pool;
+    var recStart = startSet;
     var familyOf = [];
+    var pureFiled = 0;
     function file(chords) {
       var family = "none";
       for (var i = 0; i < chords.length; i += 1) {
@@ -6584,6 +6587,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (familyOf[chords[i]] === undefined) familyOf[chords[i]] = colourFamily(deck, chords[i]);
         family = familyOf[chords[i]];
       }
+      if (family === "none") pureFiled += 1;
       var side = chordRootPc(deck, chords[0]) === ctx.home ? "home" : "other";
       var key = chords.length + "/" + family + "/" + side;
       if (!buckets[key]) buckets[key] = [];
@@ -6602,7 +6606,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         }
         return;
       }
-      var options = depth === 0 ? startSet : pool;
+      var options = depth === 0 ? recStart : recPool;
       for (var i = 0; i < options.length; i += 1) {
         var candidate = options[i];
         if (depth > 0) {
@@ -6616,7 +6620,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     var predicted = countMediumNodes(pool, startSet, isColour, matrix);
     if (predicted > budget && rng) {
-      var sampled = sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
+      // Pure cells exactly (the anchors alone are a small search), colour
+      // cells by stratified walks.
+      recPool = pool.filter(function (i) { return !isColour[i]; });
+      recStart = startSet.filter(function (i) { return !isColour[i]; });
+      TIER_LENGTHS.intermediate.forEach(function (length) {
+        len = length;
+        seq = new Array(len);
+        rec(0, false);
+      });
+      var sampled = pureFiled + sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
       if (stats) {
         stats.nodes = predicted;
         stats.truncated = true;
@@ -6653,16 +6666,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return cells;
   }
 
-  // The second pass of mediumEnumerate, run only when the DFS above ran out
-  // of budget. Random walks over the same space: a length from
-  // TIER_LENGTHS.intermediate, a start uniformly from `startSet` (both from one draw), then each
+  // The second pass of mediumEnumerate, run only when the DFS would run out
+  // of budget, and only for the COLOUR cells: the pure cells are enumerated
+  // exactly beforehand. Random walks over the same space: a start, then each
   // next card uniformly from the candidates the DFS would have expanded (not
   // the previous card, connected to it, no second colour card), closed and
-  // classified exactly as the DFS leaf does. A node is a card placed, and
-  // the walks stop at a quarter of `budget`. Each distinct sequence is filed
-  // once, through `file`; returns how many were. Draws from `rng`.
+  // classified exactly as the DFS leaf does. The walks are stratified over
+  // (length, start side), round-robin, so neither side of a colour cell is
+  // left to chance; a walk that never meets a colour card belongs to the
+  // exact pass and is dropped. A node is a card placed, and the walks stop
+  // at MEDIUM_WALK_BUDGET. Each distinct sequence is filed once, through
+  // `file`; returns how many were. Draws from `rng`.
   function sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file) {
     var lengths = TIER_LENGTHS.intermediate;
+    var sides = [[], []];
+    startSet.forEach(function (i) {
+      sides[chordRootPc(deck, i) === ctx.home ? 0 : 1].push(i);
+    });
+    var strata = [];
+    lengths.forEach(function (length) {
+      sides.forEach(function (starts) {
+        if (starts.length) strata.push({ length: length, starts: starts });
+      });
+    });
     var seen = {};
     var onward = [];
     var width = deck.chords.length;
@@ -6675,17 +6701,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // than 0.1%. rng() is the dominant cost of a walk.
     var u = 0;
     var room = 0;
-    if (!startSet.length) return 0;
+    var turn = 0;
+    if (!strata.length) return 0;
     while (nodes < walkBudget) {
-      var length = 0;
+      var stratum = strata[turn % strata.length];
+      turn += 1;
+      var length = stratum.length;
       var walk = [];
       var colourUsed = false;
       do {
-        var options = null;
-        var n;
-        if (walk.length === 0) {
-          n = lengths.length * startSet.length;
-        } else {
+        var options = walk.length === 0 ? stratum.starts : null;
+        if (!options) {
           var prevChord = walk[walk.length - 1];
           if (!onward[prevChord]) {
             onward[prevChord] = { all: [], pure: [] };
@@ -6697,9 +6723,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
             }
           }
           options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
-          n = options.length;
-          if (!n) break;
         }
+        var n = options.length;
+        if (!n) break;
         if (room < n * 1024) {
           u = rng();
           room = 4294967296;
@@ -6709,18 +6735,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (at >= n) at = n - 1;
         u -= at;
         room /= n;
-        var next;
-        if (options) {
-          next = options[at];
-        } else {
-          length = lengths[at % lengths.length];
-          next = startSet[(at - at % lengths.length) / lengths.length];
-        }
+        var next = options[at];
         walk.push(next);
         colourUsed = colourUsed || isColour[next];
         nodes += 1;
       } while (walk.length < length && nodes < walkBudget);
-      if (walk.length < length) continue;
+      if (walk.length < length || !colourUsed) continue;
       var key = length;
       for (var k = 0; k < length; k += 1) key = key * width + walk[k];
       if (seen[key]) continue;
