@@ -1,0 +1,15 @@
+# kills: a first visit with empty storage opens D Kurd 10
+# suite: node --test --test-name-pattern ^a.first.visit.with.empty.storage.opens.D.Kurd.10$ tests/app.test.js
+# The cold-start constant goes back to "hijaz", so an empty store boots Hijaz.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -6977,7 +6977,7 @@
+ // are a list, own their own key, and hold the SEED - the canonical scale string
+ // plus its options - never the built deck, which is derived (D14).
+ const STORE_KEY = "hpfc";
+-const DEFAULT_DECK = "kurd";
++const DEFAULT_DECK = "hijaz";
+ const SCALES_KEY = "hpfc.scales";
+ const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
+ let store = readStore(STORE_KEY) || {};

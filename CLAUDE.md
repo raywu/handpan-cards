@@ -381,6 +381,10 @@ pitch classes (midi % 12), never stored.
 
 ## Known pitfalls (hit during the session)
 
+- **Default deck:** the cold-start deck is the `DEFAULT_DECK` constant
+  (`kurd`), not `DECKS[0]`. Picker order is the array order of
+  `data/decks.json`. They are two facts. A stored deck id is always honoured;
+  nothing migrates a visitor who stored `hijaz` before 2026-10-06.
 - **Boot order:** the first render must happen after the card-order array
   exists; `render()` guards against an empty order. Keep it that way.
 - **Data re-injection:** the degrees contain `deg` (U+00B0) characters; a

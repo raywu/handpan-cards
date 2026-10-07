@@ -345,9 +345,69 @@ test("deck and mode round-trip through localStorage (subset semantics)", () => {
   assert.strictEqual(again.els.count.textContent, `1 / ${amara.chords.length}`);
 });
 
+test("a first visit with empty storage opens D Kurd 10", () => {
+  const app = boot();
+  assert.strictEqual(app.deckId(), "kurd");
+  assert.strictEqual(app.els.count.textContent, `1 / ${decks(app).find((d) => d.id === "kurd").chords.length}`);
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, "kurd");
+});
+
+test("a store holding hijaz from before the default changed still opens Hijaz", () => {
+  const app = boot({ storage: { hpfc: JSON.stringify({ deck: "hijaz", mode: "A" }) } });
+  assert.strictEqual(app.deckId(), "hijaz");
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, "hijaz");
+  assert.deepStrictEqual(Object.keys(JSON.parse(app.store.hpfc)).sort(), ["deck", "mode", "printPaper", "tier"],
+    "the default flip must add no key to hpfc");
+});
+
+test("a stored built-in deck wins over the default", () => {
+  for (const id of ["amara", "amara10", "pygmy"]) {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: id, mode: "A" }) } });
+    assert.strictEqual(app.deckId(), id);
+  }
+});
+
+test("a stored custom deck wins over the default", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  app.els["scale-generate"].click();
+  const id = app.deckId();
+  assert.match(id, /^custom:/);
+  const key = app.get("SCALES_KEY");
+  const again = boot({ storage: { hpfc: app.store.hpfc, [key]: app.store[key] } });
+  assert.strictEqual(again.deckId(), id);
+});
+
+test("a share link wins over the stored deck and becomes the stored deck", () => {
+  const seeded = boot();
+  const made = seeded.generate(AMARA_STRING).value;
+  const url = link(seeded, made.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  const app = boot({
+    storage: { hpfc: JSON.stringify({ deck: "pygmy", mode: "A" }) },
+    href: "https://example.test/index.html#s=" + payload(url.value),
+  });
+  assert.strictEqual(app.deckId(), made.id);
+  assert.strictEqual(JSON.parse(app.store.hpfc).deck, made.id);
+});
+
+test("two boots over one store: the last selection wins and sibling keys survive", () => {
+  const first = boot({ storage: { hpfc: JSON.stringify({ deck: "hijaz", mode: "A", sibling: "keep" }) } });
+  first.clickChip(decks(first).find((d) => d.id === "amara").name);
+  const second = boot({ storage: { hpfc: first.store.hpfc } });
+  assert.strictEqual(second.deckId(), "amara");
+  second.clickChip(decks(second).find((d) => d.id === "pygmy").name);
+  const stored = JSON.parse(second.store.hpfc);
+  assert.strictEqual(stored.deck, "pygmy");
+  assert.strictEqual(stored.sibling, "keep");
+  assert.strictEqual(boot({ storage: { hpfc: second.store.hpfc } }).deckId(), "pygmy");
+});
+
 test("a throwing localStorage breaks neither boot nor navigation", () => {
   const app = boot({ throwOnStorage: true });
   assert.ok(app.els.front.innerHTML.length, "app must render with storage denied");
+  assert.strictEqual(app.deckId(), "kurd");
 
   const amara = decks(app).find((d) => d.id === "amara");
   app.clickChip(amara.name);
