@@ -78,7 +78,7 @@ test("REASONS is the ENGINE-SPEC section 2 table, verbatim", () => {
   const spec = specReasons();
   assert.deepEqual(Object.keys(spec).sort(),
     ["BAD_NOTE", "NEEDS_NEWER_APP", "NOTE_OUT_OF_ORDER", "NOTE_OUT_OF_RANGE",
-     "NOTE_REPEATED", "NO_DING", "NO_FIFTH", "NO_THIRDS", "TOO_MANY_RIM"],
+     "NOTE_REPEATED", "NO_DING", "NO_FIFTH", "NO_THIRDS", "SMALL_LABELS", "TOO_MANY_RIM"],
     "the spec table no longer holds exactly the section 2 enum");
   assert.deepEqual(host(core.REASONS), spec);
 });

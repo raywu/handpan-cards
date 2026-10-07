@@ -5597,7 +5597,8 @@
   },
   "notFromParseSeed": [
    "NEEDS_NEWER_APP",
-   "NO_THIRDS"
+   "NO_THIRDS",
+   "SMALL_LABELS"
   ]
  }
 }

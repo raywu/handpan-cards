@@ -331,6 +331,45 @@ class PrintParityTest(unittest.TestCase):
                                            msg="page %d y" % (i + 2))
 
 
+class LabelFloorTest(unittest.TestCase):
+    """`layout.labelFloor` is the engine's own copy of the print pipeline's
+    smallest-glyph arithmetic, so the SMALL_LABELS warning can be raised
+    without reportlab. This pins that copy to tools/hifi.py."""
+
+    def _floor_from_node(self, geom):
+        script = (
+            "const {loadEngine}=require(%s);"
+            "const HPE=loadEngine(['core','layout']);"
+            "process.stdout.write(String(HPE.layout.labelFloor("
+            "JSON.parse(process.argv[1]))));"
+            % json.dumps(os.path.join(paths.TOOLS, "engine_loader.js")))
+        out = subprocess.run([NODE, "-e", script, json.dumps(geom)],
+                             capture_output=True, text=True, check=True)
+        return float(out.stdout)
+
+    def _floor_from_print(self, geom):
+        big_r = round(decks._BAND_HALF / geom["ext"], 1)
+        sizes = []
+        if geom["r_note"] > 0:
+            r = geom["r_note"] * big_r
+            sizes += [hifi.label_size(r, "rim") * 0.66,
+                      hifi.label_size(r, "rim"), hifi.num_size(r)]
+        if geom["r_bnote"] > 0:
+            sizes.append(hifi.label_size(geom["r_bnote"] * big_r, "bottom"))
+        return min(sizes)
+
+    def test_label_floor_uses_the_print_pipelines_ratios(self):
+        for seed in SEEDS:
+            with self.subTest(seed=seed):
+                out = subprocess.run([NODE, GEN_DECK, seed],
+                                     capture_output=True, text=True,
+                                     check=True)
+                geom = json.loads(out.stdout)["deck"]["geom"]
+                self.assertAlmostEqual(self._floor_from_node(geom),
+                                       self._floor_from_print(geom),
+                                       places=9)
+
+
 class SweepCoverageTest(unittest.TestCase):
     """Row 18: the C1 coverage floor (`test_the_sweep_covers_every_builtin_
     and_both_variants`) only checks the CASES/VARIANTS *constants* - it never

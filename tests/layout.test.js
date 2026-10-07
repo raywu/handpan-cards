@@ -503,7 +503,7 @@ test("the inner pair ascends opposite the rim direction", () => {
     const inner = Object.keys(fields)
       .filter((id) => fields[id][3] === "inner")
       .sort((a, b) => Number(a) - Number(b));
-    if (!inner.length) continue;
+    if (inner.length < 2) continue;      /* one inner note sits at top centre (A13) */
     const lowestRimX = Math.cos(fields["1"][4] * DEG);
     const lowestInnerX = Math.cos(fields[inner[0]][4] * DEG);
     assert.ok(lowestRimX * lowestInnerX < 0,
@@ -523,7 +523,7 @@ test("the inner pair ascends opposite the rim under mirror too", () => {
     const inner = Object.keys(fields)
       .filter((id) => fields[id][3] === "inner")
       .sort((a, b) => Number(a) - Number(b));
-    if (!inner.length) continue;
+    if (inner.length < 2) continue;
     assert.ok(Math.cos(fields["1"][4] * DEG) * Math.cos(fields[inner[0]][4] * DEG) < 0, entry.label);
   }
 });
@@ -759,31 +759,53 @@ test("ext grows when a bottom shell is added", () => {
   assert.ok(solved(withBottom).geom.ext > solved(noBottom).geom.ext);
 });
 
-/* ---- section 4 / 17: the caps ------------------------------------------ */
+/* ---- Lane S1: the solver refuses nothing for size ----------------------- */
 
-test("a twelfth rim field is rejected TOO_MANY_RIM", () => {
-  const eleven = seedOf(TWELVE, 11, 0);
-  const res = HPE.layout.solve(withExtra(eleven.seed.fields, "rim", ["12"]));
-  assert.equal(res.ok, false);
-  assert.equal(res.code, "TOO_MANY_RIM");
-  assert.equal(res.reason, HPE.core.REASONS.TOO_MANY_RIM.reason);
-  assert.equal("value" in res, false);
+/** A bare field map of the given shape: ding, rim 1.., inner after the rim,
+ *  bottom 101.. - the ids and labels core.parseSeed gives. Pitches are
+ *  placeholders; the solver reads zones only. */
+function panFields(rim, inner, bottom) {
+  const out = { 0: ["D", 3, 50, "ding", null, "Ding"] };
+  for (let i = 1; i <= rim + inner; i += 1) {
+    out[i] = ["C", 4, 60, i <= rim ? "rim" : "inner", null, String(i)];
+  }
+  for (let i = 1; i <= bottom; i += 1) out[100 + i] = ["C", 3, 48, "bottom", null, `U${i}`];
+  return out;
+}
+
+function solveCounts(rim, inner, bottom, options) {
+  const res = HPE.layout.solve(panFields(rim, inner, bottom), options);
+  assert.equal(res.ok, true, `${rim}/${inner}/${bottom}: ${res.code}`);
+  return res.value;
+}
+
+test("a twelfth rim field solves", () => {
+  assert.equal(solveCounts(12, 0, 0).geom.r_note > 0, true);
 });
 
-test("a third inner field is rejected TOO_MANY_RIM", () => {
-  const full = seedOf(NINETEEN, 13, 0);
-  const res = HPE.layout.solve(withExtra(full.seed.fields, "inner", ["14"]));
-  assert.equal(res.ok, false);
-  assert.equal(res.code, "TOO_MANY_RIM");
-  assert.equal(res.reason, HPE.core.REASONS.TOO_MANY_RIM.reason);
+test("a third inner field solves", () => {
+  assert.equal(countZone(solveCounts(11, 3, 0).fields, "inner"), 3);
 });
 
-test("a seventh bottom field is rejected TOO_MANY_RIM", () => {
-  const full = seedOf(NINETEEN, 13, 6);
-  const res = HPE.layout.solve(withExtra(full.seed.fields, "bottom", ["107"]));
-  assert.equal(res.ok, false);
-  assert.equal(res.code, "TOO_MANY_RIM");
-  assert.equal(res.reason, HPE.core.REASONS.TOO_MANY_RIM.reason);
+test("a seventh bottom field solves", () => {
+  assert.equal(countZone(solveCounts(11, 2, 7).fields, "bottom"), 7);
+});
+
+test("a hundred and fifty rim notes solve", () => {
+  const { geom, fields } = solveCounts(150, 0, 0);
+  assert.equal(countZone(fields, "rim"), 150);
+  assert.ok(geom.r_note > 0 && geom.ext > 1);
+});
+
+test("an over-cap pan solves, order or no order", () => {
+  const over = panFields(12, 0, 0);
+  const identity = Array.from({ length: 12 }, (_, i) => i);
+  for (const options of [undefined, { order: identity }]) {
+    assert.equal(HPE.layout.solve(over, options).ok, true);
+  }
+  const bad = HPE.layout.solve(over, { order: "junk" });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.code, "BAD_NOTE");
 });
 
 test("the 19-field maximum pan is accepted", () => {
@@ -995,16 +1017,6 @@ test("a bad order is rejected on a bare fields map too", () => {
   assert.equal(res.code, "BAD_NOTE");
 });
 
-test("an over-cap pan is still TOO_MANY_RIM, order or no order", () => {
-  const eleven = seedOf(TWELVE, 11, 0);
-  const over = withExtra(eleven.seed.fields, "rim", ["12"]);
-  for (const options of [undefined, { order: identity(12) }, { order: "junk" }]) {
-    const res = HPE.layout.solve(over, options);
-    assert.equal(res.ok, false);
-    assert.equal(res.code, "TOO_MANY_RIM");
-  }
-});
-
 test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
   const core = HPE.core;
   const angles = (seed, zone, options) => {
@@ -1058,4 +1070,205 @@ test("EG-5 slotOrder matches solve's emitted field order on the corpus", () => {
     checked += 1;
   }
   assert.ok(checked >= 10, `only ${checked} corpus rows checked`);
+});
+
+/* ---- Lane S1: inner notes fan, the ding clears their numbers ------------- */
+
+const innerSeats = (k) => Object.values(solveCounts(9, k, 0).fields)
+  .filter((f) => f[3] === "inner").map((f) => f[4]);
+
+test("two inner notes sit at 128 and 52", () => {
+  assert.deepEqual(innerSeats(2), [128, 52]);
+  assert.deepEqual(plain(HPE.layout.innerAngles(2)), [128, 52]);
+});
+
+test("one, three, four, five and six inner notes take the fan seats", () => {
+  assert.deepEqual(innerSeats(0), []);
+  assert.deepEqual(innerSeats(1), [90]);
+  assert.deepEqual(innerSeats(3), [166, 14, 90]);
+  assert.deepEqual(innerSeats(4), [180, 0, 120, 60]);
+  assert.deepEqual(innerSeats(5), [180, 0, 135, 45, 90]);
+  assert.deepEqual(innerSeats(6), [180, 0, 144, 36, 108, 72]);
+});
+
+/** Appendix C: the smallest distance between an inner index number (centred
+ *  where pan() draws it) and the ding's edge, less the number's reach. */
+function innerNumberClearance(geom, fields) {
+  let best = Infinity;
+  for (const id of Object.keys(fields)) {
+    const [, , , zone, angle] = fields[id];
+    if (zone !== "inner") continue;
+    const nr = geom.inner - geom.r_note - geom.n_in;
+    const dx = nr * Math.cos(angle * DEG);
+    const dy = nr * Math.sin(angle * DEG) + geom.ding_dy;
+    best = Math.min(best, Math.hypot(dx, dy) - geom.r_ding - 0.7 * geom.f_num);
+  }
+  return best;
+}
+
+test("the ding offset stays 0.1425 for the Pygmy shape and rises until every inner number clears", () => {
+  const pygmy = solveCounts(9, 2, 6);
+  assert.equal(pygmy.geom.ding_dy, 0.1425);
+  assert.ok(innerNumberClearance(pygmy.geom, pygmy.fields) >= 0.01);
+
+  for (const k of [1, 2, 3, 4, 5, 6, 9, 12]) {
+    for (const rim of [1, 3, 5, 9, 14]) {
+      const { geom, fields } = solveCounts(rim, k, 0);
+      assert.ok(geom.ding_dy >= 0.1425 && geom.ding_dy <= 0.3, `${rim}/${k}: ${geom.ding_dy}`);
+      if (geom.ding_dy < 0.3) {
+        assert.ok(innerNumberClearance(geom, fields) >= 0.01, `${rim} rim ${k} inner clears`);
+      }
+      if (geom.ding_dy > 0.1425) {
+        const lower = Math.round((geom.ding_dy - 0.0025) * 10000) / 10000;
+        const again = HPE.layout.solve(panFields(rim, k, 0));
+        assert.equal(again.value.geom.ding_dy, geom.ding_dy, "deterministic");
+        assert.ok(lower >= 0.1425);
+      }
+    }
+  }
+  const three = solveCounts(9, 3, 0);
+  assert.ok(three.geom.ding_dy > 0.1425, "three inner notes on nine rim push the ding down");
+  const four = solveCounts(9, 4, 0);
+  assert.ok(four.geom.ding_dy > three.geom.ding_dy - 0.0001);
+});
+
+test("no two fields overlap at any count", () => {
+  const worst = { top: Infinity, bottom: Infinity };
+  let pans = 0;
+  for (const mirror of [false, true]) {
+    for (let rim = 1; rim <= 60; rim += 1) {
+      for (let inner = 0; inner <= 12; inner += 1) {
+        for (const bottom of [0, 1, 2, 7, 13, 40]) {
+          const { geom, fields } = solveCounts(rim, inner, bottom, { mirror });
+          pans += 1;
+          const all = circles(geom, fields);
+          const seats = new Set();
+          for (const id of Object.keys(fields)) {
+            const [, , , zone, angle] = fields[id];
+            if (zone === "ding") continue;
+            const key = `${zone}:${angle}`;
+            assert.equal(seats.has(key), false, `${rim}/${inner}/${bottom}: duplicate seat ${key}`);
+            seats.add(key);
+          }
+          for (let i = 0; i < all.length; i += 1) {
+            for (let j = i + 1; j < all.length; j += 1) {
+              const a = all[i];
+              const b = all[j];
+              if ((a.zone === "bottom") !== (b.zone === "bottom")) continue;
+              const gap = Math.hypot(a.x - b.x, a.y - b.y) - a.r - b.r;
+              assert.ok(gap > 0,
+                `${rim}/${inner}/${bottom} mirror ${mirror}: fields ${a.id} and ${b.id} overlap by ${-gap}`);
+              const key = a.zone === "bottom" ? "bottom" : "top";
+              worst[key] = Math.min(worst[key], gap);
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.equal(pans, 9360);
+  assert.ok(worst.top > 0 && worst.bottom > 0);
+});
+
+/* ---- Lane S1: labelFloor and the warning --------------------------------- */
+
+const floorOf = (rim, inner, bottom) => HPE.layout.labelFloor(solveCounts(rim, inner, bottom).geom);
+
+/** The first count in [lo, hi] at which the floor is under 3.6 pt. */
+function crossing(lo, hi, floorAt) {
+  for (let n = lo; n <= hi; n += 1) if (floorAt(n) < 3.6) return n;
+  return null;
+}
+
+test("labelFloor crosses 3.6 pt at 21 rim, at 15 rim with a bottom shell, at seven inner on nine rim, and at 36 bottom", () => {
+  assert.equal(crossing(1, 60, (n) => floorOf(n, 0, 0)), 21);
+  assert.equal(crossing(1, 60, (n) => floorOf(n, 0, 2)), 15);
+  assert.equal(crossing(0, 12, (n) => floorOf(9, n, 0)), 7);
+  assert.equal(crossing(2, 60, (n) => floorOf(9, 0, n)), 36);
+});
+
+test("bottom octave digits do not trigger the warning", () => {
+  const one = floorOf(9, 0, 1);
+  assert.ok(one >= 3.6, `one bottom note alone floors at ${one}`);
+  const { geom } = solveCounts(9, 0, 1);
+  const R = Math.round(74 / geom.ext * 10) / 10;
+  const bottomOctave = 0.66 * 0.8232 * geom.r_bnote * R;
+  assert.ok(bottomOctave < 3.6, "the bottom octave digit is itself under the floor");
+  assert.ok(one > bottomOctave);
+});
+
+test("the E Amara 20 shape carries no warning", () => {
+  assert.ok(floorOf(9, 3, 7) >= 3.6);
+});
+
+test("labelFloor of an empty pan is finite", () => {
+  assert.equal(Number.isFinite(HPE.layout.labelFloor(solveCounts(0, 0, 0).geom)), true);
+});
+
+/* ---- R4: the automated form of G-RENDER ---------------------------------- */
+
+/** pan()'s own output for a solved pan, parsed back to coordinates (viewBox
+ *  units, y-down, R = 100). Field circles are the ones stroked in ink or the
+ *  receded grey; numbers are the <text> elements with no <tspan>. */
+function drawn(rim, inner, bottom) {
+  const app = boot();
+  const { geom, fields } = solveCounts(rim, inner, bottom);
+  const d = JSON.stringify({ geom, fields, colors: { root: "#0B7B75", tone: "#DD8F00" } });
+  const svg = app.get(`pan(${d}, null)`);
+  const circlesOut = [];
+  for (const m of svg.matchAll(/<circle cx="([-\d.e]+)" cy="([-\d.e]+)" r="([-\d.e]+)" fill="#fff"/g)) {
+    circlesOut.push({ x: +m[1], y: +m[2], r: +m[3] });
+  }
+  const numbers = [];
+  for (const m of svg.matchAll(/<text x="([-\d.e]+)" y="([-\d.e]+)"[^>]*font-size="([-\d.e]+)">([^<]*)<\/text>/g)) {
+    numbers.push({ x: +m[1], y: +m[2] - 0.34 * +m[3], fs: +m[3], label: m[4] });
+  }
+  return { geom, fields, circlesOut, numbers };
+}
+
+/* A digit advances about 0.56 em in Nunito Sans and stands about 0.72 em tall;
+ * the ding check keeps the plan's own 0.7-em reach disc (Appendix C) because
+ * that is the model the offset is solved against. */
+const boxHalfW = (n) => 0.28 * n.fs * n.label.length;
+const boxHalfH = (n) => 0.36 * n.fs;
+function boxToPoint(n, px, py) {
+  const dx = Math.max(Math.abs(px - n.x) - boxHalfW(n), 0);
+  const dy = Math.max(Math.abs(py - n.y) - boxHalfH(n), 0);
+  return Math.hypot(dx, dy);
+}
+
+const G_RENDER_SHAPES = [
+  [9, 1, 0], [9, 2, 0], [9, 3, 0], [9, 4, 0], [9, 6, 0], [5, 2, 0], [9, 3, 7],
+];
+
+test("no inner index number meets the ding or a neighbour on the G-RENDER shapes", () => {
+  for (const [rim, inner, bottom] of G_RENDER_SHAPES) {
+    const { geom, fields, circlesOut, numbers } = drawn(rim, inner, bottom);
+    const R = 100;
+    const ding = circlesOut.find((c) => c.r === R * geom.r_ding);
+    assert.ok(ding, `${rim}/${inner}/${bottom}: the ding circle was not found`);
+    const innerLabels = new Set(Object.keys(fields)
+      .filter((id) => fields[id][3] === "inner").map((id) => fields[id][5]));
+    const mine = numbers.filter((n) => innerLabels.has(n.label));
+    assert.equal(mine.length, inner, `${rim}/${inner}/${bottom}: inner numbers found`);
+    for (const n of mine) {
+      const reach = 0.7 * n.fs;
+      const label = `${rim}/${inner}/${bottom} number ${n.label}`;
+      assert.ok(Math.hypot(n.x - ding.x, n.y - ding.y) - ding.r - reach >= 1,
+        `${label} is within 0.01 R of the ding`);
+      for (const c of circlesOut) {
+        if (c === ding) continue;
+        const toCentre = Math.hypot(n.x - c.x, n.y - c.y);
+        if (Math.abs(toCentre - (c.r + geom.n_in * R)) < 1e-6) continue;   /* its own field */
+        assert.ok(boxToPoint(n, c.x, c.y) - c.r >= 0,
+          `${label} touches a field circle at (${c.x.toFixed(1)}, ${c.y.toFixed(1)})`);
+      }
+      for (const o of numbers) {
+        if (o === n) continue;
+        assert.ok(Math.abs(n.x - o.x) >= boxHalfW(n) + boxHalfW(o)
+          || Math.abs(n.y - o.y) >= boxHalfH(n) + boxHalfH(o),
+          `${label} touches number ${o.label}`);
+      }
+    }
+  }
 });
