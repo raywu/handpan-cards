@@ -1107,7 +1107,7 @@ Approval readiness: PASS
 | Design Review | `/plan-design-review` | UI and UX gaps | 0 | not run | the DS step (section 10) carries the design work |
 | DX Review | `/plan-devex-review` | Developer experience | 0 | not run | not applicable |
 
-- **OUTSIDE COVERAGE:** Codex completed. Its three findings were each checked against main `e749957` and accepted; none was rejected.
+- **OUTSIDE COVERAGE:** Codex completed. All three findings were accepted. The P1 was checked against the record functions on main `e749957`. The two P2s follow from this plan's own text and were not re-run; R8's example string is Codex's (UNVERIFIED here).
 - **CROSS-MODEL:** no disagreement left open. Codex's P1 overturned risk 6 of this plan.
 - **VERDICT:** ENG CLEARED at `016dfe0` plus this commit, with section 19 binding. Execution waits for Lane C of the beginner-decks plan, and five merge conditions stay with the owner (R4).
 
