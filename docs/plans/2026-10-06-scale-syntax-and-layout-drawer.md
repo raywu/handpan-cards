@@ -1357,6 +1357,58 @@ Lane S2 merged as #265 (main 1f4603b, 719 mutant files). Review: PASS_WITH_NITS 
 
 **Counts.** S3's forecast is +3 plus its 20.5 mutants over main at its base, which is 719.
 
+### 20.9 Coordinator record after Lane S3 and the spec follow-up (2026-10-07)
+
+Lane S3 merged as #267 (main c9adc5e, 726 mutant files). Review: PASS_WITH_NITS at 661c6fc. Lane U3 of the two-beginner-decks plan merged as #266. The design spec was amended by #268 (main 6c01e2f; one file, docs only; one review FAIL at bd9f03b, then PASS_WITH_NITS at 30d737c). The older text is not edited; read it through this section.
+
+**What S3 left on main, for every later lane brief.**
+
+- The engine option is `seats: {rim?, inner?, bottom?}`; `order` is gone from `solve`'s options.
+- Share links are written as version 3. Versions 1 and 2 still decode.
+- Saved scales live under `hpfc.scales.v3`. The first boot copies the old key and leaves it untouched.
+- In `index.html`, `layoutOrder` and `syncLayoutOrder` are now `layoutSeats` and `syncLayoutSeats`. Any lane block that names the old functions means the new ones.
+- The editor carries `mirrorBottom` and `anchor` with no control (AM-8). W1 adds the controls.
+
+**Owner answers, interview 8 (binding).**
+
+1. A bottom note added to a pan with MIRROR TOP on: **MIRROR BOTTOM stays off.** AM-4 and AD-AM-4 stand. The spec now says so (#268).
+2. The drawer opens with focus on the **first pickable note**.
+3. Between DR1 and DR2 today's ROTATE, MOVE and RESET live **inside the drawer**: Edit only, with their own short hint, closed by Escape with the drawer. DR2 replaces the group in place. Ids: `#scale-legacy-group`, `#scale-legacy-hint`.
+4. Between G2b and DR1 the sheet has no layout hint: **accepted.**
+
+**The DR1 and DR2 blocks, corrected.** 20.8 item 2 moved the removal of ROTATE and MOVE to DR2. In addition: DR1's Owns gains `#scale-legacy-group` and `#scale-legacy-hint`; DR1's `tools/sandbox.js` line keeps the four `scale-rot-` and `scale-move-` ids and adds the drawer and legacy-group ids; the removal of those four ids from `tools/sandbox.js` is DR2's. DR1's TDD floor "one test per acceptance line of the DS spec" means the lines tagged [DR1] in the spec as amended by #268.
+
+**Design spec citations.** The spec is one text since #260. Every citation in this plan of spec section 20, 21 or 22, or of "spec section 21.3 lines 108 to 116", is read through the spec's decision index and its acceptance list by tag. The acceptance list has 133 lines: W1 21, G2b 5, DR1 37, DR2 70.
+
+**Coordinator readings in the spec follow-up (owner away; listed for the owner).**
+
+- The DR1-era hint copy is the lane's wording, not the owner's: `Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.` The owner confirms or rewords it before DR1 starts.
+- The legacy group includes today's RESET; it is shown on Edit by un-hiding the group.
+- Ring order for arrows, Home, End and NEXT NOTE is seat number.
+- A swap followed by its undo returns the unsaved-layout notice to its earlier state.
+- An old `mirror: true` deck with no bottom notes opens with `Layout changed from the default.`; once a bottom note is typed, MIRROR BOTTOM joins the comparison (stored reads on, current is off) and the notice reads `Layout not saved yet.` The comparison rule decides, no separate sentence does.
+- With nothing picked a tap writes status row 10.
+- Left open for the owner, none of them needed before DR2: a second swap inside 600 ms; hold, Space, Enter or drag start on a single-note ring while another note is picked; NEXT NOTE then Escape; focus after a refused tap on another ring; the anchor helper copy after note 1 has been swapped away; the notice when a ring's count differs from the stored deck; the soft keyboard when the drawer closes over an invalid box.
+
+**Carried into Lane W1 from the S3 review** (inside W1's Owns, which already has both `solve` call sites' preview test and the sheet tests):
+
+- Nothing tests that `generateDeck`'s re-solve passes `mirrorBottom`: removing it from that call survives every unit test. W1 can now make the state from the sheet, so W1 adds the test "a deck generated with MIRROR TOP on and MIRROR BOTTOM off re-solves to the same fields" and the mutant "generateDeck omits mirrorBottom" (forecast in 20.5 under S3, not committed there).
+
+**Lane W1's block, corrected (coordinator auto-decisions).**
+
+- Its goal, Owns and tests 6 and 7 read as 20.5 rewrote them: two switches, `#scale-mirror` (MIRROR TOP) and `#scale-mirror-bottom` (MIRROR BOTTOM).
+- Its acceptance list is the 21 spec lines tagged [W1]. The tests use scales today's grammar accepts; G2b flips the grammar after W1.
+- Its acceptance grep for `LEFT-FIRST` and `RIGHT-FIRST` printing 0 cannot hold while the `LAYOUT_HINT` constant names those buttons, and the hint's wording is G2b's. W1 makes the smallest true edit: in that constant only, the button names become `MIRROR TOP` (`Layout is a guess. Tap MIRROR TOP if your pan is mirrored.`). G2b still owns the final text. W1 owns every test and mutant that quotes the old sentence.
+- The inaccurate `// false = right-first` comment of 20.8 goes with the buttons W1 replaces.
+
+**Carried into Lane P1**: the `select.build` assertion of 20.8 (fields follow the anchor). S3 did not add it.
+
+**Carried, no owner yet** (S3 review nits): no mutant for "`t` decoded as both" or "`t` accepted in version 2" (both have killing tests); the test for a crowded rim moves one ring, not every ring; the rename test rotates instead of renaming; no test saves a deck while the old storage key still holds a list; the version 3 reader accepts seats that are not canonical; `seatsField` would throw on a ring that is not an array (unreachable today); stale `order` wording in `index.html` comments, `tests/share.test.js` and `docs/ENGINE-SPEC.md` (DOC lane). Spec nits from the #268 review, for a docs pass before DR1: the sentence "This includes the legacy group's buttons in the DR1 build" sits after the wrong sentence in section 6 (focus goes to the toggle, as acc 131 says); acc 133 should say MIRROR TOP ends pressed; the compared-layout sentence in section 4 names seats with no DR1 qualifier; "in the same place" is loose for RESET.
+
+**Counts.** W1's forecast is +1 (bottom switch inert) plus its own three and the carried `generateDeck` mutant, over main at its base, which is 726.
+
+**Lane order from here.** W1; G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
