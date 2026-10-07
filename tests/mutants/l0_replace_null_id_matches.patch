@@ -1,5 +1,5 @@
-# kills: a boot after a field edit shows exactly one deck, in the same chip position
-# suite: node --test --test-name-pattern ^a.boot.after.a.field.edit.shows.exactly.one.deck..in.the.same.chip.position$ tests/app.test.js
+# kills: editing a deck with no readable id keeps an unreadable record and replaces its own
+# suite: node --test --test-name-pattern ^editing.a.deck.with.no.readable.id.keeps.an.unreadable.record.and.replaces.its.own$ tests/app.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    const oldId = stringDeckId(oldStr);
    const list = savedScales();
 -  const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
-+  const at = list.length - 1;
++  const at = list.findIndex(r => r && recordDeckId(r) === oldId);
    if (at < 0) { rememberScale(seed); return; }
    const out = [];
    list.forEach((r, i) => {
