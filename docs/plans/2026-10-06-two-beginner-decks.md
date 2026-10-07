@@ -2647,3 +2647,50 @@ user.
 
 **Stop conditions:** an existing sequence test needs an edit beyond the S7
 title; test 2 cannot hold; the time bound cannot hold.
+
+### Lane U1b, amendment 1 (2026-10-06, after CI run 37578451285)
+
+**Fact.** At `4ef5407` CI fails one existing test, "generated decks: every
+tier deals its own tier, in range and connected, under 50ms":
+`REGISTER_HOME_DECK intermediate seed 0 took 52ms`. That deck has 117 cards
+uncapped and truncates. Its cold MEDIUM pick is about 15 ms locally at
+`1576ef1` and about three times that in CI, so Lane U1 alone already left it
+near the bound. A second pass on top of a discarded 60,000-node DFS cannot
+fit. The lane stopped as instructed. The 50 ms test is not edited.
+
+**Auto-decision AD-U1b-1 (AFK, mine, owner can overturn).** Do not pay for
+a DFS whose result is thrown away. Replaces the first two bullets of the
+Design above:
+- Count the DFS's nodes exactly before running it, by a dynamic programme
+  over (depth, last card, colour used) on the connect matrix with the same
+  three prunes, for both lengths. It visits no sequence and classifies
+  nothing. The DFS truncates if and only if this count exceeds the budget.
+- Count within budget: run the DFS exactly as at `1576ef1`. No rng is
+  consumed.
+- Count over budget and an rng was passed: skip the DFS and fill the cells
+  by the random walks only. The walk budget is a named constant chosen so
+  that the cold MEDIUM pick on `REGISTER_HOME_DECK` is no slower than at
+  `1576ef1`, measured locally and stated in the report.
+- Count over budget and no rng (`mediumCells` from the shape tests): the
+  truncated DFS as today, `stats.truncated` true.
+
+**Added to the TDD order:** a test "the node count predicts truncation
+exactly": for the built-ins, Kurd 10, Amara 10, generated Pygmy 18 and the
+two truncating seeds, the count equals `stats.nodes` of an unbounded DFS
+(budget `Infinity`), and `count > MEDIUM_ENUM_BUDGET` equals
+`stats.truncated` at the default budget. One mutant for it (for example, the
+count ignores the colour prune).
+
+**Acceptance, replacing the 2.5x line:** cold and median MEDIUM pick on
+`REGISTER_HOME_DECK` and on the chromatic seed are no slower than at
+`1576ef1` (local medians, stated). The 50 ms test is green in CI unedited.
+
+The lane's four stated deviations stand, except that the "quarter budget"
+becomes the named walk-budget constant above.
+
+**Owner decisions, 2026-10-06 (second interview, binding):**
+- OQ10 CLOSED: "Leave as is". OQ11 CLOSED: "After Lane B" (docs-only task).
+- Numerals Q3 CLOSED: augmented `+` "Leave out".
+- Pygmy: "Yes, redraw it". The scale-syntax plan regenerates the shipped
+  Pygmy from its string under the new solver (seats unchanged, top circles
+  2.2% larger, PDFs rebuilt). Not in this plan.
