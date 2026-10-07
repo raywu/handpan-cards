@@ -2282,3 +2282,65 @@ test("the node count predicts truncation exactly", () => {
     assert.strictEqual(count > I.MEDIUM_ENUM_BUDGET, bounded.truncated, `${id}: count predicts truncation`);
   }
 });
+
+// Lane U1b amendment 2 (PR #254 review 2): the sampled cells must not skew
+// the owner's MEDIUM shape (home start 40%, pure-triad 33%, each within 4 pp)
+// on a pan whose enumeration does not fit the budget.
+const OVER_BUDGET_SEEDS = [TRUNCATING_SEEDS[1], REGISTER_HOME_SEED];
+
+test("MEDIUM on an over-budget pan deals inside the shape bands", () => {
+  for (const str of OVER_BUDGET_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const ctx = I.tierContext(deck);
+    assert.ok(I.mediumNodeCount(deck, ctx, I.buildConnectMatrix(deck)) > I.MEDIUM_ENUM_BUDGET,
+      `${str} must be over budget`);
+    const anchors = new Set(host(ctx.anchorsList));
+    const rootPc = (i) => deck.fields[deck.chords[i].roots[0]][2] % 12;
+    const picks = 1200;
+    let home = 0;
+    let pure = 0;
+    for (let seed = 0; seed < picks; seed += 1) {
+      const chords = host(S.pick(deck, S.mulberry32(seed), null, "intermediate").chords);
+      if (rootPc(chords[0]) === ctx.home) home += 1;
+      if (chords.every((i) => anchors.has(i))) pure += 1;
+    }
+    assert.ok(Math.abs(home / picks - 0.4) <= 0.04, `${str}: home start ${home / picks}`);
+    assert.ok(Math.abs(pure / picks - 1 / 3) <= 0.04, `${str}: pure-triad ${pure / picks}`);
+  }
+});
+
+test("an over-budget pan fills every pure cell its anchors allow", () => {
+  for (const str of OVER_BUDGET_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const ctx = I.tierContext(deck);
+    const matrix = I.buildConnectMatrix(deck);
+    const anchors = host(ctx.anchorsList);
+    const pool = anchors.slice();
+    const startSet = host(I.tierStartSet(deck, "intermediate", I.tierPool(deck, "intermediate", ctx.anchorsList), ctx))
+      .filter((i) => anchors.includes(i));
+    const expected = [];
+    for (const len of [3, 4]) {
+      const seq = new Array(len);
+      const rec = (depth) => {
+        if (depth === len) {
+          if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
+              I.classifyTier(deck, seq, ctx) === "intermediate") expected.push(seq.join(","));
+          return;
+        }
+        for (const c of depth === 0 ? startSet : pool) {
+          if (depth > 0 && (c === seq[depth - 1] || !matrix[seq[depth - 1]][c])) continue;
+          seq[depth] = c;
+          rec(depth + 1);
+        }
+      };
+      rec(0);
+    }
+    assert.ok(expected.length > 0, `${str}: the anchors enumeration is empty`);
+    const cells = host(I.mediumCells(deck, {}, undefined, S.mulberry32(7)));
+    const got = [];
+    cells.filter((c) => c.kind === "pure").forEach((c) => c.seqs.forEach((s) => got.push(s.join(","))));
+    assert.deepStrictEqual(got.sort(), expected.sort(), `${str}: pure cells against the anchors enumeration`);
+  }
+});
