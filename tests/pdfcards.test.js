@@ -134,7 +134,7 @@ function pages(bytes) {
 // thirds, one with a mixed root/tone voicing) so it takes an override.
 function fixture(seed) {
   const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
-  const parsed = E.core.parseSeed(seed || "(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+  const parsed = E.core.parseLegacySeed(seed || "(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
   assert.ok(parsed.ok, "the fixture seed must parse");
   const built = E.select.build(parsed.value);
   assert.ok(built.ok, "the fixture seed must build");
@@ -284,7 +284,7 @@ test("legendDemo on a chordless pan picks the highest and lowest field, not a ch
   // [other, root] order, or picking [ids[0], ids[last]]) would demo the
   // wrong pair of fields on a pan with nothing to demo a chord with.
   const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
-  const parsed = E.core.parseSeed("(C3) G3", {});
+  const parsed = E.core.parseLegacySeed("(C3) G3", {});
   assert.ok(parsed.ok, "fixture seed must parse");
   const built = E.select.build(parsed.value);
   assert.ok(built.ok, "fixture seed must build");
@@ -303,7 +303,7 @@ test("fromGenerated throws when geom.ext is missing, rather than silently defaul
   // no visible error. A mis-mapping that resurrects a fallback instead of
   // this throw is exactly the regression the comment describes.
   const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
-  const p = E.core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+  const p = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
   const built = E.select.build(p.value);
   const value = JSON.parse(JSON.stringify(built.value));
   assert.ok("ext" in value.geom, "fixture assumption: ext is normally present");

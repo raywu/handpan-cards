@@ -52,7 +52,7 @@ function host(value) {
 }
 
 function parsed(str, options) {
-  const r = core.parseSeed(str, options);
+  const r = core.parseLegacySeed(str, options);
   assert.equal(r.ok, true,
     `expected ${JSON.stringify(str)} to parse, got ${r.code}: ${r.reason}`);
   return host(r.value);
@@ -580,7 +580,7 @@ test("decode propagates parseSeed's own code for an invalid seed", () => {
     // mutant h_decode_repairs.patch injects - but it no longer catches decode
     // re-parsing the wrong string, because there is no longer an independent
     // expectation to disagree with it.
-    assert.equal(r.reason, core.parseSeed(core.formatSeed(seed)).reason,
+    assert.equal(r.reason, core.parseLegacySeed(core.formatSeed(seed)).reason,
       `decode changed the reason for ${row.name}`);
     checked += 1;
   }
@@ -1040,7 +1040,7 @@ test("a version byte BELOW the oldest format is a corrupt payload", () => {
 /* ---------------- Lane L0: the scale-line reader is chosen by version ------ */
 
 test("decode chooses its scale-line reader from the version", () => {
-  const seed = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
+  const seed = core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
   const link = share.encode(seed).value;
   const realLegacy = core.parseLegacySeed;
   const realSeed = core.parseSeed;

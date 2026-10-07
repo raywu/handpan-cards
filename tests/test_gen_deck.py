@@ -67,9 +67,10 @@ CODES = {"NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
          "NEEDS_NEWER_APP", "NO_THIRDS"}
 
 
-def run_gen(*args, **kw):
-    """-> CompletedProcess for `node tools/gen_deck.js <args>`."""
-    return subprocess.run([shutil.which("node") or "node", GEN_DECK, *args],
+def run_gen(*args, legacy=True, **kw):
+    """-> CompletedProcess for `node tools/gen_deck.js [--legacy] <args>`."""
+    flags = ["--legacy"] if legacy else []
+    return subprocess.run([shutil.which("node") or "node", GEN_DECK, *flags, *args],
                           capture_output=True, text=True, cwd=paths.ROOT,
                           timeout=120, **kw)
 
@@ -118,6 +119,12 @@ class GenDeckCliTest(unittest.TestCase):
             with self.subTest(chord=chord.get("main")):
                 self.assertEqual(set(chord),
                                  {"main", "sup", "subtitle", "fields", "roots"})
+
+    def test_legacy_flag_reads_the_seed_with_the_legacy_reader(self):
+        plain = json.loads(run_gen(SEED_TOP_ONLY, legacy=False).stdout)
+        flagged = json.loads(run_gen(SEED_TOP_ONLY, legacy=True).stdout)
+        self.assertEqual(flagged, plain)
+        self.assertEqual(run_gen("--legacy", "--list-presets", legacy=False).returncode, 0)
 
     def test_the_canonical_seed_round_trips_through_the_cli(self):
         payload = generate(SEED_TOP_ONLY)
@@ -244,7 +251,7 @@ def engine_reason(code, seed):
     script = (
         'const {loadEngine} = require("./tests/helpers/engine.js");'
         'const H = loadEngine(["core","voicing","layout","naming","select"]);'
-        'const r = H.core.parseSeed(process.argv[1]);'
+        'const r = H.core.parseLegacySeed(process.argv[1]);'
         'process.stdout.write(r.ok ? "" : r.reason);')
     proc = subprocess.run([shutil.which("node") or "node", "-e", script, seed],
                           capture_output=True, text=True, cwd=paths.ROOT,
