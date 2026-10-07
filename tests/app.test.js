@@ -1951,7 +1951,7 @@ test("tabbing away from DELETE disarms it too", () => {
 // Phase 5 / D5. A generated layout is a GUESS; the real pan may have the same
 // notes in a different arrangement. The LAYOUT section corrects it - rotate the
 // rim, move a single note - entirely from the keyboard, and the correction
-// travels in the share URL as options.order without moving the deck id (D5-5).
+// travels in the share URL as options.seats without moving the deck id (D5-5).
 
 // Stage 3 moved the correction ONTO the pan: there is no slot list any more, so
 // every oracle below reads the pan MOCK the Edit page draws - which is the only
@@ -2089,7 +2089,8 @@ test("ROTATE moves every note one position and SAVE keeps the id but moves the l
   app.els["scale-generate"].click();
   assert.strictEqual(app.deckId(), d.id, "a layout correction moved the deck id (D5-5)");
   const after = app.registry()[d.id];
-  assert.ok(Array.isArray(after.options.order), "the correction did not reach the deck");
+  assert.ok(after.options.seats && Array.isArray(after.options.seats.rim),
+    "the correction did not reach the deck");
   const moved = link(app, d.id);
   assert.strictEqual(moved.ok, true, moved.reason);
   assert.notStrictEqual(moved.value, before.value,
@@ -2249,7 +2250,7 @@ test("RESET clears the correction to ABSENT in one action, not to the identity",
   app.els["scale-generate"].click();
 
   const after = app.registry()[d.id];
-  assert.strictEqual(after.options.order === undefined || after.options.order === null, true,
+  assert.strictEqual(after.options.seats === undefined || after.options.seats === null, true,
     "RESET left an identity permutation on the deck instead of clearing it");
   assert.strictEqual(link(app, d.id).value, before.value,
     "RESET did not restore the byte-for-byte default share link");
@@ -5531,18 +5532,18 @@ test("AP1-3 wheelEndDecision table", () => {
 });
 
 /* ------------------------------------------------ AP2: sheet, panel, runGenerate, setMode */
-const SHEET_LETS = "[editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode]";
+const SHEET_LETS = "[editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode]";
 const sheetLets = (app) => plain(app.get(SHEET_LETS));
 
 test("AP2-1 sheet open leaves the expected state per mode", () => {
   const app = boot({ layout: true });
   const id = app.generate(AMARA_STRING, { palette: 3, mirror: true, name: "Mine" }).value.id;
-  app.run(`CUSTOM[${JSON.stringify(id)}].options.order = [1, 0, 2, 3, 4, 5, 6, 7]`);
+  app.run(`CUSTOM[${JSON.stringify(id)}].options.seats = { rim: [1, 0, 2, 3, 4, 5, 6, 7] }`);
   const edit = () => app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
-  const dirty = () => app.run(`refusal = "stale"; nameDirty = true; palette = 5; mirror = true; layoutOrder = [7, 6, 5, 4, 3, 2, 1, 0]; layoutSel = 4;`);
-  const create = { editingId: null, refusal: null, nameDirty: false, palette: 0, mirror: false, layoutOrder: null, layoutSel: 0, mode: "A" };
-  const edited = { editingId: id, refusal: null, nameDirty: false, palette: 3, mirror: true, layoutOrder: [1, 0, 2, 3, 4, 5, 6, 7], layoutSel: 0, mode: "A" };
-  const asObject = (a) => { const [editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode] = a; return { editingId, refusal, nameDirty, palette, mirror, layoutOrder, layoutSel, mode }; };
+  const dirty = () => app.run(`refusal = "stale"; nameDirty = true; palette = 5; mirror = true; layoutSeats = { rim: [7, 6, 5, 4, 3, 2, 1, 0] }; layoutSel = 4;`);
+  const create = { editingId: null, refusal: null, nameDirty: false, palette: 0, mirror: false, layoutSeats: null, layoutSel: 0, mode: "A" };
+  const edited = { editingId: id, refusal: null, nameDirty: false, palette: 3, mirror: true, layoutSeats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, layoutSel: 0, mode: "A" };
+  const asObject = (a) => { const [editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode] = a; return { editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode }; };
   const state = () => asObject(sheetLets(app));
   const boxes = () => plain(app.get(`[scaleBox.value, nameBox.value, genBtn.textContent]`));
 
@@ -5801,4 +5802,181 @@ test("saving a deck with no readable id twice leaves one record", () => {
   makeCustom(app, NO_ID_A);
   makeCustom(app, NO_ID_A);
   assert.strictEqual(scalesOf(app).length, 1, JSON.stringify(scalesOf(app)));
+});
+
+/* ------------------------------------------------ Lane S3: per-ring seats */
+
+const PYGMY_STRING = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const ringIdsOf = (d, ring) => Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === ring);
+const anglesByNote = (d) => {
+  const out = {};
+  for (const id of Object.keys(d.fields)) out[d.fields[id][F_NAME] + d.fields[id][F_OCT]] = d.fields[id][4];
+  return out;
+};
+
+test("S3: ROTATE on a rim note writes the rim's seats and no other ring's", () => {
+  const app = boot();
+  const d = makeCustom(app, PYGMY_STRING);
+  openEdit(app, d);
+  const rim = ringIdsOf(d, "rim");
+  panTap(app, d.fields[rim[0]][F_NAME] + d.fields[rim[0]][F_OCT]);
+  app.els["scale-rot-r"].click();
+  const seats = plain(app.get("layoutSeats"));
+  assert.deepStrictEqual(Object.keys(seats), ["rim"]);
+  assert.deepStrictEqual(seats.rim, rim.map((_, i) => (i + 1) % rim.length));
+});
+
+test("S3: MOVE swaps two seats inside one ring and RESET clears every ring", () => {
+  const app = boot();
+  const d = makeCustom(app, PYGMY_STRING);
+  openEdit(app, d);
+  const bottom = ringIdsOf(d, "bottom");
+  panTap(app, d.fields[bottom[0]][F_NAME] + d.fields[bottom[0]][F_OCT]);
+  app.els["scale-move-r"].click();
+  const seats = plain(app.get("layoutSeats"));
+  assert.deepStrictEqual(Object.keys(seats), ["bottom"]);
+  const want = bottom.map((_, i) => i);
+  want[0] = 1;
+  want[1] = 0;
+  assert.deepStrictEqual(seats.bottom, want);
+  app.els["scale-layout-reset"].click();
+  assert.strictEqual(app.get("layoutSeats"), null);
+});
+
+test("S3: the selected note is the tapped one on a pan with two corrected rings", () => {
+  const app = boot();
+  const d = makeCustom(app, PYGMY_STRING);
+  openEdit(app, d);
+  const name = (id) => d.fields[id][F_NAME] + d.fields[id][F_OCT];
+  panTap(app, name(ringIdsOf(d, "bottom")[0]));
+  app.els["scale-rot-r"].click();
+  panTap(app, name(ringIdsOf(d, "rim")[0]));
+  app.els["scale-rot-r"].click();
+  for (const note of Object.keys(mockPlaces(app))) {
+    assert.strictEqual(panTap(app, note), note);
+    assert.strictEqual(mockSelected(app), note, `the tap on ${note} selected another note`);
+  }
+});
+
+test("S3: a cross-ring arrangement is refused by generateDeck", () => {
+  const app = boot();
+  const rim = 11;
+  const crossed = Array.from({ length: rim }, (_, i) => i);
+  crossed[0] = rim;
+  const res = plain(app.get(`generateDeck(${JSON.stringify(PYGMY_STRING)}, { seats: { rim: ${JSON.stringify(crossed)} } })`));
+  assert.strictEqual(res.ok, false);
+  assert.deepStrictEqual(app.registry(), {}, "a refused arrangement still registered a deck");
+});
+
+test("S3: seats, anchor and a one-ring mirror travel through a share link and rebuild the same pan", () => {
+  const app = boot();
+  const options = { mirror: true, mirrorBottom: false, anchor: "between", name: "Travel",
+                    seats: { rim: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0], bottom: [1, 2, 3, 4, 5, 0] } };
+  const made = app.generate(PYGMY_STRING, options);
+  assert.strictEqual(made.ok, true, made.reason);
+  const url = link(app, made.value.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  assert.strictEqual(payload(url.value).charAt(0), "3");
+
+  const other = boot();
+  const opened = openShare(other, payload(url.value));
+  assert.strictEqual(opened.ok, true, opened.reason);
+  const back = other.registry()[made.value.id];
+  assert.deepStrictEqual(anglesByNote(back), anglesByNote(app.registry()[made.value.id]));
+  assert.deepStrictEqual(plain(back.options).seats, options.seats);
+  assert.strictEqual(back.options.anchor, "between");
+  assert.strictEqual(back.options.mirror, true);
+  assert.strictEqual(back.options.mirrorBottom, false);
+});
+
+test("S3: an anchor and a seat list are solved together, not one after the other", () => {
+  const app = boot();
+  const seats = { rim: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0] };
+  const made = app.generate(PYGMY_STRING, { anchor: "between", seats });
+  assert.strictEqual(made.ok, true, made.reason);
+  const want = plain(app.get(`(() => {
+    const seed = HPE.core.parseSeed(${JSON.stringify(PYGMY_STRING)}, { anchor: "between" }).value;
+    return HPE.layout.solve(seed, { mirror: false, mirrorBottom: false, anchor: "between",
+                                    seats: ${JSON.stringify(seats)} }).value.fields;
+  })()`));
+  const got = app.registry()[made.value.id].fields;
+  for (const id of Object.keys(want)) {
+    assert.strictEqual(got[id][4], want[id][4], `field ${id} sits at a different angle`);
+  }
+});
+
+test("S3: editing a deck keeps its anchor and a bottom mirror that differs from the top", () => {
+  const app = boot();
+  const made = app.generate(PYGMY_STRING, { mirror: true, mirrorBottom: false, anchor: "between" });
+  assert.strictEqual(made.ok, true, made.reason);
+  const id = made.value.id;
+  app.select(id);
+  app.clickChip(app.registry()[id].name);
+  app.els["scale-rot-r"].click();
+  app.els["scale-generate"].click();
+  const after = app.registry()[id];
+  assert.strictEqual(after.options.anchor, "between", "an edit dropped the anchor");
+  assert.strictEqual(after.options.mirror, true);
+  assert.strictEqual(after.options.mirrorBottom, false, "an edit dropped the bottom mirror");
+});
+
+test("S3: the saved list lives under hpfc.scales.v3 and records carry the current version", () => {
+  const app = boot();
+  assert.strictEqual(app.get("SCALES_KEY"), "hpfc.scales.v3");
+  makeCustom(app, PYGMY_STRING);
+  const list = JSON.parse(app.store["hpfc.scales.v3"]);
+  assert.strictEqual(list.length, 1);
+  assert.strictEqual(list[0].v, 3);
+  assert.strictEqual(app.store["hpfc.scales"], undefined, "the old key was written");
+});
+
+test("S3: the first boot copies the old list across and leaves the old key alone", () => {
+  const old = JSON.stringify([{ v: 2, s: AMARA_STRING, o: { palette: 2, name: "Old" } }]);
+  const app = boot({ storage: { "hpfc.scales": old } });
+  assert.strictEqual(app.store["hpfc.scales"], old, "the old key was changed");
+  assert.deepStrictEqual(JSON.parse(app.store["hpfc.scales.v3"]), JSON.parse(old));
+  assert.deepStrictEqual(Object.values(app.registry()).map((d) => d.name), ["Old"]);
+});
+
+test("S3: a list already under the new key is never overwritten by the old one", () => {
+  const old = JSON.stringify([{ v: 2, s: AMARA_STRING, o: { name: "Old" } }]);
+  const fresh = JSON.stringify([{ v: 3, s: "(C3) G3 C4 D4", o: { name: "Fresh" } }]);
+  const app = boot({ storage: { "hpfc.scales": old, "hpfc.scales.v3": fresh } });
+  assert.strictEqual(app.store["hpfc.scales.v3"], fresh);
+  assert.deepStrictEqual(Object.values(app.registry()).map((d) => d.name), ["Fresh"]);
+});
+
+test("S3: when the copy cannot be written the old list still serves this session", () => {
+  const old = JSON.stringify([{ v: 2, s: AMARA_STRING, o: { name: "Old" } }]);
+  const app = boot();
+  app.store["hpfc.scales"] = old;
+  app.run(`localStorage.setItem = () => { throw new Error("denied"); }`);
+  app.run("restoreScales()");
+  assert.deepStrictEqual(Object.values(app.registry()).map((d) => d.name), ["Old"]);
+  assert.strictEqual(app.store["hpfc.scales"], old);
+  assert.strictEqual("hpfc.scales.v3" in app.store, false);
+});
+
+test("S3: a stored v2 record's flat order becomes per-ring seats at boot", () => {
+  const order = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 15, 16, 11];
+  const rec = [{ v: 2, s: PYGMY_STRING, o: { palette: 1, name: "Moved", order } }];
+  const app = boot({ storage: { "hpfc.scales": JSON.stringify(rec) } });
+  const d = Object.values(app.registry())[0];
+  assert.deepStrictEqual(plain(d.options).seats, {
+    rim: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0],
+    bottom: [1, 2, 3, 4, 5, 0],
+  });
+  assert.strictEqual("order" in plain(d.options), false);
+});
+
+test("S3: a stored cross-ring order boots as the generated arrangement, not dropped", () => {
+  const order = Array.from({ length: 17 }, (_, i) => 16 - i);
+  const rec = [{ v: 2, s: PYGMY_STRING, o: { name: "Crossed", order } }];
+  const app = boot({ storage: { "hpfc.scales": JSON.stringify(rec) } });
+  const d = Object.values(app.registry())[0];
+  assert.ok(d, "the record was dropped");
+  assert.strictEqual(d.name, "Crossed");
+  assert.strictEqual("seats" in plain(d.options), false);
+  const plainDeck = boot().generate(PYGMY_STRING, { name: "Crossed" }).value;
+  assert.deepStrictEqual(anglesByNote(d), anglesByNote(plainDeck));
 });

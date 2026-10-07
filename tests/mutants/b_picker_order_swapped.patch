@@ -2100,7 +2100,8 @@ diff --git a/index.html b/index.html
  // plus its options - never the built deck, which is derived (D14).
  const STORE_KEY = "hpfc";
  const DEFAULT_DECK = "kurd";
- const SCALES_KEY = "hpfc.scales";
+ const SCALES_KEY = "hpfc.scales.v3";
+ const LEGACY_SCALES_KEY = "hpfc.scales";
  const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
  let store = readStore(STORE_KEY) || {};
  if (typeof store !== "object" || Array.isArray(store)) store = {};

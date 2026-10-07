@@ -5,12 +5,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -268,7 +268,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   // measured against v2's (D5-4). v1 reserved line 2 and allowed nothing on
-   // it; v2 spends it on the correction. null is ABSENT, undefined is CORRUPT.
+@@ -267,7 +267,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // both come back tagged so decode converts the one and checks the other
+   // against the seed they travel with.
    function readDeltaLine(line, version) {
 -    if (version < 2) return line === "" ? null : undefined;
 +    if (version < 2) return null;
      if (line === "") return null;
-     if (!ORDER_RE.test(line)) return undefined;
-     var order = [];
+     var i;
+     if (version === 2) {

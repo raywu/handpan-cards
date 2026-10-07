@@ -1,0 +1,16 @@
+# kills: S3: the first boot copies the old list across and leaves the old key alone
+# suite: node --test --test-name-pattern ^S3..the.first.boot.copies.the.old.list.across.and.leaves.the.old.key.alone$ tests/app.test.js
+# The boot copy deletes the old key, so rolling back to a v2 build loses the
+# saved scales (R7: the old key is never written or deleted).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7764,7 +7764,7 @@ function copyLegacyScales() {
+   try { have = localStorage.getItem(SCALES_KEY); } catch (e) { return; }
+   if (have !== null) return;
+   const old = readStore(LEGACY_SCALES_KEY);
+-  if (Array.isArray(old)) writeScales(old);
++  if (Array.isArray(old)) { writeScales(old); try { localStorage.removeItem(LEGACY_SCALES_KEY); } catch (e) {} }
+ }
+ // Queue row 132: an EXISTING record is rewritten AT ITS INDEX, and only a
+ // genuinely new one is appended. restoreScales rebuilds the registry in list

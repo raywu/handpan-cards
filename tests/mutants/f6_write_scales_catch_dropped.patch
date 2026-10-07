@@ -7,11 +7,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5644,6 +5644,6 @@
-   const raw = readStore(SCALES_KEY);
-   return Array.isArray(raw) ? raw : [];
+@@ -7753,7 +7753,7 @@ function savedScales() {
  }
  function writeScales(list) {
+   scalesMemory = list;
 -  try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
 +  localStorage.setItem(SCALES_KEY, JSON.stringify(list));
  }
+ // R7: the records changed shape (per-ring seats), so they live under a new key.
+ // The first boot with no list under it COPIES the old one across - the old key

@@ -1,0 +1,16 @@
+# kills: S3: the saved list lives under hpfc.scales.v3 and records carry the current version
+# suite: node --test --test-name-pattern ^S3..the.saved.list.lives.under.hpfc.scales.v3.and.records.carry.the.current.version$ tests/app.test.js
+# The list is written under the old key again, so a v2 build reading it would
+# misread v3 records (R7).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7558,7 +7558,7 @@ const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"r
+ // plus its options - never the built deck, which is derived (D14).
+ const STORE_KEY = "hpfc";
+ const DEFAULT_DECK = "kurd";
+-const SCALES_KEY = "hpfc.scales.v3";
++const SCALES_KEY = "hpfc.scales";
+ const LEGACY_SCALES_KEY = "hpfc.scales";
+ const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
+ let store = readStore(STORE_KEY) || {};

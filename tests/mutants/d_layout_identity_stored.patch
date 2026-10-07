@@ -1,16 +1,16 @@
 # kills: rotating all the way round is absent again, never a stored identity
 # suite: node --test --test-name-pattern ^rotating.all.the.way.round.is.absent.again..never.a.stored.identity$ tests/app.test.js
-# A correction that undoes itself is stored anyway, so rotating the rim all
-# the way round leaves a longer link than the deck started with.
+# A ring that undoes itself is stored anyway, so rotating a ring all the
+# way round leaves a longer link than the deck started with.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3088,7 +3088,7 @@ function orderFromSlots(at) {
+@@ -8787,7 +8787,7 @@ const seatsFor = (ring, size) => (layoutSeats && layoutSeats[ring]) || identityO
+  *  a pan with no ring left. */
+ function setRingSeats(ring, next) {
+   const rest = Object.assign({}, layoutSeats);
+-  if (next.every((seat, i) => seat === i)) delete rest[ring];
++  if (false) delete rest[ring];
+   else rest[ring] = next;
+   layoutSeats = Object.keys(rest).length ? rest : null;
  }
- /** ABSENT, never the identity: a correction that undoes itself is no correction. */
- function setLayoutOrder(next) {
--  layoutOrder = next.every((slot, i) => slot === i) ? null : next;
-+  layoutOrder = next;
- }
- const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
- /** The half-open slot range of the zone a slot belongs to. */

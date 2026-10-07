@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7281,8 +7281,6 @@ function replaceScale(oldStr, seed) {
- function restoreScales() {
+@@ -7863,8 +7863,6 @@ function restoreScales() {
+   copyLegacyScales();
    for (const rec of savedScales()) {
      try {
 -      if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
 -      if (!checkShareVersion(rec.v).ok) continue;
        if (!scaleReader(rec.v)(rec.s).ok) continue;
-       generateDeck(rec.s, rec.o || undefined);
+       generateDeck(rec.s, recordOptions(rec));
      } catch (e) {}

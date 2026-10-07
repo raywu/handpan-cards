@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -470,7 +470,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       counts.rim + counts.inner + counts.bottom);
+@@ -529,7 +529,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       counts);
      if (!wanted.ok) return wanted;
  
 -    var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
 +    var placed = placeZones(counts, mirrors.top, mirrors.bottom, counts.inner > 0 ? anchor : "one");
      var geom = geometry(counts, placed);
-     if (wanted.value) placed = reseat(counts, placed, wanted.value);
+     if (wanted.value) placed = reseat(placed, wanted.value);
  

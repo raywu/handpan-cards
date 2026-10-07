@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2662,7 +2662,6 @@ function generateDeck(text, options) {
+@@ -7673,7 +7673,6 @@ function generateDeck(text, options, guard) {
    // URL and into the saved record - so the app carries it back, which is why a
    // rename survives a reload while the id, which hashes fields only, does not
    // move (D14).
 -  if (seed.value.options.name) built.value.options.name = seed.value.options.name;
    // The layout correction (D5-1/D5-2) is the same story one step further on:
-   // core.parseSeed's option whitelist drops `order`, and select.build solves the
+   // core.parseSeed's option whitelist drops `seats`, and select.build solves the
    // GENERATED layout knowing nothing about it, so the correction is applied here

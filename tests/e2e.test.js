@@ -4957,7 +4957,7 @@ function run() {
         { label: "the Edit sheet to close after the rename" });
 
       const before = await chipReport();
-      const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales");`);
+      const storedBefore = await b.eval(`return localStorage.getItem("hpfc.scales.v3");`);
       assert.ok(before.chips.includes("RAY'S PAN"), JSON.stringify(before.chips));
 
       await selectChipAt(before.chips.indexOf("RAY'S PAN") - 1);   // the FIRST custom deck
@@ -4994,8 +4994,8 @@ function run() {
       assert.deepStrictEqual(after.chips, before.chips,
         `a deck was destroyed by the refused edit: ${JSON.stringify(after.chips)}`);
       assert.strictEqual(
-        await b.eval(`return localStorage.getItem("hpfc.scales");`), storedBefore,
-        "a refused save wrote to hpfc.scales");
+        await b.eval(`return localStorage.getItem("hpfc.scales.v3");`), storedBefore,
+        "a refused save wrote to hpfc.scales.v3");
     } finally {
       await b.setViewport(900, 900, false);
     }

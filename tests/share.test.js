@@ -21,7 +21,7 @@ const path = require("node:path");
 const { loadEngine } = require("./helpers/engine.js");
 
 const ROOT = path.join(__dirname, "..");
-const HPE = loadEngine(["core", "share"]);
+const HPE = loadEngine(["core", "layout", "share"]);
 const core = HPE.core;
 const share = HPE.share;
 
@@ -123,14 +123,14 @@ test("the three golden maker strings round-trip through encode/decode", () => {
 // mutant makes - changes the tail of these strings and fails the pin.
 test("encode's checksum is pinned against a captured minimal payload (Q18)", () => {
   const seed = parsed("(C3) G3");
-  assert.equal(encoded(seed), "2A4CpAI17Cmem2Gam2GeOUlLJ0");
+  assert.equal(encoded(seed), "3A4CpAI17Cmem2Gam2J092Wqgf3kG");
 });
 
 test("encode's checksum is pinned against a captured payload with every option set (Q18)", () => {
   const seed = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5",
     { palette: 2, parent: 3, mirror: true, name: "Test Deck" });
   assert.equal(encoded(seed),
-    "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0");
+    "3A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQme6ykcwG");
 });
 
 /* ---------------------------------------------------------------------- */
@@ -373,6 +373,8 @@ function refChecksum(text) {
 
 test("the reference UTF-8/alphabet/checksum re-implementation matches the two Q18 golden literals (Q4 setup)", () => {
   for (const golden of [
+    "3A4CpAI17Cmem2Gam2J092Wqgf3kG",
+    "3A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQme6ykcwG",
     "2A4CpAI17Cmem2Gam2GeOUlLJ0",
     "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0"
   ]) {
@@ -418,7 +420,7 @@ test("a 2-, 3- and 4-byte UTF-8 character each round-trip through encode's byte 
     const bytes = refFromAlphabet(str.slice(1, str.length - 6));
     const text = refUtf8String(bytes);
     assert.ok(text !== null, `${label}: reference decode failed`);
-    const recoveredName = text.split("\n")[1].split("\t")[3];
+    const recoveredName = text.split("\n")[1].split("\t")[4];
     assert.equal(recoveredName, name, `${label}: name did not survive the byte pipeline`);
 
     // Host-realm ground truth, independent of both share.js and the
@@ -692,7 +694,7 @@ test("share answers only with codes from the closed section 2 enum", () => {
 });
 
 /* ---------------------------------------------------------------------- */
-/* (j) Phase 5 / D5: options.order travels in the share string             */
+/* (j) per-ring seats travel in the share string             */
 /* ---------------------------------------------------------------------- */
 
 // D5-3: `order` rides on payload LINE 2 - the section v1 reserved for exactly
@@ -715,6 +717,8 @@ function engineAtVersion(version) {
   vm.createContext(sandbox);
   vm.runInContext(
     fs.readFileSync(path.join(ROOT, "src", "engine", "core.js"), "utf8"), sandbox);
+  vm.runInContext(
+    fs.readFileSync(path.join(ROOT, "src", "engine", "layout.js"), "utf8"), sandbox);
   vm.runInContext(src, sandbox);
   assert.equal(sandbox.HPE.share.VERSION, version);
   return sandbox.HPE.share;
@@ -725,17 +729,6 @@ function engineAtVersion(version) {
 // the module, per tests/CONTRACT.md rule 2.
 const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                       "abcdefghijklmnopqrstuvwxyz-_";
-
-/** The non-ding field count of a seed - the length `order` must have. */
-function slotCount(seed) {
-  return Object.keys(seed.fields).filter(id => seed.fields[id][3] !== "ding").length;
-}
-
-function withOrder(seed, order) {
-  const out = host(seed);
-  out.options.order = order;
-  return out;
-}
 
 function identity(n) {
   return Array.from({ length: n }, (_, i) => i);
@@ -796,114 +789,259 @@ function forgePayload(version, lines) {
   return head + check;
 }
 
-test("an order survives the round trip, unchanged element for element", () => {
+const PYGMY = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const RING_NAMES = ["rim", "inner", "bottom"];
+
+function ringCounts(seed) {
+  const counts = { rim: 0, inner: 0, bottom: 0 };
+  for (const id of Object.keys(seed.fields)) {
+    const zone = seed.fields[id][3];
+    if (zone in counts) counts[zone] += 1;
+  }
+  return counts;
+}
+
+/** Every ring with more than one note, reversed. */
+function reversedSeats(seed) {
+  const counts = ringCounts(seed);
+  const seats = {};
+  for (const ring of RING_NAMES) {
+    if (counts[ring] > 1) seats[ring] = identity(counts[ring]).reverse();
+  }
+  return seats;
+}
+
+function rotatedSeats(seed, by) {
+  const counts = ringCounts(seed);
+  const seats = {};
+  for (const ring of RING_NAMES) {
+    const n = counts[ring];
+    if (n > 1) seats[ring] = identity(n).map(i => (i + by) % n);
+  }
+  return seats;
+}
+
+function withSeats(seed, seats) {
+  const out = host(seed);
+  out.options.seats = seats;
+  return out;
+}
+
+function reject(str) {
+  const r = share.decode(str);
+  assert.equal(r.ok, false, `decode accepted ${str}`);
+  assert.equal(r.code, "BAD_NOTE", `wrong code for ${str}`);
+  return r;
+}
+
+// Three captured golden links, v1 and v2, written by the app BEFORE per-ring
+// seats existed (captured from the engine at main 1f4603b, never recomputed).
+const GOLDEN = {
+  v1TestDeck: "1A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAjkBNKG",
+  v1Minimal: "1A4CpAI17Cmem2Gam2Ge9bcwZm",
+  v1Pygmy: "1A4OpAI17Co11OZCWGpGWHM8q84Oq84Sq845YD213DI15OZKWHZKWHpKWV213Co14OZCWHM8p849YCo14OZGWGM8r2Z092J09K7bdRNaAj3GeVm",
+  v2TestDeck: "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0",
+  v2Minimal: "2A4CpAI17Cmem2Gam2GeOUlLJ0",
+  v2Pygmy: "2A4OpAI17Co11OZCWGpGWHM8q84Oq84Sq845YD213DI15OZKWHZKWHpKWV213Co14OZCWHM8p849YCo14OZGWGM8r2Z092J09K7bdRNaAz020NW",
+  v2Bent: "2A4GpAI11Co13D214D215D216D217D211D213DGen2Gan2K9bRdGADomsB3KiD2mpB38iCImmkALkb0",
+  v2Moved: "2A4OpAI17Co11OZCWGpGWHM8q84Oq84Sq845YD213DI15OZKWHZKWHpKWV213Co14OZCWHM8p849YCo14OZGWGM8r2ZG92J09JMzsPMGACImoB3CiD2mrB3OiDomuB3aiCJ0iC2mnCYmnComnD2mnDImnDYmnCGX-oii0",
+};
+
+test("seats survive the round trip, ring by ring", () => {
   for (const row of OK_ROWS) {
     const seed = parsed(row.string);
-    const n = slotCount(seed);
-    const order = identity(n).reverse();
-    const back = decoded(encoded(withOrder(seed, order)));
-    assert.deepStrictEqual(back.options.order, order, `order lost for ${row.name}`);
+    const seats = reversedSeats(seed);
+    const back = decoded(encoded(withSeats(seed, seats)));
+    if (Object.keys(seats).length === 0) {
+      assert.equal("seats" in back.options, false);
+      continue;
+    }
+    assert.deepStrictEqual(back.options.seats, seats, `seats lost for ${row.name}`);
     assert.deepStrictEqual(back.fields, seed.fields,
-      `${row.name}: order disturbed the fields`);
+      `${row.name}: seats disturbed the fields`);
   }
 });
 
-test("a rotation - a cyclic shift - round-trips like any other permutation", () => {
-  const seed = parsed(BASE);
-  const n = slotCount(seed);
+test("a seat list for one ring alone round-trips without inventing the others", () => {
+  const seed = parsed(PYGMY);
+  for (const ring of ["rim", "bottom"]) {
+    const only = { [ring]: reversedSeats(seed)[ring] };
+    assert.deepStrictEqual(decoded(encoded(withSeats(seed, only))).options.seats, only);
+  }
+});
+
+test("a rotation round-trips like any other seat list", () => {
+  const seed = parsed(PYGMY);
+  const n = ringCounts(seed).rim;
   for (const by of [1, 2, n - 1]) {
-    const order = identity(n).map(i => (i + by) % n);
-    assert.deepStrictEqual(decoded(encoded(withOrder(seed, order))).options.order, order);
+    const seats = rotatedSeats(seed, by);
+    assert.deepStrictEqual(decoded(encoded(withSeats(seed, seats))).options.seats, seats);
   }
 });
 
-test("an absent order round-trips as ABSENT, never as the identity", () => {
-  // The reset control clears the correction, so the link has to shorten back:
-  // an identity permutation on the wire would be a silent one-way door.
+test("absent seats round-trip as ABSENT, never as the identity", () => {
   const seed = parsed(BASE);
   const back = decoded(encoded(seed));
   assert.deepStrictEqual(back, seed);
-  assert.equal("order" in back.options, false, "decode invented an order");
-  const n = slotCount(seed);
-  assert.ok(encoded(seed).length < encoded(withOrder(seed, identity(n).reverse())).length,
-    "an ordered link is not longer than a default one");
+  assert.equal("seats" in back.options, false, "decode invented seats");
+  assert.ok(encoded(seed).length < encoded(withSeats(seed, reversedSeats(seed))).length,
+    "a moved link is not longer than a default one");
 });
 
-test("clearing an order restores the byte-for-byte default share string", () => {
+test("clearing seats restores the byte-for-byte default share string", () => {
   const seed = parsed(BASE);
   const before = encoded(seed);
-  const scrambled = encoded(withOrder(seed, identity(slotCount(seed)).reverse()));
-  assert.notEqual(scrambled, before);
-  const cleared = host(seed);
-  cleared.options.order = null;
-  assert.equal(encoded(cleared), before, "a cleared order did not shorten the link");
+  assert.notEqual(encoded(withSeats(seed, reversedSeats(seed))), before);
+  for (const empty of [null, undefined, {}]) {
+    const cleared = host(seed);
+    cleared.options.seats = empty;
+    assert.equal(encoded(cleared), before, "cleared seats did not shorten the link");
+  }
 });
 
-test("D5-5: an order changes the share string but never the deckId", () => {
+test("D5-5: seats change the share string but never the deckId", () => {
   const seed = parsed(BASE);
-  const n = slotCount(seed);
   const id = core.deckId(seed);
   const seen = new Set([encoded(seed)]);
   for (const by of [1, 2, 3]) {
-    const order = identity(n).map(i => (i + by) % n);
-    const str = encoded(withOrder(seed, order));
-    assert.equal(seen.has(str), false, "two corrections share one string");
+    const str = encoded(withSeats(seed, rotatedSeats(seed, by)));
+    assert.equal(seen.has(str), false, "two arrangements share one string");
     seen.add(str);
     assert.equal(core.deckId(decoded(str)), id, "the deck id moved");
   }
 });
 
-test("order composes with every other option on the wire", () => {
-  const n = slotCount(parsed(BASE));
-  const order = identity(n).map(i => (i + 1) % n);
+test("seats compose with every other option on the wire", () => {
+  const seats = rotatedSeats(parsed(BASE), 1);
   for (const options of OPTION_CASES) {
-    const seed = withOrder(parsed(BASE, options), order);
+    const seed = withSeats(parsed(BASE, options), seats);
     assert.deepStrictEqual(decoded(encoded(seed)), seed,
       `options lost for ${JSON.stringify(options)}`);
   }
 });
 
-test("a name carrying tabs and separators still survives beside an order", () => {
-  // The name is LAST on the options line precisely so it may hold anything
-  // printable; adding a field before it must not change that.
-  const n = slotCount(parsed(BASE));
-  const seed = withOrder(parsed(BASE, { name: "1,2,3 | tabbed (D3) name" }),
-                         identity(n).reverse());
+test("a name carrying tabs and separators still survives beside seats", () => {
+  const seed = withSeats(parsed(BASE, { name: "1,2;3 | tabbed (D3) name" }),
+                         reversedSeats(parsed(BASE)));
   const back = decoded(encoded(seed));
-  assert.equal(back.options.name, "1,2,3 | tabbed (D3) name");
-  assert.deepStrictEqual(back.options.order, identity(n).reverse());
+  assert.equal(back.options.name, "1,2;3 | tabbed (D3) name");
+  assert.deepStrictEqual(back.options.seats, reversedSeats(parsed(BASE)));
 });
 
-test("an order that is not a permutation of the field count is rejected", () => {
-  const seed = parsed(BASE);
-  const n = slotCount(seed);
-  const bad = [
-    identity(n).slice(0, n - 1),        // too short
-    identity(n).concat([n]),            // too long
-    identity(n - 1).concat([0]),        // a repeated index
-    identity(n - 1).concat([n]),        // out of range
+test("a name of every printable character survives beside an anchor", () => {
+  let all = "";
+  for (let c = 0x21; c <= 0x7e; c += 1) all += String.fromCharCode(c);
+  const seed = parsed(BASE, { name: all.slice(0, 40), anchor: "between" });
+  const back = decoded(encoded(seed));
+  assert.equal(back.options.name, all.slice(0, 40));
+  assert.equal(back.options.anchor, "between");
+  const tail = parsed(BASE, { name: all.slice(40, 80), anchor: "between" });
+  assert.equal(decoded(encoded(tail)).options.name, all.slice(40, 80));
+});
+
+test("mirror travels as 0, 1, t or b: each ring's own value survives", () => {
+  const cases = [
+    [{}, {}],
+    [{ mirror: true }, { mirror: true }],
+    [{ mirror: true, mirrorBottom: false }, { mirror: true, mirrorBottom: false }],
+    [{ mirror: false, mirrorBottom: true }, { mirror: false, mirrorBottom: true }],
   ];
-  for (const order of bad) {
-    const r = share.decode(encoded(withOrder(seed, order)));
-    assert.equal(r.ok, false, `decode accepted ${JSON.stringify(order)}`);
-    assert.equal(r.code, "BAD_NOTE", `wrong code for ${JSON.stringify(order)}`);
-    assert.equal(r.reason, specReason("BAD_NOTE").split("<X>").join(
-      String(encoded(withOrder(seed, order))).slice(0, 12)));
+  for (const [input, want] of cases) {
+    const seed = parsed(PYGMY, input);
+    const back = decoded(encoded(seed));
+    const mirrors = HPE.layout.resolveMirrors({}, back.options);
+    const expect = HPE.layout.resolveMirrors({}, Object.assign({}, seed.options, want));
+    assert.deepStrictEqual(mirrors, expect, JSON.stringify(input));
   }
 });
 
-test("a malformed order FIELD is refused, never repaired", () => {
-  const seed = parsed(BASE);
-  for (const order of [["x"], ["-1"], [1.5], ["1;2"]]) {
-    const r = share.decode(encoded(withOrder(seed, order)));
-    assert.equal(r.ok, false, `decode accepted ${JSON.stringify(order)}`);
-    assert.ok(CODES.includes(r.code), `invented code ${r.code}`);
+test("an explicit mirrorBottom equal to the top value normalises away", () => {
+  const same = encoded(parsed(PYGMY, { mirror: true, mirrorBottom: true }));
+  assert.equal(same, encoded(parsed(PYGMY, { mirror: true })));
+  const back = decoded(same);
+  assert.equal("mirrorBottom" in back.options, false);
+});
+
+test("the one-ring mirror letters are exactly t and b on the options line", () => {
+  const line = o => payloadOf(encoded(parsed(PYGMY, o)))[1].split("\t");
+  assert.equal(line({})[2], "0");
+  assert.equal(line({ mirror: true })[2], "1");
+  assert.equal(line({ mirror: true, mirrorBottom: false })[2], "t");
+  assert.equal(line({ mirrorBottom: true })[2], "b");
+});
+
+test("the anchor travels on the options line and round-trips", () => {
+  const plain = payloadOf(encoded(parsed(PYGMY)))[1].split("\t");
+  const between = payloadOf(encoded(parsed(PYGMY, { anchor: "between" })))[1].split("\t");
+  assert.equal(plain.length, 5);
+  assert.equal(plain[3], "0");
+  assert.equal(between[3], "1");
+  const back = decoded(encoded(parsed(PYGMY, { anchor: "between" })));
+  assert.equal(back.options.anchor, "between");
+  assert.equal("anchor" in decoded(encoded(parsed(PYGMY))).options, false);
+});
+
+test("a v3 options line with an unknown mirror or anchor character is refused", () => {
+  const payload = payloadOf(encoded(parsed(BASE, { name: "n" })));
+  for (const [mirror, anchor] of [["x", "0"], ["T", "0"], ["", "0"], ["0", "2"],
+                                  ["0", ""], ["0", "b"], ["01", "0"]]) {
+    const line1 = ["0", "", mirror, anchor, "n"].join("\t");
+    reject(forgePayload(3, [payload[0], line1, ""]));
   }
 });
 
-test("flipping any single character of an ordered link is rejected", () => {
+test("a v1 or v2 options line cannot carry a one-ring mirror letter", () => {
+  const payload = payloadOf(encoded(parsed(BASE)));
+  for (const version of [1, 2]) {
+    for (const mirror of ["t", "b"]) {
+      reject(forgePayload(version, [payload[0], ["0", "", mirror, "n"].join("\t"), ""]));
+    }
+  }
+});
+
+test("seats that do not permute their own ring are rejected", () => {
+  const seed = parsed(PYGMY);
+  const n = ringCounts(seed).rim;
+  const bad = [
+    identity(n).slice(0, n - 1),
+    identity(n).concat([n]),
+    identity(n - 1).concat([0]),
+    identity(n - 1).concat([n]),
+  ];
+  for (const rim of bad) {
+    const str = encoded(withSeats(seed, { rim }));
+    const r = reject(str);
+    assert.equal(r.reason, specReason("BAD_NOTE").split("<X>").join(str.slice(0, 12)));
+  }
+});
+
+test("a seat naming a note of another ring is rejected, not repaired", () => {
+  const seed = parsed(PYGMY);
+  const { rim, bottom } = ringCounts(seed);
+  const crossed = identity(rim).concat([]);
+  crossed[0] = rim;
+  reject(encoded(withSeats(seed, { rim: crossed })));
+  const low = identity(bottom);
+  low[0] = bottom + rim;
+  reject(encoded(withSeats(seed, { bottom: low })));
+});
+
+test("a seat list for a ring the pan does not have is rejected", () => {
+  reject(encoded(withSeats(parsed(BASE), { inner: [0, 1] })));
+  reject(encoded(withSeats(parsed(BASE), { bottom: [0] })));
+});
+
+test("a malformed seats FIELD is refused, never repaired", () => {
+  const payload = payloadOf(encoded(parsed(BASE)));
+  for (const delta of ["x;;", "-1;;", "1.5;;", "0,1", ";;;", ";;", ";", ",;;",
+                       "0,;;", "7,6,5,4,3,2,1,0", "7,6,5,4,3,2,1,0;;;"]) {
+    reject(forgePayload(3, [payload[0], payload[1], delta]));
+  }
+});
+
+test("flipping any single character of a moved link is rejected", () => {
   const seed = parsed(BASE, { palette: 2, name: "Amara" });
-  const str = encoded(withOrder(seed, identity(slotCount(seed)).reverse()));
+  const str = encoded(withSeats(seed, reversedSeats(seed)));
   for (let i = 0; i < str.length; i += 1) {
     const swap = str.charAt(i) === "A" ? "B" : "A";
     const broken = str.slice(0, i) + swap + str.slice(i + 1);
@@ -915,107 +1053,138 @@ test("flipping any single character of an ordered link is rejected", () => {
   }
 });
 
-test("the longest possible link - every option, a full order - fits the cap", () => {
-  for (const row of OK_ROWS) {
+test("the longest possible link - every option, every ring moved - fits the cap", () => {
+  for (const row of OK_ROWS.concat([{ name: "pygmy", string: PYGMY }])) {
     const seed = parsed(row.string, {
-      palette: 5, parent: 10, mirror: true,
+      palette: 5, parent: 10, mirror: true, mirrorBottom: false, anchor: "between",
       name: "A B~C 40 chars long name padded out ok!!",
     });
-    const full = withOrder(seed, identity(slotCount(seed)).reverse());
+    const full = withSeats(seed, reversedSeats(seed));
     assert.ok(encoded(full).length <= share.CAPS.payload,
-      `${row.name} with an order does not fit the share cap`);
+      `${row.name} with seats does not fit the share cap`);
   }
 });
 
+test("a 120-note pan with every note moved still fits the cap", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  for (let i = 0; i < 120; i += 1) {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2,
+                         i === 0 ? "ding" : "rim", null, letter];
+  }
+  const seat = Array.from({ length: 119 }, (_, i) => 118 - i);
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, anchor: "between",
+               name: "x".repeat(40), seats: { rim: seat } },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+});
+
+test("a link over the cap is refused on length alone", () => {
+  assert.equal(share.CAPS.payload, 4096);
+  reject("3" + "A".repeat(share.CAPS.payload));
+});
+
 /* ---------------------------------------------------------------------- */
-/* (k) D5-4: the version gate is backward-compatible                       */
+/* (k) the version gate is backward-compatible                             */
 /* ---------------------------------------------------------------------- */
 
-test("the correction rides on line 2 and never widens the options line", () => {
-  // The options line is tab-separated and `name` is its only free-text field.
-  // Widening that line would put machine indices next to the one field a user
-  // controls; line 2 was reserved for the delta, so that is where it goes.
-  const seed = parsed(BASE, { palette: 3, parent: 7, mirror: true, name: "Pan" });
-  const n = slotCount(seed);
+test("per-ring seats ride on line 2 as rim;inner;bottom", () => {
+  const seed = parsed(PYGMY, { palette: 3, parent: 7, mirror: true, name: "Pan" });
   const plain = payloadOf(encoded(seed));
-  const moved = payloadOf(encoded(withOrder(seed, identity(n).reverse())));
+  const seats = { rim: reversedSeats(seed).rim, bottom: rotatedSeats(seed, 1).bottom };
+  const moved = payloadOf(encoded(withSeats(seed, seats)));
 
-  assert.equal(plain.length, 3, "the payload is not three lines");
-  assert.equal(moved.length, 3, "a correction changed the payload's line count");
-  assert.equal(moved[0], plain[0], "a correction touched the scale line");
-  assert.equal(moved[1], plain[1], "a correction widened the OPTIONS line");
-  assert.equal(plain[1].split("\t").length, 4,
-    "the options line is no longer four fields");
-  assert.equal(plain[2], "", "an absent correction wrote something on line 2");
-  assert.equal(moved[2], identity(n).reverse().join(","),
-    "line 2 is not the correction as comma-separated decimal indices");
+  assert.equal(plain.length, 3);
+  assert.equal(moved.length, 3);
+  assert.equal(moved[0], plain[0], "seats touched the scale line");
+  assert.equal(moved[1], plain[1], "seats widened the OPTIONS line");
+  assert.equal(plain[1].split("\t").length, 5);
+  assert.equal(plain[2], "", "absent seats wrote something on line 2");
+  assert.equal(moved[2], `${seats.rim.join(",")};;${seats.bottom.join(",")}`);
 });
 
-test("an uncorrected v2 payload is the v1 payload, byte for byte", () => {
-  // Only the version character may differ: a bump that changed the bytes of
-  // every existing link would be a format change dressed as a version bump.
-  const v1 = engineAtVersion(1);
-  for (const options of OPTION_CASES) {
-    const seed = parsed(BASE, options);
-    const older = v1.encode(seed);
-    const newer = encoded(seed);
-    assert.equal(older.ok, true, older.reason);
-    assert.deepStrictEqual(payloadOf(newer), payloadOf(older.value),
-      `v2 rewrote the payload for ${JSON.stringify(options)}`);
-    assert.equal(newer.charAt(0), "2");
-    assert.equal(older.value.charAt(0), "1");
-  }
-});
-
-test("a v1 link carrying anything on line 2 is a corrupt payload", () => {
-  // v1 RESERVED the section: an old string with content there was never
-  // emitted by any shipped app, so reading it as a v2 correction would be
-  // repairing a link, not decoding one.
-  const seed = parsed(BASE);
-  const forged = forgePayload(1, [payloadOf(encoded(seed))[0],
-                                  payloadOf(encoded(seed))[1],
-                                  identity(slotCount(seed)).reverse().join(",")]);
-  const r = share.decode(forged);
-  assert.equal(r.ok, false, "a v1 link with a layout delta was accepted");
-  assert.equal(r.code, "BAD_NOTE");
-});
-
-test("this app writes wire version 2", () => {
-  assert.equal(share.VERSION, 2);
+test("this app writes wire version 3", () => {
+  assert.equal(share.VERSION, 3);
+  assert.equal(encoded(parsed(BASE)).charAt(0), "3");
   assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
 });
 
-test("a v1 link emitted by an older app still decodes here, unchanged", () => {
-  // The PWA row of the plan: a link is forever. Bumping the version must not
-  // turn every link ever shared into a corrupt-payload rejection.
-  const v1 = engineAtVersion(1);
-  for (const options of OPTION_CASES) {
-    const seed = parsed(BASE, options);
-    const link = v1.encode(seed);
-    assert.equal(link.ok, true, `the v1 app could not encode ${JSON.stringify(options)}`);
-    assert.equal(link.value.charAt(0), "1", "the fixture link is not v1");
-    assert.deepStrictEqual(decoded(link.value), seed,
-      `a v1 link decoded differently for ${JSON.stringify(options)}`);
+test("a v1 link emitted by an older app still decodes here, deck unchanged", () => {
+  assert.deepStrictEqual(decoded(GOLDEN.v1TestDeck),
+    parsed(MAKER_STRINGS[2], { palette: 2, parent: 3, mirror: true, name: "Test Deck" }));
+  assert.deepStrictEqual(decoded(GOLDEN.v1Minimal), parsed("(C3) G3"));
+  assert.deepStrictEqual(decoded(GOLDEN.v1Pygmy), parsed(PYGMY, { name: "Pygmy" }));
+});
+
+test("a v2 link emitted by an older app still decodes here, deck unchanged", () => {
+  assert.deepStrictEqual(decoded(GOLDEN.v2TestDeck),
+    parsed(MAKER_STRINGS[2], { palette: 2, parent: 3, mirror: true, name: "Test Deck" }));
+  assert.deepStrictEqual(decoded(GOLDEN.v2Minimal), parsed("(C3) G3"));
+  assert.deepStrictEqual(decoded(GOLDEN.v2Pygmy), parsed(PYGMY, { name: "Pygmy" }));
+});
+
+test("a v2 flat order is converted to per-ring seats on decode", () => {
+  const bent = decoded(GOLDEN.v2Bent);
+  assert.deepStrictEqual(bent.options.seats, { rim: [7, 6, 5, 4, 3, 2, 1, 0] });
+  assert.equal("order" in bent.options, false);
+  assert.equal(bent.options.name, "Bent");
+  const moved = decoded(GOLDEN.v2Moved);
+  assert.deepStrictEqual(moved.options.seats, {
+    rim: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0],
+    bottom: [1, 2, 3, 4, 5, 0],
+  });
+  assert.deepStrictEqual(moved.fields, parsed(PYGMY).fields);
+});
+
+test("a v2 flat order that crosses rings is refused", () => {
+  const seed = parsed(PYGMY);
+  const n = 17;
+  const swapAcross = identity(n);
+  swapAcross[0] = 16;
+  swapAcross[16] = 0;
+  const payload = payloadOf(encoded(seed));
+  const r = reject(forgePayload(2, [payload[0], payload[1].split("\t")
+    .filter((_, i) => i !== 3).join("\t"), swapAcross.join(",")]));
+  assert.equal(r.ok, false);
+  const reversedAll = identity(n).reverse();
+  reject(forgePayload(2, [payload[0], payload[1].split("\t")
+    .filter((_, i) => i !== 3).join("\t"), reversedAll.join(",")]));
+});
+
+test("a v1 link carrying anything on line 2 is a corrupt payload", () => {
+  const seed = parsed(BASE);
+  const payload = payloadOf(encoded(seed));
+  const oldOptions = payload[1].split("\t").filter((_, i) => i !== 3).join("\t");
+  reject(forgePayload(1, [payload[0], oldOptions, identity(8).reverse().join(",")]));
+});
+
+test("a v2 link with a v3-shaped line 2 or a malformed order is corrupt", () => {
+  const payload = payloadOf(encoded(parsed(BASE)));
+  const oldOptions = payload[1].split("\t").filter((_, i) => i !== 3).join("\t");
+  reject(forgePayload(2, [payload[0], oldOptions, "7,6,5,4,3,2,1,0;;"]));
+  reject(forgePayload(2, [payload[0], oldOptions, "x"]));
+  reject(forgePayload(2, [payload[0], oldOptions, "0,1"]));
+});
+
+test("a v3 link is NEEDS_NEWER_APP to an app pinned at v2 or v1", () => {
+  const str = encoded(parsed(BASE));
+  for (const pinned of [1, 2]) {
+    const r = engineAtVersion(pinned).decode(str);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NEEDS_NEWER_APP");
+    assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
   }
 });
 
-test("a v1 link carries no order and decodes as the generated default", () => {
-  const v1 = engineAtVersion(1);
-  const seed = parsed(BASE);
-  const link = v1.encode(withOrder(seed, identity(slotCount(seed)).reverse()));
-  assert.equal(link.ok, true);
-  const back = decoded(link.value);
-  assert.equal("order" in back.options, false,
-    "a v1 link cannot carry an order, so decode must not report one");
-});
-
 test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
-  const v1 = engineAtVersion(1);
-  const str = encoded(parsed(BASE));
-  const r = v1.decode(str);
+  const r = engineAtVersion(1).decode(GOLDEN.v2TestDeck);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");
-  assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
 });
 
 test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
