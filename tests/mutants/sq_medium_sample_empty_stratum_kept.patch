@@ -1,0 +1,15 @@
+# kills: a stratum with no colour start is left out
+# U3 - a colour position with no colour start falls back to pure starts instead of being left out, so colourless walks are filed
+# suite: node --test --test-name-pattern ^a.stratum.with.no.colour.start.is.left.out$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -862,7 +862,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     lengths.forEach(function (length) {
+       sides.forEach(function (side) {
+         for (var p = 0; p < length; p += 1) {
+-          var starts = p === 0 ? side.colour : side.pure;
++          var starts = p === 0 && side.colour.length ? side.colour : side.pure;
+           if (starts.length) strata.push({ length: length, starts: starts, at: p });
+         }
+       });

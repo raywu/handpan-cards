@@ -1,0 +1,15 @@
+# kills: a stratum with no colour start is left out
+# U3 - the colour step is drawn from every candidate, so the colour card lands at any step and a walk can hold two
+# suite: node --test --test-name-pattern ^a.stratum.with.no.colour.start.is.left.out$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -898,7 +898,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+               onward[prevChord][isColour[candidate] ? "colour" : "pure"].push(candidate);
+             }
+           }
+-          options = walk.length === stratum.at ? onward[prevChord].colour : onward[prevChord].pure;
++          options = onward[prevChord].colour.concat(onward[prevChord].pure);
+         }
+         var n = options.length;
+         if (!n) break;

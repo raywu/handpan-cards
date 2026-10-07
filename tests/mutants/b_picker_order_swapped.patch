@@ -2057,7 +2057,7 @@ diff --git a/data/decks.json b/data/decks.json
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6941,61 +6941,61 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -6941,62 +6941,62 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      // enumerated once.
      _internal: {
        DFS_NODE_BUDGET: DFS_NODE_BUDGET,
@@ -2071,6 +2071,7 @@ diff --git a/index.html b/index.html
        basicCells: basicCells,
        drawBasic: drawBasic,
        mediumCells: mediumCells,
+       sampleMedium: sampleMedium,
        mediumNodeCount: mediumNodeCount,
        drawMedium: drawMedium,
        colourFamily: colourFamily,
