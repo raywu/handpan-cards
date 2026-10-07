@@ -1,4 +1,4 @@
-DRAFT, awaiting owner sign-off (plan section 19, R4). W1, DR1 and DR2 may not start until this is signed off and merged.
+DRAFT, awaiting owner sign-off (plan section 19, R4). W1, DR1 and DR2 may not start until this is signed off and merged. Design review done 2026-10-07: section 20 is BINDING and overrides sections 1 to 19 wherever they differ.
 
 # DS: drawer and field interaction spec
 
@@ -36,7 +36,6 @@ Closed name list. Lanes use these ids; the `app_surface_v1.json` fixture and `to
 | `scale-drawer` | the disclosure region, `role="group"` | DR1 |
 | `scale-drawer-hint` | the open-state instruction | DR1 |
 | `scale-anchor-one`, `scale-anchor-between` | the two anchor buttons | DR1 |
-| `scale-mirror` | (as above) | DR1 |
 | `scale-layout-reset` | RESET SEATS (kept id) | DR1 (renders), DR2 (enables) |
 | `scale-seat-prev`, `scale-seat-next` | PREVIOUS SEAT, NEXT SEAT | DR1 (renders, disabled), DR2 (wires) |
 | `scale-drawer-status` | the one live line for every drawer announcement | DR1 (renders), DR2 (writes) |
@@ -485,4 +484,200 @@ Each line is one testable statement and is turned into exactly one test by the l
 
 ### Counts by lane
 
-W1 14, DR1 26, DR2 38 (78 lines in all).
+W1 14, DR1 26, DR2 38 (78 lines in all) before the design review. Section 20.4 replaces some of these lines and adds lines 79 to 107: W1 16, DR1 35, DR2 56 (107 lines in all).
+
+## 20. Design review amendments (2026-10-07, BINDING)
+
+This section is the output of `/plan-design-review` on this spec, with two outside reviews (Codex and an independent Claude reviewer). It overrides sections 1 to 19 wherever they differ. The six owner decisions of section 16 are untouched. `[RD n]` marks the nine forks the owner decided on 2026-10-07 (each as recommended). `[F n]` marks a fix that had one sensible answer and was applied without a fork. Pixel figures are still hand ESTIMATES; the consuming lane measures and reports.
+
+### 20.1 Owner decisions from the review
+
+**[RD 1] The status line is pinned under the pan.** A new full-width wrapper, `#scale-plate-band`, holds `#scale-preview` and then `#scale-drawer-status`. While the drawer is open the BAND is the sticky element (`position: sticky; top: 0`), not the plate alone. The status line is hidden while the drawer is closed. Rejected: status at the bottom of the drawer (below the fold at 380 x 780 and 380 x 667), and status as the first unpinned drawer row.
+
+**[RD 2] Tab never changes the arrangement.** Tab and Shift+Tab move focus and nothing else; a picked note stays picked while focus is anywhere in the sheet. A swap is committed only by Space, Enter, a tap or drop on a seat, or a SEAT step button. A pick ends only on: a committed tap, drop or key swap; putting the note down on its own seat; Escape; closing the drawer or the sheet; the scale ceasing to parse; a reset of its ring (count change or RESET SEATS). SEAT step swaps are committed at once and Escape does not undo them. Rejected: Tab drops on the cursor seat; Tab cancels.
+
+**[RD 3] Three marks, three sizes.**
+
+| Mark | Class | Radius | Stroke |
+|---|---|---|---|
+| valid seat | `.panseat` | 1.12 r | dashed orange `#E27005`, at least 2 CSS px |
+| armed seat (drag over it) | `.panarm` | 1.12 r | solid orange, at least 2 CSS px, plus the `rgba(226,112,5,.22)` fill |
+| picked note | `.pansel` | 1.2 r | solid orange, at least 2 CSS px, plus a 1 px ink `#272219` hairline just outside it, plus the fill |
+| keyboard focus | focus mark | 1.32 r | solid ink `#272219`, 2 CSS px, only under `:focus-visible` |
+
+The ink hairline is what carries the pick past 3:1 on the plate (orange alone is about 2.7:1); the veil and the dash are the non-colour cues for seats. A pointer user never sees the focus mark. Neighbouring rings may touch on a crowded pan; DR2 checks the 20 rim example and reports. Rejected: all marks at 1.2 r; ink dashed seats.
+
+**[RD 4] An unsaved layout says so.** `#scale-layout-state` has two texts. While seats, anchor or MIRROR differ from what GENERATE CARDS last kept (the stored deck on Edit, the default on Add): `Layout not saved yet. GENERATE CARDS keeps it.` On Edit, when the layout equals the stored deck and is not the default: `Layout changed from the default.` Otherwise hidden. It sits directly under the toggle row, drawer open or closed. BACK and closing the sheet still discard without asking. Rejected: a confirm on BACK; no notice.
+
+**[RD 5] NOTE step buttons.** `#scale-note-prev` (`PREVIOUS NOTE`) and `#scale-note-next` (`NEXT NOTE`), equal `.mode` buttons, enabled whenever the scale parses and at least one ring has two notes. They move the PICK, not a note: NEXT NOTE picks the next pickable note in the order rim, inner, bottom by seat number, wrapping from the last to the first; with nothing picked it picks the first (rim seat 1) and PREVIOUS NOTE picks the last. Rings of one note and the ding are skipped. They never change the arrangement and never move focus. Status row 20. With them, every swap is reachable through 44 px buttons alone: NOTE buttons choose, SEAT buttons move. Rejected: a native note dropdown; no addition.
+
+**[RD 6] The drop lands where the ghost is.** The hit point of a drag is the centre of the ghost (36 px above a touch point; the pointer itself for mouse and pen, where the ghost is centred on it). The valid seat under that point is ARMED (`.panarm`) while the drag is over it; nothing is armed over another ring, the ding or empty plate. The ghost is drawn in an overlay inside `#scale-plate-band`, outside the SVG, `pointer-events: none`, so it is not clipped at the plate's top edge. Rejected: hit point at the finger; no armed state.
+
+**[RD 7] Control order, steps first.** Under the pinned band, in DOM and visual order: the toggle row; `#scale-layout-state`; PREVIOUS NOTE, NEXT NOTE; PREVIOUS SEAT, NEXT SEAT; MIRROR, RESET SEATS, with the MIRROR helper `Flips left and right.`; the `NOTE 1` label, the anchor pair and its helper; `#scale-drawer-hint` last. Rejected: whole-pan settings first; a second disclosure for anchor and MIRROR.
+
+**[RD 8] Focus moves from note to note.** The plate is not itself focusable. `#scale-preview` (open) is `role="group"` with `aria-label` `Pan layout: {a} rim, {b} inner, {c} bottom notes.` Its `.panhit` elements are the focus targets with a roving `tabindex`: exactly one has `tabindex="0"`, the rest `-1`, so the plate is still ONE Tab stop. Each is `role="button"`, with `aria-pressed="true"` on the picked note and `"false"` on the others, no `aria-selected`, and the accessible name `{n}, {ring} seat {s} of {k}, {place}`. There is no separate cursor: the cursor of section 11 IS the focused note. Rejected: `role="application"` over a virtual cursor; the map as written (arrow keys do not reach the page under NVDA or JAWS).
+
+**[RD 9] A swap is shown on the pan.** After any committed swap both seats carry `.panflash`: the `rgba(226,112,5,.22)` fill, fading to nothing over 600 ms. Under reduced motion it shows for 600 ms and is removed with no fade. Nothing moves. Rejected: sliding the notes; no mark.
+
+### 20.2 Keyboard map and status rows (replaces the table and rows of section 11)
+
+| Key (focus on a note) | Nothing picked | A note picked |
+|---|---|---|
+| Right, Down | focus the next note (rim, then inner, then bottom; no wrap) | focus the next seat of the picked ring (wraps) |
+| Left, Up | previous note | previous seat of the picked ring (wraps) |
+| Home, End | first, last note of the pan | first, last seat of the picked ring |
+| Space, Enter | pick up the focused note | swap with the focused seat's note; on its own seat, put it down |
+| Escape | close the drawer | end the pick |
+| Tab, Shift+Tab | leave the plate | leave the plate; the pick is kept |
+
+Opening the drawer focuses the roving note (rim seat 1 the first time; if no note exists, focus stays on the toggle). The screen reader reads the focused note's own name, so the live line reports RESULTS only. Rows 1, 5 and 6 of section 11 are DELETED. Changed and new rows:
+
+| # | When | Text |
+|---|---|---|
+| 3 | pick up by keyboard | `Picked up {n}. Arrows choose a seat in the {ring}. Space swaps. Escape cancels.` |
+| 9 | Escape, no SEAT step swap since the pick | `Cancelled. Nothing moved.` |
+| 9b | Escape after one or more SEAT step swaps | `{n} put down. The swaps you made are kept.` |
+| 18b | the scale parses again after row 18 | `Layout is ready again.` |
+| 19 | drawer opened and no ring has two notes | `This pan has no ring with two notes, so there is nothing to rearrange.` |
+| 20 | PREVIOUS NOTE, NEXT NOTE | `Picked up {n}, {ring} seat {s} of {k}, {place}. PREVIOUS SEAT and NEXT SEAT move it.` |
+
+Rows 2, 4, 7, 8, 10 to 17 and 18 stand as written.
+
+**[F 1] The live line.** `#scale-drawer-status` is `aria-live="polite"` and `aria-atomic="true"`. One edit that changes several rings writes ONE message, the row 15 or 16 sentences joined by a space in the order rim, inner, bottom. A message identical to the one showing is re-announced by clearing the text and writing it on the next frame. The amber colour is removed by the next write that is not a refusal. Row 18 is written after the refusal sentence so the refusal is spoken first. Reserve: two lines. Every row must fit two lines at 380; DR2 measures, and if a row needs three the reserve grows to three lines, the sentence is never cut.
+
+**[F 2] Escape is routed at the sheet.** The ladder of section 4 (pick, then drawer, then sheet) is handled once, on `#scale-sheet`, wherever focus is inside the sheet, the field and the palette included.
+
+### 20.3 Fixes without a fork
+
+**[F 3] Layout numbers.** Section 5.4 is wrong about its own formula: `clamp(150px, calc(100dvh - 170px), 232px)` gives 220 px at 390 px tall, not 232. The formula stands; read "220" for "232" in 5.4 and in section 10. The two-column layout applies only under `(max-height: 520px) and (min-width: 560px)`. The drawer under the band is about 430 px with the helpers counted (the 250 px of section 5 left out the toggle row and the helper lines), against a controls window of about 245 px at 380 x 780 and about 195 px at 380 x 667 once the pinned status is counted. So the drawer scrolls on every phone; RD 7 exists so that what is on screen is the toggle and both step rows. If DR1 measures that both step rows do not fit at 380 x 667, it lowers the open plate cap from `42dvh` in steps, never under 240 px, and reports.
+
+**[F 4] The band.** `#scale-plate-band` is full width with the sheet's own background and sits above the scrolling controls (`z-index`), so nothing shows beside or through the plate. While the drawer is open `.sheetbody` carries `scroll-padding-top` equal to the band's height, so a control focused by Tab is never left under the band. The band un-sticks while ANY editable in the sheet has focus (`.sheetbody:has(input:focus, textarea:focus)`), the deck name on Edit included, not only `#scale-box`.
+
+**[F 5] Touch.** The non-passive `touchmove` listener is registered on the plate when the drawer OPENS and removed when it closes; it calls `preventDefault()` only while a note is lifted. It is not added at lift (a listener attached after `touchstart` is not reliably honoured for the gesture in flight). A second touch during a hold or a drag cancels the gesture as `pointercancel` does. A hold that lifts note B and is released without moving leaves B PICKED; it never swaps, also when another note was picked before the hold. Lines 46 and 47 are synthetic checks only. The proof is on real devices: the DR2 owner phone check must show, on iOS Safari and on Android Chrome, that a hold-drag swaps and that a swipe starting on the plate scrolls the sheet.
+
+**[F 6] Redraws while a note is picked or focused.**
+
+| Event | Pick | Focus | Status |
+|---|---|---|---|
+| committed swap (any path) | ends, except after a SEAT step, where it stays | restored to the moved note at its new seat | row 7 |
+| anchor or MIRROR changed | kept (same ring index); place words refresh | stays on the control | row 13 or 14 |
+| a pitch edited, counts unchanged | kept; names refresh | unchanged | none |
+| the picked ring's count changed | ends | if on a note, the first note of the pan | row 17 |
+| RESET SEATS | ends | `#scale-layout-toggle` (the button has just disabled itself) | row 12 |
+| the scale stops parsing | ends | if inside the plate, `#scale-layout-toggle` | row 18 |
+
+After every repaint the roving `tabindex` and, when focus was on a note, real focus are restored to the `.panhit` with the same `data-field`. There is no loading state anywhere in the drawer: the solve is synchronous.
+
+**[F 7] The field.** One routine, `syncGrow()`, sets `data-grow`; it runs on `input` AND after every programmatic assignment to the field (opening Edit, restoring a scale, resetting the sheet), because those fire no `input` event. The `::after` mirror carries `overflow-wrap: anywhere` and `box-sizing` identical to the textarea.
+
+**[F 8] Empty and partial states.** While the toggle is disabled `#scale-layout-hint` reads `Type a scale to adjust its layout.` and returns to the `LAYOUT_HINT` text when the scale parses. A scale with no ring of two notes opens the drawer with both NOTE and both SEAT buttons disabled and row 19 in the status line; anchor and MIRROR still work.
+
+**[F 9] Colours as tokens.** The colours the new rules use (`#E27005`, `rgba(226,112,5,.22)`, `#e3b25c`, `#272219`, `#f1ece1`) are declared once as custom properties on `#scale-sheet` and every new rule, the interactive SVG layer included, reads them from there. Values are unchanged and no existing rule is touched.
+
+**[F 10] Closed-state fold.** At 380 x 667 the content above the toggle may put ADJUST LAYOUT at or under the fold on the closed sheet. DR1 measures it for the D3 example and REPORTS; it does not resize the closed plate, which is a visual change for the owner.
+
+### 20.4 Acceptance list changes
+
+Replaced lines (same number, same lane):
+
+21. [DR1] Escape with the drawer open and nothing picked closes the drawer and leaves the sheet open; a second Escape closes the sheet.
+23. [DR1] The Tab order walks BACK, (Edit: the deck name,) the field, the plate as one stop (open only), the toggle, PREVIOUS NOTE, NEXT NOTE, PREVIOUS SEAT, NEXT SEAT, MIRROR, RESET SEATS, ON CENTRE, BESIDE CENTRE, in that order, skipping disabled controls.
+19. [DR1] Open: `#scale-preview` has no `tabindex`, contains `.panhit` elements and exactly one of them has `tabindex="0"`; closed: it contains no `.panhit`.
+18. [DR1] Opening moves focus to the `.panhit` with `tabindex="0"` and does not raise the soft keyboard.
+30. [DR1] `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` when MIRROR or the anchor differs from what was last kept (and, from DR2, when any seat does), reads `Layout changed from the default.` on an Edit sheet whose stored layout is not the default and is unchanged, and is hidden otherwise.
+31. [DR1] As written, with both NOTE step buttons added to the disabled set.
+32. [DR1] After the scale parses again each control is enabled or disabled by its own rule (RESET SEATS only when a seat differs, SEAT buttons only with a pick), the anchor and MIRROR values are unchanged, and the status reads row 18b.
+34. [DR1] With the drawer open at 380 x 780 `#scale-plate-band` stays inside the scrollport when the body is scrolled to its end, and while `#scale-box` has focus it is `position: static`.
+44. [DR2] Releasing where no same-ring target contains the hit point and a note of another ring does changes nothing and writes row 10 in the `warn` colour; where a same-ring target also contains the point, the same-ring target wins and the swap happens.
+47. [DR2] A touch press held 250 ms within 8 px lifts the note, shows the ghost centred 36 px above the finger and calls `preventDefault` on subsequent `touchmove`.
+58. [DR2] On the D3 example, Kurd 10 and Pygmy rims, at the measured pan size and with a note picked, every same-ring target is at least 44 px across (a hard assertion); the inner and bottom rings of the same three pans are measured and reported.
+62. [DR2] With focus on a note and nothing picked, Arrow Right and Arrow Down move focus to the next note, Arrow Left and Arrow Up to the previous, Home and End to the first and last, and no arrow key writes the status line.
+63. [DR2] Space on a focused note picks it up, sets its `aria-pressed` to `true` and writes row 3.
+64. [DR2] With a note picked, Arrow Right moves focus to the next seat of the same ring only, wraps from the last seat to the first and never changes `seats`.
+65. [DR2] Space with a note picked and focus on another seat of its ring swaps the two and writes row 7; with focus on the picked note it writes row 8.
+67. [DR2] Tab and Shift+Tab from a note with a note picked leave `seats` unchanged and the note still picked, and PREVIOUS SEAT and NEXT SEAT are then enabled Tab stops.
+78. [DR2] No drag, key or step-button path can produce a `seats` value that `readSeats` refuses, over a sweep of every ring size from 2 to 20 and every seat pair.
+
+New lines:
+
+79. [W1] Opening the Edit sheet on a saved scale that wraps to three lines shows a field of three rows without any `input` event having fired.
+80. [W1] A 60-character token with no space leaves `scrollWidth` equal to `clientWidth` in the field and in the wrapper.
+81. [DR1] `#scale-drawer-status` is inside `#scale-plate-band`, after `#scale-preview`, is hidden while the drawer is closed, and has `aria-live="polite"` and `aria-atomic="true"`.
+82. [DR1] With the drawer open at 380 x 780 and at 380 x 667 and the body scrolled to its end, `#scale-drawer-status` is inside the scrollport.
+83. [DR1] `#scale-note-prev` and `#scale-note-next` exist, read `PREVIOUS NOTE` and `NEXT NOTE`, and the drawer's controls are in the DOM order of RD 7.
+84. [DR1] With the drawer open at 380 x 667 and the band stuck, the toggle and both step rows are inside the scrollport without further scrolling; the measured open plate width is reported.
+85. [DR1] While the toggle is disabled `#scale-layout-hint` reads `Type a scale to adjust its layout.`; with a valid scale it reads the `LAYOUT_HINT` text.
+86. [DR1] On the Edit sheet with the drawer open, focusing the deck name makes `#scale-plate-band` `position: static`.
+87. [DR1] With the drawer open and the body scrolled, a control focused by Tab has its top edge at or below the band's bottom edge.
+88. [DR1] At 844 x 390 the open plate is 220 px wide within 1 px, and at 500 x 390 the zone is one column.
+89. [DR1] At 380 x 667, closed, for the D3 example, the position of `#scale-layout-toggle` against the scrollport at `scrollTop` 0 is measured and reported.
+90. [DR2] NEXT NOTE with nothing picked picks rim seat 1; pressed again it picks the next pickable note, passes from the last rim note to the first inner note, skips a ring of one note, wraps from the last note to the first, never changes `seats`, never moves focus and writes row 20; PREVIOUS NOTE is the mirror.
+91. [DR2] After a swap `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.`, and after RESET SEATS on an Add sheet with default anchor and MIRROR it is hidden.
+92. [DR2] During a drag the same-ring seat that contains the ghost's centre carries `.panarm` and no other seat does; nothing carries it over another ring, the ding or empty plate; the release swaps with the armed seat.
+93. [DR2] Dragging the top-centre note upward shows the whole ghost: its box may extend above the plate's top edge and is not clipped.
+94. [DR2] After a committed swap exactly two seats carry `.panflash`, and none does 700 ms later; under `prefers-reduced-motion: reduce` the mark has no transition.
+95. [DR2] `.panseat` and `.panarm` are drawn at 1.12 r, `.pansel` at 1.2 r with an ink hairline outside it, the focus mark at 1.32 r, and each orange stroke is at least 2 CSS px wide at a 284 px pan.
+96. [DR2] Opening the drawer with a pointer shows no focus mark on any note; reaching a note with Tab or an arrow key shows it.
+97. [DR2] After a keyboard swap, focus is on the `.panhit` of the moved note at its new seat, and exactly one `.panhit` has `tabindex="0"`.
+98. [DR2] Every `.panhit` has `role="button"`, an `aria-pressed` value, no `aria-selected`, and the accessible name `{n}, {ring} seat {s} of {k}, {place}`; the place word is correct under MIRROR and under either anchor.
+99. [DR2] When the scale stops parsing while a note has focus, focus moves to `#scale-layout-toggle`; after RESET SEATS focus is on `#scale-layout-toggle`.
+100. [DR2] With note A picked, a touch hold on note B released without moving leaves B picked and `seats` unchanged.
+101. [DR2] A second touch during a hold or a drag cancels the gesture and moves nothing.
+102. [DR2] Escape after one NEXT SEAT press writes row 9b and leaves `seats` holding that swap.
+103. [DR2] Two identical refusals in a row each change the status line's text node (cleared, then written), and the `warn` colour is gone after the next write that is not a refusal.
+104. [DR2] One edit that changes the rim count and the inner count writes one status message holding both sentences.
+105. [DR2] Changing the anchor or MIRROR with a note picked keeps that note picked.
+106. [DR2] A scale with no ring of two notes opens the drawer with all four step buttons disabled and row 19 in the status line.
+107. [DR2] With the drawer open and focus in `#scale-box`, Escape with a note picked ends the pick, a second closes the drawer, a third closes the sheet.
+
+### 20.5 New ids (adds to section 2)
+
+| Id | Element | Owner lane |
+|---|---|---|
+| `scale-plate-band` | sticky wrapper around `#scale-preview`, `#scale-drawer-status` and the ghost overlay, inside `#scale-layout-zone` | DR1 |
+| `scale-note-prev`, `scale-note-next` | PREVIOUS NOTE, NEXT NOTE | DR1 (renders, disabled), DR2 (wires) |
+
+New classes, interactive layer only: `.panarm`, `.panflash`. `pan()` with `interactive` off stays byte-identical (line 40 stands).
+
+### 20.6 Not in scope (considered in the review, deferred)
+
+- A confirm step on BACK when the layout is unsaved. The owner chose the one-line notice (RD 4).
+- A native note dropdown. The NOTE step buttons cover the need (RD 5).
+- Sliding the two notes to their seats. It needs an in-place pan update, a renderer change (RD 9).
+- Resizing the CLOSED plate so the toggle clears the fold at 380 x 667. Measured and reported first (F 10).
+- Theming the textarea's inner scrollbar, caret and selection at the three-row cap. Browser defaults stay.
+- `forced-colors` styling of the rings. The dash, the veil and the ink hairline are shape cues that survive it; a dedicated pass is not planned.
+- Validation with NVDA, JAWS, VoiceOver and TalkBack beyond the owner's phone check. The roving-focus pattern is the standard one; no lane owns a screen-reader lab.
+
+### 20.7 What already exists and is reused
+
+`.mode`, `.mode.on`, `.ctlrow`, `.mirror`, `.sheetlabel`, `.sheethint`, `.warn`, the `--sp-*` ramp and the `--ring` focus allowance; `.panhit` (already `role="button"` with `tabindex="-1"`), `.pansel`, the `.panhit:active` fill, `panHitRadii` and `sizePanHits`; `isStop` and the sheet's Tab trap; `reducedMotion`; `showParse()` and `showRefusal()`. The repo has no DESIGN.md: the visual system is the "Design system" section of CLAUDE.md, and nothing here changes it.
+
+### 20.8 Review scores
+
+| Pass | Before | After | Note |
+|---|---|---|---|
+| 1 Information architecture | 6 | 9 | status pinned, steps first; phone fit is still an estimate until DR1 measures |
+| 2 Interaction states | 6 | 9 | armed, flash, unsaved, no-pickable-ring and redraw table added |
+| 3 User journey | 7 | 9 | success now visible; unsaved work is named, not guarded |
+| 4 AI slop risk | 9 | 9 | APP UI; no card grid, no decoration added |
+| 5 Design system alignment | 7 | 9 | three ring sizes, tokens; no new colour or font |
+| 6 Responsive and accessibility | 5 | 9 | roving focus, Tab safe, 44 px path complete; real-device touch proof moved to the DR2 gate |
+| 7 Unresolved decisions | 9 forks | 0 | all decided by the owner |
+
+Outside voices: Codex and Claude both said "revise before sign-off", no hard rejection from either. Litmus: both YES on product, anchor, no cards, premium without shadows. Codex YES and Claude NO on "understandable from labels alone" (seat is never defined on screen; the drawer hint and the helpers carry it) and on "one job per section" (the status line; kept as one line by section 9's no-hidden-twin rule). Both NO on motion, answered by RD 9.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | - | - |
+| Codex Review | `/codex review` | Independent 2nd opinion | 0 | - | - |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | - | covered by the parent plan's eng reviews |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | CLEAR | score: 6/10 -> 9/10, 9 decisions |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | - | - |
+
+- **OUTSIDE VOICES:** Codex and a Claude reviewer both ran; 10 and 12 findings, all folded into section 20 or listed in 20.6.
+- **VERDICT:** DESIGN CLEARED, ready for owner sign-off. Acceptance list is now 107 lines (W1 16, DR1 35, DR2 56).
+
+NO UNRESOLVED DECISIONS
