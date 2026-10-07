@@ -505,11 +505,11 @@ function advance(str) {
  * no ding_dy, so the derivation cannot silently start measuring an offset. */
 function labelShape() {
   const app = boot();
-  const geom = app.get("JSON.stringify(DECKS[0].geom)");
+  const geom = app.get(`JSON.stringify(DECKS.find(d => d.id === "hijaz").geom)`);
   assert.equal(JSON.parse(geom).ding_dy, undefined,
-    "DECKS[0] grew a ding_dy - its ding is no longer drawn at cy 0 and the "
+    "Hijaz grew a ding_dy - its ding is no longer drawn at cy 0 and the "
     + "baseline ratio can no longer be read off the emitted y");
-  const svg = app.get("pan(DECKS[0], DECKS[0].chords[0])");
+  const svg = app.get(`(() => { const d = DECKS.find(d => d.id === "hijaz"); return pan(d, d.chords[0]); })()`);
   const m = svg.match(
     /<text[^>]*\by="([-\d.]+)"[^>]*\bfont-size="([\d.]+)"[^>]*>[^<]*<tspan\s+font-size="([\d.]+)"\s+dy="([\d.]+)"/);
   assert.ok(m, "pan() emitted no name label in the shape this test reads");

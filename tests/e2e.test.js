@@ -166,6 +166,14 @@ function run() {
   const decksMeta = () =>
     b.eval(`return DECKS.map(d => ({ id: d.id, name: d.name, chords: d.chords.length }));`);
 
+  // The meta row of the deck the page booted: looked up by the page's own
+  // DEFAULT_DECK, never by array position.
+  const bootMeta = async (meta) => {
+    const rows = meta || await decksMeta();
+    const id = await b.eval(`return DEFAULT_DECK;`);
+    return rows.find(m => m.id === id);
+  };
+
   const countText = () =>
     b.eval(`return (document.getElementById("count").textContent || "").trim();`);
 
@@ -438,7 +446,7 @@ function run() {
     const meta = await decksMeta();
     assert.ok(meta.length >= 1, "page exposes no decks");
 
-    assert.strictEqual(await countText(), `1 / ${meta[0].chords}`);
+    assert.strictEqual(await countText(), `1 / ${(await bootMeta(meta)).chords}`);
 
     const chips = await chipStates();
     assert.strictEqual(chips.length, meta.length, "one chip per deck");
@@ -574,7 +582,7 @@ function run() {
   test("buttons and arrow keys step through the deck and wrap", async () => {
     await freshLoad();
     const meta = await decksMeta();
-    const n = meta[0].chords;
+    const n = (await bootMeta(meta)).chords;
     assert.ok(n >= 3, "deck too small to test stepping");
 
     await b.click("#next");
@@ -605,7 +613,7 @@ function run() {
      test cannot reach it: it is real touch dispatch, not a click. */
   test("a swipe past the threshold steps the deck in the swiped direction", async () => {
     await freshLoad();
-    const n = (await decksMeta())[0].chords;
+    const n = (await bootMeta()).chords;
 
     await b.swipe("#card", -120);
     await expectCount(`2 / ${n}`, "swiping left did not step forward");
@@ -626,7 +634,7 @@ function run() {
   // alone (30 > the new 18px SWIPE_COMMIT_PX), with no flick required.
   test("a slow, deliberate drag past the new lower threshold still commits", async () => {
     await freshLoad();
-    const n = (await decksMeta())[0].chords;
+    const n = (await bootMeta()).chords;
 
     await b.drag("#card", [[-5, 100], [-10, 200], [-15, 300], [-20, 400], [-25, 500], [-30, 600]]);
     await b.finishAnimations();
@@ -638,7 +646,7 @@ function run() {
     // the whole of what keeps an ordinary tap - and the small drag a thumb makes
     // while tapping - from also throwing the card away to the next one.
     await freshLoad();
-    const n = (await decksMeta())[0].chords;
+    const n = (await bootMeta()).chords;
 
     // Q27 positive sentinel: touch listeners are passive, so b.swipe()'s
     // synthetic touch events can resolve before the app's own handler has
@@ -691,7 +699,7 @@ function run() {
 
   test("swipe wraps at both ends of the deck like the buttons do", async () => {
     await freshLoad();
-    const n = (await decksMeta())[0].chords;
+    const n = (await bootMeta()).chords;
 
     await b.swipe("#card", 120);
     await expectCount(`${n} / ${n}`, "swiping back from the first card did not wrap to the last");
@@ -716,7 +724,7 @@ function run() {
      save it. */
   test("a horizontal drag across the card never hands the gesture to browser history (row 95)", async () => {
     await freshLoad();
-    const n = (await decksMeta())[0].chords;
+    const n = (await bootMeta()).chords;
     const before = await b.eval(`return location.href;`);
 
     await b.swipe("#card", -120);
@@ -1215,7 +1223,7 @@ function run() {
   test("arrow keys and Enter/Space do not reach the card while the settings panel is open", async () => {
     await freshLoad();
     const meta = await decksMeta();
-    const n = meta[0].chords;
+    const n = (await bootMeta(meta)).chords;
     await expectCount(`1 / ${n}`, "starts on the first card");
 
     await openSettingsPanel();
@@ -2913,7 +2921,7 @@ function run() {
       `);
       // #decks holds deck chips only now (M2, 2026-09-28: "+ Add a scale"
       // moved into the settings panel) - three built-ins and six customs.
-      assert.strictEqual(row.chips, 3 + 6, "three built-ins and six customs");
+      assert.strictEqual(row.chips, (await decksMeta()).length + 6, "every built-in and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
       assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
@@ -3170,8 +3178,8 @@ function run() {
         // it is the state in which a height-driven card could relayout.
         await selectDeck(1, meta);
         await assertCardFits(`at ${vw}x${vh} after switching to ${meta[1].id}`);
-        await selectDeck(0, meta);
-        await assertCardFits(`at ${vw}x${vh} after switching back to ${meta[0].id}`);
+        await selectDeck(meta.indexOf(await bootMeta(meta)), meta);
+        await assertCardFits(`at ${vw}x${vh} after switching back to ${(await bootMeta(meta)).id}`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -4690,9 +4698,11 @@ function run() {
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.strictEqual(after.chips.length, 3, "the deleted deck is still in the chip row");
+      const builtIns = await decksMeta();
+      const home = (await bootMeta(builtIns)).name;
+      assert.strictEqual(after.chips.length, builtIns.length, "the deleted deck is still in the chip row");
       assert.strictEqual(after.on.length, 1, "not exactly one selected chip after a delete");
-      assert.strictEqual(after.on[0], after.chips[0], "the fallback is not the FIRST built-in");
+      assert.strictEqual(after.on[0], home, "the fallback is not the default deck");
       assert.ok(after.said.includes(gone), `the delete message never named the deck: "${after.said}"`);
       assert.strictEqual(after.shown, true, "the delete message is not visible");
       assert.ok(after.body.sw <= after.body.cw + 1, "the page scrolls horizontally after a delete");
@@ -6969,7 +6979,7 @@ function run() {
         await b.setViewport(1280, 800, false);
         await b.settle();
         const meta = await decksMeta();
-        const n = meta[0].chords;
+        const n = (await bootMeta(meta)).chords;
         await expectCount(`1 / ${n}`, "starts on the first card at desktop");
 
         await b.key("ArrowRight", "ArrowRight", 39);
@@ -7333,7 +7343,7 @@ function run() {
         await b.setViewport(1280, 800, false);
         await b.settle();
         const meta = await decksMeta();
-        const n = meta[0].chords;
+        const n = (await bootMeta(meta)).chords;
         await expectCount(`1 / ${n}`, "starts on the first card at desktop");
         await b.eval(`document.getElementById("print-paper-select").focus(); return true;`);
         await b.key("ArrowRight", "ArrowRight", 39);
@@ -7357,7 +7367,7 @@ function run() {
         await b.setViewport(1280, 800, false);
         await b.settle();
         const meta = await decksMeta();
-        const n = meta[0].chords;
+        const n = (await bootMeta(meta)).chords;
         await expectCount(`1 / ${n}`, "starts on the first card at desktop");
         await b.click("#modeB");
         await b.key("ArrowRight", "ArrowRight", 39);
@@ -9138,7 +9148,7 @@ function run() {
 
     test("card swipe: the card follows a held drag with a tilt, then springs back below the threshold", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startDrag("#card");
       await g.move(80, 0);
       const held = await sceneXform();
@@ -9198,7 +9208,7 @@ function run() {
 
     test("card swipe: a commit flies the card out, then steps and deals the next card in from the opposite side", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       const mid = await b.eval(`
         const anims = document.querySelector(".scene").getAnimations();
@@ -9242,7 +9252,7 @@ function run() {
 
     test("card swipe: a short fast fling commits and a slow drag of the same length does not", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
 
       await b.drag("#card", [[-8, 10], [-15, 25]]);
       await b.finishAnimations();
@@ -9281,7 +9291,7 @@ function run() {
       // only the browser's own scroll recogniser did, which touch-action:none
       // now prevents from ever claiming it.
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-40, 50, 6], [-80, 100, 12]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the device-case swipe (dx -80, dy 12, ~100ms) must commit");
@@ -9289,7 +9299,7 @@ function run() {
 
     test("card swipe: a tap-sized flick never steps and the tap still flips", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-4, 5], [-8, 10]]);
       await b.finishAnimations();
       await expectCount(`1 / ${n}`, "a tap-sized flick must not navigate");
@@ -9328,7 +9338,7 @@ function run() {
 
     test("card swipe: a mouse drag commits without flipping, a mouse click still flips, a short mouse drag springs back without flipping", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-60, 100], [-120, 200]], { pointer: "mouse" });
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "a mouse drag past the threshold should commit");
@@ -9367,7 +9377,7 @@ function run() {
 
     test("card swipe: a right-click at the rest position during the fly-out does not eat the next click", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await installFlyoutPauseHook();
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await pauseFlyoutAnimation(150);
@@ -9409,7 +9419,7 @@ function run() {
 
     test("card swipe: the no-flight capture branch resets eatClick on every real pointerdown", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       // Positive control: writing eatClick = true through b.eval, then a
       // PROGRAMMATIC .click() (which fires no pointerdown of its own, so the
       // capture handler's reset never runs), proves the eval reaches the
@@ -9428,7 +9438,7 @@ function run() {
 
     test("card swipe: a flipped card keeps its back face during the fly-out and the next card arrives front-up", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.click("#card");
       assert.strictEqual(await cardFlipped(), true);
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
@@ -9448,7 +9458,7 @@ function run() {
 
     test("card swipe: a tap during the fly-out lands it once and never flips the wrong card", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       // A real mouse b.click() here goes through mousedown/mouseup, which
       // starts and ends a fresh, trivial drag on #card via pointer capture -
@@ -9477,7 +9487,7 @@ function run() {
 
     test("card swipe: buttons and arrows during the fly-out land it first, never dropping or doubling a step", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       // eatClick decays on a setTimeout(0) queued at release; wait it out so
       // the deliberate action below is never mistaken for the drag's own
       // trailing tap-click.
@@ -9510,7 +9520,7 @@ function run() {
       // synthesizes for Enter on a focused button, well after the swipe had
       // fully settled.
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.drag("#card", [[-40, 100], [-80, 200], [-120, 300]]);
       await b.finishAnimations();
       await expectCount(`2 / ${n}`, "the touch swipe should commit and land");
@@ -9534,7 +9544,7 @@ function run() {
       // the click lands in the exact same task as release(e, true), before
       // the decay's setTimeout(0) has any chance to run.
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.eval(`
         window.__dragId = null;
         document.getElementById("card").addEventListener(
@@ -9563,7 +9573,7 @@ function run() {
 
     test("card swipe: a real touch tap at the card's REST position during flight lands it and must not flip", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.setViewport(380, 800, true);
       await b.settle();
       try {
@@ -9593,7 +9603,7 @@ function run() {
 
     test("card swipe: a second real swipe from the REST position during flight is not dropped", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.setViewport(380, 800, true);
       await b.settle();
       try {
@@ -9621,7 +9631,7 @@ function run() {
 
     test("card swipe: a drag with the settings panel open, or opened mid-drag, does nothing", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await openSettingsPanel();
       await b.drag("#card", [[-60, 100], [-120, 200]]);
       await b.finishAnimations();
@@ -9652,7 +9662,7 @@ function run() {
 
     test("card swipe: a drag with the scale sheet open does nothing", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await openSheet();
       const open = await b.eval(`return sheetOpen === true;`);
       assert.strictEqual(open, true, "sheetOpen must be true once the sheet is shown");
@@ -9686,7 +9696,7 @@ function run() {
 
     test("card swipe: under reduced motion the swipe steps instantly with no animation", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       try {
         await b.send("Emulation.setEmulatedMedia", {
           media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
@@ -9718,7 +9728,7 @@ function run() {
           await freshLoad();
           await b.setViewport(w, h, w < h);
           await b.settle();
-          const n = (await decksMeta())[0].chords;
+          const n = (await bootMeta()).chords;
           await b.eval(`window.__pcOnce = 0; document.getElementById("card").addEventListener("pointercancel", () => { window.__pcOnce++; }, { once: true }); return true;`);
           if (h > w) {
             // CHROME_BUDGET fits every viewport with no page overflow by design
@@ -9806,7 +9816,7 @@ function run() {
 
     test("card swipe: #count is written once per step, never per frame", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.eval(`
         window.__countBatches = 0;
         new MutationObserver(() => { window.__countBatches++; })
@@ -9880,7 +9890,7 @@ function run() {
 
     test("card swipe: a pointercancel mid-drag springs back from the last move and does not step", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       await b.eval(`
         window.__dragId = null;
         document.getElementById("card").addEventListener(
@@ -9957,7 +9967,7 @@ function run() {
 
     test("card swipe: a synthetic contextmenu on #card releases a live drag", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startDrag("#card");
       await g.move(60, 0);
       // Q15: ctrl+click also fires contextmenu, but only on macOS, so it is
@@ -9982,7 +9992,7 @@ function run() {
 
     test("card swipe: a second pointer cannot end or hijack a drag in progress", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startDrag("#card");
       // Held below SWIPE_COMMIT_PX (18) AND over enough elapsed time (300ms)
       // that its velocity reads well under the fling threshold, on purpose:
@@ -10123,7 +10133,7 @@ function run() {
 
     test("card swipe: Chrome's real mouse-release order - lostpointercapture, then pointerup, then click - commits without flipping", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startMouseDrag("#card");
       assert.ok(g.id !== null, "a real mouse press must start a drag");
       await g.move(-100, 60);
@@ -10148,7 +10158,7 @@ function run() {
 
     test("card swipe: a touch lostpointercapture still cancels the drag, not a mouse-only release", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startDrag("#card");
       await g.move(80, 0);
       const id = await b.eval(`return drag.id;`);
@@ -10204,7 +10214,7 @@ function run() {
 
     test("card swipe: a mouse lostpointercapture with a button still held cancels the drag", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       const g = await startMouseDrag("#card");
       await g.move(-100, 60);
       const rx = g.box.x - 100, ry = g.box.y;
@@ -10224,7 +10234,7 @@ function run() {
 
     test("card swipe: a click more than 400ms after a committing mouse drag is not eaten and flips", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       // Commit via the synthetic lpc path only (no trailing pointerup/click
       // dispatched), exactly as the eng-review-item-3 test below does: a
       // real mouse release's own trailing click fires (and self-eats)
@@ -10305,7 +10315,7 @@ function run() {
     // every assignment.
     test("card swipe: landing a flight during a mid-flight tap cancels a stale mouse-decay timer from the committing drag", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       // Commit via the synthetic lpc path only (no trailing pointerup/click
       // dispatched) so nothing consumes the decay timer on its own - a real
       // trailing click would eat it immediately via the document click
@@ -10362,7 +10372,7 @@ function run() {
     // read as an enormous last-instant velocity.
     test("card swipe: a short mouse drag whose lostpointercapture carries a stale clientX still springs back", async () => {
       await freshLoad();
-      const n = (await decksMeta())[0].chords;
+      const n = (await bootMeta()).chords;
       // Every event in this test is dispatched synthetically (never through
       // CDP's Input.dispatchMouseEvent), so every e.timeStamp lives in the
       // same performance.now() clock: a real pointermove from
@@ -10424,7 +10434,7 @@ function run() {
 
       test("card swipe (wheel): deltaX past 80px advances the deck exactly once per gesture", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await wheelGesture([[30, 0], [30, 0], [30, 0], [30, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "a trackpad swipe past 80px should advance once");
@@ -10432,7 +10442,7 @@ function run() {
 
       test("card swipe (wheel): deltaX under 80px does nothing and leaves no transform", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await wheelGesture([[20, 0], [20, 0]]);
         await waitElapsed(250, "the 160ms gap to fire");
         await b.finishAnimations();
@@ -10455,7 +10465,7 @@ function run() {
 
       test("card swipe (wheel): a sub-threshold gesture's spring-back starts exactly where the follow transform left off", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await wheelGesture([[20, 0], [20, 0]]);
         const follow = await sceneXform();
         assert.strictEqual(follow.none, false, "a sub-threshold gesture must leave a follow transform in place");
@@ -10485,7 +10495,7 @@ function run() {
 
       test("card swipe (wheel): a vertical-dominant wheel does nothing and is not preventDefault-ed", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         const where = await b.eval(`
           const r = document.querySelector("main").getBoundingClientRect();
           return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
@@ -10505,7 +10515,7 @@ function run() {
 
       test("card swipe (wheel): ctrlKey (pinch-zoom) is ignored", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await wheelAt(100, 0, 2); // modifiers bit 2 = Ctrl
         await b.waitFor(`wheel === null && flight === null`, { label: "the wheel gesture to end and settle", timeout: 1000 });
         await b.finishAnimations();
@@ -10516,7 +10526,7 @@ function run() {
 
       test("card swipe (wheel): a second gesture after the 160ms gap advances again", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await wheelGesture([[50, 0], [50, 0]]);
         await b.finishAnimations();
         await expectCount(`2 / ${n}`, "the first gesture should commit");
@@ -10529,7 +10539,7 @@ function run() {
 
       test("card swipe (wheel): a trackpad swipe does nothing while the settings panel is open", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         await openSettingsPanel();
         // openSettingsPanel()'s click is a real CDP mouse press/release, and
         // the gesture-skip computation below reads `order`/`flight`/`drag`
@@ -10571,7 +10581,7 @@ function run() {
       test("card swipe (wheel): momentum wheel events after a committed gesture lands do not step again", async () => {
         await freshLoad();
         await installFlyoutPauseHook();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         // The committing leg crosses the threshold and starts the 220ms
         // fly-out; the deck count already reads the committed value even
         // though the card is still mid-flight.
@@ -10612,7 +10622,7 @@ function run() {
 
       test("card swipe (wheel): the axis lock holds for the whole gesture even once later deltas favour the other axis", async () => {
         await freshLoad();
-        const n = (await decksMeta())[0].chords;
+        const n = (await bootMeta()).chords;
         // First event locks the gesture to the x axis (|dx|=50 > |dy|=5).
         // Later events in the SAME gesture report dy >> dx; the lock must
         // still treat the gesture as horizontal and keep committing on dx.
@@ -10740,7 +10750,7 @@ function run() {
           await b.setViewport(width, height, false);
           try {
             await freshLoad();
-            const n = (await decksMeta())[0].chords;
+            const n = (await bootMeta()).chords;
             await installRecorder();
             await b.drag("#card", legs, { pointer: "mouse" });
             await b.waitFor(`window.__anims.length >= 1 && window.__anims[0].sample !== null`,
@@ -10790,7 +10800,7 @@ function run() {
         try {
           await freshLoad();
           await b.click("#next");
-          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${(await decksMeta())[0].chords}"`,
+          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "2 / ${(await bootMeta()).chords}"`,
             { label: "the #next click to land" });
           await installRecorder();
           await b.drag("#card", [[40, 16], [100, 32], [180, 48]], { pointer: "mouse" });
@@ -10805,7 +10815,7 @@ function run() {
           const replayed = await replaySpeed(out);
           assert.ok(replayed > 0 && Math.abs(replayed - 3.75) / 3.75 <= 0.1);
           await b.finishAnimations();
-          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "1 / ${(await decksMeta())[0].chords}"`,
+          await b.waitFor(`(document.getElementById("count").textContent || "").trim() === "1 / ${(await bootMeta()).chords}"`,
             { label: "the rightward release to go back one card" });
           assert.strictEqual(await cardFlipped(), false);
         } finally {
@@ -10907,7 +10917,7 @@ function run() {
         await b.setViewport(1024, 700, false);
         try {
           await freshLoad();
-          const n = (await decksMeta())[0].chords;
+          const n = (await bootMeta()).chords;
           try {
             await b.send("Emulation.setEmulatedMedia", {
               media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }],
@@ -10930,7 +10940,7 @@ function run() {
         try {
           // (a) a real click on #next.
           await freshLoad();
-          let n = (await decksMeta())[0].chords;
+          let n = (await bootMeta()).chords;
           await installRecorder();
           await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
           assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
@@ -10939,7 +10949,7 @@ function run() {
 
           // (b) an ArrowRight keydown.
           await freshLoad();
-          n = (await decksMeta())[0].chords;
+          n = (await bootMeta()).chords;
           await installRecorder();
           await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
           assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
@@ -10948,7 +10958,7 @@ function run() {
 
           // (c) a wheel gesture started mid-flight is skipped entirely.
           await freshLoad();
-          n = (await decksMeta())[0].chords;
+          n = (await bootMeta()).chords;
           await installRecorder();
           await b.drag("#card", [[-8, 100], [-15, 200], [-25, 400]], { pointer: "mouse" });
           assert.notStrictEqual(await b.eval(`return flight;`), null, "a committed mouse drag must leave a live flight (D180-7)");
