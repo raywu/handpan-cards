@@ -361,7 +361,7 @@ class LabelFloorTest(unittest.TestCase):
     def test_label_floor_uses_the_print_pipelines_ratios(self):
         for seed in SEEDS:
             with self.subTest(seed=seed):
-                out = subprocess.run([NODE, GEN_DECK, seed],
+                out = subprocess.run([NODE, GEN_DECK, "--legacy", seed],
                                      capture_output=True, text=True,
                                      check=True)
                 geom = json.loads(out.stdout)["deck"]["geom"]
