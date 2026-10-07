@@ -187,6 +187,11 @@ MUTANTS = {
 # entries for one mutant's benefit; this set keeps that diff at [].
 DESYNC_ONLY = {"b_decks_json_desync"}
 
+# Per-mutant diff context where the default (-U8) splits one edit into several
+# hunks: swapping two whole deck blocks interleaves their shared lines, and the
+# mutation harness wants one hunk per touched file.
+CONTEXT = {"b_picker_order_swapped": 30}
+
 
 PATTERN = sync_decks.PATTERN
 
@@ -290,7 +295,7 @@ for name, (header, replacements, mutator) in MUTANTS.items():
     assert not replacements, (name, "replacements", replacements)
     if mutator is not None:
         apply_json(mutator, sync=name not in DESYNC_ONLY)
-    diff = sh("git", "diff", "--no-color", "--no-ext-diff", "-U8", "--", *TRACKED)
+    diff = sh("git", "diff", "--no-color", "--no-ext-diff", f"-U{CONTEXT.get(name, 8)}", "--", *TRACKED)
     assert diff.strip(), (name, "empty diff")
     # Drop git's `index <preimage>..<postimage>` lines. They name the blob this
     # patch was cut from, which the next commit to the file invalidates, and
