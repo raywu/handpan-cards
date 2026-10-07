@@ -1317,6 +1317,24 @@ No untested branch.
 
 PF; S2; S3; W1; G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last. Every absolute mutant count in a lane block is stale; read each forecast as its delta over main at the lane's base.
 
+### 20.7 Coordinator corrections (2026-10-07, after Lane PF merged)
+
+Lane PF merged as #264 (main c9a0051, 714 mutants). Its reviewer returned PASS_WITH_NITS and found the following in the plan text of 20.1 to 20.5. Each is corrected here by reading; the older text is not edited.
+
+1. Mutant counts. "Main is at 706" in 20.5 is stale; main was at 711 before PF and is at 714 after it. The rule in 20.6 stands: read each forecast as its delta.
+2. S3's size. Where a summary says S3 has "tests 8 to 11, two mutants" or counts S3 as one file, the lane text binds: tests 8 to 13, and S3 also owns the `mirrorBottom` carry in `index.html` (AM-8).
+3. The two app `solve` calls. AM-8 gives them to S3. Any line that gives "both `solve` calls" to W1 means only W1's own test that the preview redraws the bottom ring.
+4. F3 (the crowded title-card note line wraps to two lines) is recorded in 20.2 and belongs to Lane P1, though P1's block does not repeat it.
+5. The CHORD_ONLY notice listed as open in the PF block was answered in 20.2 ("Title card only").
+6. Design spec section numbers. 20.1 and 20.4 cite the spec's sections 20 to 22. PR #260 is being rewritten into one text with no override sections; its decision index keeps every id (OD, RD, F, MC, AD-MC, and the section 22 items) and says where each rule now lives. Read a citation of spec section 20, 21 or 22 through that index.
+7. S2 test 3 ("equals today's `{mirror:true}` golden angles"). S2 itself changes what an even rim draws (7.1, 5.3), so "today's" holds only for the shapes 5.3 lists as unchanged: an odd rim with no inner notes, and Pygmy's counts with anchor `between`. The test uses one of those. For any other shape the expected angles are the 7.4 table.
+8. The goal of 20.5 ("every deck, record and share link that exists today draws exactly as it does today") is about the mirror split. It does not undo 5.3: Lane S2's direction change redraws saved even-rim decks, as D10 decided.
+
+Carried from the PF review, not yet assigned an owner:
+
+- **Title-card blurb height.** Blurb lines draw downward with no limit (`hifi.py` and `pdfcards.js`, the title-card blurb loop). Four lines clear the card edge by about 2 pt; a fifth lands below it. A fifth line needs a bottom shell plus NO_THIRDS plus SMALL_LABELS, or P1's two-line note wrap on a crowded pan with a bottom shell. Unreachable until G2b. Lane P1 must bound it or the owner must rule before G2b.
+- **Stale prose for the DOC lane**: the `hifi.py` comment above `CARD_WARNINGS` and the CLAUDE.md "Pan-wide warnings print on the chord cards" bullet still say the title card carries the engine's full reason string; since PF it carries the short line for SMALL_LABELS. Section 15 has no row for this.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
