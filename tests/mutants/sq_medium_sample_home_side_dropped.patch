@@ -1,15 +1,15 @@
 # kills: MEDIUM on an over-budget pan deals inside the shape bands
-# U1b-2 - the colour walks never start on the home side, so no home colour cell is sampled and the home start share falls
+# U3 - the colour walks never start on the home side, so no home colour cell is sampled and the home start share falls
 # suite: node --test --test-name-pattern ^MEDIUM.on.an.over-budget.pan.deals.inside.the.shape.bands$ tests/sequence.test.js
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -857,7 +857,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -860,7 +860,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      });
      var strata = [];
      lengths.forEach(function (length) {
--      sides.forEach(function (starts) {
-+      sides.slice(1).forEach(function (starts) {
-         if (starts.length) strata.push({ length: length, starts: starts });
-       });
-     });
+-      sides.forEach(function (side) {
++      sides.slice(1).forEach(function (side) {
+         for (var p = 0; p < length; p += 1) {
+           var starts = p === 0 ? side.colour : side.pure;
+           if (starts.length) strata.push({ length: length, starts: starts, at: p });
