@@ -7,7 +7,9 @@
  *   node tools/gen_deck.js --preset d_kurd_9                 > deck.json
  *   node tools/gen_deck.js --list-presets
  *
- * Options: --palette <0-5>  --parent <0-10>  --mirror  --name <text>
+ * Options: --palette <0-5>  --parent <0-10>  --name <text>
+ *          --mirror (both shells)  --mirror-top  --mirror-bottom
+ *          --anchor one|between
  *          --legacy         (read the seed with core.parseLegacySeed)
  *          --out <path>     (write the JSON there instead of to stdout)
  *
@@ -79,6 +81,9 @@ function numeric(flag, raw, lo, hi) {
 
 function parseArgs(argv) {
   const out = { seed: null, options: {}, listPresets: false, legacy: false, out: null };
+  let mirrorAll = false;
+  let mirrorTop = false;
+  let mirrorBottom = false;
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -98,13 +103,26 @@ function parseArgs(argv) {
       if (out.options.name === undefined) out.options.name = hit.label;
     } else if (a === "--palette") out.options.palette = numeric(a, next(), 0, 5);
     else if (a === "--parent") out.options.parent = numeric(a, next(), 0, 10);
-    else if (a === "--mirror") out.options.mirror = true;
+    else if (a === "--mirror") { mirrorAll = true; }
+    else if (a === "--mirror-top") { mirrorTop = true; }
+    else if (a === "--mirror-bottom") { mirrorBottom = true; }
+    else if (a === "--anchor") {
+      const value = next();
+      if (value !== "one" && value !== "between") die("usage: --anchor takes one or between");
+      out.options.anchor = value;
+    }
     else if (a === "--legacy") out.legacy = true;
     else if (a === "--name") out.options.name = next();
     else if (a === "--out") out.out = next();
     else if (a.startsWith("--")) die("unknown option " + a);
     else if (out.seed === null) out.seed = a;
     else die("more than one seed given");
+  }
+  const top = mirrorAll || mirrorTop;
+  const bottom = mirrorAll || mirrorBottom;
+  if (top || bottom) {
+    out.options.mirror = top;
+    out.options.mirrorBottom = bottom;
   }
   return out;
 }

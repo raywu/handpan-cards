@@ -287,20 +287,23 @@ function pygmyRim(options) {
 }
 
 test("nine rim fields with an inner pair reproduce the verified pygmy zig-zag", () => {
-  const { fields } = pygmyRim();
+  const { fields } = pygmyRim({ anchor: "between" });
   const angles = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]);
   assert.deepEqual(angles, [290, 250, 330, 210, 10, 170, 50, 130, 90]);
 });
 
-test("mirror turns the pygmy nine-field zig-zag into the left-first pattern", () => {
-  const { fields } = pygmyRim({ mirror: true });
-  const angles = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]);
-  assert.deepEqual(angles, [250, 290, 210, 330, 170, 10, 130, 50, 90]);
+test("anchor between seats the pygmy nine-field zig-zag, and mirror reflects it", () => {
+  const angles = (options) => {
+    const { fields } = pygmyRim(options);
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]);
+  };
+  assert.deepEqual(angles({ anchor: "between" }), [290, 250, 330, 210, 10, 170, 50, 130, 90]);
+  assert.deepEqual(angles({ anchor: "between", mirror: true }), [250, 290, 210, 330, 170, 10, 130, 50, 90]);
 });
 
-test("eight rim fields mirrored reproduce the verified hijaz / amara zig-zag", () => {
+test("eight rim fields with default options reproduce the verified hijaz / amara zig-zag", () => {
   const eight = seedOf(NINETEEN, 8, 0);
-  const { fields } = solved({ ...eight, label: "hijaz rim" }, { mirror: true });
+  const { fields } = solved({ ...eight, label: "hijaz rim" });
   const angles = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => fields[String(i)][4]);
   assert.deepEqual(angles, [270, 225, 315, 180, 0, 135, 45, 90]);
 });
@@ -312,31 +315,33 @@ test("six bottom fields reproduce the verified pygmy x-ray ring", () => {
   assert.deepEqual(angles, [300, 240, 0, 180, 60, 120]);
 });
 
-test("the rim is evenly spread and anchored at bottom centre (odd, centred) or top centre", () => {
+test("the rim is evenly spread; anchor one puts note 1 at bottom centre, between straddles it", () => {
   for (const entry of SWEEP) {
-    const { fields } = solved(entry);
-    const rim = Object.keys(fields)
-      .filter((id) => fields[id][3] === "rim")
-      .sort((a, b) => Number(a) - Number(b))
-      .map((id) => fields[id][4]);
-    if (countZone(fields, "inner") === 0 && rim.length % 2 === 1) {
-      assert.equal(rim[0], 270, `${entry.label}: lowest rim note at bottom centre`);
-      assert.ok(!rim.includes(90), `${entry.label}: nothing at top centre`);
-    } else {
-      assert.equal(rim[rim.length - 1], 90, `${entry.label}: highest rim note at top centre`);
-    }
-    const step = 360 / rim.length;
-    const sorted = [...rim].sort((a, b) => a - b);
-    for (let i = 1; i < sorted.length; i += 1) {
-      assert.ok(Math.abs(sorted[i] - sorted[i - 1] - step) < 0.25,
-        `${entry.label}: rim spacing ${sorted[i - 1]} -> ${sorted[i]}, step ${step}`);
+    for (const anchor of ["one", "between"]) {
+      const { fields } = solved(entry, { anchor });
+      const rim = Object.keys(fields)
+        .filter((id) => fields[id][3] === "rim")
+        .sort((a, b) => Number(a) - Number(b))
+        .map((id) => fields[id][4]);
+      const step = 360 / rim.length;
+      if (anchor === "one") assert.equal(rim[0], 270, `${entry.label}: note 1 at bottom centre`);
+      else assert.ok(Math.abs(rim[0] - (270 + step / 2)) < 0.06, `${entry.label}: note 1 half a step right of 270`);
+      assertSpread(entry, rim, step);
     }
   }
 });
 
-/* An even rim count puts the lowest note exactly at bottom centre (hijaz's
- * field 1 at 270), so the side the zig-zag starts on is read off the first rim
- * field that is not on the vertical axis. */
+function assertSpread(entry, rim, step) {
+  const sorted = [...rim].sort((a, b) => a - b);
+  for (let i = 1; i < sorted.length; i += 1) {
+    assert.ok(Math.abs(sorted[i] - sorted[i - 1] - step) < 0.25,
+      `${entry.label}: rim spacing ${sorted[i - 1]} -> ${sorted[i]}, step ${step}`);
+  }
+}
+
+/* Anchor one puts note 1 exactly at bottom centre (hijaz's field 1 at 270), so
+ * the side the zig-zag starts on is read off the first rim field that is not
+ * on the vertical axis. */
 function firstSideX(fields) {
   const rim = Object.keys(fields)
     .filter((id) => fields[id][3] === "rim")
@@ -348,14 +353,62 @@ function firstSideX(fields) {
   return 0;
 }
 
-test("the default is right-first and mirror is left-first, except on an odd centred rim", () => {
+test("one direction: the default seats the first off-axis rim note on the left, mirror on the right", () => {
   for (const entry of SWEEP) {
-    const { fields } = solved(entry);
-    const flipped = countZone(fields, "inner") === 0 && countZone(fields, "rim") % 2 === 1;
-    const mirrored = HPE.layout.solve(entry.seed, { mirror: true }).value;
-    const [def, mir] = flipped ? [-1, 1] : [1, -1];
-    assert.equal(Math.sign(firstSideX(fields)), def, `${entry.label}: default hand`);
-    assert.equal(Math.sign(firstSideX(mirrored.fields)), mir, `${entry.label}: mirror hand`);
+    for (const anchor of ["one", "between"]) {
+      const plainFields = solved(entry, { anchor }).fields;
+      const mirrored = HPE.layout.solve(entry.seed, { anchor, mirror: true }).value;
+      const [def, mir] = anchor === "one" ? [-1, 1] : [1, -1];
+      assert.equal(Math.sign(firstSideX(plainFields)), def, `${entry.label} ${anchor}: default hand`);
+      assert.equal(Math.sign(firstSideX(mirrored.fields)), mir, `${entry.label} ${anchor}: mirror hand`);
+    }
+  }
+});
+
+test("odd rim notes sit right and even left at every count from 2 to 24, both anchors", () => {
+  for (let count = 2; count <= 24; count += 1) {
+    for (const anchor of ["one", "between"]) {
+      const angles = HPE.layout.rimAngles(count, anchor);
+      assert.equal(angles.length, count);
+      angles.forEach((a, i) => {
+        const x = Math.cos(a * DEG);
+        if (Math.abs(x) < 1e-9) return;
+        if (anchor === "one" && i === 0) return;
+        assert.equal(x > 0, i % 2 === 0,
+          `${count} rim, ${anchor}: note ${i + 1} at ${a} is on the ${x > 0 ? "right" : "left"}`);
+      });
+    }
+  }
+});
+
+test("anchor one puts note 1 at 270; anchor between straddles 270 with note 1 on the right", () => {
+  for (let count = 2; count <= 24; count += 1) {
+    const one = HPE.layout.rimAngles(count, "one");
+    const between = HPE.layout.rimAngles(count, "between");
+    const step = 360 / count;
+    assert.equal(one[0], 270, `${count} one`);
+    assert.ok(Math.abs(((between[0] - (270 + step / 2)) + 540) % 360 - 180) < 1e-9, `${count} between note 1`);
+    assert.ok(Math.abs(between[1] - (270 - step / 2)) < 1e-9, `${count} between note 2`);
+  }
+  assert.deepEqual(plain(HPE.layout.rimAngles(9, "one").map((a) => Math.round(a))), [270, 230, 310, 190, 350, 150, 30, 110, 70]);
+  assert.deepEqual(plain(HPE.layout.rimAngles(8, "one")), [270, 225, 315, 180, 0, 135, 45, 90]);
+  assert.deepEqual(plain(HPE.layout.rimAngles(9, "between").map((a) => Math.round(a))), [290, 250, 330, 210, 10, 170, 50, 130, 90]);
+  assert.deepEqual(plain(HPE.layout.rimAngles(8, "between")), [292.5, 247.5, 337.5, 202.5, 22.5, 157.5, 67.5, 112.5]);
+});
+
+test("the anchor applies with and without inner notes", () => {
+  const rimOf = (str, options) => {
+    const parsed = HPE.core.parseLegacySeed(str);
+    const { fields } = HPE.layout.solve(parsed.value, options).value;
+    return Object.keys(fields).filter((id) => fields[id][3] === "rim")
+      .sort((a, b) => Number(a) - Number(b)).map((id) => fields[id][4]);
+  };
+  const noInner = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  const withInner = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 / D5 E5";
+  for (const str of [noInner, withInner]) {
+    assert.equal(rimOf(str, { anchor: "one" })[0], 270, `${str} one`);
+    assert.ok(Math.abs(rimOf(str, { anchor: "between" })[0] - 290) < 0.06, `${str} between`);
+    assert.deepEqual(rimOf(str), rimOf(str, { anchor: "one" }), `${str} default is one`);
   }
 });
 
@@ -429,11 +482,11 @@ test("a stored order and mirror draw the same sides on an odd rim", () => {
   assert.deepEqual(anglesOf({ mirror: true, order: reversed(9) }), ODD_FROM_BOTTOM[9].mirror.slice().reverse());
 });
 
-test("even rim counts are untouched by the centred default", () => {
+test("even rim counts run in the one direction: note 2 on the left, mirror on the right", () => {
   const EVEN = {
-    6: { plain: [270, 330, 210, 30, 150, 90], mirror: [270, 210, 330, 150, 30, 90] },
-    8: { plain: [270, 315, 225, 0, 180, 45, 135, 90], mirror: [270, 225, 315, 180, 0, 135, 45, 90] },
-    10: { plain: [270, 306, 234, 342, 198, 18, 162, 54, 126, 90], mirror: [270, 234, 306, 198, 342, 162, 18, 126, 54, 90] },
+    6: { plain: [270, 210, 330, 150, 30, 90], mirror: [270, 330, 210, 30, 150, 90] },
+    8: { plain: [270, 225, 315, 180, 0, 135, 45, 90], mirror: [270, 315, 225, 0, 180, 45, 135, 90] },
+    10: { plain: [270, 234, 306, 198, 342, 162, 18, 126, 54, 90], mirror: [270, 306, 234, 342, 198, 18, 162, 54, 126, 90] },
   };
   for (const count of [6, 8, 10]) {
     assert.deepEqual(rimOnly(count).angles, EVEN[count].plain, `${count} plain`);
@@ -441,7 +494,7 @@ test("even rim counts are untouched by the centred default", () => {
   }
 });
 
-test("the centred default reproduces the shipped Amara 9 and Hijaz layouts", () => {
+test("default options reproduce the shipped Amara 9 and Hijaz layouts", () => {
   const decks = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "decks.json"), "utf8"));
   const makers = {
     amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
@@ -450,7 +503,7 @@ test("the centred default reproduces the shipped Amara 9 and Hijaz layouts", () 
   for (const id of Object.keys(makers)) {
     const shipped = decks.find((d) => d.id === id);
     const parsed = HPE.core.parseLegacySeed(makers[id]);
-    const { geom, fields } = HPE.layout.solve(parsed.value, { mirror: true }).value;
+    const { geom, fields } = HPE.layout.solve(parsed.value).value;
     for (const key of ["rim", "r_ding", "r_note", "n_in", "inner_ring"]) {
       assert.equal(geom[key], shipped.geom[key], `${id} ${key}`);
     }
@@ -497,9 +550,9 @@ test("the seed's own options.mirror is honoured, and an explicit option wins", (
   assert.deepStrictEqual(plain(overridden), plain(solved(entry).fields));
 });
 
-test("the inner pair ascends opposite the rim direction", () => {
+test("the inner pair ascends opposite the rim direction (anchor between, where note 1 leaves the axis)", () => {
   for (const entry of SWEEP) {
-    const { fields } = solved(entry);
+    const { fields } = solved(entry, { anchor: "between" });
     const inner = Object.keys(fields)
       .filter((id) => fields[id][3] === "inner")
       .sort((a, b) => Number(a) - Number(b));
@@ -519,7 +572,7 @@ test("the inner pair ascends opposite the rim direction", () => {
 
 test("the inner pair ascends opposite the rim under mirror too", () => {
   for (const entry of SWEEP) {
-    const { fields } = HPE.layout.solve(entry.seed, { mirror: true }).value;
+    const { fields } = HPE.layout.solve(entry.seed, { anchor: "between", mirror: true }).value;
     const inner = Object.keys(fields)
       .filter((id) => fields[id][3] === "inner")
       .sort((a, b) => Number(a) - Number(b));
@@ -1029,13 +1082,13 @@ test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
   };
   const host = (v) => JSON.parse(JSON.stringify(v));
 
-  assert.deepEqual(host(HPE.layout.rimAngles(9)), [290, 250, 330, 210, 10, 170, 50, 130, 90]);
+  assert.deepEqual(host(HPE.layout.rimAngles(9, "between")), [290, 250, 330, 210, 10, 170, 50, 130, 90]);
   assert.deepEqual(host(HPE.layout.bottomAngles(6)), [300, 240, 0, 180, 60, 120]);
   assert.deepEqual(host(HPE.layout.innerAngles(2)), [128, 52]);
 
-  const mirroredEight = [270, 225, 315, 180, 0, 135, 45, 90];
-  assert.deepEqual(angles("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", "rim", { mirror: true }), mirroredEight);
-  assert.deepEqual(angles("(D3) A3 C4 D4 E4 F4 G4 A4 C5", "rim", { mirror: true }), mirroredEight);
+  const eight = [270, 225, 315, 180, 0, 135, 45, 90];
+  assert.deepEqual(angles("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", "rim"), eight);
+  assert.deepEqual(angles("(D3) A3 C4 D4 E4 F4 G4 A4 C5", "rim"), eight);
   assert.deepEqual(
     angles("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5", "bottom"),
     [300, 240, 0, 180, 60, 120]);
@@ -1270,5 +1323,147 @@ test("no inner index number meets the ding or a neighbour on the G-RENDER shapes
           `${label} touches number ${o.label}`);
       }
     }
+  }
+});
+
+/* ---- Lane S2: built-ins against the solver, and the two mirrors ---------- */
+
+const BUILTIN_STRINGS = {
+  hijaz: ["(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", undefined],
+  amara: ["(D3) A3 C4 D4 E4 F4 G4 A4 C5", undefined],
+  kurd: ["(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5", undefined],
+  amara10: ["(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5", undefined],
+  pygmy: ["(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5", { anchor: "between" }],
+};
+
+const DECK_DATA = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "decks.json"), "utf8"));
+
+test("the solver seats every built-in field where its diagram has it, from the deck's scale string", () => {
+  assert.deepEqual(Object.keys(BUILTIN_STRINGS).sort(), DECK_DATA.map((d) => d.id).sort());
+  for (const deck of DECK_DATA) {
+    const [string, options] = BUILTIN_STRINGS[deck.id];
+    const parsed = HPE.core.parseLegacySeed(string);
+    assert.equal(parsed.ok, true, deck.id);
+    const { fields } = HPE.layout.solve(parsed.value, options).value;
+    const byMidi = {};
+    for (const id of Object.keys(fields)) byMidi[fields[id][2]] = fields[id];
+    assert.equal(Object.keys(fields).length, Object.keys(deck.fields).length, `${deck.id}: field count`);
+    for (const id of Object.keys(deck.fields)) {
+      const [, , midi, zone, angle] = deck.fields[id];
+      const got = byMidi[midi];
+      assert.ok(got, `${deck.id} field ${id}: midi ${midi} missing from solver output`);
+      assert.equal(got[3], zone, `${deck.id} field ${id}: ring`);
+      assert.equal(got[4], angle, `${deck.id} field ${id} (${deck.fields[id][0]}${deck.fields[id][1]}): angle`);
+    }
+  }
+});
+
+const BOTTOM_PAN = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const anglesByZone = (options) => {
+  const parsed = HPE.core.parseLegacySeed(BOTTOM_PAN);
+  const { fields } = HPE.layout.solve(parsed.value, options).value;
+  const out = { rim: [], inner: [], bottom: [] };
+  for (const id of Object.keys(fields).sort((a, b) => Number(a) - Number(b))) {
+    if (out[fields[id][3]]) out[fields[id][3]].push(fields[id][4]);
+  }
+  return out;
+};
+const reflect = (list) => list.map((a) => Math.round((((180 - a) % 360) + 360) % 360 * 10) / 10);
+
+test("mirrorBottom reflects the bottom ring and nothing else", () => {
+  const base = anglesByZone({ mirror: false, mirrorBottom: false });
+  const got = anglesByZone({ mirror: false, mirrorBottom: true });
+  assert.deepEqual(got.rim, base.rim);
+  assert.deepEqual(got.inner, base.inner);
+  assert.deepEqual(got.bottom, reflect(base.bottom));
+  assert.notDeepEqual(got.bottom, base.bottom);
+});
+
+test("mirror with mirrorBottom false reflects rim and inner and leaves the bottom ring", () => {
+  const base = anglesByZone({ mirror: false, mirrorBottom: false });
+  const got = anglesByZone({ mirror: true, mirrorBottom: false });
+  assert.deepEqual(got.rim, reflect(base.rim));
+  assert.deepEqual(got.inner, reflect(base.inner));
+  assert.deepEqual(got.bottom, base.bottom);
+});
+
+test("an absent mirrorBottom takes the value of mirror", () => {
+  const implied = anglesByZone({ mirror: true });
+  assert.deepEqual(implied, anglesByZone({ mirror: true, mirrorBottom: true }));
+  const base = anglesByZone({ mirror: false });
+  assert.deepEqual(implied.rim, reflect(base.rim));
+  assert.deepEqual(implied.bottom, reflect(base.bottom));
+  assert.deepEqual(base, anglesByZone({ mirror: false, mirrorBottom: false }));
+  /* An odd rim with no inner notes keeps today's golden mirrored angles. */
+  const odd = seedOf(TWELVE, 9, 0);
+  const { fields } = HPE.layout.solve(odd.seed, { mirror: true }).value;
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]), ODD_FROM_BOTTOM[9].mirror);
+  const withBottom = HPE.layout.solve(HPE.core.parseLegacySeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | Bb2 C3 D3").value, { mirror: true }).value.fields;
+  const plainBottom = HPE.layout.solve(HPE.core.parseLegacySeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | Bb2 C3 D3").value).value.fields;
+  const bottomIds = Object.keys(withBottom).filter((id) => withBottom[id][3] === "bottom");
+  for (const id of bottomIds) {
+    assert.equal(withBottom[id][4], reflect([plainBottom[id][4]])[0], `bottom field ${id}`);
+  }
+});
+
+test("the call's mirrorBottom beats the seed's, and the seed's beats the top value", () => {
+  const seedWith = (options) => {
+    const seed = plain(HPE.core.parseLegacySeed(BOTTOM_PAN).value);
+    Object.assign(seed.options, options);
+    return seed;
+  };
+  const zonesOf = (seed, options) => {
+    const { fields } = HPE.layout.solve(seed, options).value;
+    const out = { bottom: [] };
+    for (const id of Object.keys(fields).sort((a, b) => Number(a) - Number(b))) {
+      if (fields[id][3] === "bottom") out.bottom.push(fields[id][4]);
+    }
+    return out.bottom;
+  };
+  const straight = anglesByZone({ mirror: false }).bottom;
+  const flipped = reflect(straight);
+  assert.deepEqual(zonesOf(seedWith({ mirrorBottom: true }), { mirror: false }), flipped, "seed beats top");
+  assert.deepEqual(zonesOf(seedWith({ mirrorBottom: true }), { mirror: false, mirrorBottom: false }), straight, "call beats seed");
+  assert.deepEqual(zonesOf(seedWith({ mirrorBottom: false }), { mirror: true }), straight, "seed false beats top true");
+  assert.deepEqual(zonesOf(seedWith({ mirror: true }), {}), flipped, "no mirrorBottom anywhere: top");
+});
+
+test("resolveMirrors is one function: call first, then seed, then the top value", () => {
+  const r = HPE.layout.resolveMirrors;
+  assert.deepEqual(plain(r({}, {})), { top: false, bottom: false });
+  assert.deepEqual(plain(r({ mirror: true }, {})), { top: true, bottom: true });
+  assert.deepEqual(plain(r({}, { mirror: true })), { top: true, bottom: true });
+  assert.deepEqual(plain(r({ mirror: false }, { mirror: true })), { top: false, bottom: false });
+  assert.deepEqual(plain(r({ mirrorBottom: true }, {})), { top: false, bottom: true });
+  assert.deepEqual(plain(r({ mirror: true }, { mirrorBottom: false })), { top: true, bottom: false });
+  assert.deepEqual(plain(r({ mirror: true, mirrorBottom: false }, { mirrorBottom: true })), { top: true, bottom: false });
+  assert.deepEqual(plain(r(undefined, undefined)), { top: false, bottom: false });
+});
+
+test("the geometry keys that differ from solver output are exactly the documented ones", () => {
+  const documented = {
+    hijaz: { f_ding: [0.135, 0.12], f_note: [0.128, 0.1454], f_num: [0.105, 0.1216] },
+    amara: { f_ding: [0.135, 0.12], f_note: [0.128, 0.1454], f_num: [0.105, 0.1216] },
+    kurd: {},
+    amara10: {},
+    pygmy: {
+      r_note: [0.1425, 0.1456], f_note: [0.109, 0.1114], f_num: [0.0912, 0.0932],
+      inner_ring: [null, 0], ext: [undefined, 1.462],
+    },
+  };
+  const ABSENT_OK = new Set(["inner", "bottom", "ding_dy", "rim_num_out", "ext"]);
+  for (const deck of DECK_DATA) {
+    const [string, options] = BUILTIN_STRINGS[deck.id];
+    const { geom } = HPE.layout.solve(HPE.core.parseLegacySeed(string).value, options).value;
+    const differs = {};
+    for (const key of Object.keys(geom)) {
+      const stored = deck.geom[key];
+      if (stored === undefined && ABSENT_OK.has(key) && deck.id !== "pygmy") continue;
+      if (stored !== geom[key]) differs[key] = [stored, geom[key]];
+    }
+    for (const key of Object.keys(deck.geom)) {
+      if (!(key in geom)) differs[key] = [deck.geom[key], undefined];
+    }
+    assert.deepEqual(plain(differs), plain(documented[deck.id]), `${deck.id}: geom drift`);
   }
 });

@@ -199,6 +199,37 @@ test("options default to palette 0, no parent, no name, no mirror", () => {
     { palette: 4, parent: 2, name: "My Pan", mirror: true });
 });
 
+test("anchor is one or between, anything else is refused", () => {
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  assert.equal(parsed(seed, { anchor: "one" }).options.anchor, "one");
+  assert.equal(parsed(seed, { anchor: "between" }).options.anchor, "between");
+  for (const bad of ["centre", "", "ONE", 1, true, null]) {
+    const res = core.parseSeed(seed, { anchor: bad });
+    assert.equal(res.ok, false, `anchor ${JSON.stringify(bad)} was accepted`);
+    assert.equal(res.code, "BAD_NOTE");
+  }
+});
+
+test("mirrorBottom must be a boolean", () => {
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  assert.equal(parsed(seed, { mirrorBottom: true }).options.mirrorBottom, true);
+  assert.equal(parsed(seed, { mirrorBottom: false }).options.mirrorBottom, false);
+  for (const bad of [1, 0, "true", null]) {
+    const res = core.parseSeed(seed, { mirrorBottom: bad });
+    assert.equal(res.ok, false, `mirrorBottom ${JSON.stringify(bad)} was accepted`);
+    assert.equal(res.code, "BAD_NOTE");
+  }
+});
+
+test("a seed read without mirrorBottom has no mirrorBottom key", () => {
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  for (const options of [undefined, {}, { mirror: true }]) {
+    const read = parsed(seed, options).options;
+    assert.equal("mirrorBottom" in read, false);
+    assert.equal("anchor" in read, false);
+  }
+});
+
 test("a name option is trimmed of leading and trailing whitespace (Q25)", () => {
   // readOptions (core.js:294 area) is not itself exported; the trim is
   // observed through parseSeed's own options readback, which is its only
@@ -715,7 +746,7 @@ test("the Pygmy seed with a separator solves to the golden Pygmy angles", () => 
   assert.deepEqual(zoneCounts(value.value.fields),
     { ding: 1, rim: 9, inner: 2, bottom: 6 }, "9 rim, 2 inner, 6 bottom, 1 ding");
 
-  const solved = layout.layout.solve(value.value);
+  const solved = layout.layout.solve(value.value, { anchor: "between" });
   assert.equal(solved.ok, true, `solve: ${solved.code}`);
   const diffs = [];
   for (const id of Object.keys(pygmy.fields)) {
