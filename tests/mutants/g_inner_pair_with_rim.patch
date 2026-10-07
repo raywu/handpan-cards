@@ -1,5 +1,5 @@
-# suite: node --test --test-name-pattern ^the.inner.pair.ascends.opposite.the.rim.direction$ tests/layout.test.js
-# kills: the inner pair ascends opposite the rim direction
+# suite: node --test --test-name-pattern ^the.inner.pair.ascends.opposite.the.rim.direction..anchor.between..where.note.1.leaves.the.axis.$ tests/layout.test.js
+# kills: the inner pair ascends opposite the rim direction (anchor between, where note 1 leaves the axis)
 # the inner fan starts on the right, so the pair ascends WITH the rim direction
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js

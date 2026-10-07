@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^mirrorBottom.reflects.the.bottom.ring.and.nothing.else$ tests/layout.test.js
+# kills: mirrorBottom reflects the bottom ring and nothing else
+# The bottom ring follows the top mirror, ignoring mirrorBottom.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -273,7 +273,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     return {
+       rims: mirrored(rimAngles(counts.rim, anchor), top),
+       inners: mirrored(innerAngles(counts.inner), top),
+-      bottoms: mirrored(bottomAngles(counts.bottom), bottom)
++      bottoms: mirrored(bottomAngles(counts.bottom), top)
+     };
+   }
+ 

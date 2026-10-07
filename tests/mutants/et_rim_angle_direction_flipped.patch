@@ -1,15 +1,15 @@
-# suite: node --test --test-name-pattern ^ET-2.rim/bottom/inner.angles.follow.CLAUDE.md.zig-zags$ tests/layout.test.js
+# suite: node --test --test-name-pattern ^ET.2.rim.bottom.inner.angles.follow.CLAUDE.md.zig.zags$ tests/layout.test.js
 # kills: ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags
-# The rim zig-zag steps left-first instead of right-first, mirroring every generated pan against the verified instruments.
+# The rim steps left-first instead of odd-right, mirroring every generated rim.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -123,7 +123,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -149,7 +149,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var out = [];
+     var i;
      for (i = 0; i < count; i += 1) {
-       var back = count - 1 - i;                    /* 0 for the highest note */
-       var magnitude = Math.ceil(back / 2);
--      var sign = (back % 2 === 1) ? 1 : -1;
-+      var sign = (back % 2 === 1) ? -1 : 1;
-       out.push(norm(90 + sign * magnitude * step));
+-      var sign = (i % 2 === 1) ? -1 : 1;
++      var sign = (i % 2 === 1) ? 1 : -1;
+       var magnitude = between ? Math.floor(i / 2) + 0.5 : Math.ceil(i / 2);
+       out.push(norm(270 + sign * magnitude * step));
      }
-     return out;
