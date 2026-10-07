@@ -630,6 +630,20 @@
       ],
       [
         "Fm",
+        "add9",
+        "F MINOR ADD 9",
+        [
+          5,
+          7,
+          8,
+          6
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "Fm",
         "9",
         "F MINOR 9",
         [
@@ -637,7 +651,7 @@
           7,
           8,
           9,
-          11
+          6
         ],
         [
           5
@@ -1295,7 +1309,7 @@
     "blurb": [
       "F3 | G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5",
       "BOTTOM:  C3  Db3  Eb3  Bb3  Db4  Ab5",
-      "COMPLETE F NATURAL MINOR   -   52 CHORDS"
+      "COMPLETE F NATURAL MINOR   -   53 CHORDS"
     ],
     "legend_lines": [
       "U1 - U6: BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)",
@@ -1546,6 +1560,20 @@
       ],
       [
         "F",
+        "add9",
+        "F MAJOR ADD 9",
+        [
+          5,
+          7,
+          8,
+          6
+        ],
+        [
+          5
+        ]
+      ],
+      [
+        "F",
         "6/9",
         "F MAJOR 6/9",
         [
@@ -1719,6 +1747,20 @@
       ],
       [
         "C",
+        "add9",
+        "C MAJOR ADD 9",
+        [
+          2,
+          4,
+          6,
+          3
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        "C",
         "6/9",
         "C MAJOR 6/9",
         [
@@ -1775,7 +1817,7 @@
     ],
     "blurb": [
       "D3  |  A3  C4  D4  E4  F4  G4  A4  C5",
-      "25 CHORDS - ONE CARD PER CHORD"
+      "27 CHORDS - ONE CARD PER CHORD"
     ],
     "legend_lines": [
       "NOTE NAME + OCTAVE INSIDE EACH TONEFIELD",

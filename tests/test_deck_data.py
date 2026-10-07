@@ -122,6 +122,7 @@ PYGMY_BADGE = [
     1,  # Fsus4
     1,  # F7sus4
     0,  # Fm7
+    0,  # Fmadd9
     0,  # Fm9
     2,  # G dim
     2,  # Gm7b5

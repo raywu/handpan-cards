@@ -41,11 +41,14 @@ TOL = 0.01
 # Page counts, computed from each deck's card count padded up to a multiple
 # of 9 (hifi.build pads with blanks). 2026-09-16 (engine adoption): Hijaz
 # 18->19, Pygmy 27->52, Amara 16->25 chords, so full is now 3/7/3 and
-# printer-only is 3/6/3 (was 3/4/2 and 2/3/2).
+# printer-only is 3/6/3 (was 3/4/2 and 2/3/2). 2026-10-07 (size cap removed,
+# Lane U2): Pygmy 52->53 and Amara 25->27 chords; Amara full is now 4 sheets
+# (27 cards fill three sheets exactly, so the title sheet is a fourth) and
+# Pygmy stays at 7/6.
 JOBS = [
     ("hijaz_full", decks.HIJAZ, False, 3),
     ("pygmy_full", decks.PYGMY, False, 7),
-    ("amara_full", decks.AMARA, False, 3),
+    ("amara_full", decks.AMARA, False, 4),
     ("hijaz_print", decks.HIJAZ, True, 3),
     ("pygmy_print", decks.PYGMY, True, 6),
     ("amara_print", decks.AMARA, True, 3),
