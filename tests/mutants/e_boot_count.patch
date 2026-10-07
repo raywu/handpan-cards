@@ -1,5 +1,5 @@
-# kills: boots with the first deck loaded
-# suite: node --test --test-name-pattern ^boots.with.the.first.deck.loaded$ tests/e2e.test.js
+# kills: boots with the default deck loaded
+# suite: node --test --test-name-pattern ^boots.with.the.default.deck.loaded$ tests/e2e.test.js
 # Re-cut 2026-10-01 (lane AP, post-refactor triage A188-1): render() used to
 # set the counter tail (classList.remove("seq") + textContent) once per
 # branch, mode A and mode B each independently, because finding 18's

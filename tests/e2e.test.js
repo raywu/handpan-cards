@@ -441,7 +441,7 @@ function run() {
   /* ---------------------------------------------------------------- *
    * 1. boot
    * ---------------------------------------------------------------- */
-  test("boots with the first deck loaded", async () => {
+  test("boots with the default deck loaded", async () => {
     await freshLoad();
     const meta = await decksMeta();
     assert.ok(meta.length >= 1, "page exposes no decks");
@@ -449,11 +449,12 @@ function run() {
     assert.strictEqual(await countText(), `1 / ${(await bootMeta(meta)).chords}`);
 
     const chips = await chipStates();
+    const home = meta.indexOf(await bootMeta(meta));
     assert.strictEqual(chips.length, meta.length, "one chip per deck");
     assert.deepStrictEqual(
       chips.map((c) => c.on),
-      chips.map((_, i) => i === 0),
-      "only the first deck's chip is active on a clean boot",
+      chips.map((_, i) => i === home),
+      "only the default deck's chip is active on a clean boot",
     );
 
     // Both faces are written on every render, so both must have content.

@@ -577,7 +577,7 @@ test("render() builds the diagram at most once per render, in every mode", () =>
 
 test("an unknown deck id still falls back to a built-in deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
-  assert.strictEqual(app.deckId(), decks(app)[0].id);
+  assert.strictEqual(app.deckId(), app.get("DEFAULT_DECK"));
   assert.match(app.faces(), /<svg /);
 });
 
@@ -1284,7 +1284,8 @@ test("a corrupt saved scale is dropped and the app still boots on the built-ins"
 /* --------------------------------- 21. the two fallbacks are distinguished */
 
 test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says so", () => {
-  const first = boot().get("DECKS")[0];
+  const probe = boot();
+  const first = probe.get("DECKS").find(d => d.id === probe.get("DEFAULT_DECK"));
 
   // 21a. an unknown built-in id: SILENT. This is the Phase 3 behaviour the
   // plan marks as must-not-weaken, asserted here beside the noisy path.
@@ -1311,8 +1312,8 @@ test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says
 // script, so a throw earlier in the tail drops it in silence while the deck on
 // screen still renders and the app looks perfectly fine.
 test("a non-string stored deck id is ignored and never eats a share link", () => {
-  const first = boot().get("DECKS").find(d => d.id === "hijaz");
-  assert.strictEqual(boot().get("DEFAULT_DECK"), first.id);
+  const probe = boot();
+  const first = probe.get("DECKS").find(d => d.id === probe.get("DEFAULT_DECK"));
 
   const seeded = boot();
   const made = seeded.generate(AMARA_STRING).value;
@@ -1571,7 +1572,7 @@ test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", () 
 
 test("deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone", () => {
   const app = boot();
-  const first = decks(app)[0];
+  const first = decks(app).find(d => d.id === app.get("DEFAULT_DECK"));
   const d = makeCustom(app);
   app.select(d.id);
   app.clickChip(d.name);
@@ -1580,7 +1581,7 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
 
   assert.strictEqual(app.sheetOpen(), false, "delete left the sheet open");
   assert.deepStrictEqual(app.registry(), {}, "the deck is still in the registry");
-  assert.strictEqual(app.deckId(), first.id, "delete did not fall back to the first built-in");
+  assert.strictEqual(app.deckId(), first.id, "delete did not fall back to the default deck");
   const said = app.announcer();
   assert.ok(said.textContent.includes(d.name),
     `the delete message must name the deck removed: "${said.textContent}"`);
