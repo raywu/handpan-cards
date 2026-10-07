@@ -3204,6 +3204,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     NO_THIRDS: {
       kind: "warning",
       reason: "No 3rds on this pan: only power chords and sus chords."
+    },
+    SMALL_LABELS: {
+      kind: "warning",
+      reason: "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out."
     }
   };
 
@@ -4481,12 +4485,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 (function (HPE) {
   "use strict";
 
-  /* ---- caps (spec section 4) -------------------------------------------- */
-
-  var RIM_MAX = 11;
-  var INNER_MAX = 2;
-  var BOTTOM_MAX = 6;
-
   /* ---- D12 fixed geometry, anchored on the built-in literals ------------- */
 
   var R_DING = 0.19;          /* pygmy literal: the enlarged, offset ding    */
@@ -4497,7 +4495,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var INNER_ORB = 0.38;       /* pygmy literal                               */
   var BOTTOM_ORB = 1.15;      /* pygmy literal, x-ray ring outside the shell */
   var INNER_RING_DECOR = 0.355; /* hijaz / amara decorative circle           */
-  var INNER_ANGLES = [128, 52]; /* left first: opposite the rim direction    */
+
+  /* The inner fan (A13): k notes spread over INNER_SPAN degrees about top
+   * centre, INNER_STEP_MAX apart at most, dealt from the two ends inward. One
+   * note sits at 90 and two at 128 and 52 (Pygmy's pair) without a special
+   * case. The ding offset (A14) starts at DING_DY and rises by DING_DY_STEP
+   * until every inner index number is INNER_CLEARANCE clear of the ding, to
+   * DING_DY_MAX. These four, with the step cap, are what G-RENDER retunes. */
+  var INNER_SPAN = 180;
+  var INNER_STEP_MAX = 76;
+  var DING_DY_STEP = 0.0025;
+  var INNER_CLEARANCE = 0.01;
+  var DING_DY_MAX = 0.30;
+
+  /* The legibility floor (A16, D15): print scale is R = round(PRINT_HALF /
+   * ext, 1) points, and a label under LABEL_FLOOR_PT is crowded. The ratios
+   * are tools/hifi.py's LABEL_RATIO_NOTE, LABEL_RATIO_BNOTE and NUM_RATIO,
+   * pinned to them by tests/test_pdf_parity.py. */
+  var PRINT_HALF = 74;
+  var LABEL_FLOOR_PT = 3.6;
+  var PRINT_NOTE_RATIO = 0.80325;
+  var PRINT_BNOTE_RATIO = 0.8232;
+  var PRINT_NUM_RATIO = 0.64;
+  var PRINT_OCTAVE_RATIO = 0.66;
 
   var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
   var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */
@@ -4625,7 +4645,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   function innerAngles(count) {
-    return INNER_ANGLES.slice(0, count);
+    var out = [];
+    if (count < 1) return out;
+    var step = count > 1 ? Math.min(INNER_STEP_MAX, INNER_SPAN / (count - 1)) : 0;
+    var left = 90 + step * (count - 1) / 2;
+    var i;
+    for (i = 0; i < count; i += 1) {
+      var j = Math.floor(i / 2);
+      out.push(i % 2 === 0 ? left - j * step : left - (count - 1 - j) * step);
+    }
+    return out;
   }
 
   /* ---- the solver -------------------------------------------------------- */
@@ -4716,7 +4745,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     };
   }
 
-  function geometry(counts, placed) {
+  function geometryAt(counts, placed, dingDy) {
     var rims = placed.rims;
     var inners = placed.inners;
     var bottoms = placed.bottoms;
@@ -4724,7 +4753,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var hasInner = counts.inner > 0;
     var hasBottom = counts.bottom > 0;
     var rDing = isCentred(counts) ? R_DING_CENTRED : R_DING;
-    var dingDy = isCentred(counts) ? 0 : DING_DY;
 
     var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
     var innerOrb = hasInner ? INNER_ORB : 0;
@@ -4732,8 +4760,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     /* r_note: the largest circle that keeps every top field clear of every
      * other top field and of the ding, never larger than the built-in max.
-     * This is the D7 ceiling made mechanical - 11 rim fields stay apart
-     * because the packing bound, not a constant, sets the radius. */
+     * The packing bound, not a cap on the count, sets the radius. */
     var topPoints = [];
     var i;
     for (i = 0; i < rims.length; i += 1) topPoints.push(point(rimOrb, rims[i]));
@@ -4803,6 +4830,51 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     };
   }
 
+  /* A14: the ding offset is adaptive. Solve at DING_DY, then raise it one step
+   * at a time while an inner index number (centred where pan() draws it,
+   * `inner - r_note - n_in` along its seat, reaching LABEL_REACH x f_num)
+   * sits closer than INNER_CLEARANCE to the ding's edge, up to DING_DY_MAX.
+   * A pan with no inner notes has a centred ding and never loops. */
+  function innerClearance(geom, inners) {
+    var best = Infinity;
+    var radius = geom.inner - geom.r_note - geom.n_in;
+    var i;
+    for (i = 0; i < inners.length; i += 1) {
+      var at = point(radius, inners[i]);
+      var gap = distance(at, [0, -geom.ding_dy]) - geom.r_ding - LABEL_REACH * geom.f_num;
+      best = Math.min(best, gap);
+    }
+    return best;
+  }
+
+  function geometry(counts, placed) {
+    if (isCentred(counts)) return geometryAt(counts, placed, 0);
+    var step = 0;
+    var geom = geometryAt(counts, placed, DING_DY);
+    while (geom.ding_dy < DING_DY_MAX &&
+           innerClearance(geom, placed.inners) < INNER_CLEARANCE) {
+      step += 1;
+      geom = geometryAt(counts, placed, round(DING_DY + step * DING_DY_STEP, 4));
+    }
+    return geom;
+  }
+
+  /* The smallest of the four glyph classes the warning counts (A16), in
+   * points at print scale: top name, top octave digit, index number, bottom
+   * name. The bottom octave digit is excluded (D15). A pan with nothing to
+   * label has no floor; it reports PRINT_HALF, far above LABEL_FLOOR_PT. */
+  function labelFloor(geom) {
+    var R = round(PRINT_HALF / geom.ext, 1);
+    var sizes = [];
+    if (geom.r_note > 0) {
+      sizes.push(PRINT_NOTE_RATIO * geom.r_note * R * PRINT_OCTAVE_RATIO);
+      sizes.push(PRINT_NOTE_RATIO * geom.r_note * R);
+      sizes.push(PRINT_NUM_RATIO * geom.r_note * R);
+    }
+    if (geom.r_bnote > 0) sizes.push(PRINT_BNOTE_RATIO * geom.r_bnote * R);
+    return sizes.length ? Math.min.apply(null, sizes) : PRINT_HALF;
+  }
+
   /* The correction is applied LAST, to the field-to-slot assignment only.
    * The SET of solved angles is unchanged - order says who sits where, not
    * where the seats are - so every geom value is untouched and mirror, which
@@ -4836,10 +4908,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var source = fieldsOf(seedOrFields);
     var zones = collect(source);
 
-    if (zones.rim.length > RIM_MAX) return err("TOO_MANY_RIM");
-    if (zones.inner.length > INNER_MAX) return err("TOO_MANY_RIM");
-    if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
-
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
     var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
 
@@ -4862,6 +4930,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     rimAngles: rimAngles,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
+    labelFloor: labelFloor,
+    LABEL_FLOOR_PT: LABEL_FLOOR_PT,
     GEOM_KEYS: [
       "rim", "inner", "bottom", "r_ding", "ding_dy", "r_note", "r_bnote",
       "inner_ring", "f_ding", "f_note", "f_bnote", "f_num", "n_in", "n_out",
@@ -5715,6 +5785,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return {code: code, reason: core().REASONS[code].reason};
   }
 
+  // A16: a pan whose smallest counted glyph prints under the floor. <N> is
+  // floored to one decimal so the sentence never says "3.6 pt, under 3.6 pt".
+  // Null when the pan is legible. The sheet calls this too, so the live line
+  // and the deck's own warning are one sentence from one function.
+  function smallLabels(geom) {
+    var floor = layout().labelFloor(geom);
+    if (!(floor < layout().LABEL_FLOOR_PT)) return null;
+    var shown = (Math.floor(floor * 10) / 10).toFixed(1);
+    return {
+      code: "SMALL_LABELS",
+      reason: core().REASONS.SMALL_LABELS.reason.split("<N>").join(shown)
+    };
+  }
+
   /* ---- section 13: the auto deck name ------------------------------------ */
 
   // `<DING PITCH CLASS> <PARENT DISPLAY> <N>`, N counting the TOP-SHELL fields
@@ -5761,6 +5845,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var warnings = [];
     var thirdless = noThirds(fields);
     if (thirdless) warnings.push(warning("NO_THIRDS"));
+    var crowded = smallLabels(solved.value.geom);
+    if (crowded) warnings.push(crowded);
 
     var list = candidates(fields);
     list = collapse(fields, list, tonicPc);
@@ -5795,6 +5881,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.select = {
     build: build,
+    smallLabels: smallLabels,
     candidates: candidates,
     collapse: collapse,
     voice: voice,
@@ -8823,7 +8910,10 @@ function syncParseState({ paint }) {
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
     if (paint) showPanPreview(res.value);
-    say("", "");
+    const solved = solvePreviewLayout(res.value);
+    const crowded = solved && HPE.select.smallLabels(solved.geom);
+    if (crowded) say(crowded.reason, "warn");
+    else say("", "");
   } else {
     // showRefusal() blanks the parse line rather than removing it: the CSS
     // leans on the blank too - #scale-parse:empty steps out of the row and

@@ -442,6 +442,44 @@ test("a pan with no third yields ok plus NO_THIRDS", () => {
     "deck.warnings carries the same list (section 1)");
 });
 
+/** A parsed seed grown past the parser's own caps: the 11-rim pan with
+ *  extra rim notes climbing from its top, as Lane G2b's grammar will let a
+ *  player type. Only the cap is bypassed; solve and build run for real. */
+function crowded(extraRim) {
+  const seed = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5");
+  const steps = [2, 2, 1, 2, 2, 2, 1];
+  const names = ["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"];
+  const sharp = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+  let midi = seed.fields["11"][2];
+  for (let i = 0; i < extraRim; i += 1) {
+    midi += steps[i % steps.length];
+    seed.fields[String(12 + i)] =
+      [names[midi % 12] + (sharp[midi % 12] ? "#" : ""), Math.floor(midi / 12) - 1, midi, "rim", null, String(12 + i)];
+  }
+  return seed;
+}
+
+test("a crowded pan builds with SMALL_LABELS and is not refused", () => {
+  const result = select.build(crowded(12));
+  assert.equal(result.ok, true, `${result.code}: ${result.reason}`);
+  const warned = host(result.warnings).filter((w) => w.code === "SMALL_LABELS");
+  assert.equal(warned.length, 1);
+  const floor = layout.labelFloor(result.value.geom);
+  assert.ok(floor < 3.6);
+  assert.equal(warned[0].reason,
+    core.REASONS.SMALL_LABELS.reason.split("<N>").join((Math.floor(floor * 10) / 10).toFixed(1)));
+  assert.match(warned[0].reason, /^Crowded pan: the smallest labels print at \d\.\d pt, under the 3\.6 pt/);
+  assert.deepEqual(host(result.value.warnings), host(result.warnings));
+});
+
+test("SMALL_LABELS is absent on every pan the parser accepts today", () => {
+  for (const row of synthetic) {
+    if (!row.expect.ok) continue;
+    const codes = host(select.build(seedOf(row.string)).warnings).map((w) => w.code);
+    assert.equal(codes.includes("SMALL_LABELS"), false, row.name);
+  }
+});
+
 test("select_warnings matches on every ok row of synthetic_scales.json", () => {
   for (const row of synthetic) {
     if (!row.expect.ok) continue;

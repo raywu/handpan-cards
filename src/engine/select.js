@@ -488,6 +488,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return {code: code, reason: core().REASONS[code].reason};
   }
 
+  // A16: a pan whose smallest counted glyph prints under the floor. <N> is
+  // floored to one decimal so the sentence never says "3.6 pt, under 3.6 pt".
+  // Null when the pan is legible. The sheet calls this too, so the live line
+  // and the deck's own warning are one sentence from one function.
+  function smallLabels(geom) {
+    var floor = layout().labelFloor(geom);
+    if (!(floor < layout().LABEL_FLOOR_PT)) return null;
+    var shown = (Math.floor(floor * 10) / 10).toFixed(1);
+    return {
+      code: "SMALL_LABELS",
+      reason: core().REASONS.SMALL_LABELS.reason.split("<N>").join(shown)
+    };
+  }
+
   /* ---- section 13: the auto deck name ------------------------------------ */
 
   // `<DING PITCH CLASS> <PARENT DISPLAY> <N>`, N counting the TOP-SHELL fields
@@ -534,6 +548,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var warnings = [];
     var thirdless = noThirds(fields);
     if (thirdless) warnings.push(warning("NO_THIRDS"));
+    var crowded = smallLabels(solved.value.geom);
+    if (crowded) warnings.push(crowded);
 
     var list = candidates(fields);
     list = collapse(fields, list, tonicPc);
@@ -568,6 +584,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.select = {
     build: build,
+    smallLabels: smallLabels,
     candidates: candidates,
     collapse: collapse,
     voice: voice,

@@ -54,6 +54,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     NO_THIRDS: {
       kind: "warning",
       reason: "No 3rds on this pan: only power chords and sus chords."
+    },
+    SMALL_LABELS: {
+      kind: "warning",
+      reason: "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out."
     }
   };
 

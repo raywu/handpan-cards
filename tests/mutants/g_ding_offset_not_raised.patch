@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^the.ding.offset.stays.0.1425.for.the.Pygmy.shape.and.rises.until.every.inner.number.clears$ tests/layout.test.js
+# kills: the ding offset stays 0.1425 for the Pygmy shape and rises until every inner number clears
+# the ding offset never rises, so inner numbers meet the ding
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -398,7 +398,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (isCentred(counts)) return geometryAt(counts, placed, 0);
+     var step = 0;
+     var geom = geometryAt(counts, placed, DING_DY);
+-    while (geom.ding_dy < DING_DY_MAX &&
++    while (false && geom.ding_dy < DING_DY_MAX &&
+            innerClearance(geom, placed.inners) < INNER_CLEARANCE) {
+       step += 1;
+       geom = geometryAt(counts, placed, round(DING_DY + step * DING_DY_STEP, 4));

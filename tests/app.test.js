@@ -988,6 +988,30 @@ for (const [fixture, code] of [
   });
 }
 
+test("the sheet shows the small-labels warning while typing", () => {
+  const app = boot();
+  openSheet(app);
+  const seedText = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5";
+  const said = app.els["scale-msg"];
+  app.type(seedText);
+  assert.strictEqual(said.textContent, "", "an ordinary pan warned");
+  app.get(`HPE.core.parseSeed = (function (real) {
+    return function (text, opts) {
+      var res = real(text, opts);
+      var midi = res.value.fields["11"][2];
+      for (var i = 0; i < 12; i += 1) {
+        midi += 1;
+        res.value.fields[String(12 + i)] = ["C", Math.floor(midi / 12) - 1, midi, "rim", null, String(12 + i)];
+      }
+      return res;
+    };
+  })(HPE.core.parseSeed)`);
+  app.type(seedText + " ");
+  assert.match(said.textContent, /^Crowded pan: the smallest labels print at \d\.\d pt/);
+  assert.strictEqual(said.classList.contains("warn"), true, "warning tier not applied");
+  assert.strictEqual(app.els["scale-generate"].disabled, false, "a crowded pan was refused");
+});
+
 test("Generate builds the deck, closes the sheet, selects it and announces the count", () => {
   const app = boot();
   openSheet(app);

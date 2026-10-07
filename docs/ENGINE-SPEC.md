@@ -129,6 +129,7 @@ so they are final: a change here is a change to shipped copy.
 | `NOTE_REPEATED` | error | `<B> and <A> are the same note, and a note may appear only once per shell.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
 | `NO_THIRDS` | warning | `No 3rds on this pan: only power chords and sus chords.` |
+| `SMALL_LABELS` | warning | `Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out.` |
 
 The whole-tone fixture entry `(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4` therefore
 produces, literally: `No perfect fifth above the ding C3. Add a G, or check the
@@ -147,7 +148,7 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
 - DECIDED(plan [eng-review 7A], amended swarm-2026-09-10) The enum is exactly
   `NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`, `BAD_NOTE`, `NOTE_OUT_OF_RANGE`,
   `NOTE_OUT_OF_ORDER`, `NOTE_REPEATED`, `NEEDS_NEWER_APP` (errors) and
-  `NO_THIRDS` (warning); a lane that needs a new code amends this table rather
+  `NO_THIRDS` and `SMALL_LABELS` (warnings); a lane that needs a new code amends this table rather
   than inventing one at the call site.
 - DECIDED(swarm-2026-09-10) `BAD_NOTE` means one thing only: the offending text
   is not a note (or not the punctuation the grammar wanted there). A token that
