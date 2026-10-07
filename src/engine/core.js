@@ -57,6 +57,36 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
   };
 
+  // G1: the scale grammar's sentences (plan section 9). They live beside REASONS,
+  // not in it, because tests/core.test.js holds REASONS to ENGINE-SPEC section 2
+  // byte for byte and that spec is rewritten by the DOC lane. G2b folds this table
+  // into REASONS. NO_FIFTH and NOTE_OUT_OF_RANGE keep their REASONS text.
+  var SCALE_REASONS = {
+    NO_DING: {
+      empty: "No ding. Put the ding in round brackets, e.g. (D) A C D E.",
+      which: "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.",
+      two: "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.",
+      below: "<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C."
+    },
+    BAD_NOTE: {
+      reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.",
+      slash: "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.",
+      bracket: "<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.",
+      bar: "Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].",
+      barEmpty: "A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.",
+      barFirst: "The | comes after the ding and the top notes, e.g. (D) A C D | E F."
+    },
+    NOTE_OUT_OF_ORDER: {
+      order: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
+      ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
+      afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
+      below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+    },
+    NOTE_REPEATED: {
+      repeated: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
+    }
+  };
+
   var LETTERS = "CDEFGAB";
   var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   var ACCIDENTAL = { "": 0, "#": 1, b: -1 };
@@ -67,6 +97,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var TOP_MAX = RIM_MAX + INNER_MAX;
 
   var NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
+  // The scale grammar's note (plan section 4.1): octave -1 or 0 to 9.
+  var SCALE_NOTE_RE = /^([A-G])(#|b)?(-1|[0-9])?$/;
   var INNER_MARK = "/";
   var DEFAULT_OPTIONS = { palette: 0, parent: null, name: "", mirror: false };
 
@@ -491,6 +523,298 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return assemble(validated.value, opts.value);
   }
 
+  /* ---- G1: the scale grammar (plan section 4), unwired ------------------ *
+   * parseScale reads `(D) A C | E`, `D/ A C`, `D | A C`, `[C] (D) A [E] C`.
+   * Four passes, left to right, no backtracking: tokenise, lex, structure,
+   * infer octaves. formatScale prints the one canonical string. Nothing calls
+   * either yet; G2b routes the app through them.
+   */
+
+  var SCALE_OCTAVE_MIN = -1;
+  var SCALE_OCTAVE_MAX = 9;
+
+  function scaleErr(code, alternate, subs) {
+    var reason = SCALE_REASONS[code][alternate];
+    for (var key in subs) {
+      if (Object.prototype.hasOwnProperty.call(subs, key)) {
+        reason = reason.split(key).join(subs[key]);
+      }
+    }
+    return { ok: false, code: code, reason: reason };
+  }
+
+  function scaleBad(alternate, token) {
+    return scaleErr("BAD_NOTE", alternate, { "<X>": String(token === undefined ? "" : token).slice(0, 12) });
+  }
+
+  function lexScale(token) {
+    var m = SCALE_NOTE_RE.exec(token);
+    if (!m) return null;
+    return {
+      letter: m[1],
+      accidental: m[2] || "",
+      octave: m[3] === undefined ? null : Number(m[3]),
+      typed: m[3] !== undefined,
+      token: token
+    };
+  }
+
+  // Passes 1 and 2: whitespace and bars split the line, then every token gets
+  // a class. A bar is its own token even when glued to a note (`F|G`).
+  function scaleTokens(input) {
+    var raw = input.replace(/\|/g, " | ").split(/\s+/).filter(function (t) { return t !== ""; });
+    var items = [];
+    for (var i = 0; i < raw.length; i += 1) {
+      var t = raw[i];
+      if (t === "|") { items.push({ kind: "bar", token: t }); continue; }
+      if (t === "/") return scaleBad("slash", t);
+      var dingy = t.charAt(0) === "(" || t.charAt(t.length - 1) === ")" ||
+                  t.charAt(t.length - 1) === "/";
+      var boxy = t.charAt(0) === "[" || t.charAt(t.length - 1) === "]";
+      if (dingy && boxy) return scaleBad("bracket", t);
+      var note;
+      if (dingy) {
+        var d = dingBody(t);
+        note = d === null ? null : lexScale(d);
+        if (!note) return scaleBad("reason", t);
+        items.push({ kind: "ding", note: note, token: t });
+      } else if (boxy) {
+        var b = /^\[(.*)\]$/.exec(t);
+        note = b ? lexScale(b[1]) : null;
+        if (!note) return scaleBad("bracket", t);
+        items.push({ kind: "bottom", note: note, token: t });
+      } else {
+        note = lexScale(t);
+        if (!note) return scaleBad("reason", t);
+        items.push({ kind: "note", note: note, token: t });
+      }
+    }
+    return ok(items);
+  }
+
+  // Pass 3: find the ding and the inner bar, then give every note its zone.
+  function scaleStructure(items) {
+    var dings = [];
+    var bars = [];
+    var i;
+    for (i = 0; i < items.length; i += 1) {
+      if (items[i].kind === "ding") dings.push(i);
+      else if (items[i].kind === "bar") bars.push(i);
+    }
+    if (dings.length > 1) return scaleErr("NO_DING", "two");
+    var dingAt;
+    var innerBar = -1;
+    if (dings.length === 1) {
+      dingAt = dings[0];
+      if (bars.length > 1) return scaleBad("bar");
+      if (bars.length === 1) {
+        if (bars[0] < dingAt) return scaleBad("barFirst");
+        innerBar = bars[0];
+      }
+    } else {
+      if (bars.length === 0) return scaleErr("NO_DING", "which");
+      if (bars.length > 2) return scaleBad("bar");
+      dingAt = bars[0] - 1;
+      if (dingAt < 0 || items[dingAt].kind !== "note") return scaleErr("NO_DING", "which");
+      items[dingAt].kind = "ding";
+      items.splice(bars[0], 1);
+      if (bars.length === 2) innerBar = bars[1] - 1;
+    }
+    var before = [];
+    for (i = 0; i < dingAt; i += 1) {
+      if (items[i].kind !== "bottom") {
+        return scaleErr("NO_DING", dings.length ? "below" : "which", {"<X>": items[i].token});
+      }
+      before.push(items[i].note);
+    }
+    var after = [];
+    var zone = "rim";
+    var rim = 0;
+    var inner = 0;
+    for (i = dingAt + 1; i < items.length; i += 1) {
+      var item = items[i];
+      if (item.kind === "bar") {
+        if (rim === 0) return scaleBad("barEmpty");
+        zone = "inner";
+      } else if (item.kind === "bottom") {
+        after.push({ note: item.note, zone: "bottom" });
+      } else {
+        after.push({ note: item.note, zone: zone });
+        if (zone === "rim") rim += 1; else inner += 1;
+      }
+    }
+    if (innerBar >= 0 && inner === 0) return scaleBad("barEmpty");
+    return ok({ ding: items[dingAt].note, before: before, after: after });
+  }
+
+  // The midi must be on the keyboard, and the octave it SPELLS must be one the
+  // lexer reads (R8), so no string the printer emits is one the reader refuses.
+  function scalePlaced(note, midi) {
+    if (midi < 0 || midi > 127) return outOfRange(note, midi);
+    var octave = octaveOf(note.letter, note.accidental, midi);
+    if (octave < SCALE_OCTAVE_MIN || octave > SCALE_OCTAVE_MAX) {
+      return scaleBad("reason", spell(note.letter, note.accidental) + octave);
+    }
+    note.octave = octave;
+    note.midi = midi;
+    return null;
+  }
+
+  function scaleOrder(note, prev, alternate) {
+    return scaleErr("NOTE_OUT_OF_ORDER", alternate, {
+      "<A>": placed(note, note.midi),
+      "<B>": before(prev, prev.midi)
+    });
+  }
+
+  function scaleRepeated(note, prev) {
+    return scaleErr("NOTE_REPEATED", "repeated", {
+      "<A>": placed(note, note.midi),
+      "<B>": before(prev, prev.midi)
+    });
+  }
+
+  // Pass 4: octaves. Notes before the ding are placed from the ding downwards,
+  // notes after it from the previous note upwards.
+  function scaleInfer(layout) {
+    var ding = layout.ding;
+    var low = layout.before;
+    var high = layout.after;
+    var n;
+    var bad;
+    if (ding.octave === null) ding.octave = 3;
+    bad = scalePlaced(ding, midiFromName(ding.letter, ding.accidental, ding.octave));
+    if (bad) return bad;
+
+    var right = ding;
+    for (n = low.length - 1; n >= 0; n -= 1) {
+      var lo = low[n];
+      var m;
+      if (lo.octave === null) {
+        m = midiFromName(lo.letter, lo.accidental, 9) + 24;
+        while (m >= right.midi) m -= 12;
+      } else {
+        m = midiFromName(lo.letter, lo.accidental, lo.octave);
+      }
+      bad = scalePlaced(lo, m);
+      if (bad) return bad;
+      if (m === right.midi && right !== ding) return scaleRepeated(lo, right);
+      if (right === ding ? m > right.midi : m >= right.midi) {
+        return scaleOrder(lo, right, "below");
+      }
+      right = lo;
+    }
+
+    var prev = ding;
+    var lastTop = ding;
+    var lastBottom = low.length ? low[low.length - 1] : null;
+    var firstInner = null;
+    for (n = 0; n < high.length; n += 1) {
+      if (high[n].zone === "inner") { firstInner = high[n]; break; }
+    }
+    for (n = 0; n < high.length; n += 1) {
+      var entry = high[n];
+      var note = entry.note;
+      var mm;
+      if (note.octave === null) {
+        mm = midiFromName(note.letter, note.accidental, -1) - 12;
+        while (mm <= prev.midi) mm += 12;
+      } else {
+        mm = midiFromName(note.letter, note.accidental, note.octave);
+      }
+      bad = scalePlaced(note, mm);
+      if (bad) return bad;
+      if (mm < prev.midi) {
+        return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
+                                      (prev === ding ? "ding" : "order"));
+      }
+      if (entry.zone === "bottom") {
+        if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
+        if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
+        lastBottom = note;
+      } else {
+        if (mm <= lastTop.midi) {
+          return lastTop === ding ? scaleOrder(note, ding, "ding") : scaleRepeated(note, lastTop);
+        }
+        lastTop = note;
+      }
+      prev = note;
+    }
+    return ok(layout);
+  }
+
+  function parseScale(input, options) {
+    if (typeof input !== "string") return badNote(String(input));
+    var opts = readOptions(options);
+    if (!opts.ok) return opts;
+
+    var tokens = scaleTokens(input);
+    if (!tokens.ok) return tokens;
+    if (tokens.value.length === 0) return scaleErr("NO_DING", "empty");
+    var structure = scaleStructure(tokens.value);
+    if (!structure.ok) return structure;
+    var inferred = scaleInfer(structure.value);
+    if (!inferred.ok) return inferred;
+
+    var layout = inferred.value;
+    var ding = layout.ding;
+    var tops = [];
+    var bottoms = layout.before.map(function (note) { return { note: note, zone: "bottom" }; });
+    layout.after.forEach(function (entry) {
+      (entry.zone === "bottom" ? bottoms : tops).push(entry);
+    });
+
+    var wanted = pitchClass(ding.midi + 7);
+    var hasFifth = false;
+    tops.forEach(function (entry) {
+      if (pitchClass(entry.note.midi) === wanted) hasFifth = true;
+    });
+    if (!hasFifth) {
+      return err("NO_FIFTH", {
+        "<X>": spell(ding.letter, ding.accidental) + ding.octave,
+        "<fifth of X>": fifthName(ding.letter, ding.accidental)
+      });
+    }
+
+    var fields = {};
+    fields["0"] = [spell(ding.letter, ding.accidental), ding.octave, ding.midi, "ding", null, "Ding"];
+    tops.forEach(function (entry, n) {
+      var id = String(n + 1);
+      fields[id] = [spell(entry.note.letter, entry.note.accidental), entry.note.octave,
+                    entry.note.midi, entry.zone, null, id];
+    });
+    var first = Math.max(101, tops.length + 1);
+    bottoms.forEach(function (entry, n) {
+      fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
+                                   entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
+    });
+    return ok({ fields: fields, options: opts.value });
+  }
+
+  // The canonical string: every note by pitch, a bottom note ahead of the ding
+  // or a top note of the same pitch, the bar before the first inner note.
+  function formatScale(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var ding = fields["0"];
+    var line = [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }];
+    ids.bottom.forEach(function (id) {
+      line.push({ midi: fields[id][2], rank: 0, text: "[" + fields[id][0] + fields[id][1] + "]", inner: false });
+    });
+    ids.top.forEach(function (id) {
+      line.push({ midi: fields[id][2], rank: 2, text: fields[id][0] + fields[id][1],
+                  inner: fields[id][3] === "inner" });
+    });
+    line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
+    var out = [];
+    var barred = false;
+    line.forEach(function (entry) {
+      if (entry.inner && !barred) { out.push("|"); barred = true; }
+      out.push(entry.text);
+    });
+    return out.join(" ");
+  }
+
   /* ---- section 12: the canonical string and the deck id ----------------- */
 
   function fieldsOf(seedOrFields) {
@@ -626,10 +950,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   HPE.core = {
     parseSeed: parseSeed,
     parseLegacySeed: parseSeed,
+    parseScale: parseScale,
+    formatScale: formatScale,
     formatSeed: formatSeed,
     identitySeed: identitySeed,
     deckId: deckId,
     REASONS: REASONS,
+    SCALE_REASONS: SCALE_REASONS,
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,
