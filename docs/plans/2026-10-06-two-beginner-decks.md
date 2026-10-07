@@ -2502,3 +2502,47 @@ Nits carried forward, each with the lane that picks it up:
   `DEFAULT_DECK` is not in `DECKS`; `docs/SCALE_ENGINE_PLAN.md` quotes the
   old test title "falls back to the first deck"; PR #252's body predates its
   last two commits.
+
+## Lane E outcome (2026-10-06)
+
+Merged as #253 (main `028bcf1`, 685 mutants). Review 1 PASS_WITH_NITS at
+`c98ec55`. The lane wrote the implementation before the tests; the reviewer
+ran main's solver under the head tests and saw seven fail, so the tests do
+pin the change.
+
+Owner question raised by the review (OQ15): on a rim-only pan with 5, 7, 9
+or 11 rim notes the default RIGHT-FIRST button now draws note 2 on the left
+(Kurd: 1 at 270, 2 at 230). The mirror toggle's polarity is a non-goal here
+(D14). Stale wording sits in `docs/ENGINE-SPEC.md` section 13, the comment
+near the top of `src/engine/share.js`, the mirror control in `index.html`
+and one title in `tests/app.test.js`. The scale-syntax plan (drawer replaces
+ROTATE and MOVE) is the natural place to settle the labels.
+
+Nits carried forward, all unscheduled unless a lane is named:
+- Rim counts 1 to 3 are unpinned: `isCentred = inner === 0 && rim >= 4`
+  survives every suite. The shipped code is correct there.
+- The 9 rim + 2 bottom seed asserts only `ding_dy` and `r_ding`, not its
+  angles.
+- The "keeps its side" loop in `tests/layout.test.js` compares two test-side
+  constants after a literal `deepEqual`; `legacyOdd` recomputes main's
+  formula.
+- The `bottomAngles` comment in `src/engine/layout.js` now sits above
+  `rimAnglesFromBottom`.
+- Bare D12 to D15 in `src/engine/layout.js` and `docs/ENGINE-SPEC.md` do not
+  name this plan; the `docs/SCALE_ENGINE_PLAN.md` D12 row is marked
+  superseded as a whole though only the layout default is.
+- The CLAUDE.md paragraph (section 13 wording): "defaults to the Amara 9
+  arrangement" is loose (Amara 9's own seed still draws right-first without
+  the mirror), and "no note sits at top centre" holds only without inner
+  notes. Lane B owns CLAUDE.md next and may tighten both.
+- `docs/ENGINE-SPEC.md`: two notes change on an odd rim (note 1 moves onto
+  the axis, note N off it), not one.
+- The test title "the centred default reproduces the shipped Amara 9 and
+  Hijaz layouts" compares five geom keys only.
+- `isCentred(counts)` is called twice in `geometry()`.
+- Do not add mutants on the centred ding point, clearance or reach: ding
+  clearance never binds on a centred pan, so they are equivalent.
+- Existing defect, not this lane's: `reseat()` accepts an order that swaps a
+  rim note with a bottom note and can overlap fields. Only a hand-built
+  share link reaches it. The scale-syntax plan should refuse cross-zone
+  orders.
