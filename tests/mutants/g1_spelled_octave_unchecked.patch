@@ -1,0 +1,14 @@
+# kills: formatSeed never emits a note parseSeed refuses
+# suite: node --test --test-name-pattern ^formatSeed.never.emits.a.note.parseSeed.refuses$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -652,7 +652,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function scalePlaced(note, midi) {
+     if (midi < 0 || midi > 127) return outOfRange(note, midi);
+     var octave = octaveOf(note.letter, note.accidental, midi);
+-    if (octave < SCALE_OCTAVE_MIN || octave > SCALE_OCTAVE_MAX) {
++    if (false) {
+       return scaleBad("reason", spell(note.letter, note.accidental) + octave);
+     }
+     note.octave = octave;

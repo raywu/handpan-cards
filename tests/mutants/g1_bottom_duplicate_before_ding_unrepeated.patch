@@ -1,0 +1,15 @@
+# kills: every refused row carries its code and its sentence
+# suite: node --test --test-name-pattern ^every.refused.row.carries.its.code.and.its.sentence$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -698,8 +698,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       }
+       bad = scalePlaced(lo, m);
+       if (bad) return bad;
+-      if (m === right.midi && right !== ding) return scaleRepeated(lo, right);
+-      if (right === ding ? m > right.midi : m >= right.midi) {
++            if (right === ding ? m > right.midi : m >= right.midi) {
+         return scaleOrder(lo, right, "below");
+       }
+       right = lo;

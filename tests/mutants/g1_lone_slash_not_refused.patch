@@ -1,0 +1,13 @@
+# kills: every refused row carries its code and its sentence
+# suite: node --test --test-name-pattern ^every.refused.row.carries.its.code.and.its.sentence$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -567,7 +567,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (var i = 0; i < raw.length; i += 1) {
+       var t = raw[i];
+       if (t === "|") { items.push({ kind: "bar", token: t }); continue; }
+-      if (t === "/") return scaleBad("slash", t);
+       var dingy = t.charAt(0) === "(" || t.charAt(t.length - 1) === ")" ||
+                   t.charAt(t.length - 1) === "/";
+       var boxy = t.charAt(0) === "[" || t.charAt(t.length - 1) === "]";
