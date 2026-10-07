@@ -32,17 +32,18 @@
  * spec 13), so the split is unambiguous.
  *
  *     line 0   the canonical scale string, core.formatSeed(seed)
- *     line 1   the options, "palette \t parent \t mirror \t name"; parent is
- *              empty for "infer", mirror is "0" (right-first) or "1", and the
- *              name is last so it may hold any printable character. UNCHANGED
- *              by v2: the layout delta does NOT widen this line, so the one
- *              free-text field keeps the last slot to itself.
+ *     line 1   the options. v1 and v2: "palette \t parent \t mirror \t name".
+ *              v3: "palette \t parent \t mirror \t anchor \t name". parent is
+ *              empty for "infer"; mirror is "0" or "1" (both rings alike),
+ *              "t" (top ring only) or "b" (bottom ring only), and v1/v2 knew
+ *              only "0" and "1"; anchor is "0" (one) or "1" (between). The
+ *              name is last so it may hold any printable character.
  *     line 2   THE LAYOUT DELTA (D5-3), the section v1 reserved for it. Empty
  *              in v1, and a v1 string carrying anything here is a corrupt
- *              payload. In v2 it is the `order` permutation as comma-separated
- *              decimal indices, and EMPTY still means absent - so a v2 payload
- *              with no correction is byte-identical to the v1 one apart from
- *              the version character.
+ *              payload. In v2 it is the flat `order` permutation as comma-separated
+ *              decimal indices. In v3 it is the per-ring seats, "rim;inner;
+ *              bottom", each a comma list of the seat that ring's i-th note
+ *              takes, an unmoved ring left empty. EMPTY still means absent.
  *
  * CODES: section 2's enum is CLOSED and there is no code for "corrupt link".
  * Its last row makes an unparseable token a BAD_NOTE rejection, so every
@@ -57,17 +58,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   "use strict";
 
   // The version this build WRITES. Every version <= this one is still
-  // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a layout
-  // correction on it. The options line is the same in both.
-  var VERSION = 2;
+  // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a flat layout
+  // order on it, v3 = per-ring seats on it and two more facts on the options
+  // line (the mirror of each ring, the anchor).
+  var VERSION = 3;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
-  // Max characters in a whole share string. A 19-field pan with a 40-character
-  // name and a full 19-entry layout correction encodes to well under 400; the
-  // cap is the first gate on decode, so an over-cap link is refused before
-  // anything is parsed.
-  var CAPS = { payload: 640 };
+  // Max characters in a whole share string. The cap is the first gate on
+  // decode, so an over-cap link is refused before anything is parsed. It sits
+  // above the longest pan the engine can express (120 notes with every ring
+  // moved), which the previous 640 could not carry.
+  var CAPS = { payload: 4096 };
 
   // URL-safe, digits FIRST so the version character of an early version is the
   // plain decimal digit. Extending the format never renumbers this.
@@ -187,17 +189,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the payload ------------------------------------------------------ */
 
-  // The D5 layout correction, comma-separated decimal indices. Empty is
-  // ABSENT - the generated layout - never the identity permutation, so
-  // clearing a correction shortens the link back to what it was.
-  function orderField(order) {
-    if (order === undefined || order === null) return "";
-    if (Object.prototype.toString.call(order) !== "[object Array]") {
-      return String(order);
-    }
+  // The layout correction, per ring: "rim;inner;bottom", each ring a
+  // comma-separated list of decimal seats. A ring that was not moved is empty,
+  // and no ring moved at all is the empty string, so clearing a correction
+  // shortens the link back to what it was.
+  var RINGS = ["rim", "inner", "bottom"];
+
+  function seatsField(seats) {
+    if (!seats || typeof seats !== "object") return "";
     var parts = [];
-    for (var i = 0; i < order.length; i += 1) parts.push(String(order[i]));
-    return parts.join(",");
+    var any = false;
+    for (var r = 0; r < RINGS.length; r += 1) {
+      var list = seats[RINGS[r]];
+      if (list && list.length) {
+        any = true;
+        parts.push(list.join(","));
+      } else {
+        parts.push("");
+      }
+    }
+    return any ? parts.join(";") : "";
   }
 
   function optionsLine(options) {
@@ -206,73 +217,88 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       ? 0 : opts.palette;
     var parent = opts.parent === undefined || opts.parent === null
       ? "" : opts.parent;
-    var mirror = opts.mirror ? "1" : "0";
+    var mirrors = HPE.layout.resolveMirrors({}, opts);
+    var mirror = mirrors.top === mirrors.bottom ? (mirrors.top ? "1" : "0")
+      : (mirrors.top ? "t" : "b");
+    var anchor = opts.anchor === "between" ? "1" : "0";
     var name = opts.name === undefined || opts.name === null ? "" : opts.name;
     // `name` stays LAST and ALONE at the end of this line: the correction rides
     // on line 2, not here, so the one user-controlled free-text field never
     // gains a neighbour (D5-3).
     return String(palette) + FIELD_SEP + String(parent) + FIELD_SEP + mirror +
-           FIELD_SEP + String(name);
-  }
-
-  // Line 2. A build that writes v1 has no section to write into.
-  function deltaLine(options) {
-    if (VERSION < 2) return "";
-    return orderField((options || {}).order);
+           FIELD_SEP + anchor + FIELD_SEP + String(name);
   }
 
   var UINT_RE = /^[0-9]{1,3}$/;
   var ORDER_RE = /^[0-9]{1,2}(,[0-9]{1,2})*$/;
+  var RING_RE = /^([0-9]{1,3}(,[0-9]{1,3})*)?$/;
 
-  // The options line is version-independent: v2 added no field to it.
-  function readOptionsLine(line) {
+  // v1 and v2 spent four fields and knew mirror as 0 or 1; v3 adds the anchor
+  // and the two one-ring mirror letters.
+  function readOptionsLine(line, version) {
     var parts = String(line).split(FIELD_SEP);
-    if (parts.length !== 4) return null;
+    var v3 = version >= 3;
+    if (parts.length !== (v3 ? 5 : 4)) return null;
     if (!UINT_RE.test(parts[0])) return null;
     if (parts[1] !== "" && !UINT_RE.test(parts[1])) return null;
-    if (parts[2] !== "0" && parts[2] !== "1") return null;
-    return {
+    var m = parts[2];
+    var out = {
       palette: Number(parts[0]),
       parent: parts[1] === "" ? null : Number(parts[1]),
-      mirror: parts[2] === "1",
-      name: parts[3]
+      mirror: m === "1" || m === "t",
+      name: parts[parts.length - 1]
     };
+    if (m === "t") out.mirrorBottom = false;
+    else if (m === "b") out.mirrorBottom = true;
+    else if (m !== "0" && m !== "1") return null;
+    if (m === "t" || m === "b") {
+      if (!v3) return null;
+    }
+    if (v3) {
+      if (parts[3] !== "0" && parts[3] !== "1") return null;
+      if (parts[3] === "1") out.anchor = "between";
+    }
+    return out;
   }
 
   // One reader per wire version, so a v1 link is read by v1's rules and never
-  // measured against v2's (D5-4). v1 reserved line 2 and allowed nothing on
-  // it; v2 spends it on the correction. null is ABSENT, undefined is CORRUPT.
+  // measured against a later one's (D5-4). null is ABSENT, undefined is
+  // CORRUPT. A v1/v2 value is the flat order and a v3 value is per-ring seats;
+  // both come back tagged so decode converts the one and checks the other
+  // against the seed they travel with.
   function readDeltaLine(line, version) {
     if (version < 2) return line === "" ? null : undefined;
     if (line === "") return null;
-    if (!ORDER_RE.test(line)) return undefined;
-    var order = [];
-    var digits = line.split(",");
-    for (var i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
-    return order;
+    var i;
+    if (version === 2) {
+      if (!ORDER_RE.test(line)) return undefined;
+      var order = [];
+      var digits = line.split(",");
+      for (i = 0; i < digits.length; i += 1) order.push(Number(digits[i]));
+      return { order: order };
+    }
+    var rings = line.split(";");
+    if (rings.length !== RINGS.length) return undefined;
+    var seats = {};
+    var any = false;
+    for (i = 0; i < rings.length; i += 1) {
+      if (!RING_RE.test(rings[i])) return undefined;
+      if (rings[i] === "") continue;
+      seats[RINGS[i]] = rings[i].split(",").map(Number);
+      any = true;
+    }
+    return any ? { seats: seats } : undefined;
   }
 
-  // The correction is a permutation over the non-ding fields of the seed it
-  // travels with, so it can only be checked once the seed has been parsed.
-  // core.parseSeed is the one seed validator and its option whitelist drops
-  // `order`, so this is where the wire value is held to its meaning.
-  function checkOrder(order, seed) {
-    if (order === null) return true;
-    var n = 0;
+  function zoneCounts(seed) {
+    var counts = { rim: 0, inner: 0, bottom: 0 };
     var id;
     for (id in seed.fields) {
       if (!Object.prototype.hasOwnProperty.call(seed.fields, id)) continue;
-      if (seed.fields[id][3] !== "ding") n += 1;
+      var zone = seed.fields[id][3];
+      if (zone in counts) counts[zone] += 1;
     }
-    if (order.length !== n) return false;
-    var seen = {};
-    for (var i = 0; i < n; i += 1) {
-      var slot = order[i];
-      if (slot < 0 || slot >= n ||
-          Object.prototype.hasOwnProperty.call(seen, String(slot))) return false;
-      seen[String(slot)] = true;
-    }
-    return true;
+    return counts;
   }
 
   /* ---- encode ----------------------------------------------------------- */
@@ -284,7 +310,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
     var payload = HPE.core.formatSeed(seed.fields) + SEP +
                   optionsLine(seed.options) + SEP +
-                  deltaLine(seed.options);  // line 2: the layout delta (D5-3).
+                  seatsField((seed.options || {}).seats);  // line 2: the layout delta.
     var body = toAlphabet(utf8Bytes(payload));
     var head = ALPHABET.charAt(VERSION) + body;
     var out = head + checksum(head);
@@ -297,15 +323,22 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // The layout correction is core's blind spot: parseSeed owns seed validation
   // and drops the option it does not know, so decode re-attaches the carried
   // value and holds it to its meaning here, against the seed parseSeed just
-  // approved. A correction that is not a permutation of that seed's non-ding
-  // fields is a corrupt payload like any other (D5-2).
+  // approved. A v3 seat list must be a permutation of its own ring; a v1/v2
+  // flat order is converted per ring and refused if any entry crosses rings.
   function decode(text) {
     var carry = {};
     var result = decodeSeed(text, carry);
     if (!result.ok) return result;
-    if (carry.order) {
-      if (!checkOrder(carry.order, result.value)) return badNote(text);
-      result.value.options.order = carry.order;
+    var counts = zoneCounts(result.value);
+    var read = null;
+    if (carry.delta && carry.delta.order) {
+      read = HPE.layout.seatsFromOrder(carry.delta.order, counts);
+    } else if (carry.delta && carry.delta.seats) {
+      read = HPE.layout.readSeats(carry.delta.seats, counts);
+    }
+    if (read) {
+      if (!read.ok) return badNote(text);
+      if (read.value) result.value.options.seats = read.value;
     }
     return result;
   }
@@ -362,9 +395,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // The LINE COUNT is the same in both - only what may stand here changes.
     var delta = readDeltaLine(lines[2], version);
     if (delta === undefined) return badNote(text);
-    carry.order = delta;
+    carry.delta = delta;
 
-    var options = readOptionsLine(lines[1]);
+    var options = readOptionsLine(lines[1], version);
     if (options === null) return badNote(text);
 
     // 5. The same validator the text box uses. It rejects, never repairs, so

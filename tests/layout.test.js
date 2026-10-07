@@ -469,17 +469,17 @@ test("an odd centred rim starts at bottom centre and keeps each note on its side
   }
 });
 
-test("a stored order and mirror draw the same sides on an odd rim", () => {
+test("stored seats and mirror draw the same sides on an odd rim", () => {
   const nine = { ...seedOf(TWELVE, 9, 0), label: "nine rim" };
   const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(String);
   const anglesOf = (options) => {
     const { fields } = solved(nine, options);
     return ids.map((id) => fields[id][4]);
   };
-  assert.deepEqual(anglesOf({ order: rotated(9, 1) }), rotated(9, 1).map((slot) => ODD_FROM_BOTTOM[9].plain[slot]));
-  assert.deepEqual(anglesOf({ order: reversed(9) }), ODD_FROM_BOTTOM[9].plain.slice().reverse());
+  assert.deepEqual(anglesOf({ seats: { rim: rotated(9, 1) } }), rotated(9, 1).map((slot) => ODD_FROM_BOTTOM[9].plain[slot]));
+  assert.deepEqual(anglesOf({ seats: { rim: reversed(9) } }), ODD_FROM_BOTTOM[9].plain.slice().reverse());
   assert.deepEqual(anglesOf({ mirror: true }), ODD_FROM_BOTTOM[9].mirror);
-  assert.deepEqual(anglesOf({ mirror: true, order: reversed(9) }), ODD_FROM_BOTTOM[9].mirror.slice().reverse());
+  assert.deepEqual(anglesOf({ mirror: true, seats: { rim: reversed(9) } }), ODD_FROM_BOTTOM[9].mirror.slice().reverse());
 });
 
 test("even rim counts run in the one direction: note 2 on the left, mirror on the right", () => {
@@ -850,13 +850,13 @@ test("a hundred and fifty rim notes solve", () => {
   assert.ok(geom.r_note > 0 && geom.ext > 1);
 });
 
-test("an over-cap pan solves, order or no order", () => {
+test("an over-cap pan solves, seats or no seats", () => {
   const over = panFields(12, 0, 0);
   const identity = Array.from({ length: 12 }, (_, i) => i);
-  for (const options of [undefined, { order: identity }]) {
+  for (const options of [undefined, { seats: { rim: identity } }]) {
     assert.equal(HPE.layout.solve(over, options).ok, true);
   }
-  const bad = HPE.layout.solve(over, { order: "junk" });
+  const bad = HPE.layout.solve(over, { seats: "junk" });
   assert.equal(bad.ok, false);
   assert.equal(bad.code, "BAD_NOTE");
 });
@@ -871,23 +871,26 @@ test("the 19-field maximum pan is accepted", () => {
   assert.equal(Object.keys(fields).length, 20);
 });
 
-/* ---- Phase 5 / D5: options.order, the layout correction ----------------
+/* ---- Lane S3: options.seats, the layout correction, one ring at a time -----
  *
- * The pinned encoding (integrator decisions D5-1..D5-5): ONE seed option,
- * `order`, a permutation of [0 .. n-1] over the NON-DING fields in the order
- * the solver collects them (rim, then inner, then bottom, each ascending by
- * id). order[i] is the solved SLOT that field i takes. Absent or null is the
- * generated default, so nothing that never opened the layout editor moves.
- * Anything that is not a permutation of exactly that length is rejected
- * through the section 1 result contract with the section 2 code BAD_NOTE -
- * the enum is CLOSED, so there is no code of its own for a bad correction. */
+ * ONE seed option, `seats`, an object with optional `rim`, `inner` and `bottom`.
+ * Each is a permutation of that ring's seat indices: entry i is the seat the
+ * ring's i-th note (ascending by id) takes. A missing, null or undefined ring
+ * is the generated default. Every ring is validated on its own against its own
+ * length, so no input can seat a note in another ring. Anything malformed is
+ * rejected through the section 1 result contract with BAD_NOTE - the section 2
+ * enum is CLOSED. The legacy flat `order` is gone from the solver; only
+ * `seatsFromOrder` reads it, for version 1 and 2 records and links. */
 
-/** The non-ding field ids in the order the solver assigns slots. */
-function slotFieldIds(fields) {
-  const of = (zone) => Object.keys(fields)
-    .filter((id) => fields[id][3] === zone)
-    .sort((a, b) => Number(a) - Number(b));
-  return [...of("rim"), ...of("inner"), ...of("bottom")];
+const RINGS = ["rim", "inner", "bottom"];
+
+/** The ids of one ring, ascending by id - the order seats are indexed in. */
+function ringIds(fields) {
+  const out = { rim: [], inner: [], bottom: [] };
+  for (const id of Object.keys(fields).sort((a, b) => Number(a) - Number(b))) {
+    if (out[fields[id][3]]) out[fields[id][3]].push(id);
+  }
+  return out;
 }
 
 function identity(n) {
@@ -899,7 +902,7 @@ function reversed(n) {
   return identity(n).reverse();
 }
 
-/** A single cyclic shift - what the ROTATE control writes (D5-1). */
+/** A single cyclic shift - what ROTATE writes. */
 function rotated(n, by) {
   return identity(n).map((i) => (i + by + n) % n);
 }
@@ -910,90 +913,184 @@ function anglesById(fields) {
   return out;
 }
 
-test("an absent order solves exactly as it did before order existed", () => {
+/** Every ring of an entry reversed; rings of one note stay as they are. */
+function allReversed(entry) {
+  const rings = ringIds(plain(solved(entry)).fields);
+  const seats = {};
+  for (const ring of RINGS) if (rings[ring].length) seats[ring] = reversed(rings[ring].length);
+  return seats;
+}
+
+test("a seat list for one ring cannot name a seat in another", () => {
+  const entry = SWEEP.find((e) => e.label === "mixed N=19");
+  const rings = ringIds(plain(solved(entry)).fields);
+  assert.ok(rings.rim.length > 0 && rings.inner.length > 0 && rings.bottom.length > 0);
+  const bad = [
+    { rim: identity(rings.rim.length + 1) },
+    { rim: identity(rings.rim.length - 1) },
+    { rim: identity(rings.rim.length - 1).concat([rings.rim.length]) },
+    { inner: identity(rings.inner.length - 1).concat([rings.inner.length + rings.bottom.length]) },
+    { bottom: identity(rings.bottom.length - 1).concat([rings.bottom.length]) },
+    { inner: identity(rings.rim.length) },
+  ];
+  for (const seats of bad) {
+    const res = HPE.layout.solve(entry.seed, { seats });
+    assert.equal(res.ok, false, `accepted ${JSON.stringify(seats)}`);
+    assert.equal(res.code, "BAD_NOTE");
+  }
+});
+
+test("seats naming a ring that does not exist, or a non-object, are rejected BAD_NOTE", () => {
+  const entry = SWEEP.find((e) => e.n === 19);
+  for (const seats of [{ top: [0] }, "0,1,2", [0, 1], 17, true]) {
+    let res;
+    assert.doesNotThrow(() => { res = HPE.layout.solve(entry.seed, { seats }); });
+    assert.equal(res.ok, false, `accepted ${JSON.stringify(seats)}`);
+    assert.equal(res.code, "BAD_NOTE");
+  }
+});
+
+test("a ring that is not a permutation is rejected BAD_NOTE, never thrown", () => {
+  const entry = SWEEP.find((e) => e.label === "mixed N=19");
+  const n = ringIds(plain(solved(entry)).fields).rim.length;
+  const bad = [
+    identity(n).slice(0, n - 1),
+    identity(n).concat([n]),
+    identity(n - 1).concat([0]),
+    identity(n - 1).concat([n]),
+    identity(n - 1).concat([-1]),
+    identity(n - 1).concat([0.5]),
+    identity(n - 1).concat(["0"]),
+    identity(n - 1).concat([NaN]),
+    "0,1,2",
+    {},
+    17,
+    true,
+  ];
+  for (const rim of bad) {
+    let res;
+    assert.doesNotThrow(() => { res = HPE.layout.solve(entry.seed, { seats: { rim } }); },
+      `solve threw on ${JSON.stringify(rim)}`);
+    assert.equal(res.ok, false, `accepted ${JSON.stringify(rim)}`);
+    assert.equal(res.code, "BAD_NOTE", `wrong code for ${JSON.stringify(rim)}`);
+    assert.equal(typeof res.reason, "string");
+    assert.equal("value" in res, false, "an err result carries no value");
+  }
+});
+
+test("a rejected ring names the value in the section 2 BAD_NOTE reason", () => {
+  const entry = SWEEP.find((e) => e.n === 19);
+  const res = HPE.layout.solve(entry.seed, { seats: { rim: [0, 0] } });
+  assert.equal(res.ok, false);
+  assert.equal(res.reason,
+    HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String([0, 0]).slice(0, 12)));
+});
+
+test("a bad ring is rejected on a bare fields map too", () => {
+  const entry = SWEEP.find((e) => e.n === 19);
+  const res = HPE.layout.solve(entry.seed.fields, { seats: { rim: [1, 2, 3] } });
+  assert.equal(res.ok, false);
+  assert.equal(res.code, "BAD_NOTE");
+});
+
+test("absent seats solve exactly as they did before seats existed", () => {
   for (const entry of SWEEP) {
     const base = plain(solved(entry));
     assert.deepStrictEqual(plain(solved(entry, {})), base, entry.label);
-    assert.deepStrictEqual(plain(solved(entry, { order: null })), base, entry.label);
-    assert.deepStrictEqual(plain(solved(entry, { order: undefined })), base, entry.label);
+    assert.deepStrictEqual(plain(solved(entry, { seats: null })), base, entry.label);
+    assert.deepStrictEqual(plain(solved(entry, { seats: undefined })), base, entry.label);
+    assert.deepStrictEqual(plain(solved(entry, { seats: {} })), base, entry.label);
+    assert.deepStrictEqual(plain(solved(entry, { seats: { rim: null, inner: undefined } })), base, entry.label);
   }
 });
 
-test("the identity permutation is exactly an absent order", () => {
+test("identity seats are exactly absent seats", () => {
   for (const entry of SWEEP) {
     const base = plain(solved(entry));
-    const n = slotFieldIds(base.fields).length;
-    assert.equal(n, entry.n, `${entry.label}: n is the non-ding field count`);
-    assert.deepStrictEqual(plain(solved(entry, { order: identity(n) })), base, entry.label);
+    const rings = ringIds(base.fields);
+    const seats = {};
+    for (const ring of RINGS) seats[ring] = identity(rings[ring].length);
+    assert.deepStrictEqual(plain(solved(entry, { seats })), base, entry.label);
   }
 });
 
-test("order says which field takes which solved slot", () => {
+test("a ring's seats say which seat each of its notes takes", () => {
   for (const entry of SWEEP) {
-    const base = plain(solved(entry));
-    const ids = slotFieldIds(base.fields);
-    const slots = ids.map((id) => base.fields[id][4]);
-    for (const order of [reversed(ids.length), rotated(ids.length, 1),
-                         rotated(ids.length, -2)]) {
-      const moved = plain(solved(entry, { order })).fields;
-      ids.forEach((id, i) => {
-        assert.equal(moved[id][4], slots[order[i]],
-          `${entry.label} #${id}: field ${i} did not take slot ${order[i]}`);
-      });
+    const base = plain(solved(entry)).fields;
+    const rings = ringIds(base);
+    for (const ring of RINGS) {
+      const ids = rings[ring];
+      if (ids.length < 2) continue;
+      const slots = ids.map((id) => base[id][4]);
+      for (const perm of [reversed(ids.length), rotated(ids.length, 1), rotated(ids.length, -2)]) {
+        const moved = plain(solved(entry, { seats: { [ring]: perm } })).fields;
+        ids.forEach((id, i) => {
+          assert.equal(moved[id][4], slots[perm[i]], `${entry.label} ${ring} #${id}`);
+        });
+        for (const other of RINGS) {
+          if (other === ring) continue;
+          for (const id of rings[other]) {
+            assert.equal(moved[id][4], base[id][4], `${entry.label}: ${ring} moved ${other} #${id}`);
+          }
+        }
+      }
     }
   }
 });
 
-test("order reassigns the solved angles and never invents one", () => {
+test("seats reassign the solved angles and never invent one", () => {
   for (const entry of SWEEP) {
-    const base = plain(solved(entry));
-    const ids = slotFieldIds(base.fields);
-    const before = ids.map((id) => base.fields[id][4]).sort();
-    const moved = plain(solved(entry, { order: reversed(ids.length) })).fields;
-    const after = ids.map((id) => moved[id][4]).sort();
-    assert.deepStrictEqual(after, before, `${entry.label}: the angle set changed`);
+    const base = plain(solved(entry)).fields;
+    const moved = plain(solved(entry, { seats: allReversed(entry) })).fields;
+    for (const ring of RINGS) {
+      const ids = ringIds(base)[ring];
+      assert.deepStrictEqual(ids.map((id) => moved[id][4]).sort(), ids.map((id) => base[id][4]).sort(),
+        `${entry.label}: the ${ring} angle set changed`);
+    }
   }
 });
 
-test("a non-trivial order actually moves at least one field", () => {
+test("non-trivial seats actually move at least one field", () => {
   for (const entry of SWEEP) {
     if (entry.n < 2) continue;
     const base = plain(solved(entry)).fields;
-    const moved = plain(solved(entry, { order: reversed(entry.n) })).fields;
+    const moved = plain(solved(entry, { seats: allReversed(entry) })).fields;
     assert.notDeepStrictEqual(anglesById(moved), anglesById(base), entry.label);
   }
 });
 
-test("order changes only the angles, never the geometry", () => {
+test("seats change only the angles, never the geometry", () => {
   for (const entry of SWEEP) {
     const base = plain(solved(entry)).geom;
-    const moved = plain(solved(entry, { order: reversed(entry.n) })).geom;
+    const moved = plain(solved(entry, { seats: allReversed(entry) })).geom;
     assert.deepStrictEqual(moved, base, entry.label);
   }
 });
 
 test("the ding is never part of the correction and keeps its null angle", () => {
   for (const entry of SWEEP) {
-    const { fields } = solved(entry, { order: reversed(entry.n) });
+    const { fields } = solved(entry, { seats: allReversed(entry) });
     const dings = Object.keys(fields).filter((id) => fields[id][3] === "ding");
     assert.equal(dings.length, 1, entry.label);
     assert.equal(fields[dings[0]][4], null, entry.label);
   }
 });
 
-test("order never changes a zone", () => {
+test("seats never change a zone", () => {
   for (const entry of SWEEP) {
     const before = zoneColumn(plain(solved(entry)).fields);
-    const after = zoneColumn(plain(solved(entry, { order: reversed(entry.n) })).fields);
+    const after = zoneColumn(plain(solved(entry, { seats: allReversed(entry) })).fields);
     assert.deepStrictEqual(after, before, entry.label);
   }
 });
 
-test("order and mirror compose: a flip reflects the corrected layout", () => {
+test("seats and mirror compose: a flip reflects the corrected layout", () => {
   for (const entry of SWEEP) {
-    const order = rotated(entry.n, 1);
-    const straight = solved(entry, { order }).fields;
-    const flipped = solved(entry, { order, mirror: true }).fields;
+    const rings = ringIds(plain(solved(entry)).fields);
+    const seats = {};
+    for (const ring of RINGS) if (rings[ring].length) seats[ring] = rotated(rings[ring].length, 1);
+    const straight = solved(entry, { seats }).fields;
+    const flipped = solved(entry, { seats, mirror: true }).fields;
     for (const id of Object.keys(straight)) {
       const a = straight[id][4];
       const b = flipped[id][4];
@@ -1006,68 +1103,83 @@ test("order and mirror compose: a flip reflects the corrected layout", () => {
   }
 });
 
-test("the seed's own options.order is honoured, and an explicit option wins", () => {
+test("the seed's own options.seats is honoured, and an explicit option wins", () => {
   const entry = SWEEP.find((e) => e.n === 19);
-  const order = reversed(entry.n);
+  const seats = allReversed(entry);
   const seed = plain(entry.seed);
-  seed.options.order = order;
+  seed.options.seats = seats;
   const fromSeed = HPE.layout.solve(seed).value.fields;
-  const explicit = HPE.layout.solve(entry.seed, { order }).value.fields;
+  const explicit = HPE.layout.solve(entry.seed, { seats }).value.fields;
   assert.deepStrictEqual(plain(fromSeed), plain(explicit));
-  const overridden = HPE.layout.solve(seed, { order: null }).value.fields;
+  const overridden = HPE.layout.solve(seed, { seats: null }).value.fields;
   assert.deepStrictEqual(plain(overridden), plain(solved(entry).fields));
 });
 
-test("solve does not mutate an order it was handed", () => {
+test("solve does not mutate seats it was handed", () => {
   const entry = SWEEP.find((e) => e.n === 19);
-  const order = reversed(entry.n);
-  const before = order.slice();
-  HPE.layout.solve(entry.seed, { order });
-  assert.deepStrictEqual(order, before);
+  const seats = allReversed(entry);
+  const before = plain(seats);
+  HPE.layout.solve(entry.seed, { seats });
+  assert.deepStrictEqual(plain(seats), before);
 });
 
-test("an order that is not a permutation is rejected BAD_NOTE, never thrown", () => {
+test("a flat order option no longer moves anything", () => {
   const entry = SWEEP.find((e) => e.n === 19);
-  const n = entry.n;
-  const bad = [
-    identity(n).slice(0, n - 1),          // too short
-    identity(n).concat([n]),              // too long
-    identity(n - 1).concat([0]),          // a repeated index
-    identity(n - 1).concat([n]),          // out of range, high
-    identity(n - 1).concat([-1]),         // out of range, low
-    identity(n - 1).concat([0.5]),        // not an integer
-    identity(n - 1).concat(["0"]),        // not a number
-    identity(n - 1).concat([NaN]),        // not finite
-    "0,1,2",                              // not an array
-    {},
-    17,
-    true,
-  ];
-  for (const order of bad) {
-    let res;
-    assert.doesNotThrow(() => { res = HPE.layout.solve(entry.seed, { order }); },
-      `solve threw on ${JSON.stringify(order)}`);
-    assert.equal(res.ok, false, `accepted ${JSON.stringify(order)}`);
-    assert.equal(res.code, "BAD_NOTE", `wrong code for ${JSON.stringify(order)}`);
-    assert.equal(typeof res.reason, "string");
-    assert.ok(res.reason.length > 0);
-    assert.equal("value" in res, false, "an err result carries no value");
+  const res = HPE.layout.solve(entry.seed, { order: reversed(19) });
+  assert.equal(res.ok, true);
+  assert.deepStrictEqual(plain(res.value), plain(solved(entry)));
+});
+
+test("seatsFromOrder converts a flat order that stays in its rings", () => {
+  const counts = { rim: 4, inner: 2, bottom: 3 };
+  const order = [1, 0, 3, 2, 5, 4, 8, 6, 7];
+  const res = HPE.layout.seatsFromOrder(order, counts);
+  assert.equal(res.ok, true);
+  assert.deepStrictEqual(plain(res.value), { rim: [1, 0, 3, 2], inner: [1, 0], bottom: [2, 0, 1] });
+});
+
+test("seatsFromOrder leaves a ring that is the identity as the default", () => {
+  const counts = { rim: 3, inner: 0, bottom: 2 };
+  const res = HPE.layout.seatsFromOrder([0, 1, 2, 4, 3], counts);
+  assert.equal(res.ok, true);
+  assert.deepStrictEqual(plain(res.value), { bottom: [1, 0] });
+  assert.deepStrictEqual(plain(HPE.layout.seatsFromOrder([0, 1, 2, 3, 4], counts)), { ok: true, value: null });
+  assert.deepStrictEqual(plain(HPE.layout.seatsFromOrder(null, counts)), { ok: true, value: null });
+});
+
+test("a flat order that crosses a ring is refused BAD_NOTE", () => {
+  const counts = { rim: 3, inner: 0, bottom: 2 };
+  for (const order of [[3, 1, 2, 0, 4], [0, 1, 4, 3, 2], reversed(5)]) {
+    const res = HPE.layout.seatsFromOrder(order, counts);
+    assert.equal(res.ok, false, JSON.stringify(order));
+    assert.equal(res.code, "BAD_NOTE");
   }
 });
 
-test("a rejected order names the value in the section 2 BAD_NOTE reason", () => {
-  const entry = SWEEP.find((e) => e.n === 19);
-  const res = HPE.layout.solve(entry.seed, { order: [0, 0] });
-  assert.equal(res.ok, false);
-  assert.equal(res.reason,
-    HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String([0, 0]).slice(0, 12)));
+test("seatsFromOrder refuses what is not a permutation of the field count", () => {
+  const counts = { rim: 3, inner: 0, bottom: 2 };
+  for (const order of [[0, 1, 2], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 3], [0, 1, 2, 3, "4"], "x", {}, 4]) {
+    const res = HPE.layout.seatsFromOrder(order, counts);
+    assert.equal(res.ok, false, JSON.stringify(order));
+    assert.equal(res.code, "BAD_NOTE");
+  }
 });
 
-test("a bad order is rejected on a bare fields map too", () => {
-  const entry = SWEEP.find((e) => e.n === 19);
-  const res = HPE.layout.solve(entry.seed.fields, { order: [1, 2, 3] });
-  assert.equal(res.ok, false);
-  assert.equal(res.code, "BAD_NOTE");
+test("a seatsFromOrder result solves to what the flat order did", () => {
+  const entry = SWEEP.find((e) => e.label === "mixed N=19");
+  const base = plain(solved(entry)).fields;
+  const rings = ringIds(base);
+  const counts = { rim: rings.rim.length, inner: rings.inner.length, bottom: rings.bottom.length };
+  const order = [];
+  let offset = 0;
+  for (const ring of RINGS) {
+    reversed(counts[ring]).forEach((slot) => order.push(offset + slot));
+    offset += counts[ring];
+  }
+  const seats = HPE.layout.seatsFromOrder(order, counts).value;
+  const moved = plain(solved(entry, { seats })).fields;
+  const ids = [].concat(rings.rim, rings.inner, rings.bottom);
+  ids.forEach((id, i) => assert.equal(moved[id][4], base[ids[order[i]]][4], `#${id}`));
 });
 
 test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
@@ -1113,13 +1225,19 @@ test("EG-5 slotOrder matches solve's emitted field order on the corpus", () => {
     for (const id of ids) counts[fields[id][3]] += 1;
     assert.deepEqual(plain(HPE.layout.slotOrder(counts)), ids.map((id) => fields[id][3]), row.name);
 
-    const reversed = ids.map((_, i) => ids.length - 1 - i);
-    const back = HPE.layout.solve(fields, { order: reversed });
+    const seats = {};
+    const expected = {};
+    for (const ring of ["rim", "inner", "bottom"]) {
+      const ringIdList = ids.filter((id) => fields[id][3] === ring);
+      if (ringIdList.length < 2) continue;
+      seats[ring] = ringIdList.map((_, i) => ringIdList.length - 1 - i);
+      ringIdList.forEach((id, i) => { expected[id] = solved.value.fields[ringIdList[seats[ring][i]]][4]; });
+    }
+    const back = HPE.layout.solve(fields, { seats });
     assert.equal(back.ok, true, row.name);
-    ids.forEach((id, i) => {
-      assert.equal(back.value.fields[id][4], solved.value.fields[ids[reversed[i]]][4],
-        `${row.name}: field ${id} takes slot ${reversed[i]}`);
-    });
+    for (const id of Object.keys(expected)) {
+      assert.equal(back.value.fields[id][4], expected[id], `${row.name}: field ${id}`);
+    }
     checked += 1;
   }
   assert.ok(checked >= 10, `only ${checked} corpus rows checked`);

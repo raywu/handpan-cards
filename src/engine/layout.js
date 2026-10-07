@@ -21,9 +21,11 @@
  * when the pan has inner notes. Two reflections, `mirror` (rim and inner
  * rings) and `mirrorBottom` (bottom ring), are resolved by `resolveMirrors`.
  *
- * Phase 5 adds ONE option, `options.order` - the user's correction of the
- * generated layout, a permutation over the non-ding fields. Absent is the
- * generated default; see readOrder below.
+ * `options.seats` is the user's correction of the generated layout: one
+ * permutation per ring (`rim`, `inner`, `bottom`), each validated against its
+ * own ring, so no input can seat a note in another ring. Absent is the
+ * generated default; see readSeats below. The legacy flat `order` of versions
+ * 1 and 2 is read only by `seatsFromOrder`.
  */
 var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
@@ -211,32 +213,84 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the D5 layout correction ----------------------------------------- */
 
-  /* `options.order` is the ONE layout-correction option: a permutation of
-   * [0 .. n-1] over the non-ding fields in the order collect() yields them
-   * (rim, then inner, then bottom, each ascending by id), where order[i] is the
-   * solved SLOT that field i takes. Absent or null is the generated default -
-   * every deck that never opened the layout editor solves byte-identically to
-   * how it always did. Rotation is not a second option: the UI writes a cyclic
-   * shift into this one.
+  /* `options.seats` is the ONE layout-correction option: an object with
+   * optional `rim`, `inner` and `bottom`, each a permutation of that ring's
+   * seat indices [0 .. n-1], where entry i is the seat the ring's i-th note
+   * (ascending by id) takes. A missing, null or undefined ring is the
+   * generated default, so every deck that never opened the layout editor
+   * solves byte-identically to how it always did. Every ring is checked
+   * against its OWN length: a seat in another ring does not exist.
    *
-   * Returns a result, never a throw: an order that is not a permutation of
-   * exactly that length is BAD_NOTE. */
-  function readOrder(value, n) {
+   * Returns a result, never a throw: seats that are not exactly that are
+   * BAD_NOTE. `value` is null when no ring carries a list. */
+  function readSeats(value, counts) {
     if (value === undefined || value === null) return { ok: true, value: null };
-    if (!isArray(value) || value.length !== n) return badNote(value);
-    var seen = {};
-    var out = [];
-    for (var i = 0; i < n; i += 1) {
-      var slot = value[i];
-      if (typeof slot !== "number" || !isFinite(slot) ||
-          slot !== Math.floor(slot) || slot < 0 || slot >= n ||
-          Object.prototype.hasOwnProperty.call(seen, String(slot))) {
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var key;
+    for (key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key) && ZONES.indexOf(key) < 0) {
         return badNote(value);
       }
-      seen[String(slot)] = true;
-      out.push(slot);
     }
-    return { ok: true, value: out };
+    var out = {};
+    var any = false;
+    for (var z = 0; z < ZONES.length; z += 1) {
+      var ring = ZONES[z];
+      var list = value[ring];
+      if (list === undefined || list === null) continue;
+      if (!isPermutation(list, counts[ring])) return badNote(list);
+      out[ring] = list.slice();
+      any = true;
+    }
+    return { ok: true, value: any ? out : null };
+  }
+
+  var ZONES = ["rim", "inner", "bottom"];
+
+  function isPermutation(list, n) {
+    if (!isArray(list) || list.length !== n) return false;
+    var seen = {};
+    for (var i = 0; i < n; i += 1) {
+      var seat = list[i];
+      if (typeof seat !== "number" || !isFinite(seat) ||
+          seat !== Math.floor(seat) || seat < 0 || seat >= n ||
+          Object.prototype.hasOwnProperty.call(seen, String(seat))) {
+        return false;
+      }
+      seen[String(seat)] = true;
+    }
+    return true;
+  }
+
+  /* The ONE converter from the legacy flat `order` (versions 1 and 2): a
+   * permutation of [0 .. n-1] over the non-ding fields in the order collect()
+   * yields them (rim, then inner, then bottom), where order[i] is the solved
+   * slot field i takes. It converts only when every index stays inside the
+   * ring it started in; one that leaves its ring is BAD_NOTE. A ring that
+   * comes out as the identity is left out, and an order with nothing to say
+   * converts to null (the default arrangement). */
+  function seatsFromOrder(order, counts) {
+    if (order === undefined || order === null) return { ok: true, value: null };
+    var n = counts.rim + counts.inner + counts.bottom;
+    if (!isPermutation(order, n)) return badNote(order);
+    var out = {};
+    var any = false;
+    var offset = 0;
+    for (var z = 0; z < ZONES.length; z += 1) {
+      var ring = ZONES[z];
+      var size = counts[ring];
+      var list = [];
+      var identity = true;
+      for (var i = 0; i < size; i += 1) {
+        var seat = order[offset + i] - offset;
+        if (seat < 0 || seat >= size) return badNote(order);
+        if (seat !== i) identity = false;
+        list.push(seat);
+      }
+      if (!identity) { out[ring] = list; any = true; }
+      offset += size;
+    }
+    return { ok: true, value: any ? out : null };
   }
 
   function isArray(value) {
@@ -244,7 +298,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   /* The solved slot of every non-ding field, in the order collect() yields
-   * them: rim slots, then inner, then bottom. `readOrder` permutes over
+   * them: rim slots, then inner, then bottom. `seatsFromOrder` reads over
    * exactly this sequence. */
   function slotOrder(zoneCounts) {
     var out = [];
@@ -427,16 +481,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return sizes.length ? Math.min.apply(null, sizes) : PRINT_HALF;
   }
 
-  /* The correction is applied LAST, to the field-to-slot assignment only.
-   * The SET of solved angles is unchanged - order says who sits where, not
-   * where the seats are - so every geom value is untouched and mirror, which
-   * reflects the ANGLES, composes with it either way. */
-  function reseat(counts, placed, order) {
-    var slots = placed.rims.concat(placed.inners, placed.bottoms);
-    var layout = slotOrder(counts);
-    var out = { rims: [], inners: [], bottoms: [] };
+  /* The correction is applied LAST, to the note-to-seat assignment of each
+   * ring on its own. The SET of solved angles is unchanged - seats say who
+   * sits where, not where the seats are - so every geom value is untouched
+   * and mirror, which reflects the ANGLES, composes with it either way. */
+  function reseat(placed, seats) {
     var key = { rim: "rims", inner: "inners", bottom: "bottoms" };
-    for (var i = 0; i < order.length; i += 1) out[key[layout[i]]].push(slots[order[i]]);
+    var out = { rims: placed.rims, inners: placed.inners, bottoms: placed.bottoms };
+    for (var z = 0; z < ZONES.length; z += 1) {
+      var list = seats[ZONES[z]];
+      if (!list) continue;
+      var slots = placed[key[ZONES[z]]];
+      var moved = [];
+      for (var i = 0; i < list.length; i += 1) moved.push(slots[list[i]]);
+      out[key[ZONES[z]]] = moved;
+    }
     return out;
   }
 
@@ -465,14 +524,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var anchor = resolveAnchor(options, seedOptions);
 
     var counts = countsOf(zones);
-    var wanted = readOrder(
-      (options && "order" in options) ? options.order : seedOptions.order,
-      counts.rim + counts.inner + counts.bottom);
+    var wanted = readSeats(
+      (options && "seats" in options) ? options.seats : seedOptions.seats,
+      counts);
     if (!wanted.ok) return wanted;
 
     var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var geom = geometry(counts, placed);
-    if (wanted.value) placed = reseat(counts, placed, wanted.value);
+    if (wanted.value) placed = reseat(placed, wanted.value);
 
     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
   }
@@ -480,6 +539,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   HPE.layout = {
     solve: solve,
     slotOrder: slotOrder,
+    seatsFromOrder: seatsFromOrder,
+    readSeats: readSeats,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
