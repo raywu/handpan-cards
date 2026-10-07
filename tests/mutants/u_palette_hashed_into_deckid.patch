@@ -4,14 +4,14 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -411,7 +411,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   // D14: a pure function of formatSeed - notes, octaves, zones and order. The
+@@ -620,7 +620,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // D14: a pure function of identitySeed - notes, octaves, zones and order. The
    // options are never hashed, so renaming or recolouring keeps the id.
    function deckId(seedOrFields) {
--    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+-    return "custom:" + fnv1a32(identitySeed(seedOrFields));
 +    var extra = (seedOrFields && seedOrFields.options)
 +      ? String(seedOrFields.options.palette) : "";
-+    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)) + extra);
++    return "custom:" + fnv1a32(identitySeed(seedOrFields) + extra);
    }
  
    HPE.core = {

@@ -1,0 +1,14 @@
+# kills: identitySeed tells a twelve-note rim from an eleven-plus-one spill
+# suite: node --test --test-name-pattern ^identitySeed.tells.a.twelve.note.rim.from.an.eleven.plus.one.spill$ tests/core.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -620,7 +620,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // D14: a pure function of identitySeed - notes, octaves, zones and order. The
+   // options are never hashed, so renaming or recolouring keeps the id.
+   function deckId(seedOrFields) {
+-    return "custom:" + fnv1a32(identitySeed(seedOrFields));
++    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+   }
+ 
+   HPE.core = {
