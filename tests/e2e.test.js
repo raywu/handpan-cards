@@ -3208,7 +3208,7 @@ function run() {
 
         await selectDeck(1, meta);
         await assertCardFits(`at ${vw}x${vh} after switching deck (portrait)`);
-        await selectDeck(0, meta);
+        await selectDeck(meta.indexOf(await bootMeta(meta)), meta);
       }
     } finally {
       await b.setViewport(900, 900, false);
