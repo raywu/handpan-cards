@@ -55,7 +55,7 @@ function seedOf(str, nTop, nBottom) {
   const bottom = parts.bottom.slice(0, nBottom);
   let s = `${parts.ding} ${top.join(" ")}`;
   if (bottom.length) s += ` | ${bottom.join(" ")}`;
-  const parsed = HPE.core.parseSeed(s);
+  const parsed = HPE.core.parseLegacySeed(s);
   assert.equal(parsed.ok, true, `sweep seed did not parse: ${s} (${parsed.code})`);
   return { string: s, seed: parsed.value };
 }
@@ -281,7 +281,7 @@ test("the ding angle stays null and every other angle is filled", () => {
 const PYGMY_RIM_SEED = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
 
 function pygmyRim(options) {
-  const parsed = HPE.core.parseSeed(PYGMY_RIM_SEED);
+  const parsed = HPE.core.parseLegacySeed(PYGMY_RIM_SEED);
   assert.equal(parsed.ok, true);
   return solved({ seed: parsed.value, string: PYGMY_RIM_SEED, label: "pygmy rim" }, options);
 }
@@ -368,7 +368,7 @@ function rimOnly(count, options) {
 
 test("a pan with no inner notes draws a centred ding, and any inner note moves it off centre", () => {
   const dings = (str, options) => {
-    const parsed = HPE.core.parseSeed(str);
+    const parsed = HPE.core.parseLegacySeed(str);
     assert.equal(parsed.ok, true, str);
     const { geom } = HPE.layout.solve(parsed.value, options).value;
     return [geom.ding_dy, geom.r_ding];
@@ -449,7 +449,7 @@ test("the centred default reproduces the shipped Amara 9 and Hijaz layouts", () 
   };
   for (const id of Object.keys(makers)) {
     const shipped = decks.find((d) => d.id === id);
-    const parsed = HPE.core.parseSeed(makers[id]);
+    const parsed = HPE.core.parseLegacySeed(makers[id]);
     const { geom, fields } = HPE.layout.solve(parsed.value, { mirror: true }).value;
     for (const key of ["rim", "r_ding", "r_note", "n_in", "inner_ring"]) {
       assert.equal(geom[key], shipped.geom[key], `${id} ${key}`);
@@ -1020,7 +1020,7 @@ test("a bad order is rejected on a bare fields map too", () => {
 test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
   const core = HPE.core;
   const angles = (seed, zone, options) => {
-    const solved = HPE.layout.solve(core.parseSeed(seed).value, options);
+    const solved = HPE.layout.solve(core.parseLegacySeed(seed).value, options);
     assert.equal(solved.ok, true);
     return Object.keys(solved.value.fields)
       .filter((id) => solved.value.fields[id][3] === zone)

@@ -43,7 +43,7 @@ function host(value) {
 }
 
 function seedOf(str, options) {
-  const parsed = core.parseSeed(str, options);
+  const parsed = core.parseLegacySeed(str, options);
   assert.equal(parsed.ok, true,
     `expected ${JSON.stringify(str)} to parse, got ${parsed.code}`);
   return parsed.value;
@@ -784,7 +784,7 @@ test("every hand-authored multi-voicing card is derived by the engine", () => {
 });
 
 test("ET-2 noThirds", () => {
-  const fieldsOf = (str) => core.parseSeed(str).value.fields;
+  const fieldsOf = (str) => core.parseLegacySeed(str).value.fields;
   assert.equal(select.noThirds(fieldsOf("(C3) G3 D4 G4 D5")), true,
     "G and D roots have no 3rd above on the top shell");
   assert.equal(select.noThirds(fieldsOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5")), false,

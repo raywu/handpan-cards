@@ -1,0 +1,14 @@
+# kills: a bracketed note among top notes and a bottom note after the inner notes continue the climb
+# suite: node --test --test-name-pattern ^a.bracketed.note.among.top.notes.and.a.bottom.note.after.the.inner.notes.continue.the.climb$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -718,7 +718,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var mm;
+       if (note.octave === null) {
+         mm = midiFromName(note.letter, note.accidental, -1) - 12;
+-        while (mm <= prev.midi) mm += 12;
++        while (mm < prev.midi) mm += 12;
+       } else {
+         mm = midiFromName(note.letter, note.accidental, note.octave);
+       }

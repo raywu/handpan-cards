@@ -8,6 +8,7 @@
  *   node tools/gen_deck.js --list-presets
  *
  * Options: --palette <0-5>  --parent <0-10>  --mirror  --name <text>
+ *          --legacy         (read the seed with core.parseLegacySeed)
  *          --out <path>     (write the JSON there instead of to stdout)
  *
  * Output is the envelope {seed, deck}: `seed` is core.formatSeed's canonical
@@ -77,7 +78,7 @@ function numeric(flag, raw, lo, hi) {
 }
 
 function parseArgs(argv) {
-  const out = { seed: null, options: {}, listPresets: false, out: null };
+  const out = { seed: null, options: {}, listPresets: false, legacy: false, out: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -98,6 +99,7 @@ function parseArgs(argv) {
     } else if (a === "--palette") out.options.palette = numeric(a, next(), 0, 5);
     else if (a === "--parent") out.options.parent = numeric(a, next(), 0, 10);
     else if (a === "--mirror") out.options.mirror = true;
+    else if (a === "--legacy") out.legacy = true;
     else if (a === "--name") out.options.name = next();
     else if (a === "--out") out.out = next();
     else if (a.startsWith("--")) die("unknown option " + a);
@@ -119,7 +121,8 @@ function main(argv) {
     die("usage: gen_deck.js \"<scale seed>\" | --preset <id> | --list-presets");
   }
 
-  const parsed = HPE.core.parseSeed(args.seed, args.options);
+  const read = args.legacy ? HPE.core.parseLegacySeed : HPE.core.parseSeed;
+  const parsed = read(args.seed, args.options);
   if (!parsed.ok) die(parsed.code + ": " + parsed.reason);
 
   const built = HPE.select.build(parsed.value);

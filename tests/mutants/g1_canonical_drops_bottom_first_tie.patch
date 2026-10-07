@@ -1,0 +1,14 @@
+# kills: every row of the grammar table parses to its fields
+# suite: node --test --test-name-pattern ^every.row.of.the.grammar.table.parses.to.its.fields$ tests/scale.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -805,7 +805,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       line.push({ midi: fields[id][2], rank: 2, text: fields[id][0] + fields[id][1],
+                   inner: fields[id][3] === "inner" });
+     });
+-    line.sort(function (a, c) { return a.midi - c.midi || a.rank - c.rank; });
++    line.sort(function (a, c) { return a.midi - c.midi; });
+     var out = [];
+     var barred = false;
+     line.forEach(function (entry) {

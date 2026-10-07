@@ -59,7 +59,7 @@ function notePositions(svg) {
 
 /** The note labels the parse line reports, e.g. ["D3","A3",...]. */
 function seedNotes(app, seed) {
-  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(seed)}, {})`);
+  const res = app.get(`HPE.core.parseLegacySeed(${JSON.stringify(seed)}, {})`);
   assert.ok(res.ok, `seed did not parse: ${seed}`);
   const fields = res.value.fields;
   return Object.keys(fields).map((k) => fields[k][0] + fields[k][1]);
@@ -175,8 +175,8 @@ test("the preview highlights nothing - no chord is chosen yet", () => {
 test("a chordless pan render does not throw and lights no field", () => {
   const app = boot();
   const svg = app.get(
-    "pan({geom: HPE.layout.solve(HPE.core.parseSeed(" + JSON.stringify(PLAIN) +
-    ", {}).value, {mirror:false}).value.geom, fields: HPE.layout.solve(HPE.core.parseSeed(" +
+    "pan({geom: HPE.layout.solve(HPE.core.parseLegacySeed(" + JSON.stringify(PLAIN) +
+    ", {}).value, {mirror:false}).value.geom, fields: HPE.layout.solve(HPE.core.parseLegacySeed(" +
     JSON.stringify(PLAIN) + ", {}).value, {mirror:false}).value.fields, " +
     "colors: HPE.select.PALETTES[0]}, null)");
   assert.match(svg, /^<svg\b/);

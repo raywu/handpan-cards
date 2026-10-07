@@ -111,7 +111,7 @@ function equivRootName(deck, chord) {
 const seeds = synthetic.filter((row) => row.expect && row.expect.ok);
 
 function seedPitchClasses(row) {
-  const parsed = core.parseSeed(row.string);
+  const parsed = core.parseLegacySeed(row.string);
   assert.equal(parsed.ok, true, `${row.name}: expected to parse`);
   const fields = parsed.value.fields;
   return {

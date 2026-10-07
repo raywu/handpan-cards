@@ -689,7 +689,7 @@ test("GENERATE on a zero-chord pan refuses with a message, keeps the selection, 
 
   // The same seed reaches openShare as an encoded link, since nothing was
   // ever registered to hang a shareLink() off of.
-  const seed = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(ZERO_CHORD_SEED)}, {})`));
+  const seed = plain(app.get(`HPE.core.parseLegacySeed(${JSON.stringify(ZERO_CHORD_SEED)}, {})`));
   assert.strictEqual(seed.ok, true, "the zero-chord seed itself must parse");
   const encoded = plain(app.get(
     `HPE.share.encode(${JSON.stringify({ fields: seed.value.fields, options: seed.value.options })})`));
@@ -2798,7 +2798,7 @@ test("with the presets gone, the standing hint teaches the whole seed grammar", 
   const m = /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(src);
   assert.ok(m, "the scale box lost its placeholder");
   const ph = m[1];
-  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ph)})`);
+  const res = app.get(`HPE.core.parseLegacySeed(${JSON.stringify(ph)})`);
   assert.strictEqual(res.ok, true,
     `the placeholder "${ph}" does not parse: ${res.code}`);
 });
@@ -5652,7 +5652,7 @@ test("AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales", () =>
   let parsed = 0;
   for (const sc of SCALES) {
     const fields = app.get(`(function () {
-      var r = HPE.core.parseSeed(${JSON.stringify(sc.string)}, { palette: palette, mirror: mirror });
+      var r = HPE.core.parseLegacySeed(${JSON.stringify(sc.string)}, { palette: palette, mirror: mirror });
       return r.ok ? r.value.fields : null;
     })()`);
     if (!fields) continue;

@@ -2,6 +2,7 @@
   {
     "name": "builtin hijaz",
     "string": "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 0},
     "tags": ["builtin", "zones-match-builtin"]
@@ -9,6 +10,7 @@
   {
     "name": "builtin pygmy",
     "string": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 11, "inner": 0, "bottom": 6},
     "tags": ["builtin", "bottom", "zones-diverge-from-builtin"]
@@ -16,6 +18,7 @@
   {
     "name": "builtin amara",
     "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 0},
     "tags": ["builtin", "zones-match-builtin"]
@@ -23,6 +26,7 @@
   {
     "name": "twelve note pan",
     "string": "(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 11, "inner": 0, "bottom": 0},
     "tags": ["cap", "duplicate-pitch-classes", "cap-bites"]
@@ -30,6 +34,7 @@
   {
     "name": "nineteen field maximum",
     "string": "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 Ab5 C6 | C3 Db3 Eb3 Bb3 Db4 Gb4",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 11, "inner": 2, "bottom": 6},
     "tags": ["cap", "maximum", "bottom", "inner", "duplicate-pitch-classes"]
@@ -37,24 +42,28 @@
   {
     "name": "whole tone subset",
     "string": "(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4",
+    "reader": "legacy",
     "expect": {"code": "NO_FIFTH"},
     "tags": ["symmetric", "degenerate"]
   },
   {
     "name": "octatonic diminished",
     "string": "(C3) Db3 Eb3 E3 F#3 G3 A3 Bb3 C4",
+    "reader": "legacy",
     "expect": {"ok": true},
     "tags": ["symmetric"]
   },
   {
     "name": "augmented hexatonic",
     "string": "(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4",
+    "reader": "legacy",
     "expect": {"ok": true},
     "tags": ["symmetric", "duplicate-pitch-classes"]
   },
   {
     "name": "three pitch classes",
     "string": "(C3) G3 D4 G4 D5",
+    "reader": "legacy",
     "expect": {"ok": true},
     "select_warnings": ["NO_THIRDS"],
     "tags": ["degenerate", "no-thirds"]
@@ -62,6 +71,7 @@
   {
     "name": "omitted ding octave",
     "string": "(D) A C D E F G A C",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 0},
     "tags": ["grammar", "octave-inference"]
@@ -69,18 +79,21 @@
   {
     "name": "no ding",
     "string": "G3 B3 D4 G4",
+    "reader": "legacy",
     "expect": {"code": "NO_DING"},
     "tags": ["degenerate", "grammar"]
   },
   {
     "name": "two dings",
     "string": "(D3) (A3) C4 E4",
+    "reader": "legacy",
     "expect": {"code": "NO_DING"},
     "tags": ["grammar"]
   },
   {
     "name": "ding pitch class absent from top shell",
     "string": "(Bb2) F3 G3 C4 D4 F4 G4 C5 D5",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 0},
     "tags": ["degenerate", "tonic"]
@@ -88,6 +101,7 @@
   {
     "name": "bottom notes after bar",
     "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3",
+    "reader": "legacy",
     "expect": {"ok": true},
     "zones": {"ding": 1, "rim": 8, "inner": 0, "bottom": 2},
     "tags": ["bottom"]
@@ -95,36 +109,42 @@
   {
     "name": "fourteen top notes",
     "string": "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
+    "reader": "legacy",
     "expect": {"code": "TOO_MANY_RIM"},
     "tags": ["cap"]
   },
   {
     "name": "seven bottom notes",
     "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3 E3 F3 G3 Ab3 Bb3",
+    "reader": "legacy",
     "expect": {"code": "TOO_MANY_RIM"},
     "tags": ["cap", "bottom"]
   },
   {
     "name": "bad note token",
     "string": "(D3) A3 H4 C4",
+    "reader": "legacy",
     "expect": {"code": "BAD_NOTE"},
     "tags": ["grammar"]
   },
   {
     "name": "midi out of range",
     "string": "(C9) D9 E9 A9",
+    "reader": "legacy",
     "expect": {"code": "NOTE_OUT_OF_RANGE"},
     "tags": ["grammar", "range"]
   },
   {
     "name": "duplicate field",
     "string": "(D3) A3 C4 C4 E4",
+    "reader": "legacy",
     "expect": {"code": "NOTE_REPEATED"},
     "tags": ["grammar", "duplicate", "not-ascending"]
   },
   {
     "name": "bottom note below the inferred one before it",
     "string": "(D) A B C D E F G | C D2",
+    "reader": "legacy",
     "expect": {"code": "NOTE_OUT_OF_ORDER"},
     "tags": ["grammar", "not-ascending", "inference", "owner-report"]
   }
