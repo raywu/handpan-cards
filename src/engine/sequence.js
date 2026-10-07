@@ -774,31 +774,57 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var width = deck.chords.length;
     var filed = 0;
     var nodes = 0;
+    // One rng() call yields several draws: each pick keeps the fraction of u
+    // it did not use, and a fresh value is fetched once fewer than 1024
+    // distinct values per outcome would remain, so no index is off by more
+    // than 0.1%. rng() is the dominant cost of a walk.
+    var u = 0;
+    var room = 0;
     if (!startSet.length) return 0;
     while (nodes < budget) {
-      var opening = draw(rng, lengths.length * startSet.length);
-      var length = lengths[opening % lengths.length];
-      var walk = [startSet[(opening - opening % lengths.length) / lengths.length]];
-      var colourUsed = isColour[walk[0]];
-      nodes += 1;
-      while (walk.length < length && nodes < budget) {
-        var prevChord = walk[walk.length - 1];
-        if (!onward[prevChord]) {
-          onward[prevChord] = { all: [], pure: [] };
-          for (var i = 0; i < pool.length; i += 1) {
-            var candidate = pool[i];
-            if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
-            onward[prevChord].all.push(candidate);
-            if (!isColour[candidate]) onward[prevChord].pure.push(candidate);
+      var length = 0;
+      var walk = [];
+      var colourUsed = false;
+      do {
+        var options = null;
+        var n;
+        if (walk.length === 0) {
+          n = lengths.length * startSet.length;
+        } else {
+          var prevChord = walk[walk.length - 1];
+          if (!onward[prevChord]) {
+            onward[prevChord] = { all: [], pure: [] };
+            for (var i = 0; i < pool.length; i += 1) {
+              var candidate = pool[i];
+              if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
+              onward[prevChord].all.push(candidate);
+              if (!isColour[candidate]) onward[prevChord].pure.push(candidate);
+            }
           }
+          options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
+          n = options.length;
+          if (!n) break;
         }
-        var options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
-        if (!options.length) break;
-        var next = options[draw(rng, options.length)];
+        if (room < n * 1024) {
+          u = rng();
+          room = 4294967296;
+        }
+        u *= n;
+        var at = Math.floor(u);
+        if (at >= n) at = n - 1;
+        u -= at;
+        room /= n;
+        var next;
+        if (options) {
+          next = options[at];
+        } else {
+          length = lengths[at % lengths.length];
+          next = startSet[(at - at % lengths.length) / lengths.length];
+        }
         walk.push(next);
         colourUsed = colourUsed || isColour[next];
         nodes += 1;
-      }
+      } while (walk.length < length && nodes < budget);
       if (walk.length < length) continue;
       var key = length;
       for (var k = 0; k < length; k += 1) key = key * width + walk[k];
