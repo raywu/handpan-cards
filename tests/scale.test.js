@@ -105,6 +105,7 @@ test("every refused row carries its code and its sentence", () => {
   check("", "NO_DING", "empty");
   check("   ", "NO_DING", "empty");
   check("| (D) A C", "BAD_NOTE", "barFirst");
+  check("[C3] [C3] (D3) A", "NOTE_REPEATED", "repeated");
   assert.ok(seen.has("BAD_NOTE/barFirst") && seen.has("NO_DING/empty"));
   for (const code of Object.keys(SENTENCES)) {
     for (const alt of Object.keys(SENTENCES[code])) {
