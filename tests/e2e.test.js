@@ -3638,9 +3638,10 @@ function run() {
           const on = nav.querySelector(".chip.on");
           const onR = on && on.getBoundingClientRect();
           const activeInBox = !!on && onR.left >= box().left - 1 && onR.right <= box().right + 1;
+          const titleW = document.querySelector("h1").getBoundingClientRect().width;
           nav.scrollLeft = 0;
           return {
-            sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll, activeInBox,
+            sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll, activeInBox, titleW,
             atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2),
             chips: nav.children.length,
             overflowX: getComputedStyle(nav).overflowX,
@@ -3696,6 +3697,9 @@ function run() {
         assert.ok(m.activeInBox,
           `at ${row} the active chip is outside the deck strip even fully ` +
           `scrolled: ${JSON.stringify(seen, null, 2)}`);
+        assert.ok(m.titleW <= 2,
+          `at ${row} the landscape title takes ${m.titleW}px back from the ` +
+          `strip, which has to stay visually hidden there: ${JSON.stringify(seen, null, 2)}`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -4706,7 +4710,7 @@ function run() {
         { label: "deck chips after the reload" });
       const back = await b.eval(
         `return [...document.querySelectorAll("#decks .chip:not(#deck-add)")].map(c => c.textContent.trim());`);
-      assert.strictEqual(back.length, 3, `the deleted deck came back: ${JSON.stringify(back)}`);
+      assert.strictEqual(back.length, builtIns.length, `the deleted deck came back: ${JSON.stringify(back)}`);
     } finally {
       await b.setViewport(900, 900, false);
     }
