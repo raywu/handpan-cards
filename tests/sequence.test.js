@@ -2346,3 +2346,83 @@ test("an over-budget pan fills every pure cell its anchors allow", () => {
     assert.deepStrictEqual(got.sort(), expected.sort(), `${str}: pure cells against the anchors enumeration`);
   }
 });
+
+// Lane U3 (OQ16): on an over-budget pan the colour card's position is a
+// stratum, so no position is starved in MEDIUM colour deals.
+function colourPositionShares(deck, ctx, chordsList, length) {
+  const anchors = new Set(host(ctx.anchorsList));
+  const counts = new Array(length).fill(0);
+  let total = 0;
+  for (const chords of chordsList) {
+    if (chords.length !== length) continue;
+    const at = chords.findIndex((i) => !anchors.has(i));
+    if (at < 0) continue;
+    counts[at] += 1;
+    total += 1;
+  }
+  return counts.map((n) => n / total);
+}
+
+test("an over-budget pan does not starve a colour position", () => {
+  const picks = 4000;
+  for (const str of TRUNCATING_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const ctx = I.tierContext(deck);
+    const sampled = [];
+    for (let batch = 0; batch < 40; batch += 1) {
+      const cells = I.mediumCells(deck, {}, undefined, S.mulberry32(1000 + batch));
+      for (let seed = 0; seed < picks / 40; seed += 1) {
+        sampled.push(host(I.drawMedium(cells, S.mulberry32(batch * 1000 + seed), null)));
+      }
+    }
+    const fullCells = I.mediumCells(deck, {}, Infinity);
+    const full = [];
+    for (let seed = 0; seed < picks; seed += 1) {
+      full.push(host(I.drawMedium(fullCells, S.mulberry32(seed), null)));
+    }
+    for (const length of [3, 4]) {
+      const got = colourPositionShares(deck, ctx, sampled, length);
+      const ref = colourPositionShares(deck, ctx, full, length);
+      got.forEach((share, at) => {
+        assert.ok(share >= 0.08, `${str} length ${length} position ${at}: ${share}`);
+        if (length === 3) {
+          assert.ok(share >= ref[at] / 2, `${str} position ${at}: ${share} against full ${ref[at]}`);
+          assert.ok(share <= 0.6, `${str} position ${at}: ${share}`);
+        }
+      });
+      if (length === 3) assert.ok(got[2] >= 0.2, `${str}: last position ${got[2]}`);
+    }
+  }
+});
+
+test("a stratum with no colour start is left out", () => {
+  for (const str of TRUNCATING_SEEDS) {
+    const { S, deck } = truncatingDeck(str);
+    const I = S._internal;
+    const ctx = I.tierContext(deck);
+    const matrix = I.buildConnectMatrix(deck);
+    const anchors = host(ctx.anchorsList);
+    const pool = host(I.tierPool(deck, "intermediate", ctx.anchorsList));
+    const allStarts = host(I.tierStartSet(deck, "intermediate", I.tierPool(deck, "intermediate", ctx.anchorsList), ctx));
+    const isColour = [];
+    pool.forEach((i) => { isColour[i] = !anchors.includes(i); });
+    anchors.forEach((i) => { isColour[i] = false; });
+    const run = (starts) => {
+      const filed = [];
+      I.sampleMedium(deck, ctx, matrix, S.mulberry32(3), pool, starts, isColour, (w) => filed.push(w.slice()));
+      return filed;
+    };
+    const pureStarts = allStarts.filter((i) => !isColour[i]);
+    assert.ok(allStarts.some((i) => isColour[i]), `${str}: expected colour starts`);
+    const started = run(pureStarts);
+    assert.ok(started.length > 0, `${str}: nothing filed`);
+    for (const w of started) {
+      assert.strictEqual(w.filter((i) => isColour[i]).length, 1, `${str}: ${JSON.stringify(w)}`);
+      assert.ok(!isColour[w[0]], `${str}: ${JSON.stringify(w)} opens on a colour card`);
+    }
+    for (const w of run(allStarts)) {
+      assert.strictEqual(w.filter((i) => isColour[i]).length, 1, `${str}: ${JSON.stringify(w)}`);
+    }
+  }
+});
