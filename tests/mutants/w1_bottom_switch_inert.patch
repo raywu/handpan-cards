@@ -1,0 +1,16 @@
+# kills: W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only
+# suite: node --test --test-name-pattern ^W1.line.110.*$ tests/app.test.js
+# MIRROR BOTTOM lights nothing and moves nothing: the tap is swallowed, so a
+# pan whose bottom shell is mirrored cannot be described.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9649,7 +9649,7 @@
+ // The mirror is the choice the pan preview exists to make visible, so each
+ // button re-solves the preview through the same parse path a keystroke uses.
+ mirrorTop.onclick = () => { mirror = !mirror; paintMirrors(); resyncSheet(true); };
+-mirrorBot.onclick = () => { bottomHeld = !bottomHeld; paintMirrors(); resyncSheet(true); };
++mirrorBot.onclick = () => { paintMirrors(); resyncSheet(true); };
+ rotL.onclick = () => rotateLayout(-1);
+ rotR.onclick = () => rotateLayout(1);
+ moveL.onclick = () => moveNote(-1);

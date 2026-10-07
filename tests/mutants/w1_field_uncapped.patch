@@ -1,0 +1,19 @@
+# kills: W1 line 8: past three rows the field stays at three, scrolls inside itself and keeps the caret in view
+# suite: node --test --test-name-pattern ^W1.line.8..past.three.rows.*$ tests/e2e.test.js
+# The cap is gone, so a long scale grows the field without limit and pushes
+# GENERATE CARDS down the page.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -782,9 +782,9 @@
+ #scale-box-wrap{display:grid; min-width:0; font:400 16px/1.3 Bitter, serif}
+ #scale-box-wrap::after{content:attr(data-grow) " "; grid-area:1/1; visibility:hidden;
+   white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; box-sizing:border-box;
+-  min-height:48px; max-height:calc(3 * 1.3em + 26px); padding:12px var(--sp-3);
++  min-height:48px; padding:12px var(--sp-3);
+   border:1px solid transparent; font:inherit}
+-#scale-box{grid-area:1/1; width:100%; min-width:0; min-height:48px; max-height:calc(3 * 1.3em + 26px);
++#scale-box{grid-area:1/1; width:100%; min-width:0; min-height:48px;
+   box-sizing:border-box; resize:none; overflow-y:auto; scrollbar-width:none;
+   overflow-wrap:anywhere; padding:12px var(--sp-3); color:#eae6df;
+   font-family:Bitter, serif; font-weight:400; font-size:16px; line-height:1.3; background:#151310; border:1px solid #433b2c; border-radius:8px}

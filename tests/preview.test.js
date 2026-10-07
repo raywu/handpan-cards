@@ -4,7 +4,7 @@
 // render a mock of the notes on the pan to help user visualize before committing
 // to generating cards?" These tests hold the sheet to that: while a seed is
 // being typed, the sheet shows WHERE the notes land - ding, rim zig-zag, inner
-// pair, dashed bottom ring - and the LEFT-FIRST / RIGHT-FIRST choice visibly
+// pair, dashed bottom ring - and the MIRROR TOP switch visibly
 // moves them.
 //
 // Everything asserted here is user-observable through the sheet: what a person
@@ -65,9 +65,12 @@ function seedNotes(app, seed) {
   return Object.keys(fields).map((k) => fields[k][0] + fields[k][1]);
 }
 
-/** Click one of the two mirror buttons through its own handler. */
+/** Put MIRROR TOP on ("left") or off ("right") through its own handler. */
 function clickMirror(app, which) {
-  app.els[which === "left" ? "scale-mirror-l" : "scale-mirror-r"].onclick();
+  const on = which === "left";
+  if ((app.els["scale-mirror"].getAttribute("aria-pressed") === "true") !== on) {
+    app.els["scale-mirror"].onclick();
+  }
 }
 
 /* ------------------------------------------------------- the preview exists */
@@ -140,7 +143,7 @@ test("flipping the mirror moves the notes in the preview", () => {
   clickMirror(app, "left");
   const left = previewHTML(app);
   assert.notStrictEqual(left, right,
-    "LEFT-FIRST and RIGHT-FIRST must look different - that is the whole request");
+    "MIRROR TOP on and off must look different - that is the whole request");
   assert.notDeepStrictEqual(notePositions(left), notePositions(right),
     "the notes should sit in different places, not merely carry a changed attribute");
 });

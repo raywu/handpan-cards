@@ -5,12 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4875,7 +4875,7 @@ sheet.addEventListener("keydown", e => {
+@@ -9736,7 +9736,6 @@
                   editingId ? previewBox : null,
                   editingId ? rotL : null, editingId ? rotR : null,
                   editingId ? moveL : null, editingId ? moveR : null,
 -                 editingId ? resetBtn : null,
-+
                   editingId ? degSel : null,
-                  mirrorL, mirrorR, ...swatches.children, genBtn,
+                  mirrorTop, mirrorBot, ...swatches.children, genBtn,
                   editingId ? delBtn : null]

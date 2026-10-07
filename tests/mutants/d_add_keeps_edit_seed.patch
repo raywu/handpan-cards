@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8124,7 +8124,7 @@ function resetSheetState(edit) {
+@@ -9353,7 +9353,7 @@
    setSheetMode(!!edit);
    nameBox.value = edit ? edit.name : "";
    nameDirty = false;                                 // prefilled, not typed
 -  scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
 +  if (edit) scaleBox.value = HPE.core.formatSeed(edit.fields);
-   palette = edit ? edit.options.palette : 0;
-   buildSwatches();
-   setMirror(edit ? !!edit.options.mirror : false);
+   scaleLabel2.textContent = "";                      // the second label line is empty and hidden until it has text
+   scaleLabel2.hidden = true;
+   syncGrow();

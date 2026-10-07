@@ -11,12 +11,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -583,6 +583,7 @@
-   /* Text fields go back to the 44px floor with tighter padding: on the Edit
+@@ -895,6 +895,7 @@
       sheet there are two of them above the fold and the box the caret lands in
       is the lower one, so four pixels each is the difference between opening at
       rest and opening already scrolled. */
 +  #scale-box{font-size:14px}
    #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
-   .sheetbody{gap:var(--sp-2)}
-   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
+   #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
+   #scale-box-wrap::after, #scale-box{max-height:calc(3 * 1.3em + 20px)}

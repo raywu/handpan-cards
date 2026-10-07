@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2360,7 +2360,7 @@ function parseLineText(fields) {
-     return (zone === "ding" ? "Ding" : label) + " " + name + oct;
-   };
-   const ding = ids.filter(i => fields[i][3] === "ding");
--  const rest = ids.filter(i => fields[i][3] !== "ding");
-+  const rest = ids.filter(i => fields[i][3] !== "ding" && fields[i][3] !== "bottom");
-   const head = ding.map(part).join(" ");
-   return rest.length ? head + " | " + rest.map(part).join(" ") : head;
- }
+@@ -8761,7 +8761,7 @@
+   let ding = "";
+   for (const f of Object.values(fields)) {
+     if (f[3] === "ding") ding = f[0] + f[1];
+-    else shells[f[3]].push(f);
++    else if (f[3] !== "bottom") shells[f[3]].push(f);
+   }
+   const names = (list) => list.slice().sort((x, y) => x[2] - y[2]).map((f) => f[0] + f[1]).join(" ");
+   let line = "Ding " + ding + " \u00b7 " + shells.rim.length + " top \u00b7 " +
