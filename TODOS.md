@@ -62,3 +62,16 @@ real resize, so e2e drives the whole path against the shipped file.
 **Effort:** S
 **Priority:** P3
 **Depends on:** None
+
+## Diagram label ratios are held three times
+
+- **What:** one source for the label ratios now in `tools/hifi.py`, `pan()` in `index.html`, and (after the scale-syntax plan's Lane S1) `labelFloor` in `src/engine/layout.js`.
+- **Why:** three copies pinned by parity tests instead of one definition (eng review 2026-10-07, `docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md` risk 8).
+- **Cons:** print is Python and the app is JS, so "one source" means a generated constant, which is a new sync step.
+- **Depends on:** Lane S1 of that plan.
+
+## Bottom-shell octave digit prints at 3.2 pt on dense generated pans
+
+- **What:** decide a floor or a drop rule for the bottom octave digit.
+- **Why:** the owner excluded it from the small-labels warning (2026-10-06), so nothing reports it.
+- **Depends on:** the scale-syntax plan landing.

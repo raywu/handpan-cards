@@ -30,6 +30,8 @@ The plan starts after Lane C of `docs/plans/2026-10-06-two-beginner-decks.md` me
 - `tests/mutants` holds 684 patches. This is a FORECAST: 685 measured today, and the in-flight plan states 681 after U1, 681 after U2, 683 after B, 684 after C. Every lane re-derives its base with `ls tests/mutants | wc -l`.
 - Lane U2 pins D Amara 9 to an engine run with `--mirror`. That recipe changes in this plan's Lane S2 (section 7.5).
 
+**Re-measured 2026-10-07 (eng review, R6):** main is `e749957` (Lane U1 merged). `ls tests/mutants | wc -l` prints 687 and the frozen fixture is `golden_decks_v5.json`. The figures 684 and v7 above, and every running mutant total in section 11, are therefore low by at least 3 and are forecasts only. No lane asserts them: each lane derives its base from the tree, and FLOORS and the README count come from CI.
+
 Kurd 10 and Amara 10 are not on main yet. Everything this plan says about them was measured on stand-ins: today's engine run on the two strings above with default options.
 
 ## 3. Decisions
@@ -485,7 +487,7 @@ Output: `docs/plans/2026-10-06-layout-drawer-design.md`, holding element ids, st
 5. **P1** the Pygmy redraw. After S1 and S2, because the redrawn `geom` must be the output of the final seat and geometry rules.
 6. **S3** per-ring seats and share version 3. After S2 (the anchor travels in the same version).
 7. **W1** the sheet: wrapping field, count line, MIRROR switch. After S2 (MIRROR's meaning), after DS (its layout). Before G2b so the long placeholder has somewhere to go.
-8. **G2a** legacy tests call the legacy reader (no behaviour change), then **G2b** the flip and share version 4. After G1, S1, S3, W1.
+8. **G2a** legacy tests call the legacy reader (no behaviour change): after L0 (section 19, R4). Then **G2b** the flip and share version 4: after G1, G2a, S1, S3, W1.
 9. **DR1** drawer shell, anchor, MIRROR moved in; then **DR2** drag. After DS, S3 and G2b.
 10. **DOC** the long-form spec. Last.
 
@@ -594,7 +596,7 @@ and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.j
 - **Owns**: in `index.html` the `#scale-box` element and its CSS rules, the field's `input` and `keydown` listeners, `parseLineText`, the two mirror buttons and their handlers (replaced by one element `#scale-mirror`), the `mirror` read in `sheetOptions`; `tools/sandbox.js` ids (`scale-mirror-l` and `scale-mirror-r` out, `scale-mirror` in); the mirror and field tests in `tests/app.test.js`, `tests/e2e.test.js`, `tests/preview.test.js`; `tests/fixtures/app_surface_v1.json`.
 - **Reads only**: the DS spec; `src/engine/*`.
 - **Changes**: per the DS spec. Fixed by this plan: the field shows one to three rows and never scrolls sideways; an empty field shows the whole placeholder; Enter submits and never inserts a line break; a pasted line break is treated as a space; the count line has the shape in section 9; MIRROR is off by default and reads a stored `mirror: true` as on.
-- **TDD order**: (1) e2e "the scale field grows to three rows at 380px and shows the whole example"; (2) e2e "Enter in the scale field generates and adds no line break"; (3) "a pasted line break is read as a space"; (4) "the line under the box leads with the top, inner and bottom counts"; (5) "an octave-less list after the bar is counted as inner notes, with zero bottom"; (6) "MIRROR is one switch, off by default, and carries the choice into the deck" (replaces "the mirror pair defaults to right-first and carries the choice into the deck"); (7) "a deck stored with mirror true opens with MIRROR on"; (8) the existing e2e tests on the field under a real keyboard stay green ("the seed box is not clipped by the sheet's own scroller", "GENERATE CARDS is reachable without scrolling at every phone viewport").
+- **TDD order**: (1) e2e "the scale field grows to three rows at 380px and shows the whole example"; (2) e2e "Enter in the scale field generates and adds no line break"; (3) "a pasted line break is read as a space"; (4) "the line under the box leads with the top, inner and bottom counts"; (5) moved to G2b by the eng review (R9): before the flip the bar still means bottom notes, so the test cannot pass here; (6) "MIRROR is one switch, off by default, and carries the choice into the deck" (replaces "the mirror pair defaults to right-first and carries the choice into the deck"); (7) "a deck stored with mirror true opens with MIRROR on"; (8) the existing e2e tests on the field under a real keyboard stay green ("the seed box is not clipped by the sheet's own scroller", "GENERATE CARDS is reachable without scrolling at every phone viewport").
 - **Acceptance**: `node --test tests/app.test.js tests/preview.test.js` passes; `node --test --test-name-pattern "scale field|MIRROR" tests/e2e.test.js` passes; `grep -c "LEFT-FIRST\|RIGHT-FIRST\|scale-mirror-l\|scale-mirror-r" index.html tools/sandbox.js` prints 0 for both files.
 - **Verify**: `./tests/run.sh all`, plus a hand check on a phone at 380 px with the keyboard up, recorded on the PR (UNVERIFIED until done).
 - **Non-goals**: the grammar; the drawer; the label and hint text (G2b).
@@ -604,7 +606,7 @@ and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.j
 ### Lane G2a: legacy tests call the legacy reader (behaviour-free)
 
 - **Goal**: every test and fixture that proves the legacy grammar calls `parseLegacySeed` by name, so the flip is a small diff.
-- **Owns**: legacy-grammar cases in `tests/core.test.js` (25 literals), `tests/preview.test.js` (2), `tests/layout.test.js` (1), `tests/test_print.py` (1); `tests/fixtures/synthetic_scales.json` and `engine_corpus_v1.json` (through `tools/regen_engine_corpus.js`), each entry tagged with the reader it is for.
+- **Owns** (WIDENED by the eng review, section 19 R1; the list there replaces this one): legacy-grammar cases in `tests/core.test.js` (25 literals), `tests/preview.test.js` (2), `tests/layout.test.js` (1), `tests/test_print.py` (1); `tests/fixtures/synthetic_scales.json` and `engine_corpus_v1.json` (through `tools/regen_engine_corpus.js`), each entry tagged with the reader it is for.
 - **Reads only**: `src/engine/core.js`.
 - **TDD order**: none new; the lane is a rename with the suite green before and after.
 - **Acceptance**: `./tests/run.sh all` prints `ALL GREEN`; `git diff --stat <base> -- src index.html` prints nothing.
@@ -618,7 +620,7 @@ and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.j
 - **Goal**: typed input, the canonical string, links (version 4) and records use the new grammar; the sheet teaches it; the parser's caps and spill go.
 - **Owns**: in `src/engine/core.js` `parseSeed` and `formatSeed` (they become G1's functions; the old ones remain only as `parseLegacySeed`), the parser caps, `TOO_MANY_RIM`, the final `REASONS` text, the bottom id base in `assemble`; in `src/engine/share.js` `VERSION` 4 and the reader table; in `index.html` the generated regions, the `#scale-box` label and placeholder text, `PARSE_HINT`, `LAYOUT_HINT`, the boot rewrite in `restoreScales`; the README "+ ADD A SCALE" bullet and the CLAUDE.md "Scale strings" paragraph; mutant `u_inner_cap_unenforced` (retired).
 - **Reads only**: everything else.
-- **TDD order**: (1) `tests/app.test.js` "a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index"; (2) `tests/share.test.js` "a version 3 link with a bar opens with bottom notes"; (3) "the placeholder parses and draws the E Amara 20 pan"; (4) "label, placeholder and hint name the same three marks" (`(`, `[` and `|` in each, a lone `/` in none); (5) "every example in the label, hint and refusals parses"; (6) "typing the old inner mark shows the slash sentence"; (7) "typing an old bottom list with octaves shows the afterBar sentence"; (8) "TOO_MANY_RIM is not in REASONS and thirteen rim notes generate a deck"; (9) "a hundred-and-first top note does not collide with a bottom id"; (10) L0's "every frozen legacy string keeps its deck id", still green.
+- **TDD order**: (1) `tests/app.test.js` "a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index"; (2) `tests/share.test.js` "a version 3 link with a bar opens with bottom notes"; (3) "the placeholder parses and draws the E Amara 20 pan"; (4) "label, placeholder and hint name the same three marks" (`(`, `[` and `|` in each, a lone `/` in none); (5) "every example in the label, hint and refusals parses"; (6) "typing the old inner mark shows the slash sentence"; (7) "typing an old bottom list with octaves shows the afterBar sentence"; (8) "TOO_MANY_RIM is not in REASONS and thirteen rim notes generate a deck"; (9) "a hundred-and-first top note does not collide with a bottom id"; (10) L0's "every frozen legacy string keeps its deck id", still green; (11) from W1 (R9): "an octave-less list after the bar is counted as inner notes, with zero bottom"; (12) to (15): the record-safety and boundary tests in section 19 (R2, R7, R8).
 - **Acceptance**: `./tests/run.sh all` prints `ALL GREEN`; `grep -c "TOO_MANY_RIM" src/engine/core.js src/engine/layout.js` prints 0 for both; `python3 tools/validate.py` exits 0; `python3 -m unittest tests.test_readme_currency -v` passes.
 - **Verify**: `./tests/run.sh all`
 - **Non-goals**: the drawer; any solver change.
@@ -689,14 +691,14 @@ and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.j
 3. **Saved even-rim decks flip, and a saved mirrored even-rim deck shows MIRROR on and looks reversed** (5.3). Accepted by D10; the README says so.
 4. **Pygmy's print overlay keeps radius 60**, so its printed circles grow 2.2% inside an unchanged frame. The solver's packing bound says nothing collides; the hand check in P1 confirms it on paper (UNVERIFIED until then).
 5. **Stale mutants.** 417 patches target `index.html`. Each lane runs the stale check and regenerates what it reports.
-6. **Two tabs, old and new app.** The old tab skips newer records and keeps them; it cannot delete them.
+6. **Two tabs, old and new app.** CORRECTED by the eng review (R7): the claim that an old tab cannot harm newer records was false. Today's `rememberScale`, `replaceScale` and `forgetScale` match on the stored string, so an old tab that saves or deletes a scale whose string is unchanged overwrites a newer record with a version 2 one (anchor and seats lost) or removes it. Section 19, R7 isolates new records under a new storage key.
 7. **The in-flight plan may land differently from section 2.** L0 re-checks every assumption there; P1's fixture version and drawing counts follow what is actually on main.
 8. **`labelFloor` repeats the print ratios a third time.** Pinned by the parity test in S1.
 9. **A textarea changes keyboard and autofill behaviour on iOS.** W1's hand check with a real keyboard is a merge condition.
 
 ## 14. Rollback
 
-Each lane is one PR and reverts on its own, in reverse order. L0, G1 and G2a are inert. Reverting S1 restores the solver caps. Reverting S2 flips the redraws back and must be accompanied by reverting P1, because Pygmy's stored `geom` would no longer be the reverted engine's output for the default anchor option. Reverting P1 restores the previous `geom`, fixtures, mutants and both PDFs from the same commit. Reverting S3 or G2b after players have saved version 3 or 4 records leaves those records in storage, skipped as `NEEDS_NEWER_APP` until the lane is re-landed; nothing is deleted. Prefer rolling forward for S3 and G2b.
+Each lane is one PR and reverts on its own, in reverse order. L0, G1 and G2a are inert. Reverting S1 restores the solver caps. Reverting S2 flips the redraws back and must be accompanied by reverting P1, because Pygmy's stored `geom` would no longer be the reverted engine's output for the default anchor option. Reverting P1 restores the previous `geom`, fixtures, mutants and both PDFs from the same commit. Reverting S3 or G2b after players have saved version 3 or 4 records leaves those records under the new storage key (section 19, R7), which the reverted app does not read. The reverted app reads the old key, which still holds every deck saved before S3 shipped. Decks saved after S3 are invisible until the lane is re-landed; nothing is deleted. Prefer rolling forward for S3 and G2b.
 
 ## 15. Exact text for CLAUDE.md and README
 
@@ -871,3 +873,242 @@ For each inner note at seat angle a: the index number is centred at radius `inne
 - /Users/ray/Projects/handpan-cards/src/engine/share.js
 - /Users/ray/Projects/handpan-cards/index.html
 - /Users/ray/Projects/handpan-cards/data/decks.json
+
+## 19. Engineering review amendments (2026-10-07, binding on every lane)
+
+Where this section and sections 1 to 18 disagree, this section wins. Each
+item names the lane that owns it. R7 to R9 came from the outside voice
+(Codex); R1 to R6 from the review itself.
+
+**R1. Legacy strings live in far more files than G2a lists (G2a, G2b).**
+Measured on main `e749957` with
+
+`grep -rlE "[A-G][#b]?[0-9]? (/|\|) [A-G][#b]?[0-9]?" tests tools docs/ENGINE-SPEC.md docs/SCALE_ENGINE_PLAN.md README.md index.html src | grep -v tests/mutants/`
+
+the hits are: `tests/core.test.js` (32 lines), `tests/sequence.test.js` (4),
+`tests/layout.test.js` (3), `tests/select.test.js` (2),
+`tests/preview.test.js` (2), `tests/e2e.test.js` (1), `tests/app.test.js` (1),
+`tests/test_print.py`, `tests/test_pdf_parity.py`,
+`tests/test_pdf_deck_adapter.py`, `tests/test_gen_deck.py`,
+`tests/test_deck_data.py` (1 each), `tools/decks.py` (2),
+`tools/regen_engine_corpus.js` (1), the fixtures `engine_corpus_v1.json` (6),
+`synthetic_scales.json` (5), `print_decks_v1.json` (2),
+`golden_decks_v5.json` and `golden_decks_v3.json` (1 each), `index.html` (1),
+`docs/ENGINE-SPEC.md` (8), `docs/SCALE_ENGINE_PLAN.md` (19), and 12 mutant
+patches. Lane U2 adds a Pygmy recipe string to `tests/test_deck_data.py`.
+- G2a's ownership is this grep's output at its lane base, not the four files
+  in its block. For each hit G2a either routes the call through
+  `parseLegacySeed` or leaves it for G2b and says which in the PR.
+- `tools/gen_deck.js` gains `--legacy`, which reads the seed with
+  `parseLegacySeed`. G2a owns the flag. Every recipe that is frozen history
+  (the U2 Amara 9 and Pygmy recipes, P1's Pygmy recipe if written before
+  G2b) is run with `--legacy` or rewritten in the new grammar by G2b with the
+  deck id asserted unchanged.
+- G2b's acceptance gains: the grep above, run at its head, lists only files
+  that call the legacy reader by name, frozen fixtures, mutants and the two
+  history docs. `docs/ENGINE-SPEC.md` is rewritten by DOC;
+  `docs/SCALE_ENGINE_PLAN.md` is history and is not rewritten.
+- `golden_decks_v3.json` is frozen history and is not edited.
+
+**R2. The boot rewrite must not lose records (G2b).** `restoreScales`'s
+rewrite keeps, byte for byte and at the same index, every record it cannot
+read: a newer version, a parse failure, a non-object. Two records that
+resolve to the same deck id collapse to the first. Tests 12 and 13 in G2b:
+"the boot rewrite leaves an unreadable record byte-identical at its index"
+and "two records for one deck id collapse to the first". A storage write
+that throws leaves the old list in place (today's `writeScales` swallows the
+error; the test asserts the deck still opens).
+
+**R3. Pins are pins, not red-first tests.** L0 tests 1 and 2, G2b test 10,
+P1 test 2 and all of G2a are characterisation tests: green when written, by
+construction. "Red first" in those blocks reads "written before the change
+they guard". A reviewer does not fail a lane because a pin was never red.
+Every other test in section 11 is red first as written.
+
+**R4. Five merge conditions need a person, and AFK cannot supply one.** They
+are: the DS sign-off, G-RENDER (S1), the print check (P1), and the phone
+checks (W1, DR2). They stay owner gates; none is waived or auto-passed.
+- S1 adds an automated form of G-RENDER so the human look is a confirmation
+  and not the only evidence: `tests/layout.test.js` "no inner index number
+  meets the ding or a neighbour on the G-RENDER shapes", computed from the
+  coordinates `pan()` emits for the seven shapes named in the S1 block.
+- Without the owner, the run may complete L0, G1 and G2a (G2a needs only
+  L0's `parseLegacySeed`), draft the DS spec, and take S1 to an open PR with
+  CI green and a reviewer verdict. S1 does not merge, and S2, P1, S3, W1,
+  G2b, DR1, DR2 do not start, until the owner has passed G-RENDER.
+- Section 11.1 item 8 is corrected accordingly: G2a runs after L0, G2b after
+  G1, S1, S3 and W1.
+
+**R5. Nothing bounds deck generation once the parser caps go (G2b).** Test
+14 in G2b: "a forty-note pan generates its deck inside the time budget"
+(20 rim, 8 inner, 12 bottom, built from the placeholder's pitch set). The
+lane measures the wall time on CI first, records it in the PR, and sets the
+budget at three times that figure. Stop condition added to G2b: the measured
+time is over 5 seconds (UNVERIFIED: no forty-note pan was generated in this
+review), in which case the lane stops and reports instead of raising the
+budget.
+
+**R6. Section 2 was stale.** Corrected in place.
+
+**R7. Old tabs can destroy newer records (S3, L0).** Risk 6 was false as
+written; see its correction. Auto-decision AD-ER-1, conservative and
+non-destructive, overturnable by the owner:
+- From the first lane that writes a record newer than version 2 (S3), the
+  app reads and writes saved scales under a new key, `hpfc.scales.v3`. The
+  old key `hpfc.scales` is never written again and never deleted.
+- On boot, if the new key is absent, the app copies the old key's list into
+  it (through the reader chosen by each record's version) and carries on. If
+  the new key is present, the old key is ignored.
+- Consequence, accepted and stated in the README: a scale saved afterwards
+  in a tab still running the old app lands under the old key and does not
+  appear in the new app. This needs a tab held open across a deploy.
+- L0 routes every read and write of the list through one pair of functions
+  so S3's key change is a one-line edit. S3 owns the key, the copy, and the
+  tests: "the first boot copies the old key and leaves it byte-identical",
+  "a write never touches the old key", "an old-key record saved after the
+  copy does not overwrite a new-key record".
+- Rollback (section 14) is corrected in place to match.
+
+**R8. The canonical string can spell an octave the lexer refuses (G1).**
+`[B#] (C#-1) G# B# D#` infers a bottom note at MIDI 0 spelled `B#-2`, and
+the lexer reads only `-1` to `9`. G1: inference refuses, with `BAD_NOTE`,
+any note whose spelled octave is outside `-1` to `9`, so every string
+`formatSeed` emits is one `parseSeed` reads. Test 15 (G1, rerun in G2b):
+"formatSeed never emits a note parseSeed refuses", over `B#`, `Cb`, `E#` and
+`Fb` at both ends of the MIDI range, typed with and without octaves.
+Appendix A's prototype does not do this and is not the reference for it.
+
+**R9. W1's test 5 cannot pass before the flip.** Moved to G2b; corrected in
+place.
+
+## NOT in scope
+
+- Any change to chord ranking, voicing or sequencing: the grammar and the
+  solver's seats only.
+- A stored `ext` for Pygmy and a new print radius (owner: keep today's frame,
+  keep 60).
+- The 3.2 pt bottom octave digit (owner: excluded from the warning; TODOS).
+- Converting `docs/SCALE_ENGINE_PLAN.md` to the new grammar (history).
+- Merging old-key scales into the new key after the first copy (R7).
+- Unifying the label ratios into one source (TODOS; risk 8 stands).
+- OQ16 of the beginner-decks plan (MEDIUM colour-card position).
+
+## What already exists (reused, not rebuilt)
+
+- `parseSeed` / `formatSeed` / `deckId` in `src/engine/core.js`: kept whole
+  as `parseLegacySeed`; ids stay stable through `identitySeed`.
+- `share.decodeSeed`'s version gate (`NEEDS_NEWER_APP`): reused for 3 and 4.
+- `layout.reseat`, `slotOrder`, `readOrder`: narrowed to one ring, not
+  replaced.
+- `tools/inline_engine.py`, `tools/sync_decks.py`, `tools/gen_deck.js`,
+  `tools/regen_engine_corpus.js`, `tests/mutation_check.sh`: used as they are
+  (`gen_deck.js` gains two flags).
+- The sheet's keyboard handling (`kbOffset`, `kbCap`, `b.fakeKeyboard()`).
+
+## Record flow after R7 (the one new data path)
+
+```
+boot
+ |- hpfc.scales.v3 present? -- yes --> read each record by its version
+ |                                      |- readable   -> deck
+ |                                      |- unreadable -> kept as is, no deck
+ |- no --> read hpfc.scales (old key, never written again)
+            |- each record through its version's reader
+            |- write the list to hpfc.scales.v3   (throws -> list kept in memory)
+save / edit / delete --> hpfc.scales.v3 only, matched by deck id (L0)
+old tab              --> hpfc.scales only; cannot reach a v3 record
+```
+
+## Failure modes
+
+| Path | Failure | Test | Handling | Seen by player |
+|---|---|---|---|---|
+| boot copy | storage write throws | S3 "first boot copies" | list kept in memory | decks open; not saved |
+| boot rewrite | unreadable record | G2b 12 | kept byte-identical | deck absent, nothing lost |
+| boot rewrite | two records, one id | G2b 13 | first wins | one deck |
+| old tab saves | same string as a new record | S3 old-key test | separate key | new record intact |
+| canonical string | octave outside -1 to 9 | G1 15 | refused `BAD_NOTE` | refusal sentence |
+| huge pan | generation too slow | G2b 14 | budget; lane stops | none (pre-merge) |
+| inner fan | number meets ding | S1 overlap test + G-RENDER | constants; owner look | none (pre-merge) |
+| old bar list | read as inner notes | G2b 11 | copy only (D12) | count line says so |
+
+No path is left with no test, no handling and a silent failure. The last
+row is silent by owner decision D12 and is covered by copy.
+
+## Worktree parallelization
+
+| Lane | Touches | Depends on |
+|---|---|---|
+| L0 | core.js, share.js, index.html records | none |
+| G1 | core.js (new functions) | L0 |
+| G2a | tests/, tools/gen_deck.js, fixtures | L0 |
+| S1 | layout.js, index.html pan | none |
+| S2 | layout.js | S1, G1 |
+| P1 | data/decks.json, PDFs, fixtures, mutants | S2 |
+| S3 | layout.js, share.js, index.html layout + storage | S2 |
+| W1 | index.html sheet | S2, DS |
+| G2b | core.js, share.js, index.html sheet copy | G1, G2a, S1, S3, W1 |
+| DR1, DR2 | index.html drawer | DS, S3, G2b |
+| DOC | docs/ | all |
+
+Every code lane regenerates an engine region or mutants in `index.html`, so
+merges are serial. Worktrees may be built in parallel in two places only:
+G1 with S1 (after L0), and G2a with either. Whichever merges second reruns
+`python3 tools/inline_engine.py` and the stale-mutant check. Everything from
+S2 on is serial, and gated by R4.
+
+## Implementation Tasks
+
+- [ ] T1 (L0) seams: `identitySeed`, id-keyed record lookups, one read/write pair for the list (R7), frozen id fixture.
+- [ ] T2 (G1) new parser unwired, with the octave-range refusal and test 15 (R8).
+- [ ] T3 (G2a) legacy callers by grep, `gen_deck.js --legacy` (R1).
+- [ ] T4 (DS) design spec via `/frontend-design:frontend-design`; owner sign-off (R4).
+- [ ] T5 (S1) solver without caps, inner fan, ding offset, warning, automated overlap test; owner passes G-RENDER (R4).
+- [ ] T6 (S2) one direction, anchor option.
+- [ ] T7 (P1) Pygmy `geom` redraw, fixtures, PDFs; owner print check.
+- [ ] T8 (S3) per-ring seats, share version 3, storage key `hpfc.scales.v3` and its three tests (R7).
+- [ ] T9 (W1) wrapping field, count line, MIRROR switch; owner phone check.
+- [ ] T10 (G2b) the flip, share version 4, boot rewrite with tests 11 to 15 (R2, R5, R8, R9).
+- [ ] T11 (DR1) drawer shell, anchor, MIRROR moved in.
+- [ ] T12 (DR2) drag to seat; owner phone check.
+- [ ] T13 (DOC) `docs/ENGINE-SPEC.md`, CLAUDE.md and README text of section 15, plus the R7 README sentence.
+
+## Decision ledger
+
+Owner decisions D1 to D15 and the answers in 3.4 are unchanged. The review
+ran with the owner away (AFK armed); each choice below is the recommended,
+non-destructive option and can be overturned without reopening D1 to D15.
+
+| Id | Question | Chosen | Why |
+|---|---|---|---|
+| AD-ER-0 | Twelve lanes trips the complexity gate: cut scope? | Keep the arrangement | D1 to D15 need every part; lanes already split by ownership |
+| AD-ER-1 | Old tabs can overwrite or delete newer records (Codex P1) | New storage key, old key frozen (R7) | The only option that cannot lose a record; costs one README sentence |
+| AD-ER-2 | Canonical string can spell an unreadable octave (Codex P2) | Refuse at inference (R8) | Widening the lexer to `-2` adds a spelling nobody types |
+| AD-ER-3 | W1 test 5 impossible before the flip (Codex P2) | Move to G2b (R9) | No behaviour change |
+| AD-ER-4 | Five human gates under AFK | Keep all five as owner gates; automate G-RENDER's geometry as extra evidence (R4) | A rendered-collision check is not mine to pass |
+| AD-ER-5 | G2a's file list is short | Ownership by grep; `gen_deck.js --legacy` (R1) | Enumerated, not estimated |
+| AD-ER-6 | Boot rewrite safety | Keep unreadable records; collapse by id (R2) | Non-destructive |
+| AD-ER-7 | No generation-time bound | Measured budget test in G2b (R5) | Caps are going by owner decision; a bound is the remaining guard |
+| AD-ER-8 | Pins labelled red-first | Relabel (R3) | Stops a literal-minded review FAIL |
+| AD-ER-9 | TODOS: label ratios held three times; 3.2 pt bottom digit | Add both to `TODOS.md` | Neither blocks this plan |
+
+For the owner on return: AD-ER-1 changes where saved scales are stored. It
+deletes nothing, but it is the one choice here that touches player data.
+
+Approval readiness: PASS
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|---|---|---|---|---|---|
+| CEO Review | `/plan-ceo-review` | Scope and strategy | 0 | not run | owner decisions D1 to D15 stand in for it |
+| Outside Voice | Codex plan review | Independent second opinion | 1 | issues_found | 3 (1 P1, 2 P2), all folded in as R7, R8, R9 |
+| Eng Review | `/plan-eng-review` | Architecture and tests (required) | 1 | clear after amendments | 9 issues, 1 critical gap (R7), 0 unresolved |
+| Design Review | `/plan-design-review` | UI and UX gaps | 0 | not run | the DS step (section 10) carries the design work |
+| DX Review | `/plan-devex-review` | Developer experience | 0 | not run | not applicable |
+
+- **OUTSIDE COVERAGE:** Codex completed. Its three findings were each checked against main `e749957` and accepted; none was rejected.
+- **CROSS-MODEL:** no disagreement left open. Codex's P1 overturned risk 6 of this plan.
+- **VERDICT:** ENG CLEARED at `016dfe0` plus this commit, with section 19 binding. Execution waits for Lane C of the beginner-decks plan, and five merge conditions stay with the owner (R4).
+
+NO UNRESOLVED DECISIONS
