@@ -2,7 +2,7 @@
 //
 // Scope: only what tools/boot_sim.js does NOT already assert. boot_sim covers the
 // boot order guard, every card in both modes rendering, <svg> presence, deck
-// colours in CSS vars + markup, shuffle toggling, absence of German, 96 cards.
+// colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
 // "instrument layouts", "app data model") or from user-observable behaviour, never
@@ -248,7 +248,7 @@ test("bottom-note badge appears with the right count, and only for bottom voicin
 
 /* ------------------------------------------ 4. every rendered face is XML-ok */
 
-test("every rendered face is well-formed markup (99 cards x 2 modes)", () => {
+test("every rendered face is well-formed markup (177 cards x 2 modes)", () => {
   const app = boot();
   let seen = 0;
   for (const d of decks(app)) {
@@ -267,7 +267,15 @@ test("every rendered face is well-formed markup (99 cards x 2 modes)", () => {
       }
     }
   }
-  assert.strictEqual(seen, 99, "expected 99 cards across the three decks");
+  assert.strictEqual(seen, 177, "expected 177 cards across the five decks");
+});
+
+test("the deck picker lists Kurd 10, Amara 10, Amara 9, Hijaz, Pygmy in that order", () => {
+  const app = boot();
+  assert.deepStrictEqual(Array.from(decks(app), (d) => d.id),
+    ["kurd", "amara10", "amara", "hijaz", "pygmy"]);
+  assert.deepStrictEqual(Array.from(decks(app), (d) => d.name),
+    ["D KURD 10", "D AMARA 10", "D AMARA 9", "C# HIJAZ 9", "F3 LOW PYGMY 18"]);
 });
 
 /* ------------------------------------------------------------- 5. step() */

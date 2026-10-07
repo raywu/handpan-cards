@@ -7,8 +7,8 @@
 //   node tools/pdf_build.js --out sheet.pdf [--variant full|shop]
 //                           [--paper letter|a4]   < deck.json
 //
-// --builtin <deck-id> builds one of the three shipped decks (hijaz, pygmy,
-// amara) straight from data/decks.json instead, through
+// --builtin <deck-id> builds one of the five shipped decks (kurd, amara10,
+// hijaz, pygmy, amara) straight from data/decks.json instead, through
 // HPE.pdfdeck.fromBuiltin - no stdin involved. This branch runs BEFORE the
 // stdin listener is wired: a --builtin invocation has nothing piped in, and
 // the plain mode's whole body runs inside process.stdin.on("end"), which

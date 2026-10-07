@@ -28,7 +28,8 @@ import inline_engine  # noqa: E402
 import inline_fonts  # noqa: E402
 import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
 
-PY = {"hijaz": D.HIJAZ, "pygmy": D.PYGMY, "amara": D.AMARA}
+PY = {"kurd": D.KURD, "amara10": D.AMARA10, "hijaz": D.HIJAZ,
+      "pygmy": D.PYGMY, "amara": D.AMARA}
 GERMAN = re.compile(r"\b(MOLL|VERMINDERT|HALBVERMINDERT|LEGENDE)\b|\bDUR\b")
 
 

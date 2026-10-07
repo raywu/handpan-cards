@@ -1,5 +1,5 @@
 "use strict";
-// HPE.pdfdeck.fromBuiltin: the same job fromGenerated does, for the three
+// HPE.pdfdeck.fromBuiltin: the same job fromGenerated does, for the
 // SHIPPED decks. tools/decks.py:_from_canonical is the reference this ports -
 // a built-in deck has no geom.ext, no synthesized title, and its print copy
 // (R, cy, title, credit, legend, blurb, blank_cards, colours) is hand-written
@@ -20,6 +20,9 @@ const ROOT = path.join(__dirname, "..");
 
 const CANONICAL = JSON.parse(
   fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+
+const ALL_IDS = CANONICAL.map((d) => d.id);
+const STALE_BLURB_IDS = ["hijaz", "pygmy", "amara"];
 
 function deckById(id) {
   const d = CANONICAL.find((x) => x.id === id);
@@ -75,7 +78,7 @@ test("blurb carries the overlay text with the LAST line's chord count substitute
   // design (data A2/B1); only the chord count in the final line is derived
   // from the deck's own chord list, everything else (including the scale
   // line) is the hand-written literal, verbatim.
-  for (const id of ["hijaz", "pygmy", "amara"]) {
+  for (const id of ALL_IDS) {
     const deck = deckById(id);
     const built = HPE.pdfdeck.fromBuiltin(deck, deck.print);
     assert.equal(built.blurb.length, deck.print.blurb.length, id);
@@ -88,12 +91,15 @@ test("blurb carries the overlay text with the LAST line's chord count substitute
     const expected = lastOverlay.replace(/\d+(?=\s*CHORDS)/g,
                                          String(deck.chords.length));
     assert.equal(lastBuilt, expected, id);
-    // The overlay literal is stale on all three decks (A2/B1) - if this ever
-    // stops being true for a deck, the substitution would be a no-op there
-    // and this test would not be exercising it. Guard the fixture assumption.
-    assert.notEqual(lastOverlay, expected,
-                    id + ": overlay chord count is no longer stale - " +
-                    "update the fixture assumption note");
+    // The overlay literal is stale on the three hand-authored decks (A2/B1) -
+    // if this ever stops being true for one of them, the substitution would
+    // be a no-op there and this test would not be exercising it. Guard the
+    // fixture assumption. The engine-adopted decks carry a current count.
+    if (STALE_BLURB_IDS.includes(id)) {
+      assert.notEqual(lastOverlay, expected,
+                      id + ": overlay chord count is no longer stale - " +
+                      "update the fixture assumption note");
+    }
   }
 });
 
@@ -146,12 +152,12 @@ test("has_bottom reflects whether any field is in the bottom zone", () => {
   assert.equal(HPE.pdfdeck.fromBuiltin(pygmy, pygmy.print).has_bottom, true);
 });
 
-test("every voicing field and every root field survives, for all 99 cards", () => {
+test("every voicing field and every root field survives, for all 177 cards", () => {
   // T15's coverage floor: this must not re-derive a chord's voicing from the
   // pan (which would silently re-rank Pygmy's Fm9 - see CLAUDE.md's D-6
   // note) - it must carry the chord list through byte for byte.
   let total = 0;
-  for (const id of ["hijaz", "pygmy", "amara"]) {
+  for (const id of ALL_IDS) {
     const deck = deckById(id);
     const built = HPE.pdfdeck.fromBuiltin(deck, deck.print);
     assert.equal(built.chords.length, deck.chords.length, id);
@@ -165,7 +171,7 @@ test("every voicing field and every root field survives, for all 99 cards", () =
       total += 1;
     });
   }
-  assert.equal(total, 19 + 53 + 27, "99 cards across the three built-ins");
+  assert.equal(total, 49 + 29 + 27 + 19 + 53, "177 cards across the five built-ins");
 });
 
 test("a canonical/overlay key clash throws rather than silently shadowing", () => {
@@ -180,7 +186,7 @@ test("fromBuiltin returns warnings: [] - a built-in never carries one, but pdfca
   // JS side only, not part of the statement-for-statement port, so a caller
   // that reads `.warnings` off either adapter's output never has to branch on
   // which one produced it.
-  for (const id of ["hijaz", "pygmy", "amara"]) {
+  for (const id of ALL_IDS) {
     const deck = deckById(id);
     const built = HPE.pdfdeck.fromBuiltin(deck, deck.print);
     assert.deepEqual(built.warnings, [], id);

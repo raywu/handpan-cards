@@ -24,7 +24,11 @@ sys.path.insert(0, paths.TOOLS)
 import hifi          # noqa: E402
 import decks         # noqa: E402
 
-DECK_BY_ID = {"hijaz": decks.HIJAZ, "pygmy": decks.PYGMY, "amara": decks.AMARA}
+DECK_BY_ID = {"kurd": decks.KURD, "amara10": decks.AMARA10,
+              "hijaz": decks.HIJAZ, "pygmy": decks.PYGMY, "amara": decks.AMARA}
+# Owner, 2026-10-06 ("Test the old three only"): the no-shrink baseline exists
+# only for the decks that drew something before the label rule did.
+PRE_RULE_IDS = ("hijaz", "pygmy", "amara")
 TOL = 0.02          # normalised units (R = 100), i.e. 0.02% of the pan radius
 
 
@@ -362,8 +366,8 @@ class RenderAgreement(unittest.TestCase):
             yield card, self.print_[card["deck"]][card["index"]]
 
     def test_every_card_is_compared(self):
-        self.assertEqual(len(self.app), 99)
-        self.assertEqual(sum(len(v) for v in self.print_.values()), 99)
+        self.assertEqual(len(self.app), 177)
+        self.assertEqual(sum(len(v) for v in self.print_.values()), 177)
 
     def test_chord_names_line_up(self):
         for app_c, print_c in self.each_card():
@@ -471,6 +475,8 @@ class RenderAgreement(unittest.TestCase):
         """
         APP_INFLATION = 1.05
         for app_c, print_c in self.each_card():
+            if app_c["deck"] not in PRE_RULE_IDS:
+                continue
             deck = DECK_BY_ID[app_c["deck"]]
             geom = deck["spec"]["_geom"]
             spec = deck["spec"]

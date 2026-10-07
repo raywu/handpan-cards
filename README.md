@@ -14,12 +14,14 @@ opens straight from disk. Never hand-edit inside an engine region - change the
 module and re-run the tool. `python3 tools/validate.py` fails CI if the
 two ever drift.
 
-Decks included: C# Hijaz 9, 19 cards (pink/orange); F3 Low Pygmy 18,
-53 cards (purple/gold); D Amara 9, 27 cards (teal/amber). 99 cards total,
+Decks included: D Kurd 10, 49 cards (blue/brick); D Amara 10, 29 cards
+(green/crimson); D Amara 9, 27 cards (teal/amber); C# Hijaz 9, 19 cards
+(pink/orange); F3 Low Pygmy 18, 53 cards (purple/gold). 177 cards total,
 with the same diagrams, voicings, pitch-class highlighting, and typography as
 the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
 single-colour root-frame borders, per-deck palettes) is original to this
-project.
+project. The two beginner decks (Kurd 10 and Amara 10) are engine output and
+print from the app only; they have no committed PDF.
 
 The scale engine that generates and ranks those cards is eleven modules under
 `src/engine/`: `src/engine/core.js` (note parsing and pitch classes),
@@ -105,7 +107,7 @@ already-installed Chrome over the DevTools Protocol, so there is still no
 
 What is covered:
 
-- **Deck data** - the three instrument layouts are pinned against the tables in
+- **Deck data** - the five instrument layouts are pinned against the tables in
   `CLAUDE.md`, plus the voicing rules (ding never voiced, no doubled pitch
   classes, power chords are a root and a fifth).
 - **Print layout** - text fitting against what the renderer actually draws, the
@@ -114,7 +116,7 @@ What is covered:
   wrap, shuffle, and the localStorage guards, booted headless from `index.html`.
 - **App vs print agreement** - the two renderers are independent
   implementations of the same conventions (and use opposite y-axis signs), so
-  all 99 cards are compared on position, highlight state, note order and badge.
+  all 177 cards are compared on position, highlight state, note order and badge.
 - **The scale engine** - each module under `src/engine/` has its own node
   suite: chord selection and ranking, voicing, naming, the layout solver swept
   over N=5..19 pans, and share-URL round trips.

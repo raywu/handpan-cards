@@ -85,10 +85,10 @@ MUTANTS = {
     "b_duplicate_voicing": (
         ["# kills: test_voicings_unique_within_deck",
          "# suite: python3 -m unittest -k test_voicings_unique_within_deck tests.test_deck_data",
-         "# Amara Csus4 given C major's exact field list - a duplicate card that",
+         "# Amara 9 F6/9 given Fmaj9's exact field list - a duplicate card that",
          "# validate.py cannot see (it only rejects duplicate fields WITHIN a card)."],
         [],
-        lambda D: chord(D, "amara", "Csus", "4").update(fields=[2, 4, 6]),
+        lambda D: chord(D, "amara", "F", "6/9").update(fields=[5, 1, 2, 4, 6]),
     ),
     "b_layout_angle_swap": (
         ["# kills: test_layouts_match_spec",
@@ -129,9 +129,9 @@ MUTANTS = {
     "b_root_not_in_voicing": (
         ["# kills: test_roots_appear_in_voicing",
          "# suite: python3 -m unittest -k test_roots_appear_in_voicing tests.test_deck_data",
-         "# Amara F MAJOR 7 rooted on field 7 (A4), which its voicing does not use."],
+         "# Amara 9 Gsus4 rooted on field 7 (A4), which its voicing does not use."],
         [],
-        lambda D: chord(D, "amara", "Fmaj", "7").update(roots=[7]),
+        lambda D: chord(D, "amara", "Gsus", "4").update(roots=[7]),
     ),
     "b_cluster_forced_only": (
         ["# kills: test_forced_tones_cluster_below_root",
@@ -143,6 +143,25 @@ MUTANTS = {
          "# catches it."],
         [],
         lambda D: card(D, "pygmy", "C MINOR 7 ( = Eb6 )").update(fields=[3, 103, 1, 104]),
+    ),
+    "b_adopted_deck_drifts": (
+        ["# kills: test_engine_adopted_builtins_equal_a_fresh_engine_run",
+         "# suite: python3 -m unittest -k test_engine_adopted_builtins_equal_a_fresh_engine_run tests.test_gen_deck",
+         "# Kurd Am voiced A3 + C5 + E4 instead of A3 + C4 + E4: a hand edit to an",
+         "# engine-adopted deck. C5 and C4 share a pitch class and sit above the",
+         "# root, so every voicing invariant and the highlighting stay green; only",
+         "# the equality with a fresh engine run notices."],
+        [],
+        lambda D: chord(D, "kurd", "Am", "").update(fields=[1, 9, 5]),
+    ),
+    "b_picker_order_swapped": (
+        ["# kills: the deck picker lists Kurd 10, Amara 10, Amara 9, Hijaz, Pygmy in that order",
+         "# suite: node --test --test-name-pattern ^the.deck.picker.lists.Kurd.10..Amara.10..Amara.9..Hijaz..Pygmy.in.that.order$ tests/app.test.js",
+         "# The kurd and amara10 entries swapped in BOTH index.html and",
+         "# data/decks.json, so validate.py check 1 stays green and only the",
+         "# picker-order test sees the first two built-ins out of sequence."],
+        [],
+        lambda D: D.insert(0, D.pop(1)),
     ),
     "b_decks_json_desync": (
         ["# kills: test_validate_py_passes",

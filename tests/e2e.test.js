@@ -2921,7 +2921,7 @@ function run() {
         };
       `);
       // #decks holds deck chips only now (M2, 2026-09-28: "+ Add a scale"
-      // moved into the settings panel) - three built-ins and six customs.
+      // moved into the settings panel) - every built-in and six customs.
       assert.strictEqual(row.chips, (await decksMeta()).length + 6, "every built-in and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
@@ -3635,9 +3635,12 @@ function run() {
           nav.scrollLeft = nav.scrollWidth;
           const atEnd = box().right - last.getBoundingClientRect().right;
           const maxScroll = nav.scrollLeft;
+          const on = nav.querySelector(".chip.on");
+          const onR = on && on.getBoundingClientRect();
+          const activeInBox = !!on && onR.left >= box().left - 1 && onR.right <= box().right + 1;
           nav.scrollLeft = 0;
           return {
-            sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll,
+            sw: nav.scrollWidth, cw: nav.clientWidth, maxScroll, activeInBox,
             atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2),
             chips: nav.children.length,
             overflowX: getComputedStyle(nav).overflowX,
@@ -3683,27 +3686,16 @@ function run() {
       }
       assert.deepStrictEqual(bad, [], JSON.stringify(seen, null, 2));
 
-      // The positive claim, stated as a RELATIONSHIP rather than as a pixel
-      // count: with "+ Add a scale" out of the strip (M2, 2026-09-28), a
-      // custom deck's four chips now fit every landscape row in the budget
-      // table, including the narrowest one that used to overflow by 21px
-      // pre-M2 (611/590 at 667x375). Measured 2026-09-29: .decks
-      // scrollWidth/clientWidth is 767/767 at 844x390, 849/849 at 926x428,
-      // 590/590 at 667x375 and 1203/1203 at 1280x500 - every row fits with
-      // room to spare, so the strip's overflow-x:auto scroll path is no
-      // longer exercised by this configuration at all.
-      //
-      // Those pixel counts are font-metric dependent - a CI box without the
-      // webfont measures different chips - so what is ASSERTED is the sign,
-      // on every row: the strip fits. That is the claim this test now pins,
-      // in place of the pre-M2 claim that the narrowest row still overflows.
+      // The positive claim (D7, 2026-10-06, "Accept scrolling"): with five
+      // built-ins and one custom deck the strip may be wider than a landscape
+      // row, so what is asserted on EVERY row is reachability, not fit: the
+      // strip scrolls to both ends (checked above, per row) and the active
+      // chip sits inside the box once scrolled to it.
       for (const row of ["844x390", "926x428", "667x375", "1280x500"]) {
         const m = seen[row];
-        assert.ok(m.sw <= m.cw + 1,
-          `at ${row} the deck strip no longer fits (${m.sw} > ${m.cw}), so a ` +
-          "chip is reachable only by scrolling. With \"+ Add a scale\" out of " +
-          "the strip (M2), every landscape row in the budget table should fit " +
-          `a custom deck's four chips: ${JSON.stringify(seen, null, 2)}`);
+        assert.ok(m.activeInBox,
+          `at ${row} the active chip is outside the deck strip even fully ` +
+          `scrolled: ${JSON.stringify(seen, null, 2)}`);
       }
     } finally {
       await b.setViewport(900, 900, false);
