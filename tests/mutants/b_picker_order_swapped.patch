@@ -6,7 +6,7 @@
 diff --git a/data/decks.json b/data/decks.json
 --- a/data/decks.json
 +++ b/data/decks.json
-@@ -1,27 +1,26 @@
+@@ -1,1424 +1,1424 @@
  [
    {
 -    "id": "kurd",
@@ -41,7 +41,26 @@ diff --git a/data/decks.json b/data/decks.json
        "r_ding": 0.2,
        "ding_dy": 0,
        "r_note": 0.19,
-@@ -48,822 +47,538 @@
+       "r_bnote": 0,
+       "inner_ring": 0.355,
+       "f_ding": 0.12,
+       "f_note": 0.1454,
+       "f_bnote": 0,
+       "f_num": 0.1216,
+       "n_in": 0.085,
+       "n_out": 0,
+       "rim_num_out": false
+     },
+     "fields": {
+       "0": [
+         "D",
+         3,
+         50,
+         "ding",
+         null,
+         "Ding"
+       ],
+       "1": [
          "A",
          3,
          57,
@@ -1054,7 +1073,26 @@ diff --git a/data/decks.json b/data/decks.json
        "r_ding": 0.2,
        "ding_dy": 0,
        "r_note": 0.19,
-@@ -890,513 +605,798 @@
+       "r_bnote": 0,
+       "inner_ring": 0.355,
+       "f_ding": 0.12,
+       "f_note": 0.1454,
+       "f_bnote": 0,
+       "f_num": 0.1216,
+       "n_in": 0.085,
+       "n_out": 0,
+       "rim_num_out": false
+     },
+     "fields": {
+       "0": [
+         "D",
+         3,
+         50,
+         "ding",
+         null,
+         "Ding"
+       ],
+       "1": [
          "A",
          3,
          57,
@@ -1994,10 +2032,54 @@ diff --git a/data/decks.json b/data/decks.json
      }
    },
    {
+     "id": "amara",
+     "name": "D AMARA 9",
+     "sub": "8 + 1",
+     "colors": {
+       "root": "#0B7B75",
+       "tone": "#DD8F00",
+       "ga": "#0B7B75",
+       "gb": "#DD8F00"
+     },
+     "degrees": {
+       "2": "i",
+       "9": "v",
+       "7": "iv",
+       "0": "VII",
+       "5": "III"
+     },
+     "geom": {
+       "rim": 0.745,
+       "r_ding": 0.2,
+       "r_note": 0.19,
+       "inner_ring": 0.355,
+       "f_ding": 0.135,
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6963,17 +6963,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -6941,61 +6941,61 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // enumerated once.
+     _internal: {
+       DFS_NODE_BUDGET: DFS_NODE_BUDGET,
+       MEDIUM_ENUM_BUDGET: MEDIUM_ENUM_BUDGET,
+       MIN_BASIC_POOL: MIN_BASIC_POOL,
+       dfsFindAll: dfsFindAll,
+       makeAccept: makeAccept,
+       tierContext: tierContext,
+       tierPool: tierPool,
+       tierStartSet: tierStartSet,
+       basicCells: basicCells,
+       drawBasic: drawBasic,
+       mediumCells: mediumCells,
+       mediumNodeCount: mediumNodeCount,
+       drawMedium: drawMedium,
+       colourFamily: colourFamily,
+       buildConnectMatrix: buildConnectMatrix,
+       classifyTier: classifyTier,
+       homePc: homePc,
+       homeAnchor: homeAnchor,
+       prevValid: prevValid,
+       homeOrRefuse: homeOrRefuse
      }
    };
  })(HPE);
@@ -2016,3 +2098,25 @@ diff --git a/index.html b/index.html
  // are a list, own their own key, and hold the SEED - the canonical scale string
  // plus its options - never the built deck, which is derived (D14).
  const STORE_KEY = "hpfc";
+ const DEFAULT_DECK = "hijaz";
+ const SCALES_KEY = "hpfc.scales";
+ const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
+ let store = readStore(STORE_KEY) || {};
+ if (typeof store !== "object" || Array.isArray(store)) store = {};
+ // Both reads are TYPE-guarded, not just truthiness-guarded: "hpfc" is shared,
+ // so a sibling feature (or a hand-edited value) can leave any JSON type here,
+ // and a non-string id that reached the boot tail would throw on .indexOf and
+ // take the share-link handler at the end of the script down with it.
+ let deckId = typeof store.deck === "string" ? store.deck : DEFAULT_DECK;
+ let storedDeck = deckId;              // built-in or custom:; see save()
+ // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
+ // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
+ let mode   = ["A", "B", "S"].includes(store.mode) ? store.mode : "A";  // A: name->notes, B: notes->name, S: sequence
+ // Difficulty (sequence-difficulty plan D-7): type-guarded like mode, so a
+ // corrupted/future value reads back as "basic" rather than propagating.
+ let tier = ["basic", "intermediate", "advanced"].includes(store.tier) ? store.tier : "basic";
+ let shuffled = false;
+ let order = [], idx = 0, flipped = false;
+ // The current sequence in mode S: {chords:[chordIndex,...], style:"<id>"} or
+ // {chords:null, reason:"NO_HOME_CHORD"|"TOO_FEW_CHORDS"} (§8 E3). null before
+ // setOrder() has run once in mode S.
