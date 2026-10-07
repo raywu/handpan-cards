@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^no.deck.is.trimmed..every.ranked.card.of.a.seed.is.in.the.deck$ tests/select.test.js
+# kills: no deck is trimmed: every ranked card of a seed is in the deck
+# D16: nothing bounds a deck. Slicing the ranked list to 25 cards again
+# drops 24 cards from D Kurd 9, 10 from the twelve-note pan and 49 from the
+# nineteen-field maximum.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -540,6 +540,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     list = collapse(fields, list, tonicPc);
+     list = voice(fields, list);
+     list = rank(fields, list, tonicPc);
++    list = list.slice(0, 25);
+     list = order(list, tonicPc);
+ 
+     var chords = [];

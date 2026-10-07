@@ -7,7 +7,7 @@
  *
  * Normative source: docs/ENGINE-SPEC.md sections 1 (result contract), 5
  * (collapse rules, the 6-note trim), 7 (D9 root octave), 8 (candidates,
- * ranking, cap, dedup, canonical order), 9-10 (naming and degrees, never
+ * ranking, dedup, canonical order), 9-10 (naming and degrees, never
  * re-implemented here), 11 (the deck object), 12 (deck identity), 13 (palette,
  * mirror, auto name), 16 and 17.
  */
@@ -16,14 +16,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 (function (HPE) {
   "use strict";
 
-  /* ---- section 8: the cap and the ranking tiers -------------------------- */
+  /* ---- section 8: the ranking tiers ------------------------------------- */
 
-  /* DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT of a flat
-   * 25): the card cap SCALES WITH PAN SIZE - 25 for a pan of at most 12
-   * fields, +1 for every field beyond the twelfth. A 12-field pan therefore
-   * still caps at 25, which leaves section 8's worked example unchanged. */
-  var CAP_BASE = 25;                  /* cards, at the 12-field hinge         */
-  var CAP_HINGE = 12;                 /* fields; below this the cap is flat   */
   var NAME_MAX = 16;                  /* section 13: the auto name's cap      */
   var ELLIPSIS = "…";
 
@@ -99,17 +93,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function anyField(fields) { return true; }
   function nonDing(record) { return !isDing(record); }
-
-  /* ---- section 8: the size-scaled card cap ------------------------------- */
-
-  // `cap = 25 + max(0, fieldCount - 12)`, where fieldCount counts EVERY field
-  // in the deck - ding, rim, inner and bottom alike, not just the top shell.
-  // Only the trim point moves with pan size; ranking, collapse, dedup and the
-  // canonical order are all untouched by this.
-  function cap(fields) {
-    var fieldCount = ids(fields).length;
-    return CAP_BASE + Math.max(0, fieldCount - CAP_HINGE);
-  }
 
   /* ---- section 8: raw candidates ---------------------------------------- */
 
@@ -358,7 +341,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return count;
   }
 
-  /* ---- section 8: ranking (trim to the cap) and the canonical order ------ */
+  /* ---- section 8: ranking and the canonical order ------------ */
 
   // triads > power > sus4 > 7ths > extended; within a tier, more top-shell
   // tones ranks higher; ties by root scale degree ascending from the tonic,
@@ -426,31 +409,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < decorated.length; i += 1) {
       var group = decorated[i].members;
       for (var g = 0; g < group.length; g += 1) out.push(group[g].item);
-    }
-    return out;
-  }
-
-  // D1 (2026-09-16): the cap bounds how many CHORDS a player has to learn,
-  // not how many cards the deck prints. Counting cards lets a chord's own
-  // alternates evict a different chord from the tail of the rank order - on
-  // Pygmy that is 21 entries. Alternates ride along with their name for
-  // free. Keyed on `root|suffix` rather than the printed name because
-  // `card()` has not run yet at this point in the pipeline; the two are in
-  // bijection. Runs AFTER `rank` and BEFORE `order`, where the slice used to
-  // be - `rank` now guarantees the group is contiguous and home-first, so a
-  // name is admitted by its home card and never by an alternate.
-  function trimToNames(list, limit) {
-    var seen = {};
-    var count = 0;
-    var out = [];
-    for (var i = 0; i < list.length; i += 1) {
-      var name = list[i].root + "|" + list[i].suffix;
-      if (!Object.prototype.hasOwnProperty.call(seen, name)) {
-        if (count >= limit) continue;
-        seen[name] = true;
-        count += 1;
-      }
-      out.push(list[i]);
     }
     return out;
   }
@@ -582,8 +540,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     list = collapse(fields, list, tonicPc);
     list = voice(fields, list);
     list = rank(fields, list, tonicPc);
-    var limit = cap(fields);
-    list = trimToNames(list, limit);
     list = order(list, tonicPc);
 
     var chords = [];
@@ -613,7 +569,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.select = {
     build: build,
-    cap: cap,
     candidates: candidates,
     collapse: collapse,
     voice: voice,
