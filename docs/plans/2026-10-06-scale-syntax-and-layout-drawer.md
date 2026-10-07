@@ -1,0 +1,1114 @@
+# Scale syntax, uncapped pans, one direction and the layout drawer: implementation plan (against brief rev 4)
+
+Intended path: `docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md`. This is a plan only. No code, test, data or doc file was changed and no file was written. Every probe ran as `node - <<'EOF' ... EOF` (source on stdin). The sources needed to rerun them are in Appendices A to C. Repo state measured: `main` at commit 028bcf1 (PR #253 merged), `ls tests/mutants | wc -l` = 685.
+
+How the prior draft (written against rev 3) was used: its prototype parser (Appendix A) is reused unchanged after rerunning every check on it; its seam, parser and share-version lanes are kept; its numbers were all rerun and several were corrected (listed in section 5.9). Its claim that `data/decks.json` never changes is replaced by the Pygmy redraw (D9); its four owner questions are now answered by D13, D9, D15 and D14.
+
+---
+
+## 1. What this plan delivers
+
+Today a player types a pan as `(D) A C D E F G A C`, with inner notes after a lone `/` and bottom notes as a separate list after a lone `|`. The app refuses pans over 11 rim, 2 inner or 6 bottom notes, silently moves a 12th and 13th top note to the inner ring, draws even and odd rims in opposite directions, and offers ROTATE and MOVE buttons to correct a layout.
+
+After this plan:
+
+1. A pan is typed the way makers list it: one ascending line, the ding in round brackets, each bottom note in square brackets where its pitch falls, and a `|` before the inner notes. Example: `[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A`.
+2. No pan is refused for size. A crowded pan draws smaller and carries a legibility warning.
+3. Every generated pan runs in one direction (odd-numbered rim notes on the right). A per-deck "anchor" setting says whether note 1 sits at bottom centre or the bottom centre falls between notes 1 and 2.
+4. The solver reproduces every built-in diagram from a new-grammar string. Four built-ins keep their bytes. F3 Low Pygmy's `geom` becomes solver output and its two PDFs are rebuilt.
+5. The scale field wraps to three rows, the mirror is one switch called MIRROR, and a drawer on both the Add and the Edit sheet lets the player drag a note to another seat in its ring. ROTATE and MOVE go.
+
+Terms, defined once. **Rim**: the outer ring of top notes. **Inner**: top notes inside the rim. **Bottom**: notes on the underside shell, drawn as an outer dashed ring. **Seat**: one of a ring's evenly spaced positions. **Anchor**: where note 1 sits relative to bottom centre. **Canonical string**: the one spelling the app prints for a pan. **Legacy grammar**: today's grammar. **Legacy reader**: today's parser, kept under a new name to read strings written before this plan. **Identity string**: a grammar-independent spelling that the deck id hashes. Angles are math convention: 270 is bottom centre, 315 lower right, 225 lower left, 90 top centre.
+
+## 2. Assumed state of main when this starts
+
+The plan starts after Lane C of `docs/plans/2026-10-06-two-beginner-decks.md` merges. Assumptions, each to be re-checked by the first lane:
+
+- `data/decks.json` holds five decks in the order `kurd`, `amara10`, `amara`, `hijaz`, `pygmy`. Kurd 10 and Amara 10 were generated without a mirror from `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5` and `(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5`, and their `geom` has no `ext` key (that plan's decision AD4).
+- Pygmy has 53 chords (52 on main today).
+- The frozen deck fixture is `golden_decks_v7.json` (v5 on main today; that plan bumps it in Lanes U2 and B). This plan's Pygmy lane writes the next version.
+- `tests/mutants` holds 684 patches. This is a FORECAST: 685 measured today, and the in-flight plan states 681 after U1, 681 after U2, 683 after B, 684 after C. Every lane re-derives its base with `ls tests/mutants | wc -l`.
+- Lane U2 pins D Amara 9 to an engine run with `--mirror`. That recipe changes in this plan's Lane S2 (section 7.5).
+
+**Re-measured 2026-10-07 (eng review, R6):** main is `e749957` (Lane U1 merged). `ls tests/mutants | wc -l` prints 687 and the frozen fixture is `golden_decks_v5.json`. The figures 684 and v7 above, and every running mutant total in section 11, are therefore low by at least 3 and are forecasts only. No lane asserts them: each lane derives its base from the tree, and FLOORS and the README count come from CI.
+
+Kurd 10 and Amara 10 are not on main yet. Everything this plan says about them was measured on stand-ins: today's engine run on the two strings above with default options.
+
+## 3. Decisions
+
+### 3.1 Owner decisions (binding, quoted or paraphrased from the brief)
+
+- **D1** maker-style grammar: one ascending line; `[Bb3]` is a bottom note at its pitch position; the ding is `(F)`, `F/` or `F |`; bottom notes below the ding come before it; a further `|` starts the inner notes; octave digits optional, ding defaults to 3, "notes after it climb, notes before it descend".
+- **D2** "The label, the placeholder, `PARSE_HINT` and every refusal string describe this one format and agree with each other." The placeholder parses. "Every format-related refusal shows a corrected example."
+- **D3** the example is E Amara 20, Ayasa layout.
+- **D4** "Give user legibility warning but do not limit."
+- **D5** inner notes are only the ones typed after the inner bar.
+- **D6** inner notes take the top of the pan and push the ding down; none means a centred ding.
+- **D7** the note-1 anchor is a per-deck setting; default note 1 at bottom centre; opt-in bottom centre between notes 1 and 2 with note 1 on the right.
+- **D8** "The direction of the scale sequence is the same": odd rim notes right, even left, on every generated pan.
+- **D9** "Positions exact" for five built-ins. Pygmy: "Yes, redraw it." The other four keep their stored bytes.
+- **D10** saved decks redraw; even rims: "Yes, flip them"; no conversion to preserve a look; saved decks must still open and must not be misread.
+- **D11** a drawer on both Add and Edit with drag-to-seat within a ring, the anchor and a mirror; ROTATE and MOVE replaced; the interaction is defined by `/frontend-design:frontend-design`.
+- **D12** the old octave-less bottom list now reads as inner notes: "Copy only".
+- **D13** one switch labelled MIRROR, off by default.
+- **D14** the field wraps to as many as three rows; the example is not shortened.
+- **D15** the small-labels warning ignores bottom octave digits: "Exclude them".
+
+### 3.2 Auto-decisions (mine; each can be overturned without reopening D1 to D15)
+
+| # | Decision | Rationale |
+|---|---|---|
+| A1 | Bars are disambiguated by one lexical fact: how many ding-shaped tokens (`(X)` or `X/`) the line holds. One: at most one bar, and it is the inner bar. None: the note immediately before the first bar is the ding and a second bar is the inner bar. Two or more: refused. | The two modes accept disjoint sets of strings, so no string has two readings (4.3). |
+| A2 | In the bare form every token before the ding must be bracketed. `D A C \| E F` is refused, not read as "ding C". | The likeliest intent is `(D) A C \| E F`; guessing would silently build the wrong pan. |
+| A3 | An inner bar needs at least one rim note before it and one inner note after it. | One canonical string per pan; refuses the empty-ring typo. |
+| A4 | After the ding, an octave-less note is the lowest instance strictly above the previous note ON THE LINE, bracketed or not, bar or not. Before the ding, inference runs right to left: each octave-less note is the highest instance strictly below the note to its right. | "After climbs, before descends" with nothing special-cased. A bracketed note among top notes, and a bottom note typed after the inner notes, both simply continue the climb. |
+| A5 | Ordering: every note is at or above the previous note on the line; strictly above the last note of its own shell; every top note strictly above the ding; a bottom note after the ding strictly above the ding. Equal pitch is allowed only between a bottom note and a top note (or the ding, bottom note first) and only when the octave is typed. | Every pan the legacy grammar could express stays expressible (5.2). |
+| A6 | Canonical form: ding as `(X3)`, octaves always, one merged pitch-ordered line, a bottom note before an equal-pitch top note or ding, the bar immediately before the first inner note. | One spelling per pan; round trip measured at zero failures. |
+| A7 | The lexer accepts octave `-1`. | Descending inference can reach octave -1; the range message already says "between C-1 and G9". |
+| A8 | The deck id hashes the identity string (today's `formatSeed` algorithm, generalised), not the new canonical string. | Every existing id stays the same (0 differences in 50,731 legacy strings). |
+| A9 | Legacy strings are recognised by VERSION TAG only, never by inspecting the string. | A legacy string can be a valid new string with a different meaning (D12's case), so content sniffing cannot work. |
+| A10 | Two share/record version bumps, one per shipping lane: version 3 adds the anchor and per-ring seats (scale line still legacy grammar); version 4 switches the scale line to the new grammar. | Every merge leaves main coherent; a version costs one character. |
+| A11 | Bottom field ids start at `max(101, topCount + 1)`, and "is this a bottom field" reads the zone, never `id >= 101`. | Ids are unchanged for every pan under 101 top notes; no collision above it. |
+| A12 | An arrangement is three permutations, one per ring (`seats: {rim, inner, bottom}`). A cross-ring arrangement cannot be written down. | Makes D11's "same ring" a property of the data rather than of every caller. |
+| A13 | Inner seats: one note at 90; two at 128 and 52; three or more fanned on the inner orbit, symmetric about top centre, step `min(76, 180/(k-1))`, dealt from the two ends inward (first inner note far left, second far right, highest at or nearest top centre). | Two lands exactly on Pygmy. The D3 example puts A5 at top centre, where Ayasa's diagram shows it. A 180 degree span keeps fields largest (5.5). |
+| A14 | The ding offset is adaptive: start at 0.1425 and raise it in steps of 0.0025 until every inner index number is 0.01 clear of the ding, to a ceiling of 0.30. | A fixed per-count table fails at other rim counts (5.5). Pygmy stays at 0.1425. |
+| A15 | `TOO_MANY_RIM` is REMOVED from `REASONS`. The legibility warning is a new warning code, `SMALL_LABELS`. | Reusing an error code as a warning would change its meaning under every test and mutant that names it. |
+| A16 | The warning counts four glyph classes at print scale: top note name, top octave digit, index number, bottom note name. It shows on the sheet (live, before GENERATE, and after) and in the title-card blurb. It gets no chord-card badge: `CARD_WARNINGS` stays as it is. | D15 fixes the glyphs. Crowding is visible on every card already; a badge would cost label room on exactly the cards that lack it. |
+| A17 | The share payload cap rises from 640 to 4096 characters and the two-digit limit in `ORDER_RE` goes. | A size cap on a link is a size refusal (D4). |
+| A18 | The drag primitive handed to the design step is SWAP: dropping note A on note B's seat exchanges the two. | One drag changes exactly two notes; every arrangement is reachable. The design step may choose insert-and-shift; the data model supports both. |
+| A19 | A stored record whose legacy flat order crosses rings opens with the default arrangement; a share link carrying one is refused. | Boot must never drop a deck (D10); links are untrusted input. The shipped ROTATE and MOVE stay inside one ring (`zoneBlock`), so no player-made record has one. |
+| A20 | An old stored `mirror: true` is read as MIRROR on. No conversion. | D10: "No conversion to preserve a look." Consequence stated in 5.3. |
+| A21 | The Pygmy field `fields` block is not touched; only the keys of `geom` change. The recipe and a test tie `geom` to an engine run. | D9: "`fields` angles unchanged". |
+| A22 | MIRROR becomes one switch in place in Lane W1 and is moved into the drawer by Lane DR1, keeping its element id. | The old pair's words are wrong the moment D8 lands; the drawer arrives several lanes later. |
+
+### 3.3 Open owner questions
+
+| # | Question | Options | Recommendation | Blocks |
+|---|---|---|---|---|
+| Q1 | Does the redrawn Pygmy `geom` carry the solver's `ext` key (1.462)? Today no built-in has `ext`; the app derives the drawing extent from other keys (147.68 units for Pygmy), the in-flight plan strips `ext` from Kurd 10 and Amara 10 (its AD4), and the test "the built-in decks keep the derived extent they have always rendered" in `tests/app.test.js` forbids the key. | (a) Solver output minus `ext`: the picture frame stays `-147.68 -147.68 295.36 295.36`, 100 of 374 numbers in the no-chord drawing move, by at most 0.36 units. (b) Solver output with `ext`: the frame becomes `-146.2 -146.2 292.4 292.4`, 104 of 374 numbers move, by at most 2.96 units, the pan fills about 1% more of the card, and that test is rewritten to exempt Pygmy. | (a). It matches how the other two engine-made built-ins are stored, keeps one rule for all five, and keeps the line count of `data/decks.json`. "No hand-kept geometry" still holds: every remaining key is engine output. | Lane P1 only. |
+| Q2 | Pygmy's printed pan. The built-in print radius is a literal 60 in Pygmy's print overlay; the solver's own choice for the same pan would be `round(74/1.462, 1)` = 50.6. The brief puts replacing print overlays out of scope, so the plan keeps 60, and Pygmy's printed top circles grow 2.2% with the on-screen ones. | (a) keep 60 (in scope); (b) a follow-up that derives the print radius for built-ins. | (a), with (b) recorded as a follow-up next to the bottom-octave-digit follow-up. | Nothing. |
+
+### 3.4 Owner answers to 3.3 (2026-10-06, binding)
+
+- Q1: "Keep today's frame". The redrawn Pygmy `geom` is solver output minus `ext` (option a everywhere in Lane P1).
+- Q2: "Keep 60". Pygmy's print radius literal stays.
+- Saved even-rim deck stored with `mirror: true` opens reversed with MIRROR on: "Accept, note in README". A20 stands; no conversion.
+
+## 4. The grammar, exactly
+
+### 4.1 Tokens
+
+Insert a space either side of every `|`, then split on whitespace (a pasted line break is whitespace). Each token is one of:
+
+| Class | Shape | Notes |
+|---|---|---|
+| BAR | `\|` | Self-delimiting: `F\|G` is `F`, `\|`, `G`. |
+| SLASH | a lone `/` | Always refused, with the "old inner mark" sentence. |
+| DING | `(NOTE)` or `NOTE/` | A token that starts with `(`, or ends with `)` or `/`, is ding-shaped; if its body is not a note it is refused. |
+| BOTTOM | `[NOTE]` | A token that starts with `[` or ends with `]` is bottom-shaped; one note per bracket pair, no spaces inside. |
+| NOTE | `NOTE` | |
+
+`NOTE` is a letter A to G, an optional `#` or `b`, and an optional octave `-1` or `0` to `9`. A token that is both ding-shaped and bottom-shaped (`[(D)]`) is refused.
+
+### 4.2 Structure
+
+Let d be the number of DING tokens and b the number of BARs.
+
+- d = 1 (**explicit ding**): b is 0 or 1. The bar, if present, comes after the ding and is the inner bar.
+- d = 0 (**bare ding**): b is 1 or 2. The token immediately before the first bar must be a NOTE; it is the ding. The second bar, if present, is the inner bar.
+- d of 2 or more: refused.
+
+In both forms every token before the ding is a BOTTOM token, and an inner bar has at least one rim note before it and at least one inner note after it. Zones: a BOTTOM token is a bottom note wherever it stands; a NOTE after the ding is rim before the inner bar and inner after it. There is no spill (D5). Field ids: ding `0`; top notes `1..n` in line order (rim, then inner); bottom notes from `max(101, n + 1)` in line order, labelled `U1`, `U2`, and so on.
+
+### 4.3 Why no string is ambiguous
+
+The count d is a fact about the characters, not a choice, and the three cases share no string. Within a case the parse reads left to right with no alternative: the ding position is fixed (the one DING token, or the token before the first bar), each bar's role is fixed by its index, and each note's zone is fixed by its brackets and its side of the inner bar.
+
+Measured with the prototype (Appendix A): all 1,111,110 token sequences of length 1 to 6 over the alphabet `| (D) D/ [A] [C3] A C D E4 /`. 7,392 are accepted (6,542 explicit, 850 bare). Every accepted string's canonical form re-parses to the same fields and re-prints identically (0 failures). The 3,443 distinct canonical strings each map to exactly one field set. All 850 bare strings, rewritten with `(X)` in place of `X |`, give the same fields (0 mismatches).
+
+### 4.4 Octave inference and ordering
+
+As A4 and A5. Two cases the brief asks about by name:
+
+- **A bracketed note among top notes** takes part in the climb like any other note. In `(D) A [B] C`, B is B3 (above A3) and C is C4 (above B3). The same rule gives Pygmy's `[Bb]` between `Ab` and `C`.
+- **A bottom note typed after the inner notes** continues the climb from the last inner note. Pygmy's trailing `[Ab]` after `| F G` is Ab5.
+
+A fifth above the ding must still exist among the top notes (`NO_FIFTH`, unchanged).
+
+### 4.5 Table of strings (every row was run through the prototype)
+
+| # | String | Result |
+|---|---|---|
+| 1 | C# Hijaz 9: `(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4` | ding C#3; rim G#3 B3 C#4 D4 F4 F#4 G#4 B4. 9 of 9 shipped fields equal (name, octave, MIDI, zone, label). |
+| 2 | Same, short: `(C#) G# B C# D F F# G# B` | same pan |
+| 3 | Same, bare: `C# \| G# B C# D F F# G# B` | same pan |
+| 4 | F3 Low Pygmy 18 (D9's string): `[C3] [Db3] [Eb3] F3 \| G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 \| F5 G5 [Ab5]` | ding F3; rim G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5; inner F5 G5; bottom C3 Db3 Eb3 Bb3 Db4 Ab5 as U1 to U6. 18 of 18 shipped fields equal. Canonical (78 characters): `[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 \| F5 G5 [Ab5]` |
+| 5 | Pygmy, no octaves: `[C] [Db] [Eb] F \| G Ab [Bb] C [Db] Eb F G Ab C Eb \| F G [Ab]` | same pan |
+| 6 | D Amara 9: `(D3) A3 C4 D4 E4 F4 G4 A4 C5`; also `D/ A C D E F G A C` and `D \| A C D E F G A C` | ding D3; rim A3 C4 D4 E4 F4 G4 A4 C5. 9 of 9 shipped fields equal. |
+| 7 | D Kurd 10: `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5` | ding D3; nine rim notes |
+| 8 | D Amara 10: `(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5` | ding D3; nine rim notes |
+| 9 | E Amara 20 (D3): `[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E \| F# G A` | ding E3; rim B3 D4 E4 F#4 G4 A4 B4 D5 E5; inner F#5 G5 A5; bottom C3 D3 F#3 G3 A3 C4 C5. Exactly the D3 pitches. Typed form 60 characters; canonical 80. |
+| 10 | Xenith line from D1: `[C#3] [D#3] F3 \| G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5` | ding F3; rim (11) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5; no inner; bottom C#3 D#3 Bb3 Db4. Canonical 65 characters. |
+| 11 | `F\|G Ab C` | ding F3; rim G3 Ab3 C4 |
+| 12 | `(D3) A3 [C4] C4 D4` | bottom C4 and top C4 coexist |
+| 13 | `[D3] (D3) A3 C4` | a bottom note at the ding's pitch, written first |
+| 14 | `(C3) D E F G A B C D E F G A B` | thirteen rim notes, no inner (no spill) |
+| 15 | `(D) A [B] \| C` and `(D) A \| [B] C` | the same pan; canonical `(D3) A3 [B3] \| C4` |
+| 16 | `(D) A C \| E [F] G` | inner E4 G4, bottom F4 |
+| 17 | `(D) A C D E F G A C \| A B C` | ACCEPTED: inner A5 B5 C6. This is the legacy bottom list typed without octaves (D12; section 6.4). |
+| 18 | `D A C D E` and `D A C \| E F` | refused `NO_DING`, "which" sentence |
+| 19 | `C (D) A` | refused `NO_DING`, "below" |
+| 20 | `(D) (A) C` | refused `NO_DING`, "two" |
+| 21 | `(D3) A3 C4 D4 E4 F4 G4 / A4 C5` | refused `BAD_NOTE`, "slash" |
+| 22 | `(D) A [C D] E` | refused `BAD_NOTE`, "bracket" |
+| 23 | `(D) A \| C \| E` and `D \| A \| C \| E` | refused `BAD_NOTE`, "bar" |
+| 24 | `(D) \| A C`, `(D) A C \|`, `(D) A C [E] \| [F]` | refused `BAD_NOTE`, "barEmpty" |
+| 25 | `(D3) A3 C4 D4 \| C3 E3` | refused `NOTE_OUT_OF_ORDER`, "afterBar" (legacy bottom list with octaves) |
+| 26 | `(D3) A3 C3` | refused `NOTE_OUT_OF_ORDER`, base sentence |
+| 27 | `(D3) C3 A3` and `(D3) [D3] A3` | refused `NOTE_OUT_OF_ORDER`, "ding" |
+| 28 | `[E3] (D3) A3` and `[D3] [C3] (E3) B3` | refused `NOTE_OUT_OF_ORDER`, "below" |
+| 29 | `(D3) A3 A3 C4`; `(D) A C D E F G A C \| C5` | refused `NOTE_REPEATED` |
+| 30 | `(D) A H C` | refused `BAD_NOTE`, base sentence |
+| 31 | `(D9) A9 C` | refused `NOTE_OUT_OF_RANGE` |
+| 32 | `(D) C E F`; `D \|` | refused `NO_FIFTH` |
+
+The sentence each refusal carries is in section 9. D3's caveat, as the brief requires: reading A5 as an inner note comes from Ayasa's diagram, where it sits in the top gap; Sound-Sculpture and Sela sell the same 20 pitches. The Ayasa and Xenith pages were not opened in this session.
+
+## 5. Findings (all measured this session unless marked)
+
+### 5.1 The solver under the new rules against the shipped diagrams (D9)
+
+Method: Appendix B patches applied in memory, each deck's string parsed with Appendix A, the result drawn through the app's own `pan()` (booted with `tools/sandbox.js`) for every chord and for the no-chord drawing, and compared with the shipped deck's drawing.
+
+| Deck | Seats matching | Drawings identical | `geom` keys that differ from solver output |
+|---|---|---|---|
+| C# Hijaz 9 (8 rim), default options | 8 of 8 | 20 of 20 (19 chords and the no-chord drawing) | `f_ding` 0.135 stored against 0.12; `f_note` 0.128 against 0.1454; `f_num` 0.105 against 0.1216. The solver also emits `inner` 0, `bottom` 0, `ding_dy` 0, `rim_num_out` false, `ext` 1.06 where the stored deck has no key. No renderer reads any of these on a rim-only deck. |
+| D Amara 9 (8 rim), default options | 8 of 8 | 26 of 26 | same as Hijaz |
+| D Kurd 10, D Amara 10 stand-ins (9 rim), default options | 9 of 9 | identical seats and identical `geom` to today's unmirrored engine run, which is how the in-flight plan makes them | none beyond the stripped `ext` |
+| F3 Low Pygmy 18, anchor "between" | 17 of 17 (rim, F5 at 128, G5 at 52, U1 to U6 at 300 240 0 180 60 120) | 0 of 53: every drawing changes | `r_note` 0.1425 stored against 0.1456; `f_note` 0.109 against 0.1114; `f_num` 0.0912 against 0.0932; `inner_ring` null against 0; `ext` absent against 1.462 |
+
+Controls: Pygmy with the default anchor seats 8 of 17 (every rim seat is 20 degrees off), which is why the anchor option exists. Today's unpatched solver already seats Pygmy 17 of 17 with no mirror and 1 of 17 with mirror true.
+
+Why bottom seats fall out: the new line lists bottom notes in pitch order (C3 Db3 Eb3 Bb3 Db4 Ab5) and `bottomAngles` deals seats in line order, unchanged.
+
+The redrawn Pygmy `geom`, in full (solver output; the `ext` key is Q1):
+
+`{"rim":0.722,"inner":0.38,"bottom":1.15,"r_ding":0.19,"ding_dy":0.1425,"r_note":0.1456,"r_bnote":0.1188,"inner_ring":0,"f_ding":0.114,"f_note":0.1114,"f_bnote":0.0931,"f_num":0.0932,"n_in":0.052,"n_out":0.068,"rim_num_out":true,"ext":1.462}`
+
+Effect on the no-chord drawing (374 numbers in the SVG): with `ext` kept, 104 numbers move, by at most 2.96 units, and the frame changes from `-147.68 -147.68 295.36 295.36` to `-146.2 -146.2 292.4 292.4`; with `ext` dropped, 100 numbers move, by at most 0.36 units, and the frame is unchanged. The brief states the frame change in the opposite direction; the stored-deck fallback is the larger one.
+
+### 5.2 Legacy strings and ids
+
+- 400,000 random legacy strings (both ding forms, optional `/`, optional bottom list, typed and untyped octaves): 50,731 accepted by today's `core.parseSeed`. For every one, the identity string equals today's `formatSeed` output (0 differences) and the new canonical string re-parses to the same field map (0 failures). 28,750 of them have a new canonical string equal to the legacy string.
+- The identity string is injective on new-only shapes: over the 7,392 accepted strings of the enumeration there are 3,443 distinct identity strings and 0 clashes. It prints ` /` whenever the rim count differs from `min(topCount, 11)`, so a new 12-rim pan and a legacy 11-plus-1 spill pan get different ids.
+- 100,000 random strings with neither a lone `/` nor a `|`, at most 11 top notes: 4,725 accepted by both grammars, 0 with differing fields, 0 accepted by only one. `tools/gen_deck.js` presets and the Kurd 10 and Amara 10 strings need no change.
+- Ids on main, for lane tests to pin: C# Hijaz `custom:626198f8`, Pygmy `custom:6f9ffc33`, Amara 9 `custom:977311b5`, Kurd 10 `custom:cb5fe66a`, Amara 10 `custom:b174242c`. The E Amara 20 example gets `custom:8c15ebd7`; today's parser refuses its identity string with `TOO_MANY_RIM` (three inner notes).
+- Storage: custom decks live in the saved-scales list as records `{v, s, o}` (share version, canonical string, options). `rememberScale`, `forgetScale` and `replaceScale` find a record by comparing `s`. The only thing stored against a deck id is the selected deck. There is no per-deck progress store. Ids do not move, so the selection survives.
+
+### 5.3 What redraws for saved decks (D10)
+
+Today's solver against the new default, with the stored `mirror` read as stored:
+
+| Saved deck shape | What changes |
+|---|---|
+| Odd rim, no inner notes (either mirror value) | Nothing. |
+| Even rim, with or without inner notes (either mirror value) | **Changes sides.** Every rim note except note 1 (270) and the top note (90) swaps left and right. Example, 8 rim, unmirrored: 270 315 225 0 180 45 135 90 becomes 270 225 315 180 0 135 45 90. Field sizes are unchanged. |
+| Odd rim with inner notes | Sides are kept. Every rim note turns half a step (20 degrees on a 9 rim), so note 1 lands on bottom centre and the top note leaves 90. Fields grow (9 rim plus 2 inner: `r_note` 0.1456 to 0.1612). |
+| Exactly one inner note | That note moves from 128 to 90. |
+| Two inner notes; any bottom notes | Unchanged (128 and 52; `bottomAngles` untouched). |
+
+So the saved decks that change sides are exactly the even-rim ones. One consequence deserves plain words: a player who saved an 8-rim deck with LEFT-FIRST on (stored `mirror: true`) to make it look like Amara will see it reversed, with MIRROR shown on; switching MIRROR off restores the Amara look. D10 forbids a conversion, so the README says this instead.
+
+A saved correction (`order`) is a permutation over default seats; it is kept and applied to the new seats (section 8).
+
+### 5.4 Legibility (print, generated decks, floor 3.6 pt)
+
+Print sizes follow the shipped rule: print radius R = `round(74 / ext, 1)`; top name = 0.80325 x `r_note` x R; bottom name = 0.8232 x `r_bnote` x R; octave digit = 0.66 x its name; index number = 0.64 x `r_note` x R.
+
+| Sweep (new seat rule) | Glyph | First count under 3.6 pt |
+|---|---|---|
+| Rim only (`r_note` 0.19 through 10 rim, 0.1783 at 11) | top octave digit | 21 rim (3.48 pt) |
+| Rim only | index number | 25 rim (3.55) |
+| Rim only | top name | 31 rim (3.59) |
+| Rim with any bottom shell (R about 49.9) | octave / number / name | 15 / 19 / 23 rim |
+| Rim n with 2 inner | top octave digit | 20 rim (15 rim with 6 bottom) |
+| 7 to 12 rim with k inner, no bottom | octave / number / name | 7 / 8 / 9 inner |
+| 7 to 12 rim with k inner and 7 bottom | octave / number / name | 5 / 6 / 7 inner |
+| 9 rim with m bottom (`r_bnote` 0.1188 through 24) | bottom name | 36 bottom (3.58) |
+| 9 rim with m bottom | bottom octave digit | 1 bottom (3.22 pt), excluded by D15 |
+
+Reference points: the D3 example prints at R 50.4 with top name 6.40, top octave 4.22, number 5.10, bottom name 4.93, bottom octave 3.25 and ding 6.79 pt, so it carries no warning. A generated Pygmy shape prints top octave 3.91 pt and bottom octave 3.27 pt, so no warning either.
+
+Grid of 2,002 pans (rim 3 to 24, inner 0 to 6, bottom 0 to 12): 1,162 warn under the proposed trigger; 1,882 would warn if bottom octave digits counted. That difference is what D15 buys.
+
+Proposed trigger: warn when the smallest of {top name, top octave digit, index number, bottom name} at print scale is under 3.6 pt. In effect `min(0.5301 x r_note, 0.8232 x r_bnote) x R < 3.6`, because the top octave digit (0.66 x 0.80325 = 0.5301) is always the smallest top glyph.
+
+"Never refuse" still draws: 60 rim; 100 rim with 10 inner and 40 bottom; and 150 rim with 20 inner and 60 bottom all solve. Over 9,360 pans (rim 1 to 60, inner 0 to 12, bottom 0, 1, 2, 7, 13, 40, both anchors, with the fan and the adaptive offset) there are 0 overlapping circle pairs and 0 duplicate seats; the smallest top gap is 0.0114 R and the smallest bottom gap 0.0271 R.
+
+On-screen legibility at 380 px was NOT measured (UNVERIFIED); it is an input to the design step.
+
+### 5.5 Inner ring for N notes (D6)
+
+Fan as in A13. Seats in note order: one inner note, 90; two, 128 and 52; three, 166 14 90; four, 180 0 120 60; five, 180 0 135 45 90; six, 180 0 144 36 108 72.
+
+Why the ding offset must adapt. `pan()` draws every inner note's index number inward of its circle, toward the ding. Modelling that number as a disc of radius 0.7 x `f_num` (Appendix C), the clearance from the ding at the fixed offset 0.1425 on a 9 rim is about 0 for three inner notes (minus 0.014 at worst), minus 0.023 to minus 0.030 for four (it collides), plus 0.004 for five, and clear from six up. A fixed table by inner count (0.1425, 0.175, 0.2) fails across rim counts 5 to 20: the worst case is minus 0.027 with three inner notes, and minus 0.010 with two inner notes on small rims. That last case exists on main today, for rims of 1 to 5 with one or two inner notes.
+
+The adaptive rule (A14) over the same 9,360 pans: 0 numbers still touching; largest offset 0.22; 612 pans get an offset above 0.1425 (by inner count: 30, 42, 156, 192, 192 for one to five). With one or two inner notes only rims of 1 to 5 are affected (offsets 0.1475 or 0.165). Pygmy keeps 0.1425 (clearance 0.052).
+
+Fan span compared, 9 rim, 7 bottom, anchor "one" (`r_note`; print octave digit in pt):
+
+| Inner notes | span 120 | span 140 | span 152 | span 180 (chosen) |
+|---|---|---|---|---|
+| 3 | 0.1453; 3.90 | 0.1504; 4.03 | 0.1580; 4.22 | 0.1580; 4.22 (offset 0.175) |
+| 4 | 0.1105; 3.00 | 0.1278; 3.45 | 0.1380; 3.71 | 0.1504; 4.03 (offset 0.20) |
+| 5 | 0.0836; 2.29 | 0.0971; 2.65 | 0.1052; 2.86 | 0.1236; 3.34 (offset 0.155) |
+| 6 | 0.0672; 1.85 | 0.0781; 2.14 | 0.0847; 2.32 | 0.0998; 2.71 |
+
+A narrower fan keeps the default offset but shrinks every field; 180 with the adaptive offset gives the largest labels at every count, so it is the choice. One limit to state: `r_note` is one number for rim and inner fields, so five or more inner notes shrink the rim fields too.
+
+Results under the full rule:
+
+- **D3 example, anchor "one"**: rim 1 to 9 at 270 230 310 190 350 150 30 110 70; inner F#5 at 166, G5 at 14, A5 at 90; bottom U1 to U7 at 295.7 244.3 347.1 192.9 38.6 141.4 90; ding offset 0.175; `r_note` 0.158; `r_bnote` 0.1188; `f_note` 0.1209; `f_num` 0.1011; `ext` 1.4676; modelled clearance 0.011. With anchor "between": offset 0.155, `r_note` 0.1453, `ext` 1.4619.
+- **Xenith line** (11 rim, 4 bottom): rim 270 237.3 302.7 204.5 335.5 171.8 8.2 139.1 40.9 106.4 73.6; bottom 315 225 45 135; `r_note` 0.1783; `ext` 1.4767; centred ding.
+
+**All clearance figures are a model. No pan was rendered (UNVERIFIED).** The rendered proof is the named gate G-RENDER in Lane S1.
+
+### 5.6 Blast radius
+
+Counts are matches from `grep -rEo "<pattern>" <place> | wc -l`, run from the repo root, where the places are `src`; `index.html`; `tests` restricted to `*.js` and `*.py`; `tests/mutants` (with the number of patch files from `grep -rlE`); `tests/fixtures`; `tools`; and `CLAUDE.md README.md docs/*.md`.
+
+| Pattern | src | index.html | tests | mutants (files) | fixtures | tools | docs |
+|---|---|---|---|---|---|---|---|
+| `RIM_MAX` | 8 | 8 | 0 | 4 (4) | 0 | 0 | 0 |
+| `INNER_MAX` | 5 | 5 | 0 | 4 (4) | 0 | 0 | 0 |
+| `BOTTOM_MAX` | 4 | 4 | 0 | 4 (3) | 0 | 0 | 0 |
+| `TOP_MAX` | 2 | 2 | 0 | 2 (1) | 0 | 0 | 0 |
+| `TOO_MANY_RIM` | 6 | 6 | 20 | 6 (4) | 6 | 1 | 11 |
+| `PARSE_HINT` | 0 | 4 | 6 | 3 (3) | 1 | 0 | 0 |
+| `LAYOUT_HINT` | 0 | 3 | 0 | 4 (3) | 0 | 0 | 0 |
+| `moveNote` | 0 | 4 | 0 | 5 (3) | 0 | 0 | 0 |
+| `rotateLayout\|rotateRing` | 0 | 4 | 0 | 9 (4) | 0 | 0 | 0 |
+| `scale-rot-` | 0 | 4 | 21 | 4 (1) | 0 | 2 | 0 |
+| `scale-move-` | 0 | 4 | 11 | 2 (1) | 0 | 2 | 0 |
+| `scale-mirror-` | 0 | 4 | 21 | 0 | 0 | 2 | 4 |
+| `scale-layout-` | 0 | 13 | 25 | 28 (11) | 0 | 2 | 0 |
+| `LEFT-FIRST\|RIGHT-FIRST` | 0 | 4 | 10 | 1 (1) | 0 | 0 | 7 |
+| `left-first\|right-first` | 2 | 3 | 10 | 3 (2) | 0 | 0 | 11 |
+| `INNER_ANGLES` | 2 | 2 | 0 | 2 (1) | 0 | 0 | 0 |
+| `rimAnglesFromBottom` | 2 | 2 | 0 | 1 (1) | 0 | 0 | 0 |
+| `isCentred` | 4 | 4 | 0 | 2 (2) | 0 | 0 | 0 |
+| `CAPS\.payload` | 2 | 2 | 6 | 1 (1) | 0 | 0 | 0 |
+| `ORDER_RE` | 2 | 2 | 0 | 1 (1) | 0 | 0 | 0 |
+| `>= ?101\|> ?100` | 1 | 1 | 5 | 0 | 0 | 0 | 0 |
+| `scale-box` | 0 | 10 | 53 | 7 (2) | 0 | 4 | 4 |
+| `reseat` | 2 | 2 | 0 | 2 (1) | 0 | 0 | 0 |
+
+Scale-string literals. Old inner mark, pattern `[A-G][#b]?[0-9]? ?/ [A-G][#b]?[0-9]?`: `tests/core.test.js` 25, `tests/preview.test.js` 2, `tests/layout.test.js` 1, `tests/test_print.py` 1, `tools` 2, `docs/plans` 25, none in `src`, README or CLAUDE.md. Bar followed by a note, pattern `[A-G][#b]?[0-9] \| [A-G]`: `tests/fixtures` 11, `tests/mutants` 24, `index.html` 1, none in test sources, tools, `src`, README or CLAUDE.md. Pygmy's print overlay also holds two legacy-looking blurb lines (`"F3 | G3 Ab3 C4 ..."` and `"BOTTOM:  C3  Db3 ..."`); they are printed text, not parsed, and the print overlay is out of scope.
+
+Mutants by target file (`grep -l "^+++ b/<file>" tests/mutants/* | wc -l`): `index.html` 417, `src/engine/core.js` 29, `select.js` 17, `tools/hifi.py` 17, `pdfcards.js` 15, `layout.js` 14, `data/decks.json` 14, `share.js` 12, `tools/decks.py` 7, `tools/sandbox.js` 5, `pdfdeck.js` 4, `tools/gen_deck.js` 3, `README.md` 1.
+
+Mutants naming symbols this plan edits (`grep -lE`):
+
+- Seat functions: `g_bottom_anchor_dropped`, `g_centred_default_ignored`, `g_inner_pair_with_rim`, `l_order_ignored`.
+- ROTATE, MOVE and selection: `ap2_sheet_state_layout_sel_leaks`, `d_layout_stale_order_guard`, `d_layout_reset_identity`, `d_rotate_drops_the_selection`, `f6_pan_home_end_swapped`, `e_layout_reset_inert`, `e_layout_rotate_inert`, `qa_layout_prologue_skips_sync`, `qa_select_pan_field_ignores_order`, `r3s_served_id_not_in_markup`.
+- Mirror labels: `d_mirror_ignored`.
+- Hints: `d_empty_box_shows_no_example`, `d_layout_hint_deleted`, `d_disarm_skips_placeholder_repaint`, `d_layout_hint_only_a_comment`, `d_hint_every_time`, `d_warnings_rebuild`, `e_empty_box_drops_the_pan`, `d_upsert_says_generated`, `e_layout_hint_outside_its_group`.
+- Caps: `b_engine_desync`, `g_bottom_cap_seven`, `g_mirror_ignored`, `u_flat_raises_midi`, `u_reason_string_reworded`, `u_inner_cap_unenforced`.
+- Spill: `u_inner_mark_ignored`, `u_inner_mark_unprinted`.
+- Order: `ap3_slotzones_reversed`, `eg_slotorder_swapped`, `g_mirror_ignored`, `l_order_length_unchecked`, `l_order_ignored`, `s_share_v1_delta_accepted`, `s_share_order_unchecked`.
+- Field styling: `f6_scale_box_media_override`, `f6_scale_box_font_override`.
+
+Sites that assume a bounded count: the cap constants and the three cap lines in `layout.solve`, the two-entry `INNER_ANGLES`, the bottom id base 101, `ORDER_RE` (two digits), and the 640 payload cap. `pan()`, `tools/hifi.py` and the PDF modules loop over whatever fields a deck has; the PDF modules were checked by grep only.
+
+Sheet facts that matter to the lanes: `#scale-box` is an `<input type="text">` whose Enter key calls `runGenerate`; `showPlaceholderPan` parses the element's `placeholder`; `parseLineText` writes the line under the box as `Ding D3 | 1 A3 2 C4 ...` (it uses a bar as a separator, which will now contradict the grammar); `tools/sandbox.js` keeps a strict `ELEMENT_IDS` list, so every id added or removed must be mirrored there.
+
+### 5.7 Share payload
+
+The wire format is one version character, the payload in a 6-bit alphabet, and a 6-character check: length = 1 + ceil(8/6 x bytes) + 6. Measured with the shipped encoder: Pygmy (legacy canonical, 68 characters) encodes to 114 characters, and to 167 with a 40-character name. ESTIMATES from the formula: the D3 example in the new canonical form (80 characters) about 127, or about 245 with a name and every seat rearranged; a 60-note pan about 607; a 127-note pan about 1,290. A pan using every MIDI pitch on both shells with all seats rearranged is under 4,096. Hence A17.
+
+### 5.8 Drag targets
+
+`panHitRadii` caps each hit target at half the distance to its nearest neighbour, with a 44 px floor (`PAN_HIT_MIN_PX`) where there is room. The preview is at most 300 px wide with padding, so the pan is about 284 px (ESTIMATE; no browser was run).
+
+| Pan | Tightest pair | Target at 284 px | Target at 340 px | Pan width needed for 44 px |
+|---|---|---|---|---|
+| D3 example (9, 3, 7) | rim to inner, 0.372 R | 36 px | 43 px | 348 px |
+| Pygmy (9, 2, 6) | rim to inner, 0.342 R | 33 px | 40 px | 376 px |
+| Kurd 10 (9 rim) | rim to rim, 0.510 R | 68 px | 82 px | 184 px |
+| 12 rim | 0.386 R | 52 px | 62 px | 242 px |
+| 16 rim | 0.291 R | 39 px | 47 px | 321 px |
+| Xenith (11, 0, 4) | rim to bottom, 0.410 R | 39 px | 47 px | 317 px |
+| 20 rim, 2 inner, 8 bottom | 0.226 R | 22 px | 27 px | 561 px |
+
+Bottom-shell pans and crowded pans fall under 44 px at any phone width, so a non-drag path (tap a note, then tap a seat; and a keyboard path) is mandatory.
+
+### 5.9 Corrections to the prior draft and the brief
+
+- The draft said `data/decks.json` is unchanged; under rev 4 Pygmy's `geom` changes.
+- The draft's fixed ding-offset table (0.175 for three inner notes, 0.200 for four) holds only at 9 rim; replaced by A14.
+- The draft's share lengths for Pygmy (107 and 161) reran as 114 and 167.
+- The brief gives the Pygmy frame change backwards (5.1).
+- Pygmy has 52 chords on main, so 53 drawings; after the in-flight Lane U2 it has 53 chords, so 54.
+
+## 6. Old strings
+
+### 6.1 Where legacy strings live
+
+Stored records (version 1 or 2); share links of version 1 and 2; test sources, fixtures, mutant patches, tools and plan documents (counts in 5.6).
+
+### 6.2 How each keeps opening
+
+- **Stored records**: by version tag, then a one-time rewrite. A record with `v` of 3 or lower is read by the legacy reader (today's `tokenize`, `validate`, `assemble` and spill, kept as `parseLegacySeed`). It yields the same field map as today and so the same id. At boot the record is then rewritten in place, at the same list index, as a version 4 record holding the new canonical string.
+- **Record lookups** (`rememberScale`, `forgetScale`, `replaceScale`) compare deck ids computed through each record's own reader, not `s` against `formatSeed`. Otherwise deleting a deck whose record has not been rewritten would miss it and the deck would return on reload.
+- **Share links**: `share.decode` picks the scale-line reader from the link's version: 1 to 3 legacy, 4 new. A legacy flat order is converted to per-ring seats, or the link is refused if it crosses rings (A19).
+- **An old cached copy of the app** meeting a version 3 or 4 record skips it (`checkShareVersion` answers `NEEDS_NEWER_APP`) and leaves it in storage; meeting a newer link it shows "This link needs a newer version of the app. Reload."
+- **Tests, fixtures, tools, docs**: existing legacy-grammar tests are retargeted at `parseLegacySeed` (they go on proving the reader); new-grammar tests sit beside them.
+
+### 6.3 Proof obligation
+
+No stored deck loses its id or its selection: section 5.2's zero counts, reproduced in the suite as a frozen fixture of legacy strings with ids captured from main before any change (Lane L0), still green after the flip (Lane G2b).
+
+### 6.4 What a player who types the old form sees
+
+- A lone `/`: refused with "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F."
+- A bottom list with octaves, `(D3) A3 C4 D4 | C3 E3`: refused with the "afterBar" sentence, which shows the bracket form.
+- A bottom list WITHOUT octaves, `(D) A C D E F G A C | A B C`: **accepted, as three inner notes A5 B5 C6**. Per D12 this is handled by copy only. The player's signals are the count line (`... 3 inner · 0 bottom`), the live preview (three notes inside the rim, no dashed ring, ding pushed down) and the last sentence of the hint.
+
+## 7. Solver changes (D6, D7, D8, D9)
+
+### 7.1 Rim seats: one rule for both parities
+
+With step = 360 / n and i counting from 0: anchor `one` gives `270 + s x ceil(i / 2) x step`; anchor `between` gives `270 + s x (floor(i / 2) + 0.5) x step`; s is +1 for even i and -1 for odd i (in the app's convention a larger angle from 270 moves to the right). `rimAngles` and `rimAnglesFromBottom` are replaced by this one function.
+
+- **What changes for even rims**: today an even rim puts note 2 on the right. Now note 2 is on the left, which is Hijaz and Amara 9 without a mirror.
+- **What the anchor does**: `one` on an odd rim leaves a gap at top centre (Kurd 10: 270 230 310 190 350 150 30 110 70); on an even rim the highest note lands at top centre (270 225 315 180 0 135 45 90). `between` on an odd rim puts the highest note at top centre (Pygmy: 290 250 330 210 10 170 50 130 90); on an even rim it leaves gaps at top and bottom centre (292.5 247.5 337.5 202.5 22.5 157.5 67.5 112.5).
+- **The anchor applies with or without inner notes** (D7). Today the choice of rim function hangs on `isCentred`; that link is cut. `isCentred` keeps deciding only whether the ding is centred.
+
+### 7.2 Bottom seats
+
+`bottomAngles` is unchanged and deals seats in line order, which is pitch order. Pygmy's U1 to U6 fall out (5.1).
+
+### 7.3 Inner seats and the ding offset
+
+A13 and A14.
+
+### 7.4 Mirror (D13, item 9)
+
+MIRROR replaces every seat angle a with 180 minus a, on all three rings; it never changes geometry. Under D8 it is the only thing that puts odd rim notes on the left.
+
+| Ring, state | MIRROR off | MIRROR on |
+|---|---|---|
+| Rim, anchor one, 8 notes | 270 225 315 180 0 135 45 90 | 270 315 225 0 180 45 135 90 |
+| Rim, anchor one, 9 notes | 270 230 310 190 350 150 30 110 70 | 270 310 230 350 190 30 150 70 110 |
+| Rim, anchor between, 8 notes | 292.5 247.5 337.5 ... | 247.5 292.5 202.5 ... (note 1 left of bottom centre) |
+| Rim, anchor between, 9 notes | 290 250 330 ... 90 | 250 290 210 ... 90 |
+| Inner, two notes | 128, 52 | 52, 128 |
+| Bottom, three notes | 330 210 90 | 210 330 90 |
+
+An old stored `mirror: true` is read as MIRROR on (A20).
+
+### 7.5 The Amara 9 recipe after D8
+
+Today the shipped Amara 9 seats need `--mirror`. After Lane S2 they come from the string with default options: `node tools/gen_deck.js "(D3) A3 C4 D4 E4 F4 G4 A4 C5" --out <scratch>/amara9.json`. Lane S2 changes the recipe wherever the in-flight Lane U2 left it: the test `test_amara_9_chords_equal_a_fresh_engine_run`, the regeneration notes for the golden deck fixture, and any sentence in CLAUDE.md or README that quotes the command (UNVERIFIED which sentences exist, because Lane U2 has not run; the lane finds them with `grep -rn -- "--mirror" CLAUDE.md README.md tests tools docs/ENGINE-SPEC.md`). The deck's bytes do not change.
+
+## 8. Anchor, arrangement and mirror as data (items 7, 8, 9)
+
+- **Anchor**: seed option `anchor`, `"one"` (default) or `"between"`. Whitelisted by the option reader in `core.js`; resolved onto `deck.options` by `select.build`; stored in the record's `o`; carried in share links from version 3 as a new field on the options line placed BEFORE the name (`palette, parent, mirror, anchor, name`), so the free-text name keeps the last slot; NOT hashed into the deck id (options never are); `tools/gen_deck.js` gains `--anchor between`. An older app can only meet it inside a version 3 or 4 link or record and answers `NEEDS_NEWER_APP`.
+- **Arrangement**: seed option `seats`, an object with optional `rim`, `inner`, `bottom`, each a permutation of that ring's seat indices; entry i is the seat taken by the ring's i-th note in line order; a missing ring means the default. `layout.solve` validates each ring on its own, so no input can seat a rim note on the bottom ring, and `reseat` loses the ability to do so. On the wire (version 3 and up) the third payload line is `rim;inner;bottom`, each a comma list or empty; an all-default arrangement is the empty line, as today. The legacy flat `order` is read only from version 1 and 2 records and links and converted by one function, `seatsFromOrder(order, counts)`, which fails when any index leaves its ring. Cross-ring orders are therefore refused in three places: the solver's reader, the share decoder, and the drawer (which can only emit a swap inside one ring).
+- **A drag** maps to the data as: the dragged note's ring index a and the target seat's occupant b exchange their entries in that ring's permutation. The preview re-solves and repaints on every change, as it does on every keystroke today. `moveNote` (swap with a neighbour) is this primitive restricted to adjacent seats; `rotateLayout` (cyclic shift) is a sequence of swaps. Both are deleted.
+- **Mirror**: stays a boolean option and composes with `seats` as it does with `order` today: seats say who sits where, mirror reflects where the seats are. The anchor changes where the seats are and leaves the permutation alone. So an arrangement survives toggling either, which is how the drawer "holds" them.
+
+## 9. Copy (final text; items 10, D2, D12, D13)
+
+**Label**: `SCALE: (DING) TOP NOTES | OPTIONAL INNER NOTES`
+**Second label line**: `[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS`
+Whether each fits one line at 380 px is UNVERIFIED; the design step checks it.
+
+**Placeholder**: `[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A` (60 characters). At 16 px in a field roughly 324 px wide it needs two rows (ESTIMATE, UNVERIFIED); D14's wrapping field shows it whole. No shorter alternative is substituted.
+
+**Count line** (replaces the output of `parseLineText`; D12's "count line"): counts first, then the notes grouped by shell, with no bar used as a separator. For the example: `Ding E3 · 9 top · 3 inner · 7 bottom. Top B3 D4 E4 F#4 G4 A4 B4 D5 E5. Inner F#5 G5 A5. Bottom C3 D3 F#3 G3 A3 C4 C5.` All three counts are always printed, including `0 inner` and `0 bottom`. How the line wraps inside the field group is for the design step.
+
+**`PARSE_HINT`**: "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional. A | used to mean bottom notes; it now means inner notes."
+
+**`LAYOUT_HINT`**: "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan." (The control's name is the design step's to confirm.)
+
+**Mirror switch**: `MIRROR`, off by default. Helper, if the design step keeps one: "Flips left and right."
+
+**`REASONS`**, every entry (`<A>`, `<B>`, `<X>`, `<N>` substituted as today):
+
+| Code | Sentence |
+|---|---|
+| `NO_DING` (base, empty line) | "No ding. Put the ding in round brackets, e.g. (D) A C D E." |
+| `NO_DING` alternate `which` | "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a \| straight after it: D \| A C D E." |
+| `NO_DING` alternate `two` | "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C." |
+| `NO_DING` alternate `below` | "<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C." |
+| `NO_FIFTH` | unchanged: "No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding." |
+| `TOO_MANY_RIM` | REMOVED (A15) |
+| `BAD_NOTE` (base) | "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C." |
+| `BAD_NOTE` alternate `slash` | "A lone / is the old way to mark inner notes. Use \| now, e.g. (D) A C D \| E F." |
+| `BAD_NOTE` alternate `bracket` | "<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B." |
+| `BAD_NOTE` alternate `bar` | "Too many \| marks. One \| starts the inner notes, e.g. (D) A C D \| E F. A bottom note takes square brackets instead: [C]." |
+| `BAD_NOTE` alternate `barEmpty` | "A \| needs top notes before it and inner notes after it, e.g. (D) A C D \| E F." |
+| `BAD_NOTE` alternate `barFirst` | "The \| comes after the ding and the top notes, e.g. (D) A C D \| E F." |
+| `NOTE_OUT_OF_RANGE` | unchanged (not a format refusal) |
+| `NOTE_OUT_OF_ORDER` (base) | "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4." |
+| `NOTE_OUT_OF_ORDER` alternate `ding` | "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3." |
+| `NOTE_OUT_OF_ORDER` alternate `afterBar` | "<A> comes after the \| but is below <B>. Notes after \| are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4." |
+| `NOTE_OUT_OF_ORDER` alternate `below` | "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3." |
+| `NOTE_REPEATED` | "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4." |
+| `NEEDS_NEWER_APP` | unchanged |
+| `NO_THIRDS` (warning) | unchanged |
+| `SMALL_LABELS` (warning, NEW) | "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out." |
+
+A lane test extracts every `e.g.` example from `REASONS`, the placeholder and the hint and asserts each parses (D2).
+
+## 10. The design step (D11)
+
+**DS: drawer and field interaction spec.** Run `/frontend-design:frontend-design`. It needs only this plan, so it starts at once and runs alongside the engine lanes. Lanes W1, DR1 and DR2 may not start until its output is merged and the owner has signed it off.
+
+Inputs handed to it:
+
+1. The data model in section 8: one permutation per ring; the primitive is a swap of two notes in one ring (A18), unless the step argues for insert-and-shift.
+2. Constraints: single-file app, no new dependency, no `<script src>`; the visual system in CLAUDE.md unchanged; everything works at 380 px; the pan is drawn by the same `pan()` renderer as the cards and redraws on every seat change; the existing interactive hit layer (`sizePanHits`, `panHitRadii`, 44 px floor) is the starting point; the primary button stays outside the scrolling body and only it and the delete row are pinned (owner ruling recorded in the sheet markup).
+3. Measured facts: the table in 5.8; the placeholder is 60 characters; the field is an `<input>` today and must become a wrapping control of one to three rows in which Enter still submits and an EMPTY field is tall enough to show the whole placeholder; the count line (section 9) is longer than today's parse line, which shares one reserved line with the refusal.
+4. Behaviours to specify: how the drawer opens and closes from the sheet on both Add and Edit, and where focus goes; whether it is offered before the box parses; pointer drag on touch without scrolling the page; a tap-then-tap equivalent; a keyboard equivalent (pick up, move seat by seat within the ring, drop, cancel) with spoken announcements; what a drop outside the ring or on another ring does and how that is shown; the anchor control (two states, section 7.1); the MIRROR switch (D13); a reset; how the legibility warning and the refusal line coexist with the drawer; what happens to an arrangement when the typed notes change the count of a ring.
+5. What it must NOT do: change the card face, add a second pan renderer, allow a cross-ring move, shorten the example, or rename MIRROR.
+
+Output: `docs/plans/2026-10-06-layout-drawer-design.md`, holding element ids, states, copy, the keyboard map, announcement strings, the 380 px layout, and an acceptance list written as observable behaviours that Lanes W1, DR1 and DR2 turn into tests.
+
+## 11. Lanes
+
+### 11.1 Order and why
+
+1. **L0** seams, no behaviour change. First: it is what stops a stored record being misread once the grammar changes.
+2. **G1** the new parser, unwired. After L0 (same file, `core.js`). May run in parallel with S1; whichever merges second reruns `python3 tools/inline_engine.py`.
+3. **S1** no caps in the solver, N inner notes, adaptive ding offset, the warning. Independent of the grammar.
+4. **S2** one direction and the anchor. After S1 (same file, `layout.js`). Uses G1's parser in its D9 test.
+5. **P1** the Pygmy redraw. After S1 and S2, because the redrawn `geom` must be the output of the final seat and geometry rules.
+6. **S3** per-ring seats and share version 3. After S2 (the anchor travels in the same version).
+7. **W1** the sheet: wrapping field, count line, MIRROR switch. After S2 (MIRROR's meaning), after DS (its layout). Before G2b so the long placeholder has somewhere to go.
+8. **G2a** legacy tests call the legacy reader (no behaviour change): after L0 (section 19, R4). Then **G2b** the flip and share version 4: after G1, G2a, S1, S3, W1.
+9. **DR1** drawer shell, anchor, MIRROR moved in; then **DR2** drag. After DS, S3 and G2b.
+10. **DOC** the long-form spec. Last.
+
+Common rules for every lane: re-derive the mutant base with `ls tests/mutants | wc -l`; run `python3 tools/inline_engine.py` after any edit under `src/engine/`; regenerate (never hand-write) every mutant its edits make stale; and include in its acceptance the stale check
+
+`for p in tests/mutants/*.patch; do git apply --check "$p" 2>/dev/null || echo "STALE $p"; done` (expected: no output)
+
+and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.json` (expected: no output, exit 0). Line counts are ESTIMATES. Mutant counts after 684 are FORECASTS.
+
+---
+
+### Lane L0: seams (inert)
+
+- **Goal**: make ids, record lookups and scale-line reading independent of `formatSeed`'s spelling, with no visible change.
+- **Owns**: in `src/engine/core.js` the functions `orderedIds` and `deckId`, new `identitySeed`, new export `parseLegacySeed`; in `src/engine/share.js` the choice of reader inside `decodeSeed`; in `index.html` the generated engine regions for core and share and the functions `scaleRecord`, `rememberScale`, `forgetScale`, `replaceScale`, `restoreScales`; new fixture `tests/fixtures/deck_ids_v1.json`; the tests named below.
+- **Reads only**: `tests/helpers/engine.js`, `data/decks.json`.
+- **Changes**: `identitySeed(fields)` is today's `formatSeed` algorithm with zone-based ordering and the generalised ` /` rule (5.2); `deckId` hashes it; `parseLegacySeed` is exported as an alias of today's `parseSeed`; `decodeSeed` and `restoreScales` call a reader chosen by version (all versions map to the same function for now); record lookups compare `deckId`.
+- **TDD order** (red first): (1) `tests/core.test.js` "every frozen legacy string keeps its deck id" (about 500 strings with ids captured from main, plus the five ids in 5.2); (2) "identitySeed equals formatSeed on every legacy-reachable shape"; (3) "identitySeed tells a twelve-note rim from an eleven-plus-one spill"; (4) `tests/app.test.js` "forgetting a deck removes its record whatever spelling the record holds"; (5) `tests/share.test.js` "decode chooses its scale-line reader from the version".
+- **Acceptance**: `./tests/run.sh node` prints `ALL GREEN`; `python3 tools/validate.py` exits 0; `python3 tools/inline_engine.py --check` exits 0; `git diff --stat <base> -- tests/fixtures` lists only `deck_ids_v1.json`.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: any grammar change; any version bump.
+- **Stop conditions**: any existing fixture changes; any id in the new fixture differs from main.
+- **Mutant delta (forecast)**: +3 (id hashed from the canonical string; reader not chosen by version; lookup by string). 684 to 687. About 250 lines.
+
+### Lane G1: the new parser, unwired
+
+- **Goal**: implement and fully test the new grammar and its canonical printer as `HPE.core.parseScale` and `HPE.core.formatScale`, with nothing calling them.
+- **Owns**: in `src/engine/core.js` new functions only (tokenizer, structure pass, inference pass, `formatScale`), the note pattern, and the new `REASONS` alternates added without removing anything; the generated core region of `index.html`; new test file `tests/scale.test.js` with its row in `FLOORS` in `tests/suite_health.py`; new fixture `tests/fixtures/scale_grammar_v1.json` (the table in 4.5, each row with its expected fields or code and alternate).
+- **Reads only**: `data/decks.json`, `tests/fixtures/deck_ids_v1.json`.
+- **Changes**: section 4, following Appendix A.
+- **TDD order**: (1) "every row of the grammar table parses to its fields"; (2) "every refused row carries its code and its sentence"; (3) "the five built-in strings parse to the shipped names, octaves, MIDI, zones and labels"; (4) "the E Amara 20 example lands on exactly its twenty pitches"; (5) "formatScale round-trips every accepted string of length one to five over the probe alphabet"; (6) "a bare ding and a bracketed ding give the same pan"; (7) "every legacy-reachable field map prints and re-parses unchanged"; (8) "a string with neither mark reads the same under both grammars"; (9) "every e.g. in REASONS parses"; (10) "octave -1 lexes and round-trips"; (11) "a bracketed note among top notes and a bottom note after the inner notes continue the climb".
+- **Acceptance**: `node --test tests/scale.test.js` passes; `./tests/run.sh node` prints `ALL GREEN`; `git diff --exit-code <base> -- tests/core.test.js` prints nothing.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: wiring; removing caps; changing `formatSeed` or any id.
+- **Stop conditions**: a string is found with two readings; any D9 string fails test 3.
+- **Mutant delta (forecast)**: +7 (bare-ding bar ignored; bracket zone ignored; descending inference climbs; canonical order drops the bottom-first tie; equal pitch accepted untyped; lone slash accepted; `-1` not lexed). 687 to 694. About 450 lines.
+
+### Lane S1: no caps in the solver, N inner notes, ding offset, the warning
+
+- **Goal**: `layout.solve` never refuses for size; inner notes fan for any count; the ding clears inner index numbers; a crowded pan carries `SMALL_LABELS`.
+- **Owns**: in `src/engine/layout.js` the cap constants, `INNER_ANGLES`, `innerAngles`, `geometry`, the three cap lines in `solve`, new `labelFloor`, new named constants for the fan span, the offset step, the clearance and the offset ceiling; in `src/engine/select.js` the warnings block of `build`; in `src/engine/core.js` the `SMALL_LABELS` entry only; in `index.html` the generated regions and the one place `syncParseState` clears the message area (so the warning shows live); `tests/layout.test.js` cap tests and new tests; mutant `g_bottom_cap_seven` (retired).
+- **Reads only**: `tools/hifi.py` (label ratios, the 3.6 floor), `tools/decks.py`, `src/engine/pdfdeck.js`, `src/engine/pdfcards.js`.
+- **Changes**: delete the caps; `innerAngles(k)` per A13; ding offset per A14 (solve `r_note`, test clearance, raise, solve again); `labelFloor(geom)` returns the smallest of the four counted glyph sizes in points at `round(74 / ext, 1)`; `build` attaches `SMALL_LABELS` with `<N>` to one decimal when it is under 3.6. The parser's own caps stay until G2b, so nothing a player can type changes yet except through `tools/gen_deck.js` callers of `solve`.
+- **TDD order**: (1) "two inner notes sit at 128 and 52"; (2) "one, three, four, five and six inner notes take the fan seats"; (3) "the ding offset stays 0.1425 for the Pygmy shape and rises until every inner number clears"; (4) "no two fields overlap at any count" (the 9,360-pan sweep of 5.4); (5) "a hundred and fifty rim notes solve"; (6) "labelFloor crosses 3.6 pt at 21 rim, at 15 rim with a bottom shell, at seven inner on nine rim, and at 36 bottom"; (7) "bottom octave digits do not trigger the warning" (D15: one bottom note alone gives no warning); (8) "the E Amara 20 shape carries no warning"; (9) `tests/test_pdf_parity.py` "labelFloor uses the print pipeline's ratios"; (10) `tests/select.test.js` "a crowded pan builds with SMALL_LABELS and is not refused"; (11) `tests/app.test.js` "the sheet shows the small-labels warning while typing".
+- **Named gate G-RENDER**: render the app pan at 380 px and the print PDF for 9 rim with 1, 2, 3, 4 and 6 inner notes, for 5 rim with 2 inner, and for the E Amara 20 shape. A human confirms that no inner index number touches the ding, no label leaves its circle, the ding's lower edge stays inside the rim fields, and the title-card blurb with the warning line stays above the print floor. Screenshots go on the PR. The lane does not merge without it; if the model is contradicted, the four named constants are the only things to retune.
+- **Acceptance**: `node --test tests/layout.test.js` passes; `node --test --test-name-pattern "SMALL_LABELS" tests/select.test.js` passes; `python3 -m unittest tests.test_pdf_parity -v` passes; `grep -c "RIM_MAX\|INNER_MAX\|BOTTOM_MAX" src/engine/layout.js` prints 0.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: rim direction; the parser's caps; bottom octave digit size.
+- **Stop conditions**: G-RENDER shows a collision the constants cannot fix; any built-in drawing changes (`pan_render_v1.json` or `tests/test_render_agreement.py` moves).
+- **Mutant delta (forecast)**: -1, +5 (third inner seat wrong; offset not raised; warning never attached; bottom octave counted; cap restored). 694 to 698. Regenerate `g_mirror_ignored`, `b_engine_desync`, `g_inner_pair_with_rim`, `g_centred_default_ignored`. About 450 lines.
+
+### Lane S2: one direction and the anchor
+
+- **Goal**: every rim runs odd-right; `anchor` chooses between the two seatings; four built-ins are proven equal to solver output.
+- **Owns**: in `src/engine/layout.js` `rimAngles`, `rimAnglesFromBottom`, `placeZones`, the options read in `solve`, the export list; in `src/engine/core.js` the option reader and defaults; in `src/engine/select.js` the solve call and `deck.options` in `build`; `tools/gen_deck.js` (argument parsing, usage text); in `index.html` the generated regions; the Amara 9 recipe (7.5); `tests/layout.test.js` direction tests; the CLAUDE.md and README layout wording (section 15).
+- **Reads only**: `data/decks.json`.
+- **Changes**: section 7.1. The LEFT-FIRST and RIGHT-FIRST buttons keep working for now (W1 replaces them); with mirror off they now give the odd-right pan.
+- **TDD order**: (1) `tests/layout.test.js` "the solver seats every built-in field where its diagram has it, from the deck's scale string" (loops over `data/decks.json`, default options, anchor `between` for Pygmy, compares ring, seat and angle of every field: the D9 positions check); (2) `tests/app.test.js` "Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them" (every chord and the no-chord drawing through `pan()`, stored deck against the solver's fields and `geom`: the D9 "keeps saying so" check); (3) "the geometry keys that differ from solver output are exactly the documented ones" (pins the table in 5.1); (4) "odd rim notes sit right and even left at every count from 2 to 24, both anchors"; (5) "anchor one puts note 1 at 270; anchor between straddles 270 with note 1 on the right"; (6) "the anchor applies with and without inner notes"; (7) "mirror reflects all three rings"; (8) `tests/core.test.js` "anchor is one or between, anything else is refused"; (9) `tests/test_gen_deck.py` "--anchor between reaches the deck options"; (10) `test_amara_9_chords_equal_a_fresh_engine_run` goes red with `--mirror` and green without it.
+- Existing tests that change meaning and are rewritten here: "mirror turns the pygmy nine-field zig-zag into the left-first pattern", "eight rim fields mirrored reproduce the verified hijaz / amara zig-zag", "the rim is evenly spread and anchored at bottom centre (odd, centred) or top centre", "the default is right-first and mirror is left-first, except on an odd centred rim", "an odd centred rim starts at bottom centre and keeps each note on its side", "a stored order and mirror draw the same sides on an odd rim", "even rim counts are untouched by the centred default", "the centred default reproduces the shipped Amara 9 and Hijaz layouts", "ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags".
+- **Acceptance**: `node --test --test-name-pattern "seats every built-in field" tests/layout.test.js` passes; `node --test --test-name-pattern "draw exactly as the solver" tests/app.test.js` passes; `./tests/run.sh all` prints `ALL GREEN`; `python3 tools/sync_decks.py --check` exits 0; `grep -rn -- "--mirror" tests/test_gen_deck.py` shows no Amara 9 recipe.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: seats; the drawer; converting saved decks (D10); Pygmy's `geom`.
+- **Stop conditions**: test 1 or 2 fails for any deck; `data/decks.json` shows any diff.
+- **Mutant delta (forecast)**: +4 (even rims keep the old direction; anchor ignored; anchor tied to inner notes; a built-in no longer equal to solver output). 698 to 702. Regenerate `g_bottom_anchor_dropped`, `g_bottom_anchor_side_flipped`, `g_centred_default_ignored`, `g_mirror_ignored`, `d_mirror_ignored`. About 450 lines.
+
+### Lane P1: redraw F3 Low Pygmy (the one authorised deck-data change)
+
+- **Goal**: Pygmy's `geom` is engine output; its two PDFs are rebuilt; nothing else in any deck moves.
+- **Owns**: the `geom` object of the `pygmy` deck in `data/decks.json`; the generated `const DECKS` line of `index.html` (through `python3 tools/sync_decks.py`); `F3_Low_Pygmy_18_Cards_Letter.pdf` and `F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf` (through `python3 tools/decks.py`); the fixtures and mutants listed below; the Pygmy paragraph of CLAUDE.md (section 15).
+- **Reads only**: `src/engine/*`, `tools/decks.py`, `tools/hifi.py`.
+- **Changes**: run `node tools/gen_deck.js "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]" --anchor between --out <scratch>/pygmy.json` (until G2b wires the new grammar, the equivalent legacy string `(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5` gives the same fields); copy its `geom` into the deck, with or without `ext` per Q1. Expected values are in 5.1. `fields`, chords, the print overlay (R 60, cy 121) and the blurb are untouched.
+- **Every test this touches**:
+  - `tests/test_fixture_integrity.py`: the frozen golden deck fixture deep-equals the live decks, so it is bumped to the next version (v8 on the assumed main) following that test's own BUMP message. `golden_decks_v3.json` is frozen history and is not edited.
+  - `tests/test_deck_data.py::PrintDeckSnapshotTest.test_deck_dicts_match_the_pre_refactor_snapshot`: `print_decks_v1.json` holds Pygmy's `_geom` `r_note`, `f_note`, `f_num`. It is re-issued as `print_decks_v2.json` with those three values changed and nothing else (UNVERIFIED whether that test's rule is a version bump or an in-place update; the lane follows the rule written beside the test).
+  - `tests/app.test.js`: the `pan_render_v1.json` digests (every Pygmy row changes: 54 on the assumed main; no row of another deck may change), "every built-in card face still matches the committed digest of card_face_v1.json" (Pygmy faces only), and "the built-in decks keep the derived extent they have always rendered" (unchanged under Q1 option a; rewritten to exempt Pygmy under option b).
+  - `tests/test_print.py`: `LabelSizeRuleTest` reads Pygmy's `r_note` and follows the data; `test_no_label_is_smaller_than_what_either_renderer_drew_before` and `test_no_label_falls_below_the_print_floor` must stay green (labels grow); `test_pygmy_geometry_is_pinned` pins the print radius and centre only and is unaffected.
+  - `tests/test_render_agreement.py`, `tests/test_pdf_parity.py`, `tests/pdf_builtin.test.js`: follow the data; expected green without edits.
+  - `tests/test_pdf_build.py::test_committed_pdfs_match_a_fresh_build`: green once the two PDFs are rebuilt.
+  - `tests/layout.test.js`: the tests pinning `ding_dy` 0.1425 are unaffected (the offset does not change).
+- **Fixtures regenerated**: the golden deck fixture (next version); `print_decks_v2.json`; `pan_render_v1.json` by `node tools/regen_pan_fixture.js`; `card_face_v1.json` by `node tools/regen_card_fixture.js`. `engine_corpus_v1.json` holds only a synthetic `ding_dy` and is not touched.
+- **Mutants touched**: the eleven data mutants that embed the whole `const DECKS` line are regenerated by `python3 tools/regen_data_mutants.py` (`b_ding_in_voicing`, `b_cluster_forced_only`, `b_layout_angle_swap`, `b_degree_missing`, `b_root_not_in_voicing`, `b_doubled_pitch_class`, `b_decks_json_desync`, `b_pygmy_badge_count`, `b_duplicate_voicing`, `b_midi_off_by_one`, `b_power_chord_fifth`), plus `b_adopted_deck_drifts` if the in-flight plan generated it the same way; `c_deck_data_drift` is re-cut by hand as its header instructs; `w1b_pygmy_geometry_drifts` is re-cut because its hunk sits inside the edited `geom` block; `qd_p_pygmy_blank_cards_drifts` and `w1b_hijaz_credit_damaged` are checked with `git apply --check` and re-anchored with `python3 tools/refresh_mutants.py` only if stale. The three `r1_lock_*` patches mention `const DECKS` in a comment only and are not affected.
+- **TDD order** (red first): (1) `tests/test_deck_data.py` new `test_pygmy_geometry_equals_a_fresh_engine_run` (runs `tools/gen_deck.js` with the string and `--anchor between`; asserts every stored `geom` key equals engine output and every stored field angle equals the engine's; red on today's 0.1425); (2) new `test_pygmy_fields_and_chords_are_untouched_by_the_redraw` (the `fields` block and chord list equal the previous golden fixture's); (3) the fixture and digest tests above, red until regenerated; (4) extend Lane S2's test 2 so all five built-ins draw exactly as the solver draws them, and delete Pygmy from test 3's list of documented gaps.
+- **Acceptance**: `python3 -m unittest tests.test_deck_data tests.test_fixture_integrity tests.test_print tests.test_pdf_build -v` passes; `python3 tools/sync_decks.py --check`, `python3 tools/regen_data_mutants.py --check` and `python3 tools/validate.py` each exit 0; `git diff --stat <base> -- '*.pdf'` lists exactly the two Pygmy PDFs; `git diff <base> -- data/decks.json | grep -c '^[-+] '` prints the number of changed `geom` lines and every one lies inside the Pygmy `geom` block (5 changed lines under Q1 option a: `r_note`, `inner_ring`, `f_note`, `f_num`, and none added); the stale check prints nothing.
+- **Verify**: `./tests/run.sh all`
+- **Hand check (part of the lane's PR)**: open both rebuilt Pygmy PDFs and the app at 380 px; confirm the pan reads as before with slightly larger top circles, and that no label leaves its circle. UNVERIFIED until done.
+- **Non-goals**: Pygmy's chord list; the print overlay; any other deck; the bottom octave digit.
+- **Stop conditions**: any field angle changes; any non-Pygmy row of `pan_render_v1.json` or `card_face_v1.json` changes; a non-Pygmy PDF changes; the engine's `geom` differs from 5.1 (that means S1 or S2 changed geometry and the gap table must be re-measured first).
+- **Mutant delta (forecast)**: +1 (`b_pygmy_geom_not_engine_output`: one stored `geom` value nudged; killed by test 1). 702 to 703. About 150 changed lines outside fixtures and PDFs.
+
+### Lane S3: per-ring seats and share version 3
+
+- **Goal**: arrangements are per ring everywhere; links and records carry the anchor and seats; cross-ring is refused everywhere.
+- **Owns**: in `src/engine/layout.js` `readOrder`, `reseat`, `slotOrder`, new `readSeats` and `seatsFromOrder`; in `src/engine/share.js` `VERSION`, `CAPS`, `ORDER_RE`, `orderField`, `optionsLine`, `deltaLine`, `readOptionsLine`, `readDeltaLine`, `checkOrder`; in `index.html` the generated regions and `generateDeck`'s correction block, `layoutOrder`, `layoutIds`, `slotZones`, `zoneBlock`, `syncLayoutOrder`, `rotateLayout`, `moveNote`, `resetLayout`, `selectPanField`, `selectedField`; order tests in `tests/share.test.js` and `tests/layout.test.js`.
+- **Reads only**: `src/engine/core.js`.
+- **Changes**: section 8. ROTATE and MOVE keep working in this lane, rewritten to edit one ring's permutation (they are removed in DR1). Version 3: the options line gains `anchor` before the name; the third line is `rim;inner;bottom`; the cap is 4096. The scale line is still read by the legacy reader.
+- **TDD order**: (1) "a seat list for one ring cannot name a seat in another"; (2) "a legacy flat order that stays in its rings converts; one that crosses is refused"; (3) "a version 2 link opens with the same seats it had"; (4) "a version 3 link round-trips anchor and seats"; (5) "a link with a cross-ring arrangement is refused BAD_NOTE"; (6) "a stored record with a cross-ring order opens with the default arrangement"; (7) "a 120-note pan with every ring rearranged encodes under the cap"; (8) "a name containing every printable character still round-trips with an anchor beside it"; (9) the existing version-gate test, moved up one version.
+- **Acceptance**: `node --test tests/share.test.js tests/layout.test.js` passes; `node --test --test-name-pattern "ROTATE|MOVE|RESET" tests/app.test.js tests/e2e.test.js` passes.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: the new grammar on the scale line; any drawer UI.
+- **Stop conditions**: any version 1 or 2 golden link in `tests/share.test.js` stops decoding to the same deck.
+- **Mutant delta (forecast)**: +3. 703 to 706. Regenerate `l_order_length_unchecked`, `l_order_ignored`, `s_share_order_unchecked`, `s_share_v1_delta_accepted`, `eg_slotorder_swapped`, `ap3_slotzones_reversed`, `qa_select_pan_field_ignores_order`. About 500 lines.
+
+### Lane W1: the sheet field (D12, D13, D14)
+
+- **Goal**: the scale field wraps to three rows; the line under it leads with counts; the mirror is one switch.
+- **Owns**: in `index.html` the `#scale-box` element and its CSS rules, the field's `input` and `keydown` listeners, `parseLineText`, the two mirror buttons and their handlers (replaced by one element `#scale-mirror`), the `mirror` read in `sheetOptions`; `tools/sandbox.js` ids (`scale-mirror-l` and `scale-mirror-r` out, `scale-mirror` in); the mirror and field tests in `tests/app.test.js`, `tests/e2e.test.js`, `tests/preview.test.js`; `tests/fixtures/app_surface_v1.json`.
+- **Reads only**: the DS spec; `src/engine/*`.
+- **Changes**: per the DS spec. Fixed by this plan: the field shows one to three rows and never scrolls sideways; an empty field shows the whole placeholder; Enter submits and never inserts a line break; a pasted line break is treated as a space; the count line has the shape in section 9; MIRROR is off by default and reads a stored `mirror: true` as on.
+- **TDD order**: (1) e2e "the scale field grows to three rows at 380px and shows the whole example"; (2) e2e "Enter in the scale field generates and adds no line break"; (3) "a pasted line break is read as a space"; (4) "the line under the box leads with the top, inner and bottom counts"; (5) moved to G2b by the eng review (R9): before the flip the bar still means bottom notes, so the test cannot pass here; (6) "MIRROR is one switch, off by default, and carries the choice into the deck" (replaces "the mirror pair defaults to right-first and carries the choice into the deck"); (7) "a deck stored with mirror true opens with MIRROR on"; (8) the existing e2e tests on the field under a real keyboard stay green ("the seed box is not clipped by the sheet's own scroller", "GENERATE CARDS is reachable without scrolling at every phone viewport").
+- **Acceptance**: `node --test tests/app.test.js tests/preview.test.js` passes; `node --test --test-name-pattern "scale field|MIRROR" tests/e2e.test.js` passes; `grep -c "LEFT-FIRST\|RIGHT-FIRST\|scale-mirror-l\|scale-mirror-r" index.html tools/sandbox.js` prints 0 for both files.
+- **Verify**: `./tests/run.sh all`, plus a hand check on a phone at 380 px with the keyboard up, recorded on the PR (UNVERIFIED until done).
+- **Non-goals**: the grammar; the drawer; the label and hint text (G2b).
+- **Stop conditions**: the three-row field pushes the primary button out of reach at any tested viewport.
+- **Mutant delta (forecast)**: +3 (field stays one row; counts dropped from the line; MIRROR inert). 706 to 709. Regenerate `d_mirror_ignored`, `f6_scale_box_media_override`, `f6_scale_box_font_override`. About 350 lines.
+
+### Lane G2a: legacy tests call the legacy reader (behaviour-free)
+
+- **Goal**: every test and fixture that proves the legacy grammar calls `parseLegacySeed` by name, so the flip is a small diff.
+- **Owns** (WIDENED by the eng review, section 19 R1; the list there replaces this one): legacy-grammar cases in `tests/core.test.js` (25 literals), `tests/preview.test.js` (2), `tests/layout.test.js` (1), `tests/test_print.py` (1); `tests/fixtures/synthetic_scales.json` and `engine_corpus_v1.json` (through `tools/regen_engine_corpus.js`), each entry tagged with the reader it is for.
+- **Reads only**: `src/engine/core.js`.
+- **TDD order**: none new; the lane is a rename with the suite green before and after.
+- **Acceptance**: `./tests/run.sh all` prints `ALL GREEN`; `git diff --stat <base> -- src index.html` prints nothing.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: any behaviour change.
+- **Stop conditions**: a fixture regeneration changes any chord list.
+- **Mutant delta**: 0. Regenerate `u_inner_mark_ignored`, `u_inner_mark_unprinted` if their kill tests moved. About 300 lines.
+
+### Lane G2b: the flip
+
+- **Goal**: typed input, the canonical string, links (version 4) and records use the new grammar; the sheet teaches it; the parser's caps and spill go.
+- **Owns**: in `src/engine/core.js` `parseSeed` and `formatSeed` (they become G1's functions; the old ones remain only as `parseLegacySeed`), the parser caps, `TOO_MANY_RIM`, the final `REASONS` text, the bottom id base in `assemble`; in `src/engine/share.js` `VERSION` 4 and the reader table; in `index.html` the generated regions, the `#scale-box` label and placeholder text, `PARSE_HINT`, `LAYOUT_HINT`, the boot rewrite in `restoreScales`; the README "+ ADD A SCALE" bullet and the CLAUDE.md "Scale strings" paragraph; mutant `u_inner_cap_unenforced` (retired).
+- **Reads only**: everything else.
+- **TDD order**: (1) `tests/app.test.js` "a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index"; (2) `tests/share.test.js` "a version 3 link with a bar opens with bottom notes"; (3) "the placeholder parses and draws the E Amara 20 pan"; (4) "label, placeholder and hint name the same three marks" (`(`, `[` and `|` in each, a lone `/` in none); (5) "every example in the label, hint and refusals parses"; (6) "typing the old inner mark shows the slash sentence"; (7) "typing an old bottom list with octaves shows the afterBar sentence"; (8) "TOO_MANY_RIM is not in REASONS and thirteen rim notes generate a deck"; (9) "a hundred-and-first top note does not collide with a bottom id"; (10) L0's "every frozen legacy string keeps its deck id", still green; (11) from W1 (R9): "an octave-less list after the bar is counted as inner notes, with zero bottom"; (12) to (15): the record-safety and boundary tests in section 19 (R2, R7, R8).
+- **Acceptance**: `./tests/run.sh all` prints `ALL GREEN`; `grep -c "TOO_MANY_RIM" src/engine/core.js src/engine/layout.js` prints 0 for both; `python3 tools/validate.py` exits 0; `python3 -m unittest tests.test_readme_currency -v` passes.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: the drawer; any solver change.
+- **Stop conditions**: test 1 or 10 cannot be made green.
+- **Mutant delta (forecast)**: -1, +4 (version 3 record read as new grammar; boot rewrite moves the record's index; placeholder not parsed; `afterBar` sentence not chosen). 709 to 712. Regenerate `u_reason_string_reworded`, `u_flat_raises_midi`, `b_engine_desync`, and the hint mutants in 5.6 that quote the old text. About 450 lines.
+
+### Lane DR1: drawer shell, anchor, MIRROR moved in
+
+- **Goal**: the control that opens the drawer on both Add and Edit, the drawer, and the anchor and MIRROR controls inside it, per the DS spec. ROTATE and MOVE removed.
+- **Owns**: in `index.html` the markup and CSS of `#scale-layout-row`, the new drawer element, the position of `#scale-mirror`, and the functions `sheetOptions`, the sheet-state reset, `rotateLayout`, `moveNote`, `stepLayoutSel` (deleted or replaced), the focus-order list that names the ROTATE and MOVE buttons; `tools/sandbox.js` ids (`scale-rot-l`, `scale-rot-r`, `scale-move-l`, `scale-move-r` out; drawer ids in); the ROTATE and MOVE tests in `tests/app.test.js` and `tests/e2e.test.js` (replaced); `app_surface_v1.json`; mutants `e_layout_rotate_inert`, `d_rotate_drops_the_selection`, `qa_layout_prologue_skips_sync` (retired).
+- **Reads only**: the DS spec; `src/engine/*`.
+- **TDD order**: one test per acceptance line of the DS spec, red first; at minimum "the drawer is offered on Add and on Edit", "the drawer opens and closes from the keyboard at 380px and returns focus", "the anchor control redraws the preview and reaches the generated deck, the record and the share link", "MIRROR inside the drawer redraws and reaches the deck", "ROTATE and MOVE are gone from the markup".
+- **Acceptance**: `node --test tests/app.test.js tests/e2e.test.js` passes; `grep -c "scale-rot-\|scale-move-" index.html tools/sandbox.js` prints 0 for both.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: dragging.
+- **Stop conditions**: the spec needs something the data model in section 8 cannot express.
+- **Mutant delta (forecast)**: -3, +4. 712 to 713. Regenerate `e_layout_reset_inert`, `r3s_served_id_not_in_markup`, `ap2_sheet_state_layout_sel_leaks`, `d_layout_reset_identity`, `d_layout_stale_order_guard`, `f6_pan_home_end_swapped`, `e_layout_hint_outside_its_group`, `d_layout_hint_deleted`, `d_layout_hint_only_a_comment`. About 500 lines.
+
+### Lane DR2: drag to seat
+
+- **Goal**: pointer, tap-then-tap and keyboard seat changes within a ring, with live redraw.
+- **Owns**: in `index.html` `selectPanField`, the interactive branch of `paintPan`, the sheet's callers of `sizePanHits`, new drag handlers; drag tests in `tests/app.test.js` and `tests/e2e.test.js`.
+- **Reads only**: the DS spec; `HPE.layout`.
+- **TDD order**: "dragging a rim note onto another rim seat swaps the two and nothing else"; "a drop on another ring changes nothing"; "the same change from the keyboard alone"; "tap a note then a seat does the same"; "the preview redraws during the move"; "the arrangement reaches the generated deck, the record and the share link"; "mirror and anchor keep an arrangement"; "changing the note count of a ring resets only that ring".
+- **Acceptance**: `node --test --test-name-pattern "drag|seat" tests/app.test.js tests/e2e.test.js` passes.
+- **Verify**: `./tests/run.sh all`, plus a hand check on a phone at 380 px recorded on the PR (UNVERIFIED until done).
+- **Non-goals**: any engine change.
+- **Stop conditions**: a drag can produce an arrangement `readSeats` refuses.
+- **Mutant delta (forecast)**: +5. 713 to 718. About 500 lines.
+
+### Lane DOC: the long-form spec
+
+- **Goal**: `docs/ENGINE-SPEC.md` and `docs/SCALE_ENGINE_PLAN.md` describe the shipped behaviour.
+- **Owns**: those two files (the grammar, reasons, layout, share and options sections; the row on mirror). No code.
+- **Reads only**: everything.
+- **TDD order**: none (prose); the currency tests are the check.
+- **Acceptance**: `python3 -m unittest tests.test_readme_currency -v` passes; `grep -c "LEFT-FIRST\|RIGHT-FIRST\|TOO_MANY_RIM" docs/ENGINE-SPEC.md` prints 0.
+- **Verify**: `./tests/run.sh all`
+- **Non-goals**: any code or data change. **Stop conditions**: the spec and the code disagree (fix the code lane, not the prose). **Mutant delta**: 0.
+
+## 12. Test matrix
+
+| Requirement | Test (lane) |
+|---|---|
+| D1 grammar, no ambiguity | grammar table, enumeration round trip, bare and explicit twins, climb through brackets (G1) |
+| D2 copy agrees, examples parse | every `e.g.` parses (G1); label, placeholder and hint agree; every example parses (G2b) |
+| D3 example | twenty pitches (G1); placeholder draws it (G2b) |
+| D4 no caps, warning | overlap sweep, 150 rim, `labelFloor` thresholds, `SMALL_LABELS` built and shown live (S1); thirteen rim generates (G2b) |
+| D5 no spill | table row 14 (G1) |
+| D6 inner at top, ding down | fan seats, offset rule, G-RENDER (S1) |
+| D7 anchor | anchor tests (S2); link round trip (S3); control (DR1) |
+| D8 one direction | odd-right sweep (S2) |
+| D9 four built-ins byte-identical | `git diff --exit-code -- data/decks.json` in every lane but P1; P1's diff confined to Pygmy `geom`; the golden deck fixture |
+| D9 every seat reproduced | "the solver seats every built-in field where its diagram has it" (S2) |
+| D9 drawings equal solver output | "draw exactly as the solver draws them", four decks (S2), five decks (P1) |
+| D9 Pygmy redraw | `test_pygmy_geometry_equals_a_fresh_engine_run`, `test_pygmy_fields_and_chords_are_untouched_by_the_redraw`, PDF rebuild test (P1) |
+| D10 old strings open, not misread | frozen ids (L0, G2b); version 2 record and version 3 link with a bar (G2b); cross-ring legacy order (S3) |
+| D11 drawer | DS acceptance list as tests (DR1, DR2) |
+| D12 copy only | count line counts inner and zero bottom (W1); hint sentence (G2b) |
+| D13 MIRROR | one switch, off by default, stored true reads as on (W1) |
+| D14 field wraps | three rows at 380 px, Enter submits (W1) |
+| D15 bottom octave excluded | "bottom octave digits do not trigger the warning" (S1) |
+
+## 13. Risks
+
+1. **The silent reading in 6.4.** Mitigation is copy only, by D12.
+2. **G-RENDER may contradict the clearance model.** S1 isolates the fan span and the offset rule in four named constants; P1 runs after S1, and its stop condition catches any drift.
+3. **Saved even-rim decks flip, and a saved mirrored even-rim deck shows MIRROR on and looks reversed** (5.3). Accepted by D10; the README says so.
+4. **Pygmy's print overlay keeps radius 60**, so its printed circles grow 2.2% inside an unchanged frame. The solver's packing bound says nothing collides; the hand check in P1 confirms it on paper (UNVERIFIED until then).
+5. **Stale mutants.** 417 patches target `index.html`. Each lane runs the stale check and regenerates what it reports.
+6. **Two tabs, old and new app.** CORRECTED by the eng review (R7): the claim that an old tab cannot harm newer records was false. Today's `rememberScale`, `replaceScale` and `forgetScale` match on the stored string, so an old tab that saves or deletes a scale whose string is unchanged overwrites a newer record with a version 2 one (anchor and seats lost) or removes it. Section 19, R7 isolates new records under a new storage key.
+7. **The in-flight plan may land differently from section 2.** L0 re-checks every assumption there; P1's fixture version and drawing counts follow what is actually on main.
+8. **`labelFloor` repeats the print ratios a third time.** Pinned by the parity test in S1.
+9. **A textarea changes keyboard and autofill behaviour on iOS.** W1's hand check with a real keyboard is a merge condition.
+
+## 14. Rollback
+
+Each lane is one PR and reverts on its own, in reverse order. L0, G1 and G2a are inert. Reverting S1 restores the solver caps. Reverting S2 flips the redraws back and must be accompanied by reverting P1, because Pygmy's stored `geom` would no longer be the reverted engine's output for the default anchor option. Reverting P1 restores the previous `geom`, fixtures, mutants and both PDFs from the same commit. Reverting S3 or G2b after players have saved version 3 or 4 records leaves those records under the new storage key (section 19, R7), which the reverted app does not read. The reverted app reads the old key, which still holds every deck saved before S3 shipped. Decks saved after S3 are invisible until the lane is re-landed; nothing is deleted. Prefer rolling forward for S3 and G2b.
+
+## 15. Exact text for CLAUDE.md and README
+
+**CLAUDE.md, "Instrument layouts", Hijaz entry, first sentence (Lane S2).** Replace "Standard left-first zig-zag:" with:
+
+> Standard zig-zag, note 1 at bottom centre, odd-numbered notes on the right and even-numbered on the left:
+
+**CLAUDE.md, Pygmy entry (Lane S2).** Replace "Top rim is MIRRORED (right-first) zig-zag:" with:
+
+> Top rim is the SAME zig-zag direction as Hijaz and Amara (odd notes right, even left); what differs is the anchor: bottom centre falls between notes 1 and 2:
+
+**CLAUDE.md, replacing the whole "Generated layouts (2026-10-06, owner decisions)" paragraph (Lane S2; the sentences on inner notes and caps become true with S1, which merges first):**
+
+> **Generated layouts.** One direction on every generated pan, odd or even rim: odd-numbered rim notes sit on the right, even-numbered on the left. Two ANCHORS, a per-deck option `anchor`: `one` (the default) puts note 1 at bottom centre (C# Hijaz 9, D Amara 9, D Kurd 10, D AMARA 10); `between` puts the bottom centre between notes 1 and 2 with note 1 on the right (F3 Low Pygmy). Older notes called these "left-first" and "mirrored (right-first)"; those words described the anchor, not two directions, and are retired. MIRROR reflects all three rings about the vertical axis and is the only thing that puts odd notes on the left. The anchor applies whether or not the pan has inner notes. Inner notes are only the notes typed after the inner bar: one sits at top centre, two at 128 and 52, more fan across the top half of the inner orbit, and they push the ding toward the player (0.1425, more when an inner index number would touch the ding). No inner notes means a centred ding. There are no note-count caps: a crowded pan draws smaller and carries the `SMALL_LABELS` warning, which ignores bottom octave digits; it is never refused. The solver seats every field of every built-in exactly where its diagram has it, from the deck's scale string and default options (`anchor: between` for Pygmy).
+
+**CLAUDE.md, added to the Pygmy entry (Lane P1):**
+
+> Pygmy's `geom` is engine output: `node tools/gen_deck.js "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]" --anchor between`. Its field angles, chords and print overlay are still hand-verified data. The other four built-ins keep their stored bytes, and a test proves their drawings equal solver output.
+
+(Until G2b wires the new grammar the lane writes the equivalent legacy string and G2b swaps it.) The sentence "The three original decks are literal data and never pass through the solver" is deleted with the paragraph it sat in.
+
+**CLAUDE.md, new short paragraph under "Architecture" (Lane G2b):**
+
+> **Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, chosen by the version tag on a stored record or share link (3 or lower), never by looking at the string. The deck id hashes `identitySeed`, not the canonical string, so no id moved.
+
+**README, replacing the grammar sentences of the "+ ADD A SCALE" bullet (Lane G2b; the drawer sentence is added by DR2):**
+
+> type your pan low to high on one line, the ding in round brackets and each bottom note in square brackets where its pitch falls, e.g. `[C] (D) A C D E F G A C`. If the pan has inner notes, put a `|` before them. The line under the box counts the top, inner and bottom notes it read. Pick a palette; ADJUST LAYOUT opens a drawer where you can drag a note to another seat in its ring, choose whether note 1 sits at bottom centre, and MIRROR the pan; then GENERATE CARDS. No pan is too big; a crowded one warns that its labels print small. Scales saved before this version still open. A saved scale with an even number of rim notes now draws with its sides swapped, to match every other pan; switch MIRROR to swap them back.
+
+**README, "Layout notes", Pygmy top shell bullet (Lane S2).** Replace "zig-zag ascends right-first, Eb5 at top centre" with:
+
+> zig-zag runs the same way as the other decks (odd fields right, even left) with bottom centre between fields 1 and 2, Eb5 at top centre
+
+## 16. What was not read or run
+
+- No browser was run and no pan or PDF was rendered. Every statement about 380 px, the placeholder's fit, label fit, hit-target pixels and inner-number clearance is geometry or estimate, labelled where made.
+- No test suite and no mutant sweep was run.
+- No file was written; the probes exist only as the sources in the appendices. Appendix B reuses a read-only helper already in the session scratchpad (`plan-probe/lib.js`, function `loadPatched`), reproduced there in words.
+- Kurd 10 and Amara 10 are not on main; stand-ins were used. Pygmy's 53rd chord is not on main.
+- Read by grep or in part only: `src/engine/pdf*.js`, `src/engine/select.js` beyond `build`, `tools/validate.py`, `docs/ENGINE-SPEC.md`, the bodies of the test files (names and counts were read), and the in-flight plan beyond its mirror, fixture and mutant lines. How a warning reaches the title-card blurb was not re-read this session; S1 follows the path `NO_THIRDS` takes.
+- Whether `print_decks_v1.json` is bumped or edited in place was not established.
+- The Ayasa and Xenith pages were not opened. `/frontend-design:frontend-design` was not invoked. Nothing under `.claude/worktrees` was read or touched.
+- Lane line counts and every mutant count after 685 are forecasts.
+
+## 17. Self-check
+
+Grounding 9; completeness against D1 to D15 and items 1 to 10: 9; grammar soundness 9; lane independence 9; testability 9; honesty 10; protection of shipped decks 9; readability 9.
+
+Weakest point: the inner-ring geometry for three or more notes, and the look of the redrawn Pygmy on paper, rest on a clearance model and two gates rather than on a rendered pan.
+Second weakest: lanes that share `index.html` are independent only by named function and by order, and their sizes are estimates.
+
+## 18. Prompt feedback
+
+- The brief gives Pygmy's frame change backwards. Measured: the stored-deck fallback is `-147.68 ... 295.36` and the solver's `ext` gives `-146.2 ... 292.4`.
+- "`geom` becomes solver output" collides with an existing convention the brief does not mention: no built-in carries `ext`, a test enforces that, and the in-flight plan strips it from its two new decks. Its figures (104 numbers, 2.96 units) describe the "keep `ext`" case. I raised it as Q1 rather than decide it.
+- "No conversion to preserve a look" has a consequence the brief does not spell out: a saved even-rim deck with `mirror: true`, which today looks like Amara, opens reversed with MIRROR on.
+- The brief says today's solver needs something new to reproduce Pygmy; in fact today's unmirrored solver already seats Pygmy 17 of 17. What fails today is the default anchor once the inner-note link is cut, and `mirror: true`.
+- "Five built-ins" and "53 cards" describe a main that does not exist yet; two decks had to be measured on stand-ins.
+- "Prove the ding offset with a RENDERED pan" cannot be met by a planner that may not render or write; only the named gate was available.
+- The brief allows scratch scripts on stdin, but the prior probes depended on a helper file in the scratchpad; I reused it read-only.
+- D13 puts MIRROR on the sheet and D11 puts "a mirror" in the drawer; I read these as one control that moves (A22).
+- D12 names "the count line", but today's line under the box lists notes and has no counts, and it uses a bar as a separator; I specified a new line.
+- D9 says to name every test, fixture and mutant the Pygmy redraw touches, while the fixture versions and Pygmy row counts depend on in-flight lanes; the names given are for the assumed main.
+- The print radius of a built-in is a literal in an out-of-scope overlay, so "engine output is the source of truth" stops at the screen for Pygmy (Q2).
+
+---
+
+## Appendix A: the prototype parser (run with `node -` from the repo root)
+
+```js
+const SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11}, ACC={"":0,"#":1,b:-1};
+const NOTE_RE=/^([A-G])(#|b)?(-1|[0-9])?$/;
+const midiOf=(n,o)=>12*(o+1)+SEMI[n.l]+ACC[n.a], octOf=(n,m)=>(m-SEMI[n.l]-ACC[n.a])/12-1;
+const R=(code,why)=>({ok:false,code,why});
+function lexNote(s){const m=NOTE_RE.exec(s);return m?{l:m[1],a:m[2]||"",o:m[3]===undefined?null:+m[3],typed:m[3]!==undefined}:null;}
+function parse(input){
+  const toks=input.replace(/\|/g," | ").split(/\s+/).filter(Boolean); if(!toks.length) return R("NO_DING","empty");
+  const items=[];
+  for(const t of toks){ if(t==="|"){items.push({k:"bar"});continue;} if(t==="/") return R("BAD_NOTE","slash");
+    const dingy=t[0]==="("||t.endsWith(")")||t.endsWith("/"), boty=t[0]==="["||t.endsWith("]");
+    if(dingy&&boty) return R("BAD_NOTE","bracket");
+    if(dingy){const b=/^\((.*)\)$/.exec(t)||/^(.*)\/$/.exec(t);const n=b&&lexNote(b[1]);if(!n)return R("BAD_NOTE","reason");items.push({k:"ding",n});continue;}
+    if(boty){const b=/^\[(.*)\]$/.exec(t);const n=b&&lexNote(b[1]);if(!n)return R("BAD_NOTE","bracket");items.push({k:"bot",n});continue;}
+    const n=lexNote(t); if(!n) return R("BAD_NOTE","reason"); items.push({k:"note",n}); }
+  const dings=items.map((x,i)=>x.k==="ding"?i:-1).filter(i=>i>=0), bars=items.map((x,i)=>x.k==="bar"?i:-1).filter(i=>i>=0);
+  let di, innerBar=-1, mode;
+  if(dings.length>1) return R("NO_DING","two");
+  if(dings.length===1){ mode="explicit"; di=dings[0]; if(bars.length>1) return R("BAD_NOTE","bar");
+    if(bars.length===1){ if(bars[0]<di) return R("BAD_NOTE","barFirst"); innerBar=bars[0]; } }
+  else { mode="bare"; if(bars.length===0) return R("NO_DING","which"); if(bars.length>2) return R("BAD_NOTE","bar");
+    di=bars[0]-1; if(di<0||items[di].k!=="note") return R("NO_DING","which");
+    items[di].k="ding"; items.splice(bars[0],1); if(bars.length===2) innerBar=bars[1]-1; }
+  for(let i=0;i<di;i++) if(items[i].k!=="bot") return R("NO_DING",dings.length?"below":"which");
+  const pre=items.slice(0,di).map(x=>x.n), ding=items[di].n, post=[]; let zone="rim", rimN=0, innerN=0;
+  for(let i=di+1;i<items.length;i++){const x=items[i];
+    if(x.k==="bar"){ if(rimN===0) return R("BAD_NOTE","barEmpty"); zone="inner"; continue; }
+    if(x.k==="bot") post.push({n:x.n,z:"bottom"}); else {post.push({n:x.n,z:zone}); zone==="rim"?rimN++:innerN++;} }
+  if(innerBar>=0&&innerN===0) return R("BAD_NOTE","barEmpty");
+  if(ding.o===null) ding.o=3; ding.m=midiOf(ding,ding.o); if(ding.m<0||ding.m>127) return R("NOTE_OUT_OF_RANGE","reason");
+  let right=ding.m;
+  for(let i=pre.length-1;i>=0;i--){const n=pre[i];
+    if(n.o===null){let m=midiOf(n,9)+24; while(m>=right) m-=12; n.m=m;} else n.m=midiOf(n,n.o);
+    if(n.m<0||n.m>127) return R("NOTE_OUT_OF_RANGE","reason");
+    const lim=(i===pre.length-1)?ding.m:pre[i+1].m;
+    if(i===pre.length-1 ? n.m>lim : n.m>=lim) return R("NOTE_OUT_OF_ORDER","below");
+    n.o=octOf(n,n.m); right=n.m; }
+  let prev=ding.m, lastTop=ding.m, lastBot=pre.length?pre[pre.length-1].m:-Infinity;
+  for(const p of post){const n=p.n;
+    if(n.o===null){let m=midiOf(n,-1)-12; while(m<=prev) m+=12; n.m=m;} else n.m=midiOf(n,n.o);
+    if(n.m<0||n.m>127) return R("NOTE_OUT_OF_RANGE","reason");
+    if(n.m<prev) return R("NOTE_OUT_OF_ORDER",p.z==="inner"&&p===post.find(q=>q.z==="inner")?"afterBar":(prev===ding.m?"ding":"reason"));
+    if(p.z==="bottom"){ if(n.m<=lastBot) return R("NOTE_REPEATED","reason"); if(n.m<=ding.m) return R("NOTE_OUT_OF_ORDER","ding"); lastBot=n.m; }
+    else { if(n.m<=lastTop) return R(lastTop===ding.m?"NOTE_OUT_OF_ORDER":"NOTE_REPEATED",lastTop===ding.m?"ding":"reason"); lastTop=n.m; }
+    n.o=octOf(n,n.m); prev=n.m; }
+  const tops=post.filter(p=>p.z!=="bottom"), bots=pre.map(n=>({n})).concat(post.filter(p=>p.z==="bottom"));
+  const want=((ding.m+7)%12+12)%12; if(!tops.some(p=>((p.n.m%12)+12)%12===want)) return R("NO_FIFTH","reason");
+  const fields={"0":[ding.l+ding.a,ding.o,ding.m,"ding",null,"Ding"]};
+  tops.forEach((p,i)=>{fields[String(i+1)]=[p.n.l+p.n.a,p.n.o,p.n.m,p.z,null,String(i+1)];});
+  const base=Math.max(101,tops.length+1);
+  bots.forEach((p,i)=>{fields[String(base+i)]=[p.n.l+p.n.a,p.n.o,p.n.m,"bottom",null,"U"+(i+1)];});
+  return {ok:true,fields,mode};
+}
+function split(f){const top=[],bot=[];for(const id in f){if(id==="0")continue;(f[id][3]==="bottom"?bot:top).push(id);}const by=(a,b)=>a-b;return{top:top.sort(by),bot:bot.sort(by)};}
+function format(f){const s=split(f),d=f["0"],line=[{m:d[2],r:1,t:"("+d[0]+d[1]+")"}];let bar=false;
+  s.bot.forEach(id=>{const x=f[id];line.push({m:x[2],r:0,t:"["+x[0]+x[1]+"]"});});
+  s.top.forEach(id=>{const x=f[id];line.push({m:x[2],r:2,t:x[0]+x[1],inner:x[3]==="inner"});});
+  line.sort((a,b)=>a.m-b.m||a.r-b.r);const out=[];for(const x of line){if(x.inner&&!bar){out.push("|");bar=true;}out.push(x.t);}return out.join(" ");}
+function identity(f){const s=split(f),d=f["0"];let out="("+d[0]+d[1]+")";
+  let rim=s.top.length;for(let n=0;n<s.top.length;n++){if(f[s.top[n]][3]==="inner"){rim=n;break;}}
+  const mark=rim!==Math.min(s.top.length,11)?rim:-1;
+  for(let n=0;n<s.top.length;n++){if(n===mark)out+=" /";out+=" "+f[s.top[n]][0]+f[s.top[n]][1];}
+  if(mark===s.top.length)out+=" /";
+  if(s.bot.length){out+=" |";for(const id of s.bot)out+=" "+f[id][0]+f[id][1];}
+  return out;}
+```
+
+Checks run on it this session: (1) every row of the table in 4.5; (2) the enumeration: recurse over every sequence of length 1 to 6 from `["|","(D)","D/","[A]","[C3]","A","C","D","E4","/"]`; for each accepted string assert `parse(format(fields))` gives the same fields and the same string, record `identity(fields)` against the field set, and for bare-mode strings assert the `(X)` rewrite gives the same fields; (3) legacy comparison: load the shipped engine modules `core` and `layout` from `src/engine/` into a `node:vm` context, generate random legacy strings, and for each one `core.parseSeed` accepts assert `identity(fields) === core.formatSeed(fields)` and that `parse(format(fields))` returns the same fields; (4) ids: `core.deckId(parse(string).fields)` for the five built-in strings; (5) the neither-mark comparison of 5.2.
+
+## Appendix B: the solver probe (in-memory patches to `src/engine/layout.js`)
+
+A loader reads each engine module as text, applies `[module, from, to]` replacements in memory (throwing if an anchor is missing), and runs the result in a fresh `node:vm` context; no file is touched. Patches: `var RIM_MAX = 11;`, `var INNER_MAX = 2;` and `var BOTTOM_MAX = 6;` set to `Infinity` in `core` and `layout`; the body of `innerAngles` (`return INNER_ANGLES.slice(0, count);`) replaced by
+
+```js
+if (count === 0) return [];
+if (count === 1) return [90];
+var span = 180, step = Math.min(76, span / (count - 1));
+var left = 90 + step * (count - 1) / 2, out = [], i;
+for (i = 0; i < count; i += 1) { var j = Math.floor(i / 2); out.push(i % 2 === 0 ? left - j * step : left - (count - 1 - j) * step); }
+return out;
+```
+
+in `placeZones`, the expression `isCentred(counts) ? rimAnglesFromBottom(counts.rim) : rimAngles(counts.rim)` replaced by
+
+```js
+(function (n, anchor) { var step = n ? 360 / n : 0, out = [], i;
+  for (i = 0; i < n; i += 1) { var sign = (i % 2 === 1) ? -1 : 1;
+    out.push(norm(270 + sign * (anchor === "between" ? Math.floor(i / 2) + 0.5 : Math.ceil(i / 2)) * step)); }
+  return out; })(counts.rim, HPE.__anchor)
+```
+
+and, in `geometry`, `var dingDy = isCentred(counts) ? 0 : DING_DY;` replaced by `var dingDy = isCentred(counts) ? 0 : (HPE.__dy || DING_DY);`. The probe sets `HPE.__anchor` and `HPE.__dy` before each `layout.solve`. The adaptive offset is a loop in the probe: start `__dy` at 0.1425, compute the clearance of Appendix C from the returned `geom` and inner seat angles, and add 0.0025 until it is at least 0.01 or the offset reaches 0.30.
+
+Section 5.1 compares `solve` on each deck's parsed fields with `data/decks.json`, then draws both through the app: `const {boot} = require("./tools/sandbox.js"); const app = boot(); app.get("pan(Object.assign({}, DECKS[i], {geom: ..., fields: ...}), chord)")`, and compares the SVG strings and their numbers. Section 5.3 compares against an unpatched load. Section 5.4 computes sizes from the returned `geom` with R = `Math.round(74 / ext * 10) / 10`. The overlap sweep checks every pair of same-shell circles and every top circle against the ding. Section 5.8 takes the smallest centre-to-centre distance d among all fields and reports d / (2 x ext) x pan width.
+
+## Appendix C: the ding-offset clearance (5.5)
+
+For each inner note at seat angle a: the index number is centred at radius `inner - r_note - n_in` along a (where `pan()` draws an inner note's number); the ding is centred `ding_dy` below the pan centre; clearance = distance between those two points minus `r_ding` minus `0.7 x f_num` (0.7 is the solver's own label-reach factor). The pan's clearance is the smallest over its inner notes.
+
+### Critical Files for Implementation
+- /Users/ray/Projects/handpan-cards/src/engine/core.js
+- /Users/ray/Projects/handpan-cards/src/engine/layout.js
+- /Users/ray/Projects/handpan-cards/src/engine/share.js
+- /Users/ray/Projects/handpan-cards/index.html
+- /Users/ray/Projects/handpan-cards/data/decks.json
+
+## 19. Engineering review amendments (2026-10-07, binding on every lane)
+
+Where this section and sections 1 to 18 disagree, this section wins. Each
+item names the lane that owns it. R7 to R9 came from the outside voice
+(Codex); R1 to R6 from the review itself.
+
+**R1. Legacy strings live in far more files than G2a lists (G2a, G2b).**
+Measured on main `e749957` with
+
+`grep -rlE "[A-G][#b]?[0-9]? (/|\|) [A-G][#b]?[0-9]?" tests tools docs/ENGINE-SPEC.md docs/SCALE_ENGINE_PLAN.md README.md index.html src | grep -v tests/mutants/`
+
+the hits are: `tests/core.test.js` (32 lines), `tests/sequence.test.js` (4),
+`tests/layout.test.js` (3), `tests/select.test.js` (2),
+`tests/preview.test.js` (2), `tests/e2e.test.js` (1), `tests/app.test.js` (1),
+`tests/test_print.py`, `tests/test_pdf_parity.py`,
+`tests/test_pdf_deck_adapter.py`, `tests/test_gen_deck.py`,
+`tests/test_deck_data.py` (1 each), `tools/decks.py` (2),
+`tools/regen_engine_corpus.js` (1), the fixtures `engine_corpus_v1.json` (6),
+`synthetic_scales.json` (5), `print_decks_v1.json` (2),
+`golden_decks_v5.json` and `golden_decks_v3.json` (1 each), `index.html` (1),
+`docs/ENGINE-SPEC.md` (8), `docs/SCALE_ENGINE_PLAN.md` (19), and 12 mutant
+patches. Lane U2 adds a Pygmy recipe string to `tests/test_deck_data.py`.
+- G2a's ownership is this grep's output at its lane base, not the four files
+  in its block. For each hit G2a either routes the call through
+  `parseLegacySeed` or leaves it for G2b and says which in the PR.
+- `tools/gen_deck.js` gains `--legacy`, which reads the seed with
+  `parseLegacySeed`. G2a owns the flag. Every recipe that is frozen history
+  (the U2 Amara 9 and Pygmy recipes, P1's Pygmy recipe if written before
+  G2b) is run with `--legacy` or rewritten in the new grammar by G2b with the
+  deck id asserted unchanged.
+- G2b's acceptance gains: the grep above, run at its head, lists only files
+  that call the legacy reader by name, frozen fixtures, mutants and the two
+  history docs. `docs/ENGINE-SPEC.md` is rewritten by DOC;
+  `docs/SCALE_ENGINE_PLAN.md` is history and is not rewritten.
+- `golden_decks_v3.json` is frozen history and is not edited.
+
+**R2. The boot rewrite must not lose records (G2b).** `restoreScales`'s
+rewrite keeps, byte for byte and at the same index, every record it cannot
+read: a newer version, a parse failure, a non-object. Two records that
+resolve to the same deck id collapse to the first. Tests 12 and 13 in G2b:
+"the boot rewrite leaves an unreadable record byte-identical at its index"
+and "two records for one deck id collapse to the first". A storage write
+that throws leaves the old list in place (today's `writeScales` swallows the
+error; the test asserts the deck still opens).
+
+**R3. Pins are pins, not red-first tests.** L0 tests 1 and 2, G2b test 10,
+P1 test 2 and all of G2a are characterisation tests: green when written, by
+construction. "Red first" in those blocks reads "written before the change
+they guard". A reviewer does not fail a lane because a pin was never red.
+Every other test in section 11 is red first as written.
+
+**R4. Five merge conditions need a person, and AFK cannot supply one.** They
+are: the DS sign-off, G-RENDER (S1), the print check (P1), and the phone
+checks (W1, DR2). They stay owner gates; none is waived or auto-passed.
+- S1 adds an automated form of G-RENDER so the human look is a confirmation
+  and not the only evidence: `tests/layout.test.js` "no inner index number
+  meets the ding or a neighbour on the G-RENDER shapes", computed from the
+  coordinates `pan()` emits for the seven shapes named in the S1 block.
+- Without the owner, the run may complete L0, G1 and G2a (G2a needs only
+  L0's `parseLegacySeed`), draft the DS spec, and take S1 to an open PR with
+  CI green and a reviewer verdict. S1 does not merge, and S2, P1, S3, W1,
+  G2b, DR1, DR2 do not start, until the owner has passed G-RENDER.
+- Section 11.1 item 8 is corrected accordingly: G2a runs after L0, G2b after
+  G1, S1, S3 and W1.
+
+**R5. Nothing bounds deck generation once the parser caps go (G2b).** Test
+14 in G2b: "a forty-note pan generates its deck inside the time budget"
+(20 rim, 8 inner, 12 bottom, built from the placeholder's pitch set). The
+lane measures the wall time on CI first, records it in the PR, and sets the
+budget at three times that figure. Stop condition added to G2b: the measured
+time is over 5 seconds (UNVERIFIED: no forty-note pan was generated in this
+review), in which case the lane stops and reports instead of raising the
+budget.
+
+**R6. Section 2 was stale.** Corrected in place.
+
+**R7. Old tabs can destroy newer records (S3, L0).** Risk 6 was false as
+written; see its correction. Auto-decision AD-ER-1, conservative and
+non-destructive, overturnable by the owner:
+- From the first lane that writes a record newer than version 2 (S3), the
+  app reads and writes saved scales under a new key, `hpfc.scales.v3`. The
+  old key `hpfc.scales` is never written again and never deleted.
+- On boot, if the new key is absent, the app copies the old key's list into
+  it (through the reader chosen by each record's version) and carries on. If
+  the new key is present, the old key is ignored.
+- Consequence, accepted and stated in the README: a scale saved afterwards
+  in a tab still running the old app lands under the old key and does not
+  appear in the new app. This needs a tab held open across a deploy.
+- L0 routes every read and write of the list through one pair of functions
+  so S3's key change is a one-line edit. S3 owns the key, the copy, and the
+  tests: "the first boot copies the old key and leaves it byte-identical",
+  "a write never touches the old key", "an old-key record saved after the
+  copy does not overwrite a new-key record".
+- Rollback (section 14) is corrected in place to match.
+
+**R8. The canonical string can spell an octave the lexer refuses (G1).**
+`[B#] (C#-1) G# B# D#` infers a bottom note at MIDI 0 spelled `B#-2`, and
+the lexer reads only `-1` to `9`. G1: inference refuses, with `BAD_NOTE`,
+any note whose spelled octave is outside `-1` to `9`, so every string
+`formatSeed` emits is one `parseSeed` reads. Test 15 (G1, rerun in G2b):
+"formatSeed never emits a note parseSeed refuses", over `B#`, `Cb`, `E#` and
+`Fb` at both ends of the MIDI range, typed with and without octaves.
+Appendix A's prototype does not do this and is not the reference for it.
+
+**R9. W1's test 5 cannot pass before the flip.** Moved to G2b; corrected in
+place.
+
+## NOT in scope
+
+- Any change to chord ranking, voicing or sequencing: the grammar and the
+  solver's seats only.
+- A stored `ext` for Pygmy and a new print radius (owner: keep today's frame,
+  keep 60).
+- The 3.2 pt bottom octave digit (owner: excluded from the warning; TODOS).
+- Converting `docs/SCALE_ENGINE_PLAN.md` to the new grammar (history).
+- Merging old-key scales into the new key after the first copy (R7).
+- Unifying the label ratios into one source (TODOS; risk 8 stands).
+- OQ16 of the beginner-decks plan (MEDIUM colour-card position).
+
+## What already exists (reused, not rebuilt)
+
+- `parseSeed` / `formatSeed` / `deckId` in `src/engine/core.js`: kept whole
+  as `parseLegacySeed`; ids stay stable through `identitySeed`.
+- `share.decodeSeed`'s version gate (`NEEDS_NEWER_APP`): reused for 3 and 4.
+- `layout.reseat`, `slotOrder`, `readOrder`: narrowed to one ring, not
+  replaced.
+- `tools/inline_engine.py`, `tools/sync_decks.py`, `tools/gen_deck.js`,
+  `tools/regen_engine_corpus.js`, `tests/mutation_check.sh`: used as they are
+  (`gen_deck.js` gains two flags).
+- The sheet's keyboard handling (`kbOffset`, `kbCap`, `b.fakeKeyboard()`).
+
+## Record flow after R7 (the one new data path)
+
+```
+boot
+ |- hpfc.scales.v3 present? -- yes --> read each record by its version
+ |                                      |- readable   -> deck
+ |                                      |- unreadable -> kept as is, no deck
+ |- no --> read hpfc.scales (old key, never written again)
+            |- each record through its version's reader
+            |- write the list to hpfc.scales.v3   (throws -> list kept in memory)
+save / edit / delete --> hpfc.scales.v3 only, matched by deck id (L0)
+old tab              --> hpfc.scales only; cannot reach a v3 record
+```
+
+## Failure modes
+
+| Path | Failure | Test | Handling | Seen by player |
+|---|---|---|---|---|
+| boot copy | storage write throws | S3 "first boot copies" | list kept in memory | decks open; not saved |
+| boot rewrite | unreadable record | G2b 12 | kept byte-identical | deck absent, nothing lost |
+| boot rewrite | two records, one id | G2b 13 | first wins | one deck |
+| old tab saves | same string as a new record | S3 old-key test | separate key | new record intact |
+| canonical string | octave outside -1 to 9 | G1 15 | refused `BAD_NOTE` | refusal sentence |
+| huge pan | generation too slow | G2b 14 | budget; lane stops | none (pre-merge) |
+| inner fan | number meets ding | S1 overlap test + G-RENDER | constants; owner look | none (pre-merge) |
+| old bar list | read as inner notes | G2b 11 | copy only (D12) | count line says so |
+
+No path is left with no test, no handling and a silent failure. The last
+row is silent by owner decision D12 and is covered by copy.
+
+## Worktree parallelization
+
+| Lane | Touches | Depends on |
+|---|---|---|
+| L0 | core.js, share.js, index.html records | none |
+| G1 | core.js (new functions) | L0 |
+| G2a | tests/, tools/gen_deck.js, fixtures | L0 |
+| S1 | layout.js, index.html pan | none |
+| S2 | layout.js | S1, G1 |
+| P1 | data/decks.json, PDFs, fixtures, mutants | S2 |
+| S3 | layout.js, share.js, index.html layout + storage | S2 |
+| W1 | index.html sheet | S2, DS |
+| G2b | core.js, share.js, index.html sheet copy | G1, G2a, S1, S3, W1 |
+| DR1, DR2 | index.html drawer | DS, S3, G2b |
+| DOC | docs/ | all |
+
+Every code lane regenerates an engine region or mutants in `index.html`, so
+merges are serial. Worktrees may be built in parallel in two places only:
+G1 with S1 (after L0), and G2a with either. Whichever merges second reruns
+`python3 tools/inline_engine.py` and the stale-mutant check. Everything from
+S2 on is serial, and gated by R4.
+
+## Implementation Tasks
+
+- [ ] T1 (L0) seams: `identitySeed`, id-keyed record lookups, one read/write pair for the list (R7), frozen id fixture.
+- [ ] T2 (G1) new parser unwired, with the octave-range refusal and test 15 (R8).
+- [ ] T3 (G2a) legacy callers by grep, `gen_deck.js --legacy` (R1).
+- [ ] T4 (DS) design spec via `/frontend-design:frontend-design`; owner sign-off (R4).
+- [ ] T5 (S1) solver without caps, inner fan, ding offset, warning, automated overlap test; owner passes G-RENDER (R4).
+- [ ] T6 (S2) one direction, anchor option.
+- [ ] T7 (P1) Pygmy `geom` redraw, fixtures, PDFs; owner print check.
+- [ ] T8 (S3) per-ring seats, share version 3, storage key `hpfc.scales.v3` and its three tests (R7).
+- [ ] T9 (W1) wrapping field, count line, MIRROR switch; owner phone check.
+- [ ] T10 (G2b) the flip, share version 4, boot rewrite with tests 11 to 15 (R2, R5, R8, R9).
+- [ ] T11 (DR1) drawer shell, anchor, MIRROR moved in.
+- [ ] T12 (DR2) drag to seat; owner phone check.
+- [ ] T13 (DOC) `docs/ENGINE-SPEC.md`, CLAUDE.md and README text of section 15, plus the R7 README sentence.
+
+## Decision ledger
+
+Owner decisions D1 to D15 and the answers in 3.4 are unchanged. The review
+ran with the owner away (AFK armed); each choice below is the recommended,
+non-destructive option and can be overturned without reopening D1 to D15.
+
+| Id | Question | Chosen | Why |
+|---|---|---|---|
+| AD-ER-0 | Twelve lanes trips the complexity gate: cut scope? | Keep the arrangement | D1 to D15 need every part; lanes already split by ownership |
+| AD-ER-1 | Old tabs can overwrite or delete newer records (Codex P1) | New storage key, old key frozen (R7) | The only option that cannot lose a record; costs one README sentence |
+| AD-ER-2 | Canonical string can spell an unreadable octave (Codex P2) | Refuse at inference (R8) | Widening the lexer to `-2` adds a spelling nobody types |
+| AD-ER-3 | W1 test 5 impossible before the flip (Codex P2) | Move to G2b (R9) | No behaviour change |
+| AD-ER-4 | Five human gates under AFK | Keep all five as owner gates; automate G-RENDER's geometry as extra evidence (R4) | A rendered-collision check is not mine to pass |
+| AD-ER-5 | G2a's file list is short | Ownership by grep; `gen_deck.js --legacy` (R1) | Enumerated, not estimated |
+| AD-ER-6 | Boot rewrite safety | Keep unreadable records; collapse by id (R2) | Non-destructive |
+| AD-ER-7 | No generation-time bound | Measured budget test in G2b (R5) | Caps are going by owner decision; a bound is the remaining guard |
+| AD-ER-8 | Pins labelled red-first | Relabel (R3) | Stops a literal-minded review FAIL |
+| AD-ER-9 | TODOS: label ratios held three times; 3.2 pt bottom digit | Add both to `TODOS.md` | Neither blocks this plan |
+
+For the owner on return: AD-ER-1 changes where saved scales are stored. It
+deletes nothing, but it is the one choice here that touches player data.
+
+Approval readiness: PASS
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|---|---|---|---|---|---|
+| CEO Review | `/plan-ceo-review` | Scope and strategy | 0 | not run | owner decisions D1 to D15 stand in for it |
+| Outside Voice | Codex plan review | Independent second opinion | 1 | issues_found | 3 (1 P1, 2 P2), all folded in as R7, R8, R9 |
+| Eng Review | `/plan-eng-review` | Architecture and tests (required) | 1 | clear after amendments | 9 issues, 1 critical gap (R7), 0 unresolved |
+| Design Review | `/plan-design-review` | UI and UX gaps | 0 | not run | the DS step (section 10) carries the design work |
+| DX Review | `/plan-devex-review` | Developer experience | 0 | not run | not applicable |
+
+- **OUTSIDE COVERAGE:** Codex completed. All three findings were accepted. The P1 was checked against the record functions on main `e749957`. The two P2s follow from this plan's own text and were not re-run; R8's example string is Codex's (UNVERIFIED here).
+- **CROSS-MODEL:** no disagreement left open. Codex's P1 overturned risk 6 of this plan.
+- **VERDICT:** ENG CLEARED at `016dfe0` plus this commit, with section 19 binding. Execution waits for Lane C of the beginner-decks plan, and five merge conditions stay with the owner (R4).
+
+NO UNRESOLVED DECISIONS
