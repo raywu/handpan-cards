@@ -7558,7 +7558,8 @@ const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"r
 // plus its options - never the built deck, which is derived (D14).
 const STORE_KEY = "hpfc";
 const DEFAULT_DECK = "kurd";
-const SCALES_KEY = "hpfc.scales";
+const SCALES_KEY = "hpfc.scales.v3";
+const LEGACY_SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
 if (typeof store !== "object" || Array.isArray(store)) store = {};
@@ -7674,21 +7675,25 @@ function generateDeck(text, options, guard) {
   // move (D14).
   if (seed.value.options.name) built.value.options.name = seed.value.options.name;
   // The layout correction (D5-1/D5-2) is the same story one step further on:
-  // core.parseSeed's option whitelist drops `order`, and select.build solves the
+  // core.parseSeed's option whitelist drops `seats`, and select.build solves the
   // GENERATED layout knowing nothing about it, so the correction is applied here
-  // - to the field-to-slot assignment only, which is what layout.solve does with
-  // it - and carried back onto the options so it travels. The id hashes the
-  // fields alone, so a correction never moves it (D14, D5-5).
-  const wanted = options && options.order !== undefined && options.order !== null
-    ? options.order : null;
+  // - to the note-to-seat assignment only, which is what layout.solve does with
+  // it - and carried back onto the options so it travels. The solve takes the
+  // mirrors and the anchor from the deck select.build just built, so a re-solve
+  // never undoes them. The id hashes the fields alone, so a correction never
+  // moves it (D14, D5-5). A seat list that names a seat outside its own ring is
+  // refused by layout.solve, which is where a cross-ring arrangement dies.
+  const wanted = options && options.seats !== undefined && options.seats !== null
+    ? options.seats : null;
   if (wanted !== null) {
+    const o = built.value.options;
     const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} },
-                                   { mirror: !!built.value.options.mirror, order: wanted });
+      { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, seats: wanted });
     if (!moved.ok) return moved;
     for (const id of Object.keys(moved.value.fields)) {
       if (built.value.fields[id]) built.value.fields[id][4] = moved.value.fields[id][4];
     }
-    built.value.options.order = wanted;
+    built.value.options.seats = JSON.parse(JSON.stringify(wanted));
   }
   registerDeck(built.value);
   return built;
@@ -7741,12 +7746,25 @@ function openShare(text) {
 // A list of seed records under SCALES_KEY, each {v, s, o}: the format version,
 // the canonical scale string and the seed options. Rebuilt into CUSTOM at boot,
 // so a custom deck survives a reload.
+let scalesMemory = [];
 function savedScales() {
   const raw = readStore(SCALES_KEY);
-  return Array.isArray(raw) ? raw : [];
+  return Array.isArray(raw) ? raw : scalesMemory;
 }
 function writeScales(list) {
+  scalesMemory = list;
   try { localStorage.setItem(SCALES_KEY, JSON.stringify(list)); } catch (e) {}
+}
+// R7: the records changed shape (per-ring seats), so they live under a new key.
+// The first boot with no list under it COPIES the old one across - the old key
+// is read, never written and never deleted, so an older app on the same origin
+// keeps its list. If the write is refused the copy still serves this session.
+function copyLegacyScales() {
+  let have = null;
+  try { have = localStorage.getItem(SCALES_KEY); } catch (e) { return; }
+  if (have !== null) return;
+  const old = readStore(LEGACY_SCALES_KEY);
+  if (Array.isArray(old)) writeScales(old);
 }
 // Queue row 132: an EXISTING record is rewritten AT ITS INDEX, and only a
 // genuinely new one is appended. restoreScales rebuilds the registry in list
@@ -7824,14 +7842,31 @@ function replaceScale(oldStr, seed) {
   });
   writeScales(out);
 }
+// A record written before wire version 3 carries its arrangement as the flat
+// `order`. It is converted per ring here; one that crosses a ring is not an
+// arrangement this app can draw, so the record is kept with the generated
+// layout instead of being dropped.
+function recordOptions(rec) {
+  const o = rec.o && typeof rec.o === "object" ? Object.assign({}, rec.o) : undefined;
+  if (!o || !("order" in o)) return o;
+  const legacy = o.order;
+  delete o.order;
+  if (o.seats) return o;
+  const read = scaleReader(rec.v)(rec.s);
+  if (!read.ok) return o;
+  const converted = HPE.layout.seatsFromOrder(legacy, ringSizes(read.value.fields));
+  if (converted.ok && converted.value) o.seats = converted.value;
+  return o;
+}
 // Boot must stay resilient: an unusable record is DROPPED, never fatal.
 function restoreScales() {
+  copyLegacyScales();
   for (const rec of savedScales()) {
     try {
       if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
       if (!checkShareVersion(rec.v).ok) continue;
       if (!scaleReader(rec.v)(rec.s).ok) continue;
-      generateDeck(rec.s, rec.o || undefined);
+      generateDeck(rec.s, recordOptions(rec));
     } catch (e) {}
   }
 }
@@ -8606,17 +8641,25 @@ let sheetOpener = null;          // the control focus returns to on close
 // touched the box" from "typed exactly that", and a user who deliberately types
 // the auto label must keep it as a real name.
 let nameDirty = false;
-// D5. `layoutOrder` is the user's correction of the generated layout: a
-// permutation over the non-ding fields, in the order layout.solve collects
-// them, saying which field takes which solved slot. NULL means ABSENT - the
-// generated layout - and never an identity permutation, so a pan that was
-// never corrected keeps exactly the share string it had (D5-1, D5-3).
-let layoutOrder = null;
-// The chosen SLOT, not the chosen field: `order[field] = slot`, so everything
-// the controls do (zone blocks, cyclic shifts, swaps) is arithmetic on slots.
-// A tap on the pan arrives as a FIELD id and is converted once, in
-// selectPanField() - the one place the two can be got the wrong way round.
+// `layoutSeats` is the user's correction of the generated layout, PER RING:
+// {rim?, inner?, bottom?}, each a permutation of that ring's own notes saying
+// which seat each note takes (entry i = the seat of the ring's i-th note by id).
+// NULL means ABSENT - the generated layout - and a ring that was not moved is
+// left out, never an identity list, so a pan that was never corrected keeps
+// exactly the share string it had (D5-1, D5-3). A seat in another ring is not
+// expressible, which is how a cross-ring arrangement is refused everywhere.
+let layoutSeats = null;
+// The chosen SLOT across the whole pan (rim slots, then inner, then bottom), not
+// the chosen field: everything the controls do (cyclic shifts, swaps) is
+// arithmetic on the slots of ONE ring. A tap on the pan arrives as a FIELD id
+// and is converted once, in selectPanField() - the one place the two can be got
+// the wrong way round.
 let layoutSel = 0;
+// Two seed options the sheet has no control for but must not lose on a save:
+// the anchor, and a bottom mirror that differs from the top one (null = follows
+// the top, exactly as the engine resolves an absent mirrorBottom).
+let anchor = "one";
+let mirrorBottom = null;
 const generated = new Set();     // deck ids generated in this page session
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
@@ -8717,13 +8760,17 @@ function layoutIds(fields) {
   const byZone = { rim: of("rim"), inner: of("inner"), bottom: of("bottom") };
   return slotZones(fields).map((z) => byZone[z].shift());
 }
+const LAYOUT_RINGS = ["rim", "inner", "bottom"];
+function ringSizes(fields) {
+  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
+  return { rim: count("rim"), inner: count("inner"), bottom: count("bottom") };
+}
 /** The zone of every slot, from the engine's own slot order. */
 function slotZones(fields) {
-  const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
-  return HPE.layout.slotOrder({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") });
+  return HPE.layout.slotOrder(ringSizes(fields));
 }
 const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
-/** at[slot] = the field sitting in that slot - the inverse of an order. */
+/** at[seat] = the note sitting in that seat - the inverse of a ring's seats. */
 function slotOccupants(order) {
   const at = [];
   order.forEach((slot, i) => { at[slot] = i; });
@@ -8734,9 +8781,15 @@ function orderFromSlots(at) {
   at.forEach((field, slot) => { out[field] = slot; });
   return out;
 }
-/** ABSENT, never the identity: a correction that undoes itself is no correction. */
-function setLayoutOrder(next) {
-  layoutOrder = next.every((slot, i) => slot === i) ? null : next;
+/** One ring's seats as the editor currently holds them (identity when unmoved). */
+const seatsFor = (ring, size) => (layoutSeats && layoutSeats[ring]) || identityOrder(size);
+/** ABSENT, never the identity: a ring that undoes itself is left out, and so is
+ *  a pan with no ring left. */
+function setRingSeats(ring, next) {
+  const rest = Object.assign({}, layoutSeats);
+  if (next.every((seat, i) => seat === i)) delete rest[ring];
+  else rest[ring] = next;
+  layoutSeats = Object.keys(rest).length ? rest : null;
 }
 const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
 /** The half-open slot range of the zone a slot belongs to. */
@@ -8748,14 +8801,20 @@ function zoneBlock(fields, slot) {
 }
 const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
 
-/** A correction is a permutation of a FIXED length, so a seed edit that
- *  changes the field count invalidates it. This guard used to live inside
- *  buildSlots(); with the slot list gone it has to run wherever the correction
- *  meets a field set, or a stale correction silently lands on a different pan.
- *  Returns the non-ding count so callers do not re-derive it. */
-function syncLayoutOrder(fields) {
+/** A ring's seats are a permutation of a FIXED length, so a seed edit that
+ *  changes a ring's note count invalidates that ring's list. This guard runs
+ *  wherever the correction meets a field set, or a stale list silently lands on
+ *  a different pan. Returns the non-ding count so callers do not re-derive it. */
+function syncLayoutSeats(fields) {
   const n = layoutIds(fields).length;
-  if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;
+  const sizes = ringSizes(fields);
+  if (layoutSeats) {
+    const kept = {};
+    for (const ring of LAYOUT_RINGS) {
+      if (layoutSeats[ring] && layoutSeats[ring].length === sizes[ring]) kept[ring] = layoutSeats[ring];
+    }
+    layoutSeats = Object.keys(kept).length ? kept : null;
+  }
   if (layoutSel >= n) layoutSel = 0;
   return n;
 }
@@ -8773,17 +8832,18 @@ function layoutFields() {
 }
 
 /** Choose the note a tap landed on. `.panhit` carries a FIELD id and layoutSel
- *  is a SLOT, and `order[field] = slot` - so this is the conversion, and the
+ *  is a SLOT, and a ring's `seats[note] = seat` - so this is the conversion, and the
  *  only one. Backwards it selects the wrong note on every deck the user has
  *  already corrected, and exactly the right one on every deck they have not,
  *  which is why it gets a test of its own on a corrected pan. */
 function selectPanField(id) {
   const fields = layoutFields();
   if (!fields) return false;
-  const n = syncLayoutOrder(fields);
+  syncLayoutSeats(fields);
   const i = layoutIds(fields).indexOf(String(id));
   if (i < 0) return false;
-  layoutSel = (layoutOrder || identityOrder(n))[i];
+  const [a, b] = zoneBlock(fields, i);
+  layoutSel = a + seatsFor(slotZones(fields)[i], b - a)[i - a];
   previewLayout();
   return true;
 }
@@ -8791,8 +8851,9 @@ function selectPanField(id) {
 /** The field id sitting in the selected slot - what the ring is drawn on. */
 function selectedField(fields) {
   const ids = layoutIds(fields);
-  const at = slotOccupants(layoutOrder || identityOrder(ids.length));
-  return ids[at[layoutSel]];
+  const [a, b] = zoneBlock(fields, layoutSel);
+  const at = slotOccupants(seatsFor(slotZones(fields)[layoutSel], b - a));
+  return ids[a + at[layoutSel - a]];
 }
 
 /* The preview is the MOCK, and only the mock (D4). It used to be painted onto
@@ -8814,45 +8875,47 @@ function previewLayout() {
 // it could not be rotated at all.
 // Shared prologue for every layout-editor move (rotateLayout, moveNote,
 // stepLayoutSel): fetch the editable fields, bail if there are none, and
-// sync layoutOrder against the current field count. Byte-for-byte identical
+// sync layoutSeats against the current field count. Byte-for-byte identical
 // across the three before this extraction (finding 13, quality-refactor
 // plan 2026-09-30). Returns null for "nothing to do", which every caller
 // turns straight into its own early return.
 function layoutPrologue() {
   const fields = layoutFields();
   if (!fields) return null;
-  return { fields, n: syncLayoutOrder(fields) };
+  return { fields, n: syncLayoutSeats(fields) };
 }
 function rotateLayout(by) {
   const p = layoutPrologue();
   if (!p) return;
-  const { fields, n } = p;
+  const { fields } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
-  const at = slotOccupants(layoutOrder || identityOrder(n));
+  const ring = slotZones(fields)[layoutSel];
+  const at = slotOccupants(seatsFor(ring, span));
   const next = at.slice();
-  for (let j = a; j < b; j += 1) next[wrap(j + by, a, span)] = at[j];
-  setLayoutOrder(orderFromSlots(next));
-  layoutSel = wrap(layoutSel + by, a, span);
+  for (let j = 0; j < span; j += 1) next[wrap(j + by, 0, span)] = at[j];
+  setRingSeats(ring, orderFromSlots(next));
+  layoutSel = a + wrap(layoutSel - a + by, 0, span);
   previewLayout();
 }
 // MOVE takes the chosen note to the next position, and whatever was there takes
 // its place - a swap, so a note is never lost and the result is always still a
-// permutation. It stays inside the note's own zone: a rim note is on the rim.
+// permutation. It stays inside the note's own ring: a rim note is on the rim.
 function moveNote(by) {
   const p = layoutPrologue();
   if (!p) return;
-  const { fields, n } = p;
+  const { fields } = p;
   const [a, b] = zoneBlock(fields, layoutSel);
   const span = b - a;
   if (span < 2) return;
-  const to = wrap(layoutSel + by, a, span);
-  const at = slotOccupants(layoutOrder || identityOrder(n));
-  const held = at[layoutSel];
-  at[layoutSel] = at[to];
-  at[to] = held;
-  setLayoutOrder(orderFromSlots(at));
+  const ring = slotZones(fields)[layoutSel];
+  const to = a + wrap(layoutSel - a + by, 0, span);
+  const at = slotOccupants(seatsFor(ring, span));
+  const held = at[layoutSel - a];
+  at[layoutSel - a] = at[to - a];
+  at[to - a] = held;
+  setRingSeats(ring, orderFromSlots(at));
   layoutSel = to;
   previewLayout();
 }
@@ -8867,14 +8930,15 @@ function stepLayoutSel(by) {
   previewLayout();
 }
 function resetLayout() {
-  layoutOrder = null;
+  layoutSeats = null;
   layoutSel = 0;
   previewLayout();
 }
 
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
-  const o = { palette, mirror };
+  const o = { palette, mirror, anchor };
+  if (mirrorBottom !== null) o.mirrorBottom = mirrorBottom;
   if (editingId) {
     o.parent = Number(degSel.value);
     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
@@ -8896,7 +8960,7 @@ function sheetOptions() {
     const d = editedDeck();
     const kept = !!(d && d.options && d.options.name);
     if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
-    if (layoutOrder) o.order = layoutOrder.slice();
+    if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
   }
   return o;
 }
@@ -8913,13 +8977,14 @@ function sheetOptions() {
  *  ROTATE and MOVE visible: without it the mock would redraw the GENERATED
  *  layout after every press and the controls would look like they did nothing,
  *  which is the bug this stage exists to fix.
- *  The guard runs first, because a seed edit can change the field count and
- *  layout.solve refuses an order of the wrong length (BAD_NOTE) - which would
+ *  The guard runs first, because a seed edit can change a ring's note count and
+ *  layout.solve refuses a seat list of the wrong length (BAD_NOTE) - which would
  *  show up as a mock that silently stopped repainting. */
 function solvePreviewLayout(seed) {
-  if (editingId) syncLayoutOrder(seed.fields);
-  const res = HPE.layout.solve(seed,
-    { mirror: mirror, order: editingId ? layoutOrder : null });
+  if (editingId) syncLayoutSeats(seed.fields);
+  const solveOptions = { mirror: mirror, anchor: anchor, seats: editingId ? layoutSeats : null };
+  if (mirrorBottom !== null) solveOptions.mirrorBottom = mirrorBottom;
+  const res = HPE.layout.solve(seed, solveOptions);
   return res.ok ? res.value : null;
 }
 
@@ -9250,8 +9315,11 @@ function resetSheetState(edit) {
   if (edit) buildDegrees(edit.options.parent);
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
-  layoutOrder = edit && Array.isArray(edit.options.order) ? edit.options.order.slice() : null;
+  layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
   layoutSel = 0;
+  anchor = edit && edit.options.anchor === "between" ? "between" : "one";
+  mirrorBottom = edit && typeof edit.options.mirrorBottom === "boolean" &&
+    edit.options.mirrorBottom !== !!edit.options.mirror ? edit.options.mirrorBottom : null;
 }
 // The create path.
 function openScaleSheet(opener) {
@@ -9562,7 +9630,7 @@ previewBox.addEventListener("keydown", (e) => {
   else if (by === "end") {
     const fields = layoutFields();
     if (!fields) return;
-    layoutSel = Math.max(0, syncLayoutOrder(fields) - 1);
+    layoutSel = Math.max(0, syncLayoutSeats(fields) - 1);
     previewLayout();
   } else stepLayoutSel(by);
 });
