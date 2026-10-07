@@ -1335,6 +1335,28 @@ Carried from the PF review, not yet assigned an owner:
 - **Title-card blurb height.** Blurb lines draw downward with no limit (`hifi.py` and `pdfcards.js`, the title-card blurb loop). Four lines clear the card edge by about 2 pt; a fifth lands below it. A fifth line needs a bottom shell plus NO_THIRDS plus SMALL_LABELS, or P1's two-line note wrap on a crowded pan with a bottom shell. Unreachable until G2b. Lane P1 must bound it or the owner must rule before G2b.
 - **Stale prose for the DOC lane**: the `hifi.py` comment above `CARD_WARNINGS` and the CLAUDE.md "Pan-wide warnings print on the chord cards" bullet still say the title card carries the engine's full reason string; since PF it carries the short line for SMALL_LABELS. Section 15 has no row for this.
 
+### 20.8 Coordinator record after Lane S2 (2026-10-07)
+
+Lane S2 merged as #265 (main 1f4603b, 719 mutant files). Review: PASS_WITH_NITS at a73789d. The older text is not edited; read it through this section.
+
+**S2 deviations, accepted by the reviewer.** It regenerated `tests/fixtures/engine_corpus_v1.json` (four lines, the nineteen-field maximum's geom) and `tests/fixtures/gen_face_v1.json` (digests of even-rim and inner-note seeds), both forced by 5.3. It added "except the Pygmy geometry keys that Lane P1 reconciles" to the CLAUDE.md layout paragraph. It left the README's LEFT-FIRST wording for a later lane.
+
+**Owner answers, interview 7 (binding).**
+
+1. Title-card blurb overflow: **Lane P1 shrinks to fit.** Line spacing and size step down together until every blurb line sits inside the card; no line draws under 3.6 pt; no line is dropped. P1 adds a test for the five-line case (bottom shell, NO_THIRDS, SMALL_LABELS, wrapped note line). This closes the "Title-card blurb height" item of 20.7.
+2. **DR1 keeps today's ROTATE and MOVE buttons.** SEAT, NOTE and RESET SEATS arrive whole in DR2, and DR2 removes ROTATE and MOVE. So in the DR1 block: the goal's "ROTATE and MOVE removed", the TDD line "ROTATE and MOVE are gone from the markup", the acceptance `grep -c "scale-rot-\|scale-move-"` printing 0, the `tools/sandbox.js` id removal, and the retirement of `e_layout_rotate_inert`, `d_rotate_drops_the_selection` and `qa_layout_prologue_skips_sync` all move to DR2. The S3 block's "(they are removed in DR1)" reads "removed in DR2". The design spec's DR1 and DR2 ownership table agrees.
+3. A fourth review FAIL on PR #260 holds for the owner. S2, S3, P1 and U3 carry on; W1, DR1 and DR2 wait.
+4. Lane U3 (two-beginner-decks plan, OQ16) runs in parallel. Whichever of two open lanes merges second merges main and re-sets FLOORS and the README mutant count.
+
+**Carried into Lane S3 from the S2 review** (inside S3's Owns or AM-8):
+
+- `generateDeck`'s re-solve passes `mirror` and `order` only; it drops `anchor` and `mirrorBottom`. AM-8 gives this to S3. S3 adds the test that a deck generated with `anchor: between` or unequal mirrors re-solves to the same fields.
+- No test asserts that `select.build`'s fields follow the anchor (a mutant passing `anchor: "one"` to `solve` while still writing `options.anchor` survives). S3 owns `index.html`'s solve calls, not `select.js`; it adds the assertion in a test it owns if one fits, else leaves it for P1, which regenerates Pygmy through that path.
+
+**Carried, no owner yet** (S2 review nits): the seed-level anchor path in `resolveAnchor` is untested and an invalid call-level anchor silently becomes `one`; `g_bottom_anchor_dropped` and `g_bottom_anchor_side_flipped` no longer describe what they mutate; `s2_builtin_seat_drifts` carries a no-op term; `LAYOUT_HINT` and the `// false = right-first` comment in the app are inaccurate until W1 replaces the buttons; the CLAUDE.md mirror sentence uses option names where 20.5 gives UI names (DOC lane).
+
+**Counts.** S3's forecast is +3 plus its 20.5 mutants over main at its base, which is 719.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
