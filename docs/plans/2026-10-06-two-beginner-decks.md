@@ -2938,6 +2938,80 @@ a follow-up lane that makes the colour card's position a stratum.
 Recommendation: the follow-up lane, after Lane C. Not scheduled until the
 owner answers.
 
+**OQ16 decided (owner, 2026-10-07):** the follow-up lane, "Yes, after the
+print-fix lane"; on the same day, "Run now, in parallel" with Lane S2 of
+the scale workstream. The lane is U3, below.
+
+### Lane U3: the colour card's position is a stratum (OQ16)
+
+Base: main after Lane PF of the scale workstream (c9a0051, 714 mutants). Every absolute mutant count is read as a delta.
+
+- **Why**: on an over-budget custom pan `sampleMedium` lets a walk take its
+  one colour card at the first step that offers one, so late positions are
+  starved. Measured through `pick()`, 4000 picks, length 3: 35/57/8 % sampled
+  against 18/42/39 % full on the 12-field D seed; 37/59/4 % against
+  14/43/43 % on chromatic 12.
+- **Goal**: on an over-budget pan no position of the colour card is starved
+  in MEDIUM colour deals. Under-budget decks, which is every built-in, deal
+  exactly as today.
+- **Owns**: `sampleMedium` in `src/engine/sequence.js` and its comment; the
+  `sequence` engine region of `index.html` via `tools/inline_engine.py`;
+  `tests/sequence.test.js` (new tests only); the existing `sq_medium_*`
+  mutants whose hunks sit inside `sampleMedium`
+  (`sq_medium_sample_home_side_dropped.patch` for certain) and any other
+  mutant `git apply --check` reports stale; new mutants; FLOORS and the
+  README mutant count.
+- **Reads only**: `mediumEnumerate`, `drawMedium`, `pickMedium`,
+  `classifyTier`, the budget constants.
+- **Changes**: strata become (length, start side, colour position p), p from
+  0 to length - 1. Each side's starts are split once into pure and colour.
+  A walk for p > 0 starts from the side's pure starts, draws every step but
+  p from the pure onward candidates and step p from the colour onward
+  candidates (a third list beside `all` and `pure` in `onward`). A walk for
+  p = 0 starts from the side's colour starts. A stratum whose start list is
+  empty is left out when the strata are built. A walk whose step has no
+  candidate is dropped as today; it has already spent at least one node, so
+  the loop still ends at the budget. Round-robin, dedup, closing test,
+  classification, `MEDIUM_WALK_BUDGET` and the shared-`rng` draw stay as
+  they are. The "never met a colour card" drop goes away: every finished
+  walk has exactly one.
+- **TDD order**:
+  1. "an over-budget pan does not starve a colour position": on both OQ16
+     seeds, 4000 picks, length 3 colour deals: the last position's share is
+     at least 20 %, and every position's share is at least half its share
+     under full enumeration (computed in the test with an unlimited budget,
+     not quoted) and at most 60 %.
+  2. The same for lengths 4 and 5 where the tier allows them: no position's
+     share under 8 %.
+  3. "a stratum with no colour start is left out": a hand-built deck whose
+     colour cards cannot start; the sampler returns within the budget and
+     files only positions 1 and later.
+  4. The existing tests stay green unchanged: "every sampled sequence is a
+     MEDIUM sequence" (its 1,500 distinct-sequence floor included), "MEDIUM
+     on an over-budget pan deals inside the shape bands", "an over-budget
+     pan fills every pure cell its anchors allow", the 50 ms tests, the
+     pre-sampling golden deals captured at 1576ef1, and S1's 3,000-draw
+     bands on the five built-in decks.
+- **Report, not gated**: the home-triad opener share on both seeds (9 % and
+  8 % today against 57 % and 67 % full), and the measured position shares
+  for lengths 3, 4 and 5. The lane puts the figures in the PR.
+- **Acceptance**: tests 1 to 3 pass; the tests named in 4 pass without an
+  edit (the golden deals are the proof that under-budget decks deal as
+  before; no separate deal log); every file in `tests/mutants/` still
+  applies.
+- **Verify**: `node --test tests/sequence.test.js && python3
+  tools/inline_engine.py --check && python3 tools/validate.py`; then CI at
+  the head SHA.
+- **Non-goals**: `drawMedium`; the bands; the budget constants; weighting
+  strata or walks by probability; colour family as a stratum; backfilling a
+  missed cell; `stats` fields on the sampled path; the other U1 nits.
+- **Stop conditions**: test 1's bounds cannot be met by strata alone (report
+  the measured spread and stop, do not add weighting and do not loosen the
+  bounds); the 1,500 floor or a 50 ms test goes red; any under-budget deck
+  deals differently; an existing shape-band test needs an edit to pass.
+- **Mutant delta (forecast)**: +3 (position ignored, colour card drawn at
+  any step; colour step drawn from all candidates; empty stratum kept).
+
 Nits carried forward, all unscheduled unless a lane is named:
 - Colour family is not a stratum and nothing backfills a missed cell.
   Unreachable today (reproduced only on a hand-pruned deck); it becomes

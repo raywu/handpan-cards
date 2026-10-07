@@ -7253,20 +7253,26 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // the previous card, connected to it, no second colour card), closed and
   // classified exactly as the DFS leaf does. The walks are stratified over
   // (length, start side), round-robin, so neither side of a colour cell is
-  // left to chance; a walk that never meets a colour card belongs to the
-  // exact pass and is dropped. A node is a card placed, and the walks stop
+  // left to chance, and over the position p of the one colour card (OQ16):
+  // a walk for p > 0 starts on a pure start and draws every step but p from
+  // the pure candidates and step p from the colour ones; a walk for p = 0
+  // starts on a colour start. A stratum with no start is left out. Every
+  // finished walk holds exactly one colour card. A node is a card placed, and the walks stop
   // at MEDIUM_WALK_BUDGET. Each distinct sequence is filed once, through
   // `file`; returns how many were. Draws from `rng`.
   function sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file) {
     var lengths = TIER_LENGTHS.intermediate;
-    var sides = [[], []];
+    var sides = [{ pure: [], colour: [] }, { pure: [], colour: [] }];
     startSet.forEach(function (i) {
-      sides[chordRootPc(deck, i) === ctx.home ? 0 : 1].push(i);
+      sides[chordRootPc(deck, i) === ctx.home ? 0 : 1][isColour[i] ? "colour" : "pure"].push(i);
     });
     var strata = [];
     lengths.forEach(function (length) {
-      sides.forEach(function (starts) {
-        if (starts.length) strata.push({ length: length, starts: starts });
+      sides.forEach(function (side) {
+        for (var p = 0; p < length; p += 1) {
+          var starts = p === 0 ? side.colour : side.pure;
+          if (starts.length) strata.push({ length: length, starts: starts, at: p });
+        }
       });
     });
     var seen = {};
@@ -7288,21 +7294,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       turn += 1;
       var length = stratum.length;
       var walk = [];
-      var colourUsed = false;
       do {
         var options = walk.length === 0 ? stratum.starts : null;
         if (!options) {
           var prevChord = walk[walk.length - 1];
           if (!onward[prevChord]) {
-            onward[prevChord] = { all: [], pure: [] };
+            onward[prevChord] = { colour: [], pure: [] };
             for (var i = 0; i < pool.length; i += 1) {
               var candidate = pool[i];
               if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
-              onward[prevChord].all.push(candidate);
-              if (!isColour[candidate]) onward[prevChord].pure.push(candidate);
+              onward[prevChord][isColour[candidate] ? "colour" : "pure"].push(candidate);
             }
           }
-          options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
+          options = walk.length === stratum.at ? onward[prevChord].colour : onward[prevChord].pure;
         }
         var n = options.length;
         if (!n) break;
@@ -7317,10 +7321,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         room /= n;
         var next = options[at];
         walk.push(next);
-        colourUsed = colourUsed || isColour[next];
         nodes += 1;
       } while (walk.length < length && nodes < walkBudget);
-      if (walk.length < length || !colourUsed) continue;
+      if (walk.length < length) continue;
       var key = length;
       for (var k = 0; k < length; k += 1) key = key * width + walk[k];
       if (seen[key]) continue;
@@ -7531,6 +7534,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       basicCells: basicCells,
       drawBasic: drawBasic,
       mediumCells: mediumCells,
+      sampleMedium: sampleMedium,
       mediumNodeCount: mediumNodeCount,
       drawMedium: drawMedium,
       colourFamily: colourFamily,

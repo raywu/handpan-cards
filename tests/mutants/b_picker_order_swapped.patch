@@ -2071,6 +2071,7 @@ diff --git a/index.html b/index.html
        basicCells: basicCells,
        drawBasic: drawBasic,
        mediumCells: mediumCells,
+       sampleMedium: sampleMedium,
        mediumNodeCount: mediumNodeCount,
        drawMedium: drawMedium,
        colourFamily: colourFamily,
