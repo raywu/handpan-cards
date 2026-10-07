@@ -4,7 +4,7 @@ DRAFT, awaiting owner sign-off (plan section 19, R4). W1, DR1 and DR2 may not st
 
 Plan: `docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md`, section 10 (the DS brief) and section 19. This file is the DS step's output. It was produced with `/frontend-design:frontend-design`, constrained to the app's existing visual system. It changes no code, test or data.
 
-Reading rules. Every behaviour below is a decision. Where a real fork remains it is listed once, with one recommendation, in section 16 (Owner questions) and marked `[OQ n]` where it applies. Code is cited by function and element id, never by line. Figures marked ESTIMATE or UNVERIFIED were computed by hand and no browser was run; the consuming lane measures them and reports.
+Reading rules. Every behaviour below is a decision. The six forks it raised were decided by the owner on 2026-10-07; they are listed in section 16 (Owner decisions) and marked `[OD n]` where they apply. Code is cited by function and element id, never by line. Figures marked ESTIMATE or UNVERIFIED were computed by hand and no browser was run; the consuming lane measures them and reports.
 
 ## 1. Design position
 
@@ -61,7 +61,7 @@ One structural note for the integrator: `#scale-preview` moves into the new `#sc
 
 ## 4. How the drawer opens and closes
 
-**Name.** `ADJUST LAYOUT`, the name `LAYOUT_HINT` already uses. It is the button's text whether the drawer is open or closed; open state is shown by `aria-expanded="true"` and `.mode.on`, not by a different label [OQ 6].
+**Name.** `ADJUST LAYOUT`, the name `LAYOUT_HINT` already uses. It is the button's text whether the drawer is open or closed; open state is shown by `aria-expanded="true"` and `.mode.on`, not by a different label [OD 6].
 
 **Form.** An inline disclosure, `#scale-drawer`, in `#scale-layout-zone` under the plate and the toggle. No overlay, no focus trap of its own, no scrim. The sheet's existing Tab trap and aria-modal dialog stay the only trap.
 
@@ -216,7 +216,7 @@ Landscape spacing uses the existing `max-height:520px` ramp (`--sp-1:3px ... --s
 
 ## 7. Pointer drag on touch, without scrolling the page
 
-**Constraint.** The plate must never be a scroll trap. A swipe that starts on the plate scrolls the sheet body like any other swipe. `touch-action: none` on the plate is therefore NOT used [OQ 2].
+**Constraint.** The plate must never be a scroll trap. A swipe that starts on the plate scrolls the sheet body like any other swipe. `touch-action: none` on the plate is therefore NOT used [OD 2].
 
 **Mechanism.**
 1. `pointerdown` on a `.panhit` starts a lift timer. For `pointerType: "touch"` the lift happens after 250 ms of the finger staying within 8 px. For `mouse` and `pen` there is no timer: the drag begins after 4 px of movement.
@@ -259,9 +259,9 @@ Changing the anchor re-solves and redraws the plate at once, keeps every arrange
 
 **MIRROR (D13).** One `.mode` button, id `scale-mirror`, text `MIRROR` (not renamed), `aria-pressed`, off by default, `.on` when on. Helper: `Flips left and right.` Toggling re-solves and redraws, keeps arrangements, writes `Mirror on.` or `Mirror off.` A stored `mirror: true` opens with it on. In W1 it sits where the old pair sat (the `.ctlrow` before the swatches); DR1 moves it into the drawer, same id, same handler.
 
-**RESET SEATS.** `#scale-layout-reset`, `.mode`-style text button as today but labelled `RESET SEATS`. It returns the three seat arrangements to the generated default. It leaves anchor and MIRROR alone, each being one tap to undo [OQ 3]. Disabled while all three rings are already default. Status: `Seats reset to the default.` It cancels any pick.
+**RESET SEATS.** `#scale-layout-reset`, `.mode`-style text button as today but labelled `RESET SEATS`. It returns the three seat arrangements to the generated default. It leaves anchor and MIRROR alone, each being one tap to undo [OD 3]. Disabled while all three rings are already default. Status: `Seats reset to the default.` It cancels any pick.
 
-**PREVIOUS SEAT and NEXT SEAT.** `#scale-seat-prev`, `#scale-seat-next`, equal `.mode` buttons. They are the 44 px, no-pointer-accuracy path for every pan the plate cannot serve (section 10) [OQ 1]. Disabled until a note is picked. Each swaps the picked note with the occupant of the adjacent seat in its ring (wrapping), keeps it picked, redraws, and writes the swap sentence (section 11, row 7). They are not ROTATE and not MOVE: there is no cyclic shift and they do not exist outside the drawer.
+**PREVIOUS SEAT and NEXT SEAT.** `#scale-seat-prev`, `#scale-seat-next`, equal `.mode` buttons. They are the 44 px, no-pointer-accuracy path for every pan the plate cannot serve (section 10) [OD 1]. Disabled until a note is picked. Each swaps the picked note with the occupant of the adjacent seat in its ring (wrapping), keeps it picked, redraws, and writes the swap sentence (section 11, row 7). They are not ROTATE and not MOVE: there is no cyclic shift and they do not exist outside the drawer.
 
 **Status line.** `#scale-drawer-status`, `aria-live="polite"`, Bitter 12 px, `#c4bcab`, `min-height: 3.1em` (two lines) so the drawer does not jump; it grows if a sentence needs more. It is the ONLY live region the drawer writes: what a sighted player reads is exactly what a screen reader hears, with no hidden twin. It is blank on open, is cleared on close, and turns amber for refusals (section 8). It lives inside the dialog because `#scale-sheet` is aria-modal and the page-level `.announce` is outside it.
 
@@ -361,7 +361,7 @@ A collision refusal raised by `runGenerate()` (duplicate scale) follows the same
 Arrangements are keyed by the ring's note index, so editing a pitch without changing the count keeps every note in its seat.
 
 - When a VALID parse has a different count for a ring than the previous valid parse, ONLY that ring's arrangement resets to the default. The other rings keep theirs. Status row 15. If the picked note was in that ring it is put down (row 17).
-- Typing passes through counts that were never intended (typing a note, deleting it). The sheet therefore remembers, per ring, the arrangement it had at each count it has seen in this sheet session. When a ring returns to a count it has an arrangement for, that arrangement is restored (row 16) [OQ 4]. The memory is sheet state only, is not saved, shared or hashed, and is cleared when the sheet opens.
+- Typing passes through counts that were never intended (typing a note, deleting it). The sheet therefore remembers, per ring, the arrangement it had at each count it has seen in this sheet session. When a ring returns to a count it has an arrangement for, that arrangement is restored (row 16) [OD 4]. The memory is sheet state only, is not saved, shared or hashed, and is cleared when the sheet opens.
 - An invalid parse changes nothing (section 13).
 - Counts are compared per ring, so adding a bottom note leaves rim and inner untouched.
 - Rings that appear or disappear (inner goes from 0 to 3) start at the default; when a ring goes to 0 or 1 note there is nothing to arrange and its memory is kept.
@@ -370,16 +370,16 @@ Arrangements are keyed by the ring's note index, so editing a pitch without chan
 
 The only motion the drawer adds is the ghost returning to its seat (120 ms). With `prefers-reduced-motion: reduce` (the app already reads this through `reducedMotion`) the ghost disappears at once and nothing animates. The drawer itself never animates (no height transition), the scroll-into-view uses `behavior: "auto"`, and the veil, the dashed rings and the cursor appear instantly under both settings. Pick and drop feedback is carried by rings, veils and the status text, never by motion.
 
-## 16. Owner questions
+## 16. Owner decisions (2026-10-07)
 
-Each has one recommendation. None blocks sign-off of the rest.
+The six forks this spec raised were put to the owner on 2026-10-07. All six are decided as recommended and are no longer open. The `[OD n]` marks in the text point here. Sign-off of the spec as a whole is separate and follows a design review (line 1).
 
-1. `[OQ 1]` PREVIOUS SEAT and NEXT SEAT buttons. Recommend: include them, as the 44 px no-accuracy path for crowded pans and touch screen-reader users (plan 5.8 says a non-drag path is mandatory). Alternative: leave them out and rely on tap-then-tap and drag alone, accepting targets under 44 px on the shapes in 5.8. They reintroduce a MOVE-like control, which the plan removed, so this is yours to confirm.
-2. `[OQ 2]` Touch drag lifts after a 250 ms hold; a swipe that starts on the plate scrolls the page. Recommend: hold to lift. Alternative: lift at once with `touch-action: none` on the plate, which makes the whole 300 px plate a scroll trap on a 380 px phone.
-3. `[OQ 3]` RESET SEATS clears seat arrangements only. Recommend: seats only, because anchor and MIRROR are each one tap to undo. Alternative: reset all three.
-4. `[OQ 4]` Remembered arrangements per ring count. Recommend: remember, so typing and deleting a note does not destroy a hand-made layout. Alternative: reset a ring on every count change and lose it.
-5. `[OQ 5]` The drawer is an inline disclosure, not a modal or a bottom-docked panel. Recommend: inline, so the pan stays visible and draggable and no second focus trap is added. Alternative: a docked panel over the lower half of the sheet.
-6. `[OQ 6]` The control is named ADJUST LAYOUT and keeps that name open or closed. Recommend: keep, because plan section 9 already names it in `LAYOUT_HINT`. Alternative: any other name; the ids do not change.
+1. `[OD 1]` PREVIOUS SEAT and NEXT SEAT buttons: "Include them". They are the 44 px no-accuracy path for crowded pans and touch screen-reader users (plan 5.8). Rejected: leaving them out and relying on tap-then-tap and drag alone.
+2. `[OD 2]` Touch drag: "Hold 250 ms". A swipe that starts on the plate scrolls the page. Rejected: lift at once with `touch-action: none`, which makes the 300 px plate a scroll trap on a 380 px phone.
+3. `[OD 3]` RESET SEATS: "Seats only". Anchor and MIRROR are left alone. Rejected: reset all three.
+4. `[OD 4]` Arrangements: "Remember per count", within one sheet session (section 14). Rejected: reset a ring on every count change.
+5. `[OD 5]` Form: "Inline disclosure". Rejected: a docked panel over the lower half of the sheet.
+6. `[OD 6]` Name: "ADJUST LAYOUT", open or closed.
 
 ## 17. What this spec does not do
 
