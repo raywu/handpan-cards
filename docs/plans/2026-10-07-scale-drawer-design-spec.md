@@ -1,4 +1,4 @@
-DRAFT, awaiting owner sign-off (plan section 19, R4). W1, DR1 and DR2 may not start until this is signed off and merged. Design review done 2026-10-07: section 20 is BINDING and overrides sections 1 to 19 wherever they differ.
+SIGNED OFF by the owner 2026-10-07 (plan section 19, R4), mock version 3. W1, DR1 and DR2 may not start until this is merged. Section 22 (review fixes) is BINDING and overrides everything before it. Design review done 2026-10-07: section 20 is BINDING and overrides sections 1 to 19 wherever they differ.
 
 # DS: drawer and field interaction spec
 
@@ -23,10 +23,11 @@ Closed name list. Lanes use these ids; the `app_surface_v1.json` fixture and `to
 |---|---|---|
 | `scale-box` | `<textarea rows="1">` inside `#scale-box-wrap.grow` (replaces the `<input>`) | W1 |
 | `scale-box-wrap` | grid wrapper that sizes the field (section 3) | W1 |
-| `scale-label-2` | the second label line (section 9 of the plan) | W1 |
+| `scale-label-2` | the second label line; W1 adds the element with today's wording, G2b sets the plan section 9 text | W1 (element), G2b (text) |
 | `scale-parse` | the count line (unchanged id) | W1 |
 | `scale-refusal` | the refusal line (unchanged id) | unchanged |
-| `scale-mirror` | the one MIRROR switch; button, `.mode`, `aria-pressed` | W1 (in place), DR1 (moves it in) |
+| `scale-mirror` | the MIRROR TOP switch (section 21); button, `.mode`, `aria-pressed` | W1 (in place), DR1 (moves it in) |
+| `scale-mirror-bottom` | the MIRROR BOTTOM switch (section 21) | W1 (in place), DR1 (moves it in) |
 | `scale-layout-zone` | NEW wrapper around `#scale-preview`, `#scale-layout-row`, `#scale-drawer` | DR1 |
 | `scale-preview` | the plate (unchanged id) | DR1 (interactive only while the drawer is open) |
 | `scale-layout-row` | the closed-state row (kept id) | DR1 |
@@ -256,7 +257,7 @@ Helper (`.sheethint`): `On centre puts note 1 at the bottom centre. Beside centr
 
 Changing the anchor re-solves and redraws the plate at once, keeps every arrangement (plan section 8: the anchor changes where seats are, not who sits in them), and writes `Note 1 is on centre.` or `Note 1 is beside centre.` to the status line.
 
-**MIRROR (D13).** One `.mode` button, id `scale-mirror`, text `MIRROR` (not renamed), `aria-pressed`, off by default, `.on` when on. Helper: `Flips left and right.` Toggling re-solves and redraws, keeps arrangements, writes `Mirror on.` or `Mirror off.` A stored `mirror: true` opens with it on. In W1 it sits where the old pair sat (the `.ctlrow` before the swatches); DR1 moves it into the drawer, same id, same handler.
+**MIRROR (D13; SUPERSEDED by section 21, two switches).** One `.mode` button, id `scale-mirror`, text `MIRROR` (not renamed), `aria-pressed`, off by default, `.on` when on. Helper: `Flips left and right.` Toggling re-solves and redraws, keeps arrangements, writes `Mirror on.` or `Mirror off.` A stored `mirror: true` opens with it on. In W1 it sits where the old pair sat (the `.ctlrow` before the swatches); DR1 moves it into the drawer, same id, same handler.
 
 **RESET SEATS.** `#scale-layout-reset`, `.mode`-style text button as today but labelled `RESET SEATS`. It returns the three seat arrangements to the generated default. It leaves anchor and MIRROR alone, each being one tap to undo [OD 3]. Disabled while all three rings are already default. Status: `Seats reset to the default.` It cancels any pick.
 
@@ -320,7 +321,7 @@ Rows 1, 3, 5 and 6 are the keyboard forms; row 4 is the touch and mouse form of 
 
 ## 12. States of every control
 
-The visual system is unchanged: `.mode` (`#211d16` fill, `#433b2c` border, `#c4bcab` text, Nunito Sans 10.5 px / 600, 8 px radius, 44 px min height), `.mode.on` (`#f1ece1` fill, `#272219` text), the plate (`#f1ece1`, ink `#242424` / `#272219`), orange `#E27005`, amber `#e3b25c`, and the existing focus ring `outline: 2px solid #f1ece1; outline-offset: 2px` (the `--ring` allowance of 4 px is already reserved in `.sheetbody`).
+The visual system is unchanged: `.mode` (`#211d16` fill, `#433b2c` border, `#c4bcab` text, Nunito Sans 10.5 px / 600, 8 px radius, 44 px min height), `.mode.on` (`#f1ece1` fill, `#272219` text), the plate (`#f1ece1`, ink `#242424` / `#272219`), orange `#E27005`, amber `#e3b25c`, and the existing global focus ring `:focus-visible{outline:2px solid #e3b25c; outline-offset:2px}` (the `--ring` allowance of 4 px is already reserved in `.sheetbody`).
 
 | Control | Default | Focus | Active (pressed) | Disabled | Other |
 |---|---|---|---|---|---|
@@ -382,7 +383,7 @@ The six forks this spec raised were put to the owner on 2026-10-07. All six are 
 
 ## 17. What this spec does not do
 
-No change to the card face, to `pan()` with `interactive` off, or to deck data. No second pan renderer. No cross-ring move (the plate, the step buttons and the keyboard can only address one ring, and the data model cannot hold one). No shortened example (the field grows). MIRROR is not renamed. No dependency and no `<script src>`; everything is CSS (`:has`, `position: sticky`, grid) and a few pointer and key handlers in the existing script.
+No change to the card face, to `pan()` with `interactive` off, or to deck data. No second pan renderer. No cross-ring move (the plate, the step buttons and the keyboard can only address one ring, and the data model cannot hold one). No shortened example (the field grows). MIRROR is two switches named in section 21. No dependency and no `<script src>`; everything is CSS (`:has`, `position: sticky`, grid) and a few pointer and key handlers in the existing script.
 
 ## 18. Notes for the consuming lanes
 
@@ -399,15 +400,15 @@ Each line is one testable statement and is turned into exactly one test by the l
 
 1. [W1] `#scale-box` is a `<textarea>` and `#scale-box-wrap` holds it; the old `<input id="scale-box">` is gone.
 2. [W1] At 380, a one-line scale gives a field of one row, and a scale that wraps to three lines gives three rows, with `scrollWidth` equal to `clientWidth` in both.
-3. [W1] At 380, with the field empty, the whole placeholder is visible: the textarea's `scrollHeight` is at most its `clientHeight` and it is at most three rows tall.
-4. [W1] The placeholder equals the 60-character string of plan section 9, exactly.
+3. [W1] At 380, with the field empty, the whole placeholder (today's text in W1; the test stays green when G2b lengthens it) is visible: the textarea's `scrollHeight` is at most its `clientHeight` and it is at most three rows tall.
+4. [G2b] The placeholder equals the 60-character string of plan section 9, exactly.
 5. [W1] Enter in the field calls generate once and leaves the value free of line breaks; Shift+Enter does the same.
 6. [W1] Enter while an IME composition is active does not generate.
 7. [W1] Pasting text with line breaks leaves the value with those breaks replaced by single spaces.
 8. [W1] A value longer than three rows keeps the field at three rows, scrolls inside it and keeps the caret in view after typing at the end.
-9. [W1] The first label line is the `<label for="scale-box">` with the plan section 9 text, `#scale-label-2` carries the second line, `aria-describedby` names it, and neither is clipped (`scrollWidth` at most `clientWidth`) at 380.
+9. [G2b] (W1 asserts only that `#scale-label-2` exists, is named by `aria-describedby` and is not clipped at 380, with today's wording.) The first label line is the `<label for="scale-box">` with the plan section 9 text, `#scale-label-2` carries the second line, `aria-describedby` names it, and neither is clipped (`scrollWidth` at most `clientWidth`) at 380.
 10. [W1] `#scale-parse` and `#scale-refusal` are never both non-empty: a valid scale fills the first and blanks the second, an invalid one the reverse.
-11. [W1] The count line for the D3 example wraps inside the field group at 380 with no sideways scroll.
+11. [G2b] The count line for the D3 example wraps inside the field group at 380 with no sideways scroll.
 12. [W1] `#scale-mirror` is one `.mode` button with text `MIRROR`, `aria-pressed="false"` by default, and toggling it changes the preview and the generated deck's `mirror` option.
 13. [W1] A deck stored with `mirror: true` opens with `#scale-mirror` pressed.
 14. [W1] `SMALL_LABELS` text appears in `#scale-msg` with the `warn` class while the box holds a crowded scale, before GENERATE is pressed.
@@ -437,7 +438,7 @@ Each line is one testable statement and is turned into exactly one test by the l
 35. [DR1] With the drawer open at 380 x 667 the open plate is no wider than 42 percent of the viewport height.
 36. [DR1] Under a landscape phone viewport (844 x 390) the open drawer lays the plate and the controls in two columns and the plate is at least 150 px wide.
 37. [DR1] Every control in the drawer is at least 44 px tall and the drawer has no horizontal overflow at 380.
-38. [DR1] Each drawer control shows the existing focus ring (`outline` 2 px `#f1ece1`) when focused by keyboard.
+38. [DR1] Each drawer control shows the existing global focus ring (`outline` 2 px `#e3b25c`) when focused by keyboard.
 39. [DR1] The drawer and the toggle have no CSS transition or animation.
 40. [DR1] The pan drawn with `interactive` off is byte-identical to the shipped output for all five built-in decks.
 
@@ -507,7 +508,7 @@ This section is the output of `/plan-design-review` on this spec, with two outsi
 
 The ink hairline is what carries the pick past 3:1 on the plate (orange alone is about 2.7:1); the veil and the dash are the non-colour cues for seats. A pointer user never sees the focus mark. Neighbouring rings may touch on a crowded pan; DR2 checks the 20 rim example and reports. Rejected: all marks at 1.2 r; ink dashed seats.
 
-**[RD 4] An unsaved layout says so.** `#scale-layout-state` has two texts. While seats, anchor or MIRROR differ from what GENERATE CARDS last kept (the stored deck on Edit, the default on Add): `Layout not saved yet. GENERATE CARDS keeps it.` On Edit, when the layout equals the stored deck and is not the default: `Layout changed from the default.` Otherwise hidden. It sits directly under the toggle row, drawer open or closed. BACK and closing the sheet still discard without asking. Rejected: a confirm on BACK; no notice.
+**[RD 4] An unsaved layout says so.** `#scale-layout-state` has two texts. While seats, anchor or MIRROR differ from what GENERATE CARDS last kept (the stored deck on Edit, the default on Add): `Layout not saved yet. {BUTTON} keeps it.`, where {BUTTON} is the text of the sheet's primary button (`GENERATE CARDS` on Add, `SAVE CHANGES` on Edit). On Edit, when the layout equals the stored deck and is not the default: `Layout changed from the default.` Otherwise hidden. It sits directly under the toggle row, drawer open or closed. BACK and closing the sheet still discard without asking. Rejected: a confirm on BACK; no notice.
 
 **[RD 5] NOTE step buttons.** `#scale-note-prev` (`PREVIOUS NOTE`) and `#scale-note-next` (`NEXT NOTE`), equal `.mode` buttons, enabled whenever the scale parses and at least one ring has two notes. They move the PICK, not a note: NEXT NOTE picks the next pickable note in the order rim, inner, bottom by seat number, wrapping from the last to the first; with nothing picked it picks the first (rim seat 1) and PREVIOUS NOTE picks the last. Rings of one note and the ding are skipped. They never change the arrangement and never move focus. Status row 20. With them, every swap is reachable through 44 px buttons alone: NOTE buttons choose, SEAT buttons move. Rejected: a native note dropdown; no addition.
 
@@ -584,7 +585,7 @@ Replaced lines (same number, same lane):
 23. [DR1] The Tab order walks BACK, (Edit: the deck name,) the field, the plate as one stop (open only), the toggle, PREVIOUS NOTE, NEXT NOTE, PREVIOUS SEAT, NEXT SEAT, MIRROR, RESET SEATS, ON CENTRE, BESIDE CENTRE, in that order, skipping disabled controls.
 19. [DR1] Open: `#scale-preview` has no `tabindex`, contains `.panhit` elements and exactly one of them has `tabindex="0"`; closed: it contains no `.panhit`.
 18. [DR1] Opening moves focus to the `.panhit` with `tabindex="0"` and does not raise the soft keyboard.
-30. [DR1] `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` when MIRROR or the anchor differs from what was last kept (and, from DR2, when any seat does), reads `Layout changed from the default.` on an Edit sheet whose stored layout is not the default and is unchanged, and is hidden otherwise.
+30. [DR1] `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` on Add and `Layout not saved yet. SAVE CHANGES keeps it.` on Edit when MIRROR or the anchor differs from what was last kept (and, from DR2, when any seat does), reads `Layout changed from the default.` on an Edit sheet whose stored layout is not the default and is unchanged, and is hidden otherwise.
 31. [DR1] As written, with both NOTE step buttons added to the disabled set.
 32. [DR1] After the scale parses again each control is enabled or disabled by its own rule (RESET SEATS only when a seat differs, SEAT buttons only with a pick), the anchor and MIRROR values are unchanged, and the status reads row 18b.
 34. [DR1] With the drawer open at 380 x 780 `#scale-plate-band` stays inside the scrollport when the body is scrolled to its end, and while `#scale-box` has focus it is `position: static`.
@@ -669,7 +670,7 @@ Outside voices: Codex and Claude both said "revise before sign-off", no hard rej
 
 ## 21. Owner comments on the mock (2026-10-07, BINDING)
 
-The owner reviewed the working mock (https://claude.ai/artifact/MshNriKXvq5a8ehcqNHZq7, version 2) and gave three comments, then answered the follow-up questions. This section overrides sections 1 to 20 wherever they differ. `[MC n]` marks an owner decision. `[AD-MC n]` marks a reading the coordinator chose and the owner has not yet confirmed. Version 3 of the mock shows all of it.
+The owner reviewed the working mock (https://claude.ai/artifact/MshNriKXvq5a8ehcqNHZq7, version 2) and gave three comments, then answered the follow-up questions. This section overrides sections 1 to 20 wherever they differ. `[MC n]` marks an owner decision. `[AD-MC n]` marks a reading the coordinator chose; the owner confirmed all four on 2026-10-07. Version 3 of the mock shows all of it.
 
 ### 21.1 Decisions
 
@@ -686,7 +687,7 @@ The owner reviewed the working mock (https://claude.ai/artifact/MshNriKXvq5a8ehc
 
 Both are `.mode` buttons with `aria-pressed`, off by default, equal widths in one `.mirror` pair. One helper under the pair: `Each flips left and right. Top covers the rim and the inner notes.` Owner: the inner notes follow "Top switch"; a deck saved with the old single mirror on opens with "Both switches on".
 
-**[AD-MC 1]** MIRROR BOTTOM is disabled on a pan with no bottom notes, and its value is then written as off.
+**[AD-MC 1]** MIRROR BOTTOM is disabled on a pan with no bottom notes and is shown unpressed there, whatever is stored. Showing it unpressed is not a layout change: `#scale-layout-state` stays as it was and nothing is rewritten on open. When the sheet's primary button next saves that pan, `mirrorBottom` is written as off.
 
 **[AD-MC 2]** RESET SEATS moves to its own row under the mirror pair (the pair now holds the two switches). It still leaves the anchor and both mirrors alone (OD 3).
 
@@ -703,7 +704,7 @@ Both are `.mode` buttons with `aria-pressed`, off by default, equal widths in on
 109. [W1] `#scale-mirror` has the text `MIRROR TOP` and `#scale-mirror-bottom` the text `MIRROR BOTTOM`; both have `aria-pressed="false"` by default.
 110. [W1] On a pan with rim, inner and bottom notes, toggling MIRROR TOP changes the angle of every rim and inner field with an angle other than 90 or 270 and of no bottom field; toggling MIRROR BOTTOM changes bottom fields only.
 111. [W1] `#scale-mirror-bottom` is disabled on a pan with no bottom notes.
-112. [W1] A deck stored with the old single `mirror: true` opens with both switches pressed and draws every field where it drew before.
+112. [W1] A deck WITH bottom notes stored with the old single `mirror: true` opens with both switches pressed, and draws every field where the same build draws it for `mirror: true` alone (the baseline is the same solver, not an older release: the plan accepts that S2 redraws some old mirrored decks). The same deck WITHOUT bottom notes opens with MIRROR TOP pressed, MIRROR BOTTOM disabled and unpressed, and `#scale-layout-state` hidden.
 113. [W1] A deck generated with MIRROR TOP on and MIRROR BOTTOM off reopens on Edit, and from its share link, with exactly that pair of values.
 114. [DR1] Both switches are inside `#scale-drawer`; toggling MIRROR TOP writes row 14 and MIRROR BOTTOM writes row 21.
 115. [DR1] Pygmy's scale string typed on Add opens with `#scale-anchor-one` pressed; after one tap on BESIDE CENTRE every rim, inner and bottom field sits at the angle `data/decks.json` has for the built-in Pygmy deck (field 1 at 290), and the generated deck reopens on Edit with `#scale-anchor-between` pressed.
@@ -735,6 +736,23 @@ Two print answers from the same interview belong to the plan, not to this spec, 
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | - | - |
 
 - **OUTSIDE VOICES:** Codex and a Claude reviewer both ran; 10 and 12 findings, all folded into section 20 or listed in 20.6.
-- **VERDICT:** DESIGN CLEARED, ready for owner sign-off. Acceptance list is now 107 lines (W1 16, DR1 35, DR2 56).
+- **VERDICT:** DESIGN CLEARED, ready for owner sign-off. Acceptance list after sections 21 and 22: 116 lines (W1 18, G2b 3, DR1 38, DR2 57).
 
 NO UNRESOLVED DECISIONS
+
+## 22. Review fixes (2026-10-07, binding; overrides sections 1 to 21 wherever they differ)
+
+From the independent review of this document at `a7a4a47`. Three were blocking and are also edited in place above; the rest are settled here.
+
+1. **W1 does not ship G2b's text.** The plan gives the label and placeholder wording to G2b and makes it a W1 non-goal. Lines 4, 9 and 11 are G2b's. W1 builds the wrapping field and the `#scale-label-2` element with today's wording and today's placeholder, which the legacy reader still parses.
+2. **Old mirrored deck with no bottom notes.** [AD-MC 1] and line 112 as reworded above: top pressed, bottom disabled and unpressed, no unsaved notice, stored value rewritten only on save.
+3. **The unsaved notice names the sheet's own primary button** ([RD 4], line 30 as reworded above).
+4. **Focus ring.** Drawer controls use the global `:focus-visible` ring (`#e3b25c`). The `#f1ece1` ring existed only on `#scale-preview[tabindex]`, whose `tabindex` line 19 removes.
+5. **Focus after a swap.** Focus goes to the moved note at its new seat only when focus was on a note when the swap was committed. After PREVIOUS SEAT, NEXT SEAT, PREVIOUS NOTE or NEXT NOTE, focus stays on the button pressed; the roving `tabindex` still moves to the moved note. Line 97 covers the note case; DR2 adds the button case to the same test.
+6. **Row 2** (`{n} is the only note in the {ring} ...`) is written only when a pick or a SEAT step is attempted on a ring of one note. Moving focus with an arrow key never writes it (line 62 stands).
+7. **Line 58** holds at 380 x 667 portrait with the drawer open. At any other viewport, including the 220 px landscape plate of line 88, target sizes are measured and reported, not asserted.
+8. **Reports are not tests.** Lines 84 (the plate-width part), 89, the inner and bottom part of 58, and F 10 are measurements recorded on the lane's PR. "Exactly one test per line" in section 16 excludes them.
+9. **Landscape plate width** is 220 px (line 88). The "232 px" in section 5 was an estimate and is withdrawn.
+10. **Ring memory (section 14).** A ring that empties to 0 or 1 note keeps its memory. When it returns to a count it has an arrangement for, that arrangement is restored (row 16), including after passing through 0. Only a count never seen in this sheet session starts at the default.
+11. **Superseded text left as history.** The section 5 wireframes predate RD 7 and AD-MC 2 and show one MIRROR; section 21 and mock version 3 are the reference. Section 20's "row 14 stands" is superseded by MC 3 (rows 14 and 21).
+12. **Not this document's to settle; recorded on the plan by the coordinator:** two solver reflections and `mirrorBottom` in the record and link (W1 waits for that amendment and for S3); the plan's section 10 names another output file for this spec; the sticky `#scale-plate-band` against the plan's "only it and the delete row are pinned"; lane ownership of `pan()`'s interactive branch, the `paintPan` re-key and the `previewBox` keydown replacement; and that between DR1 and DR2 an Edit deck with stored seats cannot be rearranged or reset.
