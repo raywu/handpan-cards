@@ -72,7 +72,10 @@ def spec_label_size(radius, zone):
     return radius * spec_label_ratio(zone)
 
 
-ALL_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
+ALL_DECKS = (decks.KURD, decks.AMARA10, decks.HIJAZ, decks.PYGMY, decks.AMARA)
+# Owner, 2026-10-06 ("Test the old three only"): a deck adopted after the
+# label rule has no pre-rule baseline to shrink below.
+PRE_RULE_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
 
 
 # --------------------------------------------------------------------------
@@ -210,7 +213,7 @@ def render_chord_card(deck, index, chord, x=0.0, y=0.0):
 
 
 def every_card():
-    """(deck, 1-based index, chord) for all 99 cards."""
+    """(deck, 1-based index, chord) for all 177 cards."""
     for deck in ALL_DECKS:
         for i, chord in enumerate(deck["chords"]):
             yield deck, i + 1, chord
@@ -320,7 +323,7 @@ class FitTest(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# call-site width budgets, across all 99 cards
+# call-site width budgets, across all 177 cards
 # --------------------------------------------------------------------------
 class CardWidthBudgetTest(unittest.TestCase):
     """The budgets the card layout promises, checked against drawn ink.
@@ -350,7 +353,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], 0.0,
             "a drawn subtitle overran the %.0f%% header budget (%.2f pt). "
-            "Worst case of all 99 cards: %s / %r drawn %.2f pt, slack "
+            "Worst case of all 177 cards: %s / %r drawn %.2f pt, slack "
             "%.2f pt" % (self.SUBTITLE_BUDGET * 100,
                          SPEC_CARD_W * self.SUBTITLE_BUDGET,
                          worst[1], worst[2], worst[3], worst[0]))
@@ -375,7 +378,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreater(
             worst[0], 0.0,
             "the header subtitle overlapped the deck name. Worst case of all "
-            "99 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
+            "177 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
 
     def test_all_drawn_card_text_stays_inside_the_card(self):
         worst = None
@@ -395,7 +398,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], MIN_TEXT_MARGIN,
             "drawn text came within %.2f pt of the card edge (minimum %.2f). "
-            "Worst case of all 99 cards: %s / %s / %r"
+            "Worst case of all 177 cards: %s / %s / %r"
             % (worst[0], MIN_TEXT_MARGIN, worst[1], worst[2], worst[3]))
 
 
@@ -697,7 +700,7 @@ class LabelSizeRuleTest(unittest.TestCase):
         The app is pinned to these same numbers by
         tests/test_render_agreement.py, which measures its emitted SVG.
         """
-        for deck in ALL_DECKS:
+        for deck in PRE_RULE_DECKS:
             spec = deck["spec"]
             geom = spec["_geom"]
             R = deck["R"]

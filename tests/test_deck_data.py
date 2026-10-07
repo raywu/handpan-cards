@@ -41,6 +41,32 @@ NAME_PC = {
 # degrees, 0 = right, 90 = up, y-up. MIDI from scientific pitch notation
 # (C4 = 60), which is what the octave numbers in the spec mean.
 LAYOUTS = {
+    # Solver-generated (2026-10-06): ding D3 centre, nine rim fields, even
+    # numbers on the left as on Amara 9, nothing at top centre.
+    "kurd": [
+        ("Ding", "D", 3, 50, "ding", None),
+        ("1", "A", 3, 57, "rim", 270),
+        ("2", "Bb", 3, 58, "rim", 230),
+        ("3", "C", 4, 60, "rim", 310),
+        ("4", "D", 4, 62, "rim", 190),
+        ("5", "E", 4, 64, "rim", 350),
+        ("6", "F", 4, 65, "rim", 150),
+        ("7", "G", 4, 67, "rim", 30),
+        ("8", "A", 4, 69, "rim", 110),
+        ("9", "C", 5, 72, "rim", 70),
+    ],
+    "amara10": [
+        ("Ding", "D", 3, 50, "ding", None),
+        ("1", "A", 3, 57, "rim", 270),
+        ("2", "C", 4, 60, "rim", 230),
+        ("3", "D", 4, 62, "rim", 310),
+        ("4", "E", 4, 64, "rim", 190),
+        ("5", "F", 4, 65, "rim", 350),
+        ("6", "G", 4, 67, "rim", 150),
+        ("7", "A", 4, 69, "rim", 30),
+        ("8", "C", 5, 72, "rim", 110),
+        ("9", "D", 5, 74, "rim", 70),
+    ],
     # Ding C#3 centre, standard left-first zig-zag.
     "hijaz": [
         ("Ding", "C#", 3, 49, "ding", None),
@@ -89,13 +115,15 @@ LAYOUTS = {
     ],
 }
 
-# CLAUDE.md > "Decks:" - chord counts per deck, 99 cards in total.
+# CLAUDE.md > "Decks:" - chord counts per deck, 177 cards in total.
 # 2026-09-16 (D7/D10/D11, engine adoption): all three decks now ship the
 # scale engine's generated output. Hijaz 18 -> 19, Pygmy 27 -> 52 (31 distinct
 # chord names, D10 amended), Amara 16 -> 25 (D11, fully re-ranked).
 # 2026-10-07 (size cap removed, Lane U2): Pygmy 52 -> 53 (32 distinct names,
 # Fmadd9 at position 6, Fm9 on the engine voicing), Amara 25 -> 27.
-CHORD_COUNTS = {"hijaz": 19, "pygmy": 53, "amara": 27}
+# 2026-10-07 (Lane B): kurd 49 and amara10 29, engine output.
+CHORD_COUNTS = {"kurd": 49, "amara10": 29, "hijaz": 19, "pygmy": 53,
+                "amara": 27}
 
 # docs/ENGINE-SPEC.md section 10, keyed by note name (owner decision
 # 2026-10-05: the step of the parent scale, case, the diminished mark, and no
@@ -106,7 +134,15 @@ DEGREES = {
     "pygmy": {"F": "i", "Ab": "III", "Bb": "iv", "C": "v", "Db": "VI",
               "Eb": "VII", "G": "ii°"},
     "amara": {"D": "i", "A": "v", "G": "iv", "C": "VII", "F": "III"},
+    "kurd": {"D": "i", "E": "ii°", "F": "III", "G": "iv", "A": "v",
+             "Bb": "VI", "C": "VII"},
+    "amara10": {"D": "i", "E": "ii°", "F": "III", "G": "iv", "A": "v",
+                "C": "VII"},
 }
+
+# Owner, 2026-10-06 (D10, "Keep ii° on Amara 10"): E carries a degree label
+# with no card rooted on it. The only degree allowed to go unused.
+UNUSED_DEGREES = {"amara10": ("E",)}
 
 # Bottom notes used by each Pygmy voicing, in card order - the number the
 # orange "N BOTTOM NOTES" badge announces. Zero means the card carries no
@@ -234,7 +270,7 @@ class LayoutTest(unittest.TestCase):
     def test_deck_inventory(self):
         got = {d["id"]: len(d["chords"]) for d in decks()}
         self.assertEqual(got, CHORD_COUNTS)
-        self.assertEqual(sum(got.values()), 99, "99 cards total")
+        self.assertEqual(sum(got.values()), 177, "177 cards total")
 
     def test_midi_matches_note_name(self):
         for deck in decks():
@@ -291,7 +327,7 @@ class VoicingTest(unittest.TestCase):
                                 - field_of(deck, root)[2]) % 12
                     self.assertEqual(interval, 7,
                                      (deck["id"], ch["main"], "fifth above root"))
-        self.assertEqual(found, 19, "power chords across the three decks")
+        self.assertEqual(found, 30, "power chords across the five decks")
 
     def test_voicings_unique_within_deck(self):
         """One card per voicing. Duplicate pitch-class SETS are deliberate
@@ -422,7 +458,8 @@ class DegreeTest(unittest.TestCase):
                 got = {int(k): v for k, v in deck["degrees"].items()}
                 self.assertEqual(got, expect, deck["id"] + ": scale degrees")
                 roots = {pc(deck, r) for ch in deck["chords"] for r in ch["roots"]}
-                self.assertEqual(roots, set(expect),
+                unused = {NAME_PC[n] for n in UNUSED_DEGREES.get(deck["id"], ())}
+                self.assertEqual(roots, set(expect) - unused,
                                  deck["id"] + ": every chord root has a degree "
                                               "and every degree is used")
 

@@ -49,7 +49,7 @@ SEEDS = [
 # side and decks.HIJAZ/PYGMY/AMARA (tools/decks.py:_from_canonical) on the
 # Python side - a SECOND kind of case alongside the generated SEEDS above.
 # `_pair`/`_pair_drawings` dispatch on membership in this list.
-BUILTINS = ["hijaz", "pygmy", "amara"]
+BUILTINS = ["kurd", "amara10", "hijaz", "pygmy", "amara"]
 
 # Every case the glyph/vector sweeps below iterate: generated seeds first
 # (unchanged), then the three built-ins.
@@ -252,7 +252,8 @@ class PrintParityTest(unittest.TestCase):
         # must fail here instead of greening a sweep that never ran it.
         # Demonstrated red in the PR body by temporarily removing one
         # built-in id from BUILTINS.
-        self.assertEqual(set(BUILTINS), {"hijaz", "pygmy", "amara"})
+        self.assertEqual(set(BUILTINS),
+                         {"kurd", "amara10", "hijaz", "pygmy", "amara"})
         self.assertTrue(set(BUILTINS).issubset(set(CASES)),
                         "every built-in must be one of the swept cases")
         self.assertEqual(set(VARIANTS), {"full", "shop"})

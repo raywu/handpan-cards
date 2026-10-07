@@ -472,6 +472,28 @@ class UncappedBuiltinsTest(unittest.TestCase):
                          "a Pygmy card other than Fmadd9 and Fm9 moved")
 
 
+class EngineAdoptedBuiltinsTest(unittest.TestCase):
+    """Lane B: kurd and amara10 are engine output, never hand-edited."""
+
+    MAKERS = {
+        "kurd": ("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5", "D KURD 10"),
+        "amara10": ("(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5", "D AMARA 10"),
+    }
+
+    def test_engine_adopted_builtins_equal_a_fresh_engine_run(self):
+        for deck_id, (maker, name) in self.MAKERS.items():
+            with self.subTest(deck=deck_id):
+                fresh = generate(maker, "--name", name)["deck"]
+                got = canonical_deck(deck_id)
+                self.assertEqual(got["fields"], fresh["fields"])
+                self.assertEqual(got["chords"], fresh["chords"])
+                self.assertEqual(got["degrees"], fresh["degrees"])
+                self.assertEqual(got["geom"],
+                                 {k: v for k, v in fresh["geom"].items()
+                                  if k != "ext"})
+                self.assertEqual(got["name"], name)
+
+
 class GeneratedDeckPdfTest(unittest.TestCase):
     """End to end: a seed reaches paper through the existing hifi.build."""
 

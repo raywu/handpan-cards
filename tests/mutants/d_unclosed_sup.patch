@@ -1,5 +1,5 @@
-# kills: every rendered face is well-formed markup (99 cards x 2 modes)
-# suite: node --test --test-name-pattern ^every.rendered.face.is.well.formed.markup..99.cards.x.2.modes.$ tests/app.test.js
+# kills: every rendered face is well-formed markup (177 cards x 2 modes)
+# suite: node --test --test-name-pattern ^every.rendered.face.is.well.formed.markup..177.cards.x.2.modes.$ tests/app.test.js
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

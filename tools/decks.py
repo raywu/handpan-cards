@@ -290,6 +290,8 @@ def _from_canonical(deck_id, **extra_overlay):
 HIJAZ = _from_canonical("hijaz")
 PYGMY = _from_canonical("pygmy")
 AMARA = _from_canonical("amara")
+KURD = _from_canonical("kurd")
+AMARA10 = _from_canonical("amara10")
 
 
 def _blurb(spec, chord_count, warnings=()):
