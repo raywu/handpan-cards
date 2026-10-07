@@ -8272,6 +8272,8 @@ function run() {
     test("sequence mode: the pinned longest rail, a 6-character rail and a markup-bearing name all fit on one line at 320x568",
       async () => {
         await freshLoad();
+        const hijazMeta = await decksMeta();
+        await selectDeck(hijazMeta.findIndex((d) => d.id === "hijaz"), hijazMeta);
         await b.setViewport(320, 568, true);
         await b.settle();
         await openSettingsPanel();
