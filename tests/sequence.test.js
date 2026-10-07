@@ -2256,3 +2256,29 @@ test("every sampled sequence is a MEDIUM sequence", () => {
     }
   }
 });
+
+test("the node count predicts truncation exactly", () => {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const S = full.sequence;
+  const I = S._internal;
+  const build = (str) => full.select.build(full.core.parseSeed(str, {}).value).value;
+  const decks = {
+    hijaz: HIJAZ,
+    pygmy: PYGMY,
+    amara: AMARA,
+    kurd10: build("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"),
+    amara10: build("(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5"),
+    pygmy18: build("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5")
+  };
+  TRUNCATING_SEEDS.forEach((str, i) => { decks[`truncating${i}`] = build(str); });
+  for (const [id, deck] of Object.entries(decks)) {
+    const ctx = I.tierContext(deck);
+    const count = I.mediumNodeCount(deck, ctx, I.buildConnectMatrix(deck));
+    const unbounded = {};
+    I.mediumCells(deck, unbounded, Infinity);
+    assert.strictEqual(count, unbounded.nodes, `${id}: count against the unbounded DFS`);
+    const bounded = {};
+    I.mediumCells(deck, bounded);
+    assert.strictEqual(count > I.MEDIUM_ENUM_BUDGET, bounded.truncated, `${id}: count predicts truncation`);
+  }
+});
