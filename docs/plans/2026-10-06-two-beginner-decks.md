@@ -1033,6 +1033,26 @@ array position 0 as the default or the booted deck.
   `d_delete_silent.patch`, and `d_edit_moves_selection.patch` if the refresh
   check flags it.
 
+- Added after the first review of PR #252 (FAIL, 2026-10-06; coordinator
+  auto-decision AD20, widening ownership rather than deferring to Lane B):
+  - `tests/e2e.test.js` "boots with the first deck loaded": the active-chip
+    assertion `chips.map((_, i) => i === 0)` is a third position spelling.
+    It asserts the active chip is the `bootMeta` deck's chip; the test title
+    and message say "default deck", not "first deck".
+  - `tests/app.test.js`: "an unknown deck id still falls back to a built-in
+    deck"; "an unknown BUILT-IN deck id falls back silently; a missing
+    custom: id says so"; "deleting the SELECTED custom deck falls back to a
+    built-in, says so, and stays gone". Each expects `decks(app)[0]` as the
+    fallback and must expect the app's `DEFAULT_DECK` deck instead. Test
+    names stay as they are (two mutants name the last one in `# kills:`).
+  - `tests/app.test.js` "a non-string stored deck id is ignored and never
+    eats a share link": no `"hijaz"` literal; the expected deck is the one
+    whose id is the app's `DEFAULT_DECK`.
+  - Proof for all of the above, run locally and NOT committed: with
+    `DEFAULT_DECK` set to `"pygmy"`, and separately with the built-ins
+    reordered so the default is not first (re-synced), the app and layout
+    suites are green and "boots with ..." passes by name.
+
 **Reads only:** `data/decks.json`, `tools/sandbox.js`,
 `tests/suite_health.py`.
 
