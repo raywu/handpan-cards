@@ -3034,3 +3034,43 @@ Nits carried forward, unscheduled:
   not raised though each gained a test.
 - The new decks' progression mode is covered only by the generated-deck
   sweep and a reviewer probe (300 seeds, four tiers, no throw).
+
+## Lane C outcome (2026-10-07)
+
+Merged as #257 (main `d744071`, 690 mutants). One review: PASS_WITH_NITS at
+`d5421ae`. CI run 37601161732 green at that SHA, all 690 mutants killed
+across four shards. `DEFAULT_DECK` is `"kurd"`; nothing else in the app
+changed. A stored deck id still wins and `hpfc` gains no key. With this
+the workstream's lanes are all merged; the Amy progression rerun (OQ11,
+docs-only) is what remains.
+
+Auto-decision taken under AFK, for the owner to confirm or overturn:
+- AD-C-1: ownership widened mid-lane (amendment 2) so the lane could re-cut
+  `b_picker_order_swapped.patch`, whose context held the old default line.
+  The lane had stopped, as written, with nothing committed. The re-cut is
+  one context line and is byte-identical to what
+  `tools/regen_data_mutants.py` writes (reviewer's check).
+
+One existing e2e test was edited: "sequence mode: the pinned longest rail,
+a 6-character rail and a markup-bearing name all fit on one line at
+320x568" pins Hijaz chord indices and now selects Hijaz by id.
+
+By design, for the owner to know:
+- Every boot stores the resolved deck, so a browser that has opened the app
+  before keeps its deck. Checking the new default needs a private window.
+- A user with Hijaz stored who opens a share link and then deletes that
+  deck lands on Kurd, not Hijaz (7.3 row 5).
+
+Nits carried forward, unscheduled:
+- `kurd` is both `DEFAULT_DECK` and `DECKS[0]`, so the two are
+  indistinguishable to the tests (section 16 already lists the equivalent
+  mutant). A test that rotates `DECKS` would pin it.
+- One mutant covers seven new tests. The reviewer wrote a killable
+  no-migration mutant in memory, so section 16's "there is no code to
+  mutate" is wrong.
+- The no-migration test hard-codes the full `hpfc` key list; two of the new
+  tests repeat coverage that existed.
+- CLAUDE.md's default-deck bullet says a stored deck is "always honoured";
+  an id that no longer resolves is not. Its date is the decision date.
+- `hijazMeta` in the edited e2e test holds every deck's meta.
+
