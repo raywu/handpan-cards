@@ -1,0 +1,16 @@
+# kills: test_a_small_labels_warning_prints_the_short_line_on_the_title_card
+# suite: python3 -m unittest -k test_a_small_labels_warning_prints_the_short_line_on_the_title_card tests.test_gen_deck
+# _blurb ignores TITLE_WARNINGS, so a crowded pan prints the whole 308 pt
+# sentence on a 177.6 pt card instead of the short line.
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -315,7 +315,7 @@
+     # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
+     # that the app had flagged it; the engine's own reason string, verbatim.
+     for w in warnings:
+-        out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
++        out.append(w["reason"].upper())
+     return out
+ 
+ 

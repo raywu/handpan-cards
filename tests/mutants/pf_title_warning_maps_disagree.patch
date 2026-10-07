@@ -1,0 +1,16 @@
+# kills: test_the_title_card_warning_lines_are_the_same_copy
+# suite: python3 -m unittest -k test_the_title_card_warning_lines_are_the_same_copy tests.test_render_agreement
+# The browser's short line drifts from print's, so the two pipelines print
+# different title cards for the same crowded pan.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -94,7 +94,7 @@
+     return ids.slice().sort(function (a, b) { return Number(a) - Number(b); });
+   }
+ 
+-  var TITLE_WARNINGS = { SMALL_LABELS: "CROWDED PAN: SMALL LABELS" };
++  var TITLE_WARNINGS = { SMALL_LABELS: "CROWDED PAN: SMALL LABEL" };
+ 
+   function blurb(spec, chordCount, warnings) {
+     function line(zones) {

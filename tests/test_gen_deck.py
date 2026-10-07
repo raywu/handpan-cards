@@ -415,6 +415,52 @@ class GeneratedDeckKeyTest(unittest.TestCase):
             "an unwarned title card prints its notes and its deck size and "
             "nothing else - no extra line may appear on the quiet path")
 
+    def small_labels_deck(self):
+        """SEED_TOP_ONLY's real payload plus the warning a crowded pan earns.
+
+        The parser refuses a crowded pan until G2b, so no seed reaches
+        SMALL_LABELS through gen_deck.js; select.test.js proves the engine
+        produces it, and this appends the same shape to a real payload.
+        """
+        reason = subprocess.run(
+            ["node", "-e",
+             "const {loadEngine}=require('./tools/engine_loader.js');"
+             "process.stdout.write(loadEngine(['core']).core.REASONS"
+             ".SMALL_LABELS.reason.split('<N>').join('3.4'))"],
+            capture_output=True, text=True, cwd=paths.ROOT, timeout=120,
+            check=True).stdout
+        payload = generate(SEED_TOP_ONLY)
+        payload["deck"]["warnings"] = list(payload["deck"].get("warnings") or []) + [
+            {"code": "SMALL_LABELS", "reason": reason}]
+        return decks.from_generated(payload), reason
+
+    def test_a_small_labels_warning_prints_the_short_line_on_the_title_card(self):
+        deck, reason = self.small_labels_deck()
+        short = "CROWDED PAN: SMALL LABELS"
+        self.assertEqual(deck["blurb"].count(short), 1)
+        for line in deck["blurb"]:
+            self.assertNotIn("3.6 PT", line)
+            self.assertNotEqual(line, reason.upper())
+        with tempfile.TemporaryDirectory(prefix="handpan-gen-") as tmp:
+            out = os.path.join(tmp, "small_labels.pdf")
+            hifi.build(out, deck)
+            with pymupdf.open(out) as doc:
+                text = "".join(page.get_text() for page in doc)
+        self.assertEqual("".join(text.split()).count("".join(short.split())), 1,
+                         "the short line reaches the printed title card once")
+
+    def test_no_warning_line_on_the_title_card_is_wider_than_the_card(self):
+        small, _reason = self.small_labels_deck()
+        no_thirds = decks.from_generated(generate(SEED_NO_THIRDS))
+        for label, deck in (("SMALL_LABELS", small), ("NO_THIRDS", no_thirds)):
+            for w in deck["warnings"]:
+                line = decks.TITLE_WARNINGS.get(w["code"], w["reason"].upper())
+                self.assertIn(line, deck["blurb"])
+                width = hifi.tw(line, "Label", 4.2, 0.35)
+                with self.subTest(warning=label):
+                    self.assertLessEqual(width, hifi.CW - 24,
+                                         "%s line is %.1f pt" % (label, width))
+
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
         for deck in (decks.HIJAZ, decks.PYGMY, decks.AMARA):

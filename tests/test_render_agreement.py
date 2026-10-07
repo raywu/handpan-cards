@@ -642,7 +642,8 @@ class PdfEmitterGeometryTest(unittest.TestCase):
              "const H=loadEngine(['core','fontdata','pdf','pdfdeck','pdfcards']);"
              "process.stdout.write(JSON.stringify({geom:H.pdfcards.GEOM,"
              "paper:H.pdfcards.PAPER,slots:H.pdfcards.slots('letter'),"
-             "warn:H.pdfcards.CARD_WARNINGS}));"],
+             "warn:H.pdfcards.CARD_WARNINGS,"
+             "titleWarn:H.pdfdeck.TITLE_WARNINGS}));"],
             capture_output=True, text=True, cwd=paths.ROOT, timeout=120)
         if out.returncode != 0:
             raise AssertionError(out.stderr)
@@ -668,6 +669,9 @@ class PdfEmitterGeometryTest(unittest.TestCase):
 
     def test_the_warning_badges_are_the_same_copy(self):
         self.assertEqual(self.js["warn"], hifi.CARD_WARNINGS)
+
+    def test_the_title_card_warning_lines_are_the_same_copy(self):
+        self.assertEqual(self.js["titleWarn"], decks.TITLE_WARNINGS)
 
     def test_the_diagram_label_rule_carries_the_same_constants(self):
         """The no-shrink rule, third copy.
