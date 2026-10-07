@@ -667,6 +667,63 @@ New classes, interactive layer only: `.panarm`, `.panflash`. `pan()` with `inter
 
 Outside voices: Codex and Claude both said "revise before sign-off", no hard rejection from either. Litmus: both YES on product, anchor, no cards, premium without shadows. Codex YES and Claude NO on "understandable from labels alone" (seat is never defined on screen; the drawer hint and the helpers carry it) and on "one job per section" (the status line; kept as one line by section 9's no-hidden-twin rule). Both NO on motion, answered by RD 9.
 
+## 21. Owner comments on the mock (2026-10-07, BINDING)
+
+The owner reviewed the working mock (https://claude.ai/artifact/MshNriKXvq5a8ehcqNHZq7, version 2) and gave three comments, then answered the follow-up questions. This section overrides sections 1 to 20 wherever they differ. `[MC n]` marks an owner decision. `[AD-MC n]` marks a reading the coordinator chose and the owner has not yet confirmed. Version 3 of the mock shows all of it.
+
+### 21.1 Decisions
+
+**[MC 1] The open toggle carries a close mark.** While `#scale-layout-toggle` has `aria-expanded="true"` its label is followed, inside the same button, by a small multiplication sign (U+00D7) in a `span` with `aria-hidden="true"`, 8 px to the right of the text. The mark is absent while the drawer is closed. It is not a second control: there is one button, one Tab stop, one 44 px target, and a tap anywhere on it closes the drawer. The accessible name stays `Adjust layout`; `aria-expanded` carries the state. Owner: "Inside, after the label". Rejected: a separate round button; renaming the open button to CLOSE LAYOUT.
+
+**[MC 2] Pygmy draws as the original pan.** The original F Low Pygmy 18 layout is the solver's output with the anchor `between` (plan section 5), so a Pygmy deck kept that way opens with BESIDE CENTRE pressed and every field at the angle the built-in deck data has (note 1 G3 at 290, note 2 Ab3 at 250). Version 2 of the mock opened it ON CENTRE, which was a fault in the mock and not in this spec. The default for a TYPED scale does not change: owner, "Always on centre". Typing Pygmy's string on the Add sheet opens ON CENTRE and one tap on BESIDE CENTRE gives the original pan. Rejected: BESIDE CENTRE by default for any scale with inner notes.
+
+**[MC 3] Two mirror switches.** MIRROR is two independent switches, replacing D13's one switch.
+
+| Id | Text | Flips | Status row |
+|---|---|---|---|
+| `scale-mirror` (kept, A22) | `MIRROR TOP` | the rim and the inner notes | 14: `Top mirror on.` or `Top mirror off.` |
+| `scale-mirror-bottom` (new) | `MIRROR BOTTOM` | the bottom ring only | 21: `Bottom mirror on.` or `Bottom mirror off.` |
+
+Both are `.mode` buttons with `aria-pressed`, off by default, equal widths in one `.mirror` pair. One helper under the pair: `Each flips left and right. Top covers the rim and the inner notes.` Owner: the inner notes follow "Top switch"; a deck saved with the old single mirror on opens with "Both switches on".
+
+**[AD-MC 1]** MIRROR BOTTOM is disabled on a pan with no bottom notes, and its value is then written as off.
+
+**[AD-MC 2]** RESET SEATS moves to its own row under the mirror pair (the pair now holds the two switches). It still leaves the anchor and both mirrors alone (OD 3).
+
+### 21.2 Replaced text
+
+- **RD 7 control order** now reads: the toggle row; `#scale-layout-state`; PREVIOUS NOTE, NEXT NOTE; PREVIOUS SEAT, NEXT SEAT; MIRROR TOP, MIRROR BOTTOM with the helper of MC 3; RESET SEATS; the `NOTE 1` label, the anchor pair and its helper; `#scale-drawer-hint` last.
+- **Tab order (line 23)** now reads: BACK, (Edit: the deck name,) the field, the plate as one stop (open only), the toggle, PREVIOUS NOTE, NEXT NOTE, PREVIOUS SEAT, NEXT SEAT, MIRROR TOP, MIRROR BOTTOM, RESET SEATS, ON CENTRE, BESIDE CENTRE, skipping disabled controls.
+- **RD 4** and every line that says "MIRROR" as one value (lines 12, 13, 28, 30, 31, 32, 71, 76, 91, 98, 105, and the redraw table of 20.3) read "either mirror switch" or "both mirror switches" as the sense requires. Line 12's button text is `MIRROR TOP`.
+- **Section 9 helper** `Flips left and right.` is replaced by the helper of MC 3.
+
+### 21.3 Acceptance lines added
+
+108. [DR1] With the drawer open `#scale-layout-toggle` contains one `aria-hidden` element whose text is U+00D7 and which is displayed; with the drawer closed that element is not displayed; the toggle's accessible name is `Adjust layout` in both states.
+109. [W1] `#scale-mirror` has the text `MIRROR TOP` and `#scale-mirror-bottom` the text `MIRROR BOTTOM`; both have `aria-pressed="false"` by default.
+110. [W1] On a pan with rim, inner and bottom notes, toggling MIRROR TOP changes the angle of every rim and inner field with an angle other than 90 or 270 and of no bottom field; toggling MIRROR BOTTOM changes bottom fields only.
+111. [W1] `#scale-mirror-bottom` is disabled on a pan with no bottom notes.
+112. [W1] A deck stored with the old single `mirror: true` opens with both switches pressed and draws every field where it drew before.
+113. [W1] A deck generated with MIRROR TOP on and MIRROR BOTTOM off reopens on Edit, and from its share link, with exactly that pair of values.
+114. [DR1] Both switches are inside `#scale-drawer`; toggling MIRROR TOP writes row 14 and MIRROR BOTTOM writes row 21.
+115. [DR1] Pygmy's scale string typed on Add opens with `#scale-anchor-one` pressed; after one tap on BESIDE CENTRE every rim, inner and bottom field sits at the angle `data/decks.json` has for the built-in Pygmy deck (field 1 at 290), and the generated deck reopens on Edit with `#scale-anchor-between` pressed.
+116. [DR2] RESET SEATS leaves both mirror values unchanged.
+
+Counts by lane become W1 +5, DR1 +3, DR2 +1 over section 20.4.
+
+### 21.4 Consequences for the plan (coordinator records these on the plan before S2 starts)
+
+These reach past this spec into `docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md`. They are the coordinator's proposal and go through `/plan-eng-review` with the plan amendment; nothing here is built from this section alone.
+
+- **D13** ("one switch labelled MIRROR") is superseded by MC 3. **A22** stands for the id `scale-mirror`.
+- **Section 7.4**: "on all three rings" becomes two reflections. The top one maps a to 180 minus a on the rim and inner rings; the bottom one does the same on the bottom ring.
+- **Section 8, data** `[AD-MC 3]`: the option `mirror` stays a boolean and means the top shell. A new boolean option `mirrorBottom` means the bottom shell. A reader that finds no `mirrorBottom` key takes the value of `mirror` for it. That one rule gives the owner's "both switches on" for every old stored record and every old share link (A20), and leaves them drawing as they do today. A writer always writes both keys.
+- **CLI** `[AD-MC 4]`: `--mirror` keeps today's meaning (both shells), so existing recipes do not change; `--mirror-top` and `--mirror-bottom` set one shell.
+- **Lanes**: S2 owns the two reflections in the solver and the option reader; the lane that owns the stored record and the share options line carries `mirrorBottom`; W1 builds two switches in place; DR1 moves both into the drawer. Each lane's mutant forecast grows by one (bottom mirror ignored).
+- **README and ENGINE-SPEC** rows on mirror are rewritten by the docs lane.
+
+Two print answers from the same interview belong to the plan, not to this spec, and are recorded there: a crowded pan's title-card note line wraps to two lines (Lane P1), and `CROWDED PAN: SMALL LABELS` stays on the title card only (A16 stands).
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
