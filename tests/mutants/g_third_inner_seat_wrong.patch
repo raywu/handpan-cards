@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^one..three..four..five.and.six.inner.notes.take.the.fan.seats$ tests/layout.test.js
+# kills: one, three, four, five and six inner notes take the fan seats
+# the fan span is 170 not 180, so four or more inner notes sit off their seats
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -194,7 +194,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function innerAngles(count) {
+     var out = [];
+     if (count < 1) return out;
+-    var step = count > 1 ? Math.min(INNER_STEP_MAX, INNER_SPAN / (count - 1)) : 0;
++    var step = count > 1 ? Math.min(INNER_STEP_MAX, (INNER_SPAN - 10) / (count - 1)) : 0;
+     var left = 90 + step * (count - 1) / 2;
+     var i;
+     for (i = 0; i < count; i += 1) {

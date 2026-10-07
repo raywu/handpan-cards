@@ -1,10 +1,11 @@
 # suite: node --test --test-name-pattern ^mirror.reflects.every.angle.about.the.vertical.axis$ tests/layout.test.js
 # kills: mirror reflects every angle about the vertical axis
+# solve ignores the mirror option
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -360,7 +360,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (zones.bottom.length > BOTTOM_MAX) return err("TOO_MANY_RIM");
+@@ -456,7 +456,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var zones = collect(source);
  
      var seedOptions = (seedOrFields && seedOrFields.options) || {};
 -    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);

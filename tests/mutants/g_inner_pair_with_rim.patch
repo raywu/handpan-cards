@@ -1,15 +1,15 @@
 # suite: node --test --test-name-pattern ^the.inner.pair.ascends.opposite.the.rim.direction$ tests/layout.test.js
 # kills: the inner pair ascends opposite the rim direction
-# the inner pair ascends OPPOSITE the rim direction, so it starts on the far side from rim field 1
+# the inner fan starts on the right, so the pair ascends WITH the rim direction
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -33,7 +33,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   var INNER_ORB = 0.38;       /* pygmy literal                               */
-   var BOTTOM_ORB = 1.15;      /* pygmy literal, x-ray ring outside the shell */
-   var INNER_RING_DECOR = 0.355; /* hijaz / amara decorative circle           */
--  var INNER_ANGLES = [128, 52]; /* left first: opposite the rim direction    */
-+  var INNER_ANGLES = [52, 128]; /* left first: opposite the rim direction    */
- 
-   var R_NOTE_MAX = 0.19;      /* hijaz / amara literal                       */
-   var R_BNOTE_MAX = 0.1188;   /* pygmy literal                               */
+@@ -195,7 +195,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var out = [];
+     if (count < 1) return out;
+     var step = count > 1 ? Math.min(INNER_STEP_MAX, INNER_SPAN / (count - 1)) : 0;
+-    var left = 90 + step * (count - 1) / 2;
++    var left = 90 - step * (count - 1) / 2;
+     var i;
+     for (i = 0; i < count; i += 1) {
+       var j = Math.floor(i / 2);

@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^the.sheet.shows.the.small.labels.warning.while.typing$ tests/app.test.js
+# kills: the sheet shows the small-labels warning while typing
+# the sheet computes the crowded warning and never says it
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8585,7 +8585,7 @@ function syncParseState({ paint }) {
+     if (paint) showPanPreview(res.value);
+     const solved = solvePreviewLayout(res.value);
+     const crowded = solved && HPE.select.smallLabels(solved.geom);
+-    if (crowded) say(crowded.reason, "warn");
++    if (false) say(crowded.reason, "warn");
+     else say("", "");
+   } else {
+     // showRefusal() blanks the parse line rather than removing it: the CSS

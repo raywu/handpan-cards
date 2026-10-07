@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^a.crowded.pan.builds.with.SMALL.LABELS.and.is.not.refused$ tests/select.test.js
+# kills: a crowded pan builds with SMALL_LABELS and is not refused
+# build computes SMALL_LABELS and drops it
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -549,7 +549,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var thirdless = noThirds(fields);
+     if (thirdless) warnings.push(warning("NO_THIRDS"));
+     var crowded = smallLabels(solved.value.geom);
+-    if (crowded) warnings.push(crowded);
++    if (false) warnings.push(crowded);
+ 
+     var list = candidates(fields);
+     list = collapse(fields, list, tonicPc);

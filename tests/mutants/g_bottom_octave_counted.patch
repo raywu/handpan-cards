@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^bottom.octave.digits.do.not.trigger.the.warning$ tests/layout.test.js
+# kills: bottom octave digits do not trigger the warning
+# the bottom octave digit is counted into the floor (D15 excludes it)
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -418,7 +418,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       sizes.push(PRINT_NOTE_RATIO * geom.r_note * R);
+       sizes.push(PRINT_NUM_RATIO * geom.r_note * R);
+     }
+-    if (geom.r_bnote > 0) sizes.push(PRINT_BNOTE_RATIO * geom.r_bnote * R);
++    if (geom.r_bnote > 0) sizes.push(PRINT_BNOTE_RATIO * geom.r_bnote * R, PRINT_BNOTE_RATIO * geom.r_bnote * R * PRINT_OCTAVE_RATIO);
+     return sizes.length ? Math.min.apply(null, sizes) : PRINT_HALF;
+   }
+ 
