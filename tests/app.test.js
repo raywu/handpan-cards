@@ -5668,3 +5668,72 @@ test("AP3-4 the rail keeps its scroll across a re-render of the same deal and re
   assert.strictEqual(app.els.count.children[1].className, "sr-only");
   assert.ok(app.els.count.classList.contains("seq"));
 });
+
+/* Lane L0 (scale-syntax plan, 5.2 and 6.2): a record is found by the deck id
+   its own string resolves to, not by comparing `s` with formatSeed's spelling.
+   A stored record may hold any spelling the reader accepts. */
+test("forgetting a deck removes its record whatever spelling the record holds", () => {
+  const seeds = ["(D) A C D E F G A C", "D3/ A3 C4 D4 E4 F4 G4 A4 C5", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"];
+  for (const spelling of seeds) {
+    const key = boot().get("SCALES_KEY");
+    const other = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+    const app = boot({ storage: { [key]: JSON.stringify([
+      { v: 2, s: spelling, o: {} }, { v: 2, s: other, o: {} }]) } });
+    const id = Object.keys(app.registry()).find(k => k !== undefined &&
+      app.registry()[k].fields[0][0] === "D");
+    assert.ok(id, `${spelling} was not restored`);
+    app.run(`deleteDeck(${JSON.stringify(id)})`);
+    const left = JSON.parse(app.store[key]);
+    assert.strictEqual(left.length, 1, `${spelling}: the record survived the delete`);
+    assert.strictEqual(left[0].s, other, "the wrong record was removed");
+  }
+});
+
+/* Lane L0 bounce: a deck whose canonical string does not re-parse (octave -1)
+   has no deck id, and a null id matches nothing. It falls back to the exact
+   string, and an unreadable record of another pan is kept byte for byte. */
+const NO_ID_A = "(D0) A D F | A";
+const NO_ID_B = "(E0) B E G | B";
+const UNREADABLE = { v: 2, s: "(D3) A3 not-a-scale" };
+
+function scalesOf(app) {
+  return JSON.parse(app.store[app.get("SCALES_KEY")] || "[]");
+}
+
+test("deleting a deck with no readable id keeps every other record byte for byte", () => {
+  const app = boot();
+  const first = makeCustom(app, NO_ID_A);
+  const second = makeCustom(app, NO_ID_B);
+  const before = scalesOf(app);
+  assert.strictEqual(before.length, 2, "setup: two records");
+  app.run(`deleteDeck(${JSON.stringify(first.id)})`);
+  assert.deepStrictEqual(scalesOf(app), [before[1]], "the second pan's record was lost");
+  assert.ok(app.registry()[second.id]);
+
+  const key = app.get("SCALES_KEY");
+  const amara = { v: 2, s: AMARA_STRING, o: {} };
+  const seeded = [UNREADABLE, "junk", amara];
+  const other = boot({ storage: { [key]: JSON.stringify(seeded) } });
+  const mine = makeCustom(other, NO_ID_A);
+  other.run(`deleteDeck(${JSON.stringify(mine.id)})`);
+  assert.strictEqual(other.store[key], JSON.stringify(seeded), "unreadable records were dropped");
+});
+
+test("editing a deck with no readable id keeps an unreadable record and replaces its own", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([UNREADABLE]) } });
+  const mine = makeCustom(app, NO_ID_A);
+  assert.strictEqual(scalesOf(app).length, 2, "setup: unreadable plus own");
+  editFields(app, mine, OTHER_STRING);
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 2, JSON.stringify(list));
+  assert.deepStrictEqual(list[0], UNREADABLE, "the unreadable record was overwritten");
+  assert.strictEqual(list[1].s, app.get(`HPE.core.formatSeed(deck().fields)`));
+});
+
+test("saving a deck with no readable id twice leaves one record", () => {
+  const app = boot();
+  makeCustom(app, NO_ID_A);
+  makeCustom(app, NO_ID_A);
+  assert.strictEqual(scalesOf(app).length, 1, JSON.stringify(scalesOf(app)));
+});

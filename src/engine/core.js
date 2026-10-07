@@ -510,7 +510,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (var id in fields) {
       if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
       if (id === "0") continue;
-      (Number(id) >= 101 ? bottom : top).push(id);
+      (fields[id][3] === "bottom" ? bottom : top).push(id);
     }
     function byNumber(a, c) { return Number(a) - Number(c); }
     return { top: top.sort(byNumber), bottom: bottom.sort(byNumber) };
@@ -535,6 +535,37 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (n === mark) out += " " + INNER_MARK;
       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
     }
+    if (ids.bottom.length) {
+      out += " |";
+      for (n = 0; n < ids.bottom.length; n += 1) {
+        out += " " + fields[ids.bottom[n]][0] + fields[ids.bottom[n]][1];
+      }
+    }
+    return out;
+  }
+
+  // The string a deck id is hashed from. It is formatSeed's algorithm today,
+  // kept as its own function so the id no longer depends on how formatSeed
+  // spells a scale: ids must not move when the canonical spelling does. The
+  // zone, not the field number, decides top from bottom, and the separator is
+  // printed whenever the rim count differs from what the positional rule
+  // gives, so a twelve-note rim and an eleven-plus-one spill hash apart.
+  function identitySeed(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var ding = fields["0"];
+    var out = "(" + ding[0] + ding[1] + ")";
+    var rim = 0;
+    var n;
+    for (n = 0; n < ids.top.length; n += 1) {
+      if (fields[ids.top[n]][3] === "rim") rim += 1;
+    }
+    var mark = (rim > 0 && rim !== positionalRim(ids.top.length)) ? rim : -1;
+    for (n = 0; n < ids.top.length; n += 1) {
+      if (n === mark) out += " " + INNER_MARK;
+      out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
+    }
+    if (mark === ids.top.length) out += " " + INNER_MARK;
     if (ids.bottom.length) {
       out += " |";
       for (n = 0; n < ids.bottom.length; n += 1) {
@@ -586,15 +617,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return hex;
   }
 
-  // D14: a pure function of formatSeed - notes, octaves, zones and order. The
+  // D14: a pure function of identitySeed - notes, octaves, zones and order. The
   // options are never hashed, so renaming or recolouring keeps the id.
   function deckId(seedOrFields) {
-    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+    return "custom:" + fnv1a32(identitySeed(seedOrFields));
   }
 
   HPE.core = {
     parseSeed: parseSeed,
+    parseLegacySeed: parseSeed,
     formatSeed: formatSeed,
+    identitySeed: identitySeed,
     deckId: deckId,
     REASONS: REASONS,
     pitchClass: pitchClass,

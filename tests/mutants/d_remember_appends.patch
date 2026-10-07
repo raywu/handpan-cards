@@ -3,19 +3,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6199,13 +6199,8 @@ function scaleRecord(seed) {
- }
+@@ -7248,13 +7248,8 @@ function sameDeck(r, id, str) {
  function rememberScale(seed) {
    const rec = scaleRecord(seed);
+   const id = HPE.core.deckId(seed.fields);
 -  const out = [];
 -  let placed = false;
 -  for (const r of savedScales()) {
--    if (r && r.s === rec.s) { if (!placed) { out.push(rec); placed = true; } }
+-    if (sameDeck(r, id, rec.s)) { if (!placed) { out.push(rec); placed = true; } }
 -    else out.push(r);                     // a duplicate of the key is collapsed
 -  }
 -  if (!placed) out.push(rec);
-+  const out = savedScales().filter(r => !r || r.s !== rec.s);
++  const out = savedScales().filter(r => !sameDeck(r, id, rec.s));
 +  out.push(rec);
    writeScales(out);
  }
- // The canonical scale string IS the record's key (D14: the id is its hash), so
+ // The deck id IS the record's key (D14), and a record is matched by the id its

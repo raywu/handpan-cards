@@ -8,12 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6195,7 +6195,7 @@ function writeScales(list) {
+@@ -7216,7 +7216,7 @@ function writeScales(list) {
  // for-byte identical between the two before this extraction (finding 13,
  // quality-refactor plan 2026-09-30).
  function scaleRecord(seed) {
 -  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
 +  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: {} };
  }
- function rememberScale(seed) {
-   const rec = scaleRecord(seed);
+ // The reader for a stored record's scale string, chosen by the record's own
+ // version. Every version maps to the legacy reader today; a record keeps the

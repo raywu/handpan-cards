@@ -310,6 +310,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return result;
   }
 
+  // The scale-line reader for a link's version. Every version this build reads
+  // maps to the legacy reader for now; a later lane gives the newest its own.
+  function scaleLineReader(version) {
+    return HPE.core.parseLegacySeed;
+  }
+
   // The whole decode except the last step, which has to stay the bare
   // core.parseSeed call. `carry` is how the layout correction gets past that
   // call: parseSeed's option whitelist is core's, core.js is frozen, and it
@@ -363,7 +369,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.
-    return HPE.core.parseSeed(lines[0], options);
+    return scaleLineReader(version)(lines[0], options);
   }
 
   HPE.share = {

@@ -1,0 +1,14 @@
+# kills: forgetting a deck removes its record whatever spelling the record holds
+# suite: node --test --test-name-pattern ^forgetting.a.deck.removes.its.record.whatever.spelling.the.record.holds$ tests/app.test.js
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7262,7 +7262,7 @@ function rememberScale(seed) {
+ // spelling the record holds.
+ function forgetScale(str) {
+   const id = stringDeckId(str);
+-  writeScales(savedScales().filter(r => !r || !sameDeck(r, id, str)));
++  writeScales(savedScales().filter(r => !r || r.s !== str));
+ }
+ // Queue row 73: editing the NOTES replaces the deck, so the old record leaves
+ // storage and the new one takes ITS INDEX - restoreScales rebuilds the registry

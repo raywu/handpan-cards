@@ -1,0 +1,2064 @@
+{
+ "note": "Legacy seed strings with deck ids captured from main d744071 before Lane L0 touched deckId.",
+ "pinned": {
+  "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5": "custom:cb5fe66a",
+  "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5": "custom:b174242c",
+  "(D3) A3 C4 D4 E4 F4 G4 A4 C5": "custom:977311b5",
+  "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4": "custom:626198f8",
+  "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5": "custom:6f9ffc33"
+ },
+ "strings": [
+  [
+   "A/ Fb Gb E G B# B# A | F G# C C# A",
+   "custom:a46b2aa0"
+  ],
+  [
+   "G/ G F D",
+   "custom:a643c2b6"
+  ],
+  [
+   "F#/ D C A# A F C#",
+   "custom:8dba53df"
+  ],
+  [
+   "(C2) E# G D A E F# E B B Fb E# / Ab",
+   "custom:98b08516"
+  ],
+  [
+   "D#/ Bb C A C Gb G",
+   "custom:9883d883"
+  ],
+  [
+   "A#3/ D6 / E#6",
+   "custom:518b7ff0"
+  ],
+  [
+   "(F4) C E Bb",
+   "custom:0c1cbca9"
+  ],
+  [
+   "D/ A Db F A# G E B D# Ab E | F# E Cb F",
+   "custom:cd34cf4b"
+  ],
+  [
+   "C/ G B#",
+   "custom:9fffc1b6"
+  ],
+  [
+   "F/ C D C# B A# D# F G C# A B",
+   "custom:a1348a24"
+  ],
+  [
+   "(G2) A E# B F D C F A Db G A C# Cb",
+   "custom:7c082d3a"
+  ],
+  [
+   "D/ A Ab",
+   "custom:b719ab26"
+  ],
+  [
+   "(E6) B F# C / A#",
+   "custom:d92505cd"
+  ],
+  [
+   "(F#3) A E C G C C# F Cb D Gb | Gb G#",
+   "custom:2521eb26"
+  ],
+  [
+   "(G3) A B Bb F E D F B# Db | Ab A D",
+   "custom:e147519d"
+  ],
+  [
+   "(A2) C# Fb F E# Eb",
+   "custom:da4bb32e"
+  ],
+  [
+   "E#/ F G Db Eb G C# A E# C E#",
+   "custom:6e74151a"
+  ],
+  [
+   "(C4) B# E F# E A# Cb G C Gb | F Fb D",
+   "custom:158a42ea"
+  ],
+  [
+   "(Db4) F Gb Gb G G G C F Ab",
+   "custom:6c0c1d12"
+  ],
+  [
+   "(Fb2) B3",
+   "custom:0481cc51"
+  ],
+  [
+   "(E2) Ab A Eb B Gb A Bb B B D F | D Cb G E",
+   "custom:33ddf5a6"
+  ],
+  [
+   "E/ B# B G B# D# F | A B",
+   "custom:f97b572a"
+  ],
+  [
+   "Db/ Ab G#",
+   "custom:2456ff93"
+  ],
+  [
+   "B/ F# F G B G",
+   "custom:82f056c3"
+  ],
+  [
+   "G/ B A D / F",
+   "custom:5f77c657"
+  ],
+  [
+   "(Cb3) C G A F Eb G Bb G F#",
+   "custom:3aa2dbca"
+  ],
+  [
+   "(D2) B C B Gb A F",
+   "custom:eb1d3bfc"
+  ],
+  [
+   "(Cb4) C G# D Fb Cb Bb B Db C# F# C C#",
+   "custom:b10c0a0c"
+  ],
+  [
+   "D/ B Bb A D E A",
+   "custom:e810887e"
+  ],
+  [
+   "(Gb2) Db B# C G#",
+   "custom:578e12f5"
+  ],
+  [
+   "A#/ A F A F# Ab F# D F# A# | A G# G D D",
+   "custom:96d79ae7"
+  ],
+  [
+   "Fb/ B B# E A# D# G# C# C B G F",
+   "custom:f33707cf"
+  ],
+  [
+   "(Gb4) A C# B / F",
+   "custom:9b4afb1b"
+  ],
+  [
+   "(F4) F# G B# Db C F",
+   "custom:4f2dd8af"
+  ],
+  [
+   "(D#4) G C / E Bb | Eb",
+   "custom:90d4de0a"
+  ],
+  [
+   "(A4) B# B G B E",
+   "custom:76e4dd56"
+  ],
+  [
+   "(D2) E A G B# Ab Fb A Eb | Ab Cb F",
+   "custom:ad988650"
+  ],
+  [
+   "(C4) G Eb G B A# Eb A F# Eb",
+   "custom:6303d302"
+  ],
+  [
+   "(Cb4) D D A D# F# Bb G# D",
+   "custom:8a57af8d"
+  ],
+  [
+   "E/ B Cb E | G A",
+   "custom:27ae288f"
+  ],
+  [
+   "(C3) G# G / Ab | Gb A# C A",
+   "custom:e033554b"
+  ],
+  [
+   "(D2) F# A F# F F",
+   "custom:3e82bb81"
+  ],
+  [
+   "(B4) G D A# Gb A",
+   "custom:ae8cc622"
+  ],
+  [
+   "Bb/ Cb B G F",
+   "custom:6e3aa66a"
+  ],
+  [
+   "(G2) B D B# D# G E G Eb A E G / G",
+   "custom:80a7057b"
+  ],
+  [
+   "(F#3) B# Db C | Fb E F F B A",
+   "custom:503ec44f"
+  ],
+  [
+   "(B#2) G5",
+   "custom:0ed1c5fb"
+  ],
+  [
+   "(Db2) E# C B A Gb Ab",
+   "custom:23dee616"
+  ],
+  [
+   "(D2) E G F# A B Gb E D / Eb",
+   "custom:7b1ca5fe"
+  ],
+  [
+   "(E4) Bb C Db / A# B",
+   "custom:e1f8d46d"
+  ],
+  [
+   "(E#6) C Fb Gb E A | E E D C F#",
+   "custom:95ec39da"
+  ],
+  [
+   "(C3) B G E E F Cb C G",
+   "custom:ce3852e3"
+  ],
+  [
+   "(E#4) B C# D# C",
+   "custom:bef26914"
+  ],
+  [
+   "G/ E E# F# G D G Bb D Ab F#",
+   "custom:5b3d5f22"
+  ],
+  [
+   "G/ D / B | B C C Db G",
+   "custom:49605f70"
+  ],
+  [
+   "(G5) G Eb D A",
+   "custom:0a1018a6"
+  ],
+  [
+   "(Cb5) E# G Db Gb G Ab | G# E C B Cb",
+   "custom:4668fcca"
+  ],
+  [
+   "(G3) E G A F C E G D A",
+   "custom:3476793c"
+  ],
+  [
+   "D#/ A G F A Gb B Cb A# C G",
+   "custom:89fad5b4"
+  ],
+  [
+   "(C2) G Eb A Cb D E E F F",
+   "custom:8b63b0f5"
+  ],
+  [
+   "E/ Cb B D",
+   "custom:3a803734"
+  ],
+  [
+   "(C2) C G B | Ab Eb Cb F#",
+   "custom:b116b3fb"
+  ],
+  [
+   "C/ G G",
+   "custom:6f434599"
+  ],
+  [
+   "Ab/ F# Fb D# G C E Ab",
+   "custom:d160793a"
+  ],
+  [
+   "(Fb5) Cb",
+   "custom:ffbd3e00"
+  ],
+  [
+   "(B#4) G# Ab F# C# F G",
+   "custom:df942852"
+  ],
+  [
+   "(B#3) A Bb G C E B# A# D B# D",
+   "custom:ebda1b01"
+  ],
+  [
+   "Db/ Ab C B# D# F# G A",
+   "custom:af760f65"
+  ],
+  [
+   "(G4) Db A Bb F A D B | F Ab",
+   "custom:60fbbe4b"
+  ],
+  [
+   "(F3) D B# F D C",
+   "custom:50d9ff15"
+  ],
+  [
+   "B#/ B Ab E# C G# G B",
+   "custom:e93a9bc8"
+  ],
+  [
+   "(E4) Eb B E E F / E",
+   "custom:96014476"
+  ],
+  [
+   "(B6) F Gb",
+   "custom:9145aa77"
+  ],
+  [
+   "D/ F# G E Ab A Db F",
+   "custom:d3952042"
+  ],
+  [
+   "A/ F# A F G D A# E C B / D Eb",
+   "custom:d40354a6"
+  ],
+  [
+   "(Fb2) Fb B Eb Ab Db / F C | B F F#",
+   "custom:b0a6ea3c"
+  ],
+  [
+   "E#/ Ab G D# C | Fb Gb E C F#",
+   "custom:ee21cd59"
+  ],
+  [
+   "F/ D F Bb C Ab | D",
+   "custom:2f7d748e"
+  ],
+  [
+   "(C#3) D# E F# F G# A F",
+   "custom:2d7fef21"
+  ],
+  [
+   "B/ E# F# G / E | F",
+   "custom:5cb44e25"
+  ],
+  [
+   "(F2) E G D C A F# G G G B",
+   "custom:cb0dce77"
+  ],
+  [
+   "(E3) C B D E / F# G# | E D#",
+   "custom:55bcaa31"
+  ],
+  [
+   "C/ D E G B# Db E B / Ab | E# D F E",
+   "custom:08a7c67a"
+  ],
+  [
+   "B/ B C D B C# Gb G# D# Eb G# B",
+   "custom:f6d1b0d1"
+  ],
+  [
+   "A/ Fb A F B# D A",
+   "custom:47b587fb"
+  ],
+  [
+   "A#/ D Cb D F D G F# C",
+   "custom:d84d11cd"
+  ],
+  [
+   "(F3) Ab E C A# F D E A D B",
+   "custom:b736df70"
+  ],
+  [
+   "(E2) E# D B C",
+   "custom:7bfc2e00"
+  ],
+  [
+   "F#/ Ab C# D G E# D C",
+   "custom:3c91ae9e"
+  ],
+  [
+   "(F4) E B# F A# B B# G",
+   "custom:c7002731"
+  ],
+  [
+   "B/ D Gb D E B | B D E",
+   "custom:c9a97bb5"
+  ],
+  [
+   "G#/ C Eb B G B G# Gb B B#",
+   "custom:0c6a9f7d"
+  ],
+  [
+   "D/ A | F C# Db C",
+   "custom:f7aed032"
+  ],
+  [
+   "(A4) A# E G# C# C F | E Bb E D",
+   "custom:5c1ea27e"
+  ],
+  [
+   "A/ B D B C# C A Fb | B A B# E",
+   "custom:fc4e2220"
+  ],
+  [
+   "(F5) D Eb A C Eb A A#",
+   "custom:a08369fa"
+  ],
+  [
+   "(A#3) F# C F Db B F",
+   "custom:f8505bec"
+  ],
+  [
+   "(Fb4) B",
+   "custom:643a63fa"
+  ],
+  [
+   "C#/ Fb D G# D# Gb A",
+   "custom:e39b0050"
+  ],
+  [
+   "B/ Gb G F# Fb Gb Fb C B",
+   "custom:9e48e7d8"
+  ],
+  [
+   "D/ Ab Eb F C Db E# A Cb Cb E A F F",
+   "custom:3ba6f74e"
+  ],
+  [
+   "Fb/ B C# G# Fb E# Cb Cb Cb C A | F B",
+   "custom:25e18aec"
+  ],
+  [
+   "G/ E Ab B# D G G# F E#",
+   "custom:81893c82"
+  ],
+  [
+   "Ab/ D D# A D A Db A F Bb E# | A G# C G B",
+   "custom:4555052f"
+  ],
+  [
+   "G/ Gb F C E E / C# D | E# E Cb B A A",
+   "custom:18c1796f"
+  ],
+  [
+   "(F4) A D F D B# F# | F",
+   "custom:8f2395f9"
+  ],
+  [
+   "Bb/ B D# D G D F G D G D",
+   "custom:508ff58e"
+  ],
+  [
+   "B/ C C Cb B D E Gb D Cb Gb",
+   "custom:ea864ad8"
+  ],
+  [
+   "Eb/ F# A E# B F Fb D F Bb E D E",
+   "custom:1598c51a"
+  ],
+  [
+   "(A2) E C Ab A# G | B F E Gb Fb",
+   "custom:f2b96b1d"
+  ],
+  [
+   "(E#4) F# B# C# D# | Fb",
+   "custom:09878e51"
+  ],
+  [
+   "(G6) Fb Ab Bb B C Db C D",
+   "custom:fb0c721e"
+  ],
+  [
+   "(D2) B# G C D A F Db G D Cb Eb G# A",
+   "custom:2952f103"
+  ],
+  [
+   "(Db5) G#5 | E2 B6",
+   "custom:b80b96d7"
+  ],
+  [
+   "G/ D E F# Db",
+   "custom:15fbc795"
+  ],
+  [
+   "E/ F# F B# C# A# D# Ab Cb Ab D F F G",
+   "custom:78fb151a"
+  ],
+  [
+   "(Cb5) Cb C B# Gb A",
+   "custom:d2c0ea69"
+  ],
+  [
+   "E/ F F C A D B Eb D Bb B# G | C# B Ab F B#",
+   "custom:a7fc3238"
+  ],
+  [
+   "(F2) A F Gb G C",
+   "custom:0293cb6b"
+  ],
+  [
+   "(D3) G Bb B F D A C F# D",
+   "custom:babf965b"
+  ],
+  [
+   "(E#4) Gb F A C | G# G F C",
+   "custom:77dc834d"
+  ],
+  [
+   "(Gb2) F C# A# D G Eb F F# G D E# Fb G | D A# C F Eb",
+   "custom:dbd4579f"
+  ],
+  [
+   "F/ B C G# Bb Db Gb Cb C F E G A E | Db A Bb Gb",
+   "custom:c33fdf1e"
+  ],
+  [
+   "(E2) Bb F G E Ab Cb G E B#",
+   "custom:c69e56fa"
+  ],
+  [
+   "D/ Db Cb Eb Ab B B# G D A C# E#",
+   "custom:0e79539a"
+  ],
+  [
+   "D#/ B G G# B# F Eb E E Eb G# A# | Ab",
+   "custom:a3d6b72d"
+  ],
+  [
+   "F/ E# E# Cb Ab C | E B E G C",
+   "custom:c68c0e9d"
+  ],
+  [
+   "A#/ B Eb F A F",
+   "custom:650229a1"
+  ],
+  [
+   "G/ Fb G# A D E C D A",
+   "custom:32a9e280"
+  ],
+  [
+   "A/ B E",
+   "custom:b4980822"
+  ],
+  [
+   "(F2) Ab A C F# D G D Eb Gb B Eb D B",
+   "custom:3de49e20"
+  ],
+  [
+   "C/ C Fb D# F# F G E C D# / G#",
+   "custom:253c3aff"
+  ],
+  [
+   "(B2) Bb Gb G# F C B# C E# G",
+   "custom:378fa0b9"
+  ],
+  [
+   "A#/ Gb G Ab D A# Eb A E F Gb",
+   "custom:e56a29b1"
+  ],
+  [
+   "F/ C B G#",
+   "custom:bc95b071"
+  ],
+  [
+   "D/ B A D# A G B# Ab D#",
+   "custom:17d8f9de"
+  ],
+  [
+   "(D#4) A A# C Bb",
+   "custom:f6331be9"
+  ],
+  [
+   "A/ E | F D B# G D",
+   "custom:4ece758d"
+  ],
+  [
+   "(E3) G Bb C Cb Gb E B",
+   "custom:5f93a969"
+  ],
+  [
+   "(D2) B C D C# C# C A",
+   "custom:1f15623c"
+  ],
+  [
+   "(F5) C / G | G D B# F G#",
+   "custom:54dc103b"
+  ],
+  [
+   "F/ G F G C A A Cb E G G# E | Cb",
+   "custom:d2e495fb"
+  ],
+  [
+   "C/ Eb Ab D G C C",
+   "custom:e77eb49a"
+  ],
+  [
+   "(D2) D B# A Gb G E A",
+   "custom:df49934c"
+  ],
+  [
+   "(A#3) A Ab F E Eb Fb C#",
+   "custom:a6ba960a"
+  ],
+  [
+   "(A3) E A C# F F C# B# | E E A",
+   "custom:5cb5d75d"
+  ],
+  [
+   "(Ab5) E Eb Bb Fb D",
+   "custom:e32b465b"
+  ],
+  [
+   "E/ B G# D G# Bb E",
+   "custom:fb24b733"
+  ],
+  [
+   "(G2) B D G# Ab / B# B",
+   "custom:a26ddc23"
+  ],
+  [
+   "G/ D B# G C Bb G D",
+   "custom:44a51514"
+  ],
+  [
+   "(F#5) Fb Ab D G# C#",
+   "custom:1c35e9ad"
+  ],
+  [
+   "(E#2) B Db F C E D",
+   "custom:45a3600f"
+  ],
+  [
+   "(C3) G",
+   "custom:c501fd4e"
+  ],
+  [
+   "C/ G# G E B E#",
+   "custom:2d2aa5c7"
+  ],
+  [
+   "Db/ G# G F F Ab",
+   "custom:48301e7d"
+  ],
+  [
+   "(E5) F# B Gb Bb / Bb Db | D# C Fb",
+   "custom:467198f1"
+  ],
+  [
+   "(F3) C Bb C# A G | C Cb",
+   "custom:405873ad"
+  ],
+  [
+   "D/ A G# D",
+   "custom:89019d7c"
+  ],
+  [
+   "Fb/ D G A# D Gb B A G# Bb F",
+   "custom:50305ed1"
+  ],
+  [
+   "Bb/ Ab Cb Gb C# F Gb B",
+   "custom:157a7d41"
+  ],
+  [
+   "G/ D B Ab B E B",
+   "custom:33f34c90"
+  ],
+  [
+   "Bb/ C F Ab Cb A D# C C# Cb Eb B | C F",
+   "custom:222282b0"
+  ],
+  [
+   "G/ G D Eb A D | E B F",
+   "custom:5fb28567"
+  ],
+  [
+   "A/ G A Gb Db C# E | C G# Bb Db Ab",
+   "custom:08c51def"
+  ],
+  [
+   "F/ G D C F Fb C | C# F",
+   "custom:3b9390a6"
+  ],
+  [
+   "D/ G A C G D Ab F C# F F",
+   "custom:14beb802"
+  ],
+  [
+   "(Cb4) B A# D A D Gb A# Bb",
+   "custom:d9f0d577"
+  ],
+  [
+   "E/ D D B / A A",
+   "custom:0368a322"
+  ],
+  [
+   "F#/ Db Eb B A Db | E C B C A",
+   "custom:17636110"
+  ],
+  [
+   "E/ B F# G# F# | D C",
+   "custom:a78ecfcc"
+  ],
+  [
+   "D/ Ab E A F# Bb E# G F# A | F F E B A#",
+   "custom:ecba191d"
+  ],
+  [
+   "G/ F D",
+   "custom:21ad4d29"
+  ],
+  [
+   "C/ G C# E Eb Eb D F | G# C D A# D#",
+   "custom:6c33ecb5"
+  ],
+  [
+   "(G4) A D C / Cb G",
+   "custom:7b4e8043"
+  ],
+  [
+   "E/ Fb D# Ab B / F A",
+   "custom:718a8b5f"
+  ],
+  [
+   "(F3) Fb E C G E E# G E# Cb G",
+   "custom:4cc5e904"
+  ],
+  [
+   "Bb/ E# A E E C# G | E",
+   "custom:6b3a5024"
+  ],
+  [
+   "(A#2) E F Cb D Gb E# B G Eb",
+   "custom:ca9591d8"
+  ],
+  [
+   "E/ F F E B D# F F F",
+   "custom:5d808caa"
+  ],
+  [
+   "(Bb2) C Cb E F C E | Eb",
+   "custom:172b0b08"
+  ],
+  [
+   "(Cb6) B Gb Eb F# | Gb Db G",
+   "custom:bb3469ec"
+  ],
+  [
+   "(E#3) C Db A C Fb F# A E B G G C | E A Gb A E",
+   "custom:020ca0d2"
+  ],
+  [
+   "F/ D A Bb B# B C D# E E Bb | B D",
+   "custom:fdff98e9"
+  ],
+  [
+   "(C#6) Ab D",
+   "custom:35a1468c"
+  ],
+  [
+   "(E3) C E# E E C Eb A D F# B E",
+   "custom:02c6133f"
+  ],
+  [
+   "(C2) Db A G G Bb G A G G D D",
+   "custom:baa56571"
+  ],
+  [
+   "C/ E# E Cb G C D# Fb E C A",
+   "custom:4ae31810"
+  ],
+  [
+   "C/ B E Cb B D G A",
+   "custom:5ccc11f1"
+  ],
+  [
+   "F/ B Db C Db D G B / F# C# | Cb Eb Bb",
+   "custom:86c9aa23"
+  ],
+  [
+   "Ab/ C A# B# D D# B D#",
+   "custom:804121db"
+  ],
+  [
+   "B/ C Eb Ab D D Fb Cb A D# E G B F# | G D",
+   "custom:0f2b852e"
+  ],
+  [
+   "B#/ D Fb Eb B F D G E# D",
+   "custom:98b11787"
+  ],
+  [
+   "(D6) A# Cb F Ab D A | Gb E# G",
+   "custom:635aa084"
+  ],
+  [
+   "Fb6/ A6 / B6",
+   "custom:fadc25ac"
+  ],
+  [
+   "(F4) F E B# / A#",
+   "custom:c5836dab"
+  ],
+  [
+   "(G3) F A E D / Eb D | A# C# D# A A G",
+   "custom:e4691834"
+  ],
+  [
+   "(A#4) E B B# F# C C E# A B",
+   "custom:4fdbe962"
+  ],
+  [
+   "C/ G G F# G E / F | F Ab F D F E",
+   "custom:3909d23f"
+  ],
+  [
+   "(A3) Gb F G# D E",
+   "custom:3f13d41e"
+  ],
+  [
+   "E/ Gb C# B F# F",
+   "custom:748ff41e"
+  ],
+  [
+   "(F#2) A# Db A# F G Eb F Gb",
+   "custom:c9f0252b"
+  ],
+  [
+   "Fb/ D# D# A Ab Bb D Cb A F",
+   "custom:025d3925"
+  ],
+  [
+   "(F6) D Fb G Bb B#",
+   "custom:7ef832f5"
+  ],
+  [
+   "A/ A C E Gb A# E F# Db F | Cb",
+   "custom:177a2a2b"
+  ],
+  [
+   "(A4) G B F# G B E | B G A E F Gb",
+   "custom:d7ecfcd8"
+  ],
+  [
+   "C/ Bb G Gb A# A# Bb | G Cb",
+   "custom:17e5bb93"
+  ],
+  [
+   "G/ D Eb",
+   "custom:52f0b3e1"
+  ],
+  [
+   "(D#3) A# C B D E / D",
+   "custom:fda42704"
+  ],
+  [
+   "Ab/ A Db A D# D A E Fb E",
+   "custom:e07bc8c8"
+  ],
+  [
+   "D/ B# A B",
+   "custom:3c299e48"
+  ],
+  [
+   "F/ A Bb E B# Gb / Db",
+   "custom:1274b241"
+  ],
+  [
+   "(C4) A# Cb Fb B C D G A A",
+   "custom:e3f48b48"
+  ],
+  [
+   "F#/ Db A E F G B",
+   "custom:4f670799"
+  ],
+  [
+   "(Gb3) G# C# C Gb F | B Ab E",
+   "custom:1b5c4d2b"
+  ],
+  [
+   "Bb/ F D | A F A Db B D",
+   "custom:b4a7394d"
+  ],
+  [
+   "(Fb6) F F D Cb D | F# C# Eb A A#",
+   "custom:02cc1747"
+  ],
+  [
+   "E/ C D# B Ab",
+   "custom:67b4ee5a"
+  ],
+  [
+   "(C#4) B# Ab A# E B E# E B#",
+   "custom:55460d46"
+  ],
+  [
+   "B/ Gb G# A# B B# G# F G D Ab G# G | A D Gb Gb D",
+   "custom:3cd4d38b"
+  ],
+  [
+   "(E6) G A Bb G C Fb B",
+   "custom:7df1217e"
+  ],
+  [
+   "(B#5) G",
+   "custom:4c674163"
+  ],
+  [
+   "(E#3) F D# E B# G B | D A# D# Gb B A",
+   "custom:a69e9fda"
+  ],
+  [
+   "E/ G# C# C# G B# F E# E G B",
+   "custom:4a594461"
+  ],
+  [
+   "C/ G F / E",
+   "custom:3a4ae939"
+  ],
+  [
+   "B/ F# F G",
+   "custom:c32eb95d"
+  ],
+  [
+   "(G#2) D# Cb E B G B F D#",
+   "custom:813b08f1"
+  ],
+  [
+   "(Db5) E G Cb D B C D A Fb G# C F | Ab B Db G F# Eb",
+   "custom:f23aa417"
+  ],
+  [
+   "Eb/ G Cb F# C G D Bb Db B Eb | D#",
+   "custom:810e073a"
+  ],
+  [
+   "F/ Db E B F C D Bb Ab A Bb | E# C Ab G A B",
+   "custom:62ca27e1"
+  ],
+  [
+   "(G4) D C Eb / B",
+   "custom:9563c69f"
+  ],
+  [
+   "(A2) F# F E Bb",
+   "custom:641d4c8c"
+  ],
+  [
+   "(D#5) A E Fb D Bb | Ab A C",
+   "custom:c8593a35"
+  ],
+  [
+   "F/ B# B A D G E G Ab Cb Gb D",
+   "custom:d7344695"
+  ],
+  [
+   "(G4) Fb E# E D | E",
+   "custom:e80aeba4"
+  ],
+  [
+   "G/ D Cb D F C D E B A G | B Bb D# G",
+   "custom:cfe19c8a"
+  ],
+  [
+   "Eb/ Cb F E# A B E# A# Ab B | F D# D Gb E",
+   "custom:c4721634"
+  ],
+  [
+   "(B4) Gb Db A# D D | B",
+   "custom:75c2e66c"
+  ],
+  [
+   "Bb/ E# Fb F#",
+   "custom:d23d6176"
+  ],
+  [
+   "G/ D",
+   "custom:a6bc7bb8"
+  ],
+  [
+   "Fb/ Cb A Eb A | Ab Gb D",
+   "custom:556d9d03"
+  ],
+  [
+   "(A#6) Ab E#",
+   "custom:0fef0d7e"
+  ],
+  [
+   "(G3) E D B# F# A# Gb Ab E# G",
+   "custom:0f3e0568"
+  ],
+  [
+   "A/ D E F A",
+   "custom:57add1e0"
+  ],
+  [
+   "(F3) F E# B C D Db F C",
+   "custom:de65c4e5"
+  ],
+  [
+   "Fb/ C# B C C A",
+   "custom:b88d2717"
+  ],
+  [
+   "(A2) A# Fb D Bb / F",
+   "custom:8cef1c1e"
+  ],
+  [
+   "Bb/ D Fb Fb B# F B Bb B A# / C#",
+   "custom:23e6bc74"
+  ],
+  [
+   "B/ Fb Gb F# / F# | C B A# Bb C#",
+   "custom:1ecba061"
+  ],
+  [
+   "C/ A# F F# G Cb",
+   "custom:d8304e1f"
+  ],
+  [
+   "(C2) G Ab C# E# E Cb B#",
+   "custom:0b82ad41"
+  ],
+  [
+   "Eb/ G Eb E# G G A# D | E# G E# F# B",
+   "custom:3093b6e7"
+  ],
+  [
+   "B/ C F# F / E",
+   "custom:bb0c7044"
+  ],
+  [
+   "(C4) E G# F# C A E G A F",
+   "custom:fd2e5aa8"
+  ],
+  [
+   "(D#4) B D# Gb A# | D Cb C# Gb",
+   "custom:9505766f"
+  ],
+  [
+   "(B3) D G F# B D C D# A B E# A | B G",
+   "custom:6fd24f19"
+  ],
+  [
+   "Db/ D D D G# F",
+   "custom:3e2e3504"
+  ],
+  [
+   "E/ B | C G Bb",
+   "custom:62e9c174"
+  ],
+  [
+   "Bb/ E# D E C E G Fb Db G A# B G | F F",
+   "custom:d8bfdb30"
+  ],
+  [
+   "A#/ A E B F",
+   "custom:5bc0d459"
+  ],
+  [
+   "F/ B F C A Gb C | E B B",
+   "custom:2caefb9e"
+  ],
+  [
+   "(E4) B G Gb F Fb",
+   "custom:de3343b9"
+  ],
+  [
+   "G/ A# B E D",
+   "custom:fc38e938"
+  ],
+  [
+   "C/ A B G F",
+   "custom:baa7438f"
+  ],
+  [
+   "(B3) A# A A D E# F# D",
+   "custom:b5d31e62"
+  ],
+  [
+   "Fb/ B F# C G",
+   "custom:9dcdc2cb"
+  ],
+  [
+   "F/ C F E# A D Cb E Cb | A A A G F# F",
+   "custom:b85b1e38"
+  ],
+  [
+   "(G5) C Db A D A Fb",
+   "custom:c8819909"
+  ],
+  [
+   "C/ Eb G D A B# G C B#",
+   "custom:9b027ae8"
+  ],
+  [
+   "Db/ Bb A# F Ab A E B A# F D | D D",
+   "custom:da9e39b9"
+  ],
+  [
+   "(C5) C F G | C E#",
+   "custom:a22dd129"
+  ],
+  [
+   "B/ G# G D F A E# / F# | C A# B C",
+   "custom:a6e78131"
+  ],
+  [
+   "(G2) Gb Cb G A# C D A E D Gb",
+   "custom:01073004"
+  ],
+  [
+   "(C4) C# Gb C G A",
+   "custom:8a8b9a84"
+  ],
+  [
+   "F/ C A Gb G",
+   "custom:6e3a1ef5"
+  ],
+  [
+   "G/ E D# G C D E# B# B",
+   "custom:86aa8a42"
+  ],
+  [
+   "(A2) E E G B# Cb A B F Ab C# B Gb",
+   "custom:eae8f369"
+  ],
+  [
+   "Db/ D F E B Ab B Bb Fb A# G",
+   "custom:a94cd488"
+  ],
+  [
+   "(D#4) Bb B G G D#",
+   "custom:c954d1de"
+  ],
+  [
+   "A/ Bb Fb F# Fb F F A# E Fb B",
+   "custom:c6da203e"
+  ],
+  [
+   "D/ E G Bb / A",
+   "custom:b816b6d4"
+  ],
+  [
+   "E#/ C C# G | F F# F",
+   "custom:31ec3141"
+  ],
+  [
+   "(Cb5) F E Gb / B | A# F A C# D",
+   "custom:49442cc9"
+  ],
+  [
+   "(E2) Ab A# D G Ab G F B E Eb C# F#",
+   "custom:d33c5750"
+  ],
+  [
+   "(F#5) E Fb C# C# | E#",
+   "custom:4c2da59c"
+  ],
+  [
+   "F/ Ab C C# | B",
+   "custom:404005e0"
+  ],
+  [
+   "D/ G A F# F | C G E# G Bb",
+   "custom:fd7a4f4a"
+  ],
+  [
+   "E/ C# A A B Bb E A# / F | B D",
+   "custom:8adef897"
+  ],
+  [
+   "F/ A E C D / B#",
+   "custom:1162d57e"
+  ],
+  [
+   "(G#3) C C D# D# D D E D#",
+   "custom:242fd5ef"
+  ],
+  [
+   "(E#2) D E B# D# / F#",
+   "custom:5fe2fdb2"
+  ],
+  [
+   "(A6) Fb",
+   "custom:320f248a"
+  ],
+  [
+   "Bb/ C E Fb F G B# F D D",
+   "custom:0c78b3a4"
+  ],
+  [
+   "(A3) G C D D C# Fb D | G# E",
+   "custom:c6d7e14a"
+  ],
+  [
+   "Fb/ B A C# C# D",
+   "custom:c74d11a4"
+  ],
+  [
+   "(E2) Cb Bb A C A# G / F | Ab F C D C F",
+   "custom:3685dd07"
+  ],
+  [
+   "(Bb6) F E C / F",
+   "custom:fdc71da8"
+  ],
+  [
+   "G/ B# Fb C F G D C F A Cb F F | A# F C# F",
+   "custom:a9e9b2c7"
+  ],
+  [
+   "(C2) C# C# D Fb Fb F Fb G F Cb A F# D",
+   "custom:9f95c831"
+  ],
+  [
+   "(Fb2) B F G G | E D",
+   "custom:313046c0"
+  ],
+  [
+   "(A4) Db E B | G",
+   "custom:fd9042a2"
+  ],
+  [
+   "F/ F# B G# G# C C",
+   "custom:08b0d78c"
+  ],
+  [
+   "(Gb3) F C# | E E Cb G#",
+   "custom:d82cfad9"
+  ],
+  [
+   "(Fb4) A# D Eb Fb Cb E G# Bb C# B Bb F",
+   "custom:e3c3e4df"
+  ],
+  [
+   "A#/ C# F E C# B E G E G A C",
+   "custom:34a14322"
+  ],
+  [
+   "Bb/ F Bb B D Cb",
+   "custom:fbbb3583"
+  ],
+  [
+   "E/ Cb E E# C# D Cb A C G G | F E G B B D#",
+   "custom:ed1bfd26"
+  ],
+  [
+   "F2/ C4 G#5",
+   "custom:ddaa3ac4"
+  ],
+  [
+   "(B3) D# A# C# Gb",
+   "custom:01b8e3fd"
+  ],
+  [
+   "Eb/ A# E C F# B# C B Eb / E Ab",
+   "custom:7494da99"
+  ],
+  [
+   "E/ B G# D / C",
+   "custom:f9abed10"
+  ],
+  [
+   "C/ Fb A Ab A# G F E E#",
+   "custom:c59a5d3f"
+  ],
+  [
+   "(Bb4) F / A F",
+   "custom:234a9bd2"
+  ],
+  [
+   "(C4) A G# C Fb E G B C C",
+   "custom:7c04ff1c"
+  ],
+  [
+   "A#/ A / F B",
+   "custom:f7dd3f47"
+  ],
+  [
+   "D/ A",
+   "custom:8251be0b"
+  ],
+  [
+   "(E4) Gb Bb F# G# C B# / Cb E | G",
+   "custom:7184a32b"
+  ],
+  [
+   "(D#5) B G Bb Fb",
+   "custom:4c253b9d"
+  ],
+  [
+   "A/ F B# E A D F",
+   "custom:682a0f1f"
+  ],
+  [
+   "(C4) B B# E E A F E / G D",
+   "custom:bf30d19d"
+  ],
+  [
+   "D/ C A F# A G C Gb | D# Fb Eb B A Fb",
+   "custom:dcd98510"
+  ],
+  [
+   "(F#3) B C A D G C#",
+   "custom:9ec7ca92"
+  ],
+  [
+   "Db/ E D# G# A G",
+   "custom:2a427ad9"
+  ],
+  [
+   "A#/ B F C",
+   "custom:ed10b7f4"
+  ],
+  [
+   "Bb/ Db G G D E# C C# F / E Bb | A G E Db Eb",
+   "custom:7fd70522"
+  ],
+  [
+   "B/ D B A A# B D Gb",
+   "custom:b9ce63a6"
+  ],
+  [
+   "Db/ Ab",
+   "custom:ed7cb699"
+  ],
+  [
+   "B/ A C B F Ab Gb Ab E# D#",
+   "custom:2bc8122e"
+  ],
+  [
+   "G#/ A Gb Gb Bb Cb D B Eb Db",
+   "custom:e8410d7e"
+  ],
+  [
+   "B/ F#",
+   "custom:69e48f6e"
+  ],
+  [
+   "E#/ B# B C C C# F# B G B Fb",
+   "custom:215ae036"
+  ],
+  [
+   "A/ D# Fb Db E | E# F# G C E#",
+   "custom:c53c599a"
+  ],
+  [
+   "(Cb2) Cb C G C A A F C# C Db Gb C",
+   "custom:2b869a32"
+  ],
+  [
+   "E/ Gb Db A B G D F | G D Fb",
+   "custom:25cbd795"
+  ],
+  [
+   "A/ C E",
+   "custom:4dd031b6"
+  ],
+  [
+   "D/ A# A Fb",
+   "custom:54a4d7d2"
+  ],
+  [
+   "D/ A Cb C# A D# G Db A A Cb",
+   "custom:6b35323f"
+  ],
+  [
+   "A/ A Db E A Gb Fb G G G | D E E D B D",
+   "custom:2e1dad95"
+  ],
+  [
+   "(Eb4) Db A# B# F# F# A# E A Eb E F | Fb Fb G Cb",
+   "custom:7636601e"
+  ],
+  [
+   "Db/ D# A C# F G B G G# C# D Db E D",
+   "custom:95d5637e"
+  ],
+  [
+   "(D#2) A#2",
+   "custom:8082b3cd"
+  ],
+  [
+   "(A3) G D B# A# F D Fb F F# G Fb | Ab Cb Cb C# C# D#",
+   "custom:8775c37f"
+  ],
+  [
+   "D/ A B# Eb Ab A D B G# A B D Gb B | E A G A#",
+   "custom:03384286"
+  ],
+  [
+   "(F5) C / G G | C",
+   "custom:e32c06b2"
+  ],
+  [
+   "B/ B F A# F# F D G E",
+   "custom:d2af9fbe"
+  ],
+  [
+   "(B2) D Gb D C D Db G C",
+   "custom:99d269bd"
+  ],
+  [
+   "F/ F B# | C F F E# E#",
+   "custom:fb9b3df2"
+  ],
+  [
+   "(F5) G B C B E E E#",
+   "custom:9119bf8a"
+  ],
+  [
+   "(A4) Bb G D# E G / G Bb",
+   "custom:dbf78afe"
+  ],
+  [
+   "Eb/ C G D A# E Db Bb E F | F E E# Gb C",
+   "custom:9e1f20cb"
+  ],
+  [
+   "(C3) E Db Fb G Fb B# G Gb B Fb F",
+   "custom:720665d0"
+  ],
+  [
+   "F/ D C | F# F",
+   "custom:9de96693"
+  ],
+  [
+   "(C2) G | E A F Eb E",
+   "custom:9809b5f7"
+  ],
+  [
+   "(B4) E B Gb",
+   "custom:30545526"
+  ],
+  [
+   "B/ F F# D Eb Ab Fb E# D#",
+   "custom:b25eb49f"
+  ],
+  [
+   "D/ A A# B# Db B Eb E F B F D Ab F | F",
+   "custom:9ef8dde8"
+  ],
+  [
+   "B/ A Bb B B F# Eb Db",
+   "custom:a9513106"
+  ],
+  [
+   "(F6) B B# G C# D / D Fb",
+   "custom:7ef1c044"
+  ],
+  [
+   "G/ D G F# F F# | D",
+   "custom:31ba7ce9"
+  ],
+  [
+   "Bb/ B E# C Cb Ab C C# Cb",
+   "custom:383473b2"
+  ],
+  [
+   "C#/ E E D# C G# B A A",
+   "custom:2db10686"
+  ],
+  [
+   "(B2) E# Bb Ab D Eb Gb B# G# F C E#",
+   "custom:2a405c1c"
+  ],
+  [
+   "A/ D# A F# Fb D B A A# Fb",
+   "custom:41cd665c"
+  ],
+  [
+   "(E4) A Gb G Db A F# E E# B",
+   "custom:94fa68b4"
+  ],
+  [
+   "(G4) G G# A D E D A G# / E | A# D G",
+   "custom:68c6bafa"
+  ],
+  [
+   "(C4) Fb G Cb Fb | Eb E# D D B F",
+   "custom:a092e470"
+  ],
+  [
+   "Fb/ A# E G G# Bb C# B B B# E E Db E | B#",
+   "custom:8f1542ca"
+  ],
+  [
+   "(F2) A B# A | A Cb",
+   "custom:2c9b933b"
+  ],
+  [
+   "E#/ D Eb C Eb Ab | E Cb C",
+   "custom:c1833f9a"
+  ],
+  [
+   "D#/ Bb C Ab D B B Bb B",
+   "custom:79bd5f73"
+  ],
+  [
+   "C/ D F# G Db F D C# E E A",
+   "custom:8cb3cdad"
+  ],
+  [
+   "F/ D B# C# Gb F# E B G",
+   "custom:038ff810"
+  ],
+  [
+   "F/ B# | E# A D D",
+   "custom:8e9343a7"
+  ],
+  [
+   "(C2) B# D E# D A F G C# F# | B Bb F",
+   "custom:d59cc185"
+  ],
+  [
+   "Eb/ A E# Cb B E F G F# Ab C Bb E | E Cb F A# C F",
+   "custom:3e64b798"
+  ],
+  [
+   "G/ F# D F B F Bb B Gb C C",
+   "custom:d19a9517"
+  ],
+  [
+   "G/ A G D F G Cb",
+   "custom:e9208ccc"
+  ],
+  [
+   "Ab/ A C G# D# F Bb E G Fb E C E# | Fb D Db B F D",
+   "custom:8c8168b6"
+  ],
+  [
+   "(G#4) D#",
+   "custom:c73078e6"
+  ],
+  [
+   "B#/ C# G Gb",
+   "custom:9f3b1a99"
+  ],
+  [
+   "A/ A# G B C E B# E B# F# A# A#",
+   "custom:66f8fa51"
+  ],
+  [
+   "F/ C C C A C# A B",
+   "custom:dacb788a"
+  ],
+  [
+   "E/ A G B E",
+   "custom:acd378ed"
+  ],
+  [
+   "Gb/ E Cb / F Db",
+   "custom:d0a3a483"
+  ],
+  [
+   "B#/ Eb B G Eb F# C# G#",
+   "custom:6b6add0f"
+  ],
+  [
+   "E/ G D B B# Eb A# B#",
+   "custom:2057308c"
+  ],
+  [
+   "(F4) Db Fb B# G G# E Bb Eb F Fb | E Bb",
+   "custom:a2564091"
+  ],
+  [
+   "(Db6) B# E C E F# / Ab | F",
+   "custom:1e324544"
+  ],
+  [
+   "C#/ G Ab Bb A Db G F G# A A",
+   "custom:edd654e5"
+  ],
+  [
+   "F/ E# C",
+   "custom:435df319"
+  ],
+  [
+   "(D2) G# A D# E F# G Ab A",
+   "custom:a0ab4da1"
+  ],
+  [
+   "B/ G# Cb B E G Cb Db A Fb Gb",
+   "custom:47f3c552"
+  ],
+  [
+   "E/ B",
+   "custom:32cb6c0d"
+  ],
+  [
+   "A/ F Gb C B A# Fb / A | E G C",
+   "custom:c08cf539"
+  ],
+  [
+   "G/ B F# D F B F# G#",
+   "custom:e4fe2fb0"
+  ],
+  [
+   "G/ Ab E F Bb D Gb",
+   "custom:b4f6d9fc"
+  ],
+  [
+   "C/ F G# B Fb F G",
+   "custom:317d1e7a"
+  ],
+  [
+   "(C2) B Ab F G B Bb C G#",
+   "custom:678a5168"
+  ],
+  [
+   "(B2) G Gb E A B A# Db G",
+   "custom:52e62259"
+  ],
+  [
+   "E/ G C D# Bb A# C B# D Bb G# Cb | A G A B D",
+   "custom:b315e444"
+  ],
+  [
+   "(E#6) C Db F# G# D F# D",
+   "custom:4d8b61e0"
+  ],
+  [
+   "(G4) Ab D C D C# C# F",
+   "custom:bc731be1"
+  ],
+  [
+   "F/ G A A# B# Cb Ab C Eb Ab Ab",
+   "custom:b095635f"
+  ],
+  [
+   "(D6) A C# D / C#",
+   "custom:6772b08e"
+  ],
+  [
+   "C/ F C# F Eb E Gb G# G A B",
+   "custom:e5f55436"
+  ],
+  [
+   "(Eb6) A#",
+   "custom:84b8c8e7"
+  ],
+  [
+   "Db/ A D G C# G G# C Eb C# Db G A",
+   "custom:53501925"
+  ],
+  [
+   "(D3) D F F A Db E | F E G# G B#",
+   "custom:2a3fe6bf"
+  ],
+  [
+   "D/ B A Cb D D# B# D G / Ab Db",
+   "custom:e5b03bf4"
+  ],
+  [
+   "Eb/ A# G Eb C A Cb",
+   "custom:a2fb80b8"
+  ],
+  [
+   "F/ G A# A C G B Db B# | B G G Cb",
+   "custom:8d722f60"
+  ],
+  [
+   "G/ E D F G G / Gb A",
+   "custom:e9a0bd5d"
+  ],
+  [
+   "(E2) Cb E#",
+   "custom:9525f010"
+  ],
+  [
+   "E/ E B C E F G A F / B#",
+   "custom:c7af64da"
+  ],
+  [
+   "Gb/ E A B Db C# E C C A D G | Bb F G Cb Bb",
+   "custom:4efa0c46"
+  ],
+  [
+   "F#/ B Bb C# Eb D",
+   "custom:3d21fca6"
+  ],
+  [
+   "E/ Ab C Ab A Cb E Fb E# F Ab F D# F | G D",
+   "custom:56e883bd"
+  ],
+  [
+   "(B5) G Gb A C D C | F#",
+   "custom:b288912d"
+  ],
+  [
+   "Fb/ A# A C G B Ab Fb A C",
+   "custom:fcf0bbb1"
+  ],
+  [
+   "(Ab3) Fb A# E A B# Gb A Eb",
+   "custom:33653356"
+  ],
+  [
+   "F/ Cb F C Ab",
+   "custom:13ad175c"
+  ],
+  [
+   "(B2) G F# G Eb G B",
+   "custom:84ef0fab"
+  ],
+  [
+   "(F5) G# C E D F# C | C# B Eb D Eb",
+   "custom:af9eb84e"
+  ],
+  [
+   "G/ A D# Bb F# D# D G B D#",
+   "custom:0f6c30ff"
+  ],
+  [
+   "A/ E / C",
+   "custom:f7269736"
+  ],
+  [
+   "A/ C B# B A# Fb",
+   "custom:56f5e99e"
+  ],
+  [
+   "D/ D A A B A E D | Gb B# D# A C# Ab",
+   "custom:c50190bf"
+  ],
+  [
+   "D/ A | F#",
+   "custom:fe39b757"
+  ],
+  [
+   "(C6) G E# / G G",
+   "custom:d06f3073"
+  ],
+  [
+   "C/ G E Ab B C F C E G E D | G A",
+   "custom:b416598e"
+  ],
+  [
+   "F/ A# A F G# Bb G D C B / E# F# | B# F# B D",
+   "custom:6614f8e9"
+  ],
+  [
+   "D#/ Bb E# F Bb A B# Gb",
+   "custom:d56aa01f"
+  ],
+  [
+   "(F2) G# A B# C",
+   "custom:282ed0e1"
+  ],
+  [
+   "E/ Cb A Ab Fb C Eb E# E B C#",
+   "custom:01e27fc1"
+  ],
+  [
+   "D/ C C Gb F D# A F | G",
+   "custom:12cf0716"
+  ],
+  [
+   "F/ G# C Fb Fb Ab D# E E A# B C Db Eb | G# F Db E",
+   "custom:420bb982"
+  ],
+  [
+   "(F2) A# Ab B G Cb C F# G Fb B E",
+   "custom:55afdcea"
+  ],
+  [
+   "B/ Fb Fb C B Db F Gb G Eb E# | A",
+   "custom:ff1544f4"
+  ],
+  [
+   "D/ Fb A B B G E G Ab D#",
+   "custom:6477a77c"
+  ],
+  [
+   "D/ Gb Bb G Cb Fb F B A# G Bb E A",
+   "custom:6bd83947"
+  ],
+  [
+   "B/ F# F",
+   "custom:32a3c283"
+  ],
+  [
+   "D/ Cb A D E D E#",
+   "custom:9b99b5b4"
+  ],
+  [
+   "(C3) Gb F D E G B E B | F Eb B A#",
+   "custom:a060724c"
+  ],
+  [
+   "(F2) Eb C D Db Db / G# | Bb B B",
+   "custom:3494c7c6"
+  ],
+  [
+   "D/ A B# C Bb",
+   "custom:343abd0e"
+  ],
+  [
+   "Fb/ Cb D G Bb C A# A# G B / Ab C#",
+   "custom:3727e704"
+  ],
+  [
+   "(D#2) E Ab D F D# D B A# Fb E C# | C G C C C",
+   "custom:a31bafc4"
+  ],
+  [
+   "F/ E / C E | F Cb D# D F# C",
+   "custom:6a04c8ee"
+  ],
+  [
+   "G/ A# G F# D F# C G C D G B G | C D Db D",
+   "custom:3d03c23e"
+  ],
+  [
+   "D/ C Fb F A / Db",
+   "custom:c2518757"
+  ],
+  [
+   "(Cb6) Ab Ab A B Fb F Gb C F",
+   "custom:159f63a5"
+  ],
+  [
+   "(G#4) A Eb Ab D F | G Eb Db G",
+   "custom:15839127"
+  ],
+  [
+   "G/ E# F# C C# C# D Eb G# Fb G# G A E#",
+   "custom:49da376e"
+  ],
+  [
+   "(F#2) A G C# G# C C# F#",
+   "custom:e7f8b6e1"
+  ],
+  [
+   "F/ E# C / F",
+   "custom:cbfc93d9"
+  ],
+  [
+   "A/ Fb D D B B Db | E Eb C Fb Db A",
+   "custom:0df4fd57"
+  ],
+  [
+   "D/ C A F# C# E# Bb Cb Ab Cb A | E E Eb Bb",
+   "custom:b12ca953"
+  ],
+  [
+   "A/ G B E D F# B Gb B C# E E",
+   "custom:79e35ee4"
+  ],
+  [
+   "E#/ C B C# B# D# A C C# G# G | B Db E",
+   "custom:30ab7d09"
+  ],
+  [
+   "G#/ Db E# E# E Ab Cb C B# D#",
+   "custom:6f3e678b"
+  ],
+  [
+   "(F#4) Db5",
+   "custom:5205e7ea"
+  ],
+  [
+   "(F4) B# B G B A D# | E E# B",
+   "custom:ffe1656d"
+  ],
+  [
+   "(C2) G Eb E E",
+   "custom:9fb5c727"
+  ],
+  [
+   "(Cb6) Eb D Gb Fb F",
+   "custom:7ab8e597"
+  ],
+  [
+   "(C2) C D G C A# D# E A#",
+   "custom:859a94dc"
+  ],
+  [
+   "A#/ C# D F | Fb Bb C B E B#",
+   "custom:6ff1553c"
+  ],
+  [
+   "C#/ Db / D G#",
+   "custom:e84d3598"
+  ],
+  [
+   "D/ A Db Eb E E B E# B# G | B E Eb",
+   "custom:2b1c9b6a"
+  ],
+  [
+   "A#/ G E# B D Cb Fb Gb F# A | Eb Ab C D B",
+   "custom:9e38018f"
+  ],
+  [
+   "D#/ G# F A# G# Gb D E | F A",
+   "custom:f61c8cff"
+  ],
+  [
+   "(A2) G# E B A G C E#",
+   "custom:64d6ac01"
+  ],
+  [
+   "(A5) B D# B F B E / C",
+   "custom:c5abdf96"
+  ],
+  [
+   "(G2) D E# B F# E D E Db A C C D",
+   "custom:ca273561"
+  ],
+  [
+   "F/ D A# D F# Eb G A C Cb F",
+   "custom:eb70aa24"
+  ],
+  [
+   "F#/ A C Db D# C G C Gb A",
+   "custom:a6a74309"
+  ],
+  [
+   "(Bb3) B Bb E# F E# B D | C A E Cb F#",
+   "custom:3659e2d9"
+  ],
+  [
+   "B#/ G A B E F Gb Db B# F Ab Fb A# | D G E# A B B#",
+   "custom:08d4f138"
+  ],
+  [
+   "(F2) Fb B E D A C F D A / D A#",
+   "custom:89dd29f7"
+  ],
+  [
+   "F#/ D C G Bb Db",
+   "custom:9f9c87ef"
+  ],
+  [
+   "F/ B C# F E C",
+   "custom:4cc96505"
+  ],
+  [
+   "(G2) D F",
+   "custom:d4872785"
+  ],
+  [
+   "(C#5) C Cb Db F# Ab",
+   "custom:dd3c4931"
+  ],
+  [
+   "Bb/ B B Fb E C F Gb A",
+   "custom:6f8f164b"
+  ],
+  [
+   "Cb/ Bb B Bb F# A D | D# A",
+   "custom:5bc4a202"
+  ],
+  [
+   "D/ B B# G A B F#",
+   "custom:58b8462c"
+  ],
+  [
+   "C/ C C A / G E",
+   "custom:0fdcd103"
+  ],
+  [
+   "D3/ A3 Db6",
+   "custom:d82fd913"
+  ],
+  [
+   "(G3) F D Bb F B# Db",
+   "custom:4e97d2be"
+  ],
+  [
+   "(C4) G / D# | E G Fb Fb C",
+   "custom:e3b9f3e4"
+  ],
+  [
+   "(D3) C G# G# E Ab A Eb F B A",
+   "custom:95873d8b"
+  ],
+  [
+   "(F2) Ab C G# B# D G E",
+   "custom:55a8583d"
+  ],
+  [
+   "(Fb5) B C Ab A Eb F / B | F F# Bb A Ab E",
+   "custom:92911eb6"
+  ],
+  [
+   "G/ Bb Gb B E D Bb C Eb C D G D E#",
+   "custom:5b47ba94"
+  ],
+  [
+   "(D6) A F Cb D",
+   "custom:67c7ef87"
+  ],
+  [
+   "Cb/ Gb C F# A B B# C# Fb",
+   "custom:8cb98978"
+  ],
+  [
+   "C/ A G F | B",
+   "custom:f6415dc4"
+  ],
+  [
+   "(A5) B Ab Fb",
+   "custom:60887fb3"
+  ],
+  [
+   "C/ E G / G | C# D F# Fb G",
+   "custom:091b4e15"
+  ],
+  [
+   "(F2) B G A# D C F# D F B B# | B A B Bb B",
+   "custom:10a612ac"
+  ],
+  [
+   "B/ Ab E D C D G Gb C",
+   "custom:2bb43626"
+  ],
+  [
+   "C/ Bb A Db A# Bb G C# F A C",
+   "custom:97cef37b"
+  ],
+  [
+   "C/ B A C# E# D G G F Fb",
+   "custom:6f17aa3a"
+  ],
+  [
+   "(E4) C Fb Eb A F G A Db D Cb",
+   "custom:d2480c0b"
+  ],
+  [
+   "F/ A# A B# Db C C#",
+   "custom:7072afe0"
+  ],
+  [
+   "C/ G Bb G B B G G Bb B# | F# F# Fb F",
+   "custom:fdb41e68"
+  ],
+  [
+   "D/ A# A D C# A# Eb E#",
+   "custom:c057fa97"
+  ],
+  [
+   "Db/ C# F E F# G A / Ab",
+   "custom:001cf5a9"
+  ],
+  [
+   "E/ G C Gb E F# B G# C D C A",
+   "custom:e42da706"
+  ],
+  [
+   "B#/ Db Db D# D Fb Gb Ab F G F",
+   "custom:60942c02"
+  ],
+  [
+   "Bb3/ E#4 E6 | E#2 E4",
+   "custom:28327f51"
+  ],
+  [
+   "Bb/ F# G Bb D# G# C A G F G E",
+   "custom:74483f5b"
+  ],
+  [
+   "(G2) A# D F B Gb G D B# G# D",
+   "custom:73bd150a"
+  ],
+  [
+   "(F3) Ab F# Eb G C B E D# Gb B Eb Fb Gb",
+   "custom:b9274644"
+  ],
+  [
+   "Cb/ Bb Gb Ab G# F C E G F# E | F D",
+   "custom:b3b5c9a8"
+  ]
+ ]
+}

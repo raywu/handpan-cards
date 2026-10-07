@@ -1,0 +1,14 @@
+# kills: identitySeed orders by zone, not by field number
+# suite: node --test --test-name-pattern ^identitySeed.orders.by.zone..not.by.field.number$ tests/core.test.js
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -510,7 +510,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     for (var id in fields) {
+       if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+       if (id === "0") continue;
+-      (fields[id][3] === "bottom" ? bottom : top).push(id);
++      (Number(id) >= 101 ? bottom : top).push(id);
+     }
+     function byNumber(a, c) { return Number(a) - Number(c); }
+     return { top: top.sort(byNumber), bottom: bottom.sort(byNumber) };

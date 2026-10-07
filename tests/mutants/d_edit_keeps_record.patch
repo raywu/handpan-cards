@@ -3,10 +3,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6223,7 +6223,7 @@ function replaceScale(oldStr, seed) {
-   const rec = scaleRecord(seed);
+@@ -7275,7 +7275,7 @@ function replaceScale(oldStr, seed) {
+   const oldId = stringDeckId(oldStr);
    const list = savedScales();
-   const at = list.findIndex(r => r && r.s === oldStr);
+   const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
 -  if (at < 0) { rememberScale(seed); return; }
 +  rememberScale(seed); return;
    const out = [];
