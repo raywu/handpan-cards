@@ -579,6 +579,83 @@ Open after L0, for the owner (not scheduled):
 - **Stop conditions**: G-RENDER shows a collision the constants cannot fix; any built-in drawing changes (`pan_render_v1.json` or `tests/test_render_agreement.py` moves).
 - **Mutant delta (forecast)**: -1, +5 (third inner seat wrong; offset not raised; warning never attached; bottom octave counted; cap restored). 694 to 698. Regenerate `g_mirror_ignored`, `b_engine_desync`, `g_inner_pair_with_rim`, `g_centred_default_ignored`. About 450 lines.
 
+### Lane PF: short print line for the small-labels warning
+
+Added 2026-10-07 (owner, interview 4: "Short print string", "Own small lane before G2b"). Eng-reviewed. Base: main with S1 (#263) merged. Must merge before G2b.
+
+- **Why**: the title card prints each warning's full sentence in capitals on
+  one centred line (Label 4.2 pt, tracking 0.35). `SMALL_LABELS` measures
+  308.4 pt on a 177.6 pt card. `NO_THIRDS` measures 153.1 pt and fits.
+  Owner, interview 4: "Short print string".
+- **Goal**: a deck carrying the `SMALL_LABELS` warning prints
+  `CROWDED PAN: SMALL LABELS` (72.9 pt) on its title card, in both print
+  pipelines. The app sheet keeps the full sentence.
+- **Owns**: `tools/decks.py` (new `TITLE_WARNINGS` beside `_blurb`, and
+  `_blurb`); `src/engine/pdfdeck.js` (new `TITLE_WARNINGS`, exported, and
+  `blurb`); the generated engine regions of `index.html` via
+  `tools/inline_engine.py`; `tests/test_gen_deck.py`;
+  `tests/test_render_agreement.py`; `tests/pdfcards.test.js` (it holds the
+  `fromGenerated` tests); the two existing mutants whose hunks sit on the
+  changed lines, `c_blurb_spurious_line.patch` and
+  `c_gen_warning_off_the_sheet.patch`, plus any other mutant
+  `tools/refresh_mutants.py` or `git apply --check` reports stale; new
+  mutants; FLOORS and the README mutant count.
+- **Reads only**: `src/engine/core.js` (`REASONS`), `src/engine/select.js`,
+  `tools/hifi.py`, `src/engine/pdfcards.js`, `docs/ENGINE-SPEC.md`.
+- **Changes**: `TITLE_WARNINGS = {"SMALL_LABELS": "CROWDED PAN: SMALL LABELS"}`
+  lives with the blurb builder on each side (`tools/decks.py`,
+  `src/engine/pdfdeck.js`), not with `CARD_WARNINGS` in the card renderers:
+  `pdfdeck` loads before `pdfcards`, and the map is title-card copy.
+  `_blurb` and `blurb` print the short line for a code in the map and the
+  capitalised reason for any other code, so `NO_THIRDS` is byte-identical.
+  No change to `REASONS`, to `CARD_WARNINGS` or to what the chord cards draw.
+- **How the tests get a warned deck**: the parser still refuses a crowded
+  pan (`TOO_MANY_RIM`) until G2b, so no seed string reaches `SMALL_LABELS`
+  through `tools/gen_deck.js`. The Python tests take the real payload for
+  `SEED_TOP_ONLY` and append one warning,
+  `{"code": "SMALL_LABELS", "reason": <core REASONS text with N filled>}`,
+  before `decks.from_generated`. The JS test passes the same warning list to
+  `HPE.pdfdeck.fromGenerated`. `tests/select.test.js` already proves a
+  crowded pan produces that warning; G2b adds the end-to-end seed.
+- **TDD order**:
+  1. `tests/test_gen_deck.py` "a small-labels warning prints the short line
+     on the title card": the injected deck's `blurb` contains
+     `CROWDED PAN: SMALL LABELS` exactly once and no line contains `3.6 PT`.
+  2. Same file, "no warning line on the title card is wider than the card":
+     for the injected `SMALL_LABELS` deck and the `SEED_NO_THIRDS` deck,
+     each warning line at Label 4.2 pt with 0.35 tracking is at most
+     `CW - 24` pt. The note lines are not measured here (see F3).
+  3. The existing "a warning survives the adapter and reaches the title
+     blurb" test stays green unchanged (`NO_THIRDS` verbatim).
+  4. `tests/test_render_agreement.py`: `HPE.pdfdeck.TITLE_WARNINGS` equals
+     `decks.TITLE_WARNINGS`, next to the existing `CARD_WARNINGS` assertion.
+  5. `tests/pdfcards.test.js`: `fromGenerated` gives the short line for
+     `SMALL_LABELS` and the capitalised reason for `NO_THIRDS`.
+- **Acceptance**: the five tests pass; `python3 tools/inline_engine.py
+  --check` and `python3 tools/validate.py` pass; every file in
+  `tests/mutants/` still applies (`git apply --check`); the title-card text
+  extracted from a PDF built from the injected deck contains the short line
+  once (inside test 1 or beside it, using the PDF text helper the file
+  already has).
+- **Verify**: `./tests/run.sh all`; CI at the head SHA is the evidence.
+- **Non-goals**: the sentence in `REASONS` and on the app sheet; a
+  small-labels badge on the chord cards (decision A16 says no badge; raised
+  with the owner again below); `NO_THIRDS` copy; wrapping or shrinking any
+  blurb line, the note lines included; everything on the G2b carry-list.
+- **Stop conditions**: any built-in deck's PDF text changes; test 2 fails
+  for `NO_THIRDS` (0.5 pt of room today); the app sheet's warning text
+  moves; a stale mutant cannot be re-anchored without changing what it
+  kills.
+- **Mutant delta (forecast)**: +3 (short line dropped in Python; dropped in
+  JS; the two maps disagree). 706 plus S1's delta, plus 3.
+- **Coordinator commit on this branch** (not the lane's): the G2a, G1 and S1
+  outcomes and the interview-4 and interview-5 owner answers, added to the
+  scale plan; finding F3 added to Lane P1's block.
+- **Open with the owner, does not block**: CHORD_ONLY has no title card, so
+  a print-shop file for a crowded pan carries no small-labels notice.
+  Decision A16 chose no chord-card badge. Adding `SMALL_LABELS` to
+  `CARD_WARNINGS` is one line plus a test if the owner wants it.
+
 ### Lane S2: one direction and the anchor
 
 - **Goal**: every rim runs odd-right; `anchor` chooses between the two seatings; four built-ins are proven equal to solver output.
@@ -1020,6 +1097,225 @@ Appendix A's prototype does not do this and is not the reference for it.
 
 **R9. W1's test 5 cannot pass before the flip.** Moved to G2b; corrected in
 place.
+
+## 20. Coordinator record and amendment 2 (2026-10-07, binding on every lane not yet merged)
+
+Where this section differs from sections 1 to 19 or from a lane block, this section holds.
+
+### 20.1 Lane outcomes
+
+- **G2a**: PR #261 merged (main 463258a, 697 mutants), review PASS_WITH_NITS.
+- **G1**: PR #262 merged (main fc499bd, 706 mutants), review PASS_WITH_NITS. `HPE.core.parseScale` and `formatScale` exist, unwired.
+- **S1**: PR #263 merged (main a98b799, 711 mutants), review PASS_WITH_NITS, owner passed G-RENDER by eye ("S1 looks good"). Deviations: it edited `docs/ENGINE-SPEC.md`, `tests/core.test.js` and the corpus fixture outside its Owns (the `SMALL_LABELS` row), and it models label overlap by glyph box, not by disc. One-inner pans typeable before G2b redraw (inner seat 128 to 90, small rims shrink; 5 rim + 1 inner `r_note` 0.19 to 0.1453): owner, "Accept the redraw".
+- **DS**: the design spec is `docs/plans/2026-10-07-scale-drawer-design-spec.md` (PR #260), not the filename section 10 names. Owner signed off the design on mock version 3, 2026-10-07. Its sections 20, 21 and 22 are binding on W1, DR1 and DR2.
+
+### 20.2 Owner answers recorded here (2026-10-07)
+
+- O1: one pan is one scale; version-blind id matching is intended. Pin it with a test (G2b).
+- A 32-bit id collision keeps one record: accepted, noted in the README (DOC lane).
+- Legacy `(C0) G0 | B#` (a B#-2 field): the old reader refuses it too (G2b).
+- `SMALL_LABELS` on print: short title-card string (Lane PF). Title card only; decision A16 stands, no chord-card badge, so a CHORD_ONLY file of a crowded pan carries no notice.
+- A crowded pan's title-card note line: wrap to two lines. **Lane P1** owns it (finding F3: `_blurb` and `blurb` draw the note line as one unfitted line at Label 4.2 pt; about 100 characters of top shell runs off the 177.6 pt card once G2b lifts the cap). P1 adds a test that no title-card line of a 20-note top shell is wider than `CW - 24` pt.
+- A typed scale with inner notes opens ON CENTRE, always (anchor `one`). Pygmy's built-in data is unchanged.
+- Inner notes follow the top mirror switch. An old single `mirror: true` reads as both on.
+- The open ADJUST LAYOUT button carries a close mark inside it, after the label.
+- OQ16 of the two-beginner-decks plan: Lane U3, after PF.
+
+### 20.3 Carried into Lane G2b
+
+1. The B#-2 case above: the legacy reader refuses it.
+2. Fold `SCALE_REASONS` into `REASONS` under one key scheme.
+3. R8 wording against the code: the MIDI range is checked before the spelled octave, so `(C9) G9 C` gives `NOTE_OUT_OF_RANGE`. Fix the wording or the order, and say which.
+4. The `--legacy` flag test cannot tell the two readers apart; make it.
+5. The `reader` tag in `synthetic_scales.json` is read by nothing (the corpus tool hardcodes legacy).
+6. The app placeholder test points back at `parseSeed`; `run_gen` defaults to `--legacy`.
+7. The guard for a repeated bottom note after the ding has no test.
+8. G2b owns the `#scale-box` label and placeholder wording and the D3 example count line (spec acceptance lines 4, 9 and 11). W1 ships today's wording.
+9. The end-to-end crowded seed for `SMALL_LABELS` (PF's tests inject the warning).
+
+### 20.4 The design spec against this plan (coordinator auto-decisions, owner away)
+
+- **MIRROR is renamed.** Section 10 lists renaming MIRROR under "must NOT". The owner's mock comment MC 3 overrides it: `MIRROR TOP` and `MIRROR BOTTOM` (20.5).
+- **Pinned elements.** Section 10's "only it and the delete row are pinned" gains one: `#scale-plate-band` is sticky while the drawer is open (spec RD 1, owner decision).
+- **Ownership of shared functions.** A change belongs to the lane whose tag is on the acceptance line that needs it. Where two lanes need the same function (`paintPan`'s re-key, `pan()`'s interactive branch, the `previewBox` keydown handler), the earlier lane makes its change and the later lane extends it; both lane briefs name the function.
+- **No regression window between DR1 and DR2.** DR1 keeps today's note-moving controls working on an Edit deck with stored seats until DR2 replaces them. If the spec's DR1 lines cannot hold with that, DR1 stops and reports.
+- **W1 order.** W1 starts after S2, S3 and the spec are on main (AM-6).
+
+### 20.5 Amendment 2: two mirror switches (eng-reviewed and Codex-reviewed; AM-1 to AM-8 confirmed by the owner, AM-9 is a parsing detail under AM-3)
+
+Source: owner comment on the drawer mock ("Top rim and bottom rim should be independently mirror controlled") and interview 6. The spec's section 21 holds the screen side; this holds the engine, data and lane side. "Text changes to the plan" below are applied by reading, not by editing the older sections.
+
+#### Goal
+
+One pan has two independent reflections: TOP (rim and inner rings) and BOTTOM (bottom ring). Every deck, record and share link that exists today draws exactly as it does today.
+
+#### Non-goals
+
+- No third switch for the inner ring.
+- No change to any built-in deck's bytes, to `geom`, or to the anchor.
+- No conversion of stored records. No new storage key beyond AD-ER-1's `hpfc.scales.v3`.
+- No change to the default for a typed scale (both off, anchor `one`).
+- No change to `LAYOUT_HINT` ("... or mirror the pan" still reads true).
+
+#### Decisions
+
+| Id | Decision | Source |
+|---|---|---|
+| D13' | Two switches, `MIRROR TOP` and `MIRROR BOTTOM`, both off by default. Replaces D13. | owner, MC 3 |
+| A20' | An old `mirror: true` is read as both on. No conversion. | owner, interview 6 |
+| A22 | Unchanged: `#scale-mirror` keeps its id and is the TOP switch. New id `#scale-mirror-bottom`. | spec 21 |
+| AM-1 | Option shape: `mirror` (boolean, top shell) stays; new boolean `mirrorBottom`. When `mirrorBottom` is absent it takes the value of `mirror`. | coordinator, owner confirmed 2026-10-07 |
+| AM-2 | Share options line: the mirror field becomes `0` (neither), `1` (both), `t` (top only), `b` (bottom only). Versions 1 and 2 accept only `0` or `1`, as today. `t` and `b` are read and written only in version 3 and later. | coordinator, owner confirmed 2026-10-07 |
+| AM-3 | CLI: `--mirror` keeps meaning both; `--mirror-top` and `--mirror-bottom` set one shell. | coordinator, owner confirmed 2026-10-07 |
+| AM-4 | `MIRROR BOTTOM` is disabled on a pan with no bottom notes; a writer then stores `mirrorBottom: false`. | coordinator, owner confirmed 2026-10-07 |
+| AM-5 | One resolution rule, in one function. `layout.js` gains `resolveMirrors(options, seedOptions)` returning `{top, bottom}`: top is `options.mirror` if the key is present, else `seedOptions.mirror`; bottom is `options.mirrorBottom` if present, else `seedOptions.mirrorBottom` if present, else top. `core.js` does NOT fill the default: its reader whitelists the key and leaves it absent. `select.build` writes what `resolveMirrors` returned. | eng review, owner confirmed 2026-10-07 |
+| AM-6 | W1 starts after S3 is on main. S3 no longer runs beside W1. | eng review, owner confirmed 2026-10-07 |
+| AM-7 | A record or link whose two mirrors differ is written as version 3 or later, never as 2. | eng review, owner confirmed 2026-10-07 |
+| AM-8 | S3 makes the editor carry `mirrorBottom` untouched: `resetSheetState` reads it from the record being edited, `sheetOptions` writes it back, and both app `solve` calls pass it. No new control in S3. A top-only link opened, renamed and saved in an S3 build keeps its bottom ring. | Codex P1, owner chose "S3 carries both" |
+| AM-9 | CLI parsing keeps two tri-state values (unset, true, false). `--mirror` sets both true. `--mirror-top` sets top true and, after the loop, bottom false if nothing set it; `--mirror-bottom` the reverse. Flag order never matters. | Codex P2, folded in |
+
+#### Text changes to the plan
+
+**7.4** replaces its opening ("MIRROR replaces every seat angle a with 180 minus a, on all three rings; it never changes geometry. Under D8 it is the only thing that puts odd rim notes on the left.") with: "MIRROR TOP replaces every seat angle a with 180 minus a on the rim and inner rings. MIRROR BOTTOM does the same on the bottom ring. Neither changes geometry. Under D8, MIRROR TOP is the only thing that puts odd rim notes on the left." The table's last row moves under MIRROR BOTTOM; the rest under MIRROR TOP. The A20 sentence becomes A20'.
+
+**8, Mirror bullet** becomes: "two boolean options, `mirror` (top shell) and `mirrorBottom`. Both compose with `seats` as `mirror` does today. Absent `mirrorBottom` takes `mirror`'s value, resolved once in `layout.resolveMirrors` (AM-1, AM-5). Neither is hashed into the deck id." The options line sentence gains AM-2 and AM-7.
+
+**8, options line** (`palette, parent, mirror, anchor, name`): unchanged in shape; `mirror` takes four values from version 3.
+
+**5.6 blast radius**: the `scale-mirror-` row counts are measured history and are not edited; the new id `scale-mirror-bottom` falls under the same prefix.
+
+**9, copy**: the switch texts and the helper of spec MC 3.
+
+**Lane S3**: also owns, in `index.html`, the `mirrorBottom` carry of AM-8 (`resetSheetState`, `sheetOptions`, the two `solve` calls). **Lane S2**, TDD item 7 "mirror reflects all three rings" becomes test 3 below. **Lane W1**: goal reads "the mirror is two switches"; "replaced by one element `#scale-mirror`" becomes "replaced by `#scale-mirror` and `#scale-mirror-bottom`"; test 6 becomes "MIRROR TOP and MIRROR BOTTOM are two switches, both off by default, and each carries its own choice into the deck"; test 7 becomes "a deck stored with mirror true and no mirrorBottom opens with both switches on". `tools/sandbox.js` and `tests/fixtures/app_surface_v1.json` gain the new id.
+
+**11.1 Order**, item 7 (W1): "After S2 (MIRROR's meaning), after DS (its layout)" gains "and after S3 (AM-6)"; "MIRROR switch" becomes "MIRROR switches".
+
+**15, the Generated layouts paragraph**: "MIRROR reflects all three rings about the vertical axis and is the only thing that puts odd notes on the left." becomes "MIRROR TOP reflects the rim and inner rings about the vertical axis and is the only thing that puts odd notes on the left; MIRROR BOTTOM reflects the bottom ring. A record with one stored mirror reads as both."
+
+**19 / ledger**: D13 marked superseded by D13'; A20 by A20'.
+
+**Mutant forecasts**: every absolute count in the lane blocks is stale (main is at 706). Read each forecast as its delta only.
+
+#### Where the code changes (anchors, not lines)
+
+| Place | Change | Lane |
+|---|---|---|
+| `src/engine/core.js` option reader (the `options.mirror !== undefined` block) | whitelist `mirrorBottom`, boolean or `badNote`; leave it absent when not given. `DEFAULT_OPTIONS` and the reader's `out` literal are NOT given a `mirrorBottom` key | S2 |
+| `src/engine/layout.js` `placeZones(counts, mirror)` and `solve`'s `var mirror =` line | new `resolveMirrors`; `placeZones(counts, top, bottom)`; `rims` and `inners` use top, `bottoms` uses bottom | S2 |
+| `src/engine/select.js` `build` (the `var mirror =` line, the `solve` call, the `options:` literal) | call `resolveMirrors`, pass both to `solve`, write both onto `deck.options` | S2 |
+| `tools/gen_deck.js` option loop | `--mirror-top`, `--mirror-bottom`; `--mirror` sets both | S2 |
+| `src/engine/share.js` `optionsLine` and `readOptionsLine` | AM-2. The reader takes the version: `t`/`b` return null below 3; any other character returns null at every version. The writer maps (top, bottom) with bottom defaulting to top | S3 |
+| `index.html` `resetSheetState`, `sheetOptions`, stored record `o`, and BOTH app calls of `layout().solve(..., { mirror: ..., order: ... })` (`solvePreviewLayout` and the one in `generateDeck`) | carry `mirrorBottom` from the edited record, store it, pass it to both calls; no control (AM-8) | S3 |
+| `index.html` the mirror button and handler | two switches driving the two values S3 already carries | W1 |
+| `index.html` drawer | both switches moved in; status rows 14 and 21 | DR1 |
+| README, `docs/ENGINE-SPEC.md` mirror rows | rewritten | docs lane |
+
+#### Tests added (red first), by lane
+
+**S2**
+1. `tests/layout.test.js` "mirrorBottom reflects the bottom ring and nothing else": Pygmy counts, `{mirror:false, mirrorBottom:true}`; rim and inner angles equal the unmirrored run; each bottom angle is `180 - a` normalised.
+2. "mirror with mirrorBottom false reflects rim and inner and leaves the bottom ring".
+3. "an absent mirrorBottom takes the value of mirror": `{mirror:true}` equals `{mirror:true, mirrorBottom:true}` field for field, and equals today's `{mirror:true}` golden angles.
+4. "the call's mirrorBottom beats the seed's, and the seed's beats the top value": three `solve` calls over a seed with `options.mirrorBottom` set.
+5. `tests/core.test.js` "mirrorBottom must be a boolean", and "a seed read without mirrorBottom has no mirrorBottom key".
+6. `tests/select.test.js` "build writes both mirrors onto deck.options; a seed with only mirror true gets mirrorBottom true".
+7. `tests/test_gen_deck.py`, on a pan with bottom notes: "--mirror-top alone reflects the top shell and not the bottom"; "--mirror-bottom alone reflects the bottom and not the top"; "--mirror equals both flags, in either order".
+
+**S3**
+8. `tests/share.test.js` "the mirror field round-trips all four states in version 3".
+9. "a version 2 link with mirror 1 decodes to both mirrors on".
+10. "t or b in a version 1 or 2 options line is refused", and "any other character in the mirror field is refused at version 3".
+11. "a seed with mirror true and no mirrorBottom writes 1".
+12. `tests/app.test.js` "a top-only deck opened in the editor, renamed and saved keeps mirrorBottom false" (AM-8).
+13. `tests/app.test.js` "a deck with unequal mirrors and a moved note generates cards with the bottom ring unreflected, and reloads the same" (the `generateDeck` call, which runs only when an arrangement exists).
+
+**W1, DR1**: spec section 21.3 lines 108 to 116, plus W1 "the preview redraws the bottom ring alone when MIRROR BOTTOM is tapped" (covers the two `solve` call sites).
+
+#### Mutants
+
+Regenerate `g_mirror_ignored` and `d_mirror_ignored` (both anchor on rewritten lines; the rewriting lane owns them). New: S2 +3 (bottom mirror ignored in `placeZones`; absent `mirrorBottom` resolves to false; call value does not beat the seed's), S3 +4 (`t` decoded as both; `t` accepted in version 2; editor drops `mirrorBottom` on save; `generateDeck` omits `mirrorBottom`), W1 +1 (bottom switch inert).
+
+#### Failure modes
+
+| Case | Result | Test | Seen by the user if it broke |
+|---|---|---|---|
+| Old record, `mirror: true`, has bottom notes | both on, drawn as today | 3, 6, spec line 112 | bottom ring flips on a saved pan |
+| Old share link, mirror `1` | both on | 9 | same, on a shared pan |
+| Top-only pan shared before version 3 exists | cannot happen: no screen makes one until W1, and W1 follows S3 (AM-6) | 11 | recipient sees the bottom ring flipped, no error |
+| New record top-only, opened by an OLDER app | version 3 record, `NEEDS_NEWER_APP`, left in storage (AM-7) | S3's existing version tests | none |
+| Pan with no bottom notes, bottom switch | disabled, stored false (AM-4) | spec 21.3 | none |
+| `mirrorBottom` given, `mirror` absent | top false, bottom as given | 4 | none |
+| Top-only link opened and re-saved in an S3 build, or in a cached S3 tab after W1 | bottom stays unreflected: S3 carries the value (AM-8) | 12 | bottom ring flips after a rename |
+| `generateDeck`'s `solve` call omits `mirrorBottom` | caught: preview right, cards wrong | 13 | cards disagree with the preview |
+| Split mirrors made by the CLI in an S2-only build | the CLI writes a deck file, not a link or a record; no app path makes split mirrors before S3 | none needed | none |
+
+No critical gap remains: each row has a test and none fails silently once AM-6 holds.
+
+#### Order
+
+This amendment is committed to the plan on Lane PF's branch with the other coordinator notes, so it is on main before S2 starts. Lane order after it: PF; then S2; then S3; then W1; then G2b (it needs W1, as the plan's dependency graph already says); P1, DR1, DR2 as before.
+
+#### Decision ledger (eng review, owner AFK: recommended option taken and recorded)
+
+| Id | Question | Taken | Why | Reversible |
+|---|---|---|---|---|
+| AD-AM-1 | Where does "absent takes mirror" live: core reader, solve, build, or all three? | One function in `layout.js` (AM-5) | `solve` already resolves `mirror` from two sources; a second default in the core reader would make the app's `{mirror: x}` calls disagree with stored seeds | yes |
+| AD-AM-2 | W1 beside S3, or after? | After (AM-6) | With W1 first, a top-only pan shares as `1` under version 2 and the recipient gets a flipped bottom ring with no error | yes |
+| AD-AM-3 | Share encoding: four values in one field, or a sixth field? | Four values (AM-2 stands) | Version 1 and 2 lines stay byte-identical and the name stays last and alone (D5-3) | yes, before S3 ships |
+| AD-AM-4 | AM-4: store `false`, or store the top value, on a pan with no bottom notes? | `false` (AM-4 stands) | Matches "both off by default" if bottom notes are added later; the drawing is the same either way | yes |
+| AD-AM-5 | Outside Voice (Codex) on this amendment? | Run, after the owner authorised it for AFK | 4 findings (1 P1, 3 P2), all accepted: AM-8, AM-9, test 13, G2b order | - |
+| AD-AM-6 | TODOS.md entry? | None | Nothing is deferred; every finding is folded into a lane | yes |
+
+#### Review output
+
+**Scope challenge.** Seven files across four lanes (S2 four, S3 one, W1 and DR1 `index.html`), no new module, one new function. Under the 8-file gate in every lane. Nothing existing is rebuilt: `mirrored(list, mirror)` is reused unchanged for both shells.
+
+**What already exists.** `mirrored()` and `placeZones()` in `layout.js`; the two-source resolution in `solve`; the boolean check in the core reader; the version gates in `share.js` `decode`; `d_mirror_ignored` and `g_mirror_ignored`.
+
+**Not in scope.** Inner-ring switch; converting old records; a new share field; `LAYOUT_HINT` wording; built-in deck data.
+
+**Findings folded in (draft 1 to draft 2).**
+1. Architecture: the default was specified in three places (core reader, solve, build). Now one function (AM-5).
+2. Architecture: W1 beside S3 allowed a silently wrong share link. Reordered (AM-6).
+3. Architecture: record and link version when the mirrors differ was implied, not stated (AM-7).
+4. Code quality: the code table missed the reader's `out` literal, the two app `solve` call sites, `sandbox.js` and the surface fixture.
+5. Code quality: `readOptionsLine` is commented "version-independent"; S3 makes it take the version, and the reader must refuse unknown characters at every version.
+6. Tests: no test for resolution precedence, for `select.build`, for the writer's `1` on a legacy seed, or for the preview call. Added 4, 6, 11 and the W1 preview test.
+7. Tests: W1's tests 6 and 7 and S2's item 7 named the single switch. Reworded.
+8. Docs: section 15 CLAUDE.md text and the 7.2 id table were not listed.
+9. Mutant forecasts were absolute and stale. Deltas only.
+
+**Coverage.**
+
+```
+resolveMirrors
+  call has mirror / not            -> tests 3, 4
+  call has mirrorBottom            -> test 4
+  seed has mirrorBottom            -> test 4
+  neither (falls to top)           -> test 3
+placeZones(top, bottom)
+  top only / bottom only / both    -> tests 1, 2, 3
+core reader: boolean, bad, absent  -> test 5
+select.build writes both           -> test 6
+gen_deck flags                     -> test 7
+share writer 0/1/t/b               -> tests 8, 11
+share reader v1, v2, v3, garbage   -> tests 9, 10
+sheet: two switches, stored, old   -> W1 6, 7, spec 108-116
+preview call sites                 -> W1 preview test
+drawer                             -> DR1, spec 21.3
+```
+
+No untested branch.
+
+**Performance.** None. One more boolean through an O(n) seat map.
+
+**Parallelization.** Sequential by AM-6: S2, then S3, then W1, then G2b, then DR1.
+
+**Implementation tasks.** T-AM1 (S2) `resolveMirrors`, `placeZones`, core whitelist, `build`, CLI, tests 1 to 7, three mutants, two regenerated. T-AM2 (S3) share writer and reader, tests 8 to 11, two mutants. T-AM3 (W1) two switches, both `solve` calls, new id in sandbox and fixture, one mutant. T-AM4 (DR1) both switches in the drawer. T-AM5 (docs) README, ENGINE-SPEC, CLAUDE.md text.
+
+### 20.6 Lane order from here
+
+PF; S2; S3; W1; G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last. Every absolute mutant count in a lane block is stale; read each forecast as its delta over main at the lane's base.
 
 ## NOT in scope
 
