@@ -4,7 +4,7 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -798,7 +798,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -801,7 +801,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                var candidate = pool[i];
                if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
                onward[prevChord].all.push(candidate);

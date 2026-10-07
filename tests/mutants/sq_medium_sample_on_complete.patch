@@ -4,7 +4,7 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -734,7 +734,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -736,7 +736,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        stats.nodes = nodes;
        stats.truncated = truncated;
      }

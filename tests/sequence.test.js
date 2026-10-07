@@ -2235,7 +2235,7 @@ test("every sampled sequence is a MEDIUM sequence", () => {
     const stats = {};
     const cells = I.mediumCells(deck, stats, undefined, S.mulberry32(7));
     assert.strictEqual(stats.truncated, true);
-    assert.ok(stats.sampled >= 4000, `${str}: only ${stats.sampled} distinct sequences sampled`);
+    assert.ok(stats.sampled >= 1500, `${str}: only ${stats.sampled} distinct sequences sampled`);
     let seen = 0;
     for (const cell of host(cells)) {
       for (const seq of cell.seqs) {

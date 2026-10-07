@@ -45,7 +45,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // can need hundreds of thousands. Running out is a supported outcome: the
   // fixed-order DFS prefix would open every length-4 deal on the same few
   // cards, so a truncated enumeration is replaced by a random-walk sample
-  // (sampleMedium), drawn from the caller's rng, under the same budget.
+  // (sampleMedium), drawn from the caller's rng, under a quarter of the
+  // budget: a pick is bounded at 50ms (tests/sequence.test.js), and about
+  // 2,000 distinct sequences already cover every start card.
   var MEDIUM_ENUM_BUDGET = 60000;
 
   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
@@ -765,7 +767,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // next card uniformly from the candidates the DFS would have expanded (not
   // the previous card, connected to it, no second colour card), closed and
   // classified exactly as the DFS leaf does. A node is a card placed, and
-  // the walks stop at the same `budget`. Each distinct sequence is filed
+  // the walks stop at a quarter of `budget`. Each distinct sequence is filed
   // once, through `file`; returns how many were. Draws from `rng`.
   function sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file) {
     var lengths = TIER_LENGTHS.intermediate;
@@ -774,6 +776,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var width = deck.chords.length;
     var filed = 0;
     var nodes = 0;
+    var walkBudget = Math.ceil(budget / 4);
     // One rng() call yields several draws: each pick keeps the fraction of u
     // it did not use, and a fresh value is fetched once fewer than 1024
     // distinct values per outcome would remain, so no index is off by more
@@ -781,7 +784,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var u = 0;
     var room = 0;
     if (!startSet.length) return 0;
-    while (nodes < budget) {
+    while (nodes < walkBudget) {
       var length = 0;
       var walk = [];
       var colourUsed = false;
@@ -824,7 +827,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         walk.push(next);
         colourUsed = colourUsed || isColour[next];
         nodes += 1;
-      } while (walk.length < length && nodes < budget);
+      } while (walk.length < length && nodes < walkBudget);
       if (walk.length < length) continue;
       var key = length;
       for (var k = 0; k < length; k += 1) key = key * width + walk[k];
