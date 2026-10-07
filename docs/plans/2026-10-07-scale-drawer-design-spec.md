@@ -30,16 +30,18 @@ Closed name list. Lanes use these ids. The `app_surface_v1.json` fixture and `to
 | `scale-refusal` | the refusal line (unchanged id) | unchanged |
 | `scale-mirror` | MIRROR TOP, button, `.mode`, `aria-pressed` (kept id) | W1 (in place), DR1 (moves it in) |
 | `scale-mirror-bottom` | MIRROR BOTTOM, button, `.mode`, `aria-pressed` (new) | W1 (in place), DR1 (moves it in) |
-| `scale-layout-zone` | NEW wrapper around `#scale-plate-band`, `#scale-layout-row` and `#scale-drawer` | DR1 |
+| `scale-layout-zone` | NEW wrapper around `#scale-plate-band`, `#scale-layout-row`, `#scale-layout-state` and `#scale-drawer`, in that order. It is the parent of the notice | DR1 |
 | `scale-plate-band` | full-width wrapper holding `#scale-preview`, `#scale-drawer-status` and the ghost overlay. It is the sticky element while the drawer is open | DR1 |
 | `scale-preview` | the plate (unchanged id) | DR1 (moves it into the band), DR2 (interactive while the drawer is open) |
-| `scale-layout-row` | the row holding the toggle and the hint (kept id) | DR1 |
+| `scale-layout-row` | the row holding the toggle and the hint (kept id). DR1 gives the id a new meaning: today it holds the ROTATE and MOVE group, which moves into `#scale-legacy-group` | DR1 |
 | `scale-layout-toggle` | the ADJUST LAYOUT button | DR1 |
 | the close mark | a `span` with `aria-hidden="true"` inside the toggle, text U+00D7. It has no id. Find it as `#scale-layout-toggle > span[aria-hidden]` | DR1 |
 | `scale-layout-hint` | the closed-state hint | DR1 |
-| `scale-layout-state` | the unsaved or changed notice (section 4) | DR1 (anchor and mirrors), DR2 (seats) |
+| `scale-layout-state` | the unsaved or changed notice (section 4). A child of `#scale-layout-zone`, directly after `#scale-layout-row` and before `#scale-drawer`. In the landscape two-column layout it sits in the controls column under the toggle row | DR1 (anchor and mirrors), DR2 (seats) |
 | `scale-drawer` | the disclosure region, `role="group"` | DR1 |
 | `scale-drawer-hint` | the open-state instruction. Last in the drawer | DR1 (element), DR2 (text) |
+| `scale-legacy-group` | wrapper, inside `#scale-drawer`, of today's ROTATE, MOVE and RESET group with its `#scale-layout-label`. Present between DR1 and DR2 only; `hidden` on Add (section 17) | DR1 (wraps), DR2 (removes) |
+| `scale-legacy-hint` | the group's own short hint (today's ROTATE and MOVE sentence). The group's `aria-describedby` names it. It is not `#scale-layout-hint`, which is the toggle row's | DR1 (renames), DR2 (removes) |
 | `scale-note-prev`, `scale-note-next` | PREVIOUS NOTE, NEXT NOTE | DR2 |
 | `scale-seat-prev`, `scale-seat-next` | PREVIOUS SEAT, NEXT SEAT | DR2 |
 | `scale-layout-reset` | RESET SEATS (kept id) | DR2 (relabels, moves in, wires) |
@@ -47,7 +49,7 @@ Closed name list. Lanes use these ids. The `app_surface_v1.json` fixture and `to
 | `scale-anchor-one`, `scale-anchor-between` | the two anchor buttons | DR1 |
 | `scale-drawer-status` | the one live line for every drawer announcement, inside the band | DR1 (renders, writes rows 13, 14, 18, 18b, 19, 21), DR2 (writes the rest) |
 
-Gone: `scale-mirror-l` and `scale-mirror-r` (W1 removes them). `scale-rot-l`, `scale-rot-r`, `scale-move-l`, `scale-move-r` and today's LAYOUT group with its `#scale-layout-label` (DR2 removes them, in the same change that adds the SEAT, NOTE and RESET SEATS controls; DR1 leaves them live).
+Gone: `scale-mirror-l` and `scale-mirror-r` (W1 removes them). `scale-rot-l`, `scale-rot-r`, `scale-move-l`, `scale-move-r` and today's LAYOUT group with its `#scale-layout-label` and `#scale-legacy-hint` (DR2 removes them, in place, in the same change that adds the SEAT, NOTE and RESET SEATS controls; DR1 leaves them live inside the drawer, section 17).
 
 Colours the new rules use (`#E27005`, `rgba(226,112,5,.22)`, `#e3b25c`, `#272219`, `#f1ece1`) are declared once as custom properties on `#scale-sheet`. Every new rule, the interactive SVG layer included, reads them from there. Values are unchanged and no existing rule is touched [F 9].
 
@@ -71,13 +73,13 @@ Colours the new rules use (`#E27005`, `rgba(226,112,5,.22)`, `#e3b25c`, `#272219
 
 **Name.** The toggle's text is `ADJUST LAYOUT`, the name `LAYOUT_HINT` uses, and it carries `aria-label="Adjust layout"`. The text is the same whether the drawer is open or closed. The open state is shown by `aria-expanded="true"` and `.mode.on`, not by a different label [OD 6]. While the drawer is open, the label is followed inside the same button by the close mark, a `span` with `aria-hidden="true"` holding U+00D7, 8 px to the right of the text. The mark is not displayed while the drawer is closed. It is not a second control: there is one button, one Tab stop, one 44 px target, and a tap anywhere on it closes the drawer [MC 1].
 
-**Form.** An inline disclosure, `#scale-drawer`, in `#scale-layout-zone` under the toggle row. No overlay, no focus trap of its own, no scrim. The sheet's existing Tab trap and aria-modal dialog stay the only trap [OD 5].
+**Form.** An inline disclosure, `#scale-drawer`, in `#scale-layout-zone` under the toggle row. No overlay, no focus trap of its own, no scrim. The sheet's existing Tab trap and aria-modal dialog stay the only trap [OD 5]. In the DR1 build the drawer also holds today's ROTATE, MOVE and RESET group, on Edit only (section 17).
 
 **Where the toggle is.** In `#scale-layout-row`, under the plate: the toggle (auto width, `.mode`, left aligned), then `#scale-layout-hint`. The row is present on Add and on Edit. It is never `hidden`, so the sheet height does not jump when the scale becomes valid.
 
-**Offered before the box parses?** The toggle is shown always. It is `disabled` (opacity .5, as `#scale-generate:disabled`) while the box is empty or does not parse and the drawer is closed. It is enabled whenever the box parses, and whenever the drawer is open (so an open drawer can always be closed). Reason: an arrangement of a placeholder example nobody typed would be thrown away on the first keystroke. While the toggle is disabled, `#scale-layout-hint` reads `Type a scale to adjust its layout.` and is dimmed with the button. When the scale parses it reads the `LAYOUT_HINT` text of plan section 9. `LAYOUT_HINT` is used only there. The message after GENERATE keeps its own text: `{n} cards generated` or `Updated {name}`, then the warnings. It does not append `LAYOUT_HINT`.
+**Offered before the box parses?** The toggle is shown always. It is `disabled` (opacity .5, as `#scale-generate:disabled`) while the box is empty or does not parse and the drawer is closed. It is enabled whenever the box parses, and whenever the drawer is open (so an open drawer can always be closed). Reason: an arrangement of a placeholder example nobody typed would be thrown away on the first keystroke. While the toggle is disabled, `#scale-layout-hint` reads `Type a scale to adjust its layout.` and is dimmed with the button. When the scale parses it reads the `LAYOUT_HINT` text of plan section 9 in the DR2 build. In the DR1 build it reads `Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.`, because `LAYOUT_HINT` says a note can be moved from the drawer and the drawer's new controls move no note until DR2 (section 17). DR2 replaces that sentence with `LAYOUT_HINT`. `LAYOUT_HINT` is used only there. The message after GENERATE keeps its own text: `{n} cards generated` or `Updated {name}`, then the warnings. It does not append `LAYOUT_HINT`. Owner decision, 2026-10-07 [OD 10]: G2b removes that append before DR1 adds the hint beside the toggle, so between G2b and DR1 `LAYOUT_HINT` is shown nowhere. The gap is accepted.
 
-**The notice.** `#scale-layout-state` sits directly under the toggle row, drawer open or closed. It compares the current layout with the layout the sheet last kept: the stored deck on Edit, the default on Add. The layout is the three seat arrangements, the anchor, MIRROR TOP and MIRROR BOTTOM. MIRROR BOTTOM is left out of the comparison while the pan has no bottom notes. The comparison is by value, so swapping two notes and swapping them back hides the notice. A stored deck with no `mirrorBottom` key reads as `mirror` [AD-MC 3]. [RD 4]
+**The notice.** `#scale-layout-state` sits directly under the toggle row, drawer open or closed. It compares the current layout with the layout the sheet last kept: the stored deck on Edit, the default on Add. The layout is the three seat arrangements, the anchor, MIRROR TOP and MIRROR BOTTOM. MIRROR BOTTOM is left out of the comparison while the pan has no bottom notes. The comparison is by value, so swapping two notes and swapping them back returns the notice to what it was before the first swap: hidden when the layout the sheet last kept is the default, and `Layout changed from the default.` on Edit of a stored deck whose layout is not. A stored deck with no `mirrorBottom` key reads as `mirror` [AD-MC 3]. [RD 4]
 
 - The layout differs from what was last kept: `Layout not saved yet. {BUTTON} keeps it.` {BUTTON} is the text of the sheet's primary button: `GENERATE CARDS` on Add, `SAVE CHANGES` on Edit.
 - On Edit, the layout equals the stored deck and that deck's layout is not the default: `Layout changed from the default.`
@@ -95,15 +97,15 @@ BACK and closing the sheet still discard without asking. Showing MIRROR BOTTOM u
 
 **Close.** Any of: the toggle again; Escape with nothing picked; BACK; closing or saving the sheet. On close:
 - The hit layer is removed, any pick is cancelled without change, the status line is cleared and the band is no longer sticky.
-- Focus. If focus was inside `#scale-layout-zone`, it goes to `#scale-layout-toggle` when the box parses, and to `#scale-box` when the box is empty or does not parse (the toggle is about to disable, and a focused control that disables drops focus to the page body, outside the Tab trap). If focus was elsewhere (the field, the deck name, the degrees select), it stays where it is. When the sheet itself is closing, `hideSheet()` returns focus to the opener.
+- Focus. If focus was inside `#scale-layout-zone`, it goes to `#scale-layout-toggle` when the box parses, and to `#scale-box` when the box is empty or does not parse (the toggle is about to disable, and a focused control that disables drops focus to the page body, outside the Tab trap). If focus was elsewhere (the field, the deck name, the degrees select), it stays where it is. This includes the legacy group's buttons in the DR1 build. When the sheet itself is closing, `hideSheet()` returns focus to the opener.
 
-**General focus rule.** No control becomes `disabled`, hidden or removed while it holds focus unless the focus it needs has first been moved to the fallback the state table (section 16) names for that control.
+**General focus rule.** No control that the drawer lanes build or move becomes `disabled`, hidden or removed while it holds focus unless the focus it needs has first been moved to the fallback the state table (section 16) names for that control. The sheet's primary button is not one of those controls: after a refused save it stays disabled as shipped, and no lane changes that (the "refused seed" row of 16.1).
 
-**Escape ladder.** One level per press: a picked note is put down; else the drawer closes; else the sheet closes. It is handled once, on `#scale-sheet`, wherever focus is inside the sheet, the field and the palette included. The plate and every drawer control stop propagation of Escape when they consume it [F 2].
+**Escape ladder.** One level per press: a picked note is put down; else the drawer closes; else the sheet closes. It is handled once, on `#scale-sheet`, wherever focus is inside the sheet, the field and the palette included. The plate and every drawer control stop propagation of Escape when they consume it [F 2]. The legacy group's buttons of the DR1 build consume nothing, so Escape from one of them closes the drawer. Nothing can be picked in the DR1 build (today's selection of a note on the plate is not a pick), so the ladder's first rung does not exist until DR2.
 
-**Opening state.** The drawer is closed every time the sheet opens, Add or Edit (`resetSheetState`). An Edit deck whose stored layout is not the default opens with the drawer closed and the notice reading `Layout changed from the default.` (Bitter 12 px, `#c4bcab`). The ring memory of section 14 starts from the arrangements the sheet opened with.
+**Opening state.** The drawer is closed every time the sheet opens, Add or Edit (`resetSheetState`). An Edit deck whose stored layout is not the default opens with the drawer closed and the notice reading `Layout changed from the default.` (a deck whose only non-default is a stored seat order: from DR2) (Bitter 12 px, `#c4bcab`). The ring memory of section 14 starts from the arrangements the sheet opened with.
 
-**Focus order** (the sheet's Tab list). BACK; Edit: deck name; the scale field; the plate, as one stop, only while the drawer is open and the box parses; the toggle; while open: PREVIOUS NOTE, NEXT NOTE, PREVIOUS SEAT, NEXT SEAT, MIRROR TOP, MIRROR BOTTOM, RESET SEATS, ON CENTRE, BESIDE CENTRE; Edit: degrees; palette swatches; GENERATE CARDS or SAVE CHANGES; Edit: DELETE. Disabled controls are not stops (existing `isStop`). The plate comes before the toggle because it is above it.
+**Focus order** (the sheet's Tab list). BACK; Edit: deck name; the scale field; the plate, as one stop, only while the drawer is open and the box parses (DR1 build: on Edit the plate keeps today's tab stop, `tabindex="0"`, wherever the drawer is); the toggle; while open (DR1 build, Edit only: ROTATE back, ROTATE on, MOVE back, MOVE on, RESET, in the place the four step buttons take in DR2); while open: PREVIOUS NOTE, NEXT NOTE, PREVIOUS SEAT, NEXT SEAT, MIRROR TOP, MIRROR BOTTOM, RESET SEATS, ON CENTRE, BESIDE CENTRE; Edit: degrees; palette swatches; GENERATE CARDS or SAVE CHANGES; Edit: DELETE. Disabled controls are not stops (existing `isStop`). The plate comes before the toggle because it is above it.
 
 ## 5. Layout while the drawer is open
 
@@ -135,15 +137,17 @@ While the drawer is open `.sheetbody` carries `scroll-padding-top` equal to the 
 |  |         the pan, 300 px        |  |   plain image, no targets
 |  +--------------------------------+  |
 | [ ADJUST LAYOUT ]                    |
-| Layout not saved yet. GENERATE ...   |   #scale-layout-state, only if due
 | Layout is a guess. Open ADJUST       |   #scale-layout-hint
 | LAYOUT to move a note, ...           |
+| Layout not saved yet. GENERATE ...   |   #scale-layout-state, only if due
 | Crowded pan: the smallest labels ... |   #scale-msg (warn), only if due
 | palette dots              (Edit: ...)|
 |--------------------------------------|
 | [          GENERATE CARDS           ]|   pinned
 +--------------------------------------+
 ```
+
+The wireframe is the DR2 build. In the DR1 build the hint reads the DR1-era sentence of section 4, not `LAYOUT_HINT`.
 
 ### 5.2 Wireframe: 380 px portrait, open (the body scrolled)
 
@@ -174,6 +178,8 @@ While the drawer is open `.sheetbody` carries `scroll-padding-top` equal to the 
 +--------------------------------------+
 ```
 
+The wireframe is the DR2 build. In the DR1 build the two step rows and RESET SEATS are today's ROTATE, MOVE and RESET group (Edit only, absent on Add), in the same place.
+
 ### 5.3 Wireframe: desktop (sheet 520 to 680 px wide, plate 340 px)
 
 ```
@@ -201,7 +207,7 @@ The two-column layout applies only under `(max-height: 520px) and (min-width: 56
 
 Closed: as today, the plate is 120 px, the toggle row under it.
 
-Open: `#scale-layout-zone` becomes a two-column grid. The band is the left column, and the plate is square at `width: clamp(150px, calc(100dvh - 170px), 232px)`, which is 220 px at 390 px tall (computed). The status line sits under the plate inside the band. Controls are the right column and scroll.
+Open: `#scale-layout-zone` becomes a two-column grid. The band is the left column, and the plate is square at `width: clamp(150px, calc(100dvh - 170px), 232px)`, which is 220 px at 390 px tall (computed). The status line sits under the plate inside the band. Controls are the right column and scroll. `#scale-layout-state` is in that column, directly under the toggle row.
 
 ```
 +----------------------------------------------------------------+
@@ -225,14 +231,14 @@ Landscape spacing uses the existing `max-height:520px` ramp (`--sp-1:3px ... --s
 
 **Ring.** A note moves only within its own ring (rim, inner, bottom). The ding has no seat and is not a target and not a source. A ring of one note cannot be picked.
 
-**Seat order.** A ring's seats are numbered in the ring's own permutation order (rim seat 1 is where default note 1 sits; with the anchor and mirror applied that is wherever the solver put it). Keyboard seat-by-seat movement walks seat numbers 1 to k and wraps from k to 1 and back, because a ring is a circle. Seat numbers follow the zig-zag, not geometry, and every announcement adds a plain place word so that a listener is not asked to picture the zig-zag.
+**Seat order.** A ring's seats are numbered in the ring's own permutation order (rim seat 1 is where default note 1 sits; with the anchor and mirror applied that is wherever the solver put it). Wherever this spec orders the notes of one ring (the arrow keys and Home and End with nothing picked, NEXT NOTE and PREVIOUS NOTE, "the first note of a ring"), the order is seat number, so it follows the swaps already made. Keyboard seat-by-seat movement walks seat numbers 1 to k and wraps from k to 1 and back, because a ring is a circle. Seat numbers follow the zig-zag, not geometry, and every announcement adds a plain place word so that a listener is not asked to picture the zig-zag.
 
 **Place words.** From the seat's actual angle (0 right, 90 up, 270 bottom), 45 degree sectors: right (337.5 to 22.5), upper right, top (67.5 to 112.5), upper left, left (157.5 to 202.5), lower left, bottom (247.5 to 292.5), lower right. The word reflects the drawn position, so it is correct under either mirror switch and under either anchor.
 
 **Selection, focus and tab-entry are three different things.**
 - Selection is the picked note, shown by `aria-pressed="true"` on its `.panhit`. Exactly one note can be picked.
 - Focus is the note the arrow keys last moved to. It holds the one `tabindex="0"` while focus is inside the plate [RD 8]. With A picked and the arrows moved to B, B has focus and `tabindex="0"`, and A stays pressed.
-- The tab-entry target applies when focus is outside the plate. It is the picked note if there is one, else the note that last had focus, else the first pickable note. When focus leaves the plate, `tabindex="0"` moves to the tab-entry target.
+- The tab-entry target applies when focus is outside the plate. It is the picked note if there is one, else the note that last had focus (if that note is gone, the first pickable note, or the first note of the pan when no ring has two notes, as at open). When focus leaves the plate, `tabindex="0"` moves to the tab-entry target.
 
 **Picked.** Picked means: the orange selection ring (`.pansel`), same-ring seats get dashed rings, other rings are veiled, and the step buttons act on it. Picking never moves focus away from the plate.
 
@@ -252,7 +258,7 @@ Landscape spacing uses the existing `max-height:520px` ramp (`--sp-1:3px ... --s
 | NEXT SEAT, PREVIOUS SEAT | disabled | swap with the occupant of the adjacent seat; the note stays picked |
 | Escape | closes the drawer | ends the pick |
 
-A ring of one note cannot be picked by any gesture above. The attempt writes row 2.
+A ring of one note cannot be picked by any gesture above. With nothing picked the attempt writes row 2. A tap on its note while another note is picked is the refused tap of section 8 and writes row 10.
 
 ## 7. Pointer drag on touch, without scrolling the page
 
@@ -302,6 +308,8 @@ All are `.mode` buttons at 44 px (existing rule), in `.ctlrow` and `.mirror` fle
 6. the `NOTE 1` label, the anchor pair and its helper;
 7. `#scale-drawer-hint`, last.
 
+In the DR1 build items 2 and 3 are today's ROTATE, MOVE and RESET group (Edit only), and DR2 replaces it in place with items 2, 3 and 5.
+
 **Step controls: NOTE chooses, SEAT moves.** With them every swap is reachable through 44 px buttons alone [OD 1] [RD 5].
 
 - `#scale-note-prev` (`PREVIOUS NOTE`) and `#scale-note-next` (`NEXT NOTE`) are equal `.mode` buttons. They move the pick, not a note. NEXT NOTE picks the next pickable note in the order rim, inner, bottom by seat number, wrapping from the last to the first. With nothing picked it picks the first pickable note, and PREVIOUS NOTE picks the last. Rings of one note and the ding are skipped. They never change the arrangement and never move focus. They write row 20.
@@ -319,7 +327,8 @@ One helper under the pair: `Each flips left and right. Top covers the rim and th
 
 - A deck saved with the old single `mirror: true` opens with both switches pressed. A reader that finds no `mirrorBottom` takes the value of `mirror` for it.
 - On a pan with no bottom notes, MIRROR BOTTOM is disabled and shown unpressed, whatever is stored. It stores false. Nothing is rewritten on open. When the sheet's primary button next saves that pan, `mirrorBottom` is written as off [AD-MC 1].
-- When bottom notes return in the same sheet session, MIRROR BOTTOM is enabled and takes MIRROR TOP's value.
+- When a bottom note is added to a pan that has none, MIRROR BOTTOM becomes enabled and stays off, whatever MIRROR TOP says. It does not take MIRROR TOP's value. This matches plan AM-4 (it stored false, so both are off by default if bottom notes are added later) [OD 7]. The same holds when the last bottom note is deleted and one is typed again in the same sheet session: the count reaching 0 stored false, so the switch is enabled and off. A player who wants the bottom reflected presses it.
+- A deck saved with the old single `mirror: true` and bottom notes still opens with both switches pressed (the first bullet of this list). That is a stored value, not an added note.
 - While the box is empty or does not parse, both switches keep their values and are disabled (section 16).
 - In W1 they sit where the old pair sat. DR1 moves them into the drawer, same ids, same handlers.
 
@@ -362,7 +371,7 @@ The 44 px assertion of acceptance line 58 (a required outcome) is hard only whil
 
 ## 11. Keyboard map and announcements
 
-**Roving focus [RD 8].** The plate is not itself focusable. `#scale-preview` (open) is `role="group"` with `aria-label` `Pan layout: {a} rim, {b} inner, {c} bottom notes.` Its `.panhit` elements are the focus targets, with a roving `tabindex`: exactly one has `tabindex="0"` and the rest `-1`, so the plate is one Tab stop. Each is `role="button"`, with `aria-pressed="true"` on the picked note and `"false"` on the others, no `aria-selected`, and the accessible name `{n}, {ring} seat {s} of {k}, {place}`. There is no separate cursor: the cursor is the focused note. After every repaint the roving `tabindex` and, when focus was on a note, real focus are restored to the `.panhit` with the same `data-field`.
+**Roving focus [RD 8].** The plate is not itself focusable. `#scale-preview` (open) is `role="group"` with `aria-label` `Pan layout: {a} rim, {b} inner, {c} bottom notes.` Its `.panhit` elements are the focus targets, with a roving `tabindex`: exactly one has `tabindex="0"` and the rest `-1`, so the plate is one Tab stop. Each is `role="button"`, with `aria-pressed="true"` on the picked note and `"false"` on the others, no `aria-selected`, and the accessible name `{n}, {ring} seat {s} of {k}, {place}`. There is no separate cursor: the cursor is the focused note. After every repaint the roving `tabindex` and, when focus was on a note, real focus are restored to the `.panhit` with the same `data-field`. The exception is a committed swap by tap, drop, Space or Enter: focus goes to the note that was picked, at its new seat (section 16.3).
 
 | Key (focus on a note) | Nothing picked | A note picked |
 |---|---|---|
@@ -380,7 +389,7 @@ A focus move never changes the arrangement. Only a commit does, and a commit is 
 | # | When | Text |
 |---|---|---|
 | 1 | (retired; the focused note's own name is read instead) | |
-| 2 | a pick is attempted on a ring of one note (tap, hold, Space, Enter, drag start). An arrow key that focuses such a note never writes it | `{n} is the only note in the {ring}, so it has no other seat.` |
+| 2 | with nothing picked, a pick is attempted on a ring of one note (tap, hold, Space, Enter, drag start). An arrow key that focuses such a note never writes it. A tap on it while another note is picked writes row 10 | `{n} is the only note in the {ring}, so it has no other seat.` |
 | 3 | pick up by keyboard | `Picked up {n}. Arrows choose a seat in the {ring}. Space swaps. Escape cancels.` |
 | 4 | pick up by tap, hold or drag | `Picked up {n}. Tap or drop it on another {ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.` |
 | 5 | (retired) | |
@@ -463,7 +472,7 @@ Arrangements are keyed by the ring's note index, so editing a pitch without chan
 - A ring that empties to 0 or 1 note has nothing to arrange. Its memory is kept. A ring that appears (inner goes from 0 to 3) at a count it has not had starts at the default.
 - Counts are compared per ring, so adding a bottom note leaves rim and inner untouched.
 - An invalid parse changes nothing (section 13). A valid parse after it compares with the last valid parse.
-- With the drawer closed the same rules apply to the stored layout and nothing is announced. Rows 15, 16 and 17 are written only while the drawer is open.
+- With the drawer closed the same rules apply to the arrangements the sheet holds and nothing is announced. Rows 15, 16 and 17 are written only while the drawer is open.
 - One edit that changes several rings writes one message: the row 15 or 16 sentences joined by a space in the order rim, inner, bottom, then the row 17 sentence once if the pick ended [F 1]. When the same parse ends a pause, the message begins with row 18b.
 
 ## 15. Reduced motion
@@ -496,14 +505,14 @@ This section is the one table of when each control is enabled, visible and press
 | the close mark | both | any | closed | any | not displayed | not a control | no | none | not a control |
 | `#scale-layout-state` | Add | any | any | any | if the layout differs from the default | not a control | no | `Layout not saved yet. GENERATE CARDS keeps it.` | not a control |
 | `#scale-layout-state` | Edit | any | any | any | if the layout differs from the stored deck | not a control | no | `Layout not saved yet. SAVE CHANGES keeps it.` | not a control |
-| `#scale-layout-state` | Edit | any | any | any | if the layout equals the stored deck and the stored layout is not the default | not a control | no | `Layout changed from the default.` | not a control |
-| `#scale-layout-hint` | both | valid | closed | any | yes | not a control | no | the `LAYOUT_HINT` text | not a control |
+| `#scale-layout-state` | Edit | any | any | any | if the layout equals the stored deck and the stored layout is not the default (a stored layout whose only non-default is a seat order counts from DR2) | not a control | no | `Layout changed from the default.` | not a control |
+| `#scale-layout-hint` | both | valid | closed | any | yes | not a control | no | the `LAYOUT_HINT` text (DR2 build; the DR1 build shows the DR1-era sentence of section 4) | not a control |
 | `#scale-layout-hint` | both | empty or invalid | closed | any | yes, dimmed | not a control | no | `Type a scale to adjust its layout.` | not a control |
 | `#scale-layout-hint` | both | any | open | any | no | not a control | no | none | not a control |
 | `#scale-drawer`, `#scale-drawer-hint` | both | any | open | any | yes | not a control | no | section 9 | not a control |
 | `#scale-drawer`, `#scale-drawer-hint` | both | any | closed | any | no | not a control | no | none | not a control |
-| `#scale-plate-band` | both | any | open, no form control outside the zone focused | any | yes | not a control | no | sticky | not a control |
-| `#scale-plate-band` | both | any | open, a form control outside the zone focused | any | yes | not a control | no | static | not a control |
+| `#scale-plate-band` | both | any | open, no form control or swatch outside the zone focused | any | yes | not a control | no | sticky | not a control |
+| `#scale-plate-band` | both | any | open, a form control or palette swatch outside the zone focused | any | yes | not a control | no | static | not a control |
 | `#scale-plate-band` | both | any | closed | any | yes | not a control | no | static | not a control |
 | `#scale-drawer-status` | both | any | open | any | yes | not a control | no | the last row written. Row 19 on open if due. Amber after a refusal | not a control |
 | `#scale-drawer-status` | both | any | closed | any | no | not a control | no | cleared | not a control |
@@ -519,39 +528,47 @@ This section is the one table of when each control is enabled, visible and press
 | PREVIOUS SEAT, NEXT SEAT | both | valid | open | none | yes | no | no | same | the note that was picked, when the pick ended with Escape, a tap, a drop or a key swap while focus was on a SEAT button. If the pick ended by a reset of its ring or by the scale ceasing to parse, `#scale-layout-toggle` |
 | PREVIOUS SEAT, NEXT SEAT | both | empty or invalid | open | none | yes | no | no | same | `#scale-layout-toggle` |
 | PREVIOUS SEAT, NEXT SEAT | both | any | closed | none | no | not applicable | no | none | the toggle, or `#scale-box` as for the toggle |
-| MIRROR TOP | both | valid | open | any | yes | yes | its value | MIRROR TOP | cannot |
+| MIRROR TOP | both | valid | open | any | yes | yes | its value | MIRROR TOP | does not disable while open. If the drawer closes: the toggle, or `#scale-box` as for the toggle |
 | MIRROR TOP | both | empty or invalid | open | none | yes | no | keeps its value | MIRROR TOP | `#scale-layout-toggle`. Cannot: the box is not being edited while this control is focused |
-| MIRROR TOP | both | any | closed | any | no | not applicable | keeps its value | none | not applicable |
-| MIRROR BOTTOM | both | valid, BOT at least 1 | open | any | yes | yes | its value | MIRROR BOTTOM | cannot |
+| MIRROR TOP | both | any | closed | any | no | not applicable | keeps its value | none | the toggle, or `#scale-box` as for the toggle |
+| MIRROR BOTTOM | both | valid, BOT at least 1 | open | any | yes | yes | its value, or off when a bottom note has just been added to a pan that had none | MIRROR BOTTOM | does not disable while open. If the drawer closes: the toggle, or `#scale-box` as for the toggle |
 | MIRROR BOTTOM | both | valid, BOT is 0 | open | any | yes | no | no. It stores false | MIRROR BOTTOM | MIRROR TOP. Cannot: BOT changes only from the field |
 | MIRROR BOTTOM | both | empty or invalid | open | none | yes | no | keeps its value | MIRROR BOTTOM | `#scale-layout-toggle` |
-| MIRROR BOTTOM | both | any | closed | any | no | not applicable | keeps its value | none | not applicable |
+| MIRROR BOTTOM | both | any | closed | any | no | not applicable | keeps its value | none | the toggle, or `#scale-box` as for the toggle |
 | RESET SEATS | both | valid | open | any | yes | yes if DIFF, else no | no | RESET SEATS | `#scale-layout-toggle`. Pressing it disables it, so focus goes there first. It also ends any pick |
 | RESET SEATS | both | empty or invalid | open | none | yes | no | no | RESET SEATS | `#scale-layout-toggle` |
-| RESET SEATS | both | any | closed | any | no | not applicable | no | none | not applicable |
-| ON CENTRE, BESIDE CENTRE | both | valid | open | any | yes | yes | exactly one pressed | ON CENTRE, BESIDE CENTRE | cannot |
+| RESET SEATS | both | any | closed | any | no | not applicable | no | none | the toggle, or `#scale-box` as for the toggle |
+| ON CENTRE, BESIDE CENTRE | both | valid | open | any | yes | yes | exactly one pressed | ON CENTRE, BESIDE CENTRE | does not disable while open. If the drawer closes: the toggle, or `#scale-box` as for the toggle |
 | ON CENTRE, BESIDE CENTRE | both | empty or invalid | open | none | yes | no | the same one stays pressed | same | `#scale-layout-toggle` |
-| ON CENTRE, BESIDE CENTRE | both | any | closed | any | no | not applicable | keeps its value | none | not applicable |
+| ON CENTRE, BESIDE CENTRE | both | any | closed | any | no | not applicable | keeps its value | none | the toggle, or `#scale-box` as for the toggle |
+| `#scale-legacy-group`, `#scale-legacy-hint`, `#scale-layout-label` (DR1 build only) | Edit | any | open | none | yes | not a control | no | today's text | not a control |
+| `#scale-legacy-group`, `#scale-legacy-hint`, `#scale-layout-label` (DR1 build only) | Edit | any | closed | none | no | not a control | no | none | not a control |
+| `#scale-legacy-group`, `#scale-legacy-hint`, `#scale-layout-label` (DR1 build only) | Add | any | any | none | no (`hidden`) | not a control | no | none | not a control |
+| ROTATE back, ROTATE on, MOVE back, MOVE on, RESET (`#scale-rot-l`, `#scale-rot-r`, `#scale-move-l`, `#scale-move-r`, `#scale-layout-reset`; DR1 build only) | Edit | valid | open | none | yes | yes | no | today's labels | does not disable. If the drawer closes: the toggle, or `#scale-box` as for the toggle |
+| the same five | Edit | empty or invalid | open (HELD) | none | yes | yes, as today: they are never disabled. Behaviour is exactly today's, and DR1 changes nothing about what a press does (today the buttons act on the stored deck's fields while the box does not parse, and RESET clears with no guard) | no | today's labels | does not disable. If the drawer closes: the toggle, or `#scale-box` as for the toggle |
+| the same five | Add | any | any | none | no (inside the `hidden` group) | not applicable | no | none | not applicable |
+| the same five | Edit | any | closed | none | no | not applicable | no | none | the toggle, or `#scale-box` as for the toggle |
 | `#scale-anchor-label`, helpers | both | any | open | any | yes | not a control | no | section 9 | not a control |
 | `#scale-parse` or `#scale-refusal` | both | valid | any | any | the count line | not a control | no | the count line (section 3) | not a control |
 | `#scale-parse` or `#scale-refusal` | both | invalid | any | any | the refusal | not a control | no | the refusal sentence | not a control |
 | `#scale-msg` | both | valid | any | any | if a warning is due | not a control | no | `SMALL_LABELS` or `NO_THIRDS`, `warn` | not a control |
 | GENERATE CARDS (Add), SAVE CHANGES (Edit) | both | valid | any | any | yes | yes | no | by sheet | cannot: the box is not being edited while it is focused |
 | GENERATE CARDS, SAVE CHANGES | both | empty or invalid | any | any | yes | no | no | by sheet | `#scale-box`. Cannot, as above |
+| GENERATE CARDS, SAVE CHANGES | both | valid, after `runGenerate()` refused the seed (a duplicate scale on Edit, or an engine reason) | any | any | yes | no. It stays disabled until the next input that parses | no | by sheet | shipped behaviour (`tests/app.test.js` "a refused seed stays disabled"). No lane changes it, so this row specifies no focus fallback: it is outside the general focus rule of section 4. The reason is in `#scale-refusal` |
 | `#scale-box` | both | any | any | any | yes | yes | no | the field | not applicable |
 
 ### 16.2 Special states
 
 | State | What each control does |
 |---|---|
-| A ring of one note | Its note has a `.panhit` and takes focus by arrow keys, which write nothing. A tap, hold, Space, Enter or a drag start on it writes row 2 and picks nothing. NEXT NOTE and PREVIOUS NOTE skip it. The SEAT buttons are disabled unless a pick exists in another ring. RESET SEATS ignores it. If every ring has at most one note: RINGS2 is 0, all four step buttons are disabled, row 19 is written on open, and anchor and both mirror switches still work. |
-| No bottom notes (BOT is 0) | MIRROR BOTTOM disabled, unpressed, stores false. The comparison for the notice leaves it out. When a bottom note appears, it is enabled and takes MIRROR TOP's value. When the last one goes, it is unpressed again. |
-| Stored non-default layout (Edit) | The drawer opens closed. The notice reads `Layout changed from the default.` RESET SEATS is enabled when the drawer is opened if some ring differs from the default. Anchor and both mirrors show the stored values. |
-| Old single `mirror: true` | With bottom notes: both switches pressed. Without: MIRROR TOP pressed, MIRROR BOTTOM disabled and unpressed. In both cases the stored layout is not the default and is unchanged, so on Edit the notice reads `Layout changed from the default.` and never the unsaved text. |
+| A ring of one note | Its note has a `.panhit` and takes focus by arrow keys, which write nothing. With nothing picked, a tap, hold, Space, Enter or a drag start on it writes row 2 and picks nothing. NEXT NOTE and PREVIOUS NOTE skip it. The SEAT buttons are disabled unless a pick exists in another ring. RESET SEATS ignores it. If every ring has at most one note: RINGS2 is 0, all four step buttons are disabled, row 19 is written on open, and the anchor and MIRROR TOP still work (MIRROR BOTTOM works when BOT is at least 1 and is disabled when BOT is 0, next row). With nothing picked, a tap, hold, Space, Enter or drag start on a ring of one note writes row 2. With a note of another ring picked, a tap on it writes row 10. |
+| No bottom notes (BOT is 0) | MIRROR BOTTOM disabled, unpressed, stores false. The comparison for the notice leaves it out. When a bottom note appears, it is enabled and off, and does not take MIRROR TOP's value [OD 7]. When the last one goes, it is unpressed again, so a bottom note typed later in the same sheet session finds it enabled and off. |
+| Stored non-default layout (Edit) | The drawer opens closed. The notice reads `Layout changed from the default.` when the stored anchor or mirrors are not the default (a deck whose only non-default is a stored seat order: from DR2). RESET SEATS is enabled when the drawer is opened if some ring differs from the default (DR2; in the DR1 build RESET is today's button). Anchor and both mirrors show the stored values. |
+| Old single `mirror: true` | With bottom notes: both switches pressed. Without: MIRROR TOP pressed, MIRROR BOTTOM disabled and unpressed. In both cases the stored layout is not the default and is unchanged. A bottom note typed later onto the pan without them leaves MIRROR BOTTOM enabled and off. On Edit the notice is whatever the comparison rule of section 4 gives. |
 | Ring count changed, drawer open | Section 14: row 15 or 16, row 17 if the pick ended, one message. The memory rule decides reset or restore. |
-| Ring count changed, drawer closed | The same reset and restore rules apply to the stored layout. Nothing is announced. The notice follows the comparison. Rows 15 to 17 are not written. |
-| The scale stops parsing, drawer open (HELD) | The first rows of 16.1 marked empty or invalid. The pick is put down. The plate is `.stale` and has no hit layer. Row 18 is written. Arrangements, anchor and both mirror values are held. |
-| The scale parses again | Each control is enabled or disabled by its own row. Row 18b is written. Held values are unchanged. |
+| Ring count changed, drawer closed | The same reset and restore rules apply to the arrangements the sheet holds. Nothing is announced. The notice follows the comparison. Rows 15 to 17 are not written. |
+| The scale stops parsing, drawer open (HELD) | The first rows of 16.1 marked empty or invalid. The pick is put down. The plate is `.stale` and has no hit layer. Row 18 is written. Arrangements (from DR2; in the DR1 build the old buttons behave as today), anchor and both mirror values are held. |
+| The scale parses again | Each control is enabled or disabled by its own row. Row 18b is written. Held values are unchanged, unless the parse changes whether the pan has bottom notes (section 9): then MIRROR BOTTOM is enabled and off if the pan now has bottom notes, and disabled and unpressed if it now has none. |
 
 ### 16.3 What an event does to pick, focus and status
 
@@ -563,7 +580,7 @@ This section is the one table of when each control is enabled, visible and press
 | Escape | ends | if it was on a SEAT button: the note that was picked. Otherwise unchanged | row 9, or row 9b after a SEAT step swap |
 | anchor or a mirror switch changed | kept (same ring index). Place words refresh | stays on the control | row 13, 14 or 21 |
 | a pitch edited, counts unchanged | kept. Names refresh | unchanged | none |
-| the picked note's ring count changed to a new one | ends | if on a note: the first pickable note | row 17 |
+| the picked note's ring count changed (to a new count, row 15, or back to a remembered one, row 16) | ends | if on a note: the first pickable note | row 17 |
 | RESET SEATS | ends | `#scale-layout-toggle` (the button has just disabled itself) | row 12 |
 | the scale stops parsing | ends | if inside the plate: `#scale-layout-toggle` | row 18 |
 | the drawer closes | ends | section 4 | cleared |
@@ -571,11 +588,13 @@ This section is the one table of when each control is enabled, visible and press
 
 ## 17. Ownership: DR1 against DR2
 
-DR1 keeps today's ROTATE and MOVE controls and today's `previewBox` keydown handler live. It does not render the SEAT, NOTE or RESET SEATS controls. DR2 adds those and removes the old ones in the same change. An Edit deck with stored seats can therefore be rearranged and reset between DR1 and DR2 exactly as today. DR1 writes only the status rows that need no pick: 13, 14, 18, 18b, 19 and 21.
+DR1 keeps today's ROTATE, MOVE and RESET controls and today's `previewBox` keydown handler live. It does not render the SEAT, NOTE or RESET SEATS controls. DR2 adds those and removes the old ones in the same change. An Edit deck with stored seats can therefore be rearranged and reset between DR1 and DR2 as today, with one owner-decided change of place [OD 9]: the group now lives inside the drawer, so it is reachable only while the drawer is open.
+
+**The old group between DR1 and DR2** (owner decision, 2026-10-07 [OD 9]). DR1 moves today's ROTATE, MOVE and RESET group out of `#scale-layout-row` and into `#scale-legacy-group`, inside `#scale-drawer`, which is inside `#scale-layout-zone`. It is therefore part of the zone for every rule that names the zone: focus returns to the toggle when the drawer closes with focus on one of its buttons, and Escape closes the drawer from them like from any drawer control (section 4). The group has its own short hint, `#scale-legacy-hint` (today's ROTATE and MOVE sentence under the id the toggle row now takes), and the group's `aria-describedby`, on the group wrapper, names `#scale-legacy-hint`, which sits inside `#scale-legacy-group`. The group is Edit only. `#scale-layout-row` is never `hidden` (it holds the toggle), so the gate is on the wrapper: the code that un-hides the Edit-only rows when the sheet opens (the loop over the name row, the degrees row, the layout row and the delete row in the sheet-mode code) un-hides `#scale-legacy-group` in place of `#scale-layout-row`, and it stays `hidden` on Add. On Add the build therefore has no ROTATE, MOVE or RESET anywhere, as today. The group sits in the drawer where the NOTE, SEAT rows and RESET SEATS will be (section 9), and DR2 replaces it in place with the new controls. The group's buttons and state are listed in 16.1. The group does not raise the notice (the row below). DR1 writes only the status rows that need no pick: 13, 14, 18, 18b, 19 and 21.
 
 | Control or status row | Renders | Works | Between DR1 and DR2 |
 |---|---|---|---|
-| `#scale-layout-toggle`, close mark, `#scale-layout-row`, `#scale-layout-hint` | DR1 | DR1 | complete |
+| `#scale-layout-toggle`, close mark, `#scale-layout-row`, `#scale-layout-hint` | DR1 | DR1 | complete. The hint carries the DR1-era sentence of section 4, not `LAYOUT_HINT`; DR2 swaps in `LAYOUT_HINT` |
 | `#scale-layout-zone`, `#scale-plate-band` | DR1 | DR1 | complete. The plate moves into the band. The plate keeps today's behaviour: interactive on Edit only, with today's tab stop and arrow keys |
 | `#scale-drawer` | DR1 | DR1 | complete |
 | `#scale-drawer-hint` | DR1 (element, empty and hidden) | DR2 (text and shown) | hidden |
@@ -586,12 +605,12 @@ DR1 keeps today's ROTATE and MOVE controls and today's `previewBox` keydown hand
 | `#scale-drawer-status`, rows 2 to 4, 7 to 12, 15 to 17, 20 | DR2 | DR2 | nothing is written |
 | PREVIOUS NOTE, NEXT NOTE | DR2 | DR2 | absent |
 | PREVIOUS SEAT, NEXT SEAT | DR2 | DR2 | absent |
-| `#scale-layout-reset` | today's button, as today | DR2 relabels it RESET SEATS, moves it into the drawer and wires the enabled rule | today's behaviour and label |
-| ROTATE, MOVE, today's LAYOUT group | today's | today's | live, Edit only |
+| `#scale-layout-reset` | today's button, inside `#scale-legacy-group` | DR2 relabels it RESET SEATS, moves it onto its own row and wires the enabled rule | today's behaviour and label |
+| `#scale-legacy-group`, `#scale-legacy-hint`, ROTATE, MOVE, today's LAYOUT label | DR1 (moves into the drawer, renames the hint id, gates the wrapper to Edit) | today's | live inside the drawer, Edit only, visible only while the drawer is open; `hidden` on Add |
 | The hit layer, the roving notes, the ghost, the marks, ring mode | DR2 | DR2 | absent. `paintPan` keeps today's re-key until DR2 changes it to "drawer open" |
 | Opening the drawer moves focus | DR2 | DR2 | focus stays on the toggle. DR1 asserts nothing about it |
 
-A DR1 acceptance line that needs a new note-moving control is tagged DR2.
+A DR1 acceptance line that needs a new note-moving control is tagged DR2. A DR1 line may name the old group only to say where it sits and that it is Edit only (lines 129 to 131); its own behaviour is today's and is covered by today's tests, which DR1 keeps green.
 
 ## 18. Decisions and the decision index
 
@@ -606,6 +625,13 @@ The six forks the first draft raised were put to the owner on 2026-10-07. All si
 5. `[OD 5]` Form: "Inline disclosure". Rejected: a docked panel over the lower half of the sheet.
 6. `[OD 6]` Name: "ADJUST LAYOUT", open or closed.
 
+Interview 8, the same day, decided four more:
+
+7. `[OD 7]` MIRROR BOTTOM when a bottom note is added to a pan that has none: it stays off. It becomes enabled and unpressed and does not take MIRROR TOP's value (plan AM-4). The same holds when the last bottom note is deleted and one is typed again in the same sheet session. A stored `mirror: true` deck with bottom notes still opens with both on. Rejected: taking MIRROR TOP's value.
+8. `[OD 8]` Opening focus is the first pickable note. Confirmed as merged.
+9. `[OD 9]` Between DR1 and DR2 today's ROTATE, MOVE and RESET group lives inside the drawer, Edit only, with its own hint element. Escape closes it with the drawer. DR2 replaces it in place. Rejected: leaving it in the toggle row.
+10. `[OD 10]` The layout hint gap is accepted: between G2b and DR1 `LAYOUT_HINT` is shown nowhere. The DR1 build must not claim that the drawer moves a note.
+
 ### 18.2 The index
 
 The ids stay citeable. The table states no rule of its own. The rule lives in the section named.
@@ -618,6 +644,10 @@ The ids stay citeable. The table states no rule of its own. The rule lives in th
 | OD 4 | remember arrangements per count in a sheet session | 14 |
 | OD 5 | inline disclosure | 4 |
 | OD 6 | the name is ADJUST LAYOUT open or closed | 4 |
+| OD 7 | MIRROR BOTTOM stays off when a bottom note is added | 9, 16.2 |
+| OD 8 | opening focus is the first pickable note | 4, 6 |
+| OD 9 | the old ROTATE, MOVE and RESET group lives in the drawer, Edit only, between DR1 and DR2 | 17, 16.1 |
+| OD 10 | the layout hint gap between G2b and DR1 is accepted. The DR1 hint claims no note move | 4, 17 |
 | RD 1 | status line pinned under the pan, in a sticky band | 2, 5, 9 |
 | RD 2 | Tab never changes the arrangement. What ends a pick | 6, 11 |
 | RD 3 | three marks, three sizes | 12 |
@@ -640,7 +670,7 @@ The ids stay citeable. The table states no rule of its own. The rule lives in th
 | MC 1 | the open toggle carries a close mark | 4 |
 | MC 2 | Pygmy draws as the original pan with BESIDE CENTRE | 9 |
 | MC 3 | two mirror switches | 9 |
-| AD-MC 1 | MIRROR BOTTOM on a pan with no bottom notes | 9, 16.2 |
+| AD-MC 1 | MIRROR BOTTOM on a pan with no bottom notes (and OD 7: off when one is added) | 9, 16.2 |
 | AD-MC 2 | RESET SEATS on its own row | 9 |
 | AD-MC 3 | `mirror` is the top shell, `mirrorBottom` the bottom, the reader defaults it to `mirror` | 9, 19 |
 | AD-MC 4 | CLI: `--mirror` keeps both shells, `--mirror-top` and `--mirror-bottom` set one | 19 |
@@ -720,16 +750,16 @@ Each line is one testable statement and is turned into exactly one test by the l
 20. [DR1] Activating the toggle again hides the drawer. With a valid scale, focus is then on `#scale-layout-toggle`, also when the drawer was closed with Escape while focus was on a drawer control.
 21. [DR1] Escape with the drawer open and nothing picked closes the drawer and leaves the sheet open. A second Escape closes the sheet.
 22. [DR1] Closing and reopening the sheet, on Add and on Edit, opens it with the drawer closed.
-23. [DR1] The Tab order walks BACK, (Edit: the deck name,) the field, the toggle, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, in that order, skipping disabled controls. Controls DR1 leaves as they are today keep today's places and are outside this line. Line 120 is the full order.
-24. [DR2] `#scale-rot-l`, `#scale-rot-r`, `#scale-move-l`, `#scale-move-r` and `#scale-layout-label` are absent from the markup, and the `previewBox` keydown handler of today is gone. Needs: DR1.
+23. [DR1] The Tab order walks BACK, (Edit: the deck name,) the field, the toggle, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, in that order, skipping disabled controls. On Edit with the drawer open, the old ROTATE, MOVE and RESET group (section 17) sits between the toggle and MIRROR TOP; its buttons are outside this line, and so is the pan plate's existing tab stop on Edit (today it has `tabindex="0"` and follows the field). Line 120 is the full order.
+24. [DR2] `#scale-rot-l`, `#scale-rot-r`, `#scale-move-l`, `#scale-move-r`, `#scale-layout-label`, `#scale-legacy-group` and `#scale-legacy-hint` are absent from the markup, and the `previewBox` keydown handler of today is gone. Needs: DR1.
 25. [DR1] The drawer holds two anchor buttons with `aria-pressed`, exactly one true, `ON CENTRE` pressed by default and `BESIDE CENTRE` not.
 26. [DR1] Pressing `BESIDE CENTRE` re-solves the plate (the rim angles change) and writes `anchor: "between"` into the generated deck options, the stored record and the share link. Needs: S2, S3.
 27. [DR1] On an Edit sheet for a deck saved with anchor `between`, `BESIDE CENTRE` is pressed on open. Needs: S3.
 28. [DR1] `#scale-mirror` and `#scale-mirror-bottom` are inside `#scale-drawer`, keep their ids, and toggling either redraws the plate and reaches the generated deck.
 29. [DR2] `#scale-layout-reset` is inside the drawer on its own row, reads `RESET SEATS` and is disabled while every ring is at its default. Needs: DR1.
-30. [DR1] `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` on Add and `Layout not saved yet. SAVE CHANGES keeps it.` on Edit when either mirror switch or the anchor differs from what was last kept. It reads `Layout changed from the default.` on an Edit sheet whose stored layout is not the default and is unchanged. It is hidden otherwise. Seats join the comparison from DR2 (line 91).
+30. [DR1] `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` on Add and `Layout not saved yet. SAVE CHANGES keeps it.` on Edit when either mirror switch or the anchor differs from what was last kept. It reads `Layout changed from the default.` on an Edit sheet whose stored anchor or mirrors are not the default and are unchanged. It is hidden otherwise. Seats join the comparison from DR2 (line 91).
 31. [DR1] While the drawer is open and the scale stops parsing, the drawer stays open, the toggle is enabled, both anchor buttons and both mirror switches are disabled and keep their values, the plate has `.stale`, and `#scale-drawer-status` reads `Layout is paused until the scale parses.` after the refusal sentence. The NOTE, SEAT and RESET SEATS buttons are line 122.
-32. [DR1] After the scale parses again each control is enabled or disabled by its own rule, the anchor and mirror values from before are unchanged, and the status reads `Layout is ready again.`
+32. [DR1] After the scale parses again each control is enabled or disabled by its own rule, the anchor and mirror values from before are unchanged unless the parse changes whether the pan has bottom notes (section 9: then MIRROR BOTTOM is enabled and off, or disabled and unpressed), and the status reads `Layout is ready again.`
 33. [DR1] A `SMALL_LABELS` warning appears once, inside `#scale-msg`, and nothing inside `#scale-drawer` contains its text, with the drawer open and closed. Needs: G2b.
 34. [DR1] With the drawer open at 380 x 780 `#scale-plate-band` stays inside the scrollport when the body is scrolled to its end, and while `#scale-box` has focus it is `position: static`.
 35. [DR1] With the drawer open at 380 x 667 the open plate is no wider than 42 percent of the viewport height, that is 280 px (computed from `min(300px, 42dvh)`).
@@ -754,8 +784,8 @@ Each line is one testable statement and is turned into exactly one test by the l
 51. [DR2] Tapping a note picks it: exactly one `.pansel` ring exists, same-ring seats carry `.panseat` rings (ring size minus one of them) and notes of the other rings carry `.panveil`.
 52. [DR2] Tapping a second note of the same ring swaps the two, ends the pick, and writes row 7.
 53. [DR2] Tapping the picked note puts it down and writes row 8.
-54. [DR2] Tapping a note of another ring leaves the pick and the arrangement unchanged and writes row 10.
-55. [DR2] A note in a ring of one note cannot be picked by a tap, a hold, Space, Enter or a drag start, and the status reads row 2. An arrow key that focuses it writes nothing.
+54. [DR2] With a note picked, tapping a note of another ring, including the only note of a ring of one note, leaves the pick and the arrangement unchanged and writes row 10.
+55. [DR2] With nothing picked, a note in a ring of one note cannot be picked by a tap, a hold, Space, Enter or a drag start, and the status reads row 2. An arrow key that focuses it writes nothing.
 56. [DR2] The ding has no `.panhit`.
 57. [DR2] With a note picked, `sizePanHits` radii for that ring's targets are each at least the all-points radius of the same target and are pairwise disjoint.
 58. [DR2] On the D3 example, Kurd 10 and Pygmy rims, at 380 x 667 with the drawer open, the open plate at its `42dvh` cap, and a note picked, every same-ring target is at least 44 px across (required, a hard assertion). Where the cap was lowered (section 10), the lane names every pan whose target then measures under 44 px, and for those pans this line is a report. The inner and bottom rings of the same three pans are measured and reported. At any other viewport, including the 220 px landscape plate of line 88, target sizes are measured and reported, not asserted.
@@ -772,7 +802,7 @@ Each line is one testable statement and is turned into exactly one test by the l
 69. [DR2] The preview is repainted on each commit and on each step-button press, and the plate shows the new positions.
 70. [DR2] The arrangement reaches the generated deck options, the stored record and the share link. Needs: S3.
 71. [DR2] Toggling either mirror switch, then the anchor, leaves every ring's permutation equal to its value before.
-72. [DR2] With the drawer open, adding a note to the rim by typing resets only the rim permutation, the inner and bottom permutations are unchanged, and `#scale-drawer-status` reads row 15.
+72. [DR2] With the drawer open, adding a note to the rim by typing, to a rim count the sheet has not had before, resets only the rim permutation, the inner and bottom permutations are unchanged, and `#scale-drawer-status` reads row 15.
 73. [DR2] Returning the rim to its earlier count restores the earlier rim permutation and writes row 16.
 74. [DR2] When the picked note's ring is reset by a count change, the pick is cleared and the status ends with `The picked note was put down.`
 75. [DR2] An invalid parse leaves every permutation unchanged and a later valid parse with the same counts shows them again.
@@ -788,16 +818,16 @@ Each line is one testable statement and is turned into exactly one test by the l
 82. [DR1] With the drawer open at 380 x 780 and at 380 x 667 and the body scrolled to its end, `#scale-drawer-status` is inside the scrollport.
 83. [DR2] `#scale-note-prev` and `#scale-note-next` exist and read `PREVIOUS NOTE` and `NEXT NOTE`, and the drawer's controls are in the DOM order of section 9. Needs: DR1.
 84. [DR2] With the drawer open at 380 x 667 and the band stuck, the toggle and both step rows are inside the scrollport without further scrolling (required). The measured open plate width is reported (report). Needs: DR1.
-85. [DR1] While the toggle is disabled `#scale-layout-hint` reads `Type a scale to adjust its layout.`. With a valid scale it reads the `LAYOUT_HINT` text. Needs: G2b.
+85. [DR1] While the toggle is disabled `#scale-layout-hint` reads `Type a scale to adjust its layout.`. With a valid scale it reads the DR1-era sentence of section 4, which does not say that a note can be moved. The `LAYOUT_HINT` text is line 132.
 86. [DR1] On the Edit sheet with the drawer open, focusing the deck name or the degrees select makes `#scale-plate-band` `position: static`, and focusing a drawer control does not.
-87. [DR1] With the drawer open and the body scrolled, a control focused by Tab has its top edge at or below the band's bottom edge.
+87. [DR1] At 380 x 780 and 380 x 667, with the drawer open and the body scrolled, a control of the drawer or the toggle row focused by Tab has its top edge at or below the band's bottom edge. The plate's own tab stop is inside the band and is outside this line, and so is the landscape two-column layout, where the controls sit beside the band.
 88. [DR1] At 844 x 390 the open plate is 220 px wide within 1 px (computed from `clamp(150px, calc(100dvh - 170px), 232px)`), and at 500 x 390 the zone is one column (computed from the `min-width: 560px` rule).
 89. [DR1] At 380 x 667, closed, for the D3 example, the position of `#scale-layout-toggle` against the scrollport at `scrollTop` 0 is measured and reported (report). The status line's visibility at 844 x 390 is measured and reported the same way (report).
 90. [DR2] NEXT NOTE with nothing picked picks the first pickable note. Pressed again it picks the next pickable note, passes from the last rim note to the first inner note, skips a ring of one note, wraps from the last note to the first, never changes `seats`, never moves focus and writes row 20. PREVIOUS NOTE is the mirror.
-91. [DR2] After a swap on an Add sheet `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` (on Edit, `Layout not saved yet. SAVE CHANGES keeps it.`). After RESET SEATS on an Add sheet with default anchor and both mirrors it is hidden. After a swap and the same swap undone it is hidden, because the comparison is by value.
+91. [DR2] After a swap on an Add sheet `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` (on Edit, `Layout not saved yet. SAVE CHANGES keeps it.`). After RESET SEATS on an Add sheet with default anchor and both mirrors it is hidden. After a swap and the same swap undone on an Add sheet it is hidden, because the comparison is by value (on Edit of a stored deck whose layout is not the default it reads `Layout changed from the default.`).
 92. [DR2] During a drag the same-ring seat that contains the ghost's centre carries `.panarm` and no other seat does. Nothing carries it over another ring, the ding or empty plate. The release swaps with the armed seat.
 93. [DR2] Dragging the top-centre note upward shows the whole ghost: its box may extend above the plate's top edge and is not clipped, because the ghost is `position: fixed`.
-94. [DR2] After a committed swap exactly two seats carry `.panflash`, and none does 700 ms later. Under `prefers-reduced-motion: reduce` the mark has no transition.
+94. [DR2] After a committed swap with no other swap in the 600 ms before it, exactly two seats carry `.panflash`, and none does 700 ms later. Under `prefers-reduced-motion: reduce` the mark has no transition.
 95. [DR2] `.panseat` and `.panarm` are drawn at 1.12 r, `.pansel` at 1.2 r with an ink hairline outside it, the focus mark at 1.32 r, and each orange stroke is at least 2 CSS px wide at a 284 px pan (required).
 96. [DR2] Opening the drawer with a pointer shows no focus mark on any note. Reaching a note with Tab or an arrow key shows it.
 97. [DR2] After a keyboard swap, focus is on the `.panhit` of the moved note at its new seat, and exactly one `.panhit` has `tabindex="0"`. After a swap by PREVIOUS SEAT, NEXT SEAT, PREVIOUS NOTE or NEXT NOTE, focus stays on the button pressed and the roving `tabindex` is on the moved note.
@@ -817,7 +847,7 @@ Each line is one testable statement and is turned into exactly one test by the l
 108. [DR1] With the drawer open `#scale-layout-toggle` contains one `aria-hidden` element whose text is U+00D7 and which is displayed. With the drawer closed that element is not displayed. The toggle's accessible name is `Adjust layout` in both states.
 109. [W1] `#scale-mirror` has the text `MIRROR TOP` and `#scale-mirror-bottom` the text `MIRROR BOTTOM`. Both have `aria-pressed="false"` by default.
 110. [W1] On a pan with rim, inner and bottom notes, toggling MIRROR TOP changes the angle of every rim and inner field with an angle other than 90 or 270 and of no bottom field. Toggling MIRROR BOTTOM changes bottom fields only. Needs: S2.
-111. [W1] `#scale-mirror-bottom` is disabled and unpressed on a pan with no bottom notes, and the generated deck has `mirrorBottom` off. When a bottom note is added in the same session it is enabled and takes MIRROR TOP's value.
+111. [W1] `#scale-mirror-bottom` is disabled and unpressed on a pan with no bottom notes, and the generated deck has `mirrorBottom` off. On an Add sheet with MIRROR TOP pressed and `(D3) A3 C4 D4` typed, adding a bottom note leaves it enabled and unpressed, and the generated deck has `mirror` on and `mirrorBottom` off. The test uses a scale today's grammar accepts.
 112. [W1] A deck WITH bottom notes stored with the old single `mirror: true` opens with both switches pressed, and draws every field where the same build draws it for `mirror: true` alone (the baseline is the same solver, not an older release: the plan accepts that S2 redraws some old mirrored decks). The same deck WITHOUT bottom notes opens with MIRROR TOP pressed and MIRROR BOTTOM disabled and unpressed. W1 asserts nothing about `#scale-layout-state`, which is DR1's element (line 117). Needs: S2, S3.
 113. [W1] A deck generated with MIRROR TOP on and MIRROR BOTTOM off reopens on Edit, and from its share link, with exactly that pair of values. Needs: S3.
 114. [DR1] Both switches are inside `#scale-drawer`. Toggling MIRROR TOP writes row 14 and MIRROR BOTTOM writes row 21.
@@ -835,12 +865,21 @@ Each line is one testable statement and is turned into exactly one test by the l
 123. [DR2] When a pick ends with Escape while focus is on PREVIOUS SEAT or NEXT SEAT, focus goes to the `.panhit` of the note that was picked.
 124. [DR2] With A picked and the arrows moved to B, B has focus and `tabindex="0"` and A keeps `aria-pressed="true"`. After Tab out of the plate and Shift+Tab back, focus is on A.
 125. [DR2] A touch hold on a note released within 8 px of the lift point is not a drag: `seats` is unchanged. After a drag of more than 8 px released on the note's own seat, `seats` is unchanged, row 8 is written and the note is still picked.
-126. [DR2] With the drawer closed, a ring whose count changes follows the reset and restore rules of section 14 for the stored layout, no row 15, 16 or 17 is written, and reopening the drawer shows an empty status line.
+126. [DR2] With the drawer closed, a ring whose count changes follows the reset and restore rules of section 14 for the arrangements the sheet holds, no row 15, 16 or 17 is written, and reopening the drawer shows an empty status line when some ring has two or more notes (row 19 when none does).
 127. [G2b] The message after GENERATE does not contain the `LAYOUT_HINT` text. It reads `{n} cards generated` or `Updated {name}`, then any warnings. Needs: W1.
+
+### Lines added by the interview 8 pass
+
+128. [W1] While the box is empty or does not parse, `#scale-mirror` and `#scale-mirror-bottom` are disabled and keep their pressed values, and become enabled or disabled by their own rules when it parses again.
+129. [DR1] `#scale-legacy-group` is inside `#scale-drawer` and its `aria-describedby`, on the group wrapper, names `#scale-legacy-hint`, which sits inside the group. `#scale-layout-hint` is the toggle row's and is not inside the group.
+130. [DR1] On the Add sheet `#scale-legacy-group` is `hidden` and none of `#scale-rot-l`, `#scale-rot-r`, `#scale-move-l`, `#scale-move-r`, `#scale-layout-reset` is displayed, with the drawer open and closed. On the Edit sheet they are displayed with the drawer open and not displayed with it closed.
+131. [DR1] On the Edit sheet with the drawer open and focus on `#scale-rot-l`, Escape closes the drawer, leaves the sheet open and puts focus on `#scale-layout-toggle`.
+132. [DR2] With a valid scale and the drawer closed, `#scale-layout-hint` reads the `LAYOUT_HINT` text of plan section 9. Needs: DR1, G2b.
+133. [W1] On an Add sheet with MIRROR TOP pressed, typing a valid scale and pressing MIRROR TOP, adding a bottom note, deleting every bottom note so the box still parses with none, then typing one again leaves `#scale-mirror-bottom` enabled and unpressed. The test uses a scale today's grammar accepts.
 
 ### Counts by lane
 
-Counted from the tags above: W1 19, G2b 5, DR1 34, DR2 69, which is 127 lines in all. Retired lines: none.
+Counted from the tags above: W1 21, G2b 5, DR1 37, DR2 70, which is 133 lines in all. Retired lines: none.
 
 ## Coordinator readings
 
@@ -848,16 +887,19 @@ These are the readings the repair pass took where an earlier text was silent or 
 
 - Lane order (L4). DR1 keeps today's ROTATE, MOVE and reset controls and today's `previewBox` keydown handler. New note-moving controls (NOTE, SEAT, RESET SEATS) and the removal of the old ones arrive together in DR2. Lines 18, 19, 24, 29, 83, 84 and 106 moved to DR2. Line 31 was split (new line 122).
 - Lane order (L1, L2, L3, M2). Line 14 moved to G2b. W1 adds `#scale-label-2` empty and hidden (line 118) and G2b shows it (line 9). W1 tests the field with an injected placeholder (line 3) and G2b re-runs the check with the real one (line 4). The count-line shape is a W1 line (119).
-- Focus (S1, S2, S3, S4, S9). Closing over an invalid box sends focus to the field first. A pick that ends while focus is on a SEAT button sends focus to the picked note. "First pickable note" replaces "rim seat 1". Selection, focus and tab-entry are three separate things. A focused note deleted by a box edit cannot arise by a user path.
+- Focus (S1, S2, S3, S4, S9). Closing over an invalid box sends focus to the field first. A pick that ends while focus is on a SEAT button sends focus to the picked note. "First pickable note" replaces "rim seat 1"; the owner confirmed it on 2026-10-07 [OD 8]. Selection, focus and tab-entry are three separate things. A focused note deleted by a box edit cannot arise by a user path.
 - Close focus. When a drawer closes, focus goes to the toggle only if it was inside the zone. If it was in the field, the name or the degrees select, it stays. This keeps Escape from stealing focus while typing (line 107).
 - Touch (S5). The 8 px threshold after a lift is for touch. A mouse or pen keeps 4 px (line 50). A drag released on its own seat leaves the note picked. A tap on the picked note, or Space on its own seat, puts it down.
-- Mirror (S6). MIRROR BOTTOM with no bottom notes is disabled, unpressed and stores false. When bottom notes return it takes MIRROR TOP's value. The instruction that both switches "stay enabled only if the drawer is open" is read with line 31: while the box is empty or invalid both switches keep their values and are disabled, and they are not displayed while the drawer is closed.
+- The old `mirror: true` row. The notice for a stored `mirror: true` deck with no `mirrorBottom` key and no bottom notes is whatever the comparison rule of section 4 and line 30 give (stored bottom reads as on, current is off); the row does not promise a fixed text.
+- Picking and ring order. With nothing picked, a tap writes row 10, while hold, Space, Enter and drag start are left for the owner. Ring order for the arrow keys, Home, End and NEXT NOTE is seat number.
+- Mirror (S6). MIRROR BOTTOM with no bottom notes is disabled, unpressed and stores false. When a bottom note is added it is enabled and off, and does not take MIRROR TOP's value; the owner decided this on 2026-10-07 [OD 7], matching plan AM-4. The instruction that both switches "stay enabled only if the drawer is open" is read with line 31: while the box is empty or invalid both switches keep their values and are disabled, and they are not displayed while the drawer is closed.
 - Ring memory (S7). The memory is seeded with the arrangement the sheet opened with. With the drawer closed the same rules apply and nothing is announced. Rows 15 to 17 are written only while the drawer is open. When one parse ends a pause and changes counts, row 18b leads the one message.
-- The notice (S8). It compares by value, so a swap and its undo hide it. MIRROR BOTTOM is left out of the comparison while the pan has no bottom notes.
+- The notice (S8). It compares by value, so a swap and its undo return it to what it was before the swap. MIRROR BOTTOM is left out of the comparison while the pan has no bottom notes.
 - The ghost (S10). It is `position: fixed`.
 - The band (S13). It un-sticks while any form control outside the zone has focus: the scale field, the deck name, the degrees select, the swatches.
 - The toggle (S14). It carries `aria-label="Adjust layout"` and the close mark is not displayed when closed.
-- The hint (S15). `LAYOUT_HINT` is used only beside the toggle. The message after GENERATE no longer appends it. Today it does, and the plan puts the hint's wording with G2b (line 127).
+- The hint (S15). `LAYOUT_HINT` is used only beside the toggle. The message after GENERATE no longer appends it. Today it does, and the plan puts the hint's wording with G2b (line 127). The owner accepted on 2026-10-07 that between G2b and DR1 it is shown nowhere [OD 10], and the DR1 build shows the DR1-era sentence of section 4.
+- The old group (N1). The owner decided on 2026-10-07 that between DR1 and DR2 today's ROTATE, MOVE and RESET group lives inside the drawer, Edit only [OD 9]. Section 17 and 16.1 carry it.
 - Blank on open (S11). The clause is gone. The status line shows row 19 on open when no ring has two notes and is empty otherwise.
 - Pixels (step 6, M1). Section 10's 68 px and 52 px are predictions. The landscape arithmetic of section 5.4 is a prediction and is measured and reported. The 220 px landscape plate, the 280 px portrait plate and the 150 px lower bound are computed. The 44 px targets are required.
 - Step rows. DR2, which adds the step rows, repeats the 380 x 667 fit measurement and may lower the `42dvh` factor. That is the one DR1-owned rule it may touch.
@@ -874,7 +916,7 @@ These are the readings the repair pass took where an earlier text was silent or 
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | - | - |
 
 - **OUTSIDE VOICES:** Codex and a Claude reviewer both ran on the first draft; 10 and 12 findings, all folded into the text above or listed in section 19.
-- **VERDICT:** DESIGN CLEARED and signed off by the owner 2026-10-07. Acceptance list after the repair pass: 127 lines (W1 19, G2b 5, DR1 34, DR2 69).
+- **VERDICT:** DESIGN CLEARED and signed off by the owner 2026-10-07. Acceptance list after the interview 8 pass: 133 lines (W1 21, G2b 5, DR1 37, DR2 70).
 
 Design review scores, kept as a record:
 
