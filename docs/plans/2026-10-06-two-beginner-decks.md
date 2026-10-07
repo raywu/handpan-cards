@@ -2694,3 +2694,74 @@ becomes the named walk-budget constant above.
 - Pygmy: "Yes, redraw it". The scale-syntax plan regenerates the shipped
   Pygmy from its string under the new solver (seats unchanged, top circles
   2.2% larger, PDFs rebuilt). Not in this plan.
+
+### Lane U1b, amendment 2 (2026-10-06, after PR #254 review 2)
+
+Review 2 at `2d1170d`: FAIL, one blocker. CI run 37579836302 was green.
+
+**Finding (reproduced by the main agent).** On a deck whose MEDIUM node
+count is over budget, `pick()` deals from the sampled cells, and uniform
+walks over a colour-dominated pool almost never produce an all-anchor walk.
+The pure cells come back empty or thin, and `drawMedium` renormalises over
+the non-empty cells. Measured through `pick()`, 1500 to 3000 deals:
+
+| seed | home start | pure-triad | pure and home |
+|---|---|---|---|
+| `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 \| B3 C#4 F#4 G#4` | 32.4 | 25.3 | 1.4 |
+| `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 \| B3 C#4 F#4` | 31.8 | 26.7 | 1.9 |
+| REGISTER_HOME_SEED | 33.9 | 28.8 | 4.3 |
+| the same decks, full enumeration (and `main`, capped) | 41.0 | 32.3 | 13.5 |
+
+The owner's MEDIUM bands (`docs/plans/2026-10-04-tier-rebalance.md`
+section 2) are home start 40% and pure-triad 33%, each within 4 pp. The lane
+built the walk as amendment 1 wrote it; the defect is in this plan.
+
+**Auto-decision AD-U1b-2 (AFK).** The owner answered OQ-U2 "Fix the search"
+and set the bands, so the skew is fixed, not accepted. The uniform walk is
+no longer binding. On the over-budget path with an rng:
+
+1. **Pure cells are filled exactly.** Enumerate the anchors-only sequences
+   with the DFS's own prunes. There are at most 12 anchors, so this is
+   small; it is counted with the existing node count restricted to anchors
+   and must stay inside `MEDIUM_ENUM_BUDGET`.
+2. **Only the colour cells are sampled**, and the sampling is stratified by
+   the cell's side (home start, other start) so neither side of a colour
+   cell is left to chance.
+3. `drawMedium` is still a non-goal. The fix is in how the cells are filled.
+
+The under-budget path and the no-rng path are unchanged.
+
+**Owns (unchanged from U1b, plus):** `tests/mutants/sqr_05_min_basic_pool_zero.patch`
+(the context-only refresh already on the branch).
+
+**TDD order (red first, each red at `2d1170d`):**
+1. `tests/sequence.test.js` "MEDIUM on an over-budget pan deals inside the
+   shape bands": for the eleven-pitch-class fixture and REGISTER_HOME_SEED,
+   deals taken through `HPE.sequence.pick` with a seeded rng give home start
+   within 4 pp of 40% and pure-triad within 4 pp of 33%. The sample size is
+   chosen so the test is stable; the band is not widened.
+2. "an over-budget pan fills every pure cell its anchors allow": the pure
+   cells of the sampled set equal the anchors-only enumeration.
+3. One mutant per new behaviour (pure cells not filled exactly; colour
+   sampling not stratified), each with its `# kills:` test.
+
+**Acceptance:**
+- The two new tests pass and were red at `2d1170d`.
+- Every existing sequence test passes unedited, including "generated decks:
+  every tier deals its own tier, in range and connected, under 50ms".
+- Decks that complete deal exactly as at `2d1170d` at the same rng position
+  (the existing golden and "consumes no extra rng" tests).
+- `python3 tools/inline_engine.py --check` and `python3 tools/validate.py`
+  exit 0. `data/decks.json` and all PDFs are unchanged.
+- CI green at the head SHA, all mutation shards included.
+
+**Verify:** `node --test tests/sequence.test.js && python3 tools/inline_engine.py --check && python3 tools/validate.py`
+
+**Non-goals:** `drawMedium`; the bands; the budget constants' values unless
+the 50 ms test requires it; review 2's nits (listed in the PR thread, not
+fixed in this lane).
+
+**Stop conditions:**
+- The bands cannot be met without changing `drawMedium` or a band.
+- The 50 ms test goes red.
+- Any under-budget deck deals differently.
