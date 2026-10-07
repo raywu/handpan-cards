@@ -1,17 +1,16 @@
 # kills: RESET clears the correction to ABSENT in one action, not to the identity
 # suite: node --test --test-name-pattern ^RESET.clears.the.correction.to.ABSENT.in.one.action..not.to.the.identity$ tests/app.test.js
-# RESET writes the identity permutation instead of clearing the correction,
-# so a reset deck carries a correction on the wire that says nothing.
+# RESET writes identity seats instead of clearing the correction, so a reset
+# deck carries a correction on the wire that says nothing.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4384,7 +4384,8 @@ function stepLayoutSel(by) {
+@@ -8930,7 +8930,7 @@ function stepLayoutSel(by) {
    previewLayout();
  }
  function resetLayout() {
--  layoutOrder = null;
-+  const reset = layoutFields();
-+  layoutOrder = identityOrder(reset ? syncLayoutOrder(reset) : 0);
+-  layoutSeats = null;
++  layoutSeats = { rim: identityOrder(ringSizes(layoutFields() || {}).rim) };
    layoutSel = 0;
    previewLayout();
  }

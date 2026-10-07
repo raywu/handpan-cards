@@ -1,0 +1,16 @@
+# kills: the anchor travels on the options line and round-trips
+# suite: node --test --test-name-pattern ^the.anchor.travels.on.the.options.line.and.round.trips$ tests/share.test.js
+# The link never writes the anchor, so a between-anchored pan comes back with
+# the one-anchored layout.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -220,7 +220,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var mirrors = HPE.layout.resolveMirrors({}, opts);
+     var mirror = mirrors.top === mirrors.bottom ? (mirrors.top ? "1" : "0")
+       : (mirrors.top ? "t" : "b");
+-    var anchor = opts.anchor === "between" ? "1" : "0";
++    var anchor = "0";
+     var name = opts.name === undefined || opts.name === null ? "" : opts.name;
+     // `name` stays LAST and ALONE at the end of this line: the correction rides
+     // on line 2, not here, so the one user-controlled free-text field never

@@ -1,15 +1,16 @@
-# suite: node --test --test-name-pattern ^a.non.trivial.order.actually.moves.at.least.one.field$ tests/layout.test.js
-# kills: a non-trivial order actually moves at least one field
-# The correction is read, validated and then quietly not applied, so every corrected pan solves to the generated layout.
+# kills: non-trivial seats actually move at least one field
+# suite: node --test --test-name-pattern ^non.trivial.seats.actually.move.at.least.one.field$ tests/layout.test.js
+# Seats are read, validated and then quietly not applied, so every corrected
+# pan solves to the generated layout.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -472,7 +472,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -531,7 +531,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
      var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
      var geom = geometry(counts, placed);
--    if (wanted.value) placed = reseat(counts, placed, wanted.value);
-+    if (false) placed = reseat(counts, placed, wanted.value);
+-    if (wanted.value) placed = reseat(placed, wanted.value);
++    if (false) placed = reseat(placed, wanted.value);
  
      return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
    }

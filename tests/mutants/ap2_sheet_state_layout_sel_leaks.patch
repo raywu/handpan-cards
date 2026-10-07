@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8132,7 +8132,6 @@ function resetSheetState(edit) {
+@@ -9316,7 +9316,6 @@ function resetSheetState(edit) {
    // The correction is a seed option like the others, so Edit shows the one the
    // deck already carries and RESET is what clears it.
-   layoutOrder = edit && Array.isArray(edit.options.order) ? edit.options.order.slice() : null;
+   layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
 -  layoutSel = 0;
- }
- // The create path.
- function openScaleSheet(opener) {
+   anchor = edit && edit.options.anchor === "between" ? "between" : "one";
+   mirrorBottom = edit && typeof edit.options.mirrorBottom === "boolean" &&
+     edit.options.mirrorBottom !== !!edit.options.mirror ? edit.options.mirrorBottom : null;

@@ -1,0 +1,15 @@
+# kills: S3: editing a deck keeps its anchor and a bottom mirror that differs from the top
+# suite: node --test --test-name-pattern ^S3..editing.a.deck.keeps.its.anchor.and.a.bottom.mirror.that.differs.from.the.top$ tests/app.test.js
+# The sheet drops mirrorBottom, so SAVE CHANGES flattens a bottom mirror that
+# differs from the top (AM-8).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8938,7 +8938,6 @@ function resetLayout() {
+ /** The seed options the sheet currently describes. */
+ function sheetOptions() {
+   const o = { palette, mirror, anchor };
+-  if (mirrorBottom !== null) o.mirrorBottom = mirrorBottom;
+   if (editingId) {
+     o.parent = Number(degSel.value);
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/

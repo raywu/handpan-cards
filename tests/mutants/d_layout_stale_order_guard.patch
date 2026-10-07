@@ -1,18 +1,18 @@
 # kills: retyping a seed with a different field count drops the correction and the mock follows
 # suite: node --test --test-name-pattern ^retyping.a.seed.with.a.different.field.count.drops.the.correction.and.the.mock.follows$ tests/app.test.js
-# The length guard is gone, so an 8-slot correction is handed to a 7-field
-# seed. HPE.layout.solve refuses the pan, paintPan returns false, and
-# holdPanPreview keeps the previous pan - the Edit mock stops following
-# what is being typed. The guard used to live in buildSlots(); it moved
-# into syncLayoutOrder when the slot list died, and nothing else checks it.
+# The length guard is gone, so a stale ring list is handed to a seed whose
+# ring has a different note count. HPE.layout.solve refuses the pan,
+# paintPan returns false, and holdPanPreview keeps the previous pan - the
+# Edit mock stops following what is being typed.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4283,7 +4283,6 @@ const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
-  *  Returns the non-ding count so callers do not re-derive it. */
- function syncLayoutOrder(fields) {
-   const n = layoutIds(fields).length;
--  if (layoutOrder && layoutOrder.length !== n) layoutOrder = null;
-   if (layoutSel >= n) layoutSel = 0;
-   return n;
- }
+@@ -8811,7 +8811,7 @@ function syncLayoutSeats(fields) {
+   if (layoutSeats) {
+     const kept = {};
+     for (const ring of LAYOUT_RINGS) {
+-      if (layoutSeats[ring] && layoutSeats[ring].length === sizes[ring]) kept[ring] = layoutSeats[ring];
++      if (layoutSeats[ring] && true) kept[ring] = layoutSeats[ring];
+     }
+     layoutSeats = Object.keys(kept).length ? kept : null;
+   }

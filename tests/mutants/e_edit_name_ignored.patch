@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3329,7 +3329,6 @@ function sheetOptions() {
+@@ -8959,7 +8959,6 @@ function sheetOptions() {
      // that already carries an EXPLICIT name keeps it either way.
      const d = editedDeck();
      const kept = !!(d && d.options && d.options.name);
 -    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
-     if (layoutOrder) o.order = layoutOrder.slice();
+     if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
    }
    return o;

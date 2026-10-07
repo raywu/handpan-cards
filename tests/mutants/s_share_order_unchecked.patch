@@ -1,15 +1,17 @@
-# suite: node --test --test-name-pattern ^an.order.that.is.not.a.permutation.of.the.field.count.is.rejected$ tests/share.test.js
-# kills: an order that is not a permutation of the field count is rejected
-# The carried correction is re-attached without being held to the seed
-# parseSeed just approved, so a corrupt link is repaired instead of refused.
+# kills: a seat naming a note of another ring is rejected, not repaired
+# suite: node --test --test-name-pattern ^a.seat.naming.a.note.of.another.ring.is.rejected..not.repaired$ tests/share.test.js
+# A carried correction that fails its ring check is dropped silently instead of
+# refusing the link, so a corrupt link is repaired instead of refused.
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -329,7 +329,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var result = decodeSeed(text, carry);
-     if (!result.ok) return result;
-     if (carry.order) {
--      if (!checkOrder(carry.order, result.value)) return badNote(text);
-       result.value.options.order = carry.order;
+@@ -337,8 +337,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       read = HPE.layout.readSeats(carry.delta.seats, counts);
+     }
+     if (read) {
+-      if (!read.ok) return badNote(text);
+-      if (read.value) result.value.options.seats = read.value;
++      if (read.ok && read.value) result.value.options.seats = read.value;
      }
      return result;
+   }

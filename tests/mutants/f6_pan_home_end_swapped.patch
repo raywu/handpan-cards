@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7469,12 +7469,12 @@
+@@ -9626,8 +9626,8 @@ previewBox.addEventListener("keydown", (e) => {
    else if (e.key === "End") by = "end";
    else return;
    e.preventDefault();
@@ -16,8 +16,4 @@ diff --git a/index.html b/index.html
 +  else if (by === "home") {
      const fields = layoutFields();
      if (!fields) return;
-     layoutSel = Math.max(0, syncLayoutOrder(fields) - 1);
-     previewLayout();
-   } else stepLayoutSel(by);
- });
- scaleBox.addEventListener("input", updateParse);
+     layoutSel = Math.max(0, syncLayoutSeats(fields) - 1);
