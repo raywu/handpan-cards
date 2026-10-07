@@ -1,0 +1,17 @@
+# suite: node --test --test-name-pattern ^the.call.s.mirrorBottom.beats.the.seed.s..and.the.seed.s.beats.the.top.value$ tests/layout.test.js
+# kills: the call's mirrorBottom beats the seed's, and the seed's beats the top value
+# A seed's mirrorBottom overrides the call's.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -285,8 +285,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var call = options || {};
+     var seed = seedOptions || {};
+     var top = !!(("mirror" in call) ? call.mirror : seed.mirror);
+-    var bottom = ("mirrorBottom" in call) ? !!call.mirrorBottom :
+-      (("mirrorBottom" in seed) ? !!seed.mirrorBottom : top);
++    var bottom = ("mirrorBottom" in seed) ? !!seed.mirrorBottom :
++      (("mirrorBottom" in call) ? !!call.mirrorBottom : top);
+     return { top: top, bottom: bottom };
+   }
+ 

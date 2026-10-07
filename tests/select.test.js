@@ -183,7 +183,9 @@ test("colors come from the section 13 palette with ga = root and gb = tone", () 
 
 test("options report palette, mirror and the RESOLVED parent index", () => {
   const auto = built("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-  assert.deepEqual(Object.keys(auto.options).sort(), ["mirror", "palette", "parent"]);
+  assert.deepEqual(Object.keys(auto.options).sort(),
+    ["anchor", "mirror", "mirrorBottom", "palette", "parent"]);
+  assert.equal(auto.options.anchor, "one", "anchor defaults to one");
   // Section 10: D Amara is declared Aeolian, index 1 of the fixed parent list.
   const aeolian = naming.PARENTS.findIndex((p) => p.name === "Aeolian");
   assert.equal(auto.options.parent, aeolian,
@@ -193,6 +195,28 @@ test("options report palette, mirror and the RESOLVED parent index", () => {
   assert.equal(forced.options.parent, 2, "an explicit parent override survives");
   assert.equal(forced.options.palette, 4);
   assert.equal(forced.options.mirror, true);
+});
+
+test("build writes both mirrors onto deck.options; a seed with only mirror true gets mirrorBottom true", () => {
+  const maker = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+  const plainDeck = built(maker);
+  assert.equal(plainDeck.options.mirror, false);
+  assert.equal(plainDeck.options.mirrorBottom, false);
+  const both = built(maker, { mirror: true });
+  assert.equal(both.options.mirror, true);
+  assert.equal(both.options.mirrorBottom, true, "absent mirrorBottom took mirror");
+  const topOnly = built(maker, { mirror: true, mirrorBottom: false });
+  assert.equal(topOnly.options.mirror, true);
+  assert.equal(topOnly.options.mirrorBottom, false);
+  const bottomOnly = built(maker, { mirrorBottom: true });
+  assert.equal(bottomOnly.options.mirror, false);
+  assert.equal(bottomOnly.options.mirrorBottom, true);
+  const angle = (deck, id) => deck.fields[id][4];
+  assert.equal(angle(topOnly, "101"), angle(plainDeck, "101"), "bottom ring stayed put");
+  assert.notEqual(angle(topOnly, "2"), angle(plainDeck, "2"), "rim reflected");
+  assert.equal(angle(bottomOnly, "2"), angle(plainDeck, "2"), "rim stayed put");
+  assert.notEqual(angle(bottomOnly, "101"), angle(plainDeck, "101"), "bottom reflected");
+  assert.equal(built(maker, { anchor: "between" }).options.anchor, "between");
 });
 
 /* ---------------- section 12: deck identity ------------------------------ */

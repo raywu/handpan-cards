@@ -13,15 +13,13 @@
  * zone is empty, never a missing key and never null - because pan() yields NaN
  * for a missing key. Built-in decks bypass this module entirely.
  *
- * Generated pans default to the Amara 9 arrangement (owner decisions D12 to
- * D15, 2026-10-06): the ding sits in the centre (r_ding 0.2, ding_dy 0) and an
- * odd rim starts at bottom centre (270), second note to the left. The ding
+ * Generated pans run one direction on every rim, odd or even: odd-numbered
+ * notes on the right, even-numbered on the left. `anchor` ("one", the default,
+ * or "between") only chooses where note 1 sits: at bottom centre, or half a
+ * step to its right. The ding sits in the centre (r_ding 0.2, ding_dy 0) and
  * moves toward the player, Pygmy style (r_ding 0.19, ding_dy 0.1425), only
- * when the pan has inner notes, counted after positional spill. An even rim is
- * unchanged. `mirror` therefore means opposite hands on the two parities:
- * unmirrored, an even rim puts note 2 on the right and an odd rim puts it on
- * the left. That predates this default and keeps saved and shared scales on
- * their sides; do not fix it without the owner.
+ * when the pan has inner notes. Two reflections, `mirror` (rim and inner
+ * rings) and `mirrorBottom` (bottom ring), are resolved by `resolveMirrors`.
  *
  * Phase 5 adds ONE option, `options.order` - the user's correction of the
  * generated layout, a permutation over the non-ding fields. Absent is the
@@ -138,20 +136,22 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the zig-zag (CLAUDE.md "Instrument layouts") ---------------------- */
 
-  /* Rim, right-first ascending: the last (highest) field sits at top centre
-   * and every earlier one steps alternately down the left then the right side.
-   * With N = 9 this reproduces the verified pygmy sequence exactly
-   * (290, 250, 330, 210, 10, 170, 50, 130, 90); mirroring it about the
-   * vertical axis reproduces hijaz and amara exactly. */
-  function rimAngles(count) {
+  /* The rim, one rule for both parities (plan 7.1). With step = 360 / count
+   * and i counting from 0, anchor "one" seats note i at
+   * 270 + s * ceil(i / 2) * step and anchor "between" at
+   * 270 + s * (floor(i / 2) + 0.5) * step, s being +1 for even i and -1 for
+   * odd i: odd-numbered notes on the right, even-numbered on the left. "one"
+   * puts note 1 at bottom centre (hijaz, amara, kurd); "between" straddles it
+   * with note 1 on the right (pygmy: 290, 250, 330, ... 90). */
+  function rimAngles(count, anchor) {
     var step = count > 0 ? 360 / count : 0;
+    var between = anchor === "between";
     var out = [];
     var i;
     for (i = 0; i < count; i += 1) {
-      var back = count - 1 - i;                    /* 0 for the highest note */
-      var magnitude = Math.ceil(back / 2);
-      var sign = (back % 2 === 1) ? 1 : -1;
-      out.push(norm(90 + sign * magnitude * step));
+      var sign = (i % 2 === 1) ? -1 : 1;
+      var magnitude = between ? Math.floor(i / 2) + 0.5 : Math.ceil(i / 2);
+      out.push(norm(270 + sign * magnitude * step));
     }
     return out;
   }
@@ -159,21 +159,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   /* The bottom shell in x-ray view: an evenly spread ring that starts just
    * right of bottom centre and alternates, reproducing the verified pygmy
    * sequence (300, 240, 0, 180, 60, 120) at N = 6. */
-  /* Rim for a pan with a centred ding. An even count is rimAngles unchanged;
-   * an odd count anchors the LOWEST note at bottom centre (270) and zig-zags
-   * up, second note to the left, so no note sits at top centre. */
-  function rimAnglesFromBottom(count) {
-    if (count % 2 === 0) return rimAngles(count);
-    var step = 360 / count;
-    var out = [];
-    var i;
-    for (i = 0; i < count; i += 1) {
-      var sign = (i % 2 === 1) ? -1 : 1;
-      out.push(norm(270 + sign * Math.ceil(i / 2) * step));
-    }
-    return out;
-  }
-
   function bottomAngles(count) {
     var step = count > 0 ? 360 / count : 0;
     var anchor = 270 + step / 2;
@@ -284,12 +269,32 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
-  function placeZones(counts, mirror) {
+  function placeZones(counts, top, bottom, anchor) {
     return {
-      rims: mirrored(isCentred(counts) ? rimAnglesFromBottom(counts.rim) : rimAngles(counts.rim), mirror),
-      inners: mirrored(innerAngles(counts.inner), mirror),
-      bottoms: mirrored(bottomAngles(counts.bottom), mirror)
+      rims: mirrored(rimAngles(counts.rim, anchor), top),
+      inners: mirrored(innerAngles(counts.inner), top),
+      bottoms: mirrored(bottomAngles(counts.bottom), bottom)
     };
+  }
+
+  /* The one place the two reflections are resolved (plan 20.5, AM-5). TOP is
+   * the call's `mirror` if the key is present, else the seed's. BOTTOM is the
+   * call's `mirrorBottom` if present, else the seed's `mirrorBottom` if
+   * present, else the top value. */
+  function resolveMirrors(options, seedOptions) {
+    var call = options || {};
+    var seed = seedOptions || {};
+    var top = !!(("mirror" in call) ? call.mirror : seed.mirror);
+    var bottom = ("mirrorBottom" in call) ? !!call.mirrorBottom :
+      (("mirrorBottom" in seed) ? !!seed.mirrorBottom : top);
+    return { top: top, bottom: bottom };
+  }
+
+  function resolveAnchor(options, seedOptions) {
+    var call = options || {};
+    var seed = seedOptions || {};
+    var anchor = ("anchor" in call) ? call.anchor : seed.anchor;
+    return anchor === "between" ? "between" : "one";
   }
 
   function geometryAt(counts, placed, dingDy) {
@@ -456,7 +461,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var zones = collect(source);
 
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
-    var mirror = !!((options && "mirror" in options) ? options.mirror : seedOptions.mirror);
+    var mirrors = resolveMirrors(options, seedOptions);
+    var anchor = resolveAnchor(options, seedOptions);
 
     var counts = countsOf(zones);
     var wanted = readOrder(
@@ -464,7 +470,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       counts.rim + counts.inner + counts.bottom);
     if (!wanted.ok) return wanted;
 
-    var placed = placeZones(counts, mirror);
+    var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var geom = geometry(counts, placed);
     if (wanted.value) placed = reseat(counts, placed, wanted.value);
 
@@ -475,6 +481,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     solve: solve,
     slotOrder: slotOrder,
     rimAngles: rimAngles,
+    resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
     labelFloor: labelFloor,

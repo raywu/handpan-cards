@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^an.absent.mirrorBottom.takes.the.value.of.mirror$ tests/layout.test.js
+# kills: an absent mirrorBottom takes the value of mirror
+# An absent mirrorBottom is false instead of inheriting mirror.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -286,7 +286,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var seed = seedOptions || {};
+     var top = !!(("mirror" in call) ? call.mirror : seed.mirror);
+     var bottom = ("mirrorBottom" in call) ? !!call.mirrorBottom :
+-      (("mirrorBottom" in seed) ? !!seed.mirrorBottom : top);
++      (("mirrorBottom" in seed) ? !!seed.mirrorBottom : false);
+     return { top: top, bottom: bottom };
+   }
+ 

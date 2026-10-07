@@ -36,7 +36,7 @@ FLOORS = {
     # python
     "tests/test_deck_data.py": 25,
     "tests/test_pdf_build.py": 11,
-    "tests/test_gen_deck.py": 19,
+    "tests/test_gen_deck.py": 27,
     "tests/test_print.py": 40,
     "tests/test_render_agreement.py": 26,
     "tests/test_fixture_integrity.py": 8,
@@ -49,15 +49,15 @@ FLOORS = {
     "tests/test_pdf_parity.py": 12,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 291,
+    "tests/app.test.js": 295,
     "tests/e2e.test.js": 265,
     "tests/harness.test.js": 13,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 58,
+    "tests/core.test.js": 61,
     "tests/voicing.test.js": 16,
-    "tests/layout.test.js": 68,
+    "tests/layout.test.js": 78,
     "tests/naming.test.js": 35,
-    "tests/select.test.js": 48,
+    "tests/select.test.js": 49,
     "tests/share.test.js": 52,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
