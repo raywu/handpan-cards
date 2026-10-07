@@ -300,7 +300,9 @@ this by attaching per-instrument images.
   survives the split. The title card still carries the engine's full reason
   string via `decks._blurb`.
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has two
-  `.modebar` rows - three sites, then two Amy Naylor videos (`AMY: PROGRESSIONS`,
+  `.modebar` rows - three sites (class `trio`, 2026-10-06: three equal widths;
+  in the sidebar two equal on line one and HTC full width below; landscape
+  phones keep the older unequal widths), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
   labels wrap inside their boxes). They are links only, never on a deck or card,
   and join `panelStops()` through `a.mode[id^="res-"]`. The CI `panel-fit`
@@ -310,11 +312,16 @@ this by attaching per-instrument images.
   inherited from the reference deck (DUR/MOLL/VERMINDERT etc.) were
   rewritten to English; useful qualifiers and equivalences kept
   ("HIGH VOICING", "( = Bm6 )", "(NO 5)").
-- Scale degrees per deck: Hijaz {C#:I, D:bII, F:iii° (2026-09-16, added for
+- Scale degrees per deck: Hijaz {C#:I, D:II, F:iii° (2026-09-16, added for
   the engine-adopted F° card - F is functionally E#, the major third of C#),
-  F#:iv, G#:v deg, B:bvii};
-  Pygmy {F:i, Ab:III, Bb:iv, C:v, Db:VI, Eb:VII, G:ii deg};
-  Amara {D:i, A:v, G:IV, C:bVII, F:bIII}.
+  F#:iv, G#:v deg, B:vii};
+  Pygmy {F:i, G:ii deg, Ab:III, Bb:iv, C:v, Db:VI, Eb:VII};
+  Amara {D:i, F:III, G:iv, A:v, C:VII}.
+  (2026-10-05, owner decision: the seven steps of a deck's parent scale take
+  no accidental - case and the degree sign carry the quality. A root OUTSIDE
+  the parent scale takes `#` or `b`; that is the shipped DEFAULT, not an
+  owner decision, and it arises on generated decks only, never on the three
+  built-ins.)
 
 ## App data model (data/decks.json, embedded as DECKS)
 
