@@ -2478,3 +2478,27 @@ New questions for the owner: OQ13 one e2e test on a pre-seeded stored
 custom deck (it redraws and grows silently, AD19); OQ14 Hijaz loses
 default-path e2e coverage once Kurd is the cold-start deck.
 
+
+## Lane A outcome (2026-10-06)
+
+Merged as #252 (main `3d65f8f`, 682 mutants). Review 1 FAIL (position-0
+reads in a third spelling; three unowned app fallback tests), ownership
+widened under AD20, review 2 PASS_WITH_NITS at `c12ca48`.
+
+Nits carried forward, each with the lane that picks it up:
+- Lane B: `selectDeck(1, meta)` in three e2e layout loops assumes position 1
+  is not the booted deck. After Lane B, position 1 is D Amara 10 and the
+  default is still Hijaz, so the switch is real; after Lane C the default is
+  position 0, so it stays real. No change needed on the planned order;
+  recorded so a later reorder does not make the checks vacuous.
+- Lane B: stale wording "three built-ins and six customs" / "nine chips" in
+  `tests/e2e.test.js`, and "renders the first built-in deck" in
+  `tests/mutants/d_registry_ignored.patch`.
+- Lane C: no committed mutant pins the `DEFAULT_DECK` lookup inside
+  `deck()`, because it is equivalent while the default sits at position 0,
+  which is where Kurd lands. Left unpinned; the three app fallback tests
+  kill it under any other order (reviewer probe).
+- Unscheduled: `bootMeta` returns `undefined` with no message if
+  `DEFAULT_DECK` is not in `DECKS`; `docs/SCALE_ENGINE_PLAN.md` quotes the
+  old test title "falls back to the first deck"; PR #252's body predates its
+  last two commits.
