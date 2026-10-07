@@ -57,7 +57,7 @@ FLOORS = {
     "tests/voicing.test.js": 16,
     "tests/layout.test.js": 58,
     "tests/naming.test.js": 35,
-    "tests/select.test.js": 51,
+    "tests/select.test.js": 46,
     "tests/share.test.js": 51,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,

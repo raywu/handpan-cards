@@ -565,16 +565,13 @@ These hold for EVERY voicing the engine emits, built-in fixture or generated.
   fixture, never a policy the engine reproduces; generated decks emit one card
   per candidate.
 
-## 8. Chord selection (D1), ranking, cap, dedup, order
+## 8. Chord selection (D1), ranking, dedup, order
 
 The candidate count on the `twelve note pan` fixture entry
 (`(C3) D3 E3 G3 A3 B3 C4 D4 E4 G4 A4 B4`, pitch classes {C,D,E,G,A,B}) is the
-worked example that fixes the cap's behaviour: 29 raw candidates, 27 after the
-pitch-set collapse of `C6` into `Am7` and `G6` into `Em7`, trimmed to 25 by the
-cap. That entry has 12 fields, so the size-scaled cap decided below evaluates to
-exactly 25 there and this worked example is unaffected by it. The cap therefore
-bites on that entry, and a Phase 2 mutant that widens or removes it changes the
-deck.
+worked example: 29 raw candidates, 27 after the pitch-set collapse of `C6` into
+`Am7` and `G6` into `Em7`. Nothing trims them: the deck holds 35 cards (27
+names, root-instance alternates included).
 
 - DECIDED(D1) Default quality vocabulary: major, minor, diminished, augmented,
   power, sus4, maj7, m7, dominant 7, m7b5, dim7 - the 11 D1 qualities.
@@ -595,20 +592,13 @@ deck.
   quality is additionally a candidate only when every one of its tones lies on
   the TOP shell - that is D1's "extended chords only where the scale makes them
   obvious", operationalised.
-- DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT of a flat 25)
-  Card cap per generated deck SCALES WITH PAN SIZE: `cap = 25` for a pan of at
-  most 12 fields, then `+1` for every field beyond the twelfth, i.e.
-  `cap = 25 + max(0, fieldCount - 12)` where `fieldCount` counts EVERY field in
-  the deck - ding, rim, inner and bottom alike. A 12-field pan therefore still
-  caps at 25, which keeps the section 8 worked example above unchanged; the
-  18-field Pygmy pan caps at 31; the structural maximum (1 ding + 11 rim +
-  2 inner + 6 bottom = 20 fields, section 3) caps at 33. Rationale: the flat 25
-  was calibrated on a 12-note pan and evicted real, playable chords from larger
-  pans purely because they carried fewer top-shell tones - the built-in Pygmy
-  deck's `Gm7b5`, `Bbm7` and `Cm7` rank 27/28/29 under section 8's ranking and
-  are all on the instrument. The ranking rule below is unchanged; only the
-  trim point moves.
-- DEFAULT[owner-review] Ranking, applied to trim to the cap: triads > power >
+- DECIDED(owner 2026-10-06: "let's remove that cap", "Everywhere") A deck
+  holds every card the ranking produces. There is no size cap. This supersedes
+  the earlier size-scaled cap (`25 + max(0, fieldCount - 12)`). Ranking still
+  orders the deck: by root degree, then tier, then quality rank, with
+  alternates beside their primary. `ALTERNATE_CAP` still limits voicings per
+  name.
+- DEFAULT[owner-review] Ranking: triads > power >
   sus4 > 7ths > extended; within a tier, more top-shell tones ranks higher;
   remaining ties break by root scale degree ascending from the tonic, then by
   the quality's `rank` field in `qualities.json` (an explicit integer, 1 =
