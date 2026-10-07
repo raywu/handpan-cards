@@ -2546,3 +2546,104 @@ Nits carried forward, all unscheduled unless a lane is named:
   rim note with a bottom note and can overlap fields. Only a hand-built
   share link reaches it. The scale-syntax plan should refuse cross-zone
   orders.
+
+## Lane U1 review and owner decisions (2026-10-06, after PR #254 review 1)
+
+**Review 1 of PR #254 at `1576ef1`: FAIL.** CI green. All eight lane
+deviations were judged acceptable. The failure is a regression outside the
+lane's ownership: with the cap gone, `mediumEnumerate` in
+`src/engine/sequence.js` reaches `MEDIUM_ENUM_BUDGET` (60000 nodes) on
+custom pans with nine or more pitch classes and returns a truncated set. The
+DFS walks `startSet` and `pool` in a fixed order, so the truncated set is
+the same prefix on every call. `pickMedium` passes `stats = null` and deals
+from it without a signal. Reviewer's measurements at the head: 485 of 1,664
+random valid seeds truncate, against 3 on `main`; 0 of 759 at eight pitch
+classes or fewer, 65 of 390 at nine, 228 of 323 at ten, 161 of 161 at
+eleven, 31 of 31 at twelve. `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | B3 C#4 F#4`
+builds 94 cards and truncates; on `main` it builds 25 and completes in
+34,677 nodes. On a chromatic seed every length-4 MEDIUM progression opens on
+one card. Not affected: the three built-ins, the presets, Kurd 10, Amara 9,
+Amara 10, generated Pygmy 18 (24,886 nodes).
+
+**Owner decisions, 2026-10-06 (binding):**
+- OQ-U2 CLOSED: "Fix the search". No bound on custom decks. Lane U1 gains
+  `src/engine/sequence.js` (block U1b below).
+- OQ-U1 CLOSED: Pygmy "Increase to 53" (Fmadd9 `[5,7,8,6]`).
+- OQ13 CLOSED: "Yes, add it". OQ14 CLOSED: "Accept it".
+- Pygmy Fm9: "Use the engine's". The shipped card `[5,7,8,9,11]` becomes
+  `[5,7,8,9,6]`. This is authorised deck data change; it belongs to Lane U2.
+- "Let's not make exceptions and keep engine output as sot": engine output
+  is the source of truth for the built-in decks. Lane U2's block is updated
+  for Fmadd9 and Fm9 before U2 is dispatched. Any change to Pygmy's stored
+  geometry is out of this plan (it needs the new solver of the scale-syntax
+  plan).
+
+### Lane U1b: MEDIUM search stays fair when it runs out of budget
+
+Same branch and PR as Lane U1 (`claude/beginner-u1-uncap`, #254).
+
+**Goal:** when `mediumEnumerate` truncates, `pickMedium` deals from a fair
+sample of the MEDIUM space instead of the fixed DFS prefix. A deck whose
+enumeration completes deals exactly as it does at `1576ef1`.
+
+**Owns (added to Lane U1's list):**
+- `src/engine/sequence.js`: `mediumEnumerate`, `mediumCells`, `pickMedium`,
+  the `MEDIUM_ENUM_BUDGET` comment block, and one new helper. The
+  `<!-- engine:sequence begin -->` region of `index.html`, written by
+  `python3 tools/inline_engine.py` only.
+- `tests/sequence.test.js`: new tests for this block, and the S7 title.
+- New mutants under `tests/mutants/` for the new code; `FLOORS` and the
+  README mutant count follow.
+- The review nits in files U1 already owns: `tests/select.test.js`
+  (`KURD_9` name, "after the trim" wording), the rank comment in
+  `src/engine/select.js`, the cap wording in `docs/SCALE_ENGINE_PLAN.md`,
+  the headroom comment in `sequence.js`.
+
+**Design (binding shape, details free):**
+- First pass unchanged: the deterministic DFS with `MEDIUM_ENUM_BUDGET`. It
+  consumes no rng. If it does not truncate, its cells are used as today.
+- Only if it truncates, a second pass fills the cells by random walks drawn
+  from the caller's `rng`: each walk picks a length from
+  `TIER_LENGTHS.intermediate`, a start uniformly from `startSet`, then each
+  next card uniformly from the candidates the DFS would have expanded (same
+  three prunes), and files the leaf through the same classification. It
+  stops at the same node budget. Duplicates are filed once.
+- `drawMedium` and the cell order are untouched.
+- `mediumCells(deck, stats, budget)` keeps its deterministic first-pass
+  result and reports `stats.truncated`, so the shape tests keep their
+  meaning.
+
+**TDD order (red first):**
+1. "MEDIUM on a truncating pan does not open on one card": on the chromatic
+   seed and on the eleven-pitch-class seed above, 200 seeded `pick` calls at
+   MEDIUM yield at least half of `startSet` as first cards. Red at
+   `1576ef1`.
+2. "a deck that completes consumes no extra rng": for the three built-ins,
+   Kurd 10 and Amara 10, a seeded run of 50 MEDIUM picks equals a literal
+   captured at `1576ef1`.
+3. "every sampled sequence is a MEDIUM sequence": each dealt progression on
+   the truncating seeds passes `classifyTier(...) === "intermediate"` and
+   the loop-closure check.
+4. Implement. `python3 tools/inline_engine.py`.
+5. Mutants: at least "second pass removed", "second pass runs on complete
+   decks", "second pass ignores the colour prune". Each `# kills:` names one
+   test above exactly.
+
+**Acceptance:**
+- Tests 1 to 3 green; every existing sequence test green without edits
+  other than the S7 title.
+- `git diff main -- data/decks.json` empty; no PDF changed.
+- Median `pickMedium` time on the chromatic seed is at most 2.5 times its
+  time at `1576ef1`, measured and stated in the lane report.
+- `python3 tools/inline_engine.py --check` and `python3 tools/validate.py`
+  pass. Mutant count is what CI reports; FLOORS and README match it.
+- CI green, including the e2e and mutation jobs.
+
+**Verify:** Lane U1's verify command.
+
+**Non-goals:** raising or removing `MEDIUM_ENUM_BUDGET`; `drawMedium`;
+BASIC and HARD dealing; `dfsFindAll`; any deck data; a warning shown to the
+user.
+
+**Stop conditions:** an existing sequence test needs an edit beyond the S7
+title; test 2 cannot hold; the time bound cannot hold.
