@@ -13,6 +13,16 @@
  * zone is empty, never a missing key and never null - because pan() yields NaN
  * for a missing key. Built-in decks bypass this module entirely.
  *
+ * Generated pans default to the Amara 9 arrangement (owner decisions D12 to
+ * D15, 2026-10-06): the ding sits in the centre (r_ding 0.2, ding_dy 0) and an
+ * odd rim starts at bottom centre (270), second note to the left. The ding
+ * moves toward the player, Pygmy style (r_ding 0.19, ding_dy 0.1425), only
+ * when the pan has inner notes, counted after positional spill. An even rim is
+ * unchanged. `mirror` therefore means opposite hands on the two parities:
+ * unmirrored, an even rim puts note 2 on the right and an odd rim puts it on
+ * the left. That predates this default and keeps saved and shared scales on
+ * their sides; do not fix it without the owner.
+ *
  * Phase 5 adds ONE option, `options.order` - the user's correction of the
  * generated layout, a permutation over the non-ding fields. Absent is the
  * generated default; see readOrder below.
@@ -32,6 +42,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   var R_DING = 0.19;          /* pygmy literal: the enlarged, offset ding    */
   var DING_DY = 0.1425;       /* offset toward the player                    */
+  var R_DING_CENTRED = 0.2;   /* amara / hijaz literal: the centred ding     */
   var RIM_PLAIN = 0.745;      /* hijaz / amara literal, no inner ring        */
   var RIM_WITH_INNER = 0.722; /* pygmy literal, inner fields present         */
   var INNER_ORB = 0.38;       /* pygmy literal                               */
@@ -132,6 +143,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   /* The bottom shell in x-ray view: an evenly spread ring that starts just
    * right of bottom centre and alternates, reproducing the verified pygmy
    * sequence (300, 240, 0, 180, 60, 120) at N = 6. */
+  /* Rim for a pan with a centred ding. An even count is rimAngles unchanged;
+   * an odd count anchors the LOWEST note at bottom centre (270) and zig-zags
+   * up, second note to the left, so no note sits at top centre. */
+  function rimAnglesFromBottom(count) {
+    if (count % 2 === 0) return rimAngles(count);
+    var step = 360 / count;
+    var out = [];
+    var i;
+    for (i = 0; i < count; i += 1) {
+      var sign = (i % 2 === 1) ? -1 : 1;
+      out.push(norm(270 + sign * Math.ceil(i / 2) * step));
+    }
+    return out;
+  }
+
   function bottomAngles(count) {
     var step = count > 0 ? 360 / count : 0;
     var anchor = 270 + step / 2;
@@ -143,6 +169,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       out.push(norm(anchor + sign * magnitude * step));
     }
     return out;
+  }
+
+  function isCentred(counts) {
+    return counts.inner === 0;
   }
 
   function innerAngles(count) {
@@ -231,7 +261,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
   function placeZones(counts, mirror) {
     return {
-      rims: mirrored(rimAngles(counts.rim), mirror),
+      rims: mirrored(isCentred(counts) ? rimAnglesFromBottom(counts.rim) : rimAngles(counts.rim), mirror),
       inners: mirrored(innerAngles(counts.inner), mirror),
       bottoms: mirrored(bottomAngles(counts.bottom), mirror)
     };
@@ -244,6 +274,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var hasRim = counts.rim > 0;
     var hasInner = counts.inner > 0;
     var hasBottom = counts.bottom > 0;
+    var rDing = isCentred(counts) ? R_DING_CENTRED : R_DING;
+    var dingDy = isCentred(counts) ? 0 : DING_DY;
 
     var rimOrb = hasRim ? (hasInner ? RIM_WITH_INNER : RIM_PLAIN) : 0;
     var innerOrb = hasInner ? INNER_ORB : 0;
@@ -258,10 +290,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < rims.length; i += 1) topPoints.push(point(rimOrb, rims[i]));
     for (i = 0; i < inners.length; i += 1) topPoints.push(point(innerOrb, inners[i]));
 
-    var dingPoint = [0, -DING_DY];
+    var dingPoint = [0, -dingDy];
     var dingClear = Infinity;
     for (i = 0; i < topPoints.length; i += 1) {
-      dingClear = Math.min(dingClear, distance(topPoints[i], dingPoint) - R_DING);
+      dingClear = Math.min(dingClear, distance(topPoints[i], dingPoint) - rDing);
     }
 
     var rNote = R_NOTE_MAX;
@@ -290,7 +322,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     /* ext: the furthest drawn element, in R units - the outermost circle edge
      * plus its number-label reach, padded. Generated decks only (section 11). */
     var reach = 1;                                   /* the shell circle itself */
-    reach = Math.max(reach, DING_DY + R_DING);
+    reach = Math.max(reach, dingDy + rDing);
     if (hasRim) {
       reach = Math.max(reach, rimOrb + rNote);
       if (rimNumOut) reach = Math.max(reach, rimOrb + rNote + nIn + fNum * LABEL_REACH);
@@ -306,12 +338,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rim: round(rimOrb, 4),
       inner: round(innerOrb, 4),
       bottom: round(bottomOrb, 4),
-      r_ding: R_DING,
-      ding_dy: DING_DY,
+      r_ding: rDing,
+      ding_dy: dingDy,
       r_note: rNote,
       r_bnote: rBnote,
       inner_ring: hasInner ? 0 : INNER_RING_DECOR,
-      f_ding: round(F_DING_RATIO * R_DING, 4),
+      f_ding: round(F_DING_RATIO * rDing, 4),
       f_note: fNote,
       f_bnote: fBnote,
       f_num: fNum,

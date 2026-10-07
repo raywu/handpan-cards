@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^a.pan.with.no.inner.notes.draws.a.centred.ding..and.any.inner.note.moves.it.off.centre$ tests/layout.test.js
+# kills: a pan with no inner notes draws a centred ding, and any inner note moves it off centre
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -172,7 +172,7 @@
+   }
+ 
+   function isCentred(counts) {
+-    return counts.inner === 0;
++    return false;
+   }
+ 
+   function innerAngles(count) {
