@@ -5688,3 +5688,52 @@ test("forgetting a deck removes its record whatever spelling the record holds", 
     assert.strictEqual(left[0].s, other, "the wrong record was removed");
   }
 });
+
+/* Lane L0 bounce: a deck whose canonical string does not re-parse (octave -1)
+   has no deck id, and a null id matches nothing. It falls back to the exact
+   string, and an unreadable record of another pan is kept byte for byte. */
+const NO_ID_A = "(D0) A D F | A";
+const NO_ID_B = "(E0) B E G | B";
+const UNREADABLE = { v: 2, s: "(D3) A3 not-a-scale" };
+
+function scalesOf(app) {
+  return JSON.parse(app.store[app.get("SCALES_KEY")] || "[]");
+}
+
+test("deleting a deck with no readable id keeps every other record byte for byte", () => {
+  const app = boot();
+  const first = makeCustom(app, NO_ID_A);
+  const second = makeCustom(app, NO_ID_B);
+  const before = scalesOf(app);
+  assert.strictEqual(before.length, 2, "setup: two records");
+  app.run(`deleteDeck(${JSON.stringify(first.id)})`);
+  assert.deepStrictEqual(scalesOf(app), [before[1]], "the second pan's record was lost");
+  assert.ok(app.registry()[second.id]);
+
+  const key = app.get("SCALES_KEY");
+  const amara = { v: 2, s: AMARA_STRING, o: {} };
+  const seeded = [UNREADABLE, "junk", amara];
+  const other = boot({ storage: { [key]: JSON.stringify(seeded) } });
+  const mine = makeCustom(other, NO_ID_A);
+  other.run(`deleteDeck(${JSON.stringify(mine.id)})`);
+  assert.strictEqual(other.store[key], JSON.stringify(seeded), "unreadable records were dropped");
+});
+
+test("editing a deck with no readable id keeps an unreadable record and replaces its own", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([UNREADABLE]) } });
+  const mine = makeCustom(app, NO_ID_A);
+  assert.strictEqual(scalesOf(app).length, 2, "setup: unreadable plus own");
+  editFields(app, mine, OTHER_STRING);
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 2, JSON.stringify(list));
+  assert.deepStrictEqual(list[0], UNREADABLE, "the unreadable record was overwritten");
+  assert.strictEqual(list[1].s, app.get(`HPE.core.formatSeed(deck().fields)`));
+});
+
+test("saving a deck with no readable id twice leaves one record", () => {
+  const app = boot();
+  makeCustom(app, NO_ID_A);
+  makeCustom(app, NO_ID_A);
+  assert.strictEqual(scalesOf(app).length, 1, JSON.stringify(scalesOf(app)));
+});

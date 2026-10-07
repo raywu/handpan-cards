@@ -7239,13 +7239,19 @@ function stringDeckId(str) {
   const res = scaleReader(SHARE_VERSION)(str);
   return res.ok ? HPE.core.deckId(res.value.fields) : null;
 }
+// A null id never matches: when either side has no id (a record this build
+// cannot read, or a string that does not re-parse) the exact string decides.
+function sameDeck(r, id, str) {
+  const rid = recordDeckId(r);
+  return rid !== null && id !== null ? rid === id : !!r && r.s === str;
+}
 function rememberScale(seed) {
   const rec = scaleRecord(seed);
   const id = HPE.core.deckId(seed.fields);
   const out = [];
   let placed = false;
   for (const r of savedScales()) {
-    if (recordDeckId(r) === id) { if (!placed) { out.push(rec); placed = true; } }
+    if (sameDeck(r, id, rec.s)) { if (!placed) { out.push(rec); placed = true; } }
     else out.push(r);                     // a duplicate of the key is collapsed
   }
   if (!placed) out.push(rec);
@@ -7256,7 +7262,7 @@ function rememberScale(seed) {
 // spelling the record holds.
 function forgetScale(str) {
   const id = stringDeckId(str);
-  writeScales(savedScales().filter(r => !r || recordDeckId(r) !== id));
+  writeScales(savedScales().filter(r => !r || !sameDeck(r, id, str)));
 }
 // Queue row 73: editing the NOTES replaces the deck, so the old record leaves
 // storage and the new one takes ITS INDEX - restoreScales rebuilds the registry
@@ -7268,12 +7274,12 @@ function replaceScale(oldStr, seed) {
   const newId = HPE.core.deckId(seed.fields);
   const oldId = stringDeckId(oldStr);
   const list = savedScales();
-  const at = list.findIndex(r => r && recordDeckId(r) === oldId);
+  const at = list.findIndex(r => r && sameDeck(r, oldId, oldStr));
   if (at < 0) { rememberScale(seed); return; }
   const out = [];
   list.forEach((r, i) => {
     if (i === at) out.push(rec);
-    else if (!r || recordDeckId(r) !== newId) out.push(r);   // never a duplicate of the new record
+    else if (!r || !sameDeck(r, newId, rec.s)) out.push(r);   // never a duplicate of the new record
   });
   writeScales(out);
 }
