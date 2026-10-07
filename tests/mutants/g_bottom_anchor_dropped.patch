@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^an.odd.centred.rim.starts.at.bottom.centre.and.keeps.each.note.on.its.side$ tests/layout.test.js
+# kills: an odd centred rim starts at bottom centre and keeps each note on its side
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -261,7 +261,7 @@
+   /* Per-zone placement: each zone's evenly spread angles, mirrored and rounded. */
+   function placeZones(counts, mirror) {
+     return {
+-      rims: mirrored(isCentred(counts) ? rimAnglesFromBottom(counts.rim) : rimAngles(counts.rim), mirror),
++      rims: mirrored(rimAngles(counts.rim), mirror),
+       inners: mirrored(innerAngles(counts.inner), mirror),
+       bottoms: mirrored(bottomAngles(counts.bottom), mirror)
+     };

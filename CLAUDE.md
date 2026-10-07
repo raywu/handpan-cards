@@ -117,6 +117,19 @@ from below, so projected to top view their sequences typically run opposite
 the top zig-zag (mirror geometry). Notation systems (e.g. Notepan) handle
 this by attaching per-instrument images.
 
+**Generated layouts (2026-10-06, owner decisions).** The layout solver
+defaults to the Amara 9 arrangement: ding in the centre, lowest rim note at
+bottom centre (270). It moves the ding toward the player, Pygmy style, only
+when the seed has inner notes ("Only with inner notes") - whether written
+after a `/` or spilled there as top notes 12 and 13. With an odd number of
+rim notes no note sits at top centre; the two highest flank it. An even
+rim draws exactly as before. The mirror option means opposite hands on odd
+and even rims: unmirrored, an even rim puts note 2 on the right and an odd
+rim puts it on the left. That predates this change and was kept so saved
+and shared scales keep each note on its side ("Keep their sides"). Do not
+"fix" it without the owner. The three original decks are literal data and
+never pass through the solver.
+
 ## Verified card conventions (pixel-validated against the original D Amara PDF)
 
 1. **Pitch-class-complete highlighting.** The diagram lights EVERY field

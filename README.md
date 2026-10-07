@@ -124,7 +124,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 682 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 685 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -171,6 +171,8 @@ do not "correct"):
 - **F3 Low Pygmy bottom notes** (U1-U6) are drawn as an outer ring in
   x-ray view (seen from above): U1 C3 lower-right, U2 Db3 lower-left,
   U3 Eb3 right, U4 Bb3 left, U5 Db4 upper-right, U6 Ab5 upper-left.
+- **Generated layouts** put the ding in the centre unless the scale has inner
+  notes.
 - Highlighting is pitch-class complete (every instance of a chord's
   pitch classes lights up, ding included), matching the verified
   convention of the original D Amara reference deck.

@@ -1,0 +1,14 @@
+# suite: node --test --test-name-pattern ^an.odd.centred.rim.starts.at.bottom.centre.and.keeps.each.note.on.its.side$ tests/layout.test.js
+# kills: an odd centred rim starts at bottom centre and keeps each note on its side
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -152,7 +152,7 @@
+     var out = [];
+     var i;
+     for (i = 0; i < count; i += 1) {
+-      var sign = (i % 2 === 1) ? -1 : 1;
++      var sign = (i % 2 === 1) ? 1 : -1;
+       out.push(norm(270 + sign * Math.ceil(i / 2) * step));
+     }
+     return out;

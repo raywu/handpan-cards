@@ -219,12 +219,19 @@ test("a pan with bottom fields gets a bottom ring outside the shell", () => {
   assert.ok(geom.n_out > 0);
 });
 
-test("the ding keeps the D12 offset geometry on every generated pan", () => {
+test("the ding keeps the D12 offset geometry on every pan with inner notes and is centred on every other", () => {
   for (const entry of SWEEP) {
-    const { geom } = solved(entry);
-    assert.ok(geom.r_ding > 0, entry.label);
-    assert.ok(geom.ding_dy > 0, `${entry.label}: the ding sits toward the player`);
+    const { geom, fields } = solved(entry);
     assert.ok(geom.ding_dy + geom.r_ding < 1, entry.label);
+    if (countZone(fields, "inner") > 0) {
+      assert.equal(geom.ding_dy, 0.1425, `${entry.label}: the ding sits toward the player`);
+      assert.equal(geom.r_ding, 0.19, entry.label);
+      assert.equal(geom.f_ding, 0.114, entry.label);
+    } else {
+      assert.equal(geom.ding_dy, 0, `${entry.label}: the ding is centred`);
+      assert.equal(geom.r_ding, 0.2, entry.label);
+      assert.equal(geom.f_ding, 0.12, entry.label);
+    }
   }
 });
 
@@ -271,16 +278,22 @@ test("the ding angle stays null and every other angle is filled", () => {
 
 /* ---- the verified built-in sequences (CLAUDE.md "Instrument layouts") --- */
 
-test("nine rim fields reproduce the verified pygmy zig-zag", () => {
-  const nine = seedOf(NINETEEN, 9, 0);
-  const { fields } = solved({ ...nine, label: "pygmy rim" });
+const PYGMY_RIM_SEED = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
+
+function pygmyRim(options) {
+  const parsed = HPE.core.parseSeed(PYGMY_RIM_SEED);
+  assert.equal(parsed.ok, true);
+  return solved({ seed: parsed.value, string: PYGMY_RIM_SEED, label: "pygmy rim" }, options);
+}
+
+test("nine rim fields with an inner pair reproduce the verified pygmy zig-zag", () => {
+  const { fields } = pygmyRim();
   const angles = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]);
   assert.deepEqual(angles, [290, 250, 330, 210, 10, 170, 50, 130, 90]);
 });
 
-test("mirror turns the nine-field zig-zag into the left-first pattern", () => {
-  const nine = seedOf(NINETEEN, 9, 0);
-  const { fields } = solved({ ...nine, label: "pygmy rim" }, { mirror: true });
+test("mirror turns the pygmy nine-field zig-zag into the left-first pattern", () => {
+  const { fields } = pygmyRim({ mirror: true });
   const angles = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fields[String(i)][4]);
   assert.deepEqual(angles, [250, 290, 210, 330, 170, 10, 130, 50, 90]);
 });
@@ -299,14 +312,19 @@ test("six bottom fields reproduce the verified pygmy x-ray ring", () => {
   assert.deepEqual(angles, [300, 240, 0, 180, 60, 120]);
 });
 
-test("the rim ends at top centre and is evenly spread", () => {
+test("the rim is evenly spread and anchored at bottom centre (odd, centred) or top centre", () => {
   for (const entry of SWEEP) {
     const { fields } = solved(entry);
     const rim = Object.keys(fields)
       .filter((id) => fields[id][3] === "rim")
       .sort((a, b) => Number(a) - Number(b))
       .map((id) => fields[id][4]);
-    assert.equal(rim[rim.length - 1], 90, `${entry.label}: highest rim note at top centre`);
+    if (countZone(fields, "inner") === 0 && rim.length % 2 === 1) {
+      assert.equal(rim[0], 270, `${entry.label}: lowest rim note at bottom centre`);
+      assert.ok(!rim.includes(90), `${entry.label}: nothing at top centre`);
+    } else {
+      assert.equal(rim[rim.length - 1], 90, `${entry.label}: highest rim note at top centre`);
+    }
     const step = 360 / rim.length;
     const sorted = [...rim].sort((a, b) => a - b);
     for (let i = 1; i < sorted.length; i += 1) {
@@ -330,11 +348,116 @@ function firstSideX(fields) {
   return 0;
 }
 
-test("the default is right-first and mirror is left-first", () => {
+test("the default is right-first and mirror is left-first, except on an odd centred rim", () => {
   for (const entry of SWEEP) {
-    assert.ok(firstSideX(solved(entry).fields) > 0, `${entry.label}: default is right-first`);
+    const { fields } = solved(entry);
+    const flipped = countZone(fields, "inner") === 0 && countZone(fields, "rim") % 2 === 1;
     const mirrored = HPE.layout.solve(entry.seed, { mirror: true }).value;
-    assert.ok(firstSideX(mirrored.fields) < 0, `${entry.label}: mirror is left-first`);
+    const [def, mir] = flipped ? [-1, 1] : [1, -1];
+    assert.equal(Math.sign(firstSideX(fields)), def, `${entry.label}: default hand`);
+    assert.equal(Math.sign(firstSideX(mirrored.fields)), mir, `${entry.label}: mirror hand`);
+  }
+});
+
+function rimOnly(count, options) {
+  const entry = { ...seedOf(TWELVE, count, 0), label: `rim-only N=${count}` };
+  const { fields, geom } = solved(entry, options);
+  const angles = Array.from({ length: count }, (_, i) => fields[String(i + 1)][4]);
+  return { angles, geom };
+}
+
+test("a pan with no inner notes draws a centred ding, and any inner note moves it off centre", () => {
+  const dings = (str, options) => {
+    const parsed = HPE.core.parseSeed(str);
+    assert.equal(parsed.ok, true, str);
+    const { geom } = HPE.layout.solve(parsed.value, options).value;
+    return [geom.ding_dy, geom.r_ding];
+  };
+  for (let n = 5; n <= 11; n += 1) {
+    assert.deepEqual([rimOnly(n).geom.ding_dy, rimOnly(n).geom.r_ding], [0, 0.2], `${n} rim notes`);
+  }
+  assert.deepEqual(dings(PYGMY_RIM_SEED), [0.1425, 0.19]);
+  const top12 = seedOf(NINETEEN, 12, 0).string;
+  const top13 = seedOf(NINETEEN, 13, 0).string;
+  assert.deepEqual(dings(top12), [0.1425, 0.19], "12 top notes, no slash: 11 rim + 1 inner");
+  assert.deepEqual(dings(top13), [0.1425, 0.19], "13 top notes, no slash");
+  assert.deepEqual(dings("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | Bb2 C3"), [0, 0.2], "bottom notes do not force the offset");
+});
+
+const ODD_FROM_BOTTOM = {
+  5: { plain: [270, 198, 342, 126, 54], mirror: [270, 342, 198, 54, 126] },
+  7: { plain: [270, 218.6, 321.4, 167.1, 12.9, 115.7, 64.3], mirror: [270, 321.4, 218.6, 12.9, 167.1, 64.3, 115.7] },
+  9: { plain: [270, 230, 310, 190, 350, 150, 30, 110, 70], mirror: [270, 310, 230, 350, 190, 30, 150, 70, 110] },
+  11: { plain: [270, 237.3, 302.7, 204.5, 335.5, 171.8, 8.2, 139.1, 40.9, 106.4, 73.6], mirror: [270, 302.7, 237.3, 335.5, 204.5, 8.2, 171.8, 40.9, 139.1, 73.6, 106.4] },
+};
+
+/* The angles main drew for an odd rim: highest at 90, right-first. */
+function legacyOdd(count) {
+  const step = 360 / count;
+  return Array.from({ length: count }, (_, i) => {
+    const back = count - 1 - i;
+    const sign = back % 2 === 1 ? 1 : -1;
+    return (((90 + sign * Math.ceil(back / 2) * step) % 360) + 360) % 360;
+  });
+}
+
+test("an odd centred rim starts at bottom centre and keeps each note on its side", () => {
+  for (const count of [5, 7, 9, 11]) {
+    for (const hand of ["plain", "mirror"]) {
+      const options = hand === "mirror" ? { mirror: true } : undefined;
+      const { angles } = rimOnly(count, options);
+      assert.deepEqual(angles, ODD_FROM_BOTTOM[count][hand], `${count} rim notes, ${hand}`);
+      const before = legacyOdd(count).map((a) => (hand === "mirror" ? (((180 - a) % 360) + 360) % 360 : a));
+      for (let i = 1; i < count - 1; i += 1) {
+        assert.equal(Math.sign(Math.cos(angles[i] * DEG)), Math.sign(Math.cos(before[i] * DEG)),
+          `${count} rim notes, ${hand}: note ${i + 1} keeps its side`);
+      }
+    }
+  }
+});
+
+test("a stored order and mirror draw the same sides on an odd rim", () => {
+  const nine = { ...seedOf(TWELVE, 9, 0), label: "nine rim" };
+  const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(String);
+  const anglesOf = (options) => {
+    const { fields } = solved(nine, options);
+    return ids.map((id) => fields[id][4]);
+  };
+  assert.deepEqual(anglesOf({ order: rotated(9, 1) }), rotated(9, 1).map((slot) => ODD_FROM_BOTTOM[9].plain[slot]));
+  assert.deepEqual(anglesOf({ order: reversed(9) }), ODD_FROM_BOTTOM[9].plain.slice().reverse());
+  assert.deepEqual(anglesOf({ mirror: true }), ODD_FROM_BOTTOM[9].mirror);
+  assert.deepEqual(anglesOf({ mirror: true, order: reversed(9) }), ODD_FROM_BOTTOM[9].mirror.slice().reverse());
+});
+
+test("even rim counts are untouched by the centred default", () => {
+  const EVEN = {
+    6: { plain: [270, 330, 210, 30, 150, 90], mirror: [270, 210, 330, 150, 30, 90] },
+    8: { plain: [270, 315, 225, 0, 180, 45, 135, 90], mirror: [270, 225, 315, 180, 0, 135, 45, 90] },
+    10: { plain: [270, 306, 234, 342, 198, 18, 162, 54, 126, 90], mirror: [270, 234, 306, 198, 342, 162, 18, 126, 54, 90] },
+  };
+  for (const count of [6, 8, 10]) {
+    assert.deepEqual(rimOnly(count).angles, EVEN[count].plain, `${count} plain`);
+    assert.deepEqual(rimOnly(count, { mirror: true }).angles, EVEN[count].mirror, `${count} mirror`);
+  }
+});
+
+test("the centred default reproduces the shipped Amara 9 and Hijaz layouts", () => {
+  const decks = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "decks.json"), "utf8"));
+  const makers = {
+    amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+  };
+  for (const id of Object.keys(makers)) {
+    const shipped = decks.find((d) => d.id === id);
+    const parsed = HPE.core.parseSeed(makers[id]);
+    const { geom, fields } = HPE.layout.solve(parsed.value, { mirror: true }).value;
+    for (const key of ["rim", "r_ding", "r_note", "n_in", "inner_ring"]) {
+      assert.equal(geom[key], shipped.geom[key], `${id} ${key}`);
+    }
+    for (const fid of Object.keys(shipped.fields)) {
+      if (shipped.fields[fid][3] === "ding") continue;
+      assert.equal(fields[fid][4], shipped.fields[fid][4], `${id} field ${fid}`);
+    }
   }
 });
 

@@ -452,6 +452,21 @@ The field id and label scheme, read off all three built-ins in `index.html`:
 - DECIDED(D14 as amended, plan P0d [review D3]) Zone assignment happens in
   `core.parseSeed`; `layout.solve` never changes a zone, so the deck id never
   depends on layout code.
+- DECIDED(owner 2026-10-06, D12 to D15 of the two-beginner-decks plan) The ding
+  rule: when the pan has no inner notes (counted after positional spill, so 12
+  or 13 top notes with no `/` count as having them) the ding is centred,
+  `r_ding` 0.2, `ding_dy` 0, `f_ding` 0.12. Otherwise it keeps the offset,
+  `r_ding` 0.19, `ding_dy` 0.1425. Bottom notes do not move it.
+- DECIDED(owner 2026-10-06, D13, D14) The odd-rim anchor, on a centred pan
+  only: with an odd rim count the lowest note sits at 270 and the second note
+  at `270 - step`, so nothing sits at top centre and each note stays on the
+  side of the vertical axis it had before, except the note that was on the
+  axis. An even rim is unchanged (highest note at 90). Seeds with inner notes
+  keep the top-anchored rim.
+- NOTE The mirror option means opposite hands on the two parities: unmirrored,
+  an even rim puts note 2 on the right and an odd centred rim puts it on the
+  left. That predates the centred default and is kept so saved and shared
+  scales keep each note on its side. Do not fix it without the owner.
 
 ## 5. Legality invariants for a voicing
 
