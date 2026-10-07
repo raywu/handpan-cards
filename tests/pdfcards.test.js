@@ -350,3 +350,19 @@ test("EG-2 pdfcards takes pc/isDing from core at use time", () => {
   assert.equal(lateBytes, bytes,
     "core must be read when a card draws, not when pdfcards loads");
 });
+
+test("fromGenerated prints the short line for SMALL_LABELS and the capitalised reason for NO_THIRDS", () => {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  function deckWith(warnings) {
+    const parsed = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+    const built = E.select.build(parsed.value);
+    const value = Object.assign({}, built.value, { warnings: warnings });
+    return HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: value });
+  }
+  const crowded = deckWith([{ code: "SMALL_LABELS", reason: "Crowded pan: the smallest labels print at 3.4 pt, under the 3.6 pt this app treats as readable. Nothing is left out." }]);
+  assert.equal(crowded.blurb.filter((l) => l === "CROWDED PAN: SMALL LABELS").length, 1);
+  assert.ok(!crowded.blurb.some((l) => /3\.6 PT/.test(l)));
+  const reason = "No 3rds on this pan: only power chords and sus chords.";
+  const quiet = deckWith([{ code: "NO_THIRDS", reason: reason }]);
+  assert.ok(quiet.blurb.includes(reason.toUpperCase()));
+});

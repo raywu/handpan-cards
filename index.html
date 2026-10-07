@@ -2344,6 +2344,8 @@ HPE.pdfdeck = (function () {
     return ids.slice().sort(function (a, b) { return Number(a) - Number(b); });
   }
 
+  var TITLE_WARNINGS = { SMALL_LABELS: "CROWDED PAN: SMALL LABELS" };
+
   function blurb(spec, chordCount, warnings) {
     function line(zones) {
       return numericSort(zoneIds(spec, zones)).map(function (k) {
@@ -2359,8 +2361,12 @@ HPE.pdfdeck = (function () {
     out.push(chordCount + " CHORD" + (chordCount !== 1 ? "S" : "") +
              " - ONE CARD PER CHORD");
     // A warned pan would otherwise print with no sign anywhere on the sheets
-    // that the app had flagged it; the engine's own reason string, verbatim.
-    warnings.forEach(function (w) { out.push(String(w.reason).toUpperCase()); });
+    // that the app had flagged it; the engine's own reason string, verbatim, unless TITLE_WARNINGS has a
+    // shorter line that fits the card.
+    warnings.forEach(function (w) {
+      out.push(Object.prototype.hasOwnProperty.call(TITLE_WARNINGS, w.code)
+        ? TITLE_WARNINGS[w.code] : String(w.reason).toUpperCase());
+    });
     return out;
   }
 
@@ -2527,6 +2533,7 @@ HPE.pdfdeck = (function () {
   return {
     fromGenerated: fromGenerated,
     fromBuiltin: fromBuiltin,
+    TITLE_WARNINGS: TITLE_WARNINGS,
     bankers: bankers,
     hexColor: hexColor
   };

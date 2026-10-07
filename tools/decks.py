@@ -294,6 +294,9 @@ KURD = _from_canonical("kurd")
 AMARA10 = _from_canonical("amara10")
 
 
+TITLE_WARNINGS = {"SMALL_LABELS": "CROWDED PAN: SMALL LABELS"}
+
+
 def _blurb(spec, chord_count, warnings=()):
     """Title-card copy: the pan's own notes, the deck size, any warning."""
     def line(zone_test):
@@ -312,7 +315,7 @@ def _blurb(spec, chord_count, warnings=()):
     # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
     # that the app had flagged it; the engine's own reason string, verbatim.
     for w in warnings:
-        out.append(w["reason"].upper())
+        out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
     return out
 
 
