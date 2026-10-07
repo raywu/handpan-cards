@@ -6977,7 +6977,7 @@ const DECKS = [{"id": "kurd", "name": "D KURD 10", "sub": "9 + 1", "colors": {"r
 // are a list, own their own key, and hold the SEED - the canonical scale string
 // plus its options - never the built deck, which is derived (D14).
 const STORE_KEY = "hpfc";
-const DEFAULT_DECK = "hijaz";
+const DEFAULT_DECK = "kurd";
 const SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};

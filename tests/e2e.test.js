@@ -795,6 +795,24 @@ function run() {
     assert.strictEqual(after.mode, "B");
   });
 
+  test("a cold start shows D Kurd 10 and a reload keeps the deck the user picked", async () => {
+    await freshLoad();
+    const meta = await decksMeta();
+    const kurd = meta.findIndex((d) => d.id === "kurd");
+    assert.ok(kurd >= 0, "Kurd must ship as a built-in deck");
+    assert.strictEqual((await stored()).deck, "kurd", "a first visit stores the default");
+    assert.strictEqual(await countText(), `1 / ${meta[kurd].chords}`, "cold start is on Kurd");
+    assert.deepStrictEqual((await chipStates()).map((c) => c.on), meta.map((_, k) => k === kurd));
+
+    const other = meta.findIndex((d) => d.id === "hijaz");
+    await selectDeck(other, meta);
+    await navigate();
+    await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, {
+      label: "chips after reload",
+    });
+    assert.strictEqual(await countText(), `1 / ${meta[other].chords}`, "a stored deck is honoured");
+  });
+
   /* ---------------------------------------------------------------- *
    * 6. 380px layout
    *
