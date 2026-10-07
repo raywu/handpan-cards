@@ -514,6 +514,44 @@ and, for every lane except P1, `git diff --exit-code <lane base> -- data/decks.j
 - **Stop conditions**: any existing fixture changes; any id in the new fixture differs from main.
 - **Mutant delta (forecast)**: +3 (id hashed from the canonical string; reader not chosen by version; lookup by string). 684 to 687. About 250 lines.
 
+### Lane L0 outcome (2026-10-07, coordinator)
+
+Merged as PR #259, main `4026e63`, 697 mutants (base 690; forecast was 693).
+Two review rounds. Round 1 FAILed at `a2b4e1d`: a null deck id (a string or
+record this build cannot re-parse, reachable with an octave-0 ding such as
+`(D0) A D F | A`) matched every unreadable record in `rememberScale`,
+`forgetScale` and `replaceScale`. Fixed with `sameDeck(r, id, str)`: match by
+id only when both ids are non-null, else main's exact-string comparison.
+Round 2 PASS_WITH_NITS at `e92f5a2`, CI run 37608642668 green.
+
+As built, for later lanes:
+- `identitySeed` prints the ` /` mark only when the rim count is above 0
+  (section 5.2 does not state the guard; G1 decides the zero-rim case).
+- `generateDeck` and `select.build` still call `core.parseSeed`, and
+  `share.encode` still uses `formatSeed`. `restoreScales` and `openShare` use
+  the version reader only as a gate and then re-parse. G2b routes all of them.
+- `scaleReader(v)` and `scaleLineReader(version)` ignore their argument today.
+- Pygmy's shipped id `custom:6f9ffc33` comes from the fields string with
+  ` / F5 G5`; the golden `maker_string` without `/` hashes to `custom:b936039c`.
+  `tests/fixtures/deck_ids_v1.json` pins the slash form. R1's grep will list
+  that fixture.
+- Mutants anchored on `scaleRecord`, `rememberScale`, `sameDeck` or `deckId`
+  lines go stale when G2b or S3 rewrites them; `refresh_mutants.py` says
+  UNFIXABLE when the anchor line itself changed, and the lane then re-anchors
+  by hand with headers kept verbatim (eight were in L0).
+- `SCALES_KEY` is read and written only in `savedScales()` and `writeScales()`.
+
+Open after L0, for the owner (not scheduled):
+- O1: record matching ignores a record's version. With storage a shipped build
+  never writes (a non-restorable record whose string reads to the same id as a
+  later live one), an edit can replace the dead record and leave the live one,
+  so the old deck returns on reload. Main has the mirror case.
+- A 32-bit deck id collision now keeps one stored record where main kept two.
+- By-id matching on readable records in `rememberScale` and `replaceScale` has
+  no test or mutant; only `forgetScale`'s is pinned.
+- Docs still say the id hashes `formatSeed` (`docs/ENGINE-SPEC.md`,
+  `docs/SCALE_ENGINE_PLAN.md`, a comment in `src/engine/share.js`): Lane DOC.
+
 ### Lane G1: the new parser, unwired
 
 - **Goal**: implement and fully test the new grammar and its canonical printer as `HPE.core.parseScale` and `HPE.core.formatScale`, with nothing calling them.
