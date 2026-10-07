@@ -32,6 +32,8 @@ The plan starts after Lane C of `docs/plans/2026-10-06-two-beginner-decks.md` me
 
 **Re-measured 2026-10-07 (eng review, R6):** main is `e749957` (Lane U1 merged). `ls tests/mutants | wc -l` prints 687 and the frozen fixture is `golden_decks_v5.json`. The figures 684 and v7 above, and every running mutant total in section 11, are therefore low by at least 3 and are forecasts only. No lane asserts them: each lane derives its base from the tree, and FLOORS and the README count come from CI.
 
+**Re-measured 2026-10-07 at execution start (coordinator, Lane L0 amendment 1):** main is `d744071` (Lanes A, E, U1, U2, B and C of the beginner-decks plan all merged). `ls tests/mutants | wc -l` prints 690. The frozen fixture is `golden_decks_v7.json`. `data/decks.json` holds five decks in the order `kurd`, `amara10`, `amara`, `hijaz`, `pygmy`, 177 cards, and `DEFAULT_DECK` is `"kurd"`. Kurd 10 and Amara 10 ARE on main, so the stand-in sentence below is history. Every running mutant total in section 11 is low by 6 (L0 forecast: 690 to 693). As before, no lane asserts a forecast: each derives its base from the tree, and FLOORS and the README count come from CI. Where R1 names `golden_decks_v5.json`, read the fixture present at the lane's base.
+
 Kurd 10 and Amara 10 are not on main yet. Everything this plan says about them was measured on stand-ins: today's engine run on the two strings above with default options.
 
 ## 3. Decisions
