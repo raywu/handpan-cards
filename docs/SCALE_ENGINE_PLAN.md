@@ -103,7 +103,7 @@ diminished triads, all dim7 spellings but one, and `F#5`, and ships seven cards
 outside D1 (`C#7sus4`, `C#7b9`, `Bmadd9`, `Bm6/9`, `F#maj7sus4`, `Dmaj7`,
 `Dmaj7#11`). Pygmy omits four power chords and three sus4 and ships `Fm9`,
 `Fm11`, `Abmaj9`. Under D1 a 9-note pan yields 16-17 candidates and Pygmy 25,
-so the cap only bites beyond Pygmy's size. The extended and altered chords the
+so a cap (removed 2026-10-06, D16) would only have bitten beyond Pygmy's size. The extended and altered chords the
 owner added by hand are per-deck editorial overrides, committed as data.
 
 Two selection rules hold across all three decks and are mechanical: sus2
@@ -251,9 +251,8 @@ comment when built.
   (HOME plus up to 2 alternates). `rank()` scores and orders by chord name
   using the HOME card's sort keys, so HOME/LOW/HIGH stay contiguous and
   home-first within a group - an alternate can never rank ahead of its own
-  home. The per-deck cap (`25 + max(0, fieldCount - 12)`) counts distinct
-  chord NAMES, not raw cards, so a name with alternates cannot evict other
-  names from the deck. The `overrides` array in `divergence_v1.json` still
+  home. The per-deck cap this paragraph once described (`25 + max(0, fieldCount - 12)`,
+  counting distinct chord NAMES) was removed 2026-10-06 (D16): no deck is trimmed. The `overrides` array in `divergence_v1.json` still
   exists, but only for cards the engine genuinely does not derive (Hijaz's
   hand-authored `Dmaj7`/`Dmaj7#11` NO-5 cards, and its `Bm - HIGH VOICING`
   alternate, deferred rather than reconciled) - the alternates this
@@ -421,7 +420,7 @@ in one Phase 2 owned file). Exit: a
 committed **divergence table** against the fixture, diffed by a test with no
 numeric expectation, and a two-sided exception test so the list can only shrink.
 Owns `src/engine/select.js`, `tests/select.test.js`, `tests/mutants/s_*`,
-`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap (25 cards, DEFAULT[owner-review], stated in ENGINE-SPEC) bites on the
+`tests/fixtures/divergence_v1.json`. [eng-review 9A] Also: the cap (25 cards, DEFAULT[owner-review], stated in ENGINE-SPEC; removed 2026-10-06, D16) bit on the
 synthetic 12-note pan, the ranking order and the sus2/6 dedup are
 asserted on a synthetic pan, each with a mutant. [eng-review 2, 2A]
 `select.build` returns `warnings[]` on ok results: `NO_THIRDS` when no root

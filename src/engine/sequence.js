@@ -38,10 +38,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // is not a practice tier, so BASIC's vocabulary widens to every anchor.
   var MIN_BASIC_POOL = 12;
 
-  // R-10: MEDIUM is enumerated in full once per pick(). Largest measured
-  // search is 36,000 nodes (the 59-chord N=19 sweep decks; Pygmy 23,646), so
-  // this leaves 1.7x headroom. Hitting it is a bug the tests pin, not a
-  // fallback: the cells would then hold a partial, order-biased set.
+  // R-10: MEDIUM is enumerated once per pick(). Every built-in deck, every
+  // preset and every pan of eight or fewer pitch classes finishes well inside
+  // this (Pygmy 23,646 nodes; the 59-chord N=19 sweep decks 36,000), but with
+  // the deck size cap gone (D16) a custom pan of nine or more pitch classes
+  // can need hundreds of thousands. Running out is a supported outcome: the
+  // fixed-order DFS prefix would open every length-4 deal on the same few
+  // cards, so a truncated enumeration is replaced by a random-walk sample
+  // (sampleMedium), drawn from the caller's rng, under the same budget.
   var MEDIUM_ENUM_BUDGET = 60000;
 
   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
@@ -674,7 +678,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // seqs}], non-empty cells only, in a fixed order: length, then pure before
   // colour, then COLOUR_FAMILIES order, then home before other. `stats`,
   // when passed, gets `.nodes` and `.truncated` exactly as dfsFindAll's does.
-  function mediumEnumerate(deck, ctx, matrix, budget, stats) {
+  function mediumEnumerate(deck, ctx, matrix, budget, stats, rng) {
     var pool = tierPool(deck, "intermediate", ctx.anchorsList);
     var startSet = tierStartSet(deck, "intermediate", pool, ctx);
     var isColour = deck.chords.map(function (_, i) { return ctx.anchorsList.indexOf(i) < 0; });
@@ -683,15 +687,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var truncated = false;
     var len;
     var seq;
-    function file() {
+    var familyOf = [];
+    function file(chords) {
       var family = "none";
-      for (var i = 0; i < len; i += 1) {
-        if (isColour[seq[i]]) family = colourFamily(deck, seq[i]);
+      for (var i = 0; i < chords.length; i += 1) {
+        if (!isColour[chords[i]]) continue;
+        if (familyOf[chords[i]] === undefined) familyOf[chords[i]] = colourFamily(deck, chords[i]);
+        family = familyOf[chords[i]];
       }
-      var side = chordRootPc(deck, seq[0]) === ctx.home ? "home" : "other";
-      var key = len + "/" + family + "/" + side;
+      var side = chordRootPc(deck, chords[0]) === ctx.home ? "home" : "other";
+      var key = chords.length + "/" + family + "/" + side;
       if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(seq.slice());
+      buckets[key].push(chords.slice());
     }
     function rec(depth, colourUsed) {
       if (nodes >= budget) {
@@ -702,7 +709,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (depth === len) {
         if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
             classifyTier(deck, seq, ctx) === "intermediate") {
-          file();
+          file(seq);
         }
         return;
       }
@@ -727,6 +734,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       stats.nodes = nodes;
       stats.truncated = truncated;
     }
+    if (truncated && rng) {
+      buckets = {};
+      var sampled = sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file);
+      if (stats) stats.sampled = sampled;
+    }
 
     var cells = [];
     TIER_LENGTHS.intermediate.forEach(function (length) {
@@ -747,17 +759,73 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return cells;
   }
 
+  // The second pass of mediumEnumerate, run only when the DFS above ran out
+  // of budget. Random walks over the same space: a length from
+  // TIER_LENGTHS.intermediate, a start uniformly from `startSet` (both from one draw), then each
+  // next card uniformly from the candidates the DFS would have expanded (not
+  // the previous card, connected to it, no second colour card), closed and
+  // classified exactly as the DFS leaf does. A node is a card placed, and
+  // the walks stop at the same `budget`. Each distinct sequence is filed
+  // once, through `file`; returns how many were. Draws from `rng`.
+  function sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file) {
+    var lengths = TIER_LENGTHS.intermediate;
+    var seen = {};
+    var onward = [];
+    var width = deck.chords.length;
+    var filed = 0;
+    var nodes = 0;
+    if (!startSet.length) return 0;
+    while (nodes < budget) {
+      var opening = draw(rng, lengths.length * startSet.length);
+      var length = lengths[opening % lengths.length];
+      var walk = [startSet[(opening - opening % lengths.length) / lengths.length]];
+      var colourUsed = isColour[walk[0]];
+      nodes += 1;
+      while (walk.length < length && nodes < budget) {
+        var prevChord = walk[walk.length - 1];
+        if (!onward[prevChord]) {
+          onward[prevChord] = { all: [], pure: [] };
+          for (var i = 0; i < pool.length; i += 1) {
+            var candidate = pool[i];
+            if (candidate === prevChord || !matrix[prevChord][candidate]) continue;
+            onward[prevChord].all.push(candidate);
+            if (!isColour[candidate]) onward[prevChord].pure.push(candidate);
+          }
+        }
+        var options = colourUsed ? onward[prevChord].pure : onward[prevChord].all;
+        if (!options.length) break;
+        var next = options[draw(rng, options.length)];
+        walk.push(next);
+        colourUsed = colourUsed || isColour[next];
+        nodes += 1;
+      }
+      if (walk.length < length) continue;
+      var key = length;
+      for (var k = 0; k < length; k += 1) key = key * width + walk[k];
+      if (seen[key]) continue;
+      if (walk[length - 1] !== walk[0] && matrix[walk[length - 1]][walk[0]] &&
+          classifyTier(deck, walk, ctx) === "intermediate") {
+        seen[key] = true;
+        file(walk);
+        filed += 1;
+      }
+    }
+    return filed;
+  }
+
   // The MEDIUM cells of a deck, for callers that draw many times from one
   // enumeration (the shape tests; pick() enumerates per call). `budget`
-  // defaults to MEDIUM_ENUM_BUDGET.
-  function mediumCells(deck, stats, budget) {
+  // defaults to MEDIUM_ENUM_BUDGET. Without `rng` the result is the
+  // deterministic DFS enumeration, truncated or not; with one, a truncated
+  // enumeration is replaced by the random-walk sample, as pick() does.
+  function mediumCells(deck, stats, budget, rng) {
     return mediumEnumerate(deck, tierContext(deck), buildConnectMatrix(deck),
-      budget === undefined ? MEDIUM_ENUM_BUDGET : budget, stats);
+      budget === undefined ? MEDIUM_ENUM_BUDGET : budget, stats, rng);
   }
 
   // MEDIUM per R-5. A deck whose MEDIUM set is empty reports NO_TIER_SEQUENCE.
   function pickMedium(deck, rng, prev, ctx) {
-    var cells = mediumEnumerate(deck, ctx, buildConnectMatrix(deck), MEDIUM_ENUM_BUDGET, null);
+    var cells = mediumEnumerate(deck, ctx, buildConnectMatrix(deck), MEDIUM_ENUM_BUDGET, null, rng);
     var chosen = drawMedium(cells, rng, prevValid(deck, prev) ? prev : null);
     if (!chosen) return { chords: null, reason: "NO_TIER_SEQUENCE" };
     var style = STYLES[draw(rng, STYLES.length)];

@@ -299,7 +299,7 @@ test("collapse's symmetric-root tie-break applies to a 2-member group, not just 
     "the tie-break must run for a 2-member symmetric group and prefer the tonic");
 });
 
-const KURD_9 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const KURD_10 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
 const MAXIMUM = synthetic.find((r) => r.expect.ok && /maximum/.test(r.name));
 
 // D16: nothing trims a deck. Every ranked card of a seed is in the deck.
@@ -308,7 +308,7 @@ test("no deck is trimmed: every ranked card of a seed is in the deck", () => {
     const deck = built(str);
     return [deck.chords.length, new Set(deck.chords.map(nameOf)).size];
   };
-  assert.deepEqual(sizes(KURD_9), [49, 49], "D Kurd 9");
+  assert.deepEqual(sizes(KURD_10), [49, 49], "D Kurd 10");
   assert.deepEqual(sizes(TWELVE), [35, 27], "the twelve-note pan");
   assert.ok(MAXIMUM, "synthetic_scales.json ships a maximum-size entry");
   assert.deepEqual(sizes(MAXIMUM.string), [74, 43], "the nineteen-field maximum");
@@ -674,7 +674,7 @@ test("alternates sit beside their primary and none is dropped", () => {
   }
 });
 
-test("no chord name is half-present after the trim", () => {
+test("no chord name is half-present", () => {
   for (const seed of ALL_SEEDS) {
     const deck = built(seed);
     const byName = new Map();

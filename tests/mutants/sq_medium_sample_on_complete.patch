@@ -1,0 +1,15 @@
+# kills: a deck that completes consumes no extra rng
+# U1b - the random-walk sample also runs when the DFS finished, so a complete deck deals from a sample and draws extra rng
+# suite: node --test --test-name-pattern ^a.deck.that.completes.consumes.no.extra.rng$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -734,7 +734,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       stats.nodes = nodes;
+       stats.truncated = truncated;
+     }
+-    if (truncated && rng) {
++    if (rng) {
+       buckets = {};
+       var sampled = sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file);
+       if (stats) stats.sampled = sampled;

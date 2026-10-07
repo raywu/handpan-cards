@@ -351,8 +351,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // card, and print HOME, LOW, HIGH inside the group. Ranking cards
   // individually puts an all-top-shell HIGH voicing ahead of a home card
   // that dips to the bottom shell (the second key is the top-shell tone
-  // count, descending), which both scatters a chord across the deck and lets
-  // the cap keep an alternate whose home card was cut. Every sort key except
+  // count, descending), which scatters a chord across the deck. Every sort key except
   // the grouping is byte-identical to before, so a deck with no alternates
   // ranks exactly as it did before this changed.
   var CLASS_ORDER = {"": 0, LOW: 1, HIGH: 2};
