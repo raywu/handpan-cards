@@ -4,12 +4,12 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -787,7 +787,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -791,7 +791,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        }
      }
      var predicted = countMediumNodes(pool, startSet, isColour, matrix);
 -    if (predicted > budget && rng) {
 +    if (rng) {
-       var sampled = sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
-       if (stats) {
-         stats.nodes = predicted;
+       // Pure cells exactly (the anchors alone are a small search), colour
+       // cells by stratified walks.
+       recPool = pool.filter(function (i) { return !isColour[i]; });

@@ -1,0 +1,15 @@
+# kills: an over-budget pan fills every pure cell its anchors allow
+# U1b-2 - the over-budget path skips the exact anchors-only enumeration, so the pure cells stay empty
+# suite: node --test --test-name-pattern ^an.over-budget.pan.fills.every.pure.cell.its.anchors.allow$ tests/sequence.test.js
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -795,7 +795,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       // Pure cells exactly (the anchors alone are a small search), colour
+       // cells by stratified walks.
+       recPool = pool.filter(function (i) { return !isColour[i]; });
+-      recStart = startSet.filter(function (i) { return !isColour[i]; });
++      recStart = [];
+       TIER_LENGTHS.intermediate.forEach(function (length) {
+         len = length;
+         seq = new Array(len);
