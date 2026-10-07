@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2391,7 +2391,7 @@ let order = [], idx = 0, flipped = false;
+@@ -6849,7 +6849,7 @@ const SEQ_STYLE_COPY = {
  // need that). deck() resolves a custom id out of the registry; it never builds.
  const CUSTOM = Object.create(null);
  
--const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
-+const deck = () => (CUSTOM[deckId] ? {...CUSTOM[deckId]} : DECKS.find(d => d.id === deckId) || DECKS[0]);
+-const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS.find(d => d.id === DEFAULT_DECK) || DECKS[0];
++const deck = () => (CUSTOM[deckId] ? {...CUSTOM[deckId]} : DECKS.find(d => d.id === deckId) || DECKS.find(d => d.id === DEFAULT_DECK) || DECKS[0]);
  // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
  // from its saved seed, so restoring one is no longer a dangling reference.
  // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores

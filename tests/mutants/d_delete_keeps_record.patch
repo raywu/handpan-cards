@@ -3,11 +3,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2917,7 +2917,6 @@ function deleteDeck(id) {
+@@ -8542,7 +8542,6 @@ function deleteDeck(id) {
    const gone = d.name;
    const wasSelected = deckId === id;
    delete CUSTOM[id];
 -  forgetScale(HPE.core.formatSeed(d.fields));
    if (editingId === id) closeScaleSheet();
    if (!wasSelected) { buildChips(); return; }
-   selectDeck(DECKS[0].id);
+   selectDeck(DEFAULT_DECK);

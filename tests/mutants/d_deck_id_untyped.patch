@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -5944,7 +5944,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
+@@ -6818,7 +6818,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
  // so a sibling feature (or a hand-edited value) can leave any JSON type here,
  // and a non-string id that reached the boot tail would throw on .indexOf and
  // take the share-link handler at the end of the script down with it.
--let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
-+let deckId = store.deck || "hijaz";
+-let deckId = typeof store.deck === "string" ? store.deck : DEFAULT_DECK;
++let deckId = store.deck || DEFAULT_DECK;
  let storedDeck = deckId;              // built-in or custom:; see save()
  // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
  // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.

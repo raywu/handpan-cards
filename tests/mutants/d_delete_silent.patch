@@ -3,10 +3,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -2921,7 +2921,6 @@ function deleteDeck(id) {
+@@ -8546,7 +8546,6 @@ function deleteDeck(id) {
    if (editingId === id) closeScaleSheet();
    if (!wasSelected) { buildChips(); return; }
-   selectDeck(DECKS[0].id);
+   selectDeck(DEFAULT_DECK);
 -  say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
  }
  

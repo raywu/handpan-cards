@@ -385,9 +385,9 @@ test("writeScales swallows a storage error so generate, share and delete all sta
   assert.match(app.faces(), /<svg /, "the app stopped rendering after a storage error");
 });
 
-test("an unknown stored deck id falls back to the first deck", () => {
+test("an unknown stored deck id falls back to the default deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "nope", mode: "A" }) } });
-  const first = decks(app)[0];
+  const first = decks(app).find(d => d.id === app.get("DEFAULT_DECK"));
   assert.strictEqual(app.get("deckId"), first.id, "deckId must be renormalised, not left dangling");
   assert.strictEqual(app.els.count.textContent, `1 / ${first.chords.length}`);
   assert.ok(app.faces().includes(first.name));
@@ -577,7 +577,7 @@ test("render() builds the diagram at most once per render, in every mode", () =>
 
 test("an unknown deck id still falls back to a built-in deck", () => {
   const app = boot({ storage: { hpfc: JSON.stringify({ deck: "custom:deadbeef", mode: "A" }) } });
-  assert.strictEqual(app.deckId(), decks(app)[0].id);
+  assert.strictEqual(app.deckId(), app.get("DEFAULT_DECK"));
   assert.match(app.faces(), /<svg /);
 });
 
@@ -1284,7 +1284,8 @@ test("a corrupt saved scale is dropped and the app still boots on the built-ins"
 /* --------------------------------- 21. the two fallbacks are distinguished */
 
 test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says so", () => {
-  const first = boot().get("DECKS")[0];
+  const probe = boot();
+  const first = probe.get("DECKS").find(d => d.id === probe.get("DEFAULT_DECK"));
 
   // 21a. an unknown built-in id: SILENT. This is the Phase 3 behaviour the
   // plan marks as must-not-weaken, asserted here beside the noisy path.
@@ -1311,7 +1312,8 @@ test("an unknown BUILT-IN deck id falls back silently; a missing custom: id says
 // script, so a throw earlier in the tail drops it in silence while the deck on
 // screen still renders and the app looks perfectly fine.
 test("a non-string stored deck id is ignored and never eats a share link", () => {
-  const first = boot().get("DECKS")[0];
+  const probe = boot();
+  const first = probe.get("DECKS").find(d => d.id === probe.get("DEFAULT_DECK"));
 
   const seeded = boot();
   const made = seeded.generate(AMARA_STRING).value;
@@ -1570,7 +1572,7 @@ test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", () 
 
 test("deleting the SELECTED custom deck falls back to a built-in, says so, and stays gone", () => {
   const app = boot();
-  const first = decks(app)[0];
+  const first = decks(app).find(d => d.id === app.get("DEFAULT_DECK"));
   const d = makeCustom(app);
   app.select(d.id);
   app.clickChip(d.name);
@@ -1579,7 +1581,7 @@ test("deleting the SELECTED custom deck falls back to a built-in, says so, and s
 
   assert.strictEqual(app.sheetOpen(), false, "delete left the sheet open");
   assert.deepStrictEqual(app.registry(), {}, "the deck is still in the registry");
-  assert.strictEqual(app.deckId(), first.id, "delete did not fall back to the first built-in");
+  assert.strictEqual(app.deckId(), first.id, "delete did not fall back to the default deck");
   const said = app.announcer();
   assert.ok(said.textContent.includes(d.name),
     `the delete message must name the deck removed: "${said.textContent}"`);
@@ -3176,7 +3178,7 @@ test("every hit target is centred on the field circle it selects", () => {
  */
 test("the hit layer is emitted after everything it sits over", () => {
   const app = boot();
-  const svg = app.get(`pan(DECKS[0], null, {interactive:true})`);
+  const svg = app.get(`pan(DECKS.find(d => d.id === "hijaz"), null, {interactive:true})`);
   const group = svg.indexOf(`<g class="panhits">`);
   assert.ok(group > 0, "the layer is emitted as one group");
   assert.strictEqual(svg.slice(0, group).indexOf("panhit"), -1,
@@ -3358,7 +3360,7 @@ test("a note name cannot break out of the hit target's attributes", () => {
   // A deck whose first non-ding field is named with a quote, and whose position
   // label carries one too - both interpolate into the same attribute.
   const svg = app.get(`(() => {
-    const d = JSON.parse(JSON.stringify(DECKS[0]));
+    const d = JSON.parse(JSON.stringify(DECKS.find(d => d.id === "hijaz")));
     const f = Object.keys(d.fields).find((k) => d.fields[k][3] !== "ding");
     d.fields[f][0] = 'A" onmouseover="steal()';
     d.fields[f][5] = '1"';

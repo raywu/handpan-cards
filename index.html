@@ -6809,6 +6809,7 @@ const DECKS = [{"id": "hijaz", "name": "C# HIJAZ 9", "sub": "ORION  -  8 + 1", "
 // are a list, own their own key, and hold the SEED - the canonical scale string
 // plus its options - never the built deck, which is derived (D14).
 const STORE_KEY = "hpfc";
+const DEFAULT_DECK = "hijaz";
 const SCALES_KEY = "hpfc.scales";
 const readStore = key => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } };
 let store = readStore(STORE_KEY) || {};
@@ -6817,7 +6818,7 @@ if (typeof store !== "object" || Array.isArray(store)) store = {};
 // so a sibling feature (or a hand-edited value) can leave any JSON type here,
 // and a non-string id that reached the boot tail would throw on .indexOf and
 // take the share-link handler at the end of the script down with it.
-let deckId = typeof store.deck === "string" ? store.deck : "hijaz";
+let deckId = typeof store.deck === "string" ? store.deck : DEFAULT_DECK;
 let storedDeck = deckId;              // built-in or custom:; see save()
 // S2: only "A"/"B"/"S" survive the read; a future-version or corrupted value
 // (a stray "C", a non-string, etc.) reads back as "A" instead of propagating.
@@ -6844,11 +6845,11 @@ const SEQ_STYLE_COPY = {
 };
 
 // Generated decks live here, keyed by deck id, so the DECKS literal above stays
-// the three built-ins on one line (tools/validate.py and tests/paths.py both
+// the built-ins on one line (tools/validate.py and tests/paths.py both
 // need that). deck() resolves a custom id out of the registry; it never builds.
 const CUSTOM = Object.create(null);
 
-const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS[0];
+const deck = () => CUSTOM[deckId] || DECKS.find(d => d.id === deckId) || DECKS.find(d => d.id === DEFAULT_DECK) || DECKS[0];
 // Any deck id persists, built-in or custom: a custom deck is rebuilt at boot
 // from its saved seed, so restoring one is no longer a dangling reference.
 // READ-MODIFY-WRITE: "hpfc" is one object shared with whatever else stores
@@ -8532,8 +8533,8 @@ window.addEventListener("popstate", () => {
 });
 
 // Removing a deck the user is LOOKING AT would otherwise leave the practice
-// screen on a deck that no longer exists, so it falls back to the first
-// built-in and says so. That sentence is UI copy, not an engine reason: the
+// screen on a deck that no longer exists, so it falls back to the default
+// deck and says so. That sentence is UI copy, not an engine reason: the
 // section 2 code enum is closed and has no code for "you deleted this".
 function deleteDeck(id) {
   const d = CUSTOM[id];
@@ -8544,7 +8545,7 @@ function deleteDeck(id) {
   forgetScale(HPE.core.formatSeed(d.fields));
   if (editingId === id) closeScaleSheet();
   if (!wasSelected) { buildChips(); return; }
-  selectDeck(DECKS[0].id);
+  selectDeck(DEFAULT_DECK);
   say("Removed " + gone + ". Showing " + deck().name + ".", "warn");
 }
 
