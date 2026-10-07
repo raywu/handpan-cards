@@ -4,12 +4,12 @@
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
-@@ -736,7 +736,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       stats.nodes = nodes;
-       stats.truncated = truncated;
+@@ -787,7 +787,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       }
      }
--    if (truncated && rng) {
+     var predicted = countMediumNodes(pool, startSet, isColour, matrix);
+-    if (predicted > budget && rng) {
 +    if (rng) {
-       buckets = {};
-       var sampled = sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file);
-       if (stats) stats.sampled = sampled;
+       var sampled = sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
+       if (stats) {
+         stats.nodes = predicted;

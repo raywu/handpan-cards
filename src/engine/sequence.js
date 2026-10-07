@@ -42,13 +42,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // preset and every pan of eight or fewer pitch classes finishes well inside
   // this (Pygmy 23,646 nodes; the 59-chord N=19 sweep decks 36,000), but with
   // the deck size cap gone (D16) a custom pan of nine or more pitch classes
-  // can need hundreds of thousands. Running out is a supported outcome: the
-  // fixed-order DFS prefix would open every length-4 deal on the same few
-  // cards, so a truncated enumeration is replaced by a random-walk sample
-  // (sampleMedium), drawn from the caller's rng, under a quarter of the
-  // budget: a pick is bounded at 50ms (tests/sequence.test.js), and about
-  // 2,000 distinct sequences already cover every start card.
+  // can need hundreds of thousands. Whether the DFS would run out is known
+  // exactly beforehand (mediumNodeCount), so a deal that would truncate never
+  // runs it: the fixed-order DFS prefix would open every length-4 deal on the
+  // same few cards, so the cells are filled by random walks (sampleMedium),
+  // drawn from the caller's rng, instead. Without an rng the DFS runs and
+  // truncates, as the shape tests expect.
   var MEDIUM_ENUM_BUDGET = 60000;
+
+  // Walk steps sampleMedium may take. A pick is bounded at 50ms
+  // (tests/sequence.test.js) and, with the DFS skipped, this is the whole
+  // cost of an over-budget pick; the figure keeps it no slower than the DFS
+  // it replaced on REGISTER_HOME_DECK.
+  var MEDIUM_WALK_BUDGET = 20000;
 
   // D-2's bounded-DFS fallback node budget (eng E-3 budget-hit semantics: a
   // truncated search draws uniformly from what it found so far and reports
@@ -668,6 +674,59 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return m;
   }
 
+  // The exact number of rec() entries mediumEnumerate's DFS makes over both
+  // lengths with an unbounded budget, by dynamic programming over (last card,
+  // colour used) with the DFS's three prunes: no repeated card, connected, no
+  // second colour card. Nothing is visited or classified, so it costs a few
+  // passes over the pool instead of the search. The DFS truncates exactly
+  // when this exceeds the budget.
+  function countMediumNodes(pool, startSet, isColour, matrix) {
+    var lengths = TIER_LENGTHS.intermediate;
+    var maxLength = Math.max.apply(null, lengths);
+    var width = matrix.length;
+    var ways = [];
+    var i;
+    for (i = 0; i < width; i += 1) ways.push([0, 0]);
+    for (i = 0; i < startSet.length; i += 1) ways[startSet[i]][isColour[startSet[i]] ? 1 : 0] += 1;
+    var prefixes = [0, startSet.length];
+    for (var depth = 2; depth <= maxLength; depth += 1) {
+      var next = [];
+      for (i = 0; i < width; i += 1) next.push([0, 0]);
+      var running = 0;
+      for (var prev = 0; prev < width; prev += 1) {
+        var from = ways[prev];
+        if (!from[0] && !from[1]) continue;
+        for (var c = 0; c < pool.length; c += 1) {
+          var candidate = pool[c];
+          if (candidate === prev || !matrix[prev][candidate]) continue;
+          if (isColour[candidate]) {
+            next[candidate][1] += from[0];
+            running += from[0];
+          } else {
+            next[candidate][0] += from[0];
+            next[candidate][1] += from[1];
+            running += from[0] + from[1];
+          }
+        }
+      }
+      ways = next;
+      prefixes.push(running);
+    }
+    var total = 0;
+    lengths.forEach(function (length) {
+      total += 1;
+      for (var d = 1; d <= length; d += 1) total += prefixes[d];
+    });
+    return total;
+  }
+
+  function mediumNodeCount(deck, ctx, matrix) {
+    var pool = tierPool(deck, "intermediate", ctx.anchorsList);
+    var startSet = tierStartSet(deck, "intermediate", pool, ctx);
+    var isColour = deck.chords.map(function (_, i) { return ctx.anchorsList.indexOf(i) < 0; });
+    return countMediumNodes(pool, startSet, isColour, matrix);
+  }
+
   // R-10 / TR-14: every MEDIUM sequence of length 3 and 4, found by one
   // matrix-pruned DFS over tierPool x tierStartSet and bucketed into the R-5
   // cells. On top of dfsFindAll's two prunes (identical card, connectivity)
@@ -727,19 +786,24 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         rec(depth + 1, colourUsed || isColour[candidate]);
       }
     }
-    TIER_LENGTHS.intermediate.forEach(function (length) {
-      len = length;
-      seq = new Array(len);
-      rec(0, false);
-    });
-    if (stats) {
-      stats.nodes = nodes;
-      stats.truncated = truncated;
-    }
-    if (truncated && rng) {
-      buckets = {};
-      var sampled = sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file);
-      if (stats) stats.sampled = sampled;
+    var predicted = countMediumNodes(pool, startSet, isColour, matrix);
+    if (predicted > budget && rng) {
+      var sampled = sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file);
+      if (stats) {
+        stats.nodes = predicted;
+        stats.truncated = true;
+        stats.sampled = sampled;
+      }
+    } else {
+      TIER_LENGTHS.intermediate.forEach(function (length) {
+        len = length;
+        seq = new Array(len);
+        rec(0, false);
+      });
+      if (stats) {
+        stats.nodes = nodes;
+        stats.truncated = truncated;
+      }
     }
 
     var cells = [];
@@ -769,14 +833,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // classified exactly as the DFS leaf does. A node is a card placed, and
   // the walks stop at a quarter of `budget`. Each distinct sequence is filed
   // once, through `file`; returns how many were. Draws from `rng`.
-  function sampleMedium(deck, ctx, matrix, budget, rng, pool, startSet, isColour, file) {
+  function sampleMedium(deck, ctx, matrix, rng, pool, startSet, isColour, file) {
     var lengths = TIER_LENGTHS.intermediate;
     var seen = {};
     var onward = [];
     var width = deck.chords.length;
     var filed = 0;
     var nodes = 0;
-    var walkBudget = Math.ceil(budget / 4);
+    var walkBudget = MEDIUM_WALK_BUDGET;
     // One rng() call yields several draws: each pick keeps the fraction of u
     // it did not use, and a fresh value is fetched once fewer than 1024
     // distinct values per outcome would remain, so no index is off by more
@@ -1039,6 +1103,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       basicCells: basicCells,
       drawBasic: drawBasic,
       mediumCells: mediumCells,
+      mediumNodeCount: mediumNodeCount,
       drawMedium: drawMedium,
       colourFamily: colourFamily,
       buildConnectMatrix: buildConnectMatrix,
