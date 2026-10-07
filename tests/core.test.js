@@ -31,7 +31,7 @@ function host(value) {
 }
 
 function parsed(str, options) {
-  const r = core.parseSeed(str, options);
+  const r = core.parseLegacySeed(str, options);
   assert.equal(r.ok, true, `expected ${JSON.stringify(str)} to parse, got ` +
     `${r.code}: ${r.reason}`);
   return r.value;
@@ -127,7 +127,7 @@ test("the Pygmy maker string yields eleven rim fields from the grammar", () => {
 
 test("every synthetic entry parses or rejects exactly as the fixture expects", () => {
   for (const entry of synthetic) {
-    const r = core.parseSeed(entry.string);
+    const r = core.parseLegacySeed(entry.string);
     if (entry.expect.ok) {
       assert.equal(r.ok, true,
         `${entry.name}: expected ok, got ${r.code}: ${r.reason}`);
@@ -145,7 +145,7 @@ test("every synthetic entry parses or rejects exactly as the fixture expects", (
 
 test("parseSeed itself never emits a warning (section 16)", () => {
   for (const entry of synthetic.filter(e => e.expect.ok)) {
-    const r = core.parseSeed(entry.string);
+    const r = core.parseLegacySeed(entry.string);
     assert.equal(r.warnings, undefined, `${entry.name}: parseSeed produces no warnings`);
   }
 });
@@ -265,7 +265,7 @@ test("an explicit octave that breaks the ascending order is NOTE_OUT_OF_ORDER", 
   // before the first top note.
   for (const s of ["(D3) A2 C4 E4", "(F3) F3 C4 E4", "(D3) A3 C4 B3 E4",
                    "(D3) A3 C4 | E3 C3"]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${s} should be rejected`);
     assert.equal(r.code, "NOTE_OUT_OF_ORDER", s);
   }
@@ -276,16 +276,16 @@ test("tokenisation is whitespace-splitting only", () => {
   // BAD_NOTE, letters are uppercase only, and the octave is a single digit.
   for (const s of ["(D3)A3 C4 E4", "(D3) A3 C4|C3", "(D3) a3 C4 E4",
                    "(D3) A3 C10 E4", "(D3) A3 C#b4 E4", "(D3) A3 https://x C4"]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${s} should be rejected`);
     assert.equal(r.code, "BAD_NOTE", s);
   }
-  const spaced = core.parseSeed("( D3 ) A3 C4 E4");
+  const spaced = core.parseLegacySeed("( D3 ) A3 C4 E4");
   assert.equal(spaced.ok, false, "a spaced-out ding token does not lex");
 });
 
 test("a trailing bar with no bottom notes is BAD_NOTE naming the bar", () => {
-  const r = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 |");
+  const r = core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 |");
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
   assert.equal(r.reason, core.REASONS.BAD_NOTE.reason.replace("<X>", "|"));
@@ -295,56 +295,56 @@ test("a trailing bar with no bottom notes is BAD_NOTE naming the bar", () => {
 
 test("NO_DING covers zero dings, two dings and a misplaced ding", () => {
   for (const s of ["G3 B3 D4 G4", "(D3) (A3) C4 E4", "A3 (D3) C4", "", "   "]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${JSON.stringify(s)} should be rejected`);
     assert.equal(r.code, "NO_DING", JSON.stringify(s));
     assert.equal(r.reason, core.REASONS.NO_DING.reason);
   }
   // Ding tokens are counted over the whole string BEFORE any other rule, so a
   // two-ding string with an unlexable token is still NO_DING.
-  assert.equal(core.parseSeed("(D3) (A3) H4").code, "NO_DING");
+  assert.equal(core.parseLegacySeed("(D3) (A3) H4").code, "NO_DING");
 });
 
 test("NO_FIFTH names the ding and the missing fifth", () => {
-  const r = core.parseSeed("(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4");
+  const r = core.parseLegacySeed("(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4");
   assert.equal(r.ok, false);
   assert.equal(r.code, "NO_FIFTH");
   assert.equal(r.reason,
     "No perfect fifth above the ding C3. Add a G, or check the ding.");
 
   // Section 2: the fifth is spelled from the letter four steps above the ding.
-  const db = core.parseSeed("(Db3) Eb3 F3 G3 A3 B3 Db4");
+  const db = core.parseLegacySeed("(Db3) Eb3 F3 G3 A3 B3 Db4");
   assert.equal(db.code, "NO_FIFTH");
   assert.ok(db.reason.includes("Add a Ab,"), db.reason);
-  const b = core.parseSeed("(B3) C#4 D#4 F4 G4 A4 B4");
+  const b = core.parseLegacySeed("(B3) C#4 D#4 F4 G4 A4 B4");
   assert.equal(b.code, "NO_FIFTH");
   assert.ok(b.reason.includes("Add a F#,"), b.reason);
 
   // A fifth that exists only on the bottom shell does not satisfy the rule.
-  const bottomOnly = core.parseSeed("(C3) D3 E3 F#3 G#3 A#3 | G2");
+  const bottomOnly = core.parseLegacySeed("(C3) D3 E3 F#3 G#3 A#3 | G2");
   assert.equal(bottomOnly.code, "NO_FIFTH");
 });
 
 test("TOO_MANY_RIM covers a 14th top note and a 7th bottom note", () => {
   for (const s of ["(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
                    "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3 E3 F3 G3 Ab3 Bb3"]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, s);
     assert.equal(r.code, "TOO_MANY_RIM", s);
     assert.equal(r.reason, core.REASONS.TOO_MANY_RIM.reason);
   }
   // 13 top notes and 6 bottom notes is the accepted maximum.
-  assert.equal(core.parseSeed(
+  assert.equal(core.parseLegacySeed(
     "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 | C2 D2 E2 F2 G2 A2").ok, true);
 });
 
 test("BAD_NOTE names the offending token, truncated to 12 characters", () => {
-  const r = core.parseSeed("(D3) A3 H4 C4");
+  const r = core.parseLegacySeed("(D3) A3 H4 C4");
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
   assert.equal(r.reason, core.REASONS.BAD_NOTE.reason.replace("<X>", "H4"));
 
-  const long = core.parseSeed("(D3) A3 abcdefghijklmnop C4");
+  const long = core.parseLegacySeed("(D3) A3 abcdefghijklmnop C4");
   assert.equal(long.code, "BAD_NOTE");
   assert.ok(long.reason.startsWith("abcdefghijkl is not a note"), long.reason);
 
@@ -353,7 +353,7 @@ test("BAD_NOTE names the offending token, truncated to 12 characters", () => {
   // claim otherwise.
   for (const s of ["(C9) D9 E9 A9", "(D3) A3 C4 C4 E4", "(D3) A2 C4 E4",
                    "(D) A B C D E F G | C D2"]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${s} should be rejected`);
     assert.notEqual(r.code, "BAD_NOTE", `${s} lexes as notes: ${r.reason}`);
     assert.ok(!r.reason.includes("is not a note"),
@@ -379,23 +379,23 @@ test("a bottom note below the octave inferred for the note before it says so", (
   // The owner's phone report: `D2` is a real note, and the message used to
   // claim it was not one. What is wrong is its POSITION, under a `C` the
   // parser placed at C3, and the sentence has to name that C3.
-  const r = core.parseSeed("(D) A B C D E F G | C D2");
+  const r = core.parseLegacySeed("(D) A B C D E F G | C D2");
   assert.equal(r.ok, false, "the seed is still rejected");
   assert.equal(r.code, "NOTE_OUT_OF_ORDER");
   assert.equal(r.reason, positional("NOTE_OUT_OF_ORDER",
     { "<A>": "D2", "<B>": "C3 (inferred from C)" }));
   // Writing the octave the user meant is what fixes it, so that seed parses.
-  assert.equal(core.parseSeed("(D) A B C D E F G | C2 D2").ok, true);
-  assert.equal(core.parseSeed("(D) A B C D E F G | C D3").ok, true);
+  assert.equal(core.parseLegacySeed("(D) A B C D E F G | C2 D2").ok, true);
+  assert.equal(core.parseLegacySeed("(D) A B C D E F G | C D3").ok, true);
 });
 
 test("NOTE_OUT_OF_ORDER names the ding as the ding, and an explicit note plainly", () => {
-  const ding = core.parseSeed("(D3) A2 C4 E4");
+  const ding = core.parseLegacySeed("(D3) A2 C4 E4");
   assert.equal(ding.code, "NOTE_OUT_OF_ORDER");
   assert.equal(ding.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
     { "<A>": "A2", "<B>": "D3" }));
 
-  const typed = core.parseSeed("(D3) A3 C5 B3 E4");
+  const typed = core.parseLegacySeed("(D3) A3 C5 B3 E4");
   assert.equal(typed.code, "NOTE_OUT_OF_ORDER");
   assert.equal(typed.reason, positional("NOTE_OUT_OF_ORDER",
     { "<A>": "B3", "<B>": "C5" }),
@@ -403,41 +403,41 @@ test("NOTE_OUT_OF_ORDER names the ding as the ding, and an explicit note plainly
 });
 
 test("NOTE_OUT_OF_RANGE names the note as the parser placed it", () => {
-  const explicit = core.parseSeed("(C9) D9 E9 A9");
+  const explicit = core.parseLegacySeed("(C9) D9 E9 A9");
   assert.equal(explicit.ok, false);
   assert.equal(explicit.code, "NOTE_OUT_OF_RANGE");
   assert.equal(explicit.reason, positional("NOTE_OUT_OF_RANGE", { "<A>": "A9" }));
 
   // Section 3: the ding is range-checked too.
-  assert.equal(core.parseSeed("(B#9) C9 G9").code, "NOTE_OUT_OF_RANGE");
+  assert.equal(core.parseLegacySeed("(B#9) C9 G9").code, "NOTE_OUT_OF_RANGE");
 });
 
 test("NOTE_REPEATED names the note that is already on that shell", () => {
-  const r = core.parseSeed("(D3) A3 C4 C4 E4");
+  const r = core.parseLegacySeed("(D3) A3 C4 C4 E4");
   assert.equal(r.ok, false);
   assert.equal(r.code, "NOTE_REPEATED");
   assert.equal(r.reason, positional("NOTE_REPEATED",
     { "<A>": "C4", "<B>": "C4" }));
-  assert.equal(core.parseSeed("(D3) A3 C4 | C3 C3").code, "NOTE_REPEATED",
+  assert.equal(core.parseLegacySeed("(D3) A3 C4 | C3 C3").code, "NOTE_REPEATED",
     "the bottom shell reads the same way");
 
   // Section 3: only an immediate repeat is a repeat. Anything else is simply
   // not ascending, and an enharmonic respelling is a different name.
-  assert.equal(core.parseSeed("(D3) A3 C4 E4 C4").code, "NOTE_OUT_OF_ORDER");
-  assert.equal(core.parseSeed("(D3) A3 C4 B#3 E4").code, "NOTE_OUT_OF_ORDER");
+  assert.equal(core.parseLegacySeed("(D3) A3 C4 E4 C4").code, "NOTE_OUT_OF_ORDER");
+  assert.equal(core.parseLegacySeed("(D3) A3 C4 B#3 E4").code, "NOTE_OUT_OF_ORDER");
   // The ding is on no shell, so a top note repeating it is an ordering fault.
-  assert.equal(core.parseSeed("(F3) F3 C4 E4").code, "NOTE_OUT_OF_ORDER");
+  assert.equal(core.parseLegacySeed("(F3) F3 C4 E4").code, "NOTE_OUT_OF_ORDER");
 
   // Section 3: the same note on the OTHER shell is a different field, so it
   // stays accepted - the diagnostic must not have widened what is rejected.
-  assert.equal(core.parseSeed("(D3) A3 C4 D4 E4 | C4 D5").ok, true);
+  assert.equal(core.parseLegacySeed("(D3) A3 C4 D4 E4 | C4 D5").ok, true);
 });
 
 test("NOTE_REPEATED names both positions, inference and all", () => {
   // Nit 2 of the w37 review: the placed octave is the half the user cannot
   // see, and a repeat is the one message where NEITHER position may be
   // guessed at - the user typed `C` and `C4`, and no literal `C4` twice.
-  const inferred = core.parseSeed("(D3) A3 C C4 E4");
+  const inferred = core.parseLegacySeed("(D3) A3 C C4 E4");
   assert.equal(inferred.ok, false, "the seed is still rejected");
   assert.equal(inferred.code, "NOTE_REPEATED");
   assert.equal(inferred.reason, positional("NOTE_REPEATED",
@@ -445,13 +445,13 @@ test("NOTE_REPEATED names both positions, inference and all", () => {
   assert.match(inferred.reason, /\(inferred from C\)/,
     "the bare C the parser placed at C4 has to be named as such");
 
-  const flat = core.parseSeed("(Eb4) Ab5 Bb Bb5");
+  const flat = core.parseLegacySeed("(Eb4) Ab5 Bb Bb5");
   assert.equal(flat.code, "NOTE_REPEATED");
   assert.equal(flat.reason, positional("NOTE_REPEATED",
     { "<A>": "Bb5", "<B>": "Bb5 (inferred from Bb)" }));
 
   // Both typed: nothing is annotated, because nothing was inferred.
-  assert.equal(core.parseSeed("(D3) A3 C4 C4 E4").reason,
+  assert.equal(core.parseLegacySeed("(D3) A3 C4 C4 E4").reason,
     positional("NOTE_REPEATED", { "<A>": "C4", "<B>": "C4" }));
 });
 
@@ -461,7 +461,7 @@ test("a top note that does not clear the ding is told the ding is the floor", ()
   // F3" is the riddle, and "or the note before it a lower one" tells the user
   // to redefine their instrument. One sentence covers at-the-ding and
   // below-the-ding, and neither offers to move the ding.
-  const same = core.parseSeed("(F3) F3 C4");
+  const same = core.parseLegacySeed("(F3) F3 C4");
   assert.equal(same.ok, false, "the seed is still rejected");
   assert.equal(same.code, "NOTE_OUT_OF_ORDER");
   assert.equal(same.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
@@ -471,7 +471,7 @@ test("a top note that does not clear the ding is told the ding is the floor", ()
   assert.ok(!same.reason.includes("a lower one"),
     "the ding is the instrument; the message must not offer to lower it");
 
-  const below = core.parseSeed("(F3) E3 C4");
+  const below = core.parseLegacySeed("(F3) E3 C4");
   assert.equal(below.code, "NOTE_OUT_OF_ORDER");
   assert.equal(below.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
     { "<A>": "E3", "<B>": "F3" }));
@@ -479,13 +479,13 @@ test("a top note that does not clear the ding is told the ding is the floor", ()
 
   // The ding's own octave can itself be inferred, and that annotation - the
   // whole point of the w37 lane - must survive into this sentence.
-  const inferredDing = core.parseSeed("(D) D3 A3");
+  const inferredDing = core.parseLegacySeed("(D) D3 A3");
   assert.equal(inferredDing.code, "NOTE_OUT_OF_ORDER");
   assert.equal(inferredDing.reason, alternate("NOTE_OUT_OF_ORDER", "ding",
     { "<A>": "D3", "<B>": "D3 (inferred from D)" }));
 
   // A note that clears the ding is still accepted: the boundary has not moved.
-  assert.equal(core.parseSeed("(F3) G3 C4").ok, true);
+  assert.equal(core.parseLegacySeed("(F3) G3 C4").ok, true);
 });
 
 test("the ding is resolved before any other token, so its range comes first", () => {
@@ -493,13 +493,13 @@ test("the ding is resolved before any other token, so its range comes first", ()
   // parseSeed, BEFORE the bar check, the separator checks and the lex loop,
   // so an off-keyboard ding beats an unlexable token later in the string.
   for (const s of ["(B9) Zz3", "(B9) A3 |", "(B9) / A3"]) {
-    assert.equal(core.parseSeed(s).code, "NOTE_OUT_OF_RANGE", s);
+    assert.equal(core.parseLegacySeed(s).code, "NOTE_OUT_OF_RANGE", s);
   }
   // Past the ding, every remaining token lexes before any note is PLACED, so
   // a string carrying both an unlexable token and a misplaced one is BAD_NOTE
   // whichever order the two appear in.
   for (const s of ["(D3) A3 Zz3 B9", "(D3) A3 B9 Zz3"]) {
-    assert.equal(core.parseSeed(s).code, "BAD_NOTE", s);
+    assert.equal(core.parseLegacySeed(s).code, "BAD_NOTE", s);
   }
 });
 
@@ -507,7 +507,7 @@ test("NEEDS_NEWER_APP is carried but never raised by parseSeed", () => {
   // Section 2: it is a share-layer code, raised only by share.decode.
   assert.equal(typeof core.REASONS.NEEDS_NEWER_APP.reason, "string");
   for (const entry of synthetic) {
-    const r = core.parseSeed(entry.string);
+    const r = core.parseLegacySeed(entry.string);
     assert.notEqual(r.code, "NEEDS_NEWER_APP", entry.name);
   }
 });
@@ -608,16 +608,16 @@ test("the separator and the trailing-slash ding never collide", () => {
 
   // An unattached slash inside a token is neither, so the token does not lex.
   for (const s of ["(F3) G3/Ab3 C4", "(F3) G3 Ab3/C4 Eb4"]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, s);
     assert.equal(r.code, "BAD_NOTE", s);
   }
   // A slash attached to a LATER note is a second ding token, so the ding count
   // rule fires first, exactly as it always did.
-  assert.equal(core.parseSeed("(F3) G3 Ab3/ C4").code, "NO_DING");
+  assert.equal(core.parseLegacySeed("(F3) G3 Ab3/ C4").code, "NO_DING");
   // With no parenthesised or trailing-slash ding at all there is no ding.
   for (const s of ["F3/A3", "F3//A3", "/ (F3) G3 Ab3 C4"]) {
-    assert.equal(core.parseSeed(s).code, "NO_DING", s);
+    assert.equal(core.parseLegacySeed(s).code, "NO_DING", s);
   }
 });
 
@@ -630,7 +630,7 @@ test("a misplaced or repeated separator is BAD_NOTE naming the slash", () => {
                    "(F3) G3 / / Ab3 C4",        // twice, adjacent
                    "(F3) G3 Ab3 C4 | Db3 / Eb3" // after the bar
                   ]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${s} should be rejected`);
     assert.equal(r.code, "BAD_NOTE", s);
     assert.equal(r.reason, core.REASONS.BAD_NOTE.reason.replace("<X>", "/"), s);
@@ -642,7 +642,7 @@ test("an explicit split is capped per ring, not only in total", () => {
   for (const s of ["(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 / B4", // 12 rim
                    "(C3) D3 E3 F3 G3 / A3 B3 C4"                    // 3 inner
                   ]) {
-    const r = core.parseSeed(s);
+    const r = core.parseLegacySeed(s);
     assert.equal(r.ok, false, `${s} should be rejected`);
     assert.equal(r.code, "TOO_MANY_RIM", s);
     assert.equal(r.reason, core.REASONS.TOO_MANY_RIM.reason, s);
@@ -710,7 +710,7 @@ test("the Pygmy seed with a separator solves to the golden Pygmy angles", () => 
   const layout = loadEngine(["core", "layout"]);
   const pygmy = deckByIdes.pygmy;
   const seed = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
-  const value = layout.core.parseSeed(seed, { mirror: false });
+  const value = layout.core.parseLegacySeed(seed, { mirror: false });
   assert.equal(value.ok, true, `${seed}: ${value.code}`);
   assert.deepEqual(zoneCounts(value.value.fields),
     { ding: 1, rim: 9, inner: 2, bottom: 6 }, "9 rim, 2 inner, 6 bottom, 1 ding");
@@ -831,7 +831,7 @@ test("EG-4 parseSeed keeps the last token of every run", () => {
 });
 
 test("EG-4 parseSeed reports the first failing stage, in tokenize, place, cap, fifth order", () => {
-  const code = (str) => core.parseSeed(str).code;
+  const code = (str) => core.parseLegacySeed(str).code;
   assert.equal(code("A3 C4 | |"), "NO_DING");
   assert.equal(code("(D3) A3 | |"), "BAD_NOTE");
   assert.equal(code("(D3) A3 Zz"), "BAD_NOTE");

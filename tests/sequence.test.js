@@ -421,7 +421,7 @@ test("a pan with too few simple chords returns a reason, not a throw", () => {
   // has no anchor on its own home pitch class C (E1 of the plan).
   const built = engine();
   const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
-  const parsed = full.core.parseSeed("(C3) G3 D4 G4 D5", {});
+  const parsed = full.core.parseLegacySeed("(C3) G3 D4 G4 D5", {});
   assert.ok(parsed.ok, "the NO_THIRDS fixture must parse");
   const deck = full.select.build(parsed.value);
   assert.ok(deck.ok, "the NO_THIRDS fixture must build");
@@ -1223,7 +1223,7 @@ test("fallback and empty-tier reasons per D-2/D-6", () => {
 
   // NO_HOME_CHORD wins on every tier, reusing the NO_THIRDS fixture from S1-7.
   const full = loadEngine(["core", "voicing", "layout", "naming", "select", "sequence"]);
-  const parsed = full.core.parseSeed("(C3) G3 D4 G4 D5", {});
+  const parsed = full.core.parseLegacySeed("(C3) G3 D4 G4 D5", {});
   const noHomeDeck = full.select.build(parsed.value).value;
   for (const tier of ["basic", "intermediate", "advanced"]) {
     const result = tier === "basic"
@@ -1293,7 +1293,7 @@ function generated() {
   if (generatedFixtures) return generatedFixtures;
   const full = loadEngine(FULL_ENGINE_MODULES);
   function buildDeck(str) {
-    const parsed = full.core.parseSeed(str, {});
+    const parsed = full.core.parseLegacySeed(str, {});
     assert.equal(parsed.ok, true, `fixture seed did not parse: ${str} (${parsed.code})`);
     const built = full.select.build(parsed.value);
     assert.equal(built.ok, true, `fixture seed did not build: ${str}`);
@@ -1331,7 +1331,7 @@ function generated() {
     if (n <= 11) sweep.push({ n, label: `rim-only N=${n}`, string: seedOf(TWELVE, n, 0) });
   }
   const synthetic = scales
-    .map((row) => ({ name: row.name, parsed: full.core.parseSeed(row.string, {}) }))
+    .map((row) => ({ name: row.name, parsed: full.core.parseLegacySeed(row.string, {}) }))
     .filter((r) => r.parsed.ok)
     .map((r) => ({ label: r.name, built: full.select.build(r.parsed.value) }))
     .filter((r) => r.built.ok)
@@ -1429,7 +1429,7 @@ test("generated decks: every tier deals its own tier, in range and connected, un
 test("S7: a custom augmented hexatonic deck deals HARD with no extended card", () => {
   const { full } = generated();
   const S = full.sequence;
-  const parsed = full.core.parseSeed("(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4", {});
+  const parsed = full.core.parseLegacySeed("(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4", {});
   assert.equal(parsed.ok, true);
   const built = full.select.build(parsed.value);
   assert.equal(built.ok, true);
@@ -2160,7 +2160,7 @@ const TRUNCATING_SEEDS = [
 
 function truncatingDeck(str) {
   const full = loadEngine(FULL_ENGINE_MODULES);
-  const parsed = full.core.parseSeed(str, {});
+  const parsed = full.core.parseLegacySeed(str, {});
   assert.equal(parsed.ok, true, `fixture seed did not parse: ${str}`);
   const built = full.select.build(parsed.value);
   assert.equal(built.ok, true, `fixture seed did not build: ${str}`);
@@ -2205,7 +2205,7 @@ const MEDIUM_COMPLETE_GOLDEN = {
 test("a deck that completes consumes no extra rng", () => {
   const full = loadEngine(FULL_ENGINE_MODULES);
   const S = full.sequence;
-  const build = (str) => full.select.build(full.core.parseSeed(str, {}).value).value;
+  const build = (str) => full.select.build(full.core.parseLegacySeed(str, {}).value).value;
   const decks = {
     hijaz: HIJAZ,
     pygmy: PYGMY,
@@ -2263,7 +2263,7 @@ test("the node count predicts truncation exactly", () => {
   const full = loadEngine(FULL_ENGINE_MODULES);
   const S = full.sequence;
   const I = S._internal;
-  const build = (str) => full.select.build(full.core.parseSeed(str, {}).value).value;
+  const build = (str) => full.select.build(full.core.parseLegacySeed(str, {}).value).value;
   const decks = {
     hijaz: HIJAZ,
     pygmy: PYGMY,

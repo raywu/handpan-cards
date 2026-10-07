@@ -47,7 +47,7 @@ def _seeds():
 
 
 def _generate(seed):
-    proc = subprocess.run([NODE, GEN_DECK, seed], capture_output=True,
+    proc = subprocess.run([NODE, GEN_DECK, "--legacy", seed], capture_output=True,
                           text=True, cwd=paths.ROOT, timeout=120)
     if proc.returncode != 0:
         return None

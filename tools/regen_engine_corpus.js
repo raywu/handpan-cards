@@ -43,9 +43,9 @@ const hpe = loadEngine(["core", "voicing", "layout", "naming", "select"]);
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 function record(string) {
-  const parsed = hpe.core.parseSeed(string);
-  if (!parsed.ok) return { string, parse: { ok: false, code: parsed.code } };
-  const entry = { string, parse: { ok: true, fields: plain(parsed.value.fields) } };
+  const parsed = hpe.core.parseLegacySeed(string);
+  if (!parsed.ok) return { string, reader: "legacy", parse: { ok: false, code: parsed.code } };
+  const entry = { string, reader: "legacy", parse: { ok: true, fields: plain(parsed.value.fields) } };
   const solved = hpe.layout.solve(parsed.value);
   entry.layout = solved.ok ? { ok: true, geom: plain(solved.value.geom) } : { ok: false, code: solved.code };
   const built = hpe.select.build(parsed.value);
@@ -68,7 +68,7 @@ function build() {
       notFromParseSeed.push(code);
       continue;
     }
-    const got = hpe.core.parseSeed(MALFORMED[code]);
+    const got = hpe.core.parseLegacySeed(MALFORMED[code]);
     if (got.ok || got.code !== code) {
       throw new Error(`malformed seed for ${code} no longer yields ${code}: ${JSON.stringify(got).slice(0, 120)}`);
     }

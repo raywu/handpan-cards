@@ -417,7 +417,7 @@ test("legality invariants hold over every candidate on every synthetic pan", () 
 
   for (const row of SYNTHETIC) {
     if (!row.expect || row.expect.ok !== true) continue;
-    const parsed = HPE.core.parseSeed(row.string);
+    const parsed = HPE.core.parseLegacySeed(row.string);
     assert.ok(parsed.ok, `${row.name}: ${row.string} should parse`);
     const fields = plain(parsed.value.fields);
     pans += 1;
@@ -484,7 +484,7 @@ test("legality invariants hold over every candidate on every synthetic pan", () 
 
 test("the 6-note budget drops the lowest optional extension first", () => {
   // A pan carrying C D E F G A Bb, so every tone of a C13 exists.
-  const parsed = HPE.core.parseSeed("(C3) D3 E3 F3 G3 A3 Bb3 C4 D4 E4 F4");
+  const parsed = HPE.core.parseLegacySeed("(C3) D3 E3 F3 G3 A3 Bb3 C4 D4 E4 F4");
   assert.ok(parsed.ok);
   const fields = plain(parsed.value.fields);
   const thirteenth = QUALITIES["13"].intervals; // [0,4,7,10,14,17,21]
