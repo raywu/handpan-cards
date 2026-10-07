@@ -1754,6 +1754,25 @@ where they differ.
 - Branch `claude/beginner-c-default`, worktree
   `.claude/worktrees/beginner-c`.
 
+### Lane C, amendment 2 (2026-10-07, after the lane's first stop)
+
+The lane stopped, as written, when `tests/mutation_harness.test.js` failed
+on `tests/mutants/b_picker_order_swapped.patch`: Lane B cut that patch with
+30 lines of context, and its `index.html` hunk carries the
+`const DEFAULT_DECK = "hijaz";` line. The one-line change breaks the
+context. `tools/refresh_mutants.py --check` reports the anchor ambiguous.
+
+AD-C-1 (coordinator, under AFK): **Owns** widens to every existing patch in
+`tests/mutants/` whose context or removed lines contain the `DEFAULT_DECK`
+line, `b_picker_order_swapped.patch` included. Such a patch is re-cut so it
+applies to the new tree, by `tools/regen_data_mutants.py` on a committed
+tree where it is a data mutant, by hand otherwise. A re-cut changes context
+only: the mutation, the `# suite:` line and the `# kills:` line stay as they
+are, and the patch must still die for the test it names. `tools/`
+is not widened. A failure in `tests/mutation_harness.test.js` that such a
+re-cut clears is no longer a stop condition; any other failing test outside
+Owns still is.
+
 ## 11. Test matrix
 
 | Test | File | Asserts | Lane | Mutant that proves it bites |
