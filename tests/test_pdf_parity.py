@@ -313,12 +313,21 @@ class PrintParityTest(unittest.TestCase):
             for i, (pa, pb) in enumerate(zip(letter, a4)):
                 self.assertGreater(len(pa), 100)
                 self.assertEqual(len(pa), len(pb))
-                for ga, gb in zip(pa, pb):
+                # Pair each Letter glyph with the nearest unused A4 glyph of
+                # the same size and character. A zip of two sorted lists
+                # swaps two glyphs whose x differ in the sixth place.
+                unused = {}
+                for gb in pb:
+                    unused.setdefault((gb[2], gb[3]), []).append(gb)
+                for ga in pa:
+                    pool = unused[(ga[2], ga[3])]
+                    gb = min(pool, key=lambda g: abs(g[0] - dx - ga[0])
+                             + abs(g[1] - dy_read - ga[1]))
+                    pool.remove(gb)
                     self.assertAlmostEqual(gb[0] - dx, ga[0], places=3,
                                            msg="page %d x" % (i + 2))
                     self.assertAlmostEqual(gb[1] - dy_read, ga[1], places=3,
                                            msg="page %d y" % (i + 2))
-                    self.assertEqual((gb[2], gb[3]), (ga[2], ga[3]))
 
 
 class SweepCoverageTest(unittest.TestCase):

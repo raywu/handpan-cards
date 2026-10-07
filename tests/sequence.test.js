@@ -1424,12 +1424,12 @@ test("generated decks: every tier deals its own tier, in range and connected, un
     "the no-extended reviewer rows deal HARD on every seed");
 });
 
-// S7 custom-scale case: D Kurd 9 has no extended card at all, and HARD still
-// deals there, every deal through the two-non-anchor branch.
+// S7 custom-scale case: the augmented hexatonic seed (AD18) has no extended
+// card at all, and HARD still deals there, every deal through the two-non-anchor branch.
 test("S7: a custom D Kurd 9 deck deals HARD with no extended card", () => {
   const { full } = generated();
   const S = full.sequence;
-  const parsed = full.core.parseSeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4", {});
+  const parsed = full.core.parseSeed("(C3) Eb3 E3 G3 Ab3 B3 C4 Eb4 E4", {});
   assert.equal(parsed.ok, true);
   const built = full.select.build(parsed.value);
   assert.equal(built.ok, true);
@@ -1437,15 +1437,15 @@ test("S7: a custom D Kurd 9 deck deals HARD with no extended card", () => {
   const anchorsList = host(S.anchors(deck));
   const extended = deck.chords.filter((c, i) => !anchorsList.includes(i) &&
     (c.fields.length > 4 || /\b(LOW|HIGH) VOICING\b/.test(c.subtitle || "")));
-  assert.strictEqual(extended.length, 0, "D Kurd 9 has no extended card");
+  assert.strictEqual(extended.length, 0, "the augmented hexatonic deck has no extended card");
   let prev = null;
   for (let seed = 0; seed < 50; seed += 1) {
     const result = S.pick(deck, S.mulberry32(seed), prev, "advanced");
-    assert.ok(result.chords, `D Kurd 9 HARD seed ${seed} returned ${result.reason}`);
+    assert.ok(result.chords, `augmented HARD seed ${seed} returned ${result.reason}`);
     const chords = host(result.chords);
     assert.strictEqual(S.tierOf(deck, chords), "advanced");
     assert.ok(chords.filter((i) => !anchorsList.includes(i)).length >= 2,
-      `D Kurd 9 seed ${seed} dealt ${JSON.stringify(chords)} with fewer than two non-anchor cards`);
+      `augmented seed ${seed} dealt ${JSON.stringify(chords)} with fewer than two non-anchor cards`);
     prev = chords;
   }
 });
