@@ -317,10 +317,11 @@ this by attaching per-instrument images.
   F#:iv, G#:v deg, B:vii};
   Pygmy {F:i, G:ii deg, Ab:III, Bb:iv, C:v, Db:VI, Eb:VII};
   Amara {D:i, F:III, G:iv, A:v, C:VII}.
-  (2026-10-06, owner decision: the seven steps of a deck's parent scale take
-  no accidental - case and the degree sign carry the quality. Only a root
-  OUTSIDE the parent scale takes `#` or `b`, which happens on generated decks
-  and on none of the three built-ins.)
+  (2026-10-05, owner decision: the seven steps of a deck's parent scale take
+  no accidental - case and the degree sign carry the quality. A root OUTSIDE
+  the parent scale takes `#` or `b`; that is the shipped DEFAULT, not an
+  owner decision, and it arises on generated decks only, never on the three
+  built-ins.)
 
 ## App data model (data/decks.json, embedded as DECKS)
 
