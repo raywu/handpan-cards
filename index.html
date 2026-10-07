@@ -3660,7 +3660,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (var id in fields) {
       if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
       if (id === "0") continue;
-      (Number(id) >= 101 ? bottom : top).push(id);
+      (fields[id][3] === "bottom" ? bottom : top).push(id);
     }
     function byNumber(a, c) { return Number(a) - Number(c); }
     return { top: top.sort(byNumber), bottom: bottom.sort(byNumber) };
@@ -3685,6 +3685,37 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (n === mark) out += " " + INNER_MARK;
       out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
     }
+    if (ids.bottom.length) {
+      out += " |";
+      for (n = 0; n < ids.bottom.length; n += 1) {
+        out += " " + fields[ids.bottom[n]][0] + fields[ids.bottom[n]][1];
+      }
+    }
+    return out;
+  }
+
+  // The string a deck id is hashed from. It is formatSeed's algorithm today,
+  // kept as its own function so the id no longer depends on how formatSeed
+  // spells a scale: ids must not move when the canonical spelling does. The
+  // zone, not the field number, decides top from bottom, and the separator is
+  // printed whenever the rim count differs from what the positional rule
+  // gives, so a twelve-note rim and an eleven-plus-one spill hash apart.
+  function identitySeed(seedOrFields) {
+    var fields = fieldsOf(seedOrFields);
+    var ids = orderedIds(fields);
+    var ding = fields["0"];
+    var out = "(" + ding[0] + ding[1] + ")";
+    var rim = 0;
+    var n;
+    for (n = 0; n < ids.top.length; n += 1) {
+      if (fields[ids.top[n]][3] === "rim") rim += 1;
+    }
+    var mark = (rim > 0 && rim !== positionalRim(ids.top.length)) ? rim : -1;
+    for (n = 0; n < ids.top.length; n += 1) {
+      if (n === mark) out += " " + INNER_MARK;
+      out += " " + fields[ids.top[n]][0] + fields[ids.top[n]][1];
+    }
+    if (mark === ids.top.length) out += " " + INNER_MARK;
     if (ids.bottom.length) {
       out += " |";
       for (n = 0; n < ids.bottom.length; n += 1) {
@@ -3736,15 +3767,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return hex;
   }
 
-  // D14: a pure function of formatSeed - notes, octaves, zones and order. The
+  // D14: a pure function of identitySeed - notes, octaves, zones and order. The
   // options are never hashed, so renaming or recolouring keeps the id.
   function deckId(seedOrFields) {
-    return "custom:" + fnv1a32(formatSeed(fieldsOf(seedOrFields)));
+    return "custom:" + fnv1a32(identitySeed(seedOrFields));
   }
 
   HPE.core = {
     parseSeed: parseSeed,
+    parseLegacySeed: parseSeed,
     formatSeed: formatSeed,
+    identitySeed: identitySeed,
     deckId: deckId,
     REASONS: REASONS,
     pitchClass: pitchClass,
@@ -5759,6 +5792,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return result;
   }
 
+  // The scale-line reader for a link's version. Every version this build reads
+  // maps to the legacy reader for now; a later lane gives the newest its own.
+  function scaleLineReader(version) {
+    return HPE.core.parseLegacySeed;
+  }
+
   // The whole decode except the last step, which has to stay the bare
   // core.parseSeed call. `carry` is how the layout correction gets past that
   // call: parseSeed's option whitelist is core's, core.js is frozen, and it
@@ -5812,7 +5851,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     // 5. The same validator the text box uses. It rejects, never repairs, so
     //    its code and reason are propagated unchanged.
-    return HPE.core.parseSeed(lines[0], options);
+    return scaleLineReader(version)(lines[0], options);
   }
 
   HPE.share = {
@@ -7179,22 +7218,45 @@ function writeScales(list) {
 function scaleRecord(seed) {
   return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
 }
+// The reader for a stored record's scale string, chosen by the record's own
+// version. Every version maps to the legacy reader today; a record keeps the
+// reader it was written with, so its deck id never depends on how the current
+// canonical spelling prints.
+function scaleReader(v) {
+  return HPE.core.parseLegacySeed;
+}
+// The deck id a record's string resolves to, or null for a record this build
+// cannot read (it is kept, never matched).
+function recordDeckId(r) {
+  if (!r || typeof r !== "object" || typeof r.s !== "string") return null;
+  try {
+    const res = scaleReader(r.v)(r.s);
+    return res.ok ? HPE.core.deckId(res.value.fields) : null;
+  } catch (e) { return null; }
+}
+// The deck id a bare scale string resolves to, through the current reader.
+function stringDeckId(str) {
+  const res = scaleReader(SHARE_VERSION)(str);
+  return res.ok ? HPE.core.deckId(res.value.fields) : null;
+}
 function rememberScale(seed) {
   const rec = scaleRecord(seed);
+  const id = HPE.core.deckId(seed.fields);
   const out = [];
   let placed = false;
   for (const r of savedScales()) {
-    if (r && r.s === rec.s) { if (!placed) { out.push(rec); placed = true; } }
+    if (recordDeckId(r) === id) { if (!placed) { out.push(rec); placed = true; } }
     else out.push(r);                     // a duplicate of the key is collapsed
   }
   if (!placed) out.push(rec);
   writeScales(out);
 }
-// The canonical scale string IS the record's key (D14: the id is its hash), so
-// dropping the record is a filter on that string and nothing has to look the
-// deck up a second time.
+// The deck id IS the record's key (D14), and a record is matched by the id its
+// own string resolves to, so dropping it is a filter on that id whatever
+// spelling the record holds.
 function forgetScale(str) {
-  writeScales(savedScales().filter(r => !r || r.s !== str));
+  const id = stringDeckId(str);
+  writeScales(savedScales().filter(r => !r || recordDeckId(r) !== id));
 }
 // Queue row 73: editing the NOTES replaces the deck, so the old record leaves
 // storage and the new one takes ITS INDEX - restoreScales rebuilds the registry
@@ -7203,13 +7265,15 @@ function forgetScale(str) {
 // while it sat in place until then.
 function replaceScale(oldStr, seed) {
   const rec = scaleRecord(seed);
+  const newId = HPE.core.deckId(seed.fields);
+  const oldId = stringDeckId(oldStr);
   const list = savedScales();
-  const at = list.findIndex(r => r && r.s === oldStr);
+  const at = list.findIndex(r => r && recordDeckId(r) === oldId);
   if (at < 0) { rememberScale(seed); return; }
   const out = [];
   list.forEach((r, i) => {
     if (i === at) out.push(rec);
-    else if (!r || r.s !== rec.s) out.push(r);   // never a duplicate of the new record
+    else if (!r || recordDeckId(r) !== newId) out.push(r);   // never a duplicate of the new record
   });
   writeScales(out);
 }
@@ -7219,6 +7283,7 @@ function restoreScales() {
     try {
       if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
       if (!checkShareVersion(rec.v).ok) continue;
+      if (!scaleReader(rec.v)(rec.s).ok) continue;
       generateDeck(rec.s, rec.o || undefined);
     } catch (e) {}
   }

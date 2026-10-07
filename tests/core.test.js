@@ -838,3 +838,61 @@ test("EG-4 parseSeed reports the first failing stage, in tokenize, place, cap, f
   assert.equal(code("(D3) C4 E4"), "NO_FIFTH");
   assert.equal(code("(D3) Zz A3"), "BAD_NOTE");
 });
+
+/* ---------------- Lane L0: ids independent of formatSeed's spelling -------- */
+
+const ID_FIXTURE = JSON.parse(fs.readFileSync(
+  path.join(ROOT, "tests", "fixtures", "deck_ids_v1.json"), "utf8"));
+
+// A characterisation pin (plan section 19, R3): the ids were captured from main
+// at d744071, before deckId was touched, so this is green when written.
+test("every frozen legacy string keeps its deck id", () => {
+  const rows = Object.entries(ID_FIXTURE.pinned).concat(ID_FIXTURE.strings);
+  assert.ok(rows.length >= 500, `only ${rows.length} frozen strings`);
+  for (const [text, id] of rows) {
+    assert.equal(core.deckId(parsed(text).fields), id, `${text} moved its id`);
+  }
+  const named = {
+    "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4": "custom:626198f8",
+    "(D3) A3 C4 D4 E4 F4 G4 A4 C5": "custom:977311b5",
+    "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5": "custom:cb5fe66a",
+    "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5": "custom:b174242c",
+    "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5": "custom:6f9ffc33",
+  };
+  for (const [text, id] of Object.entries(named)) {
+    assert.equal(core.deckId(parsed(text).fields), id, `${text}`);
+  }
+});
+
+// Also a pin: identitySeed is formatSeed's algorithm today, so the two agree on
+// everything the legacy grammar can produce.
+test("identitySeed equals formatSeed on every legacy-reachable shape", () => {
+  const rows = Object.keys(ID_FIXTURE.pinned).concat(ID_FIXTURE.strings.map(r => r[0]));
+  for (const text of rows) {
+    const value = parsed(text);
+    assert.equal(core.identitySeed(value.fields), core.formatSeed(value.fields), text);
+    assert.equal(core.identitySeed(value), core.formatSeed(value), text);
+  }
+});
+
+test("identitySeed tells a twelve-note rim from an eleven-plus-one spill", () => {
+  const spill = parsed("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5").fields;
+  const rim = JSON.parse(JSON.stringify(spill));
+  rim["12"][3] = "rim";
+  assert.equal(rim["12"][3], "rim");
+  assert.notEqual(core.identitySeed(rim), core.identitySeed(spill));
+  assert.notEqual(core.deckId(rim), core.deckId(spill));
+  assert.equal(core.deckId(spill), core.deckId(parsed("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 / E5")));
+});
+
+test("identitySeed orders by zone, not by field number", () => {
+  const fields = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3").fields;
+  const renumbered = {};
+  for (const id of Object.keys(fields)) renumbered[id === "101" ? "20" : id] = fields[id];
+  assert.equal(core.identitySeed(fields), "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3");
+  assert.equal(core.identitySeed(renumbered), "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 E3");
+});
+
+test("parseLegacySeed is parseSeed", () => {
+  assert.equal(core.parseLegacySeed, core.parseSeed);
+});

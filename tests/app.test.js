@@ -5668,3 +5668,23 @@ test("AP3-4 the rail keeps its scroll across a re-render of the same deal and re
   assert.strictEqual(app.els.count.children[1].className, "sr-only");
   assert.ok(app.els.count.classList.contains("seq"));
 });
+
+/* Lane L0 (scale-syntax plan, 5.2 and 6.2): a record is found by the deck id
+   its own string resolves to, not by comparing `s` with formatSeed's spelling.
+   A stored record may hold any spelling the reader accepts. */
+test("forgetting a deck removes its record whatever spelling the record holds", () => {
+  const seeds = ["(D) A C D E F G A C", "D3/ A3 C4 D4 E4 F4 G4 A4 C5", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"];
+  for (const spelling of seeds) {
+    const key = boot().get("SCALES_KEY");
+    const other = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+    const app = boot({ storage: { [key]: JSON.stringify([
+      { v: 2, s: spelling, o: {} }, { v: 2, s: other, o: {} }]) } });
+    const id = Object.keys(app.registry()).find(k => k !== undefined &&
+      app.registry()[k].fields[0][0] === "D");
+    assert.ok(id, `${spelling} was not restored`);
+    app.run(`deleteDeck(${JSON.stringify(id)})`);
+    const left = JSON.parse(app.store[key]);
+    assert.strictEqual(left.length, 1, `${spelling}: the record survived the delete`);
+    assert.strictEqual(left[0].s, other, "the wrong record was removed");
+  }
+});

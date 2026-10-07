@@ -1036,3 +1036,24 @@ test("a version byte BELOW the oldest format is a corrupt payload", () => {
   assert.equal(r.ok, false);
   assert.equal(r.code, "BAD_NOTE");
 });
+
+/* ---------------- Lane L0: the scale-line reader is chosen by version ------ */
+
+test("decode chooses its scale-line reader from the version", () => {
+  const seed = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
+  const link = share.encode(seed).value;
+  const realLegacy = core.parseLegacySeed;
+  const realSeed = core.parseSeed;
+  const calls = [];
+  core.parseLegacySeed = (...a) => { calls.push("legacy"); return realLegacy(...a); };
+  core.parseSeed = (...a) => { calls.push("current"); return realSeed(...a); };
+  try {
+    const res = share.decode(link);
+    assert.equal(res.ok, true);
+    assert.deepEqual(calls, ["legacy"],
+      "every version this build reads goes through the legacy reader for now");
+  } finally {
+    core.parseLegacySeed = realLegacy;
+    core.parseSeed = realSeed;
+  }
+});
