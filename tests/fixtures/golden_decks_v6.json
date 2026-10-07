@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "decks": [
     {
       "id": "hijaz",
@@ -615,6 +615,20 @@
         },
         {
           "main": "Fm",
+          "sup": "add9",
+          "subtitle": "F MINOR ADD 9",
+          "fields": [
+            5,
+            7,
+            8,
+            6
+          ],
+          "roots": [
+            5
+          ]
+        },
+        {
+          "main": "Fm",
           "sup": "9",
           "subtitle": "F MINOR 9",
           "fields": [
@@ -622,7 +636,7 @@
             7,
             8,
             9,
-            11
+            6
           ],
           "roots": [
             5
@@ -1493,6 +1507,20 @@
         },
         {
           "main": "F",
+          "sup": "add9",
+          "subtitle": "F MAJOR ADD 9",
+          "fields": [
+            5,
+            7,
+            8,
+            6
+          ],
+          "roots": [
+            5
+          ]
+        },
+        {
+          "main": "F",
           "sup": "6/9",
           "subtitle": "F MAJOR 6/9",
           "fields": [
@@ -1666,6 +1694,20 @@
         },
         {
           "main": "C",
+          "sup": "add9",
+          "subtitle": "C MAJOR ADD 9",
+          "fields": [
+            2,
+            4,
+            6,
+            3
+          ],
+          "roots": [
+            2
+          ]
+        },
+        {
+          "main": "C",
           "sup": "6/9",
           "subtitle": "C MAJOR 6/9",
           "fields": [
@@ -1683,5 +1725,5 @@
       "maker_string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
     }
   ],
-  "sha256": "050d476260a4fffe7b3ff1457fb76aaaed2d2058afb4e3923ba165deaf3a49e6"
+  "sha256": "47e4fc4c07f67d2c69c7e2fd935d3b527a0e16d2c88181dd9269b6ff4c667949"
 }

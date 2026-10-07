@@ -654,6 +654,20 @@
       },
       {
         "main": "Fm",
+        "sup": "add9",
+        "subtitle": "F MINOR ADD 9",
+        "fields": [
+          5,
+          7,
+          8,
+          6
+        ],
+        "roots": [
+          5
+        ]
+      },
+      {
+        "main": "Fm",
         "sup": "9",
         "subtitle": "F MINOR 9",
         "fields": [
@@ -661,7 +675,7 @@
           7,
           8,
           9,
-          11
+          6
         ],
         "roots": [
           5
@@ -1576,6 +1590,20 @@
       },
       {
         "main": "F",
+        "sup": "add9",
+        "subtitle": "F MAJOR ADD 9",
+        "fields": [
+          5,
+          7,
+          8,
+          6
+        ],
+        "roots": [
+          5
+        ]
+      },
+      {
+        "main": "F",
         "sup": "6/9",
         "subtitle": "F MAJOR 6/9",
         "fields": [
@@ -1742,6 +1770,20 @@
           2,
           5,
           6
+        ],
+        "roots": [
+          2
+        ]
+      },
+      {
+        "main": "C",
+        "sup": "add9",
+        "subtitle": "C MAJOR ADD 9",
+        "fields": [
+          2,
+          4,
+          6,
+          3
         ],
         "roots": [
           2

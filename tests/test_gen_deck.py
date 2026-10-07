@@ -416,9 +416,60 @@ class GeneratedDeckKeyTest(unittest.TestCase):
                 self.assertNotIn("warnings", deck)
         self.assertEqual(decks.HIJAZ["name"], "C# HIJAZ 9")
         # 2026-09-16 (engine adoption): 18->19, 27->52, 16->25.
+        # 2026-10-07 (size cap removed, Lane U2): Pygmy 52->53, Amara 25->27.
         self.assertEqual(len(decks.HIJAZ["chords"]), 19)
-        self.assertEqual(len(decks.PYGMY["chords"]), 52)
-        self.assertEqual(len(decks.AMARA["chords"]), 25)
+        self.assertEqual(len(decks.PYGMY["chords"]), 53)
+        self.assertEqual(len(decks.AMARA["chords"]), 27)
+
+
+# sha256 of json.dumps(chords, sort_keys=True, separators=(",", ":")) for the
+# chord lists of golden_decks_v5.json, the corpus before the size cap came off
+# (2026-10-07, Lane U2). Pinned here because the fixture itself moved on.
+OLD_AMARA_CHORDS_SHA256 = ("6a7f861e236169672d2400280f20f7adddbc81cb71f95f168b38"
+                           "3032b084ac82")
+OLD_PYGMY_CHORDS_SHA256 = ("db3cd398ce1a96691d99852ebc3c61122cfabf4df7a6f24fef36"
+                           "6c9f9e81a235")
+AMARA_MAKER = "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
+PYGMY_MAKER = ("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5"
+               " | C3 Db3 Eb3 Bb3 Db4 Ab5")
+
+
+def chords_digest(chords):
+    return hashlib.sha256(json.dumps(chords, sort_keys=True,
+                                     separators=(",", ":")).encode()).hexdigest()
+
+
+def canonical_deck(deck_id):
+    return next(d for d in paths.canonical_decks() if d["id"] == deck_id)
+
+
+class UncappedBuiltinsTest(unittest.TestCase):
+    """Lane U2: Amara 9 and Pygmy hold what the uncapped engine generates."""
+
+    def test_amara_9_chords_equal_a_fresh_engine_run(self):
+        fresh = generate(AMARA_MAKER, "--mirror")["deck"]["chords"]
+        got = canonical_deck("amara")["chords"]
+        self.assertEqual(got, fresh)
+        self.assertEqual(len(got), 27)
+        kept = [c for c in got if (c["main"], c["sup"]) not in
+                (("F", "add9"), ("C", "add9"))]
+        self.assertEqual(len(kept), 25)
+        self.assertEqual(chords_digest(kept), OLD_AMARA_CHORDS_SHA256,
+                         "the other 25 Amara cards moved")
+
+    def test_pygmy_chords_equal_a_fresh_engine_run(self):
+        fresh = generate(PYGMY_MAKER)["deck"]["chords"]
+        got = canonical_deck("pygmy")["chords"]
+        self.assertEqual(got, fresh)
+        self.assertEqual(len(got), 53)
+        self.assertEqual((got[5]["main"], got[5]["sup"], got[5]["fields"]),
+                         ("Fm", "add9", [5, 7, 8, 6]))
+        self.assertEqual((got[6]["main"], got[6]["sup"], got[6]["fields"]),
+                         ("Fm", "9", [5, 7, 8, 9, 6]))
+        old = [dict(c) for i, c in enumerate(got) if i != 5]
+        old[5] = dict(old[5], fields=[5, 7, 8, 9, 11])
+        self.assertEqual(chords_digest(old), OLD_PYGMY_CHORDS_SHA256,
+                         "a Pygmy card other than Fmadd9 and Fm9 moved")
 
 
 class GeneratedDeckPdfTest(unittest.TestCase):

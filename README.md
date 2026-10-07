@@ -15,7 +15,7 @@ module and re-run the tool. `python3 tools/validate.py` fails CI if the
 two ever drift.
 
 Decks included: C# Hijaz 9, 19 cards (pink/orange); F3 Low Pygmy 18,
-52 cards (purple/gold); D Amara 9, 25 cards (teal/amber). 96 cards total,
+53 cards (purple/gold); D Amara 9, 27 cards (teal/amber). 99 cards total,
 with the same diagrams, voicings, pitch-class highlighting, and typography as
 the printed sets. The visual design (Marcellus / Bitter / Nunito Sans,
 single-colour root-frame borders, per-deck palettes) is original to this
@@ -114,7 +114,7 @@ What is covered:
   wrap, shuffle, and the localStorage guards, booted headless from `index.html`.
 - **App vs print agreement** - the two renderers are independent
   implementations of the same conventions (and use opposite y-axis signs), so
-  all 96 cards are compared on position, highlight state, note order and badge.
+  all 99 cards are compared on position, highlight state, note order and badge.
 - **The scale engine** - each module under `src/engine/` has its own node
   suite: chord selection and ranking, voicing, naming, the layout solver swept
   over N=5..19 pans, and share-URL round trips.

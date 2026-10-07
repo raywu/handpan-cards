@@ -89,11 +89,13 @@ LAYOUTS = {
     ],
 }
 
-# CLAUDE.md > "Decks:" - chord counts per deck, 96 cards in total.
+# CLAUDE.md > "Decks:" - chord counts per deck, 99 cards in total.
 # 2026-09-16 (D7/D10/D11, engine adoption): all three decks now ship the
 # scale engine's generated output. Hijaz 18 -> 19, Pygmy 27 -> 52 (31 distinct
 # chord names, D10 amended), Amara 16 -> 25 (D11, fully re-ranked).
-CHORD_COUNTS = {"hijaz": 19, "pygmy": 52, "amara": 25}
+# 2026-10-07 (size cap removed, Lane U2): Pygmy 52 -> 53 (32 distinct names,
+# Fmadd9 at position 6, Fm9 on the engine voicing), Amara 25 -> 27.
+CHORD_COUNTS = {"hijaz": 19, "pygmy": 53, "amara": 27}
 
 # docs/ENGINE-SPEC.md section 10, keyed by note name (owner decision
 # 2026-10-05: the step of the parent scale, case, the diminished mark, and no
@@ -120,6 +122,7 @@ PYGMY_BADGE = [
     1,  # Fsus4
     1,  # F7sus4
     0,  # Fm7
+    0,  # Fmadd9
     0,  # Fm9
     2,  # G dim
     2,  # Gm7b5
@@ -231,7 +234,7 @@ class LayoutTest(unittest.TestCase):
     def test_deck_inventory(self):
         got = {d["id"]: len(d["chords"]) for d in decks()}
         self.assertEqual(got, CHORD_COUNTS)
-        self.assertEqual(sum(got.values()), 96, "96 cards total")
+        self.assertEqual(sum(got.values()), 99, "99 cards total")
 
     def test_midi_matches_note_name(self):
         for deck in decks():

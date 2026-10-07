@@ -122,32 +122,32 @@ const GOLDEN = {
   // fallback (its triad-only pool is one loop).
   pygmy: {
     2: [
-      [0, 8], [0, 19], [0, 24], [0, 37], [0, 43]
+      [0, 9], [0, 20], [0, 25], [0, 38], [0, 44]
     ],
     3: [
-      [0, 8, 19], [0, 8, 24], [0, 8, 37], [0, 8, 43],
-      [0, 19, 8], [0, 19, 24], [0, 19, 37], [0, 19, 43],
-      [0, 24, 8], [0, 24, 19], [0, 24, 37], [0, 24, 43],
-      [0, 37, 8], [0, 37, 19], [0, 37, 24], [0, 37, 43],
-      [0, 43, 8], [0, 43, 19], [0, 43, 24], [0, 43, 37]
+      [0, 9, 20], [0, 9, 25], [0, 9, 38], [0, 9, 44],
+      [0, 20, 9], [0, 20, 25], [0, 20, 38], [0, 20, 44],
+      [0, 25, 9], [0, 25, 20], [0, 25, 38], [0, 25, 44],
+      [0, 38, 9], [0, 38, 20], [0, 38, 25], [0, 38, 44],
+      [0, 44, 9], [0, 44, 20], [0, 44, 25], [0, 44, 38]
     ]
   },
   amara: {
     2: [
-      [0, 8], [0, 16], [0, 21]
+      [0, 8], [0, 17], [0, 22]
     ],
     3: [
-      [0, 8, 16], [0, 8, 21],
-      [0, 16, 8], [0, 16, 21],
-      [0, 21, 8], [0, 21, 16]
+      [0, 8, 17], [0, 8, 22],
+      [0, 17, 8], [0, 17, 22],
+      [0, 22, 8], [0, 22, 17]
     ]
   }
 };
 
 const ANCHORS_1BASED = {
   hijaz: [1, 7, 9, 11, 13, 15],
-  pygmy: [1, 7, 9, 20, 25, 38, 44],
-  amara: [1, 9, 15, 17, 22]
+  pygmy: [1, 8, 10, 21, 26, 39, 45],
+  amara: [1, 9, 16, 18, 23]
 };
 
 function engine() {
@@ -231,9 +231,9 @@ test("sequences match the approved golden table on every built-in deck", () => {
   const I = E.sequence._internal;
   assert.strictEqual(I.MIN_BASIC_POOL, 12);
   assert.deepStrictEqual(host(I.tierContext(HIJAZ).basicVocab), host(E.sequence.anchors(HIJAZ)));
-  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicVocab), [0, 8, 19, 24, 37, 43]);
-  assert.deepStrictEqual(host(I.tierContext(AMARA).basicVocab), [0, 8, 16, 21]);
-  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicStarts), [0, 8], "Fm home, Ab relative major");
+  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicVocab), [0, 9, 20, 25, 38, 44]);
+  assert.deepStrictEqual(host(I.tierContext(AMARA).basicVocab), [0, 8, 17, 22]);
+  assert.deepStrictEqual(host(I.tierContext(PYGMY).basicStarts), [0, 9], "Fm home, Ab relative major");
   assert.deepStrictEqual(host(I.tierContext(AMARA).basicStarts), [0, 8], "Dm home, F relative major");
   assert.deepStrictEqual(host(I.tierContext(HIJAZ).basicStarts), [0], "C# is major: home only");
   assert.throws(() => E.sequence.sequences(HIJAZ, 5), /length must be 2, 3 or 4/);
@@ -657,10 +657,10 @@ test("S6: Amy's rows - A1-A8 BASIC, A9-A10 MEDIUM on Pygmy; A3/A10 MEDIUM on Ama
 test("R-9: every rotation of a BASIC sequence that starts on home or the relative start is also in the pool", () => {
   const E = engine();
   const pool = host(E.sequence.sequences(PYGMY, 4)).map((q) => q.join(","));
-  assert.ok(pool.includes("0,37,8,43"), "Fm Db Ab Eb missing");
-  assert.ok(pool.includes("8,43,0,37"), "Ab Eb Fm Db (relative-start rotation) missing");
-  assert.ok(!pool.includes("37,8,43,0"), "Db Ab Eb Fm starts off home");
-  assert.ok(!pool.includes("43,0,37,8"), "Eb Fm Db Ab starts off home");
+  assert.ok(pool.includes("0,38,9,44"), "Fm Db Ab Eb missing");
+  assert.ok(pool.includes("9,44,0,38"), "Ab Eb Fm Db (relative-start rotation) missing");
+  assert.ok(!pool.includes("38,9,44,0"), "Db Ab Eb Fm starts off home");
+  assert.ok(!pool.includes("44,0,38,9"), "Eb Fm Db Ab starts off home");
   for (const deck of [HIJAZ, PYGMY, AMARA]) {
     const starts = host(E.sequence._internal.tierContext(deck).basicStarts);
     for (const length of [2, 3, 4]) {
@@ -715,8 +715,8 @@ test("R-8: vocabulary nests and the five-card fixture classifies BASIC, MEDIUM, 
 // Measured in plan §14 (the plan itself names no figures).
 const MIGRATION_L4 = {
   hijaz: { intermediate: 1092, advanced: 88228, null: 4880 },
-  pygmy: { intermediate: 8900, advanced: 2542250, null: 2811862 },
-  amara: { intermediate: 1548, advanced: 291994, null: 3500 }
+  pygmy: { intermediate: 9320, advanced: 2858184, null: 2980060 },
+  amara: { intermediate: 1692, advanced: 409932, null: 3996 }
 };
 
 test("length-4 loops migrate per the §2 table on every built-in deck", () => {
@@ -758,21 +758,21 @@ test("length-4 loops migrate per the §2 table on every built-in deck", () => {
 // names. Tier rebalance (plan §14, S5): re-captured under R-1..R-10, each row
 // with the rule that moved it. The I/A names are the doc's, not the tiers.
 const PYGMY_TIER_GOLDEN = {
-  I1: [[0, 30, 24], "intermediate"],
+  I1: [[0, 31, 25], "intermediate"],
   // Length 3 with two or three colour cards: over MEDIUM's one-colour cap
   // (R-4), and HARD starts at length 4 (R-7).
-  I2: [[4, 41, 50], null], I3: [[0, 48, 50], null], I4: [[4, 23, 35], null], I5: [[0, 7, 35], null],
-  I6: [[0, 43, 37, 30], "intermediate"],
+  I2: [[4, 42, 51], null], I3: [[0, 49, 51], null], I4: [[4, 24, 36], null], I5: [[0, 8, 36], null],
+  I6: [[0, 44, 38, 31], "intermediate"],
   // Length 4 with two or more colour cards: HARD's two-non-anchor branch.
-  I7: [[4, 16, 41, 50], "advanced"], I8: [[2, 0, 21, 19], "advanced"],
-  A2: [[23, 50, 16, 41], "advanced"], A5: [[5, 22, 23, 7, 33, 35], "advanced"],
+  I7: [[4, 17, 42, 51], "advanced"], I8: [[2, 0, 22, 20], "advanced"],
+  A2: [[24, 51, 17, 42], "advanced"], A5: [[6, 23, 24, 8, 34, 36], "advanced"],
   // Two or more LOW/HIGH voicings in four chords: over the register bound.
-  A1: [[36, 51, 38, 0], null], A3: [[5, 17, 25, 0], null], A4: [[49, 51, 15, 16], null], A6: [[25, 38, 44, 38], null]
+  A1: [[37, 52, 39, 0], null], A3: [[6, 18, 26, 0], null], A4: [[50, 52, 16, 17], null], A6: [[26, 39, 45, 39], null]
 };
 const HIJAZ_INTERMEDIATE = [0, 6, 2];
 const HIJAZ_ADVANCED = [14, 13, 3, 5];
-const AMARA_INTERMEDIATE = [0, 18, 16];
-const AMARA_ADVANCED = [10, 20, 15, 24];
+const AMARA_INTERMEDIATE = [0, 19, 17];
+const AMARA_ADVANCED = [10, 21, 16, 26];
 
 /* -------------------------------------------------------------- D1 step 2/3 */
 
@@ -919,13 +919,13 @@ test("tierOf classifies the golden fixtures and every BASIC sequence", () => {
 // card, one per branch of the HARD gate.
 // Fm G° Ab Bbm Csus4: ONE colour card in five chords - not MEDIUM by length,
 // not HARD (nothing extended, fewer than two non-anchor cards): null.
-const PYGMY_ONE_COLOUR_L5 = [0, 6, 8, 19, 30];
+const PYGMY_ONE_COLOUR_L5 = [0, 7, 9, 20, 31];
 // Fm G° Ab5 Bb5: TWO colour cards, nothing extended - over MEDIUM's cap and
 // HARD by the two-non-anchor branch.
-const PYGMY_TWO_COLOUR_L4 = [0, 6, 11, 20];
+const PYGMY_TWO_COLOUR_L4 = [0, 7, 12, 21];
 // Fm Fm9 G° Ab: ONE extended card (Fm9, five fields) plus anchors - HARD by
 // the extended branch alone.
-const PYGMY_ONE_EXTENDED_L4 = [0, 5, 6, 8];
+const PYGMY_ONE_EXTENDED_L4 = [0, 6, 7, 9];
 
 test("tierOf returns null for a sequence ADVANCED can never deal", () => {
   const E = engine();
@@ -1564,8 +1564,8 @@ test("Pygmy's DFS fallback never exceeds DFS_NODE_BUDGET nodes, at every tier le
 // prune is a red here, not a slow pass - without the colour prune Pygmy's
 // length 4 alone is 221,520 nodes and the 60,000 budget truncates it.
 const MEDIUM_ENUM = {
-  pygmy: { nodes: 23646, total: 10442, pool: 30, starts: 10 },
-  amara: { nodes: 6892, total: 2072, pool: 20, starts: 10 },
+  pygmy: { nodes: 24886, total: 10942, pool: 31, starts: 11 },
+  amara: { nodes: 7652, total: 2264, pool: 22, starts: 10 },
   hijaz: { nodes: 4518, total: 1394, pool: 17, starts: 7 }
 };
 
@@ -1910,7 +1910,7 @@ test("S1: every tier's shape sits in its section 2 band over 3,000 draws on each
     assert.strictEqual(intermediate.extended, 0, `${id} MEDIUM extended deals`);
     const families = [...new Set(mediumCells.filter((c) => c.kind === "colour").map((c) => c.family))].sort();
     assert.deepStrictEqual(families,
-      id === "pygmy" ? ["seventh", "susPower"] : ["other", "seventh", "susPower"], `${id} colour families`);
+      ["other", "seventh", "susPower"], `${id} colour families`);
     assert.deepStrictEqual(Object.keys(intermediate.families).sort(), families);
     for (const fam of families) {
       within(intermediate.families[fam], 100 / families.length, 4, `${id} MEDIUM ${fam} share of colour deals`);
@@ -1928,7 +1928,7 @@ test("S1: every tier's shape sits in its section 2 band over 3,000 draws on each
   }
 });
 
-test("S2: 300 public pick() deals per tier classify as their tier and keep the shape", () => {
+test("S2: 1,200 public pick() deals per tier classify as their tier and keep the shape", () => {
   const E = engine();
   const TARGET = {
     basic: { 2: 40, 3: 40, 4: 20 },
@@ -1940,7 +1940,7 @@ test("S2: 300 public pick() deals per tier classify as their tier and keep the s
       const rng = E.sequence.mulberry32(7);
       const deals = [];
       let prev = null;
-      for (let k = 0; k < 300; k += 1) {
+      for (let k = 0; k < 1200; k += 1) {
         const result = tier === "basic"
           ? E.sequence.pick(deck, rng, prev)
           : E.sequence.pick(deck, rng, prev, tier);
@@ -2036,12 +2036,12 @@ const COLOUR_FAMILIES = {
     susPower: ["F5", "Fsus4", "F7sus4", "Ab5", "Absus4", "Abmaj7sus4", "Bb5", "Bbsus4", "Bb7sus4",
       "C5", "Csus4", "C7sus4", "Db5", "Eb5", "Ebsus4", "Eb7sus4"],
     seventh: ["Fm7", "Gm7b5", "Abmaj7", "Bbm7", "Cm7", "Dbmaj7", "Eb7"],
-    other: []
+    other: ["Fmadd9"]
   },
   amara: {
     susPower: ["D5", "Dsus4", "D7sus4", "F5", "G5", "G7sus4", "A5", "Asus4", "A7sus4", "C5", "Csus4"],
     seventh: ["Dm7", "Fmaj7", "Am7"],
-    other: ["Dmadd9"]
+    other: ["Dmadd9", "Fadd9", "Cadd9"]
   },
   hijaz: {
     susPower: ["C#5", "C#sus4", "C#7sus4", "F#5", "F#maj7sus4", "B5"],
@@ -2053,7 +2053,7 @@ const COLOUR_FAMILIES = {
 test("S4: colourFamily names every built-in colour card's family (sus before 7)", () => {
   const E = engine();
   const I = E.sequence._internal;
-  const COUNT = { pygmy: 23, amara: 15, hijaz: 11 };
+  const COUNT = { pygmy: 24, amara: 17, hijaz: 11 };
   for (const deck of [HIJAZ, PYGMY, AMARA]) {
     const anchorsList = host(E.sequence.anchors(deck));
     const got = { susPower: [], seventh: [], other: [] };
@@ -2191,11 +2191,13 @@ test("MEDIUM on a truncating pan does not open on one card", () => {
 });
 
 // Captured at 1576ef1 (before any sampling existed): chained 50 MEDIUM picks
-// per deck, mulberry32(0..49).
+// per deck, mulberry32(0..49). The pygmy and amara rows were re-captured
+// with the same method on 2026-10-07 (Lane U2), after those two decks gained
+// Fmadd9, Fadd9 and Cadd9; the other three rows are unchanged.
 const MEDIUM_COMPLETE_GOLDEN = {
   hijaz: [[14,0,10],[14,12,8,10],[14,10,12,6],[14,8,12,6],[10,12,0,14],[10,4,8,14],[14,6,0],[14,0,12],[14,4,12],[14,8,4],[10,12,17],[14,10,3],[10,8,12],[0,7,8],[0,11,14],[10,8,16],[10,14,0,12],[10,0,14,8],[3,0,14],[14,12,10],[1,6,12,14],[4,6,8],[10,14,6,8],[10,14,0],[4,6,12],[10,9,14],[3,6,12],[14,10,8],[10,8,17],[10,14,12],[0,9,14,12],[0,10,15,6],[14,4,10],[1,12,8],[0,7,14,10],[10,12,15],[4,10,14,8],[10,7,14],[14,10,4,12],[3,8,6],[10,13,6,14],[14,10,12,3],[10,0,17,8],[10,0,12,8],[14,6,12,8],[0,12,17],[10,8,16],[14,0,10,12],[0,13,14,6],[0,15,6]],
-  pygmy: [[0,6,43],[43,37,0,19],[43,8,19,37],[0,37,6,19],[0,6,37,19],[8,19,43,7],[0,8,6],[24,43,8],[24,50,0],[37,23,8],[24,8,20],[43,6,21],[19,6,43],[0,6,41],[0,19,15],[19,4,8],[0,8,6,19],[0,6,19,24],[2,24,8],[43,37,19],[0,30,6,37],[0,37,23],[0,8,6,24],[0,6,37],[0,41,19],[19,11,6],[2,37,8],[0,37,6],[19,11,37],[0,6,37],[0,8,24,7],[0,27,19,6],[24,41,8],[0,37,33],[0,8,7,24],[19,48,43],[4,8,24,43],[8,50,37],[43,0,35,8],[2,43,24],[19,37,24,7],[43,6,19,39],[8,43,24,20],[0,6,8,43],[37,8,0,43],[0,37,48],[19,4,24],[24,37,8,19],[0,35,6,37],[0,43,22]],
-  amara: [[0,14,16],[21,16,8,14],[21,8,16,14],[0,16,21,14],[0,8,21,14],[8,14,20,21],[0,14,21],[16,8,0],[16,10,0],[21,0,20],[14,16,5],[21,8,19],[14,0,8],[0,8,20],[0,14,18],[8,21,17],[0,14,16,8],[0,8,14,21],[2,16,14],[21,16,14],[0,17,14,21],[0,21,20],[0,14,16,8],[0,14,8],[4,8,14],[14,0,18],[2,21,8],[0,16,14],[14,5,8],[0,14,16],[0,13,8,21],[5,14,21,8],[16,4,21],[0,21,3],[0,10,21,14],[14,8,5],[4,16,8,14],[8,21,20],[21,8,20,0],[3,0,8],[14,10,21,0],[21,8,16,13],[8,16,14,5],[0,8,14,21],[16,14,8,21],[5,14,21],[8,21,17],[16,0,14,21],[0,20,21,14],[5,16,8]],
+  pygmy: [[0,7,44],[44,38,0,20],[44,9,20,38],[0,38,7,20],[0,7,38,20],[9,20,44,8],[0,9,7],[25,44,9],[25,51,0],[38,24,9],[25,5,20],[44,7,22],[20,7,44],[0,7,42],[0,20,16],[20,2,9],[0,9,7,20],[0,7,20,25],[2,25,9],[44,38,20],[0,31,7,38],[0,38,24],[0,9,7,25],[0,7,38],[0,42,20],[20,12,7],[2,38,9],[0,38,7],[20,5,38],[0,7,38],[0,9,47,44],[5,20,25,38],[25,42,9],[0,38,34],[0,9,8,25],[20,44,5],[4,9,25,44],[9,51,38],[44,0,36,9],[2,44,25],[20,38,25,8],[44,7,20,40],[9,44,5,7],[0,7,9,44],[38,9,0,44],[5,20,38],[20,2,38],[25,38,9,20],[0,36,7,38],[5,25,7]],
+  amara: [[0,15,17],[22,17,8,15],[22,8,17,15],[0,17,22,15],[0,8,22,15],[8,15,21,22],[0,15,22],[17,8,0],[17,10,0],[22,0,21],[15,25,0],[22,8,20],[15,0,8],[0,8,21],[0,15,19],[8,22,18],[0,15,17,8],[0,8,15,22],[2,17,15],[22,17,15],[0,18,15,22],[0,22,21],[0,15,17,8],[0,15,8],[4,8,15],[15,0,19],[2,22,8],[0,17,15],[15,5,22],[0,15,17],[0,14,8,22],[0,17,25,15],[17,4,22],[0,22,3],[0,10,22,15],[15,17,11],[4,17,8,15],[8,22,21],[22,8,21,0],[3,0,8],[15,10,22,0],[22,8,17,14],[8,25,0,17],[0,8,15,22],[17,15,8,22],[0,25,17],[8,22,18],[17,0,15,22],[0,21,22,15],[5,8,15]],
   kurd10: [[0,8,39],[39,32,0,18],[39,10,18,32],[0,32,8,18],[0,8,32,18],[10,18,39,9],[0,10,8],[27,39,10],[27,43,0],[32,22,10],[27,10,35],[39,8,20],[18,8,39],[0,8,34],[0,18,13],[18,2,10],[0,10,8,18],[0,8,18,27],[2,27,10],[39,32,18],[0,29,8,32],[0,32,22],[0,10,8,27],[0,8,32],[0,34,18],[18,11,8],[2,32,10],[0,32,8],[18,15,27],[0,8,32],[0,10,41,39],[0,27,44,18],[27,34,10],[0,32,30],[0,10,9,27],[27,0,35],[4,10,27,39],[10,43,32],[39,0,31,10],[2,39,27],[18,32,27,9],[39,8,18,33],[10,44,0,8],[0,8,10,39],[32,10,0,39],[0,39,15],[18,2,32],[27,32,10,18],[0,31,8,32],[0,44,8]],
   amara10: [[0,15,17],[22,17,8,15],[22,8,17,15],[0,17,22,15],[0,8,22,15],[8,15,21,22],[0,15,22],[17,8,0],[17,10,0],[22,0,21],[15,25,0],[22,8,20],[15,0,8],[0,8,21],[0,15,19],[8,22,18],[0,15,17,8],[0,8,15,22],[2,17,15],[22,17,15],[0,18,15,22],[0,22,21],[0,15,17,8],[0,15,8],[4,8,15],[15,0,19],[2,22,8],[0,17,15],[15,5,22],[0,15,17],[0,14,8,22],[0,17,25,15],[17,4,22],[0,22,3],[0,10,22,15],[15,17,11],[4,17,8,15],[8,22,21],[22,8,21,0],[3,0,8],[15,10,22,0],[22,8,17,14],[8,25,0,17],[0,8,15,22],[17,15,8,22],[0,25,17],[8,22,18],[17,0,15,22],[0,21,22,15],[5,8,15]],
 };

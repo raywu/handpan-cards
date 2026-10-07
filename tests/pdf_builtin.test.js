@@ -146,7 +146,7 @@ test("has_bottom reflects whether any field is in the bottom zone", () => {
   assert.equal(HPE.pdfdeck.fromBuiltin(pygmy, pygmy.print).has_bottom, true);
 });
 
-test("every voicing field and every root field survives, for all 96 cards", () => {
+test("every voicing field and every root field survives, for all 99 cards", () => {
   // T15's coverage floor: this must not re-derive a chord's voicing from the
   // pan (which would silently re-rank Pygmy's Fm9 - see CLAUDE.md's D-6
   // note) - it must carry the chord list through byte for byte.
@@ -165,7 +165,7 @@ test("every voicing field and every root field survives, for all 96 cards", () =
       total += 1;
     });
   }
-  assert.equal(total, 19 + 52 + 25, "96 cards across the three built-ins");
+  assert.equal(total, 19 + 53 + 27, "99 cards across the three built-ins");
 });
 
 test("a canonical/overlay key clash throws rather than silently shadowing", () => {

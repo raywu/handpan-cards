@@ -1,4 +1,4 @@
-"""The frozen 96-card corpus (v5). Engine tests read this fixture, never the live DECKS.
+"""The frozen 99-card corpus (v6). Engine tests read this fixture, never the live DECKS.
 
 A deliberate deck-data change must bump the fixture version and regenerate the
 sha256 - it is never regenerated from the engine.
@@ -11,7 +11,7 @@ import unittest
 from tests import paths
 
 FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "fixtures", "golden_decks_v5.json")
+                       "fixtures", "golden_decks_v6.json")
 V3_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "fixtures", "golden_decks_v3.json")
 
@@ -33,10 +33,15 @@ TOP_ZONES = ("ding", "rim", "inner")
 # 2026-10-06 (degree numerals, owner decision 2026-10-05): bumped v4 -> v5.
 # Five degree labels lost their accidental or changed case (Hijaz II and vii,
 # Amara III, iv and VII); no chord, field or geometry moved.
-EXPECTED_SHA256 = ("050d476260a4fffe7b3ff1457fb76aaaed2d2058afb4e3923ba165deaf3a"
-                   "49e6")
+#
+# 2026-10-07 (size cap removed, owner decisions, Lane U2): bumped v5 -> v6.
+# Amara gained Fadd9 and Cadd9 (25 -> 27 cards); Pygmy gained Fmadd9 at
+# position 6 and Fm9 took the engine voicing (52 -> 53 cards). No geometry,
+# degree or colour moved.
+EXPECTED_SHA256 = ("47e4fc4c07f67d2c69c7e2fd935d3b527a0e16d2c88181dd9269b6ff4c66"
+                   "7949")
 
-# The v3 corpus's canonical-serialisation digest, pinned the same way as v5's
+# The v3 corpus's canonical-serialisation digest, pinned the same way as v6's
 # above (queue row 48: v3 was unpinned - its "sha256" key existed in the
 # fixture but nothing outside the fixture read it, so a coordinated rewrite of
 # both the content and its self-reported digest would have passed silently).
@@ -47,16 +52,16 @@ EXPECTED_SHA256_V3 = ("6377b1e0230926a5aa85be066517647ec0f7606b569429804a4420"
 def chord_counts():
     """Card counts per deck, read from the live decks via tests.paths.
 
-    The 19/52/25 literals are asserted against CLAUDE.md once, in
+    The 19/53/27 literals are asserted against CLAUDE.md once, in
     tests/test_deck_data.py. Repeating them here would be a second copy free to
     drift; what this suite must prove is that the FROZEN corpus still holds the
     same cards the app does, so it derives the counts instead of restating them.
-    The total is still pinned to the spec's 96 below.
+    The total is still pinned to the spec's 99 below.
     """
     return {d["id"]: len(d["chords"]) for d in paths.app_decks()}
 
 BUMP = ("Deck data changed. This fixture is frozen on purpose: bump it to "
-        "golden_decks_v6.json and regenerate sha256, do not edit in place.")
+        "golden_decks_v7.json and regenerate sha256, do not edit in place.")
 
 
 def load():
@@ -77,9 +82,9 @@ class TestFixtureSelfAssertion(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon).hexdigest(), doc["sha256"],
                          "fixture content and its stored sha256 disagree. " + BUMP)
 
-    def test_sha256_is_the_pinned_v5_digest(self):
+    def test_sha256_is_the_pinned_v6_digest(self):
         self.assertEqual(load()["sha256"], EXPECTED_SHA256,
-                         "the v5 corpus digest changed. " + BUMP)
+                         "the v6 corpus digest changed. " + BUMP)
 
     def test_v3_sha256_matches_its_canonical_serialisation(self):
         doc = load_v3()
@@ -94,11 +99,11 @@ class TestFixtureSelfAssertion(unittest.TestCase):
 
     def test_shape_and_card_counts(self):
         doc = load()
-        self.assertEqual(doc["version"], 5)
+        self.assertEqual(doc["version"], 6)
         self.assertEqual(len(doc["decks"]), 3)
         counts = {d["id"]: len(d["chords"]) for d in doc["decks"]}
         self.assertEqual(counts, chord_counts())
-        self.assertEqual(sum(counts.values()), 96)
+        self.assertEqual(sum(counts.values()), 99)
         for d in doc["decks"]:
             with self.subTest(deck=d["id"]):
                 self.assertEqual(tuple(sorted(d)), tuple(sorted(DECK_KEYS)), d["id"])

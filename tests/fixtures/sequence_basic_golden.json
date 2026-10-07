@@ -4111,7 +4111,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.46732782293111086
@@ -4119,7 +4119,7 @@
       "prevCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.46732782293111086
@@ -4130,8 +4130,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.9683778982143849
@@ -4139,8 +4139,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.9683778982143849
@@ -4151,8 +4151,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.8752879470121115
@@ -4160,8 +4160,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.8752879470121115
@@ -4172,8 +4172,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "together",
         "nextRng": 0.7630053898319602
@@ -4181,8 +4181,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "together",
         "nextRng": 0.7630053898319602
@@ -4193,9 +4193,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          8,
-          37
+          20,
+          9,
+          38
         ],
         "style": "together",
         "nextRng": 0.23399724275805056
@@ -4203,9 +4203,9 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          8,
-          43
+          20,
+          9,
+          44
         ],
         "style": "together",
         "nextRng": 0.23399724275805056
@@ -4216,8 +4216,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          8
+          20,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.08513720124028623
@@ -4225,8 +4225,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.08513720124028623
@@ -4237,8 +4237,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.5421195910312235
@@ -4246,8 +4246,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.5421195910312235
@@ -4258,7 +4258,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.5214452685322613
@@ -4266,7 +4266,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.5214452685322613
@@ -4277,7 +4277,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.5850091010797769
@@ -4285,7 +4285,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.5850091010797769
@@ -4295,7 +4295,7 @@
       "seed": 9,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0
         ],
         "style": "groove",
@@ -4303,8 +4303,8 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "groove",
         "nextRng": 0.7238044005353004
@@ -4314,18 +4314,18 @@
       "seed": 10,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          19
+          9,
+          38,
+          20
         ],
         "style": "groove",
         "nextRng": 0.45741763804107904
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
-          24
+          9,
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.45741763804107904
@@ -4336,8 +4336,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.8507766961120069
@@ -4345,8 +4345,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.8507766961120069
@@ -4357,7 +4357,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.15277158934623003
@@ -4365,7 +4365,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.15277158934623003
@@ -4376,8 +4376,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          24
+          9,
+          25
         ],
         "style": "together",
         "nextRng": 0.03677086811512709
@@ -4385,8 +4385,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          37
+          9,
+          38
         ],
         "style": "together",
         "nextRng": 0.03677086811512709
@@ -4397,8 +4397,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.19429797329939902
@@ -4406,8 +4406,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.19429797329939902
@@ -4418,7 +4418,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.22275040484964848
@@ -4426,7 +4426,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.22275040484964848
@@ -4437,8 +4437,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.33968470781110227
@@ -4446,8 +4446,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.33968470781110227
@@ -4458,8 +4458,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.08778517786413431
@@ -4467,8 +4467,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.08778517786413431
@@ -4479,7 +4479,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.8037807932123542
@@ -4487,7 +4487,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.8037807932123542
@@ -4498,7 +4498,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.9865809082984924
@@ -4506,7 +4506,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.9865809082984924
@@ -4517,8 +4517,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.4274260352831334
@@ -4526,8 +4526,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.4274260352831334
@@ -4538,8 +4538,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.476709007518366
@@ -4547,8 +4547,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.476709007518366
@@ -4559,8 +4559,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          8
+          20,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.3645721802022308
@@ -4568,8 +4568,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.3645721802022308
@@ -4580,7 +4580,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.32397183775901794
@@ -4588,7 +4588,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.32397183775901794
@@ -4598,16 +4598,16 @@
       "seed": 24,
       "nullCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "together",
         "nextRng": 0.5251554888673127
       },
       "prevCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "together",
         "nextRng": 0.5251554888673127
@@ -4617,18 +4617,18 @@
       "seed": 25,
       "nullCase": {
         "chords": [
-          8,
-          24,
-          43
+          9,
+          25,
+          44
         ],
         "style": "groove",
         "nextRng": 0.27351520699448884
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
-          37
+          9,
+          25,
+          38
         ],
         "style": "groove",
         "nextRng": 0.27351520699448884
@@ -4639,8 +4639,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "together",
         "nextRng": 0.8222677248995751
@@ -4648,8 +4648,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "together",
         "nextRng": 0.8222677248995751
@@ -4660,8 +4660,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          19
+          9,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.8311622459441423
@@ -4669,8 +4669,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          24
+          9,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.8311622459441423
@@ -4681,8 +4681,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.2751748759765178
@@ -4690,8 +4690,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.2751748759765178
@@ -4702,7 +4702,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.3871832760050893
@@ -4710,7 +4710,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.3871832760050893
@@ -4720,20 +4720,20 @@
       "seed": 30,
       "nullCase": {
         "chords": [
-          8,
-          24,
+          9,
+          25,
           0,
-          37
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.15870022494345903
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
+          9,
+          25,
           0,
-          43
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.15870022494345903
@@ -4743,18 +4743,18 @@
       "seed": 31,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          24
+          9,
+          38,
+          25
         ],
         "style": "together",
         "nextRng": 0.41673933155834675
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
-          43
+          9,
+          38,
+          44
         ],
         "style": "together",
         "nextRng": 0.41673933155834675
@@ -4765,7 +4765,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.5591895803809166
@@ -4773,7 +4773,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.5591895803809166
@@ -4784,8 +4784,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "together",
         "nextRng": 0.44652835093438625
@@ -4793,8 +4793,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "together",
         "nextRng": 0.44652835093438625
@@ -4804,18 +4804,18 @@
       "seed": 34,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0,
-          37
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.13657113374210894
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0,
-          43
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.13657113374210894
@@ -4826,7 +4826,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.39364726608619094
@@ -4834,7 +4834,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.39364726608619094
@@ -4844,9 +4844,9 @@
       "seed": 36,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          24,
+          9,
+          20,
+          25,
           0
         ],
         "style": "arpeggio",
@@ -4854,10 +4854,10 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
-          24,
-          37
+          9,
+          20,
+          25,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.8151301103644073
@@ -4867,18 +4867,18 @@
       "seed": 37,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.197961472440511
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.197961472440511
@@ -4888,18 +4888,18 @@
       "seed": 38,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.8164470025803894
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.8164470025803894
@@ -4910,7 +4910,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "together",
         "nextRng": 0.8497150409966707
@@ -4918,7 +4918,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "together",
         "nextRng": 0.8497150409966707
@@ -4928,18 +4928,18 @@
       "seed": 40,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0,
-          19
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.3474891618825495
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.3474891618825495
@@ -4950,9 +4950,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8,
-          43
+          38,
+          9,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.8519706330262125
@@ -4960,9 +4960,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          8,
-          24
+          38,
+          9,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.8519706330262125
@@ -4973,8 +4973,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.17481389874592423
@@ -4982,8 +4982,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.17481389874592423
@@ -4994,9 +4994,9 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37,
-          19
+          25,
+          38,
+          20
         ],
         "style": "together",
         "nextRng": 0.06335184047929943
@@ -5004,9 +5004,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37,
-          43
+          25,
+          38,
+          44
         ],
         "style": "together",
         "nextRng": 0.06335184047929943
@@ -5017,9 +5017,9 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          24,
-          37
+          9,
+          25,
+          38
         ],
         "style": "groove",
         "nextRng": 0.6363287104759365
@@ -5027,9 +5027,9 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          24,
-          43
+          9,
+          25,
+          44
         ],
         "style": "groove",
         "nextRng": 0.6363287104759365
@@ -5039,16 +5039,16 @@
       "seed": 45,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.4594856023322791
       },
       "prevCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.4594856023322791
@@ -5058,16 +5058,16 @@
       "seed": 46,
       "nullCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "groove",
         "nextRng": 0.2250888622365892
       },
       "prevCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "groove",
         "nextRng": 0.2250888622365892
@@ -5078,8 +5078,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.5005628978833556
@@ -5087,8 +5087,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.5005628978833556
@@ -5099,9 +5099,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24,
-          8
+          20,
+          25,
+          9
         ],
         "style": "together",
         "nextRng": 0.46368863387033343
@@ -5109,9 +5109,9 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          8,
-          43
+          20,
+          9,
+          44
         ],
         "style": "together",
         "nextRng": 0.46368863387033343
@@ -5122,7 +5122,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "together",
         "nextRng": 0.509097256930545
@@ -5130,7 +5130,7 @@
       "prevCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "together",
         "nextRng": 0.509097256930545
@@ -5141,8 +5141,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "together",
         "nextRng": 0.08138687536120415
@@ -5150,8 +5150,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "together",
         "nextRng": 0.08138687536120415
@@ -5162,7 +5162,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "together",
         "nextRng": 0.2652659809682518
@@ -5170,7 +5170,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "together",
         "nextRng": 0.2652659809682518
@@ -5181,7 +5181,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.5482494172174484
@@ -5189,7 +5189,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.5482494172174484
@@ -5199,7 +5199,7 @@
       "seed": 53,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0
         ],
         "style": "freestyle",
@@ -5207,8 +5207,8 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.08261597040109336
@@ -5219,7 +5219,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.3124549286440015
@@ -5227,7 +5227,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.3124549286440015
@@ -5237,18 +5237,18 @@
       "seed": 55,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          24
+          9,
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.062248004134744406
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
-          19
+          9,
+          38,
+          20
         ],
         "style": "groove",
         "nextRng": 0.062248004134744406
@@ -5259,7 +5259,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.4403620318043977
@@ -5267,7 +5267,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.4403620318043977
@@ -5278,8 +5278,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          37
+          9,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.4667171980254352
@@ -5287,8 +5287,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          43
+          9,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.4667171980254352
@@ -5299,8 +5299,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "together",
         "nextRng": 0.8612062353640795
@@ -5308,8 +5308,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "together",
         "nextRng": 0.8612062353640795
@@ -5320,7 +5320,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.13548121228814125
@@ -5328,7 +5328,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.13548121228814125
@@ -5339,7 +5339,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.6174282841384411
@@ -5347,7 +5347,7 @@
       "prevCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.6174282841384411
@@ -5358,8 +5358,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "groove",
         "nextRng": 0.04388630925677717
@@ -5367,8 +5367,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "groove",
         "nextRng": 0.04388630925677717
@@ -5379,8 +5379,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          43
+          9,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.04583092173561454
@@ -5388,8 +5388,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          8
+          20,
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.04583092173561454
@@ -5400,7 +5400,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "together",
         "nextRng": 0.39706324925646186
@@ -5408,7 +5408,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "together",
         "nextRng": 0.39706324925646186
@@ -5419,9 +5419,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          19,
-          8
+          38,
+          20,
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.889850486535579
@@ -5429,9 +5429,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19,
-          24
+          38,
+          20,
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.889850486535579
@@ -5442,7 +5442,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.33913527661934495
@@ -5450,7 +5450,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.33913527661934495
@@ -5461,7 +5461,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.587964091449976
@@ -5469,7 +5469,7 @@
       "prevCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "groove",
         "nextRng": 0.587964091449976
@@ -5480,9 +5480,9 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          43,
-          19
+          25,
+          44,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.32041669520549476
@@ -5490,9 +5490,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43,
-          8
+          25,
+          44,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.32041669520549476
@@ -5503,7 +5503,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.12616912135854363
@@ -5511,7 +5511,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.12616912135854363
@@ -5522,8 +5522,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.8804634786210954
@@ -5531,8 +5531,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.8804634786210954
@@ -5543,8 +5543,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.9842415957245976
@@ -5552,8 +5552,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.9842415957245976
@@ -5564,8 +5564,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.4892836078070104
@@ -5573,8 +5573,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.4892836078070104
@@ -5585,7 +5585,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "together",
         "nextRng": 0.07027550949715078
@@ -5593,7 +5593,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "together",
         "nextRng": 0.07027550949715078
@@ -5603,18 +5603,18 @@
       "seed": 73,
       "nullCase": {
         "chords": [
-          8,
-          43,
-          37
+          9,
+          44,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.8816749569959939
       },
       "prevCase": {
         "chords": [
-          8,
-          43,
-          24
+          9,
+          44,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.8816749569959939
@@ -5625,7 +5625,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.6145336597692221
@@ -5633,7 +5633,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.6145336597692221
@@ -5644,7 +5644,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "together",
         "nextRng": 0.39284360548481345
@@ -5652,7 +5652,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "together",
         "nextRng": 0.39284360548481345
@@ -5663,8 +5663,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.9736848957836628
@@ -5672,8 +5672,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.9736848957836628
@@ -5684,8 +5684,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.1157626323401928
@@ -5693,8 +5693,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.1157626323401928
@@ -5705,8 +5705,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.9833984735887498
@@ -5714,8 +5714,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.9833984735887498
@@ -5725,16 +5725,16 @@
       "seed": 79,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.9233031782787293
       },
       "prevCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.9233031782787293
@@ -5745,8 +5745,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "together",
         "nextRng": 0.7594580629374832
@@ -5754,8 +5754,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "together",
         "nextRng": 0.7594580629374832
@@ -5766,9 +5766,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          43,
-          24
+          20,
+          44,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.0067381958942860365
@@ -5776,9 +5776,9 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43,
-          8
+          20,
+          44,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.0067381958942860365
@@ -5788,18 +5788,18 @@
       "seed": 82,
       "nullCase": {
         "chords": [
-          8,
-          24,
-          37
+          9,
+          25,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.5048960440326482
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
-          19
+          9,
+          25,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.5048960440326482
@@ -5810,8 +5810,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.6728156686294824
@@ -5819,8 +5819,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.6728156686294824
@@ -5831,8 +5831,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.7896823864430189
@@ -5840,8 +5840,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.7896823864430189
@@ -5852,8 +5852,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.6441372365225106
@@ -5861,8 +5861,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.6441372365225106
@@ -5872,16 +5872,16 @@
       "seed": 86,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "groove",
         "nextRng": 0.4577866627369076
       },
       "prevCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "groove",
         "nextRng": 0.4577866627369076
@@ -5892,7 +5892,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.03971227561123669
@@ -5900,7 +5900,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.03971227561123669
@@ -5911,9 +5911,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          43,
-          37
+          20,
+          44,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.3718333253636956
@@ -5921,9 +5921,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8,
-          19
+          25,
+          9,
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.3718333253636956
@@ -5934,9 +5934,9 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19,
-          24
+          44,
+          20,
+          25
         ],
         "style": "groove",
         "nextRng": 0.19405096000991762
@@ -5944,9 +5944,9 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          19,
-          8
+          44,
+          20,
+          9
         ],
         "style": "groove",
         "nextRng": 0.19405096000991762
@@ -5957,7 +5957,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.7597082178108394
@@ -5965,7 +5965,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.7597082178108394
@@ -5976,8 +5976,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          37
+          44,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.2898881866130978
@@ -5985,8 +5985,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          24
+          44,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.2898881866130978
@@ -5997,8 +5997,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.023744214791804552
@@ -6006,8 +6006,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          24
+          44,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.023744214791804552
@@ -6018,7 +6018,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.7254342380911112
@@ -6026,7 +6026,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.7254342380911112
@@ -6037,7 +6037,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.909769807010889
@@ -6045,7 +6045,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.909769807010889
@@ -6056,8 +6056,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.2856396271381527
@@ -6065,8 +6065,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.2856396271381527
@@ -6077,7 +6077,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.7994170379824936
@@ -6085,7 +6085,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.7994170379824936
@@ -6096,8 +6096,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.3220484664198011
@@ -6105,8 +6105,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.3220484664198011
@@ -6117,8 +6117,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.08313880977220833
@@ -6126,8 +6126,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.08313880977220833
@@ -6137,16 +6137,16 @@
       "seed": 99,
       "nullCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.001138708321377635
       },
       "prevCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.001138708321377635
@@ -6157,7 +6157,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.5522557524964213
@@ -6165,7 +6165,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.5522557524964213
@@ -6176,7 +6176,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.3840809662360698
@@ -6184,7 +6184,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.3840809662360698
@@ -6195,8 +6195,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.9249195288866758
@@ -6204,8 +6204,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.9249195288866758
@@ -6215,7 +6215,7 @@
       "seed": 103,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0
         ],
         "style": "freestyle",
@@ -6223,8 +6223,8 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.3242343538440764
@@ -6234,20 +6234,20 @@
       "seed": 104,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          24,
-          19
+          9,
+          38,
+          25,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.43696694099344313
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
-          24,
-          43
+          9,
+          38,
+          25,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.43696694099344313
@@ -6258,7 +6258,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "groove",
         "nextRng": 0.6149988765828311
@@ -6266,7 +6266,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.6149988765828311
@@ -6277,7 +6277,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "groove",
         "nextRng": 0.2431672338861972
@@ -6285,7 +6285,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "groove",
         "nextRng": 0.2431672338861972
@@ -6296,9 +6296,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          19,
-          43
+          38,
+          20,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.9741160254925489
@@ -6306,9 +6306,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24,
-          8
+          38,
+          25,
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.9741160254925489
@@ -6319,8 +6319,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.5209986190311611
@@ -6328,8 +6328,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.5209986190311611
@@ -6339,20 +6339,20 @@
       "seed": 109,
       "nullCase": {
         "chords": [
-          8,
-          37,
+          9,
+          38,
           0,
-          19
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.3243043760303408
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
-          43,
-          37
+          9,
+          25,
+          44,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.3243043760303408
@@ -6363,7 +6363,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "groove",
         "nextRng": 0.23997675045393407
@@ -6371,7 +6371,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.23997675045393407
@@ -6381,20 +6381,20 @@
       "seed": 111,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.9980921118985862
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.9980921118985862
@@ -6405,8 +6405,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.14813322061672807
@@ -6414,8 +6414,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.14813322061672807
@@ -6426,8 +6426,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.4438910558819771
@@ -6435,8 +6435,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.4438910558819771
@@ -6447,8 +6447,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.4812404566910118
@@ -6456,8 +6456,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.4812404566910118
@@ -6467,16 +6467,16 @@
       "seed": 115,
       "nullCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.587002559332177
       },
       "prevCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.587002559332177
@@ -6486,20 +6486,20 @@
       "seed": 116,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          37,
-          43
+          9,
+          20,
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.9471628114115447
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
-          37,
-          24
+          9,
+          20,
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.9471628114115447
@@ -6510,7 +6510,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.6416485495865345
@@ -6518,7 +6518,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.6416485495865345
@@ -6529,7 +6529,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.15544429095461965
@@ -6537,7 +6537,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.15544429095461965
@@ -6548,9 +6548,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          37,
-          8
+          20,
+          38,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.3711450113914907
@@ -6558,9 +6558,9 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          24,
-          43
+          20,
+          25,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.3711450113914907
@@ -6571,9 +6571,9 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19,
-          8
+          25,
+          20,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.9478050488978624
@@ -6581,9 +6581,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8,
-          43
+          25,
+          9,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.9478050488978624
@@ -6593,16 +6593,16 @@
       "seed": 121,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.2752872051205486
       },
       "prevCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.2752872051205486
@@ -6613,8 +6613,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.7453257641755044
@@ -6622,8 +6622,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.7453257641755044
@@ -6634,8 +6634,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.375791602069512
@@ -6643,8 +6643,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.375791602069512
@@ -6655,8 +6655,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.5112375321332365
@@ -6664,8 +6664,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.5112375321332365
@@ -6675,20 +6675,20 @@
       "seed": 125,
       "nullCase": {
         "chords": [
-          8,
-          24,
-          37,
-          19
+          9,
+          25,
+          38,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.7517775967717171
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
-          37,
-          43
+          9,
+          25,
+          38,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.7517775967717171
@@ -6698,18 +6698,18 @@
       "seed": 126,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          37
+          9,
+          20,
+          38
         ],
         "style": "together",
         "nextRng": 0.38242597645148635
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
-          43
+          9,
+          20,
+          44
         ],
         "style": "together",
         "nextRng": 0.38242597645148635
@@ -6719,16 +6719,16 @@
       "seed": 127,
       "nullCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.7919451289344579
       },
       "prevCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.7919451289344579
@@ -6739,8 +6739,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.16284702089615166
@@ -6748,8 +6748,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "three-over-two",
         "nextRng": 0.16284702089615166
@@ -6760,7 +6760,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.4625387543346733
@@ -6768,7 +6768,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.4625387543346733
@@ -6778,16 +6778,16 @@
       "seed": 130,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "together",
         "nextRng": 0.4039479591883719
       },
       "prevCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "together",
         "nextRng": 0.4039479591883719
@@ -6797,7 +6797,7 @@
       "seed": 131,
       "nullCase": {
         "chords": [
-          8,
+          9,
           0
         ],
         "style": "together",
@@ -6805,8 +6805,8 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "together",
         "nextRng": 0.2489859035704285
@@ -6817,7 +6817,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.7445431514643133
@@ -6825,7 +6825,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "groove",
         "nextRng": 0.7445431514643133
@@ -6835,18 +6835,18 @@
       "seed": 133,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          43
+          9,
+          38,
+          44
         ],
         "style": "groove",
         "nextRng": 0.8597126407548785
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
-          24
+          9,
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.8597126407548785
@@ -6857,8 +6857,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "groove",
         "nextRng": 0.015594690339639783
@@ -6866,8 +6866,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "groove",
         "nextRng": 0.015594690339639783
@@ -6878,7 +6878,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.020227667642757297
@@ -6886,7 +6886,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.020227667642757297
@@ -6897,7 +6897,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-over-two",
         "nextRng": 0.9582971003837883
@@ -6905,7 +6905,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.9582971003837883
@@ -6916,8 +6916,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          24
+          9,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.592846147948876
@@ -6925,8 +6925,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          37
+          9,
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.592846147948876
@@ -6937,7 +6937,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.9785107469651848
@@ -6945,7 +6945,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.9785107469651848
@@ -6956,8 +6956,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.6293342555873096
@@ -6965,8 +6965,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.6293342555873096
@@ -6977,7 +6977,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.4837345581036061
@@ -6985,7 +6985,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.4837345581036061
@@ -6996,8 +6996,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24
+          20,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.8077519841026515
@@ -7005,8 +7005,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.8077519841026515
@@ -7017,8 +7017,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "groove",
         "nextRng": 0.8373434494715184
@@ -7026,8 +7026,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "groove",
         "nextRng": 0.8373434494715184
@@ -7038,9 +7038,9 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          8,
-          19
+          25,
+          9,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.4082597582601011
@@ -7048,9 +7048,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          8,
-          37
+          25,
+          9,
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.4082597582601011
@@ -7061,7 +7061,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.9271618623752147
@@ -7069,7 +7069,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.9271618623752147
@@ -7080,8 +7080,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.4993761817459017
@@ -7089,8 +7089,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.4993761817459017
@@ -7101,7 +7101,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.9733131730463356
@@ -7109,7 +7109,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.9733131730463356
@@ -7120,7 +7120,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.8745395657606423
@@ -7128,7 +7128,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.8745395657606423
@@ -7138,8 +7138,8 @@
       "seed": 148,
       "nullCase": {
         "chords": [
-          8,
-          37,
+          9,
+          38,
           0
         ],
         "style": "together",
@@ -7147,9 +7147,9 @@
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
-          43
+          9,
+          25,
+          44
         ],
         "style": "together",
         "nextRng": 0.0994226629845798
@@ -7160,8 +7160,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.4744756347499788
@@ -7169,8 +7169,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.4744756347499788
@@ -7181,8 +7181,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "groove",
         "nextRng": 0.31701068789698184
@@ -7190,8 +7190,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          24
+          44,
+          25
         ],
         "style": "groove",
         "nextRng": 0.31701068789698184
@@ -7202,7 +7202,7 @@
       "nullCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.8444671600591391
@@ -7210,7 +7210,7 @@
       "prevCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "three-over-two",
         "nextRng": 0.8444671600591391
@@ -7221,8 +7221,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          8
+          25,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.5657350269611925
@@ -7230,8 +7230,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.5657350269611925
@@ -7241,16 +7241,16 @@
       "seed": 153,
       "nullCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "together",
         "nextRng": 0.6139550150837749
       },
       "prevCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "together",
         "nextRng": 0.6139550150837749
@@ -7260,17 +7260,17 @@
       "seed": 154,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          24
+          9,
+          20,
+          25
         ],
         "style": "together",
         "nextRng": 0.3723655492067337
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
+          9,
+          20,
           0
         ],
         "style": "together",
@@ -7282,7 +7282,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "groove",
         "nextRng": 0.16122042760252953
@@ -7290,7 +7290,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "groove",
         "nextRng": 0.16122042760252953
@@ -7301,8 +7301,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          24
+          44,
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.1452765550930053
@@ -7310,8 +7310,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.1452765550930053
@@ -7321,16 +7321,16 @@
       "seed": 157,
       "nullCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.41635162057355046
       },
       "prevCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.41635162057355046
@@ -7341,7 +7341,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.9057201140094548
@@ -7349,7 +7349,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.9057201140094548
@@ -7360,7 +7360,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "three-three-two",
         "nextRng": 0.8125517847947776
@@ -7368,7 +7368,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.8125517847947776
@@ -7379,9 +7379,9 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          37,
-          8
+          44,
+          38,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.9235054419841617
@@ -7389,9 +7389,9 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          24,
-          37
+          44,
+          25,
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.9235054419841617
@@ -7402,7 +7402,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.7318627564236522
@@ -7410,7 +7410,7 @@
       "prevCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.7318627564236522
@@ -7420,20 +7420,20 @@
       "seed": 162,
       "nullCase": {
         "chords": [
-          8,
-          19,
+          9,
+          20,
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.12153894104994833
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
+          9,
+          20,
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.12153894104994833
@@ -7444,8 +7444,8 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          37
+          20,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.17566213593818247
@@ -7453,8 +7453,8 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          43
+          20,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.17566213593818247
@@ -7464,16 +7464,16 @@
       "seed": 164,
       "nullCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.6006766255013645
       },
       "prevCase": {
         "chords": [
-          8,
-          24
+          9,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.6006766255013645
@@ -7484,8 +7484,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          37
+          9,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.6534761288203299
@@ -7493,8 +7493,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          43
+          9,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.6534761288203299
@@ -7505,8 +7505,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "together",
         "nextRng": 0.7847611806355417
@@ -7514,8 +7514,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "together",
         "nextRng": 0.7847611806355417
@@ -7525,20 +7525,20 @@
       "seed": 167,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          24,
-          37
+          9,
+          20,
+          25,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.0819070094730705
       },
       "prevCase": {
         "chords": [
-          8,
-          19,
-          24,
-          43
+          9,
+          20,
+          25,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.0819070094730705
@@ -7549,7 +7549,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.4909978858195245
@@ -7557,7 +7557,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.4909978858195245
@@ -7568,7 +7568,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "together",
         "nextRng": 0.8422504181507975
@@ -7576,7 +7576,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "together",
         "nextRng": 0.8422504181507975
@@ -7587,9 +7587,9 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          43,
-          19
+          9,
+          44,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.7956557534635067
@@ -7597,9 +7597,9 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          43,
-          24
+          9,
+          44,
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.7956557534635067
@@ -7610,8 +7610,8 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          19
+          9,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.9384713156614453
@@ -7619,8 +7619,8 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          24
+          9,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.9384713156614453
@@ -7631,7 +7631,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.17974822712130845
@@ -7639,7 +7639,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.17974822712130845
@@ -7649,15 +7649,15 @@
       "seed": 173,
       "nullCase": {
         "chords": [
-          8,
-          19
+          9,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.07602144055999815
       },
       "prevCase": {
         "chords": [
-          8,
+          9,
           0
         ],
         "style": "paradiddle",
@@ -7669,8 +7669,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "arpeggio",
         "nextRng": 0.947033894713968
@@ -7678,8 +7678,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.947033894713968
@@ -7689,17 +7689,17 @@
       "seed": 175,
       "nullCase": {
         "chords": [
-          8,
-          19,
-          43
+          9,
+          20,
+          44
         ],
         "style": "together",
         "nextRng": 0.018854360096156597
       },
       "prevCase": {
         "chords": [
-          8,
-          24,
+          9,
+          25,
           0
         ],
         "style": "together",
@@ -7711,7 +7711,7 @@
       "nullCase": {
         "chords": [
           0,
-          8
+          9
         ],
         "style": "together",
         "nextRng": 0.625207515899092
@@ -7719,7 +7719,7 @@
       "prevCase": {
         "chords": [
           0,
-          19
+          20
         ],
         "style": "together",
         "nextRng": 0.625207515899092
@@ -7730,8 +7730,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.8220212617889047
@@ -7739,8 +7739,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.8220212617889047
@@ -7751,9 +7751,9 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          37,
-          24
+          44,
+          38,
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.5375778772868216
@@ -7761,9 +7761,9 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          37,
-          19
+          44,
+          38,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.5375778772868216
@@ -7773,17 +7773,17 @@
       "seed": 179,
       "nullCase": {
         "chords": [
-          8,
-          37,
-          19
+          9,
+          38,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.3790890327654779
       },
       "prevCase": {
         "chords": [
-          8,
-          37,
+          9,
+          38,
           0
         ],
         "style": "paradiddle",
@@ -7795,9 +7795,9 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37,
-          8
+          25,
+          38,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.5099641939159483
@@ -7805,9 +7805,9 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          37,
-          19
+          25,
+          38,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.5099641939159483
@@ -7818,7 +7818,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "three-three-two",
         "nextRng": 0.03283508005551994
@@ -7826,7 +7826,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "three-three-two",
         "nextRng": 0.03283508005551994
@@ -7837,9 +7837,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          19,
-          24
+          38,
+          20,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.7521803902927786
@@ -7847,9 +7847,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19,
-          8
+          38,
+          20,
+          9
         ],
         "style": "paradiddle",
         "nextRng": 0.7521803902927786
@@ -7860,7 +7860,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.9739263851661235
@@ -7868,7 +7868,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.9739263851661235
@@ -7878,16 +7878,16 @@
       "seed": 184,
       "nullCase": {
         "chords": [
-          8,
-          43
+          9,
+          44
         ],
         "style": "together",
         "nextRng": 0.6866158023476601
       },
       "prevCase": {
         "chords": [
-          8,
-          37
+          9,
+          38
         ],
         "style": "together",
         "nextRng": 0.6866158023476601
@@ -7898,8 +7898,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43
+          38,
+          44
         ],
         "style": "paradiddle",
         "nextRng": 0.01897887233644724
@@ -7907,8 +7907,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.01897887233644724
@@ -7919,8 +7919,8 @@
       "nullCase": {
         "chords": [
           0,
-          43,
-          19
+          44,
+          20
         ],
         "style": "together",
         "nextRng": 0.46391364838927984
@@ -7928,8 +7928,8 @@
       "prevCase": {
         "chords": [
           0,
-          43,
-          8
+          44,
+          9
         ],
         "style": "together",
         "nextRng": 0.46391364838927984
@@ -7940,9 +7940,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          43,
-          24
+          38,
+          44,
+          25
         ],
         "style": "together",
         "nextRng": 0.6364218918606639
@@ -7950,9 +7950,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          43,
-          19
+          38,
+          44,
+          20
         ],
         "style": "together",
         "nextRng": 0.6364218918606639
@@ -7963,8 +7963,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "three-three-two",
         "nextRng": 0.6284566866233945
@@ -7972,8 +7972,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "three-three-two",
         "nextRng": 0.6284566866233945
@@ -7984,7 +7984,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "arpeggio",
         "nextRng": 0.9570200354792178
@@ -7992,7 +7992,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "arpeggio",
         "nextRng": 0.9570200354792178
@@ -8003,8 +8003,8 @@
       "nullCase": {
         "chords": [
           0,
-          24,
-          37
+          25,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.1782737944740802
@@ -8012,8 +8012,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          19
+          25,
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.1782737944740802
@@ -8024,7 +8024,7 @@
       "nullCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.5503094862215221
@@ -8032,7 +8032,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "paradiddle",
         "nextRng": 0.5503094862215221
@@ -8043,7 +8043,7 @@
       "nullCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.8647199277766049
@@ -8051,7 +8051,7 @@
       "prevCase": {
         "chords": [
           0,
-          24
+          25
         ],
         "style": "freestyle",
         "nextRng": 0.8647199277766049
@@ -8062,8 +8062,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8
+          38,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.49730871873907745
@@ -8071,8 +8071,8 @@
       "prevCase": {
         "chords": [
           0,
-          24,
-          43
+          25,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.49730871873907745
@@ -8083,9 +8083,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24,
-          19
+          38,
+          25,
+          20
         ],
         "style": "freestyle",
         "nextRng": 0.04204912902787328
@@ -8093,9 +8093,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          24,
-          8
+          38,
+          25,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.04204912902787328
@@ -8106,9 +8106,9 @@
       "nullCase": {
         "chords": [
           0,
-          19,
-          24,
-          43
+          20,
+          25,
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.7421768396161497
@@ -8116,9 +8116,9 @@
       "prevCase": {
         "chords": [
           0,
-          19,
-          37,
-          8
+          20,
+          38,
+          9
         ],
         "style": "freestyle",
         "nextRng": 0.7421768396161497
@@ -8129,8 +8129,8 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          24
+          38,
+          25
         ],
         "style": "paradiddle",
         "nextRng": 0.34185158903710544
@@ -8138,8 +8138,8 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          19
+          38,
+          20
         ],
         "style": "paradiddle",
         "nextRng": 0.34185158903710544
@@ -8150,7 +8150,7 @@
       "nullCase": {
         "chords": [
           0,
-          43
+          44
         ],
         "style": "freestyle",
         "nextRng": 0.9813134565483779
@@ -8158,7 +8158,7 @@
       "prevCase": {
         "chords": [
           0,
-          37
+          38
         ],
         "style": "freestyle",
         "nextRng": 0.9813134565483779
@@ -8169,9 +8169,9 @@
       "nullCase": {
         "chords": [
           0,
-          8,
-          24,
-          19
+          9,
+          25,
+          20
         ],
         "style": "three-over-two",
         "nextRng": 0.6045521858613938
@@ -8179,9 +8179,9 @@
       "prevCase": {
         "chords": [
           0,
-          8,
-          24,
-          37
+          9,
+          25,
+          38
         ],
         "style": "three-over-two",
         "nextRng": 0.6045521858613938
@@ -8192,9 +8192,9 @@
       "nullCase": {
         "chords": [
           0,
-          37,
-          8,
-          19
+          38,
+          9,
+          20
         ],
         "style": "arpeggio",
         "nextRng": 0.8954899178352207
@@ -8202,9 +8202,9 @@
       "prevCase": {
         "chords": [
           0,
-          37,
-          8,
-          24
+          38,
+          9,
+          25
         ],
         "style": "arpeggio",
         "nextRng": 0.8954899178352207
@@ -8225,7 +8225,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.46732782293111086
@@ -8236,8 +8236,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.9683778982143849
@@ -8245,7 +8245,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "freestyle",
@@ -8258,7 +8258,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.8752879470121115
@@ -8266,7 +8266,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-three-two",
@@ -8278,7 +8278,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "together",
@@ -8287,8 +8287,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.7630053898319602
@@ -8300,8 +8300,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "together",
         "nextRng": 0.23399724275805056
@@ -8309,9 +8309,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.23399724275805056
@@ -8323,7 +8323,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.08513720124028623
@@ -8331,7 +8331,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -8343,8 +8343,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.5421195910312235
@@ -8352,7 +8352,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -8364,7 +8364,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.5214452685322613
@@ -8372,7 +8372,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.5214452685322613
@@ -8391,7 +8391,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.5850091010797769
@@ -8410,7 +8410,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.7238044005353004
@@ -8421,7 +8421,7 @@
       "nullCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "groove",
@@ -8430,8 +8430,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.45741763804107904
@@ -8442,8 +8442,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.8507766961120069
@@ -8451,7 +8451,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -8463,7 +8463,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.15277158934623003
@@ -8471,7 +8471,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.15277158934623003
@@ -8483,7 +8483,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.03677086811512709
@@ -8492,7 +8492,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.03677086811512709
@@ -8503,8 +8503,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.19429797329939902
@@ -8512,7 +8512,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -8524,7 +8524,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.22275040484964848
@@ -8543,7 +8543,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-over-two",
@@ -8552,8 +8552,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.33968470781110227
@@ -8564,8 +8564,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.08778517786413431
@@ -8573,7 +8573,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "arpeggio",
@@ -8585,7 +8585,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.8037807932123542
@@ -8593,7 +8593,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.8037807932123542
@@ -8604,7 +8604,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.9865809082984924
@@ -8623,8 +8623,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.4274260352831334
@@ -8632,7 +8632,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -8645,7 +8645,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.476709007518366
@@ -8653,7 +8653,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -8666,7 +8666,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.3645721802022308
@@ -8674,7 +8674,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "arpeggio",
@@ -8686,7 +8686,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.32397183775901794
@@ -8694,7 +8694,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.32397183775901794
@@ -8713,7 +8713,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.5251554888673127
@@ -8724,8 +8724,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.27351520699448884
@@ -8733,7 +8733,7 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0
         ],
         "style": "groove",
@@ -8745,8 +8745,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.8222677248995751
@@ -8754,7 +8754,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "together",
@@ -8767,7 +8767,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.8311622459441423
@@ -8776,7 +8776,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.8311622459441423
@@ -8787,7 +8787,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -8796,8 +8796,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.2751748759765178
@@ -8816,7 +8816,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.3871832760050893
@@ -8827,9 +8827,9 @@
       "nullCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.15870022494345903
@@ -8837,8 +8837,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21,
+          17,
+          22,
           0
         ],
         "style": "arpeggio",
@@ -8850,7 +8850,7 @@
       "nullCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "together",
@@ -8859,8 +8859,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.41673933155834675
@@ -8879,7 +8879,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.5591895803809166
@@ -8890,8 +8890,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.44652835093438625
@@ -8899,7 +8899,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "together",
@@ -8912,7 +8912,7 @@
         "chords": [
           8,
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.13657113374210894
@@ -8921,7 +8921,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.13657113374210894
@@ -8932,7 +8932,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.39364726608619094
@@ -8940,7 +8940,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.39364726608619094
@@ -8952,8 +8952,8 @@
         "chords": [
           8,
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.8151301103644073
@@ -8961,9 +8961,9 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.8151301103644073
@@ -8975,7 +8975,7 @@
         "chords": [
           8,
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.197961472440511
@@ -8984,7 +8984,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.197961472440511
@@ -8996,7 +8996,7 @@
         "chords": [
           8,
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.8164470025803894
@@ -9005,7 +9005,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.8164470025803894
@@ -9016,7 +9016,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.8497150409966707
@@ -9024,7 +9024,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.8497150409966707
@@ -9036,7 +9036,7 @@
         "chords": [
           8,
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.3474891618825495
@@ -9045,7 +9045,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.3474891618825495
@@ -9056,8 +9056,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -9066,9 +9066,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.8519706330262125
@@ -9079,8 +9079,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.17481389874592423
@@ -9088,7 +9088,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -9100,8 +9100,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "together",
@@ -9110,9 +9110,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.06335184047929943
@@ -9124,8 +9124,8 @@
         "chords": [
           0,
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.6363287104759365
@@ -9134,8 +9134,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "groove",
         "nextRng": 0.6363287104759365
@@ -9146,7 +9146,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.4594856023322791
@@ -9154,7 +9154,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.4594856023322791
@@ -9165,7 +9165,7 @@
       "nullCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.2250888622365892
@@ -9184,7 +9184,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-three-two",
@@ -9193,8 +9193,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.5005628978833556
@@ -9206,8 +9206,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "together",
         "nextRng": 0.46368863387033343
@@ -9215,9 +9215,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.46368863387033343
@@ -9228,7 +9228,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.509097256930545
@@ -9236,7 +9236,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.509097256930545
@@ -9247,7 +9247,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "together",
@@ -9257,7 +9257,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.08138687536120415
@@ -9268,7 +9268,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.2652659809682518
@@ -9287,7 +9287,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.5482494172174484
@@ -9314,7 +9314,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.08261597040109336
@@ -9333,7 +9333,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.3124549286440015
@@ -9344,7 +9344,7 @@
       "nullCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "groove",
@@ -9353,8 +9353,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.062248004134744406
@@ -9365,7 +9365,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.4403620318043977
@@ -9373,7 +9373,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.4403620318043977
@@ -9385,7 +9385,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.4667171980254352
@@ -9394,7 +9394,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.4667171980254352
@@ -9405,7 +9405,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "together",
@@ -9414,8 +9414,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.8612062353640795
@@ -9434,7 +9434,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.13548121228814125
@@ -9453,7 +9453,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.6174282841384411
@@ -9464,8 +9464,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "groove",
         "nextRng": 0.04388630925677717
@@ -9473,7 +9473,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -9486,7 +9486,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.04583092173561454
@@ -9495,7 +9495,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.04583092173561454
@@ -9514,7 +9514,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.39706324925646186
@@ -9525,8 +9525,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "three-over-two",
@@ -9535,9 +9535,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.889850486535579
@@ -9548,7 +9548,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.33913527661934495
@@ -9556,7 +9556,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.33913527661934495
@@ -9575,7 +9575,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.587964091449976
@@ -9586,8 +9586,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -9596,9 +9596,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.32041669520549476
@@ -9617,7 +9617,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.12616912135854363
@@ -9628,7 +9628,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -9637,8 +9637,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.8804634786210954
@@ -9650,7 +9650,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.9842415957245976
@@ -9658,7 +9658,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-three-two",
@@ -9670,8 +9670,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.4892836078070104
@@ -9679,7 +9679,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -9699,7 +9699,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.07027550949715078
@@ -9710,8 +9710,8 @@
       "nullCase": {
         "chords": [
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.8816749569959939
@@ -9719,7 +9719,7 @@
       "prevCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "arpeggio",
@@ -9731,7 +9731,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.6145336597692221
@@ -9739,7 +9739,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.6145336597692221
@@ -9750,7 +9750,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.39284360548481345
@@ -9758,7 +9758,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.39284360548481345
@@ -9769,7 +9769,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -9778,8 +9778,8 @@
       "prevCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.9736848957836628
@@ -9790,7 +9790,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -9799,8 +9799,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.1157626323401928
@@ -9811,7 +9811,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -9821,7 +9821,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.9833984735887498
@@ -9832,7 +9832,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.9233031782787293
@@ -9840,7 +9840,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.9233031782787293
@@ -9851,7 +9851,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "together",
@@ -9860,8 +9860,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.7594580629374832
@@ -9872,9 +9872,9 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.0067381958942860365
@@ -9883,8 +9883,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.0067381958942860365
@@ -9895,8 +9895,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.5048960440326482
@@ -9904,7 +9904,7 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0
         ],
         "style": "paradiddle",
@@ -9916,8 +9916,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.6728156686294824
@@ -9925,7 +9925,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -9937,8 +9937,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.7896823864430189
@@ -9946,7 +9946,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -9958,7 +9958,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -9967,8 +9967,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.6441372365225106
@@ -9979,7 +9979,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.4577866627369076
@@ -9987,7 +9987,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.4577866627369076
@@ -9998,7 +9998,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.03971227561123669
@@ -10017,9 +10017,9 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.3718333253636956
@@ -10028,8 +10028,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.3718333253636956
@@ -10040,8 +10040,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16,
+          22,
+          17,
           8
         ],
         "style": "groove",
@@ -10050,9 +10050,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.19405096000991762
@@ -10071,7 +10071,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.7597082178108394
@@ -10082,8 +10082,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.2898881866130978
@@ -10091,7 +10091,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -10103,8 +10103,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.023744214791804552
@@ -10112,7 +10112,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -10124,7 +10124,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.7254342380911112
@@ -10132,7 +10132,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.7254342380911112
@@ -10143,7 +10143,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.909769807010889
@@ -10151,7 +10151,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.909769807010889
@@ -10163,7 +10163,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.2856396271381527
@@ -10171,7 +10171,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "freestyle",
@@ -10191,7 +10191,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.7994170379824936
@@ -10202,8 +10202,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.3220484664198011
@@ -10211,7 +10211,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -10223,7 +10223,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "arpeggio",
@@ -10233,7 +10233,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.08313880977220833
@@ -10244,7 +10244,7 @@
       "nullCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.001138708321377635
@@ -10252,7 +10252,7 @@
       "prevCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.001138708321377635
@@ -10263,7 +10263,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.5522557524964213
@@ -10271,7 +10271,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.5522557524964213
@@ -10282,7 +10282,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.3840809662360698
@@ -10290,7 +10290,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.3840809662360698
@@ -10301,7 +10301,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "freestyle",
@@ -10310,8 +10310,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.9249195288866758
@@ -10330,7 +10330,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.3242343538440764
@@ -10341,9 +10341,9 @@
       "nullCase": {
         "chords": [
           8,
-          21,
+          22,
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.43696694099344313
@@ -10351,8 +10351,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21,
+          17,
+          22,
           0
         ],
         "style": "arpeggio",
@@ -10364,7 +10364,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.6149988765828311
@@ -10372,7 +10372,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.6149988765828311
@@ -10391,7 +10391,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.2431672338861972
@@ -10402,9 +10402,9 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.9741160254925489
@@ -10412,8 +10412,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -10425,7 +10425,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -10434,8 +10434,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.5209986190311611
@@ -10446,8 +10446,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21,
+          17,
+          22,
           0
         ],
         "style": "arpeggio",
@@ -10456,9 +10456,9 @@
       "prevCase": {
         "chords": [
           8,
-          21,
+          22,
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.3243043760303408
@@ -10469,7 +10469,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.23997675045393407
@@ -10477,7 +10477,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.23997675045393407
@@ -10489,8 +10489,8 @@
         "chords": [
           8,
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.9980921118985862
@@ -10499,8 +10499,8 @@
         "chords": [
           8,
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.9980921118985862
@@ -10511,8 +10511,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.14813322061672807
@@ -10520,7 +10520,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -10532,7 +10532,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -10541,8 +10541,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.4438910558819771
@@ -10553,7 +10553,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -10562,8 +10562,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.4812404566910118
@@ -10574,7 +10574,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.587002559332177
@@ -10582,7 +10582,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.587002559332177
@@ -10593,9 +10593,9 @@
       "nullCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.9471628114115447
@@ -10604,8 +10604,8 @@
         "chords": [
           8,
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "groove",
         "nextRng": 0.9471628114115447
@@ -10616,7 +10616,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.6416485495865345
@@ -10624,7 +10624,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.6416485495865345
@@ -10643,7 +10643,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.15544429095461965
@@ -10655,8 +10655,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.3711450113914907
@@ -10664,9 +10664,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.3711450113914907
@@ -10677,9 +10677,9 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.9478050488978624
@@ -10687,8 +10687,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -10700,7 +10700,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.2752872051205486
@@ -10708,7 +10708,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.2752872051205486
@@ -10719,7 +10719,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -10728,8 +10728,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.7453257641755044
@@ -10740,7 +10740,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "arpeggio",
@@ -10749,8 +10749,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.375791602069512
@@ -10761,7 +10761,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -10771,7 +10771,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.5112375321332365
@@ -10782,8 +10782,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21,
+          17,
+          22,
           0
         ],
         "style": "arpeggio",
@@ -10792,9 +10792,9 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.7517775967717171
@@ -10806,7 +10806,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.38242597645148635
@@ -10814,7 +10814,7 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0
         ],
         "style": "together",
@@ -10826,7 +10826,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.7919451289344579
@@ -10834,7 +10834,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.7919451289344579
@@ -10845,7 +10845,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-over-two",
@@ -10854,8 +10854,8 @@
       "prevCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.16284702089615166
@@ -10866,7 +10866,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.4625387543346733
@@ -10874,7 +10874,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.4625387543346733
@@ -10885,7 +10885,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.4039479591883719
@@ -10893,7 +10893,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.4039479591883719
@@ -10912,7 +10912,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.2489859035704285
@@ -10923,7 +10923,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.7445431514643133
@@ -10931,7 +10931,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.7445431514643133
@@ -10942,7 +10942,7 @@
       "nullCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "groove",
@@ -10951,8 +10951,8 @@
       "prevCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.8597126407548785
@@ -10963,7 +10963,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -10972,8 +10972,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.015594690339639783
@@ -10984,7 +10984,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.020227667642757297
@@ -10992,7 +10992,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.020227667642757297
@@ -11003,7 +11003,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.9582971003837883
@@ -11011,7 +11011,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.9582971003837883
@@ -11023,7 +11023,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.592846147948876
@@ -11032,7 +11032,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.592846147948876
@@ -11043,7 +11043,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.9785107469651848
@@ -11051,7 +11051,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.9785107469651848
@@ -11062,7 +11062,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -11071,8 +11071,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.6293342555873096
@@ -11091,7 +11091,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.4837345581036061
@@ -11103,7 +11103,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.8077519841026515
@@ -11111,7 +11111,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-three-two",
@@ -11123,7 +11123,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "groove",
@@ -11132,8 +11132,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "groove",
         "nextRng": 0.8373434494715184
@@ -11144,9 +11144,9 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.4082597582601011
@@ -11154,8 +11154,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -11167,7 +11167,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.9271618623752147
@@ -11186,7 +11186,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "freestyle",
@@ -11195,8 +11195,8 @@
       "prevCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.4993761817459017
@@ -11215,7 +11215,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.9733131730463356
@@ -11234,7 +11234,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.8745395657606423
@@ -11245,8 +11245,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.0994226629845798
@@ -11254,7 +11254,7 @@
       "prevCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "together",
@@ -11266,7 +11266,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "freestyle",
@@ -11275,8 +11275,8 @@
       "prevCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.4744756347499788
@@ -11287,8 +11287,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "groove",
         "nextRng": 0.31701068789698184
@@ -11296,7 +11296,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "groove",
@@ -11316,7 +11316,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.8444671600591391
@@ -11327,7 +11327,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "arpeggio",
@@ -11336,8 +11336,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.5657350269611925
@@ -11356,7 +11356,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.6139550150837749
@@ -11368,7 +11368,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.3723655492067337
@@ -11376,7 +11376,7 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0
         ],
         "style": "together",
@@ -11388,7 +11388,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "groove",
         "nextRng": 0.16122042760252953
@@ -11396,7 +11396,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "groove",
         "nextRng": 0.16122042760252953
@@ -11407,8 +11407,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.1452765550930053
@@ -11416,7 +11416,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "freestyle",
@@ -11428,7 +11428,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.41635162057355046
@@ -11436,7 +11436,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.41635162057355046
@@ -11447,7 +11447,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.9057201140094548
@@ -11455,7 +11455,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.9057201140094548
@@ -11474,7 +11474,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.8125517847947776
@@ -11485,8 +11485,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16,
+          22,
+          17,
           8
         ],
         "style": "freestyle",
@@ -11495,9 +11495,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.9235054419841617
@@ -11508,7 +11508,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.7318627564236522
@@ -11516,7 +11516,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.7318627564236522
@@ -11528,8 +11528,8 @@
         "chords": [
           8,
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.12153894104994833
@@ -11537,9 +11537,9 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.12153894104994833
@@ -11550,7 +11550,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -11560,7 +11560,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.17566213593818247
@@ -11579,7 +11579,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.6006766255013645
@@ -11591,7 +11591,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.6534761288203299
@@ -11600,7 +11600,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.6534761288203299
@@ -11611,7 +11611,7 @@
       "nullCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "together",
@@ -11620,8 +11620,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "together",
         "nextRng": 0.7847611806355417
@@ -11633,8 +11633,8 @@
         "chords": [
           8,
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.0819070094730705
@@ -11642,9 +11642,9 @@
       "prevCase": {
         "chords": [
           8,
-          16,
+          17,
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.0819070094730705
@@ -11655,7 +11655,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.4909978858195245
@@ -11663,7 +11663,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.4909978858195245
@@ -11674,7 +11674,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.8422504181507975
@@ -11682,7 +11682,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.8422504181507975
@@ -11694,8 +11694,8 @@
         "chords": [
           0,
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.7956557534635067
@@ -11704,8 +11704,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.7956557534635067
@@ -11717,7 +11717,7 @@
         "chords": [
           0,
           8,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.9384713156614453
@@ -11726,7 +11726,7 @@
         "chords": [
           0,
           8,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.9384713156614453
@@ -11737,7 +11737,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.17974822712130845
@@ -11745,7 +11745,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.17974822712130845
@@ -11764,7 +11764,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.07602144055999815
@@ -11775,7 +11775,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -11784,8 +11784,8 @@
       "prevCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.947033894713968
@@ -11796,7 +11796,7 @@
       "nullCase": {
         "chords": [
           8,
-          16,
+          17,
           0
         ],
         "style": "together",
@@ -11806,7 +11806,7 @@
         "chords": [
           8,
           0,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.018854360096156597
@@ -11825,7 +11825,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.625207515899092
@@ -11836,8 +11836,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.8220212617889047
@@ -11845,7 +11845,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "paradiddle",
@@ -11857,8 +11857,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16,
+          22,
+          17,
           8
         ],
         "style": "freestyle",
@@ -11867,9 +11867,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.5375778772868216
@@ -11880,8 +11880,8 @@
       "nullCase": {
         "chords": [
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.3790890327654779
@@ -11889,7 +11889,7 @@
       "prevCase": {
         "chords": [
           8,
-          21,
+          22,
           0
         ],
         "style": "paradiddle",
@@ -11901,8 +11901,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -11911,9 +11911,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.5099641939159483
@@ -11924,7 +11924,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.03283508005551994
@@ -11932,7 +11932,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "three-three-two",
         "nextRng": 0.03283508005551994
@@ -11943,9 +11943,9 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.7521803902927786
@@ -11953,8 +11953,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -11966,7 +11966,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.9739263851661235
@@ -11974,7 +11974,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.9739263851661235
@@ -11985,7 +11985,7 @@
       "nullCase": {
         "chords": [
           8,
-          21
+          22
         ],
         "style": "together",
         "nextRng": 0.6866158023476601
@@ -11993,7 +11993,7 @@
       "prevCase": {
         "chords": [
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.6866158023476601
@@ -12004,7 +12004,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -12013,8 +12013,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.01897887233644724
@@ -12025,8 +12025,8 @@
       "nullCase": {
         "chords": [
           0,
-          21,
-          16
+          22,
+          17
         ],
         "style": "together",
         "nextRng": 0.46391364838927984
@@ -12034,7 +12034,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "together",
@@ -12046,9 +12046,9 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "together",
         "nextRng": 0.6364218918606639
@@ -12056,8 +12056,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "together",
@@ -12069,7 +12069,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "three-three-two",
@@ -12078,8 +12078,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-three-two",
         "nextRng": 0.6284566866233945
@@ -12090,7 +12090,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "arpeggio",
         "nextRng": 0.9570200354792178
@@ -12098,7 +12098,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.9570200354792178
@@ -12109,8 +12109,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.1782737944740802
@@ -12118,7 +12118,7 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8
         ],
         "style": "three-over-two",
@@ -12130,7 +12130,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "paradiddle",
         "nextRng": 0.5503094862215221
@@ -12138,7 +12138,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.5503094862215221
@@ -12149,7 +12149,7 @@
       "nullCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.8647199277766049
@@ -12157,7 +12157,7 @@
       "prevCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.8647199277766049
@@ -12168,8 +12168,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.49730871873907745
@@ -12177,7 +12177,7 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "freestyle",
@@ -12189,9 +12189,9 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.04204912902787328
@@ -12199,8 +12199,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "freestyle",
@@ -12213,8 +12213,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.7421768396161497
@@ -12222,9 +12222,9 @@
       "prevCase": {
         "chords": [
           0,
-          16,
+          17,
           8,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.7421768396161497
@@ -12235,7 +12235,7 @@
       "nullCase": {
         "chords": [
           0,
-          21,
+          22,
           8
         ],
         "style": "paradiddle",
@@ -12244,8 +12244,8 @@
       "prevCase": {
         "chords": [
           0,
-          16,
-          21
+          17,
+          22
         ],
         "style": "paradiddle",
         "nextRng": 0.34185158903710544
@@ -12256,7 +12256,7 @@
       "nullCase": {
         "chords": [
           0,
-          21
+          22
         ],
         "style": "freestyle",
         "nextRng": 0.9813134565483779
@@ -12264,7 +12264,7 @@
       "prevCase": {
         "chords": [
           0,
-          16
+          17
         ],
         "style": "freestyle",
         "nextRng": 0.9813134565483779
@@ -12276,8 +12276,8 @@
         "chords": [
           0,
           8,
-          16,
-          21
+          17,
+          22
         ],
         "style": "three-over-two",
         "nextRng": 0.6045521858613938
@@ -12286,8 +12286,8 @@
         "chords": [
           0,
           8,
-          21,
-          16
+          22,
+          17
         ],
         "style": "three-over-two",
         "nextRng": 0.6045521858613938
@@ -12298,8 +12298,8 @@
       "nullCase": {
         "chords": [
           0,
-          16,
-          21,
+          17,
+          22,
           8
         ],
         "style": "arpeggio",
@@ -12308,9 +12308,9 @@
       "prevCase": {
         "chords": [
           0,
-          21,
+          22,
           8,
-          16
+          17
         ],
         "style": "arpeggio",
         "nextRng": 0.8954899178352207

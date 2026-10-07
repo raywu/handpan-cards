@@ -158,6 +158,6 @@ row is a failure - add a row (0 is a fine start). Node counts come from
 - Duplicate pitch-class sets are deliberate: Hijaz 0, Pygmy 15 groups / 36
   cards, Amara 0 (2026-09-16, after the engine adoption at `e872a49` - the
   earlier "4 groups / 9 cards" predates it). The invariant that holds is that
-  no two chords in a deck share an identical `fields` list (19/52/25 all
-  distinct, verified over all 96 cards).
-- Page counts: full 3/7/3, printer-only 3/6/3. 96 cards total.
+  no two chords in a deck share an identical `fields` list (19/53/27 all
+  distinct, verified over all 99 cards).
+- Page counts: full 3/7/4, printer-only 3/6/3. 99 cards total.
