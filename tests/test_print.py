@@ -210,7 +210,7 @@ def render_chord_card(deck, index, chord, x=0.0, y=0.0):
 
 
 def every_card():
-    """(deck, 1-based index, chord) for all 96 cards."""
+    """(deck, 1-based index, chord) for all 99 cards."""
     for deck in ALL_DECKS:
         for i, chord in enumerate(deck["chords"]):
             yield deck, i + 1, chord
@@ -320,7 +320,7 @@ class FitTest(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# call-site width budgets, across all 96 cards
+# call-site width budgets, across all 99 cards
 # --------------------------------------------------------------------------
 class CardWidthBudgetTest(unittest.TestCase):
     """The budgets the card layout promises, checked against drawn ink.
@@ -350,7 +350,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], 0.0,
             "a drawn subtitle overran the %.0f%% header budget (%.2f pt). "
-            "Worst case of all 96 cards: %s / %r drawn %.2f pt, slack "
+            "Worst case of all 99 cards: %s / %r drawn %.2f pt, slack "
             "%.2f pt" % (self.SUBTITLE_BUDGET * 100,
                          SPEC_CARD_W * self.SUBTITLE_BUDGET,
                          worst[1], worst[2], worst[3], worst[0]))
@@ -375,7 +375,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreater(
             worst[0], 0.0,
             "the header subtitle overlapped the deck name. Worst case of all "
-            "96 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
+            "99 cards: %s / %r, gap %.2f pt" % (worst[1], worst[2], worst[0]))
 
     def test_all_drawn_card_text_stays_inside_the_card(self):
         worst = None
@@ -395,7 +395,7 @@ class CardWidthBudgetTest(unittest.TestCase):
         self.assertGreaterEqual(
             worst[0], MIN_TEXT_MARGIN,
             "drawn text came within %.2f pt of the card edge (minimum %.2f). "
-            "Worst case of all 96 cards: %s / %s / %r"
+            "Worst case of all 99 cards: %s / %s / %r"
             % (worst[0], MIN_TEXT_MARGIN, worst[1], worst[2], worst[3]))
 
 
@@ -849,16 +849,17 @@ class TitleBlurbChordCountTest(unittest.TestCase):
 
     def test_amara_blurb_is_unchanged(self):
         # 2026-09-16 (engine adoption, D11): Amara grew 16 -> 25 chords,
-        # fully re-ranked by the scale engine.
-        self.assertIn("25 CHORDS", decks.AMARA["blurb"][-1])
+        # fully re-ranked by the scale engine; 25 -> 27 on 2026-10-07 when
+        # the size cap came off (Lane U2).
+        self.assertIn("27 CHORDS", decks.AMARA["blurb"][-1])
 
     def test_pygmy_blurb_reads_the_true_chord_count(self):
         # 2026-09-16 (engine adoption, D10 amendment): Pygmy grew 27 -> 52
         # cards (31 distinct chord names) via the engine's root-instance
         # register enumeration.
-        self.assertEqual(len(decks.PYGMY["chords"]), 52,
-                         "fixture drift: Pygmy no longer has 52 chords")
-        self.assertIn("52 CHORDS", decks.PYGMY["blurb"][-1],
+        self.assertEqual(len(decks.PYGMY["chords"]), 53,
+                         "fixture drift: Pygmy no longer has 53 chords")
+        self.assertIn("53 CHORDS", decks.PYGMY["blurb"][-1],
                       "Pygmy's blurb still reads a stale chord count: %r"
                       % (decks.PYGMY["blurb"][-1],))
         self.assertNotIn("27 CHORDS", decks.PYGMY["blurb"][-1])

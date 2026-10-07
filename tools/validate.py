@@ -103,7 +103,7 @@ def main():
 
     # 2. every card's root pitch class is in its voicing and no pitch class
     # is doubled. Highlighting is asserted elsewhere: which fields are lit, and
-    # the root/tone role of each, is pinned per field on all 96 cards,
+    # the root/tone role of each, is pinned per field on all 99 cards,
     # app-against-print, by tests.test_render_agreement
     # test_highlighting_agrees; the tests/app.test.js test "pan() draws one
     # circle per field, two more per lit field, plus the chrome" pins the NUMBER
