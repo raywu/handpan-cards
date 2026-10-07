@@ -409,7 +409,7 @@ Each line is one testable statement and is turned into exactly one test by the l
 9. [G2b] (W1 asserts only that `#scale-label-2` exists, is named by `aria-describedby` and is not clipped at 380, with today's wording.) The first label line is the `<label for="scale-box">` with the plan section 9 text, `#scale-label-2` carries the second line, `aria-describedby` names it, and neither is clipped (`scrollWidth` at most `clientWidth`) at 380.
 10. [W1] `#scale-parse` and `#scale-refusal` are never both non-empty: a valid scale fills the first and blanks the second, an invalid one the reverse.
 11. [G2b] The count line for the D3 example wraps inside the field group at 380 with no sideways scroll.
-12. [W1] `#scale-mirror` is one `.mode` button with text `MIRROR`, `aria-pressed="false"` by default, and toggling it changes the preview and the generated deck's `mirror` option.
+12. [W1] `#scale-mirror` is one `.mode` button with text `MIRROR TOP` (section 21; `#scale-mirror-bottom` is line 109), `aria-pressed="false"` by default, and toggling it changes the preview and the generated deck's `mirror` option.
 13. [W1] A deck stored with `mirror: true` opens with `#scale-mirror` pressed.
 14. [W1] `SMALL_LABELS` text appears in `#scale-msg` with the `warn` class while the box holds a crowded scale, before GENERATE is pressed.
 
@@ -613,7 +613,7 @@ New lines:
 88. [DR1] At 844 x 390 the open plate is 220 px wide within 1 px, and at 500 x 390 the zone is one column.
 89. [DR1] At 380 x 667, closed, for the D3 example, the position of `#scale-layout-toggle` against the scrollport at `scrollTop` 0 is measured and reported.
 90. [DR2] NEXT NOTE with nothing picked picks rim seat 1; pressed again it picks the next pickable note, passes from the last rim note to the first inner note, skips a ring of one note, wraps from the last note to the first, never changes `seats`, never moves focus and writes row 20; PREVIOUS NOTE is the mirror.
-91. [DR2] After a swap `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.`, and after RESET SEATS on an Add sheet with default anchor and MIRROR it is hidden.
+91. [DR2] After a swap on an Add sheet `#scale-layout-state` reads `Layout not saved yet. GENERATE CARDS keeps it.` (on Edit, `Layout not saved yet. SAVE CHANGES keeps it.`), and after RESET SEATS on an Add sheet with default anchor and MIRROR it is hidden.
 92. [DR2] During a drag the same-ring seat that contains the ghost's centre carries `.panarm` and no other seat does; nothing carries it over another ring, the ding or empty plate; the release swaps with the armed seat.
 93. [DR2] Dragging the top-centre note upward shows the whole ghost: its box may extend above the plate's top edge and is not clipped.
 94. [DR2] After a committed swap exactly two seats carry `.panflash`, and none does 700 ms later; under `prefers-reduced-motion: reduce` the mark has no transition.
@@ -704,13 +704,14 @@ Both are `.mode` buttons with `aria-pressed`, off by default, equal widths in on
 109. [W1] `#scale-mirror` has the text `MIRROR TOP` and `#scale-mirror-bottom` the text `MIRROR BOTTOM`; both have `aria-pressed="false"` by default.
 110. [W1] On a pan with rim, inner and bottom notes, toggling MIRROR TOP changes the angle of every rim and inner field with an angle other than 90 or 270 and of no bottom field; toggling MIRROR BOTTOM changes bottom fields only.
 111. [W1] `#scale-mirror-bottom` is disabled on a pan with no bottom notes.
-112. [W1] A deck WITH bottom notes stored with the old single `mirror: true` opens with both switches pressed, and draws every field where the same build draws it for `mirror: true` alone (the baseline is the same solver, not an older release: the plan accepts that S2 redraws some old mirrored decks). The same deck WITHOUT bottom notes opens with MIRROR TOP pressed, MIRROR BOTTOM disabled and unpressed, and `#scale-layout-state` hidden.
+112. [W1] A deck WITH bottom notes stored with the old single `mirror: true` opens with both switches pressed, and draws every field where the same build draws it for `mirror: true` alone (the baseline is the same solver, not an older release: the plan accepts that S2 redraws some old mirrored decks). The same deck WITHOUT bottom notes opens with MIRROR TOP pressed and MIRROR BOTTOM disabled and unpressed. (W1 asserts nothing about `#scale-layout-state`, which is DR1's element; see line 117.)
 113. [W1] A deck generated with MIRROR TOP on and MIRROR BOTTOM off reopens on Edit, and from its share link, with exactly that pair of values.
 114. [DR1] Both switches are inside `#scale-drawer`; toggling MIRROR TOP writes row 14 and MIRROR BOTTOM writes row 21.
 115. [DR1] Pygmy's scale string typed on Add opens with `#scale-anchor-one` pressed; after one tap on BESIDE CENTRE every rim, inner and bottom field sits at the angle `data/decks.json` has for the built-in Pygmy deck (field 1 at 290), and the generated deck reopens on Edit with `#scale-anchor-between` pressed.
 116. [DR2] RESET SEATS leaves both mirror values unchanged.
+117. [DR1] On Edit, a deck WITHOUT bottom notes stored with the old single `mirror: true` opens with `#scale-layout-state` reading `Layout changed from the default.` (line 30: its stored layout is not the default and is unchanged), never the `Layout not saved yet.` text.
 
-Counts by lane become W1 +5, DR1 +3, DR2 +1 over section 20.4.
+Counts by lane become W1 +5, DR1 +3, DR2 +1 over section 20.4. (History: section 22 moved three W1 lines to G2b and added line 117; the current totals are in the review report's verdict line.)
 
 ### 21.4 Consequences for the plan (coordinator records these on the plan before S2 starts)
 
@@ -736,7 +737,7 @@ Two print answers from the same interview belong to the plan, not to this spec, 
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | - | - |
 
 - **OUTSIDE VOICES:** Codex and a Claude reviewer both ran; 10 and 12 findings, all folded into section 20 or listed in 20.6.
-- **VERDICT:** DESIGN CLEARED, ready for owner sign-off. Acceptance list after sections 21 and 22: 116 lines (W1 18, G2b 3, DR1 38, DR2 57).
+- **VERDICT:** DESIGN CLEARED and signed off by the owner 2026-10-07. Acceptance list after sections 21 and 22: 117 lines (W1 18, G2b 3, DR1 39, DR2 57).
 
 NO UNRESOLVED DECISIONS
 
@@ -745,14 +746,15 @@ NO UNRESOLVED DECISIONS
 From the independent review of this document at `a7a4a47`. Three were blocking and are also edited in place above; the rest are settled here.
 
 1. **W1 does not ship G2b's text.** The plan gives the label and placeholder wording to G2b and makes it a W1 non-goal. Lines 4, 9 and 11 are G2b's. W1 builds the wrapping field and the `#scale-label-2` element with today's wording and today's placeholder, which the legacy reader still parses.
-2. **Old mirrored deck with no bottom notes.** [AD-MC 1] and line 112 as reworded above: top pressed, bottom disabled and unpressed, no unsaved notice, stored value rewritten only on save.
+2. **Old mirrored deck with no bottom notes.** [AD-MC 1] and line 112 as reworded above: top pressed, bottom disabled and unpressed, stored value rewritten only on save. The state line follows line 30 unchanged: such a deck has a stored non-default layout, so on Edit it reads `Layout changed from the default.` and never the unsaved text (line 117, DR1). W1 asserts nothing about the state line, which does not exist until DR1.
 3. **The unsaved notice names the sheet's own primary button** ([RD 4], line 30 as reworded above).
 4. **Focus ring.** Drawer controls use the global `:focus-visible` ring (`#e3b25c`). The `#f1ece1` ring existed only on `#scale-preview[tabindex]`, whose `tabindex` line 19 removes.
 5. **Focus after a swap.** Focus goes to the moved note at its new seat only when focus was on a note when the swap was committed. After PREVIOUS SEAT, NEXT SEAT, PREVIOUS NOTE or NEXT NOTE, focus stays on the button pressed; the roving `tabindex` still moves to the moved note. Line 97 covers the note case; DR2 adds the button case to the same test.
 6. **Row 2** (`{n} is the only note in the {ring} ...`) is written only when a pick or a SEAT step is attempted on a ring of one note. Moving focus with an arrow key never writes it (line 62 stands).
 7. **Line 58** holds at 380 x 667 portrait with the drawer open. At any other viewport, including the 220 px landscape plate of line 88, target sizes are measured and reported, not asserted.
-8. **Reports are not tests.** Lines 84 (the plate-width part), 89, the inner and bottom part of 58, and F 10 are measurements recorded on the lane's PR. "Exactly one test per line" in section 16 excludes them.
+8. **Reports are not tests.** Lines 84 (the plate-width part), 89, the inner and bottom part of 58, and F 10 are measurements recorded on the lane's PR. The "one testable statement per line" rule of the acceptance list's preamble excludes them.
 9. **Landscape plate width** is 220 px (line 88). The "232 px" in section 5 was an estimate and is withdrawn.
 10. **Ring memory (section 14).** A ring that empties to 0 or 1 note keeps its memory. When it returns to a count it has an arrangement for, that arrangement is restored (row 16), including after passing through 0. Only a count never seen in this sheet session starts at the default.
 11. **Superseded text left as history.** The section 5 wireframes predate RD 7 and AD-MC 2 and show one MIRROR; section 21 and mock version 3 are the reference. Section 20's "row 14 stands" is superseded by MC 3 (rows 14 and 21).
 12. **Not this document's to settle; recorded on the plan by the coordinator:** two solver reflections and `mirrorBottom` in the record and link (W1 waits for that amendment and for S3); the plan's section 10 names another output file for this spec; the sticky `#scale-plate-band` against the plan's "only it and the delete row are pinned"; lane ownership of `pan()`'s interactive branch, the `paintPan` re-key and the `previewBox` keydown replacement; and that between DR1 and DR2 an Edit deck with stored seats cannot be rearranged or reset.
+13. **Line 58 and the plate cap.** The 44 px assertion of line 58 is hard only while the open plate keeps its `42dvh` cap at 380 x 667. If DR1 lowers the cap under F 3, DR1's PR names every pan of line 58 whose same-ring target then measures under 44 px; for those pans line 58 is a report, and the shortfall goes to the owner at the DR2 phone check. Section 10's "68 px for 9 rim" is the Kurd figure; a pan with a bottom shell is tighter (Pygmy is close to 44 px at a 280 px plate, by arithmetic, not measured).
