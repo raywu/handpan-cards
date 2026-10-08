@@ -1453,6 +1453,12 @@ Lane W1 merged as #269 (main df91453, 734 mutant files). Review: PASS_WITH_NITS 
 
 **Lane order from here.** G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last.
 
+### 20.11 R5's budget gets a floor (coordinator auto-decision, 2026-10-07, owner away)
+
+Lane G2b measured the forty-note pan on CI at 14 ms (run 37715956008, recorded in #270). R5's rule gives a budget of 42 ms. One sample at that scale is inside the noise of a shared runner: a single pause fails the test, and the test also runs under the mutation gate's baseline. R5 exists to catch generation that has become slow, not to time it to the millisecond.
+
+**Decision.** The budget is three times the measured figure or 1000 ms, whichever is larger. Today that is 1000 ms. R5's stop condition (a measured time over 5 seconds) is unchanged. The owner can restore the bare 3x rule.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
