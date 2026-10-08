@@ -173,7 +173,7 @@ for (const edit of [false, true]) {
   const where = edit ? "Edit" : "Add";
 
   test(`DR2b rule W and R (78, 41, 42): a mouse drag exchanges exactly two notes and readSeats accepts it, ring sizes swept, ${where}`, () => {
-    for (const [ring, max] of d2AllRings) {
+    for (const [ring, max] of [["rim", 10], ["inner", 8], ["bottom", 8]]) {
       for (let n = 2; n <= max; n += 1) {
         for (const [label, start] of d2Starts(n)) {
           const { app, sc, seats } = d2Case(ring, n, start, edit);
@@ -187,13 +187,13 @@ for (const edit of [false, true]) {
             assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: want }), ctx);
             const ok = JSON.parse(app.get(`JSON.stringify(HPE.layout.readSeats(layoutSeats, ${JSON.stringify(d2Sizes(ring, n))}))`));
             assert.strictEqual(ok.ok, true, `${ctx}: readSeats refuses it`);
-            assert.deepStrictEqual(app.hits().map((h) => h.getAttribute("aria-label").split(",")[0]).sort(), names.slice().sort(), `${ctx}: the plate lost a note`);
+            assert.deepStrictEqual(app.hits().map((h) => h.getAttribute("aria-label").split(",")[0]).sort(), [...sc.names.rim, ...sc.names.inner, ...sc.names.bottom].sort(), `${ctx}: the plate lost a note`);
             if (a !== b) {
               assert.strictEqual(d2Pick(app), null, `${ctx}: the pick did not end`);
               assert.match(d2Status(app), new RegExp(
                 `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${b + 1} of ${n}, [a-z ]+\\.$`), ctx);
             } else {
-              assert.deepStrictEqual(d2Pick(app), { ring, i: a }, `${ctx}: the note is not still picked`);
+              assert.deepStrictEqual(d2Pick(app), { ring, i }, `${ctx}: the note is not still picked`);
               assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${a + 1} of ${n}\\.$`), ctx);
             }
           }

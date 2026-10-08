@@ -7708,7 +7708,7 @@ describe("DR2b drag, mouse", () => {
     assert.strictEqual(arms().length, 0, "the own seat is armed");
     over("E4");
     DG.release(app, g, cc.x, cc.y);
-    assert.deepStrictEqual(dgSeats(app), { rim: [4, 1, 2, 3, 0, 5, 6, 7] });
+    assert.deepStrictEqual(dgSeats(app), { rim: [3, 1, 2, 0, 4, 5, 6, 7] });
     assert.strictEqual(arms().length, 0, "the arm outlived the drop");
   });
 

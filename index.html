@@ -1009,7 +1009,16 @@ footer.seq{row-gap:var(--sp-1)}
    it has to sit on ONE note at the radius that note was drawn at, which is a
    solved number no selector can reach. What CSS owns is the focus treatment of
    the pan as a whole. */
-#scale-preview .panhit{cursor:pointer; outline:none}
+#scale-preview .panhit{cursor:grab; outline:none}
+#scale-preview.dragging, #scale-preview.dragging .panhit{cursor:grabbing}
+/* A long press on the plate must lift a note, not select text or raise a
+   callout or a context menu. */
+#scale-preview{user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+/* The dragged note. Fixed, so the plate's edge does not clip it; it lives in the
+   band, outside the SVG, and never takes a pointer. */
+.panghost{position:fixed; z-index:60; pointer-events:none; box-sizing:border-box; border-radius:50%;
+  border:1.5px solid #E27005; background:rgba(226,112,5,.22); color:#272219;
+  display:flex; align-items:center; justify-content:center; font:600 12px/1 "Nunito Sans",sans-serif}
 #scale-preview .panfocus{display:none}
 #scale-preview .panhit:focus-visible + .panfocus{display:inline}
 /* iOS has no hover and this app turns the tap highlight off, so a note that is
@@ -8114,6 +8123,7 @@ function pan(d, ch, opts) {
   const pickedRing = picked !== null ? hit.meta[picked].ring : null;
   const veils = [];
   const seatMarks = [];
+  const armMarks = [];
   const pickMarks = [];
   const flashMarks = [];
   const hits = [];
@@ -8180,6 +8190,9 @@ function pan(d, ch, opts) {
             + ` stroke="#E27005" stroke-width="${PANSEL_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`
             + `<circle class="pansel-ink" ${at} r="${rr * 1.27}" fill="none" stroke="#272219"`
             + ` stroke-width="${PANSEL_INK_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+        } else if (m.ring === pickedRing && String(hit.arm) === String(id)) {
+          armMarks.push(`<circle class="panarm" ${at} r="${rr * 1.12}" fill="rgba(226,112,5,.22)" stroke="#E27005"`
+            + ` stroke-width="2.5" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
         } else if (m.ring === pickedRing) {
           seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
             + ` stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
@@ -8203,7 +8216,7 @@ function pan(d, ch, opts) {
   // one of the picked ring's, the picked ring wins the tap.
   if (interactive) {
     const byOrder = (a2, b2) => a2.at - b2.at;
-    s += veils.join("") + seatMarks.join("") + pickMarks.join("") + flashMarks.join("")
+    s += veils.join("") + seatMarks.join("") + armMarks.join("") + pickMarks.join("") + flashMarks.join("")
       + `<g class="panhits">${hits.sort(byOrder).concat(sameHits.sort(byOrder)).map((h) => h.node).join("")}</g>`;
   }
   return s + "</svg>";
@@ -8992,6 +9005,7 @@ function openDrawer() {
   if (!boxOk || drawerOpen) return;
   drawerOpen = true;
   drawerPaused = false;
+  previewBox.addEventListener("touchmove", plateTouchMove, { passive: false });
   drawerStatus.textContent = "";
   drawerStatus.classList.remove("warn");
   paintLayout();
@@ -9008,6 +9022,7 @@ function closeDrawer(viaToggle) {
   if (!drawerOpen) return;
   const inside = viaToggle || inDrawerZone(document.activeElement);
   cancelGesture();
+  previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
   drawerOpen = false;
   drawerPaused = false;
   pickRef = null;
@@ -9021,6 +9036,7 @@ function closeDrawer(viaToggle) {
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
   cancelGesture();
+  previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
@@ -9125,6 +9141,8 @@ let flashTimer = null;
 let suppressClick = false;
 // DR2b registers a function here that abandons a drag or hold in flight.
 let gestureCancel = null;
+// The seat the dragged note would swap with, or null: drawn as .panarm.
+let armId = null;
 
 const PLACES = ["right", "upper right", "top", "upper left", "left", "lower left", "bottom", "lower right"];
 const placeOf = (ang) => PLACES[Math.floor(((((Number(ang) + 22.5) % 360) + 360) % 360) / 45)];
@@ -9180,7 +9198,7 @@ function hitLayer() {
     meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}` };
   });
   const p = pickedNote(), r = roverNote();
-  return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash };
+  return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash, arm: armId };
 }
 
 const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
@@ -9441,6 +9459,7 @@ function paintPan(seed, state) {
   lastSeed = seed;
   lastSolved = solved;
   const interactive = drawerOpen && state === "current";
+  if (!interactive) cancelGesture();
   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
   previewBox.innerHTML = pan(
     { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
@@ -9512,6 +9531,7 @@ function noteCounts(fields) {
  *  repainting the pan there detaches the `.panhit` the press landed on, the
  *  click retargets to an ancestor, and the delegated handler drops the tap. */
 function syncParseState({ paint }) {
+  if (paint) cancelGesture();
   const text = String(scaleBox.value || "");
   boxOk = false;
   if (!text.trim()) {
@@ -9567,6 +9587,7 @@ function updateParse() {
  *  addressed. Mirrors disarmDelete()'s own guard (in `disarmDelete`), which is why
  *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
 function resyncSheet(paint) {
+  if (paint) cancelGesture();
   if (refusal) {
     showRefusal(refusal);
     if (paint) {
@@ -10101,6 +10122,214 @@ previewBox.addEventListener("focusout", (e) => {
   const to = e.relatedTarget;
   if (to && previewBox.contains && previewBox.contains(to)) return;
   if (pickRef && lastSolved) setRover(pickRef);
+});
+/* ---- the drag (Lane DR2b, spec section 7) ----
+   One gesture at a time. A press on a note starts it; what it becomes depends
+   on the pointer. Touch lifts the note after HOLD_MS within HOLD_SLOP px and
+   scrolls the sheet if the finger leaves that circle first; mouse and pen take
+   no timer and drag after MOUSE_SLOP px. A lifted note is picked and followed
+   by a ghost, a fixed disc outside the SVG; its centre is the hit point.
+   The touched circle is replaced by the repaint the pick causes, and a touch
+   goes on being delivered to the node it began on, which is then out of the
+   document and out of reach of every listener on the plate. So the same
+   non-passive touchmove handler is also put on that circle at pointerdown,
+   ahead of touchstart. */
+const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETURN_MS = 120, CLICK_GUARD_MS = 400;
+let press = null;
+let ghostEl = null;
+let clickGuard = null;
+const travel = (x0, y0, x1, y1) => Math.hypot(x1 - x0, y1 - y0);
+const circleOf = (h) => {
+  const r = h.getBoundingClientRect();
+  return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, r: (r.right - r.left) / 2 };
+};
+function guardClick() {
+  suppressClick = true;
+  clearTimeout(clickGuard);
+  clickGuard = setTimeout(() => { suppressClick = false; }, CLICK_GUARD_MS);
+}
+function plateTouchMove(e) {
+  if (!press) return;
+  if (press.lifted) e.preventDefault();
+  if (e.touches && e.touches.length > 1) endPress(true);
+}
+function placeGhost(x, y) {
+  press.hx = x;
+  press.hy = y - (press.type === "touch" ? GHOST_LIFT : 0);
+  ghostEl.style.left = (press.hx - press.d / 2) + "px";
+  ghostEl.style.top = (press.hy - press.d / 2) + "px";
+}
+function makeGhost(name, d) {
+  const g = document.createElement("div");
+  g.className = "panghost";
+  g.textContent = name;
+  g.style.width = d + "px";
+  g.style.height = d + "px";
+  g.style.fontSize = Math.max(9, d * 0.42) + "px";
+  plateBand.appendChild(g);
+  return g;
+}
+function dropGhost(g) {
+  if (g && g.parentNode) g.parentNode.removeChild(g);
+}
+/** A refused drop: the ghost goes back to the note's seat over 120 ms, or is
+ *  gone at once under reduced motion. */
+function returnGhost(g, ref) {
+  const h = hitFor(ref);
+  if (!g || !h || reducedMotion.matches) { dropGhost(g); return; }
+  const c = circleOf(h);
+  g.style.transition = `left ${GHOST_RETURN_MS}ms ease-out, top ${GHOST_RETURN_MS}ms ease-out`;
+  g.style.left = (c.x - parseFloat(g.style.width) / 2) + "px";
+  g.style.top = (c.y - parseFloat(g.style.height) / 2) + "px";
+  setTimeout(() => dropGhost(g), GHOST_RETURN_MS);
+}
+function setArm(id) {
+  if (id === armId) return;
+  armId = id;
+  repaintPlate();
+}
+/** Where a hit point lands: the nearest same-ring target that contains it,
+ *  else a note of another ring, else nothing. */
+function targetAt(x, y) {
+  const p = pickedNote();
+  let same = null, other = null;
+  for (const h of hitNodes()) {
+    const c = circleOf(h);
+    const d = travel(c.x, c.y, x, y);
+    if (d > c.r) continue;
+    if (h.getAttribute("data-ring") === p.ring) { if (!same || d < same.d) same = { h, d }; }
+    else if (!other || d < other.d) other = { h, d };
+  }
+  if (same) return { kind: same.h.getAttribute("data-field") === p.id ? "own" : "swap", ref: refOfNode(same.h) };
+  return { kind: other ? "other" : "none", ref: other ? refOfNode(other.h) : null };
+}
+/** Leave the gesture. `restore` puts the pick back as it was before the lift;
+ *  without it (a repaint or a button took over) the pick is the caller's. */
+function endPress(restore) {
+  const p = press;
+  press = null;
+  gestureCancel = null;
+  if (!p) return;
+  clearTimeout(p.timer);
+  previewBox.classList.remove("dragging");
+  if (p.captured) { try { previewBox.releasePointerCapture(p.id); } catch (_) { /* pointer already gone */ } }
+  dropGhost(ghostEl);
+  ghostEl = null;
+  const armed = armId !== null;
+  armId = null;
+  if (restore && p.lifted) {
+    setPick(p.pre ? p.pre.ref : null);
+    pickMoved = p.pre ? p.pre.moved : false;
+    if (p.pre) layoutStatus(p.pre.text, p.pre.warn);
+    else layoutStatus("");
+  } else if (armed) repaintPlate();
+}
+/** The note under the press leaves the plate: it is picked and has a ghost. */
+function liftNote() {
+  const p = press;
+  const n = noteAt(p.ref);
+  if (!n || n.k < 2) {
+    p.state = "ignored";
+    guardClick();
+    activateNote(p.ref, "tap");
+    return;
+  }
+  const h = hitFor(p.ref);
+  const hr = h.getAttribute("r"), dr = h.getAttribute("data-r");
+  p.d = 2 * circleOf(h).r * (Number(dr) / Number(hr) || 1);
+  p.pre = pickRef ? { ref: { ring: pickRef.ring, i: pickRef.i }, moved: pickMoved, text: drawerStatus.textContent, warn: drawerStatus.classList.contains("warn") } : null;
+  gestureCancel = null;
+  setPick(p.ref);
+  layoutStatus(pickAnnouncement(n, "tap"));
+  gestureCancel = () => endPress(false);
+  p.lifted = true;
+  p.state = p.type === "touch" ? "held" : "drag";
+  p.lx = p.px;
+  p.ly = p.py;
+  try { previewBox.setPointerCapture(p.id); p.captured = true; } catch (_) { /* pointer already gone */ }
+  ghostEl = makeGhost(n.name, p.d);
+  if (p.state === "drag") previewBox.classList.add("dragging");
+  placeGhost(p.px, p.py);
+  if (p.state === "drag") setArm(null);
+}
+function startDragging() {
+  press.state = "drag";
+  previewBox.classList.add("dragging");
+}
+function dropNote() {
+  const p = press;
+  const t = targetAt(p.hx, p.hy);
+  const picked = { ring: pickRef.ring, i: pickRef.i };
+  const g = ghostEl;
+  ghostEl = null;
+  endPress(false);
+  guardClick();
+  if (t.kind === "swap") { dropGhost(g); activateNote(t.ref, "tap"); return; }
+  if (t.kind === "own") { dropGhost(g); swapSeats(picked.ring, picked.i, picked.i); return; }
+  const n = noteAt(picked);
+  if (t.kind === "other") activateNote(t.ref, "tap");
+  else layoutStatus(`Not moved. Drop ${n.name} on another ${n.ring} note to swap.`, true);
+  setPick(p.pre ? p.pre.ref : null);
+  pickMoved = p.pre ? p.pre.moved : false;
+  returnGhost(g, p.ref);
+}
+previewBox.addEventListener("pointerdown", (e) => {
+  if (!drawerOpen || !lastSolved) return;
+  if (press && e.pointerType === "touch" && e.pointerId !== press.id) { endPress(true); return; }
+  suppressClick = false;
+  const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
+  if (!hit || (e.pointerType !== "touch" && e.button)) return;
+  const ref = refOfNode(hit);
+  if (!ref) return;
+  endPress(true);
+  press = { id: e.pointerId, type: e.pointerType === "touch" ? "touch" : "mouse", ref, state: "down",
+    x0: e.clientX, y0: e.clientY, px: e.clientX, py: e.clientY, t0: Date.now(), lifted: false };
+  gestureCancel = () => endPress(false);
+  if (press.type === "touch") {
+    hit.addEventListener("touchmove", plateTouchMove, { passive: false });
+    press.timer = setTimeout(() => {
+      if (press && press.state === "down") liftNote();
+    }, HOLD_MS);
+  }
+});
+previewBox.addEventListener("pointermove", (e) => {
+  const p = press;
+  if (!p || e.pointerId !== p.id) return;
+  if (p.state === "down") {
+    if (p.type === "touch") {
+      if (Date.now() - p.t0 >= HOLD_MS) liftNote();
+      else if (travel(p.x0, p.y0, e.clientX, e.clientY) > HOLD_SLOP) { p.state = "scroll"; clearTimeout(p.timer); return; }
+      else { p.px = e.clientX; p.py = e.clientY; return; }
+    } else if (travel(p.x0, p.y0, e.clientX, e.clientY) >= MOUSE_SLOP) {
+      p.px = e.clientX;
+      p.py = e.clientY;
+      liftNote();
+    } else return;
+  }
+  if (!press || !press.lifted) return;
+  p.px = e.clientX;
+  p.py = e.clientY;
+  if (p.state === "held" && travel(p.lx, p.ly, e.clientX, e.clientY) > HOLD_SLOP) startDragging();
+  if (p.state !== "drag") { placeGhost(e.clientX, e.clientY); return; }
+  placeGhost(e.clientX, e.clientY);
+  const t = targetAt(p.hx, p.hy);
+  setArm(t.kind === "swap" ? String(noteAt(t.ref).id) : null);
+});
+previewBox.addEventListener("pointerup", (e) => {
+  const p = press;
+  if (!p || e.pointerId !== p.id) return;
+  if (p.state === "down" && p.type === "touch" && Date.now() - p.t0 >= HOLD_MS) liftNote();
+  if (!press) return;
+  if (p.state === "drag") { p.px = e.clientX; p.py = e.clientY; placeGhost(e.clientX, e.clientY); dropNote(); return; }
+  if (p.state === "held") { endPress(false); guardClick(); return; }
+  if (p.state === "ignored") { endPress(false); return; }
+  endPress(false);
+});
+previewBox.addEventListener("pointercancel", (e) => {
+  if (press && e.pointerId === press.id) endPress(true);
+});
+previewBox.addEventListener("contextmenu", (e) => {
+  if (drawerOpen) e.preventDefault();
 });
 /** Keep the wrapper's ghost copy of the text in step with the box. */
 function syncGrow() {
