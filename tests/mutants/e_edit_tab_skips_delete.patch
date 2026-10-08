@@ -3,13 +3,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9949,8 +9949,7 @@
+@@ -9951,8 +9951,7 @@
                   editingId ? moveL : null, editingId ? moveR : null,
                   editingId ? resetBtn : null,
-                  editingId ? degSel : null,
--                 mirrorTop, mirrorBot, anchorOne, anchorBetween, ...swatches.children, genBtn,
+                  mirrorTop, mirrorBot, anchorOne, anchorBetween,
+-                 editingId ? degSel : null, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
-+                 mirrorTop, mirrorBot, anchorOne, anchorBetween, ...swatches.children, genBtn]
++                 editingId ? degSel : null, ...swatches.children, genBtn]
      .filter(isStop);
    cycleTabStops(stops, e);
  });
