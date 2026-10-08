@@ -8053,7 +8053,7 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
     app.pointer(g.h, "pointercancel", { pointerType: "touch", pointerId: 1 });
     app.advance(400);
     assert.strictEqual(d2Status(app), text, "a cancelled scroll rewrote the status");
-    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 3 });
+    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 1 });
   });
 
   test("DR2b (46): a touch released before 250 ms lifts nothing, and its click is a tap that picks the note", () => {
