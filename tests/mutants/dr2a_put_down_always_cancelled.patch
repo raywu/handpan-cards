@@ -1,0 +1,15 @@
+# kills: DR2a rule P (66, 102, 107, 123): the Escape ladder and its rows, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.P..66..102..107..123...the.Escape.ladder.and.its.rows..Add$ tests/app.test.js
+# Escape after a seat step says nothing moved though swaps were kept.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9306,7 +9306,7 @@ function putDownPick() {
+   const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
+   const moved = pickMoved;
+   setPick(null);
+-  layoutStatus(moved ? `${p.name} put down. The swaps you made are kept.` : "Cancelled. Nothing moved.");
++  layoutStatus("Cancelled. Nothing moved.");
+   if (fromSeatButton) { setRover(ref); focusRef(ref); }
+ }
+ function resetSeats() {

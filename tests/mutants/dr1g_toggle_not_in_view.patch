@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8958,7 +8958,6 @@ function openDrawer() {
-   drawerStatus.textContent = "";
+@@ -8984,7 +8984,6 @@ function openDrawer() {
    paintLayout();
+   repaintPlate();
    layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
 -  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
    if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");

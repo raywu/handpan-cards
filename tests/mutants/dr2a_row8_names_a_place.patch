@@ -1,0 +1,15 @@
+# kills: DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.W..78..52..53..41..42...tap.then.tap.exchanges.exactly.two.notes..ring.sizes.swept..Add$ tests/app.test.js
+# Row 8 grows a place word that the spec forbids.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9232,7 +9232,7 @@ function swapSeats(ring, i, j) {
+   paintLayout();
+   resyncSheet(true);
+   const moved = noteAt({ ring, i });
+-  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}.`);
++  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
+   else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
+   return true;
+ }

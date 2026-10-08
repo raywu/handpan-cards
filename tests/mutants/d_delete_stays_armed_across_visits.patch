@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9468,7 +9468,6 @@ if (window.visualViewport) {
+@@ -9655,7 +9655,6 @@ if (window.visualViewport) {
  
  /** Show or hide the three Edit-only rows and relabel the single primary. */
  function setSheetMode(edit) {
 -  disarmDelete();
-   for (const el of [nameRow, degRow, legacyGroup, delRow]) {
+   for (const el of [nameRow, degRow, delRow]) {
      if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
    }

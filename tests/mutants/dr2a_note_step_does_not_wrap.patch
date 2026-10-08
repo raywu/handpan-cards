@@ -1,0 +1,15 @@
+# kills: DR2a rule P (90, 20, 97): NEXT NOTE and PREVIOUS NOTE move the pick across rings, skip one-note rings, wrap, leave focus, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.P..90..20..97...NEXT.NOTE.and.PREVIOUS.NOTE.move.the.pick.across.rings..skip.one.note.rings..wrap..leave.focus..Add$ tests/app.test.js
+# NEXT NOTE on the last pickable note stays put instead of wrapping.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9285,7 +9285,7 @@ function stepNote(dir) {
+   const list = allNotes().filter((n) => n.k >= 2);
+   if (!list.length) return;
+   const at = list.findIndex((n) => sameRef(n, pickRef));
+-  const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;
++  const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : Math.max(0, Math.min(list.length - 1, at + dir));
+   setPick(list[to]);
+   layoutStatus(pickAnnouncement(list[to], "note"));
+ }

@@ -5,13 +5,15 @@
 # what the collision was over. Drop the clear and a fixed collision never lets
 # go: the box stays red and GENERATE stays dead after the user has typed a
 # free scale, which is worse than the bug this machine exists to prevent.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4600,6 +4600,5 @@
+@@ -9540,7 +9540,6 @@ function syncParseState({ paint }) {
  /** Re-parse on every input: the parse line, the outline and Generate follow.
   *  An edit is also the one event that can clear a standing refusal. */
  function updateParse() {
 -  refusal = null;
+   if (drawerOpen && !drawerPaused) layoutStatus("");
    syncParseState({ paint: true });
  }

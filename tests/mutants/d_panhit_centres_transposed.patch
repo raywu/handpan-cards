@@ -3,15 +3,16 @@
 # Swaps cx and cy on the hit target. The layer still has exactly the right
 # number of correctly-labelled targets - they are all in the wrong places, and
 # every tap on the pan selects a note reflected across the diagonal.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3866,7 +3866,7 @@ function pan(d, ch, opts) {
-         rings.push(`<circle class="pansel" cx="${x}" cy="${y}" r="${rr * 1.2}"`
-           + ` fill="none" stroke="#E27005" stroke-width="${R * 0.016}"`
-           + ` pointer-events="none"/>`);
--      hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
-+      hits.push(`<circle class="panhit" data-field="${id}" cx="${y}" cy="${x}" r="${rr}"`
-         + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
-         + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
-         + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+@@ -8190,7 +8190,7 @@ function pan(d, ch, opts) {
+       if (hit.flash && hit.flash.map(String).includes(String(id)))
+         flashMarks.push(`<circle class="panflash" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
+           + ` stroke-width="3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+-      const node = `<circle class="panhit" data-field="${id}" data-ring="${m.ring}" ${at} r="${rr}"`
++      const node = `<circle class="panhit" data-field="${id}" data-ring="${m.ring}" cx="${y}" cy="${x}" r="${rr}"`
+         + ` data-r="${rr}" fill="transparent" tabindex="${String(hit.rover) === String(id) ? 0 : -1}"`
+         + ` role="button" aria-pressed="${String(id) === picked}" aria-label="${escA(m.label)}"/>`
+         + `<circle class="panfocus" ${at} r="${rr * 1.32}" fill="none" stroke="#272219"`
