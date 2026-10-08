@@ -1001,7 +1001,7 @@ footer.seq{row-gap:var(--sp-1)}
   /* The band sits beside the controls here, not over them: nothing to pad for. */
   .sheetbody{scroll-padding-top:0}
   #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
-  #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4}
+  #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4; align-self:start}
   #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
   #scale-layout-zone.open #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
 }
