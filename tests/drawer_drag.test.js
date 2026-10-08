@@ -263,7 +263,7 @@ function run() {
     assert.strictEqual(await fire().catch(() => false), false);
   });
 
-  test("DR2b browser (46, rule T): an unheld vertical swipe on a note scrolls the sheet, a held touch drag does not", { todo: "OPEN: CDP touch hold then drag still scrolls the sheet (pointercancel, non-cancelable touchmove); see PR 274 step 0" }, async () => {
+  test("DR2b browser (46, rule T): an unheld vertical swipe on a note scrolls the sheet, a held touch drag does not", async () => {
     await openAdd(SCALES.pygmy);
     const body = `document.querySelector("#scale-sheet .sheetbody")`;
     const top = () => ev(`return ${body}.scrollTop;`);
@@ -276,6 +276,7 @@ function run() {
     await sleep(100);
     assert.ok(await top() > 0, "an unheld swipe did not scroll the sheet");
     assert.strictEqual(await pickedName(), null, "an unheld swipe lifted a note");
+    for (let last = -1; ;) { const s = await top(); if (s === last) break; last = s; await sleep(200); }
     await ev(`${body}.scrollTop = 0; return true;`);
     const note = (await plate()).filter((n) => n.ring === "rim").pop();
     await touch("touchStart", [note]);
@@ -286,6 +287,18 @@ function run() {
     await sleep(100);
     assert.strictEqual(during, 0, "the sheet scrolled during a lifted drag");
     assert.strictEqual(await top(), 0);
+    await ev(`${body}.scrollTop = 0; return true;`);
+    const again = (await plate()).filter((n) => n.ring === "rim").pop();
+    await touch("touchStart", [again]);
+    await sleep(100);
+    await touch("touchMove", [{ x: again.x + 4, y: again.y }]);
+    await sleep(220);
+    assert.ok(await ghost(), "a move under 8 px during the hold did not lift the note");
+    for (let k = 1; k <= 6; k += 1) { await touch("touchMove", [{ x: again.x, y: again.y - 14 * k }]); await sleep(8); }
+    const duringB = await top();
+    await touch("touchEnd", []);
+    await sleep(100);
+    assert.strictEqual(duringB, 0, "the sheet scrolled during a drag after a sub-8 px move in the hold");
   });
 
   test("DR2b browser (47): a touch hold shows the ghost 36 px above the finger and a second touch cancels it", async () => {
