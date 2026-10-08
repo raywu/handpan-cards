@@ -983,6 +983,19 @@ test("G2b: the first inner note below its predecessor gets the afterBar sentence
   assert.match(r.reason, /comes after the \| but is below/);
 });
 
+test("G2b: the legacy reader gives every typed note its own field past a hundred top notes", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const r = core.parseLegacySeed("(C0) " + top.join(" ") + " | D0");
+  assert.equal(r.ok, true, r.reason);
+  const ids = Object.keys(r.value.fields);
+  assert.equal(ids.length, 103, "ding + 101 top + 1 bottom");
+  const names = ids.map((id) => r.value.fields[id][0] + r.value.fields[id][1]);
+  assert.ok(names.includes("F8"), "the last top note was overwritten");
+  assert.equal(names.filter((n) => n === "D0").length, 2, "top D0 and the bottom D0");
+});
+
 test("G2b: a hundred-and-first top note leaves bottom ids clear", () => {
   const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
   const top = [];

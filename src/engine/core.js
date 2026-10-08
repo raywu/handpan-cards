@@ -493,7 +493,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                     n < rim ? "rim" : "inner", null, id];
     }
     for (n = 0; n < bottomNotes.length; n += 1) {
-      fields[String(101 + n)] = [
+      fields[String(Math.max(101, topNotes.length + 1) + n)] = [
         spell(bottomNotes[n].letter, bottomNotes[n].accidental),
         bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
     }

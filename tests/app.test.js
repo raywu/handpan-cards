@@ -6434,18 +6434,39 @@ test("a throwing storage write leaves the old list and the deck still opens", ()
   assert.strictEqual(Object.keys(app.registry()).length, 1);
 });
 
+test("the boot rewrite of a legacy record with a hundred and one top notes keeps every note", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const key = boot().get("SCALES_KEY");
+  const rec = { v: 3, s: "(C0) " + top.join(" ") + " | D0", o: {} };
+  const app = boot({ storage: { [key]: JSON.stringify([rec]) } });
+  const fields = Object.values(app.registry())[0].fields;
+  assert.strictEqual(Object.keys(fields).length, 103);
+  const rewritten = JSON.parse(app.store[key])[0];
+  assert.strictEqual(rewritten.v, 4);
+  assert.ok(/F8/.test(rewritten.s), rewritten.s);
+  assert.ok(/\[D0\]/.test(rewritten.s), rewritten.s);
+});
+
+// Plan section 19 R5: 20 rim, 8 inner, 12 bottom, drawn from the placeholder's
+// pitch set (C D E F# G A B). The budget is three times the wall time measured
+// on CI and recorded in the PR; over 5 s the lane stops instead of raising it.
+const FORTY_BUDGET_MS = 0;
 test("a forty-note pan generates its deck inside the time budget", () => {
   const app = boot();
-  const rim = "A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ");
-  const inner = "G6 A6 B6 C7 D7 E7 F7 G7".split(" ");
-  const bottom = "[C1] [D1] [E1] [F1] [G1] [A1] [B1] [C2] [D2] [E2] [F2] [G2]";
-  const seed = bottom + " (D3) " + rim.join(" ") + " | " + inner.join(" ");
+  const bottom = "[G1] [A1] [B1] [C2] [D2] [E2] [F#2] [G2] [A2] [B2] [C3] [D3]";
+  const rim = "F#3 G3 A3 B3 C4 D4 E4 F#4 G4 A4 B4 C5 D5 E5 F#5 G5 A5 B5 C6 D6";
+  const inner = "E6 F#6 G6 A6 B6 C7 D7 E7";
+  const seed = bottom + " (E3) " + rim + " | " + inner;
+  const parsed = app.get(`HPE.core.parseSeed(${JSON.stringify(seed)})`);
+  assert.strictEqual(parsed.ok, true, parsed.reason);
+  assert.strictEqual(Object.keys(parsed.value.fields).length, 41, "ding + 40 notes");
   const t0 = Date.now();
   const res = app.generate(seed, {});
   const ms = Date.now() - t0;
   assert.strictEqual(res.ok, true, res.reason);
-  assert.ok(ms < 15000, `${ms} ms`);
-  console.log(`G2b forty-note generate: ${ms} ms`);
+  assert.ok(ms < FORTY_BUDGET_MS, `MEASURED ${ms} ms`);
 });
 
 const CROWDED = "(C3) " + "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ").join(" ");

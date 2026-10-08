@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^G2b..the.legacy.reader.gives.every.typed.note.its.own.field.past.a.hundred.top.notes$ tests/core.test.js
+# kills: G2b: the legacy reader gives every typed note its own field past a hundred top notes
+# The legacy reader writes bottom ids from a fixed 101, so the 101st top note is overwritten by the first bottom note.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -493,7 +493,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+                     n < rim ? "rim" : "inner", null, id];
+     }
+     for (n = 0; n < bottomNotes.length; n += 1) {
+-      fields[String(Math.max(101, topNotes.length + 1) + n)] = [
++      fields[String(101 + n)] = [
+         spell(bottomNotes[n].letter, bottomNotes[n].accidental),
+         bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
+     }
