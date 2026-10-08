@@ -41,6 +41,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-layout-zone", "scale-plate-band", "scale-layout-toggle", "scale-layout-hint",
   "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
   "scale-legacy-group", "scale-anchor-one", "scale-anchor-between",
+  // Lane DR2a: the seat controls that replace the old rot/move group.
+  "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a
@@ -244,6 +246,55 @@ function boot(opts = {}) {
     return opts.layout ? addLayout(el) : el;
   };
   for (const id of ELEMENT_IDS) els[id] = bindFocus(makeElement(id));
+  // Lane DR2a: the plate's hit layer. The stub has no DOM parser, so the
+  // `.panhit` circles the app wrote into #scale-preview are read back into real
+  // stub nodes (cached per markup string, so a node keeps its identity and its
+  // focus until the plate is repainted) and the plate answers the three
+  // selectors the app uses. Focusing one fires `focusin` on the plate, as a
+  // browser does.
+  const preview = els["scale-preview"];
+  const hitCache = { html: null, nodes: [] };
+  const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  const hitNodes = () => {
+    const html = String(preview.innerHTML || "");
+    if (hitCache.html === html) return hitCache.nodes;
+    hitCache.html = html;
+    hitCache.nodes = [...html.matchAll(/<circle class="panhit"[^>]*\/>/g)].map((m) => {
+      const n = bindFocus(makeElement("", "circle"));
+      for (const a of m[0].matchAll(/([\w:-]+)="([^"]*)"/g)) n.setAttribute(a[1], unesc(a[2]));
+      n.classList.add("panhit");
+      n.parentNode = preview;
+      n.closest = (sel) => (/(^|,\s*)\.panhit/.test(String(sel)) ? n : null);
+      n.focus = () => { focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
+      return n;
+    });
+    return hitCache.nodes;
+  };
+  const queryHits = (sel) => {
+    const s = String(sel);
+    if (!s.startsWith(".panhit")) return [];
+    const field = /\[data-field="(\d+)"\]/.exec(s);
+    const tab = /\[tabindex="(-?\d+)"\]/.exec(s);
+    return hitNodes().filter((n) => (!field || n.getAttribute("data-field") === field[1]) &&
+      (!tab || n.getAttribute("tabindex") === tab[1]));
+  };
+  preview.querySelectorAll = queryHits;
+  preview.querySelector = (sel) => queryHits(sel)[0] || null;
+  /** Deliver an event the way a browser would: to the target, then up the
+   *  markup chain, then to the document. Returns the event. */
+  const fire = (el, ev) => {
+    ev.target = ev.target || el;
+    ev.defaultPrevented = false;
+    ev.stopped = false;
+    const origPrevent = ev.preventDefault;
+    ev.preventDefault = () => { ev.defaultPrevented = true; if (origPrevent) origPrevent.call(ev); };
+    ev.stopPropagation = () => { ev.stopped = true; };
+    for (let n = el; n && !ev.stopped; n = n.parentNode || n._markupParent) {
+      for (const fn of n.listeners[ev.type] || []) fn(ev);
+    }
+    if (!ev.stopped) for (const fn of sandbox.document._l[ev.type] || []) fn(ev);
+    return ev;
+  };
   // Layout boot: #card sits inside a .scene, #scale-sheet has its surface child
   // (the real one is sheet.firstElementChild) and <main> exists for the wheel
   // listener. Default boot gets none of these, so `scene` stays undefined there.
@@ -538,6 +589,13 @@ function boot(opts = {}) {
       for (const fn of sandbox.document._l.keydown || []) fn(ev);
       return defaultPrevented;
     },
+    /** The plate's hit nodes, in markup order, and the data-field of the focused one. */
+    hits: () => hitNodes(),
+    activeHit: () => (focusState.active && hitNodes().includes(focusState.active)
+      ? focusState.active.getAttribute("data-field") : null),
+    /** Deliver a click or a key to an element, bubbling like a browser. */
+    click: (el, init = {}) => fire(el, { type: "click", ...init }),
+    press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
     /** The id of the focused element, or null. */
     activeId: () => (focusState.active ? focusState.active.id : null),
     /** True while the scale sheet is open. */
