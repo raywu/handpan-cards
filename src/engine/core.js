@@ -16,19 +16,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var REASONS = {
     NO_DING: {
       kind: "error",
-      reason: "No ding. Start with the ding note, e.g. (D) or D/."
+      reason: "No ding. Put the ding in round brackets, e.g. (D) A C D E.",
+      // Same code, different sentence, chosen by the named condition. The enum
+      // stays closed. The base sentence is the empty line's.
+      alternates: {
+        which: "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.",
+        two: "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.",
+        below: "<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C."
+      }
     },
     NO_FIFTH: {
       kind: "error",
       reason: "No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding."
     },
-    TOO_MANY_RIM: {
-      kind: "error",
-      reason: "Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom."
-    },
     BAD_NOTE: {
       kind: "error",
-      reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave."
+      reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.",
+      alternates: {
+        slash: "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.",
+        bracket: "<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.",
+        bar: "Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].",
+        barEmpty: "A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.",
+        barFirst: "The | comes after the ding and the top notes, e.g. (D) A C D | E F."
+      }
     },
     NOTE_OUT_OF_RANGE: {
       kind: "error",
@@ -36,16 +46,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     NOTE_OUT_OF_ORDER: {
       kind: "error",
-      reason: "<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one.",
-      // Section 2, ALTERNATE SENTENCES. Same code, different sentence, chosen
-      // by the named condition. The enum stays closed.
+      reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
       alternates: {
-        ding: "<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave."
+        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
+        afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
+        below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
       }
     },
     NOTE_REPEATED: {
       kind: "error",
-      reason: "<B> and <A> are the same note, and a note may appear only once per shell."
+      reason: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
     },
     NEEDS_NEWER_APP: {
       kind: "error",
@@ -61,44 +71,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
   };
 
-  // G1: the scale grammar's sentences (plan section 9). They live beside REASONS,
-  // not in it, because tests/core.test.js holds REASONS to ENGINE-SPEC section 2
-  // byte for byte and that spec is rewritten by the DOC lane. G2b folds this table
-  // into REASONS. NO_FIFTH and NOTE_OUT_OF_RANGE keep their REASONS text.
-  var SCALE_REASONS = {
-    NO_DING: {
-      empty: "No ding. Put the ding in round brackets, e.g. (D) A C D E.",
-      which: "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.",
-      two: "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.",
-      below: "<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C."
-    },
-    BAD_NOTE: {
-      reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.",
-      slash: "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.",
-      bracket: "<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.",
-      bar: "Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].",
-      barEmpty: "A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.",
-      barFirst: "The | comes after the ding and the top notes, e.g. (D) A C D | E F."
-    },
-    NOTE_OUT_OF_ORDER: {
-      order: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
-      ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
-      afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
-      below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
-    },
-    NOTE_REPEATED: {
-      repeated: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
-    }
-  };
-
   var LETTERS = "CDEFGAB";
   var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   var ACCIDENTAL = { "": 0, "#": 1, b: -1 };
 
+  // The legacy reader's spill rule only: the first 11 top notes are rim and the
+  // rest inner. It stays because a stored deck must keep its zones and its id.
   var RIM_MAX = 11;
-  var INNER_MAX = 2;
-  var BOTTOM_MAX = 6;
-  var TOP_MAX = RIM_MAX + INNER_MAX;
 
   var NOTE_RE = /^([A-G])(#|b)?([0-9])?$/;
   // The scale grammar's note (plan section 4.1): octave -1 or 0 to 9.
@@ -351,7 +330,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok(out);
   }
 
-  /* ---- parseSeed -------------------------------------------------------- */
+  /* ---- parseLegacySeed: the grammar before 2026-10 ---------------------- *
+   * Read only for stored records and share links of version 3 or lower, chosen
+   * by the version tag and never by looking at the string. `/` marks inner
+   * notes and `|` starts a bottom list. It has no caps; the spill rule stays
+   * because a stored deck must keep its zones and its id.
+   */
 
   // Steps 1-3: tokens, ding, bar and inner-mark splits, lexing. Notes come
   // back without midi/octave; validate() places them.
@@ -428,7 +412,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var dingMidi = parsed.dingMidi;
     var topNotes = parsed.topNotes;
     var bottomNotes = parsed.bottomNotes;
-    var rimCount = parsed.rimCount;
     // 4. Octave inference, MIDI range and the strict-ascending rule. The ding
     //    counts as the element before the first top note.
     var seen = {};
@@ -464,23 +447,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                           bottomNotes[n - 1].midi, false);
       }
       low.octave = octaveOf(low.letter, low.accidental, low.midi);
+      // B#-2 is midi 0 and an octave no string can spell (the lexer reads -1 to
+      // 9 only), so a deck holding it would have no canonical string.
+      if (low.octave < -1) return badNote(spell(low.letter, low.accidental) + low.octave);
       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
       // Unreachable for the same reason as the top-shell guard above.
       if (seen[lowKey]) return repeated(low, low.midi, seen[lowKey].note, seen[lowKey].midi);
       seen[lowKey] = { note: low, midi: low.midi };
     }
 
-    // 5. Caps (section 4).
-    if (topNotes.length > TOP_MAX || bottomNotes.length > BOTTOM_MAX) {
-      return err("TOO_MANY_RIM", {});
-    }
-    // An explicit split is capped per ring, not only in total.
-    if (rimCount !== null &&
-        (rimCount > RIM_MAX || topNotes.length - rimCount > INNER_MAX)) {
-      return err("TOO_MANY_RIM", {});
-    }
-
-    // 6. A perfect fifth above the ding must exist on the TOP shell.
+    // 5. A perfect fifth above the ding must exist on the TOP shell.
     var wanted = pitchClass(dingMidi + 7);
     var hasFifth = false;
     for (n = 0; n < topNotes.length; n += 1) {
@@ -517,7 +493,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                     n < rim ? "rim" : "inner", null, id];
     }
     for (n = 0; n < bottomNotes.length; n += 1) {
-      fields[String(101 + n)] = [
+      fields[String(Math.max(101, topNotes.length + 1) + n)] = [
         spell(bottomNotes[n].letter, bottomNotes[n].accidental),
         bottomNotes[n].octave, bottomNotes[n].midi, "bottom", null, "U" + (n + 1)];
     }
@@ -525,7 +501,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok({ fields: fields, options: options });
   }
 
-  function parseSeed(input, options) {
+  function parseLegacySeed(input, options) {
     if (typeof input !== "string") return badNote(String(input));
 
     var opts = readOptions(options);
@@ -538,24 +514,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return assemble(validated.value, opts.value);
   }
 
-  /* ---- G1: the scale grammar (plan section 4), unwired ------------------ *
-   * parseScale reads `(D) A C | E`, `D/ A C`, `D | A C`, `[C] (D) A [E] C`.
+  /* ---- the scale grammar (plan section 4) ------------------------------ *
+   * parseSeed reads `(D) A C | E`, `D/ A C`, `D | A C`, `[C] (D) A [E] C`.
    * Four passes, left to right, no backtracking: tokenise, lex, structure,
-   * infer octaves. formatScale prints the one canonical string. Nothing calls
-   * either yet; G2b routes the app through them.
+   * infer octaves. formatSeed prints the one canonical string.
    */
 
   var SCALE_OCTAVE_MIN = -1;
   var SCALE_OCTAVE_MAX = 9;
 
   function scaleErr(code, alternate, subs) {
-    var reason = SCALE_REASONS[code][alternate];
-    for (var key in subs) {
-      if (Object.prototype.hasOwnProperty.call(subs, key)) {
-        reason = reason.split(key).join(subs[key]);
-      }
-    }
-    return { ok: false, code: code, reason: reason };
+    return err(code, subs || {}, alternate);
   }
 
   function scaleBad(alternate, token) {
@@ -591,7 +560,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (dingy) {
         var d = dingBody(t);
         note = d === null ? null : lexScale(d);
-        if (!note) return scaleBad("reason", t);
+        if (!note) return scaleBad(undefined, t);
         items.push({ kind: "ding", note: note, token: t });
       } else if (boxy) {
         var b = /^\[(.*)\]$/.exec(t);
@@ -600,7 +569,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         items.push({ kind: "bottom", note: note, token: t });
       } else {
         note = lexScale(t);
-        if (!note) return scaleBad("reason", t);
+        if (!note) return scaleBad(undefined, t);
         items.push({ kind: "note", note: note, token: t });
       }
     }
@@ -664,11 +633,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // The midi must be on the keyboard, and the octave it SPELLS must be one the
   // lexer reads (R8), so no string the printer emits is one the reader refuses.
+  // The midi check runs first and settles every high case: a spelled octave of
+  // 10 or more is always above midi 127 (NOTE_OUT_OF_RANGE). The octave check
+  // therefore only bites at the bottom, where B#-2 sits on midi 0 (BAD_NOTE).
   function scalePlaced(note, midi) {
     if (midi < 0 || midi > 127) return outOfRange(note, midi);
     var octave = octaveOf(note.letter, note.accidental, midi);
     if (octave < SCALE_OCTAVE_MIN || octave > SCALE_OCTAVE_MAX) {
-      return scaleBad("reason", spell(note.letter, note.accidental) + octave);
+      return scaleBad(undefined, spell(note.letter, note.accidental) + octave);
     }
     note.octave = octave;
     note.midi = midi;
@@ -683,7 +655,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   function scaleRepeated(note, prev) {
-    return scaleErr("NOTE_REPEATED", "repeated", {
+    return scaleErr("NOTE_REPEATED", undefined, {
       "<A>": placed(note, note.midi),
       "<B>": before(prev, prev.midi)
     });
@@ -741,7 +713,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (bad) return bad;
       if (mm < prev.midi) {
         return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
-                                      (prev === ding ? "ding" : "order"));
+                                      (prev === ding ? "ding" : undefined));
       }
       if (entry.zone === "bottom") {
         if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
@@ -758,14 +730,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ok(layout);
   }
 
-  function parseScale(input, options) {
+  function parseSeed(input, options) {
     if (typeof input !== "string") return badNote(String(input));
     var opts = readOptions(options);
     if (!opts.ok) return opts;
 
     var tokens = scaleTokens(input);
     if (!tokens.ok) return tokens;
-    if (tokens.value.length === 0) return scaleErr("NO_DING", "empty");
+    if (tokens.value.length === 0) return scaleErr("NO_DING");
     var structure = scaleStructure(tokens.value);
     if (!structure.ok) return structure;
     var inferred = scaleInfer(structure.value);
@@ -808,7 +780,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // The canonical string: every note by pitch, a bottom note ahead of the ding
   // or a top note of the same pitch, the bar before the first inner note.
-  function formatScale(seedOrFields) {
+  function formatSeed(seedOrFields) {
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
     var ding = fields["0"];
@@ -855,7 +827,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { top: top.sort(byNumber), bottom: bottom.sort(byNumber) };
   }
 
-  function formatSeed(seed) {
+  function formatLegacySeed(seed) {
     var fields = fieldsOf(seed);
     var ids = orderedIds(fields);
     var ding = fields["0"];
@@ -964,14 +936,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.core = {
     parseSeed: parseSeed,
-    parseLegacySeed: parseSeed,
-    parseScale: parseScale,
-    formatScale: formatScale,
+    parseLegacySeed: parseLegacySeed,
     formatSeed: formatSeed,
+    formatLegacySeed: formatLegacySeed,
     identitySeed: identitySeed,
     deckId: deckId,
     REASONS: REASONS,
-    SCALE_REASONS: SCALE_REASONS,
     pitchClass: pitchClass,
     midiFromName: midiFromName,
     fifthName: fifthName,

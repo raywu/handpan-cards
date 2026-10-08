@@ -4,12 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -42,7 +42,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -73,7 +73,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
    var LETTERS = "CDEFGAB";
    var SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 -  var ACCIDENTAL = { "": 0, "#": 1, b: -1 };
 +  var ACCIDENTAL = { "": 0, "#": 1, b: 1 };
  
-   var RIM_MAX = 11;
-   var INNER_MAX = 2;
+   // The legacy reader's spill rule only: the first 11 top notes are rim and the
+   // rest inner. It stays because a stored deck must keep its zones and its id.

@@ -524,7 +524,18 @@ const SCALES = JSON.parse(
 function scale(name) {
   const hit = SCALES.find((s) => s.name === name);
   assert.ok(hit, `no synthetic_scales.json entry named "${name}"`);
-  return hit.string;
+  return currentGrammar(hit);
+}
+
+const FIXTURE_CORE = require("./helpers/engine.js").loadEngine(["core"]).core;
+
+/** The fixture strings are legacy grammar (their reader tag says so). The app
+ *  reads the new grammar, so an ok string is re-printed through the legacy
+ *  reader's own zones; a refused one is left as the fixture has it. */
+function currentGrammar(entry) {
+  if (entry.reader !== "legacy") return entry.string;
+  const old = FIXTURE_CORE.parseLegacySeed(entry.string);
+  return old.ok ? FIXTURE_CORE.formatSeed(old.value.fields) : entry.string;
 }
 
 const AMARA_STRING = scale("builtin amara");
@@ -873,7 +884,8 @@ opBudget("nineteen field maximum", 130);
 
 /* ---------------------------------------------------------- 16. the sheet */
 
-const REASON = (app, code) => app.get(`HPE.core.REASONS[${JSON.stringify(code)}].reason`);
+const REASONS_OF = (app, code) => app.get(
+  `[HPE.core.REASONS[${JSON.stringify(code)}].reason].concat(Object.values(HPE.core.REASONS[${JSON.stringify(code)}].alternates || {}))`);
 
 /** The strip's children, as [{label, on, id}] in document order - "+ ADD"
  *  included, because it is one of them now. */
@@ -975,7 +987,7 @@ test("an empty box shows the parse hint and Generate is disabled", () => {
   const app = boot();
   openSheet(app);
   app.type("");
-  assert.match(app.els["scale-parse"].textContent, /^Type your ding first/);
+  assert.match(app.els["scale-parse"].textContent, /^Type every note low to high on one line\./);
   assert.strictEqual(app.els["scale-generate"].disabled, true);
   assert.strictEqual(app.els["scale-refusal"].textContent, "");
 });
@@ -1000,7 +1012,6 @@ test("bottom notes reach the parse line under their own U labels", () => {
 for (const [fixture, code] of [
   ["no ding", "NO_DING"],
   ["whole tone subset", "NO_FIFTH"],
-  ["fourteen top notes", "TOO_MANY_RIM"],
   ["bad note token", "BAD_NOTE"],
   ["midi out of range", "NOTE_OUT_OF_RANGE"],
   ["bottom note below the inferred one before it", "NOTE_OUT_OF_ORDER"],
@@ -1016,12 +1027,11 @@ for (const [fixture, code] of [
     const msg = app.els["scale-refusal"];
     assert.strictEqual(msg.classList.contains("err"), true, "error tier not applied");
     assert.ok(msg.textContent.length > 0, "no message rendered");
-    // The reason is the engine's, with its substitutions already applied.
-    const template = REASON(app, code).replace(/<[^>]+>/g, "");
-    for (const word of template.split(/\s+/).filter((w) => w.length > 3).slice(0, 3)) {
-      assert.ok(msg.textContent.includes(word),
-        `"${msg.textContent}" does not read like ${code}'s reason "${template}"`);
-    }
+    // The reason is one of the engine's own sentences for the code, with its
+    // substitutions already applied.
+    const sentences = REASONS_OF(app, code).map((t) => t.replace(/<[^>]+>/g, "").split(/\s+/).filter((w) => w.length > 3).slice(0, 3));
+    assert.ok(sentences.some((words) => words.every((w) => msg.textContent.includes(w))),
+      `"${msg.textContent}" does not read like any of ${code}'s sentences`);
     assert.strictEqual(app.els["scale-generate"].disabled, true);
     assert.strictEqual(app.els["scale-box"].classList.contains("bad"), true,
       "the box keeps the text and gains the error outline");
@@ -1078,20 +1088,20 @@ test("Generate builds the deck, closes the sheet, selects it and announces the c
   assert.strictEqual(mine.on, true, "the new chip is not selected");
 });
 
-test("the one-time layout hint is appended on the first generation of a deck, not the second", () => {
+test("the message after GENERATE carries no layout hint, first time or second", () => {
   const app = boot();
   openSheet(app);
   app.type(AMARA_STRING);
   app.els["scale-generate"].click();
   const first = app.announcer().textContent;
-  assert.match(first, /Tap MIRROR TOP/, `first message was "${first}"`);
+  assert.match(first, /^\d+ cards generated/, `first message was "${first}"`);
+  assert.doesNotMatch(first, /MIRROR|mirror|swap/, `the first message still teaches a layout: "${first}"`);
+  assert.strictEqual(app.get("typeof LAYOUT_HINT"), "undefined", "LAYOUT_HINT still exists");
 
   openSheet(app);
   app.type(AMARA_STRING);
   app.els["scale-generate"].click();
-  const second = app.announcer().textContent;
-  assert.doesNotMatch(second, /Tap MIRROR TOP/,
-    `the hint fired twice: "${second}"`);
+  assert.doesNotMatch(app.announcer().textContent, /Tap MIRROR TOP/);
 });
 
 test("a same-id generate replaces the deck in place, keeps the id and says Updated", () => {
@@ -1197,6 +1207,8 @@ const SPEC_MD = fs.readFileSync(path.join(ROOT, "docs", "ENGINE-SPEC.md"), "utf8
 
 /** The section 2 reason sentence for a code, read from the spec's own table. */
 function specReason(code) {
+  // Plan section 9 reworded BAD_NOTE; ENGINE-SPEC.md is frozen history.
+  if (code === "BAD_NOTE") return "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.";
   const row = new RegExp(`^\\|\\s*\`${code}\`\\s*\\|[^|]*\\|\\s*\`(.+?)\`\\s*\\|`, "m").exec(SPEC_MD);
   assert.ok(row, `no section 2 row for ${code}`);
   return row[1];
@@ -1995,7 +2007,7 @@ const LAYOUT_IDS = ["scale-layout-row", "scale-rot-l", "scale-rot-r",
 
 // A seed WITH a bottom shell. Stage 3 AC2 is about a bottom-shell note, which
 // no rotation could reach while ROTATE was hard-wired to the rim.
-const BOTTOM_STRING = "(F) G Ab C Eb F G Ab C Eb | C Db Eb Bb";
+const BOTTOM_STRING = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 Eb4 F4 G4 Ab4 C5 Eb5";
 
 function openEdit(app, d) {
   app.select(d.id);
@@ -2815,7 +2827,7 @@ test("with the presets gone, the standing hint teaches the whole seed grammar", 
   assert.strictEqual(app.els["scale-parse"].textContent, app.get("PARSE_HINT"));
   const hint = app.get("PARSE_HINT");
   assert.match(hint, /ding/i, "the hint does not name the ding");
-  assert.match(hint, /\|/, "the hint does not mention the bottom-note bar");
+  assert.match(hint, /\|/, "the hint does not mention the inner-note bar");
 
   // And the example it points at - the placeholder - must actually parse, or
   // the one worked example in the sheet is a lie. The stub does not parse
@@ -2824,7 +2836,7 @@ test("with the presets gone, the standing hint teaches the whole seed grammar", 
   const m = /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(src);
   assert.ok(m, "the scale box lost its placeholder");
   const ph = m[1];
-  const res = app.get(`HPE.core.parseLegacySeed(${JSON.stringify(ph)})`);
+  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ph)})`);
   assert.strictEqual(res.ok, true,
     `the placeholder "${ph}" does not parse: ${res.code}`);
 });
@@ -5724,73 +5736,64 @@ test("AP3-4 the rail keeps its scroll across a re-render of the same deal and re
    A stored record may hold any spelling the reader accepts. */
 test("forgetting a deck removes its record whatever spelling the record holds", () => {
   const seeds = ["(D) A C D E F G A C", "D3/ A3 C4 D4 E4 F4 G4 A4 C5", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"];
+  const key = boot().get("SCALES_KEY");
+  const other = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
   for (const spelling of seeds) {
-    const key = boot().get("SCALES_KEY");
-    const other = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
-    const app = boot({ storage: { [key]: JSON.stringify([
-      { v: 2, s: spelling, o: {} }, { v: 2, s: other, o: {} }]) } });
-    const id = Object.keys(app.registry()).find(k => k !== undefined &&
-      app.registry()[k].fields[0][0] === "D");
-    assert.ok(id, `${spelling} was not restored`);
-    app.run(`deleteDeck(${JSON.stringify(id)})`);
+    const app = boot();
+    const d = makeCustom(app, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    assert.ok(d, `${spelling}: the deck was not made`);
+    // The boot rewrite normalises every record, so a record that still holds
+    // another spelling can only be one written after boot; put it there.
+    app.store[key] = JSON.stringify([{ v: 2, s: spelling, o: {} }, { v: 2, s: other, o: {} }]);
+    app.run(`deleteDeck(${JSON.stringify(d.id)})`);
     const left = JSON.parse(app.store[key]);
     assert.strictEqual(left.length, 1, `${spelling}: the record survived the delete`);
     assert.strictEqual(left[0].s, other, "the wrong record was removed");
   }
 });
 
-/* Lane L0 bounce: a deck whose canonical string does not re-parse (octave -1)
-   has no deck id, and a null id matches nothing. It falls back to the exact
-   string, and an unreadable record of another pan is kept byte for byte. */
-const NO_ID_A = "(D0) A D F | A";
-const NO_ID_B = "(E0) B E G | B";
+/* Lane L0 bounce: a string that does not re-parse has no deck id, and a null id
+   matches nothing. It falls back to the exact string, and an unreadable record
+   of another pan is kept byte for byte. Every canonical string the current
+   grammar writes re-parses, so no typed deck reaches this: the storage
+   functions are driven directly. */
 const UNREADABLE = { v: 2, s: "(D3) A3 not-a-scale" };
+const UNREADABLE_B = { v: 2, s: "(D3) B3 not-a-scale" };
 
 function scalesOf(app) {
   return JSON.parse(app.store[app.get("SCALES_KEY")] || "[]");
 }
 
 test("deleting a deck with no readable id keeps every other record byte for byte", () => {
-  const app = boot();
-  const first = makeCustom(app, NO_ID_A);
-  const second = makeCustom(app, NO_ID_B);
-  const before = scalesOf(app);
-  assert.strictEqual(before.length, 2, "setup: two records");
-  app.run(`deleteDeck(${JSON.stringify(first.id)})`);
-  assert.deepStrictEqual(scalesOf(app), [before[1]], "the second pan's record was lost");
-  assert.ok(app.registry()[second.id]);
-
-  const key = app.get("SCALES_KEY");
-  const amara = { v: 2, s: AMARA_STRING, o: {} };
-  const seeded = [UNREADABLE, "junk", amara];
-  const other = boot({ storage: { [key]: JSON.stringify(seeded) } });
-  const mine = makeCustom(other, NO_ID_A);
-  other.run(`deleteDeck(${JSON.stringify(mine.id)})`);
-  assert.strictEqual(other.store[key], JSON.stringify(seeded), "unreadable records were dropped");
+  const key = boot().get("SCALES_KEY");
+  const amara = { v: 4, s: AMARA_STRING, o: {} };
+  const app = boot({ storage: { [key]: JSON.stringify([UNREADABLE, UNREADABLE_B, "junk", amara]) } });
+  app.run(`forgetScale(${JSON.stringify(UNREADABLE.s)})`);
+  assert.strictEqual(app.store[key], JSON.stringify([UNREADABLE_B, "junk", amara]),
+    "only the record with that exact string should leave");
 });
 
 test("editing a deck with no readable id keeps an unreadable record and replaces its own", () => {
   const key = boot().get("SCALES_KEY");
-  const app = boot({ storage: { [key]: JSON.stringify([UNREADABLE]) } });
-  const mine = makeCustom(app, NO_ID_A);
-  assert.strictEqual(scalesOf(app).length, 2, "setup: unreadable plus own");
-  editFields(app, mine, OTHER_STRING);
+  const app = boot({ storage: { [key]: JSON.stringify([UNREADABLE_B, UNREADABLE]) } });
+  app.run(`replaceScale(${JSON.stringify(UNREADABLE.s)}, HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}).value)`);
   const list = scalesOf(app);
   assert.strictEqual(list.length, 2, JSON.stringify(list));
-  assert.deepStrictEqual(list[0], UNREADABLE, "the unreadable record was overwritten");
-  assert.strictEqual(list[1].s, app.get(`HPE.core.formatSeed(deck().fields)`));
+  assert.deepStrictEqual(list[0], UNREADABLE_B, "the other unreadable record was overwritten");
+  assert.strictEqual(list[1].v, 4);
 });
 
-test("saving a deck with no readable id twice leaves one record", () => {
+test("saving the same deck twice leaves one record", () => {
   const app = boot();
-  makeCustom(app, NO_ID_A);
-  makeCustom(app, NO_ID_A);
+  makeCustom(app, AMARA_STRING);
+  makeCustom(app, AMARA_STRING);
   assert.strictEqual(scalesOf(app).length, 1, JSON.stringify(scalesOf(app)));
 });
 
 /* ------------------------------------------------ Lane S3: per-ring seats */
 
-const PYGMY_STRING = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const PYGMY_LEGACY = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const PYGMY_STRING = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]";
 const ringIdsOf = (d, ring) => Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === ring);
 const anglesByNote = (d) => {
   const out = {};
@@ -5860,7 +5863,7 @@ test("S3: seats, anchor and a one-ring mirror travel through a share link and re
   assert.strictEqual(made.ok, true, made.reason);
   const url = link(app, made.value.id);
   assert.strictEqual(url.ok, true, url.reason);
-  assert.strictEqual(payload(url.value).charAt(0), "3");
+  assert.strictEqual(payload(url.value).charAt(0), "4");
 
   const other = boot();
   const opened = openShare(other, payload(url.value));
@@ -5910,7 +5913,7 @@ test("S3: the saved list lives under hpfc.scales.v3 and records carry the curren
   makeCustom(app, PYGMY_STRING);
   const list = JSON.parse(app.store["hpfc.scales.v3"]);
   assert.strictEqual(list.length, 1);
-  assert.strictEqual(list[0].v, 3);
+  assert.strictEqual(list[0].v, 4);
   assert.strictEqual(app.store["hpfc.scales"], undefined, "the old key was written");
 });
 
@@ -5918,7 +5921,8 @@ test("S3: the first boot copies the old list across and leaves the old key alone
   const old = JSON.stringify([{ v: 2, s: AMARA_STRING, o: { palette: 2, name: "Old" } }]);
   const app = boot({ storage: { "hpfc.scales": old } });
   assert.strictEqual(app.store["hpfc.scales"], old, "the old key was changed");
-  assert.deepStrictEqual(JSON.parse(app.store["hpfc.scales.v3"]), JSON.parse(old));
+  assert.deepStrictEqual(JSON.parse(app.store["hpfc.scales.v3"]),
+    JSON.parse(old).map((r) => Object.assign({}, r, { v: 4 })), "the copy is rewritten as version 4");
   assert.deepStrictEqual(Object.values(app.registry()).map((d) => d.name), ["Old"]);
 });
 
@@ -5926,7 +5930,7 @@ test("S3: a list already under the new key is never overwritten by the old one",
   const old = JSON.stringify([{ v: 2, s: AMARA_STRING, o: { name: "Old" } }]);
   const fresh = JSON.stringify([{ v: 3, s: "(C3) G3 C4 D4", o: { name: "Fresh" } }]);
   const app = boot({ storage: { "hpfc.scales": old, "hpfc.scales.v3": fresh } });
-  assert.strictEqual(app.store["hpfc.scales.v3"], fresh);
+  assert.deepStrictEqual(JSON.parse(app.store["hpfc.scales.v3"]), JSON.parse(fresh).map((r) => Object.assign({}, r, { v: 4 })));
   assert.deepStrictEqual(Object.values(app.registry()).map((d) => d.name), ["Fresh"]);
 });
 
@@ -5943,7 +5947,7 @@ test("S3: when the copy cannot be written the old list still serves this session
 
 test("S3: a stored v2 record's flat order becomes per-ring seats at boot", () => {
   const order = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 12, 13, 14, 15, 16, 11];
-  const rec = [{ v: 2, s: PYGMY_STRING, o: { palette: 1, name: "Moved", order } }];
+  const rec = [{ v: 2, s: PYGMY_LEGACY, o: { palette: 1, name: "Moved", order } }];
   const app = boot({ storage: { "hpfc.scales": JSON.stringify(rec) } });
   const d = Object.values(app.registry())[0];
   assert.deepStrictEqual(plain(d.options).seats, {
@@ -5955,7 +5959,7 @@ test("S3: a stored v2 record's flat order becomes per-ring seats at boot", () =>
 
 test("S3: a stored cross-ring order boots as the generated arrangement, not dropped", () => {
   const order = Array.from({ length: 17 }, (_, i) => 16 - i);
-  const rec = [{ v: 2, s: PYGMY_STRING, o: { name: "Crossed", order } }];
+  const rec = [{ v: 2, s: PYGMY_LEGACY, o: { name: "Crossed", order } }];
   const app = boot({ storage: { "hpfc.scales": JSON.stringify(rec) } });
   const d = Object.values(app.registry())[0];
   assert.ok(d, "the record was dropped");
@@ -5971,8 +5975,8 @@ test("S3: a stored cross-ring order boots as the generated arrangement, not drop
  * section 16.2 that carry a [W1] tag; each test names its line. */
 
 const W1_NONE = "(D3) A3 C4 D4";
-const W1_BOTTOM = "(D3) A3 C4 D4 | C3";
-const W1_FULL = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+const W1_BOTTOM = "[C3] (D3) A3 C4 D4";
+const W1_FULL = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
 
 const pressed = (app, id) => app.els[id].getAttribute("aria-pressed") === "true";
 const fieldAngles = (deck) => Object.fromEntries(
@@ -6256,13 +6260,13 @@ test("W1 (20.9): a deck generated with MIRROR TOP on and MIRROR BOTTOM off re-so
   assert.ok(compared > 0);
 });
 
-test("W1 line 118: #scale-label-2 exists, is empty and hidden, and the field is described by it", () => {
+test("W1 line 118: #scale-label-2 is shown with the bottom-note line, and the field is described by it", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.match(html, /<textarea\b[^>]*\baria-describedby="scale-label-2"/);
-  const app = boot();
-  openSheet(app);
-  assert.strictEqual(app.els["scale-label-2"].textContent, "");
-  assert.strictEqual(app.els["scale-label-2"].hidden, true);
+  const m = /<span\b([^>]*)\bid="scale-label-2"([^>]*)>([^<]*)<\/span>/.exec(html);
+  assert.ok(m, "#scale-label-2 is gone");
+  assert.doesNotMatch(m[1] + m[2], /\bhidden\b/, "#scale-label-2 is hidden");
+  assert.strictEqual(m[3], "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS");
 });
 
 test("W1 line 119: the count line leads with the ding and all three counts, then the notes by shell", () => {
@@ -6277,4 +6281,228 @@ test("W1 line 119: the count line leads with the ding and all three counts, then
   app.type(W1_FULL);
   assert.match(app.els["scale-parse"].textContent,
     /^Ding F3 · 9 top · 2 inner · 6 bottom\. Top .+ Inner F5 G5\. Bottom C3 Db3 Eb3 Bb3 Db4 Ab5\.$/);
+});
+
+/* ------------------------------------------------------------------ Lane G2b
+ * The flip. Tests below that were written AFTER the implementation are marked
+ * "(pin)" in their title; the rest were written red first. */
+
+const PLACEHOLDER = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+const indexSource = () => require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+const placeholderOf = () => /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(indexSource())[1];
+
+test("a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index", () => {
+  const key = boot().get("SCALES_KEY");
+  const first = { v: 2, s: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", o: {} };
+  const bar = { v: 2, s: PYGMY_LEGACY, o: {} };
+  const app = boot({ storage: { [key]: JSON.stringify([first, bar]) } });
+  const d = Object.values(app.registry()).find((x) => x.fields && Object.values(x.fields).some((f) => f[F_ZONE] === "bottom"));
+  assert.ok(d, "the bar record did not open");
+  assert.strictEqual(ringIdsOf(d, "bottom").length, 6, "the bar list was not read as bottom notes");
+  assert.strictEqual(ringIdsOf(d, "inner").length, 0, "the bar list was read as inner notes");
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 2);
+  assert.strictEqual(list[0].v, 4);
+  assert.strictEqual(list[1].v, 4);
+  assert.strictEqual(list[1].s, app.get(`HPE.core.formatSeed(HPE.core.parseLegacySeed(${JSON.stringify(PYGMY_LEGACY)}).value.fields)`));
+});
+
+test("the placeholder parses and draws the E Amara 20 pan", () => {
+  const app = boot();
+  const ph = placeholderOf();
+  assert.strictEqual(ph, PLACEHOLDER);
+  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ph)})`);
+  assert.strictEqual(res.ok, true);
+  openSheet(app);
+  app.type(ph);
+  assert.strictEqual(app.els["scale-parse"].textContent,
+    "Ding E3 · 9 top · 3 inner · 7 bottom. Top B3 D4 E4 F#4 G4 A4 B4 D5 E5. Inner F#5 G5 A5. Bottom C3 D3 F#3 G3 A3 C4 C5.");
+  app.els["scale-generate"].click();
+  const d = app.registry()[app.deckId()];
+  assert.ok(d && d.chords.length > 0, "the placeholder did not generate a deck");
+});
+
+test("label, placeholder and hint name the same three marks", () => {
+  const src = indexSource();
+  const app = boot();
+  const label = /<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1];
+  const label2 = /id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1];
+  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT")].join(" ");
+  for (const mark of ["(", "[", "|"]) assert.ok(text.includes(mark), `no ${mark} in the teaching text`);
+  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT"), / \/ /, "a lone slash is still taught");
+  assert.doesNotMatch(placeholderOf(), /\//);
+});
+
+test("every example in the label, hint and refusals parses", () => {
+  const app = boot();
+  const src = indexSource();
+  const texts = [app.get("PARSE_HINT")];
+  texts.push(/<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1]);
+  texts.push(/id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1]);
+  const reasons = app.get("HPE.core.REASONS");
+  for (const code of Object.keys(reasons)) {
+    texts.push(reasons[code].reason);
+    for (const alt of Object.values(reasons[code].alternates || {})) texts.push(alt);
+  }
+  const found = [];
+  for (const t of texts) {
+    for (const m of t.matchAll(/e\.g\. ([^.,:]+?)(?:[.,:]|$)/g)) found.push(m[1].trim());
+  }
+  const grammar = found.filter((ex) => /[\(\[|]/.test(ex));
+  assert.ok(grammar.length >= 6, `only ${grammar.length} examples found`);
+  for (const ex of grammar) {
+    const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ex)})`);
+    assert.strictEqual(res.ok, true, `"${ex}" does not parse: ${res.code}`);
+  }
+});
+
+test("typing the old inner mark shows the slash sentence", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 C4 D4 / E4 F4");
+  assert.strictEqual(app.els["scale-refusal"].textContent, app.get("HPE.core.REASONS.BAD_NOTE.alternates.slash"));
+});
+
+test("typing an old bottom list with octaves shows the afterBar sentence", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 C4 D4 | C3 E3");
+  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.afterBar");
+  const want = alt.split("<A>").join("C3").split("<B>").join("D4");
+  assert.strictEqual(app.els["scale-refusal"].textContent, want);
+});
+
+test("TOO_MANY_RIM is not in REASONS and thirteen rim notes generate a deck", () => {
+  const app = boot();
+  assert.strictEqual(app.get(`"TOO_MANY_RIM" in HPE.core.REASONS`), false);
+  const thirteen = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4";
+  const d = makeCustom(app, thirteen);
+  assert.ok(d && d.chords.length > 0);
+  assert.strictEqual(ringIdsOf(d, "rim").length, 12);
+});
+
+test("a hundred-and-first top note does not collide with a bottom id", () => {
+  const app = boot();
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const name = (m) => PCS[m % 12] + (Math.floor(m / 12) - 1);
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(name(m));
+  assert.strictEqual(top.length, 101);
+  const res = app.generate("[C-1] (C0) " + top.join(" "), {});
+  assert.strictEqual(res.ok, true, res.reason);
+  const ids = Object.keys(res.value.fields);
+  assert.strictEqual(new Set(ids).size, ids.length, "two fields share an id");
+  assert.strictEqual(ids.length, 103);
+});
+
+test("an octave-less list after the bar is counted as inner notes, with zero bottom", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D) A C D | E F");
+  assert.match(app.els["scale-parse"].textContent, /· 2 inner · 0 bottom\./);
+});
+
+test("the boot rewrite leaves an unreadable record byte-identical at its index", () => {
+  const key = boot().get("SCALES_KEY");
+  const recs = [{ v: 2, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: {} }, UNREADABLE, { v: 3, s: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", o: {} }];
+  const app = boot({ storage: { [key]: JSON.stringify(recs) } });
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 3);
+  assert.deepStrictEqual(list[1], UNREADABLE);
+  assert.strictEqual(list[0].v, 4);
+  assert.strictEqual(list[2].v, 4);
+  assert.strictEqual(list[0].s, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+});
+
+test("two records for one deck id collapse to the first, whatever their versions", () => {
+  const key = boot().get("SCALES_KEY");
+  const recs = [{ v: 2, s: PYGMY_LEGACY, o: { name: "One" } }, { v: 4, s: PYGMY_STRING, o: { name: "Two" } }];
+  const app = boot({ storage: { [key]: JSON.stringify(recs) } });
+  const names = Object.values(app.registry()).map((d) => d.name);
+  assert.deepStrictEqual(names, ["One"]);
+  assert.strictEqual(scalesOf(app).filter((r) => r.o && r.o.name).length >= 1, true);
+});
+
+test("a throwing storage write leaves the old list and the deck still opens", () => {
+  const key = boot().get("SCALES_KEY");
+  const old = JSON.stringify([{ v: 2, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: {} }]);
+  const app = boot();
+  app.store[key] = old;
+  app.run(`localStorage.setItem = () => { throw new Error("denied"); }`);
+  app.run("restoreScales()");
+  assert.strictEqual(app.store[key], old);
+  assert.strictEqual(Object.keys(app.registry()).length, 1);
+});
+
+test("the boot rewrite of a legacy record with a hundred and one top notes keeps every note", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const key = boot().get("SCALES_KEY");
+  const rec = { v: 3, s: "(C0) " + top.join(" ") + " | D0", o: {} };
+  const app = boot({ storage: { [key]: JSON.stringify([rec]) } });
+  const fields = Object.values(app.registry())[0].fields;
+  assert.strictEqual(Object.keys(fields).length, 103);
+  const rewritten = JSON.parse(app.store[key])[0];
+  assert.strictEqual(rewritten.v, 4);
+  assert.ok(/F8/.test(rewritten.s), rewritten.s);
+  assert.ok(/\[D0\]/.test(rewritten.s), rewritten.s);
+});
+
+// Plan section 19 R5: 20 rim, 8 inner, 12 bottom, drawn from the placeholder's
+// pitch set (C D E F# G A B). The budget is the larger of three times the wall
+// time measured on CI and 1000 ms (plan section 20.11); over 5 s the lane stops
+// instead of raising it. CI measured 14 ms (run 37715956008, js suites).
+const FORTY_MEASURED_MS = 14;
+const FORTY_BUDGET_MS = Math.max(3 * FORTY_MEASURED_MS, 1000);
+test("a forty-note pan generates its deck inside the time budget", () => {
+  const app = boot();
+  const bottom = "[G1] [A1] [B1] [C2] [D2] [E2] [F#2] [G2] [A2] [B2] [C3] [D3]";
+  const rim = "F#3 G3 A3 B3 C4 D4 E4 F#4 G4 A4 B4 C5 D5 E5 F#5 G5 A5 B5 C6 D6";
+  const inner = "E6 F#6 G6 A6 B6 C7 D7 E7";
+  const seed = bottom + " (E3) " + rim + " | " + inner;
+  const parsed = app.get(`HPE.core.parseSeed(${JSON.stringify(seed)})`);
+  assert.strictEqual(parsed.ok, true, parsed.reason);
+  assert.strictEqual(Object.keys(parsed.value.fields).length, 41, "ding + 40 notes");
+  const t0 = Date.now();
+  const res = app.generate(seed, {});
+  const ms = Date.now() - t0;
+  assert.strictEqual(res.ok, true, res.reason);
+  assert.ok(ms < FORTY_BUDGET_MS, `${ms} ms against a ${FORTY_BUDGET_MS} ms budget`);
+});
+
+const CROWDED = "(C3) " + "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ").join(" ");
+
+test("a crowded typed scale shows the SMALL_LABELS warning in #scale-msg before GENERATE", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(CROWDED);
+  const said = app.els["scale-msg"];
+  assert.match(said.textContent, /Crowded pan/);
+  assert.strictEqual(said.classList.contains("warn"), true);
+});
+
+test("the preview redraws the bottom ring alone when MIRROR BOTTOM is tapped", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_FULL);
+  const before = app.els["scale-preview"].innerHTML;
+  app.els["scale-mirror-bottom"].click();
+  const afterBottom = app.els["scale-preview"].innerHTML;
+  assert.notStrictEqual(afterBottom, before, "MIRROR BOTTOM did not redraw the preview");
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(app.els["scale-preview"].innerHTML, before, "a second tap did not restore it");
+  app.els["scale-mirror"].click();
+  assert.notStrictEqual(app.els["scale-preview"].innerHTML, afterBottom,
+    "MIRROR TOP drew the same pan as MIRROR BOTTOM");
+});
+
+test("opening Edit on a saved long deck from a fresh load sizes the field to the deck's text", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: PYGMY_STRING, o: {} }]) } });
+  const d = Object.values(app.registry())[0];
+  app.select(d.id);
+  app.clickChip(d.name);
+  assert.strictEqual(app.els["scale-box"].value, PYGMY_STRING);
+  assert.strictEqual(app.els["scale-box-wrap"].dataset.grow, PYGMY_STRING);
 });

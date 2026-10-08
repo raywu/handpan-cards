@@ -1,16 +1,18 @@
 # kills: a corrupt saved scale is dropped and the app still boots on the built-ins
 # suite: node --test --test-name-pattern ^a.corrupt.saved.scale.is.dropped.and.the.app.still.boots.on.the.built.ins$ tests/app.test.js
-# restoreScales trusts whatever is in storage, so one unusable record throws
-# and takes the whole boot down with it.
+# restoreScales trusts whatever version a record claims, so a record from a wire
+# version this build does not know is read as the current grammar and rebuilt.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7863,8 +7863,6 @@ function restoreScales() {
-   copyLegacyScales();
-   for (const rec of savedScales()) {
+@@ -7868,8 +7868,7 @@ function restoreScales() {
+   for (const rec of list) {
+     let keep = rec;
      try {
--      if (!rec || typeof rec !== "object" || typeof rec.s !== "string") continue;
--      if (!checkShareVersion(rec.v).ok) continue;
-       if (!scaleReader(rec.v)(rec.s).ok) continue;
-       generateDeck(rec.s, recordOptions(rec));
-     } catch (e) {}
+-      const readable = rec && typeof rec === "object" && typeof rec.s === "string" &&
+-        checkShareVersion(rec.v).ok;
++      const readable = rec && typeof rec === "object" && typeof rec.s === "string";
+       const res = readable ? scaleReader(rec.v)(rec.s) : null;
+       if (res && res.ok) {
+         const id = HPE.core.deckId(res.value.fields);
+

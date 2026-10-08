@@ -175,7 +175,9 @@ function buildGen(htmlPath) {
   const scales = JSON.parse(fs.readFileSync(GEN_SCALES, "utf8")).filter((s) => s.expect && s.expect.ok);
   const decks = {};
   for (const sc of scales) {
-    const res = app.generate(sc.string);
+    const legacy = app.get(`HPE.core.parseLegacySeed(${JSON.stringify(sc.string)})`);
+    const current = legacy.ok ? app.get(`HPE.core.formatSeed(HPE.core.parseLegacySeed(${JSON.stringify(sc.string)}).value.fields)`) : sc.string;
+    const res = app.generate(current);
     if (!res.ok) throw new Error(`${sc.name}: generate failed`);
     app.select(res.value.id);
     const modes = {};

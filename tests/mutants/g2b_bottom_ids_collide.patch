@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^G2b..a.hundred.and.first.top.note.leaves.bottom.ids.clear$ tests/core.test.js
+# kills: G2b: a hundred-and-first top note leaves bottom ids clear
+# Bottom ids start at 101 whatever the top count, so the 101st top note shares an id with the first bottom note.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -770,7 +770,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       fields[id] = [spell(entry.note.letter, entry.note.accidental), entry.note.octave,
+                     entry.note.midi, entry.zone, null, id];
+     });
+-    var first = Math.max(101, tops.length + 1);
++    var first = 101;
+     bottoms.forEach(function (entry, n) {
+       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
+                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
+

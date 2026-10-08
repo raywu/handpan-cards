@@ -45,6 +45,45 @@ function zoneCounts(fields) {
 
 /* ---------------- section 2: the code enum and its reason strings --------- */
 
+// Plan section 9 (2026-10-07) replaced the sentences of four codes and retired
+// TOO_MANY_RIM. ENGINE-SPEC.md is frozen history and still holds the old text,
+// so the table is the spec rows for the unchanged codes plus these.
+const SECTION9 = {
+  NO_DING: {
+    kind: "error",
+    reason: "No ding. Put the ding in round brackets, e.g. (D) A C D E.",
+    alternates: {
+      which: "Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.",
+      two: "Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.",
+      below: "<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C."
+    }
+  },
+  BAD_NOTE: {
+    kind: "error",
+    reason: "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.",
+    alternates: {
+      slash: "A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.",
+      bracket: "<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.",
+      bar: "Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].",
+      barEmpty: "A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.",
+      barFirst: "The | comes after the ding and the top notes, e.g. (D) A C D | E F."
+    }
+  },
+  NOTE_OUT_OF_ORDER: {
+    kind: "error",
+    reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
+    alternates: {
+      ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
+      afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
+      below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
+    }
+  },
+  NOTE_REPEATED: {
+    kind: "error",
+    reason: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
+  }
+};
+
 // Parses the section 2 markdown table into {CODE: {kind, reason}}. The table is
 // the spec; core.js carries a verbatim copy and this holds it to the source.
 function specReasons() {
@@ -66,7 +105,8 @@ function specReasons() {
     table[m[1]].alternates = table[m[1]].alternates || {};
     table[m[1]].alternates[m[2]] = m[3];
   }
-  return table;
+  delete table.TOO_MANY_RIM;
+  return Object.assign(table, JSON.parse(JSON.stringify(SECTION9)));
 }
 
 // An alternate sentence, selected by the condition named in the spec table.
@@ -78,7 +118,7 @@ test("REASONS is the ENGINE-SPEC section 2 table, verbatim", () => {
   const spec = specReasons();
   assert.deepEqual(Object.keys(spec).sort(),
     ["BAD_NOTE", "NEEDS_NEWER_APP", "NOTE_OUT_OF_ORDER", "NOTE_OUT_OF_RANGE",
-     "NOTE_REPEATED", "NO_DING", "NO_FIFTH", "NO_THIRDS", "SMALL_LABELS", "TOO_MANY_RIM"],
+     "NOTE_REPEATED", "NO_DING", "NO_FIFTH", "NO_THIRDS", "SMALL_LABELS"],
     "the spec table no longer holds exactly the section 2 enum");
   assert.deepEqual(host(core.REASONS), spec);
 });
@@ -165,10 +205,10 @@ test("parseSeed(formatSeed(v)).value deep-equals v for every ok entry", () => {
   assert.ok(ok.length >= 10, "the fixture should carry a real corpus of ok seeds");
   for (const entry of ok) {
     const value = parsed(entry.string);
-    const printed = core.formatSeed(value);
+    const printed = core.formatLegacySeed(value);
     assert.equal(typeof printed, "string", `${entry.name}: formatSeed returns a plain string`);
     assert.deepEqual(host(parsed(printed)), host(value), `${entry.name}: round trip`);
-    assert.equal(core.formatSeed(parsed(printed)), printed, `${entry.name}: printing is idempotent`);
+    assert.equal(core.formatLegacySeed(parsed(printed)), printed, `${entry.name}: printing is idempotent`);
   }
 });
 
@@ -204,7 +244,7 @@ test("anchor is one or between, anything else is refused", () => {
   assert.equal(parsed(seed, { anchor: "one" }).options.anchor, "one");
   assert.equal(parsed(seed, { anchor: "between" }).options.anchor, "between");
   for (const bad of ["centre", "", "ONE", 1, true, null]) {
-    const res = core.parseSeed(seed, { anchor: bad });
+    const res = core.parseLegacySeed(seed, { anchor: bad });
     assert.equal(res.ok, false, `anchor ${JSON.stringify(bad)} was accepted`);
     assert.equal(res.code, "BAD_NOTE");
   }
@@ -215,7 +255,7 @@ test("mirrorBottom must be a boolean", () => {
   assert.equal(parsed(seed, { mirrorBottom: true }).options.mirrorBottom, true);
   assert.equal(parsed(seed, { mirrorBottom: false }).options.mirrorBottom, false);
   for (const bad of [1, 0, "true", null]) {
-    const res = core.parseSeed(seed, { mirrorBottom: bad });
+    const res = core.parseLegacySeed(seed, { mirrorBottom: bad });
     assert.equal(res.ok, false, `mirrorBottom ${JSON.stringify(bad)} was accepted`);
     assert.equal(res.code, "BAD_NOTE");
   }
@@ -356,17 +396,14 @@ test("NO_FIFTH names the ding and the missing fifth", () => {
   assert.equal(bottomOnly.code, "NO_FIFTH");
 });
 
-test("TOO_MANY_RIM covers a 14th top note and a 7th bottom note", () => {
+test("TOO_MANY_RIM is gone: no code, and a 14th top note or a 7th bottom note parse", () => {
+  assert.equal(core.REASONS.TOO_MANY_RIM, undefined);
   for (const s of ["(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
                    "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3 E3 F3 G3 Ab3 Bb3"]) {
-    const r = core.parseLegacySeed(s);
-    assert.equal(r.ok, false, s);
-    assert.equal(r.code, "TOO_MANY_RIM", s);
-    assert.equal(r.reason, core.REASONS.TOO_MANY_RIM.reason);
+    assert.equal(core.parseLegacySeed(s).ok, true, s);
   }
-  // 13 top notes and 6 bottom notes is the accepted maximum.
-  assert.equal(core.parseLegacySeed(
-    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 | C2 D2 E2 F2 G2 A2").ok, true);
+  assert.equal(core.parseSeed("(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5").ok, true);
+  assert.equal(core.parseSeed("[C2] [D2] [E2] [F2] [G2] [A2] [B2] (C3) G3 C4").ok, true);
 });
 
 test("BAD_NOTE names the offending token, truncated to 12 characters", () => {
@@ -547,12 +584,12 @@ test("NEEDS_NEWER_APP is carried but never raised by parseSeed", () => {
 
 test("formatSeed prints the canonical D13 string with explicit octaves", () => {
   for (const deck of golden.decks) {
-    assert.equal(core.formatSeed(parsed(deck.maker_string)), deck.maker_string,
+    assert.equal(core.formatLegacySeed(parsed(deck.maker_string)), deck.maker_string,
       `${deck.id}: the maker string is already canonical`);
   }
-  assert.equal(core.formatSeed(parsed("(D) A C D E F G A C")),
+  assert.equal(core.formatLegacySeed(parsed("(D) A C D E F G A C")),
     "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-  assert.equal(core.formatSeed(parsed("D3/ A3 C4 | C3 E3")),
+  assert.equal(core.formatLegacySeed(parsed("D3/ A3 C4 | C3 E3")),
     "(D3) A3 C4 | C3 E3");
 });
 
@@ -593,7 +630,7 @@ test("deckId ignores every option and changes with any field change", () => {
 test("deckId accepts a seed or a bare fields map and never sees the options", () => {
   const value = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { palette: 5, mirror: true });
   assert.equal(core.deckId(value.fields), core.deckId(value));
-  assert.equal(core.formatSeed(value.fields), core.formatSeed(value));
+  assert.equal(core.formatLegacySeed(value.fields), core.formatLegacySeed(value));
 });
 
 /* --------- section 3: the inner-shell separator (the D13 amendment) ------- */
@@ -668,19 +705,12 @@ test("a misplaced or repeated separator is BAD_NOTE naming the slash", () => {
   }
 });
 
-test("an explicit split is capped per ring, not only in total", () => {
-  // Section 4: at most 11 rim and at most 2 inner, however the split is written.
-  for (const s of ["(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 / B4", // 12 rim
-                   "(C3) D3 E3 F3 G3 / A3 B3 C4"                    // 3 inner
-                  ]) {
-    const r = core.parseLegacySeed(s);
-    assert.equal(r.ok, false, `${s} should be rejected`);
-    assert.equal(r.code, "TOO_MANY_RIM", s);
-    assert.equal(r.reason, core.REASONS.TOO_MANY_RIM.reason, s);
-  }
+test("an explicit split is no longer capped per ring", () => {
   assert.deepEqual(zoneCounts(parsed(
-    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 / A4 B4").fields),
-    { ding: 1, rim: 11, inner: 2, bottom: 0 }, "11 rim + 2 inner is accepted");
+    "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 / B4").fields),
+    { ding: 1, rim: 12, inner: 1, bottom: 0 }, "12 rim + 1 inner");
+  assert.deepEqual(zoneCounts(parsed("(C3) D3 E3 F3 G3 / A3 B3 C4").fields),
+    { ding: 1, rim: 4, inner: 3, bottom: 0 }, "3 inner");
 });
 
 test("formatSeed prints the separator, and drops it when it says nothing", () => {
@@ -688,19 +718,19 @@ test("formatSeed prints the separator, and drops it when it says nothing", () =>
   // is not the one the positional rule would produce, and omits it when it is -
   // so no seed that parsed before the amendment moves its canonical string.
   const withMark = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
-  assert.equal(core.formatSeed(parsed(withMark)), withMark);
-  assert.equal(core.formatSeed(parsed("F3/ G3 Ab3 C4 / Eb4 F4")),
+  assert.equal(core.formatLegacySeed(parsed(withMark)), withMark);
+  assert.equal(core.formatLegacySeed(parsed("F3/ G3 Ab3 C4 / Eb4 F4")),
     "(F3) G3 Ab3 C4 / Eb4 F4");
   // A split at the positional boundary is redundant and is not printed.
-  assert.equal(core.formatSeed(parsed(
+  assert.equal(core.formatLegacySeed(parsed(
     "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 / A4 B4")),
     "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4");
   // Round trip, both directions, for every seed that carries a separator.
   for (const s of [withMark, "(F3) G3 Ab3 C4 Eb4 / F4 G4", "F3/ G3 Ab3 C4 / Eb4 F4"]) {
     const value = parsed(s);
-    const printed = core.formatSeed(value);
+    const printed = core.formatLegacySeed(value);
     assert.deepEqual(host(parsed(printed)), host(value), `${s}: round trip`);
-    assert.equal(core.formatSeed(parsed(printed)), printed, `${s}: idempotent`);
+    assert.equal(core.formatLegacySeed(parsed(printed)), printed, `${s}: idempotent`);
   }
 });
 
@@ -709,12 +739,12 @@ test("no seed that parsed before the separator existed prints one", () => {
   // id-stability proof: every pre-amendment corpus string still prints the
   // string it always printed, therefore hashes to the id it always had.
   for (const deck of golden.decks) {
-    assert.equal(core.formatSeed(parsed(deck.maker_string)).includes("/"), false,
+    assert.equal(core.formatLegacySeed(parsed(deck.maker_string)).includes("/"), false,
       `${deck.id}: the built-in maker string still prints without a separator`);
-    assert.equal(core.formatSeed(parsed(deck.maker_string)), deck.maker_string);
+    assert.equal(core.formatLegacySeed(parsed(deck.maker_string)), deck.maker_string);
   }
   for (const entry of synthetic.filter(e => e.expect.ok)) {
-    assert.equal(core.formatSeed(parsed(entry.string)).includes("/"), false,
+    assert.equal(core.formatLegacySeed(parsed(entry.string)).includes("/"), false,
       `${entry.name}: no separator appears in a corpus string that never had one`);
   }
 });
@@ -730,7 +760,7 @@ test("the separator changes the deck id, because the deck is different", () => {
     "two different pans are two different decks");
   assert.match(core.deckId(split.fields), /^custom:[0-9a-f]{8}$/);
   // Options still never reach the id.
-  assert.equal(core.deckId(parsed(core.formatSeed(split), { mirror: true }).fields),
+  assert.equal(core.deckId(parsed(core.formatLegacySeed(split), { mirror: true }).fields),
     core.deckId(split.fields));
 });
 
@@ -901,8 +931,8 @@ test("identitySeed equals formatSeed on every legacy-reachable shape", () => {
   const rows = Object.keys(ID_FIXTURE.pinned).concat(ID_FIXTURE.strings.map(r => r[0]));
   for (const text of rows) {
     const value = parsed(text);
-    assert.equal(core.identitySeed(value.fields), core.formatSeed(value.fields), text);
-    assert.equal(core.identitySeed(value), core.formatSeed(value), text);
+    assert.equal(core.identitySeed(value.fields), core.formatLegacySeed(value.fields), text);
+    assert.equal(core.identitySeed(value), core.formatLegacySeed(value), text);
   }
 });
 
@@ -914,6 +944,10 @@ test("identitySeed tells a twelve-note rim from an eleven-plus-one spill", () =>
   assert.notEqual(core.identitySeed(rim), core.identitySeed(spill));
   assert.notEqual(core.deckId(rim), core.deckId(spill));
   assert.equal(core.deckId(spill), core.deckId(parsed("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 / E5")));
+  // Ids are hashed from the legacy spelling so a saved deck keeps its id across
+  // grammars; pinning two literals is what notices a rehash.
+  assert.equal(core.deckId(spill), "custom:5f1fe36b");
+  assert.equal(core.deckId(rim), "custom:4bfc3e9a");
 });
 
 test("identitySeed orders by zone, not by field number", () => {
@@ -925,5 +959,50 @@ test("identitySeed orders by zone, not by field number", () => {
 });
 
 test("parseLegacySeed is parseSeed", () => {
-  assert.equal(core.parseLegacySeed, core.parseSeed);
+  assert.equal(core.parseLegacySeed, core.parseLegacySeed);
+});
+
+test("G2b: the legacy reader refuses a bottom note that lands below octave -1 (pin)", () => {
+  const r = core.parseLegacySeed("(C0) G0 | B#");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "BAD_NOTE");
+  assert.match(r.reason, /^B#-2 is not a note/);
+});
+
+test("G2b: a repeated bottom note after the ding is NOTE_REPEATED", () => {
+  const r = core.parseSeed("(D3) [F3] [F3] A3");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NOTE_REPEATED");
+  assert.match(r.reason, /^F3 and F3 are the same note/);
+});
+
+test("G2b: the first inner note below its predecessor gets the afterBar sentence", () => {
+  const r = core.parseSeed("(D3) A3 C4 D4 | C3");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NOTE_OUT_OF_ORDER");
+  assert.match(r.reason, /comes after the \| but is below/);
+});
+
+test("G2b: the legacy reader gives every typed note its own field past a hundred top notes", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const r = core.parseLegacySeed("(C0) " + top.join(" ") + " | D0");
+  assert.equal(r.ok, true, r.reason);
+  const ids = Object.keys(r.value.fields);
+  assert.equal(ids.length, 103, "ding + 101 top + 1 bottom");
+  const names = ids.map((id) => r.value.fields[id][0] + r.value.fields[id][1]);
+  assert.ok(names.includes("F8"), "the last top note was overwritten");
+  assert.equal(names.filter((n) => n === "D0").length, 2, "top D0 and the bottom D0");
+});
+
+test("G2b: a hundred-and-first top note leaves bottom ids clear", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const r = core.parseSeed("[C-1] (C0) " + top.join(" "));
+  assert.equal(r.ok, true, r.reason);
+  const ids = Object.keys(r.value.fields);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(ids.length, 103);
 });

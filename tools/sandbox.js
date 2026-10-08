@@ -29,7 +29,7 @@ const APP = path.join(__dirname, "..", "index.html");
 // names. Serving an id costs nothing when no element in index.html uses it yet.
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
   "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
-  "scale-mirror-bottom", "scale-box-wrap", "scale-label-2", "scale-swatches", "scale-generate", "deck-add",
+  "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add",
   // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
   "scale-delete-row", "scale-delete", "scale-del-note",

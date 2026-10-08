@@ -4,7 +4,7 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -382,8 +382,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -443,8 +443,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
          : place(low, bottomNotes[n - 1].midi, nextAbove);
        if (low.midi < 0 || low.midi > 127) return outOfRange(low, low.midi);
        if (n > 0 && low.midi <= bottomNotes[n - 1].midi) {
@@ -13,4 +13,4 @@ diff --git a/src/engine/core.js b/src/engine/core.js
 +        return badNote(low.token);
        }
        low.octave = octaveOf(low.letter, low.accidental, low.midi);
-       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
+       // B#-2 is midi 0 and an octave no string can spell (the lexer reads -1 to

@@ -19,8 +19,8 @@ const { boot } = require("./helpers/sandbox.js");
 // Seeds used throughout. The Pygmy-shaped one exercises all four zones: a ding,
 // a full rim, an inner pair (the `/` separator) and a bottom shell (after `|`).
 const PLAIN = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-const FULL = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
-const NO_BOTTOM = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
+const FULL = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+const NO_BOTTOM = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5";
 
 /** Open the create sheet and type a seed into it, as a person does. */
 function typeInSheet(app, seed) {
@@ -59,7 +59,7 @@ function notePositions(svg) {
 
 /** The note labels the parse line reports, e.g. ["D3","A3",...]. */
 function seedNotes(app, seed) {
-  const res = app.get(`HPE.core.parseLegacySeed(${JSON.stringify(seed)}, {})`);
+  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(seed)}, {})`);
   assert.ok(res.ok, `seed did not parse: ${seed}`);
   const fields = res.value.fields;
   return Object.keys(fields).map((k) => fields[k][0] + fields[k][1]);

@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^the.preview.redraws.the.bottom.ring.alone.when.MIRROR.BOTTOM.is.tapped$ tests/app.test.js
+# kills: the preview redraws the bottom ring alone when MIRROR BOTTOM is tapped
+# The preview solves with MIRROR BOTTOM off, so the switch does nothing to the drawn pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9011,7 +9011,7 @@ function sheetOptions() {
+  *  show up as a mock that silently stopped repainting. */
+ function solvePreviewLayout(seed) {
+   if (editingId) syncLayoutSeats(seed.fields);
+-  const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
++  const solveOptions = { mirror: mirror, mirrorBottom: false, anchor: anchor,
+     seats: editingId ? layoutSeats : null };
+   const res = HPE.layout.solve(seed, solveOptions);
+   return res.ok ? res.value : null;
+

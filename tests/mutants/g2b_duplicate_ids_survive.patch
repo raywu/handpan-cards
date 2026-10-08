@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^two.records.for.one.deck.id.collapse.to.the.first..whatever.their.versions$ tests/app.test.js
+# kills: two records for one deck id collapse to the first, whatever their versions
+# Two records that resolve to one deck id both survive the boot rewrite.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7873,7 +7873,6 @@ function restoreScales() {
+       const res = readable ? scaleReader(rec.v)(rec.s) : null;
+       if (res && res.ok) {
+         const id = HPE.core.deckId(res.value.fields);
+-        if (seen.has(id)) continue;
+         const canonical = HPE.core.formatSeed(res.value.fields);
+         const options = recordOptions(rec);
+         const built = generateDeck(canonical, options);
+

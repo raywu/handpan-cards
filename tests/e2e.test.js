@@ -1529,7 +1529,7 @@ function run() {
         s.textContent = "#scale-mirror{display:none !important}";
         document.head.appendChild(s);
         const box = document.getElementById("scale-box");
-        box.value = "(D3) A3 C4 D4 | C3";
+        box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true }));
         document.getElementById("scale-back").focus(); return true;`);
       const seen = [];
@@ -2416,14 +2416,14 @@ function run() {
     assert.match(open.title, /Add a scale/i, "the page has no visible title");
     assert.match(open.backText, /BACK/, "the page has no visible way back");
     assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
-    assert.match(open.parseLine, /^Type your ding first/);
+    assert.match(open.parseLine, /^Type every note low to high/);
     assert.strictEqual(open.msgLive, "polite");
     // #scale-sheet is aria-modal, so the page-level .announce is outside the
     // dialog and unreachable while the sheet is open. A refusal is announced
     // only if #scale-refusal is itself a live region.
     assert.strictEqual(open.refusalLive, "polite",
       "the seed refusal is not in a live region inside the modal sheet");
-    assert.strictEqual(open.placeholder, "(D) A C D E F G A C");
+    assert.strictEqual(open.placeholder, "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
     assert.strictEqual(open.generateDisabled, true);
     assert.strictEqual(open.swatches, 6);
     assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
@@ -3251,6 +3251,7 @@ function run() {
         // The palette swatches are 14px by spec, so their hit area is an
         // invisible overlay: probe it instead of measuring the dot.
         for (const dot of document.querySelectorAll("#scale-swatches .dot")) {
+          dot.scrollIntoView({ block: "center" });
           const r = dot.getBoundingClientRect();
           const cx = r.left + r.width / 2;
           const cy = r.top + r.height / 2;
@@ -3313,6 +3314,7 @@ function run() {
           : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
             (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
         return dots.map((dot, i) => {
+          dot.scrollIntoView({ block: "center" });
           const r = dot.getBoundingClientRect();
           const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
           // +/-21 pins the documented 44px box; +/-18 would pass on 36px.
@@ -4229,7 +4231,7 @@ function run() {
   /** Generate a deck at 380px and reopen it in Edit state. */
   async function editFreshDeck() {
     await freshLoad();
-    await b.setViewport(380, 780, true);
+    await b.setViewport(380, 840, true);
     await generate(EDIT_SCALE);
     await openEdit();
   }
@@ -5024,7 +5026,7 @@ function run() {
     // engine warns NO_THIRDS on every open.
     try {
       await freshLoad();
-      await b.setViewport(380, 780, true);
+      await b.setViewport(380, 840, true);
       await generate("(C3) G3 D4 G4 D5");
       await openEdit();
       const read = () => b.eval(`
@@ -5075,7 +5077,9 @@ function run() {
     // the parse summary are both live at once.
     try {
       await freshLoad();
-      await b.setViewport(380, 780, true);
+      // 800 high, not 780: the second scale label (spec line 9) is a permanent
+      // extra line, so the row sits ~12px lower than it did before it.
+      await b.setViewport(380, 800, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
       const chips = await chipReport();
@@ -5356,7 +5360,7 @@ function run() {
         document.getElementById("scale-label-2").textContent,
         document.getElementById("scale-label-2").hidden,
         document.getElementById("scale-box").getAttribute("aria-describedby")]`),
-      [0, true, "", true, "scale-label-2"]);
+      [0, true, "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS", false, "scale-label-2"]);
 
       await typeScale("(D3) A3 C4");
       const one = await fieldMetrics();
@@ -5382,7 +5386,7 @@ function run() {
     await b.setViewport(...W1_PHONE);
     try {
       await openSheet();
-      const ph = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 / D5 E5 | C3 D3 E3 F3 G3 A3 Bb3";
+      const ph = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
       assert.strictEqual(ph.length, 60);
       const r = await b.eval(`
         const ta = document.getElementById("scale-box");
@@ -5493,7 +5497,7 @@ function run() {
     await freshLoad();
     await b.setViewport(320, 700, true);
     try {
-      await generate("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5");
+      await generate("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]");
       await b.eval(`window.__inputs = 0;
         document.getElementById("scale-box").addEventListener("input", () => { window.__inputs += 1; });
         return true;`);
@@ -5674,7 +5678,7 @@ function run() {
 
   // The largest pan the engine accepts (13 top + 6 bottom = 19 layout slots
   // beside the ding), which is the tallest the Edit sheet can ever be.
-  const BIG_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 G5 A5 | C3 E3 F3 G3 A3 Bb3";
+  const BIG_SCALE = "[C3] (D3) [E3] [F3] [G3] [A3] A3 [Bb3] C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 | G5 A5";
 
   // Everything the fold check needs, read in one round trip and with nothing
   // scrolled first. `hit` is named so a failure says what is covering it.
@@ -5785,6 +5789,57 @@ function run() {
           { label: "the Edit sheet to close" });
       }
     } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  const THREE_ROW_SCALE = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6 G6 A6 B6 C7 D7 E7 F7 G7 A7 B7 C8 D8 E8 F8";
+
+  test("G2b: GENERATE CARDS stays on screen when the scale field is three rows tall", async () => {
+    try {
+      await freshLoad();
+      for (const [w, h] of FOLD_VIEWPORTS) {
+        await b.setViewport(w, h, true);
+        await openSheetForFold(w, h);
+        await typeScale(THREE_ROW_SCALE);
+        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+          { label: `the preview to render at ${w}x${h}` });
+        const m = await fieldMetrics();
+        if (w <= 390) assert.strictEqual(m.rows, 3, `the field is ${m.rows} rows at ${w}x${h}, not three`);
+        assertPrimaryVisible(await primaryFold(), `three-row create sheet at ${w}x${h}`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("G2b spec lines 9 and 11: the second label is shown whole and the count line wraps at 380 with no sideways scroll", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await typeScale("[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
+      const m = await b.eval(`
+        const l2 = document.getElementById("scale-label-2");
+        const parse = document.getElementById("scale-parse");
+        const surf = document.getElementById("scale-sheet").firstElementChild;
+        const lh = parseFloat(getComputedStyle(parse).lineHeight);
+        return { l2h: l2.hidden, l2w: l2.scrollWidth, l2c: l2.clientWidth,
+          l2r: l2.getBoundingClientRect().right, vw: window.innerWidth,
+          pw: parse.scrollWidth, pc: parse.clientWidth, ph: parse.getBoundingClientRect().height, lh,
+          pt: parse.textContent, sw: surf.scrollWidth, sc: surf.clientWidth };`);
+      assert.strictEqual(m.l2h, false, "the second label is hidden");
+      assert.ok(m.l2w <= m.l2c + 1, `the second label is clipped (${m.l2w} > ${m.l2c})`);
+      assert.ok(m.l2r <= m.vw, "the second label runs off the right edge");
+      assert.match(m.pt, /^Ding E3 \u00b7 9 top \u00b7 3 inner \u00b7 7 bottom\./);
+      assert.ok(m.ph > m.lh * 1.5, `the count line did not wrap (${m.ph}px at ${m.lh}px lines)`);
+      assert.ok(m.pw <= m.pc + 1, "the count line scrolls sideways");
+      assert.ok(m.sw <= m.sc + 1, "the sheet scrolls sideways");
+    } finally {
+      await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
     }
   });
@@ -5990,6 +6045,9 @@ function run() {
       await typeScale(BIG_SCALE);
       await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
         { label: "the preview to render" });
+      // The permanent second label and the three-row field push the box down;
+      // a click at its centre must land on it, not on whatever is under the fold.
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
         await b.fakeKeyboard(745 - kb);
@@ -6431,7 +6489,7 @@ function run() {
       await b.setViewport(380, 800, true);
       await openSheet();
       const m = await b.eval(`
-        const label = document.querySelector('label[for="scale-box"]');
+        const label = document.getElementById("scale-label-2");
         const box = document.getElementById("scale-box");
         const parse = document.getElementById("scale-parse");
         const g = (a, bEl) => bEl.getBoundingClientRect().top - a.getBoundingClientRect().bottom;
@@ -6491,7 +6549,7 @@ function run() {
       const states = [];
       await typeScale("(D) A C D E F G A C");
       states.push(await h("valid"));
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       states.push(await h("invalid"));
       await typeScale("(D) A C D E F G A C");
       states.push(await h("valid again"));
@@ -6528,7 +6586,7 @@ function run() {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await openSheet();
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       await b.settle();
       const r = await b.eval(`
         const msg = document.getElementById("scale-refusal").getBoundingClientRect();
@@ -6584,7 +6642,10 @@ function run() {
       // #scale-refusal is EMPTY and #scale-parse holds the reserved line.
       await typeScale("(D) A C D E F G A C");
       const valid = await top();
-      await typeScale("(D) A C D zzzz");
+      const parseH = await b.eval(`
+        return document.getElementById("scale-parse").getBoundingClientRect().height;
+      `);
+      await typeScale("(D) A C D C10");
       const bad = await top();
       const msg = await b.eval(`
         const m = document.getElementById("scale-refusal");
@@ -6593,10 +6654,15 @@ function run() {
       assert.ok(msg.t.length > 0, "no refusal was rendered for an invalid seed");
       // Guards the premise: a refusal that silently grew to two lines would
       // make the assertions below fail for a reason this test does not mean.
-      assert.ok(msg.h < 27, `the refusal wrapped (${msg.h}px) - pick a shorter token`);
-      assert.ok(Math.abs(bad - valid) < 0.5,
-        `the pan moved ${(bad - valid).toFixed(1)}px when the seed went bad ` +
-        `(valid=${valid.toFixed(1)}, bad=${bad.toFixed(1)})`);
+      // Plan section 9's refusals are two lines at 380 and the spec adds no
+      // floor ("a refusal wraps to its own"), so the pan steps by exactly the
+      // difference between the two boxes. Stacking them (the parse line kept in
+      // the flow beside the refusal) steps by the refusal's whole height.
+      const step = bad - valid;
+      assert.ok(Math.abs(step - (msg.h - parseH)) < 0.5,
+        `the pan moved ${step.toFixed(1)}px when the seed went bad, expected the ` +
+        `refusal (${msg.h.toFixed(1)}px) minus the parse line it replaces ` +
+        `(${parseH.toFixed(1)}px)`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -6616,7 +6682,8 @@ function run() {
       const m = () => b.eval(`
         return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
                  body: document.querySelector(".sheetbody").scrollHeight,
-                 parse: document.getElementById("scale-parse").getBoundingClientRect().height };
+                 parse: document.getElementById("scale-parse").getBoundingClientRect().height,
+                 box: document.getElementById("scale-box").getBoundingClientRect().height };
       `);
       await b.settle();
       const empty = await m();
@@ -6628,10 +6695,12 @@ function run() {
         `the page surface resized by ${(empty.h - typed.h).toFixed(1)}px on the ` +
         "first keystroke - it is the viewport's height and must not move");
       const bodyDelta = empty.body - typed.body;
-      const parseDelta = empty.parse - typed.parse;
+      // The empty field sizes itself from the placeholder (spec, Empty field),
+      // so its own rows are the second element that legitimately changes.
+      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
-        `typed but the parse line only accounts for ${parseDelta.toFixed(1)}px ` +
+        `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
         "- something else in the page is resizing on input");
     } finally {
       await b.setViewport(900, 900, false);
@@ -6656,7 +6725,7 @@ function run() {
       await typeScale("(D) A C D E F G A C");
       await b.settle();
       const valid = await name();
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       await b.settle();
       const held = await name();
 

@@ -61,7 +61,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // readable: see decode step 2 (D5-4). v1 = an empty line 2, v2 = a flat layout
   // order on it, v3 = per-ring seats on it and two more facts on the options
   // line (the mirror of each ring, the anchor).
-  var VERSION = 3;
+  var VERSION = 4;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -343,10 +343,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return result;
   }
 
-  // The scale-line reader for a link's version. Every version this build reads
-  // maps to the legacy reader for now; a later lane gives the newest its own.
+  // The scale-line reader for a link's version: 1 to 3 wrote the old grammar
+  // (`/` for inner, `|` for a bottom list), 4 writes the new one. The version
+  // tag decides, never the look of the string.
   function scaleLineReader(version) {
-    return HPE.core.parseLegacySeed;
+    return version <= 3 ? HPE.core.parseLegacySeed : HPE.core.parseSeed;
   }
 
   // The whole decode except the last step, which has to stay the bare

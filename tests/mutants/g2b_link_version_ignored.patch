@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^decode.chooses.its.scale.line.reader.from.the.version$ tests/share.test.js
+# kills: decode chooses its scale-line reader from the version
+# A link is read as the new grammar whatever version it carries.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -347,7 +347,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // (`/` for inner, `|` for a bottom list), 4 writes the new one. The version
+   // tag decides, never the look of the string.
+   function scaleLineReader(version) {
+-    return version <= 3 ? HPE.core.parseLegacySeed : HPE.core.parseSeed;
++    return HPE.core.parseSeed;
+   }
+ 
+   // The whole decode except the last step, which has to stay the bare
+

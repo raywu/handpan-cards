@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^G2b..the.legacy.reader.refuses.a.bottom.note.that.lands.below.octave..1..pin.$ tests/core.test.js
+# kills: G2b: the legacy reader refuses a bottom note that lands below octave -1 (pin)
+# The legacy reader places a bottom note at octave -2, which no string can spell.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -449,7 +449,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       low.octave = octaveOf(low.letter, low.accidental, low.midi);
+       // B#-2 is midi 0 and an octave no string can spell (the lexer reads -1 to
+       // 9 only), so a deck holding it would have no canonical string.
+-      if (low.octave < -1) return badNote(spell(low.letter, low.accidental) + low.octave);
++      
+       var lowKey = "bottom " + spell(low.letter, low.accidental) + low.octave;
+       // Unreachable for the same reason as the top-shell guard above.
+       if (seen[lowKey]) return repeated(low, low.midi, seen[lowKey].note, seen[lowKey].midi);
+

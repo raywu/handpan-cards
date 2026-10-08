@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3407,7 +3407,8 @@ function runGenerate() {
+@@ -9508,7 +9508,8 @@ function runGenerate() {
    if (replaced) replaceRegistered(wasId, d);
    // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
    // produced; nothing is rebuilt to re-derive them.
@@ -15,4 +15,5 @@ diff --git a/index.html b/index.html
 +  const warned = ((__again.ok ? __again.value.warnings : d.warnings) || []).map(w => w.reason);
    let text = (replaced || known.has(d.id))
      ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
-   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
+   if (warned.length) text += " " + warned.join(" ");
+

@@ -1,15 +1,16 @@
 # suite: node --test --test-name-pattern ^a.top.note.that.does.not.clear.the.ding.is.told.the.ding.is.the.floor$ tests/core.test.js
 # kills: a top note that does not clear the ding is told the ding is the floor
-# the ding alternate says "at or below" and offers only the fix the user can make - the reverted wording is the riddle "F3 is not above the ding F3" plus advice to retune the pan
+# the ding alternate says the ding is the floor; the reverted wording is the riddle "F3 is not above the ding F3"
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -40,7 +40,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       // Section 2, ALTERNATE SENTENCES. Same code, different sentence, chosen
-       // by the named condition. The enum stays closed.
+@@ -48,7 +48,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       kind: "error",
+       reason: "<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.",
        alternates: {
--        ding: "<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave."
-+        ding: "<A> is not above the ding <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one."
+-        ding: "<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
++        ding: "<A> is not above the ding <B>, and notes must ascend. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.",
+         afterBar: "<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.",
+         below: "<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3."
        }
-     },
-     NOTE_REPEATED: {
+

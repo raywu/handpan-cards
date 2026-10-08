@@ -4,7 +4,7 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -356,7 +356,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -490,7 +490,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var id = String(n + 1);
        fields[id] = [spell(topNotes[n].letter, topNotes[n].accidental),
                      topNotes[n].octave, topNotes[n].midi,
@@ -12,4 +12,4 @@ diff --git a/src/engine/core.js b/src/engine/core.js
 +                    n < rim - 1 ? "rim" : "inner", null, id];
      }
      for (n = 0; n < bottomNotes.length; n += 1) {
-       fields[String(101 + n)] = [
+       fields[String(Math.max(101, topNotes.length + 1) + n)] = [

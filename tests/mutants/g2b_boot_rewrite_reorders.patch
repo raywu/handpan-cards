@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^the.boot.rewrite.leaves.an.unreadable.record.byte.identical.at.its.index$ tests/app.test.js
+# kills: the boot rewrite leaves an unreadable record byte-identical at its index
+# The boot rewrite pushes each record to the front, so the list is reversed and no record stays at its index.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -7883,7 +7883,7 @@ function restoreScales() {
+         }
+       }
+     } catch (e) {}
+-    out.push(keep);
++    out.unshift(keep);
+   }
+   if (JSON.stringify(out) !== JSON.stringify(list)) writeScales(out);
+ }
+

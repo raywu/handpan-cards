@@ -5,13 +5,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3408,8 +3408,7 @@ function runGenerate() {
+@@ -9509,8 +9509,7 @@ function runGenerate() {
    // [eng-review 2, 2A] the warnings are read off the deck the SAME generation
    // produced; nothing is rebuilt to re-derive them.
    const warned = (d.warnings || []).map(w => w.reason);
 -  let text = (replaced || known.has(d.id))
 -    ? `Updated ${d.name}` : `${d.chords.length} cards generated`;
 +  let text = `${d.chords.length} cards generated`;
-   if (!generated.has(d.id)) { generated.add(d.id); text += " " + LAYOUT_HINT; }
    if (warned.length) text += " " + warned.join(" ");
  
+   closeScaleSheet();

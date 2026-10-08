@@ -1719,7 +1719,7 @@ test("every BASIC anchor is in the INTERMEDIATE pool on every deck", () => {
     ["REGISTER_ANCHOR_DECK", fx.registerAnchor],
     ["REGISTER_HOME_DECK", fx.registerHome]
   ];
-  assert.strictEqual(fx.synthetic.length, 11, "11 of the 20 synthetic rows build");
+  assert.strictEqual(fx.synthetic.length, 13, "13 of the 20 synthetic rows build");
   for (const [label, deck] of decks) {
     const anchorsList = host(E.sequence.anchors(deck));
     const pool = host(E.sequence._internal.tierPool(deck, "intermediate", anchorsList));
