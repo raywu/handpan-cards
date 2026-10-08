@@ -944,6 +944,10 @@ test("identitySeed tells a twelve-note rim from an eleven-plus-one spill", () =>
   assert.notEqual(core.identitySeed(rim), core.identitySeed(spill));
   assert.notEqual(core.deckId(rim), core.deckId(spill));
   assert.equal(core.deckId(spill), core.deckId(parsed("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 / E5")));
+  // Ids are hashed from the legacy spelling so a saved deck keeps its id across
+  // grammars; pinning two literals is what notices a rehash.
+  assert.equal(core.deckId(spill), "custom:5f1fe36b");
+  assert.equal(core.deckId(rim), "custom:4bfc3e9a");
 });
 
 test("identitySeed orders by zone, not by field number", () => {
