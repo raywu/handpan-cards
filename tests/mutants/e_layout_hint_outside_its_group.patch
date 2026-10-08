@@ -7,19 +7,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -748,6 +748,7 @@ button.nav:active{background:#2e281e}
-          MOVE did because the thing they moved was not on screen - the chips
-          reordered and the pan behind the sheet did not visibly change. One
-          target, one group, both above the fold at 380px. -->
-+    <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
-     <div class="editrow" id="scale-layout-row" hidden>
-       <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
-       <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
-@@ -758,7 +759,6 @@ button.nav:active{background:#2e281e}
-            the correction is made on. It names the gesture before the buttons
-            because nothing either button does means anything until a note is
-            chosen. -->
--      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
-       <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
-            aria-describedby="scale-layout-hint">
-         <div class="mirror">
+@@ -1229,6 +1229,7 @@
+       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+         <!-- Edit path only. DR2 removes ROTATE and MOVE; until then they live
+              here, one tap deeper than before. -->
++    <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+         <div class="editrow" id="scale-legacy-group" role="group" aria-labelledby="scale-layout-label"
+              aria-describedby="scale-legacy-hint" hidden>
+           <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
+@@ -1240,7 +1241,6 @@
+                the correction is made on. It names the gesture before the buttons
+                because nothing either button does means anything until a note is
+                chosen. -->
+-          <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+           <div class="ctlrow">
+             <div class="mirror">
+               <button class="mode" type="button" id="scale-rot-l"

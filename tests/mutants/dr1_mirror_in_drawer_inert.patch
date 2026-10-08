@@ -1,0 +1,15 @@
+# kills: DR1 line 28: both mirror switches sit inside the drawer, keep their ids, redraw the plate and reach the deck
+# suite: node --test --test-name-pattern ^DR1.line.28.* tests/app.test.js
+# MIRROR TOP inside the drawer no longer flips the mirror: the tap is swallowed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9845,7 +9845,7 @@
+ // The mirror is the choice the pan preview exists to make visible, so each
+ // button re-solves the preview through the same parse path a keystroke uses.
+ mirrorTop.onclick = () => {
+-  mirror = !mirror; paintLayout(); resyncSheet(true);
++  paintLayout(); resyncSheet(true);
+   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
+ };
+ mirrorBot.onclick = () => {

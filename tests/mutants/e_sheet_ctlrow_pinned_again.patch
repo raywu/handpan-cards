@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -787,6 +787,7 @@ button.nav:active{background:#2e281e}
+@@ -1287,6 +1287,7 @@
        <label class="sheetlabel" for="scale-degrees">DEGREES</label>
        <select id="scale-degrees"></select>
      </div>
@@ -15,8 +15,8 @@ diff --git a/index.html b/index.html
      <!-- Inside .sheetbody, in the scroll. It used to be pinned below the
           scrollport with the primary, on the argument that everything outside
           .sheetbody is what the sheet guarantees without scrolling - so the
-@@ -818,7 +819,6 @@ button.nav:active{background:#2e281e}
-       </div>
+@@ -1314,7 +1315,6 @@
+     <div class="ctlrow">
        <div id="scale-swatches" role="group" aria-label="Card palette"></div>
      </div>
 -   </div>

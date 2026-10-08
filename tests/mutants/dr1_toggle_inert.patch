@@ -1,0 +1,15 @@
+# kills: DR1 line 17: the toggle shows the drawer, sets aria-expanded and adds .on
+# suite: node --test --test-name-pattern ^DR1.line.17.* tests/app.test.js
+# ADJUST LAYOUT does nothing when tapped: the drawer can never be opened.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9859,7 +9859,7 @@
+ };
+ anchorOne.onclick = pickAnchor("one");
+ anchorBetween.onclick = pickAnchor("between");
+-drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
++drawerBtn.onclick = () => {};
+ rotL.onclick = () => rotateLayout(-1);
+ rotR.onclick = () => rotateLayout(1);
+ moveL.onclick = () => moveNote(-1);

@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9650,8 +9650,8 @@
- // button re-solves the preview through the same parse path a keystroke uses.
- mirrorTop.onclick = () => { mirror = !mirror; paintMirrors(); resyncSheet(true); };
- mirrorBot.onclick = () => { bottomHeld = !bottomHeld; paintMirrors(); resyncSheet(true); };
+@@ -9860,8 +9860,8 @@ const pickAnchor = (to) => () => {
+ anchorOne.onclick = pickAnchor("one");
+ anchorBetween.onclick = pickAnchor("between");
+ drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
 -rotL.onclick = () => rotateLayout(-1);
 -rotR.onclick = () => rotateLayout(1);
 +rotL.onclick = () => rotateLayout(0);

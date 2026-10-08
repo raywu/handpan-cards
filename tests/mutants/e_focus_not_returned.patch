@@ -12,9 +12,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8175,7 +8175,8 @@ function hideSheet() {
-   }
+@@ -9610,7 +9610,8 @@ function hideSheet() {
    editingId = null;
+   dropDrawer();
    setInert(false, background);
 -  (sheetOpener || addChip).focus();
 +

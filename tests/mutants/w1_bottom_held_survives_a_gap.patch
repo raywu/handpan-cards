@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9140,7 +9140,7 @@
+@@ -9335,7 +9335,7 @@ function syncParseState({ paint }) {
    if (res.ok) {
      boxOk = true;
      const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
 -    if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
 +    if (bottom !== hadBottom) { hadBottom = bottom; }
-     paintMirrors();
+     paintLayout();
      showParse(parseLineText(res.value.fields));
      scaleBox.classList.remove("bad");

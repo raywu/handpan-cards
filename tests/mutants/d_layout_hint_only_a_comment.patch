@@ -9,12 +9,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -758,7 +758,7 @@ button.nav:active{background:#2e281e}
-            the correction is made on. It names the gesture before the buttons
-            because nothing either button does means anything until a note is
-            chosen. -->
--      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
-+      <!-- <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p> -->
-       <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
-            aria-describedby="scale-layout-hint">
-         <div class="mirror">
+@@ -1240,7 +1240,7 @@
+                the correction is made on. It names the gesture before the buttons
+                because nothing either button does means anything until a note is
+                chosen. -->
+-          <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
++          <!-- <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+           <div class="ctlrow">
+             <div class="mirror">
+               <button class="mode" type="button" id="scale-rot-l"
