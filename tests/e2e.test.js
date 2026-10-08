@@ -4420,17 +4420,18 @@ function run() {
     }
   });
 
-  test("DR1 focus order: on Edit the plate keeps its tab stop and comes before the toggle, with the drawer closed and open", async () => {
+  test("DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle", async () => {
     try {
       for (const open of [false, true]) {
         await (open ? editFreshDeckOpen() : editFreshDeck());
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
         const seen = [];
-        for (let i = 0; i < 2; i += 1) {
+        for (let i = 0; i < (open ? 2 : 1); i += 1) {
           await b.key("Tab", "Tab", 9);
-          seen.push(await b.eval(`return document.activeElement.id;`));
+          seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
         }
-        assert.deepStrictEqual(seen, ["scale-preview", "scale-layout-toggle"], `drawer ${open ? "open" : "closed"}`);
+        assert.deepStrictEqual(seen, open ? ["panhit", "scale-layout-toggle"] : ["scale-layout-toggle"],
+          `drawer ${open ? "open" : "closed"}`);
       }
     } finally {
       await b.setViewport(900, 900, false);

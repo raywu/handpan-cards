@@ -244,14 +244,17 @@ test("the Edit sheet draws the mock too, and makes it the correction surface", (
   // note on the pan"): the card behind the sheet is not a control, and the
   // layout buttons moved nothing the owner could see. The plate is paid for by
   // the fold check in tests/e2e.test.js, not by hiding it.
+  assert.ok(previewHTML(app).includes("<svg"), "the Edit sheet draws no pan to correct");
+  assert.ok(!previewHTML(app).includes('class="panhit"'),
+    "with the drawer closed the Edit mock is a picture");
+  app.run("openDrawer()");
   const svg = previewHTML(app);
-  assert.ok(svg.includes("<svg"), "the Edit sheet draws no pan to correct");
   assert.ok(svg.includes('class="panhit"'),
-    "the Edit mock is a picture, not the correction surface (D1)");
+    "with the drawer open the Edit mock is the correction surface (D1)");
   assert.strictEqual(app.els["scale-preview"].getAttribute("role"), "group",
-    "the Edit mock is still exposed as an image");
-  assert.strictEqual(app.els["scale-preview"].getAttribute("tabindex"), "0",
-    "the Edit mock is not a tab stop, so the correction is mouse-only");
+    "the open plate is exposed as a group of buttons");
+  assert.strictEqual((svg.match(/class="panhit"[^>]*tabindex="0"/g) || []).length, 1,
+    "the plate is one Tab stop");
 });
 
 /* ------------------------------------------------- the card path is untouched */
