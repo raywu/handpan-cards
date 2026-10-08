@@ -993,6 +993,8 @@ footer.seq{row-gap:var(--sp-1)}
   #scale-layout-zone.open #scale-preview{max-width:340px}
 }
 @media (max-height:520px) and (min-width:560px){
+  /* The band sits beside the controls here, not over them: nothing to pad for. */
+  .sheetbody{scroll-padding-top:0}
   #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
   #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4}
   #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
@@ -9948,8 +9950,8 @@ sheet.addEventListener("keydown", e => {
                  editingId ? rotL : null, editingId ? rotR : null,
                  editingId ? moveL : null, editingId ? moveR : null,
                  editingId ? resetBtn : null,
-                 editingId ? degSel : null,
-                 mirrorTop, mirrorBot, anchorOne, anchorBetween, ...swatches.children, genBtn,
+                 mirrorTop, mirrorBot, anchorOne, anchorBetween,
+                 editingId ? degSel : null, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);
   cycleTabStops(stops, e);

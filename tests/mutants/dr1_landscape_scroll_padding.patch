@@ -1,0 +1,16 @@
+# kills: DR1 line 87 landscape: at 844 x 390 with the drawer open every Tab stop of the sheet ends inside the scrollport, on Add and on Edit
+# suite: node --test --test-name-pattern ^DR1.line.87.landscape.* tests/e2e.test.js
+# The two-column layout keeps the portrait scroll-padding, which is taller than
+# the scrollport there, so Tab leaves focused controls out of view.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -994,7 +994,7 @@
+ }
+ @media (max-height:520px) and (min-width:560px){
+   /* The band sits beside the controls here, not over them: nothing to pad for. */
+-  .sheetbody{scroll-padding-top:0}
++  .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
+   #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
+   #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4}
+   #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}

@@ -6651,17 +6651,20 @@ test("DR1 line 23: Tab walks the field, the toggle, MIRROR TOP, MIRROR BOTTOM, O
     "a disabled MIRROR BOTTOM was a Tab stop");
 });
 
-test("DR1 line 23: on Edit the old group sits between the toggle and MIRROR TOP", () => {
+test("DR1 line 23: on Edit Tab runs toggle, legacy group, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, degrees, first swatch, in exactly that order", () => {
   const app = boot();
   const d = makeCustom(app, W1_BOTTOM);
   openEdit(app, d);
   dr1Toggle(app).click();
-  const seen = dr1Tabs(app, "scale-box", 12);
-  const at = (id) => seen.indexOf(id);
+  const seen = dr1Tabs(app, "scale-box", 14);
   const order = ["scale-layout-toggle", "scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
-    "scale-layout-reset", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"];
-  for (const id of order) assert.ok(at(id) >= 0, `Tab never reached #${id}: ${seen}`);
-  assert.deepStrictEqual(order.map(at), order.map(at).slice().sort((a, b) => a - b), `out of order: ${seen}`);
+    "scale-layout-reset", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between",
+    "scale-degrees"];
+  const from = seen.indexOf("scale-layout-toggle");
+  assert.ok(from >= 0, `Tab never reached the toggle: ${seen}`);
+  assert.deepStrictEqual(seen.slice(from, from + order.length), order, `out of order: ${seen}`);
+  const swatch = seen[from + order.length];
+  assert.ok(swatch && swatch !== "scale-generate", `the first swatch does not follow the degrees: ${seen}`);
 });
 
 test("DR1 line 25: two anchor buttons carry aria-pressed, ON CENTRE pressed by default", () => {

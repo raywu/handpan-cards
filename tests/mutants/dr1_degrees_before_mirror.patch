@@ -1,0 +1,18 @@
+# kills: DR1 line 23: on Edit Tab runs toggle, legacy group, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, degrees, first swatch, in exactly that order
+# suite: node --test --test-name-pattern ^DR1.line.23..on.Edit.* tests/app.test.js
+# The degrees select goes back before MIRROR TOP in the sheet's Tab-stop list,
+# so Tab runs RESET, degrees, MIRROR TOP and then back up the drawer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9948,8 +9948,8 @@
+                  editingId ? rotL : null, editingId ? rotR : null,
+                  editingId ? moveL : null, editingId ? moveR : null,
+                  editingId ? resetBtn : null,
+-                 mirrorTop, mirrorBot, anchorOne, anchorBetween,
+-                 editingId ? degSel : null, ...swatches.children, genBtn,
++                 editingId ? degSel : null,
++                 mirrorTop, mirrorBot, anchorOne, anchorBetween, ...swatches.children, genBtn,
+                  editingId ? delBtn : null]
+     .filter(isStop);
+   cycleTabStops(stops, e);

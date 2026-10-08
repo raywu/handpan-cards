@@ -4430,6 +4430,41 @@ function run() {
     }
   });
 
+  test("DR1 line 87 landscape: at 844 x 390 with the drawer open every Tab stop of the sheet ends inside the scrollport, on Add and on Edit", async () => {
+    try {
+      for (const edit of [false, true]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(844, 390, true);
+          await generate(EDIT_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else {
+          await addWithDrawer(844, 390);
+        }
+        await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+        const seen = [];
+        for (let i = 0; i < 34; i++) {
+          await b.key("Tab", "Tab", 9);
+          const r = await b.eval(`
+            const a = document.activeElement, sp = ${body};
+            if (!a || !sp.contains(a)) return null;
+            const e = a.getBoundingClientRect(), s = sp.getBoundingClientRect();
+            return { id: a.id || a.tagName, top: e.top - s.top, bottom: e.bottom - s.top, port: s.height };`);
+          if (!r) continue;
+          seen.push(r.id);
+          const fits = r.bottom - r.top <= r.port;
+          assert.ok(r.top >= -1 && (fits ? r.bottom <= r.port + 1 : r.top < r.port),
+            `${edit ? "Edit" : "Add"} at 844 x 390: #${r.id} ends outside the scrollport: ${JSON.stringify(r)}`);
+        }
+        assert.ok(seen.includes("scale-anchor-between"), `Tab never reached BESIDE CENTRE: ${seen}`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("DR1 line 89 (report): where the toggle sits at 380 x 667 closed, and the status at 844 x 390", async () => {
     try {
       await freshLoad();
