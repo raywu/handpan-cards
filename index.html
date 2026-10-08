@@ -988,7 +988,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-state{color:#e3b25c}
 #scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
   padding-bottom:var(--sp-1)}
-#scale-layout-zone.open #scale-preview{max-width:min(300px, 42dvh)}
+#scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
 .sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
   #scale-layout-zone.open #scale-plate-band{position:static}
 #scale-layout-zone.open.nostick #scale-plate-band{position:static}
@@ -8178,11 +8178,11 @@ function pan(d, ch, opts) {
         if (String(id) === picked) {
           pickMarks.push(`<circle class="pansel" ${at} r="${rr * 1.2}" fill="rgba(226,112,5,.22)"`
             + ` stroke="#E27005" stroke-width="2.2" vector-effect="non-scaling-stroke" pointer-events="none"/>`
-            + `<circle class="pansel-ink" ${at} r="${rr * 1.2}" fill="none" stroke="#272219"`
+            + `<circle class="pansel-ink" ${at} r="${rr * 1.27}" fill="none" stroke="#272219"`
             + ` stroke-width="0.8" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
         } else if (m.ring === pickedRing) {
           seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
-            + ` stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+            + ` stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
         } else {
           veils.push(`<circle class="panveil" ${at} r="${rr}" fill="#f1ece1" opacity=".55" pointer-events="none"/>`);
         }
@@ -8876,6 +8876,8 @@ function paintMirrors() {
 let drawerOpen = false;
 let drawerPaused = false;
 let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "" };
+const PAUSED_TEXT = "Layout is paused until the scale parses.";
+const READY_TEXT = "Layout is ready again.";
 const HINT_EMPTY = "Type a scale to adjust its layout.";
 const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.";
 const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
@@ -8918,10 +8920,11 @@ function paintLayout() {
     pickRef = null;
     pickMoved = false;
     if (isHit(document.activeElement)) drawerBtn.focus();
-    layoutStatus("Layout is paused until the scale parses.");
+    layoutStatus(PAUSED_TEXT);
   } else if (drawerOpen && boxOk && drawerPaused) {
     drawerPaused = false;
-    layoutStatus("Layout is ready again.");
+    const count = drawerStatus.textContent;
+    layoutStatus(count && count !== PAUSED_TEXT ? `${READY_TEXT} ${count}` : READY_TEXT);
   }
   const off = !boxOk && !drawerOpen;
   const keep = off && document.activeElement === drawerBtn;
