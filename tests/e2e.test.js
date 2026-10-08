@@ -6933,7 +6933,8 @@ function run() {
         return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
                  body: document.querySelector(".sheetbody").scrollHeight,
                  parse: document.getElementById("scale-parse").getBoundingClientRect().height,
-                 box: document.getElementById("scale-box").getBoundingClientRect().height };
+                 box: document.getElementById("scale-box").getBoundingClientRect().height,
+                 hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height };
       `);
       await b.settle();
       const empty = await m();
@@ -6947,7 +6948,10 @@ function run() {
       const bodyDelta = empty.body - typed.body;
       // The empty field sizes itself from the placeholder (spec, Empty field),
       // so its own rows are the second element that legitimately changes.
-      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box);
+      // Lane DR1: the toggle row's hint changes sentence on the first valid
+      // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
+      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box) +
+                         (empty.hint - typed.hint);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
         `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
