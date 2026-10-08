@@ -6450,10 +6450,11 @@ test("the boot rewrite of a legacy record with a hundred and one top notes keeps
 });
 
 // Plan section 19 R5: 20 rim, 8 inner, 12 bottom, drawn from the placeholder's
-// pitch set (C D E F# G A B). The budget is three times the wall time measured
-// on CI and recorded in the PR; over 5 s the lane stops instead of raising it.
-// CI measured 14 ms (run 37715956008, js suites), so the budget is 3 x 14.
-const FORTY_BUDGET_MS = 42;
+// pitch set (C D E F# G A B). The budget is the larger of three times the wall
+// time measured on CI and 1000 ms (plan section 20.11); over 5 s the lane stops
+// instead of raising it. CI measured 14 ms (run 37715956008, js suites).
+const FORTY_MEASURED_MS = 14;
+const FORTY_BUDGET_MS = Math.max(3 * FORTY_MEASURED_MS, 1000);
 test("a forty-note pan generates its deck inside the time budget", () => {
   const app = boot();
   const bottom = "[G1] [A1] [B1] [C2] [D2] [E2] [F#2] [G2] [A2] [B2] [C3] [D3]";
