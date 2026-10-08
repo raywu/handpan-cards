@@ -789,18 +789,21 @@ test("the built-in decks keep the derived extent they have always rendered", () 
   }
 });
 
-/* Lane S2: four of the five built-ins are solver output, and a test says so.
- * Each stored deck is redrawn with the solver's fields and geom swapped in; the
- * SVG must not change, for the no-chord drawing and for every chord. Pygmy is
- * the documented exception until Lane P1 redraws its geom (plan 5.1). */
+/* All five built-ins are solver output, and a test says so. Each stored deck
+ * is redrawn with the solver's fields and geom swapped in; the SVG must not
+ * change, for the no-chord drawing and for every chord. Pygmy's stored geom
+ * carries no ext (the drawing frame stays as it was), so ext is dropped from
+ * the solver's geom before the comparison. */
 const SOLVER_BUILTINS = {
   hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
   amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
   kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
   amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
 };
+const SOLVER_ANCHOR = { pygmy: "between" };
 
-test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them", () => {
+test("all five built-ins draw exactly as the solver draws them", () => {
   const { loadEngine } = require("./helpers/engine.js");
   const HPE = loadEngine(["core", "layout"]);
   const app = boot();
@@ -808,10 +811,13 @@ test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them
   for (const id of Object.keys(SOLVER_BUILTINS)) {
     const di = D.findIndex((d) => d.id === id);
     assert.ok(di >= 0, `${id} is not a built-in deck`);
-    const parsed = HPE.core.parseLegacySeed(SOLVER_BUILTINS[id]);
+    const parsed = id === "pygmy" ? HPE.core.parseSeed(SOLVER_BUILTINS[id]) : HPE.core.parseLegacySeed(SOLVER_BUILTINS[id]);
     assert.strictEqual(parsed.ok, true, id);
-    const solved = HPE.layout.solve(parsed.value);
+    const solved = HPE.layout.solve(parsed.value, SOLVER_ANCHOR[id] ? { anchor: SOLVER_ANCHOR[id] } : undefined);
     assert.strictEqual(solved.ok, true, id);
+    const solvedGeom = plain(solved.value.geom);
+    delete solvedGeom.ext;
+    if (id === "pygmy") assert.deepStrictEqual(plain(D[di].geom), solvedGeom, "pygmy geom is solver output minus ext");
     const byMidi = {};
     for (const key of Object.keys(solved.value.fields)) byMidi[solved.value.fields[key][2]] = solved.value.fields[key];
     const fields = {};
@@ -821,7 +827,7 @@ test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them
       assert.ok(fresh, `${id} field ${key} has no solver twin`);
       fields[key] = [stored[0], stored[1], stored[2], fresh[3], fresh[4], stored[5]];
     }
-    const twin = `Object.assign({}, DECKS[${di}], {fields: ${JSON.stringify(fields)}, geom: ${JSON.stringify(plain(solved.value.geom))}})`;
+    const twin = `Object.assign({}, DECKS[${di}], {fields: ${JSON.stringify(fields)}, geom: ${JSON.stringify(solvedGeom)}})`;
     assert.strictEqual(app.get(`pan(${twin}, null)`), app.get(`pan(DECKS[${di}], null)`), `${id}: no-chord drawing`);
     for (let ci = 0; ci < D[di].chords.length; ci++) {
       assert.strictEqual(app.get(`pan(${twin}, DECKS[${di}].chords[${ci}])`),

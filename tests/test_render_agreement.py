@@ -489,7 +489,7 @@ class RenderAgreement(unittest.TestCase):
                     key = ("f_ding" if zone == "ding" else
                            "f_bnote" if zone == "bottom" else "f_note")
                     was = geom[key] * 100 * inflation
-                    if app_c["deck"] == "pygmy":
+                    if app_c["deck"] == "pygmy" and zone in ("rim", "inner"):
                         was *= 1 - 3e-4
                     self.assertGreaterEqual(
                         drawn + 1e-3, was,

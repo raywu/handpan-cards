@@ -392,6 +392,20 @@ test("a crowded note line wraps inside the card, and a six-line blurb shrinks to
   assert.deepEqual(words(rows.map((r) => r.text)), words(deck.blurb), "nothing is dropped or reordered");
 });
 
+test("the blurb limit: six rows end inside the frame, seven sit on it, eight leave the card, none dropped or under 3.6 pt", () => {
+  const lay = (n) => {
+    const lines = Array.from({ length: n }, (_, i) => "ROW " + i);
+    const { rows, size, step } = P._internal.blurbLayout(lines);
+    assert.deepEqual(rows.map((r) => r.text), lines, "no row dropped");
+    assert.ok(size >= 3.6 - 1e-9, "no row under 3.6 pt, got " + size);
+    return 26 - (rows.length - 1) * step;
+  };
+  assert.ok(lay(6) >= 2 - 1e-9, "six rows end inside the frame");
+  const seven = lay(7);
+  assert.ok(seven < 2 && seven >= 0, "seven rows sit on the frame, got " + seven);
+  assert.ok(lay(8) < 0, "eight rows leave the card");
+});
+
 test("the built-in title cards keep the 4.2 pt, 8 pt-step blurb they always had", () => {
   for (const id of ["hijaz", "pygmy", "amara", "kurd", "amara10"]) {
     const canonical = DECK_DATA.find((d) => d.id === id);
