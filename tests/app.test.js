@@ -6340,6 +6340,12 @@ test("label, placeholder and hint name the same three marks", () => {
   assert.doesNotMatch(placeholderOf(), /\//);
 });
 
+test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
+  const hint = boot().get("PARSE_HINT");
+  assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
+  assert.ok(hint.endsWith("Octave numbers are optional."), `the hint ends: ${hint.slice(-60)}`);
+});
+
 test("every example in the label, hint and refusals parses", () => {
   const app = boot();
   const src = indexSource();
