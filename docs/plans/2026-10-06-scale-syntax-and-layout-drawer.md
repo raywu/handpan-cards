@@ -1800,6 +1800,23 @@ PR #273 at 8122e7a: CI green on attempt 2 of run 37838167957, review 3 PASS_WITH
 
 **Left as they are (review 3 nits).** N3 the line 70 unit test's title; N4 the keyboard-open browser test uses a script click after Tab, and the bottom-only line 18 test accepts C3 or D3; N6 the partly asserted lines listed in PR #273's map. N5: the plan commits on the lane branch are the coordinator's.
 
+### 20.21 DR2b step 0: the touch finding was the test, not the app (coordinator record, 2026-10-08, owner away)
+
+The lane reported at 0ff4adb that a held note, dragged, still scrolled the sheet under CDP touch, and marked the browser test "DR2b browser (46, rule T)" `todo`. A read-only investigation (probes in the session scratchpad, folder `inv-touch-probes/`) found:
+
+- On a fresh page the build holds all three step 0 traces: held drag 0 to 0, a move under 8 px then a drag 0 to 0, an unheld swipe 0 to 114.
+- The test pressed while the sheet was still flinging from its own swipe. Chrome sends a touchstart that lands during a fling as non-cancelable, and every touchmove of that touch with it; a standalone control page behaves the same. Waiting for the scroll to go quiet (300 ms or more, or no fling) makes it pass.
+- The listener the lane adds to the touched node at pointerdown carries the drag: after the lift's repaint the touch events go only to the detached node. Without it the held drag scrolls (0 to 114).
+
+**Repair (tests only; no change to `index.html`).**
+
+1. The rule T browser test waits until `.sheetbody`'s `scrollTop` is unchanged across 200 ms before the held half, and the `todo` comes off.
+2. It gains trace (b): one move under 8 px during the hold, then the drag; the sheet does not scroll and the note lifts.
+3. A mutant removes the touched-node listener and is killed by that test.
+4. The PR body's step 0 section and line 46 row are rewritten to say this.
+
+**Recorded, not changed.** A finger that lands on the plate while the sheet is still flinging cannot drag: the browser has already taken the gesture. It ends as "no drag" with the pick restored. Nothing within the block's limits (no permanent non-passive `touchstart`, no listener outside the plate) changes that. Phone-check item, with: iOS Safari's delivery of touch events to a detached SVG node; the long-press callout or magnifier on iOS; Android's long-press at about 500 ms; a finger's jitter during the hold.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
