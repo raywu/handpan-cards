@@ -68,9 +68,10 @@ row is a failure - add a row (0 is a fine start). Node counts come from
    source, and only the two files together can be wrong.
    Narrow exemption: `PrintDeckSnapshotTest` DOES import `tools/decks.py`,
    which rule 2 otherwise forbids. It exists to prove the three print deck
-   dicts are byte-identical to `tests/fixtures/print_decks_v1.json`, captured
-   BEFORE `decks.py` stopped holding literals - the frozen pre-refactor values
-   are the spec, so the fixture is the oracle and the module is the thing under
+   dicts are byte-identical to `tests/fixtures/print_decks_v2.json`, captured
+   BEFORE `decks.py` stopped holding literals (v2 is v1 with the four Pygmy
+   `_geom` values Lane P1 redrew; `print_decks_v1.json` is kept as history) -
+   the frozen pre-refactor values are the spec, so the fixture is the oracle and the module is the thing under
    test. Do not widen it: a new test that reads `decks.py` to derive what it
    then asserts is still a mirror.
 3. **Every test group needs a killing mutant.** Add a patch to `tests/mutants/`

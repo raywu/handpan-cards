@@ -331,6 +331,29 @@ class PrintParityTest(unittest.TestCase):
                                            msg="page %d y" % (i + 2))
 
 
+@unittest.skipIf(fitz is None, "pymupdf is required")
+class CrowdedTitleCardParityTest(unittest.TestCase):
+    """Lane P1: the wrapped, shrunk title-card blurb is the same in both."""
+
+    SEED = ("[C2] [D2] [G2] (C3) D3 G3 C4 D4 G4 C5 D5 G5 C6 D6 G6 C7 D7 G7 C8 D8"
+            " G8 C9 D9")
+
+    def test_the_six_line_blurb_lands_where_print_puts_it(self):
+        proc = subprocess.run([NODE, GEN_DECK, self.SEED], capture_output=True,
+                              text=True, cwd=paths.ROOT, timeout=180)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        payload = json.loads(proc.stdout)
+        with tempfile.TemporaryDirectory(prefix="handpan-parity-") as tmp:
+            py_path = os.path.join(tmp, "py.pdf")
+            js_path = os.path.join(tmp, "js.pdf")
+            hifi.build(py_path, decks.from_generated(payload))
+            _js_pdf(payload, js_path)
+            py_page = _glyphs(py_path)[0]
+            js_page = _glyphs(js_path)[0]
+        self.assertGreater(len(py_page), 400)
+        self.assertEqual(py_page, js_page)
+
+
 class LabelFloorTest(unittest.TestCase):
     """`layout.labelFloor` is the engine's own copy of the print pipeline's
     smallest-glyph arithmetic, so the SMALL_LABELS warning can be raised

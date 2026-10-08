@@ -219,6 +219,20 @@ test("build writes both mirrors onto deck.options; a seed with only mirror true 
   assert.equal(built(maker, { anchor: "between" }).options.anchor, "between");
 });
 
+test("build seats the fields the way its anchor says, not only in the options it reports", () => {
+  const maker = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  const rim = (deck) => Object.keys(deck.fields)
+    .filter((id) => deck.fields[id][3] === "rim")
+    .map((id) => deck.fields[id][4]);
+  const one = built(maker, { anchor: "one" });
+  const between = built(maker, { anchor: "between" });
+  assert.notDeepEqual(rim(between), rim(one), "the two anchors seat the rim differently");
+  assert.equal(one.fields["1"][4], 270, "anchor one puts note 1 at bottom centre");
+  assert.notEqual(between.fields["1"][4], 270, "anchor between does not");
+  const solved = host(HPE.layout.solve(seedOf(maker), { anchor: "between" }).value);
+  assert.deepEqual(between.fields, solved.fields, "build's fields are layout.solve's under the same anchor");
+});
+
 /* ---------------- section 12: deck identity ------------------------------ */
 
 test("id is core.deckId(seed) and is unchanged when every option changes", () => {

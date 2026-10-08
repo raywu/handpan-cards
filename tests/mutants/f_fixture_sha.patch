@@ -11,9 +11,9 @@
 # byte-identical to Dsus's own sus4 chord elsewhere in the same fixture, so it
 # rode a non-unique anchor. KNOWN_NON_UNIQUE_ANCHORS in
 # tests/mutation_harness.test.js is now empty.
-diff --git a/tests/fixtures/golden_decks_v7.json b/tests/fixtures/golden_decks_v7.json
---- a/tests/fixtures/golden_decks_v7.json
-+++ b/tests/fixtures/golden_decks_v7.json
+diff --git a/tests/fixtures/golden_decks_v8.json b/tests/fixtures/golden_decks_v8.json
+--- a/tests/fixtures/golden_decks_v8.json
++++ b/tests/fixtures/golden_decks_v8.json
 @@ -1927,13 +1927,13 @@
          {
            "main": "C#sus",

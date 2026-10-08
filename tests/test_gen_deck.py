@@ -45,6 +45,10 @@ GEN_DECK = os.path.join(paths.TOOLS, "gen_deck.js")
 SEED_TOP_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
 SEED_WITH_BOTTOM = ("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4"
                     " C5 Eb5 F5 G5 [Ab5]")
+# A pan of C, D and G in every octave: 18 rim notes and three bottom notes. It
+# earns NO_THIRDS and SMALL_LABELS, and its note line is wider than the card.
+SEED_CROWDED_NO_THIRDS = ("[C2] [D2] [G2] (C3) D3 G3 C4 D4 G4 C5 D5 G5 C6 D6 G6"
+                          " C7 D7 G7 C8 D8 G8 C9 D9")
 # A pan of fourths and fifths: it BUILDS, and carries the NO_THIRDS warning.
 SEED_NO_THIRDS = "(C3) G3 D4 G4 D5"
 
@@ -465,6 +469,53 @@ class GeneratedDeckKeyTest(unittest.TestCase):
                 with self.subTest(warning=label):
                     self.assertLessEqual(width, hifi.CW - 24,
                                          "%s line is %.1f pt" % (label, width))
+
+    def crowded_deck(self):
+        return decks.from_generated(generate(SEED_CROWDED_NO_THIRDS))
+
+    def test_a_crowded_note_line_wraps_inside_the_card(self):
+        deck = self.crowded_deck()
+        self.assertEqual({w["code"] for w in deck["warnings"]},
+                         {"NO_THIRDS", "SMALL_LABELS"},
+                         "this seed is only useful while it earns both warnings")
+        self.assertGreater(hifi.tw(deck["blurb"][0], "Label", 4.2, 0.35),
+                           hifi.CW - 24, "the unwrapped note line must overflow")
+        layout = hifi.blurb_layout(deck["blurb"])
+        for text, _bottom in layout["rows"]:
+            self.assertLessEqual(hifi.tw(text, "Label", layout["size"], 0.35),
+                                 hifi.CW - 24, text)
+        notes = [t for t, b in layout["rows"][:2]]
+        self.assertTrue(notes[0].startswith("C3  |  D3"))
+        self.assertTrue(notes[1].endswith("D9"))
+        self.assertEqual(" ".join(t for t, _ in layout["rows"]).split(),
+                         " ".join(deck["blurb"]).split(),
+                         "wrapping drops and reorders nothing")
+
+    def test_a_six_line_blurb_shrinks_to_fit_and_never_drops_a_line(self):
+        deck = self.crowded_deck()
+        layout = hifi.blurb_layout(deck["blurb"])
+        rows = layout["rows"]
+        self.assertEqual(len(rows), 6)
+        self.assertGreaterEqual(layout["size"], 3.6)
+        self.assertGreaterEqual(layout["step"], 1.2 * layout["size"])
+        self.assertGreaterEqual(26 - (len(rows) - 1) * layout["step"], 2.0 - 1e-9)
+        self.assertEqual(sum(1 for _t, b in rows if b), 1, "BOTTOM line is orange")
+        with tempfile.TemporaryDirectory(prefix="handpan-gen-") as tmp:
+            out = os.path.join(tmp, "crowded.pdf")
+            hifi.build(out, deck)
+            with pymupdf.open(out) as doc:
+                spans = [s for b in doc[0].get_text("dict")["blocks"]
+                         for ln in b.get("lines", ()) for s in ln["spans"]]
+        sizes = {round(s["size"], 1) for s in spans
+                 if "CROWDED" in s["text"] or "NO 3RDS" in s["text"]}
+        self.assertEqual(sizes, {round(layout["size"], 1)})
+
+    def test_the_builtin_title_blurbs_are_laid_out_as_they_always_were(self):
+        for deck in (decks.HIJAZ, decks.PYGMY, decks.AMARA, decks.KURD,
+                     decks.AMARA10):
+            layout = hifi.blurb_layout(deck["blurb"])
+            self.assertEqual([t for t, _ in layout["rows"]], deck["blurb"])
+            self.assertEqual((layout["size"], layout["step"]), (4.2, 8))
 
     def test_the_adapter_leaves_the_builtin_decks_untouched(self):
         """ADDITIVE only: validate.py check 1 pins decks.py to the app JSON."""
