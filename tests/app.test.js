@@ -6452,7 +6452,8 @@ test("the boot rewrite of a legacy record with a hundred and one top notes keeps
 // Plan section 19 R5: 20 rim, 8 inner, 12 bottom, drawn from the placeholder's
 // pitch set (C D E F# G A B). The budget is three times the wall time measured
 // on CI and recorded in the PR; over 5 s the lane stops instead of raising it.
-const FORTY_BUDGET_MS = 0;
+// CI measured 14 ms (run 37715956008, js suites), so the budget is 3 x 14.
+const FORTY_BUDGET_MS = 42;
 test("a forty-note pan generates its deck inside the time budget", () => {
   const app = boot();
   const bottom = "[G1] [A1] [B1] [C2] [D2] [E2] [F#2] [G2] [A2] [B2] [C3] [D3]";
@@ -6466,7 +6467,7 @@ test("a forty-note pan generates its deck inside the time budget", () => {
   const res = app.generate(seed, {});
   const ms = Date.now() - t0;
   assert.strictEqual(res.ok, true, res.reason);
-  assert.ok(ms < FORTY_BUDGET_MS, `MEASURED ${ms} ms`);
+  assert.ok(ms < FORTY_BUDGET_MS, `${ms} ms against a ${FORTY_BUDGET_MS} ms budget`);
 });
 
 const CROWDED = "(C3) " + "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ").join(" ");
