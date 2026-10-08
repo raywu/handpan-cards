@@ -215,6 +215,39 @@ function run() {
     assert.ok(m.inkSw > 0 && m.inkSw < m.sel, `the hairline is ${m.inkSw}px`);
   });
 
+  const BUILTIN_SCALES = {
+    amara9: SCALES.amara,
+    amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+    kurd: SCALES.kurd,
+    hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+    pygmy: SCALES.pygmy,
+  };
+  for (const [deck, scale] of Object.entries(BUILTIN_SCALES)) {
+    test(`DR2a browser (95): on every field of ${deck} at the 380x667 open plate the orange ring shows 2px and the 1px ink hairline lies wholly outside it`, async () => {
+      await openAdd(scale);
+      const ids = await ev(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("data-field"));`);
+      assert.ok(ids.length > 0);
+      for (const id of ids) {
+        const sel = `#scale-preview .panhit[data-field='${id}']`;
+        await b.click(sel); await frames();
+        const m = await ev(`const svg = document.querySelector("#scale-preview svg"), q = (c) => svg.querySelector("." + c);
+          const k = Math.min(svg.getBoundingClientRect().width, svg.getBoundingClientRect().height) / (2 * Number(svg.getAttribute("data-ext")));
+          const sw = (c) => parseFloat(getComputedStyle(q(c)).strokeWidth);
+          const pressed = svg.querySelector(".panhit[aria-pressed='true']");
+          return { pressed: !!pressed, k, selR: Number(q("pansel") && q("pansel").getAttribute("r")), inkR: Number(q("pansel-ink") && q("pansel-ink").getAttribute("r")),
+            selW: q("pansel") ? sw("pansel") : 0, inkW: q("pansel-ink") ? sw("pansel-ink") : 0 };`);
+        if (!m.pressed) continue;
+        const orangeOuter = m.selR * m.k + m.selW / 2;
+        const inkInner = m.inkR * m.k - m.inkW / 2;
+        const where = `${deck} field ${id}: orange r ${(m.selR * m.k).toFixed(2)}px w ${m.selW}, ink r ${(m.inkR * m.k).toFixed(2)}px w ${m.inkW}`;
+        assert.ok(m.selW >= 2, `orange ${m.selW}px wide, ${where}`);
+        assert.strictEqual(m.inkW, 1, `the hairline is ${m.inkW}px wide, ${where}`);
+        assert.ok(inkInner >= orangeOuter - 0.01, `the hairline overlaps the orange by ${(orangeOuter - inkInner).toFixed(2)}px, ${where}`);
+        await b.click(sel); await frames();
+      }
+    });
+  }
+
   /** The sheet with the scale typed and the drawer still closed. */
   const sheetWith = async (scale, edit) => {
     await b.setViewport(380, 667, true);
