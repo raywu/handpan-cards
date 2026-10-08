@@ -4454,19 +4454,31 @@ function run() {
 
   test("DR1 line 87: a control focused by Tab under the open band is not hidden behind it", async () => {
     try {
-      for (const h of [780, 667]) {
-        await addWithDrawer(380, h);
+      for (const edit of [false, true]) for (const h of [780, 667]) {
+        const where = `${edit ? "Edit" : "Add"} 380 x ${h}`;
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(380, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else {
+          await addWithDrawer(380, h);
+        }
         for (const id of ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
                           "scale-anchor-one", "scale-anchor-between"]) {
           await b.eval(`document.getElementById("scale-back").focus(); return true;`);
           await scrollEnd();
-          assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
+          assert.ok(await tabTo(id, 40), `${where}: Tab never reached #${id}`);
           const r = await b.eval(`
             const e = document.activeElement.getBoundingClientRect();
-            return { top: e.top, band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
+            const sp = ${body}.getBoundingClientRect();
+            return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
+                     band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
                      pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
-          if (r.pos === "sticky") assert.ok(r.top >= r.band - 1,
-            `380 x ${h}: #${id} sits under the band: ${JSON.stringify(r)}`);
+          assert.strictEqual(r.pos, "sticky", `${where}: the band is not stuck at focus on #${id}`);
+          assert.ok(r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
+          assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
         }
       }
     } finally {

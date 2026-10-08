@@ -6963,7 +6963,27 @@ test("DR1 line 108: the toggle holds one aria-hidden close mark, U+00D7, and kee
   assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
   for (const open of [false, true]) {
     if (open) dr1Toggle(app).click();
-    assert.strictEqual(dr1Toggle(app).getAttribute("aria-label") || "Adjust layout", "Adjust layout");
+    assert.strictEqual(dr1Toggle(app).getAttribute("aria-label"), null, "the app rewrote the toggle's name; the markup's stays");
+  }
+});
+
+test("DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks", () => {
+  const crypto = require("node:crypto");
+  const fixture = require("./fixtures/pan_render_v1.json");
+  const digest = (x) => crypto.createHash("sha256").update(x).digest("hex").slice(0, 16);
+  const app = boot();
+  const D = decks(app);
+  assert.strictEqual(D.length, 5);
+  for (let di = 0; di < D.length; di++) {
+    const rows = fixture.decks[D[di].id];
+    assert.ok(rows, `${D[di].id} has no committed digest`);
+    for (const off of ["pan(DECKS[%d], null)", "pan(DECKS[%d], null, {interactive:false})", "pan(DECKS[%d], null, {})"]) {
+      assert.strictEqual(digest(app.get(off.replace("%d", di))), rows.null, `${D[di].id}: ${off} drifted from the shipped output`);
+    }
+    for (let ci = 0; ci < D[di].chords.length; ci++) {
+      const off = app.get(`pan(DECKS[${di}], DECKS[${di}].chords[${ci}], {interactive:false})`);
+      assert.strictEqual(digest(off), rows[ci], `${D[di].id} #${ci + 1}: interactive:false drifted from the shipped card`);
+    }
   }
 });
 
@@ -7085,4 +7105,148 @@ test("DR1 line 131: on Edit, Escape from ROTATE closes the drawer, keeps the she
   assert.strictEqual(app.els["scale-drawer"].hidden, true);
   assert.strictEqual(app.sheetOpen(), true);
   assert.strictEqual(app.activeId(), "scale-layout-toggle");
+});
+
+/* ---- DR1 rule S (plan 20.16): the layout state, enumerated ---------------- */
+
+// Spec 16.1 to 16.3, as literals. Nothing below asks the app what it should say.
+const S_NOTICE = {
+  // [sheet][differs][custom]
+  add: { true: { true: "Layout not saved yet. GENERATE CARDS keeps it.", false: "Layout not saved yet. GENERATE CARDS keeps it." },
+         false: { true: "", false: "" } },
+  edit: { true: { true: "Layout not saved yet. SAVE CHANGES keeps it.", false: "Layout not saved yet. SAVE CHANGES keeps it." },
+          false: { true: "Layout changed from the default.", false: "" } },
+};
+const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.",
+                 empty: "Type a scale to adjust its layout." };
+const S_BUTTON = { add: "GENERATE CARDS", edit: "SAVE CHANGES" };
+const S_BOXES = {
+  plain: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+  bottom: "[C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5",
+  inner: "(D3) A3 C4 D4 E4 F4 G4 | A4 C5",
+  innerBottom: "[C3] (D3) A3 C4 D4 E4 F4 G4 | A4 C5",
+};
+const S_HAS_BOTTOM = { plain: false, bottom: true, inner: false, innerBottom: true };
+
+test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for every sheet, stored layout, box and press", () => {
+  const key = boot().get("SCALES_KEY");
+  const misses = [];
+  let cells = 0, snapshots = 0;
+  const run = (sheet, boxKey, stored, label) => {
+    cells += 1;
+    let app;
+    if (sheet === "edit") {
+      app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: S_BOXES[boxKey], o: { palette: 0, parent: 1, ...stored } }]) } });
+      openEdit(app, Object.values(app.registry())[0]);
+    } else {
+      app = boot();
+      openSheet(app);
+    }
+    const kept = sheet === "edit"
+      ? { anchor: stored.anchor === "between" ? "between" : "one", mirror: !!stored.mirror,
+          mb: typeof stored.mirrorBottom === "boolean" ? stored.mirrorBottom : !!stored.mirror }
+      : { anchor: "one", mirror: false, mb: false };
+    const M = { anchor: kept.anchor, mirror: kept.mirror, hasBottom: sheet === "edit" && S_HAS_BOTTOM[boxKey],
+                valid: sheet === "edit", open: false };
+    M.mb = M.hasBottom ? kept.mb : false;
+    const box = (k) => {
+      app.type(k === "invalid" ? "xyz" : k === "empty" ? "" : S_BOXES[k]);
+      if (k === "invalid" || k === "empty") { M.valid = false; return; }
+      M.valid = true;
+      if (S_HAS_BOTTOM[k] !== M.hasBottom) { M.hasBottom = S_HAS_BOTTOM[k]; M.mb = false; }
+    };
+    const press = (id) => {
+      const e = app.els[id];
+      if (e.disabled || !e.getClientRects().length) return false;
+      e.focus(); e.click();
+      if (id === "scale-layout-toggle") M.open = !M.open;
+      if (id === "scale-mirror") M.mirror = !M.mirror;
+      if (id === "scale-mirror-bottom") M.mb = !M.mb;
+      if (id === "scale-anchor-one") M.anchor = "one";
+      if (id === "scale-anchor-between") M.anchor = "between";
+      return true;
+    };
+    const check = (step) => {
+      snapshots += 1;
+      const els = app.els;
+      const shown = (id) => els[id].getClientRects().length > 0;
+      const bad = (what, want, got) => { if (want !== got) misses.push(`${label} @ ${step}: ${what} wanted ${JSON.stringify(want)}, got ${JSON.stringify(got)}`); };
+      const differs = M.anchor !== kept.anchor || M.mirror !== kept.mirror || (M.hasBottom && M.mb !== kept.mb);
+      const custom = kept.anchor !== "one" || kept.mirror || (kept.mb && M.hasBottom);
+      bad("notice", S_NOTICE[sheet][differs][custom], els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
+      bad("toggle enabled", M.valid || M.open, !els["scale-layout-toggle"].disabled);
+      bad("toggle expanded", String(M.open), els["scale-layout-toggle"].getAttribute("aria-expanded"));
+      bad("toggle on", M.open, els["scale-layout-toggle"].classList.contains("on"));
+      bad("hint shown", !M.open, shown("scale-layout-hint"));
+      if (!M.open) bad("hint text", M.valid ? S_HINT.valid : S_HINT.empty, els["scale-layout-hint"].textContent);
+      bad("drawer shown", M.open, shown("scale-drawer"));
+      bad("status shown", M.open, shown("scale-drawer-status"));
+      if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
+      bad("legacy group shown", M.open && sheet === "edit", shown("scale-legacy-group"));
+      if (shown("scale-rot-l")) {
+        for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) bad(`${id} enabled`, true, !els[id].disabled);
+      }
+      for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) bad(`${id} shown`, M.open, shown(id));
+      if (M.open) {
+        bad("mirror top enabled", M.valid, !els["scale-mirror"].disabled);
+        bad("mirror bottom enabled", M.valid && M.hasBottom, !els["scale-mirror-bottom"].disabled);
+        bad("on centre enabled", M.valid, !els["scale-anchor-one"].disabled);
+        bad("beside centre enabled", M.valid, !els["scale-anchor-between"].disabled);
+      }
+      bad("mirror top pressed", String(M.mirror), els["scale-mirror"].getAttribute("aria-pressed"));
+      bad("mirror bottom pressed", String(M.hasBottom && M.mb), els["scale-mirror-bottom"].getAttribute("aria-pressed"));
+      bad("on centre pressed", String(M.anchor === "one"), els["scale-anchor-one"].getAttribute("aria-pressed"));
+      bad("beside centre pressed", String(M.anchor === "between"), els["scale-anchor-between"].getAttribute("aria-pressed"));
+      bad("button enabled", M.valid, !els["scale-generate"].disabled);
+      bad("button text", S_BUTTON[sheet], els["scale-generate"].textContent.trim());
+    };
+
+    check("opened");
+    if (sheet === "add") { box("empty"); check("empty"); box("invalid"); check("invalid"); box(boxKey); check("typed"); }
+    for (const k of Object.keys(S_BOXES)) {
+      if (k === boxKey) continue;
+      box(k); check(`closed, box ${k}`); box(boxKey); check(`closed, back from ${k}`);
+    }
+    box("invalid"); check("closed, invalid"); box(boxKey); check("closed, valid again");
+    press("scale-layout-toggle"); check("opened drawer");
+    const other = () => (M.anchor === "one" ? "scale-anchor-between" : "scale-anchor-one");
+    for (const id of ["scale-mirror", "scale-mirror-bottom", "anchor"]) {
+      const real = () => (id === "anchor" ? other() : id);
+      if (!press(real())) { check(`${id} not pressable`); continue; }
+      check(`${id} once`);
+      box("invalid"); check(`${id} once, invalid`); box(boxKey); check(`${id} once, valid again`);
+      for (const k of Object.keys(S_BOXES)) {
+        if (k === boxKey) continue;
+        box(k); check(`${id} once, box ${k}`);
+        if (press("scale-mirror-bottom")) { check(`${id} once, box ${k}, bottom pressed`); press("scale-mirror-bottom"); check(`${id} once, box ${k}, bottom twice`); }
+        box(boxKey); check(`${id} once, back from ${k}`);
+      }
+      press("scale-layout-toggle"); check(`${id} once, drawer closed`);
+      press("scale-layout-toggle"); check(`${id} once, drawer reopened`);
+      press(real()); check(`${id} twice`);
+    }
+    for (const k of Object.keys(S_BOXES)) {
+      if (k === boxKey) continue;
+      box(k); check(`open, box ${k}`);
+      if (press("scale-mirror-bottom")) {
+        check(`open, box ${k}, bottom pressed`); box("empty"); check(`open, box ${k}, bottom pressed, empty`);
+        box(k); check(`open, box ${k}, bottom pressed, valid again`); press("scale-mirror-bottom"); check(`open, box ${k}, bottom twice`);
+      }
+      box(boxKey); check(`open, back from ${k}`);
+    }
+    box("empty"); check("open, empty"); press("scale-layout-toggle"); check("empty, drawer closed");
+    box(boxKey); check("valid again after the close");
+  };
+  for (const k of Object.keys(S_BOXES)) run("add", k, {}, `ADD ${k}`);
+  const tri = [undefined, false, true];
+  for (const k of Object.keys(S_BOXES)) for (const mirror of tri) for (const mirrorBottom of tri) for (const anchor of [undefined, "one", "between"]) {
+    const stored = {};
+    if (mirror !== undefined) stored.mirror = mirror;
+    if (mirrorBottom !== undefined) stored.mirrorBottom = mirrorBottom;
+    if (anchor !== undefined) stored.anchor = anchor;
+    run("edit", k, stored, `EDIT ${k} ${JSON.stringify(stored)}`);
+  }
+  assert.strictEqual(cells, 4 + 4 * 27);
+  assert.ok(snapshots > 5000, `only ${snapshots} snapshots`);
+  assert.deepStrictEqual(misses.slice(0, 12), [], `${misses.length} mismatches over ${cells} cells`);
 });
