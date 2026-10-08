@@ -1,0 +1,14 @@
+# kills: DR2b (49): the click that follows a completed drag does not pick or swap anything
+# suite: node --test --test-name-pattern ^DR2b..49...the.click.that.follows.a.completed.drag.does.not.pick.or.swap.anything$ tests/app.test.js
+# A drop no longer suppresses the click that follows it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10263,7 +10263,6 @@ function dropNote() {
+   const g = ghostEl;
+   ghostEl = null;
+   endPress(false);
+-  guardClick();
+   if (t.kind === "swap") { dropGhost(g); activateNote(t.ref, "tap"); return; }
+   if (t.kind === "own") { dropGhost(g); swapSeats(picked.ring, picked.i, picked.i); return; }
+   const n = noteAt(picked);

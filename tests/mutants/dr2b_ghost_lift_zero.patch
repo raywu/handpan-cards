@@ -1,0 +1,15 @@
+# kills: DR2b (47): a touch held 250 ms within 8 px lifts the note, centres the ghost 36 px above the finger and prevents touchmove
+# suite: node --test --test-name-pattern ^DR2b..47...a.touch.held.250.ms.within.8.px.lifts.the.note..centres.the.ghost.36.px.above.the.finger.and.prevents.touchmove$ tests/app.test.js
+# The touch ghost sits on the finger instead of 36 px above it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10134,7 +10134,7 @@ previewBox.addEventListener("focusout", (e) => {
+    document and out of reach of every listener on the plate. So the same
+    non-passive touchmove handler is also put on that circle at pointerdown,
+    ahead of touchstart. */
+-const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETURN_MS = 120, CLICK_GUARD_MS = 400;
++const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 0, GHOST_RETURN_MS = 120, CLICK_GUARD_MS = 400;
+ let press = null;
+ let ghostEl = null;
+ let clickGuard = null;

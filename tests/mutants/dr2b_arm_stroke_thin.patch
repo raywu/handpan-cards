@@ -1,0 +1,15 @@
+# kills: DR2b (95): .panarm is drawn at 1.12 r with an orange stroke of at least 2 CSS px that does not scale
+# suite: node --test --test-name-pattern ^DR2b..95....panarm.is.drawn.at.1.12.r.with.an.orange.stroke.of.at.least.2.CSS.px.that.does.not.scale$ tests/app.test.js
+# The drop-target ring is drawn with a 1 px stroke.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8192,7 +8192,7 @@ function pan(d, ch, opts) {
+             + ` stroke-width="${PANSEL_INK_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+         } else if (m.ring === pickedRing && String(hit.arm) === String(id)) {
+           armMarks.push(`<circle class="panarm" ${at} r="${rr * 1.12}" fill="rgba(226,112,5,.22)" stroke="#E27005"`
+-            + ` stroke-width="2.5" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
++            + ` stroke-width="1" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+         } else if (m.ring === pickedRing) {
+           seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
+             + ` stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
