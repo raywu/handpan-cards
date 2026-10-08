@@ -8177,9 +8177,9 @@ function pan(d, ch, opts) {
       if (picked !== null) {
         if (String(id) === picked) {
           pickMarks.push(`<circle class="pansel" ${at} r="${rr * 1.2}" fill="rgba(226,112,5,.22)"`
-            + ` stroke="#E27005" stroke-width="2.2" vector-effect="non-scaling-stroke" pointer-events="none"/>`
+            + ` stroke="#E27005" stroke-width="${PANSEL_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`
             + `<circle class="pansel-ink" ${at} r="${rr * 1.27}" fill="none" stroke="#272219"`
-            + ` stroke-width="0.8" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+            + ` stroke-width="${PANSEL_INK_PX}" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
         } else if (m.ring === pickedRing) {
           seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
             + ` stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
@@ -8275,7 +8275,17 @@ function sizePanHits(svg, minPx, pickedRing) {
     const r = panHitRadii(ext, size, minPx, pts);
     group.forEach((n, i) => n.setAttribute("r", String(r[i])));
   }
+  // The hairline lies wholly outside the orange ring in CSS px, whatever the
+  // field's size: a fraction of the radius is under 2px of room on a small field.
+  const k = size / (2 * ext);
+  svg.querySelectorAll(".pansel-ink").forEach((ink) => {
+    const sel = ink.previousElementSibling;
+    if (sel && sel.classList.contains("pansel"))
+      ink.setAttribute("r", String(Number(sel.getAttribute("r")) + (PANSEL_PX + PANSEL_INK_PX) / 2 / k));
+  });
 }
+const PANSEL_PX = 2.2;
+const PANSEL_INK_PX = 1;
 
 /* ---------------- card faces ---------------- */
 // Print is fully client-side (since 2026-09-24): every deck, built-in or
