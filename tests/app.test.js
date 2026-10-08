@@ -7589,3 +7589,38 @@ test("DR2a (70): the arrangement reaches the generated deck, the stored record a
   openEdit(app, d);
   assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
 });
+
+for (const edit of [false, true]) {
+  test(`DR2a (18): opening the drawer focuses the first pickable note and no other control, ${edit ? "Edit" : "Add"}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    assert.strictEqual(d2Focus(app), "A3", "focus did not move to the first pickable note on open");
+    assert.deepStrictEqual(d2Rover(app), ["A3"]);
+  });
+}
+
+test("DR2a (18): a pan whose only ring of two is the bottom focuses the first note of that ring", () => {
+  const app = boot();
+  d2Open(app, "[C3] [D3] (E3) F3 G3 | A3", false);
+  const name = d2Focus(app);
+  assert.ok(app.activeHit() !== null, "focus is not on a note: " + name);
+  assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
+});
+
+test("DR2a (71): MIRROR TOP then BESIDE CENTRE leave every permutation as it was", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const before = JSON.stringify(d2Seats(app));
+  app.els["scale-mirror"].click();
+  assert.strictEqual(JSON.stringify(d2Seats(app)), before, "mirror changed the permutation");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(JSON.stringify(d2Seats(app)), before, "the anchor changed the permutation");
+});
+
+test("DR2a (19, 24): the plate carries no tabindex of its own and the old layout label is gone", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  assert.strictEqual(app.els["scale-preview"].getAttribute("tabindex"), null);
+  assert.doesNotMatch(app.html || fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8"), /id="scale-layout-label"/);
+});

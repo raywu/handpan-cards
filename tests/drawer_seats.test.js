@@ -215,6 +215,82 @@ function run() {
     assert.ok(m.inkSw > 0 && m.inkSw < m.sel, `the hairline is ${m.inkSw}px`);
   });
 
+  /** The sheet with the scale typed and the drawer still closed. */
+  const sheetWith = async (scale, edit) => {
+    await b.setViewport(380, 667, true);
+    await ev(`try { localStorage.clear(); } catch (e) {} return true;`);
+    await b.goto(url);
+    await ev(`document.getElementById("deck-add").click(); return true;`);
+    await waitSheet(true);
+    await typeBox(scale);
+    if (edit) {
+      await ev(`document.getElementById("scale-generate").click(); return true;`);
+      await waitSheet(false);
+      await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+      await waitSheet(true);
+    }
+    await frames();
+  };
+  const openBy = async (how) => {
+    await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
+    if (how === "pointer") await b.click("#scale-layout-toggle");
+    else {
+      await b.key("Shift", "ShiftLeft", 16);
+      await ev(`document.getElementById("scale-layout-toggle").focus(); return true;`);
+      await b.key(" ", "Space", 32);
+    }
+    await frames();
+  };
+  const focusState = () => ev(`const a = document.activeElement; const mark = a && a.nextElementSibling;
+    return { name: a && a.classList.contains("panhit") ? a.getAttribute("aria-label").split(",")[0] : (a && a.id) || a.tagName,
+      rover: !!a && a.getAttribute("tabindex") === "0", hit: !!a && a.classList.contains("panhit"),
+      mark: mark && mark.classList.contains("panfocus") ? getComputedStyle(mark).display : null,
+      text: !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"),
+      rovers: document.querySelectorAll("#scale-preview .panhit[tabindex='0']").length };`);
+
+  for (const edit of [false, true]) {
+    for (const how of ["pointer", "keyboard"]) {
+      test(`DR2a browser (18, 96): opening by ${how} on ${edit ? "Edit" : "Add"} puts focus on the first pickable note, with the focus mark only for the keyboard`, async () => {
+        await sheetWith(SCALES.pygmy, edit);
+        await openBy(how);
+        const f = await focusState();
+        assert.deepStrictEqual([f.name, f.hit, f.rover, f.text, f.rovers], ["G3", true, true, false, 1], JSON.stringify(f));
+        assert.strictEqual(f.mark, how === "pointer" ? "none" : "inline", `the focus mark after a ${how} open`);
+        await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+        await frames();
+        assert.strictEqual((await focusState()).name, "scale-layout-toggle", "closing did not return focus to the toggle");
+        await openBy(how);
+        assert.strictEqual((await focusState()).name, "G3", "a reopen did not focus the first pickable note");
+      });
+    }
+  }
+
+  test("DR2a browser (18): a pan with no ring of two notes focuses its first note", async () => {
+    await sheetWith("(D3) A3", false);
+    await openBy("pointer");
+    assert.strictEqual((await focusState()).name, "A3");
+    assert.strictEqual((await focusState()).rover, true);
+  });
+
+  test("DR2a browser (18): a pan with no note (a ding alone does not parse, so the drawer cannot open) keeps focus off every note", async () => {
+    await sheetWith("(D3)", false);
+    await openBy("pointer");
+    assert.strictEqual(await ev(`return document.getElementById("scale-drawer").hidden;`), true, "the drawer opened over a pan with no note");
+    assert.strictEqual((await focusState()).hit, false, "focus went to a note over a pan with none");
+  });
+
+  test("DR2a browser (18, 84): the focus move on open leaves the toggle inside the scrollport and the step rows reachable at 380x667", async () => {
+    await sheetWith(SCALES.pygmy, false);
+    await openBy("pointer");
+    const m = await ev(`const sp = document.querySelector("#scale-sheet .sheetbody"), sr = sp.getBoundingClientRect();
+      const r = document.getElementById("scale-layout-toggle").getBoundingClientRect();
+      return { top: r.top - sr.top, bottom: r.bottom - sr.bottom };`);
+    assert.ok(m.top >= -0.5 && m.bottom <= 0.5, `the toggle is outside the scrollport after the open: ${JSON.stringify(m)}`);
+    await stickBand();
+    const r = await reach();
+    for (const row of ["toggle", "noteRow", "seatRow"]) assert.ok(r[row] <= 0.5, `${row} is ${r[row]}px below the scrollport`);
+  });
+
   test("DR2a browser (70): a swap reaches the stored deck and Edit shows it", async () => {
     await openAdd(SCALES.amara);
     await tap("A3"); await tap("C4");
