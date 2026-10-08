@@ -1510,6 +1510,58 @@ Checked by the coordinator on main before dispatch: the engine run of P1's comma
 
 **Lane order from here.** P1 is built and reviewed, then held for the owner. DR1 follows P1's merge: both regenerate parts of `index.html` and the mutants anchored there, and section "Worktree parallelization" makes everything from S2 on serial. DR2 and DOC after that.
 
+### 20.13 Coordinator record after Lane P1 (2026-10-07)
+
+Lane P1 merged as #271 (main d530875, 748 mutant files). Review: PASS_WITH_NITS at 0ef16f5, CI green at that SHA. The older text is not edited; read it through this section.
+
+**Owner answers, interview 10 (binding).**
+
+1. P1's print check: **merge now, check later.** #271 merged on that answer. The check is still open and UNVERIFIED; a problem found on paper becomes a follow-up, not a revert.
+2. The two P1 review items below (N1, N4): **folded into Lane DR1.**
+3. A title-card blurb past seven rows leaves the card (N2): **accept and document.** Today's behaviour stays. A test and a CLAUDE.md line record the limit. Nothing is refused and no row is dropped.
+4. W1's phone check stays open, done on the live site when the owner gets to it.
+
+**What P1 left on main, for every later lane brief.**
+
+- Pygmy's `geom` is engine output minus `ext`. The golden fixture is `golden_decks_v8.json` and the print fixture is `print_decks_v2.json`; v7 and v1 are kept frozen.
+- The title-card note line wraps to two lines on a crowded pan. The blurb shrinks to fit through `hifi.blurb_layout` and `blurbLayout` in `src/engine/pdfcards.js`, with a 3.6 pt floor.
+- `tests/test_print.py` has `ROUNDED_F_SLACK = 3e-4`; `tests/test_render_agreement.py` writes the same figure inline. Both apply it to every Pygmy zone.
+- Accepted touches outside P1's Owns: the Pygmy rows of `seq_ui_base_e728912.json`, a blurb bullet in CLAUDE.md, `tests/CONTRACT.md`.
+
+**P1 review nits.**
+
+- N1. The plan's TDD item was half done: the test "Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them" in `tests/app.test.js` still covers four decks and its comment still calls Pygmy "the documented exception". DR1 (below).
+- N2. The blurb's step floor stops the shrink: six rows fit, seven sit on the frame (0.08 pt over), eight and more leave the card (about 4 pt at eight). DR1 documents it (below).
+- N3. The wrap test does not bind at 4.2 pt: a mutant that wraps at the full card width in both renderers survives. No owner yet.
+- N4. The rounding slack applies to every Pygmy zone, and the baseline it guards is read from the live `geom`. Only rim and inner names and the index numbers moved in the redraw. DR1 narrows it (below).
+- N5. Surviving mutants with no killing test: step floor dropped (Python, JS); BOTTOM rows never orange in the JS renderer; wrap at card width. No owner yet.
+- N6. CLAUDE.md's label-rule figures for Pygmy's rim predate the redraw. DOC lane.
+
+**Lane DR1, read against main.** The block in section "Lanes" stands as corrected by 20.8 item 2 and 20.9. In full:
+
+- DR1 keeps ROTATE, MOVE and RESET. They move into `#scale-legacy-group` with `#scale-legacy-hint`, inside the drawer, Edit only. The removal of ROTATE and MOVE, the grep-for-zero acceptance, the removal of the four `scale-rot-` and `scale-move-` ids from `tools/sandbox.js`, and the retirement of `e_layout_rotate_inert`, `d_rotate_drops_the_selection` and `qa_layout_prologue_skips_sync` are DR2's.
+- Both mirror switches exist since W1 (`#scale-mirror`, `#scale-mirror-bottom`). DR1 moves both into the drawer. Owns therefore covers the position of both.
+- The DR1-era hint copy is confirmed by the owner (interview 9): `Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.`
+- The TDD floor is one test per acceptance line tagged [DR1] in the design spec: 37 lines. The spec's section 17 table says what DR1 renders and what waits for DR2.
+- The mutant base is 748. DR1 regenerates the nine layout and hint mutants its block lists that it does not retire; every mutant anchored on a line DR1 rewrites is DR1's to refresh.
+- DR1 has no owner gate. DR2's phone check is an owner gate and is not waived.
+
+**Three spec sentences, read as follows** (the #268 nits of 20.9; the spec is not edited):
+
+- Section 6: the sentence "This includes the legacy group's buttons in the DR1 build" belongs to the rule that focus returns to the toggle when the drawer closes, as acceptance line 131 says.
+- Acceptance line 133: MIRROR TOP ends pressed.
+- Section 4: in the DR1 build the compared layout is anchor and both mirrors only, as section 17's row for `#scale-layout-state` says. "In the same place" for RESET means inside `#scale-legacy-group`.
+
+**Added to DR1's Owns and work by interview 10.**
+
+1. In `tests/app.test.js`, the test named in N1 runs over all five built-ins and is renamed to say so; Pygmy's stored `geom` is compared with the solver's after `ext` is dropped; the stale comment goes. No mutant is owed: `b_pygmy_geom_not_engine_output` already covers the data side.
+2. In `tests/test_print.py` and `tests/test_render_agreement.py`, the Pygmy slack applies to rim and inner names and to index numbers only. Ding and bottom-shell names are held to the exact baseline again. If a ding or bottom figure then fails, that is a stop condition: report it, do not widen the slack back.
+3. The blurb limit. A test in `tests/test_print.py` (and its twin where the JS renderer's blurb tests live, `tests/pdfcards.test.js`) pins today's behaviour: six rows end inside the frame, and an eight-row blurb ends below it with no row dropped and no row under 3.6 pt. One sentence joins the blurb bullet in CLAUDE.md saying the blurb fits to six rows, sits on the frame at seven and leaves the card past that, by owner decision 2026-10-07. No renderer code changes for this item.
+
+Items 1 to 3 touch no file DR1's drawer work touches except `tests/app.test.js`. They are small and go in their own commit.
+
+**Lane order from here.** DR1; DR2 with the owner's phone check; DOC last.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
