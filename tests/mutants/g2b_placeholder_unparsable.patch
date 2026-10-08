@@ -4,13 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1154,7 +1154,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1155,7 +1155,7 @@ footer.seq{row-gap:var(--sp-1)}
          <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
                    autocomplete="off" spellcheck="false" enterkeyhint="go"
                    aria-describedby="scale-label-2"
 -                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
 +                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E / F# G A"></textarea>
        </div>
-       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
        <div id="scale-parse"></div>
-
+       <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
