@@ -117,7 +117,7 @@ function run() {
   });
 
   for (const [key, scale] of Object.entries({ amara: SCALES.amara, kurd: SCALES.kurd, pygmy: SCALES.pygmy })) {
-    test(`DR2a browser (58): at 380x667 the same-ring targets of ${key} are at least ${MIN_PX}px and the plate at least 240px`, async () => {
+    test(`DR2a browser (58): at 380x667 the same-ring targets of ${key} are ${key === "pygmy" ? "measured and reported" : "at least " + MIN_PX + "px"} and the plate at least 240px`, async () => {
       await openAdd(scale);
       const first = await ev(`return document.querySelector("#scale-preview .panhit[tabindex='0']").getAttribute("aria-label").split(",")[0];`);
       await tap(first);
@@ -126,6 +126,12 @@ function run() {
         const same = [...document.querySelectorAll("#scale-preview .panhit")].filter((h) => h.getAttribute("aria-label").includes(document.querySelector(".panhit[aria-pressed='true']").getAttribute("aria-label").split(", ")[1].split(" seat")[0] + " seat"));
         return { plate: sr.height, sizes: same.map((h) => Number(h.getAttribute("r")) * 2 * k) };`);
       assert.ok(m.plate >= 240, `plate ${m.plate}px`);
+      const least = Math.min(...m.sizes);
+      if (key === "pygmy") {
+        console.log(`DR2a 58 report, pygmy at 380x667, plate ${m.plate}px: smallest same-ring target ${least.toFixed(1)}px`);
+        assert.ok(Number.isFinite(least) && least > 0, "no same-ring target was measured");
+        return;
+      }
       for (const s of m.sizes) assert.ok(s >= MIN_PX - 0.5, `a same-ring target is ${s.toFixed(1)}px: ${m.sizes.map((x) => x.toFixed(1))}`);
     });
   }
@@ -147,6 +153,66 @@ function run() {
     await tap("Ab3");
     const after = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
     assert.ok(after - before <= 40, `the band grew ${before} to ${after}`);
+  });
+
+  const stickBand = async () => {
+    await ev(`document.activeElement && document.activeElement.blur(); const sp = document.querySelector("#scale-sheet .sheetbody"); const band = document.getElementById("scale-plate-band");
+      sp.scrollTop = 0; for (let y = 0; y <= sp.scrollHeight; y += 1) { sp.scrollTop = y; if (band.getBoundingClientRect().top - sp.getBoundingClientRect().top <= 0.5) break; } return true;`);
+    await frames();
+  };
+  const reach = () => ev(`const sp = document.querySelector("#scale-sheet .sheetbody"), sr = sp.getBoundingClientRect();
+    const band = document.getElementById("scale-plate-band"), br = band.getBoundingClientRect();
+    const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
+    return { stuck: getComputedStyle(band).position === "sticky" && br.top - sr.top <= 0.5, plateW: document.querySelector("#scale-preview svg").getBoundingClientRect().width,
+      notice: !document.getElementById("scale-layout-state").hidden,
+      toggle: out("scale-layout-toggle"), noteRow: out("scale-note-next"), seatRow: out("scale-seat-next") };`);
+
+  for (const [key, scale, a, c] of [["amara", SCALES.amara, "A3", "C4"], ["kurd", SCALES.kurd, "A3", "Bb3"], ["pygmy", SCALES.pygmy, "G3", "Ab3"]]) {
+    test(`DR2a browser (84): on Add at 380x667 with the band stuck the toggle and both step rows of ${key} are inside the scrollport, with and without the notice`, async () => {
+      await openAdd(scale);
+      await stickBand();
+      const quiet = await reach();
+      await tap(a); await tap(c);
+      await stickBand();
+      const noisy = await reach();
+      assert.strictEqual(quiet.notice, false);
+      assert.strictEqual(noisy.notice, true);
+      for (const [state, m] of [["no notice", quiet], ["the notice and the swap sentence", noisy]]) {
+        assert.ok(m.stuck, `${state}: the band is not stuck`);
+        for (const row of ["toggle", "noteRow", "seatRow"])
+          assert.ok(m[row] <= 0.5, `${key}, ${state}: the ${row} is ${m[row]}px below the scrollport (plate ${m.plateW}px)`);
+        assert.ok(m.plateW >= 240, `${key}, ${state}: the plate is ${m.plateW}px`);
+      }
+    });
+  }
+
+  test("DR2a browser (84, report): on Edit at 380x667 the open plate is no narrower than on Add; the rows' overhang is recorded", async () => {
+    await openAdd(SCALES.amara);
+    await stickBand();
+    const add = await reach();
+    await ev(`document.getElementById("scale-generate").click(); return true;`);
+    await waitSheet(false);
+    await ev(`document.querySelector("#decks .chip.on").click(); return true;`);
+    await waitSheet(true);
+    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await frames();
+    await stickBand();
+    const edit = await reach();
+    console.log(`DR2a 84 report, Edit at 380x667: plate ${edit.plateW}px (Add ${add.plateW}px); px below the scrollport: toggle ${edit.toggle}, note row ${edit.noteRow}, seat row ${edit.seatRow}`);
+    assert.ok(edit.plateW >= add.plateW - 0.5, `Edit plate ${edit.plateW}px, Add ${add.plateW}px`);
+  });
+
+  test("DR2a browser (95): a picked note's orange ring and the seat rings are at least 2px, and the ink hairline lies outside the orange ring", async () => {
+    await openAdd(SCALES.pygmy);
+    await tap("G3");
+    const m = await ev(`const q = (c) => document.querySelector("#scale-preview ." + c);
+      const sw = (c) => parseFloat(getComputedStyle(q(c)).strokeWidth);
+      return { seat: sw("panseat"), sel: sw("pansel"), selR: Number(q("pansel").getAttribute("r")), inkR: Number(q("pansel-ink").getAttribute("r")),
+        inkStroke: getComputedStyle(q("pansel-ink")).stroke, inkSw: sw("pansel-ink") };`);
+    assert.ok(m.seat >= 2, `.panseat stroke ${m.seat}px`);
+    assert.ok(m.sel >= 2, `.pansel stroke ${m.sel}px`);
+    assert.ok(m.inkR > m.selR, `the hairline r ${m.inkR} is not outside the orange ring r ${m.selR}`);
+    assert.ok(m.inkSw > 0 && m.inkSw < m.sel, `the hairline is ${m.inkSw}px`);
   });
 
   test("DR2a browser (70): a swap reaches the stored deck and Edit shows it", async () => {

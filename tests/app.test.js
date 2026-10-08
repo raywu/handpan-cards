@@ -7491,6 +7491,63 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
   assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "RESET SEATS did not redraw");
 });
 
+/* Rule C, typed one keystroke at a time with the drawer open (review 1, F-2):
+ * the keystroke that ends a pause and also changes a ring's count gives ONE
+ * message, row 18b first, then the count sentence. */
+const D2_READY = "Layout is ready again.";
+const d2Keystrokes = (app, steps) => steps.map((t) => { app.type(t); return d2Status(app); });
+
+test("DR2a rule C (F-2): a bottom note typed into a pan with swapped bottom seats, keystroke by keystroke", () => {
+  const app = boot();
+  d2Open(app, "[C3] [D3] (F3) G3 A3 B3 C4", false);
+  d2Tap(app, "C3"); d2Tap(app, "D3");
+  const head = "[C3] [D3] ", tail = "(F3) G3 A3 B3 C4", ins = "[E3] ";
+  const said = d2Keystrokes(app, Array.from({ length: ins.length }, (_, i) => head + ins.slice(0, i + 1) + tail));
+  const paused = "Layout is paused until the scale parses.";
+  assert.deepStrictEqual(said, [paused, paused, paused, paused,
+    `${D2_READY} The bottom now has 3 notes, so its seats were reset.`]);
+});
+
+test("DR2a rule C (F-2): the zzz case, rim 8 to 3, ends its pause with one message", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const said = d2Keystrokes(app, ["(D3) A3 C4 D4 z", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 zzz", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 z", "(D3) A3 C4 D4"]);
+  const paused = "Layout is paused until the scale parses.";
+  assert.deepStrictEqual(said, [paused, paused, paused, paused, paused,
+    `${D2_READY} The rim now has 3 notes, so its seats were reset.`]);
+});
+
+test("DR2a rule C (F-2): a restore that ends a pause is row 18b then row 16", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const said = d2Keystrokes(app, ["(D3) A3 C4 D4 E4 F4 G4 A4", "(D3) A3 C4 D4 E4 F4 G4 A4 z", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"]);
+  assert.deepStrictEqual(said, ["The rim now has 7 notes, so its seats were reset.", "Layout is paused until the scale parses.",
+    `${D2_READY} The rim is back to 8 notes, so its earlier seats were restored.`]);
+});
+
+/** The marks of a picked note, split by class: each tag's attributes. */
+const d2Mark = (html, cls) => {
+  const m = new RegExp(`<circle class="${cls}"[^>]*>`).exec(html);
+  assert.ok(m, `no .${cls} in the plate markup`);
+  const num = (a) => Number(new RegExp(`\\b${a}="([\\d.]+)"`).exec(m[0])[1]);
+  return { r: num("r"), sw: num("stroke-width"), stroke: /stroke="([^"]+)"/.exec(m[0])[1] };
+};
+test("DR2a (95, F-3): .panseat is at least 2 px, and the ink hairline sits outside the orange ring", () => {
+  const app = boot();
+  d2Open(app, DR1_PYGMY_MAKER, false);
+  d2Tap(app, "G3");
+  const html = app.els["scale-preview"].innerHTML;
+  const seat = d2Mark(html, "panseat"), sel = d2Mark(html, "pansel"), ink = d2Mark(html, "pansel-ink");
+  assert.ok(seat.sw >= 2, `.panseat stroke ${seat.sw}`);
+  assert.strictEqual(seat.stroke, "#E27005");
+  assert.strictEqual(sel.stroke, "#E27005");
+  assert.ok(sel.sw >= 2, `.pansel stroke ${sel.sw}`);
+  assert.strictEqual(ink.stroke, "#272219");
+  assert.ok(ink.r > sel.r, `the hairline r ${ink.r} is not outside the orange ring r ${sel.r}`);
+});
+
 test("DR2a (58, 95, 94, 51): the marks of a picked note, in the plate markup", () => {
   const app = boot();
   d2Open(app, DR1_PYGMY_MAKER, false);
