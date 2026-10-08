@@ -49,7 +49,8 @@ FLOORS = {
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 407,
+    "tests/app.test.js": 401,
+    "tests/seat_sweeps.test.js": 6,
     "tests/e2e.test.js": 283,
     "tests/harness.test.js": 13,
     "tests/drawer_grid.test.js": 3,
