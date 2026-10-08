@@ -34,8 +34,13 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
   "scale-delete-row", "scale-delete", "scale-del-note",
   // Phase 5 LAYOUT section, additive like the two before it.
-  "scale-layout-row", "scale-rot-l", "scale-rot-r",
+  "scale-rot-l", "scale-rot-r",
   "scale-move-l", "scale-move-r", "scale-layout-reset",
+  // Lane DR1: the layout drawer shell. The four rot/move ids above stay: the
+  // old group lives on inside #scale-legacy-group until DR2 removes it.
+  "scale-layout-zone", "scale-plate-band", "scale-layout-toggle", "scale-layout-hint",
+  "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
+  "scale-legacy-group", "scale-anchor-one", "scale-anchor-between",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a
