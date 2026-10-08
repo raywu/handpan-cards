@@ -7970,3 +7970,121 @@ describe("DR2b item 2: a ring of one note", () => {
     }
   });
 });
+
+describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
+  test("DR2b (F2, 125): a mouse move with no button down ends a press whose pointerup never came, and lifts nothing", () => {
+    for (const kind of ["mouse", "pen"]) {
+      const app = dgOpen({});
+      const g = DG.down(app, "A3", kind);
+      app.pointer(g.h, "pointermove", { pointerType: kind, pointerId: 1, clientX: g.x + 12, clientY: g.y, buttons: 0 });
+      assert.strictEqual(dgPress(app), null, `${kind}: the press survived a move with no button down`);
+      assert.strictEqual(DG.ghostEls(app).length, 0, `${kind}: a ghost appeared`);
+      assert.strictEqual(d2Pick(app), null, `${kind}: a note was lifted`);
+      app.pointer(g.h, "pointermove", { pointerType: kind, pointerId: 1, clientX: g.x + 30, clientY: g.y, buttons: 1 });
+      assert.strictEqual(DG.ghostEls(app).length, 0, `${kind}: a later move lifted`);
+      assert.strictEqual(dgSeats(app), null);
+    }
+  });
+
+  test("DR2b (F2, 125): a mouse move with no button down, during a drag whose pointerup never came, ends it without a swap", () => {
+    const app = dgOpen({});
+    const g = DG.down(app, "A3");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    assert.strictEqual(DG.ghostEls(app).length, 1);
+    const c = DG.centre(DG.noteNode(app, "E4"));
+    app.pointer(g.h, "pointermove", { pointerType: "mouse", pointerId: 1, clientX: c.x, clientY: c.y, buttons: 0 });
+    assert.strictEqual(dgPress(app), null);
+    assert.strictEqual(DG.ghostEls(app).length, 0, "the ghost stayed");
+    assert.strictEqual(dgSeats(app), null, "the stray move swapped");
+    assert.strictEqual(app.get("armId"), null);
+  });
+
+  test("DR2b (F3, 66, 107): Escape after a tap, a swapping step and a drag of the picked note onto its own seat writes row 9b", () => {
+    const app = dgOpen({});
+    d2Tap(app, "A3");
+    app.els["scale-seat-next"].click();
+    assert.deepStrictEqual(dgSeats(app), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+    DG.mouseDrag(app, "A3", "A3");
+    assert.strictEqual(d2Status(app), "A3 stays in rim seat 2 of 8.");
+    d2Hit(app, "A3").focus();
+    app.keydown("Escape");
+    assert.strictEqual(d2Status(app), "A3 put down. The swaps you made are kept.");
+    assert.deepStrictEqual(dgSeats(app), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  });
+
+  test("DR2b (F3, 66, 107): Escape after a tap, a swapping step and a hold released on the picked note writes row 9b", () => {
+    const app = dgOpen({});
+    d2Tap(app, "A3");
+    app.els["scale-seat-next"].click();
+    const g = DG.down(app, "A3", "touch");
+    app.advance(250);
+    DG.release(app, g, g.x, g.y);
+    d2Hit(app, "A3").focus();
+    app.keydown("Escape");
+    assert.strictEqual(d2Status(app), "A3 put down. The swaps you made are kept.");
+  });
+
+  test("DR2b (F3, 66): Escape after a tap and a drag of the picked note onto its own seat, with no swap, still writes row 9", () => {
+    const app = dgOpen({});
+    d2Tap(app, "A3");
+    DG.mouseDrag(app, "A3", "A3");
+    d2Hit(app, "A3").focus();
+    app.keydown("Escape");
+    assert.strictEqual(d2Status(app), "Cancelled. Nothing moved.");
+  });
+
+  test("DR2b (F5, 48): a pointercancel on the plate with no gesture in flight leaves the status line as it was", () => {
+    const app = dgOpen({});
+    d2Tap(app, "A3");
+    const h = d2Hit(app, "A3");
+    for (const withPick of [true, false]) {
+      if (!withPick) { h.focus(); app.keydown("Escape"); }
+      const text = d2Status(app), warn = app.els["scale-drawer-status"].classList.contains("warn"), pick = d2Pick(app);
+      app.pointer(h, "pointercancel", { pointerType: "touch", pointerId: 1 });
+      assert.strictEqual(d2Status(app), text, `pick ${withPick}`);
+      assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), warn);
+      assert.deepStrictEqual(d2Pick(app), pick);
+    }
+    d2Tap(app, "C4");
+    const text = d2Status(app);
+    const g = DG.down(app, "A3", "touch");
+    app.advance(100);
+    DG.moveTo(app, g, g.x, g.y + 20);
+    app.pointer(g.h, "pointercancel", { pointerType: "touch", pointerId: 1 });
+    app.advance(400);
+    assert.strictEqual(d2Status(app), text, "a cancelled scroll rewrote the status");
+    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 3 });
+  });
+
+  test("DR2b (46): a touch released before 250 ms lifts nothing, and its click is a tap that picks the note", () => {
+    const app = dgOpen({});
+    const g = DG.down(app, "A3", "touch");
+    app.advance(100);
+    DG.release(app, g, g.x, g.y);
+    app.advance(400);
+    assert.strictEqual(DG.ghostEls(app).length, 0);
+    assert.strictEqual(d2Pick(app), null, "a short touch lifted");
+    assert.strictEqual(dgPress(app), null);
+    app.click(g.h);
+    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 0 }, "the click was not a tap");
+  });
+
+  test("DR2b (rule R drag row): a drag under a standing runGenerate() refusal redraws the plate and keeps the refusal", () => {
+    for (const how of ["mouse", "touch"]) {
+      const app = boot();
+      makeCustom(app, DR1_PYGMY_MAKER);
+      const d = makeCustom(app, D2_AMARA);
+      openEdit(app, d);
+      app.type(DR1_PYGMY_MAKER);
+      app.els["scale-generate"].click();
+      const refusal = app.els["scale-refusal"].textContent;
+      assert.ok(refusal, "no refusal stands");
+      app.els["scale-layout-toggle"].click();
+      const base = d2Drawn(app);
+      if (how === "mouse") DG.mouseDrag(app, "G3", "Ab3"); else DG.touchDrag(app, "G3", "Ab3");
+      assert.deepStrictEqual(d2Drawn(app), { ...base, G3: base.Ab3, Ab3: base.G3 }, `${how}: the drag did not redraw`);
+      assert.strictEqual(app.els["scale-refusal"].textContent, refusal, `${how}: the refusal changed`);
+      assert.strictEqual(app.els["scale-generate"].disabled, true, `${how}: the primary button was enabled`);
+    }
+  });
+});

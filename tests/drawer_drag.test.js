@@ -158,6 +158,105 @@ function run() {
     for (const list of Object.values(byRing(await plate()))) await dragPairSwaps(list[0].name, list[list.length - 1].name, "touch");
   });
 
+  const visible = (n, vw, vh) => n.x >= 0 && n.x <= vw && n.y >= 40 && n.y <= vh;
+  const inBody = (n) => ev(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return ${n.x} >= r.left && ${n.x} <= r.right && ${n.y} >= r.top && ${n.y} <= r.bottom;`);
+  const pairOnScreen = async (w, h) => {
+    const rings = byRing(await plate());
+    for (const list of Object.values(rings)) {
+      for (let i = 0; i < list.length; i += 1) for (let j = i + 1; j < list.length; j += 1) {
+        const ok = visible(list[i], w, h) && visible(list[j], w, h) && await inBody(list[i]) && await inBody(list[j]);
+        if (ok && Math.hypot(list[i].x - list[j].x, list[i].y - list[j].y) > 20) return [list[i], list[j]];
+      }
+    }
+    return null;
+  };
+  const near = (g, want, what) => assert.ok(Math.abs(g.x - want.x) <= 1 && Math.abs(g.y - want.y) <= 1,
+    `${what}: ghost centre ${g.x},${g.y} vs ${want.x},${want.y}`);
+  for (const [w, h, kb, ot] of [[380, 667, 300, 0], [380, 667, 300, 120], [820, 1180, 400, 0], [380, 667, 0, 0], [820, 1180, 0, 0]]) {
+    for (const how of ["mouse", "touch"]) {
+      test(`DR2b browser (F1, 93): at ${w}x${h} ${kb ? `with the keyboard up (offsetTop ${ot})` : "with no keyboard"} a ${how} drag keeps the ghost on its hit point and arms the seat under it`, async () => {
+        await openAdd(SCALES.amara, w, h, true);
+        try {
+          if (kb) {
+            await ev(`document.getElementById("scale-box").focus(); return true;`);
+            await b.fakeKeyboard(h - kb, ot);
+            await sleep(100);
+            await ev(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop += document.getElementById("scale-plate-band").getBoundingClientRect().top - body.getBoundingClientRect().top - 4; return true;`);
+            await sleep(100);
+            await frames();
+          }
+          const pair = await pairOnScreen(w, h);
+          assert.ok(pair, "no two notes of one ring are on screen after the lift, so the case is not exercised");
+          const [a, c] = pair;
+          const lift = how === "touch" ? 36 : 0;
+          const mid = { x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 };
+          if (how === "mouse") {
+            await mouse("mouseMoved", a.x, a.y, { button: "none", buttons: 0 });
+            await mouse("mousePressed", a.x, a.y);
+            await mouse("mouseMoved", a.x + 6, a.y);
+          } else {
+            await touch("touchStart", [a]);
+            await sleep(320);
+          }
+          for (const at of [mid, c]) {
+            if (how === "mouse") await mouse("mouseMoved", at.x, at.y);
+            else await touch("touchMove", [{ x: at.x, y: at.y + lift }]);
+            await sleep(30);
+            const g = await ghost();
+            assert.ok(g, `${how}: no ghost`);
+            near(g, at, how);
+          }
+          assert.deepStrictEqual(await arms(), [`${c.cx},${c.cy}`], `${how}: the armed seat is not the one under the ghost`);
+          if (how === "mouse") await mouse("mouseReleased", c.x, c.y);
+          else await touch("touchEnd", []);
+          assert.match(await status(), new RegExp(`^Swapped ${a.name} and ${c.name}\\.`));
+        } finally {
+          await touch("touchEnd", []).catch(() => {});
+          await mouse("mouseReleased", 0, 0).catch(() => {});
+          await b.clearKeyboard();
+        }
+      });
+    }
+  }
+
+  for (const [key, w, h] of [["amara", 380, 667], ["kurd", 380, 667], ["pygmy", 380, 667]]) {
+    test(`DR2b browser rule D (41, 47): at ${w}x${h} a real touch hold-and-drag swaps one pair per ring of ${key}`, async () => {
+      await openAdd(SCALES[key], w, h);
+      for (const list of Object.values(byRing(await plate()))) await dragPairSwaps(list[0].name, list[list.length - 1].name, "touch");
+    });
+  }
+
+  test("DR2b browser (F1 step 4): a hold that lifts leaves the sheet body's scrollTop alone, with the note focused and partly out of view", async () => {
+    await openAdd(SCALES.pygmy, 380, 390);
+    const body = `document.querySelector("#scale-sheet .sheetbody")`;
+    const max = await ev(`return ${body}.scrollHeight - ${body}.clientHeight;`);
+    assert.ok(max > 40, "the sheet does not scroll at 380x390, so the case is not exercised");
+    let lifted = 0;
+    for (const focused of [false, true]) {
+      for (const frac of [0, 0.5, 1]) {
+        await ev(`${body}.scrollTop = ${Math.round(max * frac)}; return true;`);
+        await sleep(300);
+        const band = await ev(`const r = document.getElementById("scale-plate-band").getBoundingClientRect(); const s = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { top: Math.max(r.top, s.top), bottom: Math.min(r.bottom, s.bottom) };`);
+        const cands = (await plate()).filter((n) => n.y > band.top + 2 && n.y < band.bottom - 2);
+        const pick = cands.sort((p, q) => Math.abs(q.y - band.bottom) - Math.abs(p.y - band.bottom)).pop();
+        if (!pick) continue;
+        if (focused) await ev(`[...document.querySelectorAll("#scale-preview .panhit")].find((h) => h.getAttribute("aria-label").split(",")[0] === ${JSON.stringify(pick.name)}).focus({ preventScroll: true }); return true;`);
+        const before = await ev(`return ${body}.scrollTop;`);
+        await touch("touchStart", [pick]);
+        await sleep(320);
+        const g = await ghost();
+        const during = await ev(`return ${body}.scrollTop;`);
+        await touch("touchMove", [{ x: pick.x, y: pick.y }]);
+        await touch("touchEnd", []);
+        await sleep(100);
+        if (!g) continue;
+        lifted += 1;
+        assert.strictEqual(during, before, `the lift moved scrollTop ${before} to ${during} (focused ${focused}, ${frac} of the way)`);
+      }
+    }
+    assert.ok(lifted >= 3, `only ${lifted} lifts were exercised`);
+  });
+
   test("DR2b browser (43, 44, 45): own seat, another ring, the ding, empty plate and outside write rows 8, 10 and 11 and move nothing", async () => {
     await openAdd(SCALES.pygmy);
     const all = await plate();
