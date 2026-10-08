@@ -5075,7 +5075,9 @@ function run() {
     // the parse summary are both live at once.
     try {
       await freshLoad();
-      await b.setViewport(380, 780, true);
+      // 800 high, not 780: the second scale label (spec line 9) is a permanent
+      // extra line, so the row sits ~12px lower than it did before it.
+      await b.setViewport(380, 800, true);
       await generate(EDIT_SCALE);
       await generate(COLLIDE_SCALE);
       const chips = await chipReport();
