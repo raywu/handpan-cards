@@ -226,6 +226,25 @@ function run() {
     assert.ok(m.inkSw > 0 && m.inkSw < m.sel, `the hairline is ${m.inkSw}px`);
   });
 
+  test("DR2a browser (57): with a note picked the picked ring's targets are at least their all-points radius and pairwise disjoint", async () => {
+    await openAdd(SCALES.pygmy);
+    const read = () => ev(`const svg = document.querySelector("#scale-preview svg"), k = Math.min(svg.getBoundingClientRect().width, svg.getBoundingClientRect().height) / (2 * Number(svg.getAttribute("data-ext")));
+      return [...svg.querySelectorAll(".panhit")].map((h) => ({ id: h.getAttribute("data-field"), ring: h.getAttribute("data-ring"), x: Number(h.getAttribute("cx")) * k, y: Number(h.getAttribute("cy")) * k, r: Number(h.getAttribute("r")) * k }));`);
+    const all = await read();
+    await tap("G3");
+    const picked = await read();
+    const ring = picked.filter((h) => h.ring === "rim");
+    assert.ok(ring.length > 1);
+    for (const h of ring) {
+      const before = all.find((a) => a.id === h.id);
+      assert.ok(h.r >= before.r - 0.01, `field ${h.id}: picked radius ${h.r.toFixed(2)} under the all-points radius ${before.r.toFixed(2)}`);
+    }
+    for (let i = 0; i < ring.length; i += 1) for (let j = i + 1; j < ring.length; j += 1) {
+      const d = Math.hypot(ring[i].x - ring[j].x, ring[i].y - ring[j].y);
+      assert.ok(d >= ring[i].r + ring[j].r - 0.01, `targets ${ring[i].id} and ${ring[j].id} overlap: ${d.toFixed(2)} < ${(ring[i].r + ring[j].r).toFixed(2)}`);
+    }
+  });
+
   const BUILTIN_SCALES = {
     amara9: SCALES.amara,
     amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
