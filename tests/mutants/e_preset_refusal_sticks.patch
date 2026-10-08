@@ -3,11 +3,20 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8262,6 +8262,7 @@ function runGenerate() {
+@@ -9500,6 +9500,7 @@
      // section 2 code enum is closed and has no code for "that scale is taken",
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
-+    scaleBox.removeEventListener("input", updateParse);
++    scaleBox.dataset.dead = "1";
      refusal = "Another deck already uses this scale.";
      showRefusal(refusal);
      return refusal;
+@@ -9698,7 +9699,7 @@
+     if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
+   }
+   syncGrow();
+-  updateParse();
++  if (!scaleBox.dataset.dead) updateParse();
+ });
+ // The name is a seed option, so an unusable one is rejected by core.parseSeed
+ // through the same parse line every other input goes through.
