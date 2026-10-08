@@ -1,0 +1,15 @@
+# kills: test_a_six_line_blurb_shrinks_to_fit_and_never_drops_a_line
+# suite: python3 -m unittest -k test_a_six_line_blurb_shrinks_to_fit_and_never_drops_a_line tests.test_gen_deck
+# The print blurb shrinks past the 3.6 pt floor instead of stopping at it.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -511,7 +511,7 @@ def blurb_layout(lines):
+     if len(rows) > 1 and (len(rows) - 1) * step > room:
+         f = room / ((len(rows) - 1) * step)
+         step = max(step * f, BLURB_MIN_STEP)
+-        size = max(BLURB_SIZE * f, BLURB_FLOOR)
++        size = BLURB_SIZE * f
+     return {"rows": rows, "size": size, "step": step}
+ 
+ 

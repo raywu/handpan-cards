@@ -1,0 +1,15 @@
+# kills: a crowded note line wraps inside the card, and a six-line blurb shrinks to fit without dropping a line
+# suite: node --test --test-name-pattern ^a.crowded.note.line.wraps.inside tests/pdfcards.test.js
+# The browser port shrinks the blurb past the 3.6 pt floor.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -519,7 +519,7 @@ HPE.pdfcards = (function () {
+     if (rows.length > 1 && (rows.length - 1) * step > room) {
+       var f = room / ((rows.length - 1) * step);
+       step = Math.max(step * f, BLURB_MIN_STEP);
+-      size = Math.max(BLURB_SIZE * f, BLURB_FLOOR);
++      size = BLURB_SIZE * f;
+     }
+     return { rows: rows, size: size, step: step };
+   }
