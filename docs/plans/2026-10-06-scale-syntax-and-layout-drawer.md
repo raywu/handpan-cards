@@ -1783,6 +1783,23 @@ PR #273, CI green. One blocking finding, reproduced in Chrome. Review 2 walked t
 
 **Review 3.** A fresh reviewer, briefed with 20.17, 20.18 and this section, facts only. **A third FAIL triggers the regroup rule; the lane is not resumed after it.**
 
+### 20.20 DR2a review 3: PASS_WITH_NITS at 8122e7a; DR2b starts (coordinator record, 2026-10-08, owner away)
+
+PR #273 at 8122e7a: CI green on attempt 2 of run 37838167957, review 3 PASS_WITH_NITS, no blocking finding. **DR2a is not merged: the owner's phone check gates it.** This section lives on DR2b's branch so that DR2a's reviewed head does not move.
+
+**N1, fixed in DR2b's first commit.** Attempt 1 of that run timed out `tests/app.test.js` at the 180 s suite clock. The reviewer measured it: the six "DR2a rule W" sweep tests take about 42 s of the file's 55 s locally and put the file near 165 s on CI. It is an overrun, not a hang. DR2b adds more unit tests to the same file, so before anything else DR2b moves the DR2a rule W sweep tests, unchanged, into a new unit file `tests/seat_sweeps.test.js`, registered wherever `tests/app.test.js` is registered as a unit suite (suite health's count table and FLOORS, `tests/mutation_check.sh`, `tests/shard_mutants.js`, the README's node-suite count); every mutant whose `# suite:` or `# kills:` names a moved test is repointed; the mutants that patch `tests/mutation_check.sh` are checked to still apply. No assertion changes and no sweep is cut. This is the one change DR2b may make to DR2a's tests. The timeout is not raised.
+
+**DR2b block, additions (they govern where they differ from 20.17).**
+
+- The hand-back and the PR body carry a table: every DR2b acceptance line, one row each, with the test file, the test name and the one assertion that fails if the line breaks. It is written before the handlers, with the failing tests. A test title names a line only if the test asserts it. Both DR2a FAILs after review 1 came from lines named and not asserted.
+- Commits end with the attribution the lane's own session gives (20.18), not the Opus line of 20.17.
+- The README node-suite count goes 18 to 20 (the sweep file and `tests/drawer_drag.test.js`).
+- DR2b's new unit tests go where they keep `tests/app.test.js` and `tests/seat_sweeps.test.js` each under 90 s on CI's js step, read from the CI log at the head; the lane reports both times.
+
+**Phone-check list, added to 20.17's.** A composite status message of three or four sentences against the seat row at 380 x 667; Pygmy's 40.7 px targets (line 58 report); on Edit the SEAT row below the fold (line 84 report); place words on an 8-note rim under BESIDE CENTRE, where every seat sits on a sector boundary and mirror-image seats read differently ("lower right" against "bottom"); that opening the drawer does not raise the soft keyboard.
+
+**Left as they are (review 3 nits).** N3 the line 70 unit test's title; N4 the keyboard-open browser test uses a script click after Tab, and the bottom-only line 18 test accepts C3 or D3; N6 the partly asserted lines listed in PR #273's map. N5: the plan commits on the lane branch are the coordinator's.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
