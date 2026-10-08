@@ -1409,6 +1409,50 @@ Lane S3 merged as #267 (main c9adc5e, 726 mutant files). Review: PASS_WITH_NITS 
 
 **Lane order from here.** W1; G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last.
 
+### 20.10 Coordinator record after Lane W1 (2026-10-07)
+
+Lane W1 merged as #269 (main df91453, 734 mutant files). Review: PASS_WITH_NITS at 425a591. The older text is not edited; read it through this section.
+
+**Owner answers, interview 9 (binding).**
+
+1. W1's phone check at 380 px with the keyboard up: **merge on the review pass, check later.** It stays UNVERIFIED on #269; a problem found becomes a follow-up fix.
+2. The DR1-era hint copy of 20.9 (`Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.`): **kept as written.**
+3. W1's interim `LAYOUT_HINT` (`Layout is a guess. Tap MIRROR TOP if your pan is mirrored.`): **kept** until G2b.
+4. An old single-mirror deck with no bottom notes, a bottom note typed on Edit: **MIRROR BOTTOM stays off and the notice says unsaved.** The spec stands.
+
+**What W1 left on main, for every later lane brief.**
+
+- `#scale-box` is a `textarea` that grows to three rows. Enter generates; a pasted line break becomes a space.
+- The mirror controls are two switches, `#scale-mirror` (MIRROR TOP) and `#scale-mirror-bottom` (MIRROR BOTTOM). `scale-mirror-l` and `scale-mirror-r` are gone.
+- The field cap is `calc(3 * 1.3em + 26px)`: the spec's 24 px plus two 1 px borders (border-box). Accepted.
+- Acceptance line 79's e2e runs at 320x700, not 380. Accepted.
+- The old "mirror pair defaults to right-first" test was deleted with the pair.
+- `e_preset_refusal_sticks` is a two-hunk mutant; `dataset.dead` exists only inside that patch, not in the app.
+- 8 mutants were added against a forecast of 5; 15 were regenerated.
+
+**Carried into Lane G2b from the W1 review** (G2b already owns the sheet copy and rewrites these tests' inputs):
+
+- The plan-named test "the preview redraws the bottom ring alone when MIRROR BOTTOM is tapped" (20.5, 20.7 item 3) was not written. `mirrorBottom: false` in `solvePreviewLayout` survives every test. G2b adds the test and a mutant for it.
+- Nothing guards `syncGrow()` in `resetSheetState`: the line 79 test types the scale before it opens Edit, so the field has already grown. G2b adds a test that opens Edit on a saved long deck from a fresh load, and a mutant.
+- No fold test uses a three-row field. G2b's placeholder and D3 example are long enough; one fold test takes a three-row scale and asserts `#scale-generate` stays on screen.
+
+**Carried, no owner yet** (W1 review nits):
+
+- `BIG_SCALE` in `tests/e2e.test.js` changed its last note from `B3` to `Bb3` without a note in the PR.
+- In landscape (844x390, 667x375) the mirror and swatch row is 97 px tall against 44 on main: the two switches are wider and the swatches wrap. No binding line asks for one row. For the owner's eye with the phone check.
+- The IME check is `isComposing` only; Safari's keyCode 229 is not covered.
+- The paste caret is offset by the count of CRLF pairs.
+- `dataset.grow` is set twice (property and attribute).
+- README prose outside the mutant count still says LEFT-FIRST (DOC lane, or G2b if it rewrites that bullet).
+
+**Lane G2b's block, read against main today.**
+
+- `LAYOUT_HINT` goes: spec acceptance line 127 and interview 8 item 4. G2b owns every test and mutant that quotes it.
+- Its acceptance list gains the spec lines tagged [G2b]: 4, 9, 11, 14 and 127.
+- Its mutant forecast is a delta over 734.
+
+**Lane order from here.** G2b; then P1, DR1, DR2 with the owner's print and phone checks; DOC last.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
