@@ -14,7 +14,7 @@ const REPO = path.resolve(__dirname, "..");
 const SCALES = {
   amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
   kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
-  pygmy: "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]",
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
 };
 const MIN_PX = 44;
 
@@ -88,7 +88,7 @@ function run() {
     await tap("C4"); await tap("E4");
     assert.ok(await ev(`return document.querySelectorAll("#scale-preview .panflash").length;`) <= 2, "more than two flash seats");
     await b.waitFor(`document.querySelectorAll("#scale-preview .panflash").length === 0`, { label: "the flash to end", timeout: 2000 });
-    assert.match(await seatOrder(), /^A3=3 C4=4 D4=1 E4=2 /);
+    assert.match(await seatOrder(), /^D4=1 E4=2 A3=3 C4=4 /);
   });
 
   test("DR2a browser: Tab order, the plate as one stop, and Space/arrows/Escape on a focused note", async () => {
@@ -158,6 +158,6 @@ function run() {
     await waitSheet(true);
     await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
     await frames();
-    assert.match(await seatOrder(), /^A3=2 C4=1 /);
+    assert.match(await seatOrder(), /^C4=1 A3=2 /);
   });
 }

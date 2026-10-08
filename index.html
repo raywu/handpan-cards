@@ -965,7 +965,6 @@ footer.seq{row-gap:var(--sp-1)}
    box and changes as you type, this one never changes. */
 .sheethint{margin:0; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
   line-height:1.5; color:#a79d8b; overflow-wrap:anywhere}
-#scale-legacy-group .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
 /* ---- The layout drawer (Lane DR1). Closed, the zone is the plate, one
    toggle and one hint. Open, the plate band sticks to the top of the sheet's
    scroller so the pan stays in view while the drawer's controls scroll past
@@ -974,8 +973,9 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-zone{display:flex; flex-direction:column; gap:var(--sp-2)}
 #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
 #scale-layout-toggle{align-self:flex-start}
-#scale-layout-toggle:disabled, #scale-layout-toggle:disabled + #scale-layout-hint,
-#scale-drawer .mode:disabled{opacity:.5; cursor:default}
+#scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
+#scale-layout-toggle:disabled + #scale-layout-hint,
+#scale-drawer .mode:disabled, #scale-layout-reset:disabled{opacity:.5; cursor:default}
 #scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
 #scale-layout-toggle.on span{display:inline}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
@@ -984,6 +984,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-drawer .mirror{width:100%}
 #scale-drawer .ctlrow{justify-content:flex-start}
 #scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
+#scale-drawer-status.warn{color:#e3b25c}
 #scale-layout-state{color:#e3b25c}
 #scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
   padding-bottom:var(--sp-1)}
@@ -1008,8 +1009,9 @@ footer.seq{row-gap:var(--sp-1)}
    it has to sit on ONE note at the radius that note was drawn at, which is a
    solved number no selector can reach. What CSS owns is the focus treatment of
    the pan as a whole. */
-#scale-preview[tabindex]{cursor:pointer; border-radius:12px}
-#scale-preview[tabindex]:focus-visible{outline:2px solid #f1ece1; outline-offset:2px}
+#scale-preview .panhit{cursor:pointer; outline:none}
+#scale-preview .panfocus{display:none}
+#scale-preview .panhit:focus-visible + .panfocus{display:inline}
 /* iOS has no hover and this app turns the tap highlight off, so a note that is
    already selected would otherwise answer a tap with nothing at all. The hit
    target is transparent by design (it is smaller than the note it covers), so
@@ -1233,35 +1235,16 @@ footer.seq{row-gap:var(--sp-1)}
       </div>
       <p class="sheethint" id="scale-layout-state" hidden></p>
       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
-        <!-- Edit path only. DR2 removes ROTATE and MOVE; until then they live
-             here, one tap deeper than before. -->
-        <div class="editrow" id="scale-legacy-group" role="group" aria-labelledby="scale-layout-label"
-             aria-describedby="scale-legacy-hint" hidden>
-          <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
-          <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
-               intend to do since I can't see the layout of the pan change in real
-               time". Stage 3 answered the second half by putting the mock in the
-               flow; this sentence answers the first, and it has to live HERE - a
-               comment in this file teaches nobody, and a doc is not on the phone
-               the correction is made on. It names the gesture before the buttons
-               because nothing either button does means anything until a note is
-               chosen. -->
-          <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
-          <div class="ctlrow">
-            <div class="mirror">
-              <button class="mode" type="button" id="scale-rot-l"
-                      aria-label="Rotate the selected note's ring one position back">ROTATE &larr;</button>
-              <button class="mode" type="button" id="scale-rot-r"
-                      aria-label="Rotate the selected note's ring one position on">ROTATE &rarr;</button>
-            </div>
-            <div class="mirror">
-              <button class="mode" type="button" id="scale-move-l"
-                      aria-label="Move the selected note one position back">MOVE &larr;</button>
-              <button class="mode" type="button" id="scale-move-r"
-                      aria-label="Move the selected note one position on">MOVE &rarr;</button>
-            </div>
-            <button id="scale-layout-reset" type="button"
-                    aria-label="Reset the layout to the generated one">RESET</button>
+        <div class="ctlrow">
+          <div class="mirror">
+            <button class="mode" type="button" id="scale-note-prev" disabled>PREVIOUS NOTE</button>
+            <button class="mode" type="button" id="scale-note-next" disabled>NEXT NOTE</button>
+          </div>
+        </div>
+        <div class="ctlrow">
+          <div class="mirror">
+            <button class="mode" type="button" id="scale-seat-prev" disabled>PREVIOUS SEAT</button>
+            <button class="mode" type="button" id="scale-seat-next" disabled>NEXT SEAT</button>
           </div>
         </div>
         <div class="ctlrow">
@@ -1271,6 +1254,9 @@ footer.seq{row-gap:var(--sp-1)}
           </div>
         </div>
         <p class="sheethint">Each flips left and right. Top covers the rim and the inner notes.</p>
+        <div class="ctlrow">
+          <button id="scale-layout-reset" type="button" disabled>RESET SEATS</button>
+        </div>
         <div class="editrow">
           <span class="sheetlabel" id="scale-anchor-label">NOTE 1</span>
           <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
@@ -1280,7 +1266,7 @@ footer.seq{row-gap:var(--sp-1)}
             </div>
           </div>
         </div>
-        <p class="sheethint">On centre puts note 1 at the bottom centre. Beside centre puts the bottom centre between notes 1 and 2.</p>
+        <p class="sheethint">On centre puts seat 1 at the bottom centre. Beside centre puts the bottom centre between seats 1 and 2.</p>
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
       </div>
     </div>
@@ -8119,14 +8105,19 @@ function panLabel(x, y, name, oct, fs, col) {
  * tests/test_render_agreement.py pins its output against tools/hifi.py per
  * field: with no third argument the bytes are the ones print agrees with. */
 function pan(d, ch, opts) {
-  const interactive = !!(opts && opts.interactive);
-  // The SELECTED field id, or null. Drawn, not implied: the LAYOUT controls act
-  // on one note, and a user who cannot see which one is being asked to trust
-  // that ROTATE and MOVE will do what they mean - which is the exact complaint
-  // Stage 3 exists to answer.
-  const sel = interactive && opts.selected != null ? String(opts.selected) : null;
-  const rings = [];
+  // opts.hit, when present, is the seat editor's layer: { meta: id -> {ring,
+  // label}, picked: id | null, rover: id | null, flash: [id, id] }. Without it
+  // the output is the card path's, byte for byte.
+  const hit = opts && opts.hit ? opts.hit : null;
+  const interactive = !!hit;
+  const picked = hit && hit.picked != null ? String(hit.picked) : null;
+  const pickedRing = picked !== null ? hit.meta[picked].ring : null;
+  const veils = [];
+  const seatMarks = [];
+  const pickMarks = [];
+  const flashMarks = [];
   const hits = [];
+  const sameHits = [];
   const g = d.geom, R = 100;
   // A null chord is the UNHIGHLIGHTED render the scale sheet's pan preview
   // uses: no chord has been chosen there, so every field draws in its
@@ -8154,9 +8145,6 @@ function pan(d, ch, opts) {
     s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
 
   const numFs = numSize(R * g.r_note);
-  // The ding has no slot in the layout correction, so it is not selectable and
-  // is not counted in the "position N of M" a screen reader reads out.
-  const selectable = Object.keys(d.fields).filter((f) => d.fields[f][3] !== "ding").length;
   for (const fid in d.fields) {
     const id = +fid;
     const [name, oct, , zone, ang, lab] = d.fields[fid];
@@ -8182,29 +8170,42 @@ function pan(d, ch, opts) {
     const [nx, ny] = P(nr, ang);
     s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
-    // The ding is skipped above and so never reaches here: it has no slot in
-    // the layout correction, so there is nothing to select it FOR.
+    // The ding is skipped above and so never reaches here: it has no seat.
     if (interactive) {
-      const on = sel !== null && String(id) === sel;
-      // The ring is its own element rather than a stroke on the hit target: the
-      // target's radius is shrunk to whatever keeps it disjoint from its
-      // neighbours (panHitRadii), which on a crowded pan is well inside the
-      // note it covers. A selection the user cannot line up with a note is not
-      // a selection, so the ring is drawn at the NOTE's radius and stays there.
-      if (on)
-        rings.push(`<circle class="pansel" cx="${x}" cy="${y}" r="${rr * 1.2}"`
-          + ` fill="none" stroke="#E27005" stroke-width="${R * 0.016}"`
-          + ` pointer-events="none"/>`);
-      hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
-        + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
-        + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
-        + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
+      const m = hit.meta[id];
+      const at = `cx="${x}" cy="${y}"`;
+      if (picked !== null) {
+        if (String(id) === picked) {
+          pickMarks.push(`<circle class="pansel" ${at} r="${rr * 1.2}" fill="rgba(226,112,5,.22)"`
+            + ` stroke="#E27005" stroke-width="2.2" vector-effect="non-scaling-stroke" pointer-events="none"/>`
+            + `<circle class="pansel-ink" ${at} r="${rr * 1.2}" fill="none" stroke="#272219"`
+            + ` stroke-width="0.8" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+        } else if (m.ring === pickedRing) {
+          seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
+            + ` stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+        } else {
+          veils.push(`<circle class="panveil" ${at} r="${rr}" fill="#f1ece1" opacity=".55" pointer-events="none"/>`);
+        }
+      }
+      if (hit.flash && hit.flash.map(String).includes(String(id)))
+        flashMarks.push(`<circle class="panflash" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`
+          + ` stroke-width="3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+      const node = `<circle class="panhit" data-field="${id}" data-ring="${m.ring}" ${at} r="${rr}"`
+        + ` data-r="${rr}" fill="transparent" tabindex="${String(hit.rover) === String(id) ? 0 : -1}"`
+        + ` role="button" aria-pressed="${String(id) === picked}" aria-label="${escA(m.label)}"/>`
+        + `<circle class="panfocus" ${at} r="${rr * 1.32}" fill="none" stroke="#272219"`
+        + ` stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/>`;
+      (picked !== null && m.ring === pickedRing ? sameHits : hits).push({ at: m.order, node });
     }
   }
-  // After every field, so a target is never painted under the pan it selects,
-  // and the ring under the targets so it can never eat a tap.
-  if (interactive) s += `<g class="pansels">${rings.join("")}</g>`
-                      + `<g class="panhits">${hits.join("")}</g>`;
+  // After every field, so a target is never painted under the pan it selects.
+  // The picked ring's targets come last: where a target of another ring laps
+  // one of the picked ring's, the picked ring wins the tap.
+  if (interactive) {
+    const byOrder = (a2, b2) => a2.at - b2.at;
+    s += veils.join("") + seatMarks.join("") + pickMarks.join("") + flashMarks.join("")
+      + `<g class="panhits">${hits.sort(byOrder).concat(sameHits.sort(byOrder)).map((h) => h.node).join("")}</g>`;
+  }
   return s + "</svg>";
 }
 
@@ -8250,7 +8251,7 @@ const PAN_HIT_MIN_PX = 44;
  *  from the `r` a previous pass wrote, so running again on resize or an
  *  orientation change cannot compound. A layer that has not been laid out yet
  *  measures zero and is left with its rendered radii rather than zeroed. */
-function sizePanHits(svg, minPx) {
+function sizePanHits(svg, minPx, pickedRing) {
   if (!svg || !svg.getAttribute) return;
   const ext = Number(svg.getAttribute("data-ext"));
   const box = svg.getBoundingClientRect ? svg.getBoundingClientRect() : null;
@@ -8261,10 +8262,19 @@ function sizePanHits(svg, minPx) {
   if (!ext || !size) return;
   const nodes = [].slice.call(svg.querySelectorAll(".panhit"));
   if (!nodes.length) return;
-  const pts = nodes.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy")),
-                                Number(n.getAttribute("data-r")) || 0]);
-  const r = panHitRadii(ext, size, minPx, pts);
-  nodes.forEach((n, i) => n.setAttribute("r", String(r[i])));
+  // With a note picked the picked ring's targets are sized among themselves and
+  // the rest among themselves: the other rings are veiled and only refuse a tap.
+  const groups = pickedRing
+    ? [nodes.filter((n) => n.getAttribute("data-ring") === pickedRing),
+       nodes.filter((n) => n.getAttribute("data-ring") !== pickedRing)]
+    : [nodes];
+  for (const group of groups) {
+    if (!group.length) continue;
+    const pts = group.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy")),
+                                  Number(n.getAttribute("data-r")) || 0]);
+    const r = panHitRadii(ext, size, minPx, pts);
+    group.forEach((n, i) => n.setAttribute("r", String(r[i])));
+  }
 }
 
 /* ---------------- card faces ---------------- */
@@ -8739,10 +8749,10 @@ const delNote   = document.getElementById("scale-del-note");
 const delBtn    = document.getElementById("scale-delete");
 // The Phase 5 LAYOUT section. Secondaries only: the sheet's single primary is
 // still #scale-generate, relabelled SAVE CHANGES on the Edit path.
-const rotL      = document.getElementById("scale-rot-l");
-const rotR      = document.getElementById("scale-rot-r");
-const moveL     = document.getElementById("scale-move-l");
-const moveR     = document.getElementById("scale-move-r");
+const notePrev  = document.getElementById("scale-note-prev");
+const noteNext  = document.getElementById("scale-note-next");
+const seatPrev  = document.getElementById("scale-seat-prev");
+const seatNext  = document.getElementById("scale-seat-next");
 const resetBtn  = document.getElementById("scale-layout-reset");
 // Lane DR1: the layout drawer shell.
 const layoutZone = document.getElementById("scale-layout-zone");
@@ -8752,7 +8762,6 @@ const layoutHint = document.getElementById("scale-layout-hint");
 const layoutNote = document.getElementById("scale-layout-state");
 const drawerBox  = document.getElementById("scale-drawer");
 const drawerStatus = document.getElementById("scale-drawer-status");
-const legacyGroup = document.getElementById("scale-legacy-group");
 const drawerHint = document.getElementById("scale-drawer-hint");
 const anchorOne  = document.getElementById("scale-anchor-one");
 const anchorBetween = document.getElementById("scale-anchor-between");
@@ -8786,12 +8795,6 @@ let nameDirty = false;
 // exactly the share string it had (D5-1, D5-3). A seat in another ring is not
 // expressible, which is how a cross-ring arrangement is refused everywhere.
 let layoutSeats = null;
-// The chosen SLOT across the whole pan (rim slots, then inner, then bottom), not
-// the chosen field: everything the controls do (cyclic shifts, swaps) is
-// arithmetic on the slots of ONE ring. A tap on the pan arrives as a FIELD id
-// and is converted once, in selectPanField() - the one place the two can be got
-// the wrong way round.
-let layoutSel = 0;
 // The anchor is a seed option the sheet has no control for but must not lose on
 // a save. MIRROR BOTTOM is its own switch: `bottomHeld` is the value the user
 // chose, `hadBottom` is whether the last valid parse had bottom notes (the
@@ -8872,16 +8875,19 @@ function paintMirrors() {
    closing it never touches the layout, and leaving the sheet drops it. */
 let drawerOpen = false;
 let drawerPaused = false;
-let layoutBase = { anchor: "one", mirror: false, mb: false };
+let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "" };
 const HINT_EMPTY = "Type a scale to adjust its layout.";
-const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.";
-const DRAWER_ZONE = [drawerBtn, rotL, rotR, moveL, moveR, resetBtn, mirrorTop, mirrorBot,
+const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.";
+const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
+const DRAWER_ZONE = [drawerBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
   anchorOne, anchorBetween, previewBox];
+const inDrawerZone = (el) => DRAWER_ZONE.includes(el) || isHit(el);
 
 /** One line under the plate, read once. The same sentence twice in a row is
  *  cleared first, or a live region would stay silent on the repeat. */
-function layoutStatus(text) {
-  if (text && drawerStatus.textContent === text) {
+function layoutStatus(text, warn) {
+  drawerStatus.classList.toggle("warn", !!warn);
+  if (warn && text && drawerStatus.textContent === text) {
     drawerStatus.textContent = "";
     setTimeout(() => { if (drawerOpen && !drawerStatus.textContent) drawerStatus.textContent = text; }, 0);
     return;
@@ -8890,30 +8896,48 @@ function layoutStatus(text) {
 }
 function layoutNoticeText() {
   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
-    (!hadBottom || bottomMirror() === layoutBase.mb);
-  if (!same) return editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
+    (!hadBottom || bottomMirror() === layoutBase.mb) && seatsKey(layoutSeats) === layoutBase.seats;
+  let text;
+  if (!same) text = editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
     : "Layout not saved yet. GENERATE CARDS keeps it.";
-  const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom);
-  return editingId && custom ? "Layout changed from the default." : "";
+  else {
+    const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom) ||
+      layoutBase.seats !== "";
+    text = editingId && custom ? "Layout changed from the default." : "";
+  }
+  if (editingId && storedSeats && ringCount)
+    for (const ring of LAYOUT_RINGS)
+      if (storedSeats[ring] && ringCount[ring] !== storedCounts[ring]) text += ` The ${ring} seats were reset.`;
+  return text;
 }
 /** Everything the layout zone shows, from the session state alone. */
 function paintLayout() {
   paintMirrors();
   if (drawerOpen && !boxOk && !drawerPaused) {
     drawerPaused = true;
+    pickRef = null;
+    pickMoved = false;
+    if (isHit(document.activeElement)) drawerBtn.focus();
     layoutStatus("Layout is paused until the scale parses.");
   } else if (drawerOpen && boxOk && drawerPaused) {
     drawerPaused = false;
     layoutStatus("Layout is ready again.");
   }
-  drawerBtn.disabled = !boxOk && !drawerOpen;
+  const off = !boxOk && !drawerOpen;
+  const keep = off && document.activeElement === drawerBtn;
+  drawerBtn.disabled = off && !keep;
+  if (keep) drawerBtn.setAttribute("aria-disabled", "true"); else drawerBtn.removeAttribute("aria-disabled");
   drawerBtn.classList.toggle("on", drawerOpen);
   drawerBtn.setAttribute("aria-expanded", String(drawerOpen));
   layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
   layoutHint.hidden = drawerOpen;
   drawerBox.hidden = !drawerOpen;
   drawerStatus.hidden = !drawerOpen;
-  legacyGroup.hidden = !editingId;
+  drawerHint.textContent = DRAWER_HINT;
+  drawerHint.hidden = !drawerOpen;
+  notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
+  seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
+  resetBtn.disabled = !boxOk || !layoutSeats;
   layoutZone.classList.toggle("open", drawerOpen);
   const note = layoutNoticeText();
   layoutNote.textContent = note;
@@ -8956,29 +8980,41 @@ function openDrawer() {
   drawerOpen = true;
   drawerPaused = false;
   drawerStatus.textContent = "";
+  drawerStatus.classList.remove("warn");
   paintLayout();
+  repaintPlate();
   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Close the drawer. Focus follows only when it was inside the zone, or the
- *  toggle itself closed it: to the toggle if the scale parses, else the field. */
+ *  toggle itself closed it: to the toggle, which stays focusable (aria-disabled
+ *  in place of disabled) when the scale does not parse. */
 function closeDrawer(viaToggle) {
   if (!drawerOpen) return;
-  const inside = viaToggle || DRAWER_ZONE.includes(document.activeElement);
+  const inside = viaToggle || inDrawerZone(document.activeElement);
+  cancelGesture();
   drawerOpen = false;
   drawerPaused = false;
+  pickRef = null;
+  pickMoved = false;
   drawerStatus.textContent = "";
+  drawerStatus.classList.remove("warn");
+  if (inside) { drawerBtn.disabled = false; drawerBtn.focus(); }
   paintLayout();
-  if (inside) (boxOk ? drawerBtn : scaleBox).focus();
+  repaintPlate();
 }
 /** Leaving the sheet or opening a fresh session: no focus, no status. */
 function dropDrawer() {
+  cancelGesture();
   drawerHint.textContent = "";
   drawerHint.hidden = true;
   drawerOpen = false;
   drawerPaused = false;
+  pickRef = null;
+  pickMoved = false;
   drawerStatus.textContent = "";
+  drawerStatus.classList.remove("warn");
 }
 
 /** "Ding D3 · 3 top · 0 inner · 1 bottom. Top A3 C4 D4. Bottom C3." - the ding,
@@ -9011,42 +9047,26 @@ function buildDegrees(selected) {
   degSel.value = String(selected);
 }
 
-/* ---- the LAYOUT correction (D5, moved onto the pan in Stage 3) ----
- * The generated layout is a GUESS, and LAYOUT_HINT says so; this is how it is
- * corrected. The pan mock IS the editor: a note is chosen by tapping it, the
- * ring says which one is chosen, and ROTATE and MOVE redraw the mock under the
- * finger. Everything still works from the keyboard - ROTATE, MOVE and RESET are
- * ordinary buttons and the pan is ONE tab stop whose arrow keys walk the
- * selection - so there is no drag-only path to any of it. */
-
-/** The non-ding field ids in the order layout.solve assigns slots. */
-function layoutIds(fields) {
-  const of = (z) => Object.keys(fields).filter((id) => fields[id][3] === z)
-    .sort((a, b) => Number(a) - Number(b));
-  const byZone = { rim: of("rim"), inner: of("inner"), bottom: of("bottom") };
-  return slotZones(fields).map((z) => byZone[z].shift());
-}
+/* ---- the seat editor (Lane DR2a) ----
+ * The generated layout is a GUESS; this is how it is corrected. The only edit is
+ * a SWAP of two notes of one ring, and every path reaches it through the same
+ * three operations (DR2b's drag and hold use them too):
+ *   setPick(ref)               (a) pick a note up, or put it down with null
+ *   swapSeats(ring, i, j)      (b) the two notes trade seats: commit, flash, status
+ *   cancelGesture()            (c) cancel a gesture in flight (DR2b registers one)
+ * A note is named by { ring, i }: its ring and its index among the ring's notes
+ * by ascending field id. Field ids move when another ring changes size; the
+ * index inside a ring does not, so a pick survives an edit to a different ring.
+ * layoutSeats[ring][i] is the seat (0-based) the i-th note of the ring sits in;
+ * a ring that was not moved is ABSENT, never an identity list. */
 const LAYOUT_RINGS = ["rim", "inner", "bottom"];
 function ringSizes(fields) {
   const count = (z) => Object.keys(fields).filter((id) => fields[id][3] === z).length;
   return { rim: count("rim"), inner: count("inner"), bottom: count("bottom") };
 }
-/** The zone of every slot, from the engine's own slot order. */
-function slotZones(fields) {
-  return HPE.layout.slotOrder(ringSizes(fields));
-}
+const ringIds = (fields, ring) => Object.keys(fields).filter((id) => fields[id][3] === ring)
+  .sort((a, b) => Number(a) - Number(b));
 const identityOrder = (n) => Array.from({ length: n }, (_, i) => i);
-/** at[seat] = the note sitting in that seat - the inverse of a ring's seats. */
-function slotOccupants(order) {
-  const at = [];
-  order.forEach((slot, i) => { at[slot] = i; });
-  return at;
-}
-function orderFromSlots(at) {
-  const out = [];
-  at.forEach((field, slot) => { out[field] = slot; });
-  return out;
-}
 /** One ring's seats as the editor currently holds them (identity when unmoved). */
 const seatsFor = (ring, size) => (layoutSeats && layoutSeats[ring]) || identityOrder(size);
 /** ABSENT, never the identity: a ring that undoes itself is left out, and so is
@@ -9057,148 +9077,249 @@ function setRingSeats(ring, next) {
   else rest[ring] = next;
   layoutSeats = Object.keys(rest).length ? rest : null;
 }
+const seatsKey = (s) => LAYOUT_RINGS.filter((r) => s && s[r]).map((r) => r + ":" + s[r].join(",")).join(";");
 const editedDeck = () => (editingId ? CUSTOM[editingId] : null) || null;
-/** The half-open slot range of the zone a slot belongs to. */
-function zoneBlock(fields, slot) {
-  const zones = slotZones(fields);
-  const zone = zones[slot];
-  if (zone === undefined) return [0, 0];
-  return [zones.indexOf(zone), zones.lastIndexOf(zone) + 1];
-}
-const wrap = (i, a, span) => a + (((i - a) % span) + span) % span;
-
-/** A ring's seats are a permutation of a FIXED length, so a seed edit that
- *  changes a ring's note count invalidates that ring's list. This guard runs
- *  wherever the correction meets a field set, or a stale list silently lands on
- *  a different pan. Returns the non-ding count so callers do not re-derive it. */
-function syncLayoutSeats(fields) {
-  const n = layoutIds(fields).length;
+/** The seats that fit the notes of `fields`, or null: a list of the wrong length
+ *  would be refused by layout.solve, and a repaint must never stop on that. */
+function fitSeats(fields) {
+  if (!layoutSeats) return null;
   const sizes = ringSizes(fields);
-  if (layoutSeats) {
-    const kept = {};
-    for (const ring of LAYOUT_RINGS) {
-      if (layoutSeats[ring] && layoutSeats[ring].length === sizes[ring]) kept[ring] = layoutSeats[ring];
-    }
-    layoutSeats = Object.keys(kept).length ? kept : null;
+  const kept = {};
+  for (const ring of LAYOUT_RINGS)
+    if (layoutSeats[ring] && layoutSeats[ring].length === sizes[ring]) kept[ring] = layoutSeats[ring];
+  return Object.keys(kept).length ? kept : null;
+}
+
+// What the plate last drew, so a pick, a flash or the drawer opening repaints
+// without re-reading the box.
+let lastSeed = null;
+let lastSolved = null;
+// The picked note, or null; the note the arrow keys last stood on (the one Tab
+// stop of the plate); whether a SEAT step has moved anything since the pick.
+let pickRef = null;
+let roverRef = null;
+let pickMoved = false;
+// Per ring: the arrangement at every note count the ring has had (section 14).
+let seatMemo = { rim: {}, inner: {}, bottom: {} };
+let ringCount = null;
+let storedSeats = null;
+let storedCounts = null;
+// The two notes that just traded seats, for 600 ms.
+let panFlash = null;
+let flashTimer = null;
+// DR2b sets this to swallow the click that ends its own pointer gesture.
+let suppressClick = false;
+// DR2b registers a function here that abandons a drag or hold in flight.
+let gestureCancel = null;
+
+const PLACES = ["right", "upper right", "top", "upper left", "left", "lower left", "bottom", "lower right"];
+const placeOf = (ang) => PLACES[Math.floor(((((Number(ang) + 22.5) % 360) + 360) % 360) / 45)];
+
+/** The notes of one ring, in ascending field id, with their seat and place. */
+function ringNotes(ring) {
+  if (!lastSolved) return [];
+  const f = lastSolved.fields;
+  const ids = ringIds(f, ring);
+  const seats = seatsFor(ring, ids.length);
+  return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, name: f[id][0] + f[id][1],
+    place: placeOf(f[id][4]) }));
+}
+const bySeat = (a, b) => a.seat - b.seat;
+/** Every note of the pan in the order the arrow keys walk: rim, inner, bottom, seat by seat. */
+const allNotes = () => LAYOUT_RINGS.reduce((out, r) => out.concat(ringNotes(r).sort(bySeat)), []);
+const noteAt = (ref) => (ref ? ringNotes(ref.ring)[ref.i] || null : null);
+const pickedNote = () => noteAt(pickRef);
+const sameRef = (a, b) => !!a && !!b && a.ring === b.ring && a.i === b.i;
+const isHit = (el) => !!el && !!el.classList && el.classList.contains("panhit");
+function refOfNode(n) {
+  const ring = n.getAttribute("data-ring");
+  const i = ringIds(lastSolved.fields, ring).indexOf(n.getAttribute("data-field"));
+  return i < 0 ? null : { ring, i };
+}
+const hitNodes = () => [].slice.call(previewBox.querySelectorAll(".panhit"));
+function hitFor(ref) {
+  const n = noteAt(ref);
+  return n ? hitNodes().find((h) => h.getAttribute("data-field") === n.id) || null : null;
+}
+function focusRef(ref) {
+  const h = hitFor(ref);
+  if (h) h.focus();
+  return !!h;
+}
+/** The single Tab stop of the plate: the note the arrows last stood on. */
+function roverNote() {
+  return noteAt(roverRef) || allNotes()[0] || null;
+}
+function applyRover() {
+  const r = roverNote();
+  hitNodes().forEach((h) => h.setAttribute("tabindex", r && h.getAttribute("data-field") === r.id ? "0" : "-1"));
+}
+function setRover(ref) {
+  roverRef = ref;
+  applyRover();
+}
+
+/** What the hit layer needs to draw and to name each target. */
+function hitLayer() {
+  const meta = {};
+  allNotes().forEach((n, order) => {
+    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}` };
+  });
+  const p = pickedNote(), r = roverNote();
+  return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash };
+}
+
+const countsLabel = (c) => `Pan layout: ${c.rim} rim, ${c.inner} inner, ${c.bottom} bottom notes.`;
+
+function ringPickable() {
+  return !!ringCount && LAYOUT_RINGS.some((r) => ringCount[r] >= 2);
+}
+
+/** A ring's note count changed: it takes the arrangement it last had at the new
+ *  count, or the default. Returns the sentence to say and whether the pick ended. */
+function syncRingCounts(fields) {
+  const sizes = ringSizes(fields);
+  if (!ringCount) { ringCount = sizes; return { text: "", putDown: false }; }
+  const said = [];
+  let putDown = false;
+  for (const ring of LAYOUT_RINGS) {
+    const from = ringCount[ring], to = sizes[ring];
+    if (from === to) continue;
+    seatMemo[ring][from] = layoutSeats && layoutSeats[ring] ? layoutSeats[ring] : null;
+    const had = Object.prototype.hasOwnProperty.call(seatMemo[ring], to);
+    setRingSeats(ring, had && seatMemo[ring][to] ? seatMemo[ring][to] : identityOrder(to));
+    said.push(had ? `The ${ring} is back to ${to} notes, so its earlier seats were restored.`
+      : `The ${ring} now has ${to === 1 ? "1 note" : to + " notes"}, so its seats were reset.`);
+    if (pickRef && pickRef.ring === ring) putDown = true;
+    ringCount[ring] = to;
   }
-  if (layoutSel >= n) layoutSel = 0;
-  return n;
+  if (putDown) { pickRef = null; pickMoved = false; }
+  return { text: said.join(" ") + (putDown ? " The picked note was put down." : ""), putDown };
 }
 
-/** The fields the LAYOUT controls act on: the seed as TYPED, which on an
- *  untouched Edit box is the deck's own (the box is prefilled with
- *  formatSeed(d.fields)). The TYPED seed and not the stored deck, because once
- *  the mock repaints on every keystroke the two can differ, and the controls
- *  must move the pan the user is looking at. */
-function layoutFields() {
-  const d = editedDeck();
-  if (!d) return null;
-  const res = HPE.core.parseSeed(String(scaleBox.value || ""), { palette, mirror });
-  return res.ok ? res.value.fields : d.fields;
+function cancelGesture() {
+  const fn = gestureCancel;
+  gestureCancel = null;
+  if (fn) fn();
 }
-
-/** Choose the note a tap landed on. `.panhit` carries a FIELD id and layoutSel
- *  is a SLOT, and a ring's `seats[note] = seat` - so this is the conversion, and the
- *  only one. Backwards it selects the wrong note on every deck the user has
- *  already corrected, and exactly the right one on every deck they have not,
- *  which is why it gets a test of its own on a corrected pan. */
-function selectPanField(id) {
-  const fields = layoutFields();
-  if (!fields) return false;
-  syncLayoutSeats(fields);
-  const i = layoutIds(fields).indexOf(String(id));
-  if (i < 0) return false;
-  const [a, b] = zoneBlock(fields, i);
-  layoutSel = a + seatsFor(slotZones(fields)[i], b - a)[i - a];
-  previewLayout();
+/** (a) Pick a note up, or put it down with null. Says nothing: the caller knows
+ *  which row applies. */
+function setPick(ref) {
+  cancelGesture();
+  pickRef = ref ? { ring: ref.ring, i: ref.i } : null;
+  pickMoved = false;
+  if (ref) setRover(pickRef);
+  paintLayout();
+  repaintPlate();
+}
+/** (b) The notes i and j of `ring` trade seats. Commits to layoutSeats, flashes
+ *  both, repaints and writes row 7 (row 8 when i is j). The pick is the
+ *  caller's. */
+function swapSeats(ring, i, j) {
+  cancelGesture();
+  const before = ringNotes(ring);
+  const a = before[i], b = before[j];
+  if (!a || !b) return false;
+  if (i !== j) {
+    const next = before.map((n) => n.seat);
+    next[i] = b.seat;
+    next[j] = a.seat;
+    setRingSeats(ring, next);
+    panFlash = [a.id, b.id];
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { panFlash = null; repaintPlate(); }, 600);
+  }
+  paintLayout();
+  resyncSheet(true);
+  const moved = noteAt({ ring, i });
+  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}.`);
+  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
   return true;
 }
 
-/** The field id sitting in the selected slot - what the ring is drawn on. */
-function selectedField(fields) {
-  const ids = layoutIds(fields);
-  const [a, b] = zoneBlock(fields, layoutSel);
-  const at = slotOccupants(seatsFor(slotZones(fields)[layoutSel], b - a));
-  return ids[a + at[layoutSel - a]];
+function pickAnnouncement(n, how) {
+  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.`;
+  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
+  return `Picked up ${n.name}. Arrows choose a seat in the ${n.ring}. Space swaps. Escape cancels.`;
 }
-
-/* The preview is the MOCK, and only the mock (D4). It used to be painted onto
- * the real deck behind the sheet, which meant every abandoned correction had to
- * be unpainted on the way out - a second copy of the fields, a restore path,
- * and a deck that was briefly wrong if anything threw in between. The deck is
- * now untouched until SAVE CHANGES commits `order` like any other seed option,
- * so "Escape leaves the deck byte-identical" is structural rather than
- * something a restore function has to remember to do. */
-function previewLayout() {
-  if (!editingId) return;
-  resyncSheet(true);
-}
-
-// ROTATE is a cyclic shift of the SELECTED note's ring (D2): the whole ring
-// turns, which is what a pan whose zig-zag starts somewhere else actually looks
-// like. The ring is the selection's, not always the rim's - a bottom shell is
-// built from below and can start anywhere the rim does not, and before Stage 3
-// it could not be rotated at all.
-// Shared prologue for every layout-editor move (rotateLayout, moveNote,
-// stepLayoutSel): fetch the editable fields, bail if there are none, and
-// sync layoutSeats against the current field count. Byte-for-byte identical
-// across the three before this extraction (finding 13, quality-refactor
-// plan 2026-09-30). Returns null for "nothing to do", which every caller
-// turns straight into its own early return.
-function layoutPrologue() {
-  const fields = layoutFields();
-  if (!fields) return null;
-  return { fields, n: syncLayoutSeats(fields) };
-}
-function rotateLayout(by) {
-  const p = layoutPrologue();
-  if (!p) return;
-  const { fields } = p;
-  const [a, b] = zoneBlock(fields, layoutSel);
-  const span = b - a;
-  if (span < 2) return;
-  const ring = slotZones(fields)[layoutSel];
-  const at = slotOccupants(seatsFor(ring, span));
-  const next = at.slice();
-  for (let j = 0; j < span; j += 1) next[wrap(j + by, 0, span)] = at[j];
-  setRingSeats(ring, orderFromSlots(next));
-  layoutSel = a + wrap(layoutSel - a + by, 0, span);
-  previewLayout();
-}
-// MOVE takes the chosen note to the next position, and whatever was there takes
-// its place - a swap, so a note is never lost and the result is always still a
-// permutation. It stays inside the note's own ring: a rim note is on the rim.
-function moveNote(by) {
-  const p = layoutPrologue();
-  if (!p) return;
-  const { fields } = p;
-  const [a, b] = zoneBlock(fields, layoutSel);
-  const span = b - a;
-  if (span < 2) return;
-  const ring = slotZones(fields)[layoutSel];
-  const to = a + wrap(layoutSel - a + by, 0, span);
-  const at = slotOccupants(seatsFor(ring, span));
-  const held = at[layoutSel - a];
-  at[layoutSel - a] = at[to - a];
-  at[to - a] = held;
-  setRingSeats(ring, orderFromSlots(at));
-  layoutSel = to;
-  previewLayout();
-}
-/** Walk the selection one slot, wrapping across the whole pan - the keyboard
- *  equivalent of tapping the next note round. */
-function stepLayoutSel(by) {
-  const p = layoutPrologue();
-  if (!p) return;
-  const { n } = p;
+/** A tap, Space or Enter on a note. `how` is "tap" or "key". */
+function activateNote(ref, how) {
+  const n = noteAt(ref);
   if (!n) return;
-  layoutSel = (layoutSel + by + n) % n;
-  previewLayout();
+  const p = pickedNote();
+  if (!p) {
+    if (n.k < 2) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
+    setPick(ref);
+    layoutStatus(pickAnnouncement(n, how));
+    return;
+  }
+  if (n.ring !== p.ring) {
+    layoutStatus(`Not moved. ${p.name} moves only within the ${p.ring}.`, true);
+    focusRef(pickRef);
+    return;
+  }
+  const picked = { ring: pickRef.ring, i: pickRef.i };
+  const onNote = isHit(document.activeElement);
+  pickRef = null;
+  pickMoved = false;
+  setRover(picked);
+  swapSeats(picked.ring, picked.i, ref.i);
+  if (onNote) focusRef(picked);
 }
-function resetLayout() {
+/** Walk focus between the notes. With a note picked the arrows walk the seats of
+ *  its ring and wrap; with nothing picked they walk every note and do not. */
+function walkFocus(ref, nav) {
+  const picked = !!pickRef;
+  const list = picked ? ringNotes(pickRef.ring).sort(bySeat) : allNotes();
+  if (!list.length) return;
+  const from = list.findIndex((n) => sameRef(n, picked && ref.ring !== pickRef.ring ? pickRef : ref));
+  let to;
+  if (nav === "home") to = 0;
+  else if (nav === "end") to = list.length - 1;
+  else if (picked) to = (from + nav + list.length) % list.length;
+  else to = Math.min(list.length - 1, Math.max(0, from + nav));
+  focusRef(list[to]);
+}
+/** PREVIOUS NOTE and NEXT NOTE: the pick moves along the pickable notes. */
+function stepNote(dir) {
+  const list = allNotes().filter((n) => n.k >= 2);
+  if (!list.length) return;
+  const at = list.findIndex((n) => sameRef(n, pickRef));
+  const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;
+  setPick(list[to]);
+  layoutStatus(pickAnnouncement(list[to], "note"));
+}
+/** PREVIOUS SEAT and NEXT SEAT: the picked note swaps with its neighbour seat. */
+function stepSeat(dir) {
+  const p = pickedNote();
+  if (!p) return;
+  const ring = ringNotes(p.ring);
+  const target = ring.find((n) => n.seat === (p.seat + dir + p.k) % p.k);
+  pickMoved = true;
+  setRover(pickRef);
+  swapSeats(p.ring, p.i, target.i);
+}
+/** Escape with a note picked: put it down and keep the drawer open. */
+function putDownPick() {
+  const p = pickedNote();
+  const ref = pickRef;
+  const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
+  const moved = pickMoved;
+  setPick(null);
+  layoutStatus(moved ? `${p.name} put down. The swaps you made are kept.` : "Cancelled. Nothing moved.");
+  if (fromSeatButton) { setRover(ref); focusRef(ref); }
+}
+function resetSeats() {
+  cancelGesture();
   layoutSeats = null;
-  layoutSel = 0;
-  previewLayout();
+  seatMemo = { rim: {}, inner: {}, bottom: {} };
+  pickRef = null;
+  pickMoved = false;
+  panFlash = null;
+  paintLayout();
+  resyncSheet(true);
+  layoutStatus("Seats reset to the default.");
+  drawerBtn.focus();
 }
 
 /** The seed options the sheet currently describes. */
@@ -9225,8 +9346,8 @@ function sheetOptions() {
     const d = editedDeck();
     const kept = !!(d && d.options && d.options.name);
     if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
-    if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
   }
+  if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
   return o;
 }
 
@@ -9246,9 +9367,8 @@ function sheetOptions() {
  *  layout.solve refuses a seat list of the wrong length (BAD_NOTE) - which would
  *  show up as a mock that silently stopped repainting. */
 function solvePreviewLayout(seed) {
-  if (editingId) syncLayoutSeats(seed.fields);
   const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
-    seats: editingId ? layoutSeats : null };
+    seats: fitSeats(seed.fields) };
   const res = HPE.layout.solve(seed, solveOptions);
   return res.ok ? res.value : null;
 }
@@ -9279,42 +9399,57 @@ function clearPanPreview() {
 }
 
 // What the plate last drew. Held in a variable rather than read back off the
-// accessible name: on the Edit path the name also carries the instruction for
-// the arrow keys, so the string is no longer a key into PAN_NAMES.
+// accessible name, which is not a key into PAN_NAMES once the plate is a group.
 let panState = "example";
-const PAN_EDIT_HINT = " Tap a note to choose it, or use the arrow keys.";
-function markPan(state) {
+function markPan(state, interactive) {
   panState = state;
   previewBox.classList.toggle("stale", state !== "current");
-  previewBox.setAttribute("aria-label",
-    PAN_NAMES[state] + (editingId ? "." + PAN_EDIT_HINT : ""));
+  if (interactive) {
+    previewBox.setAttribute("role", "group");
+    previewBox.setAttribute("aria-label", countsLabel(ringSizes(lastSolved.fields)));
+  } else {
+    previewBox.setAttribute("role", "img");
+    previewBox.setAttribute("aria-label", PAN_NAMES[state]);
+  }
 }
 
+// Set when a ring changed size under a focused note: the next paint puts focus
+// on the first pickable note instead of a note index that no longer means it.
+let focusFirstNext = false;
 /** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the
  * seed has no solvable layout, which leaves whatever is on screen alone.
- *
- * BOTH PATHS. Through Stage 2 this was create-only and the Edit path cleared
- * the plate instead, on the reasoning that previewLayout() was already
- * repainting the real card behind the sheet. That reasoning did not survive
- * contact with the owner: the card behind a full-screen page is not visible at
- * all, so ROTATE and MOVE moved something nobody could see. The mock is now the
- * one place the layout is shown, on both paths, and on Edit it is interactive.
- */
+ * With the drawer open and the seed current the plate is the interactive one:
+ * a hit layer, one button per note. Anything else is the plain picture. */
 function paintPan(seed, state) {
+  const prev = lastSolved && isHit(document.activeElement) ? refOfNode(document.activeElement) : null;
   const solved = solvePreviewLayout(seed);
   if (!solved) return false;
+  lastSeed = seed;
+  lastSolved = solved;
+  const interactive = drawerOpen && state === "current";
   const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
-  // A chordless deck shape: pan() reads geom, fields and colours, and with no
-  // chord it lights nothing, so the colours are only ever a fallback.
   previewBox.innerHTML = pan(
     { geom: solved.geom, fields: solved.fields, colors: { root: p.root, tone: p.tone } },
     null,
-    editingId ? { interactive: true, selected: selectedField(solved.fields) } : null);
+    interactive ? { hit: hitLayer() } : null);
   previewBox.removeAttribute("hidden");
-  markPan(state);
-  if (editingId) sizePanHits(previewBox.querySelector && previewBox.querySelector("svg"),
-                             PAN_HIT_MIN_PX);
+  markPan(state, interactive);
+  if (interactive) {
+    sizePanHits(previewBox.querySelector && previewBox.querySelector("svg"), PAN_HIT_MIN_PX,
+                pickRef ? pickRef.ring : null);
+    if (focusFirstNext) {
+      focusFirstNext = false;
+      const first = allNotes().find((n) => n.k >= 2) || allNotes()[0];
+      if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first); }
+    } else if (prev) focusRef(prev);
+  }
   return true;
+}
+
+/** Redraw the plate from what it last drew: a pick, a flash, the drawer opening
+ *  or closing. */
+function repaintPlate() {
+  if (lastSeed && !previewBox.hasAttribute("hidden")) paintPan(lastSeed, panState);
 }
 
 function showPanPreview(seed) {
@@ -9339,13 +9474,24 @@ function holdPanPreview() {
     showPlaceholderPan();
     return;
   }
-  markPan(panState === "example" ? "example" : "held");
+  if (previewBox.querySelector(".panhit") && lastSeed) { paintPan(lastSeed, "held"); return; }
+  markPan(panState === "example" ? "example" : "held", false);
 }
 
 /* A refusal the SEED cannot re-derive: the collision veto is decided by the
    registry, not by the text in the box, so syncParseState() would clear it.
    Cleared by the next real parse, which is the edit that could fix it. */
 let refusal = null;
+
+/** A parse changed the pan's ring sizes: take the seats for the new counts, say
+ *  so (drawer open only), and keep focus on a real note. */
+function noteCounts(fields) {
+  const wasOnNote = isHit(document.activeElement);
+  const r = syncRingCounts(fields);
+  if (!r.text) return;
+  if (r.putDown && wasOnNote) focusFirstNext = true;
+  if (drawerOpen) layoutStatus(r.text);
+}
 
 /** Re-derive the parse line, the box, GENERATE and the message from the seed.
  *  `paint` is false for the one caller that runs inside a pointerdown:
@@ -9368,6 +9514,7 @@ function syncParseState({ paint }) {
     boxOk = true;
     const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
     if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
+    noteCounts(res.value.fields);
     paintLayout();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
@@ -9394,6 +9541,7 @@ function syncParseState({ paint }) {
  *  An edit is also the one event that can clear a standing refusal. */
 function updateParse() {
   refusal = null;
+  if (drawerOpen && !drawerPaused) layoutStatus("");
   syncParseState({ paint: true });
 }
 
@@ -9405,7 +9553,14 @@ function updateParse() {
  *  addressed. Mirrors disarmDelete()'s own guard (in `disarmDelete`), which is why
  *  disarmDelete() is not rewritten to use this - it already avoids the bug. */
 function resyncSheet(paint) {
-  if (refusal) { showRefusal(refusal); return; }
+  if (refusal) {
+    showRefusal(refusal);
+    if (paint) {
+      const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
+      if (res.ok) { noteCounts(res.value.fields); paintPan(res.value, "current"); }
+    }
+    return;
+  }
   syncParseState({ paint });
 }
 
@@ -9501,21 +9656,10 @@ if (window.visualViewport) {
 /** Show or hide the three Edit-only rows and relabel the single primary. */
 function setSheetMode(edit) {
   disarmDelete();
-  for (const el of [nameRow, degRow, legacyGroup, delRow]) {
+  for (const el of [nameRow, degRow, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
-  // On the create path the plate is a picture: role="img" with a name, read as
-  // content and skipped by Tab. On the Edit path it is a control group holding
-  // one button per note, so it takes a group role, a name that says what the
-  // arrow keys do, and the single tab stop that reaches it.
-  if (edit) {
-    previewBox.setAttribute("role", "group");
-    previewBox.setAttribute("tabindex", "0");
-  } else {
-    previewBox.setAttribute("role", "img");
-    previewBox.removeAttribute("tabindex");
-  }
   // The page is named by the title it shows (#scale-title, via
   // aria-labelledby), so there is one string and a sighted user and a screen
   // reader are told the same thing.
@@ -9589,7 +9733,16 @@ function resetSheetState(edit) {
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
-  layoutSel = 0;
+  pickRef = null;
+  roverRef = null;
+  pickMoved = false;
+  panFlash = null;
+  lastSeed = null;
+  lastSolved = null;
+  ringCount = null;
+  seatMemo = { rim: {}, inner: {}, bottom: {} };
+  storedSeats = edit && layoutSeats ? JSON.parse(JSON.stringify(layoutSeats)) : null;
+  storedCounts = edit ? ringSizes(edit.fields) : null;
   anchor = edit && edit.options.anchor === "between" ? "between" : "one";
   hadBottom = !!edit && Object.values(edit.fields).some((f) => f[3] === "bottom");
   bottomHeld = hadBottom && (typeof edit.options.mirrorBottom === "boolean"
@@ -9597,7 +9750,7 @@ function resetSheetState(edit) {
   boxOk = !!edit;
   dropDrawer();
   layoutBase = { anchor, mirror, mb: edit && typeof edit.options.mirrorBottom === "boolean"
-    ? edit.options.mirrorBottom : mirror };
+    ? edit.options.mirrorBottom : mirror, seats: seatsKey(layoutSeats) };
   paintLayout();
 }
 // The create path.
@@ -9892,40 +10045,48 @@ const pickAnchor = (to) => () => {
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
 drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
-rotL.onclick = () => rotateLayout(-1);
-rotR.onclick = () => rotateLayout(1);
-moveL.onclick = () => moveNote(-1);
-moveR.onclick = () => moveNote(1);
-resetBtn.onclick = resetLayout;
-// A tap anywhere on the pan chooses the note under it. Delegated to the plate
-// rather than bound per target, because the targets are rewritten on every
-// repaint and a listener per circle would be re-attached on every keystroke.
-previewBox.addEventListener("click", (e) => {
-  if (!editingId) return;
-  const t = e.target;
-  const hit = t && t.closest ? t.closest(".panhit") : null;
-  if (!hit) return;
-  selectPanField(hit.getAttribute("data-field"));
+notePrev.onclick = () => stepNote(-1);
+noteNext.onclick = () => stepNote(1);
+seatPrev.onclick = () => stepSeat(-1);
+seatNext.onclick = () => stepSeat(1);
+resetBtn.onclick = resetSeats;
+drawerBtn.addEventListener("blur", () => {
+  if (drawerBtn.getAttribute("aria-disabled")) paintLayout();
 });
-// The pan is ONE tab stop and the arrows walk the selection inside it - the
-// same contract the slot list had, on the thing the notes are actually drawn
-// on. Home and End go to the ends, so a long pan is two keys wide.
+// Delegated to the plate: the targets are rewritten on every repaint.
+previewBox.addEventListener("click", (e) => {
+  const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
+  if (!hit || !drawerOpen || !lastSolved) return;
+  if (suppressClick) { suppressClick = false; return; }
+  const ref = refOfNode(hit);
+  if (ref) activateNote(ref, "tap");
+});
+// The plate is ONE tab stop; the arrows walk the notes inside it.
 previewBox.addEventListener("keydown", (e) => {
-  if (!editingId) return;
-  let by;
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") by = 1;
-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") by = -1;
-  else if (e.key === "Home") by = "home";
-  else if (e.key === "End") by = "end";
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
+  if (!hit || !drawerOpen || !lastSolved) return;
+  const ref = refOfNode(hit);
+  if (!ref) return;
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); activateNote(ref, "key"); return; }
+  let nav;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") nav = 1;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") nav = -1;
+  else if (e.key === "Home") nav = "home";
+  else if (e.key === "End") nav = "end";
   else return;
   e.preventDefault();
-  if (by === "home") { layoutSel = 0; previewLayout(); }
-  else if (by === "end") {
-    const fields = layoutFields();
-    if (!fields) return;
-    layoutSel = Math.max(0, syncLayoutSeats(fields) - 1);
-    previewLayout();
-  } else stepLayoutSel(by);
+  walkFocus(ref, nav);
+});
+previewBox.addEventListener("focusin", (e) => {
+  const hit = e.target && e.target.closest ? e.target.closest(".panhit") : null;
+  const ref = hit && lastSolved ? refOfNode(hit) : null;
+  if (ref) setRover(ref);
+});
+previewBox.addEventListener("focusout", (e) => {
+  const to = e.relatedTarget;
+  if (to && previewBox.contains && previewBox.contains(to)) return;
+  if (pickRef && lastSolved) setRover(pickRef);
 });
 /** Keep the wrapper's ghost copy of the text in step with the box. */
 function syncGrow() {
@@ -9975,15 +10136,13 @@ sheet.addEventListener("keydown", e => {
   const stops = [backBtn,
                  editingId ? nameBox : null,
                  scaleBox,
-                 editingId ? previewBox : null,
-                 drawerBtn,
-                 editingId ? rotL : null, editingId ? rotR : null,
-                 editingId ? moveL : null, editingId ? moveR : null,
-                 editingId ? resetBtn : null,
-                 mirrorTop, mirrorBot, anchorOne, anchorBetween,
+                 drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
+                 drawerBtn, notePrev, noteNext, seatPrev, seatNext,
+                 mirrorTop, mirrorBot, resetBtn, anchorOne, anchorBetween,
                  editingId ? degSel : null, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);
+  if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
   cycleTabStops(stops, e);
 });
 
@@ -10167,7 +10326,12 @@ document.addEventListener("keydown", e => {
   // While the sheet is open it owns the keyboard: Escape closes it, and an
   // arrow key is cursor movement inside the box, never a card step.
   if (sheetOpen) {
-    if (e.key === "Escape") { e.preventDefault(); if (drawerOpen) closeDrawer(); else closeScaleSheet(); }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (drawerOpen && pickRef) putDownPick();
+      else if (drawerOpen) closeDrawer();
+      else closeScaleSheet();
+    }
     return;
   }
   // While the settings panel is open it owns the keyboard too (eng review

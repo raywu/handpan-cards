@@ -34,13 +34,11 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
   "scale-delete-row", "scale-delete", "scale-del-note",
   // Phase 5 LAYOUT section, additive like the two before it.
-  "scale-rot-l", "scale-rot-r",
-  "scale-move-l", "scale-move-r", "scale-layout-reset",
-  // Lane DR1: the layout drawer shell. The four rot/move ids above stay: the
-  // old group lives on inside #scale-legacy-group until DR2 removes it.
+  "scale-layout-reset",
+  // Lane DR1: the layout drawer shell.
   "scale-layout-zone", "scale-plate-band", "scale-layout-toggle", "scale-layout-hint",
   "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
-  "scale-legacy-group", "scale-anchor-one", "scale-anchor-between",
+  "scale-anchor-one", "scale-anchor-between",
   // Lane DR2a: the seat controls that replace the old rot/move group.
   "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
   // The pan-layout preview, additive like every row above it.
