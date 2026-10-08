@@ -957,3 +957,35 @@ test("identitySeed orders by zone, not by field number", () => {
 test("parseLegacySeed is parseSeed", () => {
   assert.equal(core.parseLegacySeed, core.parseLegacySeed);
 });
+
+test("G2b: the legacy reader refuses a bottom note that lands below octave -1 (pin)", () => {
+  const r = core.parseLegacySeed("(C0) G0 | B#");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "BAD_NOTE");
+  assert.match(r.reason, /^B#-2 is not a note/);
+});
+
+test("G2b: a repeated bottom note after the ding is NOTE_REPEATED", () => {
+  const r = core.parseSeed("(D3) [F3] [F3] A3");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NOTE_REPEATED");
+  assert.match(r.reason, /^F3 and F3 are the same note/);
+});
+
+test("G2b: the first inner note below its predecessor gets the afterBar sentence", () => {
+  const r = core.parseSeed("(D3) A3 C4 D4 | C3");
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NOTE_OUT_OF_ORDER");
+  assert.match(r.reason, /comes after the \| but is below/);
+});
+
+test("G2b: a hundred-and-first top note leaves bottom ids clear", () => {
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(PCS[m % 12] + (Math.floor(m / 12) - 1));
+  const r = core.parseSeed("[C-1] (C0) " + top.join(" "));
+  assert.equal(r.ok, true, r.reason);
+  const ids = Object.keys(r.value.fields);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(ids.length, 103);
+});

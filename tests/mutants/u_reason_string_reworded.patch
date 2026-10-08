@@ -4,12 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -20,7 +20,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -27,7 +27,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      },
      NO_FIFTH: {
        kind: "error",
 -      reason: "No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding."
 +      reason: "No perfect fifth above the ding <X>. Add <fifth of X>, or check the ding."
      },
-     TOO_MANY_RIM: {
+     BAD_NOTE: {
        kind: "error",

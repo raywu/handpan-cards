@@ -6293,3 +6293,204 @@ test("W1 line 119: the count line leads with the ding and all three counts, then
   assert.match(app.els["scale-parse"].textContent,
     /^Ding F3 · 9 top · 2 inner · 6 bottom\. Top .+ Inner F5 G5\. Bottom C3 Db3 Eb3 Bb3 Db4 Ab5\.$/);
 });
+
+/* ------------------------------------------------------------------ Lane G2b
+ * The flip. Tests below that were written AFTER the implementation are marked
+ * "(pin)" in their title; the rest were written red first. */
+
+const PLACEHOLDER = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
+const indexSource = () => require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
+const placeholderOf = () => /id="scale-box"[\s\S]{0,400}?placeholder="([^"]+)"/.exec(indexSource())[1];
+
+test("a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index", () => {
+  const key = boot().get("SCALES_KEY");
+  const first = { v: 2, s: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", o: {} };
+  const bar = { v: 2, s: PYGMY_LEGACY, o: {} };
+  const app = boot({ storage: { [key]: JSON.stringify([first, bar]) } });
+  const d = Object.values(app.registry()).find((x) => x.fields && Object.values(x.fields).some((f) => f[F_ZONE] === "bottom"));
+  assert.ok(d, "the bar record did not open");
+  assert.strictEqual(ringIdsOf(d, "bottom").length, 6, "the bar list was not read as bottom notes");
+  assert.strictEqual(ringIdsOf(d, "inner").length, 0, "the bar list was read as inner notes");
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 2);
+  assert.strictEqual(list[0].v, 4);
+  assert.strictEqual(list[1].v, 4);
+  assert.strictEqual(list[1].s, app.get(`HPE.core.formatSeed(HPE.core.parseLegacySeed(${JSON.stringify(PYGMY_LEGACY)}).value.fields)`));
+});
+
+test("the placeholder parses and draws the E Amara 20 pan", () => {
+  const app = boot();
+  const ph = placeholderOf();
+  assert.strictEqual(ph, PLACEHOLDER);
+  const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ph)})`);
+  assert.strictEqual(res.ok, true);
+  openSheet(app);
+  app.type(ph);
+  assert.strictEqual(app.els["scale-parse"].textContent,
+    "Ding E3 · 9 top · 3 inner · 7 bottom. Top B3 D4 E4 F#4 G4 A4 B4 D5 E5. Inner F#5 G5 A5. Bottom C3 D3 F#3 G3 A3 C4 C5.");
+  app.els["scale-generate"].click();
+  const d = app.registry()[app.deckId()];
+  assert.ok(d && d.chords.length > 0, "the placeholder did not generate a deck");
+});
+
+test("label, placeholder and hint name the same three marks", () => {
+  const src = indexSource();
+  const app = boot();
+  const label = /<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1];
+  const label2 = /id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1];
+  const text = [label, label2, placeholderOf(), app.get("PARSE_HINT")].join(" ");
+  for (const mark of ["(", "[", "|"]) assert.ok(text.includes(mark), `no ${mark} in the teaching text`);
+  assert.doesNotMatch(label + label2 + app.get("PARSE_HINT"), / \/ /, "a lone slash is still taught");
+  assert.doesNotMatch(placeholderOf(), /\//);
+});
+
+test("every example in the label, hint and refusals parses", () => {
+  const app = boot();
+  const src = indexSource();
+  const texts = [app.get("PARSE_HINT")];
+  texts.push(/<label class="sheetlabel" for="scale-box">([^<]*)</.exec(src)[1]);
+  texts.push(/id="scale-label-2"[^>]*>([^<]*)</.exec(src)[1]);
+  const reasons = app.get("HPE.core.REASONS");
+  for (const code of Object.keys(reasons)) {
+    texts.push(reasons[code].reason);
+    for (const alt of Object.values(reasons[code].alternates || {})) texts.push(alt);
+  }
+  const found = [];
+  for (const t of texts) {
+    for (const m of t.matchAll(/e\.g\. ([^.,:]+?)(?:[.,:]|$)/g)) found.push(m[1].trim());
+  }
+  const grammar = found.filter((ex) => /[\(\[|]/.test(ex));
+  assert.ok(grammar.length >= 6, `only ${grammar.length} examples found`);
+  for (const ex of grammar) {
+    const res = app.get(`HPE.core.parseSeed(${JSON.stringify(ex)})`);
+    assert.strictEqual(res.ok, true, `"${ex}" does not parse: ${res.code}`);
+  }
+});
+
+test("typing the old inner mark shows the slash sentence", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 C4 D4 / E4 F4");
+  assert.strictEqual(app.els["scale-refusal"].textContent, app.get("HPE.core.REASONS.BAD_NOTE.alternates.slash"));
+});
+
+test("typing an old bottom list with octaves shows the afterBar sentence", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 C4 D4 | C3 E3");
+  const alt = app.get("HPE.core.REASONS.NOTE_OUT_OF_ORDER.alternates.afterBar");
+  const want = alt.split("<A>").join("C3").split("<B>").join("D4");
+  assert.strictEqual(app.els["scale-refusal"].textContent, want);
+});
+
+test("TOO_MANY_RIM is not in REASONS and thirteen rim notes generate a deck", () => {
+  const app = boot();
+  assert.strictEqual(app.get(`"TOO_MANY_RIM" in HPE.core.REASONS`), false);
+  const thirteen = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4";
+  const d = makeCustom(app, thirteen);
+  assert.ok(d && d.chords.length > 0);
+  assert.strictEqual(ringIdsOf(d, "rim").length, 12);
+});
+
+test("a hundred-and-first top note does not collide with a bottom id", () => {
+  const app = boot();
+  const PCS = "C C# D D# E F F# G G# A A# B".split(" ");
+  const name = (m) => PCS[m % 12] + (Math.floor(m / 12) - 1);
+  const top = [];
+  for (let m = 13; m <= 113; m += 1) top.push(name(m));
+  assert.strictEqual(top.length, 101);
+  const res = app.generate("[C-1] (C0) " + top.join(" "), {});
+  assert.strictEqual(res.ok, true, res.reason);
+  const ids = Object.keys(res.value.fields);
+  assert.strictEqual(new Set(ids).size, ids.length, "two fields share an id");
+  assert.strictEqual(ids.length, 103);
+});
+
+test("an octave-less list after the bar is counted as inner notes, with zero bottom", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D) A C D | E F");
+  assert.match(app.els["scale-parse"].textContent, /· 2 inner · 0 bottom\./);
+});
+
+test("the boot rewrite leaves an unreadable record byte-identical at its index", () => {
+  const key = boot().get("SCALES_KEY");
+  const recs = [{ v: 2, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: {} }, UNREADABLE, { v: 3, s: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4", o: {} }];
+  const app = boot({ storage: { [key]: JSON.stringify(recs) } });
+  const list = scalesOf(app);
+  assert.strictEqual(list.length, 3);
+  assert.deepStrictEqual(list[1], UNREADABLE);
+  assert.strictEqual(list[0].v, 4);
+  assert.strictEqual(list[2].v, 4);
+  assert.strictEqual(list[0].s, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+});
+
+test("two records for one deck id collapse to the first, whatever their versions", () => {
+  const key = boot().get("SCALES_KEY");
+  const recs = [{ v: 2, s: PYGMY_LEGACY, o: { name: "One" } }, { v: 4, s: PYGMY_STRING, o: { name: "Two" } }];
+  const app = boot({ storage: { [key]: JSON.stringify(recs) } });
+  const names = Object.values(app.registry()).map((d) => d.name);
+  assert.deepStrictEqual(names, ["One"]);
+  assert.strictEqual(scalesOf(app).filter((r) => r.o && r.o.name).length >= 1, true);
+});
+
+test("a throwing storage write leaves the old list and the deck still opens", () => {
+  const key = boot().get("SCALES_KEY");
+  const old = JSON.stringify([{ v: 2, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5", o: {} }]);
+  const app = boot();
+  app.store[key] = old;
+  app.run(`localStorage.setItem = () => { throw new Error("denied"); }`);
+  app.run("restoreScales()");
+  assert.strictEqual(app.store[key], old);
+  assert.strictEqual(Object.keys(app.registry()).length, 1);
+});
+
+test("a forty-note pan generates its deck inside the time budget", () => {
+  const app = boot();
+  const rim = "A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ");
+  const inner = "G6 A6 B6 C7 D7 E7 F7 G7".split(" ");
+  const bottom = "[C1] [D1] [E1] [F1] [G1] [A1] [B1] [C2] [D2] [E2] [F2] [G2]";
+  const seed = bottom + " (D3) " + rim.join(" ") + " | " + inner.join(" ");
+  const t0 = Date.now();
+  const res = app.generate(seed, {});
+  const ms = Date.now() - t0;
+  assert.strictEqual(res.ok, true, res.reason);
+  assert.ok(ms < 15000, `${ms} ms`);
+  console.log(`G2b forty-note generate: ${ms} ms`);
+});
+
+const CROWDED = "(C3) " + "D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6".split(" ").join(" ");
+
+test("a crowded typed scale shows the SMALL_LABELS warning in #scale-msg before GENERATE", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(CROWDED);
+  const said = app.els["scale-msg"];
+  assert.match(said.textContent, /Crowded pan/);
+  assert.strictEqual(said.classList.contains("warn"), true);
+});
+
+test("the preview redraws the bottom ring alone when MIRROR BOTTOM is tapped", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_FULL);
+  const before = app.els["scale-preview"].innerHTML;
+  app.els["scale-mirror-bottom"].click();
+  const afterBottom = app.els["scale-preview"].innerHTML;
+  assert.notStrictEqual(afterBottom, before, "MIRROR BOTTOM did not redraw the preview");
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(app.els["scale-preview"].innerHTML, before, "a second tap did not restore it");
+  app.els["scale-mirror"].click();
+  assert.notStrictEqual(app.els["scale-preview"].innerHTML, afterBottom,
+    "MIRROR TOP drew the same pan as MIRROR BOTTOM");
+});
+
+test("opening Edit on a saved long deck from a fresh load sizes the field to the deck's text", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: PYGMY_STRING, o: {} }]) } });
+  const d = Object.values(app.registry())[0];
+  app.select(d.id);
+  app.clickChip(d.name);
+  assert.strictEqual(app.els["scale-box"].value, PYGMY_STRING);
+  assert.strictEqual(app.els["scale-box-wrap"].dataset.grow, PYGMY_STRING);
+});

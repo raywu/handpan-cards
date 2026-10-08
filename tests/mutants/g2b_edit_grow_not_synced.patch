@@ -1,0 +1,15 @@
+# suite: node --test --test-name-pattern ^opening.Edit.on.a.saved.long.deck.from.a.fresh.load.sizes.the.field.to.the.deck.s.text$ tests/app.test.js
+# kills: opening Edit on a saved long deck from a fresh load sizes the field to the deck's text
+# The Edit sheet fills the field without resizing it, so a long saved deck opens clipped to one row.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9345,7 +9345,6 @@ function resetSheetState(edit) {
+   nameBox.value = edit ? edit.name : "";
+   nameDirty = false;                                 // prefilled, not typed
+   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+-  syncGrow();
+   palette = edit ? edit.options.palette : 0;
+   buildSwatches();
+   mirror = edit ? !!edit.options.mirror : false;
+

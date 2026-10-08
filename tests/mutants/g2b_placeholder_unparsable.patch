@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^the.placeholder.parses.and.draws.the.E.Amara.20.pan$ tests/app.test.js
+# kills: the placeholder parses and draws the E Amara 20 pan
+# The placeholder teaches the retired slash.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1154,7 +1154,7 @@ footer.seq{row-gap:var(--sp-1)}
+         <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
+                   autocomplete="off" spellcheck="false" enterkeyhint="go"
+                   aria-describedby="scale-label-2"
+-                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A"></textarea>
++                  placeholder="[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E / F# G A"></textarea>
+       </div>
+       <span class="sheetlabel" id="scale-label-2">[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS</span>
+       <div id="scale-parse"></div>
+

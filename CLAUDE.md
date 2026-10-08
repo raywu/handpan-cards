@@ -52,6 +52,8 @@ no committed PDF; the app builds theirs in the browser.
   regions of `index.html`. A SYNC STEP, NOT A BUILD STEP: see "Hard
   constraints".
 
+**Scale strings.** One ascending line: `[C] [D] (E) [F#] B D E | F# G`. Round brackets (or a trailing slash, or a `|` straight after the note) mark the ding; square brackets mark a bottom note at its pitch position; a `|` after the top notes starts the inner notes. Strings written before 2026-10 used `/` for inner notes and `|` for a bottom list; they are read only by `HPE.core.parseLegacySeed`, chosen by the version tag on a stored record or share link (3 or lower), never by looking at the string. The deck id hashes `identitySeed`, not the canonical string, so no id moved.
+
 ## Hard constraints
 
 - **Single-file app.** No bundlers, no frameworks, no external JS. Additions

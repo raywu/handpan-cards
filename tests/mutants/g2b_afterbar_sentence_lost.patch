@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^G2b..the.first.inner.note.below.its.predecessor.gets.the.afterBar.sentence$ tests/core.test.js
+# kills: G2b: the first inner note below its predecessor gets the afterBar sentence
+# The first inner note below its predecessor gets the generic ordering sentence, not the afterBar one.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -712,7 +712,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       bad = scalePlaced(note, mm);
+       if (bad) return bad;
+       if (mm < prev.midi) {
+-        return scaleOrder(note, prev, entry === firstInner ? "afterBar" :
++        return scaleOrder(note, prev, false ? "afterBar" :
+                                       (prev === ding ? "ding" : undefined));
+       }
+       if (entry.zone === "bottom") {
+

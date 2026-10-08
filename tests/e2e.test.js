@@ -5789,6 +5789,57 @@ function run() {
     }
   });
 
+  const THREE_ROW_SCALE = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6 G6 A6 B6 C7 D7 E7 F7 G7 A7 B7 C8 D8 E8 F8";
+
+  test("G2b: GENERATE CARDS stays on screen when the scale field is three rows tall", async () => {
+    try {
+      await freshLoad();
+      for (const [w, h] of FOLD_VIEWPORTS) {
+        await b.setViewport(w, h, true);
+        await openSheetForFold(w, h);
+        await typeScale(THREE_ROW_SCALE);
+        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
+          { label: `the preview to render at ${w}x${h}` });
+        const m = await fieldMetrics();
+        if (w <= 390) assert.strictEqual(m.rows, 3, `the field is ${m.rows} rows at ${w}x${h}, not three`);
+        assertPrimaryVisible(await primaryFold(), `three-row create sheet at ${w}x${h}`);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: "the sheet to close" });
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("G2b spec lines 9 and 11: the second label is shown whole and the count line wraps at 380 with no sideways scroll", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await typeScale("[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
+      const m = await b.eval(`
+        const l2 = document.getElementById("scale-label-2");
+        const parse = document.getElementById("scale-parse");
+        const surf = document.getElementById("scale-sheet").firstElementChild;
+        const lh = parseFloat(getComputedStyle(parse).lineHeight);
+        return { l2h: l2.hidden, l2w: l2.scrollWidth, l2c: l2.clientWidth,
+          l2r: l2.getBoundingClientRect().right, vw: window.innerWidth,
+          pw: parse.scrollWidth, pc: parse.clientWidth, ph: parse.getBoundingClientRect().height, lh,
+          pt: parse.textContent, sw: surf.scrollWidth, sc: surf.clientWidth };`);
+      assert.strictEqual(m.l2h, false, "the second label is hidden");
+      assert.ok(m.l2w <= m.l2c + 1, `the second label is clipped (${m.l2w} > ${m.l2c})`);
+      assert.ok(m.l2r <= m.vw, "the second label runs off the right edge");
+      assert.match(m.pt, /^Ding E3 \u00b7 9 top \u00b7 3 inner \u00b7 7 bottom\./);
+      assert.ok(m.ph > m.lh * 1.5, `the count line did not wrap (${m.ph}px at ${m.lh}px lines)`);
+      assert.ok(m.pw <= m.pc + 1, "the count line scrolls sideways");
+      assert.ok(m.sw <= m.sc + 1, "the sheet scrolls sideways");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("SAVE CHANGES is reachable without scrolling on the largest pan the engine allows", async () => {
     try {
       await freshLoad();

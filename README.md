@@ -56,11 +56,8 @@ decisions behind it.
   and voicing. **Notes -> Name** reverses it (read the diagram, name the chord).
 - **Shuffle** randomizes order. Deck and mode choices persist between visits
   (when the browser allows storage).
-- **+ ADD A SCALE** (in the settings panel, under Scales) opens the scale sheet: type your
-  pan as a ding in brackets followed by the top notes, e.g.
-  `(D) A C D E F G A C`, with any bottom notes after a `|`. The line under the
-  box shows how the notes were read as you type; pick a palette and, if your
-  pan is mirrored, LEFT-FIRST; then GENERATE CARDS. Regenerating the same
+- **+ ADD A SCALE** (in the settings panel, under Scales) opens the scale sheet:
+  type your pan low to high on one line, the ding in round brackets and each bottom note in square brackets where its pitch falls, e.g. `[C] (D) A C D E F G A C`. If the pan has inner notes, put a `|` before them. The line under the box counts the top, inner and bottom notes it read. Pick a palette; ADJUST LAYOUT opens a drawer where you can drag a note to another seat in its ring, choose whether note 1 sits at bottom centre, and MIRROR the pan; then GENERATE CARDS. No pan is too big; a crowded one warns that its labels print small. Scales saved before this version still open. A saved scale with an even number of rim notes now draws with its sides swapped, to match every other pan; switch MIRROR to swap them back. Regenerating the same
   scale replaces that deck in place. The sheet is a real page, not an overlay:
   opening it pushes `#add`, and reopening a saved one pushes `#edit-<id>`, so
   the back gesture closes the sheet instead of leaving the app. A page route
@@ -73,6 +70,9 @@ decisions behind it.
   tap to confirm. A generated deck also travels as a `#s=` link: the app opens
   one from the address bar with no account and no server, though nothing in
   the UI builds or copies that link yet.
+  A scale saved in a tab still running the previous version of the app lands under
+  the old storage key and does not appear in the new app; that needs a tab held
+  open across an update, and reloading it fixes the tab.
 - **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
   CHORD-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
@@ -126,7 +126,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 734 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 744 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 

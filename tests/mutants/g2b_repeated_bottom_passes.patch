@@ -1,0 +1,16 @@
+# suite: node --test --test-name-pattern ^G2b..a.repeated.bottom.note.after.the.ding.is.NOTE.REPEATED$ tests/core.test.js
+# kills: G2b: a repeated bottom note after the ding is NOTE_REPEATED
+# A bottom note equal to the previous bottom note is accepted.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -716,7 +716,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+                                       (prev === ding ? "ding" : undefined));
+       }
+       if (entry.zone === "bottom") {
+-        if (lastBottom && mm <= lastBottom.midi) return scaleRepeated(note, lastBottom);
++        if (lastBottom && mm < lastBottom.midi) return scaleRepeated(note, lastBottom);
+         if (mm <= ding.midi) return scaleOrder(note, ding, "ding");
+         lastBottom = note;
+       } else {
+

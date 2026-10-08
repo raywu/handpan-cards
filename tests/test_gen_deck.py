@@ -43,8 +43,8 @@ GEN_DECK = os.path.join(paths.TOOLS, "gen_deck.js")
 # A nine-note top shell with no bottom notes, and the same pan with a bottom
 # shell, so the badge / legend / dashed-ring paths are exercised too.
 SEED_TOP_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"
-SEED_WITH_BOTTOM = ("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5"
-                    " | C3 Db3 Eb3 Bb3 Db4 Ab5")
+SEED_WITH_BOTTOM = ("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4"
+                    " C5 Eb5 F5 G5 [Ab5]")
 # A pan of fourths and fifths: it BUILDS, and carries the NO_THIRDS warning.
 SEED_NO_THIRDS = "(C3) G3 D4 G4 D5"
 
@@ -62,12 +62,12 @@ PAGES_TOP_ONLY_PRINT = 6
 CHORDS_TOP_ONLY = 49
 
 # The closed code enum of ENGINE-SPEC section 2.
-CODES = {"NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
+CODES = {"NO_DING", "NO_FIFTH", "BAD_NOTE",
          "NOTE_OUT_OF_RANGE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED",
          "NEEDS_NEWER_APP", "NO_THIRDS"}
 
 
-def run_gen(*args, legacy=True, **kw):
+def run_gen(*args, legacy=False, **kw):
     """-> CompletedProcess for `node tools/gen_deck.js [--legacy] <args>`."""
     flags = ["--legacy"] if legacy else []
     return subprocess.run([shutil.which("node") or "node", GEN_DECK, *flags, *args],
@@ -124,6 +124,11 @@ class GenDeckCliTest(unittest.TestCase):
         plain = json.loads(run_gen(SEED_TOP_ONLY, legacy=False).stdout)
         flagged = json.loads(run_gen(SEED_TOP_ONLY, legacy=True).stdout)
         self.assertEqual(flagged, plain)
+        legacy = json.loads(run_gen(PYGMY_LEGACY_MAKER, legacy=True).stdout)
+        current = json.loads(run_gen(PYGMY_MAKER, legacy=False).stdout)
+        self.assertEqual(legacy["deck"]["fields"], current["deck"]["fields"])
+        self.assertNotEqual(run_gen(PYGMY_LEGACY_MAKER, legacy=False).returncode, 0,
+                            "the new reader accepted a legacy bar list")
         self.assertEqual(run_gen("--legacy", "--list-presets", legacy=False).returncode, 0)
 
     def test_the_canonical_seed_round_trips_through_the_cli(self):
@@ -251,7 +256,7 @@ def engine_reason(code, seed):
     script = (
         'const {loadEngine} = require("./tests/helpers/engine.js");'
         'const H = loadEngine(["core","voicing","layout","naming","select"]);'
-        'const r = H.core.parseLegacySeed(process.argv[1]);'
+        'const r = H.core.parseSeed(process.argv[1]);'
         'process.stdout.write(r.ok ? "" : r.reason);')
     proc = subprocess.run([shutil.which("node") or "node", "-e", script, seed],
                           capture_output=True, text=True, cwd=paths.ROOT,
@@ -483,8 +488,10 @@ OLD_AMARA_CHORDS_SHA256 = ("6a7f861e236169672d2400280f20f7adddbc81cb71f95f168b38
 OLD_PYGMY_CHORDS_SHA256 = ("db3cd398ce1a96691d99852ebc3c61122cfabf4df7a6f24fef36"
                            "6c9f9e81a235")
 AMARA_MAKER = "(D3) A3 C4 D4 E4 F4 G4 A4 C5"
-PYGMY_MAKER = ("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5"
-               " | C3 Db3 Eb3 Bb3 Db4 Ab5")
+PYGMY_MAKER = ("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4"
+               " C5 Eb5 F5 G5 [Ab5]")
+PYGMY_LEGACY_MAKER = ("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5"
+                      " | C3 Db3 Eb3 Bb3 Db4 Ab5")
 
 
 def chords_digest(chords):

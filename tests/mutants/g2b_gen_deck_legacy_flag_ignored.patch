@@ -1,0 +1,16 @@
+# suite: python3 -m unittest -k test_legacy_flag_reads_the_seed_with_the_legacy_reader tests.test_gen_deck
+# kills: test_legacy_flag_reads_the_seed_with_the_legacy_reader
+# gen_deck.js ignores --legacy.
+diff --git a/tools/gen_deck.js b/tools/gen_deck.js
+--- a/tools/gen_deck.js
++++ b/tools/gen_deck.js
+@@ -139,7 +139,7 @@ function main(argv) {
+     die("usage: gen_deck.js \"<scale seed>\" | --preset <id> | --list-presets");
+   }
+ 
+-  const read = args.legacy ? HPE.core.parseLegacySeed : HPE.core.parseSeed;
++  const read = HPE.core.parseSeed;
+   const parsed = read(args.seed, args.options);
+   if (!parsed.ok) die(parsed.code + ": " + parsed.reason);
+ 
+
