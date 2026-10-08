@@ -173,8 +173,9 @@ function run() {
   const near = (g, want, what) => assert.ok(Math.abs(g.x - want.x) <= 1 && Math.abs(g.y - want.y) <= 1,
     `${what}: ghost centre ${g.x},${g.y} vs ${want.x},${want.y}`);
   for (const [w, h, kb, ot] of [[380, 667, 300, 0], [380, 667, 300, 120], [820, 1180, 400, 0], [380, 667, 0, 0], [820, 1180, 0, 0]]) {
+    const kbWhat = kb ? "with the keyboard up (offsetTop " + ot + ")" : "with no keyboard";
     for (const how of ["mouse", "touch"]) {
-      test(`DR2b browser (F1, 93): at ${w}x${h} ${kb ? `with the keyboard up (offsetTop ${ot})` : "with no keyboard"} a ${how} drag keeps the ghost on its hit point and arms the seat under it`, async () => {
+      test(`DR2b browser (F1, 93): at ${w}x${h} ${kbWhat} a ${how} drag keeps the ghost on its hit point and arms the seat under it`, async () => {
         await openAdd(SCALES.amara, w, h, true);
         try {
           if (kb) {
