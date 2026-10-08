@@ -1,0 +1,14 @@
+# kills: DR1 rule G by resize: open on Edit, rotate in either direction, and the band and padding follow
+# suite: node --test --test-name-pattern ^DR1.rule.G.by.resize.* tests/drawer_grid.test.js
+# The sheet body is not observed, so a keyboard shrinking the scrollport leaves the stuck state stale (rule G-e).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8936,7 +8936,6 @@ const bandPort = document.querySelector(".sheetbody") || plateBand;
+ if (typeof ResizeObserver === "function") {
+   const bandWatch = new ResizeObserver(syncBand);
+   bandWatch.observe(plateBand);
+-  bandWatch.observe(bandPort);
+ }
+ /** A native focus scrolls a text control only far enough to show its caret;
+  *  rule G-c wants the whole control in the scrollport. */

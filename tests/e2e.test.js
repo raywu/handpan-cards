@@ -1531,10 +1531,11 @@ function run() {
         const box = document.getElementById("scale-box");
         box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true }));
+        document.getElementById("scale-layout-toggle").click();
         document.getElementById("scale-back").focus(); return true;`);
       const seen = [];
       let prev = await stopTag();
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 24; i++) {
         await tabKey(false);
         const now = await stopTag();
         assert.notStrictEqual(now, prev,
@@ -3241,9 +3242,14 @@ function run() {
     await b.setViewport(380, 780, true);
     try {
       await openSheet();
+      await b.eval(`const box = document.getElementById("scale-box");
+        box.value = "[C3] (D3) A3 C4 D4";
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+        document.getElementById("scale-layout-toggle").click(); return true;`);
       const hits = await b.eval(`
         const out = { small: [], swatches: [] };
-        const sel = "#decks .chip, #scale-box, #scale-mirror, #scale-mirror-bottom, #scale-generate";
+        const sel = "#decks .chip, #scale-box, #scale-layout-toggle, #scale-mirror, #scale-mirror-bottom, " +
+          "#scale-anchor-one, #scale-anchor-between, #scale-generate";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
           if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
@@ -4236,6 +4242,341 @@ function run() {
     await openEdit();
   }
 
+  /** Open the layout drawer by its toggle, the way a finger does. */
+  const openDrawer = async () => {
+    await b.eval(`document.getElementById("scale-layout-toggle")
+      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+    await b.click("#scale-layout-toggle");
+    await b.waitFor(`!document.getElementById("scale-drawer").hidden`,
+      { label: "the layout drawer to open" });
+  };
+  /** editFreshDeck(), then the drawer that holds ROTATE, MOVE and RESET. */
+  async function editFreshDeckOpen() {
+    await editFreshDeck();
+    await openDrawer();
+  }
+
+  /* ------------------------------------------------------------------
+   * Lane DR1: the layout drawer shell, judged in a real browser. The unit
+   * tests own the state; these own what only a layout engine can see. The
+   * numbers are the spec's acceptance lines
+   * (docs/plans/2026-10-07-scale-drawer-design-spec.md).
+   * ---------------------------------------------------------------- */
+  const DR1_SCALE = "[C3] (D3) A3 C4 D4";
+  const addWithDrawer = async (w, h) => {
+    await freshLoad();
+    await b.setViewport(w, h, true);
+    await openSheet();
+    await typeScale(DR1_SCALE);
+    await openDrawer();
+  };
+  const bandPosition = () =>
+    b.eval(`return getComputedStyle(document.getElementById("scale-plate-band")).position;`);
+  const body = `document.querySelector("#scale-sheet .sheetbody")`;
+  const scrollEnd = () => b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight; return s.scrollTop;`);
+  const inScrollport = (id) => b.eval(`
+    const sp = ${body}.getBoundingClientRect();
+    const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect();
+    return { top: r.top, bottom: r.bottom, spTop: sp.top, spBottom: sp.bottom, h: r.height };
+  `);
+
+  test("DR1 line 34: the open plate band stays in the scrollport at the end of the body, and is static while the field has focus", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      await b.eval(`document.getElementById("scale-layout-toggle").focus(); return true;`);
+      await scrollEnd();
+      const r = await inScrollport("scale-plate-band");
+      assert.ok(r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
+        `the band left the scrollport: ${JSON.stringify(r)}`);
+      assert.strictEqual(await bandPosition(), "sticky");
+      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+      assert.strictEqual(await bandPosition(), "static", "the band stayed sticky under the field's keyboard");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 35: at 380 x 667 the open plate is no wider than 42 percent of the viewport height", async () => {
+    try {
+      await addWithDrawer(380, 667);
+      const w = await b.eval(`return document.getElementById("scale-preview").getBoundingClientRect().width;`);
+      assert.ok(w <= 667 * 0.42 + 1, `the open plate is ${w}px wide`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 lines 36 and 88: at 844 x 390 the open drawer is two columns with a 220px plate, and at 500 x 390 one column", async () => {
+    try {
+      await addWithDrawer(844, 390);
+      const two = await b.eval(`
+        const z = document.getElementById("scale-layout-zone");
+        const band = document.getElementById("scale-plate-band").getBoundingClientRect();
+        const ctl = document.getElementById("scale-layout-toggle").getBoundingClientRect();
+        return { display: getComputedStyle(z).display, bandRight: band.right, ctlLeft: ctl.left,
+                 plate: document.getElementById("scale-preview").getBoundingClientRect().width };
+      `);
+      assert.strictEqual(two.display, "grid");
+      assert.ok(two.ctlLeft >= two.bandRight - 1, `the controls are not beside the band: ${JSON.stringify(two)}`);
+      assert.ok(two.plate >= 150, `the plate is ${two.plate}px wide`);
+      assert.ok(Math.abs(two.plate - 220) <= 1, `the plate is ${two.plate}px wide, not 220`);
+      await b.setViewport(500, 390, true);
+      const one = await b.eval(`return getComputedStyle(document.getElementById("scale-layout-zone")).display;`);
+      assert.notStrictEqual(one, "grid", "500 x 390 laid the zone out in two columns");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 37: every drawer control is at least 44px tall and the drawer does not overflow sideways at 380", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      const r = await b.eval(`
+        const d = document.getElementById("scale-drawer");
+        const small = [...d.querySelectorAll("button")].filter(el => el.getClientRects().length)
+          .map(el => ({ id: el.id, h: el.getBoundingClientRect().height })).filter(x => x.h < 44);
+        return { small, sw: d.scrollWidth, cw: d.clientWidth, page: document.body.scrollWidth - document.body.clientWidth };
+      `);
+      assert.deepStrictEqual(r.small, [], `drawer controls under 44px: ${JSON.stringify(r.small)}`);
+      assert.ok(r.sw <= r.cw + 1 && r.page <= 1, `the drawer overflows sideways: ${JSON.stringify(r)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+      for (const id of ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
+                        "scale-anchor-one", "scale-anchor-between"]) {
+        assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
+        const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
+          return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 39: the drawer and its controls have no transition or animation", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      const bad = await b.eval(`
+        const els = [document.getElementById("scale-layout-toggle"), document.getElementById("scale-drawer"),
+          ...document.querySelectorAll("#scale-drawer button, #scale-layout-toggle span")];
+        return els.map(el => { const cs = getComputedStyle(el);
+          return { id: el.id || el.tagName, t: cs.transitionDuration, a: cs.animationName }; })
+          .filter(x => !/^0s(, 0s)*$/.test(x.t) || x.a !== "none");
+      `);
+      assert.deepStrictEqual(bad, []);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 82: the status line is inside the scrollport at the end of the body at 380 x 780 and 380 x 667", async () => {
+    try {
+      for (const h of [780, 667]) {
+        await addWithDrawer(380, h);
+        // With the toggle row's hint gone while open, the switch rests under
+        // the sticky footer at 667; bring it into view as a thumb would.
+        await b.eval(`document.getElementById("scale-mirror").scrollIntoView({ block: "center" });`);
+        await b.click("#scale-mirror");
+        await scrollEnd();
+        const r = await inScrollport("scale-drawer-status");
+        assert.ok(r.h > 0 && r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
+          `380 x ${h}: the status left the scrollport: ${JSON.stringify(r)}`);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 hint row dimming: the hint and the toggle dim together when disabled, and a disabled drawer switch dims", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheet();
+      const op = () => b.eval(`return { hint: getComputedStyle(document.getElementById("scale-layout-hint")).opacity,
+        toggle: getComputedStyle(document.getElementById("scale-layout-toggle")).opacity };`);
+      const empty = await op();
+      assert.strictEqual(empty.toggle, "0.5");
+      assert.strictEqual(empty.hint, empty.toggle, "the empty-state hint is not dimmed with its button");
+      await typeScale("(D3) A3 C4 D4");
+      const typed = await op();
+      assert.strictEqual(typed.toggle, "1");
+      assert.strictEqual(typed.hint, "1", "the hint stayed dimmed after the scale parsed");
+      await b.eval(`document.getElementById("scale-layout-toggle").click();`);
+      const mb = await b.eval(`const e = document.getElementById("scale-mirror-bottom");
+        return { off: e.disabled, o: getComputedStyle(e).opacity,
+          top: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
+      assert.deepStrictEqual(mb, { off: true, o: "0.5", top: "1" },
+        "a disabled drawer switch is not dimmed to .5, or an enabled one is");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 focus order: on Edit the plate keeps its tab stop and comes before the toggle, with the drawer closed and open", async () => {
+    try {
+      for (const open of [false, true]) {
+        await (open ? editFreshDeckOpen() : editFreshDeck());
+        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+        const seen = [];
+        for (let i = 0; i < 2; i += 1) {
+          await b.key("Tab", "Tab", 9);
+          seen.push(await b.eval(`return document.activeElement.id;`));
+        }
+        assert.deepStrictEqual(seen, ["scale-preview", "scale-layout-toggle"], `drawer ${open ? "open" : "closed"}`);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 86: on Edit the band goes static for the name and the degrees, and not for a drawer control", async () => {
+    try {
+      await editFreshDeckOpen();
+      for (const id of ["scale-name", "scale-degrees"]) {
+        await b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
+        assert.strictEqual(await bandPosition(), "static", `focusing #${id} left the band sticky`);
+      }
+      await b.eval(`document.getElementById("scale-mirror").focus(); return true;`);
+      assert.strictEqual(await bandPosition(), "sticky");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 87: a control focused by Tab under the open band is not hidden behind it", async () => {
+    try {
+      for (const edit of [false, true]) for (const h of [780, 667]) {
+        const where = `${edit ? "Edit" : "Add"} 380 x ${h}`;
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(380, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else {
+          await addWithDrawer(380, h);
+        }
+        for (const id of ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
+                          "scale-anchor-one", "scale-anchor-between"]) {
+          await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+          await scrollEnd();
+          assert.ok(await tabTo(id, 40), `${where}: Tab never reached #${id}`);
+          const r = await b.eval(`
+            const e = document.activeElement.getBoundingClientRect();
+            const sp = ${body}.getBoundingClientRect();
+            return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
+                     band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
+                     pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
+          assert.strictEqual(r.pos, "sticky", `${where}: the band is not stuck at focus on #${id}`);
+          assert.ok(r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
+          assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
+        }
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 87 landscape: at 844 x 390 with the drawer open every Tab stop of the sheet ends inside the scrollport, on Add and on Edit", async () => {
+    try {
+      for (const edit of [false, true]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(844, 390, true);
+          await generate(EDIT_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else {
+          await addWithDrawer(844, 390);
+        }
+        await b.eval(`document.getElementById("scale-back").focus(); return true;`);
+        const seen = [];
+        for (let i = 0; i < 34; i++) {
+          await b.key("Tab", "Tab", 9);
+          const r = await b.eval(`
+            const a = document.activeElement, sp = ${body};
+            if (!a || !sp.contains(a)) return null;
+            const e = a.getBoundingClientRect(), s = sp.getBoundingClientRect();
+            return { id: a.id || a.tagName, top: e.top - s.top, bottom: e.bottom - s.top, port: s.height };`);
+          if (!r) continue;
+          seen.push(r.id);
+          const fits = r.bottom - r.top <= r.port;
+          assert.ok(r.top >= -1 && (fits ? r.bottom <= r.port + 1 : r.top < r.port),
+            `${edit ? "Edit" : "Add"} at 844 x 390: #${r.id} ends outside the scrollport: ${JSON.stringify(r)}`);
+        }
+        assert.ok(seen.includes("scale-anchor-between"), `Tab never reached BESIDE CENTRE: ${seen}`);
+      }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 89 (report): where the toggle sits at 380 x 667 closed, and the status at 844 x 390", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 667, true);
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      const t = await b.eval(`const sp = ${body}; sp.scrollTop = 0;
+        const sr = sp.getBoundingClientRect(); const r = document.getElementById("scale-layout-toggle").getBoundingClientRect();
+        return { top: r.top - sr.top, bottom: r.bottom - sr.top, scrollport: sr.height };`);
+      console.log("DR1 line 89: toggle at 380 x 667, closed, scrollTop 0:", JSON.stringify(t));
+      await addWithDrawer(844, 390);
+      const st = await b.eval(`const sp = ${body}.getBoundingClientRect();
+        const r = document.getElementById("scale-drawer-status").getBoundingClientRect();
+        return { top: r.top - sp.top, bottom: r.bottom - sp.top, scrollport: sp.height, hidden: document.getElementById("scale-drawer-status").hidden };`);
+      console.log("DR1 line 89: status at 844 x 390, open:", JSON.stringify(st));
+      assert.ok(Number.isFinite(t.top) && Number.isFinite(st.top));
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 108: the open toggle shows one aria-hidden U+00D7, the closed one hides it, and the name stays", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      const read = () => b.eval(`
+        const t = document.getElementById("scale-layout-toggle");
+        const m = [...t.querySelectorAll("[aria-hidden='true']")];
+        return { n: m.length, text: m[0] && m[0].textContent, shown: !!m[0] && getComputedStyle(m[0]).display !== "none",
+                 name: t.getAttribute("aria-label") };`);
+      const open = await read();
+      assert.deepStrictEqual(open, { n: 1, text: "×", shown: true, name: "Adjust layout" });
+      await b.click("#scale-layout-toggle");
+      const closed = await read();
+      assert.deepStrictEqual(closed, { n: 1, text: "×", shown: false, name: "Adjust layout" });
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 line 130: the old group is displayed on Edit with the drawer open and not on Add", async () => {
+    try {
+      const shown = () => b.eval(`return ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]
+        .map(id => document.getElementById(id).getClientRects().length > 0);`);
+      await addWithDrawer(380, 780);
+      assert.deepStrictEqual(await shown(), [false, false, false, false, false]);
+      await editFreshDeck();
+      assert.deepStrictEqual(await shown(), [false, false, false, false, false]);
+      await openDrawer();
+      assert.deepStrictEqual(await shown(), [true, true, true, true, true]);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   const activeChipText = () => b.eval(`
     const el = document.activeElement;
     return el && el.closest && el.closest("#decks") ? el.textContent.trim() : null;
@@ -4317,9 +4658,9 @@ function run() {
 
   test("Tab is trapped inside the Edit sheet and reaches every Edit control", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const seen = [];
-      for (let i = 0; i < 27; i++) {
+      for (let i = 0; i < 31; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`
           const el = document.activeElement;
@@ -4353,11 +4694,11 @@ function run() {
    * three gestures. */
   test("the LAYOUT hint is visible inside the group, not merely present in the file", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const hint = await b.eval(`
-        const el = document.getElementById("scale-layout-hint");
+        const el = document.getElementById("scale-legacy-hint");
         if (!el) return { missing: true };
-        const row = document.getElementById("scale-layout-row");
+        const row = document.getElementById("scale-legacy-group");
         /* Scroll it up the way a reader would before measuring: the hint sits
          * below the fold of the sheet's own scroller at 380x780, so measuring
          * where it happens to rest asserts a scroll position, not visibility. */
@@ -4398,12 +4739,12 @@ function run() {
           display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
           effOpacity,
           text: (el.textContent || "").trim(),
-          describes: document.querySelector('[aria-describedby~="scale-layout-hint"]') !== null,
+          describes: document.querySelector('[aria-describedby~="scale-legacy-hint"]') !== null,
         };
       `);
-      assert.ok(!hint.missing, "#scale-layout-hint never reached the DOM");
+      assert.ok(!hint.missing, "#scale-legacy-hint never reached the DOM");
       assert.ok(hint.inRow,
-        "the hint is not inside #scale-layout-row - it explains buttons it does not sit with");
+        "the hint is not inside #scale-legacy-group - it explains buttons it does not sit with");
       assert.ok(hint.h > 0 && hint.w > 0,
         `the hint draws no box (${hint.w}x${hint.h}, display:${hint.display}) - nothing renders`);
       assert.notStrictEqual(hint.visibility, "hidden", "the hint is visibility:hidden");
@@ -4519,7 +4860,7 @@ function run() {
 
   test("ROTATE makes its correction from the keyboard alone at 380px", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const before = await panState();
       assert.ok(before.notes.length >= 8, `the pan drew ${JSON.stringify(before.notes)}`);
       assert.strictEqual(before.stops, 0, "a hit target is its own tab stop");
@@ -4553,7 +4894,7 @@ function run() {
 
   test("the arrow keys choose a position and MOVE swaps it with its neighbour", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const before = await panState();
       assert.ok(await tabTo("scale-preview"), "Tab never reached the pan");
       await b.key("ArrowRight", "ArrowRight", 39);
@@ -4587,7 +4928,7 @@ function run() {
 
   test("RESET puts the generated layout back in one keyboard action", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const before = await panState();
       assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
       await pressActive();
@@ -4609,7 +4950,7 @@ function run() {
 
   test("every LAYOUT control is a 44px target with a visible focus ring", async () => {
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const ids = ["scale-rot-l", "scale-rot-r", "scale-layout-reset",
                    "scale-move-l", "scale-move-r"];
       const small = await b.eval(`
@@ -5301,6 +5642,7 @@ function run() {
       assert.match(refused.msg, /Another deck already uses this scale/,
         `the sheet says "${refused.msg}"`);
 
+      await b.eval(`document.getElementById("scale-layout-toggle").click(); return true;`);
       await b.eval(`document.getElementById("scale-mirror")
         .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
       await b.click("#scale-mirror");
@@ -6683,7 +7025,8 @@ function run() {
         return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
                  body: document.querySelector(".sheetbody").scrollHeight,
                  parse: document.getElementById("scale-parse").getBoundingClientRect().height,
-                 box: document.getElementById("scale-box").getBoundingClientRect().height };
+                 box: document.getElementById("scale-box").getBoundingClientRect().height,
+                 hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height };
       `);
       await b.settle();
       const empty = await m();
@@ -6697,7 +7040,10 @@ function run() {
       const bodyDelta = empty.body - typed.body;
       // The empty field sizes itself from the placeholder (spec, Empty field),
       // so its own rows are the second element that legitimately changes.
-      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box);
+      // Lane DR1: the toggle row's hint changes sentence on the first valid
+      // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
+      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box) +
+                         (empty.hint - typed.hint);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
         `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +

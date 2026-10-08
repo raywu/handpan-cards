@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -587,7 +587,7 @@ button.nav:active{background:#2e281e}
+@@ -963,7 +963,7 @@ footer.seq{row-gap:var(--sp-1)}
     label's letter-spaced caps - it is a sentence to read once, not a control
     label to scan. Dimmer than #scale-parse: that line reports on what is in the
     box and changes as you type, this one never changes. */
 -.sheethint{margin:0; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
 +.sheethint{margin:0; position:absolute; left:-9999px; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
    line-height:1.5; color:#a79d8b; overflow-wrap:anywhere}
- #scale-layout-row .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
- /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
+ #scale-legacy-group .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
+ /* ---- The layout drawer (Lane DR1). Closed, the zone is the plate, one

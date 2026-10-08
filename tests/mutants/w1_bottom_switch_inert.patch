@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9649,7 +9649,7 @@
- // The mirror is the choice the pan preview exists to make visible, so each
- // button re-solves the preview through the same parse path a keystroke uses.
- mirrorTop.onclick = () => { mirror = !mirror; paintMirrors(); resyncSheet(true); };
--mirrorBot.onclick = () => { bottomHeld = !bottomHeld; paintMirrors(); resyncSheet(true); };
-+mirrorBot.onclick = () => { paintMirrors(); resyncSheet(true); };
- rotL.onclick = () => rotateLayout(-1);
- rotR.onclick = () => rotateLayout(1);
- moveL.onclick = () => moveNote(-1);
+@@ -9849,7 +9849,7 @@
+   layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
+ };
+ mirrorBot.onclick = () => {
+-  bottomHeld = !bottomHeld; paintLayout(); resyncSheet(true);
++  paintLayout(); resyncSheet(true);
+   layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
+ };
+ const pickAnchor = (to) => () => {

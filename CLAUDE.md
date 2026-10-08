@@ -338,7 +338,9 @@ changing the solver or the seed, never by hand.
   `blurbLayout` in `pdfcards.js`): a line wider than the card wraps at a note
   boundary, and a blurb too tall for the card steps its size and spacing down
   together (never under 3.6 pt, never dropping a line). The five built-ins keep
-  4.2 pt at an 8 pt step.
+  4.2 pt at an 8 pt step. The blurb fits to six rows, sits on the frame at seven and leaves the
+  card past that, by owner decision 2026-10-07; nothing is refused and no row is
+  dropped (`TitleBlurbLimitTest`, and its twin in `tests/pdfcards.test.js`).
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has two
   `.modebar` rows - three sites (class `trio`, 2026-10-06: three equal widths;
   in the sidebar two equal on line one and HTC full width below; landscape

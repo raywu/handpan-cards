@@ -1,0 +1,16 @@
+# kills: DR1 line 26: BESIDE CENTRE re-solves the plate and reaches the deck, the stored record and the share link
+# suite: node --test --test-name-pattern ^DR1.line.26.* tests/app.test.js
+# The anchor is chosen and painted but left out of the options the deck is
+# generated with, so the saved deck ignores the control.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9171,7 +9171,7 @@
+ 
+ /** The seed options the sheet currently describes. */
+ function sheetOptions() {
+-  const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
++  const o = { palette, mirror, mirrorBottom: bottomMirror() };
+   if (editingId) {
+     o.parent = Number(degSel.value);
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/

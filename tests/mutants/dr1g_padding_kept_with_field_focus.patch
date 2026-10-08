@@ -1,0 +1,14 @@
+# kills: DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell
+# suite: node --test --test-name-pattern ^DR1.rule.G.grid.* tests/drawer_grid.test.js
+# A focused text field, with the keyboard up, keeps the band-height scroll padding (rule G-b, G-d).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -992,7 +992,6 @@ footer.seq{row-gap:var(--sp-1)}
+   #scale-layout-zone.open #scale-plate-band{position:static}
+ #scale-layout-zone.open.nostick #scale-plate-band{position:static}
+ .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
+-.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus){scroll-padding-top:0}
+ @media (min-width:640px) and (min-height:700px){
+   #scale-layout-zone.open #scale-preview{max-width:340px}
+ }

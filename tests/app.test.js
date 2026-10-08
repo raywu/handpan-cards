@@ -789,18 +789,21 @@ test("the built-in decks keep the derived extent they have always rendered", () 
   }
 });
 
-/* Lane S2: four of the five built-ins are solver output, and a test says so.
- * Each stored deck is redrawn with the solver's fields and geom swapped in; the
- * SVG must not change, for the no-chord drawing and for every chord. Pygmy is
- * the documented exception until Lane P1 redraws its geom (plan 5.1). */
+/* All five built-ins are solver output, and a test says so. Each stored deck
+ * is redrawn with the solver's fields and geom swapped in; the SVG must not
+ * change, for the no-chord drawing and for every chord. Pygmy's stored geom
+ * carries no ext (the drawing frame stays as it was), so ext is dropped from
+ * the solver's geom before the comparison. */
 const SOLVER_BUILTINS = {
   hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
   amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
   kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
   amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5",
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
 };
+const SOLVER_ANCHOR = { pygmy: "between" };
 
-test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them", () => {
+test("all five built-ins draw exactly as the solver draws them", () => {
   const { loadEngine } = require("./helpers/engine.js");
   const HPE = loadEngine(["core", "layout"]);
   const app = boot();
@@ -808,10 +811,13 @@ test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them
   for (const id of Object.keys(SOLVER_BUILTINS)) {
     const di = D.findIndex((d) => d.id === id);
     assert.ok(di >= 0, `${id} is not a built-in deck`);
-    const parsed = HPE.core.parseLegacySeed(SOLVER_BUILTINS[id]);
+    const parsed = id === "pygmy" ? HPE.core.parseSeed(SOLVER_BUILTINS[id]) : HPE.core.parseLegacySeed(SOLVER_BUILTINS[id]);
     assert.strictEqual(parsed.ok, true, id);
-    const solved = HPE.layout.solve(parsed.value);
+    const solved = HPE.layout.solve(parsed.value, SOLVER_ANCHOR[id] ? { anchor: SOLVER_ANCHOR[id] } : undefined);
     assert.strictEqual(solved.ok, true, id);
+    const solvedGeom = plain(solved.value.geom);
+    delete solvedGeom.ext;
+    if (id === "pygmy") assert.deepStrictEqual(plain(D[di].geom), solvedGeom, "pygmy geom is solver output minus ext");
     const byMidi = {};
     for (const key of Object.keys(solved.value.fields)) byMidi[solved.value.fields[key][2]] = solved.value.fields[key];
     const fields = {};
@@ -821,7 +827,7 @@ test("Hijaz, Amara 9, Kurd 10 and Amara 10 draw exactly as the solver draws them
       assert.ok(fresh, `${id} field ${key} has no solver twin`);
       fields[key] = [stored[0], stored[1], stored[2], fresh[3], fresh[4], stored[5]];
     }
-    const twin = `Object.assign({}, DECKS[${di}], {fields: ${JSON.stringify(fields)}, geom: ${JSON.stringify(plain(solved.value.geom))}})`;
+    const twin = `Object.assign({}, DECKS[${di}], {fields: ${JSON.stringify(fields)}, geom: ${JSON.stringify(solvedGeom)}})`;
     assert.strictEqual(app.get(`pan(${twin}, null)`), app.get(`pan(DECKS[${di}], null)`), `${id}: no-chord drawing`);
     for (let ci = 0; ci < D[di].chords.length; ci++) {
       assert.strictEqual(app.get(`pan(${twin}, DECKS[${di}].chords[${ci}])`),
@@ -2002,7 +2008,7 @@ function panTap(app, note) {
   return t.note;
 }
 
-const LAYOUT_IDS = ["scale-layout-row", "scale-rot-l", "scale-rot-r",
+const LAYOUT_IDS = ["scale-legacy-group", "scale-rot-l", "scale-rot-r",
                     "scale-move-l", "scale-move-r", "scale-layout-reset"];
 
 // A seed WITH a bottom shell. Stage 3 AC2 is about a bottom-shell note, which
@@ -2017,10 +2023,10 @@ function openEdit(app, d) {
 test("the LAYOUT section is Edit-only, like the other correction rows", () => {
   const app = boot();
   const d = makeCustom(app);
-  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), true,
+  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), true,
     "the create sheet offers a layout correction for a pan that does not exist yet");
   openEdit(app, d);
-  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), false,
+  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), false,
     "the Edit sheet hides the layout correction");
 });
 
@@ -2320,6 +2326,7 @@ test("the layout controls are tab stops inside the sheet and never a second prim
   const app = boot();
   const d = makeCustom(app);
   openEdit(app, d);
+  app.els["scale-layout-toggle"].click();
 
   const seen = new Set();
   for (let i = 0; i < 40; i += 1) {
@@ -2404,13 +2411,13 @@ test("the LAYOUT group explains itself on the page, not only in a comment", () =
   // the file" owns those, in a browser that can measure a box.
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
     .replace(/<!--[\s\S]*?-->/g, "");
-  const m = /<p class="sheethint" id="scale-layout-hint">([^<]+)<\/p>/.exec(html);
-  assert.ok(m, "#scale-layout-hint is not in the markup");
+  const m = /<p class="sheethint" id="scale-legacy-hint">([^<]+)<\/p>/.exec(html);
+  assert.ok(m, "#scale-legacy-hint is not in the markup");
   const hint = m[1].toLowerCase();
   for (const word of ["tap", "rotate", "move"]) {
     assert.ok(hint.includes(word), `the LAYOUT hint never mentions ${word}: "${m[1]}"`);
   }
-  assert.strictEqual(app.els["scale-layout-row"].hasAttribute("hidden"), false,
+  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), false,
     "the LAYOUT row carrying the hint is hidden on the Edit page");
 });
 
@@ -6333,6 +6340,12 @@ test("label, placeholder and hint name the same three marks", () => {
   assert.doesNotMatch(placeholderOf(), /\//);
 });
 
+test("PARSE_HINT ends at the octave sentence and says nothing about the old bar", () => {
+  const hint = boot().get("PARSE_HINT");
+  assert.doesNotMatch(hint, /used to mean/i, "the hint still teaches the retired bottom-note bar");
+  assert.ok(hint.endsWith("Octave numbers are optional."), `the hint ends: ${hint.slice(-60)}`);
+});
+
 test("every example in the label, hint and refusals parses", () => {
   const app = boot();
   const src = indexSource();
@@ -6505,4 +6518,735 @@ test("opening Edit on a saved long deck from a fresh load sizes the field to the
   app.clickChip(d.name);
   assert.strictEqual(app.els["scale-box"].value, PYGMY_STRING);
   assert.strictEqual(app.els["scale-box-wrap"].dataset.grow, PYGMY_STRING);
+});
+
+/* ------------------------------ DR1: the layout drawer shell ----------------
+ * Lane DR1 of docs/plans/2026-10-07-scale-drawer-design-spec.md. The numbers in
+ * the test names are the spec's acceptance lines. Lines that need a layout
+ * engine (positions, sizes, focus rings) are in tests/e2e.test.js. */
+const DR1_STATUS = {
+  paused: "Layout is paused until the scale parses.",
+  ready: "Layout is ready again.",
+  noRing: "This pan has no ring with two notes, so there is nothing to rearrange.",
+};
+const DR1_PYGMY_MAKER = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+const dr1El = (app, id) => app.els[id];
+const dr1Open = (app, text = W1_NONE) => {
+  openSheet(app);
+  if (text !== null) app.type(text);
+  return app.els;
+};
+const DR1_HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+/** The shipped markup of one element: its opening tag attributes and inner text. */
+const dr1Markup = (id) => {
+  const m = new RegExp(`<(\\w+)([^>]*)\\bid="${id}"([^>]*)>([\\s\\S]*?)</\\1>`).exec(DR1_HTML);
+  assert.ok(m, `no #${id} in the markup`);
+  const attrs = (m[2] + " " + m[3]);
+  return { attrs, text: m[4].replace(/<[^>]*>/g, "").trim(),
+    attr: (k) => { const a = new RegExp(`\\b${k}="([^"]*)"`).exec(attrs); return a ? a[1] : null; } };
+};
+const dr1Toggle = (app) => app.els["scale-layout-toggle"];
+const dr1Notice = (app) => (app.els["scale-layout-state"].hidden ? "" : app.els["scale-layout-state"].textContent);
+const dr1Tabs = (app, from, n) => {
+  app.els[from].focus();
+  const seen = [];
+  for (let i = 0; i < n; i += 1) {
+    app.els["scale-sheet"].dispatchEvent(
+      { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
+    seen.push(app.activeId());
+  }
+  return seen;
+};
+const dr1Angles = (deck) => Object.fromEntries(
+  Object.values(deck.fields).filter((f) => f[3] !== "ding").map((f) => [f[2], f[4]]));
+
+test("DR1 line 15: the toggle exists on Add and Edit with its name, state and controls; the drawer starts hidden", () => {
+  for (const edit of [false, true]) {
+    const app = boot();
+    if (edit) openEdit(app, makeCustom(app)); else openSheet(app);
+    const t = dr1Toggle(app);
+    assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
+    assert.strictEqual(t.getAttribute("aria-expanded"), "false");
+    assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-controls"), "scale-drawer");
+    assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  }
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  assert.match(html, /<button[^>]*\bid="scale-layout-toggle"[^>]*>\s*ADJUST LAYOUT\s*<span aria-hidden="true">/);
+  assert.match(html, /<div[^>]*\bid="scale-drawer"[^>]*\brole="group"/);
+});
+
+test("DR1 line 16: the toggle is disabled for an empty or invalid box and enabled for a valid scale", () => {
+  const app = boot();
+  openSheet(app);
+  assert.strictEqual(dr1Toggle(app).disabled, true, "enabled on an empty box");
+  app.type("(D3) zzz");
+  assert.strictEqual(dr1Toggle(app).disabled, true, "enabled on an invalid box");
+  app.type(W1_NONE);
+  assert.strictEqual(dr1Toggle(app).disabled, false, "disabled on a valid scale");
+});
+
+test("DR1 line 17: the toggle shows the drawer, sets aria-expanded and adds .on", () => {
+  const app = boot();
+  dr1Open(app);
+  dr1Toggle(app).click();
+  assert.strictEqual(app.els["scale-drawer"].hidden, false);
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "true");
+  assert.strictEqual(dr1Toggle(app).classList.contains("on"), true);
+});
+
+test("DR1 line 20: the toggle again hides the drawer and focus is on the toggle, also after Escape from a drawer control", () => {
+  const app = boot();
+  dr1Open(app);
+  dr1Toggle(app).click();
+  dr1Toggle(app).click();
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+  assert.strictEqual(dr1Toggle(app).classList.contains("on"), false);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+
+  dr1Toggle(app).click();
+  app.els["scale-anchor-between"].focus();
+  app.keydown("Escape");
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+});
+
+test("DR1 line 21: Escape closes the open drawer and keeps the sheet; a second Escape closes the sheet", () => {
+  const app = boot();
+  dr1Open(app);
+  dr1Toggle(app).click();
+  app.keydown("Escape");
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(app.sheetOpen(), true, "the first Escape closed the sheet");
+  app.keydown("Escape");
+  assert.strictEqual(app.sheetOpen(), false, "the second Escape left the sheet open");
+});
+
+test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", () => {
+  const app = boot();
+  const d = makeCustom(app);
+  openSheet(app);
+  app.type(W1_NONE);
+  dr1Toggle(app).click();
+  app.els["scale-back"].click();
+  openSheet(app);
+  assert.strictEqual(app.els["scale-drawer"].hidden, true, "Add reopened with the drawer open");
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+  app.els["scale-back"].click();
+  openEdit(app, d);
+  dr1Toggle(app).click();
+  app.els["scale-back"].click();
+  openEdit(app, d);
+  assert.strictEqual(app.els["scale-drawer"].hidden, true, "Edit reopened with the drawer open");
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
+});
+
+test("DR1 line 23: Tab walks the field, the toggle, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE in order", () => {
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  dr1Toggle(app).click();
+  const seen = dr1Tabs(app, "scale-box", 5);
+  assert.deepStrictEqual(seen, ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
+    "scale-anchor-one", "scale-anchor-between"]);
+
+  const none = boot();
+  dr1Open(none, W1_NONE);
+  dr1Toggle(none).click();
+  assert.deepStrictEqual(dr1Tabs(none, "scale-box", 4),
+    ["scale-layout-toggle", "scale-mirror", "scale-anchor-one", "scale-anchor-between"],
+    "a disabled MIRROR BOTTOM was a Tab stop");
+});
+
+test("DR1 line 23: on Edit Tab runs toggle, legacy group, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, degrees, first swatch, in exactly that order", () => {
+  const app = boot();
+  const d = makeCustom(app, W1_BOTTOM);
+  openEdit(app, d);
+  dr1Toggle(app).click();
+  const seen = dr1Tabs(app, "scale-box", 14);
+  const order = ["scale-layout-toggle", "scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
+    "scale-layout-reset", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between",
+    "scale-degrees"];
+  const from = seen.indexOf("scale-layout-toggle");
+  assert.ok(from >= 0, `Tab never reached the toggle: ${seen}`);
+  assert.deepStrictEqual(seen.slice(from, from + order.length), order, `out of order: ${seen}`);
+  const swatch = seen[from + order.length];
+  assert.ok(swatch && swatch !== "scale-generate", `the first swatch does not follow the degrees: ${seen}`);
+});
+
+test("DR1 line 25: two anchor buttons carry aria-pressed, ON CENTRE pressed by default", () => {
+  const app = boot();
+  dr1Open(app);
+  assert.strictEqual(dr1Markup("scale-anchor-one").text, "ON CENTRE");
+  assert.strictEqual(dr1Markup("scale-anchor-between").text, "BESIDE CENTRE");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
+});
+
+test("DR1 line 26: BESIDE CENTRE re-solves the plate and reaches the deck, the stored record and the share link", () => {
+  const app = boot();
+  dr1Open(app, DR1_PYGMY_MAKER);
+  dr1Toggle(app).click();
+  const before = app.els["scale-preview"].innerHTML;
+  app.els["scale-anchor-between"].click();
+  assert.notStrictEqual(app.els["scale-preview"].innerHTML, before, "the plate did not change");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "false");
+  app.els["scale-generate"].click();
+  const deck = app.registry()[app.deckId()];
+  assert.strictEqual(deck.options.anchor, "between");
+  const list = JSON.parse(app.store[app.get("SCALES_KEY")]);
+  assert.strictEqual(list[0].o.anchor, "between", "the stored record lost the anchor");
+  const url = link(app, deck.id);
+  assert.strictEqual(url.ok, true, url.reason);
+  const other = boot();
+  assert.strictEqual(openShare(other, payload(url.value)).ok, true);
+  assert.strictEqual(other.registry()[deck.id].options.anchor, "between");
+});
+
+test("DR1 line 27: an Edit sheet for a deck saved with anchor between opens with BESIDE CENTRE pressed", () => {
+  const app = boot();
+  const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between" });
+  assert.strictEqual(made.ok, true, made.reason);
+  openEdit(app, app.registry()[made.value.id]);
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "false");
+});
+
+test("DR1 line 28: both mirror switches sit inside the drawer, keep their ids, redraw the plate and reach the deck", () => {
+  const app = boot();
+  dr1Open(app, W1_FULL);
+  for (const id of ["scale-mirror", "scale-mirror-bottom"]) {
+    let n = app.els[id];
+    let inside = false;
+    for (; n; n = n._markupParent) if (n === app.els["scale-drawer"]) inside = true;
+    assert.ok(inside, `#${id} is not inside #scale-drawer`);
+  }
+  dr1Toggle(app).click();
+  const before = app.els["scale-preview"].innerHTML;
+  app.els["scale-mirror"].click();
+  assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
+  app.els["scale-mirror-bottom"].click();
+  app.els["scale-generate"].click();
+  const o = app.registry()[app.deckId()].options;
+  assert.strictEqual(o.mirror, true);
+  assert.strictEqual(o.mirrorBottom, true);
+});
+
+test("DR1 line 30: the notice names the button on Add and on Edit, and is hidden when nothing differs", () => {
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  assert.strictEqual(dr1Notice(app), "");
+  app.els["scale-mirror"].click();
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+  app.els["scale-mirror"].click();
+  assert.strictEqual(dr1Notice(app), "", "pressing a switch back did not clear the notice");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+  app.els["scale-anchor-one"].click();
+  assert.strictEqual(dr1Notice(app), "");
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. GENERATE CARDS keeps it.");
+
+  const made = app.generate(W1_BOTTOM, { mirror: true, mirrorBottom: true });
+  openEdit(app, app.registry()[made.value.id]);
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
+  app.els["scale-anchor-one"].click();
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  const fresh = boot();
+  const plain = fresh.generate(W1_NONE);
+  openEdit(fresh, fresh.registry()[plain.value.id]);
+  assert.strictEqual(dr1Notice(fresh), "", "a default stored layout raised a notice");
+});
+
+test("DR1 line 117: an Edit deck without bottom notes stored with the old mirror true reads Layout changed from the default", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: W1_NONE, o: { mirror: true } }]) } });
+  const d = Object.values(app.registry())[0];
+  openEdit(app, d);
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+});
+
+test("DR1 notice baseline: the stored MIRROR BOTTOM is the baseline, so a bottom note typed onto a mirrored Edit deck reads not saved yet", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: W1_NONE, o: { mirror: true } }]) } });
+  openEdit(app, Object.values(app.registry())[0]);
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
+});
+
+test("DR1 notice baseline: deleting the bottom notes leaves MIRROR BOTTOM out of the comparison", () => {
+  const both = boot();
+  const a = both.generate(W1_BOTTOM, { mirror: true, mirrorBottom: true });
+  openEdit(both, both.registry()[a.value.id]);
+  assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
+  both.type(W1_NONE);
+  assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
+  const only = boot();
+  const b = only.generate(W1_BOTTOM, { mirror: false, mirrorBottom: true });
+  openEdit(only, only.registry()[b.value.id]);
+  assert.strictEqual(dr1Notice(only), "Layout changed from the default.");
+  only.type(W1_NONE);
+  assert.strictEqual(dr1Notice(only), "", "a bottom-only stored mirror still raised a notice with no bottom notes");
+  const add = boot();
+  dr1Open(add, W1_BOTTOM);
+  add.els["scale-mirror-bottom"].click();
+  assert.strictEqual(dr1Notice(add), "Layout not saved yet. GENERATE CARDS keeps it.");
+  add.type(W1_NONE);
+  assert.strictEqual(dr1Notice(add), "");
+});
+
+test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes come and go, and the legacy five never disabled", () => {
+  const key = boot().get("SCALES_KEY");
+  const stored = (str) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: str, o: { mirror: true } }]) } });
+  const withB = stored(W1_BOTTOM);
+  openEdit(withB, Object.values(withB.registry())[0]);
+  assert.strictEqual(withB.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(withB.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "true");
+  const noB = stored(W1_NONE);
+  openEdit(noB, Object.values(noB.registry())[0]);
+  assert.strictEqual(noB.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(noB.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(noB.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "true");
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  app.els["scale-mirror"].click();
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false",
+    "a bottom note typed later took MIRROR TOP's value or the old bottom value");
+
+  const edit = boot();
+  openEdit(edit, makeCustom(edit, W1_BOTTOM));
+  dr1Toggle(edit).click();
+  edit.type("(D3) zzz");
+  for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) {
+    assert.ok(!edit.els[id].disabled, `#${id} disabled while the scale does not parse`);
+  }
+});
+
+test("DR1 line 31: a scale that stops parsing under an open drawer pauses the controls and keeps their values", () => {
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  app.els["scale-mirror"].click();
+  app.els["scale-anchor-between"].click();
+  dr1Toggle(app).click();
+  app.type("[C3] (D3) zzz");
+  assert.strictEqual(app.els["scale-drawer"].hidden, false, "the drawer closed");
+  assert.strictEqual(dr1Toggle(app).disabled, false, "the toggle cannot close the drawer");
+  for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"])
+    assert.strictEqual(app.els[id].disabled, true, `#${id} stayed enabled`);
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-preview"].classList.contains("stale"), true);
+  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.paused);
+  assert.notStrictEqual(app.els["scale-refusal"].textContent, "", "the refusal sentence is gone");
+});
+
+test("DR1 line 32: after the scale parses again each control follows its own rule and the status says so", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  app.els["scale-mirror"].click();
+  app.els["scale-anchor-between"].click();
+  dr1Toggle(app).click();
+  app.type("(D3) zzz");
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.ready);
+  assert.strictEqual(app.els["scale-mirror"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true, "no bottom notes, so it stays disabled");
+
+  app.type("(D3) zzz");
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  app.els["scale-mirror-bottom"].click();
+  app.type("(D3) zzz");
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+});
+
+test("DR1 line 33: a SMALL_LABELS warning is in #scale-msg once and nowhere in the drawer, open or closed", () => {
+  const app = boot();
+  dr1Open(app, CROWDED);
+  for (const open of [false, true]) {
+    if (open) dr1Toggle(app).click();
+    const warn = app.els["scale-msg"].textContent;
+    assert.match(warn, /Crowded pan/);
+    for (const id of ["scale-drawer-status", "scale-drawer-hint", "scale-layout-state", "scale-layout-hint"])
+      assert.ok(!app.els[id].textContent.includes(warn), `#${id} repeats the warning (drawer open ${open})`);
+  }
+  let n = app.els["scale-msg"];
+  for (; n; n = n._markupParent) assert.notStrictEqual(n, app.els["scale-drawer"], "#scale-msg is inside the drawer");
+});
+
+test("DR1 line 81: the status line is in the band after the plate, hidden while closed, polite and atomic", () => {
+  const app = boot();
+  const s = app.els["scale-drawer-status"];
+  assert.strictEqual(s._markupParent, app.els["scale-plate-band"]);
+  assert.strictEqual(app.els["scale-preview"]._markupParent, app.els["scale-plate-band"]);
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  assert.ok(html.indexOf('id="scale-preview"') < html.indexOf('id="scale-drawer-status"'));
+  assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-live"), "polite");
+  assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-atomic"), "true");
+  dr1Open(app);
+  assert.strictEqual(s.hidden, true, "visible while the drawer is closed");
+  dr1Toggle(app).click();
+  assert.strictEqual(s.hidden, false);
+  dr1Toggle(app).click();
+  assert.strictEqual(s.hidden, true);
+  assert.strictEqual(s.textContent, "", "the status was not cleared on close");
+});
+
+test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint stays empty", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  const hint = app.els["scale-layout-hint"];
+  const dh = app.els["scale-drawer-hint"];
+  assert.ok(!hint.hidden, "the hint is hidden with the drawer closed");
+  dr1Toggle(app).click();
+  assert.ok(hint.hidden, "the hint stays visible with the drawer open");
+  assert.ok(dh.hidden && dh.textContent === "", "the drawer hint is not empty and hidden in DR1");
+  dr1Toggle(app).click();
+  assert.ok(!hint.hidden, "the hint did not return on close");
+  dr1Toggle(app).click();
+  app.keydown("Escape");
+  assert.ok(!hint.hidden, "the hint did not return after Escape closed the drawer");
+});
+
+test("DR1 open step 5: opening the drawer scrolls the zone into view with block nearest and behavior auto, and closing does not scroll", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  const calls = [];
+  app.els["scale-layout-zone"].scrollIntoView = (o) => calls.push(o);
+  dr1Toggle(app).click();
+  assert.strictEqual(JSON.stringify(calls), JSON.stringify([{ block: "nearest", behavior: "auto" }]));
+  dr1Toggle(app).click();
+  assert.strictEqual(calls.length, 1, "closing the drawer scrolled the sheet");
+});
+
+test("DR1 line 85: the hint reads the empty sentence while the toggle is disabled and the DR1 sentence once the scale parses", () => {
+  const app = boot();
+  openSheet(app);
+  const hint = app.els["scale-layout-hint"];
+  assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
+  app.type(W1_NONE);
+  assert.strictEqual(hint.textContent,
+    "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.");
+  assert.ok(!/move a note|drag/i.test(hint.textContent));
+  app.type("(D3) zzz");
+  assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
+});
+
+test("DR1 line 108: the toggle holds one aria-hidden close mark, U+00D7, and keeps its name", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const m = /<button[^>]*\bid="scale-layout-toggle"[^>]*>([\s\S]*?)<\/button>/.exec(html);
+  assert.ok(m, "no toggle in the markup");
+  const marks = [...m[1].matchAll(/<span\b[^>]*\baria-hidden="true"[^>]*>([^<]*)<\/span>/g)];
+  assert.strictEqual(marks.length, 1);
+  assert.ok(marks[0][1] === "×" || marks[0][1] === "&times;", `the mark reads ${marks[0][1]}`);
+  const app = boot();
+  dr1Open(app);
+  assert.strictEqual(dr1Markup("scale-layout-toggle").attr("aria-label"), "Adjust layout");
+  for (const open of [false, true]) {
+    if (open) dr1Toggle(app).click();
+    assert.strictEqual(dr1Toggle(app).getAttribute("aria-label"), null, "the app rewrote the toggle's name; the markup's stays");
+  }
+});
+
+test("DR1 line 40: the pan drawn with interactive off is byte-identical to the shipped output for all five built-in decks", () => {
+  const crypto = require("node:crypto");
+  const fixture = require("./fixtures/pan_render_v1.json");
+  const digest = (x) => crypto.createHash("sha256").update(x).digest("hex").slice(0, 16);
+  const app = boot();
+  const D = decks(app);
+  assert.strictEqual(D.length, 5);
+  for (let di = 0; di < D.length; di++) {
+    const rows = fixture.decks[D[di].id];
+    assert.ok(rows, `${D[di].id} has no committed digest`);
+    for (const off of ["pan(DECKS[%d], null)", "pan(DECKS[%d], null, {interactive:false})", "pan(DECKS[%d], null, {})"]) {
+      assert.strictEqual(digest(app.get(off.replace("%d", di))), rows.null, `${D[di].id}: ${off} drifted from the shipped output`);
+    }
+    for (let ci = 0; ci < D[di].chords.length; ci++) {
+      const off = app.get(`pan(DECKS[${di}], DECKS[${di}].chords[${ci}], {interactive:false})`);
+      assert.strictEqual(digest(off), rows[ci], `${D[di].id} #${ci + 1}: interactive:false drifted from the shipped card`);
+    }
+  }
+});
+
+test("DR1 line 114: MIRROR TOP writes status row 14 and MIRROR BOTTOM row 21", () => {
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  dr1Toggle(app).click();
+  const s = app.els["scale-drawer-status"];
+  app.els["scale-mirror"].click();
+  assert.strictEqual(s.textContent, "Top mirror on.");
+  app.els["scale-mirror"].click();
+  app.flushTimers && app.flushTimers();
+  assert.strictEqual(s.textContent, "Top mirror off.");
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(s.textContent, "Bottom mirror on.");
+  app.els["scale-mirror-bottom"].click();
+  app.flushTimers && app.flushTimers();
+  assert.strictEqual(s.textContent, "Bottom mirror off.");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(s.textContent, "Note 1 is beside centre.");
+  app.els["scale-anchor-one"].click();
+  assert.strictEqual(s.textContent, "Note 1 is on centre.");
+});
+
+test("DR1 line 19 note, row 19: opening over a pan with no ring of two notes says so", () => {
+  const app = boot();
+  dr1Open(app, "(D3) A3");
+  dr1Toggle(app).click();
+  assert.strictEqual(app.els["scale-drawer-status"].textContent, DR1_STATUS.noRing);
+  dr1Toggle(app).click();
+  dr1Open(boot(), W1_NONE);
+  const fine = boot();
+  dr1Open(fine, W1_NONE);
+  dr1Toggle(fine).click();
+  assert.strictEqual(fine.els["scale-drawer-status"].textContent, "");
+});
+
+test("DR1 line 115: Pygmy typed on Add opens ON CENTRE; one tap on BESIDE CENTRE gives the built-in angles and reopens pressed", () => {
+  const app = boot();
+  dr1Open(app, DR1_PYGMY_MAKER);
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
+  dr1Toggle(app).click();
+  app.els["scale-anchor-between"].click();
+  app.els["scale-generate"].click();
+  const deck = app.registry()[app.deckId()];
+  const builtin = decks(app).find((d) => d.id === "pygmy");
+  assert.deepStrictEqual(dr1Angles(deck), dr1Angles(builtin));
+  assert.strictEqual(Object.values(deck.fields).find((f) => f[0] + f[1] === "G3")[4], 290);
+  openEdit(app, deck);
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+});
+
+test("DR1 line 121: closing over an invalid or empty box lands on the field; over a valid one on the toggle; Escape from the field stays there", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  dr1Toggle(app).click();
+  app.type("(D3) zzz");
+  app.els["scale-anchor-one"].focus();
+  dr1Toggle(app).click();
+  assert.strictEqual(app.activeId(), "scale-box");
+  assert.strictEqual(dr1Toggle(app).disabled, true);
+
+  const empty = boot();
+  dr1Open(empty, W1_NONE);
+  dr1Toggle(empty).click();
+  empty.type("");
+  empty.els["scale-mirror"].focus();
+  empty.keydown("Escape");
+  assert.strictEqual(empty.activeId(), "scale-box");
+  assert.strictEqual(dr1Toggle(empty).disabled, true);
+
+  const typing = boot();
+  dr1Open(typing, W1_NONE);
+  dr1Toggle(typing).click();
+  typing.els["scale-box"].focus();
+  typing.keydown("Escape");
+  assert.strictEqual(typing.els["scale-drawer"].hidden, true);
+  assert.strictEqual(typing.activeId(), "scale-box");
+});
+
+test("DR1 line 129: the legacy group is in the drawer, its describedby names its own hint, and the toggle row's hint is outside it", () => {
+  const app = boot();
+  const inside = (id, anc) => { for (let n = app.els[id]; n; n = n._markupParent) if (n === app.els[anc]) return true; return false; };
+  assert.ok(inside("scale-legacy-group", "scale-drawer"));
+  assert.ok(!inside("scale-layout-hint", "scale-legacy-group"));
+  assert.ok(!inside("scale-layout-hint", "scale-drawer"));
+  const group = DR1_HTML.slice(DR1_HTML.indexOf('id="scale-legacy-group"'));
+  const hintAt = group.indexOf('id="scale-legacy-hint"');
+  assert.ok(hintAt > 0 && hintAt < group.indexOf('id="scale-rot-l"'), "the legacy hint is not inside its group");
+  assert.strictEqual(dr1Markup("scale-legacy-group").attr("aria-describedby"), "scale-legacy-hint");
+});
+
+test("DR1 line 130: the legacy group is hidden on Add, shown on Edit only while the drawer is open", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  const ids = ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"];
+  const shown = (id) => app.els[id].getClientRects().length > 0;
+  assert.strictEqual(app.els["scale-legacy-group"].hidden, true);
+  dr1Toggle(app).click();
+  for (const id of ids) assert.strictEqual(shown(id), false, `#${id} is displayed on Add`);
+  app.keydown("Escape");
+  const d = makeCustom(app, W1_NONE);
+  openEdit(app, d);
+  assert.strictEqual(app.els["scale-legacy-group"].hidden, false);
+  for (const id of ids) assert.strictEqual(shown(id), false, `#${id} is displayed with the drawer closed`);
+  dr1Toggle(app).click();
+  for (const id of ids) assert.strictEqual(shown(id), true, `#${id} is not displayed with the drawer open`);
+  dr1Toggle(app).click();
+  for (const id of ids) assert.strictEqual(shown(id), false);
+});
+
+test("DR1 line 131: on Edit, Escape from ROTATE closes the drawer, keeps the sheet and focuses the toggle", () => {
+  const app = boot();
+  const d = makeCustom(app, W1_NONE);
+  openEdit(app, d);
+  dr1Toggle(app).click();
+  app.els["scale-rot-l"].focus();
+  app.keydown("Escape");
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(app.sheetOpen(), true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+});
+
+/* ---- DR1 rule S (plan 20.16): the layout state, enumerated ---------------- */
+
+// Spec 16.1 to 16.3, as literals. Nothing below asks the app what it should say.
+const S_NOTICE = {
+  // [sheet][differs][custom]
+  add: { true: { true: "Layout not saved yet. GENERATE CARDS keeps it.", false: "Layout not saved yet. GENERATE CARDS keeps it." },
+         false: { true: "", false: "" } },
+  edit: { true: { true: "Layout not saved yet. SAVE CHANGES keeps it.", false: "Layout not saved yet. SAVE CHANGES keeps it." },
+          false: { true: "Layout changed from the default.", false: "" } },
+};
+const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.",
+                 empty: "Type a scale to adjust its layout." };
+const S_BUTTON = { add: "GENERATE CARDS", edit: "SAVE CHANGES" };
+const S_BOXES = {
+  plain: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+  bottom: "[C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5",
+  inner: "(D3) A3 C4 D4 E4 F4 G4 | A4 C5",
+  innerBottom: "[C3] (D3) A3 C4 D4 E4 F4 G4 | A4 C5",
+};
+const S_HAS_BOTTOM = { plain: false, bottom: true, inner: false, innerBottom: true };
+
+test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for every sheet, stored layout, box and press", () => {
+  const key = boot().get("SCALES_KEY");
+  const misses = [];
+  let cells = 0, snapshots = 0;
+  const run = (sheet, boxKey, stored, label) => {
+    cells += 1;
+    let app;
+    if (sheet === "edit") {
+      app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: S_BOXES[boxKey], o: { palette: 0, parent: 1, ...stored } }]) } });
+      openEdit(app, Object.values(app.registry())[0]);
+    } else {
+      app = boot();
+      openSheet(app);
+    }
+    const kept = sheet === "edit"
+      ? { anchor: stored.anchor === "between" ? "between" : "one", mirror: !!stored.mirror,
+          mb: typeof stored.mirrorBottom === "boolean" ? stored.mirrorBottom : !!stored.mirror }
+      : { anchor: "one", mirror: false, mb: false };
+    const M = { anchor: kept.anchor, mirror: kept.mirror, hasBottom: sheet === "edit" && S_HAS_BOTTOM[boxKey],
+                valid: sheet === "edit", open: false };
+    M.mb = M.hasBottom ? kept.mb : false;
+    const box = (k) => {
+      app.type(k === "invalid" ? "xyz" : k === "empty" ? "" : S_BOXES[k]);
+      if (k === "invalid" || k === "empty") { M.valid = false; return; }
+      M.valid = true;
+      if (S_HAS_BOTTOM[k] !== M.hasBottom) { M.hasBottom = S_HAS_BOTTOM[k]; M.mb = false; }
+    };
+    const press = (id) => {
+      const e = app.els[id];
+      if (e.disabled || !e.getClientRects().length) return false;
+      e.focus(); e.click();
+      if (id === "scale-layout-toggle") M.open = !M.open;
+      if (id === "scale-mirror") M.mirror = !M.mirror;
+      if (id === "scale-mirror-bottom") M.mb = !M.mb;
+      if (id === "scale-anchor-one") M.anchor = "one";
+      if (id === "scale-anchor-between") M.anchor = "between";
+      return true;
+    };
+    const check = (step) => {
+      snapshots += 1;
+      const els = app.els;
+      const shown = (id) => els[id].getClientRects().length > 0;
+      const bad = (what, want, got) => { if (want !== got) misses.push(`${label} @ ${step}: ${what} wanted ${JSON.stringify(want)}, got ${JSON.stringify(got)}`); };
+      const differs = M.anchor !== kept.anchor || M.mirror !== kept.mirror || (M.hasBottom && M.mb !== kept.mb);
+      const custom = kept.anchor !== "one" || kept.mirror || (kept.mb && M.hasBottom);
+      bad("notice", S_NOTICE[sheet][differs][custom], els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
+      bad("toggle enabled", M.valid || M.open, !els["scale-layout-toggle"].disabled);
+      bad("toggle expanded", String(M.open), els["scale-layout-toggle"].getAttribute("aria-expanded"));
+      bad("toggle on", M.open, els["scale-layout-toggle"].classList.contains("on"));
+      bad("hint shown", !M.open, shown("scale-layout-hint"));
+      if (!M.open) bad("hint text", M.valid ? S_HINT.valid : S_HINT.empty, els["scale-layout-hint"].textContent);
+      bad("drawer shown", M.open, shown("scale-drawer"));
+      bad("status shown", M.open, shown("scale-drawer-status"));
+      if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
+      bad("legacy group shown", M.open && sheet === "edit", shown("scale-legacy-group"));
+      if (shown("scale-rot-l")) {
+        for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) bad(`${id} enabled`, true, !els[id].disabled);
+      }
+      for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) bad(`${id} shown`, M.open, shown(id));
+      if (M.open) {
+        bad("mirror top enabled", M.valid, !els["scale-mirror"].disabled);
+        bad("mirror bottom enabled", M.valid && M.hasBottom, !els["scale-mirror-bottom"].disabled);
+        bad("on centre enabled", M.valid, !els["scale-anchor-one"].disabled);
+        bad("beside centre enabled", M.valid, !els["scale-anchor-between"].disabled);
+      }
+      bad("mirror top pressed", String(M.mirror), els["scale-mirror"].getAttribute("aria-pressed"));
+      bad("mirror bottom pressed", String(M.hasBottom && M.mb), els["scale-mirror-bottom"].getAttribute("aria-pressed"));
+      bad("on centre pressed", String(M.anchor === "one"), els["scale-anchor-one"].getAttribute("aria-pressed"));
+      bad("beside centre pressed", String(M.anchor === "between"), els["scale-anchor-between"].getAttribute("aria-pressed"));
+      bad("button enabled", M.valid, !els["scale-generate"].disabled);
+      bad("button text", S_BUTTON[sheet], els["scale-generate"].textContent.trim());
+    };
+
+    check("opened");
+    if (sheet === "add") { box("empty"); check("empty"); box("invalid"); check("invalid"); box(boxKey); check("typed"); }
+    for (const k of Object.keys(S_BOXES)) {
+      if (k === boxKey) continue;
+      box(k); check(`closed, box ${k}`); box(boxKey); check(`closed, back from ${k}`);
+    }
+    box("invalid"); check("closed, invalid"); box(boxKey); check("closed, valid again");
+    press("scale-layout-toggle"); check("opened drawer");
+    const other = () => (M.anchor === "one" ? "scale-anchor-between" : "scale-anchor-one");
+    for (const id of ["scale-mirror", "scale-mirror-bottom", "anchor"]) {
+      const real = () => (id === "anchor" ? other() : id);
+      if (!press(real())) { check(`${id} not pressable`); continue; }
+      check(`${id} once`);
+      box("invalid"); check(`${id} once, invalid`); box(boxKey); check(`${id} once, valid again`);
+      for (const k of Object.keys(S_BOXES)) {
+        if (k === boxKey) continue;
+        box(k); check(`${id} once, box ${k}`);
+        if (press("scale-mirror-bottom")) { check(`${id} once, box ${k}, bottom pressed`); press("scale-mirror-bottom"); check(`${id} once, box ${k}, bottom twice`); }
+        box(boxKey); check(`${id} once, back from ${k}`);
+      }
+      press("scale-layout-toggle"); check(`${id} once, drawer closed`);
+      press("scale-layout-toggle"); check(`${id} once, drawer reopened`);
+      press(real()); check(`${id} twice`);
+    }
+    for (const k of Object.keys(S_BOXES)) {
+      if (k === boxKey) continue;
+      box(k); check(`open, box ${k}`);
+      if (press("scale-mirror-bottom")) {
+        check(`open, box ${k}, bottom pressed`); box("empty"); check(`open, box ${k}, bottom pressed, empty`);
+        box(k); check(`open, box ${k}, bottom pressed, valid again`); press("scale-mirror-bottom"); check(`open, box ${k}, bottom twice`);
+      }
+      box(boxKey); check(`open, back from ${k}`);
+    }
+    box("empty"); check("open, empty"); press("scale-layout-toggle"); check("empty, drawer closed");
+    box(boxKey); check("valid again after the close");
+  };
+  for (const k of Object.keys(S_BOXES)) run("add", k, {}, `ADD ${k}`);
+  const tri = [undefined, false, true];
+  for (const k of Object.keys(S_BOXES)) for (const mirror of tri) for (const mirrorBottom of tri) for (const anchor of [undefined, "one", "between"]) {
+    const stored = {};
+    if (mirror !== undefined) stored.mirror = mirror;
+    if (mirrorBottom !== undefined) stored.mirrorBottom = mirrorBottom;
+    if (anchor !== undefined) stored.anchor = anchor;
+    run("edit", k, stored, `EDIT ${k} ${JSON.stringify(stored)}`);
+  }
+  assert.strictEqual(cells, 4 + 4 * 27);
+  assert.ok(snapshots > 5000, `only ${snapshots} snapshots`);
+  assert.deepStrictEqual(misses.slice(0, 12), [], `${misses.length} mismatches over ${cells} cells`);
 });

@@ -1,0 +1,15 @@
+# kills: DR1 line 130: the legacy group is hidden on Add, shown on Edit only while the drawer is open
+# suite: node --test --test-name-pattern ^DR1.line.130.* tests/app.test.js
+# ROTATE and MOVE appear on Add, where there is no solved layout to correct.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8911,7 +8911,7 @@
+   layoutHint.hidden = drawerOpen;
+   drawerBox.hidden = !drawerOpen;
+   drawerStatus.hidden = !drawerOpen;
+-  legacyGroup.hidden = !editingId;
++  legacyGroup.hidden = false;
+   layoutZone.classList.toggle("open", drawerOpen);
+   const note = layoutNoticeText();
+   layoutNote.textContent = note;

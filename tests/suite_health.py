@@ -37,7 +37,7 @@ FLOORS = {
     "tests/test_deck_data.py": 27,
     "tests/test_pdf_build.py": 11,
     "tests/test_gen_deck.py": 30,
-    "tests/test_print.py": 40,
+    "tests/test_print.py": 43,
     "tests/test_render_agreement.py": 26,
     "tests/test_fixture_integrity.py": 8,
     "tests/test_failure_diagnosability.py": 23,
@@ -49,9 +49,10 @@ FLOORS = {
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 342,
-    "tests/e2e.test.js": 275,
+    "tests/app.test.js": 377,
+    "tests/e2e.test.js": 290,
     "tests/harness.test.js": 13,
+    "tests/drawer_grid.test.js": 4,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 66,
     "tests/voicing.test.js": 16,
@@ -61,7 +62,7 @@ FLOORS = {
     "tests/share.test.js": 68,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
-    "tests/pdfcards.test.js": 19,
+    "tests/pdfcards.test.js": 20,
     "tests/mutation_harness.test.js": 53,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 51,
@@ -73,7 +74,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40

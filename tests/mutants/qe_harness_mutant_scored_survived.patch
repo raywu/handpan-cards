@@ -10,7 +10,7 @@ diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
    # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
    # skipped itself for want of a browser.
    case "$cmd" in
--    *tests/e2e.test.js*|*tests/harness.test.js*)
+-    *tests/e2e.test.js*|*tests/harness.test.js*|*tests/drawer_grid.test.js*)
 +    *tests/e2e.test.js*)
        if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then
          echo "$base skipped  (no browser; e2e mutants cannot be validated here)"

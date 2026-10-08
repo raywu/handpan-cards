@@ -77,7 +77,9 @@ ALL_DECKS = (decks.KURD, decks.AMARA10, decks.HIJAZ, decks.PYGMY, decks.AMARA)
 # label rule has no pre-rule baseline to shrink below.
 PRE_RULE_DECKS = (decks.HIJAZ, decks.PYGMY, decks.AMARA)
 # Pygmy's geom is engine output since Lane P1: its f_note is solver-rounded and
-# may sit up to 0.03% above what the rule draws (CLAUDE.md, label rule).
+# may sit up to 0.03% above what the rule draws (CLAUDE.md, label rule). The
+# slack covers rim and inner names and index numbers only: the ding and the
+# bottom shell did not move in the redraw and are held to the exact baseline.
 ROUNDED_F_SLACK = 3e-4
 
 
@@ -714,7 +716,8 @@ class LabelSizeRuleTest(unittest.TestCase):
                 frac = (geom["r_ding"] if zone == "ding" else
                         geom["r_bnote"] if zone == "bottom" else geom["r_note"])
                 drawn = hifi.label_size(R * frac, zone)
-                slack = 1 - ROUNDED_F_SLACK if deck is decks.PYGMY else 1.0
+                slack = (1 - ROUNDED_F_SLACK
+                         if deck is decks.PYGMY and zone in ("rim", "inner") else 1.0)
                 for side, was in (("print", R * geom[key] * slack),
                                   ("app", R * geom[key] * MAIN_APP_INFLATION * slack)):
                     with self.subTest(deck=deck["name"], zone=zone, side=side):
@@ -838,6 +841,36 @@ class BottomAccentColourTest(PaletteSafeTest):
         self.assertEqual(painted, {SPEC_BOTTOM_ACCENT},
                          "the BOTTOM NOTES badge is not drawn in %s (drew %r)"
                          % (SPEC_BOTTOM_ACCENT, sorted(painted)))
+
+
+class TitleBlurbLimitTest(unittest.TestCase):
+    """Owner decision 2026-10-07: the title-card blurb fits to six rows, sits on
+    the frame at seven and leaves the card past that. Nothing is refused and no
+    row is dropped. This pins today's behaviour; it does not endorse it."""
+
+    @staticmethod
+    def last_baseline(n):
+        lay = hifi.blurb_layout(["ROW %d" % i for i in range(n)])
+        return lay, hifi.BLURB_Y0 - (len(lay["rows"]) - 1) * lay["step"]
+
+    def test_six_rows_end_inside_the_frame(self):
+        lay, last = self.last_baseline(6)
+        self.assertEqual(len(lay["rows"]), 6)
+        self.assertGreaterEqual(last, hifi.BLURB_LAST_BASELINE - 1e-9)
+        self.assertGreaterEqual(lay["size"], 3.6 - 1e-9)
+
+    def test_seven_rows_sit_on_the_frame(self):
+        lay, last = self.last_baseline(7)
+        self.assertEqual(len(lay["rows"]), 7)
+        self.assertLess(last, hifi.BLURB_LAST_BASELINE)
+        self.assertGreaterEqual(last, 0.0)
+        self.assertGreaterEqual(lay["size"], 3.6 - 1e-9)
+
+    def test_eight_rows_leave_the_card_and_drop_nothing(self):
+        lay, last = self.last_baseline(8)
+        self.assertEqual([r[0] for r in lay["rows"]], ["ROW %d" % i for i in range(8)])
+        self.assertLess(last, 0.0)
+        self.assertGreaterEqual(lay["size"], 3.6 - 1e-9)
 
 
 class TitleBlurbChordCountTest(unittest.TestCase):

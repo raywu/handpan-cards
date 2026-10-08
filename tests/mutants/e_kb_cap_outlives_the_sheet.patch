@@ -6,7 +6,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8169,10 +8169,7 @@ function hideSheet() {
+@@ -9603,10 +9603,7 @@ function hideSheet() {
    // be left behind (queue row 88): applyKbOffset() writes transform and
    // maxHeight together, so the teardown has to undo them together or the two
    // halves drift apart the moment anything else learns to call hideSheet().
@@ -16,5 +16,5 @@ diff --git a/index.html b/index.html
 -  }
 +  if (sheetSurf) sheetSurf.style.transform = "";
    editingId = null;
+   dropDrawer();
    setInert(false, background);
-   (sheetOpener || addChip).focus();

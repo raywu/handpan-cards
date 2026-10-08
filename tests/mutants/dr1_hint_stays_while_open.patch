@@ -1,0 +1,15 @@
+# kills: DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint stays empty
+# suite: node --test --test-name-pattern ^DR1.hint.row.* tests/app.test.js
+# The toggle row's hint stays visible while the drawer is open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8908,7 +8908,7 @@
+   drawerBtn.classList.toggle("on", drawerOpen);
+   drawerBtn.setAttribute("aria-expanded", String(drawerOpen));
+   layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
+-  layoutHint.hidden = drawerOpen;
++  layoutHint.hidden = false;
+   drawerBox.hidden = !drawerOpen;
+   drawerStatus.hidden = !drawerOpen;
+   legacyGroup.hidden = !editingId;

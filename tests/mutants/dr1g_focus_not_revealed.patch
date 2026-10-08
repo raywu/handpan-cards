@@ -1,0 +1,15 @@
+# kills: DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell
+# suite: node --test --test-name-pattern ^DR1.rule.G.grid.* tests/drawer_grid.test.js
+# A focused text control is not scrolled fully into view (rule G-c).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8942,7 +8942,7 @@ if (typeof ResizeObserver === "function") {
+  *  rule G-c wants the whole control in the scrollport. */
+ bandPort.addEventListener("focusin", (e) => {
+   const t = e.target;
+-  if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
++  if (t && t.matches && t.matches("input, textarea, select")) void t;
+ });
+ function hasTwoNoteRing() {
+   const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());

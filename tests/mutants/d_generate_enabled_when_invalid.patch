@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9157,7 +9157,7 @@
+@@ -9352,7 +9352,7 @@
      // jumps the sheet nor costs the fieldrow a second reserved line.
-     paintMirrors();
+     paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;

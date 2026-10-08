@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9736,7 +9736,6 @@
-                  editingId ? previewBox : null,
+@@ -9949,7 +9949,6 @@
+                  drawerBtn,
                   editingId ? rotL : null, editingId ? rotR : null,
                   editingId ? moveL : null, editingId ? moveR : null,
 -                 editingId ? resetBtn : null,
-                  editingId ? degSel : null,
-                  mirrorTop, mirrorBot, ...swatches.children, genBtn,
+                  mirrorTop, mirrorBot, anchorOne, anchorBetween,
+                  editingId ? degSel : null, ...swatches.children, genBtn,
                   editingId ? delBtn : null]

@@ -4,12 +4,12 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -34,7 +34,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
+@@ -34,7 +34,7 @@
    "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
    "scale-delete-row", "scale-delete", "scale-del-note",
    // Phase 5 LAYOUT section, additive like the two before it.
--  "scale-layout-row", "scale-rot-l", "scale-rot-r",
-+  "scale-layout-row", "scale-rot-l", "scale-rot-r", "scale-slots",
+-  "scale-rot-l", "scale-rot-r",
++  "scale-rot-l", "scale-rot-r", "scale-slots",
    "scale-move-l", "scale-move-r", "scale-layout-reset",
-   // The pan-layout preview, additive like every row above it.
-   "scale-preview",
+   // Lane DR1: the layout drawer shell. The four rot/move ids above stay: the
+   // old group lives on inside #scale-legacy-group until DR2 removes it.

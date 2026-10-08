@@ -965,7 +965,45 @@ footer.seq{row-gap:var(--sp-1)}
    box and changes as you type, this one never changes. */
 .sheethint{margin:0; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
   line-height:1.5; color:#a79d8b; overflow-wrap:anywhere}
-#scale-layout-row .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
+#scale-legacy-group .ctlrow{gap:var(--sp-2); flex-wrap:wrap}
+/* ---- The layout drawer (Lane DR1). Closed, the zone is the plate, one
+   toggle and one hint. Open, the plate band sticks to the top of the sheet's
+   scroller so the pan stays in view while the drawer's controls scroll past
+   it, and the status line sits under the plate. No transitions: the drawer
+   appears and disappears in one frame. */
+#scale-layout-zone{display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
+#scale-layout-toggle{align-self:flex-start}
+#scale-layout-toggle:disabled, #scale-layout-toggle:disabled + #scale-layout-hint,
+#scale-drawer .mode:disabled{opacity:.5; cursor:default}
+#scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
+#scale-layout-toggle.on span{display:inline}
+#scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-drawer[hidden]{display:none}
+#scale-drawer .mirror .mode{flex:1 1 0; min-width:0}
+#scale-drawer .mirror{width:100%}
+#scale-drawer .ctlrow{justify-content:flex-start}
+#scale-drawer-status{font:400 12px/1.5 Bitter, serif; color:#c4bcab; min-height:3em; text-align:center}
+#scale-layout-state{color:#e3b25c}
+#scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
+  padding-bottom:var(--sp-1)}
+#scale-layout-zone.open #scale-preview{max-width:min(300px, 42dvh)}
+.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
+  #scale-layout-zone.open #scale-plate-band{position:static}
+#scale-layout-zone.open.nostick #scale-plate-band{position:static}
+.sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
+.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus){scroll-padding-top:0}
+@media (min-width:640px) and (min-height:700px){
+  #scale-layout-zone.open #scale-preview{max-width:340px}
+}
+@media (max-height:520px) and (min-width:560px){
+  /* The band sits beside the controls here, not over them: nothing to pad for. */
+  .sheetbody{scroll-padding-top:0}
+  #scale-layout-zone.open{display:grid; grid-template-columns:auto 1fr; column-gap:var(--sp-3)}
+  #scale-layout-zone.open #scale-plate-band{grid-column:1; grid-row:1 / span 4}
+  #scale-layout-zone.open > :not(#scale-plate-band){grid-column:2}
+  #scale-layout-zone.open #scale-preview{width:clamp(150px, calc(100dvh - 170px), 232px); max-width:none}
+}
 /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
    it has to sit on ONE note at the radius that note was drawn at, which is a
    solved number no selector can reach. What CSS owns is the focus treatment of
@@ -1177,44 +1215,73 @@ footer.seq{row-gap:var(--sp-1)}
          pair, dashed bottom ring in x-ray view - drawn by the SAME pan()
          renderer the cards use, with no chord chosen, so what is previewed
          cannot drift from what GENERATE CARDS produces. -->
-    <div id="scale-preview" role="img"
-         aria-label="Preview of where the notes sit on the pan" hidden></div>
-    <!-- D5: the generated layout is a guess; this corrects it. Edit path only -
-         there is nothing to correct until a pan has been solved.
-
-         The controls sit DIRECTLY under the pan they move, and the pan IS the
-         selection: Stage 3 deleted #scale-slots, the parallel list of position
-         chips that stood in for it. The owner could not tell what ROTATE and
-         MOVE did because the thing they moved was not on screen - the chips
-         reordered and the pan behind the sheet did not visibly change. One
-         target, one group, both above the fold at 380px. -->
-    <div class="editrow" id="scale-layout-row" hidden>
-      <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
-      <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
-           intend to do since I can't see the layout of the pan change in real
-           time". Stage 3 answered the second half by putting the mock in the
-           flow; this sentence answers the first, and it has to live HERE - a
-           comment in this file teaches nobody, and a doc is not on the phone
-           the correction is made on. It names the gesture before the buttons
-           because nothing either button does means anything until a note is
-           chosen. -->
-      <p class="sheethint" id="scale-layout-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
-      <div class="ctlrow" role="group" aria-labelledby="scale-layout-label"
-           aria-describedby="scale-layout-hint">
-        <div class="mirror">
-          <button class="mode" type="button" id="scale-rot-l"
-                  aria-label="Rotate the selected note's ring one position back">ROTATE &larr;</button>
-          <button class="mode" type="button" id="scale-rot-r"
-                  aria-label="Rotate the selected note's ring one position on">ROTATE &rarr;</button>
+    <!-- Lane DR1: the layout zone. The pan mock sits in a band (sticky while the
+         drawer is open) with its status line; the ADJUST LAYOUT toggle and its
+         hint come next, then the drawer. The pan mock is drawn by the SAME
+         pan() renderer the cards use, with no chord chosen, so what is
+         previewed cannot drift from what GENERATE CARDS produces. -->
+    <div id="scale-layout-zone">
+      <div id="scale-plate-band">
+        <div id="scale-preview" role="img"
+             aria-label="Preview of where the notes sit on the pan" hidden></div>
+        <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
+      </div>
+      <div class="editrow" id="scale-layout-row">
+        <button class="mode" type="button" id="scale-layout-toggle" aria-label="Adjust layout"
+                aria-expanded="false" aria-controls="scale-drawer" disabled>ADJUST LAYOUT<span aria-hidden="true">×</span></button>
+        <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+      </div>
+      <p class="sheethint" id="scale-layout-state" hidden></p>
+      <div id="scale-drawer" role="group" aria-label="Layout" hidden>
+        <!-- Edit path only. DR2 removes ROTATE and MOVE; until then they live
+             here, one tap deeper than before. -->
+        <div class="editrow" id="scale-legacy-group" role="group" aria-labelledby="scale-layout-label"
+             aria-describedby="scale-legacy-hint" hidden>
+          <span class="sheetlabel" id="scale-layout-label">LAYOUT</span>
+          <!-- Stage 4 AC3. The owner's words were "I'm not sure what any of these
+               intend to do since I can't see the layout of the pan change in real
+               time". Stage 3 answered the second half by putting the mock in the
+               flow; this sentence answers the first, and it has to live HERE - a
+               comment in this file teaches nobody, and a doc is not on the phone
+               the correction is made on. It names the gesture before the buttons
+               because nothing either button does means anything until a note is
+               chosen. -->
+          <p class="sheethint" id="scale-legacy-hint">Tap a note on the pan above, then ROTATE turns its whole ring one seat on, and MOVE swaps just that note with its neighbour. The pan follows every press.</p>
+          <div class="ctlrow">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-rot-l"
+                      aria-label="Rotate the selected note's ring one position back">ROTATE &larr;</button>
+              <button class="mode" type="button" id="scale-rot-r"
+                      aria-label="Rotate the selected note's ring one position on">ROTATE &rarr;</button>
+            </div>
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-move-l"
+                      aria-label="Move the selected note one position back">MOVE &larr;</button>
+              <button class="mode" type="button" id="scale-move-r"
+                      aria-label="Move the selected note one position on">MOVE &rarr;</button>
+            </div>
+            <button id="scale-layout-reset" type="button"
+                    aria-label="Reset the layout to the generated one">RESET</button>
+          </div>
         </div>
-        <div class="mirror">
-          <button class="mode" type="button" id="scale-move-l"
-                  aria-label="Move the selected note one position back">MOVE &larr;</button>
-          <button class="mode" type="button" id="scale-move-r"
-                  aria-label="Move the selected note one position on">MOVE &rarr;</button>
+        <div class="ctlrow">
+          <div class="mirror">
+            <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
+            <button class="mode" type="button" id="scale-mirror-bottom" aria-pressed="false" disabled>MIRROR BOTTOM</button>
+          </div>
         </div>
-        <button id="scale-layout-reset" type="button"
-                aria-label="Reset the layout to the generated one">RESET</button>
+        <p class="sheethint">Each flips left and right. Top covers the rim and the inner notes.</p>
+        <div class="editrow">
+          <span class="sheetlabel" id="scale-anchor-label">NOTE 1</span>
+          <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-anchor-one" aria-pressed="true" disabled>ON CENTRE</button>
+              <button class="mode" type="button" id="scale-anchor-between" aria-pressed="false" disabled>BESIDE CENTRE</button>
+            </div>
+          </div>
+        </div>
+        <p class="sheethint">On centre puts note 1 at the bottom centre. Beside centre puts the bottom centre between notes 1 and 2.</p>
+        <p class="sheethint" id="scale-drawer-hint" hidden></p>
       </div>
     </div>
     <!-- Above the control row, so the soft keyboard never covers it. Warnings,
@@ -1251,10 +1318,6 @@ footer.seq{row-gap:var(--sp-1)}
          "GENERATE CARDS is reachable without scrolling at every phone
          viewport". -->
     <div class="ctlrow">
-      <div class="mirror">
-        <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
-        <button class="mode" type="button" id="scale-mirror-bottom" aria-pressed="false" disabled>MIRROR BOTTOM</button>
-      </div>
       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
     </div>
    </div>
@@ -8640,7 +8703,7 @@ function buildChips() {
  * through HPE.core.parseSeed, and Generate hands the text to generateDeck().
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
-const PARSE_HINT = "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional. A | used to mean bottom notes; it now means inner notes.";
+const PARSE_HINT = "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional.";
 const sheet     = document.getElementById("scale-sheet");
 // The scrolling surface itself (.sheetsurf), looked up by DOM position rather
 // than by id: it is the one thing the iOS keyboard fix below has to move, and
@@ -8676,12 +8739,23 @@ const delNote   = document.getElementById("scale-del-note");
 const delBtn    = document.getElementById("scale-delete");
 // The Phase 5 LAYOUT section. Secondaries only: the sheet's single primary is
 // still #scale-generate, relabelled SAVE CHANGES on the Edit path.
-const layoutRow = document.getElementById("scale-layout-row");
 const rotL      = document.getElementById("scale-rot-l");
 const rotR      = document.getElementById("scale-rot-r");
 const moveL     = document.getElementById("scale-move-l");
 const moveR     = document.getElementById("scale-move-r");
 const resetBtn  = document.getElementById("scale-layout-reset");
+// Lane DR1: the layout drawer shell.
+const layoutZone = document.getElementById("scale-layout-zone");
+const plateBand  = document.getElementById("scale-plate-band");
+const drawerBtn  = document.getElementById("scale-layout-toggle");
+const layoutHint = document.getElementById("scale-layout-hint");
+const layoutNote = document.getElementById("scale-layout-state");
+const drawerBox  = document.getElementById("scale-drawer");
+const drawerStatus = document.getElementById("scale-drawer-status");
+const legacyGroup = document.getElementById("scale-legacy-group");
+const drawerHint = document.getElementById("scale-drawer-hint");
+const anchorOne  = document.getElementById("scale-anchor-one");
+const anchorBetween = document.getElementById("scale-anchor-between");
 const announce = document.querySelector(".announce");
 announce.className = "announce";
 
@@ -8783,12 +8857,128 @@ function buildSwatches() {
  *  never on for a pan with no bottom notes. */
 const bottomMirror = () => hadBottom && bottomHeld;
 function paintMirrors() {
-  const pairs = [[mirrorTop, mirror, !boxOk], [mirrorBot, bottomMirror(), !boxOk || !hadBottom]];
+  const pairs = [[mirrorTop, mirror, !boxOk], [mirrorBot, bottomMirror(), !boxOk || !hadBottom],
+    [anchorOne, anchor === "one", !boxOk], [anchorBetween, anchor === "between", !boxOk]];
   for (const [el, on, off] of pairs) {
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", String(on));
     el.disabled = off;
   }
+}
+
+/* ---- the layout drawer (Lane DR1) ----
+   The drawer holds the layout choices that used to sit loose in the sheet.
+   Its state is a session let like `mirror` and `anchor`: it opens closed,
+   closing it never touches the layout, and leaving the sheet drops it. */
+let drawerOpen = false;
+let drawerPaused = false;
+let layoutBase = { anchor: "one", mirror: false, mb: false };
+const HINT_EMPTY = "Type a scale to adjust its layout.";
+const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.";
+const DRAWER_ZONE = [drawerBtn, rotL, rotR, moveL, moveR, resetBtn, mirrorTop, mirrorBot,
+  anchorOne, anchorBetween, previewBox];
+
+/** One line under the plate, read once. The same sentence twice in a row is
+ *  cleared first, or a live region would stay silent on the repeat. */
+function layoutStatus(text) {
+  if (text && drawerStatus.textContent === text) {
+    drawerStatus.textContent = "";
+    setTimeout(() => { if (drawerOpen && !drawerStatus.textContent) drawerStatus.textContent = text; }, 0);
+    return;
+  }
+  drawerStatus.textContent = text;
+}
+function layoutNoticeText() {
+  const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
+    (!hadBottom || bottomMirror() === layoutBase.mb);
+  if (!same) return editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
+    : "Layout not saved yet. GENERATE CARDS keeps it.";
+  const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom);
+  return editingId && custom ? "Layout changed from the default." : "";
+}
+/** Everything the layout zone shows, from the session state alone. */
+function paintLayout() {
+  paintMirrors();
+  if (drawerOpen && !boxOk && !drawerPaused) {
+    drawerPaused = true;
+    layoutStatus("Layout is paused until the scale parses.");
+  } else if (drawerOpen && boxOk && drawerPaused) {
+    drawerPaused = false;
+    layoutStatus("Layout is ready again.");
+  }
+  drawerBtn.disabled = !boxOk && !drawerOpen;
+  drawerBtn.classList.toggle("on", drawerOpen);
+  drawerBtn.setAttribute("aria-expanded", String(drawerOpen));
+  layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
+  layoutHint.hidden = drawerOpen;
+  drawerBox.hidden = !drawerOpen;
+  drawerStatus.hidden = !drawerOpen;
+  legacyGroup.hidden = !editingId;
+  layoutZone.classList.toggle("open", drawerOpen);
+  const note = layoutNoticeText();
+  layoutNote.textContent = note;
+  layoutNote.hidden = !note;
+  syncBand();
+}
+/** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
+ *  for a control under it, and the scroll padding is its height exactly then.
+ *  Where nothing can be measured (no layout) it stays stuck. */
+const BAND_MIN_ROOM = 44;
+function syncBand() {
+  const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
+  const band = drawerOpen ? high(plateBand) : 0;
+  const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
+  const stuck = drawerOpen && !(port > 0 && port - band < BAND_MIN_ROOM);
+  layoutZone.classList.toggle("nostick", drawerOpen && !stuck);
+  document.documentElement.style.setProperty("--plate-band-h", (stuck ? band : 0) + "px");
+}
+const bandPort = document.querySelector(".sheetbody") || plateBand;
+if (typeof ResizeObserver === "function") {
+  const bandWatch = new ResizeObserver(syncBand);
+  bandWatch.observe(plateBand);
+  bandWatch.observe(bandPort);
+}
+/** A native focus scrolls a text control only far enough to show its caret;
+ *  rule G-c wants the whole control in the scrollport. */
+bandPort.addEventListener("focusin", (e) => {
+  const t = e.target;
+  if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
+});
+function hasTwoNoteRing() {
+  const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
+  if (!res.ok) return true;
+  const n = { rim: 0, inner: 0, bottom: 0 };
+  for (const f of Object.values(res.value.fields)) if (f[3] in n) n[f[3]] += 1;
+  return Object.values(n).some((c) => c >= 2);
+}
+function openDrawer() {
+  if (!boxOk || drawerOpen) return;
+  drawerOpen = true;
+  drawerPaused = false;
+  drawerStatus.textContent = "";
+  paintLayout();
+  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
+  if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+}
+/** Close the drawer. Focus follows only when it was inside the zone, or the
+ *  toggle itself closed it: to the toggle if the scale parses, else the field. */
+function closeDrawer(viaToggle) {
+  if (!drawerOpen) return;
+  const inside = viaToggle || DRAWER_ZONE.includes(document.activeElement);
+  drawerOpen = false;
+  drawerPaused = false;
+  drawerStatus.textContent = "";
+  paintLayout();
+  if (inside) (boxOk ? drawerBtn : scaleBox).focus();
+}
+/** Leaving the sheet or opening a fresh session: no focus, no status. */
+function dropDrawer() {
+  drawerHint.textContent = "";
+  drawerHint.hidden = true;
+  drawerOpen = false;
+  drawerPaused = false;
+  drawerStatus.textContent = "";
 }
 
 /** "Ding D3 · 3 top · 0 inner · 1 bottom. Top A3 C4 D4. Bottom C3." - the ding,
@@ -9165,7 +9355,7 @@ function syncParseState({ paint }) {
   const text = String(scaleBox.value || "");
   boxOk = false;
   if (!text.trim()) {
-    paintMirrors();
+    paintLayout();
     showParse(PARSE_HINT);
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
@@ -9178,7 +9368,7 @@ function syncParseState({ paint }) {
     boxOk = true;
     const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
     if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
-    paintMirrors();
+    paintLayout();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
@@ -9192,7 +9382,7 @@ function syncParseState({ paint }) {
     // leans on the blank too - #scale-parse:empty steps out of the row and
     // #scale-refusal takes the identical box - so a half-typed seed neither
     // jumps the sheet nor costs the fieldrow a second reserved line.
-    paintMirrors();
+    paintLayout();
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
     if (paint) holdPanPreview();
@@ -9311,7 +9501,7 @@ if (window.visualViewport) {
 /** Show or hide the three Edit-only rows and relabel the single primary. */
 function setSheetMode(edit) {
   disarmDelete();
-  for (const el of [nameRow, degRow, layoutRow, delRow]) {
+  for (const el of [nameRow, degRow, legacyGroup, delRow]) {
     if (edit) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
   }
   genBtn.textContent = edit ? "SAVE CHANGES" : "GENERATE CARDS";
@@ -9405,7 +9595,10 @@ function resetSheetState(edit) {
   bottomHeld = hadBottom && (typeof edit.options.mirrorBottom === "boolean"
     ? edit.options.mirrorBottom : mirror);
   boxOk = !!edit;
-  paintMirrors();
+  dropDrawer();
+  layoutBase = { anchor, mirror, mb: edit && typeof edit.options.mirrorBottom === "boolean"
+    ? edit.options.mirrorBottom : mirror };
+  paintLayout();
 }
 // The create path.
 function openScaleSheet(opener) {
@@ -9447,6 +9640,7 @@ function hideSheet() {
     sheetSurf.style.maxHeight = "";
   }
   editingId = null;
+  dropDrawer();
   setInert(false, background);
   (sheetOpener || addChip).focus();
   sheetOpener = null;
@@ -9682,8 +9876,22 @@ sheet.addEventListener("pointerdown", (e) => {
 delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
-mirrorTop.onclick = () => { mirror = !mirror; paintMirrors(); resyncSheet(true); };
-mirrorBot.onclick = () => { bottomHeld = !bottomHeld; paintMirrors(); resyncSheet(true); };
+mirrorTop.onclick = () => {
+  mirror = !mirror; paintLayout(); resyncSheet(true);
+  layoutStatus(mirror ? "Top mirror on." : "Top mirror off.");
+};
+mirrorBot.onclick = () => {
+  bottomHeld = !bottomHeld; paintLayout(); resyncSheet(true);
+  layoutStatus(bottomMirror() ? "Bottom mirror on." : "Bottom mirror off.");
+};
+const pickAnchor = (to) => () => {
+  if (anchor === to) return;
+  anchor = to; paintLayout(); resyncSheet(true);
+  layoutStatus(to === "one" ? "Note 1 is on centre." : "Note 1 is beside centre.");
+};
+anchorOne.onclick = pickAnchor("one");
+anchorBetween.onclick = pickAnchor("between");
+drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
 rotL.onclick = () => rotateLayout(-1);
 rotR.onclick = () => rotateLayout(1);
 moveL.onclick = () => moveNote(-1);
@@ -9768,11 +9976,12 @@ sheet.addEventListener("keydown", e => {
                  editingId ? nameBox : null,
                  scaleBox,
                  editingId ? previewBox : null,
+                 drawerBtn,
                  editingId ? rotL : null, editingId ? rotR : null,
                  editingId ? moveL : null, editingId ? moveR : null,
                  editingId ? resetBtn : null,
-                 editingId ? degSel : null,
-                 mirrorTop, mirrorBot, ...swatches.children, genBtn,
+                 mirrorTop, mirrorBot, anchorOne, anchorBetween,
+                 editingId ? degSel : null, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);
   cycleTabStops(stops, e);
@@ -9958,7 +10167,7 @@ document.addEventListener("keydown", e => {
   // While the sheet is open it owns the keyboard: Escape closes it, and an
   // arrow key is cursor movement inside the box, never a card step.
   if (sheetOpen) {
-    if (e.key === "Escape") { e.preventDefault(); closeScaleSheet(); }
+    if (e.key === "Escape") { e.preventDefault(); if (drawerOpen) closeDrawer(); else closeScaleSheet(); }
     return;
   }
   // While the settings panel is open it owns the keyboard too (eng review
@@ -10321,7 +10530,7 @@ document.addEventListener("click", e => {
 }, true);
 
 /* ---------------- go ---------------- */
-sheet.setAttribute("hidden", ""); buildSwatches(); paintMirrors(); resyncSheet(true);
+sheet.setAttribute("hidden", ""); buildSwatches(); paintLayout(); resyncSheet(true);
 // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
 // deck that was selected last session is in the registry by the time deck()
 // looks for it.

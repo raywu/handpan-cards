@@ -1,0 +1,14 @@
+# kills: DR1 rule G by resize: open on Edit, rotate in either direction, and the band and padding follow
+# suite: node --test --test-name-pattern ^DR1.rule.G.by.resize.* tests/drawer_grid.test.js
+# The band is not observed, so a band that grows on its own leaves the padding stale (rule G-e).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8935,7 +8935,6 @@ function syncBand() {
+ const bandPort = document.querySelector(".sheetbody") || plateBand;
+ if (typeof ResizeObserver === "function") {
+   const bandWatch = new ResizeObserver(syncBand);
+-  bandWatch.observe(plateBand);
+   bandWatch.observe(bandPort);
+ }
+ /** A native focus scrolls a text control only far enough to show its caret;
