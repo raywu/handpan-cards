@@ -2416,14 +2416,14 @@ function run() {
     assert.match(open.title, /Add a scale/i, "the page has no visible title");
     assert.match(open.backText, /BACK/, "the page has no visible way back");
     assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
-    assert.match(open.parseLine, /^Type your ding first/);
+    assert.match(open.parseLine, /^Type every note low to high/);
     assert.strictEqual(open.msgLive, "polite");
     // #scale-sheet is aria-modal, so the page-level .announce is outside the
     // dialog and unreachable while the sheet is open. A refusal is announced
     // only if #scale-refusal is itself a live region.
     assert.strictEqual(open.refusalLive, "polite",
       "the seed refusal is not in a live region inside the modal sheet");
-    assert.strictEqual(open.placeholder, "(D) A C D E F G A C");
+    assert.strictEqual(open.placeholder, "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A");
     assert.strictEqual(open.generateDisabled, true);
     assert.strictEqual(open.swatches, 6);
     assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
@@ -3251,6 +3251,7 @@ function run() {
         // The palette swatches are 14px by spec, so their hit area is an
         // invisible overlay: probe it instead of measuring the dot.
         for (const dot of document.querySelectorAll("#scale-swatches .dot")) {
+          dot.scrollIntoView({ block: "center" });
           const r = dot.getBoundingClientRect();
           const cx = r.left + r.width / 2;
           const cy = r.top + r.height / 2;
@@ -3313,6 +3314,7 @@ function run() {
           : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
             (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
         return dots.map((dot, i) => {
+          dot.scrollIntoView({ block: "center" });
           const r = dot.getBoundingClientRect();
           const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
           // +/-21 pins the documented 44px box; +/-18 would pass on 36px.
@@ -4229,7 +4231,7 @@ function run() {
   /** Generate a deck at 380px and reopen it in Edit state. */
   async function editFreshDeck() {
     await freshLoad();
-    await b.setViewport(380, 780, true);
+    await b.setViewport(380, 840, true);
     await generate(EDIT_SCALE);
     await openEdit();
   }
@@ -5024,7 +5026,7 @@ function run() {
     // engine warns NO_THIRDS on every open.
     try {
       await freshLoad();
-      await b.setViewport(380, 780, true);
+      await b.setViewport(380, 840, true);
       await generate("(C3) G3 D4 G4 D5");
       await openEdit();
       const read = () => b.eval(`
@@ -6043,6 +6045,9 @@ function run() {
       await typeScale(BIG_SCALE);
       await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
         { label: "the preview to render" });
+      // The permanent second label and the three-row field push the box down;
+      // a click at its centre must land on it, not on whatever is under the fold.
+      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
       await b.click("#scale-box");
       for (const kb of KEYBOARDS) {
         await b.fakeKeyboard(745 - kb);
@@ -6484,7 +6489,7 @@ function run() {
       await b.setViewport(380, 800, true);
       await openSheet();
       const m = await b.eval(`
-        const label = document.querySelector('label[for="scale-box"]');
+        const label = document.getElementById("scale-label-2");
         const box = document.getElementById("scale-box");
         const parse = document.getElementById("scale-parse");
         const g = (a, bEl) => bEl.getBoundingClientRect().top - a.getBoundingClientRect().bottom;
@@ -6544,7 +6549,7 @@ function run() {
       const states = [];
       await typeScale("(D) A C D E F G A C");
       states.push(await h("valid"));
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       states.push(await h("invalid"));
       await typeScale("(D) A C D E F G A C");
       states.push(await h("valid again"));
@@ -6581,7 +6586,7 @@ function run() {
       await freshLoad();
       await b.setViewport(380, 800, true);
       await openSheet();
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       await b.settle();
       const r = await b.eval(`
         const msg = document.getElementById("scale-refusal").getBoundingClientRect();
@@ -6637,7 +6642,10 @@ function run() {
       // #scale-refusal is EMPTY and #scale-parse holds the reserved line.
       await typeScale("(D) A C D E F G A C");
       const valid = await top();
-      await typeScale("(D) A C D zzzz");
+      const parseH = await b.eval(`
+        return document.getElementById("scale-parse").getBoundingClientRect().height;
+      `);
+      await typeScale("(D) A C D C10");
       const bad = await top();
       const msg = await b.eval(`
         const m = document.getElementById("scale-refusal");
@@ -6646,10 +6654,15 @@ function run() {
       assert.ok(msg.t.length > 0, "no refusal was rendered for an invalid seed");
       // Guards the premise: a refusal that silently grew to two lines would
       // make the assertions below fail for a reason this test does not mean.
-      assert.ok(msg.h < 27, `the refusal wrapped (${msg.h}px) - pick a shorter token`);
-      assert.ok(Math.abs(bad - valid) < 0.5,
-        `the pan moved ${(bad - valid).toFixed(1)}px when the seed went bad ` +
-        `(valid=${valid.toFixed(1)}, bad=${bad.toFixed(1)})`);
+      // Plan section 9's refusals are two lines at 380 and the spec adds no
+      // floor ("a refusal wraps to its own"), so the pan steps by exactly the
+      // difference between the two boxes. Stacking them (the parse line kept in
+      // the flow beside the refusal) steps by the refusal's whole height.
+      const step = bad - valid;
+      assert.ok(Math.abs(step - (msg.h - parseH)) < 0.5,
+        `the pan moved ${step.toFixed(1)}px when the seed went bad, expected the ` +
+        `refusal (${msg.h.toFixed(1)}px) minus the parse line it replaces ` +
+        `(${parseH.toFixed(1)}px)`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -6669,7 +6682,8 @@ function run() {
       const m = () => b.eval(`
         return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
                  body: document.querySelector(".sheetbody").scrollHeight,
-                 parse: document.getElementById("scale-parse").getBoundingClientRect().height };
+                 parse: document.getElementById("scale-parse").getBoundingClientRect().height,
+                 box: document.getElementById("scale-box").getBoundingClientRect().height };
       `);
       await b.settle();
       const empty = await m();
@@ -6681,10 +6695,12 @@ function run() {
         `the page surface resized by ${(empty.h - typed.h).toFixed(1)}px on the ` +
         "first keystroke - it is the viewport's height and must not move");
       const bodyDelta = empty.body - typed.body;
-      const parseDelta = empty.parse - typed.parse;
+      // The empty field sizes itself from the placeholder (spec, Empty field),
+      // so its own rows are the second element that legitimately changes.
+      const parseDelta = (empty.parse - typed.parse) + (empty.box - typed.box);
       assert.ok(Math.abs(bodyDelta - parseDelta) < 0.5,
         `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
-        `typed but the parse line only accounts for ${parseDelta.toFixed(1)}px ` +
+        `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
         "- something else in the page is resizing on input");
     } finally {
       await b.setViewport(900, 900, false);
@@ -6709,7 +6725,7 @@ function run() {
       await typeScale("(D) A C D E F G A C");
       await b.settle();
       const valid = await name();
-      await typeScale("(D) A C D zzzz");
+      await typeScale("(D) A C D z");
       await b.settle();
       const held = await name();
 
