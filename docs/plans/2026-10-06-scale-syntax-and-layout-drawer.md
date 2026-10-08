@@ -1763,6 +1763,26 @@ Reading (AFK auto-decision, for the owner):
 
 **Review 2.** A fresh reviewer, briefed with 20.17 and this section, facts only. A third FAIL triggers the regroup rule.
 
+### 20.19 DR2a review 2: FAIL at e1b8693 (coordinator record, 2026-10-08, owner away)
+
+PR #273, CI green. One blocking finding, reproduced in Chrome. Review 2 walked the other DR2a lines on the Add sheet in a browser and found them holding; F-1 to F-3 of 20.18 are repaired.
+
+**F1. Acceptance 18 is not implemented.** `openDrawer` moves no focus: after a pointer click or Space on the toggle, focus is still on the toggle. Line 18, section 4 Open step 3 and interview 8 item 2 say focus moves to the roving note: the first pickable note; if no ring has two notes, the first note of the pan; if the pan has no note, focus stays on the toggle; the soft keyboard is not raised. The test titled for line 18 asserts nothing about it, and the browser Tab test puts focus on the note by script.
+
+**Cause, the same in both reviews.** Lines 18, 84 and 95 were each named in a test title and not asserted by it. The lane handed back test names by group, not the line-by-line map its block asks for, so nobody saw the holes. The repair therefore starts with the map.
+
+**Steps (tests first).**
+
+1. The map. A table in the PR body: every acceptance line of the DR2a block, one row each, with the test (file and name) and the one assertion in it that would fail if the line were broken. A line with no such assertion gets one, on the sheet or sheets the line speaks of, before any fix. A test title names a line only if the test asserts it. Clauses handed to DR2b are rows marked DR2b. The lane reports every line that had no assertion.
+2. F1. Browser tests of focus after opening: by pointer and by keyboard, on Add and on Edit, on a pan with a two-note ring, on a pan with no two-note ring (`(D3) A3`: A3), on a pan with no note (focus stays on the toggle), and on a reopen. Then the fix. After it, shown by tests: a pointer open shows no focus mark (line 96); rule G and line 84 still hold at 380 x 667 (a programmatic focus can scroll the sheet, so the focus move must not scroll the toggle or the step rows out).
+3. Line 95 on small fields. At the 242 px plate the ink hairline overlaps Pygmy's orange ring and leaves under 2 px of orange showing (1.39 px on the bottom shell). Required: on every field of the five built-ins at the 380 x 667 open plate, the orange of `.pansel` shows at least 2 CSS px and the ink hairline is 1 CSS px wide and lies wholly outside the orange. The browser test computes this from the drawn radii and stroke widths in CSS px, for every field.
+4. Test repairs: the Amara and Kurd line 58 tests assert 44, not 43.5; the status-height test uses the longest single status row of the spec table, not a shorter sentence.
+5. One mutant per fix (focus on open removed; focus on open when the pan has no note; the hairline pulled onto the ring). Push; CI green at the head; do not merge.
+
+**Recorded, not changed.** The deletion of the "DR1 rule G by content" test in 85495d3 is the F3 choice of 20.17 (delete the test and its claim); said here because the commit did not say it. A composite status message of three or four sentences (a two-ring edit that also ends a pause) runs to three or four lines and can push the seat row out at 380 x 667; the spec's two-line rule speaks of single rows, so this is a phone-check item for the owner. The browser files measure fallback fonts; the reviewer's real-font run gave the same line counts.
+
+**Review 3.** A fresh reviewer, briefed with 20.17, 20.18 and this section, facts only. **A third FAIL triggers the regroup rule; the lane is not resumed after it.**
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
