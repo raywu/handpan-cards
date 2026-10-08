@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10176,7 +10176,7 @@ function dropGhost(g) {
+@@ -10191,7 +10191,7 @@ function dropGhost(g) {
   *  gone at once under reduced motion. */
  function returnGhost(g, ref) {
    const h = hitFor(ref);
 -  if (!g || !h || reducedMotion.matches) { dropGhost(g); return; }
 +  if (!g || !h) { dropGhost(g); return; }
    const c = circleOf(h);
+   const o = ghostShift(g);
    g.style.transition = `left ${GHOST_RETURN_MS}ms ease-out, top ${GHOST_RETURN_MS}ms ease-out`;
-   g.style.left = (c.x - parseFloat(g.style.width) / 2) + "px";
