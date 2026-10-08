@@ -261,6 +261,7 @@ function run() {
 
   /** The sheet with the scale typed and the drawer still closed. */
   const sheetWith = async (scale, edit) => {
+    await ev(`document.activeElement && document.activeElement.blur(); return true;`);
     await b.setViewport(380, 667, true);
     await ev(`try { localStorage.clear(); } catch (e) {} return true;`);
     await b.goto(url);
@@ -279,9 +280,10 @@ function run() {
     await ev(`document.getElementById("scale-layout-toggle").scrollIntoView({ block: "center" }); return true;`);
     if (how === "pointer") await b.click("#scale-layout-toggle");
     else {
-      await b.key("Shift", "ShiftLeft", 16);
-      await ev(`document.getElementById("scale-layout-toggle").focus(); return true;`);
-      await b.key(" ", "Space", 32);
+      await ev(`document.getElementById("scale-box").focus(); return true;`);
+      for (let i = 0; i < 8 && (await ev(`return document.activeElement.id;`)) !== "scale-layout-toggle"; i += 1) await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await ev(`return document.activeElement.id;`), "scale-layout-toggle", "Tab did not reach the toggle");
+      await ev(`document.activeElement.click(); return true;`);
     }
     await frames();
   };

@@ -1,0 +1,15 @@
+# kills: DR2a browser (18): a pan with no ring of two notes focuses its first note
+# suite: node --test --test-name-pattern ^DR2a.browser..18...a.pan.with.no.ring.of.two.notes.focuses.its.first.note$ tests/drawer_seats.test.js
+A pan with no ring of two notes gets no focus on open instead of its first note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9453,7 +9453,7 @@ function paintPan(seed, state) {
+                 pickRef ? pickRef.ring : null);
+     if (focusFirstNext) {
+       focusFirstNext = false;
+-      const first = allNotes().find((n) => n.k >= 2) || allNotes()[0];
++      const first = allNotes().find((n) => n.k >= 2);
+       if (first) { setRover({ ring: first.ring, i: first.i }); focusRef(first); }
+     } else if (prev) focusRef(prev);
+   }

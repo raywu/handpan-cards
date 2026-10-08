@@ -1,0 +1,14 @@
+# kills: DR2a (18): opening the drawer focuses the first pickable note and no other control, Add
+# suite: node --test --test-name-pattern ^DR2a..18...opening.the.drawer.focuses.the.first.pickable.note.and.no.other.control..Add$ tests/app.test.js
+Opening the drawer no longer moves focus to the first pickable note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8995,7 +8995,6 @@ function openDrawer() {
+   drawerStatus.textContent = "";
+   drawerStatus.classList.remove("warn");
+   paintLayout();
+-  focusFirstNext = true;
+   repaintPlate();
+   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });

@@ -1,12 +1,13 @@
 # kills: DR1 open step 5: opening the drawer scrolls the zone into view with block nearest and behavior auto, and closing does not scroll
 # suite: node --test --test-name-pattern ^DR1.open.step.5.* tests/app.test.js
 # Opening the drawer does not scroll the zone into view.
+# Refreshed 2026-10-08 (DR2a): context follows the focus-on-open line
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8983,7 +8983,6 @@ function openDrawer() {
-   drawerStatus.classList.remove("warn");
+@@ -8997,7 +8997,6 @@ function openDrawer() {
    paintLayout();
+   focusFirstNext = true;
    repaintPlate();
 -  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
    drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
