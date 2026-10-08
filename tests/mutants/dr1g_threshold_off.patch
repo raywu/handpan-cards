@@ -1,0 +1,15 @@
+# kills: DR1 rule G boundary walk: stepping the height 1px at a time, stuck flips exactly where the window reaches 44
+# suite: node --test --test-name-pattern ^DR1.rule.G.boundary.walk.* tests/drawer_grid.test.js
+# The stuck threshold is a few pixels over the 44 px one control needs (rule G-a).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8923,7 +8923,7 @@ function paintLayout() {
+ /** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
+  *  for a control under it, and the scroll padding is its height exactly then.
+  *  Where nothing can be measured (no layout) it stays stuck. */
+-const BAND_MIN_ROOM = 44;
++const BAND_MIN_ROOM = 48;
+ function syncBand() {
+   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
+   const band = drawerOpen ? high(plateBand) : 0;

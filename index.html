@@ -990,7 +990,9 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-zone.open #scale-preview{max-width:min(300px, 42dvh)}
 .sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
   #scale-layout-zone.open #scale-plate-band{position:static}
+#scale-layout-zone.open.nostick #scale-plate-band{position:static}
 .sheetbody{scroll-padding-top:var(--plate-band-h, 0px)}
+.sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus){scroll-padding-top:0}
 @media (min-width:640px) and (min-height:700px){
   #scale-layout-zone.open #scale-preview{max-width:340px}
 }
@@ -8916,9 +8918,32 @@ function paintLayout() {
   const note = layoutNoticeText();
   layoutNote.textContent = note;
   layoutNote.hidden = !note;
-  document.documentElement.style.setProperty("--plate-band-h",
-    (drawerOpen ? plateBand.offsetHeight || 0 : 0) + "px");
+  syncBand();
 }
+/** Rule G-a, G-b, G-e: the band sticks only while the scrollport keeps room
+ *  for a control under it, and the scroll padding is its height exactly then.
+ *  Where nothing can be measured (no layout) it stays stuck. */
+const BAND_MIN_ROOM = 44;
+function syncBand() {
+  const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
+  const band = drawerOpen ? high(plateBand) : 0;
+  const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
+  const stuck = drawerOpen && !(port > 0 && port - band < BAND_MIN_ROOM);
+  layoutZone.classList.toggle("nostick", drawerOpen && !stuck);
+  document.documentElement.style.setProperty("--plate-band-h", (stuck ? band : 0) + "px");
+}
+const bandPort = document.querySelector(".sheetbody") || plateBand;
+if (typeof ResizeObserver === "function") {
+  const bandWatch = new ResizeObserver(syncBand);
+  bandWatch.observe(plateBand);
+  bandWatch.observe(bandPort);
+}
+/** A native focus scrolls a text control only far enough to show its caret;
+ *  rule G-c wants the whole control in the scrollport. */
+bandPort.addEventListener("focusin", (e) => {
+  const t = e.target;
+  if (t && t.matches && t.matches("input, textarea, select")) t.scrollIntoView({ block: "nearest", behavior: "auto" });
+});
 function hasTwoNoteRing() {
   const res = HPE.core.parseSeed(String(scaleBox.value || ""), sheetOptions());
   if (!res.ok) return true;
@@ -8933,6 +8958,7 @@ function openDrawer() {
   drawerStatus.textContent = "";
   paintLayout();
   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Close the drawer. Focus follows only when it was inside the zone, or the

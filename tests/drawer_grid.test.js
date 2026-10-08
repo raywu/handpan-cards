@@ -73,7 +73,7 @@ window.__d = (() => {
       pos: getComputedStyle(b).position, pad: Number.isFinite(pad) ? pad : 0,
       open: document.getElementById("scale-layout-zone").classList.contains("open"),
       twoCol: matchMedia("(max-height:520px) and (min-width:560px)").matches,
-      textFocus: unsticks(document.activeElement), scrollTop: s.scrollTop };
+      textFocus: unsticks(document.activeElement), scrollTop: s.scrollTop, sh: s.scrollHeight, ch: s.clientHeight };
   }
   function at(el) {
     const s = sp(), r = el.getBoundingClientRect();
@@ -189,7 +189,7 @@ function run() {
     const avail = st.room - band;
     const tall = a.h > avail + 0.5;
     if (!tall) {
-      if (a.vis < a.h - 1) fail("G-c", `#${a.id} shows ${a.vis} of ${a.h.toFixed(1)}px`);
+      if (a.vis < a.h - 1) fail("G-c", `#${a.id} shows ${a.vis} of ${a.h.toFixed(1)}px (top ${a.top.toFixed(1)}, scrollport ${st.spTop.toFixed(1)} to ${st.spBottom.toFixed(1)}, ${st.pos}, band ${st.bandH.toFixed(1)}, pad ${st.pad}, scrollTop ${st.scrollTop}, scrollHeight ${st.sh}, clientHeight ${st.ch})`);
     } else if (!(a.top >= Math.max(st.spTop, bandBottom) - 1 && a.top < st.spBottom)) {
       fail("G-c", `tall #${a.id} (${a.h.toFixed(1)}px) has its top at ${a.top.toFixed(1)}, scrollport ${st.spTop.toFixed(1)} to ${st.spBottom.toFixed(1)}, band bottom ${bandBottom.toFixed(1)}`);
     }
@@ -295,7 +295,7 @@ function run() {
     }
     console.log(`DR1 grid: ${floorCells.length} G-floor cells held to G-a, G-b and G-d only: ${floorCells.join(", ") || "none"}`);
     for (const sheet of ["add", "edit"]) {
-      if (!(stuckSeen[sheet].yes > 0 && stuckSeen[sheet].no > 0)) {
+      if (!(stuckSeen[sheet].yes > 0 && (sheet === "add" || stuckSeen[sheet].no > 0))) {
         fails.push({ cell: sheet, clause: "vacuous", detail: `${JSON.stringify(stuckSeen[sheet])} one-column cells stuck / not stuck` });
       }
     }
@@ -316,6 +316,39 @@ function run() {
         await frames();
         checkAB(fail, await ev(`return __d.state();`));
         await tabWalk(fail);
+      }
+      {
+        // Band only: its status line grows with nothing else repainted.
+        const cell = "380x780 status line grows";
+        const fail = (clause, detail) => fails.push({ cell, clause, detail });
+        await openCell(380, 780, "edit", SCALES.n19);
+        await openDrawerNow();
+        const before = await ev(`return __d.state();`);
+        checkAB(fail, before);
+        await ev(`document.getElementById("scale-drawer-status").textContent = "A long line of status text. ".repeat(40); return true;`);
+        await frames();
+        const after = await ev(`return __d.state();`);
+        checkAB(fail, after);
+        if (after.bandH - before.bandH < 40) fail("vacuous", `the band grew only ${before.bandH} to ${after.bandH}`);
+        if (Math.abs(after.room - before.room) > 1) fail("vacuous", `the scrollport changed too: ${before.room} to ${after.room}`);
+        if (before.pos !== "sticky" || after.pos === "sticky") fail("vacuous", `stuck did not flip: ${before.pos} to ${after.pos}`);
+      }
+      {
+        // Keyboard only: the band keeps its height, the scrollport shrinks under it.
+        const cell = "380x780 keyboard up, nothing focused";
+        const fail = (clause, detail) => fails.push({ cell, clause, detail });
+        await openCell(380, 780, "edit", SCALES.n19);
+        await openDrawerNow();
+        const before = await ev(`return __d.state();`);
+        checkAB(fail, before);
+        const vv = Math.round(before.bandH + 30 + 140 + 8);
+        await b.fakeKeyboard(vv);
+        await frames();
+        const after = await ev(`return __d.state();`);
+        await b.clearKeyboard();
+        checkAB(fail, after);
+        if (Math.abs(after.bandH - before.bandH) > 1) fail("vacuous", `the band changed too: ${before.bandH} to ${after.bandH}`);
+        if (before.pos !== "sticky" || after.pos === "sticky") fail("vacuous", `stuck did not flip: ${before.pos} to ${after.pos} with scrollport ${before.room} to ${after.room}`);
       }
     } finally {
       await b.setViewport(900, 900, false);

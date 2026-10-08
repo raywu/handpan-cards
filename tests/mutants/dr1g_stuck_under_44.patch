@@ -1,0 +1,15 @@
+# kills: DR1 rule G boundary walk: stepping the height 1px at a time, stuck flips exactly where the window reaches 44
+# suite: node --test --test-name-pattern ^DR1.rule.G.boundary.walk.* tests/drawer_grid.test.js
+# The band stays stuck however small the window under it gets (rule G-a).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8928,7 +8928,7 @@ function syncBand() {
+   const high = (el) => (el.getBoundingClientRect ? el.getBoundingClientRect().height : el.offsetHeight) || 0;
+   const band = drawerOpen ? high(plateBand) : 0;
+   const port = bandPort.clientHeight > 0 ? high(bandPort) : 0;
+-  const stuck = drawerOpen && !(port > 0 && port - band < BAND_MIN_ROOM);
++  const stuck = drawerOpen && !(port > 0 && port - band < 0);
+   layoutZone.classList.toggle("nostick", drawerOpen && !stuck);
+   document.documentElement.style.setProperty("--plate-band-h", (stuck ? band : 0) + "px");
+ }

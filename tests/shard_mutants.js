@@ -21,7 +21,7 @@ const path = require("node:path");
 
 // harness.test.js drives the same browser and skips without one, so its
 // mutants are e2e-selecting for both the skip rule and the shard balance.
-const E2E_SUITE_MARKERS = ["tests/e2e.test.js", "tests/harness.test.js"];
+const E2E_SUITE_MARKERS = ["tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js"];
 
 function suiteOf(patchText) {
   const m = patchText.match(/^# suite:\s*(.*)$/m);

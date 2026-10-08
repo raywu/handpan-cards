@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8932,7 +8932,6 @@
+@@ -8932,8 +8932,7 @@
    drawerPaused = false;
    drawerStatus.textContent = "";
    paintLayout();
 -  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
    if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
  }
  /** Close the drawer. Focus follows only when it was inside the zone, or the

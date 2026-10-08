@@ -1,0 +1,14 @@
+# kills: DR1 rule G grid: stuck, padding, Tab stops, toggle in view and keyboard-up fields hold at every cell
+# suite: node --test --test-name-pattern ^DR1.rule.G.grid.* tests/drawer_grid.test.js
+# Opening the drawer does not bring the toggle into view (rule G-f).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8958,7 +8958,6 @@ function openDrawer() {
+   drawerStatus.textContent = "";
+   paintLayout();
+   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
+-  drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
+   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
+ }
+ /** Close the drawer. Focus follows only when it was inside the zone, or the
