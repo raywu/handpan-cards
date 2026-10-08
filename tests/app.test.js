@@ -7601,7 +7601,7 @@ for (const edit of [false, true]) {
 
 test("DR2a (18): a pan whose only ring of two is the bottom focuses the first note of that ring", () => {
   const app = boot();
-  d2Open(app, "[C3] [D3] (E3) F3 G3 | A3", false);
+  d2Open(app, "[C3] [D3] (A3) E4", false);
   const name = d2Focus(app);
   assert.ok(app.activeHit() !== null, "focus is not on a note: " + name);
   assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");

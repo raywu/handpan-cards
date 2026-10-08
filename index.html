@@ -8985,6 +8985,7 @@ function openDrawer() {
   drawerStatus.textContent = "";
   drawerStatus.classList.remove("warn");
   paintLayout();
+  focusFirstNext = true;
   repaintPlate();
   layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
   drawerBtn.scrollIntoView({ block: "nearest", behavior: "auto" });
