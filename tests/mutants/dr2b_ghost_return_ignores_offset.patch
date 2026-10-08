@@ -1,0 +1,15 @@
+# kills: DR2b (F1, 93): the ghost's drawn centre is the hit point under any offset its ancestors carry, also one that changes mid-drag, and a refused drop returns to the seat
+# suite: node --test --test-name-pattern ^DR2b..F1..93...the.ghost.s.drawn.centre.is.the.hit.point.under.any.offset.its.ancestors.carry..also.one.that.changes.mid.drag..and.a.refused.drop.returns.to.the.seat$ tests/app.test.js
+# A refused ghost returns to the seat without the ancestor's offset.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10195,7 +10195,7 @@ function returnGhost(g, ref) {
+   const c = circleOf(h);
+   const o = ghostShift(g);
+   g.style.transition = `left ${GHOST_RETURN_MS}ms ease-out, top ${GHOST_RETURN_MS}ms ease-out`;
+-  g.style.left = (c.x - parseFloat(g.style.width) / 2 - o.x) + "px";
++  g.style.left = (c.x - parseFloat(g.style.width) / 2) + "px";
+   g.style.top = (c.y - parseFloat(g.style.height) / 2 - o.y) + "px";
+   setTimeout(() => dropGhost(g), GHOST_RETURN_MS);
+ }

@@ -1,0 +1,14 @@
+# kills: DR2b (F2, 125): a mouse move with no button down ends a press whose pointerup never came, and lifts nothing
+# suite: node --test --test-name-pattern ^DR2b..F2..125...a.mouse.move.with.no.button.down.ends.a.press.whose.pointerup.never.came..and.lifts.nothing$ tests/app.test.js
+# A pointermove with no button down no longer ends a press whose pointerup was lost.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10318,7 +10318,6 @@ previewBox.addEventListener("pointerdown", (e) => {
+ previewBox.addEventListener("pointermove", (e) => {
+   const p = press;
+   if (!p || e.pointerId !== p.id) return;
+-  if (p.type !== "touch" && e.buttons === 0) { endPress(true); return; }
+   if (p.state === "down") {
+     if (p.type === "touch") {
+       if (Date.now() - p.t0 >= HOLD_MS) liftNote();

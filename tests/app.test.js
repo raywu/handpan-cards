@@ -8049,8 +8049,8 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
       app.plate.gy = -120;
       DG.moveTo(app, g, e.x + 5, e.y + lift + 7);
       assert.deepStrictEqual(drawn(), { x: e.x + 5, y: e.y + 7 }, `${type}: offset changed mid-drag`);
+      app.plate.gx = 70;
       DG.release(app, g, 330, 330 + lift);
-      app.plate.gy = -120;
       const left = DG.ghostEls(app)[0];
       const home = DG.centre(DG.noteNode(app, "A3"));
       const r = left.getBoundingClientRect();

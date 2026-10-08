@@ -1,0 +1,15 @@
+# kills: DR2b browser (F1 step 4): a hold that lifts leaves the sheet body's scrollTop alone, with the note focused and partly out of view
+# suite: node --test --test-name-pattern ^DR2b.browser..F1.step.4...a.hold.that.lifts.leaves.the.sheet.body.s.scrollTop.alone..with.the.note.focused.and.partly.out.of.view$ tests/drawer_drag.test.js
+# The lift's repaint is no longer held at the sheet body's scroll position, so the focus restore moves it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10261,7 +10261,7 @@ function liftNote() {
+   p.pre = pickRef ? { ref: { ring: pickRef.ring, i: pickRef.i }, moved: pickMoved, text: drawerStatus.textContent, warn: drawerStatus.classList.contains("warn") } : null;
+   gestureCancel = null;
+   const sameNote = p.pre && p.pre.ref.ring === p.ref.ring && p.pre.ref.i === p.ref.i;
+-  keepScroll(() => setPick(p.ref));
++  setPick(p.ref);
+   pickMoved = sameNote ? p.pre.moved : false;
+   layoutStatus(pickAnnouncement(n, "tap"));
+   gestureCancel = () => endPress(false);

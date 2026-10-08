@@ -1,0 +1,15 @@
+# kills: DR2b (F3, 66, 107): Escape after a tap, a swapping step and a drag of the picked note onto its own seat writes row 9b
+# suite: node --test --test-name-pattern ^DR2b..F3..66..107...Escape.after.a.tap..a.swapping.step.and.a.drag.of.the.picked.note.onto.its.own.seat.writes.row.9b$ tests/app.test.js
+# Lifting the already-picked note clears the record of the swaps, so Escape says Cancelled. Nothing moved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10262,7 +10262,7 @@ function liftNote() {
+   gestureCancel = null;
+   const sameNote = p.pre && p.pre.ref.ring === p.ref.ring && p.pre.ref.i === p.ref.i;
+   keepScroll(() => setPick(p.ref));
+-  pickMoved = sameNote ? p.pre.moved : false;
++  pickMoved = false;
+   layoutStatus(pickAnnouncement(n, "tap"));
+   gestureCancel = () => endPress(false);
+   p.lifted = true;
