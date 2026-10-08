@@ -1,0 +1,15 @@
+# kills: DR2a (95, F-3): .panseat is at least 2 px, and the ink hairline sits outside the orange ring
+# suite: node --test --test-name-pattern ^DR2a..95..F.3....panseat.is.at.least.2.px..and.the.ink.hairline.sits.outside.the.orange.ring$ tests/app.test.js
+# The ink hairline is drawn at the orange ring's radius, not outside it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8178,7 +8178,7 @@ function pan(d, ch, opts) {
+         if (String(id) === picked) {
+           pickMarks.push(`<circle class="pansel" ${at} r="${rr * 1.2}" fill="rgba(226,112,5,.22)"`
+             + ` stroke="#E27005" stroke-width="2.2" vector-effect="non-scaling-stroke" pointer-events="none"/>`
+-            + `<circle class="pansel-ink" ${at} r="${rr * 1.27}" fill="none" stroke="#272219"`
++            + `<circle class="pansel-ink" ${at} r="${rr * 1.2}" fill="none" stroke="#272219"`
+             + ` stroke-width="0.8" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+         } else if (m.ring === pickedRing) {
+           seatMarks.push(`<circle class="panseat" ${at} r="${rr * 1.12}" fill="none" stroke="#E27005"`

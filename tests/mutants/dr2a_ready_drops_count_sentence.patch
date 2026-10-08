@@ -1,0 +1,15 @@
+# kills: DR2a rule C (F-2): a bottom note typed into a pan with swapped bottom seats, keystroke by keystroke
+# suite: node --test --test-name-pattern ^DR2a.rule.C..F.2...a.bottom.note.typed.into.a.pan.with.swapped.bottom.seats..keystroke.by.keystroke$ tests/app.test.js
+# The sentence that ends a pause overwrites the count sentence written by the same keystroke.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8924,7 +8924,7 @@ function paintLayout() {
+   } else if (drawerOpen && boxOk && drawerPaused) {
+     drawerPaused = false;
+     const count = drawerStatus.textContent;
+-    layoutStatus(count && count !== PAUSED_TEXT ? `${READY_TEXT} ${count}` : READY_TEXT);
++    layoutStatus(READY_TEXT);
+   }
+   const off = !boxOk && !drawerOpen;
+   const keep = off && document.activeElement === drawerBtn;
