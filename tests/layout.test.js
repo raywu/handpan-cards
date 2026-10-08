@@ -1564,10 +1564,7 @@ test("the geometry keys that differ from solver output are exactly the documente
     amara: { f_ding: [0.135, 0.12], f_note: [0.128, 0.1454], f_num: [0.105, 0.1216] },
     kurd: {},
     amara10: {},
-    pygmy: {
-      r_note: [0.1425, 0.1456], f_note: [0.109, 0.1114], f_num: [0.0912, 0.0932],
-      inner_ring: [null, 0], ext: [undefined, 1.462],
-    },
+    pygmy: {},
   };
   const ABSENT_OK = new Set(["inner", "bottom", "ding_dy", "rim_num_out", "ext"]);
   for (const deck of DECK_DATA) {
@@ -1576,7 +1573,7 @@ test("the geometry keys that differ from solver output are exactly the documente
     const differs = {};
     for (const key of Object.keys(geom)) {
       const stored = deck.geom[key];
-      if (stored === undefined && ABSENT_OK.has(key) && deck.id !== "pygmy") continue;
+      if (stored === undefined && ABSENT_OK.has(key)) continue;
       if (stored !== geom[key]) differs[key] = [stored, geom[key]];
     }
     for (const key of Object.keys(deck.geom)) {

@@ -559,6 +559,37 @@ class PygmyBottomShellTest(unittest.TestCase):
                          {NAME_PC[n] for n in F_NATURAL_MINOR})
 
 
+PYGMY_ENGINE_STRING = ("[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4"
+                       " C5 Eb5 | F5 G5 [Ab5]")
+
+
+class PygmyRedrawTest(unittest.TestCase):
+    """Lane P1: Pygmy's geom is engine output, and nothing else moved."""
+
+    def test_pygmy_geometry_equals_a_fresh_engine_run(self):
+        out = subprocess.run(
+            [shutil.which("node") or "node",
+             os.path.join(paths.TOOLS, "gen_deck.js"), PYGMY_ENGINE_STRING,
+             "--anchor", "between"],
+            capture_output=True, text=True, cwd=paths.ROOT, timeout=120)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        fresh = json.loads(out.stdout)["deck"]
+        stored = paths.canonical_decks()
+        pygmy = next(d for d in stored if d["id"] == "pygmy")
+        self.assertEqual(pygmy["geom"],
+                         {k: v for k, v in fresh["geom"].items() if k != "ext"})
+        self.assertEqual({k: v[4] for k, v in pygmy["fields"].items()},
+                         {k: v[4] for k, v in fresh["fields"].items()})
+
+    def test_pygmy_fields_and_chords_are_untouched_by_the_redraw(self):
+        golden = os.path.join(paths.ROOT, "tests", "fixtures", "golden_decks_v7.json")
+        with open(golden, encoding="utf-8") as fh:
+            before = next(d for d in json.load(fh)["decks"] if d["id"] == "pygmy")
+        now = next(d for d in paths.canonical_decks() if d["id"] == "pygmy")
+        self.assertEqual(now["fields"], before["fields"])
+        self.assertEqual(now["chords"], before["chords"])
+
+
 class ValidateScriptTest(unittest.TestCase):
 
     def test_validate_py_passes(self):
@@ -707,7 +738,7 @@ class CanonicalSourceTest(unittest.TestCase):
 def _plain(deck):
     """A print deck dict, normalised to JSON-comparable primitives.
 
-    The same normaliser wrote tests/fixtures/print_decks_v1.json, so the
+    The same normaliser wrote tests/fixtures/print_decks_v2.json, so the
     fixture and the assertion below cannot disagree about shape.
     """
     out = {}
@@ -751,7 +782,7 @@ class PrintDeckSnapshotTest(unittest.TestCase):
         sys.modules.setdefault("hifi", types.ModuleType("hifi"))
         import decks as D
         want = json.load(open(os.path.join(paths.ROOT, "tests", "fixtures",
-                                           "print_decks_v1.json"),
+                                           "print_decks_v2.json"),
                               encoding="utf-8"))
         got = {i: _plain(d) for i, d in
                (("hijaz", D.HIJAZ), ("pygmy", D.PYGMY), ("amara", D.AMARA))}

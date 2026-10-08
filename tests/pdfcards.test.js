@@ -366,3 +366,39 @@ test("fromGenerated prints the short line for SMALL_LABELS and the capitalised r
   const quiet = deckWith([{ code: "NO_THIRDS", reason: reason }]);
   assert.ok(quiet.blurb.includes(reason.toUpperCase()));
 });
+
+/* ------------------------------------------------------------------ *
+ * Lane P1: the title-card blurb wraps and shrinks to fit (hifi.blurb_layout)
+ * ------------------------------------------------------------------ */
+const DECK_DATA = JSON.parse(require("node:fs").readFileSync(
+  require("node:path").join(__dirname, "..", "data", "decks.json"), "utf8"));
+const CROWDED_NO_THIRDS = "[C2] [D2] [G2] (C3) D3 G3 C4 D4 G4 C5 D5 G5 C6 D6 G6 C7 D7 G7 C8 D8 G8 C9 D9";
+
+test("a crowded note line wraps inside the card, and a six-line blurb shrinks to fit without dropping a line", () => {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const parsed = E.core.parseSeed(CROWDED_NO_THIRDS);
+  assert.equal(parsed.ok, true, parsed.reason);
+  const built = E.select.build(parsed.value);
+  assert.deepEqual(built.value.warnings.map((w) => w.code), ["NO_THIRDS", "SMALL_LABELS"]);
+  const deck = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: built.value });
+  const { rows, size, step } = P._internal.blurbLayout(deck.blurb);
+  const CW = P.GEOM.CW;
+  assert.equal(rows.length, 6, "two note lines, bottom, count and two warnings");
+  rows.forEach((r) => assert.ok(P._internal.tw(r.text, "Label", size, 0.35) <= CW - 24, r.text));
+  assert.ok(size >= 3.6, "no line under 3.6 pt, got " + size);
+  assert.ok(step >= 1.2 * size, "lines do not touch");
+  assert.ok(26 - (rows.length - 1) * step >= 2 - 1e-9, "the last baseline stays inside the card");
+  const words = (list) => list.join(" ").split(/\s+/).filter(Boolean);
+  assert.deepEqual(words(rows.map((r) => r.text)), words(deck.blurb), "nothing is dropped or reordered");
+});
+
+test("the built-in title cards keep the 4.2 pt, 8 pt-step blurb they always had", () => {
+  for (const id of ["hijaz", "pygmy", "amara", "kurd", "amara10"]) {
+    const canonical = DECK_DATA.find((d) => d.id === id);
+    const deck = HPE.pdfdeck.fromBuiltin(canonical, canonical.print);
+    const { rows, size, step } = P._internal.blurbLayout(deck.blurb);
+    assert.deepEqual(rows.map((r) => r.text), deck.blurb, id);
+    assert.equal(size, 4.2, id);
+    assert.equal(step, 8, id);
+  }
+});

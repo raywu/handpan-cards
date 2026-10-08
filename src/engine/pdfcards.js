@@ -479,6 +479,51 @@ HPE.pdfcards = (function () {
     });
   }
 
+  // tools/hifi.py's BLURB_* and blurb_layout: a note line wider than the card
+  // wraps at a note boundary, and a blurb too tall for the card steps its size
+  // and spacing down together, never under the 3.6 pt floor, never dropping a
+  // line.
+  var BLURB_Y0 = 26.0, BLURB_SIZE = 4.2, BLURB_STEP = 8.0, BLURB_TRACK = 0.35;
+  var BLURB_LAST_BASELINE = 2.0;
+  var BLURB_FLOOR = 3.6;
+  var BLURB_MIN_STEP = 1.2 * BLURB_FLOOR;
+
+  function wrapBlurbLine(text, maxw) {
+    if (tw(text, "Label", BLURB_SIZE, BLURB_TRACK) <= maxw) return [text];
+    var tokens = [];
+    text.split("  ").forEach(function (tok) {
+      if (tok === "|" && tokens.length) tokens[tokens.length - 1] += "  |";
+      else tokens.push(tok);
+    });
+    var out = [tokens[0]];
+    tokens.slice(1).forEach(function (tok) {
+      var trial = out[out.length - 1] + "  " + tok;
+      if (tw(trial, "Label", BLURB_SIZE, BLURB_TRACK) <= maxw) {
+        out[out.length - 1] = trial;
+      } else {
+        out.push(tok);
+      }
+    });
+    return out;
+  }
+
+  function blurbLayout(lines) {
+    var rows = [];
+    lines.forEach(function (ln) {
+      wrapBlurbLine(ln, CW - 24).forEach(function (part) {
+        rows.push({ text: part, bottom: ln.indexOf("BOTTOM") === 0 });
+      });
+    });
+    var size = BLURB_SIZE, step = BLURB_STEP;
+    var room = BLURB_Y0 - BLURB_LAST_BASELINE;
+    if (rows.length > 1 && (rows.length - 1) * step > room) {
+      var f = room / ((rows.length - 1) * step);
+      step = Math.max(step * f, BLURB_MIN_STEP);
+      size = Math.max(BLURB_SIZE * f, BLURB_FLOOR);
+    }
+    return { rows: rows, size: size, step: step };
+  }
+
   function titleCard(c, x, y, deck) {
     plainFrame(c, x, y, CW, CH);
     var s = fit(deck.name, "Display", 16, CW - 24, 0.4);
@@ -491,9 +536,10 @@ HPE.pdfcards = (function () {
       return deck.spec[k][3] !== "bottom";
     });
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, deck.spec, tops, [0]);
-    deck.blurb.forEach(function (ln, i) {
-      tracked(c, x + CW / 2, y + 26 - i * 8, ln, "Label", 4.2, 0.35, "c",
-              ln.indexOf("BOTTOM") === 0 ? ORANGE : SEP);
+    var lay = blurbLayout(deck.blurb);
+    lay.rows.forEach(function (row, i) {
+      tracked(c, x + CW / 2, y + BLURB_Y0 - i * lay.step, row.text, "Label",
+              lay.size, BLURB_TRACK, "c", row.bottom ? ORANGE : SEP);
     });
   }
 
@@ -603,7 +649,7 @@ HPE.pdfcards = (function () {
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
-      numSize: numSize, fitNote: fitNote
+      numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout
     }
   };
 }());

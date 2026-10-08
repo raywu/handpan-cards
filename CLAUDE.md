@@ -116,6 +116,7 @@ gained `Fmadd9` at position 6, before Fm9, and Fm9 takes the engine's
 voicing F4 Ab4 C5 Eb5 G4 in place of the earlier G5 on the inner pair. Pygmy's
 chord list is the engine's output for its maker string, "keep engine output
 as sot".)
+Pygmy's `geom` is engine output: `node tools/gen_deck.js "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]" --anchor between`, stored without `ext` (the drawing frame stays as it was). Its field angles, chords and print overlay are still hand-verified data. The other four built-ins keep their stored bytes, and a test proves their drawings equal solver output.
 
 **D Amara 9** - Ding D3. Standard zig-zag: 1 A3 @270, 2 C4 @225, 3 D4 @315,
 4 E4 @180, 5 F4 @0, 6 G4 @135, 7 A4 @45, 8 C5 @90.
@@ -126,7 +127,7 @@ from below, so projected to top view their sequences typically run opposite
 the top zig-zag (mirror geometry). Notation systems (e.g. Notepan) handle
 this by attaching per-instrument images.
 
-**Generated layouts.** One direction on every generated pan, odd or even rim: odd-numbered rim notes sit on the right, even-numbered on the left. Two ANCHORS, a per-deck option `anchor`: `one` (the default) puts note 1 at bottom centre (C# Hijaz 9, D Amara 9, D Kurd 10, D AMARA 10); `between` puts the bottom centre between notes 1 and 2 with note 1 on the right (F3 Low Pygmy). Older notes called these "left-first" and "mirrored (right-first)"; those words described the anchor, not two directions, and are retired. MIRROR reflects the rim and inner rings about the vertical axis and is the only thing that puts odd notes on the left; `mirrorBottom` reflects the bottom ring and, when absent, follows `mirror`. The anchor applies whether or not the pan has inner notes. Inner notes are only the notes typed after the inner bar: one sits at top centre, two at 128 and 52, more fan across the top half of the inner orbit, and they push the ding toward the player (0.1425, more when an inner index number would touch the ding). No inner notes means a centred ding. There are no note-count caps: a crowded pan draws smaller and carries the `SMALL_LABELS` warning, which ignores bottom octave digits; it is never refused. The solver seats every field of every built-in exactly where its diagram has it, from the deck's scale string and default options (`anchor: between` for Pygmy), except the Pygmy geometry keys that Lane P1 reconciles.
+**Generated layouts.** One direction on every generated pan, odd or even rim: odd-numbered rim notes sit on the right, even-numbered on the left. Two ANCHORS, a per-deck option `anchor`: `one` (the default) puts note 1 at bottom centre (C# Hijaz 9, D Amara 9, D Kurd 10, D AMARA 10); `between` puts the bottom centre between notes 1 and 2 with note 1 on the right (F3 Low Pygmy). Older notes called these "left-first" and "mirrored (right-first)"; those words described the anchor, not two directions, and are retired. MIRROR reflects the rim and inner rings about the vertical axis and is the only thing that puts odd notes on the left; `mirrorBottom` reflects the bottom ring and, when absent, follows `mirror`. The anchor applies whether or not the pan has inner notes. Inner notes are only the notes typed after the inner bar: one sits at top centre, two at 128 and 52, more fan across the top half of the inner orbit, and they push the ding toward the player (0.1425, more when an inner index number would touch the ding). No inner notes means a centred ding. There are no note-count caps: a crowded pan draws smaller and carries the `SMALL_LABELS` warning, which ignores bottom octave digits; it is never refused. The solver seats every field of every built-in exactly where its diagram has it, from the deck's scale string and default options (`anchor: between` for Pygmy).
 
 ## Solver-generated layouts (not verified against an instrument)
 
@@ -333,6 +334,11 @@ changing the solver or the seed, never by hand.
   CHORD_ONLY omits the title card, so that is the only place a warning
   survives the split. The title card still carries the engine's full reason
   string via `decks._blurb`.
+  The title-card blurb is laid out by `hifi.blurb_layout` (and
+  `blurbLayout` in `pdfcards.js`): a line wider than the card wraps at a note
+  boundary, and a blurb too tall for the card steps its size and spacing down
+  together (never under 3.6 pt, never dropping a line). The five built-ins keep
+  4.2 pt at an 8 pt step.
 - **Menu Resources** (2026-10-05): the settings panel's Resources group has two
   `.modebar` rows - three sites (class `trio`, 2026-10-06: three equal widths;
   in the sidebar two equal on line one and HTC full width below; landscape

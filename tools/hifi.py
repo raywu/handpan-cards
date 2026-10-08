@@ -471,6 +471,50 @@ def chord_card(c, x, y, deck, num, chord):
                 "c", ORANGE)
 
 
+# Title-card blurb: baseline of the first line, its size, step and tracking.
+# A pan whose note line is wider than the card wraps it at a note boundary; a
+# blurb too tall for the card steps its size and spacing down together, never
+# under the 3.6 pt floor and never dropping a line.
+BLURB_Y0, BLURB_SIZE, BLURB_STEP, BLURB_TRACK = 26.0, 4.2, 8.0, 0.35
+BLURB_LAST_BASELINE = 2.0
+BLURB_FLOOR = 3.6
+BLURB_MIN_STEP = 1.2 * BLURB_FLOOR
+
+
+def _wrap_blurb_line(text, maxw):
+    if tw(text, "Label", BLURB_SIZE, BLURB_TRACK) <= maxw:
+        return [text]
+    tokens = []
+    for tok in text.split("  "):
+        if tok == "|" and tokens:
+            tokens[-1] += "  |"
+        else:
+            tokens.append(tok)
+    out = [tokens[0]]
+    for tok in tokens[1:]:
+        trial = out[-1] + "  " + tok
+        if tw(trial, "Label", BLURB_SIZE, BLURB_TRACK) <= maxw:
+            out[-1] = trial
+        else:
+            out.append(tok)
+    return out
+
+
+def blurb_layout(lines):
+    """{"rows": [(text, is_bottom)], "size", "step"} for the title-card blurb."""
+    rows = []
+    for ln in lines:
+        for part in _wrap_blurb_line(ln, CW - 24):
+            rows.append((part, ln.startswith("BOTTOM")))
+    size, step = BLURB_SIZE, BLURB_STEP
+    room = BLURB_Y0 - BLURB_LAST_BASELINE
+    if len(rows) > 1 and (len(rows) - 1) * step > room:
+        f = room / ((len(rows) - 1) * step)
+        step = max(step * f, BLURB_MIN_STEP)
+        size = max(BLURB_SIZE * f, BLURB_FLOOR)
+    return {"rows": rows, "size": size, "step": step}
+
+
 def title_card(c, x, y, deck):
     plain_frame(c, x, y, CW, CH)
     s = fit(deck["name"], "Display", 16, CW - 24, track=0.4)
@@ -482,9 +526,10 @@ def title_card(c, x, y, deck):
                if k != "_geom" and v[3] != "bottom")
     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], deck["spec"],
              tops, {0})
-    for i, ln in enumerate(deck["blurb"]):
-        tracked(c, x + CW / 2, y + 26 - i * 8, ln, "Label", 4.2, 0.35, "c",
-                ORANGE if ln.startswith("BOTTOM") else SEP)
+    lay = blurb_layout(deck["blurb"])
+    for i, (ln, bottom) in enumerate(lay["rows"]):
+        tracked(c, x + CW / 2, y + BLURB_Y0 - i * lay["step"], ln, "Label",
+                lay["size"], BLURB_TRACK, "c", ORANGE if bottom else SEP)
 
 
 def legend_card(c, x, y, deck):

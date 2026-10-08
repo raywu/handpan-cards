@@ -1,0 +1,16 @@
+# kills: build seats the fields the way its anchor says, not only in the options it reports
+# suite: node --test --test-name-pattern ^build.seats.the.fields.the.way.its.anchor.says tests/select.test.js
+# build still records options.anchor but hands the solver the default anchor,
+# so a between-anchored pan reports one thing and draws another.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -544,7 +544,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var paletteIndex = seedOptions.palette || 0;
+ 
+     var solved = layout().solve(fields,
+-      {mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: anchor});
++      {mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: "one"});
+     if (!solved.ok) return solved;      // propagated unchanged (section 1)
+ 
+     var warnings = [];

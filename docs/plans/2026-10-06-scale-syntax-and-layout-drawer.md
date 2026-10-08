@@ -1459,6 +1459,57 @@ Lane G2b measured the forty-note pan on CI at 14 ms (run 37715956008, recorded i
 
 **Decision.** The budget is three times the measured figure or 1000 ms, whichever is larger. Today that is 1000 ms. R5's stop condition (a measured time over 5 seconds) is unchanged. The owner can restore the bare 3x rule.
 
+### 20.12 Coordinator record after Lane G2b (2026-10-07)
+
+Lane G2b merged as #270 (main fb7193d, 744 mutant files). Review 1 at 1ab02a7: FAIL. Review 2 at 92f0d82: PASS_WITH_NITS. The older text is not edited; read it through this section.
+
+**The FAIL and its fix.** With the caps gone, the legacy reader still numbered bottom notes from 101, so a legacy string with 101 or more top notes lost a top note and the boot rewrite stored the loss. Bottom ids now start at `max(101, topCount + 1)` in both readers. The same review found three plan-letter misses (R5's test used a 15 second bound; the README carried DR2's drawer sentence; the PR body's mutant figures). All four were fixed on the branch.
+
+**What G2b left on main, for every later lane brief.**
+
+- `parseSeed` and `formatSeed` are the new grammar: `(` or a lone first note for the ding, `[ ]` for a bottom note, `|` before the inner notes. The old reader is `parseLegacySeed`.
+- The parser caps and `TOO_MANY_RIM` are gone.
+- Share links are written as version 4. Stored records are rewritten to version 4 at boot by `restoreScales`: lossless, idempotent, duplicates collapse to the first, an unreadable record is kept byte for byte. `scaleReader` picks the reader by version.
+- `LAYOUT_HINT` is gone. `#scale-label-2` sits directly under label 1. The placeholder is the E Amara 20 string of section 9.
+- `SMALL_LABELS` shows live in `#scale-msg`.
+- `tools/gen_deck.js` reads the new grammar, so Lane P1 uses the new string of its block, not the legacy one.
+- FLOORS: app 342, core 66, e2e 275, share 68.
+
+**G2b deviations, accepted by the reviewers.** The CLAUDE.md "Scale strings" paragraph sits before "Hard constraints"; `#scale-label-2` moved up under label 1; some e2e tests use taller viewports; two L0 tests call `forgetScale` and `replaceScale` directly; a third mutant was retired (`l0_remember_null_id_appends`). `tools/sandbox.js` (one id removed), `tools/regen_card_fixture.js` and three fixtures were touched outside the literal Owns.
+
+**G2b nits, no owner yet.**
+
+- Stale comments in `index.html`: "Every version maps to the legacy reader today", and one that still names `LAYOUT_HINT`.
+- A stray second hunk in `g2b_record_version_ignored.patch`.
+- A tautological test, "parseLegacySeed is parseSeed", in `tests/core.test.js`; a duplicated `formatSeed` pair in `tests/scale.test.js`.
+- Three survivors over correct shipped code: keeping a duplicate record in storage; `scaleReader`'s threshold at 3 instead of 4; `stringDeckId` using the legacy reader.
+- `recordDeckId` does not check that the version is valid (it did not before G2b either).
+- The e2e title "the pan does not move when the seed goes bad" no longer describes the test.
+- The MIRROR BOTTOM preview test never asserts that the rim is unchanged.
+- No test that a rewritten version 4 record's `o` carries `seats` and no flat `order`.
+- 20.3 item 3 ("say which") is answered only in a code comment: the wording was fixed and the order kept.
+- `generateDeck` registers the deck before it checks `built.value.id === id`.
+- 20.3 item 9: `tests/test_gen_deck.py` still injects `SMALL_LABELS` and its docstring is stale. A real crowded string now works through `tools/gen_deck.js`. Carried into P1 below.
+
+**Lane P1's block, read against main fb7193d.**
+
+Checked by the coordinator on main before dispatch: the engine run of P1's command gives exactly the `geom` of 5.1, every field id matches, and no field angle differs from the stored deck. The stop condition "the engine's `geom` differs from 5.1" is not met.
+
+- The golden deck fixture on main is `golden_decks_v7.json`; the bump is to v8. `golden_decks_v3.json` stays frozen.
+- The mutant base is 744, not 702. Forecast: +1 for the block's own mutant, plus what the added work below brings.
+- Q1 stands: the stored `geom` is solver output minus `ext`. Four changed lines' worth of keys: `r_note`, `f_note`, `f_num`, `inner_ring`.
+- **Added to P1's Owns** by 20.2 (F3), interview 7 and 20.8, which the block does not repeat: the title-card blurb code in both renderers. That is `_blurb` in `tools/decks.py`, the blurb loop of `title_card` in `tools/hifi.py`, `blurb` in `src/engine/pdfdeck.js` and the title-card blurb loop in `src/engine/pdfcards.js`, with their generated regions in `index.html` (through `python3 tools/inline_engine.py`), their tests, and any mutant anchored on a line the lane rewrites. `tools/decks.py` and `tools/hifi.py` move from "Reads only" to "Owns" for those functions only.
+- **Added to P1's work**:
+  1. A crowded pan's title-card note line wraps to two lines (20.2). Test: no title-card line of a 20-note top shell is wider than `CW - 24` pt.
+  2. The blurb shrinks to fit (interview 7): line spacing and size step down together until every blurb line sits inside the card; no line draws under 3.6 pt; no line is dropped. Test: the five-line case (bottom shell, NO_THIRDS, SMALL_LABELS, wrapped note line).
+  3. Both renderers agree on 1 and 2 (the existing print and browser PDF parity tests are the model).
+  4. An assertion that `select.build`'s fields follow the anchor (20.8, 20.9), with its mutant.
+  5. `tests/test_gen_deck.py` runs a real crowded string through `tools/gen_deck.js` instead of injecting `SMALL_LABELS` (20.3 item 9), if it fits inside the lane; if not, the lane says so and it stays a nit.
+- **A new stop condition** follows from 1 and 2: any committed PDF other than the two Pygmy ones changes its extracted text or its drawing. The five built-in title cards have at most four blurb lines and no crowded note line, so the new code must not move them. Pygmy's own title card may change only through its `geom`.
+- The hand check stays an owner gate (R4). The lane cannot do it. The PR is built and reviewed; **the merge waits for the owner's print check.**
+
+**Lane order from here.** P1 is built and reviewed, then held for the owner. DR1 follows P1's merge: both regenerate parts of `index.html` and the mutants anchored there, and section "Worktree parallelization" makes everything from S2 on serial. DR2 and DOC after that.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the

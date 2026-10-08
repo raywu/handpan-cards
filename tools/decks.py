@@ -14,7 +14,7 @@ from reportlab.lib.colors import Color
 # heard of.  from_generated() synthesises them.
 #
 # ADDITIVE ONLY: the three built-in decks come out of _from_canonical() below
-# and must stay byte-identical, which tests/fixtures/print_decks_v1.json pins
+# and must stay byte-identical, which tests/fixtures/print_decks_v2.json pins
 # and tools/validate.py check 1b re-asserts against data/decks.json.
 #
 # Every key a built-in deck dict carries is either produced here or named in

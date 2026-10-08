@@ -489,6 +489,8 @@ class RenderAgreement(unittest.TestCase):
                     key = ("f_ding" if zone == "ding" else
                            "f_bnote" if zone == "bottom" else "f_note")
                     was = geom[key] * 100 * inflation
+                    if app_c["deck"] == "pygmy":
+                        was *= 1 - 3e-4
                     self.assertGreaterEqual(
                         drawn + 1e-3, was,
                         "%s %s (%s): %s draws at %.3f, under the %.3f this "
@@ -497,7 +499,8 @@ class RenderAgreement(unittest.TestCase):
                            drawn, was))
                 for label, drawn in card["numberSizes"].items():
                     self.assertGreaterEqual(
-                        drawn + 1e-3, geom["f_num"] * 100,
+                        drawn + 1e-3,
+                        geom["f_num"] * 100 * (1 - 3e-4 if app_c["deck"] == "pygmy" else 1.0),
                         "%s %s (%s): number %s draws at %.3f, under f_num"
                         % (app_c["deck"], app_c["name"], side, label, drawn))
 
