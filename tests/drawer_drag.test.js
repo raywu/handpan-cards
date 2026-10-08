@@ -1,7 +1,7 @@
 // Lane DR2b: the browser layer of the note drag (spec sections 7, 8; plan
 // 20.17). Real mouse and touch input through CDP, real waits for the 250 ms
 // hold, real layout for the ghost. The unit layer is the DR2b block at the
-// end of tests/app.test.js and the drag rows of tests/seat_sweeps.test.js.
+// end of tests/app.test.js and the drag rows of tests/seat_sweeps_*.test.js.
 // Expected values are literals written here from the spec, and the drag
 // geometry is computed from the circles the plate draws.
 

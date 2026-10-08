@@ -49,13 +49,15 @@ FLOORS = {
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 435,
-    "tests/seat_sweeps.test.js": 10,
+    "tests/app.test.js": 444,
+    "tests/seat_sweeps_tap_add.test.js": 3,
+    "tests/seat_sweeps_tap_edit.test.js": 3,
+    "tests/seat_sweeps_keys.test.js": 4,
     "tests/e2e.test.js": 283,
     "tests/harness.test.js": 13,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 26,
-    "tests/drawer_drag.test.js": 18,
+    "tests/drawer_drag.test.js": 32,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 66,
     "tests/voicing.test.js": 16,

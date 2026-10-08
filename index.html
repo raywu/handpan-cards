@@ -10153,11 +10153,26 @@ function plateTouchMove(e) {
   if (press.lifted) e.preventDefault();
   if (e.touches && e.touches.length > 1) endPress(true);
 }
+function ghostShift(g) {
+  const r = g.getBoundingClientRect();
+  if (!(r.right - r.left)) return { x: 0, y: 0 };
+  const d = parseFloat(g.style.width);
+  return { x: (r.left + r.right) / 2 - (parseFloat(g.style.left) + d / 2), y: (r.top + r.bottom) / 2 - (parseFloat(g.style.top) + d / 2) };
+}
+function seatGhost(g, cx, cy) {
+  const d = parseFloat(g.style.width);
+  g.style.left = (cx - d / 2) + "px";
+  g.style.top = (cy - d / 2) + "px";
+  const o = ghostShift(g);
+  if (o.x || o.y) {
+    g.style.left = (cx - d / 2 - o.x) + "px";
+    g.style.top = (cy - d / 2 - o.y) + "px";
+  }
+}
 function placeGhost(x, y) {
   press.hx = x;
   press.hy = y - (press.type === "touch" ? GHOST_LIFT : 0);
-  ghostEl.style.left = (press.hx - press.d / 2) + "px";
-  ghostEl.style.top = (press.hy - press.d / 2) + "px";
+  seatGhost(ghostEl, press.hx, press.hy);
 }
 function makeGhost(name, d) {
   const g = document.createElement("div");
@@ -10178,15 +10193,21 @@ function returnGhost(g, ref) {
   const h = hitFor(ref);
   if (!g || !h || reducedMotion.matches) { dropGhost(g); return; }
   const c = circleOf(h);
+  const o = ghostShift(g);
   g.style.transition = `left ${GHOST_RETURN_MS}ms ease-out, top ${GHOST_RETURN_MS}ms ease-out`;
-  g.style.left = (c.x - parseFloat(g.style.width) / 2) + "px";
-  g.style.top = (c.y - parseFloat(g.style.height) / 2) + "px";
+  g.style.left = (c.x - parseFloat(g.style.width) / 2 - o.x) + "px";
+  g.style.top = (c.y - parseFloat(g.style.height) / 2 - o.y) + "px";
   setTimeout(() => dropGhost(g), GHOST_RETURN_MS);
+}
+function keepScroll(fn) {
+  const at = bandPort.scrollTop;
+  fn();
+  if (bandPort.scrollTop !== at) bandPort.scrollTop = at;
 }
 function setArm(id) {
   if (id === armId) return;
   armId = id;
-  repaintPlate();
+  keepScroll(repaintPlate);
 }
 /** Where a hit point lands: the nearest same-ring target that contains it,
  *  else a note of another ring, else nothing. */
@@ -10239,7 +10260,9 @@ function liftNote() {
   p.d = 2 * circleOf(h).r * (Number(dr) / Number(hr) || 1);
   p.pre = pickRef ? { ref: { ring: pickRef.ring, i: pickRef.i }, moved: pickMoved, text: drawerStatus.textContent, warn: drawerStatus.classList.contains("warn") } : null;
   gestureCancel = null;
-  setPick(p.ref);
+  const sameNote = p.pre && p.pre.ref.ring === p.ref.ring && p.pre.ref.i === p.ref.i;
+  keepScroll(() => setPick(p.ref));
+  pickMoved = sameNote ? p.pre.moved : false;
   layoutStatus(pickAnnouncement(n, "tap"));
   gestureCancel = () => endPress(false);
   p.lifted = true;
@@ -10295,6 +10318,7 @@ previewBox.addEventListener("pointerdown", (e) => {
 previewBox.addEventListener("pointermove", (e) => {
   const p = press;
   if (!p || e.pointerId !== p.id) return;
+  if (p.type !== "touch" && e.buttons === 0) { endPress(true); return; }
   if (p.state === "down") {
     if (p.type === "touch") {
       if (Date.now() - p.t0 >= HOLD_MS) liftNote();

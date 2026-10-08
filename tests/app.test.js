@@ -8033,6 +8033,32 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
     assert.strictEqual(d2Status(app), "Cancelled. Nothing moved.");
   });
 
+  test("DR2b (F1, 93): the ghost's drawn centre is the hit point under any offset its ancestors carry, also one that changes mid-drag, and a refused drop returns to the seat", () => {
+    for (const type of ["mouse", "touch"]) {
+      const app = dgOpen({});
+      app.plate.gx = 150;
+      app.plate.gy = -40;
+      const g = DG.down(app, "A3", type);
+      if (type === "touch") app.advance(250); else DG.moveTo(app, g, g.x + 6, g.y);
+      const drawn = () => { const r = DG.ghostEls(app)[0].getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 }; };
+      const lift = type === "touch" ? 36 : 0;
+      const e = DG.centre(DG.noteNode(app, "E4"));
+      DG.moveTo(app, g, e.x, e.y + lift);
+      assert.deepStrictEqual(drawn(), { x: e.x, y: e.y }, `${type}: first offset`);
+      app.plate.gx = 0;
+      app.plate.gy = -120;
+      DG.moveTo(app, g, e.x + 5, e.y + lift + 7);
+      assert.deepStrictEqual(drawn(), { x: e.x + 5, y: e.y + 7 }, `${type}: offset changed mid-drag`);
+      DG.release(app, g, 330, 330 + lift);
+      app.plate.gy = -120;
+      const left = DG.ghostEls(app)[0];
+      const home = DG.centre(DG.noteNode(app, "A3"));
+      const r = left.getBoundingClientRect();
+      assert.deepStrictEqual({ x: parseFloat(left.style.left) + parseFloat(left.style.width) / 2 + app.plate.gx, y: parseFloat(left.style.top) + parseFloat(left.style.height) / 2 + app.plate.gy }, { x: home.x, y: home.y }, `${type}: the return target`);
+      assert.ok(r);
+    }
+  });
+
   test("DR2b (F5, 48): a pointercancel on the plate with no gesture in flight leaves the status line as it was", () => {
     const app = dgOpen({});
     d2Tap(app, "A3");

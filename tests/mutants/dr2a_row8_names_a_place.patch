@@ -1,5 +1,5 @@
 # kills: DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, Add
-# suite: node --test --test-name-pattern ^DR2a.rule.W..78..52..53..41..42...tap.then.tap.exchanges.exactly.two.notes..ring.sizes.swept..Add$ tests/seat_sweeps.test.js
+# suite: node --test --test-name-pattern ^DR2a.rule.W..78..52..53..41..42...tap.then.tap.exchanges.exactly.two.notes..ring.sizes.swept..Add$ tests/seat_sweeps_tap_add.test.js
 # Row 8 grows a place word that the spec forbids.
 diff --git a/index.html b/index.html
 --- a/index.html

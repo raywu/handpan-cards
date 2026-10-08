@@ -263,7 +263,7 @@ function boot(opts = {}) {
   // Lane DR2b: where the plate sits on the screen. A hit circle's box is its
   // viewBox circle scaled by k about (x0, y0), its radius by a further rk (the
   // ring-mode growth sizePanHits does in a browser); the stub has no layout to ask.
-  const plate = { x0: 200, y0: 200, k: 1, rk: 1 };
+  const plate = { x0: 200, y0: 200, k: 1, rk: 1, gx: 0, gy: 0 };
   preview.setPointerCapture = (id) => { preview._captured = id; };
   preview.releasePointerCapture = (id) => { if (preview._captured === id) preview._captured = null; };
   preview.hasPointerCapture = (id) => preview._captured === id;
@@ -456,7 +456,16 @@ function boot(opts = {}) {
     },
     document: {
       getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
-      createElement: (tag) => { const e = bindFocus(makeElement("dyn", tag || "div")); created.push(e); return e; },
+      createElement: (tag) => {
+        const e = bindFocus(makeElement("dyn", tag || "div"));
+        e.getBoundingClientRect = () => {
+          const w = parseFloat(e.style.width) || 0, h = parseFloat(e.style.height) || 0;
+          const l = (parseFloat(e.style.left) || 0) + plate.gx, t = (parseFloat(e.style.top) || 0) + plate.gy;
+          return { left: l, top: t, right: l + w, bottom: t + h, width: w, height: h };
+        };
+        created.push(e);
+        return e;
+      },
       // D-12 (sequence-difficulty): renderSeqRail() groups a separator and a
       // chord name into one unit with a real text node between them, so the
       // stub needs a minimal one too - just enough to be appendChild'd and

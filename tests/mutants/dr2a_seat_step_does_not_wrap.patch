@@ -1,5 +1,5 @@
 # kills: DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, Add
-# suite: node --test --test-name-pattern ^DR2a.rule.W..60..61...NEXT.SEAT.and.PREVIOUS.SEAT.swap.with.the.adjacent.seat..wrap..keep.the.pick..every.start.seat..Add$ tests/seat_sweeps.test.js
+# suite: node --test --test-name-pattern ^DR2a.rule.W..60..61...NEXT.SEAT.and.PREVIOUS.SEAT.swap.with.the.adjacent.seat..wrap..keep.the.pick..every.start.seat..Add$ tests/seat_sweeps_keys.test.js
 # NEXT SEAT on the last seat stays put instead of wrapping to seat 1.
 diff --git a/index.html b/index.html
 --- a/index.html
