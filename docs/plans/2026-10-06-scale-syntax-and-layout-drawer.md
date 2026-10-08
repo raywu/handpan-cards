@@ -1729,13 +1729,37 @@ Lane DR1 merged as #272 (main b8c0944, 766 mutant files, 17 node suites). Review
 - **Stop conditions**: as DR2a's; step 0 fails; a touch drag cannot be kept from scrolling the sheet without a change outside the plate.
 - **Mutant delta (forecast)**: about +8.
 
-**Owner gate.** After DR2b's review passes, the owner checks DR2b's build on a phone: iOS Safari, and Android Chrome if one is to hand (section 7 names both; the PR says which were checked). The list: a held note dragged without the sheet scrolling; a swipe that starts on the plate and is not held scrolls the sheet; a small wobble before the lift, then a drag; hold to lift; a refused drop; tap then tap; the step buttons; iOS Safari's `scroll-padding-top`, `:has()` and the `focusin` reveal from DR1; the keyboard up at heights under 553 px; real web fonts; landscape two columns (F2). Then DR2a merges, DR2b is rebased onto main if needed and merges after CI is green at its new head and a fresh review of that head.
+**Owner gate.** After DR2b's review passes, the owner checks DR2b's build on a phone: iOS Safari and Android Chrome, both required (owner, interview 13). The list: a held note dragged without the sheet scrolling; a swipe that starts on the plate and is not held scrolls the sheet; a small wobble before the lift, then a drag; hold to lift; a refused drop; tap then tap; the step buttons; iOS Safari's `scroll-padding-top`, `:has()` and the `focusin` reveal from DR1; the keyboard up at heights under 553 px; real web fonts; landscape two columns (F2). Then DR2a merges, DR2b is rebased onto main if needed and merges after CI is green at its new head and a fresh review of that head.
 
 **Both lanes.** Commits end with the two attribution lines of this session, `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and the `Claude-Session:` line; no other model name. Mutant patches carry no `index a..b` line; `# suite:` headers hold no quoted pattern; `# kills:` equals the test name. Engine regions and the `const DECKS` line are generated and are not edited.
 
 **Reviews.** One fresh reviewer per lane, briefed with this section and the lane's block, facts only. DR2a is reviewed against its own line set; the clauses handed to DR2b are not findings against it. On a third FAIL of one lane the regroup rule applies.
 
 **Engineering review and outside voice (2026-10-08).** Seven review findings and fifteen outside-voice findings, all folded in above; none left open. The largest: seats were Edit-only in eight places; rules C and W could pass with the feature broken (default arrangements only); rule D contradicted the overlap rule of section 10; rule T was not single-valued; item 7 pointed focus at a disabled button; the touch mechanism needed a probe before code.
+
+### 20.18 DR2a review 1: FAIL at 226e909 (coordinator record, 2026-10-08, owner away)
+
+PR #273, CI green. Three findings, each reproduced by the reviewer. This section governs the DR2a block where they differ.
+
+**Interview 13 (owner, 2026-10-08, binding).** (1) The item 7 reading of 20.17 is confirmed: the toggle takes focus as `aria-disabled` and becomes `disabled` when focus leaves. (2) The item 6 notice copy `The {ring} seats were reset.` is kept. (3) The phone check needs iOS Safari and Android Chrome, both, before either DR2 merge. (4) The check build is a private artifact of DR2b's `index.html`.
+
+**F-1. Acceptance 84 does not hold.** At 380 x 667, band stuck: on Add after one swap the notice pushes the seat row 14.7 px out of the scrollport; on Edit the footer leaves a 425 px scrollport and the note row is 2.7 px out and the seat row wholly out, with or without a notice. The plate cap was not lowered. The lane's test for the line checks only the band's growth. This was a stop condition and was not reported.
+
+Reading (AFK auto-decision, for the owner):
+
+- On the Add sheet line 84 is required as written, in every notice state (no notice, and the longest Add notice showing) and with the longest status sentence. The lane lowers the open plate cap as section 5 allows, never under the 240 px floor, and reports the measured plate width.
+- On the Edit sheet at 380 x 667 line 84 cannot hold above the 240 px floor (it would need about 207 px), so there it is a report, not a requirement. What is required on Edit: rule G as it stands (every stop reachable by Tab, clear of the stuck band), and the plate no narrower than on Add. The lane reports how far each row sits outside. The owner sees this at the phone check and may ask for a different footer or plate; nothing else is changed for it now.
+- The test named for line 84 measures the toggle and both step rows against the scrollport on Add in each notice state, and records the Edit figures without asserting them.
+
+**F-2. A count change that lands on the keystroke that ends a pause loses its sentence.** `paintLayout` writes "Layout is ready again." over the row 15 or 16 message that `noteCounts` has just written. Section 14 says row 18b leads the one message. Fix: one message, row 18b first, then the count sentence. Rule C gains typed traces, one keystroke at a time, with the drawer open: a bottom note typed into a pan with swapped bottom seats; the `zzz` case (rim 8 to 3); a restore (row 16) that ends a pause. Expected text is a literal.
+
+**F-3. Acceptance 95.** `.panseat` is 1.6 CSS px; the line asks for at least 2. The ink hairline of `.pansel` is drawn at the same radius as the orange ring, not outside it. The unit test's hairline pattern matches any `#272219` stroke. Fix both marks; the unit test asserts each mark's radius and stroke width by class; a browser test in `tests/drawer_seats.test.js` reads the computed stroke widths and the hairline's radius with a note picked (the TDD order asked for it).
+
+**Steps.** Tests first for F-1, F-2, F-3, failing, in one commit; then the fixes; one mutant per fix; push; CI green at the head; do not merge. Nothing else is changed.
+
+**Left as they are (review 1 nits, not fixed before the final review).** Rule W sweeps inner and bottom to 8 and Space/Enter to 8 (the reviewer's 5,947-cell sweep found nothing); no test reads a share link; `.panflash` has no fill or fade; `layoutStatus` re-announces only warnings; other-ring target radii grow on a pick; the hint is not dimmed with an `aria-disabled` toggle; an identity seat list is not normalised on load; the hung RESET mutant's cause is unknown (no real input reaches it in a 36,000-step fuzz); no browser test of 107 or item 6; "back to 1 notes"; RESET SEATS clears the count memory; no mutant names a rule C or R clause. Also recorded: the lane's six commits carry another model name in the co-author line; history is not rewritten for it. `tests/preview.test.js` and `tests/fixtures/app_surface_v1.json` were edited as consequences of owned removals, and `align-self:start` on the landscape band undoes the lane's own regression; all three accepted.
+
+**Review 2.** A fresh reviewer, briefed with 20.17 and this section, facts only. A third FAIL triggers the regroup rule.
 
 ## NOT in scope
 
