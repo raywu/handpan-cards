@@ -773,9 +773,22 @@ footer.seq{row-gap:var(--sp-1)}
 .fieldrow{display:flex; flex-direction:column; gap:var(--sp-1)}
 .sheetlabel{font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; color:#a79d8b;
   text-transform:uppercase}
-#scale-box{width:100%; min-height:48px; padding:12px var(--sp-3); color:#eae6df;
-  font-family:Bitter, serif; font-weight:400; font-size:16px;
-  background:#151310; border:1px solid #433b2c; border-radius:8px}
+/* The field grows with its text up to three rows. The wrapper is one grid cell
+   holding the textarea and, behind it, an invisible ::after that prints the same
+   text (data-grow, kept in step by syncGrow()) in the same font and box: the
+   ::after sets the cell's height, the textarea fills it. The cap is three lines
+   plus the padding and the two 1px borders; past it the textarea scrolls inside
+   itself with its scrollbar hidden, so the width the text wraps at never changes. */
+#scale-box-wrap{display:grid; min-width:0; font:400 16px/1.3 Bitter, serif}
+#scale-box-wrap::after{content:attr(data-grow) " "; grid-area:1/1; visibility:hidden;
+  white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; box-sizing:border-box;
+  min-height:48px; max-height:calc(3 * 1.3em + 26px); padding:12px var(--sp-3);
+  border:1px solid transparent; font:inherit}
+#scale-box{grid-area:1/1; width:100%; min-width:0; min-height:48px; max-height:calc(3 * 1.3em + 26px);
+  box-sizing:border-box; resize:none; overflow-y:auto; scrollbar-width:none;
+  overflow-wrap:anywhere; padding:12px var(--sp-3); color:#eae6df;
+  font-family:Bitter, serif; font-weight:400; font-size:16px; line-height:1.3; background:#151310; border:1px solid #433b2c; border-radius:8px}
+#scale-box::-webkit-scrollbar{display:none}
 #scale-box.bad{border-color:#E27005}
 /* Two things beyond type. The margin: .fieldrow's --sp-1 binds a label to the
    control it names, but this line COMMENTS on what was typed and wants the
@@ -883,6 +896,8 @@ footer.seq{row-gap:var(--sp-1)}
      is the lower one, so four pixels each is the difference between opening at
      rest and opening already scrolled. */
   #scale-box, #scale-name, #scale-degrees{min-height:44px; padding:9px var(--sp-3)}
+  #scale-box-wrap::after{min-height:44px; padding:9px var(--sp-3)}
+  #scale-box-wrap::after, #scale-box{max-height:calc(3 * 1.3em + 20px)}
   .sheetbody{gap:var(--sp-2)}
   .sheetsurf{gap:var(--sp-3); padding-top:var(--sp-2)}
   /* A 390px-tall viewport leaves the body a couple of hundred px, and the
@@ -1135,9 +1150,13 @@ footer.seq{row-gap:var(--sp-1)}
          thing, and keep the placeholder a seed that actually parses. -->
     <div class="fieldrow">
       <label class="sheetlabel" for="scale-box">SCALE: DING, THEN TOP NOTES, | BOTTOM NOTES</label>
-      <input id="scale-box" type="text" autocapitalize="off" autocorrect="off"
-             autocomplete="off" spellcheck="false" enterkeyhint="go"
-             placeholder="(D) A C D E F G A C">
+      <div id="scale-box-wrap" data-grow="(D) A C D E F G A C">
+        <textarea id="scale-box" rows="1" wrap="soft" autocapitalize="off" autocorrect="off"
+                  autocomplete="off" spellcheck="false" enterkeyhint="go"
+                  aria-describedby="scale-label-2"
+                  placeholder="(D) A C D E F G A C"></textarea>
+      </div>
+      <span class="sheetlabel" id="scale-label-2" hidden></span>
       <div id="scale-parse"></div>
       <!-- Owner feedback, 2026-09-21: a refusal rendered below the pan is
            below the fold on an iPhone 14 with the keyboard up, so the user
@@ -1233,8 +1252,8 @@ footer.seq{row-gap:var(--sp-1)}
          viewport". -->
     <div class="ctlrow">
       <div class="mirror">
-        <button class="mode" type="button" id="scale-mirror-l" aria-pressed="false">LEFT-FIRST</button>
-        <button class="mode on" type="button" id="scale-mirror-r" aria-pressed="true">RIGHT-FIRST</button>
+        <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
+        <button class="mode" type="button" id="scale-mirror-bottom" aria-pressed="false" disabled>MIRROR BOTTOM</button>
       </div>
       <div id="scale-swatches" role="group" aria-label="Card palette"></div>
     </div>
@@ -8582,7 +8601,7 @@ function buildChips() {
  * There is exactly ONE adapter from the engine's result shape to the message
  * area (say()), and nothing here composes a reason sentence of its own. */
 const PARSE_HINT = "Type your ding first, in brackets - then the top notes, low to high, exactly like the example in the box. Put | before any bottom-shell notes.";
-const LAYOUT_HINT = "Layout is a guess. Tap LEFT-FIRST / RIGHT-FIRST if your pan is mirrored.";
+const LAYOUT_HINT = "Layout is a guess. Tap MIRROR TOP if your pan is mirrored.";
 const sheet     = document.getElementById("scale-sheet");
 // The scrolling surface itself (.sheetsurf), looked up by DOM position rather
 // than by id: it is the one thing the iOS keyboard fix below has to move, and
@@ -8597,8 +8616,10 @@ const parseLine = document.getElementById("scale-parse");
 const previewBox = document.getElementById("scale-preview");
 const msgLine   = document.getElementById("scale-msg");
 const refusalLine = document.getElementById("scale-refusal");
-const mirrorL   = document.getElementById("scale-mirror-l");
-const mirrorR   = document.getElementById("scale-mirror-r");
+const mirrorTop = document.getElementById("scale-mirror");
+const mirrorBot = document.getElementById("scale-mirror-bottom");
+const scaleWrap = document.getElementById("scale-box-wrap");
+const scaleLabel2 = document.getElementById("scale-label-2");
 const swatches  = document.getElementById("scale-swatches");
 const genBtn    = document.getElementById("scale-generate");
 const addChip   = document.getElementById("deck-add");
@@ -8636,7 +8657,7 @@ announce.className = "announce";
 const background = [...document.querySelectorAll("header, main, footer, #settings-panel")];
 
 let palette = 0;                 // D6 index 0-5
-let mirror = false;              // section 13: false = right-first (the default)
+let mirror = false;              // MIRROR TOP: the rim and the inner ring
 let sheetOpen = false;
 let editingId = null;            // the custom deck the sheet is editing, or null
 let sheetOpener = null;          // the control focus returns to on close
@@ -8659,11 +8680,16 @@ let layoutSeats = null;
 // and is converted once, in selectPanField() - the one place the two can be got
 // the wrong way round.
 let layoutSel = 0;
-// Two seed options the sheet has no control for but must not lose on a save:
-// the anchor, and a bottom mirror that differs from the top one (null = follows
-// the top, exactly as the engine resolves an absent mirrorBottom).
+// The anchor is a seed option the sheet has no control for but must not lose on
+// a save. MIRROR BOTTOM is its own switch: `bottomHeld` is the value the user
+// chose, `hadBottom` is whether the last valid parse had bottom notes (the
+// switch only means something then), and `boxOk` is whether the box parses now.
+// Adding a bottom note to a pan that had none starts the switch OFF, not at
+// MIRROR TOP's value (owner decision 7).
 let anchor = "one";
-let mirrorBottom = null;
+let bottomHeld = false;
+let hadBottom = false;
+let boxOk = false;
 const generated = new Set();     // deck ids generated in this page session
 
 /* The seed row has exactly TWO writers, and each blanks the other. That is
@@ -8716,25 +8742,34 @@ function buildSwatches() {
     swatches.appendChild(b);
   });
 }
-function setMirror(left) {
-  mirror = left;
-  mirrorL.classList.toggle("on", left);
-  mirrorR.classList.toggle("on", !left);
-  mirrorL.setAttribute("aria-pressed", String(left));
-  mirrorR.setAttribute("aria-pressed", String(!left));
+/** The bottom mirror the pan is drawn and saved with: the held choice, and
+ *  never on for a pan with no bottom notes. */
+const bottomMirror = () => hadBottom && bottomHeld;
+function paintMirrors() {
+  const pairs = [[mirrorTop, mirror, !boxOk], [mirrorBot, bottomMirror(), !boxOk || !hadBottom]];
+  for (const [el, on, off] of pairs) {
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", String(on));
+    el.disabled = off;
+  }
 }
 
-/** "Ding D3 | 1 A3 2 C4 ..." - the ding, then every field under its label. */
+/** "Ding D3 · 3 top · 0 inner · 1 bottom. Top A3 C4 D4. Bottom C3." - the ding,
+ *  all three counts, then the notes of each shell that has any, low to high. */
 function parseLineText(fields) {
-  const ids = Object.keys(fields).map(Number).sort((a, b) => a - b);
-  const part = id => {
-    const [name, oct, , zone, , label] = fields[id];
-    return (zone === "ding" ? "Ding" : label) + " " + name + oct;
-  };
-  const ding = ids.filter(i => fields[i][3] === "ding");
-  const rest = ids.filter(i => fields[i][3] !== "ding");
-  const head = ding.map(part).join(" ");
-  return rest.length ? head + " | " + rest.map(part).join(" ") : head;
+  const shells = { rim: [], inner: [], bottom: [] };
+  let ding = "";
+  for (const f of Object.values(fields)) {
+    if (f[3] === "ding") ding = f[0] + f[1];
+    else shells[f[3]].push(f);
+  }
+  const names = (list) => list.slice().sort((x, y) => x[2] - y[2]).map((f) => f[0] + f[1]).join(" ");
+  let line = "Ding " + ding + " \u00b7 " + shells.rim.length + " top \u00b7 " +
+    shells.inner.length + " inner \u00b7 " + shells.bottom.length + " bottom.";
+  for (const [key, label] of [["rim", "Top"], ["inner", "Inner"], ["bottom", "Bottom"]]) {
+    if (shells[key].length) line += " " + label + " " + names(shells[key]) + ".";
+  }
+  return line;
 }
 
 /** The D10 parent candidates, in the engine's FIXED list order (section 10). */
@@ -8941,8 +8976,7 @@ function resetLayout() {
 
 /** The seed options the sheet currently describes. */
 function sheetOptions() {
-  const o = { palette, mirror, anchor };
-  if (mirrorBottom !== null) o.mirrorBottom = mirrorBottom;
+  const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
   if (editingId) {
     o.parent = Number(degSel.value);
     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
@@ -8986,8 +9020,8 @@ function sheetOptions() {
  *  show up as a mock that silently stopped repainting. */
 function solvePreviewLayout(seed) {
   if (editingId) syncLayoutSeats(seed.fields);
-  const solveOptions = { mirror: mirror, anchor: anchor, seats: editingId ? layoutSeats : null };
-  if (mirrorBottom !== null) solveOptions.mirrorBottom = mirrorBottom;
+  const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
+    seats: editingId ? layoutSeats : null };
   const res = HPE.layout.solve(seed, solveOptions);
   return res.ok ? res.value : null;
 }
@@ -9092,7 +9126,9 @@ let refusal = null;
  *  click retargets to an ancestor, and the delegated handler drops the tap. */
 function syncParseState({ paint }) {
   const text = String(scaleBox.value || "");
+  boxOk = false;
   if (!text.trim()) {
+    paintMirrors();
     showParse(PARSE_HINT);
     scaleBox.classList.remove("bad");
     genBtn.disabled = true;
@@ -9102,6 +9138,10 @@ function syncParseState({ paint }) {
   }
   const res = HPE.core.parseSeed(text, sheetOptions());
   if (res.ok) {
+    boxOk = true;
+    const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
+    if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
+    paintMirrors();
     showParse(parseLineText(res.value.fields));
     scaleBox.classList.remove("bad");
     genBtn.disabled = false;
@@ -9115,6 +9155,7 @@ function syncParseState({ paint }) {
     // leans on the blank too - #scale-parse:empty steps out of the row and
     // #scale-refusal takes the identical box - so a half-typed seed neither
     // jumps the sheet nor costs the fieldrow a second reserved line.
+    paintMirrors();
     scaleBox.classList.add("bad");
     genBtn.disabled = true;
     if (paint) holdPanPreview();
@@ -9313,17 +9354,23 @@ function resetSheetState(edit) {
   nameBox.value = edit ? edit.name : "";
   nameDirty = false;                                 // prefilled, not typed
   scaleBox.value = edit ? HPE.core.formatSeed(edit.fields) : "";  // 8A: the canonical string
+  scaleLabel2.textContent = "";                      // the second label line is empty and hidden until it has text
+  scaleLabel2.hidden = true;
+  syncGrow();
   palette = edit ? edit.options.palette : 0;
   buildSwatches();
-  setMirror(edit ? !!edit.options.mirror : false);
+  mirror = edit ? !!edit.options.mirror : false;
   if (edit) buildDegrees(edit.options.parent);
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
   layoutSel = 0;
   anchor = edit && edit.options.anchor === "between" ? "between" : "one";
-  mirrorBottom = edit && typeof edit.options.mirrorBottom === "boolean" &&
-    edit.options.mirrorBottom !== !!edit.options.mirror ? edit.options.mirrorBottom : null;
+  hadBottom = !!edit && Object.values(edit.fields).some((f) => f[3] === "bottom");
+  bottomHeld = hadBottom && (typeof edit.options.mirrorBottom === "boolean"
+    ? edit.options.mirrorBottom : mirror);
+  boxOk = !!edit;
+  paintMirrors();
 }
 // The create path.
 function openScaleSheet(opener) {
@@ -9601,8 +9648,8 @@ sheet.addEventListener("pointerdown", (e) => {
 delBtn.onblur = disarmDelete;
 // The mirror is the choice the pan preview exists to make visible, so each
 // button re-solves the preview through the same parse path a keystroke uses.
-mirrorL.onclick = () => { setMirror(true); resyncSheet(true); };
-mirrorR.onclick = () => { setMirror(false); resyncSheet(true); };
+mirrorTop.onclick = () => { mirror = !mirror; paintMirrors(); resyncSheet(true); };
+mirrorBot.onclick = () => { bottomHeld = !bottomHeld; paintMirrors(); resyncSheet(true); };
 rotL.onclick = () => rotateLayout(-1);
 rotR.onclick = () => rotateLayout(1);
 moveL.onclick = () => moveNote(-1);
@@ -9638,12 +9685,30 @@ previewBox.addEventListener("keydown", (e) => {
     previewLayout();
   } else stepLayoutSel(by);
 });
-scaleBox.addEventListener("input", updateParse);
+/** Keep the wrapper's ghost copy of the text in step with the box. */
+function syncGrow() {
+  scaleWrap.dataset.grow = scaleBox.value || scaleBox.placeholder || "";
+  scaleWrap.setAttribute("data-grow", scaleWrap.dataset.grow);
+}
+scaleBox.addEventListener("input", () => {
+  const raw = String(scaleBox.value || "");
+  if (/[\r\n]/.test(raw)) {
+    const at = scaleBox.selectionStart;
+    scaleBox.value = raw.replace(/\r\n|\r|\n/g, " ");
+    if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
+  }
+  syncGrow();
+  updateParse();
+});
 // The name is a seed option, so an unusable one is rejected by core.parseSeed
 // through the same parse line every other input goes through.
 nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
 degSel.addEventListener("change", () => resyncSheet(true));
-scaleBox.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); runGenerate(); } });
+scaleBox.addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.isComposing) return;
+  e.preventDefault();
+  runGenerate();
+});
 // Shared by every modal Tab trap (the sheet below, the settings panel
 // further down): wrap-around cycling through a caller-built stop list, the
 // one piece of the two traps' keydown handlers that was byte-for-byte
@@ -9673,7 +9738,7 @@ sheet.addEventListener("keydown", e => {
                  editingId ? moveL : null, editingId ? moveR : null,
                  editingId ? resetBtn : null,
                  editingId ? degSel : null,
-                 mirrorL, mirrorR, ...swatches.children, genBtn,
+                 mirrorTop, mirrorBot, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);
   cycleTabStops(stops, e);
@@ -10222,7 +10287,7 @@ document.addEventListener("click", e => {
 }, true);
 
 /* ---------------- go ---------------- */
-sheet.setAttribute("hidden", ""); buildSwatches(); setMirror(mirror); resyncSheet(true);
+sheet.setAttribute("hidden", ""); buildSwatches(); paintMirrors(); resyncSheet(true);
 // Saved scales are rebuilt BEFORE the stored deck id is resolved, so a custom
 // deck that was selected last session is in the registry by the time deck()
 // looks for it.

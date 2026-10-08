@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4704,7 +4704,7 @@ function syncParseState({ paint }) {
-     // #scale-refusal takes the identical box - so a half-typed seed neither
+@@ -9157,7 +9157,7 @@
      // jumps the sheet nor costs the fieldrow a second reserved line.
+     paintMirrors();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;

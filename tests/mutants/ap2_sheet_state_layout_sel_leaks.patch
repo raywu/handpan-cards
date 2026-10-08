@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9316,7 +9316,6 @@ function resetSheetState(edit) {
+@@ -9364,7 +9364,6 @@
    // The correction is a seed option like the others, so Edit shows the one the
    // deck already carries and RESET is what clears it.
    layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
 -  layoutSel = 0;
    anchor = edit && edit.options.anchor === "between" ? "between" : "one";
-   mirrorBottom = edit && typeof edit.options.mirrorBottom === "boolean" &&
-     edit.options.mirrorBottom !== !!edit.options.mirror ? edit.options.mirrorBottom : null;
+   hadBottom = !!edit && Object.values(edit.fields).some((f) => f[3] === "bottom");
+   bottomHeld = hadBottom && (typeof edit.options.mirrorBottom === "boolean"

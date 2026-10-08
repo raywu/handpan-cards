@@ -1,16 +1,16 @@
-# kills: the mirror pair defaults to right-first and carries the choice into the deck
-# suite: node --test --test-name-pattern ^the.mirror.pair.defaults.to.right.first.and.carries.the.choice.into.the.deck$ tests/app.test.js
-# LEFT-FIRST lights up but the choice never reaches the engine, so a mirrored
+# kills: W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
+# suite: node --test --test-name-pattern ^W1.line.12..MIRROR.TOP.sets.the.deck.s.mirror.option.and.moves.the.preview$ tests/app.test.js
+# MIRROR TOP lights up but the choice never reaches the engine, so a mirrored
 # pan is always laid out the wrong way round.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8937,7 +8937,7 @@ function resetLayout() {
+@@ -8976,7 +8976,7 @@
  
  /** The seed options the sheet currently describes. */
  function sheetOptions() {
--  const o = { palette, mirror, anchor };
-+  const o = { palette, mirror: false, anchor };
-   if (mirrorBottom !== null) o.mirrorBottom = mirrorBottom;
+-  const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
++  const o = { palette, mirror: false, mirrorBottom: bottomMirror(), anchor };
    if (editingId) {
      o.parent = Number(degSel.value);
+     // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/

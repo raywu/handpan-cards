@@ -1,0 +1,15 @@
+# kills: W1 line 7: pasted line breaks become single spaces
+# suite: node --test --test-name-pattern ^W1.line.7.*$ tests/app.test.js
+# A pasted line break stays in the box, so the seed carries a newline.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9694,7 +9694,7 @@
+   const raw = String(scaleBox.value || "");
+   if (/[\r\n]/.test(raw)) {
+     const at = scaleBox.selectionStart;
+-    scaleBox.value = raw.replace(/\r\n|\r|\n/g, " ");
++    scaleBox.value = raw;
+     if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
+   }
+   syncGrow();

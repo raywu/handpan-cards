@@ -28,8 +28,8 @@ const APP = path.join(__dirname, "..", "index.html");
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
-  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror-l",
-  "scale-mirror-r", "scale-swatches", "scale-generate", "deck-add",
+  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
+  "scale-mirror-bottom", "scale-box-wrap", "scale-label-2", "scale-swatches", "scale-generate", "deck-add",
   // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
   "scale-name-row", "scale-name", "scale-degrees-row", "scale-degrees",
   "scale-delete-row", "scale-delete", "scale-del-note",
@@ -256,13 +256,13 @@ function boot(opts = {}) {
   // with no placeholder would silently exercise the empty-string path and
   // report a pass for behaviour the browser does not have.
   for (const [, id, ph] of html
-      .matchAll(/<input[^>]*\bid="([^"]+)"[^>]*\bplaceholder="([^"]*)"/g)) {
+      .matchAll(/<(?:input|textarea)[^>]*\bid="([^"]+)"[^>]*\bplaceholder="([^"]*)"/g)) {
     if (els[id]) els[id].placeholder = ph;
   }
   // `hidden` is real initial state in the shipped markup (the scale page and
   // the print container both ship hidden), and a test that asserts a container
   // STARTS hidden has to see what the browser sees rather than `undefined`.
-  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
+  for (const [, tag, id] of html.matchAll(/<(?:div|section|aside|p|span)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
     if (els[id] && /\bhidden\b/.test(tag)) els[id].hidden = true;
   }
   // Ancestry from a tag-stack walk of the shipped markup, so a control inside a

@@ -1526,8 +1526,11 @@ function run() {
       await b.click("#deck-add");
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "sheet open" });
       await b.eval(`const s = document.createElement("style");
-        s.textContent = "#scale-mirror-l{display:none !important}";
+        s.textContent = "#scale-mirror{display:none !important}";
         document.head.appendChild(s);
+        const box = document.getElementById("scale-box");
+        box.value = "(D3) A3 C4 D4 | C3";
+        box.dispatchEvent(new Event("input", { bubbles: true }));
         document.getElementById("scale-back").focus(); return true;`);
       const seen = [];
       let prev = await stopTag();
@@ -1539,8 +1542,8 @@ function run() {
         seen.push(now);
         prev = now;
       }
-      assert.ok(!seen.includes("scale-mirror-l"), "focus landed on the unrendered #scale-mirror-l");
-      assert.ok(seen.includes("scale-mirror-r"), `Tab never reached #scale-mirror-r: ${JSON.stringify(seen)}`);
+      assert.ok(!seen.includes("scale-mirror"), "focus landed on the unrendered #scale-mirror");
+      assert.ok(seen.includes("scale-mirror-bottom"), `Tab never reached #scale-mirror-bottom: ${JSON.stringify(seen)}`);
       assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
     });
 
@@ -2383,7 +2386,7 @@ function run() {
         placeholder: document.getElementById("scale-box").placeholder,
         generateDisabled: document.getElementById("scale-generate").disabled,
         swatches: document.querySelectorAll("#scale-swatches .dot").length,
-        mirrorOn: [...document.querySelectorAll("#scale-mirror-l, #scale-mirror-r")]
+        mirrorOn: [...document.querySelectorAll("#scale-mirror, #scale-mirror-bottom")]
           .filter(el => el.classList.contains("on")).map(el => el.id),
       };
     `);
@@ -2423,7 +2426,7 @@ function run() {
     assert.strictEqual(open.placeholder, "(D) A C D E F G A C");
     assert.strictEqual(open.generateDisabled, true);
     assert.strictEqual(open.swatches, 6);
-    assert.deepStrictEqual(open.mirrorOn, ["scale-mirror-r"], "right-first is the default");
+    assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
   });
 
   test("Generate stays disabled until the parse line is valid", async () => {
@@ -3240,7 +3243,7 @@ function run() {
       await openSheet();
       const hits = await b.eval(`
         const out = { small: [], swatches: [] };
-        const sel = "#decks .chip, #scale-box, #scale-mirror-l, #scale-mirror-r, #scale-generate";
+        const sel = "#decks .chip, #scale-box, #scale-mirror, #scale-mirror-bottom, #scale-generate";
         for (const el of document.querySelectorAll(sel)) {
           const r = el.getBoundingClientRect();
           if (r.height < 44) out.small.push((el.id || el.className) + " " + r.height.toFixed(1));
@@ -5294,15 +5297,225 @@ function run() {
       assert.match(refused.msg, /Another deck already uses this scale/,
         `the sheet says "${refused.msg}"`);
 
-      await b.eval(`document.getElementById("scale-mirror-l")
+      await b.eval(`document.getElementById("scale-mirror")
         .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      await b.click("#scale-mirror-l");
+      await b.click("#scale-mirror");
 
       const after = await sheetState();
       assert.strictEqual(after.bad, true,
         "flipping the mirror cleared the collision's red box");
       assert.match(after.msg, /Another deck already uses this scale/,
         `after flipping the mirror the sheet says "${after.msg}"`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  /* ---------------------------------------------------------------- Lane W1
+   * The wrapping scale field (spec 16.2 lines 1-8, 79, 80, 118) and the two
+   * mirror switches' hit area. Measured at 380, the phone width the sheet is
+   * built for. */
+  const W1_PHONE = [380, 780, true];
+
+  const fieldMetrics = () => b.eval(`
+    const ta = document.getElementById("scale-box");
+    const wrap = document.getElementById("scale-box-wrap");
+    const cs = getComputedStyle(ta);
+    const line = parseFloat(cs.lineHeight);
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+      + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    return {
+      tag: ta.tagName, h: ta.getBoundingClientRect().height, line, padY,
+      rows: Math.round((ta.getBoundingClientRect().height - padY) / line),
+      sw: ta.scrollWidth, cw: ta.clientWidth, wsw: wrap.scrollWidth, wcw: wrap.clientWidth,
+      st: ta.scrollTop, sh: ta.scrollHeight, ch: ta.clientHeight,
+      grow: wrap.dataset.grow, active: document.activeElement && document.activeElement.id,
+    };
+  `);
+
+  /** The first count of repeated words at which the field is `rows` high. */
+  async function wordsForRows(rows) {
+    for (let n = 1; n <= 120; n += 1) {
+      await typeScale("(D3) " + "Ab4 ".repeat(n).trim());
+      if ((await fieldMetrics()).rows === rows) return n;
+    }
+    return null;
+  }
+
+  test("W1 lines 1, 2 and 118: the field is a textarea that grows from one row to three, and has no sideways overflow", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      const m0 = await fieldMetrics();
+      assert.strictEqual(m0.tag, "TEXTAREA");
+      assert.deepStrictEqual(await b.eval(`return [
+        document.querySelectorAll("input#scale-box").length,
+        !!document.getElementById("scale-box").closest("#scale-box-wrap"),
+        document.getElementById("scale-label-2").textContent,
+        document.getElementById("scale-label-2").hidden,
+        document.getElementById("scale-box").getAttribute("aria-describedby")]`),
+      [0, true, "", true, "scale-label-2"]);
+
+      await typeScale("(D3) A3 C4");
+      const one = await fieldMetrics();
+      assert.strictEqual(one.rows, 1, "short text did not give one row");
+      assert.strictEqual(one.sw, one.cw, "one row scrolls sideways");
+      assert.strictEqual(one.wsw, one.wcw);
+
+      const n3 = await wordsForRows(3);
+      assert.ok(n3, "no text reached three rows at 380");
+      const three = await fieldMetrics();
+      assert.strictEqual(three.rows, 3);
+      assert.strictEqual(three.sw, three.cw, "three rows scroll sideways");
+      assert.strictEqual(three.wsw, three.wcw);
+      assert.ok(three.h > one.h + three.line, "three rows are not taller than one");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 3: an empty field shows a 60-character placeholder whole, in at most three rows", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      const ph = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 / D5 E5 | C3 D3 E3 F3 G3 A3 Bb3";
+      assert.strictEqual(ph.length, 60);
+      const r = await b.eval(`
+        const ta = document.getElementById("scale-box");
+        ta.placeholder = ${JSON.stringify(ph)};
+        ta.value = "";
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        const cs = getComputedStyle(ta);
+        const probe = document.createElement("div");
+        probe.textContent = ${JSON.stringify(ph)};
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre-wrap;overflow-wrap:anywhere;" +
+          "box-sizing:border-box;width:" + ta.getBoundingClientRect().width + "px;font:" + cs.font +
+          ";padding:" + cs.padding + ";border:" + cs.border;
+        document.body.appendChild(probe);
+        const out = { grow: document.getElementById("scale-box-wrap").dataset.grow,
+          ta: ta.getBoundingClientRect().height, probe: probe.getBoundingClientRect().height,
+          line: parseFloat(cs.lineHeight), pad: parseFloat(cs.paddingTop) * 2 + 2 };
+        probe.remove();
+        return out;`);
+      assert.strictEqual(r.grow, ph);
+      assert.ok(r.ta >= r.probe - 0.5, `the field (${r.ta}) is shorter than the placeholder needs (${r.probe})`);
+      assert.ok(r.ta <= 3 * r.line + r.pad + 0.5, `the field (${r.ta}) is taller than three rows`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 5: real Enter and Shift+Enter each generate once and put no line break in the box", async () => {
+    for (const modifiers of [0, 8]) {
+      await freshLoad();
+      await b.setViewport(...W1_PHONE);
+      try {
+        await openSheet();
+        await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+        for (const type of ["keyDown", "keyUp"]) {
+          await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
+            windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13, modifiers });
+        }
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+          { label: `the sheet to close after Enter (modifiers ${modifiers})` });
+        const state = await b.eval(`return {
+          value: document.getElementById("scale-box").value,
+          custom: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
+        assert.doesNotMatch(state.value, /[\r\n]/);
+        assert.ok(state.custom >= 1);
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    }
+  });
+
+  test("W1 line 6: an Enter that confirms an IME candidate does not generate", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      const r = await b.eval(`
+        const ta = document.getElementById("scale-box");
+        const ev = new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true, cancelable: true });
+        ta.dispatchEvent(ev);
+        return { prevented: ev.defaultPrevented, open: !document.getElementById("scale-sheet").hasAttribute("hidden") };`);
+      assert.strictEqual(r.prevented, false);
+      assert.strictEqual(r.open, true, "Enter during composition generated");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 7: pasted line breaks become single spaces", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+      await b.send("Input.insertText", { text: "(D3) A3 C4\nD4\r\nE4" });
+      const v = await b.eval(`return document.getElementById("scale-box").value`);
+      assert.strictEqual(v, "(D3) A3 C4 D4 E4");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 8: past three rows the field stays at three, scrolls inside itself and keeps the caret in view", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await typeScale("(D3) " + "Ab4 ".repeat(40).trim());
+      await b.eval(`const ta = document.getElementById("scale-box"); ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length); return true;`);
+      await b.send("Input.insertText", { text: " Eb5" });
+      const m = await fieldMetrics();
+      assert.strictEqual(m.rows, 3, "the field grew past three rows");
+      assert.ok(m.sh > m.ch + 1, "the text does not overflow the field, so the test proves nothing");
+      assert.ok(m.st + m.ch >= m.sh - 2, `the caret line is out of view (scrollTop ${m.st}, ${m.ch}/${m.sh})`);
+      assert.strictEqual(m.sw, m.cw);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 79: Edit opens a saved scale that wraps to three lines at three rows with no input event", async () => {
+    await freshLoad();
+    await b.setViewport(320, 700, true);
+    try {
+      await generate("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5");
+      await b.eval(`window.__inputs = 0;
+        document.getElementById("scale-box").addEventListener("input", () => { window.__inputs += 1; });
+        return true;`);
+      await openEdit();
+      const m = await fieldMetrics();
+      assert.strictEqual(m.rows, 3, `the Edit field opened at ${m.rows} rows`);
+      assert.strictEqual(await b.eval(`return window.__inputs`), 0, "an input event fired");
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("W1 line 80: a 60-character token with no space overflows neither the field nor its wrapper", async () => {
+    await freshLoad();
+    await b.setViewport(...W1_PHONE);
+    try {
+      await openSheet();
+      await typeScale("(D3) " + "W".repeat(60));
+      const m = await fieldMetrics();
+      assert.strictEqual(m.sw, m.cw, "the field scrolls sideways");
+      assert.strictEqual(m.wsw, m.wcw, "the wrapper scrolls sideways");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -5461,7 +5674,7 @@ function run() {
 
   // The largest pan the engine accepts (13 top + 6 bottom = 19 layout slots
   // beside the ding), which is the tallest the Edit sheet can ever be.
-  const BIG_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 G5 A5 | C3 E3 F3 G3 A3 B3";
+  const BIG_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 G5 A5 | C3 E3 F3 G3 A3 Bb3";
 
   // Everything the fold check needs, read in one round trip and with nothing
   // scrolled first. `hit` is named so a failure says what is covering it.

@@ -1,0 +1,16 @@
+# kills: W1 line 133: a bottom note added, deleted and typed again leaves MIRROR BOTTOM enabled and unpressed
+# suite: node --test --test-name-pattern ^W1.line.133.*$ tests/app.test.js
+# Deleting every bottom note keeps the old MIRROR BOTTOM choice, so typing one
+# again brings it back pressed instead of starting OFF (owner decision 7).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9140,7 +9140,7 @@
+   if (res.ok) {
+     boxOk = true;
+     const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
+-    if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
++    if (bottom !== hadBottom) { hadBottom = bottom; }
+     paintMirrors();
+     showParse(parseLineText(res.value.fields));
+     scaleBox.classList.remove("bad");

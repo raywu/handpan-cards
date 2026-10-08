@@ -985,7 +985,7 @@ test("a valid scale fills the parse line with the ding and the numbered notes", 
   openSheet(app);
   app.type(scale("omitted ding octave"));       // "(D) A C D E F G A C"
   const line = app.els["scale-parse"].textContent;
-  assert.match(line, /^Ding D3 \| 1 A3 2 C4 3 D4 /, `parse line was "${line}"`);
+  assert.match(line, /^Ding D3 · 8 top · 0 inner · 0 bottom\. Top A3 C4 D4 /, `parse line was "${line}"`);
   assert.strictEqual(app.els["scale-generate"].disabled, false);
   assert.strictEqual(app.els["scale-refusal"].textContent, "", "a valid scale shows no refusal");
 });
@@ -994,7 +994,7 @@ test("bottom notes reach the parse line under their own U labels", () => {
   const app = boot();
   openSheet(app);
   app.type(scale("bottom notes after bar"));
-  assert.match(app.els["scale-parse"].textContent, /U1 C3 U2 E3$/);
+  assert.match(app.els["scale-parse"].textContent, /Bottom C3 E3\.$/);
 });
 
 for (const [fixture, code] of [
@@ -1084,13 +1084,13 @@ test("the one-time layout hint is appended on the first generation of a deck, no
   app.type(AMARA_STRING);
   app.els["scale-generate"].click();
   const first = app.announcer().textContent;
-  assert.match(first, /LEFT-FIRST \/ RIGHT-FIRST/, `first message was "${first}"`);
+  assert.match(first, /Tap MIRROR TOP/, `first message was "${first}"`);
 
   openSheet(app);
   app.type(AMARA_STRING);
   app.els["scale-generate"].click();
   const second = app.announcer().textContent;
-  assert.doesNotMatch(second, /LEFT-FIRST \/ RIGHT-FIRST/,
+  assert.doesNotMatch(second, /Tap MIRROR TOP/,
     `the hint fired twice: "${second}"`);
 });
 
@@ -1135,22 +1135,6 @@ test("the success path reads deck.warnings without generating a second time", ()
   assert.strictEqual(said.classList.contains("warn"), true, "warning tier not applied");
   for (const w of d.warnings) assert.ok(said.textContent.includes(w.reason),
     `"${said.textContent}" is missing "${w.reason}"`);
-});
-
-test("the mirror pair defaults to right-first and carries the choice into the deck", () => {
-  const app = boot();
-  openSheet(app);
-  assert.strictEqual(app.els["scale-mirror-r"].classList.contains("on"), true,
-    "right-first is the default (D12)");
-  assert.strictEqual(app.els["scale-mirror-l"].classList.contains("on"), false);
-
-  app.type(AMARA_STRING);
-  app.els["scale-mirror-l"].click();
-  assert.strictEqual(app.els["scale-mirror-l"].classList.contains("on"), true);
-  assert.strictEqual(app.els["scale-mirror-r"].classList.contains("on"), false);
-  app.els["scale-generate"].click();
-  // ENGINE-SPEC section 13: mirror true = left-first.
-  assert.strictEqual(app.registry()[app.deckId()].options.mirror, true);
 });
 
 test("six palette swatches carry the D6 indices and the selected one is ringed", () => {
@@ -1599,7 +1583,7 @@ test("changing only an option keeps the deck id and moves the share URL", () => 
 
   app.clickChip(d.name);
   app.els["scale-swatches"].children[3].click();
-  app.els["scale-mirror-l"].click();
+  app.els["scale-mirror"].click();
   app.els["scale-degrees"].value = String(d.options.parent === 0 ? 1 : 0);
   app.els["scale-name"].value = "MY PAN";
   app.els["scale-name"].dispatchEvent({ type: "input" });
@@ -2596,7 +2580,7 @@ function editOptions(app, d, name) {
     app.els["scale-name"].dispatchEvent({ type: "input" });
   }
   app.els["scale-swatches"].children[4].click();
-  app.els["scale-mirror-l"].click();
+  app.els["scale-mirror"].click();
   app.els["scale-generate"].click();
   return app.registry()[app.deckId()];
 }
@@ -5979,4 +5963,318 @@ test("S3: a stored cross-ring order boots as the generated arrangement, not drop
   assert.strictEqual("seats" in plain(d.options), false);
   const plainDeck = boot().generate(PYGMY_STRING, { name: "Crossed" }).value;
   assert.deepStrictEqual(anglesByNote(d), anglesByNote(plainDeck));
+});
+
+/* ------------------------------------------------------------------ Lane W1
+ * The wrapping scale field, the count line, and the two mirror switches. The
+ * numbers are the lines of docs/plans/2026-10-07-scale-drawer-design-spec.md
+ * section 16.2 that carry a [W1] tag; each test names its line. */
+
+const W1_NONE = "(D3) A3 C4 D4";
+const W1_BOTTOM = "(D3) A3 C4 D4 | C3";
+const W1_FULL = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5";
+
+const pressed = (app, id) => app.els[id].getAttribute("aria-pressed") === "true";
+const fieldAngles = (deck) => Object.fromEntries(
+  Object.entries(deck.fields).map(([id, f]) => [id, { zone: f[3], angle: f[4] }]));
+
+/** Add a deck from W1_FULL with the given switches pressed after typing. */
+function w1Generate(seed, ids = []) {
+  const app = boot();
+  openSheet(app);
+  app.type(seed);
+  for (const id of ids) app.els[id].click();
+  app.els["scale-generate"].click();
+  return { app, deck: app.registry()[app.deckId()] };
+}
+
+test("W1 line 1: #scale-box is a textarea inside #scale-box-wrap, and the old input is gone", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.match(html, /<textarea\b[^>]*\bid="scale-box"/);
+  assert.doesNotMatch(html, /<input\b[^>]*\bid="scale-box"/);
+  assert.match(html, /\bid="scale-box-wrap"/);
+});
+
+test("W1 line 5: Enter and Shift+Enter each generate once and leave no line break", () => {
+  for (const shiftKey of [false, true]) {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    spyBuild(app);
+    let prevented = false;
+    app.els["scale-box"].dispatchEvent({ type: "keydown", key: "Enter", shiftKey,
+      preventDefault() { prevented = true; } });
+    assert.strictEqual(prevented, true, "Enter inserted a line break");
+    assert.strictEqual(app.get("globalThis.__buildCalls"), 1,
+      `Enter (shift ${shiftKey}) did not generate exactly once`);
+    assert.doesNotMatch(app.els["scale-box"].value, /[\r\n]/);
+  }
+});
+
+test("W1 line 6: Enter during an IME composition does not generate", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  let prevented = false;
+  app.els["scale-box"].dispatchEvent({ type: "keydown", key: "Enter", isComposing: true,
+    preventDefault() { prevented = true; } });
+  assert.strictEqual(prevented, false, "Enter was swallowed while composing");
+  assert.strictEqual(app.sheetOpen(), true, "Enter during composition generated");
+  assert.strictEqual(Object.keys(app.registry()).length, 0);
+});
+
+test("W1 line 7: pasted line breaks become single spaces", () => {
+  const app = boot();
+  openSheet(app);
+  app.type("(D3) A3 C4\nD4\r\nE4\rF4");
+  assert.strictEqual(app.els["scale-box"].value, "(D3) A3 C4 D4 E4 F4");
+});
+
+test("W1: the wrapper's data-grow follows the value, and the placeholder when empty", () => {
+  const app = boot();
+  openSheet(app);
+  const wrap = app.els["scale-box-wrap"];
+  app.type("(D3) A3 C4");
+  assert.strictEqual(wrap.dataset.grow, "(D3) A3 C4");
+  app.type("");
+  assert.strictEqual(wrap.dataset.grow, app.els["scale-box"].placeholder);
+  assert.ok(wrap.dataset.grow.length > 0);
+});
+
+test("W1 line 10: #scale-parse and #scale-refusal are never both non-empty", () => {
+  const app = boot();
+  openSheet(app);
+  const seen = { parse: false, refusal: false };
+  for (const text of [W1_NONE, "(D3) A3 zzz", "", W1_BOTTOM, "(D3)", AMARA_STRING, "zzz"]) {
+    app.type(text);
+    const p = app.els["scale-parse"].textContent;
+    const r = app.els["scale-refusal"].textContent;
+    assert.ok(!(p && r), `"${text}" filled both lines: "${p}" and "${r}"`);
+    if (r) seen.refusal = true;
+    if (p) seen.parse = true;
+  }
+  assert.ok(seen.parse && seen.refusal, "the sweep never reached both states");
+});
+
+test("W1 line 12 and 109: two .mode switches, MIRROR TOP and MIRROR BOTTOM, unpressed by default", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.match(html, /<button class="mode"[^>]*\bid="scale-mirror"[^>]*>MIRROR TOP<\/button>/);
+  assert.match(html, /<button class="mode"[^>]*\bid="scale-mirror-bottom"[^>]*>MIRROR BOTTOM<\/button>/);
+  assert.doesNotMatch(html, /scale-mirror-[lr]\b/, "the old pair is still in the file");
+  const app = boot();
+  openSheet(app);
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+});
+
+test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview", () => {
+  const base = w1Generate(W1_NONE);
+  assert.strictEqual(base.deck.options.mirror, false);
+  const top = w1Generate(W1_NONE, ["scale-mirror"]);
+  assert.strictEqual(top.deck.options.mirror, true);
+
+  const app = boot();
+  openSheet(app);
+  app.type(W1_NONE);
+  const before = app.els["scale-preview"].innerHTML;
+  app.els["scale-mirror"].click();
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
+});
+
+test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", () => {
+  const base = fieldAngles(w1Generate(W1_FULL).deck);
+  const top = fieldAngles(w1Generate(W1_FULL, ["scale-mirror"]).deck);
+  const bot = fieldAngles(w1Generate(W1_FULL, ["scale-mirror-bottom"]).deck);
+  const zones = new Set(Object.values(base).map((f) => f.zone));
+  for (const z of ["rim", "inner", "bottom"]) assert.ok(zones.has(z), `no ${z} field in the fixture`);
+  let movedTop = 0, movedBot = 0;
+  for (const id of Object.keys(base)) {
+    const { zone, angle } = base[id];
+    const offAxis = angle % 360 !== 90 && angle % 360 !== 270;
+    if (zone === "rim" || zone === "inner") {
+      assert.strictEqual(top[id].angle !== angle, offAxis, `TOP on ${zone} field ${id} at ${angle}`);
+      assert.strictEqual(bot[id].angle, angle, `BOTTOM moved ${zone} field ${id}`);
+      if (offAxis) movedTop += 1;
+    } else if (zone === "bottom") {
+      assert.strictEqual(top[id].angle, angle, `TOP moved bottom field ${id}`);
+      assert.strictEqual(bot[id].angle !== angle, offAxis, `BOTTOM on field ${id} at ${angle}`);
+      if (offAxis) movedBot += 1;
+    }
+  }
+  assert.ok(movedTop > 0 && movedBot > 0);
+});
+
+test("W1 line 111: MIRROR BOTTOM is disabled and unpressed with no bottom notes, and the deck has mirrorBottom off", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+  app.els["scale-mirror"].click();
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  app.els["scale-generate"].click();
+  const deck = app.registry()[app.deckId()];
+  assert.strictEqual(deck.options.mirror, true);
+  assert.strictEqual(deck.options.mirrorBottom, false);
+});
+
+test("W1 line 111: with MIRROR TOP pressed, adding a bottom note leaves MIRROR BOTTOM enabled and unpressed", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_NONE);
+  app.els["scale-mirror"].click();
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  app.els["scale-generate"].click();
+  const deck = app.registry()[app.deckId()];
+  assert.strictEqual(deck.options.mirror, true);
+  assert.strictEqual(deck.options.mirrorBottom, false);
+});
+
+test("W1 line 128: both switches are disabled while the box is empty or invalid, keep their values, and re-enable by their own rules", () => {
+  const app = boot();
+  openSheet(app);
+  assert.strictEqual(app.els["scale-mirror"].disabled, true, "enabled on an empty box");
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  app.type(W1_BOTTOM);
+  app.els["scale-mirror"].click();
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(app.els["scale-mirror"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  for (const bad of ["", "(D3) A3 zzz"]) {
+    app.type(bad);
+    for (const id of ["scale-mirror", "scale-mirror-bottom"]) {
+      assert.strictEqual(app.els[id].disabled, true, `${id} enabled on "${bad}"`);
+      assert.strictEqual(pressed(app, id), true, `${id} lost its value on "${bad}"`);
+    }
+  }
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), true);
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+});
+
+test("W1 line 133: a bottom note added, deleted and typed again leaves MIRROR BOTTOM enabled and unpressed", () => {
+  for (const pressBottom of [false, true]) {
+    const app = boot();
+    openSheet(app);
+    app.type(W1_NONE);
+    app.els["scale-mirror"].click();
+    app.type(W1_BOTTOM);
+    if (pressBottom) app.els["scale-mirror-bottom"].click();
+    app.type(W1_NONE);
+    assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+    app.type(W1_BOTTOM);
+    assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+    assert.strictEqual(pressed(app, "scale-mirror-bottom"), false,
+      `MIRROR BOTTOM came back pressed (pressed before: ${pressBottom})`);
+    assert.strictEqual(pressed(app, "scale-mirror"), true);
+  }
+});
+
+test("W1 lines 13 and 112: an old mirror:true deck opens with both pressed and keeps every field where it was", () => {
+  const app = boot();
+  const made = app.generate(W1_FULL, { mirror: true });
+  assert.strictEqual(made.ok, true, made.reason);
+  const id = app.get("Object.keys(CUSTOM)[0]");
+  app.run(`delete CUSTOM[${JSON.stringify(id)}].options.mirrorBottom`);
+  const before = fieldAngles(app.registry()[id]);
+  openEdit(app, app.registry()[id]);
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), true);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  app.els["scale-generate"].click();
+  assert.deepStrictEqual(fieldAngles(app.registry()[id]), before);
+
+  const baseline = app.get(`HPE.layout.solve(HPE.core.parseLegacySeed(${JSON.stringify(W1_FULL)}, {}).value, {mirror: true}).value.fields`);
+  for (const fid of Object.keys(baseline)) {
+    assert.strictEqual(app.registry()[id].fields[fid][4], baseline[fid][4], `field ${fid}`);
+  }
+});
+
+test("W1 line 112: the same old deck without bottom notes opens with MIRROR TOP pressed and MIRROR BOTTOM disabled and unpressed", () => {
+  const app = boot();
+  app.generate(AMARA_STRING, { mirror: true });
+  const id = app.get("Object.keys(CUSTOM)[0]");
+  openEdit(app, app.registry()[id]);
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+});
+
+test("W1 line 113: MIRROR TOP on and MIRROR BOTTOM off reopens on Edit and from the share link with that pair", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_FULL);
+  app.els["scale-mirror"].click();
+  app.els["scale-generate"].click();
+  const id = app.deckId();
+  assert.strictEqual(app.registry()[id].options.mirror, true);
+  assert.strictEqual(app.registry()[id].options.mirrorBottom, false);
+
+  openEdit(app, app.registry()[id]);
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+
+  const url = link(app, id);
+  assert.strictEqual(url.ok, true, url.reason);
+  app.forgetDeck(id);
+  const shared = openShare(app, payload(url.value));
+  assert.strictEqual(shared.ok, true, shared.reason);
+  assert.strictEqual(app.registry()[id].options.mirror, true);
+  assert.strictEqual(app.registry()[id].options.mirrorBottom, false);
+  openEdit(app, app.registry()[id]);
+  assert.strictEqual(pressed(app, "scale-mirror"), true);
+  assert.strictEqual(pressed(app, "scale-mirror-bottom"), false);
+});
+
+test("W1 (20.9): a deck generated with MIRROR TOP on and MIRROR BOTTOM off re-solves to the same fields under a seat correction", () => {
+  const app = boot();
+  const plain0 = app.generate(W1_FULL, { mirror: true, mirrorBottom: false });
+  assert.strictEqual(plain0.ok, true, plain0.reason);
+  const id = app.get("Object.keys(CUSTOM)[0]");
+  const flat = fieldAngles(app.registry()[id]);
+  app.forgetDeck(id);
+  const seated = app.generate(W1_FULL, {
+    mirror: true, mirrorBottom: false, seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] } });
+  assert.strictEqual(seated.ok, true, seated.reason);
+  const after = fieldAngles(app.registry()[app.get("Object.keys(CUSTOM)[0]")]);
+  let compared = 0;
+  for (const fid of Object.keys(flat)) {
+    if (flat[fid].zone !== "bottom") continue;
+    assert.strictEqual(after[fid].angle, flat[fid].angle, `bottom field ${fid} was reflected by the re-solve`);
+    compared += 1;
+  }
+  assert.ok(compared > 0);
+});
+
+test("W1 line 118: #scale-label-2 exists, is empty and hidden, and the field is described by it", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.match(html, /<textarea\b[^>]*\baria-describedby="scale-label-2"/);
+  const app = boot();
+  openSheet(app);
+  assert.strictEqual(app.els["scale-label-2"].textContent, "");
+  assert.strictEqual(app.els["scale-label-2"].hidden, true);
+});
+
+test("W1 line 119: the count line leads with the ding and all three counts, then the notes by shell", () => {
+  const app = boot();
+  openSheet(app);
+  app.type(W1_BOTTOM);
+  assert.match(app.els["scale-parse"].textContent,
+    /^Ding D3 · 3 top · 0 inner · 1 bottom\. Top A3 C4 D4\. Bottom C3\.$/);
+  app.type(W1_NONE);
+  assert.match(app.els["scale-parse"].textContent,
+    /^Ding D3 · 3 top · 0 inner · 0 bottom\. Top A3 C4 D4\.$/);
+  app.type(W1_FULL);
+  assert.match(app.els["scale-parse"].textContent,
+    /^Ding F3 · 9 top · 2 inner · 6 bottom\. Top .+ Inner F5 G5\. Bottom C3 Db3 Eb3 Bb3 Db4 Ab5\.$/);
 });

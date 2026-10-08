@@ -1,0 +1,15 @@
+# kills: W1 line 6: Enter during an IME composition does not generate
+# suite: node --test --test-name-pattern ^W1.line.6.*$ tests/app.test.js
+# The Enter that confirms an IME candidate also submits the half-typed seed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9705,7 +9705,7 @@
+ nameBox.addEventListener("input", () => { nameDirty = true; resyncSheet(true); });
+ degSel.addEventListener("change", () => resyncSheet(true));
+ scaleBox.addEventListener("keydown", e => {
+-  if (e.key !== "Enter" || e.isComposing) return;
++  if (e.key !== "Enter") return;
+   e.preventDefault();
+   runGenerate();
+ });
