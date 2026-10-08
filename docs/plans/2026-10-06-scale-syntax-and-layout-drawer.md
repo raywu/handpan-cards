@@ -1573,6 +1573,17 @@ Also from review 1, for the PR body: the acceptance line 89 figures. 380x667, cl
 
 Review 1 nits, not fixed before the final review: `closeDrawer` paints before it moves focus; a stale comment near `sheetOptions` saying the sheet has no anchor control; `--plate-band-h` is read on every paint and goes stale on resize; `hasTwoNoteRing` returns true on a parse failure (unreachable); the JS blurb twin uses literals where Python uses constants; stale `#scale-layout-row` wording in two mutant comments; no mutant on the new stops' Tab order beyond F1's, on `closeDrawer` focus, the Escape ladder, the notice or the pause state.
 
+### 20.15 DR1 review 2: FAIL at bdd94cb (coordinator record, 2026-10-07, owner away)
+
+PR #272, review 2: FAIL at bdd94cb with CI green. F1 and F2 of 20.14 hold in a real browser. Two new findings; both are fixed before review 3. A third FAIL triggers the regroup rule.
+
+- **A (blocking).** The layout notice compares MIRROR BOTTOM against the effective value at sheet open, which is off whenever the pan has no bottom notes. The spec compares against the stored value read through [AD-MC 3] (no `mirrorBottom` key reads as `mirror`) and leaves MIRROR BOTTOM out only while the pan currently has no bottom notes. So a `{mirror: true}` record with a bottom note typed on Edit reads `Layout changed from the default.` where interview 9 item 4 requires `Layout not saved yet. SAVE CHANGES keeps it.`; and a `{mirror: true, mirrorBottom: true}` record with its bottom note deleted reads unsaved where the spec requires `Layout changed from the default.` Fix: the baseline holds the stored value read through [AD-MC 3]; the comparison skips MIRROR BOTTOM only while the box has no bottom notes. Tests pin both directions; a mutant covers the baseline.
+- **B.** `#scale-layout-hint` stays shown while the drawer is open. Spec section 4, Open step 4, and the state table of 16.1 hide it. Fix: hidden while open, shown again on close. One test.
+
+**Before review 3 the lane sweeps the spec's state table (section 16.1) row by row against the build**, for every row section 17 gives to DR1, and reports each row as holds, fixed, or DR2's. Both findings of this review were rows no acceptance line names; the sweep is how the rest are found before a reviewer finds them.
+
+Review 2 nits, not fixed: the portrait line 87 assertion is conditional on the band being sticky; `d_generate_enabled_when_invalid` has a `# kills:` header that matches no test name (older than this lane); line 89 is a report with no assertion.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
