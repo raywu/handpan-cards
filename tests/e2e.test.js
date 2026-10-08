@@ -1529,7 +1529,7 @@ function run() {
         s.textContent = "#scale-mirror{display:none !important}";
         document.head.appendChild(s);
         const box = document.getElementById("scale-box");
-        box.value = "(D3) A3 C4 D4 | C3";
+        box.value = "[C3] (D3) A3 C4 D4";
         box.dispatchEvent(new Event("input", { bubbles: true }));
         document.getElementById("scale-back").focus(); return true;`);
       const seen = [];
@@ -5356,7 +5356,7 @@ function run() {
         document.getElementById("scale-label-2").textContent,
         document.getElementById("scale-label-2").hidden,
         document.getElementById("scale-box").getAttribute("aria-describedby")]`),
-      [0, true, "", true, "scale-label-2"]);
+      [0, true, "[NOTE] = A BOTTOM NOTE, WRITTEN WHERE ITS PITCH FALLS", false, "scale-label-2"]);
 
       await typeScale("(D3) A3 C4");
       const one = await fieldMetrics();
@@ -5382,7 +5382,7 @@ function run() {
     await b.setViewport(...W1_PHONE);
     try {
       await openSheet();
-      const ph = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 / D5 E5 | C3 D3 E3 F3 G3 A3 Bb3";
+      const ph = "[C] [D] (E) [F#] [G] [A] B [C] D E F# G A B [C] D E | F# G A";
       assert.strictEqual(ph.length, 60);
       const r = await b.eval(`
         const ta = document.getElementById("scale-box");
@@ -5493,7 +5493,7 @@ function run() {
     await freshLoad();
     await b.setViewport(320, 700, true);
     try {
-      await generate("(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5");
+      await generate("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]");
       await b.eval(`window.__inputs = 0;
         document.getElementById("scale-box").addEventListener("input", () => { window.__inputs += 1; });
         return true;`);
@@ -5674,7 +5674,7 @@ function run() {
 
   // The largest pan the engine accepts (13 top + 6 bottom = 19 layout slots
   // beside the ding), which is the tallest the Edit sheet can ever be.
-  const BIG_SCALE = "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 G5 A5 | C3 E3 F3 G3 A3 Bb3";
+  const BIG_SCALE = "[C3] (D3) [E3] [F3] [G3] [A3] A3 [Bb3] C4 D4 E4 F4 G4 A4 C5 D5 E5 F5 | G5 A5";
 
   // Everything the fold check needs, read in one round trip and with nothing
   // scrolled first. `hit` is named so a failure says what is covering it.

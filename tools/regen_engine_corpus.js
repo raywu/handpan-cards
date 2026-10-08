@@ -32,7 +32,6 @@ const SYNTHETIC = path.join(ROOT, "tests", "fixtures", "synthetic_scales.json");
 const MALFORMED = {
   NO_DING: "G3 B3 D4 G4",
   NO_FIFTH: "(C3) D3 E3 F#3 G#3 A#3 C4 D4 E4",
-  TOO_MANY_RIM: "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
   BAD_NOTE: "(D3) A3 H4 C4",
   NOTE_OUT_OF_RANGE: "(C9) D9 E9 A9",
   NOTE_OUT_OF_ORDER: "(D) A B C D E F G | C D2",
@@ -42,10 +41,14 @@ const MALFORMED = {
 const hpe = loadEngine(["core", "voicing", "layout", "naming", "select"]);
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
-function record(string) {
-  const parsed = hpe.core.parseLegacySeed(string);
-  if (!parsed.ok) return { string, reader: "legacy", parse: { ok: false, code: parsed.code } };
-  const entry = { string, reader: "legacy", parse: { ok: true, fields: plain(parsed.value.fields) } };
+const READERS = { legacy: hpe.core.parseLegacySeed, current: hpe.core.parseSeed };
+
+function record(string, reader = "legacy") {
+  const read = READERS[reader];
+  if (!read) throw new Error(`unknown reader tag ${JSON.stringify(reader)} for ${string}`);
+  const parsed = read(string);
+  if (!parsed.ok) return { string, reader, parse: { ok: false, code: parsed.code } };
+  const entry = { string, reader, parse: { ok: true, fields: plain(parsed.value.fields) } };
   const solved = hpe.layout.solve(parsed.value);
   entry.layout = solved.ok ? { ok: true, geom: plain(solved.value.geom) } : { ok: false, code: solved.code };
   const built = hpe.select.build(parsed.value);
@@ -75,7 +78,7 @@ function build() {
     malformed[code] = record(MALFORMED[code]);
   }
   return {
-    synthetic: synthetic.map((s) => ({ name: s.name, ...record(s.string) })),
+    synthetic: synthetic.map((s) => ({ name: s.name, ...record(s.string, s.reader) })),
     malformed,
     notFromParseSeed,
   };

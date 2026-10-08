@@ -324,6 +324,66 @@
           "back": "c98f654c12d053e6"
         }
       }
+    },
+    "fourteen top notes": {
+      "A": {
+        "0": {
+          "front": "14edea2a3382632d",
+          "back": "999cb74a72089f39"
+        },
+        "1": {
+          "front": "7f7aaa2d372e82a8",
+          "back": "c7b9fafa12b147a4"
+        },
+        "2": {
+          "front": "8fa46cb46e4ea92c",
+          "back": "29425802fe727d76"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "5f36b957364fb24d",
+          "back": "fdd7d35b15b5fed2"
+        },
+        "1": {
+          "front": "cc3de246ababc330",
+          "back": "0af0a059489fd621"
+        },
+        "2": {
+          "front": "aeeed26dd67d26a7",
+          "back": "3a0de810b6f65020"
+        }
+      }
+    },
+    "seven bottom notes": {
+      "A": {
+        "0": {
+          "front": "9151db9446e038d5",
+          "back": "fd389579bf0f2ce1"
+        },
+        "1": {
+          "front": "a1e7f5c12829f26b",
+          "back": "753e93a5a1f699ad"
+        },
+        "2": {
+          "front": "b60eec0873e0ec0f",
+          "back": "6cd131e273dfafe9"
+        }
+      },
+      "B": {
+        "0": {
+          "front": "8ee6dafae3b91004",
+          "back": "418d707472a18e6d"
+        },
+        "1": {
+          "front": "ecb58077db39433e",
+          "back": "4d527054b8a52734"
+        },
+        "2": {
+          "front": "58316a2787d17cca",
+          "back": "03dc403c4bbb0991"
+        }
+      }
     }
   },
   "rails": {

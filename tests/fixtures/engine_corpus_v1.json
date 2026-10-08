@@ -5514,8 +5514,1017 @@
     "string": "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
     "reader": "legacy",
     "parse": {
-     "ok": false,
-     "code": "TOO_MANY_RIM"
+     "ok": true,
+     "fields": {
+      "0": [
+       "C",
+       3,
+       48,
+       "ding",
+       null,
+       "Ding"
+      ],
+      "1": [
+       "D",
+       3,
+       50,
+       "rim",
+       null,
+       "1"
+      ],
+      "2": [
+       "E",
+       3,
+       52,
+       "rim",
+       null,
+       "2"
+      ],
+      "3": [
+       "F",
+       3,
+       53,
+       "rim",
+       null,
+       "3"
+      ],
+      "4": [
+       "G",
+       3,
+       55,
+       "rim",
+       null,
+       "4"
+      ],
+      "5": [
+       "A",
+       3,
+       57,
+       "rim",
+       null,
+       "5"
+      ],
+      "6": [
+       "B",
+       3,
+       59,
+       "rim",
+       null,
+       "6"
+      ],
+      "7": [
+       "C",
+       4,
+       60,
+       "rim",
+       null,
+       "7"
+      ],
+      "8": [
+       "D",
+       4,
+       62,
+       "rim",
+       null,
+       "8"
+      ],
+      "9": [
+       "E",
+       4,
+       64,
+       "rim",
+       null,
+       "9"
+      ],
+      "10": [
+       "F",
+       4,
+       65,
+       "rim",
+       null,
+       "10"
+      ],
+      "11": [
+       "G",
+       4,
+       67,
+       "rim",
+       null,
+       "11"
+      ],
+      "12": [
+       "A",
+       4,
+       69,
+       "inner",
+       null,
+       "12"
+      ],
+      "13": [
+       "B",
+       4,
+       71,
+       "inner",
+       null,
+       "13"
+      ],
+      "14": [
+       "C",
+       5,
+       72,
+       "inner",
+       null,
+       "14"
+      ]
+     }
+    },
+    "layout": {
+     "ok": true,
+     "geom": {
+      "rim": 0.722,
+      "inner": 0.38,
+      "bottom": 0,
+      "r_ding": 0.19,
+      "ding_dy": 0.1575,
+      "r_note": 0.1471,
+      "r_bnote": 0,
+      "inner_ring": 0,
+      "f_ding": 0.114,
+      "f_note": 0.1125,
+      "f_bnote": 0,
+      "f_num": 0.0941,
+      "n_in": 0.052,
+      "n_out": 0,
+      "rim_num_out": true,
+      "ext": 1.06
+     }
+    },
+    "build": {
+     "ok": true,
+     "chords": [
+      {
+       "main": "C",
+       "sup": "",
+       "fields": [
+        7,
+        9,
+        11
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "C5",
+       "sup": "",
+       "fields": [
+        7,
+        11
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "Csus",
+       "sup": "4",
+       "fields": [
+        7,
+        10,
+        11
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "Cmaj7sus",
+       "sup": "4",
+       "fields": [
+        7,
+        10,
+        11,
+        13
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "Cmaj",
+       "sup": "7",
+       "fields": [
+        7,
+        9,
+        11,
+        13
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "add9",
+       "fields": [
+        7,
+        9,
+        11,
+        8
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "6/9",
+       "fields": [
+        7,
+        9,
+        11,
+        12,
+        8
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "Cmaj",
+       "sup": "9",
+       "fields": [
+        7,
+        9,
+        11,
+        13,
+        8
+       ],
+       "roots": [
+        7
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "",
+       "fields": [
+        1,
+        3,
+        5
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "",
+       "fields": [
+        8,
+        10,
+        12
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "D5",
+       "sup": "",
+       "fields": [
+        1,
+        5
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "D5",
+       "sup": "",
+       "fields": [
+        8,
+        12
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dsus",
+       "sup": "4",
+       "fields": [
+        1,
+        4,
+        5
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dsus",
+       "sup": "4",
+       "fields": [
+        8,
+        11,
+        12
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "D7sus",
+       "sup": "4",
+       "fields": [
+        1,
+        4,
+        5,
+        7
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "D7sus",
+       "sup": "4",
+       "fields": [
+        8,
+        11,
+        12,
+        14
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "7",
+       "fields": [
+        1,
+        3,
+        5,
+        7
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "7",
+       "fields": [
+        8,
+        10,
+        12,
+        14
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "add9",
+       "fields": [
+        1,
+        3,
+        5,
+        2
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "add9",
+       "fields": [
+        8,
+        10,
+        12,
+        9
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "6/9",
+       "fields": [
+        1,
+        3,
+        5,
+        6,
+        2
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "6/9",
+       "fields": [
+        8,
+        10,
+        12,
+        13,
+        9
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "9",
+       "fields": [
+        1,
+        3,
+        5,
+        7,
+        2
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "9",
+       "fields": [
+        8,
+        10,
+        12,
+        14,
+        9
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "11",
+       "fields": [
+        1,
+        3,
+        5,
+        7,
+        2,
+        4
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "11",
+       "fields": [
+        8,
+        10,
+        12,
+        14,
+        9,
+        11
+       ],
+       "roots": [
+        8
+       ]
+      },
+      {
+       "main": "Em",
+       "sup": "",
+       "fields": [
+        2,
+        4,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Em",
+       "sup": "",
+       "fields": [
+        9,
+        11,
+        13
+       ],
+       "roots": [
+        9
+       ]
+      },
+      {
+       "main": "E5",
+       "sup": "",
+       "fields": [
+        2,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "E5",
+       "sup": "",
+       "fields": [
+        9,
+        13
+       ],
+       "roots": [
+        9
+       ]
+      },
+      {
+       "main": "Esus",
+       "sup": "4",
+       "fields": [
+        2,
+        5,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Esus",
+       "sup": "4",
+       "fields": [
+        9,
+        12,
+        13
+       ],
+       "roots": [
+        9
+       ]
+      },
+      {
+       "main": "E7sus",
+       "sup": "4",
+       "fields": [
+        2,
+        5,
+        6,
+        8
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Em",
+       "sup": "7",
+       "fields": [
+        2,
+        4,
+        6,
+        8
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "",
+       "fields": [
+        3,
+        5,
+        7
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "",
+       "fields": [
+        10,
+        12,
+        14
+       ],
+       "roots": [
+        10
+       ]
+      },
+      {
+       "main": "F5",
+       "sup": "",
+       "fields": [
+        3,
+        7
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "F5",
+       "sup": "",
+       "fields": [
+        10,
+        14
+       ],
+       "roots": [
+        10
+       ]
+      },
+      {
+       "main": "Fmaj",
+       "sup": "7",
+       "fields": [
+        3,
+        5,
+        7,
+        9
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "add9",
+       "fields": [
+        3,
+        5,
+        7,
+        4
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "add9",
+       "fields": [
+        10,
+        12,
+        14,
+        11
+       ],
+       "roots": [
+        10
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "6/9",
+       "fields": [
+        3,
+        5,
+        7,
+        8,
+        4
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Fmaj",
+       "sup": "9",
+       "fields": [
+        3,
+        5,
+        7,
+        9,
+        4
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Fmaj7",
+       "sup": "#11",
+       "fields": [
+        3,
+        5,
+        7,
+        9,
+        6
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "",
+       "fields": [
+        4,
+        6,
+        8
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G5",
+       "sup": "",
+       "fields": [
+        4,
+        8
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "Gsus",
+       "sup": "4",
+       "fields": [
+        4,
+        7,
+        8
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G7sus",
+       "sup": "4",
+       "fields": [
+        4,
+        7,
+        8,
+        10
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "7",
+       "fields": [
+        4,
+        6,
+        8,
+        10
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "add9",
+       "fields": [
+        4,
+        6,
+        8,
+        5
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "6/9",
+       "fields": [
+        4,
+        6,
+        8,
+        9,
+        5
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "9",
+       "fields": [
+        4,
+        6,
+        8,
+        10,
+        5
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "11",
+       "fields": [
+        4,
+        6,
+        8,
+        10,
+        5,
+        7
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "G",
+       "sup": "13",
+       "fields": [
+        4,
+        6,
+        8,
+        10,
+        7,
+        9
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "",
+       "fields": [
+        5,
+        7,
+        9
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "A5",
+       "sup": "",
+       "fields": [
+        5,
+        9
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Asus",
+       "sup": "4",
+       "fields": [
+        5,
+        8,
+        9
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "A7sus",
+       "sup": "4",
+       "fields": [
+        5,
+        8,
+        9,
+        11
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "7",
+       "fields": [
+        5,
+        7,
+        9,
+        11
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "add9",
+       "fields": [
+        5,
+        7,
+        9,
+        6
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "add9",
+       "fields": [
+        12,
+        7,
+        9,
+        13
+       ],
+       "roots": [
+        12
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "9",
+       "fields": [
+        5,
+        7,
+        9,
+        11,
+        6
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "9",
+       "fields": [
+        12,
+        7,
+        9,
+        11,
+        13
+       ],
+       "roots": [
+        12
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "11",
+       "fields": [
+        5,
+        7,
+        9,
+        11,
+        6,
+        8
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "11",
+       "fields": [
+        12,
+        7,
+        9,
+        11,
+        13,
+        8
+       ],
+       "roots": [
+        12
+       ]
+      },
+      {
+       "main": "B°",
+       "sup": "",
+       "fields": [
+        6,
+        8,
+        10
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "Bm7",
+       "sup": "b5",
+       "fields": [
+        6,
+        8,
+        10,
+        12
+       ],
+       "roots": [
+        6
+       ]
+      }
+     ],
+     "warnings": []
     }
    },
    {
@@ -5523,8 +6532,1116 @@
     "string": "(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3 E3 F3 G3 Ab3 Bb3",
     "reader": "legacy",
     "parse": {
-     "ok": false,
-     "code": "TOO_MANY_RIM"
+     "ok": true,
+     "fields": {
+      "0": [
+       "D",
+       3,
+       50,
+       "ding",
+       null,
+       "Ding"
+      ],
+      "1": [
+       "A",
+       3,
+       57,
+       "rim",
+       null,
+       "1"
+      ],
+      "2": [
+       "C",
+       4,
+       60,
+       "rim",
+       null,
+       "2"
+      ],
+      "3": [
+       "D",
+       4,
+       62,
+       "rim",
+       null,
+       "3"
+      ],
+      "4": [
+       "E",
+       4,
+       64,
+       "rim",
+       null,
+       "4"
+      ],
+      "5": [
+       "F",
+       4,
+       65,
+       "rim",
+       null,
+       "5"
+      ],
+      "6": [
+       "G",
+       4,
+       67,
+       "rim",
+       null,
+       "6"
+      ],
+      "7": [
+       "A",
+       4,
+       69,
+       "rim",
+       null,
+       "7"
+      ],
+      "8": [
+       "C",
+       5,
+       72,
+       "rim",
+       null,
+       "8"
+      ],
+      "101": [
+       "C",
+       3,
+       48,
+       "bottom",
+       null,
+       "U1"
+      ],
+      "102": [
+       "Eb",
+       3,
+       51,
+       "bottom",
+       null,
+       "U2"
+      ],
+      "103": [
+       "E",
+       3,
+       52,
+       "bottom",
+       null,
+       "U3"
+      ],
+      "104": [
+       "F",
+       3,
+       53,
+       "bottom",
+       null,
+       "U4"
+      ],
+      "105": [
+       "G",
+       3,
+       55,
+       "bottom",
+       null,
+       "U5"
+      ],
+      "106": [
+       "Ab",
+       3,
+       56,
+       "bottom",
+       null,
+       "U6"
+      ],
+      "107": [
+       "Bb",
+       3,
+       58,
+       "bottom",
+       null,
+       "U7"
+      ]
+     }
+    },
+    "layout": {
+     "ok": true,
+     "geom": {
+      "rim": 0.745,
+      "inner": 0,
+      "bottom": 1.15,
+      "r_ding": 0.2,
+      "ding_dy": 0,
+      "r_note": 0.19,
+      "r_bnote": 0.1188,
+      "inner_ring": 0.355,
+      "f_ding": 0.12,
+      "f_note": 0.1454,
+      "f_bnote": 0.0931,
+      "f_num": 0.1216,
+      "n_in": 0.085,
+      "n_out": 0.068,
+      "rim_num_out": false,
+      "ext": 1.4819
+     }
+    },
+    "build": {
+     "ok": true,
+     "chords": [
+      {
+       "main": "Dm",
+       "sup": "",
+       "fields": [
+        3,
+        5,
+        7
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "D°",
+       "sup": "",
+       "fields": [
+        3,
+        5,
+        106
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "D5",
+       "sup": "",
+       "fields": [
+        3,
+        7
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dsus",
+       "sup": "4",
+       "fields": [
+        3,
+        6,
+        7
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "D7sus",
+       "sup": "4",
+       "fields": [
+        3,
+        6,
+        7,
+        8
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "7",
+       "fields": [
+        3,
+        5,
+        7,
+        8
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dm7",
+       "sup": "b5",
+       "fields": [
+        3,
+        5,
+        106,
+        8
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "add9",
+       "fields": [
+        3,
+        5,
+        7,
+        4
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "9",
+       "fields": [
+        3,
+        5,
+        7,
+        8,
+        4
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Dm",
+       "sup": "11",
+       "fields": [
+        3,
+        5,
+        7,
+        8,
+        4,
+        6
+       ],
+       "roots": [
+        3
+       ]
+      },
+      {
+       "main": "Eb",
+       "sup": "",
+       "fields": [
+        102,
+        105,
+        107
+       ],
+       "roots": [
+        102
+       ]
+      },
+      {
+       "main": "Eb5",
+       "sup": "",
+       "fields": [
+        102,
+        107
+       ],
+       "roots": [
+        102
+       ]
+      },
+      {
+       "main": "Ebsus",
+       "sup": "4",
+       "fields": [
+        102,
+        106,
+        107
+       ],
+       "roots": [
+        102
+       ]
+      },
+      {
+       "main": "Ebmaj7sus",
+       "sup": "4",
+       "fields": [
+        102,
+        106,
+        107,
+        3
+       ],
+       "roots": [
+        102
+       ]
+      },
+      {
+       "main": "Ebmaj",
+       "sup": "7",
+       "fields": [
+        102,
+        105,
+        107,
+        3
+       ],
+       "roots": [
+        102
+       ]
+      },
+      {
+       "main": "E°",
+       "sup": "",
+       "fields": [
+        4,
+        6,
+        107
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "Eaug",
+       "sup": "",
+       "fields": [
+        4,
+        106,
+        8
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "Em7",
+       "sup": "b5",
+       "fields": [
+        4,
+        105,
+        107,
+        3
+       ],
+       "roots": [
+        4
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "",
+       "fields": [
+        5,
+        7,
+        8
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "",
+       "fields": [
+        104,
+        1,
+        2
+       ],
+       "roots": [
+        104
+       ]
+      },
+      {
+       "main": "Fm",
+       "sup": "",
+       "fields": [
+        5,
+        106,
+        8
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F5",
+       "sup": "",
+       "fields": [
+        5,
+        8
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F5",
+       "sup": "",
+       "fields": [
+        104,
+        2
+       ],
+       "roots": [
+        104
+       ]
+      },
+      {
+       "main": "Fsus",
+       "sup": "4",
+       "fields": [
+        5,
+        107,
+        8
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F7sus",
+       "sup": "4",
+       "fields": [
+        5,
+        107,
+        8,
+        102
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Fmaj7sus",
+       "sup": "4",
+       "fields": [
+        5,
+        107,
+        2,
+        4
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Fmaj",
+       "sup": "7",
+       "fields": [
+        5,
+        1,
+        2,
+        4
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Fm",
+       "sup": "7",
+       "fields": [
+        5,
+        106,
+        8,
+        102
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "7",
+       "fields": [
+        5,
+        7,
+        8,
+        102
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "add9",
+       "fields": [
+        5,
+        7,
+        8,
+        6
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "add9",
+       "fields": [
+        104,
+        1,
+        2,
+        105
+       ],
+       "roots": [
+        104
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "6/9",
+       "fields": [
+        5,
+        1,
+        2,
+        3,
+        6
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "F",
+       "sup": "6/9",
+       "fields": [
+        104,
+        1,
+        2,
+        3,
+        105
+       ],
+       "roots": [
+        104
+       ]
+      },
+      {
+       "main": "Fmaj",
+       "sup": "9",
+       "fields": [
+        5,
+        1,
+        2,
+        4,
+        6
+       ],
+       "roots": [
+        5
+       ]
+      },
+      {
+       "main": "Fmaj",
+       "sup": "9",
+       "fields": [
+        104,
+        1,
+        2,
+        4,
+        105
+       ],
+       "roots": [
+        104
+       ]
+      },
+      {
+       "main": "Gm",
+       "sup": "",
+       "fields": [
+        6,
+        107,
+        3
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "G5",
+       "sup": "",
+       "fields": [
+        6,
+        3
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "Gsus",
+       "sup": "4",
+       "fields": [
+        6,
+        2,
+        3
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "G7sus",
+       "sup": "4",
+       "fields": [
+        6,
+        2,
+        3,
+        5
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "Gm",
+       "sup": "7",
+       "fields": [
+        6,
+        107,
+        3,
+        5
+       ],
+       "roots": [
+        6
+       ]
+      },
+      {
+       "main": "Ab",
+       "sup": "",
+       "fields": [
+        106,
+        2,
+        102
+       ],
+       "roots": [
+        106
+       ]
+      },
+      {
+       "main": "Ab5",
+       "sup": "",
+       "fields": [
+        106,
+        102
+       ],
+       "roots": [
+        106
+       ]
+      },
+      {
+       "main": "Abmaj",
+       "sup": "7",
+       "fields": [
+        106,
+        2,
+        102,
+        6
+       ],
+       "roots": [
+        106
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "",
+       "fields": [
+        1,
+        2,
+        4
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "A°",
+       "sup": "",
+       "fields": [
+        1,
+        2,
+        102
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "A5",
+       "sup": "",
+       "fields": [
+        1,
+        4
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Asus",
+       "sup": "4",
+       "fields": [
+        1,
+        3,
+        4
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "A7sus",
+       "sup": "4",
+       "fields": [
+        1,
+        3,
+        4,
+        6
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Amaj7sus",
+       "sup": "4",
+       "fields": [
+        1,
+        3,
+        4,
+        106
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Am",
+       "sup": "7",
+       "fields": [
+        1,
+        2,
+        4,
+        6
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Am7",
+       "sup": "b5",
+       "fields": [
+        1,
+        2,
+        102,
+        6
+       ],
+       "roots": [
+        1
+       ]
+      },
+      {
+       "main": "Bb",
+       "sup": "",
+       "fields": [
+        107,
+        3,
+        5
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bb5",
+       "sup": "",
+       "fields": [
+        107,
+        5
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bbsus",
+       "sup": "4",
+       "fields": [
+        107,
+        102,
+        5
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bb7sus",
+       "sup": "4",
+       "fields": [
+        107,
+        102,
+        5,
+        106
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bbmaj7sus",
+       "sup": "4",
+       "fields": [
+        107,
+        102,
+        5,
+        7
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bbmaj",
+       "sup": "7",
+       "fields": [
+        107,
+        3,
+        5,
+        7
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "Bb",
+       "sup": "7",
+       "fields": [
+        107,
+        3,
+        5,
+        106
+       ],
+       "roots": [
+        107
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "",
+       "fields": [
+        2,
+        4,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "",
+       "fields": [
+        101,
+        103,
+        105
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "Cm",
+       "sup": "",
+       "fields": [
+        2,
+        102,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Cm",
+       "sup": "",
+       "fields": [
+        101,
+        102,
+        105
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "C5",
+       "sup": "",
+       "fields": [
+        2,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C5",
+       "sup": "",
+       "fields": [
+        101,
+        105
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "Csus",
+       "sup": "4",
+       "fields": [
+        2,
+        5,
+        6
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Csus",
+       "sup": "4",
+       "fields": [
+        101,
+        104,
+        105
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "C7sus",
+       "sup": "4",
+       "fields": [
+        2,
+        5,
+        6,
+        107
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C7sus",
+       "sup": "4",
+       "fields": [
+        101,
+        104,
+        105,
+        107
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "Cm",
+       "sup": "7",
+       "fields": [
+        2,
+        102,
+        6,
+        107
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "Cm",
+       "sup": "7",
+       "fields": [
+        101,
+        102,
+        105,
+        107
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "7",
+       "fields": [
+        2,
+        4,
+        6,
+        107
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "7",
+       "fields": [
+        101,
+        103,
+        105,
+        107
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "add9",
+       "fields": [
+        2,
+        4,
+        6,
+        3
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "add9",
+       "fields": [
+        101,
+        103,
+        105,
+        3
+       ],
+       "roots": [
+        101
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "6/9",
+       "fields": [
+        2,
+        4,
+        6,
+        7,
+        3
+       ],
+       "roots": [
+        2
+       ]
+      },
+      {
+       "main": "C",
+       "sup": "6/9",
+       "fields": [
+        101,
+        103,
+        105,
+        1,
+        3
+       ],
+       "roots": [
+        101
+       ]
+      }
+     ],
+     "warnings": []
     }
    },
    {
@@ -5579,14 +7696,6 @@
     "parse": {
      "ok": false,
      "code": "NO_FIFTH"
-    }
-   },
-   "TOO_MANY_RIM": {
-    "string": "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5",
-    "reader": "legacy",
-    "parse": {
-     "ok": false,
-     "code": "TOO_MANY_RIM"
     }
    },
    "BAD_NOTE": {

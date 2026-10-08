@@ -1,4 +1,4 @@
-// G1 - the new scale grammar, HPE.core.parseScale and HPE.core.formatScale,
+// G1 - the new scale grammar, HPE.core.parseSeed and HPE.core.formatSeed,
 // nothing calling them yet. Spec: docs/plans/2026-10-06-scale-syntax-and-layout-drawer.md
 // section 4 (grammar), section 9 (REASONS text) and section 19 R8 (octave range).
 // Every expectation comes from the plan's table in tests/fixtures/scale_grammar_v1.json,
@@ -21,7 +21,7 @@ const decks = Array.isArray(decksFile) ? decksFile : decksFile.decks;
 const host = v => JSON.parse(JSON.stringify(v));
 
 function scale(str) {
-  const r = core.parseScale(str);
+  const r = core.parseSeed(str);
   assert.equal(r.ok, true, `expected ${JSON.stringify(str)} to parse, got ${r.code}: ${r.reason}`);
   return host(r.value.fields);
 }
@@ -67,6 +67,14 @@ const SENTENCES = {
   }
 };
 
+function flatReasons() {
+  const out = {};
+  for (const [code, e] of Object.entries(core.REASONS)) {
+    out[code] = Object.assign({ "": e.reason, empty: e.reason, reason: e.reason, order: e.reason, repeated: e.reason }, e.alternates || {});
+  }
+  return out;
+}
+
 function sentenceMatcher(template) {
   const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp("^" + escaped.replace(/<fifth of X>|<[ABX]>/g, ".+?") + "$");
@@ -83,7 +91,7 @@ test("every row of the grammar table parses to its fields", () => {
       assert.equal(zoneNames(fields, "rim"), want.rim, label);
       assert.equal(zoneNames(fields, "inner"), want.inner, label);
       assert.equal(zoneNames(fields, "bottom"), want.bottom, label);
-      assert.equal(core.formatScale(fields), want.canonical, label);
+      assert.equal(core.formatSeed(fields), want.canonical, label);
     }
   }
 });
@@ -91,7 +99,7 @@ test("every row of the grammar table parses to its fields", () => {
 test("every refused row carries its code and its sentence", () => {
   const seen = new Set();
   const check = (str, code, alternate) => {
-    const r = core.parseScale(str);
+    const r = core.parseSeed(str);
     assert.equal(r.ok, false, `${JSON.stringify(str)} should be refused`);
     assert.equal(r.code, code, str);
     const template = SENTENCES[code][alternate === null ? "" : alternate];
@@ -110,7 +118,7 @@ test("every refused row carries its code and its sentence", () => {
   for (const code of Object.keys(SENTENCES)) {
     for (const alt of Object.keys(SENTENCES[code])) {
       if (alt === "") continue;
-      assert.equal(core.SCALE_REASONS[code][alt], SENTENCES[code][alt], `${code}.${alt}`);
+      assert.equal(flatReasons()[code][alt], SENTENCES[code][alt], `${code}.${alt}`);
     }
   }
 });
@@ -135,7 +143,7 @@ test("the five built-in strings parse to the shipped names, octaves, MIDI, zones
   }
   for (const s of ["(C#) G# B C# D F F# G# B", "C# | G# B C# D F F# G# B", "D/ A C D E F G A C",
                    "[C] [Db] [Eb] F | G Ab [Bb] C [Db] Eb F G Ab C Eb | F G [Ab]"]) {
-    assert.ok(core.parseScale(s).ok, s);
+    assert.ok(core.parseSeed(s).ok, s);
   }
 });
 
@@ -149,7 +157,7 @@ test("the E Amara 20 example lands on exactly its twenty pitches", () => {
   assert.deepEqual(all, dPan.slice().sort());
   assert.equal(Object.keys(fields).length, 20);
   assert.equal(zoneNames(fields, "bottom"), "C3 D3 F#3 G3 A3 C4 C5");
-  assert.equal(core.formatScale(fields).length, 80);
+  assert.equal(core.formatSeed(fields).length, 80);
   assert.equal(core.deckId(fields), "custom:8c15ebd7");
 });
 
@@ -161,7 +169,7 @@ function acceptedStrings() {
   const walk = (tokens, depth) => {
     if (tokens.length) {
       const str = tokens.join(" ");
-      const r = core.parseScale(str);
+      const r = core.parseSeed(str);
       if (r.ok) accepted.push({ str, tokens: tokens.slice(), fields: host(r.value.fields) });
     }
     if (depth === 5) return;
@@ -175,11 +183,11 @@ test("formatScale round-trips every accepted string of length one to five over t
   const list = acceptedStrings();
   assert.ok(list.length > 500, `only ${list.length} accepted strings: the sweep is vacuous`);
   for (const { str, fields } of list) {
-    const canonical = core.formatScale(fields);
-    const again = core.parseScale(canonical);
+    const canonical = core.formatSeed(fields);
+    const again = core.parseSeed(canonical);
     assert.equal(again.ok, true, `${str} -> ${canonical}`);
     assert.equal(JSON.stringify(host(again.value.fields)), JSON.stringify(fields), `${str} -> ${canonical}`);
-    assert.equal(core.formatScale(again.value.fields), canonical, str);
+    assert.equal(core.formatSeed(again.value.fields), canonical, str);
   }
 });
 
@@ -191,7 +199,7 @@ test("a bare ding and a bracketed ding give the same pan", () => {
     const bar = spaced.indexOf("|");
     assert.ok(bar > 0, tokens.join(" "));
     const rewritten = spaced.slice(0, bar - 1).concat(["(" + spaced[bar - 1] + ")"], spaced.slice(bar + 1));
-    const r = core.parseScale(rewritten.join(" "));
+    const r = core.parseSeed(rewritten.join(" "));
     assert.equal(r.ok, true, rewritten.join(" "));
     assert.equal(JSON.stringify(host(r.value.fields)), JSON.stringify(fields), tokens.join(" "));
     bare += 1;
@@ -246,15 +254,15 @@ test("every legacy-reachable field map prints and re-parses unchanged", () => {
     const legacy = core.parseLegacySeed(str);
     if (!legacy.ok) continue;
     const fields = host(legacy.value.fields);
-    const canonical = core.formatScale(fields);
-    const again = core.parseScale(canonical);
+    const canonical = core.formatSeed(fields);
+    const again = core.parseSeed(canonical);
     assert.equal(again.ok, true, `${str} -> ${canonical}: ${again.code} ${again.reason}`);
     assert.equal(JSON.stringify(host(again.value.fields)), JSON.stringify(fields), `${str} -> ${canonical}`);
     checked += 1;
   }
   assert.ok(checked > 2000, `only ${checked} legacy strings accepted: the sweep is vacuous`);
   for (const d of decks) {
-    const canonical = core.formatScale(d.fields);
+    const canonical = core.formatSeed(d.fields);
     assert.equal(JSON.stringify(scale(canonical)), JSON.stringify(
       Object.fromEntries(Object.keys(d.fields).map(id => [id, [d.fields[id][0], d.fields[id][1], d.fields[id][2], d.fields[id][3], null, d.fields[id][5]]]))), d.id);
   }
@@ -266,7 +274,7 @@ test("a string with neither mark reads the same under both grammars", () => {
   for (let i = 0; i < 60000; i += 1) {
     const str = randomLegacy(rand, false);
     const old = core.parseLegacySeed(str);
-    const now = core.parseScale(str);
+    const now = core.parseSeed(str);
     assert.equal(now.ok, old.ok, `${str}: legacy ${old.ok}, new ${now.ok}`);
     if (old.ok) {
       assert.equal(JSON.stringify(host(now.value.fields)), JSON.stringify(host(old.value.fields)), str);
@@ -278,12 +286,12 @@ test("a string with neither mark reads the same under both grammars", () => {
 
 test("every e.g. in REASONS parses", () => {
   let count = 0;
-  for (const code of Object.keys(core.SCALE_REASONS)) {
-    for (const text of Object.values(core.SCALE_REASONS[code])) {
+  for (const code of Object.keys(flatReasons())) {
+    for (const text of Object.values(flatReasons()[code])) {
       const m = /e\.g\. (.*?)\.(?:\s|$)/.exec(text);
       if (!m) continue;
       for (const example of m[1].split(", or put a | straight after it: ")) {
-        const r = core.parseScale(example);
+        const r = core.parseSeed(example);
         assert.equal(r.ok, true, `${code}: "${example}" -> ${r.code}: ${r.reason}`);
         count += 1;
       }
@@ -296,12 +304,12 @@ test("octave -1 lexes and round-trips", () => {
   const fields = scale("(C-1) G-1 C0");
   assert.equal(fields["0"][2], 0);
   assert.equal(fields["1"][2], 7);
-  assert.equal(core.formatScale(fields), "(C-1) G-1 C0");
-  assert.deepEqual(scale(core.formatScale(fields)), fields);
+  assert.equal(core.formatSeed(fields), "(C-1) G-1 C0");
+  assert.deepEqual(scale(core.formatSeed(fields)), fields);
   const low = scale("[G-1] (C0) G0");
   assert.equal(low["101"][1], -1);
-  assert.equal(core.formatScale(low), "[G-1] (C0) G0");
-  assert.equal(core.parseScale("(C-2) G-2").ok, false);
+  assert.equal(core.formatSeed(low), "[G-1] (C0) G0");
+  assert.equal(core.parseSeed("(C-2) G-2").ok, false);
 });
 
 test("a bracketed note among top notes and a bottom note after the inner notes continue the climb", () => {
@@ -339,21 +347,21 @@ test("formatSeed never emits a note parseSeed refuses", () => {
         n => `(${n}) F`
       ]) {
         const str = shape(spelled + octave);
-        const r = core.parseScale(str);
+        const r = core.parseSeed(str);
         if (!r.ok) continue;
         accepted += 1;
         const fields = host(r.value.fields);
-        for (const printed of [core.formatSeed(fields), core.formatScale(fields)]) {
+        for (const printed of [core.formatSeed(fields), core.formatSeed(fields)]) {
           for (const token of noteTokens(printed)) assert.match(token, NOTE, `${str} printed ${printed}`);
         }
-        assert.equal(core.parseScale(core.formatScale(fields)).ok, true, str);
+        assert.equal(core.parseSeed(core.formatSeed(fields)).ok, true, str);
       }
     }
   }
   assert.ok(accepted > 10, `only ${accepted} accepted: the sweep is vacuous`);
-  const refused = core.parseScale("[B#] (C#-1) G# B# D#");
+  const refused = core.parseSeed("[B#] (C#-1) G# B# D#");
   assert.equal(refused.ok, false);
   assert.equal(refused.code, "BAD_NOTE");
   assert.match(refused.reason, /B#-2/);
-  assert.equal(core.parseScale("[Cb] (C0) G").ok, true);
+  assert.equal(core.parseSeed("[Cb] (C0) G").ok, true);
 });

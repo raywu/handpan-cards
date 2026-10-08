@@ -75,6 +75,8 @@ function decoded(str) {
 
 // The section 2 reason string for a code, read from the spec table.
 function specReason(code) {
+  // Plan section 9 reworded BAD_NOTE; ENGINE-SPEC.md is frozen history.
+  if (code === "BAD_NOTE") return "<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.";
   const start = SPEC.indexOf("\n## 2. ");
   const end = SPEC.indexOf("\n## 3. ", start);
   assert.ok(start > 0 && end > start, "ENGINE-SPEC has no section 2");
@@ -86,7 +88,7 @@ function specReason(code) {
 }
 
 // Section 2 is a CLOSED enum; share may only ever answer with one of these.
-const CODES = ["NO_DING", "NO_FIFTH", "TOO_MANY_RIM", "BAD_NOTE",
+const CODES = ["NO_DING", "NO_FIFTH", "BAD_NOTE",
                "NOTE_OUT_OF_RANGE", "NOTE_OUT_OF_ORDER", "NOTE_REPEATED",
                "NEEDS_NEWER_APP", "NO_THIRDS"];
 
@@ -123,14 +125,14 @@ test("the three golden maker strings round-trip through encode/decode", () => {
 // mutant makes - changes the tail of these strings and fails the pin.
 test("encode's checksum is pinned against a captured minimal payload (Q18)", () => {
   const seed = parsed("(C3) G3");
-  assert.equal(encoded(seed), "3A4CpAI17Cmem2Gam2J092Wqgf3kG");
+  assert.equal(encoded(seed), "4A4CpAI17Cmem2Gam2J092WIpeFI0");
 });
 
 test("encode's checksum is pinned against a captured payload with every option set (Q18)", () => {
   const seed = parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5",
     { palette: 2, parent: 3, mirror: true, name: "Test Deck" });
   assert.equal(encoded(seed),
-    "3A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQme6ykcwG");
+    "4A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQmeFYxq1W");
 });
 
 /* ---------------------------------------------------------------------- */
@@ -373,8 +375,8 @@ function refChecksum(text) {
 
 test("the reference UTF-8/alphabet/checksum re-implementation matches the two Q18 golden literals (Q4 setup)", () => {
   for (const golden of [
-    "3A4CpAI17Cmem2Gam2J092Wqgf3kG",
-    "3A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQme6ykcwG",
+    "4A4CpAI17Cmem2Gam2J092WIpeFI0",
+    "4A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGam2LHbStGWH6LZQmeFYxq1W",
     "2A4CpAI17Cmem2Gam2GeOUlLJ0",
     "2A4GpAI11Co13D214D215D216D217D211D213DGeo2JC9CGbKPNDq84HbOsiAlM3pN0"
   ]) {
@@ -530,7 +532,7 @@ test("every valid seed encodes inside the cap", () => {
 function unvalidatedSeed(str) {
   const tokens = str.split(/\s+/).filter(t => t !== "");
   const ding = /^\((.+)\)$/.exec(tokens[0]);
-  if (!ding) return null;
+  if (!ding || tokens.slice(1).some(t => t.startsWith("("))) return null;
   const split = (t) => {
     const m = /^([A-Za-z][#b]?)(-?\d+)?$/.exec(t);
     return m ? [m[1], m[2] === undefined ? 3 : Number(m[2])] : [t, 3];
@@ -582,7 +584,7 @@ test("decode propagates parseSeed's own code for an invalid seed", () => {
     // mutant h_decode_repairs.patch injects - but it no longer catches decode
     // re-parsing the wrong string, because there is no longer an independent
     // expectation to disagree with it.
-    assert.equal(r.reason, core.parseLegacySeed(core.formatSeed(seed)).reason,
+    assert.equal(r.reason, core.parseSeed(core.formatSeed(seed.fields)).reason,
       `decode changed the reason for ${row.name}`);
     checked += 1;
   }
@@ -1108,9 +1110,9 @@ test("per-ring seats ride on line 2 as rim;inner;bottom", () => {
   assert.equal(moved[2], `${seats.rim.join(",")};;${seats.bottom.join(",")}`);
 });
 
-test("this app writes wire version 3", () => {
-  assert.equal(share.VERSION, 3);
-  assert.equal(encoded(parsed(BASE)).charAt(0), "3");
+test("this app writes wire version 4", () => {
+  assert.equal(share.VERSION, 4);
+  assert.equal(encoded(parsed(BASE)).charAt(0), "4");
   assert.equal(encoded(parsed(BASE)).charAt(0), VERSION_CHARS.charAt(share.VERSION));
 });
 
@@ -1148,6 +1150,7 @@ test("a v2 flat order that crosses rings is refused", () => {
   swapAcross[0] = 16;
   swapAcross[16] = 0;
   const payload = payloadOf(encoded(seed));
+  payload[0] = core.formatLegacySeed(seed);
   const r = reject(forgePayload(2, [payload[0], payload[1].split("\t")
     .filter((_, i) => i !== 3).join("\t"), swapAcross.join(",")]));
   assert.equal(r.ok, false);
@@ -1209,20 +1212,34 @@ test("a version byte BELOW the oldest format is a corrupt payload", () => {
 /* ---------------- Lane L0: the scale-line reader is chosen by version ------ */
 
 test("decode chooses its scale-line reader from the version", () => {
-  const seed = core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
+  const seed = core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value;
   const link = share.encode(seed).value;
+  const v3 = forgePayload(3, [core.formatLegacySeed(seed), ...payloadOf(link).slice(1)]);
   const realLegacy = core.parseLegacySeed;
   const realSeed = core.parseSeed;
   const calls = [];
   core.parseLegacySeed = (...a) => { calls.push("legacy"); return realLegacy(...a); };
   core.parseSeed = (...a) => { calls.push("current"); return realSeed(...a); };
   try {
-    const res = share.decode(link);
-    assert.equal(res.ok, true);
-    assert.deepEqual(calls, ["legacy"],
-      "every version this build reads goes through the legacy reader for now");
+    assert.equal(share.decode(link).ok, true);
+    assert.deepEqual(calls, ["current"], "a version 4 link is read by the new grammar");
+    calls.length = 0;
+    assert.equal(share.decode(v3).ok, true);
+    assert.deepEqual(calls, ["legacy"], "a version 3 link is read by the legacy grammar");
   } finally {
     core.parseLegacySeed = realLegacy;
     core.parseSeed = realSeed;
   }
+});
+
+test("a version 3 link with a bar opens with bottom notes", () => {
+  const old = core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Eb3").value;
+  const link = share.encode(core.parseSeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5").value).value;
+  const v3 = forgePayload(3, [core.formatLegacySeed(old), ...payloadOf(link).slice(1)]);
+  const res = share.decode(v3);
+  assert.equal(res.ok, true);
+  const zones = {};
+  for (const f of Object.values(res.value.fields)) zones[f[3]] = (zones[f[3]] || 0) + 1;
+  assert.equal(zones.bottom, 2);
+  assert.equal(zones.inner, undefined);
 });

@@ -530,7 +530,7 @@ test("the same seed builds the same deck byte for byte", () => {
     const second = JSON.stringify(host(select.build(seedOf(b.maker)).value));
     assert.equal(first, second, `${b.id}: build is deterministic`);
     const roundTripped = JSON.stringify(
-      host(select.build(seedOf(core.formatSeed(seedOf(b.maker)))).value));
+      host(select.build(seedOf(core.formatLegacySeed(seedOf(b.maker)))).value));
     assert.equal(roundTripped, first, `${b.id}: stable across formatSeed`);
   }
 });

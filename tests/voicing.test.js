@@ -478,7 +478,7 @@ test("legality invariants hold over every candidate on every synthetic pan", () 
       }
     }
   }
-  assert.strictEqual(pans, 11, "every ok row of synthetic_scales.json");
+  assert.strictEqual(pans, 13, "every ok row of synthetic_scales.json");
   assert.ok(voicings > 1000, `only ${voicings} candidate voicings swept`);
 });
 
