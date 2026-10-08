@@ -1562,6 +1562,17 @@ Items 1 to 3 touch no file DR1's drawer work touches except `tests/app.test.js`.
 
 **Lane order from here.** DR1; DR2 with the owner's phone check; DOC last.
 
+### 20.14 DR1 review 1: FAIL at 910314e, and one reading (coordinator auto-decision, 2026-10-07, owner away)
+
+PR #272, review 1: FAIL at 910314e with CI green. Two findings; neither test nor mutant saw them.
+
+- **F1.** On Edit with the drawer open, Tab goes from RESET to the degrees select and then back up to MIRROR TOP. The spec's focus order (section 4) puts degrees after BESIDE CENTRE. Fix: move the degrees entry in the sheet's Tab-stop list to after the anchor pair. The acceptance line 23 Edit test becomes an exact-order check from the toggle to the first swatch, and a mutant "degrees before MIRROR TOP" joins it.
+- **F2.** In the landscape two-column layout (844x390) the plate band spans the grid's height, so `scroll-padding-top` equal to the band's height is larger than the scrollport and Tab leaves focused controls out of view. **Reading (auto-decision):** the spec gives the padding one purpose, "so a control focused by Tab is never left under the band". In the two-column layout the band sits beside the controls, not over them, so the padding there is zero. The portrait rule is unchanged. Test: at 844x390 with the drawer open, on Add and on Edit, every Tab stop of the sheet ends inside the scrollport. The owner was offered no alternative; the other choice is to keep the letter of the spec and leave keyboard users in landscape with off-screen focus.
+
+Also from review 1, for the PR body: the acceptance line 89 figures. 380x667, closed, example scale: toggle top 447.3, bottom 491.3, scrollport 491. 844x390, open: status line top 308.1, bottom 344.1, scrollport 256, not visible at scroll top. Spec line 226 leaves the judgement to the owner at the phone check.
+
+Review 1 nits, not fixed before the final review: `closeDrawer` paints before it moves focus; a stale comment near `sheetOptions` saying the sheet has no anchor control; `--plate-band-h` is read on every paint and goes stale on resize; `hasTwoNoteRing` returns true on a parse failure (unreachable); the JS blurb twin uses literals where Python uses constants; stale `#scale-layout-row` wording in two mutant comments; no mutant on the new stops' Tab order beyond F1's, on `closeDrawer` focus, the Escape ladder, the notice or the pause state.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
