@@ -132,7 +132,7 @@ function run() {
         assert.ok(Number.isFinite(least) && least > 0, "no same-ring target was measured");
         return;
       }
-      for (const s of m.sizes) assert.ok(s >= MIN_PX - 0.5, `a same-ring target is ${s.toFixed(1)}px: ${m.sizes.map((x) => x.toFixed(1))}`);
+      for (const s of m.sizes) assert.ok(s >= MIN_PX, `a same-ring target is ${s.toFixed(1)}px: ${m.sizes.map((x) => x.toFixed(1))}`);
     });
   }
 
@@ -146,13 +146,24 @@ function run() {
     assert.strictEqual(await ev(`return document.getElementById("scale-layout-toggle").getAttribute("aria-disabled");`), "true");
   });
 
-  test("DR2a browser (84): the longest status sentence fits the reserved band without the plate scrolling away", async () => {
+  test("DR2a browser (84): the longest single status row of the spec table fits the reserved band without the plate scrolling away", async () => {
     await openAdd(SCALES.pygmy);
+    const rows = [
+      "Picked up Eb5. Arrows choose a seat in the bottom. Space swaps. Escape cancels.",
+      "Picked up Eb5. Tap or drop it on another bottom note to swap, or use PREVIOUS SEAT and NEXT SEAT.",
+      "Swapped Eb5 and Ab4. Eb5 is now in bottom seat 12 of 12, upper right.",
+      "Not moved. Drop Eb5 on another bottom note to swap.",
+      "The bottom is back to 12 notes, so its earlier seats were restored. The picked note was put down.",
+      "The bottom now has 12 notes, so its seats were reset. The picked note was put down.",
+      "This pan has no ring with two notes, so there is nothing to rearrange.",
+      "Picked up Eb5, bottom seat 12 of 12, upper right. PREVIOUS SEAT and NEXT SEAT move it.",
+    ];
+    const longest = rows.reduce((a, r) => (r.length > a.length ? r : a), "");
     const before = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
-    await tap("G3");
-    await tap("Ab3");
+    await ev(`layoutStatus(${JSON.stringify(longest)}); return true;`);
+    await frames();
     const after = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
-    assert.ok(after - before <= 40, `the band grew ${before} to ${after}`);
+    assert.ok(after - before <= 40, `the band grew ${before} to ${after} on a ${longest.length}-character row`);
   });
 
   const stickBand = async () => {
