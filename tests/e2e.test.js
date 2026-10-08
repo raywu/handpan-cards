@@ -4381,11 +4381,56 @@ function run() {
     try {
       for (const h of [780, 667]) {
         await addWithDrawer(380, h);
+        // With the toggle row's hint gone while open, the switch rests under
+        // the sticky footer at 667; bring it into view as a thumb would.
+        await b.eval(`document.getElementById("scale-mirror").scrollIntoView({ block: "center" });`);
         await b.click("#scale-mirror");
         await scrollEnd();
         const r = await inScrollport("scale-drawer-status");
         assert.ok(r.h > 0 && r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
           `380 x ${h}: the status left the scrollport: ${JSON.stringify(r)}`);
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 hint row dimming: the hint and the toggle dim together when disabled, and a disabled drawer switch dims", async () => {
+    try {
+      await freshLoad();
+      await b.setViewport(380, 780, true);
+      await openSheet();
+      const op = () => b.eval(`return { hint: getComputedStyle(document.getElementById("scale-layout-hint")).opacity,
+        toggle: getComputedStyle(document.getElementById("scale-layout-toggle")).opacity };`);
+      const empty = await op();
+      assert.strictEqual(empty.toggle, "0.5");
+      assert.strictEqual(empty.hint, empty.toggle, "the empty-state hint is not dimmed with its button");
+      await typeScale("(D3) A3 C4 D4");
+      const typed = await op();
+      assert.strictEqual(typed.toggle, "1");
+      assert.strictEqual(typed.hint, "1", "the hint stayed dimmed after the scale parsed");
+      await b.eval(`document.getElementById("scale-layout-toggle").click();`);
+      const mb = await b.eval(`const e = document.getElementById("scale-mirror-bottom");
+        return { off: e.disabled, o: getComputedStyle(e).opacity,
+          top: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
+      assert.deepStrictEqual(mb, { off: true, o: "0.5", top: "1" },
+        "a disabled drawer switch is not dimmed to .5, or an enabled one is");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("DR1 focus order: on Edit the plate keeps its tab stop and comes before the toggle, with the drawer closed and open", async () => {
+    try {
+      for (const open of [false, true]) {
+        await (open ? editFreshDeckOpen() : editFreshDeck());
+        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
+        const seen = [];
+        for (let i = 0; i < 2; i += 1) {
+          await b.key("Tab", "Tab", 9);
+          seen.push(await b.eval(`return document.activeElement.id;`));
+        }
+        assert.deepStrictEqual(seen, ["scale-preview", "scale-layout-toggle"], `drawer ${open ? "open" : "closed"}`);
       }
     } finally {
       await b.setViewport(900, 900, false);

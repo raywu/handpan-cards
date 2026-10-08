@@ -1,0 +1,16 @@
+# kills: DR1 notice baseline: the stored MIRROR BOTTOM is the baseline, so a bottom note typed onto a mirrored Edit deck reads not saved yet
+# suite: node --test --test-name-pattern ^DR1.notice.baseline.* tests/app.test.js
+# The notice baseline holds the effective bottom mirror instead of the stored one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9566,8 +9566,7 @@
+     ? edit.options.mirrorBottom : mirror);
+   boxOk = !!edit;
+   dropDrawer();
+-  layoutBase = { anchor, mirror, mb: edit && typeof edit.options.mirrorBottom === "boolean"
+-    ? edit.options.mirrorBottom : mirror };
++  layoutBase = { anchor, mirror, mb: bottomMirror() };
+   paintLayout();
+ }
+ // The create path.

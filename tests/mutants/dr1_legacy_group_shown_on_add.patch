@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8906,7 +8906,7 @@
-   layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
+@@ -8911,7 +8911,7 @@
+   layoutHint.hidden = drawerOpen;
    drawerBox.hidden = !drawerOpen;
    drawerStatus.hidden = !drawerOpen;
 -  legacyGroup.hidden = !editingId;

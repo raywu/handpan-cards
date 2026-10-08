@@ -6762,6 +6762,73 @@ test("DR1 line 117: an Edit deck without bottom notes stored with the old mirror
   assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
 });
 
+test("DR1 notice baseline: the stored MIRROR BOTTOM is the baseline, so a bottom note typed onto a mirrored Edit deck reads not saved yet", () => {
+  const key = boot().get("SCALES_KEY");
+  const app = boot({ storage: { [key]: JSON.stringify([{ v: 4, s: W1_NONE, o: { mirror: true } }]) } });
+  openEdit(app, Object.values(app.registry())[0]);
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it.");
+});
+
+test("DR1 notice baseline: deleting the bottom notes leaves MIRROR BOTTOM out of the comparison", () => {
+  const both = boot();
+  const a = both.generate(W1_BOTTOM, { mirror: true, mirrorBottom: true });
+  openEdit(both, both.registry()[a.value.id]);
+  assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
+  both.type(W1_NONE);
+  assert.strictEqual(dr1Notice(both), "Layout changed from the default.");
+  const only = boot();
+  const b = only.generate(W1_BOTTOM, { mirror: false, mirrorBottom: true });
+  openEdit(only, only.registry()[b.value.id]);
+  assert.strictEqual(dr1Notice(only), "Layout changed from the default.");
+  only.type(W1_NONE);
+  assert.strictEqual(dr1Notice(only), "", "a bottom-only stored mirror still raised a notice with no bottom notes");
+  const add = boot();
+  dr1Open(add, W1_BOTTOM);
+  add.els["scale-mirror-bottom"].click();
+  assert.strictEqual(dr1Notice(add), "Layout not saved yet. GENERATE CARDS keeps it.");
+  add.type(W1_NONE);
+  assert.strictEqual(dr1Notice(add), "");
+});
+
+test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes come and go, and the legacy five never disabled", () => {
+  const key = boot().get("SCALES_KEY");
+  const stored = (str) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: str, o: { mirror: true } }]) } });
+  const withB = stored(W1_BOTTOM);
+  openEdit(withB, Object.values(withB.registry())[0]);
+  assert.strictEqual(withB.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(withB.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "true");
+  const noB = stored(W1_NONE);
+  openEdit(noB, Object.values(noB.registry())[0]);
+  assert.strictEqual(noB.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(noB.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(noB.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+
+  const app = boot();
+  dr1Open(app, W1_BOTTOM);
+  app.els["scale-mirror-bottom"].click();
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "true");
+  app.type(W1_NONE);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, true);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  app.els["scale-mirror"].click();
+  app.type(W1_BOTTOM);
+  assert.strictEqual(app.els["scale-mirror-bottom"].disabled, false);
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false",
+    "a bottom note typed later took MIRROR TOP's value or the old bottom value");
+
+  const edit = boot();
+  openEdit(edit, makeCustom(edit, W1_BOTTOM));
+  dr1Toggle(edit).click();
+  edit.type("(D3) zzz");
+  for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) {
+    assert.ok(!edit.els[id].disabled, `#${id} disabled while the scale does not parse`);
+  }
+});
+
 test("DR1 line 31: a scale that stops parsing under an open drawer pauses the controls and keeps their values", () => {
   const app = boot();
   dr1Open(app, W1_BOTTOM);
@@ -6836,6 +6903,33 @@ test("DR1 line 81: the status line is in the band after the plate, hidden while 
   dr1Toggle(app).click();
   assert.strictEqual(s.hidden, true);
   assert.strictEqual(s.textContent, "", "the status was not cleared on close");
+});
+
+test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint stays empty", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  const hint = app.els["scale-layout-hint"];
+  const dh = app.els["scale-drawer-hint"];
+  assert.ok(!hint.hidden, "the hint is hidden with the drawer closed");
+  dr1Toggle(app).click();
+  assert.ok(hint.hidden, "the hint stays visible with the drawer open");
+  assert.ok(dh.hidden && dh.textContent === "", "the drawer hint is not empty and hidden in DR1");
+  dr1Toggle(app).click();
+  assert.ok(!hint.hidden, "the hint did not return on close");
+  dr1Toggle(app).click();
+  app.keydown("Escape");
+  assert.ok(!hint.hidden, "the hint did not return after Escape closed the drawer");
+});
+
+test("DR1 open step 5: opening the drawer scrolls the zone into view with block nearest and behavior auto, and closing does not scroll", () => {
+  const app = boot();
+  dr1Open(app, W1_NONE);
+  const calls = [];
+  app.els["scale-layout-zone"].scrollIntoView = (o) => calls.push(o);
+  dr1Toggle(app).click();
+  assert.strictEqual(JSON.stringify(calls), JSON.stringify([{ block: "nearest", behavior: "auto" }]));
+  dr1Toggle(app).click();
+  assert.strictEqual(calls.length, 1, "closing the drawer scrolled the sheet");
 });
 
 test("DR1 line 85: the hint reads the empty sentence while the toggle is disabled and the DR1 sentence once the scale parses", () => {

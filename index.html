@@ -974,6 +974,8 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-zone{display:flex; flex-direction:column; gap:var(--sp-2)}
 #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
 #scale-layout-toggle{align-self:flex-start}
+#scale-layout-toggle:disabled, #scale-layout-toggle:disabled + #scale-layout-hint,
+#scale-drawer .mode:disabled{opacity:.5; cursor:default}
 #scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
 #scale-layout-toggle.on span{display:inline}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
@@ -8869,7 +8871,6 @@ function paintMirrors() {
 let drawerOpen = false;
 let drawerPaused = false;
 let layoutBase = { anchor: "one", mirror: false, mb: false };
-let layoutBaseCustom = false;
 const HINT_EMPTY = "Type a scale to adjust its layout.";
 const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.";
 const DRAWER_ZONE = [drawerBtn, rotL, rotR, moveL, moveR, resetBtn, mirrorTop, mirrorBot,
@@ -8887,10 +8888,11 @@ function layoutStatus(text) {
 }
 function layoutNoticeText() {
   const same = anchor === layoutBase.anchor && mirror === layoutBase.mirror &&
-    bottomMirror() === layoutBase.mb;
+    (!hadBottom || bottomMirror() === layoutBase.mb);
   if (!same) return editingId ? "Layout not saved yet. SAVE CHANGES keeps it."
     : "Layout not saved yet. GENERATE CARDS keeps it.";
-  return editingId && layoutBaseCustom ? "Layout changed from the default." : "";
+  const custom = layoutBase.anchor !== "one" || layoutBase.mirror || (layoutBase.mb && hadBottom);
+  return editingId && custom ? "Layout changed from the default." : "";
 }
 /** Everything the layout zone shows, from the session state alone. */
 function paintLayout() {
@@ -8906,6 +8908,7 @@ function paintLayout() {
   drawerBtn.classList.toggle("on", drawerOpen);
   drawerBtn.setAttribute("aria-expanded", String(drawerOpen));
   layoutHint.textContent = boxOk || drawerOpen ? HINT_GUESS : HINT_EMPTY;
+  layoutHint.hidden = drawerOpen;
   drawerBox.hidden = !drawerOpen;
   drawerStatus.hidden = !drawerOpen;
   legacyGroup.hidden = !editingId;
@@ -8929,6 +8932,7 @@ function openDrawer() {
   drawerPaused = false;
   drawerStatus.textContent = "";
   paintLayout();
+  layoutZone.scrollIntoView({ block: "nearest", behavior: "auto" });
   if (!hasTwoNoteRing()) layoutStatus("This pan has no ring with two notes, so there is nothing to rearrange.");
 }
 /** Close the drawer. Focus follows only when it was inside the zone, or the
@@ -9566,8 +9570,8 @@ function resetSheetState(edit) {
     ? edit.options.mirrorBottom : mirror);
   boxOk = !!edit;
   dropDrawer();
-  layoutBase = { anchor, mirror, mb: bottomMirror() };
-  layoutBaseCustom = layoutBase.anchor !== "one" || layoutBase.mirror || layoutBase.mb;
+  layoutBase = { anchor, mirror, mb: edit && typeof edit.options.mirrorBottom === "boolean"
+    ? edit.options.mirrorBottom : mirror };
   paintLayout();
 }
 // The create path.
