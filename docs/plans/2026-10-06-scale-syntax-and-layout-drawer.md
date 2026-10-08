@@ -430,7 +430,7 @@ Whether each fits one line at 380 px is UNVERIFIED; the design step checks it.
 
 **Count line** (replaces the output of `parseLineText`; D12's "count line"): counts first, then the notes grouped by shell, with no bar used as a separator. For the example: `Ding E3 · 9 top · 3 inner · 7 bottom. Top B3 D4 E4 F#4 G4 A4 B4 D5 E5. Inner F#5 G5 A5. Bottom C3 D3 F#3 G3 A3 C4 C5.` All three counts are always printed, including `0 inner` and `0 bottom`. How the line wraps inside the field group is for the design step.
 
-**`PARSE_HINT`**: "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional. A | used to mean bottom notes; it now means inner notes."
+**`PARSE_HINT`**: "Type every note low to high on one line. Put the ding in round brackets: (D). Put each bottom note in square brackets where its pitch falls: [C]. If your pan has inner notes, put a | before them. Octave numbers are optional." (A closing sentence about the old bar was removed on 2026-10-07; see 20.16.)
 
 **`LAYOUT_HINT`**: "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan." (The control's name is the design step's to confirm.)
 
@@ -1583,6 +1583,67 @@ PR #272, review 2: FAIL at bdd94cb with CI green. F1 and F2 of 20.14 hold in a r
 **Before review 3 the lane sweeps the spec's state table (section 16.1) row by row against the build**, for every row section 17 gives to DR1, and reports each row as holds, fixed, or DR2's. Both findings of this review were rows no acceptance line names; the sweep is how the rest are found before a reviewer finds them.
 
 Review 2 nits, not fixed: the portrait line 87 assertion is conditional on the band being sticky; `d_generate_enabled_when_invalid` has a `# kills:` header that matches no test name (older than this lane); line 89 is a report with no assertion.
+
+### 20.16 DR1 repair subplan after the third review FAIL (2026-10-07)
+
+PR #272 failed review 3 at 981f546 (CI green). Under the regroup rule a read-only investigation ran a grid over the build: 792 open and closed cells and 2832 keyboard cells for geometry, 112 cells for the layout state. This section is the repair. It governs the DR1 block wherever they differ. Probes and raw data: session scratchpad, folder `regroup/` (`grid.js`, `state.js`, `dyn.js`).
+
+**Cause.** The acceptance lines name sizes and states; the lane wrote one test per line; nothing tested the rule the lines are instances of. Reviews 1 and 3 found the geometry rule broken off the named points, review 2 the state rule. Mechanically: the sheet's `scroll-padding-top` is a cached band height, and neither it nor the band's stickiness is decided against the scrollport's real height. The state product shows no mismatch at 981f546, so the state side needs a test, not a fix.
+
+**Owner answers, interview 11 (binding).**
+
+1. When the scroll area is too short for the pinned pan plus one control, **the pan un-pins and scrolls away**.
+2. DR1 **holds at every window size**, tested over a grid, not named points.
+3. Remove the last sentence of `PARSE_HINT`: "A | used to mean bottom notes; it now means inner notes."
+4. P1 print check: closed ("Prints look great"). W1 phone check: still open.
+5. DR2's open behaviours: interview before DR2.
+
+**Rule G (geometry), stated once.** With the drawer open, in every window size, on Add and on Edit, keyboard up or down, before and after a resize:
+
+- G-a. The band is stuck only while `scrollport height - band height >= 44 px`. Otherwise it is not stuck and scrolls with the sheet. 44 px is one control, from answer 1.
+- G-b. `scroll-padding-top` equals the band height while the band is stuck and is 0 whenever it is not stuck. That includes the keyboard-up case, the landscape two-column case of 20.14, and G-a's short case.
+- G-c. After a real Tab, every stop of the sheet is fully inside the scrollport and clear of a stuck band. A stop taller than the room it has (the scrollport, less a stuck band) passes when its top is in view below the band (the 20.14 pass rule, extended to the stuck band). The plate is exempt: it is the band.
+- G-d. With the keyboard up, a focused text field shows as much of itself with the drawer open as the same page shows at the same size with the drawer closed, after focus and after one typed character.
+- G-e. G-a and G-b are recomputed whenever the scrollport or the band changes size, whatever the reason (window resize, rotation, keyboard cap, name row, a different scale).
+- G-layout. G-a and G-b speak of the one-column layout. In the landscape two-column layout of 20.14 the padding stays 0 and the columns stay as built; G-c, G-d and G-e still apply there.
+- G-f. After the drawer opens, the toggle that opened it is in view by G-c's pass rule (in DR1 focus stays on the toggle).
+- G-floor. Where the scrollport itself is under 44 px high (the sheet's footer has taken the room, as it does on main), no control can be shown whatever the drawer does. Such a cell is held to G-a (not stuck), G-b and G-d only, and the test prints the cells it treated this way.
+
+**Rule S (state), stated once.** For every combination of sheet (Add, Edit), stored `mirror`, stored `mirrorBottom` (absent, true, false), stored `anchor` (absent, one, between), box (with or without bottom notes, with or without inner notes, valid or invalid) and each control pressed or not: the notice text and each control's enabled, pressed and visible state equal spec 16.1 to 16.3 as read by 20.13 and 20.15.
+
+**Goal.** PR #272 satisfies rule G and rule S, each proved by one enumerating test, and drops the old-bar sentence.
+
+**Non-goals.** No change to the drawer's contents, copy (other than answer 3), focus order, notice rule, plate size, or anything spec section 17 gives DR2. No change to the landscape reading of 20.14. No engine, deck data or geometry change. Review nits of 20.14 and 20.15 stay unfixed except where a step below names one. No new dependency, no `<script src>`.
+
+**Steps (tests first in each).**
+
+1. Rule G test, e2e, one test that loops a fixed cell list: widths 320, 380, 500, 844; heights 390, 480, 553, 667, 780; Add and Edit; keyboard down, and up at 291 and 395 px for heights of 553 and more; a 9-note and a 19-note scale with bottom notes. Keyboard-down cells do the Tab walk (G-a, G-b, G-c, G-f); keyboard-up cells focus each text field and type one character (G-b, G-d). It computes what it expects from the page's own measurements, holds no pixel figure but 44, and names the failing cell. It also asserts the list is not vacuous: on each sheet at least one one-column cell is stuck and at least one is not; add a height to the list if that needs it. It is written from `regroup/grid.js` and must fail at 981f546 on the investigation's groups G1, G2, G3, G4. A second test does G-e by resize: open on Edit at 667x375, resize to 375x667, Tab through; and the reverse. A third does G-e by content: at one fixed size with the drawer open, replace the 9-note scale in the box with the 19-note one (the band's height differs between them) and assert G-a and G-b against fresh measurements one frame later. A fourth walks the boundary: at each width of the list, Edit, 19-note, drawer open, keyboard down, it steps the height 1 px at a time from 480 to 640, measures only (no Tab walk), asserts G-a and G-b at every step, and asserts that both states occur at each width that stays one-column through the walk. The cell list of the first test also carries the breakpoint neighbours 559x520, 560x520, 560x521, 639x700 and 640x699.
+
+   Budget. These four tests live in a new file, `tests/drawer_grid.test.js`, because `tests/e2e.test.js` already runs under one 180 s wall clock in suite health and under the same clock per mutant. The lane registers the file wherever `tests/e2e.test.js` is registered (suite health's count table and its browser-file set, the browser case in `tests/mutation_check.sh`, the README if it lists suites) and checks the five mutants that patch that script still apply. Each test of the file runs in under 60 s here with `CHROME_BIN` set; the lane reports each time. If the first test is over, cells are cut in this order and the cut is reported: the 9-note scale from keyboard-up cells, then width 500 from keyboard-up cells.
+2. Mechanism, in `index.html` outside the generated regions: one function decides stuck or not from live measurements (G-a), sets a class or attribute on the zone and sets `--plate-band-h` to the band height or 0 (G-b). Where it cannot measure (the unit tests' DOM stub has no `clientHeight`, `getComputedStyle` or `ResizeObserver`) it keeps today's result, stuck with the band's height, so no existing unit test changes meaning. The keyboard-up un-stick rule also zeroes the padding (one CSS line beside the existing rule). The function runs from `paintLayout` and from one ResizeObserver watching both the band and the sheet body (G-e); the observer is the recompute path, so no second listener is added beside `applyKbOffset`'s. `openDrawer` also brings the toggle into view, `nearest`, no animation (G-f).
+3. Rule S test, unit, one test built from `regroup/state.js`'s product. Its expected values are a literal table written from spec 16.1 to 16.3, never the result of calling the app's own functions. Expected to pass as written; if a cell fails, fix the code, not the oracle, and report it.
+4. Test repairs named by the investigation: the line 87 test is repaired in place under its present name: it asserts the band's position instead of skipping when it is not stuck, covers Edit, and checks the bottom edge; the line 108 unit test drops its `|| "Adjust layout"` fallback; one test is named for line 40.
+5. Answer 3, done before any height is re-measured: delete the sentence from `PARSE_HINT`; update every test and mutant that reads the hint's text or its wrapped height; the plan's own copy of `PARSE_HINT` is the coordinator's to update.
+6. Mutants: one per rule clause that code implements (stuck with a window under 44; threshold moved off 44 by a few px, killed by the boundary walk; padding kept while not stuck; padding kept with the keyboard up; sheet body not observed; band not observed, killed by the content test; toggle not brought into view), each killed by the step 1 tests. Re-anchor any mutant whose context moved. FLOORS and the README count follow the file count.
+7. Push; `gh pr checks 272 --watch` to green; do not merge.
+
+**Verify (a reviewer can rerun).** `CHROME_BIN` set, run `node --test tests/drawer_grid.test.js` and the step 3 test by name; all pass at the head. The tests of steps 1, 3 and 4 land in a commit of their own before the mechanism, and the lane reports the failing cells at that commit (groups G1 to G4 must be among them); the step 6 mutants, killed in CI's mutation gate at the head, are the standing proof. `python3 tools/inline_engine.py --check` and `python3 tools/sync_decks.py --check` clean. CI green at the head SHA.
+
+**Acceptance.** Rule G and rule S hold as tested; the 37 [DR1] lines still pass; `PARSE_HINT` ends at "Octave numbers are optional."; at 380x780, 380x667 and 844x390 the drawer looks and behaves as at 981f546 (the band is stuck at the two portrait sizes, on Add and on Edit).
+
+**Spec sentences read through this section** (the spec file is not edited by the lane; DOC folds these in). Section 5: the band is stuck only with a 44 px window under it; padding is 0 whenever the band is not stuck. Section 4 Open step 5: the toggle is also brought into view. Acceptance 34 and 87 are instances of rule G.
+
+**Coordinator readings (AFK auto-decisions, for the owner).**
+
+- 44 px is taken from the owner's words "the pinned pan plus one control".
+- G-f, the toggle brought into view after open, is my reading: at 380x780 on Edit the focused toggle was left 1.4 of 44 px in view.
+- The mechanism keeps `scroll-padding-top` (the investigation's option 1). Replacing it with a focus handler (option 2) or shrinking the plate (option 3) is not taken; the owner chose un-pin over shrink.
+- Left for the owner's phone check, not changed: in landscape two columns the status line is not visible together with the plate top (spec line 226 makes this a report).
+- Unknown and not testable here: whether iOS Safari honours `scroll-padding-top` as desktop Chrome does. It goes on the DR2 phone-check list.
+
+**Review 4.** A fresh reviewer, briefed with the DR1 block through 20.13 to 20.16, facts only. Review 3's nits not named in step 4 stay listed, not fixed. **On a fourth FAIL the lane stops:** no fifth round; the coordinator reports to the owner with the finding and the options, because a fourth miss means the lane's shape, not its code, is wrong.
+
+Reviewed 2026-10-07: engineering review (nine findings) and an outside voice (four findings), all folded into the text above.
 
 ## NOT in scope
 
