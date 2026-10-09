@@ -601,3 +601,17 @@ test("ET-2 reduceIntervals", () => {
     "a chord tone is never dropped, even past six notes");
   assert.throws(() => V.reduceIntervals([0, 4, 12]), /repeats a pitch class/);
 });
+
+test("R4-E isLegal refuses no ids, an id the deck lacks, and a voicing the chord symbol does not allow", () => {
+  const amara = GOLDEN.decks.find((d) => d.id === "amara");
+  const dm = amara.chords.find((c) => c.main === "Dm" && c.sup === "");
+  assert.strictEqual(V.isLegal(amara.fields, undefined), false, "no ids");
+  assert.strictEqual(V.isLegal(amara.fields, []), false, "an empty voicing");
+  assert.strictEqual(V.isLegal(amara.fields, [99, 1]), false, "an id the deck does not have");
+  assert.strictEqual(V.isLegal(amara.fields, dm.fields, [0, 3, 7]), true, "control");
+  assert.strictEqual(V.isLegal(amara.fields, dm.fields, [0, 3, 7, 10]), false,
+    "a voicing of the wrong size for its symbol");
+  const d5 = amara.chords.find((c) => c.main === "D5");
+  assert.strictEqual(V.isLegal(amara.fields, d5.fields.concat(dm.fields.slice(1, 2)), [0, 7]), false,
+    "a power chord of three notes");
+});

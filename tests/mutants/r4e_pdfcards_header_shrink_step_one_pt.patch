@@ -1,0 +1,15 @@
+# kills: a chord name too wide for the header steps down in 0.5 pt until name and superscript fit
+# suite: node --test --test-name-pattern ^a.chord.name.too.wide.for.the.header.steps.down.in.0.5.pt.until.name.and.superscript.fit$ tests/pdfcards.test.js
+# R4-E: the chord-name shrink loop steps by a whole point and stops short of the widest fit.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -220,7 +220,7 @@
+     var size = 27.0;
+     while (size > 8 && (tw(main, "Display", size, size * 0.02) +
+                         tw(sup, "Display", size * 0.52, 0)) > w * 0.62) {
+-      size -= 0.5;
++      size -= 1.0;
+     }
+     var supw = sup ? tw(sup, "Display", size * 0.52, 0) : 0.0;
+     var base = y + h - 24 - size * 0.70;

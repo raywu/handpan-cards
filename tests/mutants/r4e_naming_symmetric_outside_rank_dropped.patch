@@ -1,0 +1,15 @@
+# kills: R4-E symmetricRoot ranks a candidate outside the degree order after every one inside it, by distance from the tonic
+# suite: node --test --test-name-pattern ^R4.E.symmetricRoot.ranks.a.candidate.outside.the.degree.order.after.every.one.inside.it..by.distance.from.the.tonic$ tests/naming.test.js
+# R4-E: a candidate outside the degree order keeps rank -1 and so beats every one inside it.
+diff --git a/src/engine/naming.js b/src/engine/naming.js
+--- a/src/engine/naming.js
++++ b/src/engine/naming.js
+@@ -309,7 +309,7 @@
+       var rank;
+       if (order) {
+         rank = indexOfPc(order, candidates[i]);
+-        if (rank < 0) rank = order.length + pc(candidates[i] - tonic);
++
+       } else {
+         rank = pc(candidates[i] - tonic);
+       }

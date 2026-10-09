@@ -1,0 +1,14 @@
+# kills: R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers
+# suite: node --test --test-name-pattern ^R4.E.options.that.are.not.a.plain.value.of.the.right.kind.are.BAD.NOTE..in.both.parsers$ tests/core.test.js
+# R4-E: a non-object options value is read as an empty one.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -289,7 +289,6 @@
+       mirror: DEFAULT_OPTIONS.mirror
+     };
+     if (options === undefined || options === null) return ok(out);
+-    if (typeof options !== "object") return badNote(options);
+ 
+     if (options.palette !== undefined) {
+       var palette = options.palette;

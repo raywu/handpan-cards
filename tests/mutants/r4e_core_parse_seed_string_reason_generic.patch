@@ -1,0 +1,15 @@
+# kills: R4-E a seed that is not a string is BAD_NOTE naming it, in both parsers
+# suite: node --test --test-name-pattern ^R4.E.a.seed.that.is.not.a.string.is.BAD.NOTE.naming.it..in.both.parsers$ tests/core.test.js
+# R4-E: parseSeed names no value when its input is not a string.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -731,7 +731,7 @@
+   }
+ 
+   function parseSeed(input, options) {
+-    if (typeof input !== "string") return badNote(String(input));
++    if (typeof input !== "string") return badNote("input");
+     var opts = readOptions(options);
+     if (!opts.ok) return opts;
+ 

@@ -1,0 +1,15 @@
+# kills: EG-4 parseSeed reports the first failing stage, in tokenize, place, cap, fifth order
+# suite: node --test --test-name-pattern ^EG.4.parseSeed.reports.the.first.failing.stage..in.tokenize..place..cap..fifth.order$ tests/core.test.js
+# R4-E: the doubled-bar check runs before ding counting, so the stages report out of order.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -342,7 +342,7 @@
+   function tokenize(input) {
+     var tokens = input.split(/\s+/).filter(function (t) { return t !== ""; });
+ 
+-    // 1. Ding counting, before every other rule (D13).
++    if (tokens.filter(function (t) { return t === "|"; }).length > 1) return badNote("|");
+     var dingIndexes = [];
+     for (var i = 0; i < tokens.length; i += 1) {
+       if (isDingShaped(tokens[i])) dingIndexes.push(i);

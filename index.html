@@ -2076,8 +2076,7 @@ HPE.pdf = (function () {
   function num(v) {
     if (!isFinite(v)) throw new Error("non-finite coordinate: " + v);
     var s = (Math.round(v * 10000) / 10000).toFixed(4);
-    s = s.replace(/0+$/, "").replace(/\.$/, "");
-    return s === "-0" ? "0" : s;
+    return s.replace(/0+$/, "").replace(/\.$/, "");
   }
 
   function escapeText(s) {
@@ -3283,6 +3282,8 @@ HPE.pdfcards = (function () {
     GEOM: GEOM,
     PAPER: PAPER,
     CARD_WARNINGS: CARD_WARNINGS,
+    labelRatio: labelRatio,
+    labelSize: labelSize,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
@@ -4676,16 +4677,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return Math.round(value * f) / f;
   }
 
-  // Finding 10 (2026-09-30 quality-refactor plan): fieldsOf/err/badNote are
-  // HPE.core's own helpers; layout.js always loads after core.js (every
+  // Finding 10 (2026-09-30 quality-refactor plan): fieldsOf is
+  // HPE.core's own helper; layout.js always loads after core.js (every
   // caller's loadEngine list includes "core" ahead of "layout"), so this
   // module just delegates rather than keeping its own copy.
   function fieldsOf(seedOrFields) {
     return HPE.core.fieldsOf(seedOrFields);
-  }
-
-  function err(code) {
-    return HPE.core.err(code);
   }
 
   /* Section 2's enum is CLOSED and carries no code for "that correction is not

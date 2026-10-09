@@ -1,0 +1,15 @@
+# kills: R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check
+# suite: node --test --test-name-pattern ^R4.E.decode.refuses.a.version.byte.outside.the.alphabet.and.a.body.character.outside.it..even.under.a.valid.check$ tests/share.test.js
+# R4-E: a body character outside the alphabet is read as 0.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -165,7 +165,7 @@
+     var acc = 0;
+     for (var i = 0; i < str.length; i += 1) {
+       var value = INDEX[str.charAt(i)];
+-      if (value === undefined) return null;
++      if (value === undefined) value = 0;
+       acc = (acc << 6) | value;
+       bits += 6;
+       if (bits >= 8) {

@@ -1,0 +1,14 @@
+# kills: R4-E encode refuses a value that is not a seed, writes a seed with no options as the defaults, and refuses an over-cap link
+# suite: node --test --test-name-pattern ^R4.E.encode.refuses.a.value.that.is.not.a.seed..writes.a.seed.with.no.options.as.the.defaults..and.refuses.an.over.cap.link$ tests/share.test.js
+# R4-E: encode of a non-seed throws instead of refusing.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -310,7 +310,6 @@
+   // one validator is core.parseSeed (spec 1, "input validation lives only in
+   // core.parseSeed"), and decode runs it again on the far side.
+   function encode(seed) {
+-    if (!seed || typeof seed !== "object" || !seed.fields) return badNote(seed);
+     var payload = HPE.core.formatSeed(seed.fields) + SEP +
+                   optionsLine(seed.options) + SEP +
+                   seatsField((seed.options || {}).seats);  // line 2: the layout delta.

@@ -80,7 +80,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { loadEngine } = require("./helpers/engine.js");
-const { score } = require("./helpers/sequence_score.js");
 
 const ROOT = path.join(__dirname, "..");
 const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
@@ -2145,8 +2144,10 @@ test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
 
   const late = loadEngine(["sequence", "core"]);
   assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
-  assert.deepEqual(host(late.sequence.anchors(AMARA)), host(E.sequence.anchors(AMARA)),
-    "core must be read when anchors runs, not when sequence loads");
+  const msg = "core must be read when anchors runs, not when sequence loads";
+  let lateAnchors;
+  assert.doesNotThrow(() => { lateAnchors = late.sequence.anchors(AMARA); }, msg);
+  assert.deepEqual(host(lateAnchors), host(E.sequence.anchors(AMARA)), msg);
 });
 
 // Lane U1b (PR #254 review 1): with the deck cap gone, MEDIUM's enumeration
@@ -2425,4 +2426,13 @@ test("a stratum with no colour start is left out", () => {
       assert.strictEqual(w.filter((i) => isColour[i]).length, 1, `${str}: ${JSON.stringify(w)}`);
     }
   }
+});
+
+test("R4-E tierOf refuses chords that are not a non-empty array, by name", () => {
+  const E = engine();
+  const deck = fiveCardDeck();
+  for (const bad of [undefined, null, [], "0123", { length: 2 }]) {
+    assert.throws(() => E.sequence.tierOf(deck, bad), /tierOf: chords must be a non-empty array/);
+  }
+  assert.strictEqual(E.sequence.tierOf(deck, [0, 1, 2, 3]), "basic", "control");
 });

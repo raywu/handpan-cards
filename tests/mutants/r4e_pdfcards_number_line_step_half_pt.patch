@@ -1,0 +1,15 @@
+# kills: a long note line and a long number line each step down in 0.25 pt to the widest size that fits
+# suite: node --test --test-name-pattern ^a.long.note.line.and.a.long.number.line.each.step.down.in.0.25.pt.to.the.widest.size.that.fits$ tests/pdfcards.test.js
+# R4-E: the number-line shrink loop steps by half a point.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -269,7 +269,7 @@
+       }
+       total2 += (fields.length - 1) * tw(" - ", "Notes", s2);
+       if (total2 <= w - 16) break;
+-      s2 -= 0.25;
++      s2 -= 0.5;
+     }
+     px = x + (w - total2) / 2;
+     for (i = 0; i < fields.length; i++) {

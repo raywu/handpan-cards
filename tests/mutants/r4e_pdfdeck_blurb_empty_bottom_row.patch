@@ -1,0 +1,15 @@
+# kills: R4-E the title blurb is led by the ding when there is one, counts chords in the singular, and omits an empty BOTTOM row
+# suite: node --test --test-name-pattern ^R4.E.the.title.blurb.is.led.by.the.ding.when.there.is.one..counts.chords.in.the.singular..and.omits.an.empty.BOTTOM.row$ tests/pdfcards.test.js
+# R4-E: a pan without a bottom shell prints an empty BOTTOM row.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -107,7 +107,7 @@
+                              spec[numericSort(ding)[0]][1] + "  |  " : "";
+     var out = [head + line(["rim", "inner"])];
+     var bottom = line(["bottom"]);
+-    if (bottom) out.push("BOTTOM:  " + bottom);
++    out.push("BOTTOM:  " + bottom);
+     out.push(chordCount + " CHORD" + (chordCount !== 1 ? "S" : "") +
+              " - ONE CARD PER CHORD");
+     // A warned pan would otherwise print with no sign anywhere on the sheets

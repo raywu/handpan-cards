@@ -1,0 +1,16 @@
+# kills: R4-E a select function called with a module it needs unloaded says which module to load first
+# suite: node --test --test-name-pattern ^R4.E.a.select.function.called.with.a.module.it.needs.unloaded.says.which.module.to.load.first$ tests/select.test.js
+# R4-E: the missing-module error does not name the module.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -48,8 +48,7 @@
+ 
+   function need(name) {
+     if (!HPE[name]) {
+-      throw new Error("HPE.select requires HPE." + name + ": load " + name +
+-        ".js first");
++      throw new Error("HPE.select requires a module: load it first");
+     }
+     return HPE[name];
+   }

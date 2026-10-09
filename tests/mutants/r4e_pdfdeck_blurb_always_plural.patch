@@ -1,0 +1,15 @@
+# kills: R4-E the title blurb is led by the ding when there is one, counts chords in the singular, and omits an empty BOTTOM row
+# suite: node --test --test-name-pattern ^R4.E.the.title.blurb.is.led.by.the.ding.when.there.is.one..counts.chords.in.the.singular..and.omits.an.empty.BOTTOM.row$ tests/pdfcards.test.js
+# R4-E: one chord is counted as 1 CHORDS.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -108,7 +108,7 @@
+     var out = [head + line(["rim", "inner"])];
+     var bottom = line(["bottom"]);
+     if (bottom) out.push("BOTTOM:  " + bottom);
+-    out.push(chordCount + " CHORD" + (chordCount !== 1 ? "S" : "") +
++    out.push(chordCount + " CHORD" + "S" +
+              " - ONE CARD PER CHORD");
+     // A warned pan would otherwise print with no sign anywhere on the sheets
+     // that the app had flagged it; the engine's own reason string, verbatim, unless TITLE_WARNINGS has a

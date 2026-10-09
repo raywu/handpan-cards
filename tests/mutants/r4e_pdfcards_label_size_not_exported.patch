@@ -1,0 +1,14 @@
+# kills: the label rule is public: HPE.pdfcards.labelRatio and labelSize match the internal figures
+# suite: node --test --test-name-pattern ^the.label.rule.is.public..HPE.pdfcards.labelRatio.and.labelSize.match.the.internal.figures$ tests/pdfcards.test.js
+# R4-E: HPE.pdfcards.labelSize leaves the public surface.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -648,7 +648,6 @@
+     PAPER: PAPER,
+     CARD_WARNINGS: CARD_WARNINGS,
+     labelRatio: labelRatio,
+-    labelSize: labelSize,
+     // exported for the port's own unit tests, not for the app
+     _internal: {
+       Canvas: Canvas, tracked: tracked,

@@ -1,0 +1,14 @@
+# kills: a bottom-shell pan draws the dashed bottom orbit once and one dashed ring per unlit bottom field
+# suite: node --test --test-name-pattern ^a.bottom.shell.pan.draws.the.dashed.bottom.orbit.once.and.one.dashed.ring.per.unlit.bottom.field$ tests/pdfcards.test.js
+# R4-E: an unlit bottom-shell field is drawn as a solid ring.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -295,7 +295,6 @@
+     c.setLineWidth(0.65);
+     if (state === "off-bottom") {
+       c.setStrokeColor([0.62, 0.62, 0.62]);
+-      c.setDash(1.6, 1.6);
+       c.circle(x, y, r, 1, 1);
+       c.setDash();
+       return;

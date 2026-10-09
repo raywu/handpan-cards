@@ -1,0 +1,15 @@
+# kills: R4-E solve ignores inherited keys and fields in a zone it does not know
+# suite: node --test --test-name-pattern ^R4.E.solve.ignores.inherited.keys.and.fields.in.a.zone.it.does.not.know$ tests/layout.test.js
+# R4-E: collect seats a field in an unknown zone as a rim note.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -197,7 +197,7 @@
+     for (id in fields) {
+       if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+       var zone = fields[id][3];
+-      if (!Object.prototype.hasOwnProperty.call(zones, zone)) continue;
++      if (!Object.prototype.hasOwnProperty.call(zones, zone)) zone = "rim";
+       zones[zone].push(id);
+     }
+     zones.ding.sort(byNumber);

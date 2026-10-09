@@ -1,0 +1,15 @@
+# kills: R4-E a generated deck with no warnings key has none, and bankers leaves a non-finite number alone
+# suite: node --test --test-name-pattern ^R4.E.a.generated.deck.with.no.warnings.key.has.none..and.bankers.leaves.a.non.finite.number.alone$ tests/pdfcards.test.js
+# R4-E: a deck with no warnings key is given one.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -155,7 +155,7 @@
+       return [c.main, c.sup, c.subtitle, c.fields.slice(), c.roots.slice()];
+     });
+     var hasBottom = zoneIds(spec, ["bottom"]).length > 0;
+-    var warnings = (generated.warnings || []).slice();
++    var warnings = (generated.warnings || [{ code: "X", reason: "x" }]).slice();
+ 
+     var root = hexColor(generated.colors.root);
+     var tone = hexColor(generated.colors.tone);

@@ -365,3 +365,14 @@ test("formatSeed never emits a note parseSeed refuses", () => {
   assert.match(refused.reason, /B#-2/);
   assert.equal(core.parseSeed("[Cb] (C0) G").ok, true);
 });
+
+test("R4-E gen_deck.js refuses a flag given no value, naming the flag, and exits 1", () => {
+  const { spawnSync } = require("node:child_process");
+  const run = (...args) => spawnSync(process.execPath,
+    [path.join(__dirname, "..", "tools", "gen_deck.js"), ...args], { encoding: "utf8" });
+  for (const flag of ["--palette", "--parent", "--preset"]) {
+    const r = run(flag);
+    assert.equal(r.status, 1, `${flag} with no value`);
+    assert.ok(r.stderr.includes(`usage: ${flag} needs a value`), r.stderr);
+  }
+});

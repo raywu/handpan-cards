@@ -1,0 +1,15 @@
+# kills: R4-E a ding whose body is not a note is BAD_NOTE naming the ding token
+# suite: node --test --test-name-pattern ^R4.E.a.ding.whose.body.is.not.a.note.is.BAD.NOTE.naming.the.ding.token$ tests/core.test.js
+# R4-E: a ding that does not lex names no token.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -354,7 +354,7 @@
+     var body = dingBody(tokens[0]);
+     if (body === null) return badNote(tokens[0]);
+     var dingNote = lex(body);
+-    if (!dingNote) return badNote(tokens[0]);
++    if (!dingNote) return badNote("ding");
+     // A ding written without an octave is octave 3 (all three built-ins).
+     if (dingNote.octave === null) dingNote.octave = 3;
+     var dingMidi = midiFromName(dingNote.letter, dingNote.accidental, dingNote.octave);

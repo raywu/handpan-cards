@@ -1,0 +1,15 @@
+# kills: R4-E gen_deck.js refuses a flag given no value, naming the flag, and exits 1
+# suite: node --test --test-name-pattern ^R4.E.gen.deck.js.refuses.a.flag.given.no.value..naming.the.flag..and.exits.1$ tests/scale.test.js
+# R4-E: the missing-value refusal does not name the flag.
+diff --git a/tools/gen_deck.js b/tools/gen_deck.js
+--- a/tools/gen_deck.js
++++ b/tools/gen_deck.js
+@@ -88,7 +88,7 @@
+     const a = argv[i];
+     const next = () => {
+       i += 1;
+-      if (i >= argv.length) die("usage: " + a + " needs a value");
++      if (i >= argv.length) die("usage: a flag needs a value");
+       return argv[i];
+     };
+     if (a === "--list-presets") out.listPresets = true;

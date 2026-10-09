@@ -1,0 +1,15 @@
+# kills: bottom-shell index numbers print in the orange accent
+# suite: node --test --test-name-pattern ^bottom.shell.index.numbers.print.in.the.orange.accent$ tests/pdfcards.test.js
+# R4-E: a bottom-shell index number takes the ink colour of a rim number.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -372,7 +372,7 @@
+         var nr, col, fnt;
+         if (zone === "bottom") {
+           nr = orb + rr + R * g.n_out;
+-          col = ORANGE; fnt = "LabelSB";
++          col = INK; fnt = "LabelSB";
+         } else if (zone === "rim" && g.rim_num_out) {
+           nr = orb + rr + R * g.n_in;
+           col = INK; fnt = "Label";

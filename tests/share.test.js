@@ -1243,3 +1243,79 @@ test("a version 3 link with a bar opens with bottom notes", () => {
   assert.equal(zones.bottom, 2);
   assert.equal(zones.inner, undefined);
 });
+
+/* ------------------------------------------------ R4-E: refusals -------- */
+
+const R4E_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const sealed = (head) => head + refChecksum(head);
+
+test("R4-E decode refuses a version byte outside the alphabet and a body character outside it, even under a valid check", () => {
+  const link = encoded(parsed(R4E_SEED));
+  assert.equal(share.decode("~" + link.slice(1)).ok, false, "a version byte that is not in the alphabet");
+  assert.equal(share.decode("~" + link.slice(1)).code, "BAD_NOTE");
+  const head = link.slice(0, link.length - 6);
+  const at = head.indexOf("0", 1);
+  assert.ok(at > 0, "fixture assumption: the body holds a 0 to swap");
+  const forged = sealed(head.slice(0, at) + "~" + head.slice(at + 1));
+  const r = share.decode(forged);
+  assert.equal(r.ok, false, "a body character outside the alphabet is refused, not read as 0");
+  assert.equal(r.code, "BAD_NOTE");
+});
+
+test("R4-E decode refuses a payload of two or four lines", () => {
+  const lines = payloadOf(encoded(parsed(R4E_SEED)));
+  assert.equal(lines.length, 3);
+  assert.equal(share.decode(forgePayload(4, lines.slice(0, 2))).ok, false);
+  assert.equal(share.decode(forgePayload(4, lines.concat(["x"]))).ok, false);
+  assert.equal(share.decode(forgePayload(4, lines)).ok, true, "the three-line control decodes");
+});
+
+test("R4-E decode refuses an options line with the wrong number of fields, a palette or parent that is not a count", () => {
+  const lines = payloadOf(encoded(parsed(R4E_SEED)));
+  const parts = lines[1].split("\t");
+  assert.equal(parts.length, 5);
+  const without = (line1) => share.decode(forgePayload(4, [lines[0], line1, lines[2]]));
+  assert.equal(without(parts.join("\t")).ok, true, "control");
+  assert.equal(without(parts.slice(1).join("\t")).ok, false, "four fields at version 4");
+  assert.equal(without(parts.concat(["x"]).join("\t")).ok, false, "six fields");
+  assert.equal(without(["x"].concat(parts.slice(1)).join("\t")).ok, false, "a palette that is not a count");
+  assert.equal(without([parts[0], "x"].concat(parts.slice(2)).join("\t")).ok, false, "a parent that is not a count");
+  assert.equal(without(["1000"].concat(parts.slice(1)).join("\t")).ok, false, "a palette of four digits");
+});
+
+test("R4-E encode refuses a value that is not a seed, writes a seed with no options as the defaults, and refuses an over-cap link", () => {
+  for (const bad of [undefined, null, "x", 5, {}]) {
+    const r = share.encode(bad);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "BAD_NOTE");
+  }
+  const seed = parsed(R4E_SEED);
+  const bare = { fields: seed.fields };
+  assert.equal(share.encode(bare).value, share.encode({ fields: seed.fields, options: {} }).value);
+  const huge = { fields: seed.fields, options: { name: "x".repeat(share.CAPS.payload) } };
+  const over = share.encode(huge);
+  assert.equal(over.ok, false);
+  assert.equal(over.code, "BAD_NOTE");
+});
+
+test("R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits the cap and keeps every ring", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  const zones = ["ding"].concat(Array(60).fill("rim"), Array(30).fill("inner"), Array(29).fill("bottom"));
+  zones.forEach((zone, i) => {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2, zone, null, letter];
+  });
+  const ring = (from, count) => Array.from({ length: count }, (_, i) => from + count - 1 - i);
+  const seats = { rim: ring(1, 60), inner: ring(61, 30), bottom: ring(91, 29) };
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, anchor: "between", name: "x".repeat(40), seats },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+  const lineTwo = payloadOf(r.value)[2].split(";");
+  assert.equal(lineTwo.length, 3, "one list per ring");
+  assert.deepEqual(lineTwo.map((s) => s.split(",").length), [60, 30, 29]);
+});

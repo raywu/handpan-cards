@@ -1,0 +1,14 @@
+# kills: R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers
+# suite: node --test --test-name-pattern ^R4.E.options.that.are.not.a.plain.value.of.the.right.kind.are.BAD.NOTE..in.both.parsers$ tests/core.test.js
+# R4-E: a non-boolean mirror is accepted.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -313,7 +313,6 @@
+       out.name = name;
+     }
+     if (options.mirror !== undefined) {
+-      if (typeof options.mirror !== "boolean") return badNote(options.mirror);
+       out.mirror = options.mirror;
+     }
+     // mirrorBottom and anchor are whitelisted and left ABSENT when not given:

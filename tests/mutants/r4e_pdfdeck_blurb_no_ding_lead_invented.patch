@@ -1,0 +1,15 @@
+# kills: R4-E the title blurb is led by the ding when there is one, counts chords in the singular, and omits an empty BOTTOM row
+# suite: node --test --test-name-pattern ^R4.E.the.title.blurb.is.led.by.the.ding.when.there.is.one..counts.chords.in.the.singular..and.omits.an.empty.BOTTOM.row$ tests/pdfcards.test.js
+# R4-E: a pan with no ding gets an invented lead.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -104,7 +104,7 @@
+     }
+     var ding = zoneIds(spec, ["ding"]);
+     var head = ding.length ? spec[numericSort(ding)[0]][0] +
+-                             spec[numericSort(ding)[0]][1] + "  |  " : "";
++                             spec[numericSort(ding)[0]][1] + "  |  " : "?  |  ";
+     var out = [head + line(["rim", "inner"])];
+     var bottom = line(["bottom"]);
+     if (bottom) out.push("BOTTOM:  " + bottom);

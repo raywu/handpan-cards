@@ -144,3 +144,37 @@ test("every drawing primitive emits an operator and a paint mode", () => {
     assert.ok(s.includes(op), `missing operator ${JSON.stringify(op)}`);
   }
 });
+
+/* ---- R4-E: the writer's refusals and defaults ---------------------------- */
+
+test("R4-E a non-finite number is refused, and a value that rounds to negative zero prints as 0", () => {
+  const p = HPE.pdf.doc(612, 792).page();
+  assert.throws(() => p.setLineWidth(NaN), /non-finite coordinate: NaN/);
+  assert.throws(() => p.translate(Infinity, 0), /non-finite coordinate: Infinity/);
+  p.setLineWidth(-0.00001);
+  assert.equal(p.ops.at(-1), "0 w");
+});
+
+test("R4-E text outside the character set and in an unknown face is refused by name", () => {
+  const p = HPE.pdf.doc(612, 792).page();
+  assert.throws(() => p.text(0, 0, "€", "Label", 10), /character "€" is outside CHARSET/);
+  assert.throws(() => p.text(0, 0, "a", "Nope", 10), /unknown face "Nope"/);
+});
+
+test("R4-E setDash with one number is a square dash, with none clears, and rect, roundRect and circle stroke by default", () => {
+  const p = HPE.pdf.doc(612, 792).page();
+  p.setDash(3);
+  assert.equal(p.ops.at(-1), "[3 3] 0 d");
+  p.setDash(3, 1);
+  assert.equal(p.ops.at(-1), "[3 1] 0 d");
+  p.setDash();
+  assert.equal(p.ops.at(-1), "[] 0 d");
+  p.rect(1, 2, 3, 4);
+  assert.equal(p.ops.at(-1), "S");
+  p.roundRect(1, 2, 30, 40, 5);
+  assert.equal(p.ops.at(-1), "S");
+  p.circle(5, 5, 2);
+  assert.equal(p.ops.at(-1), "S");
+  p.rect(1, 2, 3, 4, "f");
+  assert.equal(p.ops.at(-1), "f");
+});

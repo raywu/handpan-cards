@@ -46,8 +46,9 @@ function zoneCounts(fields) {
 /* ---------------- section 2: the code enum and its reason strings --------- */
 
 // Plan section 9 (2026-10-07) replaced the sentences of four codes and retired
-// TOO_MANY_RIM. ENGINE-SPEC.md is frozen history and still holds the old text,
-// so the table is the spec rows for the unchanged codes plus these.
+// TOO_MANY_RIM. ENGINE-SPEC section 2 has since been corrected to the shipped
+// text, so these rows now repeat what the spec table holds; they stay as the
+// test's own hand-typed pin of those sentences, laid over the parsed table.
 const SECTION9 = {
   NO_DING: {
     kind: "error",
@@ -859,10 +860,15 @@ test("ET-1 engine corpus matches", () => {
 
   const tampered = JSON.parse(fs.readFileSync(fixture, "utf8"));
   tampered.corpus.synthetic[0].layout.geom.r_note += 0.001;
-  const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "et1-")), "tampered.json");
-  fs.writeFileSync(tmp, JSON.stringify(tampered));
-  const stale = run("--fixture", tmp);
-  assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "et1-"));
+  try {
+    const tmp = path.join(dir, "tampered.json");
+    fs.writeFileSync(tmp, JSON.stringify(tampered));
+    const stale = run("--fixture", tmp);
+    assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("ET-2 fifthName", () => {
@@ -1005,4 +1011,52 @@ test("G2b: a hundred-and-first top note leaves bottom ids clear", () => {
   const ids = Object.keys(r.value.fields);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids.length, 103);
+});
+
+/* ------------------------------------------------ R4-E: input guards ---- */
+
+const OK_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+
+test("R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers", () => {
+  for (const parse of [core.parseSeed, core.parseLegacySeed]) {
+    assert.equal(parse(OK_SEED, "mirror").code, "BAD_NOTE", "options must be an object");
+    assert.equal(parse(OK_SEED, 7).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: "3" }).code, "BAD_NOTE", "parent is a number");
+    assert.equal(parse(OK_SEED, { parent: 1.5 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: 11 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: -1 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { name: 5 }).code, "BAD_NOTE", "name is a string");
+    assert.equal(parse(OK_SEED, { name: "café" }).code, "BAD_NOTE", "name is printable ASCII");
+    assert.equal(parse(OK_SEED, { name: "x".repeat(41) }).code, "BAD_NOTE", "name is at most 40 long");
+    assert.equal(parse(OK_SEED, { mirror: "yes" }).code, "BAD_NOTE", "mirror is a boolean");
+    assert.equal(parse(OK_SEED, { mirror: 1 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, null).ok, true, "null options are the defaults");
+    assert.equal(parse(OK_SEED, { parent: 10, name: "x".repeat(40), mirror: true }).ok, true,
+      "the limits themselves are accepted");
+  }
+});
+
+test("R4-E a seed that is not a string is BAD_NOTE naming it, in both parsers", () => {
+  for (const parse of [core.parseSeed, core.parseLegacySeed]) {
+    for (const input of [undefined, null, 5, ["(D3)"], {}]) {
+      const r = parse(input);
+      assert.equal(r.ok, false);
+      assert.equal(r.code, "BAD_NOTE");
+    }
+    assert.match(parse(5).reason, /5/);
+  }
+});
+
+test("R4-E a ding whose body is not a note is BAD_NOTE naming the ding token", () => {
+  const r = core.parseLegacySeed("(Zz) A3 C4");
+  assert.equal(r.code, "BAD_NOTE");
+  assert.match(r.reason, /\(Zz\)/);
+});
+
+test("R4-E formatLegacySeed and deckId read own fields only, so an inherited key is not a field", () => {
+  const own = parsed(OK_SEED).fields;
+  const heir = Object.create({ 9: ["Z", 9, 99, "rim", null, "9"] });
+  for (const id of Object.keys(own)) heir[id] = own[id];
+  assert.equal(core.formatLegacySeed(heir), core.formatLegacySeed(own));
+  assert.equal(core.deckId(heir), core.deckId(own));
 });

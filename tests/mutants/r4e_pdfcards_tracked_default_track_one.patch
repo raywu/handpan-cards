@@ -1,0 +1,15 @@
+# kills: R4-E drawString of an empty string draws nothing, and tracked and fit default to no tracking and the 3.6 pt floor
+# suite: node --test --test-name-pattern ^R4.E.drawString.of.an.empty.string.draws.nothing..and.tracked.and.fit.default.to.no.tracking.and.the.3.6.pt.floor$ tests/pdfcards.test.js
+# R4-E: tracked defaults to one point of tracking.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -115,7 +115,7 @@
+   }
+ 
+   function tracked(c, x, y, text, font, size, track, align, color) {
+-    track = track || 0.0;
++    track = track || 1.0;
+     if (color) c.setFillColor(color);
+     c.setFont(font, size);
+     var w = tw(text, font, size, track);

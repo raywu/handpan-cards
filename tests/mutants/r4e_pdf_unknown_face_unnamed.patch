@@ -1,0 +1,15 @@
+# kills: R4-E text outside the character set and in an unknown face is refused by name
+# suite: node --test --test-name-pattern ^R4.E.text.outside.the.character.set.and.in.an.unknown.face.is.refused.by.name$ tests/pdf.test.js
+# R4-E: the unknown-face error does not name the face.
+diff --git a/src/engine/pdf.js b/src/engine/pdf.js
+--- a/src/engine/pdf.js
++++ b/src/engine/pdf.js
+@@ -66,7 +66,7 @@
+ 
+   function faceData(face) {
+     var f = HPE.fontdata.FACES[face];
+-    if (!f) throw new Error("unknown face " + JSON.stringify(face));
++    if (!f) throw new Error("unknown face");
+     return f;
+   }
+ 
