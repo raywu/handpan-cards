@@ -2145,8 +2145,10 @@ test("EG-2 sequence and voicing take pc/isDing from core at use time", () => {
 
   const late = loadEngine(["sequence", "core"]);
   assert.equal(typeof late.sequence.anchors, "function", "sequence must load before core");
-  assert.deepEqual(host(late.sequence.anchors(AMARA)), host(E.sequence.anchors(AMARA)),
-    "core must be read when anchors runs, not when sequence loads");
+  const msg = "core must be read when anchors runs, not when sequence loads";
+  let lateAnchors;
+  assert.doesNotThrow(() => { lateAnchors = late.sequence.anchors(AMARA); }, msg);
+  assert.deepEqual(host(lateAnchors), host(E.sequence.anchors(AMARA)), msg);
 });
 
 // Lane U1b (PR #254 review 1): with the deck cap gone, MEDIUM's enumeration

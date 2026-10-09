@@ -46,8 +46,9 @@ function zoneCounts(fields) {
 /* ---------------- section 2: the code enum and its reason strings --------- */
 
 // Plan section 9 (2026-10-07) replaced the sentences of four codes and retired
-// TOO_MANY_RIM. ENGINE-SPEC.md is frozen history and still holds the old text,
-// so the table is the spec rows for the unchanged codes plus these.
+// TOO_MANY_RIM. ENGINE-SPEC section 2 has since been corrected to the shipped
+// text, so these rows now repeat what the spec table holds; they stay as the
+// test's own hand-typed pin of those sentences, laid over the parsed table.
 const SECTION9 = {
   NO_DING: {
     kind: "error",
@@ -859,10 +860,15 @@ test("ET-1 engine corpus matches", () => {
 
   const tampered = JSON.parse(fs.readFileSync(fixture, "utf8"));
   tampered.corpus.synthetic[0].layout.geom.r_note += 0.001;
-  const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "et1-")), "tampered.json");
-  fs.writeFileSync(tmp, JSON.stringify(tampered));
-  const stale = run("--fixture", tmp);
-  assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "et1-"));
+  try {
+    const tmp = path.join(dir, "tampered.json");
+    fs.writeFileSync(tmp, JSON.stringify(tampered));
+    const stale = run("--fixture", tmp);
+    assert.equal(stale.status, 1, "--check must exit 1 on a drifted fixture");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("ET-2 fifthName", () => {
