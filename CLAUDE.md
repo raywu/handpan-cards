@@ -441,11 +441,13 @@ is stale, check 1b if the print adapter drifts.
 Then run `python3 tools/regen_data_mutants.py` on a clean tree: the data
 mutants anchor on the DECKS line and go stale on every data change.
 
-Other regen tools, each with `--check`: `tools/regen_engine_corpus.js`
+Other regen tools: `tools/regen_engine_corpus.js`
 rewrites `tests/fixtures/engine_corpus_v1.json` (the engine's observable
 output for a fixed seed corpus; regenerate it in the same commit as any
 deliberate engine output change), beside `tools/regen_card_fixture.js` and
-`tools/regen_pan_fixture.js`.
+`tools/regen_pan_fixture.js`. `--check` belongs to `regen_engine_corpus.js` and
+`regen_card_fixture.js` only; `regen_pan_fixture.js` has no `--check` and always
+writes `tests/fixtures/pan_render_v1.json`.
 
 Coverage: `.github/workflows/coverage.yml` is manual-only and gates nothing.
 It runs the whole suite under V8, browser (CDP) and python coverage and

@@ -313,7 +313,7 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   `NO_FIFTH`. Only `parseLegacySeed` counts dings before lexing. The ding is placed and range-checked before any other note.
 - DECIDED(refactor-4 lane D, stated as the code does them) Three corners of
   that precedence, checked against `src/engine/core.js` `parseSeed` and
-  `scaleStructure`. (i) `readOptions` runs first of all, before any token is
+  `scaleStructure`. (i) `readOptions` runs before any token is
   lexed: a bad `options` object is `BAD_NOTE` even when the string is also
   unreadable. (ii) Bar form with three bars (`| A | B | C`) is `BAD_NOTE`
   `bar`, not `NO_DING` `which`: the bar count is tested before the note
