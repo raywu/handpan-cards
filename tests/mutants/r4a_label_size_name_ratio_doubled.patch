@@ -1,0 +1,18 @@
+# kills: every name the app draws fits inside the field it labels
+# suite: node --test --test-name-pattern ^every.name.the.app.draws.fits.inside.the.field.it.labels$ tests/layout.test.js
+# Replaces c_name_outgrows_its_field (its hunk, the app-block LABEL_RATIO_NOTE literal,
+# went when the app began reading HPE.pdfcards.labelSize). Doubles the name size the
+# app draws, the same 2x the old 1.60650 ratio gave, so every rim name spills out of
+# its circle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8110,7 +8110,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
+    "Where the ratios come from, and what actually changed".
+    Safe above the solver's budget because in the app the field circle itself
+    bounds a name; ext comes from f_num on generated decks only. */
+-const labelSize = HPE.pdfcards.labelSize;
++const labelSize = (r, zone) => HPE.pdfcards.labelSize(r, zone) * 2;
+ const NUM_RATIO = 0.64;
+ function numSize(rNote) { return rNote * NUM_RATIO; }
+ 

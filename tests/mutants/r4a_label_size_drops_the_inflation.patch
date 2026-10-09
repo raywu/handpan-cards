@@ -1,0 +1,18 @@
+# kills: test_neither_renderer_draws_smaller_than_it_did_before_the_rule
+# suite: python3 -m unittest -k test_neither_renderer_draws_smaller_than_it_did_before_the_rule tests.test_render_agreement
+# Replaces r_app_drops_the_label_inflation (its hunk, the app-block LABEL_RATIO_*
+# literals, went when the app began reading HPE.pdfcards.labelSize). Takes the
+# historic 1.05 back off the app-side name size: every diagram name in the app
+# loses ~4.7% while print is untouched.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8110,7 +8110,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
+    "Where the ratios come from, and what actually changed".
+    Safe above the solver's budget because in the app the field circle itself
+    bounds a name; ext comes from f_num on generated decks only. */
+-const labelSize = HPE.pdfcards.labelSize;
++const labelSize = (r, zone) => HPE.pdfcards.labelSize(r, zone) / 1.05;
+ const NUM_RATIO = 0.64;
+ function numSize(rNote) { return rNote * NUM_RATIO; }
+ 
