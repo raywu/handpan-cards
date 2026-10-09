@@ -1,0 +1,15 @@
+# kills: R4-E build with no options, colours, degrees, grad or warnings falls back to the teal and amber defaults
+# suite: node --test --test-name-pattern ^R4.E.build.with.no.options..colours..degrees..grad.or.warnings.falls.back.to.the.teal.and.amber.defaults$ tests/pdfcards.test.js
+# R4-E: a deck with no warnings is given NO_THIRDS.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -431,7 +431,7 @@
+   var CARD_WARNINGS = { NO_THIRDS: "NO 3RDS ON THIS PAN" };
+ 
+   function cardWarnings(deck) {
+-    return (deck.warnings || []).filter(function (w) {
++    return (deck.warnings || [{ code: "NO_THIRDS" }]).filter(function (w) {
+       return Object.prototype.hasOwnProperty.call(CARD_WARNINGS, w.code);
+     }).map(function (w) { return CARD_WARNINGS[w.code]; });
+   }

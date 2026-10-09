@@ -712,3 +712,32 @@ test("R4-E an overlay that shadows canonical data names the deck by id, or by na
   assert.throws(() => HPE.pdfdeck.fromBuiltin(anonymous, clash),
     new RegExp("^Error: " + deck.name + ": print overlay shadows canonical data: name$"));
 });
+
+test("R4-E drawString of an empty string draws nothing, and tracked and fit default to no tracking and the 3.6 pt floor", () => {
+  const P = HPE.pdfcards;
+  const page = HPE.pdf.doc(200, 200).page();
+  const c = new P._internal.Canvas(page);
+  c.drawString(10, 10, "");
+  assert.equal(page.ops.length, 0, "an empty run emits no operator");
+  const plain = P._internal.tracked(c, 10, 10, "ABC", "Label", 10);
+  assert.equal(plain, P._internal.tw("ABC", "Label", 10, 0), "no track argument is no tracking");
+  assert.ok(page.ops.every((op) => !/rg$/.test(op)), "and no colour argument sets no fill");
+  assert.equal(P._internal.fit("ABCDEFGHIJ", "Label", 10, 1), 3.5, "an impossible width steps down past the default 3.6 pt floor and stops");
+  assert.equal(P._internal.fit("ABCDEFGHIJ", "Label", 10, 1, 0, 2), 2, "an explicit floor is honoured");
+});
+
+test("R4-E build with no options, colours, degrees, grad or warnings falls back to the teal and amber defaults", () => {
+  const deck = fixture();
+  const tealAmber = ["0.043 0.482 0.459 rg", "0.867 0.561 0 rg"];
+  const bare = JSON.parse(JSON.stringify(deck));
+  for (const key of ["col_root", "col_tone", "degrees", "grad", "warnings"]) delete bare[key];
+  const withDefaults = latin1(HPE.pdfcards.build(bare));
+  for (const op of tealAmber) assert.ok(withDefaults.includes(op), op + " missing from a deck with no colours");
+  assert.ok(!pdfGlyphs(HPE.pdfcards.build(bare)).map((g) => g.ch).join("").includes("NO 3RDS"), "no warnings key, no badge");
+  const recoloured = JSON.parse(JSON.stringify(deck));
+  recoloured.col_root = [0.1, 0.2, 0.3];
+  recoloured.col_tone = [0.4, 0.5, 0.6];
+  const own = latin1(HPE.pdfcards.build(recoloured));
+  assert.ok(own.includes("0.1 0.2 0.3 rg") && own.includes("0.4 0.5 0.6 rg"));
+  assert.ok(!own.includes("0.043 0.482 0.459 rg"), "a deck's own colours replace the defaults");
+});

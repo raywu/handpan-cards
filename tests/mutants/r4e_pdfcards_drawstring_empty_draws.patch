@@ -1,0 +1,14 @@
+# kills: R4-E drawString of an empty string draws nothing, and tracked and fit default to no tracking and the 3.6 pt floor
+# suite: node --test --test-name-pattern ^R4.E.drawString.of.an.empty.string.draws.nothing..and.tracked.and.fit.default.to.no.tracking.and.the.3.6.pt.floor$ tests/pdfcards.test.js
+# R4-E: an empty string is sent to the page.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -83,7 +83,6 @@
+   };
+   Canvas.prototype.setFont = function (f, s) { this.font = f; this.size = s; };
+   Canvas.prototype.drawString = function (x, y, s) {
+-    if (s === "") return;
+     this.p.text(x, y, s, this.font, this.size);
+   };
+   Canvas.prototype.drawCentredString = function (x, y, s) {

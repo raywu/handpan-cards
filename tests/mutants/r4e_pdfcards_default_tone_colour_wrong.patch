@@ -1,0 +1,15 @@
+# kills: R4-E build with no options, colours, degrees, grad or warnings falls back to the teal and amber defaults
+# suite: node --test --test-name-pattern ^R4.E.build.with.no.options..colours..degrees..grad.or.warnings.falls.back.to.the.teal.and.amber.defaults$ tests/pdfcards.test.js
+# R4-E: a deck without col_tone takes the root colour.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -588,7 +588,7 @@
+     var page = pageSize(paper);
+ 
+     BLUE = deck.col_root || BLUE0;
+-    GREEN = deck.col_tone || GREEN0;
++    GREEN = deck.col_tone || BLUE0;
+ 
+     var doc = HPE.pdf.doc(page[0], page[1]);
+     var S = slots(paper);

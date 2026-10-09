@@ -1,0 +1,15 @@
+# kills: R4-E drawString of an empty string draws nothing, and tracked and fit default to no tracking and the 3.6 pt floor
+# suite: node --test --test-name-pattern ^R4.E.drawString.of.an.empty.string.draws.nothing..and.tracked.and.fit.default.to.no.tracking.and.the.3.6.pt.floor$ tests/pdfcards.test.js
+# R4-E: fit defaults to a 2 pt floor.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -130,7 +130,7 @@
+ 
+   function fit(text, font, size, maxw, track, floor) {
+     track = track || 0.0;
+-    floor = floor === undefined ? 3.6 : floor;
++    floor = floor === undefined ? 2 : floor;
+     while (size > floor && tw(text, font, size, track * size / 10.0) > maxw) {
+       size -= 0.25;
+     }
