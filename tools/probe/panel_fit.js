@@ -35,7 +35,7 @@ const OD8_FAIL_BASE_OVERFLOW = false;
 // Any other control the base renders and the candidate lacks fails rule 2: the
 // judge walks the candidate's controls, so an accidental deletion is otherwise
 // invisible to it.
-const REMOVED_BY_DESIGN = ["modeS"];
+const REMOVED_BY_DESIGN = ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF"];
 
 const W_LO = 320, W_HI = 1300, H_LO = 320, H_HI = 1100;
 const SIDEBAR_WIDTHS = [1024, 1025, 1100, 1280, 1300, 1440, 1920];

@@ -549,7 +549,8 @@ main{overflow-x:clip}
    panel's own .mode-sized controls, which is also what clears the 44px
    target floor (eng review C4). No new colour: these reuse `.mode`'s own
    surface, border and text tokens. */
-.prints{display:flex; flex-wrap:wrap; gap:var(--sp-2)}
+.prints{display:flex; flex-wrap:nowrap; gap:var(--sp-2)}
+.prints button, .prints select{min-width:0}
 .prints button, .prints select{font:600 10.5px/1 "Nunito Sans";
   letter-spacing:.08em; color:#c4bcab; background:#211d16; border:1px solid #433b2c;
   border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
@@ -1381,8 +1382,7 @@ footer.seq{row-gap:var(--sp-1)}
   <div class="panel-group">
     <h3 class="panel-heading">Print this deck</h3>
     <div class="prints">
-      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
-      <button type="button" onclick="downloadDeckPDF('shop', this); closePanel();">CHORD-ONLY PDF</button>
+      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
       <!-- The paper choice keeps the panel open (design direction, "After an
            action"): the next tap is a print button, not a new task. -->
       <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
@@ -1393,7 +1393,7 @@ footer.seq{row-gap:var(--sp-1)}
   </div>
   <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
        amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): five
-       outbound links in two rows, styled as .mode (no new colour
+       outbound links in three rows, styled as .mode (no new colour
        or typeface, N15). They deliberately carry no onclick - a link click
        must NOT call closePanel() (amendment 3), unlike the print buttons
        above: the user comes back from the new tab to the still-open menu.
@@ -1402,10 +1402,17 @@ footer.seq{row-gap:var(--sp-1)}
     <h3 class="panel-heading">Resources</h3>
     <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
          pattern as the Practice buttons) rather than stacked 44px rows -
-         stacked overflowed the 320x568 fit test by 18px. Row one holds the
+         stacked overflowed the 320x568 fit test by 18px. Row one holds
+         HANDPAN 101 alone (2026-10-08, full width, above the sites), row two the
          three sites (class trio: equal widths above the landscape grid, two
-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
+         equal on line one in the sidebar), row three (class duo: one line, labels wrap inside their
          boxes) the two Amy Naylor videos. -->
+    <div class="modebar">
+      <a class="mode" id="res-handpan-101"
+         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
+         aria-label="Handpan 101 (Google Doc)"
+         target="_blank" rel="noopener">HANDPAN 101</a>
+    </div>
     <div class="modebar trio">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
          target="_blank" rel="noopener">HANDPANER</a>
@@ -2513,6 +2520,8 @@ HPE.pdfdeck = (function () {
                      : (tops.length + " + 1"),
       credit: name.toUpperCase(),
       blurb: blurb(spec, chords.length, warnings),
+      // Only the full-deck legend card reads this; the app no longer builds that
+      // variant (2026-10-08), so nothing user-visible shows it. Kept.
       legend_lines: legendLines(spec, hasBottom),
       legend_demo: legendDemo(spec, chords),
       // --- data -----------------------------------------------------------
@@ -3202,6 +3211,8 @@ HPE.pdfcards = (function () {
   // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
+    // The "full" variant (anything but "shop": title card, legend card, blank
+    // padding) is not used by the app since 2026-10-08; kept, and tested.
     var chordsOnly = opts.variant === "shop";
     var paper = PAPER[opts.paper] ? opts.paper : "letter";
     var page = pageSize(paper);
@@ -8370,7 +8381,9 @@ function setPrintPaper(p) {
    against it by tests/test_pdf_parity.py. Nothing about the page layout is
    decided here - only delivery. */
 function pdfFileName(d, variant, paper) {
-  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files. A custom deck's
+  // tools/decks.py's main() names the three shipped CHORD_ONLY files. The
+  // "_Cards_" branch is not used by the UI since 2026-10-08 (no control asks for
+  // the full deck), but it is kept and tested. A custom deck's
   // download joins that shelf rather than inventing a second shape, so a
   // person with both on their desktop can see they are the same kind of thing.
   const stem = d.name.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
@@ -8378,6 +8391,9 @@ function pdfFileName(d, variant, paper) {
   return stem + (variant === "shop" ? "_CHORD_ONLY_" : "_Cards_") + tail + ".pdf";
 }
 
+// NOT USED BY THE UI since 2026-10-08: the 'full' variant (title card, legend
+// card, blank padding) has no control. The settings panel offers DOWNLOAD PDF,
+// which calls this with 'shop'. 'full' is kept for tests and a future return.
 function downloadDeckPDF(variant, btn) {
   const d = deck();
   // One function, one decision: a built-in deck's print overlay lives under

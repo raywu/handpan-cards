@@ -376,6 +376,9 @@ def crop_marks(c):
         c.line(PAGE[0] - 6, y, PAGE[0] - 6 - m, y)
 
 
+# chords_only=False builds the full deck (title and legend cards). Nothing uses
+# it since 2026-10-08: tools/decks.py writes the chord-only sheets, and the app
+# offers only the chord-only PDF. Kept, and exercised by tests/test_pdf_build.py.
 def build(path, deck, chords_only=False):
     global BLUE, GREEN
     BLUE = deck.get("col_root", _BLUE0)
