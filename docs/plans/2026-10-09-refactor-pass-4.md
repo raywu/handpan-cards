@@ -491,6 +491,21 @@ The owner closed the scale-syntax-and-layout-drawer workstream with one intervie
 
 **10.6 AFK ledger confirmed.** The owner confirmed every auto-decision since the last check-in (PM before DR3; HANDPAN 101 last row; DOWNLOAD PDF overflow fix; chord-only file name; drawer wording; legendLines; planner copy; merges of #275, #276, #277; DOC scope; branch deletions; planner and PR #278 before this interview; ledger D1 to D15; Sonnet co-author trailers left). Nothing is reopened.
 
+## 11. Close-out (lane C, 2026-10-09)
+
+**Base.** Main `f328f10` (merge of PR #286), after lanes 0, E, P, H, T, A, D. Mutant corpus: 889 patches (`ls tests/mutants/*.patch | wc -l`); lane C adds, replaces and re-points none. Counts taken from the `python-results` and `js-results` artifacts of the `validate` push run on `f328f10` (run 38005725717). Its `mutation gate shard 4/4` first failed on a CLEAN baseline (`E2E-SETTLE-CEILING 1 animation(s) still running after 500ms`, e_flip_transform.patch), the known gate flake; the failed jobs were re-run at the same SHA.
+
+**FLOORS moves.** One row: `tests/mutation_harness.test.js` 53 -> 54. Every other row already equalled the artifact (`tests/harness.test.js` stays 13). README: mutant count 878 -> 889; suite counts (23 node, 14 python) were already exact.
+
+**Reviewer-nit records (facts only; no code changed here).**
+- Lane A (PR #285): the PR body lacked per-test replacement rows and an itemised mutant map; the R4-A24 table misses the `.finished.then(swipeRest, ...)` handler; it lists CSS rules "unmeasured", which is not a section 2.1 class; `#scale-msg.err, .announce.err` is LIVE via `say(res.reason, "err")`.
+- Lane D (PR #286): ENGINE-SPEC §15 says `scale-anchor-label` does not exist, but it is live markup (`index.html` `HANDPAN ORIENTATION` span, the `aria-labelledby` target) merely absent from `tools/sandbox.js` `ELEMENT_IDS`, and the §15 list omits registry ids `scale-layout-zone`, `scale-plate-band`, `scale-layout-hint`, `scale-layout-state`, `scale-preview`; the second coverage-report correction addresses a claim from PR #283's body, not the report; the PR body had no mutant reconciliation statement (count change zero); ENGINE-SPEC precedence item (1) and corner (i) are consistent but worded differently.
+- Lane T (PR #284), unscheduled: modes A/B 1024x700 Amy scroll bound only by `assertAmyScroll`; consolidation "no pair qualifies" recorded without per-candidate evidence; `r4t_dr3_stop_outside_scrollport` mutates shared `cycleTabStops` but names only the sheet test.
+- Unscheduled items (owning lanes merged): `tools/decks.py` comment rewording (would stale `r4p_title_warning_line_too_wide.patch`); `tools/validate.py:113` "one if/else" comment; `tools/regen_engine_corpus.js --fixture` TypeError; `src/engine/share.js` `seatsField` non-array ring guard; `tools/refresh_mutants.py` write mode empties `e_panel_moved_into_header.patch`; lane P `test_gen_deck.py` width-test items; harness `sharedBodyGroups` `index ` stripping and probe CLI `main` untested; `panel_fit.js:84-85` comment names only app.test.js.
+- `tests/mutation_check.sh` takes no positional arguments (it reads only environment variables such as `MUTANT_SHARD`), so passing a single patch path is silently ignored and the whole corpus runs.
+
+**Plan corrections** (owner override of "plan documents are history", 2026-10-09 check-in): the Lane H verify line and the Lane T candidate 5 / R4-A22 inert sets, each marked inline.
+
 ---
 
 ## Prompt feedback
