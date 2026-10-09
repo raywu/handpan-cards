@@ -844,3 +844,35 @@ test("EG-3 warning shape equals core.err shape", () => {
   assert.deepEqual(warning, errorWithoutOk,
     "same code and reason, but not the same shape: routing through core.err would add ok:false to every warning");
 });
+
+/* ------------------------------------------------ R4-E: input guards ---- */
+
+test("R4-E select.build of something with no ding is NO_DING, and of a field map whose field 0 is not a ding throws", () => {
+  for (const bad of [undefined, null, {}, { fields: {} }, { fields: { 1: ["A", 3, 57, "rim", null, "1"] } }]) {
+    let r;
+    assert.doesNotThrow(() => { r = host(select.build(bad)); }, `${JSON.stringify(bad)} is refused, not thrown`);
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NO_DING");
+    assert.equal(r.reason, core.REASONS.NO_DING.reason);
+  }
+  const rimZero = { fields: {
+    0: ["D", 3, 50, "rim", null, "0"], 1: ["A", 3, 57, "rim", null, "1"], 2: ["C", 4, 60, "rim", null, "2"] } };
+  assert.throws(() => select.build(rimZero), /select: deck has no ding field/);
+});
+
+test("R4-E select.build reads a bare seed with no options as the defaults", () => {
+  const seed = seedOf("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  const bare = { fields: seed.fields };
+  const withOptions = select.build(seed);
+  const withoutOptions = select.build(bare);
+  assert.equal(withoutOptions.ok, true);
+  assert.deepEqual(host(withoutOptions.value.fields), host(withOptions.value.fields));
+  assert.equal(withoutOptions.value.name, withOptions.value.name);
+});
+
+test("R4-E a select function called with a module it needs unloaded says which module to load first", () => {
+  const alone = loadEngine(["select"]);
+  assert.throws(() => alone.select.smallLabels({}), /HPE\.select requires HPE\.layout: load layout\.js first/);
+  const noCore = loadEngine(["voicing", "layout", "naming", "select"]);
+  assert.throws(() => noCore.select.build(null), /HPE\.select requires HPE\.core: load core\.js first/);
+});

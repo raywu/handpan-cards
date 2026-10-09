@@ -1,0 +1,15 @@
+# kills: R4-E select.build of something with no ding is NO_DING, and of a field map whose field 0 is not a ding throws
+# suite: node --test --test-name-pattern ^R4.E.select.build.of.something.with.no.ding.is.NO.DING..and.of.a.field.map.whose.field.0.is.not.a.ding.throws$ tests/select.test.js
+# R4-E: a deck with no ding field is voiced against midi 0.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -272,7 +272,7 @@
+     for (var i = 0; i < all.length; i += 1) {
+       if (isDing(fields[all[i]])) return fields[all[i]][2];
+     }
+-    throw new Error("select: deck has no ding field");
++    return 0;
+   }
+ 
+   // `choose` takes the root PITCH CLASS, not the root field: D9 fixes the

@@ -1,0 +1,15 @@
+# kills: R4-E select.build of something with no ding is NO_DING, and of a field map whose field 0 is not a ding throws
+# suite: node --test --test-name-pattern ^R4.E.select.build.of.something.with.no.ding.is.NO.DING..and.of.a.field.map.whose.field.0.is.not.a.ding.throws$ tests/select.test.js
+# R4-E: build lets a field map with no field 0 through to the voicer.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -527,7 +527,7 @@
+   /* ---- section 11: build -------------------------------------------------- */
+ 
+   function build(seed) {
+-    if (!seed || !seed.fields || !seed.fields["0"]) {
++    if (!seed || !seed.fields || !seed.fields) {
+       return {ok: false, code: "NO_DING", reason: core().REASONS.NO_DING.reason};
+     }
+     var fields = seed.fields;

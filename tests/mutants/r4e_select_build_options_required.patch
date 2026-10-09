@@ -1,0 +1,15 @@
+# kills: R4-E select.build reads a bare seed with no options as the defaults
+# suite: node --test --test-name-pattern ^R4.E.select.build.reads.a.bare.seed.with.no.options.as.the.defaults$ tests/select.test.js
+# R4-E: a seed with no options is read as parent 0.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -531,7 +531,7 @@
+       return {ok: false, code: "NO_DING", reason: core().REASONS.NO_DING.reason};
+     }
+     var fields = seed.fields;
+-    var seedOptions = seed.options || {};
++    var seedOptions = seed.options || { parent: 0 };
+     var tonicPc = pc(fields["0"][2]);
+     var panPcs = pcsWhere(fields, anyField);
+ 
