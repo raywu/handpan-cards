@@ -59,19 +59,21 @@ err     = {ok: false, code: <CODE>, reason: <English sentence>}
   `core.parseSeed`), plus `share.encode` below and `layout.solve` and
   `voicing.choose` under the amendment below that. They never throw on user
   input. Untrusted input reaches `core.parseSeed` and `share.decode`, and also
-  `layout.solve`, whose `options.order` arrives from a decoded share payload or
-  a restored localStorage record and is validated by `readOrder`
-  (`src/engine/layout.js:189-205`, section 14); `select.build` by contrast is
-  handed an already-parsed seed.
+  `layout.solve`, whose `options.seats` arrives from a decoded share payload or
+  a restored localStorage record and is validated by `readSeats` (section 14);
+  `select.build` by contrast is handed an already-parsed seed.
 - DECIDED(swarm-2026-09-08) `core.parseSeed(string, options?)` returns, on
   success, `value` = the SEED: `{fields, options}` where `fields` is the map
   `{id: [name, octave, midi, zone, angle, label]}` of section 4 (`angle` is
   `null` from `parseSeed`; `layout.solve` fills it) (ids are the decimal
   strings of section 4) and `options` is `{palette, parent, name, mirror}`
   (palette index 0-5, parent index 0-10 or `null` for "infer", name string,
-  mirror boolean), validated per section 14 and defaulting to
+  mirror boolean) plus the optional layout options `mirrorBottom` (boolean),
+  `anchor` (`"one"` or `"between"`) and `seats` (section 13), validated per
+  section 14 and defaulting to
   `{palette: 0, parent: null, name: '', mirror: false}` when the second
-  argument is omitted. `formatSeed(seed)` reads `seed.fields` only.
+  argument is omitted. `core.parseLegacySeed(string, options?)` returns the same
+  shape from a pre-2026-10 string (section 3.9). `formatSeed(seed)` reads `seed.fields` only.
 - DECIDED(swarm-2026-09-08) `core.formatSeed(seed)` returns a plain string and
   `core.deckId(fields)` returns a plain string; neither validates, because both
   take an already-parsed seed, so neither is wrapped in the result type.
@@ -120,13 +122,12 @@ so they are final: a change here is a change to shipped copy.
 
 | code | kind | reason |
 |---|---|---|
-| `NO_DING` | error | `No ding. Start with the ding note, e.g. (D) or D/.` |
+| `NO_DING` | error | `No ding. Put the ding in round brackets, e.g. (D) A C D E.` |
 | `NO_FIFTH` | error | `No perfect fifth above the ding <X>. Add a <fifth of X>, or check the ding.` |
-| `TOO_MANY_RIM` | error | `Too many notes for one pan: at most 11 rim, 2 inner and 6 bottom.` |
-| `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave.` |
+| `BAD_NOTE` | error | `<X> is not a note. Use names like C, F#, Bb, with an optional octave, e.g. (D) A Bb C.` |
 | `NOTE_OUT_OF_RANGE` | error | `<A> is off the keyboard: a note must be between C-1 and G9.` |
-| `NOTE_OUT_OF_ORDER` | error | `<A> is not above <B>, and notes must ascend. Give <A> a higher octave, or the note before it a lower one.` |
-| `NOTE_REPEATED` | error | `<B> and <A> are the same note, and a note may appear only once per shell.` |
+| `NOTE_OUT_OF_ORDER` | error | `<A> is not above <B>, and the line runs low to high. Give <A> a higher octave or move it earlier, e.g. (D3) A3 C4 D4.` |
+| `NOTE_REPEATED` | error | `<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4.` |
 | `NEEDS_NEWER_APP` | error | `This link needs a newer version of the app. Reload.` |
 | `NO_THIRDS` | warning | `No 3rds on this pan: only power chords and sus chords.` |
 | `SMALL_LABELS` | warning | `Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out.` |
@@ -143,12 +144,28 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
 
 | code | when | reason |
 |---|---|---|
-| `NOTE_OUT_OF_ORDER` | `ding` - the element before the offending note is the ding | `<A> is at or below the ding <B>, and every top note must be above the ding. Give <A> a higher octave.` |
+| `NO_DING` | `which` - no ding mark and no bar form | `Which note is the ding? Put it in round brackets, e.g. (D) A C D E, or put a | straight after it: D | A C D E.` |
+| `NO_DING` | `two` - more than one ding | `Two dings. Only the ding takes round brackets; a bottom note takes square ones, e.g. [C] (D) A C.` |
+| `NO_DING` | `below` - a non-bottom note before the ding | `<X> comes before the ding, so it must be a bottom note. Write it in square brackets, e.g. [C] (D) A C.` |
+| `BAD_NOTE` | `slash` - a lone `/` | `A lone / is the old way to mark inner notes. Use | now, e.g. (D) A C D | E F.` |
+| `BAD_NOTE` | `bracket` - a malformed square-bracket token | `<X> is not a bottom note. Give each bottom note its own square brackets, no spaces inside, e.g. [C] [D] (E) B.` |
+| `BAD_NOTE` | `bar` - too many bars | `Too many | marks. One | starts the inner notes, e.g. (D) A C D | E F. A bottom note takes square brackets instead: [C].` |
+| `BAD_NOTE` | `barEmpty` - a bar with no top notes before it or no inner notes after it | `A | needs top notes before it and inner notes after it, e.g. (D) A C D | E F.` |
+| `BAD_NOTE` | `barFirst` - a bar before the ding | `The | comes after the ding and the top notes, e.g. (D) A C D | E F.` |
+| `NOTE_OUT_OF_ORDER` | `ding` - the element before the offending note is the ding | `<A> is at or below the ding <B>. Top notes are above the ding; a lower note is a bottom note and goes before it in square brackets, e.g. [C3] (D3) A3.` |
+| `NOTE_OUT_OF_ORDER` | `afterBar` - the first inner note is below the note before it | `<A> comes after the | but is below <B>. Notes after | are inner notes now. For a bottom note, use square brackets where its pitch falls, e.g. [C3] (D3) A3 C4.` |
+| `NOTE_OUT_OF_ORDER` | `below` - a bottom note before the ding is not below the one after it | `<A> is not below <B>. Bottom notes before the ding also run low to high, e.g. [C3] [D3] (E3) B3.` |
 
-- DECIDED(plan [eng-review 7A], amended swarm-2026-09-10) The enum is exactly
-  `NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`, `BAD_NOTE`, `NOTE_OUT_OF_RANGE`,
+`src/engine/core.js` `REASONS` is the shipped copy of every sentence in this
+section; `tests/core.test.js` holds the two together.
+
+- DECIDED(plan [eng-review 7A], amended swarm-2026-09-10 and 2026-10, the caps
+  code retired) The enum is exactly
+  `NO_DING`, `NO_FIFTH`, `BAD_NOTE`, `NOTE_OUT_OF_RANGE`,
   `NOTE_OUT_OF_ORDER`, `NOTE_REPEATED`, `NEEDS_NEWER_APP` (errors) and
-  `NO_THIRDS` and `SMALL_LABELS` (warnings); a lane that needs a new code amends this table rather
+  `NO_THIRDS` and `SMALL_LABELS` (warnings). The code for "too many notes"
+  was retired in 2026-10 with the caps (section 4); no pan is refused for its
+  size; a lane that needs a new code amends this table rather
   than inventing one at the call site.
 - DECIDED(swarm-2026-09-10) `BAD_NOTE` means one thing only: the offending text
   is not a note (or not the punctuation the grammar wanted there). A token that
@@ -172,8 +189,8 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
   alternate sentence above says it, so the two never collide into `the ding the
   ding D3`. The 12-character truncation of `<X>` does not apply: these values
   are engine-spelled note names, not user text. So the seed above now reads:
-  `D2 is not above C3 (inferred from C), and notes must ascend. Give D2 a
-  higher octave, or the note before it a lower one.`
+  `D2 is not above C3 (inferred from C), and the line runs low to high. Give D2
+  a higher octave or move it earlier, e.g. (D3) A3 C4 D4.` (the 2026-10 sentence)
 - DECIDED(swarm-2026-09-10 w39) BOTH positions are named whenever the fault is
   a relation between two notes, and either may carry the inference annotation.
   `NOTE_REPEATED` substitutes `<B>` for the earlier of the two and `<A>` for
@@ -225,189 +242,121 @@ are. This adds SENTENCES, never codes: the enum above stays closed, and the
   by `share.decode` on the version byte, never by `core.parseSeed`; it
   therefore has no row in `synthetic_scales.json` and is tested by
   `tests/share.test.js` in Phase 4.
+- DECIDED(owner 2026-10, the PF lane) `SMALL_LABELS` is the only reply to a
+  crowded pan. It fires when the smallest drawn glyph (the bottom octave digit
+  excluded) would print under 3.6 pt, and the title card carries its short
+  line (`hifi.py` `CARD_WARNINGS` comment; no chord-card badge, decision A16).
 - DECIDED(D13) A pasted URL, a vendor link, or any other unparseable token is a
   `BAD_NOTE` rejection like any other token; nothing is fetched, stored or
   shown.
 
-## 3. The scale string grammar (D13)
+## 3. The scale string grammar (D13, rewritten 2026-10)
+
+The shipped reader is `core.parseSeed`, the shipped printer `core.formatSeed`.
+They read and print ONE ascending line, low to high, the way the pan is played.
 
 ```
-seed_string := ding  rim_note+  ( "/"  inner_note+ )?  ( "|"  bottom_note+ )?
-ding        := "(" note ")" | note "/"
-note        := [A-G] ("#" | "b")? ([0-9])?
+line      := ( bottom | ding | note | "|" )+
+ding      := "(" note ")" | note "/"          (or the note straight before a first "|")
+bottom    := "[" note "]"
+note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
 ```
 
-- DECIDED(D13) Input is one freeform scale string in maker notation, not a
-  per-note form.
-- DECIDED(D13) The ding is MANDATORY, written `(C#3)` / `(C#)` (parentheses) or
-  `D3/` / `D/` (trailing slash). Zero dings, or more than one, is `NO_DING`.
-  Ding tokens are counted over the whole string before any other rule runs, so
-  `(D3) (A3) C4` is `NO_DING`, not `BAD_NOTE`; a single ding token that is not
-  the first token (`A3 (D3) C4`) is also `NO_DING`.
-- DECIDED(D13) After the ding come the top notes in ascending zig-zag order,
-  then optionally a `|` followed by the bottom notes.
-- DECIDED(D13) Separators are whitespace; `(`, `)`, `/` and `|` are the only
-  punctuation. Any other token, or a note name outside `[A-G](#|b)?(\d)?`, is
-  `BAD_NOTE`.
-- DECIDED(owner 2026-09-09, the D13 inner-shell amendment) The top run may be
-  split by a single `/`: the notes before it are `rim`, the notes after it are
-  `inner`. The separator is OPTIONAL. A seed without one keeps the POSITIONAL
-  zone rule of section 4 byte for byte, so no seed that parsed before the
-  amendment changes its fields, its canonical string or its deck id.
-- DECIDED(owner 2026-09-09) DISAMBIGUATION from the trailing-slash ding: the
-  ding's slash is ATTACHED to a note (`F3/`), and the inner separator STANDS
-  ALONE, exactly as `|` does. That one rule settles every spelling. `F3/ A3 B3`
-  is a trailing-slash ding; `(F3) A3 / B3` is a rim note, the separator and an
-  inner note; `F3/ A3 / B3` is both at once. `F3/A3` and `F3//A3` carry no
-  ding token at all and are `NO_DING`; `(F3) A3/B3` is one token that does not
-  lex and is `BAD_NOTE`; `(F3) A3/ B3` is a SECOND ding-shaped token and is
-  `NO_DING` by the count-first rule.
-- DECIDED(owner 2026-09-09) A malformed separator is `BAD_NOTE` naming `/` -
-  the section 2 enum is closed and the amendment mints no code. Malformed
-  means: more than one separator in the top run, a separator with no note
-  before it or none after it, and a separator after the `|` (it is then an
-  ordinary bottom token that does not lex). A separator written BEFORE the
-  ding leaves the ding token in a position other than the first, so the
-  count-first rule of this section reaches it earlier and it is `NO_DING`.
-- DECIDED(owner 2026-09-09) Exceeding the section 4 caps with an explicit split
-  stays `TOO_MANY_RIM`: more than 11 notes before the separator, or more than 2
-  after it, whatever the top run totals.
-- DECIDED(D13) Note tokens match `[A-G](#|b)?(\d)?`: a letter, an optional
-  single accidental, an optional single-digit octave in scientific pitch
-  notation (middle C = C4, so the built-in Amara ding is `D3`).
-- DEFAULT[owner-review] Letters are UPPERCASE only: `c4` is `BAD_NOTE`, not a
-  silent uppercasing, because repairing input contradicts "rejects, never
-  repairs".
-- DEFAULT[owner-review] The octave is a SINGLE digit 0-9; `C10` is one
-  whitespace-delimited token that fails the note pattern and is `BAD_NOTE`
-  with `<X>` = `C10`. Tokenisation is whitespace-splitting only: `(D3)A3` and
-  `C5|C3` are each `BAD_NOTE` (the ding token must be exactly `(NAME)` or
-  `NAME/`, and `|` must stand alone), while `( D3 )` splits into three tokens
-  of which two - the bare `(` and the bare `)` - are ding-shaped, so the
-  count-first rule reaches it earlier and it is `NO_DING`, as the precedence
-  bullet below also records.
+- DECIDED(D13, 2026-10) The ding is MANDATORY and written `(D3)` / `(D)`
+  (round brackets), `D3/` / `D/` (trailing slash), or as the note straight
+  before the first `|` (`D | A C`, the "bar form"). Zero dings is `NO_DING`
+  (alternate `which`), more than one is `NO_DING` (alternate `two`). Ding tokens
+  are counted over the whole string before any other rule runs.
+- DECIDED(D13, 2026-10) Square brackets mark a BOTTOM note at its pitch
+  position: `[C] [D] (E) B` puts C and D below the ding E. A bottom note after
+  the ding sits where its pitch falls among the top notes (`(D) A [C] C`), and
+  a non-bottom note before the ding is `NO_DING` (alternate `below`). Bottom
+  notes need no octave of their own to be placed but print one.
+- DECIDED(D13, 2026-10) A `|` after the ding and the top notes starts the INNER
+  notes: everything between the ding and the bar is rim, everything after it is
+  inner. A second `|`, a `|` before the ding, or a `|` with nothing on one side
+  is `BAD_NOTE` (alternates `bar`, `barFirst`, `barEmpty`). A lone `/` is the
+  retired inner mark and is `BAD_NOTE` (alternate `slash`).
+- DECIDED(D13, 2026-10) There are NO note-count caps: no limit on rim, inner or
+  bottom notes, and no refusal for size. A crowded pan draws smaller and
+  carries the `SMALL_LABELS` warning (section 2).
+- DECIDED(D13, 2026-10) Separators are whitespace. A `|` is its own token even
+  when glued to a note (`F|G`). Any token that is not a ding, a bracketed
+  bottom note or a note is `BAD_NOTE`. Letters are UPPERCASE only; `c4` is
+  `BAD_NOTE`, not a silent uppercasing (rejects, never repairs).
+- DECIDED(D13, 2026-10) The octave is optional, `-1` through `9`, in scientific
+  pitch notation (middle C = C4). MIDI is letter-anchored:
+  `midi = 12 * (octave + 1) + letter + accidental`, so `Cb4` = 59 and `B#3` = 60.
+  A note whose MIDI is outside 0-127 is `NOTE_OUT_OF_RANGE`; one that spells an
+  octave the lexer cannot read back (below -1) is `BAD_NOTE`.
+- DECIDED(swarm-2026-09-08) A ding with no octave is octave 3. Octave inference
+  runs in four passes left to right with no backtracking (tokenise, lex,
+  structure, infer): each top note takes the next instance of its pitch class
+  strictly above the previous note; a bottom note before the ding takes the
+  instance below the note after it; an explicit octave overrides inference and
+  reseeds it for the notes after.
+- DECIDED(swarm-2026-09-08) After inference the whole line must be strictly
+  ascending. A break is `NOTE_OUT_OF_ORDER` (alternates `ding`, `afterBar`,
+  `below`), or `NOTE_REPEATED` when the note is spelled as the one before it
+  on the same shell. This is what makes `parseSeed(formatSeed(x))` equal `x`.
+- DECIDED(owner-review 2026-09-08) Error precedence: the ding count first
+  (`NO_DING`), then structure (`BAD_NOTE` for tokens and bars), then the
+  positional codes per note in the order the parser reaches them
+  (`NOTE_OUT_OF_RANGE`, then `NOTE_REPEATED` or `NOTE_OUT_OF_ORDER`), then
+  `NO_FIFTH`. The ding is placed and range-checked before any other note.
+- DECIDED(swarm-2026-09-08) `NO_FIFTH` is decided in `core.parseSeed` before
+  any voicing work: no TOP-shell note is a perfect fifth above the ding.
+  Bottom-shell notes do not satisfy it.
 - DEFAULT[owner-review] Enharmonic names are accepted as typed and never
-  normalised: `E#` and `F` are different labels for the same pitch class, and
-  both are legal note names.
-- DECIDED(swarm-2026-09-08) MIDI is letter-anchored scientific pitch notation:
-  `midi = 12 * (octave + 1) + letter + accidental` with C=0, D=2, E=4, F=5,
-  G=7, A=9, B=11 and `#`=+1, `b`=-1, so `Cb4` = 59 and `B#3` = 60. Octave
-  inference picks the next instance by MIDI and then prints the octave that
-  formula implies for the typed letter (`Cb4`, never `Cb3`).
-- DEFAULT[owner-review] Zero notes after a trailing `|` is `BAD_NOTE`; a seed
-  with no bottom shell omits the `|` entirely.
-- DECIDED(owner-review 2026-09-08, replacing the earlier DEFAULT) Error
-  precedence when a string trips more than one rule: the ding count is checked
-  FIRST, so `NO_DING` precedes `BAD_NOTE`; then `BAD_NOTE` (a token that does
-  not lex), then the positional codes IN THE ORDER THE PARSER REACHES THEM
-  per note - `NOTE_OUT_OF_RANGE`, then the ascending rule, which answers
-  `NOTE_REPEATED` when the note is spelled exactly as the one before it and
-  `NOTE_OUT_OF_ORDER` otherwise - then `TOO_MANY_RIM` (caps), then
-  `NO_FIFTH` (musical). The DING is resolved before any other token is
-  examined - lexed, defaulted to octave 3 and range-checked - so an
-  off-keyboard ding beats a bad token anywhere after it: `(B9) Zz3`,
-  `(B9) A3 |` and `(B9) / A3` are all `NOTE_OUT_OF_RANGE`, not `BAD_NOTE`.
-  PAST the ding, the separators are checked and then every remaining token
-  lexes, all before any note is PLACED, so a string carrying both an unlexable
-  token and a misplaced one is `BAD_NOTE` in either order. `( D3 )` returns
-  `NO_DING`, not `BAD_NOTE`. This aligns the precedence list with the D13
-  count-first bullet in this section and with `core.parseSeed` as shipped.
-  (Corrected swarm-2026-09-10 w39: the previous wording claimed every token
-  lexed before any note was placed, full stop, which the ding's own range check
-  has always contradicted. The guard order is right; only this sentence was
-  wrong, and it was invisible until the w37 lane gave the ding check a code of
-  its own.)
-- DECIDED(swarm-2026-09-08) A ding written without an octave defaults to octave
-  3: `(D)` is `D3`, matching all three built-ins. Every top note is then
-  inferred strictly above it, so the ding remains the lowest note of the top
-  shell.
-- DECIDED(D13) Octave inference on the top shell: each next top note is the
-  next instance of its pitch class strictly above the previous top note (the
-  ding for the first one).
-- DECIDED(D13) Inference restarts after `|`: the first bottom note is the
-  instance of its pitch class nearest the ding, and each subsequent bottom note
-  is the next instance strictly above the previous one. Bottom notes may sit
-  below the ding, e.g. Pygmy `C3 Db3 Eb3` under an F3 ding.
-- DECIDED(swarm-2026-09-08) When the first bottom note is a tritone from the
-  ding, so the instance above and the instance below are equidistant, choose the
-  instance BELOW the ding. When the first bottom note has the ding's own pitch
-  class, "nearest" excludes the ding's MIDI itself and the tie goes below:
-  `(F3) ... | F` is `F2`.
-- DECIDED(D13) An explicit octave anywhere overrides inference for that note
-  and reseeds the inference for the notes after it.
-- DECIDED(swarm-2026-09-08) After inference, the top notes must be strictly
-  ascending in MIDI and the bottom notes must be strictly ascending in MIDI. An
-  explicit octave that breaks either order is `NOTE_OUT_OF_ORDER`; the ding
-  counts as the element before the first top note, so an explicit top note at or
-  below the ding (`(D3) A2 ...`, `(F3) F3 ...`) is `NOTE_OUT_OF_ORDER`. This is what makes
-  `parseSeed(formatSeed(x))` equal `x` for every accepted seed: `formatSeed`
-  prints explicit octaves, and only a strictly ascending printing can be
-  re-parsed to the same fields.
-- DEFAULT[owner-review] Accidental spelling is the user's typed spelling,
-  verbatim, on the field label and on the card; the engine never re-spells
-  enharmonics.
-- DECIDED(plan "Sharing is untrusted input") Every resulting MIDI number must
-  be 0-127; outside that range is `NOTE_OUT_OF_RANGE`, and that includes the
-  ding itself (`(B#9) ...`).
-- DECIDED(plan P0d "no duplicate fields", clarified swarm-2026-09-10) Two fields
-  may not be identical (same name, octave and zone). On one shell that is not a
-  separate rule but a consequence of the strictly-ascending rule above - a
-  spelling plus an octave fixes the MIDI, so two identical fields cannot both
-  ascend - and the parser reports it there: `NOTE_REPEATED` when the repeat is
-  the note IMMEDIATELY before it (`(D3) A3 C4 C4`), `NOTE_OUT_OF_ORDER` when
-  something else intervenes (`(D3) A3 C4 E4 C4`, which is equally not ascending).
-  The `seen` map in `core.parseSeed` is a belt-and-braces guard behind that
-  proof and is unreachable. Duplicate PITCH CLASSES
-  across octaves are legal and expected, and one pitch class may appear on both
-  shells, even at the same MIDI (a top field and a bottom field with the same
-  note and octave are distinct fields because their zones differ). When a
-  voicing rule (D2, D11) selects "the highest lower instance" or "the nearest
-  instance above" and two fields share that MIDI, the TOP-shell field wins.
+  normalised; the typed spelling is the label on the field and the card.
+- DECIDED(plan P0d "no duplicate fields") Two fields may not be identical.
+  Duplicate PITCH CLASSES across octaves are legal; one pitch class may appear
+  on both shells. Where a voicing rule picks "the highest lower instance" or
+  "the nearest instance above" and two fields share that MIDI, the TOP-shell
+  field wins.
+- DECIDED(2026-10) `core.formatSeed(seed)` prints the one canonical string:
+  every note by pitch, the ding in round brackets, bottom notes in square
+  brackets, the `|` before the first inner note, explicit octaves everywhere,
+  single spaces: `[C3] [Db3] (F3) G3 Ab3 | F5 G5`. A bottom note ahead of the
+  ding or of a top note of the same pitch sorts first.
+
+### 3.9 The legacy grammar (read only)
+
+- DECIDED(2026-10) Strings written before 2026-10 used `/` for the inner notes
+  (`(F3) A3 B3 / C5`), `|` for a bottom list (`... | C3 Db3`), and an 11-rim /
+  2-inner / 6-bottom positional spill with caps. They are read ONLY by
+  `core.parseLegacySeed` and printed by `core.formatLegacySeed`. The reader is
+  chosen by the version tag on a stored record or a share link (3 or lower is
+  legacy, 4 is the shipped grammar) and NEVER by inspecting the string. The
+  legacy reader keeps its caps and its old codes' behaviour so that every
+  stored deck keeps its zones and its id.
 
 ### The three built-in maker strings
 
 ```
 (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4
-(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5
+[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]
 (D3) A3 C4 D4 E4 F4 G4 A4 C5
 ```
 
 - DECIDED(swarm-2026-09-08) `core.parseSeed` reproduces all three built-in pans
   from these strings on `name`, `octave`, `midi` and `label` for every field.
   `angle` is lane B's output and is excluded.
-- DECIDED(swarm-2026-09-08) `zone` is reproduced for Hijaz and Amara only. The
-  Pygmy string AS WRITTEN ABOVE yields ELEVEN rim fields from the grammar (11
-  top notes, all within the D7 rim cap), whereas the built-in literal ships 9
-  rim + 2 inner (F5 and G5 on the inner ring). This is not a defect: that
-  string names no inner shell, and per D12 the built-in `geom` and `zone`
-  literals bypass the solver entirely, so the divergence never reaches a
-  rendered built-in card. `synthetic_scales.json` records the parse-side
-  expectation (`zones.rim` = 11) on the `builtin pygmy` row, tagged
-  `zones-diverge-from-builtin`. That row is about the unmarked string and stays
-  correct after the amendment.
-- DECIDED(owner 2026-09-09, superseding the "not reproducible" reading) The
-  divergence is a property of the STRING, not a limit of the engine. With the
-  inner shell named,
-
-  ```
-  (F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5 | C3 Db3 Eb3 Bb3 Db4 Ab5
-  ```
-
-  parses to 9 rim + 2 inner + 6 bottom + the ding and, solved through
-  `layout.solve` with `mirror: false`, reproduces the measured F3 Low Pygmy 18
-  instrument with ZERO angle differences across all 18 fields, zones included.
-  `tests/core.test.js` holds that receipt against the golden fixture. The
-  residue is four `geom` fractions (`r_note`, `f_note`, `f_num` and
-  `inner_ring`) plus `ext`, which the built-in literal does not carry; none of
-  them moves a note.
-- DECIDED(owner 2026-09-09) The two strings are two DIFFERENT decks and hash to
-  different ids: the id is a pure function of `formatSeed` (section 12), and
-  `formatSeed` prints the separator. Adding a separator to a shared seed
-  therefore mints a new deck rather than editing one.
+- DECIDED(owner 2026-10) The Pygmy string above, with the inner shell named by
+  the second `|`, parses to 9 rim + 2 inner + 6 bottom + the ding and, solved
+  through `layout.solve` with `anchor: "between"`, reproduces the measured F3
+  Low Pygmy 18 instrument with ZERO angle differences, zones included
+  (`node tools/gen_deck.js "<string>" --anchor between`; `tests/core.test.js`
+  and the layout tests hold the receipt). The earlier unmarked 11-rim reading
+  of the old string is gone with the caps.
+- DECIDED(owner 2026-10) Two strings that differ only in where the inner bar
+  falls are two different decks and hash to different ids: the id hashes
+  `identitySeed` (section 12), which prints the rim count whenever it differs
+  from the legacy positional rule.
 - DECIDED(swarm-2026-09-08) The grammar's zone assignment governs GENERATED
   decks only.
 
-## 4. Zone assignment, field ids and caps
+## 4. Zone assignment, field ids and layout rules
 
 The field id and label scheme, read off all three built-ins in `index.html`:
 
@@ -415,59 +364,52 @@ The field id and label scheme, read off all three built-ins in `index.html`:
 |---|---|---|
 | ding | `"0"` | `Ding` |
 | rim, then inner | `"1"` .. `"N"`, one sequence ascending | `"1"` .. `"N"` |
-| bottom | `"101"` .. `"106"` | `U1` .. `U6` |
+| bottom | `"101"` upward | `U1`, `U2`, ... |
 
 - DECIDED(CLAUDE.md "App data model") Zones are `ding | rim | inner | bottom`,
   exactly the built-in enum.
 - DECIDED(swarm-2026-09-08) Field ids are decimal strings: the ding is `"0"`;
   the top notes are `"1"` through `"N"` in ascending order, rim first then
   inner, in ONE sequence that does not restart at the inner ring; the bottom
-  notes are `"101"` through `"106"`. Verified against all three built-ins,
+  notes are `"101"` upward. Verified against all three built-ins,
   including Pygmy's inner pair at ids `"10"` and `"11"`.
 - DECIDED(swarm-2026-09-08) Labels are the strings the diagram prints: `Ding`
   for the ding, the id itself (`"1"` .. `"N"`) for every top note, and `U1` ..
-  `U6` for the bottom notes.
+  `U1`, `U2`, ... for the bottom notes.
 - DECIDED(D13) The ding is its own zone and is assigned from the `( )` / `/`
   token only.
-- DECIDED(D7, D12) Top notes are assigned in ascending order. With no `/` in
-  the seed the rule is POSITIONAL: the first up to 11 are `rim` (the D7
-  stroke-aware ceiling), the next up to 2 are `inner` (D12).
-- DECIDED(owner 2026-09-09, the D13 inner-shell amendment) With a `/` in the
-  seed the split is EXPLICIT and the positional rule does not run: every note
-  before the separator is `rim` and every note after it is `inner`, so a pan
-  whose rim is not full can still carry an inner ring. Ids and labels are
-  unchanged - one ascending sequence, rim first then inner (`(F3) A3 B3 / C5`
-  is rim `"1"`, `"2"` and inner `"3"`).
-- DECIDED(owner 2026-09-09) Section 12's canonical string prints the separator
-  only when it CARRIES information - when the split is not the one the
-  positional rule would produce. A seed whose inner ring starts exactly at the
-  positional boundary prints without one (`... G4 / A4 B4` with 13 top notes
-  round-trips as `... G4 A4 B4`), which is what keeps every pre-amendment
-  canonical string, and therefore every pre-amendment deck id, exactly where it
-  was.
-- DECIDED(D12, plan P0d [review D3]) A 14th top note is `TOO_MANY_RIM`.
-- DECIDED(D12) Notes after `|` are `bottom`, at most 6; a 7th bottom note is
-  `TOO_MANY_RIM`.
-- DECIDED(D12) The maximum accepted pan is therefore 19 non-ding fields (11 rim
-  + 2 inner + 6 bottom), 20 fields counting the mandatory ding.
+- DECIDED(2026-10) Top notes are assigned in ascending order. The notes
+  between the ding and the `|` are `rim`, the notes after it `inner`; a string
+  with no `|` has no inner notes. Ids and labels are one ascending sequence,
+  rim first then inner (`(F3) A3 B3 | C5` is rim `"1"`, `"2"` and inner `"3"`).
+  Bottom ids are `"101"` upward, or one past the last top id when a pan has more
+  than 100 top notes (`U1`, `U2`, ... in ascending pitch).
+- DECIDED(owner 2026-10, caps retired) There is no cap on any ring, so there is
+  no maximum pan. The old 11 / 2 / 6 limits and their error code are gone; only
+  the legacy reader (section 3.9) keeps the positional spill, to hold stored ids.
 - DECIDED(D14 as amended, plan P0d [review D3]) Zone assignment happens in
   `core.parseSeed`; `layout.solve` never changes a zone, so the deck id never
   depends on layout code.
-- DECIDED(owner 2026-10-06, D12 to D15 of the two-beginner-decks plan) The ding
-  rule: when the pan has no inner notes (counted after positional spill, so 12
-  or 13 top notes with no `/` count as having them) the ding is centred,
-  `r_ding` 0.2, `ding_dy` 0, `f_ding` 0.12. Otherwise it keeps the offset,
-  `r_ding` 0.19, `ding_dy` 0.1425. Bottom notes do not move it.
-- DECIDED(owner 2026-10-06, D13, D14) The odd-rim anchor, on a centred pan
-  only: with an odd rim count the lowest note sits at 270 and the second note
-  at `270 - step`, so nothing sits at top centre and each note stays on the
-  side of the vertical axis it had before, except the note that was on the
-  axis. An even rim is unchanged (highest note at 90). Seeds with inner notes
-  keep the top-anchored rim.
-- NOTE The mirror option means opposite hands on the two parities: unmirrored,
-  an even rim puts note 2 on the right and an odd centred rim puts it on the
-  left. That predates the centred default and is kept so saved and shared
-  scales keep each note on its side. Do not fix it without the owner.
+- DECIDED(owner 2026-10) The ding: with no inner notes it is centred (`r_ding`
+  0.2, `ding_dy` 0). With inner notes it is offset toward the player, starting
+  at `ding_dy` 0.1425 (`r_ding` 0.19) and rising in 0.0025 steps, up to 0.30,
+  until every inner index number clears the ding by 0.01. Bottom notes never
+  move it.
+- DECIDED(owner 2026-10) The inner notes fan across the top half of the inner
+  orbit: k notes over a 180 degree span, 76 degrees apart at most, dealt from
+  the two ends inward, so one note sits at 90 and two at 128 and 52.
+- DECIDED(owner 2026-10, plan 7.1) One direction on every generated rim, odd or
+  even: odd-numbered notes on the right, even-numbered on the left. The option
+  `anchor` chooses where the line starts: `one` (default) puts note 1 at bottom
+  centre; `between` puts the bottom centre between notes 1 and 2 with note 1 on
+  the right (the Pygmy pattern). The retired odd-rim anchor and the "left-first"
+  and "right-first" names, which described the anchor and not a direction, are
+  gone. `mirror` reflects the rim and inner rings about the vertical axis and is
+  the only thing that puts odd notes on the left; `mirrorBottom` reflects the
+  bottom ring and, when absent, follows `mirror`.
+- DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
+  not to the note: moving a note (`options.seats`) changes the name drawn there
+  and nothing else, on the plate and on the generated cards alike.
 
 ## 5. Legality invariants for a voicing
 
@@ -750,7 +692,8 @@ Verified against all three built-ins under the fixed list order of
 {
   id:       "custom:<8 lowercase hex>",
   name:     "<auto or user name>",
-  options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>},
+  options:  {palette: <0-5>, mirror: <bool>, parent: <0-10>,
+             mirrorBottom?: <bool>, anchor?: "one"|"between", seats?: {rim, inner, bottom}},
   colors:   {root, tone, ga, gb},
   degrees:  {"<pitch class 0-11 as string>": "<label>"},
   geom:     {...},
@@ -787,31 +730,42 @@ Verified against all three built-ins under the fixed list order of
 
 ## 12. Deck identity and the canonical seed string
 
-- DECIDED(D13, plan [design-review 8A]) `core.formatSeed(seed)` prints a seed
-  back into the D13 grammar with EXPLICIT octaves everywhere, ding in
-  parentheses, top notes ascending in id order (rim then inner), bottom notes
-  after ` | ` in id order, single spaces:
-  `(D3) A3 C4 D4 E4 F4 G4 A4 C5 | C3 Db3`.
+- DECIDED(D13, plan [design-review 8A], 2026-10) `core.formatSeed(seed)` prints a
+  seed back into the section 3 grammar with EXPLICIT octaves everywhere: the
+  whole scale as one ascending line, the ding in round brackets, bottom notes in
+  square brackets at their pitch position, the `|` before the first inner note,
+  single spaces: `[C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5`.
 - DECIDED(swarm-2026-09-08) `formatSeed` walks the fields by the id scheme of
-  section 4 - `"0"` first, then `"1"` .. `"N"`, then `"101"` .. `"106"` - so the
-  canonical string is a pure function of the field map and never of iteration
-  order.
+  section 4 - `"0"` first, then the top ids ascending, then the bottom ids - and
+  orders by MIDI, so the canonical string is a pure function of the field map
+  and never of iteration order.
+- DECIDED(2026-10) The deck id hashes `core.identitySeed(seed)`, NOT the
+  canonical string. `identitySeed` is the legacy printing (ding in round
+  brackets, top notes ascending, the `|` bar printed whenever the rim count
+  differs from the legacy positional rule, bottom notes after ` | `), kept as its
+  own function so ids never move when the canonical spelling does. No id moved
+  when the grammar changed.
 - DEFAULT[owner-review] `core.deckId(fields)` = `"custom:"` + the lowercase
-  8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.formatSeed(seed)`
+  8-hex FNV-1a 32-bit hash of the UTF-8 bytes of `core.identitySeed(seed)`
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
   2^32), giving the same result in Node and in the browser.
-- DECIDED(D14 as amended) The id is a pure function of `formatSeed(seed)` -
+- DECIDED(2026-10) The id is 32 bits, so two different scales can collide. The
+  records store keeps ONE record per id (the first wins); a collision is
+  accepted as vanishingly rare and is documented in the README.
+- DECIDED(D14 as amended) The id is a pure function of `identitySeed(seed)` -
   notes, octaves, zones and order - and nothing else; `select.build` is never
   consulted for it.
-- DECIDED(D14 as amended) Palette, mirror, parent override and name are seed
-  OPTIONS outside the id, so renaming, recolouring, flipping the mirror or
-  overriding the parent keeps the id and every card's per-card state.
+- DECIDED(D14 as amended) Palette, mirrors, anchor, seats, parent override and
+  name are seed OPTIONS outside the id, so renaming, recolouring, flipping a
+  mirror, moving a note or overriding the parent keeps the id and every card's
+  per-card state.
 - DECIDED(D14) Any future per-card state keys on `(deck id, fields list)`,
   never on list index and never on `main + sup` (not unique on the built-ins:
   Pygmy `Cm` x3).
 - DECIDED(plan P0d exit) `parseSeed(formatSeed(seed))` deep-equals `seed` for
   every entry of `synthetic_scales.json` whose expectation is ok, which the
-  strict-ascending rule of section 3 guarantees.
+  strict-ascending rule of section 3 guarantees. A legacy string round-trips
+  through `parseLegacySeed` / `formatLegacySeed` in the same way.
 
 ## 13. Options: palette, mirror, name
 
@@ -834,12 +788,25 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(D6) The share URL and the seed carry a palette INDEX, never a colour
   string; colours never come from the URL. Extending the set later appends
   indices and never renumbers.
-- DECIDED(owner-review 2026-09-08, correcting the polarity of D12 as amended
-  by [design-review 3A]) `options.mirror` is one boolean: **false = right-first
-  (the Pygmy pattern, and the generated-layout default of D12); true =
-  left-first (Hijaz / Amara)**. False is the default so that an omitted option
-  yields the D12 default layout. The built-ins never consult it, because their
-  `geom` and angles are literals that bypass the solver.
+- DECIDED(owner 2026-10, replacing the right-first / left-first polarity bullet)
+  The layout options are `mirror`, `mirrorBottom`, `anchor` and `seats`.
+  `mirror` (boolean, default false) reflects the rim and the inner ring about
+  the vertical axis; false puts odd-numbered notes on the right, even on the
+  left, on every deck. `mirrorBottom` (boolean) reflects the bottom ring and,
+  when absent, follows `mirror`; with no bottom notes it is false.
+  `layout.resolveMirrors` is the one place the two are resolved.
+- DECIDED(owner 2026-10) `anchor` is `"one"` (default: note 1 at bottom centre)
+  or `"between"` (bottom centre between notes 1 and 2, note 1 on the right).
+  `layout.resolveAnchor` reads it; anything else is refused, not repaired.
+- DECIDED(owner 2026-10, D5) `seats` is `{rim, inner, bottom}`: per ring, a
+  permutation giving the seat each of that ring's notes takes (in ascending
+  pitch order), validated by `layout.readSeats` against the ring sizes. A ring
+  left out, or an identity permutation, is unmoved. `layout.seatsFromOrder`
+  converts the legacy flat `order` of share versions 1 and 2; `layout.reseat`
+  applies a correction last, to the note-to-seat assignment. Rule N applies:
+  seat numbers belong to positions.
+- DECIDED(owner-review 2026-09-08) The built-ins never consult the layout
+  options, because their `geom` and angles are literals that bypass the solver.
 - DECIDED(plan [design-review 5A]) The auto deck name is
   `<DING> <PARENT-DISPLAY> <N>` - the ding pitch class, the parent's short
   display name from `parents.json`, and `N`, the number of TOP-SHELL fields
@@ -856,28 +823,41 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 
 - DECIDED(D14, plan "Sharing is untrusted input") The share URL encodes the
   SEED (fields plus options), never the generated deck output, behind a leading
-  VERSION BYTE, on a third payload line that v1 reserved for layout deltas and
-  that v2 (the shipped `share.VERSION`) spends on the `order` permutation.
-  When the engine improves, an old link renders NEW cards: the seed is the
-  contract, not the output.
+  VERSION BYTE. The payload is three lines: line 0 the canonical scale string
+  (`formatSeed` from version 4, `formatLegacySeed` before); line 1 the options,
+  tab-separated `palette, parent, mirror, anchor, name` from version 3 (`mirror`
+  is `0` or `1` for both rings, `t` for top only, `b` for bottom only; `anchor`
+  is `0` for `one` or `1` for `between`; version 1 and 2 had four fields without
+  `anchor`); line 2 the layout delta: empty in version 1, the flat `order`
+  permutation in version 2, and from version 3 the per-ring `seats`
+  `rim;inner;bottom`, each a comma list, an unmoved ring left empty. The
+  shipped `share.VERSION` is 4; versions 1 to 3 stay readable, and the version
+  tag, not the string, selects the legacy or the shipped reader. The payload cap
+  is 4096 characters. When the engine improves, an old link renders NEW cards:
+  the seed is the contract, not the output.
 - DECIDED(plan Phase 4) A version byte greater than the running app's is
   rejected with `NEEDS_NEWER_APP` so a PWA-cached old `index.html` fails
   politely; the app stays usable.
 - DECIDED(swarm-2026-09-08) `share.decode` calls the SAME `core.parseSeed` as
   the text box and rejects rather than repairs. `parseSeed` validates the note
-  names, the MIDI range 0-127, the field ordering and the caps of sections 3
-  and 4, plus the seed OPTIONS: palette index 0-5, parent index 0-10, and the
-  name whitelist of section 13. It does NOT validate `zone`, `angle` or
-  `order`: zones are derived by `parseSeed` itself and never carried in the
-  seed, and angles are `layout.solve`'s output, so neither is decoder input.
-  `order` IS carried in a share payload, but it is validated in TWO other
-  places instead - `layout.solve` checks it against the fields it was handed
-  and refuses rather than repairs, and `share.decode` re-attaches it only
-  after `checkOrder` has held it against the seed `parseSeed` has just
-  approved. Two validators rather than one is deliberate and safe here: no
-  path reaches a solve with an unvalidated `order` (verified 2026-09-09 over
-  every `layout.solve` caller and the localStorage restore path).
+  names, the MIDI range 0-127, and the line ordering of section 3, plus the seed
+  OPTIONS: palette index 0-5, parent index 0-10, and the name whitelist of
+  section 13. It does NOT validate `zone`, `angle` or `seats`: zones are derived
+  by `parseSeed` itself and never carried in the seed, and angles are
+  `layout.solve`'s output, so neither is decoder input. `seats` IS carried in a
+  share payload, but it is validated in TWO other places instead -
+  `layout.solve` checks it against the fields it was handed and refuses rather
+  than repairs, and `share.decode` re-attaches it only after `layout.readSeats`
+  has held it against the ring sizes of the seed `parseSeed` has just approved
+  (a v2 flat `order` goes through `layout.seatsFromOrder` first). Two validators
+  rather than one is deliberate and safe here: no path reaches a solve with an
+  unvalidated layout correction.
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
+- DECIDED(owner 2026-10, R7) Saved scales live in localStorage under
+  `hpfc.scales.v3`. On first boot the old `hpfc.scales` list is copied there
+  record by record through each record's own version reader, and the old key
+  is never written again. A scale saved in a tab still running the old app
+  lands under the old key and does not appear in the new app.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
   `CompressionStream`, so the engine may not depend on it. The test realm
   (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and
@@ -894,6 +874,13 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   uses these element ids: `scale-sheet`, `scale-box`, `scale-parse`,
   `scale-msg`, `scale-mirror-l`, `scale-mirror-r`, `scale-swatches`,
   `scale-generate`, `deck-add`.
+- DECIDED(owner 2026-10, W1 to DR3) `scale-mirror-l` and `scale-mirror-r` are
+  gone. The layout drawer's ids are `scale-layout-toggle`, `scale-drawer`,
+  `scale-anchor-label`, `scale-anchor-one`, `scale-anchor-between`,
+  `scale-mirror` (MIRROR TOP), `scale-mirror-bottom`, `scale-fine-toggle`,
+  `scale-fine`, `scale-note-prev`, `scale-note-next`, `scale-seat-prev`,
+  `scale-seat-next`, `scale-layout-reset` (RESET LAYOUT), `scale-drawer-status`
+  and `scale-drawer-hint`; the registry in `tools/sandbox.js` is the record.
 
 ## 16. Fixture schemas
 
@@ -968,7 +955,7 @@ sheets); the rule is that phases APPEND, never renumber or rename.
 | symmetric sets (octatonic, augmented hexatonic) | ok, deterministic tie-break | `naming` (lane C) |
 | no ding, or more than one | `NO_DING` | `core.parseSeed` (P0d) |
 | ding pitch class absent from the top shell | ok; tonic still the ding | `core.parseSeed` (P0d) |
-| beyond 11 rim / 2 inner / 6 bottom | `TOO_MANY_RIM` | `core.parseSeed` (P0d) |
+| a very large pan | ok + `SMALL_LABELS` warning; never refused | `layout.solve` |
 | a note placed outside MIDI 0-127 | `NOTE_OUT_OF_RANGE` | `core.parseSeed` (P0d) |
 | an explicit octave that breaks the ascending order | `NOTE_OUT_OF_ORDER` | `core.parseSeed` (P0d) |
 | the same note twice in a row on one shell | `NOTE_REPEATED` | `core.parseSeed` (P0d) |

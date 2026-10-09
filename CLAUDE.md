@@ -36,8 +36,10 @@ no committed PDF; the app builds theirs in the browser.
 - `index.html` - the app. Deck data is embedded as `const DECKS = [...]`, a
   GENERATED copy of `data/decks.json` written by `tools/sync_decks.py`.
 - `README.md` - usage, hosting, layout provenance notes.
-- `*.pdf` - print outputs ("Cards" = full deck with title/legend/blank
-  templates; "CHORD_ONLY" = chord cards only, for the print shop).
+- `*_CHORD_ONLY_Letter.pdf` - the three committed print outputs (Hijaz, Pygmy,
+  Amara 9): chord cards only, for the print shop. There is no committed
+  full-deck ("Cards") PDF and the app offers none (2026-10-08, lane PM); the
+  full-deck path in `hifi.build` is kept and commented as unused.
 - `tools/decks.py`, `tools/hifi.py` - print generator (see "Print pipeline").
   `decks.py` reads `data/decks.json`, PRINT OVERLAY included: the overlay
   (R, cy, title, credit, blurb, legend copy, blank-card padding, colours) now
@@ -270,7 +272,12 @@ changing the solver or the seed, never by hand.
   uniformly "a solver constant x 1.05". `src/engine/layout.js` derives all four
   of its `F_*_RATIO` constants from **Pygmy alone** (its own comments say so:
   `F_NOTE_RATIO` 0.765 = 0.109/0.1425, `F_BNOTE_RATIO` 0.784 = 0.0931/0.1188,
-  `F_NUM_RATIO` 0.64 = 0.0912/0.1425, `F_DING_RATIO` 0.6 = 0.114/0.19). The
+  `F_NUM_RATIO` 0.64 = 0.0912/0.1425, `F_DING_RATIO` 0.6 = 0.114/0.19; those are
+  the hand-tuned Pygmy of the time. Pygmy's stored geom is engine output since
+  2026-10-07 - `r_note` 0.1456, `f_note` 0.1114, `f_num` 0.0932, `r_bnote`
+  0.1188, `f_bnote` 0.0931, `r_ding` 0.19, `f_ding` 0.114 - and gives the same
+  ratios, 0.765, 0.64, 0.784 and 0.6, so every figure in the table below
+  stands). The
   Hijaz/Amara geom literals were tuned independently and sit at different
   ratios: `f_note/r_note` 0.6737, `f_num/r_note` 0.5526, `f_ding/r_ding`
   **0.675** - and 0.675 is a deck literal that appears nowhere in `layout.js`.
@@ -328,12 +335,14 @@ changing the solver or the seed, never by hand.
 - **Card anatomy:** header (deck name, #index, root-coloured scale-degree
   label, small-caps subtitle), Marcellus chord name with superscript,
   diagram, optional bottom-note badge, note line, number line.
-- **Pan-wide warnings print on the chord cards**, not only on the title card:
-  `hifi.CARD_WARNINGS` maps an engine warning code to a short orange badge at
-  the foot of every chord card (today `NO_THIRDS` -> `NO 3RDS ON THIS PAN`).
-  CHORD_ONLY omits the title card, so that is the only place a warning
-  survives the split. The title card still carries the engine's full reason
-  string via `decks._blurb`.
+- **Pan-wide warnings.** `NO_THIRDS` prints on the chord cards:
+  `hifi.CARD_WARNINGS` maps it to a short orange badge at the foot of every
+  chord card (`NO 3RDS ON THIS PAN`), the only place it survives, because
+  CHORD_ONLY omits the title card. `SMALL_LABELS` is title card only (decision
+  A16): `decks.TITLE_WARNINGS` gives it the short line `CROWDED PAN: SMALL
+  LABELS`, and there is no chord-card badge for it. Any other code the title
+  card meets falls back to the engine's reason string, uppercased
+  (`decks._blurb`).
   The title-card blurb is laid out by `hifi.blurb_layout` (and
   `blurbLayout` in `pdfcards.js`): a line wider than the card wraps at a note
   boundary, and a blurb too tall for the card steps its size and spacing down
@@ -341,12 +350,14 @@ changing the solver or the seed, never by hand.
   4.2 pt at an 8 pt step. The blurb fits to six rows, sits on the frame at seven and leaves the
   card past that, by owner decision 2026-10-07; nothing is refused and no row is
   dropped (`TitleBlurbLimitTest`, and its twin in `tests/pdfcards.test.js`).
-- **Menu Resources** (2026-10-05): the settings panel's Resources group has two
+- **Menu Resources** (2026-10-05): the settings panel's Resources group has three
   `.modebar` rows - three sites (class `trio`, 2026-10-06: three equal widths;
   in the sidebar two equal on line one and HTC full width below; landscape
   phones keep the older unequal widths), then two Amy Naylor videos (`AMY: PROGRESSIONS`,
   `AMY: BOTTOM NOTES`, class `duo`: one line at every width, equal widths,
-  labels wrap inside their boxes). They are links only, never on a deck or card,
+  labels wrap inside their boxes), then `HANDPAN 101` alone (2026-10-08, lane PM:
+  a Google Doc link, `#res-handpan-101`, full width, the last panel stop, so no
+  earlier control moved). They are links only, never on a deck or card,
   and join `panelStops()` through `a.mode[id^="res-"]`. The CI `panel-fit`
   oracle allows `res-*` controls 64px of growth and nothing else. Every panel control centres its label, wrapped or not
   (`#settings-panel .mode`, and the paper select's value).
@@ -407,14 +418,14 @@ pitch classes (midi % 12), never stored.
 
 ## Print pipeline (tools/)
 
-`python3 decks.py` builds all six PDFs into the repo root (three decks x
-full "Cards" + CHORD_ONLY variants). Requirements: `pip install reportlab`
+`python3 decks.py` builds the three CHORD_ONLY PDFs into the repo root (one per
+built-in deck; `main()` writes only those). Requirements: `pip install reportlab`
 (the test suite additionally needs `pymupdf`, and `fonttools` for
 `tools/validate.py` check 5). The required TTFs
 (Marcellus-Regular, Bitter-Regular/-Bold, NunitoSans-Regular/-SemiBold) are
 checked into `tools/fonts/` together with each family's OFL license text, so a
 fresh clone builds with no extra downloads.
-Note: rebuilding always rewrites the six PDFs even when nothing changed -
+Note: rebuilding always rewrites the three PDFs even when nothing changed -
 reportlab stamps a creation date - so `git diff` showing binary churn after a
 build does not mean the cards changed. The staleness test compares extracted
 text, not bytes.

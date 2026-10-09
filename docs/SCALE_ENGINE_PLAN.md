@@ -1,3 +1,12 @@
+<!-- ANNOTATED 2026-10-09 (lane DOC). This file is HISTORY, not the spec. What
+     shipped is described in docs/ENGINE-SPEC.md; where this plan and the spec
+     differ, the spec wins. Known differences, each also marked where it
+     appears: the scale grammar is now one ascending line with (D), [C] and a
+     single | for inner notes (the "/" inner mark and the "|" bottom list are
+     read only by parseLegacySeed); there are no note-count caps and no
+     TOO_MANY_RIM code; the deck id hashes identitySeed, not formatSeed; the
+     LEFT-FIRST / RIGHT-FIRST pair is gone (options mirror, mirrorBottom,
+     anchor, seats; share format v4; storage key hpfc.scales.v3). -->
 <!-- Promoted from the 2026-09 planning session and AMENDED after a third
      adversarial review (2026-09-08, post-retrofit). This is the reviewed,
      owner-decided plan for the user-configurable-scale feature. It has NOT
@@ -191,7 +200,7 @@ decoder-side whitelist of its own.
 
 **One result contract [eng-review 7A].** Every public engine entry point returns
 `{ok: true, value}` or `{ok: false, code, reason}` and never throws on user
-input. `code` is a short stable enum (`NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`,
+input. `code` is a short stable enum (`NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM` [retired 2026-10: no caps],
 `BAD_NOTE`, `NEEDS_NEWER_APP`, ...); `reason` is the English sentence the UI
 shows. The UI has exactly one adapter from this shape to the message area.
 
@@ -210,7 +219,7 @@ shows. The UI has exactly one adapter from this shape to the message area.
    select.build(seed, fields) --- voicing.pick (D2, D11); D9 root octave in select
         |                      \-- naming.name  (D1 table, D8, D10)
         v
-   deck object {id: "custom:" + hash(formatSeed(fields)), name, options
+   deck object {id: "custom:" + hash(formatSeed(fields)) [2026-10: hash(identitySeed(fields))], name, options
                 {palette, mirror, parent}, colors, degrees, geom, fields,
                 chords[], warnings[]}          <- shape fixed in ENGINE-SPEC (P0a)
         |                                   \
@@ -482,7 +491,7 @@ practice screen itself (card, nav, mode buttons) does not change.
 | 2 | Scale box | Bitter 16px, bg `#151310`, border `1px #433b2c`, radius 8px, min-height 44px, placeholder "(D) A C D E F G A C"; `autocapitalize=off`, `spellcheck=false` |
 | 3 | Live parse line | Bitter 12px `#c4bcab`, updates on every input from `core.parseSeed`: "Ding D3 \| 1 A3 2 C4 3 D4 ..."; empty box shows the standing hint. With the preset row removed (owner, 2026-09) that hint, the label and the placeholder are the ONLY teaching of the seed grammar, so it spells the whole of it: "Type your ding first, in brackets - then the top notes, low to high, exactly like the example in the box. Put \| before any bottom-shell notes." |
 | 4 | Message line | Nunito Sans 11.5px, `aria-live="polite"`; error `#E27005`, warning `#e3b25c`, success `#a4c9a0`; sits ABOVE the control row so the soft keyboard never covers it |
-| 5 | Control row | left: mirror pair as two `.mode` buttons "LEFT-FIRST" / "RIGHT-FIRST" (D12, default right-first per D12 shown as `.on`); right: six 14px `.dot` swatches (D6 index 0-5), selected one ringed `#f1ece1` |
+| 5 | Control row | left: mirror pair as two `.mode` buttons "LEFT-FIRST" / "RIGHT-FIRST" [superseded 2026-10: the layout drawer's MIRROR TOP / MIRROR BOTTOM and HANDPAN ORIENTATION] (D12, default right-first per D12 shown as `.on`); right: six 14px `.dot` swatches (D6 index 0-5), selected one ringed `#f1ece1` |
 | 6 | Generate | full-width `.mode.on` style (`#f1ece1` on `#272219`), 44px, "GENERATE CARDS"; disabled at 50% opacity until the parse line is valid; the only primary button while the sheet is open |
 
 No parent-scale picker and no URL field on the create path (owner decisions
@@ -496,7 +505,7 @@ No parent-scale picker and no URL field on the create path (owner decisions
 |---|---|---|---|---|
 | empty | placeholder | parse hint | disabled | unchanged |
 | typing, valid | text | parse line only | enabled | unchanged |
-| error (`NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM`, `BAD_NOTE`) | text kept, amber-orange outline `#E27005` | one sentence from `reason`, e.g. "No perfect fifth above the ding D3. Add an A, or check the ding." | disabled | unchanged |
+| error (`NO_DING`, `NO_FIFTH`, `TOO_MANY_RIM` [retired], `BAD_NOTE`) | text kept, amber-orange outline `#E27005` | one sentence from `reason`, e.g. "No perfect fifth above the ding D3. Add an A, or check the ding." | disabled | unchanged |
 | loading | read-only | none | label "GENERATING", disabled, no spinner (budget is under 200 ms) | unchanged |
 | success | sheet closes | practice-screen `aria-live` says "14 cards generated" | n/a | new chip `.on` and scrolled into view; card 1 face-up at full width |
 | partial (ok with `warnings[]`) | as success | warning tier in `#e3b25c` on the practice screen, e.g. "Only power chords: no 3rds on this pan" | n/a | as success |
@@ -508,7 +517,7 @@ No parent-scale picker and no URL field on the create path (owner decisions
 **Journey [3].** Practice screen -> tap "+ ADD" -> focus lands in the box ->
 type or paste -> parse line updates -> Generate -> sheet closes -> new chip
 selected, card 1 face-up, success message with the one-time hint -> tap
-LEFT-FIRST / RIGHT-FIRST later via the Edit sheet (Phase 4) if the pan is
+LEFT-FIRST / RIGHT-FIRST [superseded 2026-10, see the drawer] later via the Edit sheet (Phase 4) if the pan is
 mirrored. The user never leaves the practice screen.
 
 **Custom chip [5A].** Same anatomy as built-in chips: palette `.dot` plus an
@@ -540,7 +549,7 @@ deck and not on the second, and that the success path reads
 Versioned seed encoding, `share.decode` calling `core.parseSeed` (3A), `hpfc`
 read-modify-write fix with its sibling-survival test and mutant, saved scales
 under their own key, custom deck id = `core.deckId(fields)` (D14 as amended;
-tests: id equals `hash(formatSeed(fields))` and `select.build` is never consulted for it (spy); change every option, id unchanged; the id itself is computed in Phase 3 from P0d, Phase 4 only encodes it), the seed options (palette, mirror, parent, name) encoded beside
+tests: id equals `hash(formatSeed(fields))` [2026-10: identitySeed] and `select.build` is never consulted for it (spy); change every option, id unchanged; the id itself is computed in Phase 3 from P0d, Phase 4 only encodes it), the seed options (palette, mirror, parent, name) encoded beside
 the fields and never hashed,
 layout-delta space reserved. [design-review 7A] **One Edit sheet:** tapping
 the already-selected custom chip reopens the Phase 3 sheet in Edit state:
@@ -709,14 +718,14 @@ DESIGN.md yet, tracked in `TODOS.md`). Lane ownership is unchanged by any of it.
 | 18B | Codex | Keep seed-as-contract; per-card state keys on (deck id, fields list) (D14 as amended by review D4) |
 | 19A | Owner UX | Freeform scale string replaces the per-note form (D13; URL field removed by design review) |
 | TODO 1 | P0b | Fixture freezes per-deck fields, degrees, colours, geom |
-| TODO 2 | Phase 4 | Custom id = hash of `formatSeed(fields)` only; options never hashed (amended by 1A) |
+| TODO 2 | Phase 4 | Custom id = hash of `formatSeed(fields)` only [2026-10: `identitySeed`]; options never hashed (amended by 1A) |
 | TODO 3 | P0c | Scoped revert + clean after each mutant, clean-tree assertion |
 
 ### Eng re-review decisions (run 2, after design) [eng-review 2]
 
 | # | Section | Decision |
 |---|---|---|
-| 1A | Architecture | Custom id = hash of `formatSeed(fields)` only; options (palette, mirror, parent, name) never hashed; computable in Phase 3 |
+| 1A | Architecture | Custom id = hash of `formatSeed(fields)` only [2026-10: `identitySeed`]; options (palette, mirror, parent, name) never hashed; computable in Phase 3 |
 | 2A | Code quality | `select.build` is the one producer of `warnings[]`; the registry stores `deck.warnings`; readers never regenerate; deck object shape fixed in ENGINE-SPEC |
 | 3A | Tests | 11 delta gaps added with mutants: `\|` round-trip, id stability, `NO_THIRDS`, Escape/backdrop/focus e2e, disabled Generate, upsert, one-time hint, warnings without regeneration, Edit prefill, Degrees override, delete |
 | 4A | Codex tension | Same-id generate replaces the deck in place ("Updated ..."), id and progress kept; Codex's "mirror joins the id" rejected because a mirror flip would drop progress |

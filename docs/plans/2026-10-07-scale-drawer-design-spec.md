@@ -1,3 +1,5 @@
+SUPERSEDED IN PART, 2026-10-09 (lane DOC). The drawer that shipped is the DR3 build (#276, main b3d7dac) as the owner changed it in interview 14 and the phone check of 2026-10-08 (plan 20.23, 20.24, 20.24.6). Section 20 below, "As shipped", is the current text for every name, order and copy it covers. Where an older section names `RESET SEATS`, the `NOTE 1` group, `ON CENTRE`, `BESIDE CENTRE`, the four step buttons as always visible, or the legacy ROTATE and MOVE group, that text is superseded and is marked where it appears; it is kept as the record of the design.
+
 SIGNED OFF by the owner 2026-10-07 (plan section 19, R4), mock version 3. W1, DR1 and DR2 may not start until this is merged.
 
 History: this text is one current-truth fold of the earlier draft and its three review layers. The superseded text is in git at 702fc12 and is not repeated here. Nothing below overrides anything else in this file.
@@ -44,9 +46,10 @@ Closed name list. Lanes use these ids. The `app_surface_v1.json` fixture and `to
 | `scale-legacy-hint` | the group's own short hint (today's ROTATE and MOVE sentence). The group's `aria-describedby` names it. It is not `#scale-layout-hint`, which is the toggle row's | DR1 (renames), DR2 (removes) |
 | `scale-note-prev`, `scale-note-next` | PREVIOUS NOTE, NEXT NOTE | DR2 |
 | `scale-seat-prev`, `scale-seat-next` | PREVIOUS SEAT, NEXT SEAT | DR2 |
-| `scale-layout-reset` | RESET SEATS (kept id) | DR2 (relabels, moves in, wires) |
-| `scale-anchor-label` | the `NOTE 1` group label | DR1 |
-| `scale-anchor-one`, `scale-anchor-between` | the two anchor buttons | DR1 |
+| `scale-layout-reset` | RESET SEATS (kept id). SUPERSEDED 2026-10-09: reads `RESET LAYOUT` and resets seats, both mirrors and the orientation (section 20) | DR2 (relabels, moves in, wires), DR3 |
+| `scale-anchor-label` | the `NOTE 1` group label. SUPERSEDED 2026-10-09: `HANDPAN ORIENTATION` (section 20) | DR1, DR3 |
+| `scale-anchor-one`, `scale-anchor-between` | the two anchor buttons. SUPERSEDED 2026-10-09: `#1 CENTRED` and `#1 / #2` (section 20) | DR1, DR3 |
+| `scale-fine-toggle`, `scale-fine` | added 2026-10-09 (DR3): the quiet disclosure button and the hidden wrapper of the four step buttons (section 20) | DR3 |
 | `scale-drawer-status` | the one live line for every drawer announcement, inside the band | DR1 (renders, writes rows 13, 14, 18, 18b, 19, 21), DR2 (writes the rest) |
 
 Gone: `scale-mirror-l` and `scale-mirror-r` (W1 removes them). `scale-rot-l`, `scale-rot-r`, `scale-move-l`, `scale-move-r` and today's LAYOUT group with its `#scale-layout-label` and `#scale-legacy-hint` (DR2 removes them, in place, in the same change that adds the SEAT, NOTE and RESET SEATS controls; DR1 leaves them live inside the drawer, section 17).
@@ -120,6 +123,8 @@ While the drawer is open `.sheetbody` carries `scroll-padding-top` equal to the 
 **Drawer height.** The drawer under the band is about 430 px with the helpers counted, against a controls window of about 245 px at 380 x 780 and about 195 px at 380 x 667 once the pinned status is counted (predictions, ESTIMATE). So the drawer scrolls on every phone. The control order exists so that what is on screen is the toggle and both step rows [RD 7]. The lane that adds the step rows (DR2) measures that both step rows fit at 380 x 667 with the band stuck. If they do not fit, it lowers the `42dvh` factor in steps, never under a 240 px plate, and reports. That is the one DR1-owned rule DR2 may change.
 
 **Closed fold.** At 380 x 667 the content above the toggle may put ADJUST LAYOUT at or under the fold on the closed sheet. DR1 measures it for the D3 example and reports. It does not resize the closed plate, which would be a visual change for the owner [F 10].
+
+SUPERSEDED 2026-10-09 for the open drawers (5.2 to 5.4): the labels `RESET SEATS`, `NOTE 1`, `ON CENTRE`, `BESIDE CENTRE` and the always-visible step rows in the wireframes below are the DR2 design. The shipped open drawer is drawn in section 20.
 
 ### 5.1 Wireframe: 380 px portrait, closed
 
@@ -298,6 +303,8 @@ Refusals are warnings, not errors: amber, never the orange `#E27005` of `.err`.
 
 ## 9. The controls in the drawer
 
+SUPERSEDED IN PART, 2026-10-09: the order below is the DR2 order. The shipped order, names and copy are in section 20. The four step buttons now sit behind a disclosure, `RESET SEATS` is `RESET LAYOUT` and resets everything, and the `NOTE 1` group is `HANDPAN ORIENTATION` at the top of the drawer.
+
 All are `.mode` buttons at 44 px (existing rule), in `.ctlrow` and `.mirror` flex rows with `gap: var(--sp-2)`. No new component. The drawer's order, in the DOM and on screen, under the band [RD 7]:
 
 1. the toggle row, then `#scale-layout-state`;
@@ -370,6 +377,8 @@ If DR2 measures a ring that reaches neither 44 px in ring mode nor is disjoint, 
 The 44 px assertion of acceptance line 58 (a required outcome) is hard only while the open plate keeps its `42dvh` cap at 380 x 667. If the cap is lowered under section 5, the lane that lowers it names on its PR every pan of line 58 whose same-ring target then measures under 44 px. For those pans line 58 becomes a report, and the shortfall goes to the owner at the DR2 phone check. The Kurd 10 figure is 68 px at 284 px. A pan with a bottom shell is tighter. Pygmy is close to 44 px at a 280 px plate, by arithmetic and not measured.
 
 ## 11. Keyboard map and announcements
+
+SUPERSEDED IN PART, 2026-10-09: rows 12 (`Seats reset to the default.`) and the `{n} is now in {ring} seat {t} of {k}` family follow rule N of section 20: the seat number is the number the plate draws at that position, and a swap moves only the note name. Row 12 now reads `Layout reset.`. Strings that tell the player to use PREVIOUS SEAT and NEXT SEAT say so only while the finer controls are open; closed, the tap string ends at `to swap.`
 
 **Roving focus [RD 8].** The plate is not itself focusable. `#scale-preview` (open) is `role="group"` with `aria-label` `Pan layout: {a} rim, {b} inner, {c} bottom notes.` Its `.panhit` elements are the focus targets, with a roving `tabindex`: exactly one has `tabindex="0"` and the rest `-1`, so the plate is one Tab stop. Each is `role="button"`, with `aria-pressed="true"` on the picked note and `"false"` on the others, no `aria-selected`, and the accessible name `{n}, {ring} seat {s} of {k}, {place}`. There is no separate cursor: the cursor is the focused note. After every repaint the roving `tabindex` and, when focus was on a note, real focus are restored to the `.panhit` with the same `data-field`. The exception is a committed swap by tap, drop, Space or Enter: focus goes to the note that was picked, at its new seat (section 16.3).
 
@@ -480,6 +489,8 @@ Arrangements are keyed by the ring's note index, so editing a pitch without chan
 The only motion the drawer adds is the ghost returning to its seat (120 ms) and the swap flash fading over 600 ms. With `prefers-reduced-motion: reduce` (the app already reads this through `reducedMotion`) the ghost disappears at once, the flash shows for 600 ms with no fade, and nothing animates. The drawer itself never animates (no height transition), the scroll-into-view uses `behavior: "auto"`, and the veil, the dashed rings and the focus mark appear instantly under both settings. Pick and drop feedback is carried by rings, veils and the status text, never by motion.
 
 ## 16. Control states
+
+SUPERSEDED IN PART, 2026-10-09: the RESET SEATS rows read as RESET LAYOUT (enabled when seats, either mirror or the orientation differ from the default), the ON CENTRE and BESIDE CENTRE rows as `#1 CENTRED` and `#1 / #2`, and the four step rows are also hidden and out of the tab order while `#scale-fine` is closed. Section 20 has the shipped rules.
 
 This section is the one table of when each control is enabled, visible and pressed, and where focus goes if the control disables or goes away while it holds focus. The prose elsewhere states the same rules. The two agree.
 
@@ -904,6 +915,41 @@ These are the readings the repair pass took where an earlier text was silent or 
 - Pixels (step 6, M1). Section 10's 68 px and 52 px are predictions. The landscape arithmetic of section 5.4 is a prediction and is measured and reported. The 220 px landscape plate, the 280 px portrait plate and the 150 px lower bound are computed. The 44 px targets are required.
 - Step rows. DR2, which adds the step rows, repeats the 380 x 667 fit measurement and may lower the `42dvh` factor. That is the one DR1-owned rule it may touch.
 - Drawer hint. DR1 adds the element empty and hidden. DR2 gives it the text, because the text describes the tap and drag interaction DR2 builds.
+
+## 20. As shipped (DR3, 2026-10-09)
+
+Source: plan 20.16 to 20.24.6 and interview 14 (20.23), checked against `index.html` at main b3d7dac. This section governs wherever it differs from sections 2 to 19.
+
+**Coordinator readings and owner decisions folded in.**
+
+- Interview 12 (20.17): a second swap inside 600 ms replaces the first flash (never more than two seats carry `.panflash`); with a note picked, hold, Space, Enter or drag start on a one-note ring's note acts as a refused tap (row 10, pick kept); Escape with a note picked puts it down and the drawer stays open, the next Escape closes it; after a refused tap on another ring's note focus stays on the picked note; the anchor helper speaks of seats; a standing refusal no longer blocks the plate repaint (F1).
+- Reviews of DR2a and DR2b (20.18 to 20.22) ended PASS_WITH_NITS; the touch finding of 20.21 was a test fault, not an app fault. The owner checked iOS Safari and Android Chrome on 2026-10-08: "both work great".
+- Interview 14 (20.23), binding:
+  1. Rule N. A seat's number belongs to the position. A swap moves the note name and nothing else, on the plate and on the generated cards, so the number line of a card reads the numbers drawn at its voicing's positions. A deck with no moved seat is byte-identical to before. The stored seat arrangement and the share format did not change; numbers are derived, never stored.
+  2. The four step buttons stay, hidden behind a disclosure.
+  3. `RESET SEATS` becomes `RESET LAYOUT`, a real `.mode` button, and resets everything.
+  4. `NOTE 1` becomes `HANDPAN ORIENTATION` and the section moves to the top of the drawer, below the pan.
+- Owner phone check of #276 (20.24.6): the orientation pair reads `#1 CENTRED` and `#1 / #2`. This supersedes `1 CENTRED` and `1 + 2 SPLIT`. The status, hint and seat wording is accepted as shipped.
+- Lane PM (20.24.5): `HANDPAN 101` (a Google Doc link) is the last Resources row. It is not part of the drawer.
+
+**Drawer order, under the band and the toggle row (shipped).**
+
+1. `HANDPAN ORIENTATION` (`#scale-anchor-label`), the pair `#1 CENTRED` (`#scale-anchor-one`, default) and `#1 / #2` (`#scale-anchor-between`), then the helper `Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.`
+2. `MIRROR TOP` (`#scale-mirror`), `MIRROR BOTTOM` (`#scale-mirror-bottom`) and the helper `Each flips left and right. Top covers the rim and the inner notes.`
+3. `#scale-fine-toggle`, one quiet text button, `aria-expanded` and `aria-controls="scale-fine"`: closed `HARD TO TAP? SHOW FINER CONTROLS`, open `HIDE FINER CONTROLS`.
+4. `#scale-fine`, hidden until opened: PREVIOUS NOTE / NEXT NOTE and PREVIOUS SEAT / NEXT SEAT, ids and behaviour unchanged.
+5. `RESET LAYOUT` (`#scale-layout-reset`), full row.
+6. `#scale-drawer-hint`, last: `Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.`
+
+**Disclosure.** Closed whenever the sheet opens. Opening it moves neither focus nor scroll; closing it while a step button has focus puts focus on the disclosure. It stays as set across drawer close and reopen within one sheet. Closed, the four buttons are out of the tab order and the accessibility tree. It is enabled whenever the drawer's controls are. The arrow keys, taps and drags on the plate are the same open or closed.
+
+**RESET LAYOUT.** Returns all three seat arrangements, both mirrors and the orientation to the default: no seat moved, mirrors off, anchor `one`. On Edit the default is the generated one, not the stored record. Enabled when any of those differs. It puts down a picked note, cancels a drag and writes `Layout reset.` to the status line.
+
+**Notice.** `Layout not saved yet. GENERATE CARDS keeps it.` on Add, `Layout not saved yet. SAVE CHANGES keeps it.` on Edit; on a stored deck with a non-default layout the drawer opens closed and the notice reads `Layout changed from the default.`
+
+**Left as is.** Releasing a drag can scroll the sheet up to 13 px at 380 x 390; `ghostShift` is exact for translate-only ancestors; in landscape two columns the plate and status scroll away (F2); a Edit deck name with a non-ASCII letter disables the toggle (F4, older than DR1).
+
+**Superseded, kept as record.** The DR1/DR2 split of section 17, the legacy ROTATE and MOVE group, `scale-mirror-l` and `scale-mirror-r`, and every label named in the banner.
 
 ## GSTACK REVIEW REPORT
 

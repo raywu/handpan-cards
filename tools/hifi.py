@@ -429,8 +429,9 @@ def build(path, deck, chords_only=False):
     return len(cards) // 9
 
 
-# Short card copy per engine warning code. The title card prints the engine's
-# own full reason string; a chord card has room for a badge, not a sentence.
+# Short card copy per engine warning code for the CHORD cards, which have room
+# for a badge, not a sentence. Only NO_THIRDS is here: SMALL_LABELS is a title
+# card line (decks.TITLE_WARNINGS) and has no chord-card badge (decision A16).
 CARD_WARNINGS = {"NO_THIRDS": "NO 3RDS ON THIS PAN"}
 
 
