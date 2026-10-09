@@ -876,3 +876,19 @@ test("R4-E a select function called with a module it needs unloaded says which m
   const noCore = loadEngine(["voicing", "layout", "naming", "select"]);
   assert.throws(() => noCore.select.build(null), /HPE\.select requires HPE\.core: load core\.js first/);
 });
+
+test("R4-E voice, the public stage after collapse, seats every kept candidate once and never on the ding", () => {
+  const seed = seedOf(TWELVE);
+  const collapsed = select.collapse(seed.fields, select.candidates(seed.fields), 0);
+  const voiced = host(select.voice(seed.fields, collapsed));
+  assert.ok(voiced.length >= host(collapsed).length, "a candidate with a second root instance gains a card");
+  const keys = new Set();
+  for (const v of voiced) {
+    assert.ok(Array.isArray(v.fields) && v.fields.length >= 2);
+    assert.ok(!v.fields.includes(0), "the ding is never voiced");
+    assert.equal(seed.fields[String(v.fields[0])][2] % 12, seed.fields[String(v.rootId)][2] % 12,
+      "a voicing leads with its root pitch class");
+    keys.add(v.fields.join(","));
+  }
+  assert.equal(keys.size, voiced.length, "one fields list per deck");
+});
