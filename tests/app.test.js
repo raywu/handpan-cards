@@ -3782,8 +3782,8 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files: `<Name>_Cards_Letter.pdf`
-  // and `<Name>_CHORD_ONLY_Letter.pdf`, with punctuation folded out of
+  // tools/decks.py's `if __name__ == "__main__":` block names the three shipped files, `<Name>_CHORD_ONLY_Letter.pdf`;
+  // the unused full-deck path names its output `<Name>_Cards_Letter.pdf`, with punctuation folded out of
   // the deck name. A custom deck's download joins that shelf, so it takes the
   // same shape rather than inventing a second one.
   assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
@@ -5466,11 +5466,29 @@ test("AP3-0 generated faces and rail DOM match the committed digest", () => {
   assert.ok(html.includes("Tap to reveal the notes"));
   const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "ap3-0-"));
   const drifted = path.join(dir, "index.html");
-  fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
-  assert.throws(
-    () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
-    /Command failed/, "a drifted generated face must fail the check");
-  fs.rmSync(dir, { recursive: true, force: true });
+  try {
+    fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
+    assert.throws(
+      () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
+      /Command failed/, "a drifted generated face must fail the check");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("R4-A29 regen_card_fixture --html without a value exits non-zero with a message", () => {
+  const { spawnSync } = require("node:child_process");
+  const tool = path.join(ROOT, "tools", "regen_card_fixture.js");
+  const dest = path.join(ROOT, "tests", "fixtures", "card_face_v1.json");
+  const before = fs.readFileSync(dest);
+  for (const argv of [["--html"], ["--check", "--html"], ["--html", "--check"], ["--gen", "--html"]]) {
+    const r = spawnSync(process.execPath, [tool, ...argv], { encoding: "utf8" });
+    const where = argv.join(" ");
+    assert.notStrictEqual(r.status, 0, `${where}: a flag with no value must not succeed`);
+    assert.match(r.stderr, /--html needs a path/, `${where}: the message names the flag`);
+    assert.doesNotMatch(r.stderr, /TypeError|at Object\.|node:internal/, `${where}: a message, not a stack`);
+  }
+  assert.ok(fs.readFileSync(dest).equals(before), "a refused invocation writes nothing");
 });
 
 test("AP3-1 faceHTML is the only answer-template builder", () => {
@@ -8144,9 +8162,7 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
       DG.release(app, g, 330, 330 + lift);
       const left = DG.ghostEls(app)[0];
       const home = DG.centre(DG.noteNode(app, "A3"));
-      const r = left.getBoundingClientRect();
       assert.deepStrictEqual({ x: parseFloat(left.style.left) + parseFloat(left.style.width) / 2 + app.plate.gx, y: parseFloat(left.style.top) + parseFloat(left.style.height) / 2 + app.plate.gy }, { x: home.x, y: home.y }, `${type}: the return target`);
-      assert.ok(r);
     }
   });
 
@@ -8281,6 +8297,37 @@ test("rule N: generateDeck gives the plate and the card number line the seat num
   const svg = app.get(`pan(${expr}, ${expr}.chords[0])`);
   const labels = [...svg.matchAll(/<text[^>]*>(\d+)<\/text>/g)].map((m) => m[1]);
   assert.ok(labels.includes("2") && labels.includes("1"), "the plate draws the seat numbers");
+});
+
+test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring's labels and the number line", () => {
+  const swaps = [[1, 0], [2, 1, 0]];
+  const cases = [["D3 example", DR3_D3], ["D Kurd 10", DR3_KURD], ["F3 Low Pygmy", DR1_PYGMY_MAKER]];
+  const app = boot();
+  for (const [name, text] of cases) {
+    const base = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(text)}, {}).value.fields`));
+    const rimIds = Object.keys(base).filter((id) => base[id][3] === "rim").sort((a, b) => a - b);
+    for (const anchor of ["one", "between"]) {
+      for (const mirror of [false, true]) {
+        for (const nSwaps of [1, 3]) {
+          const order = rimIds.map((_, i) => i);
+          for (let k = 0; k < nSwaps; k += 1) [order[k], order[k + 1]] = [order[k + 1], order[k]];
+          const tag = `${name} ${anchor} mirror=${mirror} swaps=${nSwaps}`;
+          const made = app.generate(text, { anchor, mirror, seats: { rim: order } });
+          assert.strictEqual(made.ok, true, `${tag}: ${made.reason}`);
+          const deck = app.registry()[made.value.id];
+          const rimLabels = Object.keys(deck.fields).filter((id) => deck.fields[id][3] === "rim").map((id) => deck.fields[id][5]);
+          assert.deepStrictEqual([...rimLabels].sort(), rimIds.map((id) => base[id][5]).sort(), `${tag}: rim labels are the default set`);
+          const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+          plain(deck.chords).forEach((ch, i) => {
+            const line = app.get(`linesHTML(${expr}, ${expr}.chords[${i}])`);
+            const numline = /<div class="numline">([\s\S]*)<\/div><\/div>/.exec(line)[1];
+            const got = [...numline.matchAll(/>(\d+)<\/span>/g)].map((m) => m[1]);
+            assert.deepStrictEqual(got, ch.fields.map((f) => deck.fields[f][5]).filter((l) => /^\d+$/.test(l)), `${tag}: ${ch.main} number line`);
+          });
+        }
+      }
+    }
+  }
 });
 
 test("rule N: a moved deck's stored record and share link are the strings main wrote", () => {

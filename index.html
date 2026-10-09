@@ -1398,7 +1398,7 @@ footer.seq{row-gap:var(--sp-1)}
     </div>
   </div>
   <!-- Resources (docs/plans/2026-10-01-resources-menu.md, eng review
-       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): five
+       amendments 1-7; docs/plans/2026-10-05-menu-resources-amy.md): six
        outbound links in three rows, styled as .mode (no new colour
        or typeface, N15). They deliberately carry no onclick - a link click
        must NOT call closePanel() (amendment 3), unlike the print buttons
@@ -7907,9 +7907,10 @@ function scaleRecord(seed) {
   return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
 }
 // The reader for a stored record's scale string, chosen by the record's own
-// version. Every version maps to the legacy reader today; a record keeps the
-// reader it was written with, so its deck id never depends on how the current
-// canonical spelling prints.
+// version: 4 and up read the canonical grammar (parseSeed), anything older the
+// legacy grammar (parseLegacySeed); a record keeps the reader it was written
+// with, so its deck id never depends on how the current canonical spelling
+// prints.
 function scaleReader(v) {
   return v >= 4 ? HPE.core.parseSeed : HPE.core.parseLegacySeed;
 }
@@ -8077,7 +8078,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
    ONE rule sizes every glyph the pan draws, and tools/hifi.py carries the
    same constants and the same arithmetic for print:
 
-     name   = r * LABEL_RATIO[zone]
+     name   = r * labelRatio(zone)   (HPE.pdfcards owns the three ratios)
      number = r_note * NUM_RATIO
 
    `r` is the field's own drawn radius, so the ding, the top shell and the
@@ -8109,13 +8110,8 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
    "Where the ratios come from, and what actually changed".
    Safe above the solver's budget because in the app the field circle itself
    bounds a name; ext comes from f_num on generated decks only. */
-const LABEL_RATIO_DING = 0.70875, LABEL_RATIO_NOTE = 0.80325,
-      LABEL_RATIO_BNOTE = 0.8232, NUM_RATIO = 0.64;
-function labelRatio(zone) {
-  return zone === "ding" ? LABEL_RATIO_DING
-       : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
-}
-function labelSize(r, zone) { return r * labelRatio(zone); }
+const labelSize = HPE.pdfcards.labelSize;
+const NUM_RATIO = 0.64;
 function numSize(rNote) { return rNote * NUM_RATIO; }
 
 /* pan()'s two per-field emitters, hoisted so pan() is the loop only. `sets` is
@@ -8624,6 +8620,7 @@ function faceHTML(d, ch, n, kind) {
       return headerHTML(d, { ...ch, subtitle: "WHICH CHORD IS THIS?" }, n) +
         `<div class="diagwrap">${pan(d, ch)}</div>
      <div class="lines"><div class="hint" style="margin:0 0 12px">Tap to reveal the name</div></div>`;
+    case "answerB":
     default:
       return headerHTML(d, ch, n) +
         `<div class="prompt">${nameHTML(ch, true)}</div>` + linesHTML(d, ch);
@@ -9966,13 +9963,13 @@ function runGenerate() {
     scaleBox.classList.add("bad");
     refusal = "Another deck already uses this scale.";
     showRefusal(refusal);
-    return refusal;
+    return;
   }
   if (!res.ok) {
     scaleBox.classList.add("bad");
     refusal = res.reason;
     showRefusal(refusal);
-    return refusal;
+    return;
   }
   const d = res.value;
   // "Edit means edit" (queue row 73). D14 could not keep the id across a field

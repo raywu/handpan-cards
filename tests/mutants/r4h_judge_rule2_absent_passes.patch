@@ -1,5 +1,5 @@
-# kills: judgeCell rule 2: a control the base renders must stay rendered, in place, and present
-# suite: node --test --test-name-pattern ^judgeCell.rule.2 tests/harness.test.js
+# kills: panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design
+# suite: node --test --test-name-pattern ^panel.fit.rule.2..a.control.the.base.renders.and.the.candidate.lacks.fails.unless.it.is.removed.by.design$ tests/app.test.js
 # Rule 2 treats a control deleted from the candidate as removed by design.
 diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
 --- a/tools/probe/panel_fit.js

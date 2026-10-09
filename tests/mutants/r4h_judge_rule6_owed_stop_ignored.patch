@@ -1,5 +1,5 @@
-# kills: judgeCell rule 6: a stop must be enabled and rendered, and every enabled rendered control must be a stop
-# suite: node --test --test-name-pattern ^judgeCell.rule.6 tests/harness.test.js
+# kills: panel fit rule 6: a rendered enabled control missing from the stop list fails, and a disabled one need not be listed
+# suite: node --test --test-name-pattern ^panel.fit.rule.6..a.rendered.enabled.control.missing.from.the.stop.list.fails..and.a.disabled.one.need.not.be.listed$ tests/app.test.js
 # Rule 6 stops failing a rendered enabled control that is not a stop.
 diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
 --- a/tools/probe/panel_fit.js

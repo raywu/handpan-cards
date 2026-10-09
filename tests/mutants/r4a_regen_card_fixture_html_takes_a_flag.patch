@@ -1,0 +1,15 @@
+# kills: R4-A29 regen_card_fixture --html without a value exits non-zero with a message
+# suite: node --test --test-name-pattern ^R4-A29.regen_card_fixture.--html.without.a.value.exits.non-zero.with.a.message$ tests/app.test.js
+# --html followed by another flag is accepted as a path ("--check" is read as a file).
+diff --git a/tools/regen_card_fixture.js b/tools/regen_card_fixture.js
+--- a/tools/regen_card_fixture.js
++++ b/tools/regen_card_fixture.js
+@@ -244,7 +244,7 @@ function main() {
+   const check = args.includes("--check");
+   const htmlFlagIdx = args.indexOf("--html");
+   const htmlArg = htmlFlagIdx >= 0 ? args[htmlFlagIdx + 1] : null;
+-  if (htmlFlagIdx >= 0 && (!htmlArg || htmlArg.startsWith("--"))) {
++  if (htmlFlagIdx >= 0 && !htmlArg) {
+     console.error("regen_card_fixture: --html needs a path");
+     process.exit(2);
+   }

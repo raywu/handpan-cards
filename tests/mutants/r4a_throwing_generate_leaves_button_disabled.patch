@@ -1,0 +1,22 @@
+# kills: AP2-3 a throwing generate still restores readonly and the label and leaves the button disabled
+# suite: node --test --test-name-pattern ^AP2-3.a.throwing.generate.still.restores.readonly.and.the.label.and.leaves.the.button.disabled$ tests/app.test.js
+# runGenerate restores readonly and the label in a finally; this restores them only on
+# the non-throwing path, so a generate that throws leaves the box read-only and the
+# button reading GENERATING.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9952,10 +9952,9 @@ function runGenerate() {
+       taken = CUSTOM[id];
+       return { ok: false };
+     });
+-  } finally {
+-    scaleBox.removeAttribute("readonly");
+-    genBtn.textContent = label;
+-  }
++  } catch (e) { throw e; }
++  scaleBox.removeAttribute("readonly");
++  genBtn.textContent = label;
+   if (taken) {
+     // UI copy, like the delete fallback above it - NOT an engine reason. The
+     // section 2 code enum is closed and has no code for "that scale is taken",

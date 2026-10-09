@@ -9,6 +9,6 @@ diff --git a/index.html b/index.html
      refusal = "Another deck already uses this scale.";
 -    showRefusal(refusal);
 +    showRefusal("");
-     return refusal;
+     return;
    }
    if (!res.ok) {

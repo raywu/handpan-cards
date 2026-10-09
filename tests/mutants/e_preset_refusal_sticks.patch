@@ -3,15 +3,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9500,6 +9500,7 @@
+@@ -9961,6 +9961,7 @@ function runGenerate() {
      // section 2 code enum is closed and has no code for "that scale is taken",
      // so this composes no sentence that could pass for one and carries no code.
      scaleBox.classList.add("bad");
 +    scaleBox.dataset.dead = "1";
      refusal = "Another deck already uses this scale.";
      showRefusal(refusal);
-     return refusal;
-@@ -9698,7 +9699,7 @@
+     return;
+@@ -10417,7 +10418,7 @@ scaleBox.addEventListener("input", () => {
      if (typeof at === "number" && scaleBox.setSelectionRange) scaleBox.setSelectionRange(at, at);
    }
    syncGrow();

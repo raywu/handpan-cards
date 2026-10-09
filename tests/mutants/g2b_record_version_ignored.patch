@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7871,7 +7871,7 @@ function scaleRecord(seed) {
- // reader it was written with, so its deck id never depends on how the current
- // canonical spelling prints.
+@@ -7912,7 +7912,7 @@ function scaleRecord(seed) {
+ // with, so its deck id never depends on how the current canonical spelling
+ // prints.
  function scaleReader(v) {
 -  return v >= 4 ? HPE.core.parseSeed : HPE.core.parseLegacySeed;
 +  return HPE.core.parseSeed;

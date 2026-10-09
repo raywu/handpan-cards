@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7216,7 +7216,7 @@ function writeScales(list) {
+@@ -7904,7 +7904,7 @@ function copyLegacyScales() {
  // for-byte identical between the two before this extraction (finding 13,
  // quality-refactor plan 2026-09-30).
  function scaleRecord(seed) {
@@ -16,4 +16,4 @@ diff --git a/index.html b/index.html
 +  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: {} };
  }
  // The reader for a stored record's scale string, chosen by the record's own
- // version. Every version maps to the legacy reader today; a record keeps the
+ // version: 4 and up read the canonical grammar (parseSeed), anything older the

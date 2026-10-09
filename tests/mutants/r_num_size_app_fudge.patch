@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6834,7 +6834,7 @@ function labelRatio(zone) {
-        : zone === "bottom" ? LABEL_RATIO_BNOTE : LABEL_RATIO_NOTE;
- }
- function labelSize(r, zone) { return r * labelRatio(zone); }
+@@ -8112,7 +8112,7 @@ const escA = s => esc(s).replace(/"/g, "&quot;");
+    bounds a name; ext comes from f_num on generated decks only. */
+ const labelSize = HPE.pdfcards.labelSize;
+ const NUM_RATIO = 0.64;
 -function numSize(rNote) { return rNote * NUM_RATIO; }
 +function numSize(rNote) { return rNote * NUM_RATIO * 1.1; }
  
