@@ -2438,6 +2438,14 @@ Stop condition added to PM.9: the new last row fails rule 1 or rule 3 of the ora
 
 Owner check-in, 2026-10-08 (confirmed, no longer coordinator readings): `HANDPAN 101` sits in the last row of Resources; the print button reads `DOWNLOAD PDF`. The owner judges the drawer's new status, hint and seat wording at the DR3 phone check. Older parked items are interviewed once after DR3 merges.
 
+### 20.24.6 Owner phone check of DR3 (2026-10-08)
+
+The owner checked the preview of #276 at `9f50909` and wrote: "Let's update: “#1 centred” & “#1 / #2”", then "Everything else look great and can merge once we update the strings".
+
+- The orientation pair reads `#1 CENTRED` (`#scale-anchor-one`) and `#1 / #2` (`#scale-anchor-between`). This supersedes `1 CENTRED` and `1 + 2 SPLIT` wherever 20.23 and 20.24 name them. Nothing else in the row changes: the label, the helper, the ids, the status lines and the hint stand.
+- The status, hint and seat wording left to the phone check is accepted as shipped.
+- The phone-check gate on DR3 is met once the two strings ship. The CI and independent-review gates are unchanged and apply at the new head.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the

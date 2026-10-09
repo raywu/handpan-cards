@@ -4537,7 +4537,7 @@ function run() {
           assert.ok(r.top >= -1 && (fits ? r.bottom <= r.port + 1 : r.top < r.port),
             `${edit ? "Edit" : "Add"} at 844 x 390: #${r.id} ends outside the scrollport: ${JSON.stringify(r)}`);
         }
-        assert.ok(seen.includes("scale-anchor-between"), `Tab never reached 1 + 2 SPLIT: ${seen}`);
+        assert.ok(seen.includes("scale-anchor-between"), `Tab never reached #1 / #2: ${seen}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);

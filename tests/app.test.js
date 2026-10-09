@@ -6373,16 +6373,16 @@ test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", 
 
 
 
-test("DR1 line 25: two anchor buttons carry aria-pressed, 1 CENTRED pressed by default", () => {
+test("DR1 line 25: two anchor buttons carry aria-pressed, #1 CENTRED pressed by default", () => {
   const app = boot();
   dr1Open(app);
-  assert.strictEqual(dr1Markup("scale-anchor-one").text, "1 CENTRED");
-  assert.strictEqual(dr1Markup("scale-anchor-between").text, "1 + 2 SPLIT");
+  assert.strictEqual(dr1Markup("scale-anchor-one").text, "#1 CENTRED");
+  assert.strictEqual(dr1Markup("scale-anchor-between").text, "#1 / #2");
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
 });
 
-test("DR1 line 26: 1 + 2 SPLIT re-solves the plate and reaches the deck, the stored record and the share link", () => {
+test("DR1 line 26: #1 / #2 re-solves the plate and reaches the deck, the stored record and the share link", () => {
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
   dr1Toggle(app).click();
@@ -6403,7 +6403,7 @@ test("DR1 line 26: 1 + 2 SPLIT re-solves the plate and reaches the deck, the sto
   assert.strictEqual(other.registry()[deck.id].options.anchor, "between");
 });
 
-test("DR1 line 27: an Edit sheet for a deck saved with anchor between opens with 1 + 2 SPLIT pressed", () => {
+test("DR1 line 27: an Edit sheet for a deck saved with anchor between opens with #1 / #2 pressed", () => {
   const app = boot();
   const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between" });
   assert.strictEqual(made.ok, true, made.reason);
@@ -6721,7 +6721,7 @@ test("DR1 line 19 note, row 19: opening over a pan with no ring of two notes say
   assert.strictEqual(fine.els["scale-drawer-status"].textContent, "");
 });
 
-test("DR1 line 115: Pygmy typed on Add opens 1 CENTRED; one tap on 1 + 2 SPLIT gives the built-in angles and reopens pressed", () => {
+test("DR1 line 115: Pygmy typed on Add opens #1 CENTRED; one tap on #1 / #2 gives the built-in angles and reopens pressed", () => {
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
@@ -7482,7 +7482,7 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
   same();
   assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "anchor one baseline");
   app.els["scale-anchor-between"].click(); same();
-  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "1 + 2 SPLIT did not redraw");
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "#1 / #2 did not redraw");
   app.els["scale-anchor-between"].click(); same();
   assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "the pressed anchor changed the pan");
   app.els["scale-anchor-one"].click(); same();
@@ -7625,7 +7625,7 @@ test("DR2a (18): a pan whose only ring of two is the bottom focuses the first no
   assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
 });
 
-test("DR2a (71): MIRROR TOP then 1 + 2 SPLIT leave every permutation as it was", () => {
+test("DR2a (71): MIRROR TOP then #1 / #2 leave every permutation as it was", () => {
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4");
@@ -8382,8 +8382,8 @@ test("DR3 orientation: label, two options, helper and status rows read as the ow
   const label = dr1Markup("scale-anchor-label");
   assert.strictEqual(label.text, "HANDPAN ORIENTATION");
   assert.ok(/class="sheetlabel"/.test(label.attrs));
-  assert.strictEqual(dr1Markup("scale-anchor-one").text, "1 CENTRED");
-  assert.strictEqual(dr1Markup("scale-anchor-between").text, "1 + 2 SPLIT");
+  assert.strictEqual(dr1Markup("scale-anchor-one").text, "#1 CENTRED");
+  assert.strictEqual(dr1Markup("scale-anchor-between").text, "#1 / #2");
   assert.ok(/role="group"[^>]*aria-labelledby="scale-anchor-label"|aria-labelledby="scale-anchor-label"[^>]*role="group"/.test(html));
   assert.ok(html.includes('<p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>'));
   assert.ok(!/ON CENTRE|BESIDE CENTRE|RESET SEATS/.test(html), "an old label survived");
