@@ -127,3 +127,8 @@ The earlier unit-only local probe (946 tests: `index.html` 88.61 % lines / 77.20
 | `tests/helpers/cdp.js` now carries the coverage hook (env-gated; `ex_exception_listener_dropped.patch` was refreshed because its hunk shifted) | T owns `tests/helpers/*` once this merges |
 | `tests/suite_health.py` FLOORS row and README node-suite count (22 to 23) | H (FLOORS), D (README) rebase onto these |
 | The `coverage.yml` temporary `push` trigger is removed in the final commit | none |
+
+## Corrections (lane D, 2026-10-09)
+
+- The row "`layout.js` `err` (106) | LIVE, defensive wrapper" above was wrong: `err` had no caller and lane E removed it as PROVEN DEAD (commit 50e1d9d, PR #283).
+- `pdf.js` `num()`'s negative-zero ternary was removed by lane E as UNREACHABLE (`toFixed` never yields `-0`), not PROVEN DEAD, matching PR #283's table.
