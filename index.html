@@ -2076,8 +2076,7 @@ HPE.pdf = (function () {
   function num(v) {
     if (!isFinite(v)) throw new Error("non-finite coordinate: " + v);
     var s = (Math.round(v * 10000) / 10000).toFixed(4);
-    s = s.replace(/0+$/, "").replace(/\.$/, "");
-    return s === "-0" ? "0" : s;
+    return s.replace(/0+$/, "").replace(/\.$/, "");
   }
 
   function escapeText(s) {

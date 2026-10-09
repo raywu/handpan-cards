@@ -1,0 +1,14 @@
+# kills: R4-E a non-finite number is refused, and a value that rounds to negative zero prints as 0
+# suite: node --test --test-name-pattern ^R4.E.a.non.finite.number.is.refused..and.a.value.that.rounds.to.negative.zero.prints.as.0$ tests/pdf.test.js
+# R4-E: a non-finite number is written into the content stream.
+diff --git a/src/engine/pdf.js b/src/engine/pdf.js
+--- a/src/engine/pdf.js
++++ b/src/engine/pdf.js
+@@ -39,7 +39,6 @@
+   // "612.0000". Trailing-zero noise would also make two identical builds differ
+   // byte for byte, which the print parity tests compare.
+   function num(v) {
+-    if (!isFinite(v)) throw new Error("non-finite coordinate: " + v);
+     var s = (Math.round(v * 10000) / 10000).toFixed(4);
+     return s.replace(/0+$/, "").replace(/\.$/, "");
+   }

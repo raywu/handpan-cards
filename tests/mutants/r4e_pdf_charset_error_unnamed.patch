@@ -1,0 +1,15 @@
+# kills: R4-E text outside the character set and in an unknown face is refused by name
+# suite: node --test --test-name-pattern ^R4.E.text.outside.the.character.set.and.in.an.unknown.face.is.refused.by.name$ tests/pdf.test.js
+# R4-E: the charset error does not name the character.
+diff --git a/src/engine/pdf.js b/src/engine/pdf.js
+--- a/src/engine/pdf.js
++++ b/src/engine/pdf.js
+@@ -50,7 +50,7 @@
+     for (var i = 0; i < s.length; i++) {
+       var code = winansi(s[i]);
+       if (code < 0) {
+-        throw new Error("character " + JSON.stringify(s[i]) +
++        throw new Error("character " +
+                         " is outside CHARSET - the subset fonts cannot draw it");
+       }
+       if (code === 0x28 || code === 0x29 || code === 0x5c) {
