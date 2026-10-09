@@ -2415,6 +2415,29 @@ Facts the planner could not verify, left to the lanes with stop conditions: all 
 
 Coordinator readings added by this section (owner can overturn any): `DOWNLOAD PDF` and the one-row print group; the chord-only file name kept; `HANDPAN 101` first in Resources on its own row; `{ring} seat {N}` wording without "of k"; the orientation status copy; PM merges before DR3; the three CHORD_ONLY PDFs stay.
 
+### 20.24.5 Amendment after lane PM's first stop (2026-10-08, owner away; AFK auto-decision)
+
+Lane PM stopped on two PM.9 conditions at #275.
+
+**Finding 1.** PM.3 said the new Resources row costs 47px and is "inside the oracle's 64px `res-` allowance". That is false for the links below it. `resAllowance()` in `tools/probe/panel_fit.js` grants the 64px to NEW `res-` controls only (rules 1 and 3). Rule 2 judges existing controls against main, and a row placed first pushes the five existing links down 47px. Rule 2 failed on both font modes.
+
+Decision: **`HANDPAN 101` is the LAST row of Resources, below the Amy row.** No existing control moves down, and no fit rule is loosened (PM-14 stands as written). Position was a coordinator reading, not the owner's words; the owner asked for "a new option". Rejected: granting the allowance to existing `res-` controls in rule 2, because it loosens the oracle for every later change. The owner can overturn this; putting the link first then needs an oracle change in its own lane.
+
+Rules as amended:
+- **PM-7.** The LAST focusable child of the Resources group is the `#res-handpan-101` link (markup unchanged).
+- **PM-8.** It is alone in its own `.modebar` row, full row width, below the Amy row. The site row keeps three siblings, the Amy row two.
+- **PM-9.** `panelStops()` contains `#res-handpan-101` exactly once, immediately after `#res-amy-bottom`, and it is the last stop. Tab from it wraps to `#settings-trigger`. `#res-handpaner` follows `#print-paper-select` as on main.
+- PM.3 drawings: read the `HANDPAN 101` row at the bottom of Resources.
+- PM.5 test title: `PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row`. `RESOURCES` gains the id at the last row; the other five keep their row indices.
+- PM.6: `pm_handpan101_not_first` becomes `pm_handpan101_not_last` (row moved above the site row).
+- P-A5 reads "last in Resources".
+
+**Finding 2.** `DOWNLOAD PDF` overflows its box by about 4px in the 240px sidebar with Linux fallback fonts. PM-5 stands. The fix is CSS inside the `.prints` rule only (padding or flex shares of the two controls in the sidebar). The label, the 44px height and the type size do not change. If no such CSS holds PM-5 on both font modes, the lane stops and reports.
+
+Stop condition added to PM.9: the new last row fails rule 1 or rule 3 of the oracle in any cell.
+
+Owner check-in, 2026-10-08 (confirmed, no longer coordinator readings): `HANDPAN 101` sits in the last row of Resources; the print button reads `DOWNLOAD PDF`. The owner judges the drawer's new status, hint and seat wording at the DR3 phone check. Older parked items are interviewed once after DR3 merges.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
