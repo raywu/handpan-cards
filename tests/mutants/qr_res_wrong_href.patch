@@ -1,14 +1,14 @@
-# kills: the settings panel has exactly one Resources group with its five outbound links in two rows
-# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.five.outbound.links.in.two.rows$ tests/e2e.test.js
+# kills: the settings panel has exactly one Resources group with its six outbound links in three rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.six.outbound.links.in.three.rows$ tests/e2e.test.js
 # R186-2 (docs/plans/2026-10-01-resources-menu.md:85-86). Drops the trailing
 # slash from #res-handpaner's href, so the link's href no longer matches the
 # exact URL the RESOURCES fixture expects.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1332,7 +1332,7 @@ footer.seq{row-gap:var(--sp-1)}
-          equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
-          boxes) the two Amy Naylor videos. -->
+@@ -1409,7 +1409,7 @@ footer.seq{row-gap:var(--sp-1)}
+          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+          full width, LAST so no existing control moves down). -->
      <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com"

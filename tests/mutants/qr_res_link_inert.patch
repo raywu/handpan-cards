@@ -12,8 +12,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1329,7 +1329,7 @@ footer.seq{row-gap:var(--sp-1)}
-          boxes) the two Amy Naylor videos. -->
+@@ -1410,7 +1410,7 @@ footer.seq{row-gap:var(--sp-1)}
+          full width, LAST so no existing control moves down). -->
      <div class="modebar trio">
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 -         target="_blank" rel="noopener">HANDPANER</a>

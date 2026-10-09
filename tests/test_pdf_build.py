@@ -7,8 +7,8 @@ stamp, and card copy from extracted text.  No layout constant is imported
 from ``hifi`` (CONTRACT rule 2) - the numbers below are CLAUDE.md's print
 spec, which the artifact has to hit.
 
-The last test is the staleness gate: the six PDFs committed in the repo root
-must match a fresh build, so deck data cannot change without the printed
+The last test is the staleness gate: the three CHORD_ONLY PDFs committed in the
+repo root must match a fresh build, so deck data cannot change without the printed
 sheets being regenerated.
 """
 import hashlib
@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import pymupdf
 
@@ -235,6 +236,33 @@ class CommittedPdfBytesTest(unittest.TestCase):
                     os.path.join("/tmp/x", os.path.basename(rel)))
 
 
+THREE_COMMITTED = (
+    "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf",
+    "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf",
+    "D_Amara_9_CHORD_ONLY_Letter.pdf",
+)
+
+
+class ShippedPdfsTest(unittest.TestCase):
+    """PM-10 and PM-11: the repo ships the three chord-only sheets and no
+    full-deck seed."""
+
+    def test_the_repo_root_holds_only_the_three_chord_only_pdfs(self):
+        tracked = subprocess.run(
+            ["git", "ls-files", "*.pdf"], cwd=paths.ROOT,
+            capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(sorted(tracked), sorted(THREE_COMMITTED))
+
+    def test_decks_main_writes_only_the_three_chord_only_pdfs(self):
+        out = tempfile.mkdtemp(prefix="handpan-main-")
+        try:
+            with mock.patch.object(decks, "hifi", hifi):
+                decks.main(out)
+            self.assertEqual(sorted(os.listdir(out)), sorted(THREE_COMMITTED))
+        finally:
+            shutil.rmtree(out, ignore_errors=True)
+
+
 class BuiltDecksTest(unittest.TestCase):
     """Base class: every deck built once, into a throwaway directory."""
 
@@ -260,7 +288,7 @@ class BuiltDecksTest(unittest.TestCase):
     @staticmethod
     def _repo_pdf_hashes():
         out = {}
-        for name in sorted(paths.PDFS.values()):
+        for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
             with open(os.path.join(paths.ROOT, name), "rb") as fh:
                 out[name] = hashlib.sha256(fh.read()).hexdigest()
         return out
@@ -408,7 +436,8 @@ class BuildTest(BuiltDecksTest):
         and commit it without rerunning tools/decks.py and this goes red -
         app and print would otherwise silently diverge.
         """
-        stale = _stale_reasons(paths.PDFS, paths.ROOT, self.tmp,
+        stale = _stale_reasons({k: paths.PDFS[k] for k in paths.COMMITTED},
+                               paths.ROOT, self.tmp,
                                self.docs, self.text)
         self.assertEqual(
             stale, [],

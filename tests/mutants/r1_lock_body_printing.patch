@@ -4,12 +4,14 @@
 # browser-print body-class flag the R1 retirement removed. Guards that the
 # lock test's code-shaped regex, not just the old narrower forms, still
 # catches a real reintroduction.
+# Re-cut 2026-10-08 (lane PM): the context moved with the not-used comment above downloadDeckPDF. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -6546,6 +6546,7 @@ function pdfFilename(d, variant, paper) {
- }
-
+@@ -8394,7 +8394,8 @@ function pdfFilename(d, variant, paper) {
+ // NOT USED BY THE UI since 2026-10-08: the 'full' variant (title card, legend
+ // card, blank padding) has no control. The settings panel offers DOWNLOAD PDF,
+ // which calls this with 'shop'. 'full' is kept for tests and a future return.
  function downloadDeckPDF(variant, btn) {
 +  if (false) { document.body.classList.toggle("printing", body.printing); }
    const d = deck();

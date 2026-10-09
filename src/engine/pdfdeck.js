@@ -186,6 +186,8 @@ HPE.pdfdeck = (function () {
                      : (tops.length + " + 1"),
       credit: name.toUpperCase(),
       blurb: blurb(spec, chords.length, warnings),
+      // Only the full-deck legend card reads this; the app no longer builds that
+      // variant (2026-10-08), so nothing user-visible shows it. Kept.
       legend_lines: legendLines(spec, hasBottom),
       legend_demo: legendDemo(spec, chords),
       // --- data -----------------------------------------------------------

@@ -17,7 +17,7 @@ Two halves:
 
 No layout constant is imported from ``hifi`` (CONTRACT rule 2); the PDF
 assertions are made against the built artifact, in a temp directory - never the
-repo root, whose six committed PDFs this file must not touch.
+repo root, whose three committed PDFs this file must not touch.
 """
 import hashlib
 import json
@@ -88,9 +88,9 @@ def generate(seed, *args):
 
 
 def repo_pdf_hashes():
-    """{filename: sha256} for the six committed PDFs in the repo root."""
+    """{filename: sha256} for the three committed PDFs in the repo root."""
     out = {}
-    for name in sorted(paths.PDFS.values()):
+    for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
         with open(os.path.join(paths.ROOT, name), "rb") as fh:
             out[name] = hashlib.sha256(fh.read()).hexdigest()
     return out
@@ -660,7 +660,7 @@ class GeneratedDeckPdfTest(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="handpan-gen-")
         # Snapshot BEFORE anything is built: the oracle for the staleness test
-        # below is the sha256 of the six committed PDFs as they were on entry.
+        # below is the sha256 of the three committed PDFs as they were on entry.
         cls.pdfs_before = repo_pdf_hashes()
         cls.deck = decks.from_generated(generate(SEED_TOP_ONLY))
         cls.bottom = decks.from_generated(generate(SEED_WITH_BOTTOM))
@@ -740,8 +740,8 @@ class GeneratedDeckPdfTest(unittest.TestCase):
         repo path, neither of which can be false, so pointing hifi.build at the
         repo root would have left it green.
         """
-        self.assertEqual(len(self.pdfs_before), 6,
-                         "six committed PDFs are the thing being guarded")
+        self.assertEqual(len(self.pdfs_before), 3,
+                         "three committed PDFs are the thing being guarded")
         self.assertEqual(
             repo_pdf_hashes(), self.pdfs_before,
             "building a generated deck rewrote a committed PDF in the repo "

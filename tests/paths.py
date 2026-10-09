@@ -15,6 +15,8 @@ PDFS = {
     "amara_print": "D_Amara_9_CHORD_ONLY_Letter.pdf",
 }
 
+COMMITTED = ("hijaz_print", "pygmy_print", "amara_print")
+
 
 def app_decks():
     """The DECKS JSON embedded in index.html, parsed."""

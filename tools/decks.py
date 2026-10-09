@@ -401,15 +401,20 @@ def from_generated(payload):
     )
 
 
+# The full-deck sheet (title card, legend card, blank padding) is no longer
+# written: the app has no control for it and the three "_Cards_Letter.pdf" seed
+# files left the repo. The path is kept and still tested - hifi.build(path, deck)
+# builds one - but nothing here uses it.
+def main(out):
+    names = (
+        ("CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf", HIJAZ),
+        ("F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf", PYGMY),
+        ("D_Amara_9_CHORD_ONLY_Letter.pdf", AMARA),
+    )
+    pages = [hifi.build(os.path.join(out, name), deck, chords_only=True)
+             for name, deck in names]
+    print("printer:", *pages)
+
+
 if __name__ == "__main__":
-    OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    n1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_Cards_Letter.pdf"), HIJAZ)
-    n2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_Cards_Letter.pdf"), PYGMY)
-    n3 = hifi.build(os.path.join(OUT, "D_Amara_9_Cards_Letter.pdf"), AMARA)
-    p1 = hifi.build(os.path.join(OUT, "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf"),
-                    HIJAZ, chords_only=True)
-    p2 = hifi.build(os.path.join(OUT, "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf"),
-                    PYGMY, chords_only=True)
-    p3 = hifi.build(os.path.join(OUT, "D_Amara_9_CHORD_ONLY_Letter.pdf"),
-                    AMARA, chords_only=True)
-    print("full:", n1, n2, n3, "| printer:", p1, p2, p3)
+    main(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

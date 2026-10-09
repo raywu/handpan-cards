@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1329,7 +1329,7 @@ footer.seq{row-gap:var(--sp-1)}
-          three sites (class trio: equal widths above the landscape grid, two
+@@ -1408,7 +1408,7 @@ footer.seq{row-gap:var(--sp-1)}
           equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
-          boxes) the two Amy Naylor videos. -->
+          boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+          full width, LAST so no existing control moves down). -->
 -    <div class="modebar trio">
 +    <div class="modebar">
        <a class="mode" id="res-handpaner" href="https://handpaner.com/"

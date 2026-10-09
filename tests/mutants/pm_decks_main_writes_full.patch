@@ -1,0 +1,14 @@
+# kills: test_decks_main_writes_only_the_three_chord_only_pdfs
+# suite: python3 -m unittest -k test_decks_main_writes_only_the_three_chord_only_pdfs tests.test_pdf_build
+# Lane PM. decks.main also writes a full-deck sheet, so a rebuild would resurrect a *_Cards_Letter.pdf.
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -410,6 +410,7 @@ def main(out):
+         ("CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf", HIJAZ),
+         ("F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf", PYGMY),
+         ("D_Amara_9_CHORD_ONLY_Letter.pdf", AMARA),
++        ("D_Amara_9_Cards_Letter.pdf", AMARA),
+     )
+     pages = [hifi.build(os.path.join(out, name), deck, chords_only=True)
+              for name, deck in names]

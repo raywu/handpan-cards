@@ -581,6 +581,8 @@ HPE.pdfcards = (function () {
   // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
+    // The "full" variant (anything but "shop": title card, legend card, blank
+    // padding) is not used by the app since 2026-10-08; kept, and tested.
     var chordsOnly = opts.variant === "shop";
     var paper = PAPER[opts.paper] ? opts.paper : "letter";
     var page = pageSize(paper);

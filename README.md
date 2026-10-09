@@ -73,14 +73,14 @@ decisions behind it.
   A scale saved in a tab still running the previous version of the app lands under
   the old storage key and does not appear in the new app; that needs a tab held
   open across an update, and reloading it fixes the tab.
-- **Print**: every deck - built-in and custom alike - shows FULL DECK PDF and
-  CHORD-ONLY PDF buttons plus a Letter/A4 size picker. Tapping a button does
+- **Print**: every deck - built-in and custom alike - shows one DOWNLOAD PDF
+  button (the chord-only sheets) plus a Letter/A4 size picker. Tapping it does
   not open a pre-built file; the PDF is built in the browser, on the spot, by
   the scale engine's PDF modules (`HPE.pdfdeck` adapts the deck, `HPE.pdfcards`
   draws it - a separate renderer from the one the flip cards use), so a
   built-in deck's cards and a custom deck's cards go through one path with one
-  set of controls. The paper choice persists between visits, and both buttons
-  disable while a PDF is being built so a second tap can't start a duplicate
+  set of controls. The paper choice persists between visits, and the button
+  disables while a PDF is being built so a second tap can't start a duplicate
   one. Off iOS the file downloads directly; on iOS it opens in a new tab where
   the platform allows it, falling back to replacing the current page where it
   does not.
@@ -126,7 +126,7 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 775 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 783 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
@@ -160,7 +160,7 @@ Quickest local test: `tools/preview.sh` (or `tools/preview.sh <branch>` /
 embedded `const DECKS` line, the browser's own PDF builder, and the print
 generator all derive from it. Edit that file, then run
 `python3 tools/sync_decks.py` (re-injects it into `index.html`) and
-`python3 tools/decks.py` (rebuilds the six committed PDFs through
+`python3 tools/decks.py` (rebuilds the three committed chord-only PDFs through
 `tools/hifi.py` - the print-shop artifacts under `tests/test_pdf_build.py`'s
 staleness gate, not what the app's print buttons open).
 

@@ -961,16 +961,16 @@ function run() {
       const id = meta[i].id;
       const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
-      assert.strictEqual(m.buttons, 2, `deck ${id}: expected exactly 2 buttons, found ${m.buttons}`);
+      assert.strictEqual(m.buttons, 1, `deck ${id}: expected exactly 1 button, found ${m.buttons}`);
       assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
-      assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "CHORD-ONLY PDF"], `deck ${id}`);
+      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF"], `deck ${id}`);
     }
 
     // And a generated deck gets the identical row - it is the same element.
     await generate(SIX_SCALES[1]);
     const g = await shape();
     assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
-    assert.strictEqual(g.buttons, 2, "generated deck: expected exactly 2 buttons");
+    assert.strictEqual(g.buttons, 1, "generated deck: expected exactly 1 button");
     assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
   });
 
@@ -1032,7 +1032,7 @@ function run() {
      the setTimeout(0)-deferred re-enable controls (browsers suppress the
      click on a disabled element the same way whether the click call
      originates from a second dispatched input event or from script). */
-  test("two taps on FULL DECK PDF queued together build the PDF once", async () => {
+  test("two taps on DOWNLOAD PDF queued together build the PDF once", async () => {
     await freshLoad();
     const meta = await decksMeta();
     const i = meta.findIndex((m) => m.id === "pygmy");
@@ -1050,13 +1050,13 @@ function run() {
       // profiles; suppress activation so the test cannot hang on a modal
       // that has nothing to do with the guard under test.
       HTMLAnchorElement.prototype.click = function () {};
-      const btn = document.querySelector("#settings-panel .prints button"); // FULL DECK PDF
+      const btn = document.querySelector("#settings-panel .prints button"); // DOWNLOAD PDF
       btn.click();
       btn.click(); // the "second tap queued while the first is still running"
       return window.__buildCount;
     `);
     assert.strictEqual(count, 1,
-      `two taps on FULL DECK PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
+      `two taps on DOWNLOAD PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
   });
 
   /* The `finally` in downloadDeckPDF must re-enable the buttons on BOTH the
@@ -1128,10 +1128,10 @@ function run() {
     assert.strictEqual(m.flipped, false,
       "Enter on a print button flipped the card");
     assert.strictEqual(m.buildCalls.length, 1,
-      "Enter on the FULL DECK PDF button never reached HPE.pdfcards.build - " +
+      "Enter on the DOWNLOAD PDF button never reached HPE.pdfcards.build - " +
       "the real onclick chain did not run");
-    assert.strictEqual(m.buildCalls[0].variant, "full",
-      "Enter on the FULL DECK PDF button built the wrong variant");
+    assert.strictEqual(m.buildCalls[0].variant, "shop",
+      "Enter on the DOWNLOAD PDF button built the wrong variant");
     assert.strictEqual(m.panelHidden, true,
       "Enter on a print button never called closePanel() - the panel stayed open");
   });
@@ -1358,6 +1358,8 @@ function run() {
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
     { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
       aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
+    { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 2,
+      aria: "Handpan 101 (Google Doc)" },
   ];
   const RES_IDS = RESOURCES.map((r) => r.id);
   const RES_IDS_JS = JSON.stringify(RES_IDS);
@@ -1713,7 +1715,10 @@ function run() {
   // the fit assertion unchanged.
   // macOS fallback fonts measure 373.75; the Linux CI runner's measure 371.75
   // (its 16px headings against macOS's 17px). Both read from origin/main 655a45c.
-  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 371.75 : 373.75;
+  // Lane PM (2026-10-08): HANDPAN 101 adds a 44px row + one --sp-1 (47 here) to the
+  // Resources column, which is the tall one in this cell; the one-line print row
+  // is not in it. So the literal is the old one + 47: 418.75 Linux / 420.75 macOS.
+  const MAIN_NEEDED_667x375_S_FALLBACK = process.platform === "linux" ? 418.75 : 420.75;
 
   test("the full-screen settings panel fits with no scroll in every mode, at 320x568 and every landscape size",
     async () => {
@@ -1797,7 +1802,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its five outbound links in two rows", async () => {
+  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1820,8 +1825,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2], "expected two rows holding three then two links");
-    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [3, 2, 1], "expected three rows holding three, two then one links");
+    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -1915,9 +1920,13 @@ function run() {
             // still reachable by scrolling (its bottom is inside scrollHeight).
             const hg = await b.eval(`const h = document.getElementById("panel-prog-heading");
               return h.getBoundingClientRect().height + parseFloat(getComputedStyle(h).marginTop);`);
-            const mainNeeded = process.platform === "linux" ? 669.75 : 673.75;
-            const want = mainNeeded + hg - m.clientH;
-            assert.ok(m.scrollH - m.clientH > 0, `${label}: the cell must really scroll (two-sided)`);
+            // Lane PM (2026-10-08): the print row is one line in the sidebar (179 -> 67,
+            // -112) and HANDPAN 101 adds a row (+50), so the 673.75 / 669.75 became
+            // 611.75 / 607.75. With the heading that is 634.75 of 688 and the cell
+            // no longer scrolls; the edge test pins the exact figure.
+            const mainNeeded = process.platform === "linux" ? 607.75 : 611.75;
+            const want = Math.max(0, mainNeeded + hg - m.clientH);
+            assert.ok(m.scrollH - m.clientH >= want - 1, `${label}: with the Amy row the cell scrolls by at least ${want}px, got ${m.scrollH - m.clientH}px`);
             assert.ok(Math.abs(amy.overWithout - want) <= 1,
               `${label}: without the Amy row the sidebar scrolls by ${amy.overWithout}px, expected ${want}px`);
             const unreachable = await b.eval(`
@@ -2097,6 +2106,18 @@ function run() {
                 `${vw}x${vh}: a line of .${r.cls} is not flush: ${JSON.stringify(l.items)} in [${r.left}, ${r.right}]`);
             }
           }
+          const prints = await b.eval(`
+            const row = document.querySelector("#settings-panel .prints");
+            const kids = [...row.children];
+            const tops = kids.map(k => k.getBoundingClientRect().top);
+            return { n: kids.length, oneLine: Math.max(...tops) - Math.min(...tops) < 2,
+              tall: Math.min(...kids.map(k => k.getBoundingClientRect().height)),
+              spill: kids.map(k => k.scrollWidth - k.clientWidth) };
+          `);
+          assert.strictEqual(prints.n, 2, `${vw}x${vh}: the print row holds two controls`);
+          assert.ok(prints.oneLine, `${vw}x${vh}: DOWNLOAD PDF and the paper select are not on one line`);
+          assert.ok(prints.tall >= 44, `${vw}x${vh}: a print control is under the 44px target`);
+          assert.ok(prints.spill.every((x) => x <= 0), `${vw}x${vh}: a print control clips its text: ${JSON.stringify(prints.spill)}`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
@@ -2774,8 +2795,8 @@ function run() {
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
         const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
+          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -2828,11 +2849,12 @@ function run() {
       `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
     const got = JSON.parse(r.stdout.trim().split("\n").pop());
 
-    // The deck the app just generated, counted the app's own way: the full
-    // variant is the chords plus a title card and a legend card, padded to
-    // whole 3x3 pages. Nothing here is a literal the emitter could drift from.
+    // The deck the app just generated, counted the app's own way: the button
+    // builds the chord-only variant (lane PM, 2026-10-08), so one card per
+    // chord, padded to whole 3x3 pages. Nothing here is a literal the emitter
+    // could drift from.
     const want = await b.eval(`
-      const n = deck().chords.length + 2;
+      const n = deck().chords.length;
       return { pages: Math.ceil(n / 9), cards: n };`);
 
     assert.strictEqual(got.pages, want.pages,
@@ -2854,7 +2876,7 @@ function run() {
      converge on the same pdfcards.build/pymupdf-verified renderer, and this
      test exists to catch fromBuiltin wiring - a missing/garbled overlay
      field, a bad geom.ext fallback - not to re-prove the renderer itself. */
-  test("a built-in deck's FULL DECK PDF tap produces bytes that open as a PDF", async () => {
+  test("a built-in deck's DOWNLOAD PDF tap produces bytes that open as a PDF", async () => {
     if (process.env.E2E_HARNESS_CHILD) return;
     const { spawnSync } = require("node:child_process");
     const os = require("node:os");
@@ -2869,8 +2891,8 @@ function run() {
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
         const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
+          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -7383,12 +7405,12 @@ function run() {
       }
     });
 
-    test("the sidebar's FULL DECK and CHORD-ONLY buttons produce a PDF blob", async () => {
+    test("the sidebar's DOWNLOAD PDF button produces a PDF blob", async () => {
       await freshLoad();
       try {
         await b.setViewport(1280, 800, false);
         await b.settle();
-        for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
+        for (const label of ["DOWNLOAD PDF"]) {
           const cap = await b.eval(`
             return (async () => {
               const real = URL.createObjectURL;
@@ -7969,8 +7991,11 @@ function run() {
         // with every control still reachable by scrolling; the others keep the
         // original assertion (no scroll, nothing offscreen).
         const cases = [
-          [740, 360, "S", 328.25], [740, 340, "S", 328.25], [812, 330, "S", 310], [926, 310, "S", 251.75],
-          [568, 312, "A", 313],
+          // Lane PM (2026-10-08): HANDPAN 101 (+47) and the one-line print row
+          // (-50 where the print group was the tall column): 328.25 -> 375.25,
+          // 310 -> 357, 251.75 unchanged, 313 -> 310.
+          [740, 360, "S", 375.25], [740, 340, "S", 375.25], [812, 330, "S", 357], [926, 310, "S", 251.75],
+          [568, 312, "A", 310],
         ];
         for (const [w, h, mode, mainNeeded] of cases) {
           await rb.setViewport(w, h, true);
@@ -8284,7 +8309,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "", "", "print-paper-select", ...RES_IDS];
+      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
@@ -11500,6 +11525,10 @@ function run() {
     // ("fallback") and the Linux CI runner ("fallback-linux", measured on the
     // runner from origin/main 655a45c). The real fonts are the checked-in TTFs and
     // measure identically on both, so "real" has one table.
+    // Lane PM (2026-10-08): per-mode change in `needed` in the landscape cells, where the
+    // tallest column moves (the other layouts derive it from the group heights below).
+    // "fallback-linux" is measured on the CI runner (run 37890810855, 060e1c1).
+    const PM_NEEDED_L = {"fallback":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[17,17,47],"640x375":[17,17,47],"640x519":[17,17,47],"640x520":[17,17,47],"641x320":[17,17,47],"641x375":[17,17,47],"641x519":[17,17,47],"641x520":[17,17,47],"1023x320":[26.5,26.5,0],"1023x375":[26.5,26.5,0],"1023x519":[26.5,26.5,0],"1023x520":[26.5,26.5,0],"1024x320":[26.5,26.5,0],"1024x375":[26.5,26.5,0],"1024x519":[26.5,26.5,0],"1024x520":[26.5,26.5,0],"1280x320":[24,24,0],"1280x375":[24,24,0],"1280x519":[24,24,0],"1280x520":[24,24,0]},"real":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[44,44,44],"427x375":[44,44,44],"427x519":[44,44,44],"427x520":[44,44,44],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[18,18,47],"640x375":[18,18,47],"640x519":[18,18,47],"640x520":[18,18,47],"641x320":[18,18,47],"641x375":[18,18,47],"641x519":[18,18,47],"641x520":[18,18,47],"1023x320":[23,23,0],"1023x375":[23,23,0],"1023x519":[23,23,0],"1023x520":[23,23,0],"1024x320":[23,23,0],"1024x375":[23,23,0],"1024x519":[23,23,0],"1024x520":[23,23,0],"1280x320":[23,23,0],"1280x375":[23,23,0],"1280x519":[23,23,0],"1280x520":[23,23,0]},"fallback-linux":{"320x320":[-3,-3,-3],"320x375":[-3,-3,-3],"320x519":[-3,-3,-3],"320x520":[-3,-3,-3],"427x320":[47,47,47],"427x375":[47,47,47],"427x519":[47,47,47],"427x520":[47,47,47],"568x320":[44,44,44],"568x375":[44,44,44],"568x519":[44,44,44],"568x520":[44,44,44],"640x320":[16,16,47],"640x375":[16,16,47],"640x519":[16,16,47],"640x520":[16,16,47],"641x320":[16,16,47],"641x375":[16,16,47],"641x519":[16,16,47],"641x520":[16,16,47],"1023x320":[27.5,27.5,0],"1023x375":[27.5,27.5,0],"1023x519":[27.5,27.5,0],"1023x520":[27.5,27.5,0],"1024x320":[27.5,27.5,0],"1024x375":[27.5,27.5,0],"1024x519":[27.5,27.5,0],"1024x520":[27.5,27.5,0],"1280x320":[25,25,0],"1280x375":[25,25,0],"1280x519":[25,25,0],"1280x520":[25,25,0]}};
     const tableKey = (fm) => (fm === "fallback" && process.platform === "linux" ? "fallback-linux" : fm);
     const isLandscape = (w, h) => h <= 520;
     const isSidebar = (w, h) => w >= 1024 && h >= 700;
@@ -11589,11 +11618,15 @@ function run() {
             assert.ok(g.hg <= pf.HEADING_ALLOWANCE_PX, `${where}: H + g = ${g.hg} exceeds the oracle's allowance`);
             const d = delta ? delta[tableKey(fm)][key][i] : 1;
             const [amyNeeded, amyRes] = AMY_DELTA[tableKey(fm)][key][i];
-            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded)) <= 0.5,
-              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded}`);
             const wantG = groups[tableKey(fm)][key][i];
+            const dPrint = wantG[1] - wantG[2];
+            const dRes = 44 + g.sp1;
+            const dPm = delta ? PM_NEEDED_L[tableKey(fm)][key][i] : dPrint + dRes;
+            assert.ok(Math.abs(g.needed - (want[i] + d * g.hg + amyNeeded + dPm)) <= 0.5,
+              `${where}: needed ${g.needed}px, expected main ${want[i]} + ${d ? "H + g = " + g.hg : "0"} + the Amy row ${amyNeeded} + PM ${dPm}`);
             assert.ok(Math.abs(g.groups[0] - (wantG[0] + g.hg)) <= 0.5, `${where}: the first group is ${g.groups[0]}px, expected main ${wantG[0]} + ${g.hg}`);
-            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + (k === 3 ? amyRes : 0))) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${k === 3 ? amyRes : 0}`);
+            const plus = [0, 0, dPrint, amyRes + dRes];
+            for (let k = 1; k < 4; k++) assert.ok(Math.abs(g.groups[k] - (wantG[k] + plus[k])) <= 0.5, `${where}: group ${k} is ${g.groups[k]}px, main has ${wantG[k]}px plus ${plus[k]}`);
           });
         }
       }

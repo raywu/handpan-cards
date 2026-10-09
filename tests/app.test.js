@@ -3578,7 +3578,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   customDeck(app);
   const custom = String(app.get("headerHTML(deck(), deck().chords[0], 1)"));
   for (const html of [builtin, custom]) {
-    for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
+    for (const label of ["DOWNLOAD PDF"]) {
       assert.ok(!html.includes(label), `the card header must not carry "${label}" any more`);
     }
     assert.ok(!html.includes("<button"), "the card header must carry no buttons");
@@ -3586,15 +3586,85 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
-  for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
+  for (const label of ["DOWNLOAD PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
   // One-pdf-path plan: every deck builds its PDF client-side - one panel, one
   // set of buttons, used for built-in and custom decks alike.
   assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
-  assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
+});
+
+const PM_SHOP_SHA256 = {
+  "hijaz/letter": "3c47f7d1ab8b85eb0e3d7c62845de03b057a44f641196e0b13e5015f1ae4c9b7",
+  "hijaz/a4": "826c0d7053f4e0d2c784b89f56c5030c65bad9fe8e7c9da57df097ecf6893489",
+  "pygmy/letter": "ec865b8f4954bfc2c89df62e2268ece336e0397999c7e1923bbf465f9ee9f34f",
+  "pygmy/a4": "82735f2ba2ad021c7402c3d0ad660825e8a651711fa6ef4764a1827d7578cf2c",
+  "amara/letter": "c6c72330c6c0ea5fc83ec331d5d81de8de1954b2858c3c6fd3058a3af7fac536",
+  "amara/a4": "755b079253b755ac97c0a81da55e56d2abaee29392fa4da4043aa92c80d67f89",
+};
+
+function pmPanel() {
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const at = src.indexOf('id="settings-panel"');
+  return src.slice(at, src.indexOf("<!-- The scale engine, inlined", at));
+}
+
+test("PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no full-deck control is rendered", () => {
+  const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const panel = pmPanel();
+  const row = panel.slice(panel.indexOf('<div class="prints">'));
+  const rowHtml = row.slice(0, row.indexOf("</select>") + 9);
+  const controls = [...rowHtml.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
+  assert.strictEqual(controls.length, 2, "the print row holds exactly two controls");
+  assert.match(controls[0], /^<button type="button" id="print-download" onclick="downloadDeckPDF\('shop', this\); closePanel\(\);">$/);
+  assert.match(controls[1], /^<select id="print-paper-select"/);
+  assert.match(rowHtml, /<button[^>]*>DOWNLOAD PDF<\/button>/);
+  assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
+  assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
+  assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
+  assert.match(panel, /<h3 class="panel-heading">Print this deck<\/h3>/);
+});
+
+test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built", () => {
+  const crypto = require("node:crypto");
+  const shopButton = pmPanel().match(/<button[^>]*onclick="downloadDeckPDF\('(\w+)', this\)[^>]*>(?:DOWNLOAD|CHORD-ONLY) PDF<\/button>/);
+  assert.ok(shopButton, "the chord-only print button is in the panel");
+  assert.strictEqual(shopButton[1], "shop", "the button builds the chord-only variant");
+  for (const id of ["hijaz", "pygmy", "amara"]) {
+    for (const paper of ["letter", "a4"]) {
+      const app = boot();
+      app.select(id);
+      app.run(`setPrintPaper("${paper}"); downloadDeckPDF("shop")`);
+      const bytes = Buffer.from(app.blobs()[0].parts[0]);
+      assert.strictEqual(crypto.createHash("sha256").update(bytes).digest("hex"),
+        PM_SHOP_SHA256[`${id}/${paper}`], `${id} ${paper}: chord-only bytes drifted from main`);
+      assert.match(anchor(app).download, new RegExp(`_CHORD_ONLY_${paper === "a4" ? "A4" : "Letter"}\\.pdf$`));
+    }
+  }
+});
+
+test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row", () => {
+  const panel = pmPanel();
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
+  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
+  assert.ok(links.length >= 6, "six Resources links");
+  const first = links[links.length - 1];
+  assert.match(first, /\bid="res-handpan-101"/);
+  assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
+  assert.match(first, /target="_blank"/);
+  assert.match(first, /rel="noopener"/);
+  assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
+  assert.match(first, /class="mode"/);
+  assert.ok(!/onclick/.test(first), "a link click must not close the panel");
+  assert.match(first, />HANDPAN 101<\/a>/);
+  const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
+  assert.strictEqual(rows.length, 3, "three modebar rows");
+  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
+  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
+  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
+  assert.ok(rows[2][2].includes("res-handpan-101"));
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -3796,7 +3866,6 @@ test("the paper control drives the page box, not just the filename", () => {
 test("the CTA buttons call the emitter, built-in and custom alike", () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
-  assert.match(panel, /onclick="downloadDeckPDF\('full', this\); closePanel\(\);"/);
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
     "exactly one settings panel serves every deck");
@@ -4561,11 +4630,17 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS"]);
+    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
     assert.deepStrictEqual(noS.removed, ["modeS"], "removal is listed so the report can name it");
+    const withFull = withControl(withControl(cell(), "button:FULL DECK PDF", ctl(100)), "button:CHORD-ONLY PDF", ctl(100));
+    const noFull = judge(withFull, cell());
+    assert.strictEqual(noFull.rule2.fail.length, 0, "the full-deck button is removed by design");
+    assert.deepStrictEqual(noFull.removed, ["button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
+    const withPaper = withControl(cell(), "print-paper-select", ctl(100));
+    assert.strictEqual(judge(withPaper, cell()).rule2.fail.length, 1, "the paper select is not removed by design");
     assert.deepStrictEqual(judge(cell(), cell()).removed, []);
   });
 
