@@ -1,0 +1,15 @@
+# kills: test_a_crowded_note_line_wraps_inside_the_card
+# suite: python3 -m unittest -k test_a_crowded_note_line_wraps_inside_the_card tests.test_gen_deck
+# A note line wraps at the full card width, not the card less its 12 pt side margins.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -514,7 +514,7 @@ def blurb_layout(lines):
+     """{"rows": [(text, is_bottom)], "size", "step"} for the title-card blurb."""
+     rows = []
+     for ln in lines:
+-        for part in _wrap_blurb_line(ln, CW - 24):
++        for part in _wrap_blurb_line(ln, CW):
+             rows.append((part, ln.startswith("BOTTOM")))
+     size, step = BLURB_SIZE, BLURB_STEP
+     room = BLURB_Y0 - BLURB_LAST_BASELINE

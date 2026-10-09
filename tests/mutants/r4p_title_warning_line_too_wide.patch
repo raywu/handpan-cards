@@ -1,0 +1,15 @@
+# kills: test_no_warning_line_on_the_title_card_is_wider_than_the_card
+# suite: python3 -m unittest -k test_no_warning_line_on_the_title_card_is_wider_than_the_card tests.test_gen_deck
+# The short SMALL_LABELS line grows wider than the card less its margins.
+diff --git a/tools/decks.py b/tools/decks.py
+--- a/tools/decks.py
++++ b/tools/decks.py
+@@ -294,7 +294,7 @@ KURD = _from_canonical("kurd")
+ AMARA10 = _from_canonical("amara10")
+ 
+ 
+-TITLE_WARNINGS = {"SMALL_LABELS": "CROWDED PAN: SMALL LABELS"}
++TITLE_WARNINGS = {"SMALL_LABELS": "CROWDED PAN: SMALL LABELS ON THIS PAN, READ THEM CLOSELY"}
+ 
+ 
+ # Title and legend card copy: read only by the full-deck path (hifi.title_card and

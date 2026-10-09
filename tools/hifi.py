@@ -187,6 +187,8 @@ def duo_frame(c, x, y, w, h, bw=2.8, rad=7.0, ga=None, gb=None):
                 stroke=0, fill=1)
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def plain_frame(c, x, y, w, h, col=NAME, bw=1.0, rad=7.0):
     c.setStrokeColor(col)
     c.setLineWidth(bw)
@@ -485,6 +487,8 @@ BLURB_FLOOR = 3.6
 BLURB_MIN_STEP = 1.2 * BLURB_FLOOR
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def _wrap_blurb_line(text, maxw):
     if tw(text, "Label", BLURB_SIZE, BLURB_TRACK) <= maxw:
         return [text]
@@ -504,6 +508,8 @@ def _wrap_blurb_line(text, maxw):
     return out
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def blurb_layout(lines):
     """{"rows": [(text, is_bottom)], "size", "step"} for the title-card blurb."""
     rows = []
@@ -519,6 +525,8 @@ def blurb_layout(lines):
     return {"rows": rows, "size": size, "step": step}
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def title_card(c, x, y, deck):
     plain_frame(c, x, y, CW, CH)
     s = fit(deck["name"], "Display", 16, CW - 24, track=0.4)
@@ -536,6 +544,8 @@ def title_card(c, x, y, deck):
                 lay["size"], BLURB_TRACK, "c", ORANGE if bottom else SEP)
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def legend_card(c, x, y, deck):
     plain_frame(c, x, y, CW, CH)
     tracked(c, x + 9, y + CH - 13.5, deck["name"], "Label", 4.6, 0.5, "l", INK)
@@ -560,6 +570,8 @@ def legend_card(c, x, y, deck):
                 0.3, "c", ORANGE if i == 0 and deck["has_bottom"] else SEP)
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def blank_card(c, x, y, deck):
     plain_frame(c, x, y, CW, CH, col=FAINT)
     tracked(c, x + 9, y + CH - 13.5, deck["name"], "Label", 4.6, 0.5, "l", FAINT)
@@ -570,6 +582,8 @@ def blank_card(c, x, y, deck):
     c.line(x + 18, y + deck["y_num"] - 3, x + CW - 18, y + deck["y_num"] - 3)
 
 
+# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
+# kept by owner decision.
 def back_card(c, x, y, deck):
     ga, gb = deck.get("grad", (None, None))
     duo_frame(c, x, y, CW, CH, ga=ga, gb=gb)

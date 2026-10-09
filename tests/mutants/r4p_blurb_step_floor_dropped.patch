@@ -1,0 +1,15 @@
+# kills: test_the_row_step_stops_at_one_and_a_fifth_of_the_size_floor
+# suite: python3 -m unittest -k test_the_row_step_stops_at_one_and_a_fifth_of_the_size_floor tests.test_print
+# The blurb row step shrinks past 1.2 x the size floor instead of stopping at it.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -520,7 +520,7 @@ def blurb_layout(lines):
+     room = BLURB_Y0 - BLURB_LAST_BASELINE
+     if len(rows) > 1 and (len(rows) - 1) * step > room:
+         f = room / ((len(rows) - 1) * step)
+-        step = max(step * f, BLURB_MIN_STEP)
++        step = step * f
+         size = max(BLURB_SIZE * f, BLURB_FLOOR)
+     return {"rows": rows, "size": size, "step": step}
+ 

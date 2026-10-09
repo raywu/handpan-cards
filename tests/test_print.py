@@ -866,6 +866,12 @@ class TitleBlurbLimitTest(unittest.TestCase):
         self.assertGreaterEqual(last, 0.0)
         self.assertGreaterEqual(lay["size"], 3.6 - 1e-9)
 
+    def test_the_row_step_stops_at_one_and_a_fifth_of_the_size_floor(self):
+        for n in (7, 8):
+            with self.subTest(rows=n):
+                lay, _last = self.last_baseline(n)
+                self.assertAlmostEqual(lay["step"], 1.2 * 3.6)
+
     def test_eight_rows_leave_the_card_and_drop_nothing(self):
         lay, last = self.last_baseline(8)
         self.assertEqual([r[0] for r in lay["rows"]], ["ROW %d" % i for i in range(8)])
