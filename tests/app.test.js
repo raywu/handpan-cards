@@ -8299,6 +8299,37 @@ test("rule N: generateDeck gives the plate and the card number line the seat num
   assert.ok(labels.includes("2") && labels.includes("1"), "the plate draws the seat numbers");
 });
 
+test("rule N matrix: every scale, anchor, mirror and swap count keeps each ring's labels and the number line", () => {
+  const swaps = [[1, 0], [2, 1, 0]];
+  const cases = [["D3 example", DR3_D3], ["D Kurd 10", DR3_KURD], ["F3 Low Pygmy", DR1_PYGMY_MAKER]];
+  const app = boot();
+  for (const [name, text] of cases) {
+    const base = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(text)}, {}).value.fields`));
+    const rimIds = Object.keys(base).filter((id) => base[id][3] === "rim").sort((a, b) => a - b);
+    for (const anchor of ["one", "between"]) {
+      for (const mirror of [false, true]) {
+        for (const nSwaps of [1, 3]) {
+          const order = rimIds.map((_, i) => i);
+          for (let k = 0; k < nSwaps; k += 1) [order[k], order[k + 1]] = [order[k + 1], order[k]];
+          const tag = `${name} ${anchor} mirror=${mirror} swaps=${nSwaps}`;
+          const made = app.generate(text, { anchor, mirror, seats: { rim: order } });
+          assert.strictEqual(made.ok, true, `${tag}: ${made.reason}`);
+          const deck = app.registry()[made.value.id];
+          const rimLabels = Object.keys(deck.fields).filter((id) => deck.fields[id][3] === "rim").map((id) => deck.fields[id][5]);
+          assert.deepStrictEqual([...rimLabels].sort(), rimIds.map((id) => base[id][5]).sort(), `${tag}: rim labels are the default set`);
+          const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+          plain(deck.chords).forEach((ch, i) => {
+            const line = app.get(`linesHTML(${expr}, ${expr}.chords[${i}])`);
+            const numline = /<div class="numline">([\s\S]*)<\/div><\/div>/.exec(line)[1];
+            const got = [...numline.matchAll(/>(\d+)<\/span>/g)].map((m) => m[1]);
+            assert.deepStrictEqual(got, ch.fields.map((f) => deck.fields[f][5]).filter((l) => /^\d+$/.test(l)), `${tag}: ${ch.main} number line`);
+          });
+        }
+      }
+    }
+  }
+});
+
 test("rule N: a moved deck's stored record and share link are the strings main wrote", () => {
   const app = boot();
   const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
