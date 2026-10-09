@@ -499,8 +499,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  /* Merge: copy the source fields and write each zone's angle into slot 4. */
-  function merge(source, zones, placed) {
+  /* Merge: copy the source fields and write each zone's angle into slot 4.
+   * Rule N: a seat's number is the default label of the note that sits there by
+   * default, so the note in seat s carries seat s's label (slot 5). Labels are
+   * read from `source`, never from the fields being written. */
+  function merge(source, zones, placed, seats) {
     var fields = {};
     var id;
     var i;
@@ -512,6 +515,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = placed.rims[i];
     for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = placed.inners[i];
     for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
+    if (seats) {
+      for (var z = 0; z < ZONES.length; z += 1) {
+        var list = seats[ZONES[z]];
+        if (!list) continue;
+        var ids = zones[ZONES[z]];
+        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
+      }
+    }
     return fields;
   }
 
@@ -533,7 +544,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var geom = geometry(counts, placed);
     if (wanted.value) placed = reseat(placed, wanted.value);
 
-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
+    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
   }
 
   HPE.layout = {

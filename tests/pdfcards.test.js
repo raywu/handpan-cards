@@ -432,9 +432,9 @@ test("rule N: the browser PDF prints the seat number on the diagram and the numb
   const deck = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: built.value });
   assert.strictEqual(deck.spec["1"][5], "2", "A3 now sits in seat 2");
   assert.strictEqual(deck.spec["2"][5], "1", "C4 now sits in seat 1");
-  const chord = deck.chords.find((c) => c[3].indexOf("1") >= 0 && c[3].indexOf("2") >= 0);
+  const chord = deck.chords.find((c) => c[3].map(String).indexOf("1") >= 0 && c[3].map(String).indexOf("2") >= 0);
   assert.ok(chord, "fixture assumption: a chord that voices both swapped notes");
-  const want = chord[3].map((f) => (f === "1" ? "2" : f === "2" ? "1" : deck.spec[f][5]));
+  const want = chord[3].map(String).map((f) => (f === "1" ? "2" : f === "2" ? "1" : deck.spec[f][5]));
   const run = [];
   want.forEach((lab, i) => { run.push(lab); if (i < want.length - 1) run.push(" - "); });
   const glyphs = pdfGlyphs(P.build(deck, { variant: "shop" }));
