@@ -582,8 +582,8 @@ def blank_card(c, x, y, deck):
     c.line(x + 18, y + deck["y_num"] - 3, x + CW - 18, y + deck["y_num"] - 3)
 
 
-# Full-deck path only (hifi.build with chords_only=False): unused since 2026-10-08,
-# kept by owner decision.
+# No caller anywhere (the full-deck path of hifi.build does not call it); kept by
+# the pass-3 owner decision.
 def back_card(c, x, y, deck):
     ga, gb = deck.get("grad", (None, None))
     duo_frame(c, x, y, CW, CH, ga=ga, gb=gb)

@@ -311,6 +311,16 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   positional codes per note in the order the parser reaches them
   (`NOTE_OUT_OF_RANGE`, then `NOTE_REPEATED` or `NOTE_OUT_OF_ORDER`); (5)
   `NO_FIFTH`. Only `parseLegacySeed` counts dings before lexing. The ding is placed and range-checked before any other note.
+- DECIDED(refactor-4 lane D, stated as the code does them) Three corners of
+  that precedence, checked against `src/engine/core.js` `parseSeed` and
+  `scaleStructure`. (i) `readOptions` runs first of all, before any token is
+  lexed: a bad `options` object is `BAD_NOTE` even when the string is also
+  unreadable. (ii) Bar form with three bars (`| A | B | C`) is `BAD_NOTE`
+  `bar`, not `NO_DING` `which`: the bar count is tested before the note
+  straight before the first bar is looked for. (iii) `A D | E A` (no marked
+  ding, so the `D` before the bar becomes the ding) is `NO_DING` `which`, not
+  `below`: the run before the ding is reported as `below` only when the string
+  carried an explicit ding mark, and `A` there is not a bottom note.
 - DECIDED(swarm-2026-09-08) `NO_FIFTH` is decided in `core.parseSeed` before
   any voicing work: no TOP-shell note is a perfect fifth above the ding.
   Bottom-shell notes do not satisfy it.
@@ -381,8 +391,8 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   notes are `"101"` upward. Verified against all three built-ins,
   including Pygmy's inner pair at ids `"10"` and `"11"`.
 - DECIDED(swarm-2026-09-08) Labels are the strings the diagram prints: `Ding`
-  for the ding, the id itself (`"1"` .. `"N"`) for every top note, and `U1` ..
-  `U1`, `U2`, ... for the bottom notes.
+  for the ding, the id itself (`"1"` .. `"N"`) for every top note, and `U1`,
+  `U2`, ... for the bottom notes.
 - DECIDED(D13) The ding is its own zone and is assigned from the `( )` / `/`
   token only.
 - DECIDED(2026-10) Top notes are assigned in ascending order. The notes
@@ -884,7 +894,7 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   `scale-generate`, `deck-add`.
 - DECIDED(owner 2026-10, W1 to DR3) `scale-mirror-l` and `scale-mirror-r` are
   gone. The layout drawer's ids are `scale-layout-toggle`, `scale-drawer`,
-  `scale-anchor-label`, `scale-anchor-one`, `scale-anchor-between`,
+  `scale-anchor-one`, `scale-anchor-between`,
   `scale-mirror` (MIRROR TOP), `scale-mirror-bottom`, `scale-fine-toggle`,
   `scale-fine`, `scale-note-prev`, `scale-note-next`, `scale-seat-prev`,
   `scale-seat-next`, `scale-layout-reset` (RESET LAYOUT), `scale-drawer-status`
@@ -947,8 +957,10 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   Phase 2 reads it, and only rows whose `expect` is ok may carry it.
 - DECIDED(swarm-2026-09-08) `zones` is an optional per-row map of the expected
   field count per zone after `parseSeed`, for P0d and lane B. On the
-  `builtin pygmy` row it records the grammar's 11 rim, which deliberately
-  differs from the built-in literal's 9 rim + 2 inner (section 3).
+  `builtin pygmy` row (`"reader": "legacy"`, so it is read by
+  `parseLegacySeed`, not `parseSeed`) it records the legacy reader's 11 rim,
+  which deliberately differs from the built-in literal's 9 rim + 2 inner
+  (section 3).
 - DECIDED(plan [eng-review 9A]) Every lane asserts its own invariants over the
   entries whose `expect` is ok.
 - DECIDED(plan [eng-review 9A]) Lane B generates its own N=5..19 sweep from the
@@ -963,7 +975,7 @@ sheets); the rule is that phases APPEND, never renumber or rename.
 | symmetric sets (octatonic, augmented hexatonic) | ok, deterministic tie-break | `naming` (lane C) |
 | no ding, or more than one | `NO_DING` | `core.parseSeed` (P0d) |
 | ding pitch class absent from the top shell | ok; tonic still the ding | `core.parseSeed` (P0d) |
-| a very large pan | ok + `SMALL_LABELS` warning; never refused | `layout.solve` |
+| a very large pan | ok + `SMALL_LABELS` warning; never refused | `select.build`, via `smallLabels(geom)` in `src/engine/select.js` |
 | a note placed outside MIDI 0-127 | `NOTE_OUT_OF_RANGE` | `core.parseSeed` (P0d) |
 | an explicit octave that breaks the ascending order | `NOTE_OUT_OF_ORDER` | `core.parseSeed` (P0d) |
 | the same note twice in a row on one shell | `NOTE_REPEATED` | `core.parseSeed` (P0d) |

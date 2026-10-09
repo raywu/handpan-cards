@@ -441,6 +441,19 @@ is stale, check 1b if the print adapter drifts.
 Then run `python3 tools/regen_data_mutants.py` on a clean tree: the data
 mutants anchor on the DECKS line and go stale on every data change.
 
+Other regen tools, each with `--check`: `tools/regen_engine_corpus.js`
+rewrites `tests/fixtures/engine_corpus_v1.json` (the engine's observable
+output for a fixed seed corpus; regenerate it in the same commit as any
+deliberate engine output change), beside `tools/regen_card_fixture.js` and
+`tools/regen_pan_fixture.js`.
+
+Coverage: `.github/workflows/coverage.yml` is manual-only and gates nothing.
+It runs the whole suite under V8, browser (CDP) and python coverage and
+`tools/coverage_merge.js` merges the three into `artifacts/coverage-report.json`.
+Refactor pass 4 (`docs/plans/2026-10-09-refactor-pass-4.md`) used it to
+separate dead code from unreached-but-live code; its report is
+`docs/plans/2026-10-09-refactor-pass-4-coverage.md`.
+
 ## Hosting facts (checked against GitHub docs)
 
 - Pages is free for public repos; private-repo Pages needs Pro/Team, and the
