@@ -191,6 +191,19 @@ test("browser and sandbox ranges for labelSize land on the same module range aft
   assert.deepStrictEqual([hits[0].start, hits[0].node, hits[0].browser], [modOff, 5, 5]);
 });
 
+test("browser scripts served by the harness over http://127.0.0.1 are attributed to the file they were served from", () => {
+  const nd = tmp(), bd = tmp();
+  nodeJson(nd, "sandbox", [{ scriptId: "1", url: "file://" + path.join(ROOT, "src", "engine", "pdfcards.js"), functions: [fn("labelSize", modOff, modOff + LABEL_SIZE.length, 0)] }]);
+  const rel = regionStart + modOff - bodyStart;
+  fs.writeFileSync(path.join(bd, "browser-1-0-0.json"), JSON.stringify({
+    suite: "tests/e2e.test.js", scripts: { 7: { url: "http://127.0.0.1:46417/index.html", startLine, startColumn } },
+    coverage: [{ scriptId: "7", url: "x", functions: [fn("labelSize", rel, rel + LABEL_SIZE.length, 1)] }],
+  }));
+  fs.writeFileSync(path.join(bd, "session-1-0.json"), JSON.stringify({ closed: true }));
+  const m = buildReport({ node: [nd], browser: bd }).files["src/engine/pdfcards.js"];
+  assert.ok(m.browserOnly.some((x) => x.name === "labelSize"));
+});
+
 test("a function executed only in the browser copy is browser-only, not zero", () => {
   const nd = tmp(), bd = tmp();
   nodeJson(nd, "sandbox", [{ scriptId: "1", url: "file://" + path.join(ROOT, "src", "engine", "pdfcards.js"), functions: [fn("labelSize", modOff, modOff + LABEL_SIZE.length, 0)] }]);
@@ -217,6 +230,18 @@ test("scripts run without a filename are listed as unattributed and never counte
   const z = rep.files["src/engine/pdfcards.js"].zeroFunctions.find((x) => x.name === "labelSize");
   assert.ok(z, "still zero for the shipped file");
   assert.strictEqual(z.liveInUnattributed, true);
+});
+
+test("a patched copy of index.html (different length) is unattributed, not counted against the shipped file", () => {
+  const nd = tmp();
+  const u = "file://" + path.join(ROOT, "index.html");
+  nodeJson(nd, "a", [{ scriptId: "1", url: u, functions: [fn("", 0, html.length + 1, 1), fn("labelSize", regionStart + modOff + 1, regionStart + modOff + 1 + LABEL_SIZE.length, 0)] }]);
+  const rep = buildReport({ node: [nd], browser: tmp() });
+  assert.ok(!rep.files["src/engine/pdfcards.js"]);
+  assert.strictEqual(rep.unattributed.length, 0, "zero-count functions are not live, so nothing to list");
+  nodeJson(nd, "b", [{ scriptId: "1", url: u, functions: [fn("", 0, html.length - 1, 1), fn("labelSize", 5, 50, 2)] }]);
+  const rep2 = buildReport({ node: [nd], browser: tmp() });
+  assert.ok(rep2.unattributed.some((x) => /modified copy/.test(x.url)));
 });
 
 test("the suite that alone executes a function is reported as its only toucher", () => {

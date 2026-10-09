@@ -58,6 +58,9 @@ function relOf(root, url) {
   if (!url) return null;
   let p = url;
   if (p.startsWith("file://")) { try { p = fileURLToPath(p); } catch { return null; } }
+  else if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(p)) {
+    try { p = path.join(root, decodeURIComponent(new URL(p).pathname)); } catch { return null; }
+  }
   if (!path.isAbsolute(p)) return null;
   let real = p;
   try { real = fs.realpathSync(p); } catch { /* a path that is gone */ }
@@ -158,7 +161,13 @@ class Acc {
     if (!entries.length && !anon.length) return;
     this.counts.nodeJson++;
     if (!suite) suite = "node:other";
-    for (const x of entries) this.addScript(x.rel, suite, "node", x.s.functions, 0);
+    // A test that loads a patched copy of index.html reports offsets that are not
+    // the shipped file's; the top-level range's length gives it away.
+    const modified = (x) => x.rel === "index.html" && x.s.functions[0] && x.s.functions[0].functionName === "" && x.s.functions[0].ranges[0].startOffset === 0 && x.s.functions[0].ranges[0].endOffset !== this.layout.html.length;
+    for (const x of entries) {
+      if (modified(x)) { anon.push({ url: x.s.url + " (modified copy)", functions: x.s.functions }); continue; }
+      this.addScript(x.rel, suite, "node", x.s.functions, 0);
+    }
     for (const s of anon) {
       const live = s.functions.filter((f) => f.functionName && f.ranges[0].count > 0)
         .map((f) => ({ name: f.functionName, length: f.ranges[0].endOffset - f.ranges[0].startOffset, count: f.ranges[0].count }));
