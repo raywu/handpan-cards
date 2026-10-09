@@ -1297,3 +1297,25 @@ test("R4-E encode refuses a value that is not a seed, writes a seed with no opti
   assert.equal(over.ok, false);
   assert.equal(over.code, "BAD_NOTE");
 });
+
+test("R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits the cap and keeps every ring", () => {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const fields = {};
+  const zones = ["ding"].concat(Array(60).fill("rim"), Array(30).fill("inner"), Array(29).fill("bottom"));
+  zones.forEach((zone, i) => {
+    const letter = letters[i % 7];
+    const octave = 1 + Math.floor(i / 7);
+    fields[String(i)] = [letter, octave, 12 * (octave + 1) + (i % 7) * 2, zone, null, letter];
+  });
+  const ring = (from, count) => Array.from({ length: count }, (_, i) => from + count - 1 - i);
+  const seats = { rim: ring(1, 60), inner: ring(61, 30), bottom: ring(91, 29) };
+  const r = share.encode({
+    fields,
+    options: { palette: 5, parent: 10, mirror: true, anchor: "between", name: "x".repeat(40), seats },
+  });
+  assert.equal(r.ok, true, r.reason);
+  assert.ok(r.value.length <= share.CAPS.payload, `${r.value.length} chars`);
+  const lineTwo = payloadOf(r.value)[2].split(";");
+  assert.equal(lineTwo.length, 3, "one list per ring");
+  assert.deepEqual(lineTwo.map((s) => s.split(",").length), [60, 30, 29]);
+});

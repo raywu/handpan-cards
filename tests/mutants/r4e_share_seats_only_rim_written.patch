@@ -1,0 +1,15 @@
+# kills: R4-E a 120-note pan with the rim, inner and bottom rings all reversed fits the cap and keeps every ring
+# suite: node --test --test-name-pattern ^R4.E.a.120.note.pan.with.the.rim..inner.and.bottom.rings.all.reversed.fits.the.cap.and.keeps.every.ring$ tests/share.test.js
+# R4-E: only the rim's seats are written; the inner and bottom rings travel in default order.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -206,7 +206,7 @@
+       var list = seats[RINGS[r]];
+       if (list && list.length) {
+         any = true;
+-        parts.push(list.join(","));
++        parts.push(r === 0 ? list.join(",") : "");
+       } else {
+         parts.push("");
+       }
