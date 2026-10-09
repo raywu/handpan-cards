@@ -1,0 +1,15 @@
+# kills: cdp coverage hook sends no Profiler command unless HPC_COVERAGE_DIR is set
+# suite: node --test tests/coverage_merge.test.js
+# A mutation of the coverage lane.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -254,7 +254,7 @@ class CoverageHook {
+ 
+ async function maybeEnableCoverage(browser, env = process.env) {
+   const dir = coverageDir(env);
+-  if (!dir) return null;
++  if (false) return null;
+   browser.coverage = new CoverageHook(browser, dir);
+   await browser.coverage.start();
+   return browser.coverage;

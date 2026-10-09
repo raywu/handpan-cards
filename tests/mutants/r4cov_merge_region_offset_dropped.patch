@@ -1,0 +1,15 @@
+# kills: coverage_merge attributes an index.html range inside an engine region to the module
+# suite: node --test tests/coverage_merge.test.js
+# A mutation of the coverage lane.
+diff --git a/tools/coverage_merge.js b/tools/coverage_merge.js
+--- a/tools/coverage_merge.js
++++ b/tools/coverage_merge.js
+@@ -111,7 +111,7 @@ class Acc {
+   // Route one html-coordinate range to [rel, shifted start, shifted end] or null.
+   route(rel, s, e) {
+     if (rel !== "index.html") return [rel, s, e];
+-    for (const r of this.layout.regions) if (s >= r.start && e <= r.end) return [r.rel, s - r.start, e - r.start];
++    for (const r of this.layout.regions) if (s >= r.start && e <= r.end) return [r.rel, s, e];
+     return ["index.html", s, e];
+   }
+   addScript(rel, suite, kind, fns, base) {

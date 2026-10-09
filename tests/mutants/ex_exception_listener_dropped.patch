@@ -5,7 +5,7 @@
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -528,10 +528,6 @@ async function launchOnce(opts = {}) {
+@@ -693,10 +693,6 @@ async function launchOnce(opts = {}) {
      const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
      const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
      b.sessionId = sessionId;
@@ -15,4 +15,4 @@ diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 -    });
      await b.send("Page.enable");
      await b.send("Runtime.enable");
-     if (opts.realFonts) {
+     await maybeEnableCoverage(b);
