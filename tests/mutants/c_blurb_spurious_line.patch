@@ -6,10 +6,10 @@
 diff --git a/tools/decks.py b/tools/decks.py
 --- a/tools/decks.py
 +++ b/tools/decks.py
-@@ -316,6 +316,8 @@
-     # that the app had flagged it; the engine's own reason string, verbatim.
+@@ -320,6 +320,8 @@ def _blurb(spec, chord_count, warnings=()):
      for w in warnings:
-         out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
+         out.append(TITLE_WARNINGS[w["code"]] if w["code"] in TITLE_WARNINGS
+                    else w["reason"].upper())
 +    if not warnings:
 +        out.append("SPURIOUS EXTRA LINE")
      return out

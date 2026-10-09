@@ -5,14 +5,16 @@
 diff --git a/tools/decks.py b/tools/decks.py
 --- a/tools/decks.py
 +++ b/tools/decks.py
-@@ -312,10 +312,6 @@
+@@ -314,12 +314,6 @@ def _blurb(spec, chord_count, warnings=()):
          out.append("BOTTOM:  " + bottom)
      out.append("%d CHORD%s - ONE CARD PER CHORD"
                 % (chord_count, "S" if chord_count != 1 else ""))
 -    # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
--    # that the app had flagged it; the engine's own reason string, verbatim.
+-    # that the app had flagged it; a code with no short line here prints the
+-    # engine's own reason string, upper-cased.
 -    for w in warnings:
--        out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
+-        out.append(TITLE_WARNINGS[w["code"]] if w["code"] in TITLE_WARNINGS
+-                   else w["reason"].upper())
      return out
  
  

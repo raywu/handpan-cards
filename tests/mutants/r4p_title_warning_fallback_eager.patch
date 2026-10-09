@@ -1,7 +1,6 @@
-# kills: test_a_small_labels_warning_prints_the_short_line_on_the_title_card
-# suite: python3 -m unittest -k test_a_small_labels_warning_prints_the_short_line_on_the_title_card tests.test_gen_deck
-# _blurb ignores TITLE_WARNINGS, so a crowded pan prints the whole 308 pt
-# sentence on a 177.6 pt card instead of the short line.
+# kills: test_a_known_warning_code_prints_without_a_reason_string
+# suite: python3 -m unittest -k test_a_known_warning_code_prints_without_a_reason_string tests.test_gen_deck
+# The fallback reason string is evaluated even for a code that has a short line.
 diff --git a/tools/decks.py b/tools/decks.py
 --- a/tools/decks.py
 +++ b/tools/decks.py
@@ -11,7 +10,7 @@ diff --git a/tools/decks.py b/tools/decks.py
      for w in warnings:
 -        out.append(TITLE_WARNINGS[w["code"]] if w["code"] in TITLE_WARNINGS
 -                   else w["reason"].upper())
-+        out.append(w["reason"].upper())
++        out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
      return out
  
  
