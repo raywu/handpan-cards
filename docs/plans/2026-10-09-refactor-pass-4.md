@@ -368,7 +368,7 @@ node tools/probe/panel_fit.js --base origin/main --font real && node tools/probe
 
 **Owns.** `docs/ENGINE-SPEC.md`, `CLAUDE.md`, `tests/CONTRACT.md`, `README.md` prose (counts are lane C's).
 
-**Candidates.** ENGINE-SPEC §17: `SMALL_LABELS` is emitted by `src/engine/select.js` `function smallLabels(geom)`, not `layout.solve`; §15: `scale-anchor-label` does not exist (`tools/sandbox.js` `ELEMENT_IDS` has `scale-anchor-one`/`scale-anchor-between`); §16: Pygmy's "11 rim" row is `reader: 'legacy'` in `synthetic_scales.json` and should say so. `CLAUDE.md`: name `tools/regen_engine_corpus.js` beside the other regen tools, add the coverage workflow and `coverage_merge.js` under "Print pipeline"/tools, point at this plan and its coverage report; (R5) its "Print pipeline" paragraph says `decks.py` "builds all six PDFs" and the repo layout says `*.pdf` includes "Cards" files - both are three chord-only files since PM #275, and `hifi.build(..., chords_only=False)` is the kept-but-unused full path. `tests/CONTRACT.md`: drop the `print_decks_v1.json` "kept as history" line (lane P removed the file). `tests/core.test.js`'s "ENGINE-SPEC.md is frozen history" comment is lane E's file; if §17/§15/§16 corrections contradict "frozen", lane D says in ENGINE-SPEC that the spec is corrected to the code and lane E's comment is a hand-off row.
+**Candidates.** ENGINE-SPEC §17: `SMALL_LABELS` is emitted by `src/engine/select.js` `function smallLabels(geom)`, not `layout.solve`; §15: `scale-anchor-label` does not exist (`tools/sandbox.js` `ELEMENT_IDS` has `scale-anchor-one`/`scale-anchor-between`); §16: Pygmy's "11 rim" row is `reader: 'legacy'` in `synthetic_scales.json` and should say so. `CLAUDE.md`: name `tools/regen_engine_corpus.js` beside the other regen tools, add the coverage workflow and `coverage_merge.js` under "Print pipeline"/tools, point at this plan and its coverage report. (R5, corrected at review read-back: `CLAUDE.md` at `7b4f383` already says three CHORD_ONLY PDFs and names the kept full-deck path - DOC #277 fixed it; the "six" wording lived only in this plan.) `tests/CONTRACT.md`: drop the `print_decks_v1.json` "kept as history" line (lane P removed the file). `tests/core.test.js`'s "ENGINE-SPEC.md is frozen history" comment is lane E's file; if §17/§15/§16 corrections contradict "frozen", lane D says in ENGINE-SPEC that the spec is corrected to the code and lane E's comment is a hand-off row.
 
 **Rules.** Plan documents are history and are not rewritten (G3 stays open). `README.md` suite counts and the mutant count are not touched here.
 
@@ -587,7 +587,7 @@ Test Plan Artifact: `~/.gstack/projects/raywu-handpan-cards/ray-claude-refactor-
 - [ ] **T4 (P2, human: ~2h / CC: ~15min)** - lane H - suite health candidates 1-3; candidate 4 closed LIVE
 - [ ] **T5 (P1, human: ~4h / CC: ~30min)** - lane T - dead e2e tests with their mutants re-pointed in the same PR
 - [ ] **T6 (P1, human: ~4h / CC: ~30min)** - lane A - app dead code; CSS removals with real-browser absence checks; D2 label rule only
-- [ ] **T7 (P2, human: ~2h / CC: ~15min)** - lane D - docs incl. the "six PDFs" correction in CLAUDE.md
+- [ ] **T7 (P2, human: ~2h / CC: ~15min)** - lane D - docs (ENGINE-SPEC §15/§16/§17, CLAUDE.md tool list, CONTRACT.md)
 - [ ] **T8 (P2, human: ~1h / CC: ~10min)** - lane C - FLOORS and README counts from CI artifacts
 
 **Unresolved decisions:** none; every brief was auto-answered under AFK and is listed above for the owner.
