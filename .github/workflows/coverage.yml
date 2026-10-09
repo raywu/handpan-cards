@@ -5,8 +5,6 @@ name: coverage
 # it into artifacts/coverage-report.json. It gates nothing and runs on no PR.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/refactor-4-cov]
 
 jobs:
   coverage:

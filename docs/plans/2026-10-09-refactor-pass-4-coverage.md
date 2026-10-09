@@ -2,16 +2,18 @@
 
 Produced by `.github/workflows/coverage.yml` (node V8 coverage per test file, browser precise coverage and CSS rule usage over CDP, python line coverage per module), merged by `tools/coverage_merge.js`.
 
-- **Run:** https://github.com/raywu/handpan-cards/actions/runs/37974945711, at SHA `bc307b308a8720110c7f296330431423df365cc3`. Artifacts: `coverage-report` (the merged JSON), `coverage-raw` (every input, plus `node-failed.txt`).
+- **Run:** https://github.com/raywu/handpan-cards/actions/runs/37979425994, at SHA `cdea95f92034e681c73426f90b520d7e1970aa55`. Artifacts: `coverage-report` (the merged JSON), `coverage-raw` (every input, plus `instrumentation-failed.txt`).
 - **Trigger:** the run was started by a temporary `push` trigger on the lane branch, not by `workflow_dispatch`: GitHub refuses to dispatch a workflow that is not on the default branch yet (HTTP 404). The temporary trigger is removed in the final commit; the workflow file is the only difference between the measured SHA and the head SHA besides this document.
-- **Measured:** 23 node test files in separate processes, 14 python modules, 584 browser takes over five browser suites (`e2e`, `harness`, `drawer_drag`, `drawer_grid`, `drawer_seats`), 781 recorded viewports (39 distinct widths, 320 to 1920).
-- **Run health:** `tests/sequence.test.js` failed two 50 ms timing assertions under V8 instrumentation (`node-failed.txt`); every other node file and every python module passed. The first run of this workflow (run 37969691405, SHA `9e83e16`) also failed one timing-bound e2e test ("card swipe (mouse momentum): a fast release flies on ...", a 30 ms sample); the same test passed in the run above. Both are instrumentation cost, not logic; neither runs with the hook off (CI at the head SHA is green with `HPC_COVERAGE_DIR` unset).
+- **Measured (counts from `sources` in the cited artifact):** 23 node test files in separate processes plus the node children of 14 python test modules (196 V8 coverage files in all), 558 browser takes over five browser suites (`e2e`, `harness`, `drawer_drag`, `drawer_grid`, `drawer_seats`), 781 recorded viewports (39 distinct widths, 320 to 1920), 14 python modules run under `coverage run` of which 10 wrote a JSON file (`sources.pythonModules` = 10; a module that executes no `tools/` or `src/` line writes none), 14 `unattributed` entries.
+- **Run health:** `tests/sequence.test.js` fails two 50 ms assertions under V8 instrumentation and passes with the measurement off, so the workflow files it under `instrumentation-failed.txt` and does not gate on it. Every other node file, and every python module, passed. A browser suite that fails under the hook but passes without it (`hook-induced-failed.txt`), a node file that fails with the measurement off too, or a python module failure fails the job; none occurred in this run. CI at the head SHA is green with `HPC_COVERAGE_DIR` unset.
+- **History of this report:** round 1 (run 37974945711, SHA `bc307b3`) did not export `NODE_V8_COVERAGE` for the node children of the python tests, so `tools/pdf_build.js`, `gen_deck.js`, `pdf_adapt.js`, `pdf_smoke.js` and `dump_app_render.js` read as zero or never loaded. Round 2 (this run) measures them; section 1.3 and 1.4 are restated from it.
+- **Deviation list (cumulative):** (1) temporary `push` trigger, because a workflow absent from main cannot be dispatched (see Trigger). (2) Round 1 missed the python tests' node children (above). (3) A timing-bound e2e test failed under the hook on the very first measurement run (run 37969691405) and passed on every later one. (4) `tests/sequence.test.js` timing failures under instrumentation are recorded, not gated.
 
 ## Reading the report, and what it cannot see
 
 - **Python run through subprocess is not measured.** `coverage run -m unittest` sees only the interpreter it starts. `tools/validate.py`, `tools/sync_decks.py`, `tools/inline_engine.py`, `tools/inline_fonts.py`, `tools/make_icons.py`, `tools/refresh_mutants.py` and `tools/regen_data_mutants.py` are driven by tests and CI as child processes, so their zero rows below mean "not measured", not "not executed". They are LIVE; none is evidence of dead code.
-- **Node CLIs run as child processes are not measured either** (`tools/boot_sim.js`, `gen_deck.js`, `pdf_adapt.js`, `pdf_smoke.js`, `regen_pan_fixture.js`, `tests/helpers/dump_app_render.js`; the report's `neverLoaded` list). Each has a reader (table 4).
-- **A patched copy of `index.html`** loaded by some `app.test.js` cases reports offsets one character off the shipped file; the merge tool sets those scripts aside under `unattributed` rather than counting zeros against the real file. The 13 `unattributed` entries are `evalmachine` scripts (the unit-test sandbox) and that patched copy.
+- **Node children of the python tests ARE measured** (`NODE_V8_COVERAGE` is exported in the python step). Still unmeasured: `tools/boot_sim.js` (a CI step) and `tools/regen_pan_fixture.js` (run by hand); each has a reader (section 1.4).
+- **A patched copy of `index.html`** loaded by some `app.test.js` cases reports offsets one character off the shipped file; the merge tool sets those scripts aside under `unattributed` rather than counting zeros against the real file. The 14 `unattributed` entries are `evalmachine` scripts (the unit-test sandbox) and that patched copy.
 - **Function-level zero is the evidence standard.** A function with count 0 in every node process and every browser take is a "zero-execution item". Unexecuted branches inside live functions are in the JSON (`uncovered`) and are gaps, not dead code (plan 2.1).
 
 ## 1. Zero-execution functions, classified (plan 2.1)
@@ -41,27 +43,24 @@ Every other engine function, across all eleven modules, is executed by the node 
 
 | Item | Class | Reader | Lane |
 |---|---|---|---|
-| `tools/pdf_build.js` `writeDeck` (53), `main` closures (64, 75, 76) | LIVE, CLI path unexecuted | `tests/pdf_builtin.test.js`, `tests/test_pdf_parity.py`, `tools/hifi.py`, README | E (smoke test or ruling, E candidate 5) |
+| `tools/pdf_build.js` | LIVE, fully executed (6 of 6 functions, via `tests/test_pdf_parity.py` and `tests/pdf_builtin.test.js`) | n/a | none: lane E's candidate 5 ("smoke test or ruling") has no zero-execution function left to act on; any remaining gap is a branch in `uncovered` |
 | `tools/probe/panel_fit.js` (18 functions: `rawEdges`, `serve`, `Root`, `start`, `close`, `measure`, `walk`, `cellId`, `runFont`, `printReport`, `rangesOf`, `parseArgs`, `main`, and closures) | LIVE, CLI and server path unexecuted by tests | `validate.yml` panel-fit jobs, `tests/e2e.test.js`, `tests/app.test.js` | H (H candidate 2) |
 | `tools/regen_card_fixture.js` closure (276) | LIVE, unexecuted flag path | `tests/app.test.js`, fixtures | A |
 | `tools/sandbox.js` (22 stub members: `focus`, `blur`, `el.contains`, `el.closest`, `removeItem`, `removeEventListener`, `dispatchEvent`, `ClockDate`, ...) | TEST-ONLY (a stub; its members exist for the app to call) | `tests/helpers/sandbox.js`, `tools/boot_sim.js` | A |
+| `tools/gen_deck.js` closure (100) | LIVE, unexecuted branch (6 of 7 functions executed through `test_gen_deck.py` and friends) | CLI entry, `tools/decks.py`, 6 tests | E |
 | `tests/helpers/cdp.js` `sleepSync` (56) and 5 closures | LIVE, unexecuted branch | `sleepSync` is called at 77 on the process-kill escalation path | T |
 | `tests/helpers/sequence_score.js`, all 13 functions | **PROVEN DEAD candidate** | the only importer is `tests/sequence.test.js:83`, which destructures `score` and never calls it (`grep -n "score(" tests/sequence.test.js` is empty); no tool, workflow or other test mentions the file | **two-lane**: file is T's (`tests/helpers/*`), importer is E's (`sequence.test.js`); see section 3 |
 | `tools/coverage_merge.js` (6 closures) | LIVE, unexecuted error paths of this lane's own tool | `tests/coverage_merge.test.js`, `coverage.yml` | 0 (this lane) |
 
 ### 1.4 Never loaded by any measured process
 
-`neverLoaded` in the JSON: `tools/boot_sim.js`, `tools/gen_deck.js`, `tools/pdf_adapt.js`, `tools/pdf_smoke.js`, `tools/regen_pan_fixture.js`, `tests/helpers/dump_app_render.js`, `tests/helpers/engine.js`, `tests/helpers/sandbox.js`.
+`neverLoaded` in the JSON: `tools/boot_sim.js`, `tools/regen_pan_fixture.js`, `tests/helpers/engine.js`, `tests/helpers/sandbox.js`. Now measured and no longer listed: `tools/gen_deck.js` (7 functions, 1 zero), `tools/pdf_adapt.js` (2 of 2 executed), `tools/pdf_smoke.js` (no function bodies of its own), `tests/helpers/dump_app_render.js` (7 of 7 executed), `tools/pdf_build.js` (6 of 6).
 
 | File | Class | Reader | Lane |
 |---|---|---|---|
 | `tools/boot_sim.js` | LIVE | `validate.yml` "App boot simulation", `tests/run.sh`, `tests/app.test.js`, `mutation_harness.test.js` | A |
-| `tools/gen_deck.js` | LIVE | `tools/decks.py`, `test_gen_deck.py`, `test_pdf_parity.py`, `regen_data_mutants.py`, CLAUDE.md | E |
-| `tools/pdf_adapt.js` | LIVE | `tests/test_pdf_deck_adapter.py` | E |
-| `tools/pdf_smoke.js` | LIVE | `tests/test_pdf_emitter.py` | E |
-| `tools/regen_pan_fixture.js` | LIVE | `tests/app.test.js`, `tools/regen_card_fixture.js`, `tests/helpers/sandbox.js` | A |
-| `tests/helpers/dump_app_render.js` | LIVE | `tests/test_render_agreement.py` | T (plan candidate 6 owns its fate) |
-| `tests/helpers/engine.js`, `tests/helpers/sandbox.js` | LIVE, re-export shims | required by most test files (they re-export `tools/engine_loader.js` and `tools/sandbox.js`, whose own rows are measured) | T |
+| `tools/regen_pan_fixture.js` | LIVE (a regeneration tool, run by hand) | `tests/app.test.js`, `tools/regen_card_fixture.js`, `tests/helpers/sandbox.js` | A |
+| `tests/helpers/engine.js`, `tests/helpers/sandbox.js` | LIVE, re-export shims | required by most test files (they re-export `tools/engine_loader.js` and `tools/sandbox.js`, whose own rows are measured; a `require` of a shim is evaluated, so its absence from the list means the shim is loaded through a path the filter drops, not that it is unused) | T |
 
 ### 1.5 `tools/*.py` (lane P unless noted)
 
