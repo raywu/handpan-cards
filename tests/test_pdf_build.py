@@ -7,8 +7,8 @@ stamp, and card copy from extracted text.  No layout constant is imported
 from ``hifi`` (CONTRACT rule 2) - the numbers below are CLAUDE.md's print
 spec, which the artifact has to hit.
 
-The last test is the staleness gate: the six PDFs committed in the repo root
-must match a fresh build, so deck data cannot change without the printed
+The last test is the staleness gate: the three CHORD_ONLY PDFs committed in the
+repo root must match a fresh build, so deck data cannot change without the printed
 sheets being regenerated.
 """
 import hashlib
@@ -286,7 +286,7 @@ class BuiltDecksTest(unittest.TestCase):
     @staticmethod
     def _repo_pdf_hashes():
         out = {}
-        for name in sorted(paths.PDFS.values()):
+        for name in sorted(paths.PDFS[k] for k in paths.COMMITTED):
             with open(os.path.join(paths.ROOT, name), "rb") as fh:
                 out[name] = hashlib.sha256(fh.read()).hexdigest()
         return out
@@ -434,7 +434,8 @@ class BuildTest(BuiltDecksTest):
         and commit it without rerunning tools/decks.py and this goes red -
         app and print would otherwise silently diverge.
         """
-        stale = _stale_reasons(paths.PDFS, paths.ROOT, self.tmp,
+        stale = _stale_reasons({k: paths.PDFS[k] for k in paths.COMMITTED},
+                               paths.ROOT, self.tmp,
                                self.docs, self.text)
         self.assertEqual(
             stale, [],
