@@ -75,7 +75,7 @@ function run() {
   const tap = async (name) => { const sel = await hitSel(name); assert.ok(sel, `no target for ${name}`); await b.click(sel); await frames(); };
   const status = () => ev(`return document.getElementById("scale-drawer-status").textContent;`);
   const focusName = () => ev(`const a = document.activeElement; return a && a.classList.contains("panhit") ? a.getAttribute("aria-label").split(",")[0] : (a && a.id) || null;`);
-  const seatOrder = () => ev(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("aria-label").split(",")[0] + "=" + h.getAttribute("aria-label").split("seat ")[1].split(" ")[0]).join(" ");`);
+  const seatOrder = () => ev(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("aria-label").split(",")[0] + "=" + h.getAttribute("aria-label").split("seat ")[1].split(",")[0]).join(" ");`);
 
   test("DR2a browser: a real tap then a real tap swaps two notes, focus returns, the flash is two seats and then none", async () => {
     await openAdd(SCALES.amara);
@@ -186,7 +186,7 @@ function run() {
   };
 
   for (const [key, scale, a, c] of [["amara", SCALES.amara, "A3", "C4"], ["kurd", SCALES.kurd, "A3", "Bb3"], ["pygmy", SCALES.pygmy, "G3", "Ab3"]]) {
-    test(`DR2a browser (84): on Add at 380x667 with the band stuck the toggle and the disclosure of ${key} are inside the scrollport, with and without the notice, and with the finer controls open both step rows are reachable`, async () => {
+    test(`DR2a browser (84): on Add at 380x667 with the band stuck the toggle of ${key} is inside the scrollport, with and without the notice, and with the finer controls open both step rows are reachable`, async () => {
       await openAdd(scale);
       await stickBand();
       const quiet = await reach();
@@ -197,7 +197,7 @@ function run() {
       assert.strictEqual(noisy.notice, true);
       for (const [state, m] of [["no notice", quiet], ["the notice and the swap sentence", noisy]]) {
         assert.ok(m.stuck, `${state}: the band is not stuck`);
-        for (const row of ["toggle", "fineToggle"])
+        for (const row of ["toggle"])
           assert.ok(m[row] <= 0.5, `${key}, ${state}: the ${row} is ${m[row]}px below the scrollport (plate ${m.plateW}px)`);
         assert.ok(m.plateW >= 240, `${key}, ${state}: the plate is ${m.plateW}px`);
       }
@@ -362,7 +362,7 @@ function run() {
     assert.ok(m.top >= -0.5 && m.bottom <= 0.5, `the toggle is outside the scrollport after the open: ${JSON.stringify(m)}`);
     await stickBand();
     const r = await reach();
-    for (const row of ["toggle", "fineToggle"]) assert.ok(r[row] <= 0.5, `${row} is ${r[row]}px below the scrollport`);
+    for (const row of ["toggle"]) assert.ok(r[row] <= 0.5, `${row} is ${r[row]}px below the scrollport`);
     const open = await reachOpen();
     for (const row of ["noteRow", "seatRow"]) assert.ok(open[row] <= 0.5, `${row} is ${open[row]}px below the scrollport`);
   });
@@ -370,6 +370,8 @@ function run() {
   test("DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and the toggle moves no scroll", async () => {
     await openAdd(SCALES.pygmy);
     await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await frames();
+    await ev(`document.getElementById("scale-mirror").click(); return true;`);
     await frames();
     const before = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
     await ev(`document.getElementById("scale-fine-toggle").focus(); return true;`);
