@@ -1,0 +1,15 @@
+# kills: FU-6 names every patch in a group that shares a diff body
+# suite: node --test --test-name-pattern FU-6.names.every.patch.in.a.group tests/mutation_harness.test.js
+# The group keeps only a first and a latest name, so three identical patches read as one pair and the middle one is never named.
+diff --git a/tests/mutation_harness.test.js b/tests/mutation_harness.test.js
+--- a/tests/mutation_harness.test.js
++++ b/tests/mutation_harness.test.js
+@@ -1508,7 +1508,7 @@ function sharedBodyGroups(patches) {
+     const body = lines.filter((l) => !/^(#|index |@@)/.test(l)).join("\n");
+     const key = `${kills}\n${body}`;
+     if (!groups.has(key)) groups.set(key, []);
+-    groups.get(key).push(name);
++    const g = groups.get(key); if (g.length < 2) g.push(name); else g[1] = name;
+   }
+   return [...groups.values()].filter((names) => names.length > 1);
+ }

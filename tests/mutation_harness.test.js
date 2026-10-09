@@ -1500,20 +1500,38 @@ test("every mutant patch's # kills: line is actually selected by its # suite: co
       `selected=${JSON.stringify(v.selected)}`).join("\n"));
 });
 
-test("FU-6 no two mutant patches share a diff body and a selected test", () => {
-  const dir = path.join(ROOT, "tests", "mutants");
-  const seen = new Map();
-  const pairs = [];
-  for (const name of fs.readdirSync(dir).filter((n) => n.endsWith(".patch")).sort()) {
-    const lines = fs.readFileSync(path.join(dir, name), "utf8").split("\n");
+function sharedBodyGroups(patches) {
+  const groups = new Map();
+  for (const { name, text } of patches) {
+    const lines = text.split("\n");
     const kills = lines.find((l) => l.startsWith("# kills:")) || "";
     const body = lines.filter((l) => !/^(#|index |@@)/.test(l)).join("\n");
     const key = `${kills}\n${body}`;
-    if (seen.has(key)) pairs.push(`${seen.get(key)} / ${name}`);
-    else seen.set(key, name);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(name);
   }
-  assert.deepStrictEqual(pairs, [],
-    "these mutant patches change the same lines and are judged by the same test; keep one of each pair");
+  return [...groups.values()].filter((names) => names.length > 1);
+}
+
+test("FU-6 no two mutant patches share a diff body and a selected test", () => {
+  const dir = path.join(ROOT, "tests", "mutants");
+  const patches = fs.readdirSync(dir).filter((n) => n.endsWith(".patch")).sort()
+    .map((name) => ({ name, text: fs.readFileSync(path.join(dir, name), "utf8") }));
+  const groups = sharedBodyGroups(patches).map((names) => names.join(" / "));
+  assert.deepStrictEqual(groups, [],
+    "these mutant patches change the same lines and are judged by the same test; keep one of each group");
+});
+
+test("FU-6 names every patch in a group that shares a diff body", () => {
+  const body = "# kills: k\ndiff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n";
+  const other = "# kills: k\ndiff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+c\n";
+  const groups = sharedBodyGroups([
+    { name: "a.patch", text: body },
+    { name: "b.patch", text: body.replace("@@ -1 +1 @@", "@@ -9 +9 @@") },
+    { name: "c.patch", text: body },
+    { name: "d.patch", text: other },
+  ]);
+  assert.deepStrictEqual(groups, [["a.patch", "b.patch", "c.patch"]]);
 });
 
 // --- Finding 4 (2026-09-30 quality refactor): MUTANT_SHARD -------------------
