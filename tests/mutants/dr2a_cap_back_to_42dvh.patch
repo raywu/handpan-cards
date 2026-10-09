@@ -1,5 +1,5 @@
-# kills: DR2a browser (84): on Add at 380x667 with the band stuck the toggle and both step rows of amara are inside the scrollport, with and without the notice
-# suite: node --test --test-name-pattern ^DR2a.browser..84...on.Add.at.380x667.with.the.band.stuck.the.toggle.and.both.step.rows.of.amara.are.inside.the.scrollport..with.and.without.the.notice$ tests/drawer_seats.test.js
+# kills: DR2a browser (84): on Add at 380x667 with the band stuck the toggle and the disclosure of amara are inside the scrollport, with and without the notice, and with the finer controls open both step rows are reachable
+# suite: node --test --test-name-pattern ^DR2a.browser..84...on.Add.at.380x667.with.the.band.stuck.the.toggle.and.the.disclosure.of.amara.are.inside.the.scrollport..with.and.without.the.notice..and.with.the.finer.controls.open.both.step.rows.are.reachable$ tests/drawer_seats.test.js
 # The open plate cap goes back to 42dvh, so the seat row sits below the scrollport after a swap on Add.
 diff --git a/index.html b/index.html
 --- a/index.html

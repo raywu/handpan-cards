@@ -5,12 +5,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -531,7 +531,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -542,7 +542,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
      var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
      var geom = geometry(counts, placed);
 -    if (wanted.value) placed = reseat(placed, wanted.value);
 +    if (false) placed = reseat(placed, wanted.value);
  
-     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
+     return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
    }

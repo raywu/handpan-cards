@@ -1,4 +1,4 @@
-# kills: DR1 line 26: BESIDE CENTRE re-solves the plate and reaches the deck, the stored record and the share link
+# kills: DR1 line 26: 1 + 2 SPLIT re-solves the plate and reaches the deck, the stored record and the share link
 # suite: node --test --test-name-pattern ^DR1.line.26.* tests/app.test.js
 # The anchor is chosen and painted but left out of the options the deck is
 # generated with, so the saved deck ignores the control.

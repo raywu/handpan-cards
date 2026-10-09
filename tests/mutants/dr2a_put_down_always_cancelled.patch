@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9306,7 +9306,7 @@ function putDownPick() {
+@@ -9364,7 +9364,7 @@ function putDownPick() {
    const fromSeatButton = document.activeElement === seatPrev || document.activeElement === seatNext;
    const moved = pickMoved;
    setPick(null);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  layoutStatus("Cancelled. Nothing moved.");
    if (fromSeatButton) { setRover(ref); focusRef(ref); }
  }
- function resetSeats() {
+ function resetLayout() {

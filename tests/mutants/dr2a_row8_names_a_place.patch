@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
    paintLayout();
    resyncSheet(true);
    const moved = noteAt({ ring, i });
--  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}.`);
-+  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
-   else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
+-  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}.`);
++  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}, ${moved.place}.`);
+   else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.label}, ${moved.place}.`);
    return true;
  }
