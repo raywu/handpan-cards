@@ -265,8 +265,9 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
 - DECIDED(D13, 2026-10) The ding is MANDATORY and written `(D3)` / `(D)`
   (round brackets), `D3/` / `D/` (trailing slash), or as the note straight
   before the first `|` (`D | A C`, the "bar form"). Zero dings is `NO_DING`
-  (alternate `which`), more than one is `NO_DING` (alternate `two`). Ding tokens
-  are counted over the whole string before any other rule runs.
+  (alternate `which`), more than one is `NO_DING` (alternate `two`). The ding count
+  is taken after every token has lexed (see the error precedence below), and
+  before bars and note placement are checked.
 - DECIDED(D13, 2026-10) Square brackets mark a BOTTOM note at its pitch
   position: `[C] [D] (E) B` puts C and D below the ding E. A bottom note after
   the ding sits where its pitch falls among the top notes (`(D) A [C] C`), and
@@ -274,8 +275,11 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   notes need no octave of their own to be placed but print one.
 - DECIDED(D13, 2026-10) A `|` after the ding and the top notes starts the INNER
   notes: everything between the ding and the bar is rim, everything after it is
-  inner. A second `|`, a `|` before the ding, or a `|` with nothing on one side
-  is `BAD_NOTE` (alternates `bar`, `barFirst`, `barEmpty`). A lone `/` is the
+  inner. With the ding marked by brackets or a slash, a second `|` is `BAD_NOTE`
+  (alternate `bar`); in bar form (the ding marked by the `|` straight after it)
+  two bars are legal, as in the Pygmy maker string, and only a third is `bar`.
+  A `|` before a marked ding is `BAD_NOTE` (`barFirst`), and a `|` with nothing
+  on one side is `BAD_NOTE` (`barEmpty`). A lone `/` is the
   retired inner mark and is `BAD_NOTE` (alternate `slash`).
 - DECIDED(D13, 2026-10) There are NO note-count caps: no limit on rim, inner or
   bottom notes, and no refusal for size. A crowded pan draws smaller and
@@ -299,11 +303,14 @@ note      := [A-G] ("#" | "b")? ("-1" | [0-9])?
   ascending. A break is `NOTE_OUT_OF_ORDER` (alternates `ding`, `afterBar`,
   `below`), or `NOTE_REPEATED` when the note is spelled as the one before it
   on the same shell. This is what makes `parseSeed(formatSeed(x))` equal `x`.
-- DECIDED(owner-review 2026-09-08) Error precedence: the ding count first
-  (`NO_DING`), then structure (`BAD_NOTE` for tokens and bars), then the
+- DECIDED(owner-review 2026-09-08) Error precedence in `parseSeed`: (1) lexing
+  of every token, so an unreadable token, a lone `/` or a malformed bracket is
+  `BAD_NOTE` before anything else; (2) the ding count (`NO_DING`, alternates
+  `two` and `which`); (3) bars and the run before the ding (`BAD_NOTE` for
+  `bar` and `barFirst`, `NO_DING` `below`, `BAD_NOTE` `barEmpty`); (4)
   positional codes per note in the order the parser reaches them
-  (`NOTE_OUT_OF_RANGE`, then `NOTE_REPEATED` or `NOTE_OUT_OF_ORDER`), then
-  `NO_FIFTH`. The ding is placed and range-checked before any other note.
+  (`NOTE_OUT_OF_RANGE`, then `NOTE_REPEATED` or `NOTE_OUT_OF_ORDER`); (5)
+  `NO_FIFTH`. Only `parseLegacySeed` counts dings before lexing. The ding is placed and range-checked before any other note.
 - DECIDED(swarm-2026-09-08) `NO_FIFTH` is decided in `core.parseSeed` before
   any voicing work: no TOP-shell note is a perfect fifth above the ding.
   Bottom-shell notes do not satisfy it.
@@ -750,7 +757,7 @@ Verified against all three built-ins under the fixed list order of
   (offset basis `0x811c9dc5`, prime `0x01000193`, multiplication taken modulo
   2^32), giving the same result in Node and in the browser.
 - DECIDED(2026-10) The id is 32 bits, so two different scales can collide. The
-  records store keeps ONE record per id (the first wins); a collision is
+  records store holds one record per id: saving a second scale with a colliding id overwrites the earlier record in place (the later save wins), while the boot dedupe in `restoreScales` keeps the first; a collision is
   accepted as vanishingly rare and is documented in the README.
 - DECIDED(D14 as amended) The id is a pure function of `identitySeed(seed)` -
   notes, octaves, zones and order - and nothing else; `select.build` is never
@@ -855,7 +862,8 @@ The D6 palette set, index 0-5, from `CLAUDE.md` "Design system":
 - DECIDED(plan Phase 4) A flipped byte or an over-cap payload is rejected.
 - DECIDED(owner 2026-10, R7) Saved scales live in localStorage under
   `hpfc.scales.v3`. On first boot the old `hpfc.scales` list is copied there
-  record by record through each record's own version reader, and the old key
+  verbatim as a whole list (`copyLegacyScales`), and each record is read through
+  its own version reader and rewritten as v4 later, in `restoreScales`; the old key
   is never written again. A scale saved in a tab still running the old app
   lands under the old key and does not appear in the new app.
 - DECIDED(plan "Encoding") The encoder is pure JS: `node:vm` has no
