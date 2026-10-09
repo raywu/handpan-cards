@@ -235,6 +235,32 @@ class CommittedPdfBytesTest(unittest.TestCase):
                     os.path.join("/tmp/x", os.path.basename(rel)))
 
 
+THREE_COMMITTED = (
+    "CSharp_Hijaz_Orion_9_CHORD_ONLY_Letter.pdf",
+    "F3_Low_Pygmy_18_CHORD_ONLY_Letter.pdf",
+    "D_Amara_9_CHORD_ONLY_Letter.pdf",
+)
+
+
+class ShippedPdfsTest(unittest.TestCase):
+    """PM-10 and PM-11: the repo ships the three chord-only sheets and no
+    full-deck seed."""
+
+    def test_the_repo_root_holds_only_the_three_chord_only_pdfs(self):
+        tracked = subprocess.run(
+            ["git", "ls-files", "*.pdf"], cwd=paths.ROOT,
+            capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(sorted(tracked), sorted(THREE_COMMITTED))
+
+    def test_decks_main_writes_only_the_three_chord_only_pdfs(self):
+        out = tempfile.mkdtemp(prefix="handpan-main-")
+        try:
+            decks.main(out)
+            self.assertEqual(sorted(os.listdir(out)), sorted(THREE_COMMITTED))
+        finally:
+            shutil.rmtree(out, ignore_errors=True)
+
+
 class BuiltDecksTest(unittest.TestCase):
     """Base class: every deck built once, into a throwaway directory."""
 

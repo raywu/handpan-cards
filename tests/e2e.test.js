@@ -961,16 +961,16 @@ function run() {
       const id = meta[i].id;
       const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
-      assert.strictEqual(m.buttons, 2, `deck ${id}: expected exactly 2 buttons, found ${m.buttons}`);
+      assert.strictEqual(m.buttons, 1, `deck ${id}: expected exactly 1 button, found ${m.buttons}`);
       assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
-      assert.deepStrictEqual(m.labels, ["FULL DECK PDF", "CHORD-ONLY PDF"], `deck ${id}`);
+      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF"], `deck ${id}`);
     }
 
     // And a generated deck gets the identical row - it is the same element.
     await generate(SIX_SCALES[1]);
     const g = await shape();
     assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
-    assert.strictEqual(g.buttons, 2, "generated deck: expected exactly 2 buttons");
+    assert.strictEqual(g.buttons, 1, "generated deck: expected exactly 1 button");
     assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
   });
 
@@ -1032,7 +1032,7 @@ function run() {
      the setTimeout(0)-deferred re-enable controls (browsers suppress the
      click on a disabled element the same way whether the click call
      originates from a second dispatched input event or from script). */
-  test("two taps on FULL DECK PDF queued together build the PDF once", async () => {
+  test("two taps on DOWNLOAD PDF queued together build the PDF once", async () => {
     await freshLoad();
     const meta = await decksMeta();
     const i = meta.findIndex((m) => m.id === "pygmy");
@@ -1050,13 +1050,13 @@ function run() {
       // profiles; suppress activation so the test cannot hang on a modal
       // that has nothing to do with the guard under test.
       HTMLAnchorElement.prototype.click = function () {};
-      const btn = document.querySelector("#settings-panel .prints button"); // FULL DECK PDF
+      const btn = document.querySelector("#settings-panel .prints button"); // DOWNLOAD PDF
       btn.click();
       btn.click(); // the "second tap queued while the first is still running"
       return window.__buildCount;
     `);
     assert.strictEqual(count, 1,
-      `two taps on FULL DECK PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
+      `two taps on DOWNLOAD PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
   });
 
   /* The `finally` in downloadDeckPDF must re-enable the buttons on BOTH the
@@ -1128,10 +1128,10 @@ function run() {
     assert.strictEqual(m.flipped, false,
       "Enter on a print button flipped the card");
     assert.strictEqual(m.buildCalls.length, 1,
-      "Enter on the FULL DECK PDF button never reached HPE.pdfcards.build - " +
+      "Enter on the DOWNLOAD PDF button never reached HPE.pdfcards.build - " +
       "the real onclick chain did not run");
-    assert.strictEqual(m.buildCalls[0].variant, "full",
-      "Enter on the FULL DECK PDF button built the wrong variant");
+    assert.strictEqual(m.buildCalls[0].variant, "shop",
+      "Enter on the DOWNLOAD PDF button built the wrong variant");
     assert.strictEqual(m.panelHidden, true,
       "Enter on a print button never called closePanel() - the panel stayed open");
   });
@@ -1351,12 +1351,14 @@ function run() {
   // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
   // list of Resources ids in this file derives from here.
   const RESOURCES = [
-    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
-    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
-    { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
+    { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 0,
+      aria: "Handpan 101 (Google Doc)" },
+    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 1 },
+    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 1 },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 1 },
+    { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 2,
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
-    { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
+    { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 2,
       aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
   ];
   const RES_IDS = RESOURCES.map((r) => r.id);
@@ -1797,7 +1799,7 @@ function run() {
    * amendments 1-7)
    * ---------------------------------------------------------------- */
 
-  test("the settings panel has exactly one Resources group with its five outbound links in two rows", async () => {
+  test("the settings panel has exactly one Resources group with its six outbound links in three rows", async () => {
     await freshLoad();
     await openSettingsPanel();
     const m = await b.eval(`
@@ -1820,8 +1822,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [3, 2], "expected two rows holding three then two links");
-    assert.strictEqual(m.links.length, 5, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [1, 3, 2], "expected three rows holding one, three then two links");
+    assert.strictEqual(m.links.length, 6, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -2097,6 +2099,18 @@ function run() {
                 `${vw}x${vh}: a line of .${r.cls} is not flush: ${JSON.stringify(l.items)} in [${r.left}, ${r.right}]`);
             }
           }
+          const prints = await b.eval(`
+            const row = document.querySelector("#settings-panel .prints");
+            const kids = [...row.children];
+            const tops = kids.map(k => k.getBoundingClientRect().top);
+            return { n: kids.length, oneLine: Math.max(...tops) - Math.min(...tops) < 2,
+              tall: Math.min(...kids.map(k => k.getBoundingClientRect().height)),
+              spill: kids.map(k => k.scrollWidth - k.clientWidth) };
+          `);
+          assert.strictEqual(prints.n, 2, `${vw}x${vh}: the print row holds two controls`);
+          assert.ok(prints.oneLine, `${vw}x${vh}: DOWNLOAD PDF and the paper select are not on one line`);
+          assert.ok(prints.tall >= 44, `${vw}x${vh}: a print control is under the 44px target`);
+          assert.ok(prints.spill.every((x) => x <= 0), `${vw}x${vh}: a print control clips its text: ${JSON.stringify(prints.spill)}`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
@@ -2774,8 +2788,8 @@ function run() {
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
         const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
+          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -2854,7 +2868,7 @@ function run() {
      converge on the same pdfcards.build/pymupdf-verified renderer, and this
      test exists to catch fromBuiltin wiring - a missing/garbled overlay
      field, a bad geom.ext fallback - not to re-prove the renderer itself. */
-  test("a built-in deck's FULL DECK PDF tap produces bytes that open as a PDF", async () => {
+  test("a built-in deck's DOWNLOAD PDF tap produces bytes that open as a PDF", async () => {
     if (process.env.E2E_HARNESS_CHILD) return;
     const { spawnSync } = require("node:child_process");
     const os = require("node:os");
@@ -2869,8 +2883,8 @@ function run() {
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
         const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "FULL DECK PDF");
-        if (!btn) return { err: "no FULL DECK PDF button in the settings panel" };
+          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -7383,12 +7397,12 @@ function run() {
       }
     });
 
-    test("the sidebar's FULL DECK and CHORD-ONLY buttons produce a PDF blob", async () => {
+    test("the sidebar's DOWNLOAD PDF button produces a PDF blob", async () => {
       await freshLoad();
       try {
         await b.setViewport(1280, 800, false);
         await b.settle();
-        for (const label of ["FULL DECK PDF", "CHORD-ONLY PDF"]) {
+        for (const label of ["DOWNLOAD PDF"]) {
           const cap = await b.eval(`
             return (async () => {
               const real = URL.createObjectURL;
@@ -8284,7 +8298,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "", "", "print-paper-select", ...RES_IDS];
+      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
     const pressedFive = () => b.eval(`return ["modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced"]
