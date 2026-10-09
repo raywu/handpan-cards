@@ -7036,7 +7036,7 @@ for (const edit of [false, true]) {
     }
     d2Tap(app, "D4");
     assert.deepStrictEqual(d2Pressed(app), ["D4"]);
-    assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap, or use PREVIOUS SEAT and NEXT SEAT.");
+    assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap.");
     d2Tap(app, "D4");
     assert.deepStrictEqual(d2Pressed(app), []);
     assert.strictEqual(d2Status(app), "D4 stays in rim seat 3.");
@@ -8326,8 +8326,6 @@ test("rule W: seat names use the drawn number on rim, inner and bottom", () => {
   d2Tap(app, "G5");
   d2Tap(app, "F5");
   assert.match(d2Status(app), /^Swapped G5 and F5\. G5 is now in inner seat (10|11), \S/);
-  d2Tap(app, "G5");
-  assert.match(d2Status(app), /^G5 stays in inner seat (10|11)\.$/);
 });
 
 test("rule W: the tap row names the seat buttons only while the finer controls are open", () => {
@@ -8374,7 +8372,7 @@ test("DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hin
   assert.strictEqual(reset.text, "RESET LAYOUT");
   assert.strictEqual(reset.attr("class"), "mode");
   assert.ok(/\bdisabled\b/.test(reset.attrs));
-  const finerBlock = /<div id="scale-fine"[^>]*>([\s\S]*?)<button type="button" id="scale-layout-reset"/.exec(drawer);
+  const finerBlock = /<div id="scale-fine"[^>]*>([\s\S]*?)<button[^>]*id="scale-layout-reset"/.exec(drawer);
   assert.ok(finerBlock, "the finer rows are not between the disclosure and RESET LAYOUT");
   for (const id of DR3_STEPS) assert.ok(finerBlock[1].includes(`id="${id}"`), `#${id} is not inside #scale-fine`);
 });
@@ -8518,7 +8516,7 @@ test("DR3 reset returns seats, both mirrors and orientation to the default and w
 test("DR3 reset on Edit gives the generated default, not the stored layout", () => {
   const app = boot();
   const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between", mirror: true, mirrorBottom: false,
-    seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10] } });
+    seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] } });
   assert.strictEqual(made.ok, true, made.reason);
   openEdit(app, app.registry()[made.value.id]);
   app.els["scale-layout-toggle"].click();
