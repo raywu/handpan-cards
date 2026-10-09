@@ -200,6 +200,8 @@ function run() {
         for (const row of ["toggle"])
           assert.ok(m[row] <= 0.5, `${key}, ${state}: the ${row} is ${m[row]}px below the scrollport (plate ${m.plateW}px)`);
         assert.ok(m.plateW >= 240, `${key}, ${state}: the plate is ${m.plateW}px`);
+        const cap = 0.39 * (await ev(`return window.innerHeight;`));
+        assert.ok(m.plateW <= cap, `${key}, ${state}: the plate is ${m.plateW}px, over its 39dvh cap of ${cap}px, so the rows below it drift out of reach`);
       }
       const open = await reachOpen();
       for (const row of ["noteRow", "seatRow", "reset"]) assert.ok(open[row] <= 0.5, `${key}: the ${row} is ${open[row]}px below the scrollport with the finer controls open`);
