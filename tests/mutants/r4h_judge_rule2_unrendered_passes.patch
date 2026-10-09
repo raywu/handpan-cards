@@ -1,0 +1,15 @@
+# kills: judgeCell rule 2: a control the base renders must stay rendered, in place, and present
+# suite: node --test --test-name-pattern ^judgeCell.rule.2 tests/harness.test.js
+# Rule 2 lets a control the base renders go unrendered on the candidate.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -101,7 +101,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
+       // 2 control (a control the base renders)
+       const bc = b.controls[key];
+       if (!bc.rendered) continue;
+-      if (!cc.rendered) {
++      if (false) {
+         out.rule2.fail.push(offender(id, `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`));
+       } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance), avail) + CTRL_TOL) {
+         const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`);

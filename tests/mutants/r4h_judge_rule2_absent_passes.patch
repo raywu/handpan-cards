@@ -1,0 +1,15 @@
+# kills: judgeCell rule 2: a control the base renders must stay rendered, in place, and present
+# suite: node --test --test-name-pattern ^judgeCell.rule.2 tests/harness.test.js
+# Rule 2 treats a control deleted from the candidate as removed by design.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -119,7 +119,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
+   for (const key of Object.keys(b.controls)) {
+     if (!present(b, key) || !b.controls[key].rendered || present(c, key)) continue;
+     if (REMOVED_BY_DESIGN.includes(key)) { out.removed.push(key); continue; }
+-    out.rule2.fail.push(offender(id, `${key} is rendered on the base and absent from the candidate`));
++    out.removed.push(key);
+   }
+ 
+   // 4 horizontal

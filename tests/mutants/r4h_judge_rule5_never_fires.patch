@@ -1,0 +1,15 @@
+# kills: judgeCell rule 5: the rendered set must equal the reference set
+# suite: node --test --test-name-pattern ^judgeCell.rule.5 tests/harness.test.js
+# Rule 5 (rendered set) can no longer fail.
+diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
+--- a/tools/probe/panel_fit.js
++++ b/tools/probe/panel_fit.js
+@@ -132,7 +132,7 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
+   // 5 R-1: rendered set equals the reference cell's for this mode
+   const renderedC = Object.keys(c.controls).filter((k) => present(c, k) && c.controls[k].rendered).sort();
+   const want = [...refRendered].sort();
+-  if (renderedC.join("|") !== want.join("|")) {
++  if (false) {
+     const miss = want.filter((k) => !renderedC.includes(k));
+     const extra = renderedC.filter((k) => !want.includes(k));
+     out.rule5.fail.push(offender(id, `missing [${miss}] extra [${extra}]`));
