@@ -1,0 +1,16 @@
+# kills: cdp coverage hook sends no Profiler command unless HPC_COVERAGE_DIR is set
+# suite: node --test tests/coverage_merge.test.js
+# With the variable unset the hook still turns on, in a directory that exists, so the
+# kill is the missing-env assertion itself and not a constructor failure.
+diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
+--- a/tests/helpers/cdp.js
++++ b/tests/helpers/cdp.js
+@@ -146,7 +146,7 @@ function assertNoUncaught() {
+ let coverageSeq = 0;
+ 
+ function coverageDir(env = process.env) {
+-  return env.HPC_COVERAGE_DIR || null;
++  return env.HPC_COVERAGE_DIR || require("node:os").tmpdir();
+ }
+ 
+ class CoverageHook {

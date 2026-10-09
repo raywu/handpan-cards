@@ -68,6 +68,7 @@ FLOORS = {
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 11,
     "tests/pdfcards.test.js": 21,
+    "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 53,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 51,
