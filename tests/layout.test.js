@@ -245,7 +245,7 @@ test("solve never changes a zone", () => {
   }
 });
 
-test("solve preserves the field ids and every non-angle column", () => {
+test("solve with no seats preserves the field ids and every non-angle column", () => {
   for (const entry of SWEEP) {
     const { fields } = solved(entry);
     assert.deepEqual(Object.keys(fields).sort(), Object.keys(entry.seed.fields).sort(), entry.label);
@@ -1580,5 +1580,149 @@ test("the geometry keys that differ from solver output are exactly the documente
       if (!(key in geom)) differs[key] = [deck.geom[key], undefined];
     }
     assert.deepEqual(plain(differs), plain(documented[deck.id]), `${deck.id}: geom drift`);
+  }
+});
+
+/* ---------------------------------------------------------------- rule N
+ * A seat's number is the label the default arrangement gave the note that
+ * sits there. A moved note takes the number of the seat it now fills. */
+
+const RULE_N_SCALES = [
+  ["D3 example", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"],
+  ["D Kurd 10", "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5"],
+  ["F3 Low Pygmy", "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]"],
+];
+const RULE_N_ANCHORS = ["one", "between"];
+const RULE_N_MIRRORS = [[false, false], [true, false], [false, true], [true, true]];
+
+const freshSeed = (text) => {
+  const res = HPE.core.parseSeed(text, {});
+  assert.equal(res.ok, true, `${text}: ${res.code}`);
+  return res.value;
+};
+
+/** n-note ring: no move, one swap, then three swaps. */
+function ruleNArrangements(n) {
+  const out = [];
+  if (n < 2) return out;
+  const one = identity(n);
+  [one[0], one[1]] = [one[1], one[0]];
+  out.push(one);
+  const three = identity(n);
+  for (let k = 0; k < 3; k += 1) {
+    const i = (k * 2) % n;
+    const j = (k * 2 + 1) % n;
+    if (i !== j) [three[i], three[j]] = [three[j], three[i]];
+  }
+  out.push(three);
+  return out;
+}
+
+const ruleNLabels = (fields) => {
+  const out = {};
+  for (const id of Object.keys(fields)) out[id] = fields[id][5];
+  return out;
+};
+
+test("rule N: after seats, each seat keeps its number and the note sitting there carries it", () => {
+  for (const [name, text] of RULE_N_SCALES) {
+    for (const anchor of RULE_N_ANCHORS) {
+      for (const [mirror, mirrorBottom] of RULE_N_MIRRORS) {
+        const base = { mirror, mirrorBottom, anchor };
+        const seed = freshSeed(text);
+        const rings = ringIds(seed.fields);
+        const home = plain(HPE.layout.solve(freshSeed(text), base).value.fields);
+        for (const ring of RINGS) {
+          for (const list of ruleNArrangements(rings[ring].length)) {
+            const label = `${name} ${anchor} ${mirror}/${mirrorBottom} ${ring} ${list}`;
+            const res = HPE.layout.solve(freshSeed(text), { ...base, seats: { [ring]: list } });
+            assert.equal(res.ok, true, label);
+            const moved = res.value.fields;
+            for (let s = 0; s < rings[ring].length; s += 1) {
+              const seatId = rings[ring][s];
+              const sitting = Object.keys(moved).find((id) => moved[id][3] === ring
+                && moved[id][4] === home[seatId][4]);
+              assert.ok(sitting, `${label}: nobody sits at seat ${s}`);
+              assert.equal(moved[sitting][5], seed.fields[seatId][5],
+                `${label}: the note at seat ${s} carries ${moved[sitting][5]}, not ${seed.fields[seatId][5]}`);
+            }
+            for (const id of Object.keys(moved)) {
+              assert.deepStrictEqual(moved[id].slice(0, 4), seed.fields[id].slice(0, 4), `${label} #${id}`);
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+test("rule N: mirrors and orientation change no label", () => {
+  for (const [name, text] of RULE_N_SCALES) {
+    const rings = ringIds(freshSeed(text).fields);
+    const seats = {};
+    for (const ring of RINGS) {
+      const lists = ruleNArrangements(rings[ring].length);
+      if (lists.length) seats[ring] = lists[1];
+    }
+    const want = ruleNLabels(HPE.layout.solve(freshSeed(text), { seats }).value.fields);
+    for (const anchor of RULE_N_ANCHORS) {
+      for (const [mirror, mirrorBottom] of RULE_N_MIRRORS) {
+        const got = ruleNLabels(HPE.layout.solve(freshSeed(text), { mirror, mirrorBottom, anchor, seats }).value.fields);
+        assert.deepStrictEqual(got, want, `${name} ${anchor} ${mirror}/${mirrorBottom}`);
+      }
+    }
+  }
+});
+
+const RULE_N_NO_SEATS = {
+  "D3 example one false/false": "25ac5a7c09cd908b",
+  "D3 example one true/true": "f675f30395520a1c",
+  "D3 example between false/false": "8f7bf228071c4263",
+  "D3 example between true/true": "046adf1ebce7ffd9",
+  "D Kurd 10 one false/false": "bb40d40871ccbaa8",
+  "D Kurd 10 one true/true": "3393bf5408748c94",
+  "D Kurd 10 between false/false": "67640a0ffec2c92c",
+  "D Kurd 10 between true/true": "633dae4764b43080",
+  "F3 Low Pygmy one false/false": "7f4f6b8e4a128a15",
+  "F3 Low Pygmy one true/true": "fa2e9b7d48c1e768",
+  "F3 Low Pygmy between false/false": "65909a1b9132c2da",
+  "F3 Low Pygmy between true/true": "3a2444569d85577d",
+};
+
+test("rule N: with no seats every column of every field is what main solved", () => {
+  const crypto = require("node:crypto");
+  const got = {};
+  for (const [name, text] of RULE_N_SCALES) {
+    for (const anchor of RULE_N_ANCHORS) {
+      for (const both of [false, true]) {
+        const fields = HPE.layout.solve(freshSeed(text), { mirror: both, mirrorBottom: both, anchor }).value.fields;
+        got[`${name} ${anchor} ${both}/${both}`] = crypto.createHash("sha256")
+          .update(JSON.stringify(fields)).digest("hex").slice(0, 16);
+      }
+    }
+  }
+  assert.deepStrictEqual(got, RULE_N_NO_SEATS);
+});
+
+test("rule N: solve reads labels from its input and never from its own output", () => {
+  const seed = freshSeed(RULE_N_SCALES[2][1]);
+  for (const id of Object.keys(seed.fields)) seed.fields[id][5] = `x${id}`;
+  const before = plain(seed.fields);
+  const rings = ringIds(seed.fields);
+  const seats = {};
+  for (const ring of RINGS) {
+    const lists = ruleNArrangements(rings[ring].length);
+    if (lists.length) seats[ring] = lists[1];
+  }
+  const res = HPE.layout.solve(seed, { seats });
+  assert.equal(res.ok, true);
+  assert.deepStrictEqual(plain(seed.fields), before, "solve wrote into its input");
+  for (const ring of RINGS) {
+    const list = seats[ring];
+    if (!list) continue;
+    for (let i = 0; i < list.length; i += 1) {
+      assert.equal(res.value.fields[rings[ring][i]][5], before[rings[ring][list[i]]][5],
+        `${ring} note ${i} did not take the label of seat ${list[i]} from the input`);
+    }
   }
 });

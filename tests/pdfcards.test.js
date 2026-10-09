@@ -416,3 +416,31 @@ test("the built-in title cards keep the 4.2 pt, 8 pt-step blurb they always had"
     assert.equal(step, 8, id);
   }
 });
+
+test("rule N: the browser PDF prints the seat number on the diagram and the number line", () => {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const text = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const parsed = E.core.parseLegacySeed(text, {});
+  const built = E.select.build(parsed.value);
+  assert.ok(built.ok);
+  const moved = E.layout.solve(E.core.parseLegacySeed(text, {}).value, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } });
+  assert.ok(moved.ok);
+  for (const id of Object.keys(moved.value.fields)) {
+    built.value.fields[id][4] = moved.value.fields[id][4];
+    built.value.fields[id][5] = moved.value.fields[id][5];
+  }
+  const deck = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: built.value });
+  assert.strictEqual(deck.spec["1"][5], "2", "A3 now sits in seat 2");
+  assert.strictEqual(deck.spec["2"][5], "1", "C4 now sits in seat 1");
+  const chord = deck.chords.find((c) => c[3].indexOf("1") >= 0 && c[3].indexOf("2") >= 0);
+  assert.ok(chord, "fixture assumption: a chord that voices both swapped notes");
+  const want = chord[3].map((f) => (f === "1" ? "2" : f === "2" ? "1" : deck.spec[f][5]));
+  const run = [];
+  want.forEach((lab, i) => { run.push(lab); if (i < want.length - 1) run.push(" - "); });
+  const glyphs = pdfGlyphs(P.build(deck, { variant: "shop" }));
+  assert.ok(findTokenRun(glyphs, run).length >= 1,
+    "the number line's token run " + JSON.stringify(run) + " is not in the PDF");
+  const plain = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: E.select.build(parsed.value).value });
+  assert.notStrictEqual(latin1(P.build(deck, { variant: "shop" })), latin1(P.build(plain, { variant: "shop" })),
+    "a moved deck printed the same bytes as the unmoved one, so the diagram numbers did not follow the seats");
+});

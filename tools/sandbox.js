@@ -41,6 +41,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-anchor-one", "scale-anchor-between",
   // Lane DR2a: the seat controls that replace the old rot/move group.
   "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
+  // Lane DR3: the disclosure over the finer controls.
+  "scale-fine-toggle", "scale-fine",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a

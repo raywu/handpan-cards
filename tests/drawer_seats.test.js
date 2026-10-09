@@ -82,7 +82,7 @@ function run() {
     await tap("A3");
     assert.strictEqual(await ev(`return document.querySelector("#scale-preview .panhit[aria-pressed='true']").getAttribute("aria-label").split(",")[0];`), "A3");
     await tap("D4");
-    assert.strictEqual(await status(), "Swapped A3 and D4. A3 is now in rim seat 3 of 8, lower right.");
+    assert.strictEqual(await status(), "Swapped A3 and D4. A3 is now in rim seat 3, lower right.");
     assert.strictEqual(await focusName(), "A3");
     assert.strictEqual(await ev(`return document.querySelectorAll("#scale-preview .panflash").length;`), 2);
     await tap("C4"); await tap("E4");
@@ -101,10 +101,10 @@ function run() {
       if (id === "scale-back") break;
       seen.push(id);
     }
-    const head = ["scale-box", "plate", "scale-layout-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev",
-      "scale-seat-next", "scale-mirror", "scale-mirror-bottom", "scale-layout-reset", "scale-anchor-one", "scale-anchor-between"];
+    const head = ["scale-box", "plate", "scale-layout-toggle", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+      "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
     const got = seen.filter((x) => head.includes(x));
-    const want = head.filter((x) => x !== "scale-seat-prev" && x !== "scale-seat-next" && x !== "scale-layout-reset");
+    const want = head.filter((x) => !["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"].includes(x));
     assert.deepStrictEqual(got.filter((x) => want.includes(x)), want, `Tab order: ${seen}`);
     await ev(`document.querySelector("#scale-preview .panhit[tabindex='0']").focus(); return true;`);
     await b.key(" ", "Space", 32);
@@ -139,7 +139,7 @@ function run() {
   test("DR2a browser (121, item 7): over a scale that does not parse the closed drawer leaves the toggle focused and aria-disabled", async () => {
     await openAdd(SCALES.amara);
     await typeBox("(D3) zzz");
-    await ev(`document.getElementById("scale-note-next").focus(); return true;`);
+    await ev(`document.getElementById("scale-anchor-one").focus(); return true;`);
     await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
     await frames();
     assert.strictEqual(await focusName(), "scale-layout-toggle");
@@ -151,12 +151,12 @@ function run() {
     const rows = [
       "Picked up Eb5. Arrows choose a seat in the bottom. Space swaps. Escape cancels.",
       "Picked up Eb5. Tap or drop it on another bottom note to swap, or use PREVIOUS SEAT and NEXT SEAT.",
-      "Swapped Eb5 and Ab4. Eb5 is now in bottom seat 12 of 12, upper right.",
+      "Swapped Eb5 and Ab4. Eb5 is now in bottom seat U12, upper right.",
       "Not moved. Drop Eb5 on another bottom note to swap.",
       "The bottom is back to 12 notes, so its earlier seats were restored. The picked note was put down.",
       "The bottom now has 12 notes, so its seats were reset. The picked note was put down.",
       "This pan has no ring with two notes, so there is nothing to rearrange.",
-      "Picked up Eb5, bottom seat 12 of 12, upper right. PREVIOUS SEAT and NEXT SEAT move it.",
+      "Picked up Eb5, bottom seat U12, upper right. PREVIOUS SEAT and NEXT SEAT move it.",
     ];
     const longest = rows.reduce((a, r) => (r.length > a.length ? r : a), "");
     const before = await ev(`return document.getElementById("scale-plate-band").getBoundingClientRect().height;`);
@@ -176,10 +176,17 @@ function run() {
     const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
     return { stuck: getComputedStyle(band).position === "sticky" && br.top - sr.top <= 0.5, plateW: document.querySelector("#scale-preview svg").getBoundingClientRect().width,
       notice: !document.getElementById("scale-layout-state").hidden,
-      toggle: out("scale-layout-toggle"), noteRow: out("scale-note-next"), seatRow: out("scale-seat-next") };`);
+      toggle: out("scale-layout-toggle"), fineToggle: out("scale-fine-toggle") };`);
+  const reachOpen = async () => {
+    await ev(`const t = document.getElementById("scale-fine-toggle"); if (t.getAttribute("aria-expanded") !== "true") t.click(); return true;`);
+    await frames();
+    return ev(`const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = sp.scrollHeight; const sr = sp.getBoundingClientRect();
+      const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
+      return { noteRow: out("scale-note-next"), seatRow: out("scale-seat-next"), reset: out("scale-layout-reset") };`);
+  };
 
   for (const [key, scale, a, c] of [["amara", SCALES.amara, "A3", "C4"], ["kurd", SCALES.kurd, "A3", "Bb3"], ["pygmy", SCALES.pygmy, "G3", "Ab3"]]) {
-    test(`DR2a browser (84): on Add at 380x667 with the band stuck the toggle and both step rows of ${key} are inside the scrollport, with and without the notice`, async () => {
+    test(`DR2a browser (84): on Add at 380x667 with the band stuck the toggle and the disclosure of ${key} are inside the scrollport, with and without the notice, and with the finer controls open both step rows are reachable`, async () => {
       await openAdd(scale);
       await stickBand();
       const quiet = await reach();
@@ -190,10 +197,12 @@ function run() {
       assert.strictEqual(noisy.notice, true);
       for (const [state, m] of [["no notice", quiet], ["the notice and the swap sentence", noisy]]) {
         assert.ok(m.stuck, `${state}: the band is not stuck`);
-        for (const row of ["toggle", "noteRow", "seatRow"])
+        for (const row of ["toggle", "fineToggle"])
           assert.ok(m[row] <= 0.5, `${key}, ${state}: the ${row} is ${m[row]}px below the scrollport (plate ${m.plateW}px)`);
         assert.ok(m.plateW >= 240, `${key}, ${state}: the plate is ${m.plateW}px`);
       }
+      const open = await reachOpen();
+      for (const row of ["noteRow", "seatRow", "reset"]) assert.ok(open[row] <= 0.5, `${key}: the ${row} is ${open[row]}px below the scrollport with the finer controls open`);
     });
   }
 
@@ -353,7 +362,27 @@ function run() {
     assert.ok(m.top >= -0.5 && m.bottom <= 0.5, `the toggle is outside the scrollport after the open: ${JSON.stringify(m)}`);
     await stickBand();
     const r = await reach();
-    for (const row of ["toggle", "noteRow", "seatRow"]) assert.ok(r[row] <= 0.5, `${row} is ${r[row]}px below the scrollport`);
+    for (const row of ["toggle", "fineToggle"]) assert.ok(r[row] <= 0.5, `${row} is ${r[row]}px below the scrollport`);
+    const open = await reachOpen();
+    for (const row of ["noteRow", "seatRow"]) assert.ok(open[row] <= 0.5, `${row} is ${open[row]}px below the scrollport`);
+  });
+
+  test("DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and the toggle moves no scroll", async () => {
+    await openAdd(SCALES.pygmy);
+    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
+    await frames();
+    const before = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
+    await ev(`document.getElementById("scale-fine-toggle").focus(); return true;`);
+    await b.key("Tab", "Tab", 9);
+    assert.strictEqual(await focusName(), "scale-layout-reset", "Tab from the closed disclosure reached a hidden step button");
+    await ev(`document.getElementById("scale-fine-toggle").focus(); document.getElementById("scale-fine-toggle").click(); return true;`);
+    await frames();
+    assert.strictEqual(await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`), before, "the toggle moved the scroll");
+    await b.key("Tab", "Tab", 9);
+    assert.strictEqual(await focusName(), "scale-note-prev");
+    const inside = await ev(`const sp = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(), r = document.activeElement.getBoundingClientRect();
+      return r.top >= sp.top - 0.5 && r.bottom <= sp.bottom + 0.5;`);
+    assert.ok(inside, "the first finer button is outside the scrollport");
   });
 
   test("DR2a browser (70): a swap reaches the stored deck and Edit shows it", async () => {
