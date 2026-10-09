@@ -1,0 +1,14 @@
+# kills: DR2b browser (46, rule T): an unheld vertical swipe on a note scrolls the sheet, a held touch drag does not
+# suite: node --test --test-name-pattern ^DR2b.browser..46..rule.T...an.unheld.vertical.swipe.on.a.note.scrolls.the.sheet..a.held.touch.drag.does.not$ tests/drawer_drag.test.js
+# The touchmove listener is no longer put on the touched note at pointerdown. The lift's repaint detaches that node, and the touch's events go only to it, so the held drag scrolls the sheet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10286,7 +10286,6 @@ previewBox.addEventListener("pointerdown", (e) => {
+     x0: e.clientX, y0: e.clientY, px: e.clientX, py: e.clientY, t0: Date.now(), lifted: false };
+   gestureCancel = () => endPress(false);
+   if (press.type === "touch") {
+-    hit.addEventListener("touchmove", plateTouchMove, { passive: false });
+     press.timer = setTimeout(() => {
+       if (press && press.state === "down") liftNote();
+     }, HOLD_MS);

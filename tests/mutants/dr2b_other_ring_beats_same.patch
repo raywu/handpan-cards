@@ -1,0 +1,15 @@
+# kills: DR2b (44): where a same-ring target and a note of another ring both contain the hit point, the same-ring target wins
+# suite: node --test --test-name-pattern ^DR2b..44...where.a.same.ring.target.and.a.note.of.another.ring.both.contain.the.hit.point..the.same.ring.target.wins$ tests/app.test.js
+# A note of another ring under the hit point wins over a same-ring target.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10200,7 +10200,7 @@ function targetAt(x, y) {
+     if (h.getAttribute("data-ring") === p.ring) { if (!same || d < same.d) same = { h, d }; }
+     else if (!other || d < other.d) other = { h, d };
+   }
+-  if (same) return { kind: same.h.getAttribute("data-field") === p.id ? "own" : "swap", ref: refOfNode(same.h) };
++  if (same && !other) return { kind: same.h.getAttribute("data-field") === p.id ? "own" : "swap", ref: refOfNode(same.h) };
+   return { kind: other ? "other" : "none", ref: other ? refOfNode(other.h) : null };
+ }
+ /** Leave the gesture. `restore` puts the pick back as it was before the lift;

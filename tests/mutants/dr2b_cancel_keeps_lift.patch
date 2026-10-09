@@ -1,0 +1,15 @@
+# kills: DR2b (48): pointercancel during a drag restores the pre-gesture state and moves nothing
+# suite: node --test --test-name-pattern ^DR2b..48...pointercancel.during.a.drag.restores.the.pre.gesture.state.and.moves.nothing$ tests/app.test.js
+# pointercancel no longer restores the pick from before the gesture.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10326,7 +10326,7 @@ previewBox.addEventListener("pointerup", (e) => {
+   endPress(false);
+ });
+ previewBox.addEventListener("pointercancel", (e) => {
+-  if (press && e.pointerId === press.id) endPress(true);
++  if (press && e.pointerId === press.id) endPress(false);
+ });
+ previewBox.addEventListener("contextmenu", (e) => {
+   if (drawerOpen) e.preventDefault();

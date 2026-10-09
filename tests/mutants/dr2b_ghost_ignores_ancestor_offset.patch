@@ -1,0 +1,17 @@
+# kills: DR2b (F1, 93): the ghost's drawn centre is the hit point under any offset its ancestors carry, also one that changes mid-drag, and a refused drop returns to the seat
+# suite: node --test --test-name-pattern ^DR2b..F1..93...the.ghost.s.drawn.centre.is.the.hit.point.under.any.offset.its.ancestors.carry..also.one.that.changes.mid.drag..and.a.refused.drop.returns.to.the.seat$ tests/app.test.js
+# The ghost is placed in viewport coordinates and never corrected for a transformed ancestor, so under the keyboard lift it is drawn off its hit point.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10164,10 +10164,6 @@ function seatGhost(g, cx, cy) {
+   g.style.left = (cx - d / 2) + "px";
+   g.style.top = (cy - d / 2) + "px";
+   const o = ghostShift(g);
+-  if (o.x || o.y) {
+-    g.style.left = (cx - d / 2 - o.x) + "px";
+-    g.style.top = (cy - d / 2 - o.y) + "px";
+-  }
+ }
+ function placeGhost(x, y) {
+   press.hx = x;

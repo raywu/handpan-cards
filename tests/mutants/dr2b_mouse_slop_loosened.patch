@@ -1,0 +1,15 @@
+# kills: DR2b (50): a mouse press moved less than 4 px is a tap and 4 px or more starts a drag
+# suite: node --test --test-name-pattern ^DR2b..50...a.mouse.press.moved.less.than.4.px.is.a.tap.and.4.px.or.more.starts.a.drag$ tests/app.test.js
+# The mouse drag threshold grows from 4 px to 9, so a 4 px move no longer starts a drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10134,7 +10134,7 @@ previewBox.addEventListener("focusout", (e) => {
+    document and out of reach of every listener on the plate. So the same
+    non-passive touchmove handler is also put on that circle at pointerdown,
+    ahead of touchstart. */
+-const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETURN_MS = 120, CLICK_GUARD_MS = 400;
++const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 9, GHOST_LIFT = 36, GHOST_RETURN_MS = 120, CLICK_GUARD_MS = 400;
+ let press = null;
+ let ghostEl = null;
+ let clickGuard = null;

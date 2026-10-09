@@ -1783,6 +1783,61 @@ PR #273, CI green. One blocking finding, reproduced in Chrome. Review 2 walked t
 
 **Review 3.** A fresh reviewer, briefed with 20.17, 20.18 and this section, facts only. **A third FAIL triggers the regroup rule; the lane is not resumed after it.**
 
+### 20.20 DR2a review 3: PASS_WITH_NITS at 8122e7a; DR2b starts (coordinator record, 2026-10-08, owner away)
+
+PR #273 at 8122e7a: CI green on attempt 2 of run 37838167957, review 3 PASS_WITH_NITS, no blocking finding. **DR2a is not merged: the owner's phone check gates it.** This section lives on DR2b's branch so that DR2a's reviewed head does not move.
+
+**N1, fixed in DR2b's first commit.** Attempt 1 of that run timed out `tests/app.test.js` at the 180 s suite clock. The reviewer measured it: the six "DR2a rule W" sweep tests take about 42 s of the file's 55 s locally and put the file near 165 s on CI. It is an overrun, not a hang. DR2b adds more unit tests to the same file, so before anything else DR2b moves the DR2a rule W sweep tests, unchanged, into a new unit file `tests/seat_sweeps.test.js`, registered wherever `tests/app.test.js` is registered as a unit suite (suite health's count table and FLOORS, `tests/mutation_check.sh`, `tests/shard_mutants.js`, the README's node-suite count); every mutant whose `# suite:` or `# kills:` names a moved test is repointed; the mutants that patch `tests/mutation_check.sh` are checked to still apply. No assertion changes and no sweep is cut. This is the one change DR2b may make to DR2a's tests. The timeout is not raised.
+
+**DR2b block, additions (they govern where they differ from 20.17).**
+
+- The hand-back and the PR body carry a table: every DR2b acceptance line, one row each, with the test file, the test name and the one assertion that fails if the line breaks. It is written before the handlers, with the failing tests. A test title names a line only if the test asserts it. Both DR2a FAILs after review 1 came from lines named and not asserted.
+- Commits end with the attribution the lane's own session gives (20.18), not the Opus line of 20.17.
+- The README node-suite count goes 18 to 20 (the sweep file and `tests/drawer_drag.test.js`).
+- DR2b's new unit tests go where they keep `tests/app.test.js` and `tests/seat_sweeps.test.js` each under 90 s on CI's js step, read from the CI log at the head; the lane reports both times.
+
+**Phone-check list, added to 20.17's.** A composite status message of three or four sentences against the seat row at 380 x 667; Pygmy's 40.7 px targets (line 58 report); on Edit the SEAT row below the fold (line 84 report); place words on an 8-note rim under BESIDE CENTRE, where every seat sits on a sector boundary and mirror-image seats read differently ("lower right" against "bottom"); that opening the drawer does not raise the soft keyboard.
+
+**Left as they are (review 3 nits).** N3 the line 70 unit test's title; N4 the keyboard-open browser test uses a script click after Tab, and the bottom-only line 18 test accepts C3 or D3; N6 the partly asserted lines listed in PR #273's map. N5: the plan commits on the lane branch are the coordinator's.
+
+### 20.21 DR2b step 0: the touch finding was the test, not the app (coordinator record, 2026-10-08, owner away)
+
+The lane reported at 0ff4adb that a held note, dragged, still scrolled the sheet under CDP touch, and marked the browser test "DR2b browser (46, rule T)" `todo`. A read-only investigation (probes in the session scratchpad, folder `inv-touch-probes/`) found:
+
+- On a fresh page the build holds all three step 0 traces: held drag 0 to 0, a move under 8 px then a drag 0 to 0, an unheld swipe 0 to 114.
+- The test pressed while the sheet was still flinging from its own swipe. Chrome sends a touchstart that lands during a fling as non-cancelable, and every touchmove of that touch with it; a standalone control page behaves the same. Waiting for the scroll to go quiet (300 ms or more, or no fling) makes it pass.
+- The listener the lane adds to the touched node at pointerdown carries the drag: after the lift's repaint the touch events go only to the detached node. Without it the held drag scrolls (0 to 114).
+
+**Repair (tests only; no change to `index.html`).**
+
+1. The rule T browser test waits until `.sheetbody`'s `scrollTop` is unchanged across 200 ms before the held half, and the `todo` comes off.
+2. It gains trace (b): one move under 8 px during the hold, then the drag; the sheet does not scroll and the note lifts.
+3. A mutant removes the touched-node listener and is killed by that test.
+4. The PR body's step 0 section and line 46 row are rewritten to say this.
+
+**Recorded, not changed.** A finger that lands on the plate while the sheet is still flinging cannot drag: the browser has already taken the gesture. It ends as "no drag" with the pick restored. Nothing within the block's limits (no permanent non-passive `touchstart`, no listener outside the plate) changes that. Phone-check item, with: iOS Safari's delivery of touch events to a detached SVG node; the long-press callout or magnifier on iOS; Android's long-press at about 500 ms; a finger's jitter during the hold.
+
+### 20.22 DR2b review 1: FAIL at 07d896e (coordinator record, 2026-10-08, owner away)
+
+PR #274, CI green. One blocking finding; the lane's flags (no listener outside the plate, no `touchstart` listener, no change to tap, keys or step buttons, generated regions clean) are all clear, and the six DR2a sweeps moved byte-identical.
+
+**F1. The ghost is drawn away from the hit point while the keyboard lift is on** (acceptance 47, 92; spec section 7, Hit point). The ghost is `position: fixed` inside `#scale-plate-band` and is given viewport coordinates, but `applyKbOffset` puts a transform on `.sheetsurf`, and a transformed ancestor is the containing block of a fixed box. Measured with the fake keyboard and focus in `#scale-box`: 8 px off at 380 x 667, 128 px with `offsetTop` 120, 150 px sideways at 820 x 1180. The swap still lands under the hit point, so the ghost and the armed seat disagree.
+
+**Steps (tests first, each failing before its fix).**
+
+1. F1. A browser test: drawer open, focus in `#scale-box` with the fake keyboard, at 380 x 667 (`offsetTop` 0 and 120) and 820 x 1180; during a touch drag and a mouse drag the ghost's centre is within 1 px of the hit point (36 px above the finger; the pointer for a mouse), and the armed seat is the one under the ghost's centre. The same with no keyboard. Then the fix, inside the ghost's code: the ghost's position is right whatever transform its ancestors carry. `applyKbOffset` is not changed.
+2. A press whose `pointerup` never reaches the plate: a later `pointermove` with no button down (`buttons` 0, mouse or pen) ends the press and lifts nothing.
+3. The status row after Escape tells the truth: after a tap, a step that swapped, then a drag of the picked note onto its own seat, or a hold and release on it, Escape gives row 9b (the swaps are kept), not row 9. A lift of the already-picked note does not clear `pickMoved`.
+4. A hold that lifts does not change `.sheetbody`'s `scrollTop` (step 0's first trace), also when the focused note is partly out of view: the reviewer saw 0 to 12 px at 380 x 390 from the repaint's focus restore.
+5. A `pointercancel` with no gesture in flight leaves the status line as it was.
+6. Tests the block asks for and the PR lacks, added (the behaviour was probed correct): a drag under a standing `runGenerate()` refusal redraws the plate and keeps the refusal (rule R drag row); rule D's touch pairs on the D3 example and Kurd 10 as well as Pygmy; rule T's touch "up before 250 ms" trace. Any test title that names a rule or line it does not assert is renamed.
+7. Unit-file time. CI's log carries no per-file time, so 20.20's 90 s line is replaced: **no unit test file takes over 25 s locally** (`node --test <file>`, reported per file). The sweeps are split across as many `tests/seat_sweeps_*.test.js` files as that needs, tests unchanged, registered as `tests/seat_sweeps.test.js` is; mutant `# suite:` headers follow; the README's node-suite count follows the files.
+8. The PR body: "Changes to DR2a-owned code" lists every edit inside DR2a-owned functions (`pan()` arm marks, the hit layer's arm, the cancel hooks in `paintPan`, `syncParseState` and `resyncSheet`, the listener add and remove in `openDrawer`, `closeDrawer` and `dropDrawer`); the gaps list names every cut that remains. One mutant per fix of steps 1 to 5.
+
+**Recorded, not changed.** A second touch outside the plate while the first finger is still does not cancel (the block allows no listener outside the plate). NEXT NOTE during a drag steps from the dragged note (16.3 does not say otherwise). A touch move of 9 to 14 px released without a scroll may still tap. All three are phone-check items, as is whether a real iOS keyboard produces F1's lift state.
+
+**Review 2.** A fresh reviewer, briefed with the DR2b block and 20.20 to this section, facts only.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the

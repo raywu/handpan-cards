@@ -49,11 +49,15 @@ FLOORS = {
     "tests/test_pdf_parity.py": 13,
     "tests/test_icons.py": 4,
     # node
-    "tests/app.test.js": 407,
+    "tests/app.test.js": 444,
+    "tests/seat_sweeps_tap_add.test.js": 3,
+    "tests/seat_sweeps_tap_edit.test.js": 3,
+    "tests/seat_sweeps_keys.test.js": 4,
     "tests/e2e.test.js": 283,
     "tests/harness.test.js": 13,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 26,
+    "tests/drawer_drag.test.js": 32,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 66,
     "tests/voicing.test.js": 16,
@@ -75,7 +79,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40

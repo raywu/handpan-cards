@@ -11,10 +11,10 @@ diff --git a/index.html b/index.html
    // one of the picked ring's, the picked ring wins the tap.
    if (interactive) {
      const byOrder = (a2, b2) => a2.at - b2.at;
--    s += veils.join("") + seatMarks.join("") + pickMarks.join("") + flashMarks.join("")
+-    s += veils.join("") + seatMarks.join("") + armMarks.join("") + pickMarks.join("") + flashMarks.join("")
 -      + `<g class="panhits">${hits.sort(byOrder).concat(sameHits.sort(byOrder)).map((h) => h.node).join("")}</g>`;
 +    s = s.replace(/(<svg[^>]*>)/, (m0) => m0 + `<g class="panhits">${hits.sort(byOrder).concat(sameHits.sort(byOrder)).map((h) => h.node).join("")}</g>`);
-+    s += veils.join("") + seatMarks.join("") + pickMarks.join("") + flashMarks.join("");
++    s += veils.join("") + seatMarks.join("") + armMarks.join("") + pickMarks.join("") + flashMarks.join("");
    }
    return s + "</svg>";
  }

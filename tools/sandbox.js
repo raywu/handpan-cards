@@ -113,7 +113,15 @@ function makeElement(id, tag = "div") {
     get className() { return [...this.classList._set].join(" "); },
     set className(v) { this.classList._set = new Set(String(v).split(/\s+/).filter(Boolean)); },
     style: { _props: {}, setProperty(k, v) { this._props[k] = v; } },
-    addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); },
+    addEventListener(t, fn) {
+      const l = (this.listeners[t] = this.listeners[t] || []);
+      if (!l.includes(fn)) l.push(fn);
+    },
+    removeEventListener(t, fn) {
+      const l = this.listeners[t] || [];
+      const i = l.indexOf(fn);
+      if (i >= 0) l.splice(i, 1);
+    },
     dispatchEvent(ev) { for (const fn of this.listeners[ev && ev.type] || []) fn(ev); return true; },
     appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
     removeChild(c) {
@@ -252,6 +260,13 @@ function boot(opts = {}) {
   // browser does.
   const preview = els["scale-preview"];
   const hitCache = { html: null, nodes: [] };
+  // Lane DR2b: where the plate sits on the screen. A hit circle's box is its
+  // viewBox circle scaled by k about (x0, y0), its radius by a further rk (the
+  // ring-mode growth sizePanHits does in a browser); the stub has no layout to ask.
+  const plate = { x0: 200, y0: 200, k: 1, rk: 1, gx: 0, gy: 0 };
+  preview.setPointerCapture = (id) => { preview._captured = id; };
+  preview.releasePointerCapture = (id) => { if (preview._captured === id) preview._captured = null; };
+  preview.hasPointerCapture = (id) => preview._captured === id;
   const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   const hitNodes = () => {
     const html = String(preview.innerHTML || "");
@@ -262,6 +277,12 @@ function boot(opts = {}) {
       for (const a of m[0].matchAll(/([\w:-]+)="([^"]*)"/g)) n.setAttribute(a[1], unesc(a[2]));
       n.classList.add("panhit");
       n.parentNode = preview;
+      n.getBoundingClientRect = () => {
+        const r = Number(n.getAttribute("r")) * plate.k * plate.rk;
+        const x = plate.x0 + Number(n.getAttribute("cx")) * plate.k;
+        const y = plate.y0 + Number(n.getAttribute("cy")) * plate.k;
+        return { left: x - r, right: x + r, top: y - r, bottom: y + r, width: 2 * r, height: 2 * r };
+      };
       n.closest = (sel) => (/(^|,\s*)\.panhit/.test(String(sel)) ? n : null);
       n.focus = () => { focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
       return n;
@@ -372,6 +393,11 @@ function boot(opts = {}) {
   // flushTimers() drains the queue in due order.
   const timers = new Map();
   let nextTimer = 1;
+  // Lane DR2b: a virtual clock. It moves only when a test calls advance(), so
+  // a timer set for 250 ms is due 250 ms later and no sooner. With opts.clock
+  // the app's Date.now() reads it too.
+  let now = 0;
+  const CLOCK_BASE = 1000000;
 
   const historyCalls = [];
   const location = makeLocation(opts.href || "https://example.test/index.html");
@@ -430,7 +456,16 @@ function boot(opts = {}) {
     },
     document: {
       getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
-      createElement: (tag) => { const e = bindFocus(makeElement("dyn", tag || "div")); created.push(e); return e; },
+      createElement: (tag) => {
+        const e = bindFocus(makeElement("dyn", tag || "div"));
+        e.getBoundingClientRect = () => {
+          const w = parseFloat(e.style.width) || 0, h = parseFloat(e.style.height) || 0;
+          const l = (parseFloat(e.style.left) || 0) + plate.gx, t = (parseFloat(e.style.top) || 0) + plate.gy;
+          return { left: l, top: t, right: l + w, bottom: t + h, width: w, height: h };
+        };
+        created.push(e);
+        return e;
+      },
       // D-12 (sequence-difficulty): renderSeqRail() groups a separator and a
       // chord name into one unit with a real text node between them, so the
       // stub needs a minimal one too - just enough to be appendChild'd and
@@ -454,7 +489,7 @@ function boot(opts = {}) {
     TextEncoder, btoa, atob,
     setTimeout(fn, ms, ...args) {
       const id = nextTimer++;
-      timers.set(id, { fn, ms: ms || 0, args, seq: id });
+      timers.set(id, { fn, ms: ms || 0, due: now + (ms || 0), args, seq: id });
       return id;
     },
     clearTimeout(id) { timers.delete(id); },
@@ -482,7 +517,7 @@ function boot(opts = {}) {
     // itself is only meaningfully exercised in the e2e suite, which drives a
     // real browser and a real viewport.
     matchMedia: (query) => ({
-      matches: false, media: query,
+      matches: !!opts.reducedMotion && /reduce/.test(query), media: query,
       addEventListener() {}, removeEventListener() {},
     }),
   };
@@ -511,15 +546,34 @@ function boot(opts = {}) {
     const i = l.indexOf(fn);
     if (i >= 0) l.splice(i, 1);
   };
+  if (opts.clock) {
+    sandbox.Date = class ClockDate extends Date {
+      static now() { return CLOCK_BASE + now; }
+      constructor(...a) { if (a.length) super(...a); else super(CLOCK_BASE + now); }
+    };
+  }
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(combinedSrc, sandbox, { filename: APP });
 
+  /** Move the virtual clock forward, running every timer that falls due on the way. */
+  function advance(ms) {
+    const end = now + ms;
+    for (;;) {
+      const next = [...timers.entries()].filter(([, t]) => t.due <= end)
+        .sort((a, b) => a[1].due - b[1].due || a[1].seq - b[1].seq)[0];
+      if (!next) break;
+      timers.delete(next[0]);
+      now = Math.max(now, next[1].due);
+      next[1].fn(...next[1].args);
+    }
+    now = end;
+  }
   /** Run queued setTimeout callbacks in due order until the queue is empty. */
   function flushTimers(maxRounds = 100) {
     for (let round = 0; round < maxRounds && timers.size; round++) {
-      const due = [...timers.entries()].sort((a, b) => a[1].ms - b[1].ms || a[1].seq - b[1].seq);
+      const due = [...timers.entries()].sort((a, b) => a[1].due - b[1].due || a[1].seq - b[1].seq);
       const [id, t] = due[0];
       timers.delete(id);
       t.fn(...t.args);
@@ -528,7 +582,7 @@ function boot(opts = {}) {
   }
 
   return {
-    els, store, sandbox, created, location, history, blocks, flushTimers,
+    els, store, sandbox, created, location, history, blocks, flushTimers, advance, plate,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
     run: (stmt) => vm.runInContext(stmt, sandbox),
@@ -594,6 +648,18 @@ function boot(opts = {}) {
     /** Deliver a click or a key to an element, bubbling like a browser. */
     click: (el, init = {}) => fire(el, { type: "click", ...init }),
     press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
+    /** A pointer event. Once the plate has captured the pointer the event goes
+     *  to the plate, as a browser would deliver it; `el` is where it would have
+     *  gone otherwise. */
+    pointer: (el, type, init = {}) => {
+      const id = init.pointerId === undefined ? 1 : init.pointerId;
+      const to = type !== "pointerdown" && preview._captured === id ? preview : el;
+      return fire(to, { type, pointerId: id, pointerType: "touch", isPrimary: true, button: 0, buttons: 1,
+        clientX: 0, clientY: 0, ...init });
+    },
+    /** A touchmove, to the node the touch began on. */
+    touchmove: (el, init = {}) => fire(el, { type: "touchmove", touches: [{}], cancelable: true, ...init }),
+    contextmenu: (el) => fire(el, { type: "contextmenu" }),
     /** The id of the focused element, or null. */
     activeId: () => (focusState.active ? focusState.active.id : null),
     /** True while the scale sheet is open. */

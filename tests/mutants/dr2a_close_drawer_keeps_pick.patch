@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8996,7 +8996,6 @@ function closeDrawer(viaToggle) {
-   cancelGesture();
+@@ -9025,7 +9025,6 @@ function closeDrawer(viaToggle) {
+   previewBox.removeEventListener("touchmove", plateTouchMove, { passive: false });
    drawerOpen = false;
    drawerPaused = false;
 -  pickRef = null;
