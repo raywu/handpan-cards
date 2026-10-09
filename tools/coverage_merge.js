@@ -398,7 +398,8 @@ function problems(browserDir) {
     if (b.endsWith(".incomplete.json")) bad.push({ file: b, reason: "a takePreciseCoverage/CSS take failed: " + (readJSON(f).error || "") });
     else if (b.startsWith("session-")) {
       const s = readJSON(f);
-      if (!s.closed) bad.push({ file: b, reason: "browser session never reached close(); its last take is missing", suite: s.suite });
+      const probe = !s.suite && !fs.readdirSync(path.dirname(f)).some((n) => n.startsWith(`browser-${s.tag}-`));
+      if (!s.closed && !probe) bad.push({ file: b, reason: "browser session never reached close(); its last take is missing", suite: s.suite });
     }
   }
   return bad;

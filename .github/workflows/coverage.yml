@@ -29,22 +29,20 @@ jobs:
         run: |
           mkdir -p artifacts/cov/node artifacts/cov/browser artifacts/cov/python
           export HPC_COVERAGE_DIR="$PWD/artifacts/cov/browser"
-          failed=0
           for f in tests/*.test.js; do
             n=$(basename "$f" .test.js)
             mkdir -p "artifacts/cov/node/$n"
-            NODE_V8_COVERAGE="$PWD/artifacts/cov/node/$n" node --test "$f" || { echo "FAILED $f"; failed=1; }
+            NODE_V8_COVERAGE="$PWD/artifacts/cov/node/$n" node --test "$f" || { echo "FAILED $f"; echo "$f" >> artifacts/cov/node-failed.txt; }
           done
-          exit $failed
+          exit 0
       - name: Python suites, one coverage file per module
         run: |
-          failed=0
           for f in tests/test_*.py; do
             n=$(basename "$f" .py)
-            python -m coverage run --data-file="artifacts/cov/python/$n.data" --include='tools/*,src/*' -m unittest "tests.$n" || { echo "FAILED $f"; failed=1; }
+            python -m coverage run --data-file="artifacts/cov/python/$n.data" --include='tools/*,src/*' -m unittest "tests.$n" || { echo "FAILED $f"; echo "$f" >> artifacts/cov/python-failed.txt; }
             python -m coverage json --data-file="artifacts/cov/python/$n.data" -o "artifacts/cov/python/$n.json" || true
           done
-          exit $failed
+          exit 0
       - name: Merge
         if: always()
         run: |

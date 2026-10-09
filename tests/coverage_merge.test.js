@@ -125,6 +125,14 @@ test("a browser session that never reached close() also refuses a report", () =>
   assert.throws(() => buildReport({ browser: dir }), /incomplete/);
 });
 
+test("an unclosed session with no suite and no takes (a node -e probe killed on purpose) is not an incomplete run", () => {
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, "session-9-0.json"), JSON.stringify({ tag: "9-0", suite: "", closed: false }));
+  assert.doesNotThrow(() => buildReport({ browser: dir }));
+  fs.writeFileSync(path.join(dir, "browser-9-0-0.json"), JSON.stringify({ coverage: [], scripts: {} }));
+  assert.throws(() => buildReport({ browser: dir }), /incomplete/);
+});
+
 // ---------------------------------------------------------------------------
 // Merge: attribution.
 // ---------------------------------------------------------------------------
