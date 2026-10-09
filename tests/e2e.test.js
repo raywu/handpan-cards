@@ -2849,11 +2849,12 @@ function run() {
       `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
     const got = JSON.parse(r.stdout.trim().split("\n").pop());
 
-    // The deck the app just generated, counted the app's own way: the full
-    // variant is the chords plus a title card and a legend card, padded to
-    // whole 3x3 pages. Nothing here is a literal the emitter could drift from.
+    // The deck the app just generated, counted the app's own way: the button
+    // builds the chord-only variant (lane PM, 2026-10-08), so one card per
+    // chord, padded to whole 3x3 pages. Nothing here is a literal the emitter
+    // could drift from.
     const want = await b.eval(`
-      const n = deck().chords.length + 2;
+      const n = deck().chords.length;
       return { pages: Math.ceil(n / 9), cards: n };`);
 
     assert.strictEqual(got.pages, want.pages,
@@ -11631,31 +11632,20 @@ function run() {
       }
       assert.ok(n > 0);
     });
-    test("PMDUMP", async () => {
-      const keys = new Set();
-      for (const t of [MAIN_NEEDED_P, MAIN_NEEDED_L, MAIN_NEEDED_S]) for (const k of Object.keys(t[tableKey("fallback")])) keys.add(k);
-      const extra = ["667x375", "1024x700", "740x360", "740x340", "812x330", "926x310", "568x312"];
-      const out = {};
-      for (const [fm, br] of Object.entries(fonts)) {
-        out[fm] = {};
-        for (const key of [...keys, ...extra]) {
-          const [w, h] = key.split("x").map(Number);
-          await br.setViewport(w, h, false);
-          await br.settle();
-          out[fm][key] = await br.eval(`
-            return ["A", "B", "S"].map((m) => {
-              const c = window.__pf.one(m);
-              const ph = document.getElementById("panel-prog-heading");
-              const row = document.getElementById("res-amy-progressions").parentElement;
-              row.style.display = "none"; const c2 = window.__pf.one(m); row.style.display = "";
-              return { n: c.needed, nNoAmy: c2.needed, ch: c.avail,
-                g: [...document.querySelectorAll("#settings-panel > .panel-group")].map((g) => g.getBoundingClientRect().height),
-                hg: ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop) };
-            });`);
-        }
+    for (let chunk = 0; chunk < 8; chunk++) test("PMDUMP" + chunk, async () => {
+      const keys = Object.keys(MAIN_NEEDED_L[tableKey("fallback")]).slice(chunk * 4, chunk * 4 + 4);
+      const br = fonts.fallback;
+      const parts = [];
+      for (const key of keys) {
+        const [w, h] = key.split("x").map(Number);
+        await br.setViewport(w, h, false);
+        await br.settle();
+        const r = await br.eval(`
+          const ph = document.getElementById("panel-prog-heading");
+          return [["A", "B", "S"].map((m) => window.__pf.one(m).needed), ph.getBoundingClientRect().height + parseFloat(getComputedStyle(ph).marginTop)];`);
+        parts.push(key + "=" + r[0].join(",") + "/" + r[1]);
       }
-      require("node:fs").writeFileSync(process.env.PMDUMP_FILE || "/dev/null", JSON.stringify(out));
-      if (process.platform === "linux") assert.fail("PMDUMP_BEGIN " + JSON.stringify(out) + " PMDUMP_END");
+      if (process.platform === "linux") assert.fail("PMDUMP " + parts.join(" ") + " END");
     });
     edgeTest(MAIN_NEEDED_P, MAIN_GROUPS_P, (w, h) => !isLandscape(w, h) && !isSidebar(w, h), "portrait");
     edgeTest(MAIN_NEEDED_L, MAIN_GROUPS_L, isLandscape, "landscape", L_DELTA);
