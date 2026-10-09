@@ -297,6 +297,8 @@ AMARA10 = _from_canonical("amara10")
 TITLE_WARNINGS = {"SMALL_LABELS": "CROWDED PAN: SMALL LABELS"}
 
 
+# Title and legend card copy: read only by the full-deck path (hifi.title_card and
+# hifi.legend_card), unused since 2026-10-08, kept by owner decision.
 def _blurb(spec, chord_count, warnings=()):
     """Title-card copy: the pan's own notes, the deck size, any warning."""
     def line(zone_test):
@@ -313,12 +315,16 @@ def _blurb(spec, chord_count, warnings=()):
     out.append("%d CHORD%s - ONE CARD PER CHORD"
                % (chord_count, "S" if chord_count != 1 else ""))
     # A NO_THIRDS pan would otherwise print with no sign anywhere on the sheets
-    # that the app had flagged it; the engine's own reason string, verbatim.
+    # that the app had flagged it; a code with no short line here prints the
+    # engine's own reason string, upper-cased.
     for w in warnings:
-        out.append(TITLE_WARNINGS.get(w["code"], w["reason"].upper()))
+        out.append(TITLE_WARNINGS[w["code"]] if w["code"] in TITLE_WARNINGS
+                   else w["reason"].upper())
     return out
 
 
+# Title and legend card copy: read only by the full-deck path (hifi.title_card and
+# hifi.legend_card), unused since 2026-10-08, kept by owner decision.
 def _legend_lines(spec, has_bottom):
     tops = [k for k in spec if k != "_geom" and spec[k][3] in ("rim", "inner")]
     bottoms = [k for k in spec if k != "_geom" and spec[k][3] == "bottom"]
@@ -334,6 +340,8 @@ def _legend_lines(spec, has_bottom):
     return lines
 
 
+# Title and legend card copy: read only by the full-deck path (hifi.title_card and
+# hifi.legend_card), unused since 2026-10-08, kept by owner decision.
 def _legend_demo(spec, chords):
     """(field to light, field to light as root) for the how-to-read card."""
     if chords:

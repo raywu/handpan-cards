@@ -462,13 +462,18 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         small, _reason = self.small_labels_deck()
         no_thirds = decks.from_generated(generate(SEED_NO_THIRDS))
         for label, deck in (("SMALL_LABELS", small), ("NO_THIRDS", no_thirds)):
+            self.assertTrue(deck["warnings"], "%s: this seed earns no warning" % label)
             for w in deck["warnings"]:
                 line = decks.TITLE_WARNINGS.get(w["code"], w["reason"].upper())
                 self.assertIn(line, deck["blurb"])
-                width = hifi.tw(line, "Label", 4.2, 0.35)
+                width = hifi.tw(line, "Label", hifi.BLURB_SIZE, hifi.BLURB_TRACK)
                 with self.subTest(warning=label):
                     self.assertLessEqual(width, hifi.CW - 24,
                                          "%s line is %.1f pt" % (label, width))
+
+    def test_a_known_warning_code_prints_without_a_reason_string(self):
+        lines = decks._blurb(decks.KURD["spec"], 3, [{"code": "SMALL_LABELS"}])
+        self.assertEqual(lines[-1], decks.TITLE_WARNINGS["SMALL_LABELS"])
 
     def crowded_deck(self):
         return decks.from_generated(generate(SEED_CROWDED_NO_THIRDS))
@@ -481,9 +486,18 @@ class GeneratedDeckKeyTest(unittest.TestCase):
         self.assertGreater(hifi.tw(deck["blurb"][0], "Label", 4.2, 0.35),
                            hifi.CW - 24, "the unwrapped note line must overflow")
         layout = hifi.blurb_layout(deck["blurb"])
-        for text, _bottom in layout["rows"]:
-            self.assertLessEqual(hifi.tw(text, "Label", layout["size"], 0.35),
+        rows = [t for t, _bottom in layout["rows"]]
+        for text in rows:
+            self.assertLessEqual(hifi.tw(text, "Label", hifi.BLURB_SIZE, hifi.BLURB_TRACK),
                                  hifi.CW - 24, text)
+        for line, nxt in zip(rows, rows[1:]):
+            if line.startswith("BOTTOM") != nxt.startswith("BOTTOM"):
+                continue
+            parts = nxt.split("  ")
+            first = "  ".join(parts[:2]) if parts[1:2] == ["|"] else parts[0]
+            self.assertGreater(
+                hifi.tw(line + "  " + first, "Label", hifi.BLURB_SIZE, hifi.BLURB_TRACK),
+                hifi.CW - 24, "a row broke early: %r then %r" % (line, nxt))
         notes = [t for t, b in layout["rows"][:2]]
         self.assertTrue(notes[0].startswith("C3  |  D3"))
         self.assertTrue(notes[1].endswith("D9"))
