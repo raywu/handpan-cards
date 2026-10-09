@@ -1,0 +1,14 @@
+# kills: R4-E decode refuses an options line with the wrong number of fields, a palette or parent that is not a count
+# suite: node --test --test-name-pattern ^R4.E.decode.refuses.an.options.line.with.the.wrong.number.of.fields..a.palette.or.parent.that.is.not.a.count$ tests/share.test.js
+# R4-E: an options line of any width is read.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -241,7 +241,6 @@
+   function readOptionsLine(line, version) {
+     var parts = String(line).split(FIELD_SEP);
+     var v3 = version >= 3;
+-    if (parts.length !== (v3 ? 5 : 4)) return null;
+     if (!UINT_RE.test(parts[0])) return null;
+     if (parts[1] !== "" && !UINT_RE.test(parts[1])) return null;
+     var m = parts[2];

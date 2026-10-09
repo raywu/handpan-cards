@@ -1,0 +1,15 @@
+# kills: R4-E encode refuses a value that is not a seed, writes a seed with no options as the defaults, and refuses an over-cap link
+# suite: node --test --test-name-pattern ^R4.E.encode.refuses.a.value.that.is.not.a.seed..writes.a.seed.with.no.options.as.the.defaults..and.refuses.an.over.cap.link$ tests/share.test.js
+# R4-E: a seed with no options is written with palette 1.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -215,7 +215,7 @@
+   }
+ 
+   function optionsLine(options) {
+-    var opts = options || {};
++    var opts = options || {palette: 1};
+     var palette = opts.palette === undefined || opts.palette === null
+       ? 0 : opts.palette;
+     var parent = opts.parent === undefined || opts.parent === null

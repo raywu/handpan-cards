@@ -1,0 +1,14 @@
+# kills: R4-E decode refuses a payload of two or four lines
+# suite: node --test --test-name-pattern ^R4.E.decode.refuses.a.payload.of.two.or.four.lines$ tests/share.test.js
+# R4-E: a payload of the wrong number of lines is read.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -393,7 +393,6 @@
+     if (payload === null) return badNote(text);
+ 
+     var lines = payload.split(SEP);
+-    if (lines.length !== LINES) return badNote(text);
+ 
+     // Line 2 is the layout-delta section: empty in v1, the correction in v2.
+     // The LINE COUNT is the same in both - only what may stand here changes.
