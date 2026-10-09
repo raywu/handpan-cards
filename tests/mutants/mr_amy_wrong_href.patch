@@ -1,5 +1,5 @@
-# kills: the settings panel has exactly one Resources group with its five outbound links in two rows
-# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.five.outbound.links.in.two.rows$ tests/e2e.test.js
+# kills: the settings panel has exactly one Resources group with its six outbound links in three rows
+# suite: node --test --test-name-pattern ^the.settings.panel.has.exactly.one.Resources.group.with.its.six.outbound.links.in.three.rows$ tests/e2e.test.js
 # menu-resources AD7. #res-amy-progressions points at the wrong video.
 diff --git a/index.html b/index.html
 --- a/index.html

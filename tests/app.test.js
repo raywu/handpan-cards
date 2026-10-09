@@ -3645,12 +3645,12 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the first Resources link, a Google Doc in a new tab, alone in its row", () => {
+test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
   assert.ok(links.length >= 6, "six Resources links");
-  const first = links[0];
+  const first = links[links.length - 1];
   assert.match(first, /\bid="res-handpan-101"/);
   assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
   assert.match(first, /target="_blank"/);
@@ -3661,10 +3661,10 @@ test("PM rule 7: HANDPAN 101 is the first Resources link, a Google Doc in a new 
   assert.match(first, />HANDPAN 101<\/a>/);
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
   assert.strictEqual(rows.length, 3, "three modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
-  assert.ok(rows[0][2].includes("res-handpan-101"));
-  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
+  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
+  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
+  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 1, "HANDPAN 101 is alone in its row");
+  assert.ok(rows[2][2].includes("res-handpan-101"));
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored

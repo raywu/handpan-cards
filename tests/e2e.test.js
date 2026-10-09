@@ -1351,15 +1351,15 @@ function run() {
   // Amy Naylor videos, docs/plans/2026-10-05-menu-resources-amy.md). Every
   // list of Resources ids in this file derives from here.
   const RESOURCES = [
-    { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 0,
-      aria: "Handpan 101 (Google Doc)" },
-    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 1 },
-    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 1 },
-    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 1 },
-    { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 2,
+    { id: "res-handpaner", href: "https://handpaner.com/", label: "HANDPANER", row: 0 },
+    { id: "res-dingandtones", href: "https://www.dingandtones.com/", label: "DING & TONES", row: 0 },
+    { id: "res-trainingcards", href: "https://svenkirchhofer.de/handpan-training-cards/", label: "HTC", row: 0 },
+    { id: "res-amy-progressions", href: "https://youtu.be/-BD13QhFJ-M", label: "AMY: PROGRESSIONS", row: 1,
       aria: "Amy Naylor: ten handpan chord progressions (YouTube)" },
-    { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 2,
+    { id: "res-amy-bottom", href: "https://youtu.be/0hMIUnA5-OI", label: "AMY: BOTTOM NOTES", row: 1,
       aria: "Amy Naylor: more interesting chords with bottom notes (YouTube)" },
+    { id: "res-handpan-101", href: "https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk", label: "HANDPAN 101", row: 2,
+      aria: "Handpan 101 (Google Doc)" },
   ];
   const RES_IDS = RESOURCES.map((r) => r.id);
   const RES_IDS_JS = JSON.stringify(RES_IDS);
@@ -1825,8 +1825,8 @@ function run() {
       };
     `);
     assert.strictEqual(m.headingCount, 1, "expected exactly one Resources heading");
-    assert.deepStrictEqual(m.rowSizes, [1, 3, 2], "expected three rows holding one, three then two links");
-    assert.strictEqual(m.links.length, 6, `expected 5 links in the Resources group, got ${JSON.stringify(m.links)}`);
+    assert.deepStrictEqual(m.rowSizes, [3, 2, 1], "expected three rows holding three, two then one links");
+    assert.strictEqual(m.links.length, 6, `expected 6 links in the Resources group, got ${JSON.stringify(m.links)}`);
     m.links.forEach((link, i) => {
       const expected = RESOURCES[i];
       assert.strictEqual(link.id, expected.id, `link ${i} id mismatch: ${JSON.stringify(link)}`);
@@ -11655,7 +11655,7 @@ function run() {
         }
       }
       require("node:fs").writeFileSync(process.env.PMDUMP_FILE || "/dev/null", JSON.stringify(out));
-      console.log("PMDUMP_BEGIN " + process.platform + " " + JSON.stringify(out) + " PMDUMP_END");
+      if (process.platform === "linux") assert.fail("PMDUMP_BEGIN " + JSON.stringify(out) + " PMDUMP_END");
     });
     edgeTest(MAIN_NEEDED_P, MAIN_GROUPS_P, (w, h) => !isLandscape(w, h) && !isSidebar(w, h), "portrait");
     edgeTest(MAIN_NEEDED_L, MAIN_GROUPS_L, isLandscape, "landscape", L_DELTA);

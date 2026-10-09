@@ -70,11 +70,11 @@
 # second row (the two Amy links); the moved copy was regenerated from the
 # current element. The mutation itself is unchanged.
 # Re-cut 2026-10-05 (refactor pass 3, AP-2): the .prints tag lost its onclick; the moved copy follows it. The mutation itself is unchanged.
-# Re-cut 2026-10-08 (lane PM): the print group is one DOWNLOAD PDF button and Resources gained HANDPAN 101; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
+# Re-cut 2026-10-08 (lane PM): the print group is one DOWNLOAD PDF button and Resources gained HANDPAN 101 as its last row; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1130,6 +1130,89 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1131,6 +1131,89 @@ footer.seq{row-gap:var(--sp-1)}
    <!-- "+ Add a scale" lives in the settings panel's Scales group now (M2,
         2026-09-28); #decks holds deck chips only. -->
    <nav class="decks" id="decks"></nav>
@@ -133,16 +133,10 @@ diff --git a/index.html b/index.html
 +    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
 +         pattern as the Practice buttons) rather than stacked 44px rows -
 +         stacked overflowed the 320x568 fit test by 18px. Row one holds
-+         HANDPAN 101 alone (2026-10-08, full width, above the sites), row two the
-+         three sites (class trio: equal widths above the landscape grid, two
-+         equal on line one in the sidebar), row three (class duo: one line, labels wrap inside their
-+         boxes) the two Amy Naylor videos. -->
-+    <div class="modebar">
-+      <a class="mode" id="res-handpan-101"
-+         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
-+         aria-label="Handpan 101 (Google Doc)"
-+         target="_blank" rel="noopener">HANDPAN 101</a>
-+    </div>
++         the three sites (class trio: equal widths above the landscape grid, two
++         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
++         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
++         full width, LAST so no existing control moves down). -->
 +    <div class="modebar trio">
 +      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 +         target="_blank" rel="noopener">HANDPANER</a>
@@ -159,12 +153,18 @@ diff --git a/index.html b/index.html
 +         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 +         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
 +    </div>
++    <div class="modebar">
++      <a class="mode" id="res-handpan-101"
++         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
++         aria-label="Handpan 101 (Google Doc)"
++         target="_blank" rel="noopener">HANDPAN 101</a>
++    </div>
 +  </div>
 +</div>
  </header>
  
  <main>
-@@ -1348,89 +1431,6 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1349,89 +1432,6 @@ footer.seq{row-gap:var(--sp-1)}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -223,16 +223,10 @@ diff --git a/index.html b/index.html
 -    <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
 -         pattern as the Practice buttons) rather than stacked 44px rows -
 -         stacked overflowed the 320x568 fit test by 18px. Row one holds
--         HANDPAN 101 alone (2026-10-08, full width, above the sites), row two the
--         three sites (class trio: equal widths above the landscape grid, two
--         equal on line one in the sidebar), row three (class duo: one line, labels wrap inside their
--         boxes) the two Amy Naylor videos. -->
--    <div class="modebar">
--      <a class="mode" id="res-handpan-101"
--         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
--         aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener">HANDPAN 101</a>
--    </div>
+-         the three sites (class trio: equal widths above the landscape grid, two
+-         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
+-         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+-         full width, LAST so no existing control moves down). -->
 -    <div class="modebar trio">
 -      <a class="mode" id="res-handpaner" href="https://handpaner.com/"
 -         target="_blank" rel="noopener">HANDPANER</a>
@@ -248,6 +242,12 @@ diff --git a/index.html b/index.html
 -      <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
 -         aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
 -         target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
+-    </div>
+-    <div class="modebar">
+-      <a class="mode" id="res-handpan-101"
+-         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
+-         aria-label="Handpan 101 (Google Doc)"
+-         target="_blank" rel="noopener">HANDPAN 101</a>
 -    </div>
 -  </div>
 -</div>

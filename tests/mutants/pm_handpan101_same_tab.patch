@@ -1,15 +1,15 @@
-# kills: PM rule 7: HANDPAN 101 is the first Resources link, a Google Doc in a new tab, alone in its row
+# kills: PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, alone in its row
 # suite: node --test --test-name-pattern PM.rule.7 tests/app.test.js
 # Lane PM. HANDPAN 101 loses target=_blank, so it replaces the app in the same tab.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1411,7 +1411,7 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1428,7 +1428,7 @@ footer.seq{row-gap:var(--sp-1)}
        <a class="mode" id="res-handpan-101"
           href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
           aria-label="Handpan 101 (Google Doc)"
 -         target="_blank" rel="noopener">HANDPAN 101</a>
 +         rel="noopener">HANDPAN 101</a>
      </div>
-     <div class="modebar trio">
-       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
+   </div>
+ </div>

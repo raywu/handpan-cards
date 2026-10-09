@@ -556,6 +556,7 @@ main{overflow-x:clip}
   border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
   white-space:nowrap; -webkit-appearance:none; appearance:none}
 .prints button, .prints select{flex:1 1 auto}
+.prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}
 .prints button, .prints select{text-align:center; text-align-last:center}
 .prints button:hover, .prints button:focus-visible,
 .prints select:hover, .prints select:focus-visible{background:#2a251c}
@@ -1403,16 +1404,10 @@ footer.seq{row-gap:var(--sp-1)}
     <!-- Plan risk "no scroll budget", fallback 1: .modebar-style rows (same
          pattern as the Practice buttons) rather than stacked 44px rows -
          stacked overflowed the 320x568 fit test by 18px. Row one holds
-         HANDPAN 101 alone (2026-10-08, full width, above the sites), row two the
-         three sites (class trio: equal widths above the landscape grid, two
-         equal on line one in the sidebar), row three (class duo: one line, labels wrap inside their
-         boxes) the two Amy Naylor videos. -->
-    <div class="modebar">
-      <a class="mode" id="res-handpan-101"
-         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
-         aria-label="Handpan 101 (Google Doc)"
-         target="_blank" rel="noopener">HANDPAN 101</a>
-    </div>
+         the three sites (class trio: equal widths above the landscape grid, two
+         equal on line one in the sidebar), row two (class duo: one line, labels wrap inside their
+         boxes) the two Amy Naylor videos, row three HANDPAN 101 alone (2026-10-08,
+         full width, LAST so no existing control moves down). -->
     <div class="modebar trio">
       <a class="mode" id="res-handpaner" href="https://handpaner.com/"
          target="_blank" rel="noopener">HANDPANER</a>
@@ -1428,6 +1423,12 @@ footer.seq{row-gap:var(--sp-1)}
       <a class="mode" id="res-amy-bottom" href="https://youtu.be/0hMIUnA5-OI"
          aria-label="Amy Naylor: more interesting chords with bottom notes (YouTube)"
          target="_blank" rel="noopener">AMY: BOTTOM NOTES</a>
+    </div>
+    <div class="modebar">
+      <a class="mode" id="res-handpan-101"
+         href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
+         aria-label="Handpan 101 (Google Doc)"
+         target="_blank" rel="noopener">HANDPAN 101</a>
     </div>
   </div>
 </div>
