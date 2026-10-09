@@ -1,0 +1,15 @@
+# kills: a title card prints the BOTTOM row of the note blurb in orange, and the other rows in the separator grey
+# suite: node --test --test-name-pattern ^a.title.card.prints.the.BOTTOM.row.of.the.note.blurb.in.orange..and.the.other.rows.in.the.separator.grey$ tests/pdfcards.test.js
+# R4-E: the BOTTOM row of the title blurb is never orange.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -539,7 +539,7 @@
+     var lay = blurbLayout(deck.blurb);
+     lay.rows.forEach(function (row, i) {
+       tracked(c, x + CW / 2, y + BLURB_Y0 - i * lay.step, row.text, "Label",
+-              lay.size, BLURB_TRACK, "c", row.bottom ? ORANGE : SEP);
++              lay.size, BLURB_TRACK, "c", SEP);
+     });
+   }
+ 

@@ -647,6 +647,8 @@ HPE.pdfcards = (function () {
     GEOM: GEOM,
     PAPER: PAPER,
     CARD_WARNINGS: CARD_WARNINGS,
+    labelRatio: labelRatio,
+    labelSize: labelSize,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,

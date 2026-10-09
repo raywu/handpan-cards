@@ -1,0 +1,15 @@
+# kills: a warning code that is an Object.prototype name is not a known code: pdfdeck prints its reason, pdfcards draws no badge
+# suite: node --test --test-name-pattern ^a.warning.code.that.is.an.Object.prototype.name.is.not.a.known.code..pdfdeck.prints.its.reason..pdfcards.draws.no.badge$ tests/pdfcards.test.js
+# R4-E: the TITLE_WARNINGS lookup reads inherited keys, so code 'constructor' prints a function.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -114,7 +114,7 @@
+     // that the app had flagged it; the engine's own reason string, verbatim, unless TITLE_WARNINGS has a
+     // shorter line that fits the card.
+     warnings.forEach(function (w) {
+-      out.push(Object.prototype.hasOwnProperty.call(TITLE_WARNINGS, w.code)
++      out.push(TITLE_WARNINGS[w.code]
+         ? TITLE_WARNINGS[w.code] : String(w.reason).toUpperCase());
+     });
+     return out;

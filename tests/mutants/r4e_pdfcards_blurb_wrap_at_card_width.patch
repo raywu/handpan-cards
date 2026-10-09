@@ -1,0 +1,15 @@
+# kills: blurbLayout wraps a note line at the card width less 24 pt, and never lets a step go under 1.2 x the 3.6 pt floor
+# suite: node --test --test-name-pattern ^blurbLayout.wraps.a.note.line.at.the.card.width.less.24.pt..and.never.lets.a.step.go.under.1.2.x.the.3.6.pt.floor$ tests/pdfcards.test.js
+# R4-E: a blurb row wraps at the card width instead of the width less the frame.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -510,7 +510,7 @@
+   function blurbLayout(lines) {
+     var rows = [];
+     lines.forEach(function (ln) {
+-      wrapBlurbLine(ln, CW - 24).forEach(function (part) {
++      wrapBlurbLine(ln, CW).forEach(function (part) {
+         rows.push({ text: part, bottom: ln.indexOf("BOTTOM") === 0 });
+       });
+     });

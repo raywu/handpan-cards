@@ -1,0 +1,15 @@
+# kills: blurbLayout wraps a note line at the card width less 24 pt, and never lets a step go under 1.2 x the 3.6 pt floor
+# suite: node --test --test-name-pattern ^blurbLayout.wraps.a.note.line.at.the.card.width.less.24.pt..and.never.lets.a.step.go.under.1.2.x.the.3.6.pt.floor$ tests/pdfcards.test.js
+# R4-E: the blurb size floor is dropped.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -519,7 +519,7 @@
+     if (rows.length > 1 && (rows.length - 1) * step > room) {
+       var f = room / ((rows.length - 1) * step);
+       step = Math.max(step * f, BLURB_MIN_STEP);
+-      size = Math.max(BLURB_SIZE * f, BLURB_FLOOR);
++      size = BLURB_SIZE * f;
+     }
+     return { rows: rows, size: size, step: step };
+   }

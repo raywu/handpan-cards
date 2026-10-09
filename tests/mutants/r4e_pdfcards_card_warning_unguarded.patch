@@ -1,0 +1,15 @@
+# kills: a warning code that is an Object.prototype name is not a known code: pdfdeck prints its reason, pdfcards draws no badge
+# suite: node --test --test-name-pattern ^a.warning.code.that.is.an.Object.prototype.name.is.not.a.known.code..pdfdeck.prints.its.reason..pdfcards.draws.no.badge$ tests/pdfcards.test.js
+# R4-E: the CARD_WARNINGS lookup reads inherited keys.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -432,7 +432,7 @@
+ 
+   function cardWarnings(deck) {
+     return (deck.warnings || []).filter(function (w) {
+-      return Object.prototype.hasOwnProperty.call(CARD_WARNINGS, w.code);
++      return CARD_WARNINGS[w.code];
+     }).map(function (w) { return CARD_WARNINGS[w.code]; });
+   }
+ 

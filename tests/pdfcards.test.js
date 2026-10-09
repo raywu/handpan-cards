@@ -359,10 +359,10 @@ test("fromGenerated prints the short line for SMALL_LABELS and the capitalised r
     const value = Object.assign({}, built.value, { warnings: warnings });
     return HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: value });
   }
-  const crowded = deckWith([{ code: "SMALL_LABELS", reason: "Crowded pan: the smallest labels print at 3.4 pt, under the 3.6 pt this app treats as readable. Nothing is left out." }]);
+  const crowded = deckWith([{ code: "SMALL_LABELS", reason: E.core.REASONS.SMALL_LABELS.reason.replace("<N>", "3.4") }]);
   assert.equal(crowded.blurb.filter((l) => l === "CROWDED PAN: SMALL LABELS").length, 1);
   assert.ok(!crowded.blurb.some((l) => /3\.6 PT/.test(l)));
-  const reason = "No 3rds on this pan: only power chords and sus chords.";
+  const reason = E.core.REASONS.NO_THIRDS.reason;
   const quiet = deckWith([{ code: "NO_THIRDS", reason: reason }]);
   assert.ok(quiet.blurb.includes(reason.toUpperCase()));
 });
@@ -443,4 +443,220 @@ test("rule N: the browser PDF prints the seat number on the diagram and the numb
   const plain = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: E.select.build(parsed.value).value });
   assert.notStrictEqual(latin1(P.build(deck, { variant: "shop" })), latin1(P.build(plain, { variant: "shop" })),
     "a moved deck printed the same bytes as the unmoved one, so the diagram numbers did not follow the seats");
+});
+
+/* ------------------------------------------------------------------ *
+ * Lane E (refactor pass 4): the paths only index.html reached before
+ * ------------------------------------------------------------------ */
+const ORANGE_RGB = [0.8863, 0.4392, 0.0196];
+
+// "r g b rg" fills and "BT /Fn size Tf ... (s) Tj ET" runs, in order, so a
+// test can read the size and colour each run was actually drawn with.
+function textRuns(bytes) {
+  const text = latin1(bytes);
+  const re = /([\d.]+) ([\d.]+) ([\d.]+) rg|\/F\d+ ([\d.]+) Tf [^\n]*?\(((?:\\.|[^()\\])*)\) Tj/g;
+  var m, fill = null;
+  const runs = [];
+  while ((m = re.exec(text))) {
+    if (m[5] !== undefined) runs.push({ s: m[5], size: Number(m[4]), col: fill });
+    else fill = [Number(m[1]), Number(m[2]), Number(m[3])];
+  }
+  return runs;
+}
+
+function dashCount(bytes, on) {
+  return (latin1(bytes).match(new RegExp("\\[" + on + " " + on + "\\] 0 d", "g")) || []).length;
+}
+
+function sameRgb(a, b) {
+  return a.every((v, i) => Math.abs(v - b[i]) < 1e-4);
+}
+
+function pygmyDeck() {
+  const canonical = DECK_DATA.find((d) => d.id === "pygmy");
+  return HPE.pdfdeck.fromBuiltin(canonical, canonical.print);
+}
+
+// One card on one sheet: the Pygmy deck cut down to the named chord.
+function pygmyCard(main, fields) {
+  const deck = pygmyDeck();
+  const chord = deck.chords.find((c) => c[0] + c[1] === main && String(c[3]) === String(fields));
+  assert.ok(chord, "fixture assumption: Pygmy ships " + main + " " + fields);
+  return { deck: deck, chord: chord,
+           bytes: P.build(Object.assign({}, deck, { chords: [chord] }), { variant: "shop" }) };
+}
+
+test("Canvas.setDash: one argument is both dash and gap, two are dash and gap, none clears", () => {
+  const calls = [];
+  const page = { setDash: (...a) => calls.push(a) };
+  const c = new P._internal.Canvas(page);
+  c.setDash(2.2);
+  c.setDash(1.6, 0.4);
+  c.setDash();
+  assert.deepEqual(calls, [[2.2, 2.2], [1.6, 0.4], [0]]);
+});
+
+test("a bottom-shell pan draws the dashed bottom orbit once and one dashed ring per unlit bottom field", () => {
+  const { deck, chord, bytes } = pygmyCard("Cm7", [101, 103, 1, 104]);
+  const pcs = chord[3].map((f) => HPE.core.pc(deck.spec[f][2]));
+  const unlit = Object.keys(deck.spec).filter((k) => k !== "_geom" &&
+    deck.spec[k][3] === "bottom" && pcs.indexOf(HPE.core.pc(deck.spec[k][2])) < 0);
+  assert.ok(unlit.length >= 1 && unlit.length < 6, "fixture assumption: some bottom fields stay unlit");
+  assert.equal(dashCount(bytes, "2.2"), 1, "the bottom orbit");
+  assert.equal(dashCount(bytes, "1.6"), unlit.length, "off-bottom rings");
+  const plain = P.build(Object.assign({}, fixture(), { chords: [fixture().chords[0]] }), { variant: "shop" });
+  assert.equal(dashCount(plain, "2.2") + dashCount(plain, "1.6"), 0, "a pan with no bottom shell draws neither");
+});
+
+test("bottom-shell index numbers print in the orange accent", () => {
+  const { deck, chord, bytes } = pygmyCard("Cm7", [101, 103, 1, 104]);
+  const pcs = chord[3].map((f) => HPE.core.pc(deck.spec[f][2]));
+  const unlit = Object.keys(deck.spec).filter((k) => k !== "_geom" &&
+    deck.spec[k][3] === "bottom" && pcs.indexOf(HPE.core.pc(deck.spec[k][2])) < 0);
+  const runs = textRuns(bytes);
+  unlit.forEach((k) => {
+    const hits = runs.filter((r) => r.s === deck.spec[k][5]);
+    assert.equal(hits.length, 1, "field " + k + " is on the diagram only: " + deck.spec[k][5]);
+    assert.ok(sameRgb(hits[0].col, ORANGE_RGB), "field " + k + " number is not orange");
+  });
+  const rim = runs.filter((r) => r.s === deck.spec["5"][5]);
+  assert.ok(rim.length >= 1 && rim.every((r) => !sameRgb(r.col, ORANGE_RGB)), "a rim number is not orange");
+});
+
+test("a card voicing bottom-shell fields says how many, in orange, singular for one", () => {
+  const one = pygmyCard("Cm7", [3, 4, 6, 104]);
+  const two = pygmyCard("Eb7", [4, 6, 104, 105]);
+  const none = pygmyCard("Ab", [7, 8, 9]);
+  const joined = (bytes) => pdfGlyphs(bytes).map((g) => g.ch).join("");
+  assert.ok(joined(one.bytes).includes("1 BOTTOM NOTE"));
+  assert.ok(!joined(one.bytes).includes("BOTTOM NOTES"), "one field reads singular");
+  assert.ok(joined(two.bytes).includes("2 BOTTOM NOTES"));
+  [[one, "1 BOTTOM NOTE"], [two, "2 BOTTOM NOTES"]].forEach(([card, text]) => {
+    const cols = coloursOf(pdfGlyphs(card.bytes), text);
+    assert.equal(cols.length, 1, text);
+    assert.ok(sameRgb(cols[0], ORANGE_RGB), text + " is not orange");
+  });
+  assert.ok(!/BOTTOM NOTE/.test(joined(none.bytes)), "Ab voices the top shell only");
+});
+
+function pygmyWith(main, sup, fields) {
+  const deck = pygmyDeck();
+  const chord = [main, sup, "", fields, [fields[0]]];
+  return { deck: deck, chord: chord,
+           bytes: P.build(Object.assign({}, deck, { chords: [chord] }), { variant: "shop" }) };
+}
+
+test("a chord name too wide for the header steps down in 0.5 pt until name and superscript fit", () => {
+  let shrunk = 0;
+  for (let n = 4; n <= 9; n++) {
+    const name = "Z".repeat(n);
+    const { bytes } = pygmyWith(name, "maj7", [3, 4, 6]);
+    const sizes = textRuns(bytes).filter((r) => r.s === "Z").map((r) => r.size);
+    assert.equal(sizes.length, n, "one glyph per letter of the name");
+    assert.ok(sizes.every((s) => s === sizes[0]), "one size for the whole name");
+    const size = sizes[0];
+    const fits = (sz) => P._internal.tw(name, "Display", sz, sz * 0.02) +
+      P._internal.tw("maj7", "Display", sz * 0.52, 0) <= P.GEOM.CW * 0.62;
+    assert.ok(fits(size), n + " letters fit at the size drawn, " + size);
+    if (size < 27) {
+      shrunk++;
+      assert.ok(size > 8, n + " letters: not at the floor, got " + size);
+      assert.ok(!fits(size + 0.5), n + " letters: one 0.5 pt step bigger would not fit");
+      assert.equal((27 - size) % 0.5, 0, "the size sits on the 0.5 pt grid from 27");
+    }
+  }
+  assert.ok(shrunk >= 3, "fixture assumption: several widths take the shrink loop, got " + shrunk);
+});
+
+test("a long note line and a long number line each step down in 0.25 pt to the widest size that fits", () => {
+  const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 101, 102, 103, 104];
+  const avail = P.GEOM.CW - 16;
+  const sep = (sz) => HPE.pdf.stringWidth(" - ", "Notes", sz);
+  let noteShrunk = 0, numShrunk = 0;
+  for (let k = 6; k <= all.length; k++) {
+    const ids = all.slice(0, k);
+    const { deck, bytes } = pygmyWith("C", "", ids);
+    const sepSizes = textRuns(bytes).filter((r) => r.s === " - ").map((r) => r.size);
+    assert.equal(sepSizes.length, 2 * (k - 1), "a note line and a number line of separators");
+    const noteSize = sepSizes[0], numSize = sepSizes[k - 1];
+    const noteTotal = (sz) => ids.reduce((t, f) => t +
+      HPE.pdf.stringWidth(deck.spec[f][0], "Notes", sz) +
+      HPE.pdf.stringWidth(String(deck.spec[f][1]), "Notes", sz * 0.66), 0) + (k - 1) * sep(sz);
+    const numTotal = (sz) => ids.reduce((t, f) => t +
+      HPE.pdf.stringWidth(deck.spec[f][5], "Notes", sz), 0) + (k - 1) * sep(sz);
+    if (noteSize < 11) {
+      noteShrunk++;
+      assert.ok(noteTotal(noteSize) <= avail || noteSize <= 4.4, k + " fields: note line fits, got " + noteSize);
+      assert.ok(noteSize <= 4.4 || noteTotal(noteSize + 0.25) > avail, k + " fields: note line is the widest fit");
+    }
+    if (numSize < 11) {
+      numShrunk++;
+      assert.ok(numTotal(numSize) <= avail || numSize <= 4.2, k + " fields: number line fits, got " + numSize);
+      assert.ok(numSize <= 4.2 || numTotal(numSize + 0.25) > avail, k + " fields: number line is the widest fit");
+    }
+  }
+  assert.ok(noteShrunk >= 3 && numShrunk >= 3, "fixture assumption: several widths take each loop");
+});
+
+test("the label rule is public: HPE.pdfcards.labelRatio and labelSize match the internal figures", () => {
+  assert.equal(typeof P.labelSize, "function");
+  assert.equal(typeof P.labelRatio, "function");
+  assert.equal(P.labelSize, P._internal.labelSize, "one function, two doors");
+  ["ding", "rim", "inner", "bottom"].forEach((zone) => {
+    assert.ok(Math.abs(P.labelSize(10, zone) - 10 * P.labelRatio(zone)) < 1e-12, zone);
+  });
+  assert.equal(P.labelRatio("ding"), 0.70875);
+  assert.equal(P.labelRatio("rim"), 0.80325);
+  assert.equal(P.labelRatio("bottom"), 0.8232);
+});
+
+test("a warning code that is an Object.prototype name is not a known code: pdfdeck prints its reason, pdfcards draws no badge", () => {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const parsed = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+  const built = E.select.build(parsed.value);
+  const value = Object.assign({}, built.value, { warnings: [{ code: "constructor", reason: "odd one" }] });
+  const deck = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: value });
+  assert.ok(deck.blurb.includes("ODD ONE"), "the reason, upper-cased, as for any code without a short line");
+  const glyphs = pdfGlyphs(P.build(deck, { variant: "shop" }));
+  assert.ok(!glyphs.map((g) => g.ch).join("").includes("function"), "no inherited function reached the page");
+  assert.equal(coloursOf(glyphs, P.CARD_WARNINGS.NO_THIRDS).length, 0);
+});
+
+test("a title card prints the BOTTOM row of the note blurb in orange, and the other rows in the separator grey", () => {
+  const deck = pygmyDeck();
+  const bytes = P.build(deck, { variant: "full" });
+  const runs = textRuns(bytes);
+  const bottomRow = deck.blurb.find((l) => l.indexOf("BOTTOM") === 0);
+  assert.ok(bottomRow, "fixture assumption: Pygmy's blurb has a BOTTOM row");
+  const SEPRGB = [0.451, 0.451, 0.451];
+  const rowRuns = (text) => {
+    const tokens = text.split("");
+    const out = [];
+    for (var i = 0; i + tokens.length <= runs.length; i++) {
+      if (tokens.every((t, j) => runs[i + j].s === t)) out.push(runs[i]);
+    }
+    return out;
+  };
+  const b = rowRuns(bottomRow);
+  assert.ok(b.length >= 1, "the BOTTOM row is on the title card");
+  assert.ok(sameRgb(b[0].col, ORANGE_RGB), "BOTTOM row is orange");
+  const other = rowRuns(deck.blurb.find((l) => /CHORD/.test(l)));
+  assert.ok(other.length >= 1 && sameRgb(other[0].col, SEPRGB), "a non-BOTTOM row is separator grey");
+});
+
+test("blurbLayout wraps a note line at the card width less 24 pt, and never lets a step go under 1.2 x the 3.6 pt floor", () => {
+  const maxw = P.GEOM.CW - 24;
+  const note = (n) => Array.from({ length: n }, (_, i) => "C" + (i % 9)).join("  ");
+  const tw = (t) => P._internal.tw(t, "Label", 4.2, 0.35);
+  var n = 1;
+  while (tw(note(n + 1)) <= maxw) n++;
+  assert.ok(tw(note(n)) <= maxw && tw(note(n + 1)) > maxw, "fixture: n notes just fit, n + 1 do not");
+  assert.equal(P._internal.blurbLayout([note(n)]).rows.length, 1, "a line that just fits stays whole");
+  const wrapped = P._internal.blurbLayout([note(n + 1)]).rows;
+  assert.equal(wrapped.length, 2, "one note over the width wraps");
+  wrapped.forEach((r) => assert.ok(tw(r.text) <= maxw, r.text));
+  const lines = Array.from({ length: 12 }, (_, i) => "ROW " + i);
+  const { size, step } = P._internal.blurbLayout(lines);
+  assert.equal(size, 3.6, "the size floor holds");
+  assert.ok(Math.abs(step - 1.2 * 3.6) < 1e-9, "the step floor holds, got " + step);
 });

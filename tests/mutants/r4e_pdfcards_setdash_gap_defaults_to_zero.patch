@@ -1,0 +1,15 @@
+# kills: Canvas.setDash: one argument is both dash and gap, two are dash and gap, none clears
+# suite: node --test --test-name-pattern ^Canvas.setDash..one.argument.is.both.dash.and.gap..two.are.dash.and.gap..none.clears$ tests/pdfcards.test.js
+# R4-E: a one-argument setDash draws a zero gap instead of a square dash.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -79,7 +79,7 @@
+   Canvas.prototype.setLineWidth = function (w) { this.p.setLineWidth(w); };
+   Canvas.prototype.setDash = function (a, b) {
+     if (a === undefined) this.p.setDash(0);
+-    else this.p.setDash(a, b === undefined ? a : b);
++    else this.p.setDash(a, b === undefined ? 0 : b);
+   };
+   Canvas.prototype.setFont = function (f, s) { this.font = f; this.size = s; };
+   Canvas.prototype.drawString = function (x, y, s) {

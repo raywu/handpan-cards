@@ -1,0 +1,15 @@
+# kills: a card voicing bottom-shell fields says how many, in orange, singular for one
+# suite: node --test --test-name-pattern ^a.card.voicing.bottom.shell.fields.says.how.many..in.orange..singular.for.one$ tests/pdfcards.test.js
+# R4-E: the bottom-note badge never pluralises.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -464,7 +464,7 @@
+     var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
+     if (nb) {
+       tracked(c, x + CW / 2, y + deck.y_note + 13,
+-              nb + " BOTTOM NOTE" + (nb > 1 ? "S" : ""),
++              nb + " BOTTOM NOTE",
+               "LabelSB", 4.6, 0.7, "c", ORANGE);
+     }
+     bottomLines(c, x, y, CW, fields, roots, spec,
