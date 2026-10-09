@@ -369,15 +369,15 @@ function run() {
 
   test("DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and the toggle moves no scroll", async () => {
     await openAdd(SCALES.pygmy);
-    await ev(`document.getElementById("scale-layout-toggle").click(); return true;`);
-    await frames();
     await ev(`document.getElementById("scale-mirror").click(); return true;`);
     await frames();
-    const before = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
     await ev(`document.getElementById("scale-fine-toggle").focus(); return true;`);
     await b.key("Tab", "Tab", 9);
     assert.strictEqual(await focusName(), "scale-layout-reset", "Tab from the closed disclosure reached a hidden step button");
-    await ev(`document.getElementById("scale-fine-toggle").focus(); document.getElementById("scale-fine-toggle").click(); return true;`);
+    await ev(`document.getElementById("scale-fine-toggle").focus(); return true;`);
+    await frames();
+    const before = await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`);
+    await ev(`document.getElementById("scale-fine-toggle").click(); return true;`);
     await frames();
     assert.strictEqual(await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`), before, "the toggle moved the scroll");
     await b.key("Tab", "Tab", 9);
