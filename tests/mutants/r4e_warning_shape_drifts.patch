@@ -1,0 +1,15 @@
+# kills: EG-3 warning shape equals core.err shape
+# suite: node --test --test-name-pattern ^EG.3.warning.shape.equals.core.err.shape$ tests/select.test.js
+# R4-E: a warning is built by core.err and so carries ok:false.
+diff --git a/src/engine/select.js b/src/engine/select.js
+--- a/src/engine/select.js
++++ b/src/engine/select.js
+@@ -485,7 +485,7 @@
+   }
+ 
+   function warning(code) {
+-    return {code: code, reason: core().REASONS[code].reason};
++    return core().err(code);
+   }
+ 
+   // A16: a pan whose smallest counted glyph prints under the floor. <N> is
