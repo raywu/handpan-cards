@@ -9158,6 +9158,7 @@ let lastSolved = null;
 // The picked note, or null; the note the arrow keys last stood on (the one Tab
 // stop of the plate); whether a SEAT step has moved anything since the pick.
 let pickRef = null;
+let fineOpen = false;
 let roverRef = null;
 let pickMoved = false;
 // Per ring: the arrangement at every note count the ring has had (section 14).
@@ -9184,7 +9185,7 @@ function ringNotes(ring) {
   const f = lastSolved.fields;
   const ids = ringIds(f, ring);
   const seats = seatsFor(ring, ids.length);
-  return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, name: f[id][0] + f[id][1],
+  return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, label: String(f[id][5]), name: f[id][0] + f[id][1],
     place: placeOf(f[id][4]) }));
 }
 const bySeat = (a, b) => a.seat - b.seat;
@@ -9226,7 +9227,7 @@ function setRover(ref) {
 function hitLayer() {
   const meta = {};
   allNotes().forEach((n, order) => {
-    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}` };
+    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.label}, ${n.place}` };
   });
   const p = pickedNote(), r = roverNote();
   return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash, arm: armId };
@@ -9295,14 +9296,14 @@ function swapSeats(ring, i, j) {
   paintLayout();
   resyncSheet(true);
   const moved = noteAt({ ring, i });
-  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}.`);
-  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
+  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}.`);
+  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.label}, ${moved.place}.`);
   return true;
 }
 
 function pickAnnouncement(n, how) {
-  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.`;
-  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
+  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap${fineOpen ? ", or use PREVIOUS SEAT and NEXT SEAT" : ""}.`;
+  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.label}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
   return `Picked up ${n.name}. Arrows choose a seat in the ${n.ring}. Space swaps. Escape cancels.`;
 }
 /** A tap, Space or Enter on a note. `how` is "tap" or "key". */
