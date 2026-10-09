@@ -1,0 +1,15 @@
+# kills: AP2-2 browser: the settings panel inerts main, footer and the deck strip but never the header; the sheet inerts the header, main, footer and the panel
+# suite: node --test --test-name-pattern ^AP2-2.browser..the.settings.panel.inerts.main..footer.and.the.deck.strip.but.never.the.header..the.sheet.inerts.the.header..main..footer.and.the.panel$ tests/e2e.test.js
+# The panel's background set gains the header, so the trigger that must close the panel is inert behind it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10504,7 +10504,7 @@
+ // tap, OR the trigger) lives inside the header. Inerting the header would
+ // inert the trigger along with it and the panel could never be closed by a
+ // second tap on it.
+-const panelBackground = [document.querySelector("main"), document.querySelector("footer"),
++const panelBackground = [document.querySelector("header"), document.querySelector("main"), document.querySelector("footer"),
+                           document.getElementById("decks")].filter(Boolean);
+ let panelOpen = false;
+ // M3 (desktop sidebar, 2026-09-28): the same breakpoint the CSS media query

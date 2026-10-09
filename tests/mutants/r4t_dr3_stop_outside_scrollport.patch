@@ -1,0 +1,15 @@
+# kills: DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and the toggle moves no scroll
+# suite: node --test --test-name-pattern ^DR3.browser..real.Tab.skips.the.hidden.step.buttons.and.every.stop.lands.inside.the.scrollport.at.380x667..and.the.toggle.moves.no.scroll$ tests/drawer_seats.test.js
+# Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10447,7 +10447,7 @@
+   const i = stops.indexOf(document.activeElement);
+   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+   e.preventDefault();
+-  stops[next].focus();
++  stops[next].focus({ preventScroll: true });
+ }
+ // Tab is trapped inside: the sheet's own controls, in visual order.
+ sheet.addEventListener("keydown", e => {

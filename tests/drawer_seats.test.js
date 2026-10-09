@@ -176,7 +176,7 @@ function run() {
     const out = (id) => Math.round((document.getElementById(id).getBoundingClientRect().bottom - sr.bottom) * 10) / 10;
     return { stuck: getComputedStyle(band).position === "sticky" && br.top - sr.top <= 0.5, plateW: document.querySelector("#scale-preview svg").getBoundingClientRect().width,
       notice: !document.getElementById("scale-layout-state").hidden,
-      toggle: out("scale-layout-toggle"), fineToggle: out("scale-fine-toggle") };`);
+      toggle: out("scale-layout-toggle") };`);
   const reachOpen = async () => {
     await ev(`const t = document.getElementById("scale-fine-toggle"); if (t.getAttribute("aria-expanded") !== "true") t.click(); return true;`);
     await frames();
@@ -220,7 +220,8 @@ function run() {
     await frames();
     await stickBand();
     const edit = await reach();
-    console.log(`DR2a 84 report, Edit at 380x667: plate ${edit.plateW}px (Add ${add.plateW}px); px below the scrollport: toggle ${edit.toggle}, note row ${edit.noteRow}, seat row ${edit.seatRow}`);
+    const open = await reachOpen();
+    console.log(`DR2a 84 report, Edit at 380x667: plate ${edit.plateW}px (Add ${add.plateW}px); px below the scrollport: toggle ${edit.toggle}, note row ${open.noteRow}, seat row ${open.seatRow}`);
     assert.ok(edit.plateW >= add.plateW - 0.5, `Edit plate ${edit.plateW}px, Add ${add.plateW}px`);
   });
 
@@ -384,9 +385,39 @@ function run() {
     assert.strictEqual(await ev(`return document.querySelector("#scale-sheet .sheetbody").scrollTop;`), before, "the toggle moved the scroll");
     await b.key("Tab", "Tab", 9);
     assert.strictEqual(await focusName(), "scale-note-prev");
-    const inside = await ev(`const sp = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(), r = document.activeElement.getBoundingClientRect();
-      return r.top >= sp.top - 0.5 && r.bottom <= sp.bottom + 0.5;`);
-    assert.ok(inside, "the first finer button is outside the scrollport");
+    const rendered = await ev(`return [...document.querySelectorAll("#scale-sheet button, #scale-sheet input, #scale-sheet select, #scale-sheet textarea, #scale-sheet [tabindex='0']")]
+      .filter((el) => !el.disabled && el.getAttribute("tabindex") !== "-1" && el.getClientRects().length > 0).length;`);
+    const stops = [];
+    for (let i = 0; i < rendered + 2; i += 1) {
+      const stop = await ev(`const a = document.activeElement, body = document.querySelector("#scale-sheet .sheetbody"), r = a.getBoundingClientRect();
+        const port = body.contains(a) ? body.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        return { name: a.classList.contains("panhit") ? "plate" : a.id || a.className + "#" + [...a.parentNode.children].indexOf(a),
+          inside: r.top >= port.top - 0.5 && r.bottom <= port.bottom + 0.5 };`);
+      if (stops.length && stops[0].name === stop.name) break;
+      stops.push(stop);
+      await b.key("Tab", "Tab", 9);
+    }
+    assert.strictEqual(stops.length, rendered, `Tab visited ${stops.length} stops of the ${rendered} rendered controls: ${stops.map((x) => x.name)}`);
+    for (const stop of stops) assert.ok(stop.inside, `${stop.name} is outside the scrollport (the screen, for the sheet's own header and footer controls) when Tab lands on it`);
+    const finer = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"];
+    assert.deepStrictEqual(stops.map((x) => x.name).filter((n) => finer.includes(n)), ["scale-note-prev", "scale-note-next", "scale-layout-reset"],
+      "with no note picked the seat buttons are not stops, and the others follow in order");
+  });
+
+  test("DR3 browser: at 320x568 the finer-controls toggle reads on one line, closed and open", async () => {
+    await openAdd(SCALES.amara, 320, 568);
+    const lines = () => ev(`const t = document.getElementById("scale-fine-toggle");
+      const range = document.createRange(); range.selectNodeContents(t);
+      const tops = new Set([...range.getClientRects()].map((r) => Math.round(r.top)));
+      return { lines: tops.size, text: t.textContent, w: t.getBoundingClientRect().width, avail: t.parentNode.getBoundingClientRect().width };`);
+    const closed = await lines();
+    assert.strictEqual(closed.text, "HARD TO TAP? SHOW FINER CONTROLS");
+    assert.strictEqual(closed.lines, 1, `closed label wraps to ${closed.lines} lines in ${closed.w}px of ${closed.avail}px`);
+    await ev(`document.getElementById("scale-fine-toggle").click(); return true;`);
+    await frames();
+    const open = await lines();
+    assert.strictEqual(open.text, "HIDE FINER CONTROLS");
+    assert.strictEqual(open.lines, 1, `open label wraps to ${open.lines} lines`);
   });
 
   test("DR2a browser (70): a swap reaches the stored deck and Edit shows it", async () => {

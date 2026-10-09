@@ -417,6 +417,23 @@ function run() {
     assert.strictEqual(await ev(`return JSON.stringify(layoutSeats);`), "null");
   });
 
+  test("DR2b browser: editing the scale box mid-drag cancels the gesture, drops the ghost and moves nothing", async () => {
+    await openAdd(SCALES.amara);
+    const [a, c] = await plate();
+    await mouse("mouseMoved", a.x, a.y, { button: "none", buttons: 0 });
+    await mouse("mousePressed", a.x, a.y);
+    await mouse("mouseMoved", a.x + 6, a.y);
+    await mouse("mouseMoved", (a.x + c.x) / 2, (a.y + c.y) / 2);
+    assert.ok(await ghost(), "no ghost mid-drag");
+    await typeBox(SCALES.kurd);
+    await frames();
+    assert.strictEqual(await ghost(), null, "the ghost outlived the edit");
+    assert.strictEqual(await ev(`return document.getElementById("scale-preview").classList.contains("dragging");`), false, "the plate is still dragging");
+    await mouse("mouseReleased", c.x, c.y);
+    await frames();
+    assert.strictEqual(await ev(`return JSON.stringify(layoutSeats);`), "null", "the release after the edit moved a seat");
+  });
+
   for (const reduced of [false, true]) {
     test(`DR2b browser (77): a refused drop ${reduced ? "removes the ghost at once under reduced motion" : "returns the ghost over 120 ms"}`, async () => {
       await openAdd(SCALES.amara);
