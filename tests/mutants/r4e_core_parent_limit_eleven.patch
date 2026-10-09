@@ -1,0 +1,15 @@
+# kills: R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers
+# suite: node --test --test-name-pattern ^R4.E.options.that.are.not.a.plain.value.of.the.right.kind.are.BAD.NOTE..in.both.parsers$ tests/core.test.js
+# R4-E: parent 11 is accepted.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -300,7 +300,7 @@
+     if (options.parent !== undefined && options.parent !== null) {
+       var parent = options.parent;
+       if (typeof parent !== "number" || parent !== Math.floor(parent) ||
+-          parent < 0 || parent > 10) return badNote(parent);
++          parent < 0 || parent > 11) return badNote(parent);
+       out.parent = parent;
+     }
+     if (options.name !== undefined && options.name !== "") {

@@ -1,0 +1,14 @@
+# kills: R4-E formatLegacySeed and deckId read own fields only, so an inherited key is not a field
+# suite: node --test --test-name-pattern ^R4.E.formatLegacySeed.and.deckId.read.own.fields.only..so.an.inherited.key.is.not.a.field$ tests/core.test.js
+# R4-E: orderedIds walks inherited keys.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -819,7 +819,6 @@
+     var top = [];
+     var bottom = [];
+     for (var id in fields) {
+-      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+       if (id === "0") continue;
+       (fields[id][3] === "bottom" ? bottom : top).push(id);
+     }

@@ -1012,3 +1012,51 @@ test("G2b: a hundred-and-first top note leaves bottom ids clear", () => {
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids.length, 103);
 });
+
+/* ------------------------------------------------ R4-E: input guards ---- */
+
+const OK_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+
+test("R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers", () => {
+  for (const parse of [core.parseSeed, core.parseLegacySeed]) {
+    assert.equal(parse(OK_SEED, "mirror").code, "BAD_NOTE", "options must be an object");
+    assert.equal(parse(OK_SEED, 7).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: "3" }).code, "BAD_NOTE", "parent is a number");
+    assert.equal(parse(OK_SEED, { parent: 1.5 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: 11 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { parent: -1 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, { name: 5 }).code, "BAD_NOTE", "name is a string");
+    assert.equal(parse(OK_SEED, { name: "café" }).code, "BAD_NOTE", "name is printable ASCII");
+    assert.equal(parse(OK_SEED, { name: "x".repeat(41) }).code, "BAD_NOTE", "name is at most 40 long");
+    assert.equal(parse(OK_SEED, { mirror: "yes" }).code, "BAD_NOTE", "mirror is a boolean");
+    assert.equal(parse(OK_SEED, { mirror: 1 }).code, "BAD_NOTE");
+    assert.equal(parse(OK_SEED, null).ok, true, "null options are the defaults");
+    assert.equal(parse(OK_SEED, { parent: 10, name: "x".repeat(40), mirror: true }).ok, true,
+      "the limits themselves are accepted");
+  }
+});
+
+test("R4-E a seed that is not a string is BAD_NOTE naming it, in both parsers", () => {
+  for (const parse of [core.parseSeed, core.parseLegacySeed]) {
+    for (const input of [undefined, null, 5, ["(D3)"], {}]) {
+      const r = parse(input);
+      assert.equal(r.ok, false);
+      assert.equal(r.code, "BAD_NOTE");
+    }
+    assert.match(parse(5).reason, /5/);
+  }
+});
+
+test("R4-E a ding whose body is not a note is BAD_NOTE naming the ding token", () => {
+  const r = core.parseLegacySeed("(Zz) A3 C4");
+  assert.equal(r.code, "BAD_NOTE");
+  assert.match(r.reason, /\(Zz\)/);
+});
+
+test("R4-E formatLegacySeed and deckId read own fields only, so an inherited key is not a field", () => {
+  const own = parsed(OK_SEED).fields;
+  const heir = Object.create({ 9: ["Z", 9, 99, "rim", null, "9"] });
+  for (const id of Object.keys(own)) heir[id] = own[id];
+  assert.equal(core.formatLegacySeed(heir), core.formatLegacySeed(own));
+  assert.equal(core.deckId(heir), core.deckId(own));
+});

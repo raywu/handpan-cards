@@ -1,0 +1,15 @@
+# kills: R4-E options that are not a plain value of the right kind are BAD_NOTE, in both parsers
+# suite: node --test --test-name-pattern ^R4.E.options.that.are.not.a.plain.value.of.the.right.kind.are.BAD.NOTE..in.both.parsers$ tests/core.test.js
+# R4-E: a 41-character name is accepted.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -307,7 +307,7 @@
+       var name = options.name;
+       if (typeof name !== "string") return badNote(name);
+       name = name.replace(/^\s+/, "").replace(/\s+$/, "");
+-      if (!NAME_RE.test(name) || name.length < 1 || name.length > 40) {
++      if (!NAME_RE.test(name) || name.length < 1 || name.length > 41) {
+         return badNote(name);
+       }
+       out.name = name;
