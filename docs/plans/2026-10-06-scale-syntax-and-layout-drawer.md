@@ -1838,6 +1838,60 @@ PR #274, CI green. One blocking finding; the lane's flags (no listener outside t
 
 **Review 2.** A fresh reviewer, briefed with the DR2b block and 20.20 to this section, facts only.
 
+### 20.23 DR2 merged; owner phone check; interview 14; lane DR3 (2026-10-08)
+
+**Record.** DR2b review 2: PASS_WITH_NITS at 3e90c34 (CI run 37859965774); F1 retested by the reviewer at 0.015 px over 20 cells. The owner checked the build on iOS Safari and Android Chrome: "both work great". #273 then #274 merged (main b14febb, 775 mutants, 22 node suites). Review 2's nits are listed under "Left as is" below.
+
+**Interview 14 (owner, 2026-10-08, binding).**
+
+1. A seat's number does not change. A swap moves the note name; the number stays at the position. This holds on the generated cards too, so the drawer and the cards agree.
+2. The four step buttons stay but are hidden behind a call to action ("Hard to tap? ... finer controls"), placed right above or below the reset button. Front-end design consulted.
+3. `RESET SEATS` becomes `RESET LAYOUT`, drawn as a real button, and resets everything: moved notes, both mirrors and the orientation.
+4. `NOTE 1` becomes `HANDPAN ORIENTATION`, options `1 CENTRED` and `1 + 2 SPLIT`, and the section moves to the top of the drawer, still below the pan.
+
+**Lane DR3.** Branch `claude/scale-dr3`, own worktree, one PR to main.
+
+**Goal.** The drawer follows interview 14.
+
+**Rule N (numbers belong to seats).** On every pan, generated or built in, the index number drawn at a position is the number the default arrangement (no seat moved; the deck's own anchor and mirrors applied) draws there. Moving notes changes which note name a position shows and nothing else about its number. A card's number line shows, for each note of the voicing, the number drawn at that note's position on the diagram, so the diagram and the line agree on every card. A deck with no moved seat is byte-identical to today in every output: `data/decks.json`, the five built-ins' drawings, their cards, their PDFs, share links and stored records. The stored seat arrangement and the share format do not change; numbers are derived, never stored. The drawer's status and helper copy uses "seat N" for the same number the plate draws.
+
+**Drawer order, under the band and the toggle row.**
+
+1. `HANDPAN ORIENTATION` (the label, id unchanged), the pair `1 CENTRED` (`#scale-anchor-one`) and `1 + 2 SPLIT` (`#scale-anchor-between`), then the helper: `Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.`
+2. `MIRROR TOP`, `MIRROR BOTTOM` and their helper, unchanged.
+3. The disclosure: one quiet text button, `#scale-fine-toggle`, in the style `#scale-layout-reset` has today (no border, `#a79d8b`, 9.5 px caps, 44 px high, full row, centred). Closed it reads `HARD TO TAP? SHOW FINER CONTROLS`; open it reads `HIDE FINER CONTROLS`. It carries `aria-expanded` and `aria-controls="scale-fine"`.
+4. `#scale-fine`, hidden until the disclosure is opened: the two existing rows, PREVIOUS NOTE / NEXT NOTE and PREVIOUS SEAT / NEXT SEAT, ids and behaviour unchanged.
+5. `RESET LAYOUT` (`#scale-layout-reset`), now a `.mode` button, full row.
+6. `#scale-drawer-hint`, last.
+
+**Disclosure behaviour.** Closed whenever the sheet opens. Opening it does not move focus and does not scroll; closing it while one of the four buttons has focus puts focus on the disclosure. It stays as set while the sheet stays open, across drawer close and reopen. While closed the four buttons are out of the tab order and out of the accessibility tree. It is enabled whenever the drawer's controls are. The arrow keys on the plate and every tap and drag behaviour are unchanged whether it is open or closed. Rule G of 20.16 holds with it open and closed.
+
+**RESET LAYOUT.** Returns all three seat arrangements, `mirror`, `mirrorBottom` and the anchor to the default: no seat moved, both mirrors off, anchor `one`. On Edit this is the generated default, not the stored record. Enabled when any of those differs from the default. It puts down a picked note, cancels a drag, and writes `Layout reset.` to the status line. The Edit notice that names a reset ring (interview 13) keeps its copy.
+
+**Copy that follows.** Every string that names `RESET SEATS`, `NOTE 1` as the section, `ON CENTRE` or `BESIDE CENTRE` is updated to the new names. Status strings that tell the player to use PREVIOUS SEAT and NEXT SEAT say so only while the disclosure is open; closed, the tap string ends at "to swap." The step buttons' own status rows are unchanged.
+
+**Non-goals.** No change to tap, drag, keyboard or step behaviour, to the plate, the band or rule G, to the notice rule, to the share format or stored records, to built-in deck data or geometry. No new component, dependency or `<script src>`. No fix for review nits unless a step names one. The spec file and CLAUDE.md are not edited (DOC does that).
+
+**Ownership.** `index.html` outside the generated regions; `src/engine/*.js` only as far as rule N needs, synced with `tools/inline_engine.py`; `tools/hifi.py`, `tools/decks.py` and `pdfcards` code only as far as rule N needs; tests, `tests/mutants/`, FLOORS, README counts. If rule N cannot be met without changing a stored format, a built-in's bytes or the print output of an unmoved deck, the lane stops and reports before building.
+
+**Steps (tests first; the tests land in a commit of their own and the lane reports which fail there).**
+
+1. Rule N. Unit tests: for the D3 example, Kurd 10 and Pygmy, with each anchor and mirror setting, after one swap and after three swaps on each ring, every position's number equals the default arrangement's number there and the note names moved; a card's number line equals the numbers at its voicing's positions; app and print agree per field (`tests/test_render_agreement.py`'s rule, on a moved-seat custom deck through the browser PDF path where print cannot read it). A no-move deck's output is byte-identical to main for all five built-ins and one custom deck. Then the change.
+2. Order, names and copy, with unit tests for the DOM order, the labels, the helper and each updated string.
+3. Disclosure, with unit tests for each sentence of "Disclosure behaviour" and one browser test at 380 x 667 on Add and Edit, open and closed, that the Tab walk meets rule G-c.
+4. RESET LAYOUT, with unit tests over the product of (seats moved or not, each mirror, anchor) on Add and Edit: enabled exactly when something differs, and after it everything is default.
+5. The `syncParseState` cancel hook (review 2 nit 1): a test that typing a scale with a different ring count during a lifted drag ends the drag without an error.
+6. Mutants: one per rule clause the code implements (number follows the note; card line reads pitch order; disclosure open by default; hidden buttons left in the tab order; reset leaves a mirror; reset leaves the anchor; reset enabled rule). Re-anchor moved mutants. FLOORS and the README follow the file counts.
+7. A line-to-assertion table on the PR for interview 14's four items and each sentence above. Push; `gh pr checks <n> --watch` to green; do not merge.
+
+**Verify.** `python3 tools/inline_engine.py --check` and `python3 tools/sync_decks.py --check` clean; `python3 tools/decks.py` rebuilds PDFs whose extracted text is unchanged; the named tests pass with `CHROME_BIN` set; no unit test file over 25 s locally except `tests/sequence.test.js`, which is not this lane's; CI green at the head SHA.
+
+**Owner gate.** A private Artifact of the DR3 build for the owner to look at before the merge: the wording, the disclosure and the numbers after a swap.
+
+**Left as is (review 2 nits, for DOC or the owner).** Releasing a drag can scroll the sheet up to 13 px at 380 x 390. `ghostShift` is exact for translate-only ancestors. The #274 PR body lists the focusout listener wrongly and omits the `.panhit` cursor and `let armId`. A vestigial `assert.ok(r)`. `tests/sequence.test.js` takes 51 s locally.
+
+**Coordinator readings (for the owner).** The disclosure sits above RESET LAYOUT and takes the quiet style the reset button gives up, so the reset is the one bordered button at the foot. The disclosure does not persist past the sheet. "Everything" on Edit means the generated default, not the stored record. `CENTRED` keeps the app's existing spelling.
+
 ## NOT in scope
 
 - Any change to chord ranking, voicing or sequencing: the grammar and the
