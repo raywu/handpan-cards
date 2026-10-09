@@ -131,12 +131,142 @@ function assertNoUncaught() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Execution-coverage hook (refactor pass 4, lane 0). DORMANT unless
+// HPC_COVERAGE_DIR is set: with it unset, maybeEnableCoverage() returns before
+// sending anything, Browser.coverage stays null, and send()/close() take the
+// same path they always did. tools/coverage_merge.js reads what this writes.
+//
+// Precise coverage is scoped to the isolate and a navigation throws the old
+// document's counters away, so the hook takes them BEFORE every Page.navigate
+// (and once more in close()). A take that fails writes a *.incomplete.json
+// marker and the merge tool refuses to report over it: there is no "merge at
+// close" fallback, because that would silently under-count.
+// ---------------------------------------------------------------------------
+let coverageSeq = 0;
+
+function coverageDir(env = process.env) {
+  return env.HPC_COVERAGE_DIR || null;
+}
+
+class CoverageHook {
+  constructor(browser, dir) {
+    this.b = browser;
+    this.dir = dir;
+    this.tag = `${process.pid}-${coverageSeq++}`;
+    this.n = 0;
+    this.scripts = {};
+    this.sheets = {};
+    this.suite = process.argv[1] ? path.relative(path.join(__dirname, "..", ".."), process.argv[1]) : "";
+    this.finished = false;
+    fs.mkdirSync(dir, { recursive: true });
+    this.writeSession(false);
+  }
+  raw(method, params) { return this.b.rawSend(method, params); }
+  writeSession(closed) {
+    fs.writeFileSync(path.join(this.dir, `session-${this.tag}.json`),
+      JSON.stringify({ tag: this.tag, suite: this.suite, closed }));
+  }
+  async start() {
+    await this.raw("Debugger.enable");
+    await this.raw("Profiler.enable");
+    await this.raw("Profiler.startPreciseCoverage", { callCount: true, detailed: true });
+    await this.raw("DOM.enable");
+    await this.raw("CSS.enable");
+    await this.raw("CSS.startRuleUsageTracking");
+  }
+  event(msg) {
+    const p = msg.params || {};
+    if (msg.method === "Debugger.scriptParsed") {
+      this.scripts[p.scriptId] = {
+        url: p.url, startLine: p.startLine, startColumn: p.startColumn,
+        endLine: p.endLine, endColumn: p.endColumn,
+      };
+    } else if (msg.method === "CSS.styleSheetAdded") {
+      const h = p.header || {};
+      this.sheets[h.styleSheetId] = {
+        sourceURL: h.sourceURL, isInline: h.isInline, startLine: h.startLine,
+        startColumn: h.startColumn, length: h.length,
+      };
+    } else if (msg.method === "Page.frameNavigated" && p.frame && !p.frame.parentId) {
+      this.raw("CSS.startRuleUsageTracking").catch(() => {});
+    }
+  }
+  // Take what the current document accumulated and write it as the next
+  // numbered file. `final` also stops CSS tracking (close() only).
+  async take(final) {
+    const file = path.join(this.dir, `browser-${this.tag}-${this.n++}`);
+    const out = { suite: this.suite, final: !!final, scripts: this.scripts, sheets: this.sheets,
+      viewport: this.viewport || null };
+    try {
+      out.media = await this.mediaState();
+      const prec = await this.raw("Profiler.takePreciseCoverage");
+      out.coverage = prec.result;
+      const delta = await this.raw("CSS.takeCoverageDelta");
+      out.cssDelta = delta.coverage;
+      if (final) out.cssFinal = (await this.raw("CSS.stopRuleUsageTracking")).ruleUsage;
+      fs.writeFileSync(file + ".json", JSON.stringify(out));
+    } catch (err) {
+      fs.writeFileSync(file + ".incomplete.json", JSON.stringify({ suite: this.suite, error: String(err && err.message || err) }));
+    }
+    this.scripts = {};
+    this.sheets = {};
+  }
+  async mediaState() {
+    try {
+      const r = await this.raw("Runtime.evaluate", { returnByValue: true, expression: `(() => {
+        const out = [], seen = new Set();
+        const walk = (rules) => { for (const r of rules) {
+          if (r.media && !seen.has(r.media.mediaText)) { seen.add(r.media.mediaText);
+            out.push({ text: r.media.mediaText, matches: matchMedia(r.media.mediaText).matches }); }
+          if (r.cssRules) walk(r.cssRules); } };
+        for (const s of document.styleSheets) { try { walk(s.cssRules); } catch (e) {} }
+        return out; })()` });
+      return (r.result && r.result.value) || [];
+    } catch { return []; }
+  }
+  async recordViewport(params) {
+    this.viewport = { width: params.width, height: params.height, mobile: !!params.mobile };
+    fs.appendFileSync(path.join(this.dir, `viewports-${this.tag}.jsonl`), JSON.stringify({
+      suite: this.suite, ...this.viewport, media: await this.mediaState(),
+    }) + "\n");
+  }
+  // Returns a promise to stand in for send(), or null to let send() proceed.
+  intercept(method, params, useSession) {
+    if (method === "Page.navigate") {
+      return this.take(false).then(() => this.b.rawSend(method, params, useSession));
+    }
+    if (method === "Emulation.setDeviceMetricsOverride") {
+      return this.b.rawSend(method, params, useSession).then(async (r) => {
+        await this.recordViewport(params);
+        return r;
+      });
+    }
+    return null;
+  }
+  async finish() {
+    if (this.finished) return;
+    this.finished = true;
+    await this.take(true);
+    this.writeSession(true);
+  }
+}
+
+async function maybeEnableCoverage(browser, env = process.env) {
+  const dir = coverageDir(env);
+  if (!dir) return null;
+  browser.coverage = new CoverageHook(browser, dir);
+  await browser.coverage.start();
+  return browser.coverage;
+}
+
 class Browser {
   constructor(proc, ws, profileDir, entry) {
     this.proc = proc; this.ws = ws; this.profileDir = profileDir;
     this.entry = entry || { proc, profileDir };
     this.id = 0; this.pending = new Map(); this.sessionId = null;
     this.eventHandlers = new Map();      // CDP method -> async handler(params)
+    this.coverage = null;                // CoverageHook, only under HPC_COVERAGE_DIR
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.id !== undefined) {
@@ -148,6 +278,7 @@ class Browser {
         }
         return;
       }
+      if (this.coverage) this.coverage.event(msg);
       // An unsolicited CDP event (no id), e.g. Fetch.requestPaused - dispatch
       // to whatever enableRealFonts() (or a future caller) registered. Errors
       // here must not crash the ws listener, so they are swallowed; a stuck
@@ -162,6 +293,13 @@ class Browser {
     this.eventHandlers.set(method, handler);
   }
   send(method, params = {}, useSession = true) {
+    if (this.coverage) {
+      const p = this.coverage.intercept(method, params, useSession);
+      if (p) return p;
+    }
+    return this.rawSend(method, params, useSession);
+  }
+  rawSend(method, params = {}, useSession = true) {
     const id = ++this.id;
     const payload = { id, method, params };
     if (useSession && this.sessionId) payload.sessionId = this.sessionId;
@@ -427,6 +565,7 @@ class Browser {
     `);
   }
   async close() {
+    if (this.coverage) await this.coverage.finish();
     try { this.ws.close(); } catch {}
     // Deregisters as well as kills, so a normally-closed browser is not killed
     // a second time at process exit.
@@ -560,6 +699,7 @@ async function launchOnce(opts = {}) {
     });
     await b.send("Page.enable");
     await b.send("Runtime.enable");
+    await maybeEnableCoverage(b);
     if (opts.realFonts) {
       // Reviewer FAIL #3: serve the real TTFs instead of blocking - see
       // enableRealFonts()'s own comment for why this exists and what it does
@@ -610,4 +750,4 @@ async function launch(opts = {}) {
 // Browser is exported for tests/harness.test.js's self-tests of settle() and
 // waitFor(); APP_READY_EXPR for tests/e2e.test.js's boot-readiness waits. e2e
 // journeys otherwise only get a Browser instance from launch().
-module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };
+module.exports = { launch, findBrowser, Browser, APP_READY_EXPR, maybeEnableCoverage, takeExceptions, peekExceptions, expectUncaught, assertNoUncaught };
