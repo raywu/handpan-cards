@@ -1,0 +1,16 @@
+# kills: R4-E tierOf refuses chords that are not a non-empty array, by name
+# suite: node --test --test-name-pattern ^R4.E.tierOf.refuses.chords.that.are.not.a.non.empty.array..by.name$ tests/sequence.test.js
+# R4-E: tierOf of no chords classifies instead of refusing.
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -633,9 +633,6 @@
+ 
+   // Public entry point: computes the context once and delegates.
+   function tierOf(deck, chords) {
+-    if (!Array.isArray(chords) || chords.length === 0) {
+-      throw new Error("HPE.sequence.tierOf: chords must be a non-empty array");
+-    }
+     return classifyTier(deck, chords, tierContext(deck));
+   }
+ 

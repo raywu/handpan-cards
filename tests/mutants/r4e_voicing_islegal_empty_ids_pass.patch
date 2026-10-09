@@ -1,0 +1,14 @@
+# kills: R4-E isLegal refuses no ids, an id the deck lacks, and a voicing the chord symbol does not allow
+# suite: node --test --test-name-pattern ^R4.E.isLegal.refuses.no.ids..an.id.the.deck.lacks..and.a.voicing.the.chord.symbol.does.not.allow$ tests/voicing.test.js
+# R4-E: an empty voicing is legal.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -141,7 +141,6 @@
+   // voicing the engine emits. `intervals`, when given, additionally holds the
+   // voicing to its chord symbol (the power-chord rule needs it).
+   function isLegal(fields, ids, intervals) {
+-    if (!ids || !ids.length) return false;
+     if (ids.length > MAX_NOTES) return false;
+ 
+     var seen = {};

@@ -1,0 +1,15 @@
+# kills: R4-E isLegal refuses no ids, an id the deck lacks, and a voicing the chord symbol does not allow
+# suite: node --test --test-name-pattern ^R4.E.isLegal.refuses.no.ids..an.id.the.deck.lacks..and.a.voicing.the.chord.symbol.does.not.allow$ tests/voicing.test.js
+# R4-E: an id the deck lacks is skipped.
+diff --git a/src/engine/voicing.js b/src/engine/voicing.js
+--- a/src/engine/voicing.js
++++ b/src/engine/voicing.js
+@@ -147,7 +147,7 @@
+     var seen = {};
+     for (var i = 0; i < ids.length; i += 1) {
+       var rec = fields[String(ids[i])];
+-      if (!rec) return false;
++      if (!rec) continue;
+       if (isDing(rec)) return false;
+       var pc = pitchClass(rec[2]);
+       if (seen[pc]) return false;

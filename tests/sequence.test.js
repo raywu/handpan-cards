@@ -2428,3 +2428,12 @@ test("a stratum with no colour start is left out", () => {
     }
   }
 });
+
+test("R4-E tierOf refuses chords that are not a non-empty array, by name", () => {
+  const E = engine();
+  const deck = fiveCardDeck();
+  for (const bad of [undefined, null, [], "0123", { length: 2 }]) {
+    assert.throws(() => E.sequence.tierOf(deck, bad), /tierOf: chords must be a non-empty array/);
+  }
+  assert.strictEqual(E.sequence.tierOf(deck, [0, 1, 2, 3]), "basic", "control");
+});
