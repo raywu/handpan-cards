@@ -244,6 +244,10 @@ function main() {
   const check = args.includes("--check");
   const htmlFlagIdx = args.indexOf("--html");
   const htmlArg = htmlFlagIdx >= 0 ? args[htmlFlagIdx + 1] : null;
+  if (htmlFlagIdx >= 0 && (!htmlArg || htmlArg.startsWith("--"))) {
+    console.error("regen_card_fixture: --html needs a path");
+    process.exit(2);
+  }
   const htmlPath = path.resolve(htmlArg || path.join(__dirname, "..", "index.html"));
   const dest = path.join(__dirname, "..", "tests", "fixtures", "card_face_v1.json");
 

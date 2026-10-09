@@ -3782,8 +3782,8 @@ test("the download is named the way the print pipeline names its files", () => {
   const full = anchor(app);
   assert.ok(full, "a desktop download is delivered through an <a download>");
   assert.strictEqual(full.clicks, 1, "the anchor was built but never activated");
-  // tools/decks.py's `if __name__ == "__main__":` block names the six shipped files: `<Name>_Cards_Letter.pdf`
-  // and `<Name>_CHORD_ONLY_Letter.pdf`, with punctuation folded out of
+  // tools/decks.py's `if __name__ == "__main__":` block names the three shipped files, `<Name>_CHORD_ONLY_Letter.pdf`;
+  // the unused full-deck path names its output `<Name>_Cards_Letter.pdf`, with punctuation folded out of
   // the deck name. A custom deck's download joins that shelf, so it takes the
   // same shape rather than inventing a second one.
   assert.match(full.download, /^[A-Za-z0-9_]+_Cards_Letter\.pdf$/);
@@ -5466,11 +5466,29 @@ test("AP3-0 generated faces and rail DOM match the committed digest", () => {
   assert.ok(html.includes("Tap to reveal the notes"));
   const dir = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "ap3-0-"));
   const drifted = path.join(dir, "index.html");
-  fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
-  assert.throws(
-    () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
-    /Command failed/, "a drifted generated face must fail the check");
-  fs.rmSync(dir, { recursive: true, force: true });
+  try {
+    fs.writeFileSync(drifted, html.replace("Tap to reveal the notes", "Tap to reveal the notes!"));
+    assert.throws(
+      () => execFileSync(process.execPath, [tool, "--gen", "--check", "--html", drifted], { stdio: "pipe" }),
+      /Command failed/, "a drifted generated face must fail the check");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("R4-A29 regen_card_fixture --html without a value exits non-zero with a message", () => {
+  const { spawnSync } = require("node:child_process");
+  const tool = path.join(ROOT, "tools", "regen_card_fixture.js");
+  const dest = path.join(ROOT, "tests", "fixtures", "card_face_v1.json");
+  const before = fs.readFileSync(dest);
+  for (const argv of [["--html"], ["--check", "--html"], ["--html", "--check"], ["--gen", "--html"]]) {
+    const r = spawnSync(process.execPath, [tool, ...argv], { encoding: "utf8" });
+    const where = argv.join(" ");
+    assert.notStrictEqual(r.status, 0, `${where}: a flag with no value must not succeed`);
+    assert.match(r.stderr, /--html needs a path/, `${where}: the message names the flag`);
+    assert.doesNotMatch(r.stderr, /TypeError|at Object\.|node:internal/, `${where}: a message, not a stack`);
+  }
+  assert.ok(fs.readFileSync(dest).equals(before), "a refused invocation writes nothing");
 });
 
 test("AP3-1 faceHTML is the only answer-template builder", () => {
@@ -8144,9 +8162,7 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
       DG.release(app, g, 330, 330 + lift);
       const left = DG.ghostEls(app)[0];
       const home = DG.centre(DG.noteNode(app, "A3"));
-      const r = left.getBoundingClientRect();
       assert.deepStrictEqual({ x: parseFloat(left.style.left) + parseFloat(left.style.width) / 2 + app.plate.gx, y: parseFloat(left.style.top) + parseFloat(left.style.height) / 2 + app.plate.gy }, { x: home.x, y: home.y }, `${type}: the return target`);
-      assert.ok(r);
     }
   });
 
