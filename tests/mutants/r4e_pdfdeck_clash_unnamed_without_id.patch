@@ -1,0 +1,15 @@
+# kills: R4-E an overlay that shadows canonical data names the deck by id, or by name when it has no id
+# suite: node --test --test-name-pattern ^R4.E.an.overlay.that.shadows.canonical.data.names.the.deck.by.id..or.by.name.when.it.has.no.id$ tests/pdfcards.test.js
+# R4-E: a clash on a deck without an id names "undefined".
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -257,7 +257,7 @@
+       return Object.prototype.hasOwnProperty.call(shared, k);
+     });
+     if (clash.length) {
+-      throw new Error((deck.id || deck.name) +
++      throw new Error((deck.id) +
+                       ": print overlay shadows canonical data: " +
+                       clash.sort().join(", "));
+     }

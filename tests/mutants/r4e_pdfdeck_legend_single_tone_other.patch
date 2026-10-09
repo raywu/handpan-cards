@@ -1,0 +1,15 @@
+# kills: R4-E legendDemo of a one-tone chord shows that tone as both root and other
+# suite: node --test --test-name-pattern ^R4.E.legendDemo.of.a.one.tone.chord.shows.that.tone.as.both.root.and.other$ tests/pdfcards.test.js
+# R4-E: a one-tone chord demos undefined as its other tone.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -141,7 +141,7 @@
+       var c = chords[0];
+       var root = c[3].filter(function (f) { return c[4].indexOf(f) >= 0; })[0];
+       var other = c[3].filter(function (f) { return f !== root; })[0];
+-      return [other === undefined ? root : other, root];
++      return [other, root];
+     }
+     var ids = numericSort(fieldIds(spec)).map(Number);
+     return [ids[ids.length - 1], ids[0]];

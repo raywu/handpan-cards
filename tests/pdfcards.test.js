@@ -660,3 +660,55 @@ test("blurbLayout wraps a note line at the card width less 24 pt, and never lets
   assert.equal(size, 3.6, "the size floor holds");
   assert.ok(Math.abs(step - 1.2 * 3.6) < 1e-9, "the step floor holds, got " + step);
 });
+
+/* ---------------------------------------------------------------------
+ * R4-E: pdfdeck branches no suite reached
+ * ------------------------------------------------------------------ */
+function generatedValue(seed) {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const parsed = E.core.parseLegacySeed(seed, {});
+  assert.ok(parsed.ok, "fixture seed must parse");
+  const built = E.select.build(parsed.value);
+  assert.ok(built.ok, "fixture seed must build");
+  return { seed: E.core.formatSeed(parsed.value), deck: built.value };
+}
+
+test("R4-E legendDemo of a one-tone chord shows that tone as both root and other", () => {
+  const payload = generatedValue("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  payload.deck.chords = [{ main: "X", sup: "", subtitle: "", fields: [3], roots: [3] }];
+  assert.deepEqual(HPE.pdfdeck.fromGenerated(payload).legend_demo, [3, 3]);
+  payload.deck.chords = [{ main: "X", sup: "", subtitle: "", fields: [3, 5], roots: [3] }];
+  assert.deepEqual(HPE.pdfdeck.fromGenerated(payload).legend_demo, [5, 3]);
+});
+
+test("R4-E the title blurb is led by the ding when there is one, counts chords in the singular, and omits an empty BOTTOM row", () => {
+  const payload = generatedValue("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  payload.deck.chords = payload.deck.chords.slice(0, 1);
+  const lines = HPE.pdfdeck.fromGenerated(payload).blurb;
+  assert.match(lines[0], /^D3  \|  A3  C4/);
+  assert.deepEqual(lines.slice(1), ["1 CHORD - ONE CARD PER CHORD"], "no BOTTOM row on a pan without a bottom shell");
+  payload.deck.chords = payload.deck.chords.concat(payload.deck.chords);
+  assert.equal(HPE.pdfdeck.fromGenerated(payload).blurb.at(-1), "2 CHORDS - ONE CARD PER CHORD");
+
+  delete payload.deck.fields["0"];
+  assert.match(HPE.pdfdeck.fromGenerated(payload).blurb[0], /^A3  C4/, "no ding, no ding lead");
+});
+
+test("R4-E a generated deck with no warnings key has none, and bankers leaves a non-finite number alone", () => {
+  const payload = generatedValue("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+  delete payload.deck.warnings;
+  assert.deepEqual(JSON.parse(JSON.stringify(HPE.pdfdeck.fromGenerated(payload).warnings)), []);
+  assert.ok(Number.isNaN(HPE.pdfdeck.bankers(NaN, 1)));
+  assert.equal(HPE.pdfdeck.bankers(Infinity, 1), Infinity);
+  assert.equal(HPE.pdfdeck.bankers(0.25, 1), 0.2, "an exact tie goes to the even digit");
+});
+
+test("R4-E an overlay that shadows canonical data names the deck by id, or by name when it has no id", () => {
+  const deck = DECK_DATA.find((d) => d.id === "hijaz");
+  const clash = Object.assign({}, deck.print, { name: "nope" });
+  assert.throws(() => HPE.pdfdeck.fromBuiltin(deck, clash), /^Error: hijaz: print overlay shadows canonical data: name$/);
+  const anonymous = Object.assign({}, deck);
+  delete anonymous.id;
+  assert.throws(() => HPE.pdfdeck.fromBuiltin(anonymous, clash),
+    new RegExp("^Error: " + deck.name + ": print overlay shadows canonical data: name$"));
+});

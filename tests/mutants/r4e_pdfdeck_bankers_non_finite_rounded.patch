@@ -1,0 +1,14 @@
+# kills: R4-E a generated deck with no warnings key has none, and bankers leaves a non-finite number alone
+# suite: node --test --test-name-pattern ^R4.E.a.generated.deck.with.no.warnings.key.has.none..and.bankers.leaves.a.non.finite.number.alone$ tests/pdfcards.test.js
+# R4-E: bankers rounds NaN and Infinity as if they were numbers.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -38,7 +38,6 @@
+   // input here carries, so the tie test is made on the same digits Python sees.
+   function bankers(x, digits) {
+     var d = digits || 0;
+-    if (!isFinite(x)) return x;
+     var neg = x < 0;
+     var s = Math.abs(x).toFixed(20);
+     var dot = s.indexOf(".");
