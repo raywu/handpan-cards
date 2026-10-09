@@ -80,7 +80,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { loadEngine } = require("./helpers/engine.js");
-const { score } = require("./helpers/sequence_score.js");
 
 const ROOT = path.join(__dirname, "..");
 const DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
