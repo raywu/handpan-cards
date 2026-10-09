@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import pymupdf
 
@@ -255,7 +256,8 @@ class ShippedPdfsTest(unittest.TestCase):
     def test_decks_main_writes_only_the_three_chord_only_pdfs(self):
         out = tempfile.mkdtemp(prefix="handpan-main-")
         try:
-            decks.main(out)
+            with mock.patch.object(decks, "hifi", hifi):
+                decks.main(out)
             self.assertEqual(sorted(os.listdir(out)), sorted(THREE_COMMITTED))
         finally:
             shutil.rmtree(out, ignore_errors=True)
