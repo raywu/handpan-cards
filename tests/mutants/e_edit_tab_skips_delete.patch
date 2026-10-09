@@ -3,10 +3,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10139,8 +10139,7 @@ sheet.addEventListener("keydown", e => {
+@@ -10441,8 +10441,7 @@ sheet.addEventListener("keydown", e => {
                   drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
-                  drawerBtn, notePrev, noteNext, seatPrev, seatNext,
-                  mirrorTop, mirrorBot, resetBtn, anchorOne, anchorBetween,
+                  drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
 -                 editingId ? degSel : null, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
 +                 editingId ? degSel : null, ...swatches.children, genBtn]

@@ -1,0 +1,34 @@
+# kills: DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hint
+# suite: node --test --test-name-pattern ^DR3.order..orientation..mirrors..disclosure..finer.rows..RESET.LAYOUT..hint$ tests/app.test.js
+# The orientation block sits below the mirror rows instead of above them.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1246,6 +1246,13 @@ footer.seq{row-gap:var(--sp-1)}
+       </div>
+       <p class="sheethint" id="scale-layout-state" hidden></p>
+       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
++        <div class="ctlrow">
++          <div class="mirror">
++            <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
++            <button class="mode" type="button" id="scale-mirror-bottom" aria-pressed="false" disabled>MIRROR BOTTOM</button>
++          </div>
++        </div>
++        <p class="sheethint">Each flips left and right. Top covers the rim and the inner notes.</p>
+         <div class="editrow">
+           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
+           <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+@@ -1256,13 +1263,6 @@ footer.seq{row-gap:var(--sp-1)}
+           </div>
+         </div>
+         <p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>
+-        <div class="ctlrow">
+-          <div class="mirror">
+-            <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
+-            <button class="mode" type="button" id="scale-mirror-bottom" aria-pressed="false" disabled>MIRROR BOTTOM</button>
+-          </div>
+-        </div>
+-        <p class="sheethint">Each flips left and right. Top covers the rim and the inner notes.</p>
+         <button type="button" id="scale-fine-toggle" aria-expanded="false" aria-controls="scale-fine" disabled>HARD TO TAP? SHOW FINER CONTROLS</button>
+         <div id="scale-fine" hidden>
+           <div class="ctlrow">

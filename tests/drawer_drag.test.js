@@ -265,7 +265,7 @@ function run() {
     const seats = () => ev(`return JSON.stringify(layoutSeats);`);
     const s0 = await seats();
     await mouseDrag(rim[0], rim[0]);
-    assert.strictEqual(await status(), `${rim[0].name} stays in rim seat 1 of 9.`);
+    assert.strictEqual(await status(), `${rim[0].name} stays in rim seat 1.`);
     assert.strictEqual(await pickedName(), rim[0].name);
     await ev(`document.querySelector("#scale-preview .panhit[aria-pressed='true']").dispatchEvent(new MouseEvent("click", { bubbles: true })); return true;`);
     await sleep(450);

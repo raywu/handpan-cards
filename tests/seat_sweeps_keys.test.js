@@ -5,6 +5,13 @@ const { boot } = require("./helpers/sandbox.js");
 const { openSheet, makeCustom, openEdit, D2_NAT, d2Nat, d2Build, D2_RINGS, d2Sizes, d2Id, d2Open, d2Hit, d2Tap, d2Key, d2Seats, d2Pick, d2Status, d2Norm, d2Seed, d2Exchange, d2Starts, D2_OTHER, d2Case, d2AllRings } = require("./helpers/seat_sweep_common.js");
 const DG = require("./helpers/drag.js");
 
+/** The number the plate draws in seat k of a ring: the default label (rule N). */
+const seatLabel = (app, sc, ring, k) => {
+  const f = JSON.parse(app.get(`JSON.stringify(HPE.core.parseSeed(${JSON.stringify(sc.text)}, {}).value.fields)`));
+  const ids = Object.keys(f).filter((id) => f[id][3] === ring).sort((a, b) => Number(a) - Number(b));
+  return f[ids[k]][5];
+};
+
 for (const edit of [false]) {
   const where = edit ? "Edit" : "Add";
 
@@ -45,7 +52,7 @@ for (const edit of [false]) {
             assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: d2Exchange(start, i, j) }), ctx);
             assert.deepStrictEqual(d2Pick(app), { ring, i }, `${ctx}: the pick moved or ended`);
             assert.match(d2Status(app), new RegExp(
-              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${t + 1} of ${n}, [a-z ]+\\.$`), ctx);
+              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${seatLabel(app, sc, ring, t)}, [a-z ]+\\.$`), ctx);
           }
         }
       }
@@ -93,7 +100,7 @@ for (const edit of [true]) {
             assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: d2Exchange(start, i, j) }), ctx);
             assert.deepStrictEqual(d2Pick(app), { ring, i }, `${ctx}: the pick moved or ended`);
             assert.match(d2Status(app), new RegExp(
-              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${t + 1} of ${n}, [a-z ]+\\.$`), ctx);
+              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${seatLabel(app, sc, ring, t)}, [a-z ]+\\.$`), ctx);
           }
         }
       }

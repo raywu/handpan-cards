@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7711,7 +7711,7 @@
+@@ -7802,7 +7802,7 @@ function generateDeck(text, options, guard) {
    if (wanted !== null) {
      const o = built.value.options;
      const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} },
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +      { mirror: !!o.mirror, anchor: o.anchor, seats: wanted });
      if (!moved.ok) return moved;
      for (const id of Object.keys(moved.value.fields)) {
-       if (built.value.fields[id]) built.value.fields[id][4] = moved.value.fields[id][4];
+       if (built.value.fields[id]) {

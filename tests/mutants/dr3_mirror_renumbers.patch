@@ -1,0 +1,20 @@
+# kills: rule N: mirrors and orientation change no label
+# suite: node --test --test-name-pattern ^rule.N..mirrors.and.orientation.change.no.label$ tests/layout.test.js
+# A top mirror reverses the rim numbers as well as the angles.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -544,7 +544,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var geom = geometry(counts, placed);
+     if (wanted.value) placed = reseat(placed, wanted.value);
+ 
+-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
++    var merged = merge(source, zones, placed, wanted.value);
++    if (mirrors.top) {
++      var rl = zones.rim.map(function (x) { return merged[x][5]; }).reverse();
++      zones.rim.forEach(function (x, k) { merged[x][5] = rl[k]; });
++    }
++    return { ok: true, value: { geom: geom, fields: merged } };
+   }
+ 
+   HPE.layout = {

@@ -9,8 +9,8 @@ diff --git a/index.html b/index.html
  #scale-layout-toggle{align-self:flex-start}
  #scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
  #scale-layout-toggle:disabled + #scale-layout-hint,
--#scale-drawer .mode:disabled, #scale-layout-reset:disabled{opacity:.5; cursor:default}
-+#scale-drawer .mode:disabled, #scale-layout-reset:disabled{cursor:default}
+-#scale-drawer .mode:disabled, #scale-fine-toggle:disabled{opacity:.5; cursor:default}
++#scale-drawer .mode:disabled, #scale-fine-toggle:disabled{cursor:default}
  #scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
  #scale-layout-toggle.on span{display:inline}
  #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}

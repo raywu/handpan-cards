@@ -1,0 +1,15 @@
+# kills: DR3 disclosure: closed on every sheet open, kept across a drawer close
+# suite: node --test --test-name-pattern ^DR3.disclosure..closed.on.every.sheet.open..kept.across.a.drawer.close$ tests/app.test.js
+# A fresh sheet opens with the finer controls showing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9797,7 +9797,7 @@ function resetSheetState(edit) {
+   // The correction is a seed option like the others, so Edit shows the one the
+   // deck already carries and RESET is what clears it.
+   layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
+-  fineOpen = false;
++  fineOpen = true;
+   pickRef = null;
+   roverRef = null;
+   pickMoved = false;

@@ -6373,16 +6373,16 @@ test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", 
 
 
 
-test("DR1 line 25: two anchor buttons carry aria-pressed, ON CENTRE pressed by default", () => {
+test("DR1 line 25: two anchor buttons carry aria-pressed, #1 CENTRED pressed by default", () => {
   const app = boot();
   dr1Open(app);
-  assert.strictEqual(dr1Markup("scale-anchor-one").text, "ON CENTRE");
-  assert.strictEqual(dr1Markup("scale-anchor-between").text, "BESIDE CENTRE");
+  assert.strictEqual(dr1Markup("scale-anchor-one").text, "#1 CENTRED");
+  assert.strictEqual(dr1Markup("scale-anchor-between").text, "#1 / #2");
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
 });
 
-test("DR1 line 26: BESIDE CENTRE re-solves the plate and reaches the deck, the stored record and the share link", () => {
+test("DR1 line 26: #1 / #2 re-solves the plate and reaches the deck, the stored record and the share link", () => {
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
   dr1Toggle(app).click();
@@ -6403,7 +6403,7 @@ test("DR1 line 26: BESIDE CENTRE re-solves the plate and reaches the deck, the s
   assert.strictEqual(other.registry()[deck.id].options.anchor, "between");
 });
 
-test("DR1 line 27: an Edit sheet for a deck saved with anchor between opens with BESIDE CENTRE pressed", () => {
+test("DR1 line 27: an Edit sheet for a deck saved with anchor between opens with #1 / #2 pressed", () => {
   const app = boot();
   const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between" });
   assert.strictEqual(made.ok, true, made.reason);
@@ -6646,7 +6646,7 @@ test("DR2 lines 85, 132: the hint reads the empty sentence while the toggle is d
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
   app.type(W1_NONE);
   assert.strictEqual(hint.textContent,
-    "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.");
+    "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.");
   app.type("(D3) zzz");
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
 });
@@ -6703,9 +6703,9 @@ test("DR1 line 114: MIRROR TOP writes status row 14 and MIRROR BOTTOM row 21", (
   app.flushTimers && app.flushTimers();
   assert.strictEqual(s.textContent, "Bottom mirror off.");
   app.els["scale-anchor-between"].click();
-  assert.strictEqual(s.textContent, "Note 1 is beside centre.");
+  assert.strictEqual(s.textContent, "Notes 1 and 2 are split.");
   app.els["scale-anchor-one"].click();
-  assert.strictEqual(s.textContent, "Note 1 is on centre.");
+  assert.strictEqual(s.textContent, "Note 1 is centred.");
 });
 
 test("DR1 line 19 note, row 19: opening over a pan with no ring of two notes says so", () => {
@@ -6721,7 +6721,7 @@ test("DR1 line 19 note, row 19: opening over a pan with no ring of two notes say
   assert.strictEqual(fine.els["scale-drawer-status"].textContent, "");
 });
 
-test("DR1 line 115: Pygmy typed on Add opens ON CENTRE; one tap on BESIDE CENTRE gives the built-in angles and reopens pressed", () => {
+test("DR1 line 115: Pygmy typed on Add opens #1 CENTRED; one tap on #1 / #2 gives the built-in angles and reopens pressed", () => {
   const app = boot();
   dr1Open(app, DR1_PYGMY_MAKER);
   assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
@@ -6789,7 +6789,7 @@ const S_NOTICE = {
   edit: { true: { true: "Layout not saved yet. SAVE CHANGES keeps it.", false: "Layout not saved yet. SAVE CHANGES keeps it." },
           false: { true: "Layout changed from the default.", false: "" } },
 };
-const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.",
+const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.",
                  empty: "Type a scale to adjust its layout." };
 const S_BUTTON = { add: "GENERATE CARDS", edit: "SAVE CHANGES" };
 const S_BOXES = {
@@ -6857,10 +6857,12 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
       bad("drawer hint", M.open ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
         shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
-      for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"]) bad(`${id} shown`, M.open, shown(id));
+      for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) bad(`${id} shown`, false, shown(id));
+      for (const id of ["scale-layout-reset", "scale-fine-toggle"]) bad(`${id} shown`, M.open, shown(id));
       for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) bad(`${id} shown`, M.open, shown(id));
       if (M.open) {
         bad("mirror top enabled", M.valid, !els["scale-mirror"].disabled);
+        bad("fine toggle enabled", M.valid, !els["scale-fine-toggle"].disabled);
         bad("mirror bottom enabled", M.valid && M.hasBottom, !els["scale-mirror-bottom"].disabled);
         bad("on centre enabled", M.valid, !els["scale-anchor-one"].disabled);
         bad("beside centre enabled", M.valid, !els["scale-anchor-between"].disabled);
@@ -7026,7 +7028,7 @@ for (const edit of [false, true]) {
     const app = boot();
     d2Open(app, D2_AMARA, edit);
     assert.deepStrictEqual(app.hits().map((h) => h.getAttribute("aria-label")),
-      D2_NOTES.map((n, i) => `${n}, rim seat ${i + 1} of 8, ${D2_PLACE[i]}`));
+      D2_NOTES.map((n, i) => `${n}, rim seat ${i + 1}, ${D2_PLACE[i]}`));
     for (const h of app.hits()) {
       assert.strictEqual(h.getAttribute("role"), "button");
       assert.strictEqual(h.hasAttribute("aria-selected"), false);
@@ -7034,10 +7036,10 @@ for (const edit of [false, true]) {
     }
     d2Tap(app, "D4");
     assert.deepStrictEqual(d2Pressed(app), ["D4"]);
-    assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap, or use PREVIOUS SEAT and NEXT SEAT.");
+    assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap.");
     d2Tap(app, "D4");
     assert.deepStrictEqual(d2Pressed(app), []);
-    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3 of 8.");
+    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3.");
     d2Key(app, "F4", " ");
     assert.deepStrictEqual(d2Pressed(app), ["F4"]);
     assert.strictEqual(d2Status(app), "Picked up F4. Arrows choose a seat in the rim. Space swaps. Escape cancels.");
@@ -7049,12 +7051,12 @@ for (const edit of [false, true]) {
     d2Tap(app, "A3"); d2Tap(app, "C4");
     assert.strictEqual(d2Pick(app), null);
     assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
-    assert.strictEqual(d2Status(app), "Swapped A3 and C4. A3 is now in rim seat 2 of 8, lower left.");
+    assert.strictEqual(d2Status(app), "Swapped A3 and C4. A3 is now in rim seat 2, lower left.");
     assert.strictEqual(d2Focus(app), "A3", "focus did not return to the picked note");
     assert.deepStrictEqual(d2Rover(app), ["A3"]);
     d2Key(app, "E4", "Enter"); d2Key(app, "G4", "Enter");
     assert.strictEqual(d2Focus(app), "E4");
-    assert.strictEqual(d2Status(app), "Swapped E4 and G4. E4 is now in rim seat 6 of 8, upper left.");
+    assert.strictEqual(d2Status(app), "Swapped E4 and G4. E4 is now in rim seat 6, upper left.");
   });
 
   test(`DR2a rule P (62, 64, 124): arrows with nothing picked walk the notes without wrap; with a pick they walk seats and wrap, ${where}`, () => {
@@ -7181,7 +7183,7 @@ for (const edit of [false, true]) {
     app.els["scale-note-next"].focus();
     const next = () => { app.els["scale-note-next"].click(); return d2Pick(app); };
     assert.deepStrictEqual(next(), { ring: "rim", i: 0 });
-    assert.strictEqual(d2Status(app), "Picked up F3, rim seat 1 of 2, bottom. PREVIOUS SEAT and NEXT SEAT move it.");
+    assert.strictEqual(d2Status(app), "Picked up F3, rim seat 1, bottom. PREVIOUS SEAT and NEXT SEAT move it.");
     assert.deepStrictEqual(next(), { ring: "rim", i: 1 });
     assert.deepStrictEqual(next(), { ring: "inner", i: 0 });
     assert.deepStrictEqual(next(), { ring: "inner", i: 1 });
@@ -7198,9 +7200,10 @@ for (const edit of [false, true]) {
   });
 }
 
-test("DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET SEATS follows the seats and returns to the default", () => {
+test("DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET LAYOUT follows the layout and returns to the default", () => {
   const app = boot();
   d2Open(app, D2_AMARA, false);
+  app.els["scale-fine-toggle"].click();
   assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next", "scale-layout-reset"].map((id) => app.els[id].disabled), [true, true, true]);
   d2Tap(app, "A3");
   assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next"].map((id) => app.els[id].disabled), [false, false]);
@@ -7209,13 +7212,13 @@ test("DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET SEATS foll
   app.els["scale-anchor-between"].click();
   assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 0 }, "a mirror or anchor change dropped the pick (105)");
   app.els["scale-seat-next"].click();
-  assert.strictEqual(app.els["scale-layout-reset"].disabled, false);
   app.els["scale-layout-reset"].click();
   assert.strictEqual(d2Seats(app), null);
-  assert.strictEqual(d2Status(app), "Seats reset to the default.");
+  assert.strictEqual(d2Status(app), "Layout reset.");
   assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
-  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
-  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
   assert.strictEqual(app.activeId(), "scale-layout-toggle");
   assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next"].map((id) => app.els[id].disabled), [true, true]);
 });
@@ -7259,25 +7262,25 @@ test("DR2a item 7 (121): closing the drawer over a scale that does not parse lea
   assert.strictEqual(app.els["scale-layout-toggle"].hasAttribute("aria-disabled"), false);
 });
 
-test("DR2a (83, 132, 130): the DOM carries the new controls in the order of section 9, the old group is gone, the closed hint is LAYOUT_HINT", () => {
+test("DR2a (83, 132, 130): the DOM carries the new controls in the order of 20.24, the old group is gone, the closed hint is LAYOUT_HINT", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const order = ["scale-layout-toggle", "scale-layout-state", "scale-note-prev", "scale-note-next", "scale-seat-prev",
-    "scale-seat-next", "scale-mirror", "scale-mirror-bottom", "scale-layout-reset", "scale-anchor-one", "scale-anchor-between",
-    "scale-drawer-hint"];
+  const order = ["scale-layout-toggle", "scale-layout-state", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+    "scale-mirror-bottom", "scale-fine-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
+    "scale-layout-reset", "scale-drawer-hint"];
   const at = order.map((id) => html.indexOf(`id="${id}"`));
   assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
-  assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the controls are not in the order of section 9");
+  assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the controls are not in the order of 20.24");
   assert.strictEqual(dr1Markup("scale-note-prev").text, "PREVIOUS NOTE");
   assert.strictEqual(dr1Markup("scale-note-next").text, "NEXT NOTE");
   assert.strictEqual(dr1Markup("scale-seat-prev").text, "PREVIOUS SEAT");
   assert.strictEqual(dr1Markup("scale-seat-next").text, "NEXT SEAT");
-  assert.strictEqual(dr1Markup("scale-layout-reset").text, "RESET SEATS");
+  assert.strictEqual(dr1Markup("scale-layout-reset").text, "RESET LAYOUT");
   assert.doesNotMatch(html, /scale-rot-|scale-move-|scale-legacy/);
-  assert.ok(html.includes("On centre puts seat 1 at the bottom centre. Beside centre puts the bottom centre between seats 1 and 2."));
+  assert.ok(html.includes("Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side."));
   const app = boot();
   openSheet(app);
   app.type(D2_AMARA);
-  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.");
+  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.");
   const drawer = boot();
   d2Open(drawer, D2_AMARA, false);
   assert.strictEqual(drawer.els["scale-drawer-hint"].hidden, false);
@@ -7286,27 +7289,40 @@ test("DR2a (83, 132, 130): the DOM carries the new controls in the order of sect
   assert.strictEqual(drawer.els["scale-layout-hint"].hidden, true);
 });
 
-test("DR2a rule P (120): the Tab order of the sheet on Add and Edit, plate as one stop", () => {
+test("DR3 Tab order on Add and Edit, finer controls closed and open", () => {
   for (const edit of [false, true]) {
-    const app = boot();
-    d2Open(app, DR1_PYGMY_MAKER, edit);
-    d2Tap(app, "G3");
-    app.els["scale-seat-next"].click();
-    app.els["scale-box"].focus();
-    app.els["scale-back"].focus();
-    const seen = [];
-    for (let i = 0; i < 40; i += 1) {
-      app.press(app.els["scale-sheet"], "Tab");
-      const here = app.activeHit() !== null ? "plate" : app.activeId();
-      if (here === "scale-back") break;
-      seen.push(here);
+    for (const open of [false, true]) {
+      const app = boot();
+      d2Open(app, DR1_PYGMY_MAKER, edit);
+      if (open) app.els["scale-fine-toggle"].click();
+      d2Tap(app, "G3");
+      app.els["scale-seat-next"].click();
+      app.els["scale-back"].focus();
+      const seen = [];
+      for (let i = 0; i < 40; i += 1) {
+        app.press(app.els["scale-sheet"], "Tab");
+        const here = app.activeHit() !== null ? "plate" : app.activeId();
+        if (here === "scale-back") break;
+        seen.push(here);
+      }
+      const want = [edit ? "scale-name" : null, "scale-box", "plate", "scale-layout-toggle", "scale-anchor-one",
+        "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
+        ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
+        "scale-layout-reset"].filter((x) => x !== null);
+      const ctx = `edit=${edit} open=${open}: ${seen}`;
+      assert.deepStrictEqual(seen.slice(0, want.length), want, ctx);
+      assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
+      if (!open) for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"]) {
+        assert.ok(!seen.includes(id), `${id} is a Tab stop while the finer controls are closed`);
+      }
+      app.els["scale-layout-reset"].focus();
+      const back = [];
+      for (let i = 0; i < want.length - 1; i += 1) {
+        app.press(app.els["scale-sheet"], "Tab", { shiftKey: true });
+        back.push(app.activeHit() !== null ? "plate" : app.activeId());
+      }
+      assert.deepStrictEqual(back, want.slice(0, -1).reverse(), `Shift+Tab ${ctx}`);
     }
-    const want = ["scale-box", "plate", "scale-layout-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev",
-      "scale-seat-next", "scale-mirror", "scale-mirror-bottom", "scale-layout-reset", "scale-anchor-one", "scale-anchor-between"];
-    if (edit) want.unshift("scale-name");
-    const named = seen.filter((x) => x !== "" && x !== null);
-    assert.deepStrictEqual(named.slice(0, want.length + (edit ? 1 : 0)).filter((x) => want.includes(x)), want, `edit=${edit}`);
-    assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
   }
 });
 
@@ -7466,7 +7482,7 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
   same();
   assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "anchor one baseline");
   app.els["scale-anchor-between"].click(); same();
-  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "BESIDE CENTRE did not redraw");
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "#1 / #2 did not redraw");
   app.els["scale-anchor-between"].click(); same();
   assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "the pressed anchor changed the pan");
   app.els["scale-anchor-one"].click(); same();
@@ -7490,7 +7506,7 @@ test("DR2a rule R (item 8, F1): under a standing refusal every layout control an
   assert.deepStrictEqual(d2Drawn(app), before, "a NOTE step moved a field");
   assert.strictEqual(d2Pressed(app).length, 1);
   app.els["scale-layout-reset"].click(); same();
-  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "RESET SEATS did not redraw");
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "RESET LAYOUT did not redraw");
 });
 
 /* Rule C, typed one keystroke at a time with the drawer open (review 1, F-2):
@@ -7609,7 +7625,7 @@ test("DR2a (18): a pan whose only ring of two is the bottom focuses the first no
   assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
 });
 
-test("DR2a (71): MIRROR TOP then BESIDE CENTRE leave every permutation as it was", () => {
+test("DR2a (71): MIRROR TOP then #1 / #2 leave every permutation as it was", () => {
   const app = boot();
   d2Open(app, D2_AMARA, false);
   d2Tap(app, "A3"); d2Tap(app, "C4");
@@ -7650,7 +7666,7 @@ describe("DR2b drag, mouse", () => {
       DG.mouseDrag(app, names[0], names[2]);
       assert.deepStrictEqual(dgSeats(app), { [ring]: [2, 1, 0, 3] });
       assert.strictEqual(d2Pick(app), null);
-      assert.strictEqual(d2Status(app), `Swapped ${names[0]} and ${names[2]}. ${names[0]} is now in ${ring} seat 3 of 4, ${
+      assert.strictEqual(d2Status(app), `Swapped ${names[0]} and ${names[2]}. ${names[0]} is now in ${ring} seat ${dr3SeatLabel(app, dgRingText.text, ring, 2)}, ${
         app.hits().find((h) => h.getAttribute("aria-label").startsWith(names[0] + ",")).getAttribute("aria-label").split(", ").pop()}.`);
     });
   }
@@ -7659,7 +7675,7 @@ describe("DR2b drag, mouse", () => {
     const app = dgOpen({});
     DG.mouseDrag(app, "D4", "D4");
     assert.strictEqual(dgSeats(app), null);
-    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3 of 8.");
+    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3.");
     assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 2 });
     assert.strictEqual(DG.ghostEls(app).length, 0, "the ghost stayed");
   });
@@ -7912,14 +7928,14 @@ describe("DR2b drag, touch (rule T traces on a controlled clock)", () => {
     DG.release(app, g, g.x + 6, g.y);
     assert.strictEqual(dgSeats(app), null);
     assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 2 });
-    assert.notStrictEqual(d2Status(app), "D4 stays in rim seat 3 of 8.", "a hold wrote row 8");
+    assert.notStrictEqual(d2Status(app), "D4 stays in rim seat 3.", "a hold wrote row 8");
     const h2 = DG.down(app, "D4", "touch");
     app.advance(250);
     DG.moveTo(app, h2, h2.x, h2.y + 9);
     DG.moveTo(app, h2, h2.x, h2.y + 36);
     DG.release(app, h2, h2.x, h2.y + 36);
     assert.strictEqual(dgSeats(app), null);
-    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3 of 8.");
+    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3.");
     assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 2 });
   });
 
@@ -8080,7 +8096,7 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
     app.els["scale-seat-next"].click();
     assert.deepStrictEqual(dgSeats(app), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
     DG.mouseDrag(app, "A3", "A3");
-    assert.strictEqual(d2Status(app), "A3 stays in rim seat 2 of 8.");
+    assert.strictEqual(d2Status(app), "A3 stays in rim seat 2.");
     d2Hit(app, "A3").focus();
     app.keydown("Escape");
     assert.strictEqual(d2Status(app), "A3 put down. The swaps you made are kept.");
@@ -8188,4 +8204,332 @@ describe("DR2b review 1 (20.22 steps 2, 3, 5, 6)", () => {
       assert.strictEqual(app.els["scale-generate"].disabled, true, `${how}: the primary button was enabled`);
     }
   });
+});
+
+/* ------------------------------------------------ DR3 rule N and rule W
+ * A seat's number is the number the default arrangement drew there. A moved
+ * note takes the number of the seat it now fills, on the plate, the card
+ * number line and the PDF. Seats are named by that drawn number. */
+
+/** The number the plate draws in seat k of a ring: the default label (rule N). */
+const dr3SeatLabel = (app, text, ring, k) => {
+  const f = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(text)}, {}).value.fields`));
+  const ids = Object.keys(f).filter((id) => f[id][3] === ring).sort((a, b) => Number(a) - Number(b));
+  return f[ids[k]][5];
+};
+const DR3_D3 = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const DR3_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const DR3_SWAPPED = { rim: [1, 0, 2, 3, 4, 5, 6, 7] };
+const dr3Digest = (x) => require("node:crypto").createHash("sha256").update(x).digest("hex").slice(0, 16);
+
+/** Everything a deck puts in front of a player, hashed: its record, every
+ *  card face, every number line, and the bytes of its chord-card PDF. */
+function dr3Surface(text) {
+  const app = boot();
+  const made = app.generate(text, {});
+  assert.strictEqual(made.ok, true, made.reason);
+  const id = made.value.id;
+  app.select(id);
+  const deck = `CUSTOM[${JSON.stringify(id)}]`;
+  const n = app.get(`${deck}.chords.length`);
+  const faces = [app.get(`pan(${deck}, null)`)];
+  for (let i = 0; i < n; i += 1) {
+    faces.push(app.get(`pan(${deck}, ${deck}.chords[${i}])`));
+    faces.push(app.get(`linesHTML(${deck}, ${deck}.chords[${i}])`));
+  }
+  app.run('downloadDeckPDF("shop")');
+  const bytes = Buffer.from(app.blobs()[0].parts[0]);
+  return {
+    record: dr3Digest(JSON.stringify(plain(app.registry()[id]))),
+    faces: dr3Digest(faces.join("\n")),
+    pdf: dr3Digest(bytes),
+  };
+}
+
+const DR3_UNMOVED = {
+  "D3 example": { record: "2b6cf546501e9143", faces: "f40c14454a44c68e", pdf: "c9d922c9737030d7" },
+  "D Kurd 10": { record: "0330e4911a3c5e61", faces: "2ffb8e4a89d70314", pdf: "819275e64958391e" },
+  "F3 Low Pygmy": { record: "629f1fa4dff72d20", faces: "7d89a6a05bc946d8", pdf: "ef6939b0c40de12a" },
+};
+
+test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", () => {
+  const got = {
+    "D3 example": dr3Surface(DR3_D3),
+    "D Kurd 10": dr3Surface(DR3_KURD),
+    "F3 Low Pygmy": dr3Surface(DR1_PYGMY_MAKER),
+  };
+  assert.deepStrictEqual(got, DR3_UNMOVED);
+});
+
+test("rule N: generateDeck gives the plate and the card number line the seat number", () => {
+  const app = boot();
+  const made = app.generate(DR3_D3, { seats: DR3_SWAPPED });
+  assert.strictEqual(made.ok, true, made.reason);
+  const deck = app.registry()[made.value.id];
+  assert.strictEqual(deck.fields["1"][5], "2", "A3 sits in seat 2");
+  assert.strictEqual(deck.fields["2"][5], "1", "C4 sits in seat 1");
+  assert.deepStrictEqual(Object.keys(deck.fields).filter((k) => k > 2).map((k) => deck.fields[k][5]),
+    ["3", "4", "5", "6", "7", "8"]);
+  const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+  const chords = plain(deck.chords);
+  chords.forEach((ch, i) => {
+    const line = app.get(`linesHTML(${expr}, ${expr}.chords[${i}])`);
+    const numline = /<div class="numline">([\s\S]*)<\/div><\/div>/.exec(line)[1];
+    const got = [...numline.matchAll(/>(\d+)<\/span>/g)].map((m) => m[1]);
+    assert.deepStrictEqual(got, ch.fields.map((f) => deck.fields[f][5]), `${ch.main} number line`);
+  });
+  const svg = app.get(`pan(${expr}, ${expr}.chords[0])`);
+  const labels = [...svg.matchAll(/<text[^>]*>(\d+)<\/text>/g)].map((m) => m[1]);
+  assert.ok(labels.includes("2") && labels.includes("1"), "the plate draws the seat numbers");
+});
+
+test("rule N: a moved deck's stored record and share link are the strings main wrote", () => {
+  const app = boot();
+  const made = app.generate(DR3_D3, { seats: DR3_SWAPPED, anchor: "between", mirror: true });
+  assert.strictEqual(made.ok, true, made.reason);
+  const expr = `CUSTOM[${JSON.stringify(made.value.id)}]`;
+  assert.deepStrictEqual(plain(app.get(`(rememberScale(seedOf(${expr})), savedScales())`)), [{
+    v: 4, s: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+    o: { palette: 0, mirror: true, mirrorBottom: true, anchor: "between", parent: 1, seats: DR3_SWAPPED },
+  }]);
+  assert.strictEqual(plain(app.get(`shareLink(${expr})`)).value,
+    "https://example.test/index.html#s=4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m");
+  assert.strictEqual(app.get(`HPE.core.formatSeed(${expr}.fields)`), DR3_D3);
+});
+
+const dr3Names = (app) => Object.fromEntries(app.hits().map((h) => [h.getAttribute("data-field"), h.getAttribute("aria-label")]));
+
+test("rule W: seat names use the drawn number on rim, inner and bottom", () => {
+  const app = boot();
+  d2Open(app, DR1_PYGMY_MAKER, false);
+  const home = plain(app.get(`HPE.core.parseSeed(${JSON.stringify(DR1_PYGMY_MAKER)}, {}).value.fields`));
+  const place = /^(\S+), (rim|inner|bottom) seat (\d+|U\d+), (\S.*)$/;
+  const before = dr3Names(app);
+  for (const id of Object.keys(before)) {
+    const m = place.exec(before[id]);
+    assert.ok(m, `${before[id]} does not read {name}, {ring} seat {N}, {place}`);
+    assert.strictEqual(m[3], home[id][5], `${before[id]}: the default seat is the drawn number`);
+    assert.ok(!/ of \d+/.test(before[id]), `${before[id]} still says "of k"`);
+  }
+  assert.ok(Object.values(before).some((l) => /inner seat 10,/.test(l)), "an inner note names seat 10");
+  assert.ok(Object.values(before).some((l) => /bottom seat U1,/.test(l)), "a bottom note names seat U1");
+  const rimIds = Object.keys(home).filter((k) => home[k][3] === "rim");
+  const innerIds = Object.keys(home).filter((k) => home[k][3] === "inner");
+  const bottomIds = Object.keys(home).filter((k) => home[k][3] === "bottom");
+  const swap = (ids) => ids.map((_, i) => (i === 0 ? 1 : i === 1 ? 0 : i));
+  d2Seed(app, { rim: swap(rimIds), inner: swap(innerIds), bottom: swap(bottomIds) });
+  const after = dr3Names(app);
+  for (const ids of [rimIds, innerIds, bottomIds]) {
+    assert.match(after[ids[0]], new RegExp(`seat ${home[ids[1]][5]},`));
+    assert.match(after[ids[1]], new RegExp(`seat ${home[ids[0]][5]},`));
+  }
+  d2Tap(app, "G5");
+  d2Tap(app, "F5");
+  assert.match(d2Status(app), /^Swapped G5 and F5\. G5 is now in inner seat (10|11), \S/);
+});
+
+test("rule W: the tap row names the seat buttons only while the finer controls are open", () => {
+  const app = boot();
+  d2Open(app, DR3_D3, false);
+  d2Tap(app, "D4");
+  assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap.");
+  d2Tap(app, "D4");
+  app.els["scale-fine-toggle"].click();
+  d2Tap(app, "D4");
+  assert.strictEqual(d2Status(app),
+    "Picked up D4. Tap or drop it on another rim note to swap, or use PREVIOUS SEAT and NEXT SEAT.");
+  d2Tap(app, "D4");
+  app.els["scale-fine-toggle"].click();
+  d2Tap(app, "D4");
+  assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap.");
+});
+
+/* ------------------------------------------------ DR3 drawer: order, copy,
+ * the finer-controls disclosure, RESET LAYOUT */
+
+const DR3_STEPS = ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"];
+const dr3Fine = (app) => app.els["scale-fine-toggle"];
+const dr3Open = (app, text, edit) => { d2Open(app, text, edit); return app; };
+
+test("DR3 order: orientation, mirrors, disclosure, finer rows, RESET LAYOUT, hint", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const drawer = html.slice(html.indexOf('id="scale-drawer"'));
+  const order = ["scale-anchor-label", "scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom",
+    "scale-fine-toggle", "scale-fine", ...DR3_STEPS, "scale-layout-reset", "scale-drawer-hint"];
+  const at = order.map((id) => drawer.indexOf(`id="${id}"`));
+  assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
+  assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the drawer is not in the order of 20.24");
+  const hint = drawer.indexOf("Which note sits nearest you");
+  assert.ok(hint > at[2] && hint < at[3], "the orientation helper sits under the two options, above the mirrors");
+  const fine = dr1Markup("scale-fine");
+  assert.ok(fine.attrs.includes("hidden"), "#scale-fine ships hidden");
+  const toggle = dr1Markup("scale-fine-toggle");
+  assert.strictEqual(toggle.attr("type"), "button");
+  assert.strictEqual(toggle.attr("aria-expanded"), "false");
+  assert.strictEqual(toggle.attr("aria-controls"), "scale-fine");
+  assert.strictEqual(toggle.text, "HARD TO TAP? SHOW FINER CONTROLS");
+  const reset = dr1Markup("scale-layout-reset");
+  assert.strictEqual(reset.text, "RESET LAYOUT");
+  assert.strictEqual(reset.attr("class"), "mode");
+  assert.ok(/\bdisabled\b/.test(reset.attrs));
+  const finerBlock = /<div id="scale-fine"[^>]*>([\s\S]*?)<button[^>]*id="scale-layout-reset"/.exec(drawer);
+  assert.ok(finerBlock, "the finer rows are not between the disclosure and RESET LAYOUT");
+  for (const id of DR3_STEPS) assert.ok(finerBlock[1].includes(`id="${id}"`), `#${id} is not inside #scale-fine`);
+});
+
+test("DR3 orientation: label, two options, helper and status rows read as the owner wrote them", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const label = dr1Markup("scale-anchor-label");
+  assert.strictEqual(label.text, "HANDPAN ORIENTATION");
+  assert.ok(/class="sheetlabel"/.test(label.attrs));
+  assert.strictEqual(dr1Markup("scale-anchor-one").text, "#1 CENTRED");
+  assert.strictEqual(dr1Markup("scale-anchor-between").text, "#1 / #2");
+  assert.ok(/role="group"[^>]*aria-labelledby="scale-anchor-label"|aria-labelledby="scale-anchor-label"[^>]*role="group"/.test(html));
+  assert.ok(html.includes('<p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>'));
+  assert.ok(!/ON CENTRE|BESIDE CENTRE|RESET SEATS/.test(html), "an old label survived");
+  const app = dr3Open(boot(), DR3_D3, false);
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(d2Status(app), "Notes 1 and 2 are split.");
+  app.els["scale-anchor-one"].click();
+  assert.strictEqual(d2Status(app), "Note 1 is centred.");
+});
+
+test("DR3 disclosure: closed on every sheet open, kept across a drawer close", () => {
+  for (const edit of [false, true]) {
+    const app = dr3Open(boot(), DR3_D3, edit);
+    const ctx = `edit=${edit}`;
+    assert.strictEqual(app.els["scale-fine"].hidden, true, ctx);
+    assert.strictEqual(dr3Fine(app).textContent.trim(), "HARD TO TAP? SHOW FINER CONTROLS", ctx);
+    assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "false", ctx);
+    for (const id of DR3_STEPS) assert.strictEqual(app.els[id].getClientRects().length, 0, `${ctx} #${id} is rendered closed`);
+    dr3Fine(app).click();
+    assert.strictEqual(app.els["scale-fine"].hidden, false, ctx);
+    assert.strictEqual(dr3Fine(app).textContent.trim(), "HIDE FINER CONTROLS", ctx);
+    assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "true", ctx);
+    for (const id of DR3_STEPS) assert.strictEqual(app.els[id].getClientRects().length, 1, `${ctx} #${id} is not rendered open`);
+    app.els["scale-layout-toggle"].click();
+    app.els["scale-layout-toggle"].click();
+    assert.strictEqual(app.els["scale-fine"].hidden, false, `${ctx}: a drawer close and reopen shut the finer controls`);
+    assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "true", ctx);
+    app.run("closeScaleSheet()");
+    if (edit) openEdit(app, Object.values(app.registry())[0]); else openSheet(app);
+    app.els["scale-layout-toggle"].click();
+    assert.strictEqual(app.els["scale-fine"].hidden, true, `${ctx}: the sheet reopened with the finer controls open`);
+    assert.strictEqual(dr3Fine(app).textContent.trim(), "HARD TO TAP? SHOW FINER CONTROLS", ctx);
+    assert.strictEqual(dr3Fine(app).getAttribute("aria-expanded"), "false", ctx);
+  }
+});
+
+test("DR3 disclosure: toggling moves no focus, and closing under a focused step button focuses the disclosure", () => {
+  const app = dr3Open(boot(), DR3_D3, false);
+  app.els["scale-box"].focus();
+  dr3Fine(app).click();
+  assert.strictEqual(app.activeId(), "scale-box", "opening moved focus");
+  dr3Fine(app).click();
+  assert.strictEqual(app.activeId(), "scale-box", "closing moved focus");
+  dr3Fine(app).click();
+  for (const id of DR3_STEPS) {
+    app.els[id].focus();
+    dr3Fine(app).click();
+    assert.strictEqual(app.activeId(), "scale-fine-toggle", `closing under #${id} lost focus`);
+    dr3Fine(app).click();
+  }
+  dr3Fine(app).focus();
+  dr3Fine(app).click();
+  assert.strictEqual(app.activeId(), "scale-fine-toggle");
+});
+
+test("DR3 Escape from the disclosure closes the drawer and focuses the toggle", () => {
+  const app = dr3Open(boot(), DR3_D3, false);
+  dr3Fine(app).focus();
+  app.keydown("Escape");
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(app.sheetOpen(), true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  app.els["scale-layout-toggle"].click();
+  d2Tap(app, "D4");
+  assert.ok(d2Pick(app));
+  dr3Fine(app).focus();
+  app.keydown("Escape");
+  assert.strictEqual(d2Pick(app), null, "Escape on the disclosure did not put the pick down");
+  assert.strictEqual(app.els["scale-drawer"].hidden, false, "the first Escape closed the drawer under a pick");
+  app.keydown("Escape");
+  assert.strictEqual(app.els["scale-drawer"].hidden, true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+});
+
+const dr3Reset = (app) => app.els["scale-layout-reset"];
+
+test("DR3 reset is enabled by a seat, by either mirror and by orientation, each alone", () => {
+  const cases = [
+    ["a seat", (app) => { d2Tap(app, "G3"); d2Tap(app, "F4"); }],
+    ["the top mirror", (app) => app.els["scale-mirror"].click()],
+    ["the bottom mirror", (app) => app.els["scale-mirror-bottom"].click()],
+    ["the orientation", (app) => app.els["scale-anchor-between"].click()],
+  ];
+  for (const edit of [false, true]) {
+    for (const [what, act] of cases) {
+      const app = dr3Open(boot(), DR1_PYGMY_MAKER, edit);
+      assert.strictEqual(dr3Reset(app).disabled, true, `${what} edit=${edit}: enabled before any change`);
+      act(app);
+      assert.strictEqual(dr3Reset(app).disabled, false, `${what} edit=${edit}: not enabled by the change alone`);
+    }
+  }
+  const app = dr3Open(boot(), DR1_PYGMY_MAKER, false);
+  app.els["scale-anchor-between"].click();
+  app.els["scale-anchor-one"].click();
+  assert.strictEqual(dr3Reset(app).disabled, true, "back at the default it is still enabled");
+  app.type("(D3) zzz");
+  assert.strictEqual(dr3Reset(app).disabled, true, "enabled over a box that does not parse");
+});
+
+test("DR3 reset returns seats, both mirrors and orientation to the default and writes Layout reset.", () => {
+  const app = dr3Open(boot(), DR1_PYGMY_MAKER, false);
+  const home = d2Drawn(app);
+  dr3Fine(app).click();
+  d2Tap(app, "G3"); d2Tap(app, "F4");
+  app.els["scale-mirror"].click();
+  app.els["scale-mirror-bottom"].click();
+  app.els["scale-anchor-between"].click();
+  d2Tap(app, "G4");
+  assert.ok(d2Pick(app));
+  assert.notDeepStrictEqual(d2Drawn(app), home);
+  app.els["scale-layout-reset"].click();
+  assert.strictEqual(d2Seats(app), null);
+  assert.strictEqual(d2Pick(app), null, "the pick survived");
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "false");
+  assert.deepStrictEqual(d2Drawn(app), home, "the plate is not back at the default");
+  assert.strictEqual(d2Status(app), "Layout reset.");
+  assert.strictEqual(dr3Reset(app).disabled, true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.els["scale-fine"].hidden, false, "the disclosure state changed");
+  app.els["scale-generate"].click();
+  const fresh = makeCustom(boot(), DR1_PYGMY_MAKER);
+  const got = app.registry()[app.deckId()];
+  assert.deepStrictEqual(plain(got.fields), plain(fresh.fields), "GENERATE after a reset differs from a fresh Add");
+  assert.deepStrictEqual(plain(got.options), plain(fresh.options));
+});
+
+test("DR3 reset on Edit gives the generated default, not the stored layout", () => {
+  const app = boot();
+  const made = app.generate(DR1_PYGMY_MAKER, { anchor: "between", mirror: true, mirrorBottom: false,
+    seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] } });
+  assert.strictEqual(made.ok, true, made.reason);
+  openEdit(app, app.registry()[made.value.id]);
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(dr3Reset(app).disabled, false, "a stored layout that differs from the default left RESET LAYOUT off");
+  app.els["scale-layout-reset"].click();
+  assert.strictEqual(d2Seats(app), null);
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "false");
+  assert.strictEqual(app.els["scale-anchor-one"].getAttribute("aria-pressed"), "true");
+  const fresh = dr3Open(boot(), DR1_PYGMY_MAKER, false);
+  assert.deepStrictEqual(d2Drawn(app), d2Drawn(fresh), "reset on Edit is not the generated default");
+  app.els["scale-generate"].click();
+  const saved = app.registry()[app.deckId()];
+  const clean = makeCustom(boot(), DR1_PYGMY_MAKER);
+  assert.deepStrictEqual(plain(saved.fields), plain(clean.fields));
 });

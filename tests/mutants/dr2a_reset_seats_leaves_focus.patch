@@ -1,13 +1,13 @@
-# kills: DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET SEATS follows the seats and returns to the default
-# suite: node --test --test-name-pattern ^DR2a..59..76..99..116..12...SEAT.buttons.follow.the.pick..RESET.SEATS.follows.the.seats.and.returns.to.the.default$ tests/app.test.js
-# RESET SEATS leaves focus on a button that may have gone disabled.
+# kills: DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET LAYOUT follows the layout and returns to the default
+# suite: node --test --test-name-pattern ^DR2a..59..76..99..116..12...SEAT.buttons.follow.the.pick..RESET.LAYOUT.follows.the.layout.and.returns.to.the.default$ tests/app.test.js
+# RESET LAYOUT leaves focus on a button that may have gone disabled.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9319,7 +9319,6 @@ function resetSeats() {
+@@ -9319,7 +9319,6 @@ function resetLayout() {
    paintLayout();
    resyncSheet(true);
-   layoutStatus("Seats reset to the default.");
+   layoutStatus("Layout reset.");
 -  drawerBtn.focus();
  }
  

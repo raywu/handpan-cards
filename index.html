@@ -977,7 +977,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-layout-toggle{align-self:flex-start}
 #scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
 #scale-layout-toggle:disabled + #scale-layout-hint,
-#scale-drawer .mode:disabled, #scale-layout-reset:disabled{opacity:.5; cursor:default}
+#scale-drawer .mode:disabled, #scale-fine-toggle:disabled{opacity:.5; cursor:default}
 #scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
 #scale-layout-toggle.on span{display:inline}
 #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}
@@ -1028,12 +1028,14 @@ footer.seq{row-gap:var(--sp-1)}
    target is transparent by design (it is smaller than the note it covers), so
    the press flash fills it rather than restyling the note. */
 #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
-#scale-layout-reset{background:none; border:none; color:#a79d8b; cursor:pointer;
+#scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
   min-height:44px; padding:0 4px;
   font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 /* Quiet, never a primary: auto width, so the sheet's only full-width button
    stays #scale-generate. */
 #scale-delete-row{align-items:center}
+#scale-fine:not([hidden]){display:flex; flex-direction:column; gap:var(--sp-2)}
+#scale-layout-reset{width:100%}
 /* Amber to match #scale-delete[data-armed] and #scale-msg.warn - one colour
    for "about to do something you cannot undo". :empty leaves the flow so an
    idle DELETE row is exactly the height it was before this line existed. */
@@ -1084,7 +1086,7 @@ footer.seq{row-gap:var(--sp-1)}
 #scale-swatches .dot:active::after{box-shadow:0 0 0 2px #a79d8b}
 #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #f1ece1}
 #scale-swatches .dot:active{opacity:.75}
-#scale-layout-reset:active, #scale-delete:active{color:#eae6df}
+#scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
 /* Armed is a state the eye can read without the label: the same amber the
    announcer uses for a warning. */
 #scale-delete[data-armed]{color:#e3b25c}
@@ -1246,18 +1248,16 @@ footer.seq{row-gap:var(--sp-1)}
       </div>
       <p class="sheethint" id="scale-layout-state" hidden></p>
       <div id="scale-drawer" role="group" aria-label="Layout" hidden>
-        <div class="ctlrow">
-          <div class="mirror">
-            <button class="mode" type="button" id="scale-note-prev" disabled>PREVIOUS NOTE</button>
-            <button class="mode" type="button" id="scale-note-next" disabled>NEXT NOTE</button>
+        <div class="editrow">
+          <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
+          <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-anchor-one" aria-pressed="true" disabled>#1 CENTRED</button>
+              <button class="mode" type="button" id="scale-anchor-between" aria-pressed="false" disabled>#1 / #2</button>
+            </div>
           </div>
         </div>
-        <div class="ctlrow">
-          <div class="mirror">
-            <button class="mode" type="button" id="scale-seat-prev" disabled>PREVIOUS SEAT</button>
-            <button class="mode" type="button" id="scale-seat-next" disabled>NEXT SEAT</button>
-          </div>
-        </div>
+        <p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>
         <div class="ctlrow">
           <div class="mirror">
             <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
@@ -1265,19 +1265,24 @@ footer.seq{row-gap:var(--sp-1)}
           </div>
         </div>
         <p class="sheethint">Each flips left and right. Top covers the rim and the inner notes.</p>
-        <div class="ctlrow">
-          <button id="scale-layout-reset" type="button" disabled>RESET SEATS</button>
-        </div>
-        <div class="editrow">
-          <span class="sheetlabel" id="scale-anchor-label">NOTE 1</span>
-          <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
+        <button type="button" id="scale-fine-toggle" aria-expanded="false" aria-controls="scale-fine" disabled>HARD TO TAP? SHOW FINER CONTROLS</button>
+        <div id="scale-fine" hidden>
+          <div class="ctlrow">
             <div class="mirror">
-              <button class="mode" type="button" id="scale-anchor-one" aria-pressed="true" disabled>ON CENTRE</button>
-              <button class="mode" type="button" id="scale-anchor-between" aria-pressed="false" disabled>BESIDE CENTRE</button>
+              <button class="mode" type="button" id="scale-note-prev" disabled>PREVIOUS NOTE</button>
+              <button class="mode" type="button" id="scale-note-next" disabled>NEXT NOTE</button>
+            </div>
+          </div>
+          <div class="ctlrow">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-seat-prev" disabled>PREVIOUS SEAT</button>
+              <button class="mode" type="button" id="scale-seat-next" disabled>NEXT SEAT</button>
             </div>
           </div>
         </div>
-        <p class="sheethint">On centre puts seat 1 at the bottom centre. Beside centre puts the bottom centre between seats 1 and 2.</p>
+        <div class="ctlrow">
+          <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
+        </div>
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
       </div>
     </div>
@@ -5075,8 +5080,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  /* Merge: copy the source fields and write each zone's angle into slot 4. */
-  function merge(source, zones, placed) {
+  /* Merge: copy the source fields and write each zone's angle into slot 4.
+   * Rule N: a seat's number is the default label of the note that sits there by
+   * default, so the note in seat s carries seat s's label (slot 5). Labels are
+   * read from `source`, never from the fields being written. */
+  function merge(source, zones, placed, seats) {
     var fields = {};
     var id;
     var i;
@@ -5088,6 +5096,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = placed.rims[i];
     for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = placed.inners[i];
     for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
+    if (seats) {
+      for (var z = 0; z < ZONES.length; z += 1) {
+        var list = seats[ZONES[z]];
+        if (!list) continue;
+        var ids = zones[ZONES[z]];
+        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
+      }
+    }
     return fields;
   }
 
@@ -5109,7 +5125,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var geom = geometry(counts, placed);
     if (wanted.value) placed = reseat(placed, wanted.value);
 
-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed) } };
+    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
   }
 
   HPE.layout = {
@@ -7801,7 +7817,10 @@ function generateDeck(text, options, guard) {
       { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, seats: wanted });
     if (!moved.ok) return moved;
     for (const id of Object.keys(moved.value.fields)) {
-      if (built.value.fields[id]) built.value.fields[id][4] = moved.value.fields[id][4];
+      if (built.value.fields[id]) {
+        built.value.fields[id][4] = moved.value.fields[id][4];
+        built.value.fields[id][5] = moved.value.fields[id][5];
+      }
     }
     built.value.options.seats = JSON.parse(JSON.stringify(wanted));
   }
@@ -8794,6 +8813,8 @@ const noteNext  = document.getElementById("scale-note-next");
 const seatPrev  = document.getElementById("scale-seat-prev");
 const seatNext  = document.getElementById("scale-seat-next");
 const resetBtn  = document.getElementById("scale-layout-reset");
+const fineBtn   = document.getElementById("scale-fine-toggle");
+const fineBox   = document.getElementById("scale-fine");
 // Lane DR1: the layout drawer shell.
 const layoutZone = document.getElementById("scale-layout-zone");
 const plateBand  = document.getElementById("scale-plate-band");
@@ -8919,9 +8940,9 @@ let layoutBase = { anchor: "one", mirror: false, mb: false, seats: "" };
 const PAUSED_TEXT = "Layout is paused until the scale parses.";
 const READY_TEXT = "Layout is ready again.";
 const HINT_EMPTY = "Type a scale to adjust its layout.";
-const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.";
+const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.";
 const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
-const DRAWER_ZONE = [drawerBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
+const DRAWER_ZONE = [drawerBtn, fineBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
   anchorOne, anchorBetween, previewBox];
 const inDrawerZone = (el) => DRAWER_ZONE.includes(el) || isHit(el);
 
@@ -8980,7 +9001,11 @@ function paintLayout() {
   drawerHint.hidden = !drawerOpen;
   notePrev.disabled = noteNext.disabled = !boxOk || !ringPickable();
   seatPrev.disabled = seatNext.disabled = !boxOk || !pickRef;
-  resetBtn.disabled = !boxOk || !layoutSeats;
+  resetBtn.disabled = !boxOk || !(layoutSeats || mirror || bottomMirror() || anchor !== "one");
+  fineBox.hidden = !fineOpen;
+  fineBtn.disabled = !boxOk;
+  fineBtn.setAttribute("aria-expanded", String(fineOpen));
+  fineBtn.textContent = fineOpen ? "HIDE FINER CONTROLS" : "HARD TO TAP? SHOW FINER CONTROLS";
   layoutZone.classList.toggle("open", drawerOpen);
   const note = layoutNoticeText();
   layoutNote.textContent = note;
@@ -9144,6 +9169,7 @@ let lastSolved = null;
 // The picked note, or null; the note the arrow keys last stood on (the one Tab
 // stop of the plate); whether a SEAT step has moved anything since the pick.
 let pickRef = null;
+let fineOpen = false;
 let roverRef = null;
 let pickMoved = false;
 // Per ring: the arrangement at every note count the ring has had (section 14).
@@ -9170,7 +9196,7 @@ function ringNotes(ring) {
   const f = lastSolved.fields;
   const ids = ringIds(f, ring);
   const seats = seatsFor(ring, ids.length);
-  return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, name: f[id][0] + f[id][1],
+  return ids.map((id, i) => ({ ring, i, id, seat: seats[i], k: ids.length, label: String(f[id][5]), name: f[id][0] + f[id][1],
     place: placeOf(f[id][4]) }));
 }
 const bySeat = (a, b) => a.seat - b.seat;
@@ -9212,7 +9238,7 @@ function setRover(ref) {
 function hitLayer() {
   const meta = {};
   allNotes().forEach((n, order) => {
-    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}` };
+    meta[n.id] = { ring: n.ring, order, label: `${n.name}, ${n.ring} seat ${n.label}, ${n.place}` };
   });
   const p = pickedNote(), r = roverNote();
   return { meta, picked: p ? p.id : null, rover: r ? r.id : null, flash: panFlash, arm: armId };
@@ -9281,14 +9307,14 @@ function swapSeats(ring, i, j) {
   paintLayout();
   resyncSheet(true);
   const moved = noteAt({ ring, i });
-  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.seat + 1} of ${moved.k}.`);
-  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.seat + 1} of ${moved.k}, ${moved.place}.`);
+  if (i === j) layoutStatus(`${moved.name} stays in ${ring} seat ${moved.label}.`);
+  else layoutStatus(`Swapped ${a.name} and ${b.name}. ${moved.name} is now in ${ring} seat ${moved.label}, ${moved.place}.`);
   return true;
 }
 
 function pickAnnouncement(n, how) {
-  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap, or use PREVIOUS SEAT and NEXT SEAT.`;
-  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.seat + 1} of ${n.k}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
+  if (how === "tap") return `Picked up ${n.name}. Tap or drop it on another ${n.ring} note to swap${fineOpen ? ", or use PREVIOUS SEAT and NEXT SEAT" : ""}.`;
+  if (how === "note") return `Picked up ${n.name}, ${n.ring} seat ${n.label}, ${n.place}. PREVIOUS SEAT and NEXT SEAT move it.`;
   return `Picked up ${n.name}. Arrows choose a seat in the ${n.ring}. Space swaps. Escape cancels.`;
 }
 /** A tap, Space or Enter on a note. `how` is "tap" or "key". */
@@ -9358,16 +9384,19 @@ function putDownPick() {
   layoutStatus(moved ? `${p.name} put down. The swaps you made are kept.` : "Cancelled. Nothing moved.");
   if (fromSeatButton) { setRover(ref); focusRef(ref); }
 }
-function resetSeats() {
+function resetLayout() {
   cancelGesture();
   layoutSeats = null;
+  mirror = false;
+  bottomHeld = false;
+  anchor = "one";
   seatMemo = { rim: {}, inner: {}, bottom: {} };
   pickRef = null;
   pickMoved = false;
   panFlash = null;
   paintLayout();
   resyncSheet(true);
-  layoutStatus("Seats reset to the default.");
+  layoutStatus("Layout reset.");
   drawerBtn.focus();
 }
 
@@ -9785,6 +9814,7 @@ function resetSheetState(edit) {
   // The correction is a seed option like the others, so Edit shows the one the
   // deck already carries and RESET is what clears it.
   layoutSeats = edit && edit.options.seats ? JSON.parse(JSON.stringify(edit.options.seats)) : null;
+  fineOpen = false;
   pickRef = null;
   roverRef = null;
   pickMoved = false;
@@ -10092,7 +10122,7 @@ mirrorBot.onclick = () => {
 const pickAnchor = (to) => () => {
   if (anchor === to) return;
   anchor = to; paintLayout(); resyncSheet(true);
-  layoutStatus(to === "one" ? "Note 1 is on centre." : "Note 1 is beside centre.");
+  layoutStatus(to === "one" ? "Note 1 is centred." : "Notes 1 and 2 are split.");
 };
 anchorOne.onclick = pickAnchor("one");
 anchorBetween.onclick = pickAnchor("between");
@@ -10101,7 +10131,12 @@ notePrev.onclick = () => stepNote(-1);
 noteNext.onclick = () => stepNote(1);
 seatPrev.onclick = () => stepSeat(-1);
 seatNext.onclick = () => stepSeat(1);
-resetBtn.onclick = resetSeats;
+resetBtn.onclick = resetLayout;
+fineBtn.onclick = () => {
+  fineOpen = !fineOpen;
+  if (!fineOpen && [notePrev, noteNext, seatPrev, seatNext].includes(document.activeElement)) fineBtn.focus();
+  paintLayout();
+};
 drawerBtn.addEventListener("blur", () => {
   if (drawerBtn.getAttribute("aria-disabled")) paintLayout();
 });
@@ -10421,8 +10456,8 @@ sheet.addEventListener("keydown", e => {
                  editingId ? nameBox : null,
                  scaleBox,
                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
-                 drawerBtn, notePrev, noteNext, seatPrev, seatNext,
-                 mirrorTop, mirrorBot, resetBtn, anchorOne, anchorBetween,
+                 drawerBtn, anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+                 notePrev, noteNext, seatPrev, seatNext, resetBtn,
                  editingId ? degSel : null, ...swatches.children, genBtn,
                  editingId ? delBtn : null]
     .filter(isStop);

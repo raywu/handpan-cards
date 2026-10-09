@@ -1,0 +1,15 @@
+# kills: DR3 Escape from the disclosure closes the drawer and focuses the toggle
+# suite: node --test --test-name-pattern ^DR3.Escape.from.the.disclosure.closes.the.drawer.and.focuses.the.toggle$ tests/app.test.js
+# The disclosure toggle is outside the drawer zone, so closing the drawer from it leaves focus on a hidden control.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8925,7 +8925,7 @@ const READY_TEXT = "Layout is ready again.";
+ const HINT_EMPTY = "Type a scale to adjust its layout.";
+ const HINT_GUESS = "Layout is a guess. Open ADJUST LAYOUT to move a note, change the handpan orientation, or mirror the pan.";
+ const DRAWER_HINT = "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.";
+-const DRAWER_ZONE = [drawerBtn, fineBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
++const DRAWER_ZONE = [drawerBtn, notePrev, noteNext, seatPrev, seatNext, resetBtn, mirrorTop, mirrorBot,
+   anchorOne, anchorBetween, previewBox];
+ const inDrawerZone = (el) => DRAWER_ZONE.includes(el) || isHit(el);
+ 

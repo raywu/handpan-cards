@@ -1,0 +1,15 @@
+# kills: DR3 Tab order on Add and Edit, finer controls closed and open
+# suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
+# The sheet's Tab list stops on buttons inside the closed disclosure.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -10443,7 +10443,7 @@ sheet.addEventListener("keydown", e => {
+                  notePrev, noteNext, seatPrev, seatNext, resetBtn,
+                  editingId ? degSel : null, ...swatches.children, genBtn,
+                  editingId ? delBtn : null]
+-    .filter(isStop);
++    .filter((el) => !!el && !el.disabled);
+   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
+   cycleTabStops(stops, e);
+ });

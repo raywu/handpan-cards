@@ -1,0 +1,15 @@
+# kills: DR3 reset on Edit gives the generated default, not the stored layout
+# suite: node --test --test-name-pattern ^DR3.reset.on.Edit.gives.the.generated.default..not.the.stored.layout$ tests/app.test.js
+# On Edit, RESET LAYOUT returns to the stored seats.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9369,7 +9369,7 @@ function putDownPick() {
+ }
+ function resetLayout() {
+   cancelGesture();
+-  layoutSeats = null;
++  layoutSeats = storedSeats ? JSON.parse(JSON.stringify(storedSeats)) : null;
+   mirror = false;
+   bottomHeld = false;
+   anchor = "one";

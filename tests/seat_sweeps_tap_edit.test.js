@@ -5,6 +5,13 @@ const { boot } = require("./helpers/sandbox.js");
 const { openSheet, makeCustom, openEdit, D2_NAT, d2Nat, d2Build, D2_RINGS, d2Sizes, d2Id, d2Open, d2Hit, d2Tap, d2Key, d2Seats, d2Pick, d2Status, d2Norm, d2Seed, d2Exchange, d2Starts, D2_OTHER, d2Case, d2AllRings } = require("./helpers/seat_sweep_common.js");
 const DG = require("./helpers/drag.js");
 
+/** The number the plate draws in seat k of a ring: the default label (rule N). */
+const seatLabel = (app, sc, ring, k) => {
+  const f = JSON.parse(app.get(`JSON.stringify(HPE.core.parseSeed(${JSON.stringify(sc.text)}, {}).value.fields)`));
+  const ids = Object.keys(f).filter((id) => f[id][3] === ring).sort((a, b) => Number(a) - Number(b));
+  return f[ids[k]][5];
+};
+
 for (const edit of [true]) {
   const where = edit ? "Edit" : "Add";
 
@@ -25,8 +32,8 @@ for (const edit of [true]) {
             const ok = JSON.parse(app.get(`JSON.stringify(HPE.layout.readSeats(layoutSeats, ${JSON.stringify(d2Sizes(ring, n))}))`));
             assert.strictEqual(ok.ok, true, `${ctx}: readSeats refuses it`);
             if (a !== b) assert.match(d2Status(app), new RegExp(
-              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${b + 1} of ${n}, [a-z ]+\\.$`), ctx);
-            else assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${a + 1} of ${n}\\.$`), ctx);
+              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${seatLabel(app, sc, ring, b)}, [a-z ]+\\.$`), ctx);
+            else assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${seatLabel(app, sc, ring, a)}\\.$`), ctx);
           }
         }
       }
@@ -52,10 +59,10 @@ for (const edit of [true]) {
             if (a !== b) {
               assert.strictEqual(d2Pick(app), null, `${ctx}: the pick did not end`);
               assert.match(d2Status(app), new RegExp(
-                `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${b + 1} of ${n}, [a-z ]+\\.$`), ctx);
+                `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${seatLabel(app, sc, ring, b)}, [a-z ]+\\.$`), ctx);
             } else {
               assert.deepStrictEqual(d2Pick(app), { ring, i }, `${ctx}: the note is not still picked`);
-              assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${a + 1} of ${n}\\.$`), ctx);
+              assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${seatLabel(app, sc, ring, a)}\\.$`), ctx);
             }
           }
         }
