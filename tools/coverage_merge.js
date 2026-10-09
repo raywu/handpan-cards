@@ -451,7 +451,7 @@ function buildReport(opts) {
       if (!acc.seenRel.has(rel)) report.neverLoaded.push(rel);
     }
   }
-  if (opts.python) report.python = pythonReport(root, opts.python);
+  if (opts.python) { report.python = pythonReport(root, opts.python); report.sources.pythonModules = report.python.modules; }
 
   // CSS: rule universe from index.html, used ranges from the browser takes.
   const rules = styles.flatMap((s) => parseCssRules(s.text, s.start));

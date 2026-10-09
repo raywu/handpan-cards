@@ -274,6 +274,7 @@ test("python: a def with no executed body line is a zero def; a loaded def is no
   assert.ok(f.zeroDefs.some((d) => d.name === "main"));
   assert.strictEqual(f.neverLoaded, false);
   assert.strictEqual(rep.python.files["tools/hifi.py"].neverLoaded, true);
+  assert.strictEqual(rep.sources.pythonModules, 1);
 });
 
 test("css: rules parse with their @media ancestry, and an unmatched media block is live by default", () => {
