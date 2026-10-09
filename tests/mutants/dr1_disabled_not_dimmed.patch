@@ -1,15 +1,16 @@
 # kills: DR1 hint row dimming: the hint and the toggle dim together when disabled, and a disabled drawer switch dims
 # suite: node --test --test-name-pattern ^DR1.hint.row.dimming.* tests/e2e.test.js
 # A disabled drawer switch is not dimmed.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -975,7 +975,7 @@
- #scale-plate-band{display:flex; flex-direction:column; gap:var(--sp-1)}
+@@ -975,7 +975,7 @@ footer.seq{row-gap:var(--sp-1)}
  #scale-layout-toggle{align-self:flex-start}
- #scale-layout-toggle:disabled, #scale-layout-toggle:disabled + #scale-layout-hint,
--#scale-drawer .mode:disabled{opacity:.5; cursor:default}
-+#scale-drawer .mode:disabled{cursor:default}
+ #scale-layout-toggle:disabled, #scale-layout-toggle[aria-disabled="true"],
+ #scale-layout-toggle:disabled + #scale-layout-hint,
+-#scale-drawer .mode:disabled, #scale-layout-reset:disabled{opacity:.5; cursor:default}
++#scale-drawer .mode:disabled, #scale-layout-reset:disabled{cursor:default}
  #scale-layout-toggle span{display:none; margin-left:var(--sp-2)}
  #scale-layout-toggle.on span{display:inline}
  #scale-drawer{display:flex; flex-direction:column; gap:var(--sp-2)}

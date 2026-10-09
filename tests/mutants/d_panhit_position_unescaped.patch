@@ -4,15 +4,16 @@
 # the aria-label and leaves ' of 8"' as stray in-tag markup - which carries no
 # attribute name, so a check on the tag's attribute NAMES alone cannot see it.
 # The label ending where it should is what catches it.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -3869,7 +3869,7 @@ function pan(d, ch, opts) {
-       hits.push(`<circle class="panhit" data-field="${id}" cx="${x}" cy="${y}" r="${rr}"`
-         + ` data-r="${rr}" fill="transparent" tabindex="-1" role="button"`
-         + ` aria-selected="${on}"${on ? ' data-sel="true"' : ""}`
--        + ` aria-label="${escA(name + oct)}, position ${escA(String(lab))} of ${selectable}"/>`);
-+        + ` aria-label="${escA(name + oct)}, position ${String(lab)} of ${selectable}"/>`);
-     }
-   }
-   // After every field, so a target is never painted under the pan it selects,
+@@ -8192,7 +8192,7 @@ function pan(d, ch, opts) {
+           + ` stroke-width="3" vector-effect="non-scaling-stroke" pointer-events="none"/>`);
+       const node = `<circle class="panhit" data-field="${id}" data-ring="${m.ring}" ${at} r="${rr}"`
+         + ` data-r="${rr}" fill="transparent" tabindex="${String(hit.rover) === String(id) ? 0 : -1}"`
+-        + ` role="button" aria-pressed="${String(id) === picked}" aria-label="${escA(m.label)}"/>`
++        + ` role="button" aria-pressed="${String(id) === picked}" aria-label="${m.label}"/>`
+         + `<circle class="panfocus" ${at} r="${rr * 1.32}" fill="none" stroke="#272219"`
+         + ` stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/>`;
+       (picked !== null && m.ring === pickedRing ? sameHits : hits).push({ at: m.order, node });

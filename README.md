@@ -126,11 +126,11 @@ What is covered:
 - **Browser e2e** - real Chromium: deck switching, the 3D card flip, keyboard
   and touch navigation, reload persistence, clipping at a 380px viewport, and
   the scale sheet's modality, focus handling and 44px hit areas.
-- **Mutation gate** - 766 mutant patches under `tests/mutants/`, each one a
+- **Mutation gate** - 760 mutant patches under `tests/mutants/`, each one a
   deliberate break that some test must catch. The gate is all-or-nothing: one
   survivor fails it. A test nothing can kill does not count as coverage.
 
-That is 17 node suites (`tests/*.test.js`) and 14 python suites
+That is 18 node suites (`tests/*.test.js`) and 14 python suites
 (`tests/test_*.py`), plus `tests/suite_health.py`, which holds a per-file floor
 on the number of tests collected so a suite cannot quietly stop running.
 

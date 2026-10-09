@@ -4420,17 +4420,18 @@ function run() {
     }
   });
 
-  test("DR1 focus order: on Edit the plate keeps its tab stop and comes before the toggle, with the drawer closed and open", async () => {
+  test("DR1 focus order: on Edit the plate is a tab stop only while the drawer is open, and comes before the toggle", async () => {
     try {
       for (const open of [false, true]) {
         await (open ? editFreshDeckOpen() : editFreshDeck());
         await b.eval(`document.getElementById("scale-box").focus(); return true;`);
         const seen = [];
-        for (let i = 0; i < 2; i += 1) {
+        for (let i = 0; i < (open ? 2 : 1); i += 1) {
           await b.key("Tab", "Tab", 9);
-          seen.push(await b.eval(`return document.activeElement.id;`));
+          seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
         }
-        assert.deepStrictEqual(seen, ["scale-preview", "scale-layout-toggle"], `drawer ${open ? "open" : "closed"}`);
+        assert.deepStrictEqual(seen, open ? ["panhit", "scale-layout-toggle"] : ["scale-layout-toggle"],
+          `drawer ${open ? "open" : "closed"}`);
       }
     } finally {
       await b.setViewport(900, 900, false);
@@ -4561,22 +4562,6 @@ function run() {
     }
   });
 
-  test("DR1 line 130: the old group is displayed on Edit with the drawer open and not on Add", async () => {
-    try {
-      const shown = () => b.eval(`return ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]
-        .map(id => document.getElementById(id).getClientRects().length > 0);`);
-      await addWithDrawer(380, 780);
-      assert.deepStrictEqual(await shown(), [false, false, false, false, false]);
-      await editFreshDeck();
-      assert.deepStrictEqual(await shown(), [false, false, false, false, false]);
-      await openDrawer();
-      assert.deepStrictEqual(await shown(), [true, true, true, true, true]);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
   const activeChipText = () => b.eval(`
     const el = document.activeElement;
     return el && el.closest && el.closest("#decks") ? el.textContent.trim() : null;
@@ -4673,96 +4658,9 @@ function run() {
         `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
       const ids = new Set(seen.map(s => s.id));
       for (const id of ["scale-back",
-                        "scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete",
-                        "scale-rot-l", "scale-rot-r", "scale-layout-reset",
-                        "scale-move-l", "scale-move-r"]) {
+                        "scale-name", "scale-box", "scale-degrees", "scale-generate", "scale-delete"]) {
         assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
       }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  /* The AC3 hint, judged by what the owner can SEE. The unit test reads
-   * index.html as text because the DOM sandbox conjures an element for any id
-   * asked for - but text cannot tell markup from a comment, cannot tell a
-   * paragraph inside the LAYOUT group from one dumped before </body>, and
-   * cannot see `display:none`. All three of those leave the owner's question
-   * unanswered while the unit test still passes, so the oracle that closes them
-   * has to be a real browser: a box with height, inside the group, carrying the
-   * three gestures. */
-  test("the LAYOUT hint is visible inside the group, not merely present in the file", async () => {
-    try {
-      await editFreshDeckOpen();
-      const hint = await b.eval(`
-        const el = document.getElementById("scale-legacy-hint");
-        if (!el) return { missing: true };
-        const row = document.getElementById("scale-legacy-group");
-        /* Scroll it up the way a reader would before measuring: the hint sits
-         * below the fold of the sheet's own scroller at 380x780, so measuring
-         * where it happens to rest asserts a scroll position, not visibility. */
-        el.scrollIntoView({ block: "center" });
-        const r = el.getBoundingClientRect();
-        const cs = getComputedStyle(el);
-        /* The box the owner can actually SEE: the element's own rect clipped by
-         * every scrolling/hiding ancestor and then by the viewport. A rect with
-         * height is not enough - 'left:-9999px' and an ancestor 'max-height:0;
-         * overflow:hidden' both leave getBoundingClientRect() reporting a full
-         * box for a paragraph nobody can read. */
-        let top = r.top, left = r.left, right = r.right, bottom = r.bottom;
-        for (let p = el.parentElement; p; p = p.parentElement) {
-          const pcs = getComputedStyle(p);
-          if (pcs.overflowX !== "visible" || pcs.overflowY !== "visible") {
-            const q = p.getBoundingClientRect();
-            top = Math.max(top, q.top); left = Math.max(left, q.left);
-            right = Math.min(right, q.right); bottom = Math.min(bottom, q.bottom);
-          }
-        }
-        top = Math.max(top, 0); left = Math.max(left, 0);
-        right = Math.min(right, innerWidth); bottom = Math.min(bottom, innerHeight);
-        /* opacity does not inherit, so a fully-opaque element can still be
-         * invisible because an ANCESTOR (not necessarily the nearest one) is
-         * opacity:0 - the effective opacity is the PRODUCT of every ancestor's
-         * own opacity, own element included, all the way to <html>. Stopping
-         * at the first non-1 ancestor (or the first ancestor at all) misses
-         * every case where that ancestor is opaque but one further up isn't. */
-        let effOpacity = parseFloat(cs.opacity);
-        for (let p = el.parentElement; p; p = p.parentElement) {
-          effOpacity *= parseFloat(getComputedStyle(p).opacity);
-        }
-        return {
-          inRow: !!(row && row.contains(el)),
-          h: r.height, w: r.width,
-          vw: Math.max(0, right - left), vh: Math.max(0, bottom - top),
-          rleft: r.left, rtop: r.top,
-          display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
-          effOpacity,
-          text: (el.textContent || "").trim(),
-          describes: document.querySelector('[aria-describedby~="scale-legacy-hint"]') !== null,
-        };
-      `);
-      assert.ok(!hint.missing, "#scale-legacy-hint never reached the DOM");
-      assert.ok(hint.inRow,
-        "the hint is not inside #scale-legacy-group - it explains buttons it does not sit with");
-      assert.ok(hint.h > 0 && hint.w > 0,
-        `the hint draws no box (${hint.w}x${hint.h}, display:${hint.display}) - nothing renders`);
-      assert.notStrictEqual(hint.visibility, "hidden", "the hint is visibility:hidden");
-      assert.notStrictEqual(hint.opacity, "0", "the hint is fully transparent");
-      assert.ok(hint.effOpacity > 0,
-        `an ancestor of the hint is opacity:0 (effective opacity ${hint.effOpacity}) - the hint's `
-        + "own opacity is fine, but something above it in the tree hides it");
-      assert.ok(hint.vw > 0 && hint.vh > 0,
-        `the hint is laid out (${hint.w}x${hint.h} at ${hint.rleft},${hint.rtop}) but none of it `
-        + `survives its clipping ancestors and the viewport (${hint.vw}x${hint.vh}) - `
-        + `pushed off-screen or clipped away, the owner never reads it`);
-      const said = hint.text.toLowerCase();
-      for (const word of ["tap", "rotate", "move"]) {
-        assert.ok(said.includes(word),
-          `the rendered hint never mentions ${word}: "${hint.text}"`);
-      }
-      assert.ok(hint.describes,
-        "nothing points at the hint with aria-describedby, so a screen reader never hears it");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -4834,7 +4732,7 @@ function run() {
     const box = document.getElementById("scale-preview");
     const hits = [...box.querySelectorAll(".panhit")];
     const name = h => String(h.getAttribute("aria-label") || "").split(",")[0];
-    const sel = hits.filter(h => h.getAttribute("data-sel") === "true");
+    const sel = hits.filter(h => h.getAttribute("aria-pressed") === "true");
     const row = document.getElementById("scale-layout-row").getBoundingClientRect();
     const br = box.getBoundingClientRect();
     const places = {};
@@ -4857,131 +4755,6 @@ function run() {
   const noOverflow = (st, what) =>
     assert.ok(st.body.sw <= st.body.cw + 1,
       `${what} scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
-
-  test("ROTATE makes its correction from the keyboard alone at 380px", async () => {
-    try {
-      await editFreshDeckOpen();
-      const before = await panState();
-      assert.ok(before.notes.length >= 8, `the pan drew ${JSON.stringify(before.notes)}`);
-      assert.strictEqual(before.stops, 0, "a hit target is its own tab stop");
-      assert.strictEqual(before.boxStop, true, "the pan is not a tab stop");
-      assert.strictEqual(before.named, true, "a hit target has no accessible name");
-      assert.strictEqual(before.inView, true,
-        "the pan and the LAYOUT group are not both visible without scrolling");
-      noOverflow(before, "the LAYOUT section");
-
-      assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
-      await pressActive();
-      const after = await panState();
-      assert.notDeepStrictEqual(after.places, before.places, "ROTATE moved nothing on the pan");
-      assert.deepStrictEqual(Object.values(after.places).sort(),
-        Object.values(before.places).sort(), "ROTATE invented or lost a place");
-      noOverflow(after, "a rotated layout");
-      assert.strictEqual(after.cardW, before.cardW, "ROTATE moved --card-w");
-
-      // and it commits through the sheet's ONE primary
-      await b.click("#scale-generate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close after SAVE CHANGES" });
-      await openEdit();
-      assert.deepStrictEqual((await panState()).places, after.places,
-        "the saved correction did not come back with the sheet");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("the arrow keys choose a position and MOVE swaps it with its neighbour", async () => {
-    try {
-      await editFreshDeckOpen();
-      const before = await panState();
-      assert.ok(await tabTo("scale-preview"), "Tab never reached the pan");
-      await b.key("ArrowRight", "ArrowRight", 39);
-      const chosen = await panState();
-      assert.ok(chosen.selected, "ArrowRight selected nothing");
-      assert.notStrictEqual(chosen.selected, before.selected,
-        "ArrowRight did not move the selection");
-      assert.strictEqual(await activeId(), "scale-preview",
-        "the arrow keys moved focus off the pan");
-
-      assert.ok(await tabTo("scale-move-r"), "Tab never reached MOVE");
-      await pressActive();
-      const moved = await panState();
-      assert.strictEqual(moved.selected, chosen.selected,
-        "the selection did not follow the note");
-      const changed = Object.keys(chosen.places)
-        .filter((n) => moved.places[n] !== chosen.places[n]).sort();
-      assert.strictEqual(changed.length, 2, `MOVE is not a swap: ${JSON.stringify(changed)}`);
-      assert.ok(changed.includes(chosen.selected), "MOVE did not move the chosen note");
-      const other = changed.find((n) => n !== chosen.selected);
-      assert.strictEqual(moved.places[chosen.selected], chosen.places[other],
-        "MOVE did not put the note where its neighbour was");
-      assert.strictEqual(moved.places[other], chosen.places[chosen.selected],
-        "MOVE did not displace the note it passed");
-      noOverflow(moved, "a moved note");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("RESET puts the generated layout back in one keyboard action", async () => {
-    try {
-      await editFreshDeckOpen();
-      const before = await panState();
-      assert.ok(await tabTo("scale-rot-r"), "Tab never reached ROTATE");
-      await pressActive();
-      await pressActive();
-      assert.notDeepStrictEqual((await panState()).places, before.places,
-        "two rotations moved nothing");
-
-      assert.ok(await tabTo("scale-layout-reset"), "Tab never reached RESET");
-      await pressActive();
-      const back = await panState();
-      assert.deepStrictEqual(back.places, before.places,
-        "RESET did not put the generated layout back");
-      noOverflow(back, "the reset layout");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("every LAYOUT control is a 44px target with a visible focus ring", async () => {
-    try {
-      await editFreshDeckOpen();
-      const ids = ["scale-rot-l", "scale-rot-r", "scale-layout-reset",
-                   "scale-move-l", "scale-move-r"];
-      const small = await b.eval(`
-        const ids = ${JSON.stringify(ids)};
-        return ids.map(id => {
-          const el = document.getElementById(id);
-          const r = el.getBoundingClientRect();
-          return { id, w: Math.round(r.width), h: Math.round(r.height) };
-        }).filter(t => t.w < 44 || t.h < 44);
-      `);
-      assert.deepStrictEqual(small, [], `LAYOUT controls under 44px: ${JSON.stringify(small)}`);
-
-      // A keyboard user must be able to SEE where they are: the sheet's
-      // :focus-visible ring is #e3b25c and these controls are no exception.
-      for (const id of ids) {
-        assert.ok(await tabTo(id), `Tab never reached #${id}`);
-        const ring = await b.eval(`
-          const cs = getComputedStyle(document.activeElement);
-          return { id: document.activeElement.id, color: cs.outlineColor,
-                   width: parseFloat(cs.outlineWidth) || 0, style: cs.outlineStyle };
-        `);
-        assert.strictEqual(ring.id, id);
-        assert.strictEqual(ring.color, "rgb(227, 178, 92)", `#${id} has no #e3b25c ring`);
-        assert.ok(ring.width >= 2, `#${id} focus ring is ${ring.width}px`);
-        assert.notStrictEqual(ring.style, "none", `#${id} focus ring is styled away`);
-      }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("the armed delete button still answers a press, in the pressed colour", async () => {
     /* The armed rule and the shared :active rule have the same specificity,
@@ -5484,7 +5257,7 @@ function run() {
        click retargets to an ancestor, the delegated handler finds no hit and
        drops it, and the owner's first tap does nothing at all. */
     try {
-      await editFreshDeck();
+      await editFreshDeckOpen();
       const before = await panState();
       const target = before.notes.find(n => n !== before.selected);
       assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
@@ -5502,36 +5275,6 @@ function run() {
       assert.strictEqual(
         await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
         false, "the tap on the pan did not disarm DELETE");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("clearing the seed box then tapping a pan note still chooses it while DELETE is armed (queue row 117)", async () => {
-    /* Same hazard as row 91's pan-tap test, one branch over: syncParseState's
-       EMPTY-seed branch has its own `if (paint) showPlaceholderPan();` guard
-       in index.html's syncParseState, load-bearing on its own. Clearing the box paints
-       the placeholder pan once (paint: true, from the input event); disarming
-       DELETE on the very next tap must NOT repaint it again, or the .panhit
-       the finger landed on is replaced before the click arrives. */
-    try {
-      await editFreshDeck();
-      await typeScale("");
-      const before = await panState();
-      const target = before.notes.find(n => n !== before.selected);
-      assert.ok(target, `the placeholder pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
-
-      await b.click("#scale-delete");
-      assert.strictEqual(
-        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
-        true, "DELETE never armed");
-
-      await tapPanNote(target);
-      const after = await panState();
-      assert.strictEqual(after.selected, target,
-        `with an empty seed and DELETE armed, tapping ${target} selected ${after.selected} - ` +
-        "the tap was swallowed by the disarm's placeholder repaint");
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -5891,6 +5634,7 @@ function run() {
       assert.match(refused.msg, /Another deck already uses this scale/,
         `the sheet says "${refused.msg}"`);
 
+      await openDrawer();
       const pan = await panState();
       const target = pan.notes.find(n => n !== pan.selected);
       assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(pan.notes)}`);
@@ -6041,7 +5785,7 @@ function run() {
       label: (gen.textContent || "").trim(),
       hitsSelf: hit === gen,
       hit: hit ? (hit.id || hit.className || hit.tagName) : null,
-      slots: document.querySelectorAll("#scale-preview .panhit").length,
+      slots: document.querySelectorAll("#scale-preview svg text").length,
       // The preset row used to sit directly above the box and was the tallest
       // single thing between the top of the sheet and this button (owner,
       // 2026-09: "I don't know if we need the preset options" - they went).
@@ -6197,7 +5941,7 @@ function run() {
         const m = await primaryFold();
         assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
         assert.ok(m.slots >= 17,
-          `the worst case regressed: the pan draws only ${m.slots} hit targets`);
+          `the worst case regressed: the pan draws only ${m.slots} labels`);
         assertPrimaryVisible(m, `Edit sheet (${m.slots} notes) at ${w}x${h}`);
         await b.key("Escape", "Escape", 27);
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,

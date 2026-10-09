@@ -1,0 +1,15 @@
+# kills: DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.W..78..52..53..41..42...tap.then.tap.exchanges.exactly.two.notes..ring.sizes.swept..Add$ tests/app.test.js
+# A swap writes the first note's new seat and leaves the second where it was, so the ring is no longer a permutation.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9223,7 +9223,7 @@ function swapSeats(ring, i, j) {
+   if (i !== j) {
+     const next = before.map((n) => n.seat);
+     next[i] = b.seat;
+-    next[j] = a.seat;
++    next[j] = b.seat;
+     setRingSeats(ring, next);
+     panFlash = [a.id, b.id];
+     clearTimeout(flashTimer);

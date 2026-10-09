@@ -1,0 +1,15 @@
+# kills: DR2a rule P (54, 55, 106): one-note rings, rows 2 and 10, and a pan with no ring of two, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.P..54..55..106...one.note.rings..rows.2.and.10..and.a.pan.with.no.ring.of.two..Add$ tests/app.test.js
+# A tap on another ring's note is not refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9253,7 +9253,7 @@ function activateNote(ref, how) {
+     layoutStatus(pickAnnouncement(n, how));
+     return;
+   }
+-  if (n.ring !== p.ring) {
++  if (false) {
+     layoutStatus(`Not moved. ${p.name} moves only within the ${p.ring}.`, true);
+     focusRef(pickRef);
+     return;

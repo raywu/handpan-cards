@@ -1,0 +1,15 @@
+# kills: DR2a rule P (62, 64, 124): arrows with nothing picked walk the notes without wrap; with a pick they walk seats and wrap, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.P..62..64..124...arrows.with.nothing.picked.walk.the.notes.without.wrap..with.a.pick.they.walk.seats.and.wrap..Add$ tests/app.test.js
+# With a note picked the arrows stop at the ends of the ring instead of wrapping.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9276,7 +9276,7 @@ function walkFocus(ref, nav) {
+   let to;
+   if (nav === "home") to = 0;
+   else if (nav === "end") to = list.length - 1;
+-  else if (picked) to = (from + nav + list.length) % list.length;
++  else if (picked) to = Math.min(list.length - 1, Math.max(0, from + nav));
+   else to = Math.min(list.length - 1, Math.max(0, from + nav));
+   focusRef(list[to]);
+ }

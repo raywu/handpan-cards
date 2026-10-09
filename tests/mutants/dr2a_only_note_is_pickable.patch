@@ -1,0 +1,15 @@
+# kills: DR2a rule P (54, 55, 106): one-note rings, rows 2 and 10, and a pan with no ring of two, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.P..54..55..106...one.note.rings..rows.2.and.10..and.a.pan.with.no.ring.of.two..Add$ tests/app.test.js
+# A one-note ring's note can be picked up and has nowhere to go.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9248,7 +9248,7 @@ function activateNote(ref, how) {
+   if (!n) return;
+   const p = pickedNote();
+   if (!p) {
+-    if (n.k < 2) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
++    if (n.k < 1) { layoutStatus(`${n.name} is the only note in the ${n.ring}, so it has no other seat.`); return; }
+     setPick(ref);
+     layoutStatus(pickAnnouncement(n, how));
+     return;

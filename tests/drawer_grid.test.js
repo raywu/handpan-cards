@@ -356,33 +356,6 @@ function run() {
     report("rule G by resize", fails);
   });
 
-  test("DR1 rule G by content: a taller band after the box changes is measured again one frame later", async () => {
-    const fails = [];
-    const heights = [];
-    try {
-      await generateDeck(SCALES.n9);
-      for (const [w, h] of [[380, 553], [380, 667], [380, 780], [320, 553]]) {
-        const cell = `${w}x${h}`;
-        const fail = (clause, detail) => fails.push({ cell, clause, detail });
-        await openCell(w, h, "edit", SCALES.n9);
-        await openDrawerNow();
-        const first = await ev(`return __d.state();`);
-        checkAB(fail, first);
-        for (const key of ["n19", "n9"]) {
-          await typeBox(SCALES[key]);
-          await frames();
-          const st = await ev(`return __d.state();`);
-          heights.push(st.bandH);
-          checkAB((c, d) => fails.push({ cell: `${cell} after ${key}`, clause: c, detail: d }), st);
-        }
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-    assert.ok(new Set(heights.map((x) => Math.round(x))).size > 1, `the band never changed height: ${heights}`);
-    report("rule G by content", fails);
-  });
-
   test("DR1 rule G boundary walk: stepping the height 1px at a time, stuck flips exactly where the window reaches 44", async () => {
     const fails = [];
     const note = [];

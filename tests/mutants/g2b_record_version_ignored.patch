@@ -1,10 +1,11 @@
 # suite: node --test --test-name-pattern ^a.version.2.record.with.a.bar.opens.with.bottom.notes..not.inner.notes..and.is.rewritten.as.version.4.at.the.same.index$ tests/app.test.js
 # kills: a version 2 record with a bar opens with bottom notes, not inner notes, and is rewritten as version 4 at the same index
 # A stored record is read as the new grammar whatever version it carries, so an old bar list opens as inner notes.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -7776,7 +7776,7 @@ function scaleRecord(seed) {
+@@ -7871,7 +7871,7 @@ function scaleRecord(seed) {
  // reader it was written with, so its deck id never depends on how the current
  // canonical spelling prints.
  function scaleReader(v) {
@@ -13,13 +14,3 @@ diff --git a/index.html b/index.html
  }
  // The deck id a record's string resolves to, or null for a record this build
  // cannot read (it is kept, never matched).
-@@ -8776,7 +8776,7 @@ function buildDegrees(selected) {
- }
- 
- /* ---- the LAYOUT correction (D5, moved onto the pan in Stage 3) ----
-- * The generated layout is a GUESS, and LAYOUT_HINT says so; this is how it is
-+ * The generated layout is a GUESS; this is how it is
-  * corrected. The pan mock IS the editor: a note is chosen by tapping it, the
-  * ring says which one is chosen, and ROTATE and MOVE redraw the mock under the
-  * finger. Everything still works from the keyboard - ROTATE, MOVE and RESET are
-

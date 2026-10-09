@@ -23,7 +23,7 @@ diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
    # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
    # skipped itself for want of a browser.
 -  case "$cmd" in
--    *tests/e2e.test.js*|*tests/harness.test.js*|*tests/drawer_grid.test.js*)
+-    *tests/e2e.test.js*|*tests/harness.test.js*|*tests/drawer_grid.test.js*|*tests/drawer_seats.test.js*)
 +  case "$base" in
 +    e_*)
        if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then

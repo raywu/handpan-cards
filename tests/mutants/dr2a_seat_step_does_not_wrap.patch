@@ -1,0 +1,15 @@
+# kills: DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, Add
+# suite: node --test --test-name-pattern ^DR2a.rule.W..60..61...NEXT.SEAT.and.PREVIOUS.SEAT.swap.with.the.adjacent.seat..wrap..keep.the.pick..every.start.seat..Add$ tests/app.test.js
+# NEXT SEAT on the last seat stays put instead of wrapping to seat 1.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9294,7 +9294,7 @@ function stepSeat(dir) {
+   const p = pickedNote();
+   if (!p) return;
+   const ring = ringNotes(p.ring);
+-  const target = ring.find((n) => n.seat === (p.seat + dir + p.k) % p.k);
++  const target = ring.find((n) => n.seat === Math.max(0, Math.min(p.k - 1, p.seat + dir)));
+   pickMoved = true;
+   setRover(pickRef);
+   swapSeats(p.ring, p.i, target.i);

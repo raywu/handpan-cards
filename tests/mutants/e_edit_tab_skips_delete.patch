@@ -3,13 +3,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9951,8 +9951,7 @@
-                  editingId ? moveL : null, editingId ? moveR : null,
-                  editingId ? resetBtn : null,
-                  mirrorTop, mirrorBot, anchorOne, anchorBetween,
+@@ -10139,8 +10139,7 @@ sheet.addEventListener("keydown", e => {
+                  drawerOpen ? previewBox.querySelector('.panhit[tabindex="0"]') : null,
+                  drawerBtn, notePrev, noteNext, seatPrev, seatNext,
+                  mirrorTop, mirrorBot, resetBtn, anchorOne, anchorBetween,
 -                 editingId ? degSel : null, ...swatches.children, genBtn,
 -                 editingId ? delBtn : null]
 +                 editingId ? degSel : null, ...swatches.children, genBtn]
      .filter(isStop);
+   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
    cycleTabStops(stops, e);
- });

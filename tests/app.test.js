@@ -2008,8 +2008,8 @@ function panTap(app, note) {
   return t.note;
 }
 
-const LAYOUT_IDS = ["scale-legacy-group", "scale-rot-l", "scale-rot-r",
-                    "scale-move-l", "scale-move-r", "scale-layout-reset"];
+const LAYOUT_IDS = ["scale-layout-reset", "scale-note-prev", "scale-note-next",
+                    "scale-seat-prev", "scale-seat-next"];
 
 // A seed WITH a bottom shell. Stage 3 AC2 is about a bottom-shell note, which
 // no rotation could reach while ROTATE was hard-wired to the rim.
@@ -2020,204 +2020,14 @@ function openEdit(app, d) {
   app.clickChip(d.name);
 }
 
-test("the LAYOUT section is Edit-only, like the other correction rows", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), true,
-    "the create sheet offers a layout correction for a pan that does not exist yet");
-  openEdit(app, d);
-  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), false,
-    "the Edit sheet hides the layout correction");
-});
 
-test("the Edit page draws the pan itself, with one target per non-ding note", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
 
-  assert.strictEqual(app.els["scale-preview"].hasAttribute("hidden"), false,
-    "the Edit page hides the pan, so the layout controls have nothing to move");
-  const ids = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] !== "ding");
-  const shown = mockTargets(app).map((t) => t.note);
-  assert.strictEqual(shown.length, ids.length,
-    "the mock is not one target per non-ding field");
-  const want = ids.map((id) => d.fields[id][F_NAME] + d.fields[id][F_OCT]).sort();
-  assert.deepStrictEqual(shown.slice().sort(), want,
-    "the mock is not the pan's non-ding notes");
-  // The ding carries no slot in the correction, so it is not selectable.
-  const ding = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "ding");
-  const fields = mockTargets(app).map((t) => t.field);
-  for (const id of ding)
-    assert.ok(!fields.includes(String(id)), "the ding got a correction target");
-});
 
-test("a tap selects the note that was tapped, on a pan that is already corrected", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
 
-  const notes = mockTargets(app).map((t) => t.note);
-  // Uncorrected first: with an identity order, slot and field agree, so this
-  // half passes whichever way round the conversion is written.
-  panTap(app, notes[2]);
-  assert.strictEqual(mockSelected(app), notes[2], "a tap did not select the note under it");
 
-  // Now correct the pan, so slot and field no longer agree. `order[field] =
-  // slot`: reading it as slot -> field selects a different note, and the
-  // arithmetic is otherwise identical, so this is the only assertion that can
-  // tell the two apart.
-  app.els["scale-rot-r"].click();
-  const target = notes.find((n) => n !== mockSelected(app) && n !== notes[2]);
-  panTap(app, target);
-  assert.strictEqual(mockSelected(app), target,
-    "the tap selected a different note than the one tapped - slot and field are " +
-    "the wrong way round in selectPanField");
-});
 
-test("ROTATE moves every note one position and SAVE keeps the id but moves the link", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  const before = link(app, d.id);
-  assert.strictEqual(before.ok, true, before.reason);
-  openEdit(app, d);
 
-  const was = mockPlaces(app);
-  app.els["scale-rot-r"].click();
-  const now = mockPlaces(app);
-  assert.notDeepStrictEqual(now, was, "ROTATE did not move anything on the pan");
-  assert.deepStrictEqual(Object.values(now).sort(), Object.values(was).sort(),
-    "ROTATE invented or lost a place on the pan");
 
-  app.els["scale-generate"].click();
-  assert.strictEqual(app.deckId(), d.id, "a layout correction moved the deck id (D5-5)");
-  const after = app.registry()[d.id];
-  assert.ok(after.options.seats && Array.isArray(after.options.seats.rim),
-    "the correction did not reach the deck");
-  const moved = link(app, d.id);
-  assert.strictEqual(moved.ok, true, moved.reason);
-  assert.notStrictEqual(moved.value, before.value,
-    "the correction never reached the share URL (D5-5)");
-});
-
-test("a correction is reachable with the keyboard alone: arrows select, MOVE swaps", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  const first = mockSelected(app);
-  assert.ok(first, "the pan opens with no note selected, so MOVE has no subject");
-  assert.strictEqual(panKey(app, "ArrowRight"), true,
-    "the arrow key was not handled by the pan");
-  const second = mockSelected(app);
-  assert.notStrictEqual(second, first, "ArrowRight did not move the selection");
-  panKey(app, "ArrowLeft");
-  assert.strictEqual(mockSelected(app), first, "ArrowLeft did not move the selection back");
-  panKey(app, "ArrowRight");
-
-  const was = mockPlaces(app);
-  app.els["scale-move-r"].click();
-  const now = mockPlaces(app);
-  assert.strictEqual(mockSelected(app), second, "the selection did not follow the note");
-  const moved = Object.keys(was).filter((n) => now[n] !== was[n]).sort();
-  assert.strictEqual(moved.length, 2, `MOVE is not a swap: ${JSON.stringify(moved)}`);
-  assert.ok(moved.includes(second), "MOVE did not move the selected note");
-  const other = moved.find((n) => n !== second);
-  assert.strictEqual(now[second], was[other], "MOVE did not put the note where its neighbour was");
-  assert.strictEqual(now[other], was[second], "MOVE did not displace the note it passed");
-});
-
-// Q15: the previewBox keydown handler (index.html near :7466) maps
-// ArrowRight/ArrowDown to +1 and ArrowLeft/ArrowUp to -1, but nothing
-// asserted ArrowUp/ArrowDown specifically - every other pan-keyboard test
-// here only ever presses ArrowRight/ArrowLeft, so swapping the Up/Down half
-// of that mapping (vertical arrows move backwards) passed every test.
-test("ArrowDown and ArrowUp move the pan selection the same way ArrowRight and ArrowLeft do", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  const first = mockSelected(app);
-  assert.ok(first, "the pan opens with no note selected, so ArrowDown has no subject");
-  assert.strictEqual(panKey(app, "ArrowDown"), true,
-    "the arrow key was not handled by the pan");
-  const second = mockSelected(app);
-  assert.notStrictEqual(second, first, "ArrowDown did not move the selection");
-
-  panKey(app, "ArrowUp");
-  assert.strictEqual(mockSelected(app), first, "ArrowUp did not move the selection back to where ArrowDown started");
-
-  panKey(app, "ArrowRight");
-  assert.strictEqual(mockSelected(app), second,
-    "ArrowRight landed somewhere other than where ArrowDown just did");
-  panKey(app, "ArrowUp");
-  assert.strictEqual(mockSelected(app), first,
-    "ArrowUp did not undo the move the same way ArrowLeft does");
-});
-
-test("ROTATE turns the ring the selection is on, bottom shell included", () => {
-  const app = boot();
-  const d = makeCustom(app, BOTTOM_STRING);
-  openEdit(app, d);
-
-  const bottom = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "bottom")
-    .map((id) => d.fields[id][F_NAME] + d.fields[id][F_OCT]);
-  assert.ok(bottom.length >= 3, `the seed has no bottom shell: ${JSON.stringify(bottom)}`);
-
-  const was = mockPlaces(app);
-  const onBottom = Object.keys(was).filter((n) => bottom.includes(n));
-  assert.ok(onBottom.length >= 3, "the mock drew no bottom-shell notes");
-
-  // Select a BOTTOM note, then rotate. Before Stage 3, ROTATE was hard-wired to
-  // zoneBlock(fields, 0) - the rim - so this press turned the rim and left the
-  // bottom shell exactly as it was, whatever was selected.
-  panTap(app, onBottom[0]);
-  app.els["scale-rot-r"].click();
-  const now = mockPlaces(app);
-
-  for (const n of Object.keys(was)) {
-    if (bottom.includes(n)) continue;
-    assert.strictEqual(now[n], was[n],
-      `rotating a bottom-shell note moved ${n}, which is not on that ring`);
-  }
-  assert.notDeepStrictEqual(onBottom.map((n) => now[n]), onBottom.map((n) => was[n]),
-    "ROTATE did not turn the bottom shell the selected note is on");
-  assert.deepStrictEqual(onBottom.map((n) => now[n]).sort(), onBottom.map((n) => was[n]).sort(),
-    "ROTATE invented or lost a bottom-shell place");
-});
-
-test("ROTATE keeps the note you chose selected as its ring turns", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  // The selection is a SLOT and rotation moves every note to a new slot, so the
-  // selection has to move with it or it silently ends up on whichever note
-  // rotated INTO the old slot - a correction aimed at the wrong note from the
-  // second press onward. Nothing else in the suite reads the selection across a
-  // rotation, so this is the only assertion that can catch it.
-  const notes = Object.keys(mockPlaces(app));
-  const chosen = panTap(app, notes[3]);
-  assert.strictEqual(mockSelected(app), chosen, "the tap did not select the note");
-  app.els["scale-rot-r"].click();
-  assert.strictEqual(mockSelected(app), chosen,
-    "ROTATE turned the ring but left the selection behind on the old slot");
-});
-
-test("retyping a seed with a different field count drops the correction and the mock follows", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  // A correction is a permutation of a FIXED length. Carry an 8-slot one onto a
-  // 7-field seed and HPE.layout.solve refuses the whole pan, paintPan returns
-  // false, and holdPanPreview keeps the PREVIOUS pan on screen - so the mock
-  // stops following what is being typed, which is the one thing it is for.
-  app.els["scale-rot-r"].click();
-  app.type("(D3) A3 C4 D4 E4 F4 G4 A4");
-  assert.deepStrictEqual(Object.keys(mockPlaces(app)).sort(),
-    ["A3", "A4", "C4", "D4", "E4", "F4", "G4"],
-    "the mock froze on the pre-edit pan instead of following the typed seed");
-});
 
 test("the deck is untouched while the mock previews the correction", () => {
   const app = boot();
@@ -2225,8 +2035,8 @@ test("the deck is untouched while the mock previews the correction", () => {
   const before = JSON.parse(JSON.stringify(app.registry()[d.id].fields));
   openEdit(app, d);
 
-  app.els["scale-rot-r"].click();
-  app.els["scale-move-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
+  app.run('swapSeats("rim", 1, 2)');
   assert.deepStrictEqual(app.registry()[d.id].fields, before,
     "a correction was painted onto the real deck before SAVE (D4)");
   app.keydown("Escape");
@@ -2234,29 +2044,6 @@ test("the deck is untouched while the mock previews the correction", () => {
     "the deck did not come back byte-identical after an abandoned correction");
 });
 
-test("RESET clears the correction to ABSENT in one action, not to the identity", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  // The baseline is a save that corrects NOTHING: an Edit always commits the
-  // name too, so only an uncorrected save isolates what `order` costs.
-  openEdit(app, d);
-  app.els["scale-generate"].click();
-  const before = link(app, d.id);
-  openEdit(app, app.registry()[d.id]);
-  app.els["scale-rot-r"].click();
-  app.els["scale-generate"].click();
-  assert.notStrictEqual(link(app, d.id).value, before.value);
-
-  openEdit(app, app.registry()[d.id]);
-  app.els["scale-layout-reset"].click();
-  app.els["scale-generate"].click();
-
-  const after = app.registry()[d.id];
-  assert.strictEqual(after.options.seats === undefined || after.options.seats === null, true,
-    "RESET left an identity permutation on the deck instead of clearing it");
-  assert.strictEqual(link(app, d.id).value, before.value,
-    "RESET did not restore the byte-for-byte default share link");
-});
 
 test("rotating all the way round is absent again, never a stored identity", () => {
   const app = boot();
@@ -2266,8 +2053,8 @@ test("rotating all the way round is absent again, never a stored identity", () =
   const before = link(app, d.id);
   const plain0 = app.registry()[d.id].fields;
   openEdit(app, app.registry()[d.id]);
-  const rim = Object.keys(d.fields).filter((id) => d.fields[id][F_ZONE] === "rim").length;
-  for (let i = 0; i < rim; i += 1) app.els["scale-rot-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
+  app.run('swapSeats("rim", 0, 1)');
   app.els["scale-generate"].click();
 
   assert.deepStrictEqual(app.registry()[d.id].fields, plain0,
@@ -2280,7 +2067,7 @@ test("a correction survives a save, a reopen and a reload", () => {
   const app = boot();
   const d = makeCustom(app);
   openEdit(app, d);
-  app.els["scale-rot-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
   const corrected = mockPlaces(app);
   app.els["scale-generate"].click();
 
@@ -2299,7 +2086,7 @@ test("a correction travels in a share link and lands on the same deck id", () =>
   const app = boot();
   const d = makeCustom(app);
   openEdit(app, d);
-  app.els["scale-rot-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
   app.els["scale-generate"].click();
   const url = link(app, d.id);
   assert.strictEqual(url.ok, true, url.reason);
@@ -2314,7 +2101,7 @@ test("Escape closes the sheet without keeping the previewed correction", () => {
   const app = boot();
   const d = makeCustom(app);
   openEdit(app, d);
-  app.els["scale-rot-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
   app.keydown("Escape");
 
   assert.strictEqual(app.sheetOpen(), false, "Escape did not close the sheet");
@@ -2322,49 +2109,11 @@ test("Escape closes the sheet without keeping the previewed correction", () => {
     "an abandoned preview was left on the deck");
 });
 
-test("the layout controls are tab stops inside the sheet and never a second primary", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-  app.els["scale-layout-toggle"].click();
-
-  const seen = new Set();
-  for (let i = 0; i < 40; i += 1) {
-    app.els["scale-sheet"].dispatchEvent(
-      { type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
-    seen.add(app.activeId());
-  }
-  for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
-                    "scale-layout-reset", "scale-preview"]) {
-    assert.ok(seen.has(id), `Tab never reached #${id}`);
-  }
-  assert.strictEqual(app.els["scale-generate"].textContent, "SAVE CHANGES",
-    "the single primary was relabelled by the layout section");
-  assert.strictEqual(app.els["scale-generate"].disabled, false,
-    "the layout section disabled the sheet's only primary");
-});
 
 // Q15: Home/End on the pan (index.html ~7448-7463), the sheet's Shift+Tab
 // wrap (~7472-7490, the only prior Tab test at :1984 always sends
 // shiftKey:false) and Enter in the scale box (~7470) had no test.
 
-test("Home and End on the pan jump to the first and last slot, not to each other's opposite", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  const notes = Object.keys(mockPlaces(app));
-  assert.ok(notes.length >= 3, "need at least 3 notes to tell Home/End from a swap");
-  panTap(app, notes[1]);
-  assert.strictEqual(mockSelected(app), notes[1]);
-
-  assert.strictEqual(panKey(app, "Home"), true, "Home was not handled by the pan");
-  assert.strictEqual(mockSelected(app), notes[0], "Home did not select the first slot");
-
-  assert.strictEqual(panKey(app, "End"), true, "End was not handled by the pan");
-  assert.strictEqual(mockSelected(app), notes[notes.length - 1],
-    "End did not select the last slot");
-});
 
 test("Shift+Tab from the sheet's first stop wraps to the last, not off the front", () => {
   const app = boot();
@@ -2388,38 +2137,6 @@ test("Enter in the scale box submits, the same as clicking Generate", () => {
     "Enter in the scale box did not generate a deck");
 });
 
-test("the LAYOUT group explains itself on the page, not only in a comment", () => {
-  const app = boot();
-  const d = makeCustom(app);
-  openEdit(app, d);
-
-  // Stage 4 AC3, and the owner's original complaint: "I'm not sure what any of
-  // these intend to do". A comment in index.html teaches nobody - the sentence
-  // has to be IN the sheet, next to the buttons, and it has to name all three
-  // gestures (tap a note, ROTATE the ring, MOVE the note) or it only half
-  // answers the question that prompted the stage. Read from the FILE, because
-  // the sandbox conjures an element for any id asked for and would happily
-  // report a hint that is not in the markup.
-  //
-  // COMMENTS ARE STRIPPED FIRST, and that is the whole difference between this
-  // test and its own name. A commented-out paragraph is still raw file text, so
-  // without the strip the sentence could survive as `<!-- ... -->` - nothing
-  // rendered, the owner's question unanswered - and a test called "not only in
-  // a comment" would pass on exactly the thing it forbids. What this test still
-  // cannot see is `display:none` or the paragraph's PLACE in the sheet; the e2e
-  // test "the LAYOUT hint is visible inside the group, not merely present in
-  // the file" owns those, in a browser that can measure a box.
-  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8")
-    .replace(/<!--[\s\S]*?-->/g, "");
-  const m = /<p class="sheethint" id="scale-legacy-hint">([^<]+)<\/p>/.exec(html);
-  assert.ok(m, "#scale-legacy-hint is not in the markup");
-  const hint = m[1].toLowerCase();
-  for (const word of ["tap", "rotate", "move"]) {
-    assert.ok(hint.includes(word), `the LAYOUT hint never mentions ${word}: "${m[1]}"`);
-  }
-  assert.strictEqual(app.els["scale-legacy-group"].hasAttribute("hidden"), false,
-    "the LAYOUT row carrying the hint is hidden on the Edit page");
-});
 
 test("the layout markup exists and a built-in deck is never editable", () => {
   const app = boot();
@@ -3227,12 +2944,20 @@ test("the card render still matches the committed digest of every built-in card"
   }
 });
 
-test("interactive pan() adds one hit target per non-ding field, and none for the ding", () => {
+/** The seat editor's hit-layer option for a deck expression, built the way the
+ *  app builds it: one entry per non-ding field with its ring, order and label. */
+const hitOpts = (deckExpr) => `(() => { const hd = ${deckExpr}; const meta = {}; let o = 0;
+  const ids = Object.keys(hd.fields).filter((k) => hd.fields[k][3] !== "ding");
+  for (const id of ids) { const f = hd.fields[id];
+    meta[id] = { ring: f[3], order: o++, label: f[0] + f[1] + ", " + f[3] + " seat " + f[5] + " of " + ids.length + ", top" }; }
+  return { hit: { meta, picked: null, rover: null, flash: null } }; })()`;
+
+test("pan() with a hit layer adds one hit target per non-ding field, and none for the ding", () => {
   const app = boot();
   const D = decks(app);
   for (let di = 0; di < D.length; di++) {
     const d = D[di];
-    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const svg = app.get(`pan(DECKS[${di}], null, ${hitOpts(`DECKS[${di}]`)})`);
     const ids = Object.keys(d.fields).map(Number);
     const selectable = ids.filter((f) => d.fields[f][F_ZONE] !== "ding");
     const ding = ids.filter((f) => d.fields[f][F_ZONE] === "ding");
@@ -3262,7 +2987,7 @@ test("interactive pan() adds one hit target per non-ding field, and none for the
     // many there are to move through (the plan's "position N of M").
     for (const f of selectable) {
       const [name, oct, , , , lab] = d.fields[f];
-      assert.ok(svg.includes(`aria-label="${name}${oct}, position ${lab} of ${selectable.length}"`),
+      assert.ok(svg.includes(`aria-label="${name}${oct}, ${d.fields[f][3]} seat ${lab} of ${selectable.length}, top"`),
         `${d.id}: field ${f} names itself and the size of the set`);
     }
   }
@@ -3289,9 +3014,9 @@ test("every hit target is centred on the field circle it selects", () => {
   const N = "([-+\\d.eE]+)";   // a field on the vertical axis renders in exponent form
   for (let di = 0; di < D.length; di++) {
     const d = D[di], g = d.geom, R = 100;
-    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const svg = app.get(`pan(DECKS[${di}], null, ${hitOpts(`DECKS[${di}]`)})`);
     const hits = [...svg.matchAll(new RegExp(
-      `class="panhit" data-field="(\\d+)" cx="${N}" cy="${N}" r="${N}" data-r="${N}"`, "g"))];
+      `class="panhit" data-field="(\\d+)" data-ring="[a-z]+" cx="${N}" cy="${N}" r="${N}" data-r="${N}"`, "g"))];
     assert.ok(hits.length > 0, `${d.id}: the layer has targets to check`);
     for (const [, fid, cx, cy, r, dr] of hits) {
       const [, , , zone, ang] = d.fields[fid];
@@ -3315,7 +3040,7 @@ test("every hit target is centred on the field circle it selects", () => {
  */
 test("the hit layer is emitted after everything it sits over", () => {
   const app = boot();
-  const svg = app.get(`pan(DECKS.find(d => d.id === "hijaz"), null, {interactive:true})`);
+  const svg = app.get(`pan(DECKS.find(d => d.id === "hijaz"), null, ${hitOpts(`DECKS.find(d => d.id === "hijaz")`)})`);
   const group = svg.indexOf(`<g class="panhits">`);
   assert.ok(group > 0, "the layer is emitted as one group");
   assert.strictEqual(svg.slice(0, group).indexOf("panhit"), -1,
@@ -3391,7 +3116,7 @@ test("every built-in pan holds disjoint hit targets at the page-scale width", ()
   const CAPPED = { pygmy: 34.8 };   // 17 fields; touching diameter at 300px
   for (let di = 0; di < D.length; di++) {
     const d = D[di];
-    const svg = app.get(`pan(DECKS[${di}], null, {interactive:true})`);
+    const svg = app.get(`pan(DECKS[${di}], null, ${hitOpts(`DECKS[${di}]`)})`);
     const ext = Number(svg.match(new RegExp(`data-ext="${N}"`))[1]);
     const pts = [...svg.matchAll(
       new RegExp(`class="panhit"[^>]*cx="${N}" cy="${N}" r="${N}"`, "g"))]
@@ -3501,7 +3226,7 @@ test("a note name cannot break out of the hit target's attributes", () => {
     const f = Object.keys(d.fields).find((k) => d.fields[k][3] !== "ding");
     d.fields[f][0] = 'A" onmouseover="steal()';
     d.fields[f][5] = '1"';
-    return pan(d, null, {interactive:true});
+    return pan(d, null, ${hitOpts("d")});
   })()`);
   const targets = [...svg.matchAll(/<circle class="panhit"[^>]*\/>/g)].map((m) => m[0]);
   const labels = targets.map((t) => (t.match(/aria-label="([^"]*)"/) || [])[1]);
@@ -3512,8 +3237,8 @@ test("a note name cannot break out of the hit target's attributes", () => {
   // on the tag's attribute NAMES, not on whether the string appears at all.
   // data-sel is absent on an unselected target, so it is not in this list: the
   // selected one is asserted separately, in the LAYOUT section.
-  const WANT = ["class", "data-field", "cx", "cy", "r", "data-r",
-                "fill", "tabindex", "role", "aria-selected", "aria-label"];
+  const WANT = ["class", "data-field", "data-ring", "cx", "cy", "r", "data-r",
+                "fill", "tabindex", "role", "aria-pressed", "aria-label"];
   for (const t of targets)
     assert.deepStrictEqual([...t.matchAll(/([a-z-]+)="/g)].map((m) => m[1]), WANT,
       `a note name added an attribute to the target: ${t}`);
@@ -3525,7 +3250,7 @@ test("a note name cannot break out of the hit target's attributes", () => {
   // catches that, and it holds for the position slot as well as the note name.
   const M = (svg.match(/class="panhit"/g) || []).length;
   for (const l of labels)
-    assert.ok(l.endsWith(` of ${M}`), `a label stops short of its count: ${l}`);
+    assert.ok(l.endsWith(` of ${M}, top`), `a label stops short of its count: ${l}`);
 });
 
 /* ---------------- 30. the scale PAGE: its route, and what boot does with it
@@ -5535,7 +5260,7 @@ test("AP1-3 wheelEndDecision table", () => {
 });
 
 /* ------------------------------------------------ AP2: sheet, panel, runGenerate, setMode */
-const SHEET_LETS = "[editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode]";
+const SHEET_LETS = "[editingId, refusal, nameDirty, palette, mirror, layoutSeats, pickRef, mode]";
 const sheetLets = (app) => plain(app.get(SHEET_LETS));
 
 test("AP2-1 sheet open leaves the expected state per mode", () => {
@@ -5543,10 +5268,10 @@ test("AP2-1 sheet open leaves the expected state per mode", () => {
   const id = app.generate(AMARA_STRING, { palette: 3, mirror: true, name: "Mine" }).value.id;
   app.run(`CUSTOM[${JSON.stringify(id)}].options.seats = { rim: [1, 0, 2, 3, 4, 5, 6, 7] }`);
   const edit = () => app.run(`openEditSheet(CUSTOM[${JSON.stringify(id)}])`);
-  const dirty = () => app.run(`refusal = "stale"; nameDirty = true; palette = 5; mirror = true; layoutSeats = { rim: [7, 6, 5, 4, 3, 2, 1, 0] }; layoutSel = 4;`);
-  const create = { editingId: null, refusal: null, nameDirty: false, palette: 0, mirror: false, layoutSeats: null, layoutSel: 0, mode: "A" };
-  const edited = { editingId: id, refusal: null, nameDirty: false, palette: 3, mirror: true, layoutSeats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, layoutSel: 0, mode: "A" };
-  const asObject = (a) => { const [editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode] = a; return { editingId, refusal, nameDirty, palette, mirror, layoutSeats, layoutSel, mode }; };
+  const dirty = () => app.run(`refusal = "stale"; nameDirty = true; palette = 5; mirror = true; layoutSeats = { rim: [7, 6, 5, 4, 3, 2, 1, 0] }; pickRef = { ring: "rim", i: 2 };`);
+  const create = { editingId: null, refusal: null, nameDirty: false, palette: 0, mirror: false, layoutSeats: null, pickRef: null, mode: "A" };
+  const edited = { editingId: id, refusal: null, nameDirty: false, palette: 3, mirror: true, layoutSeats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, pickRef: null, mode: "A" };
+  const asObject = (a) => { const [editingId, refusal, nameDirty, palette, mirror, layoutSeats, pickRef, mode] = a; return { editingId, refusal, nameDirty, palette, mirror, layoutSeats, pickRef, mode }; };
   const state = () => asObject(sheetLets(app));
   const boxes = () => plain(app.get(`[scaleBox.value, nameBox.value, genBtn.textContent]`));
 
@@ -5692,35 +5417,6 @@ test("AP3-1 faceHTML is the only answer-template builder", () => {
   assert.ok(seen.B.back.includes("prompt") && seen.B.back.includes('class="lines"'));
 });
 
-test("AP3-3 layoutIds equals engine slotOrder on all 20 synthetic scales", () => {
-  const app = boot();
-  let parsed = 0;
-  for (const sc of SCALES) {
-    const fields = app.get(`(function () {
-      var r = HPE.core.parseLegacySeed(${JSON.stringify(sc.string)}, { palette: palette, mirror: mirror });
-      return r.ok ? r.value.fields : null;
-    })()`);
-    if (!fields) continue;
-    parsed += 1;
-    const zoneOf = (id) => fields[id][3];
-    const count = (z) => Object.keys(fields).filter((id) => zoneOf(id) === z).length;
-    const expected = plain(app.get(
-      `HPE.layout.slotOrder(${JSON.stringify({ rim: count("rim"), inner: count("inner"), bottom: count("bottom") })})`));
-    const ids = plain(app.get(`layoutIds(${JSON.stringify(fields)})`));
-    assert.deepStrictEqual(ids.map(zoneOf), expected, `${sc.name}: zone order`);
-    for (const z of ["rim", "inner", "bottom"]) {
-      const run = ids.filter((id) => zoneOf(id) === z).map(Number);
-      assert.deepStrictEqual(run, run.slice().sort((a, b) => a - b), `${sc.name}: ${z} ids ascend`);
-    }
-    expected.forEach((z, slot) => {
-      const first = expected.indexOf(z), last = expected.lastIndexOf(z) + 1;
-      assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${slot})`)), [first, last],
-        `${sc.name}: zoneBlock(${slot})`);
-    });
-    assert.deepStrictEqual(plain(app.get(`zoneBlock(${JSON.stringify(fields)}, ${expected.length})`)), [0, 0]);
-  }
-  assert.ok(parsed >= 11, `parsed ${parsed} scales`);
-});
 
 test("AP3-4 the rail keeps its scroll across a re-render of the same deal and resets on a new one", () => {
   const app = boot({ random: () => 0 });
@@ -5808,49 +5504,8 @@ const anglesByNote = (d) => {
   return out;
 };
 
-test("S3: ROTATE on a rim note writes the rim's seats and no other ring's", () => {
-  const app = boot();
-  const d = makeCustom(app, PYGMY_STRING);
-  openEdit(app, d);
-  const rim = ringIdsOf(d, "rim");
-  panTap(app, d.fields[rim[0]][F_NAME] + d.fields[rim[0]][F_OCT]);
-  app.els["scale-rot-r"].click();
-  const seats = plain(app.get("layoutSeats"));
-  assert.deepStrictEqual(Object.keys(seats), ["rim"]);
-  assert.deepStrictEqual(seats.rim, rim.map((_, i) => (i + 1) % rim.length));
-});
 
-test("S3: MOVE swaps two seats inside one ring and RESET clears every ring", () => {
-  const app = boot();
-  const d = makeCustom(app, PYGMY_STRING);
-  openEdit(app, d);
-  const bottom = ringIdsOf(d, "bottom");
-  panTap(app, d.fields[bottom[0]][F_NAME] + d.fields[bottom[0]][F_OCT]);
-  app.els["scale-move-r"].click();
-  const seats = plain(app.get("layoutSeats"));
-  assert.deepStrictEqual(Object.keys(seats), ["bottom"]);
-  const want = bottom.map((_, i) => i);
-  want[0] = 1;
-  want[1] = 0;
-  assert.deepStrictEqual(seats.bottom, want);
-  app.els["scale-layout-reset"].click();
-  assert.strictEqual(app.get("layoutSeats"), null);
-});
 
-test("S3: the selected note is the tapped one on a pan with two corrected rings", () => {
-  const app = boot();
-  const d = makeCustom(app, PYGMY_STRING);
-  openEdit(app, d);
-  const name = (id) => d.fields[id][F_NAME] + d.fields[id][F_OCT];
-  panTap(app, name(ringIdsOf(d, "bottom")[0]));
-  app.els["scale-rot-r"].click();
-  panTap(app, name(ringIdsOf(d, "rim")[0]));
-  app.els["scale-rot-r"].click();
-  for (const note of Object.keys(mockPlaces(app))) {
-    assert.strictEqual(panTap(app, note), note);
-    assert.strictEqual(mockSelected(app), note, `the tap on ${note} selected another note`);
-  }
-});
 
 test("S3: a cross-ring arrangement is refused by generateDeck", () => {
   const app = boot();
@@ -5906,7 +5561,7 @@ test("S3: editing a deck keeps its anchor and a bottom mirror that differs from 
   const id = made.value.id;
   app.select(id);
   app.clickChip(app.registry()[id].name);
-  app.els["scale-rot-r"].click();
+  app.run('swapSeats("rim", 0, 1)');
   app.els["scale-generate"].click();
   const after = app.registry()[id];
   assert.strictEqual(after.options.anchor, "between", "an edit dropped the anchor");
@@ -6641,37 +6296,7 @@ test("DR1 line 22: the sheet opens with the drawer closed, on Add and on Edit", 
   assert.strictEqual(dr1Toggle(app).getAttribute("aria-expanded"), "false");
 });
 
-test("DR1 line 23: Tab walks the field, the toggle, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE in order", () => {
-  const app = boot();
-  dr1Open(app, W1_BOTTOM);
-  dr1Toggle(app).click();
-  const seen = dr1Tabs(app, "scale-box", 5);
-  assert.deepStrictEqual(seen, ["scale-layout-toggle", "scale-mirror", "scale-mirror-bottom",
-    "scale-anchor-one", "scale-anchor-between"]);
 
-  const none = boot();
-  dr1Open(none, W1_NONE);
-  dr1Toggle(none).click();
-  assert.deepStrictEqual(dr1Tabs(none, "scale-box", 4),
-    ["scale-layout-toggle", "scale-mirror", "scale-anchor-one", "scale-anchor-between"],
-    "a disabled MIRROR BOTTOM was a Tab stop");
-});
-
-test("DR1 line 23: on Edit Tab runs toggle, legacy group, MIRROR TOP, MIRROR BOTTOM, ON CENTRE, BESIDE CENTRE, degrees, first swatch, in exactly that order", () => {
-  const app = boot();
-  const d = makeCustom(app, W1_BOTTOM);
-  openEdit(app, d);
-  dr1Toggle(app).click();
-  const seen = dr1Tabs(app, "scale-box", 14);
-  const order = ["scale-layout-toggle", "scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r",
-    "scale-layout-reset", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between",
-    "scale-degrees"];
-  const from = seen.indexOf("scale-layout-toggle");
-  assert.ok(from >= 0, `Tab never reached the toggle: ${seen}`);
-  assert.deepStrictEqual(seen.slice(from, from + order.length), order, `out of order: ${seen}`);
-  const swatch = seen[from + order.length];
-  assert.ok(swatch && swatch !== "scale-generate", `the first swatch does not follow the degrees: ${seen}`);
-});
 
 test("DR1 line 25: two anchor buttons carry aria-pressed, ON CENTRE pressed by default", () => {
   const app = boot();
@@ -6800,7 +6425,7 @@ test("DR1 notice baseline: deleting the bottom notes leaves MIRROR BOTTOM out of
   assert.strictEqual(dr1Notice(add), "");
 });
 
-test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes come and go, and the legacy five never disabled", () => {
+test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes come and go, and the seat controls pause with the scale", () => {
   const key = boot().get("SCALES_KEY");
   const stored = (str) => boot({ storage: { [key]: JSON.stringify([{ v: 4, s: str, o: { mirror: true } }]) } });
   const withB = stored(W1_BOTTOM);
@@ -6830,8 +6455,8 @@ test("DR1 16.1/16.2 sweep: old single mirror true, the bottom switch when notes 
   openEdit(edit, makeCustom(edit, W1_BOTTOM));
   dr1Toggle(edit).click();
   edit.type("(D3) zzz");
-  for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) {
-    assert.ok(!edit.els[id].disabled, `#${id} disabled while the scale does not parse`);
+  for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"]) {
+    assert.ok(edit.els[id].disabled, `#${id} enabled while the scale does not parse`);
   }
 });
 
@@ -6911,7 +6536,7 @@ test("DR1 line 81: the status line is in the band after the plate, hidden while 
   assert.strictEqual(s.textContent, "", "the status was not cleared on close");
 });
 
-test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint stays empty", () => {
+test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, shown again on close, and the drawer hint takes its place", () => {
   const app = boot();
   dr1Open(app, W1_NONE);
   const hint = app.els["scale-layout-hint"];
@@ -6919,7 +6544,8 @@ test("DR1 hint row: the toggle row's hint is hidden while the drawer is open, sh
   assert.ok(!hint.hidden, "the hint is hidden with the drawer closed");
   dr1Toggle(app).click();
   assert.ok(hint.hidden, "the hint stays visible with the drawer open");
-  assert.ok(dh.hidden && dh.textContent === "", "the drawer hint is not empty and hidden in DR1");
+  assert.ok(!dh.hidden && dh.textContent === "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.",
+    "the drawer hint is not the DR2a sentence while the drawer is open");
   dr1Toggle(app).click();
   assert.ok(!hint.hidden, "the hint did not return on close");
   dr1Toggle(app).click();
@@ -6938,15 +6564,14 @@ test("DR1 open step 5: opening the drawer scrolls the zone into view with block 
   assert.strictEqual(calls.length, 1, "closing the drawer scrolled the sheet");
 });
 
-test("DR1 line 85: the hint reads the empty sentence while the toggle is disabled and the DR1 sentence once the scale parses", () => {
+test("DR2 lines 85, 132: the hint reads the empty sentence while the toggle is disabled and LAYOUT_HINT once the scale parses", () => {
   const app = boot();
   openSheet(app);
   const hint = app.els["scale-layout-hint"];
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
   app.type(W1_NONE);
   assert.strictEqual(hint.textContent,
-    "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.");
-  assert.ok(!/move a note|drag/i.test(hint.textContent));
+    "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.");
   app.type("(D3) zzz");
   assert.strictEqual(hint.textContent, "Type a scale to adjust its layout.");
 });
@@ -7043,8 +6668,9 @@ test("DR1 line 121: closing over an invalid or empty box lands on the field; ove
   app.type("(D3) zzz");
   app.els["scale-anchor-one"].focus();
   dr1Toggle(app).click();
-  assert.strictEqual(app.activeId(), "scale-box");
-  assert.strictEqual(dr1Toggle(app).disabled, true);
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(dr1Toggle(app).getAttribute("aria-disabled"), "true");
+  assert.strictEqual(dr1Toggle(app).disabled, false);
 
   const empty = boot();
   dr1Open(empty, W1_NONE);
@@ -7052,8 +6678,8 @@ test("DR1 line 121: closing over an invalid or empty box lands on the field; ove
   empty.type("");
   empty.els["scale-mirror"].focus();
   empty.keydown("Escape");
-  assert.strictEqual(empty.activeId(), "scale-box");
-  assert.strictEqual(dr1Toggle(empty).disabled, true);
+  assert.strictEqual(empty.activeId(), "scale-layout-toggle");
+  assert.strictEqual(dr1Toggle(empty).getAttribute("aria-disabled"), "true");
 
   const typing = boot();
   dr1Open(typing, W1_NONE);
@@ -7064,43 +6690,14 @@ test("DR1 line 121: closing over an invalid or empty box lands on the field; ove
   assert.strictEqual(typing.activeId(), "scale-box");
 });
 
-test("DR1 line 129: the legacy group is in the drawer, its describedby names its own hint, and the toggle row's hint is outside it", () => {
-  const app = boot();
-  const inside = (id, anc) => { for (let n = app.els[id]; n; n = n._markupParent) if (n === app.els[anc]) return true; return false; };
-  assert.ok(inside("scale-legacy-group", "scale-drawer"));
-  assert.ok(!inside("scale-layout-hint", "scale-legacy-group"));
-  assert.ok(!inside("scale-layout-hint", "scale-drawer"));
-  const group = DR1_HTML.slice(DR1_HTML.indexOf('id="scale-legacy-group"'));
-  const hintAt = group.indexOf('id="scale-legacy-hint"');
-  assert.ok(hintAt > 0 && hintAt < group.indexOf('id="scale-rot-l"'), "the legacy hint is not inside its group");
-  assert.strictEqual(dr1Markup("scale-legacy-group").attr("aria-describedby"), "scale-legacy-hint");
-});
 
-test("DR1 line 130: the legacy group is hidden on Add, shown on Edit only while the drawer is open", () => {
-  const app = boot();
-  dr1Open(app, W1_NONE);
-  const ids = ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"];
-  const shown = (id) => app.els[id].getClientRects().length > 0;
-  assert.strictEqual(app.els["scale-legacy-group"].hidden, true);
-  dr1Toggle(app).click();
-  for (const id of ids) assert.strictEqual(shown(id), false, `#${id} is displayed on Add`);
-  app.keydown("Escape");
-  const d = makeCustom(app, W1_NONE);
-  openEdit(app, d);
-  assert.strictEqual(app.els["scale-legacy-group"].hidden, false);
-  for (const id of ids) assert.strictEqual(shown(id), false, `#${id} is displayed with the drawer closed`);
-  dr1Toggle(app).click();
-  for (const id of ids) assert.strictEqual(shown(id), true, `#${id} is not displayed with the drawer open`);
-  dr1Toggle(app).click();
-  for (const id of ids) assert.strictEqual(shown(id), false);
-});
 
-test("DR1 line 131: on Edit, Escape from ROTATE closes the drawer, keeps the sheet and focuses the toggle", () => {
+test("DR1 line 131: on Edit, Escape from NOTE closes the drawer, keeps the sheet and focuses the toggle", () => {
   const app = boot();
   const d = makeCustom(app, W1_NONE);
   openEdit(app, d);
   dr1Toggle(app).click();
-  app.els["scale-rot-l"].focus();
+  app.els["scale-note-prev"].focus();
   app.keydown("Escape");
   assert.strictEqual(app.els["scale-drawer"].hidden, true);
   assert.strictEqual(app.sheetOpen(), true);
@@ -7117,7 +6714,7 @@ const S_NOTICE = {
   edit: { true: { true: "Layout not saved yet. SAVE CHANGES keeps it.", false: "Layout not saved yet. SAVE CHANGES keeps it." },
           false: { true: "Layout changed from the default.", false: "" } },
 };
-const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to flip the pan left and right or choose where note 1 sits.",
+const S_HINT = { valid: "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.",
                  empty: "Type a scale to adjust its layout." };
 const S_BUTTON = { add: "GENERATE CARDS", edit: "SAVE CHANGES" };
 const S_BOXES = {
@@ -7157,7 +6754,7 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
     };
     const press = (id) => {
       const e = app.els[id];
-      if (e.disabled || !e.getClientRects().length) return false;
+      if (e.disabled || e.getAttribute("aria-disabled") === "true" || !e.getClientRects().length) return false;
       e.focus(); e.click();
       if (id === "scale-layout-toggle") M.open = !M.open;
       if (id === "scale-mirror") M.mirror = !M.mirror;
@@ -7174,7 +6771,8 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
       const differs = M.anchor !== kept.anchor || M.mirror !== kept.mirror || (M.hasBottom && M.mb !== kept.mb);
       const custom = kept.anchor !== "one" || kept.mirror || (kept.mb && M.hasBottom);
       bad("notice", S_NOTICE[sheet][differs][custom], els["scale-layout-state"].hidden ? "" : els["scale-layout-state"].textContent);
-      bad("toggle enabled", M.valid || M.open, !els["scale-layout-toggle"].disabled);
+      bad("toggle enabled", M.valid || M.open || app.activeId() === "scale-layout-toggle", !els["scale-layout-toggle"].disabled);
+      bad("toggle aria-disabled", !M.valid && !M.open && app.activeId() === "scale-layout-toggle" ? "true" : null, els["scale-layout-toggle"].getAttribute("aria-disabled"));
       bad("toggle expanded", String(M.open), els["scale-layout-toggle"].getAttribute("aria-expanded"));
       bad("toggle on", M.open, els["scale-layout-toggle"].classList.contains("on"));
       bad("hint shown", !M.open, shown("scale-layout-hint"));
@@ -7182,10 +6780,9 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
       bad("drawer shown", M.open, shown("scale-drawer"));
       bad("status shown", M.open, shown("scale-drawer-status"));
       if (!M.open) bad("status cleared", "", els["scale-drawer-status"].textContent);
-      bad("legacy group shown", M.open && sheet === "edit", shown("scale-legacy-group"));
-      if (shown("scale-rot-l")) {
-        for (const id of ["scale-rot-l", "scale-rot-r", "scale-move-l", "scale-move-r", "scale-layout-reset"]) bad(`${id} enabled`, true, !els[id].disabled);
-      }
+      bad("drawer hint", M.open ? "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it." : "",
+        shown("scale-drawer-hint") ? els["scale-drawer-hint"].textContent : "");
+      for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"]) bad(`${id} shown`, M.open, shown(id));
       for (const id of ["scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) bad(`${id} shown`, M.open, shown(id));
       if (M.open) {
         bad("mirror top enabled", M.valid, !els["scale-mirror"].disabled);
@@ -7249,4 +6846,781 @@ test("DR1 rule S: notice, toggle, switches, anchors and hint match spec 16 for e
   assert.strictEqual(cells, 4 + 4 * 27);
   assert.ok(snapshots > 5000, `only ${snapshots} snapshots`);
   assert.deepStrictEqual(misses.slice(0, 12), [], `${misses.length} mismatches over ${cells} cells`);
+});
+
+/* ------------------------------ DR2a: seats without a drag ------------------
+ * Lane DR2a of docs/plans/2026-10-07-scale-drawer-design-spec.md, read through
+ * plan section 20.17. Unit layer: every expectation below is a literal table or
+ * a small model written here from the spec; none is read from the app's own
+ * functions. The browser layer is tests/drawer_seats.test.js. */
+const D2_NAT = ["C", "D", "E", "F", "G", "A", "B"];
+/** n natural notes from `start` ("E3") upward. */
+function d2Nat(start, n) {
+  let i = D2_NAT.indexOf(start[0]);
+  let oct = Number(start.slice(1));
+  const out = [];
+  for (let k = 0; k < n; k += 1) {
+    out.push(D2_NAT[i] + oct);
+    i += 1;
+    if (i === 7) { i = 0; oct += 1; }
+  }
+  return out;
+}
+/** The scale with `sz` notes in each ring, and the note names of each ring in
+ *  ascending order (which is the order of the ring's permutation). */
+function d2Build(sz) {
+  const bottom = d2Nat("C1", sz.bottom);
+  const rim = d2Nat("E3", sz.rim);
+  const inner = rim.length ? d2Nat(rim[rim.length - 1], sz.inner + 1).slice(1) : d2Nat("E3", sz.inner);
+  const parts = [...bottom.map((n) => `[${n}]`), "(A2)", ...rim];
+  if (inner.length) parts.push("|", ...inner);
+  return { text: parts.join(" "), names: { rim, inner, bottom } };
+}
+const D2_RINGS = ["rim", "inner", "bottom"];
+const d2Sizes = (ring, n) => ({ rim: 3, inner: 3, bottom: 3, [ring]: n });
+const d2Id = (n) => Array.from({ length: n }, (_, i) => i);
+function d2Open(app, text, edit) {
+  if (edit) openEdit(app, makeCustom(app, text));
+  else { openSheet(app); app.type(text); }
+  app.els["scale-layout-toggle"].click();
+}
+const d2Hit = (app, name) => {
+  const h = app.hits().find((n) => String(n.getAttribute("aria-label")).startsWith(name + ","));
+  assert.ok(h, `no hit target for ${name}`);
+  return h;
+};
+/** A pointer tap: the press focuses the note, then the click arrives. */
+const d2Tap = (app, name) => { const h = d2Hit(app, name); h.focus(); app.click(h); };
+const d2Key = (app, name, key) => { const h = d2Hit(app, name); h.focus(); return app.press(h, key); };
+const d2Seats = (app) => JSON.parse(app.get("JSON.stringify(layoutSeats)"));
+const d2Pick = (app) => JSON.parse(app.get("JSON.stringify(pickRef)"));
+const d2Status = (app) => app.els["scale-drawer-status"].textContent;
+const d2Norm = (seats) => {
+  const out = {};
+  for (const r of D2_RINGS) {
+    const l = seats && seats[r];
+    if (l && l.some((s, i) => s !== i)) out[r] = l;
+  }
+  return Object.keys(out).length ? out : null;
+};
+const d2Seed = (app, seats) => {
+  app.run(`setPick(null); layoutSeats = ${JSON.stringify(seats)}; resyncSheet(true)`);
+};
+/** The model of an exchange: the notes at list[i] and list[j] trade seats. */
+const d2Exchange = (list, i, j) => { const l = list.slice(); [l[i], l[j]] = [l[j], l[i]]; return l; };
+const d2Starts = (k) => {
+  const out = [["default", d2Id(k)]];
+  out.push(["exchange", d2Exchange(d2Id(k), 0, 1)]);
+  if (k >= 3) out.push(["cycle", d2Id(k).map((i) => (i < 3 ? (i + 1) % 3 : i))]);
+  return out;
+};
+const D2_OTHER = [1, 0, 2];
+function d2Case(ring, n, start, edit) {
+  const app = boot();
+  const sc = d2Build(d2Sizes(ring, n));
+  d2Open(app, sc.text, edit);
+  const seats = {};
+  for (const r of D2_RINGS) seats[r] = r === ring ? start : D2_OTHER;
+  d2Seed(app, seats);
+  return { app, sc, seats };
+}
+const d2AllRings = [["rim", 20], ["inner", 8], ["bottom", 8]];
+
+for (const edit of [false, true]) {
+  const where = edit ? "Edit" : "Add";
+
+  test(`DR2a rule W (78, 52, 53, 41, 42): tap then tap exchanges exactly two notes, ring sizes swept, ${where}`, () => {
+    for (const [ring, max] of d2AllRings) {
+      for (let n = 2; n <= max; n += 1) {
+        for (const [label, start] of d2Starts(n)) {
+          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const names = sc.names[ring];
+          for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
+            d2Seed(app, seats);
+            const i = start.indexOf(a), j = start.indexOf(b);
+            d2Tap(app, names[i]); d2Tap(app, names[j]);
+            const want = a === b ? start : d2Exchange(start, i, j);
+            const ctx = `${ring} k=${n} ${label} seat ${a}->${b}`;
+            assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: want }), ctx);
+            assert.strictEqual(d2Pick(app), null, `${ctx}: the pick did not end`);
+            const ok = JSON.parse(app.get(`JSON.stringify(HPE.layout.readSeats(layoutSeats, ${JSON.stringify(d2Sizes(ring, n))}))`));
+            assert.strictEqual(ok.ok, true, `${ctx}: readSeats refuses it`);
+            if (a !== b) assert.match(d2Status(app), new RegExp(
+              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${b + 1} of ${n}, [a-z ]+\\.$`), ctx);
+            else assert.match(d2Status(app), new RegExp(`^${names[i]} stays in ${ring} seat ${a + 1} of ${n}\\.$`), ctx);
+          }
+        }
+      }
+    }
+  });
+
+  test(`DR2a rule W (65, 78): Space and Enter swap the same pairs, ring sizes to 8 swept, ${where}`, () => {
+    for (const [ring] of d2AllRings) {
+      for (let n = 2; n <= 8; n += 1) {
+        for (const [label, start] of d2Starts(n)) {
+          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const names = sc.names[ring];
+          for (const key of [" ", "Enter"]) for (let a = 0; a < n; a += 1) for (let b = 0; b < n; b += 1) {
+            d2Seed(app, seats);
+            const i = start.indexOf(a), j = start.indexOf(b);
+            d2Key(app, names[i], key); d2Key(app, names[j], key);
+            const want = a === b ? start : d2Exchange(start, i, j);
+            assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: want }),
+              `${ring} k=${n} ${label} ${JSON.stringify(key)} ${a}->${b}`);
+            assert.strictEqual(d2Pick(app), null);
+          }
+        }
+      }
+    }
+  });
+
+  test(`DR2a rule W (60, 61): NEXT SEAT and PREVIOUS SEAT swap with the adjacent seat, wrap, keep the pick, every start seat, ${where}`, () => {
+    for (const [ring, max] of d2AllRings) {
+      for (let n = 2; n <= max; n += 1) {
+        for (const [label, start] of d2Starts(n)) {
+          const { app, sc, seats } = d2Case(ring, n, start, edit);
+          const names = sc.names[ring];
+          for (let s = 0; s < n; s += 1) for (const [id, dir] of [["scale-seat-next", 1], ["scale-seat-prev", -1]]) {
+            d2Seed(app, seats);
+            const i = start.indexOf(s);
+            const t = (s + dir + n) % n;
+            const j = start.indexOf(t);
+            d2Tap(app, names[i]);
+            app.els[id].click();
+            const ctx = `${ring} k=${n} ${label} seat ${s} ${id}`;
+            assert.deepStrictEqual(d2Norm(d2Seats(app)), d2Norm({ ...seats, [ring]: d2Exchange(start, i, j) }), ctx);
+            assert.deepStrictEqual(d2Pick(app), { ring, i }, `${ctx}: the pick moved or ended`);
+            assert.match(d2Status(app), new RegExp(
+              `^Swapped ${names[i]} and ${names[j]}\\. ${names[i]} is now in ${ring} seat ${t + 1} of ${n}, [a-z ]+\\.$`), ctx);
+          }
+        }
+      }
+    }
+  });
+}
+
+/* Rule P. The fixture is D Amara 9's maker string: its rim angles are the
+ * verified ones of CLAUDE.md (1 A3 @270 ... 8 C5 @90), so the place word of
+ * every seat is a literal here. */
+const D2_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+const D2_NOTES = ["A3", "C4", "D4", "E4", "F4", "G4", "A4", "C5"];
+const D2_PLACE = ["bottom", "lower left", "lower right", "left", "right", "upper left", "upper right", "top"];
+const D2_SEAT_OF = (seats) => (name) => (seats ? seats.indexOf(D2_NOTES.indexOf(name)) >= 0 : false);
+const d2Pressed = (app) => app.hits().filter((h) => h.getAttribute("aria-pressed") === "true")
+  .map((h) => h.getAttribute("aria-label").split(",")[0]);
+const d2Rover = (app) => app.hits().filter((h) => h.getAttribute("tabindex") === "0")
+  .map((h) => h.getAttribute("aria-label").split(",")[0]);
+const d2Focus = (app) => {
+  const f = app.activeHit();
+  if (f === null) return app.activeId();
+  const h = app.hits().find((n) => n.getAttribute("data-field") === f);
+  return h.getAttribute("aria-label").split(",")[0];
+};
+
+for (const edit of [false, true]) {
+  const where = edit ? "Edit" : "Add";
+
+  test(`DR2a rule P (63, 98, 53, 51): pick by tap and by Space, status rows 3 and 4, names, pressed state, ${where}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    assert.deepStrictEqual(app.hits().map((h) => h.getAttribute("aria-label")),
+      D2_NOTES.map((n, i) => `${n}, rim seat ${i + 1} of 8, ${D2_PLACE[i]}`));
+    for (const h of app.hits()) {
+      assert.strictEqual(h.getAttribute("role"), "button");
+      assert.strictEqual(h.hasAttribute("aria-selected"), false);
+      assert.strictEqual(h.getAttribute("aria-pressed"), "false");
+    }
+    d2Tap(app, "D4");
+    assert.deepStrictEqual(d2Pressed(app), ["D4"]);
+    assert.strictEqual(d2Status(app), "Picked up D4. Tap or drop it on another rim note to swap, or use PREVIOUS SEAT and NEXT SEAT.");
+    d2Tap(app, "D4");
+    assert.deepStrictEqual(d2Pressed(app), []);
+    assert.strictEqual(d2Status(app), "D4 stays in rim seat 3 of 8.");
+    d2Key(app, "F4", " ");
+    assert.deepStrictEqual(d2Pressed(app), ["F4"]);
+    assert.strictEqual(d2Status(app), "Picked up F4. Arrows choose a seat in the rim. Space swaps. Escape cancels.");
+  });
+
+  test(`DR2a rule P (52, 97, 124): a committed swap ends the pick and focus ends on the picked note, ${where}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    d2Tap(app, "A3"); d2Tap(app, "C4");
+    assert.strictEqual(d2Pick(app), null);
+    assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+    assert.strictEqual(d2Status(app), "Swapped A3 and C4. A3 is now in rim seat 2 of 8, lower left.");
+    assert.strictEqual(d2Focus(app), "A3", "focus did not return to the picked note");
+    assert.deepStrictEqual(d2Rover(app), ["A3"]);
+    d2Key(app, "E4", "Enter"); d2Key(app, "G4", "Enter");
+    assert.strictEqual(d2Focus(app), "E4");
+    assert.strictEqual(d2Status(app), "Swapped E4 and G4. E4 is now in rim seat 6 of 8, upper left.");
+  });
+
+  test(`DR2a rule P (62, 64, 124): arrows with nothing picked walk the notes without wrap; with a pick they walk seats and wrap, ${where}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    app.run("layoutStatus('')");
+    const walk = (from, key) => { d2Key(app, from, key); return d2Focus(app); };
+    assert.strictEqual(walk("A3", "ArrowRight"), "C4");
+    assert.strictEqual(walk("A3", "ArrowDown"), "C4");
+    assert.strictEqual(walk("A3", "ArrowLeft"), "A3");
+    assert.strictEqual(walk("C5", "ArrowRight"), "C5");
+    assert.strictEqual(walk("D4", "ArrowUp"), "C4");
+    assert.strictEqual(walk("D4", "Home"), "A3");
+    assert.strictEqual(walk("D4", "End"), "C5");
+    assert.strictEqual(d2Status(app), "", "an arrow key wrote the status line");
+    d2Tap(app, "D4");
+    const picked = d2Status(app);
+    assert.strictEqual(walk("D4", "ArrowRight"), "E4");
+    assert.strictEqual(walk("C5", "ArrowRight"), "A3", "no wrap from the last seat to the first");
+    assert.strictEqual(walk("A3", "ArrowLeft"), "C5");
+    assert.strictEqual(walk("E4", "Home"), "A3");
+    assert.strictEqual(walk("E4", "End"), "C5");
+    assert.strictEqual(d2Status(app), picked);
+    assert.strictEqual(d2Seats(app), null, "a focus move changed seats");
+    assert.deepStrictEqual(d2Pressed(app), ["D4"]);
+    d2Tap(app, "C4");
+    d2Tap(app, "A3");
+    assert.strictEqual(walk("C4", "Home"), "A3");
+    assert.strictEqual(walk("A3", "ArrowRight"), "D4");
+  });
+
+  test(`DR2a rule P (124): with A picked and the arrows on B, B has focus and tabindex 0; Tab out and Shift+Tab back returns to A, ${where}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    d2Tap(app, "C4");
+    d2Key(app, "C4", "ArrowRight"); d2Key(app, "D4", "ArrowRight");
+    assert.strictEqual(d2Focus(app), "E4");
+    assert.deepStrictEqual(d2Rover(app), ["E4"]);
+    assert.deepStrictEqual(d2Pressed(app), ["C4"]);
+    app.press(d2Hit(app, "E4"), "Tab");
+    assert.strictEqual(app.activeId(), "scale-layout-toggle");
+    assert.deepStrictEqual(d2Rover(app), ["C4"], "tab entry is not the picked note");
+    app.press(app.els["scale-layout-toggle"], "Tab", { shiftKey: true });
+    assert.strictEqual(d2Focus(app), "C4");
+    assert.deepStrictEqual(d2Pressed(app), ["C4"]);
+    assert.strictEqual(d2Seats(app), null);
+  });
+
+  test(`DR2a rule P (66, 102, 107, 123): the Escape ladder and its rows, ${where}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    d2Tap(app, "C4");
+    app.keydown("Escape");
+    assert.strictEqual(d2Pick(app), null);
+    assert.strictEqual(d2Status(app), "Cancelled. Nothing moved.");
+    assert.strictEqual(app.els["scale-drawer"].hidden, false, "Escape closed the drawer while a note was picked");
+    d2Tap(app, "C4");
+    app.els["scale-seat-next"].click();
+    app.els["scale-seat-next"].focus();
+    app.keydown("Escape");
+    assert.strictEqual(d2Status(app), "C4 put down. The swaps you made are kept.");
+    assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [0, 2, 1, 3, 4, 5, 6, 7] });
+    assert.strictEqual(d2Focus(app), "C4", "focus did not go to the picked note from a SEAT button");
+    d2Tap(app, "D4");
+    app.els["scale-box"].focus();
+    app.keydown("Escape");
+    assert.strictEqual(d2Pick(app), null);
+    assert.strictEqual(app.els["scale-drawer"].hidden, false);
+    app.keydown("Escape");
+    assert.strictEqual(app.els["scale-drawer"].hidden, true);
+    assert.strictEqual(app.activeId(), "scale-box", "focus left the field");
+    app.keydown("Escape");
+    assert.strictEqual(app.sheetOpen(), false);
+  });
+
+  test(`DR2a rule P (54, 55, 106): one-note rings, rows 2 and 10, and a pan with no ring of two, ${where}`, () => {
+    const app = boot();
+    d2Open(app, "(D3) E3 F3 G3 | A3", edit);
+    d2Tap(app, "A3");
+    assert.strictEqual(d2Status(app), "A3 is the only note in the inner, so it has no other seat.");
+    assert.strictEqual(d2Pick(app), null);
+    d2Key(app, "G3", "ArrowRight");
+    d2Key(app, "G3", "End");
+    assert.strictEqual(d2Pick(app), null);
+    d2Key(app, "A3", " ");
+    assert.strictEqual(d2Status(app), "A3 is the only note in the inner, so it has no other seat.");
+    d2Tap(app, "F3");
+    app.run("layoutStatus('')");
+    d2Tap(app, "A3");
+    assert.strictEqual(d2Status(app), "Not moved. F3 moves only within the rim.");
+    assert.ok(app.els["scale-drawer-status"].classList.contains("warn"), "the refusal is not amber");
+    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 1 });
+    assert.strictEqual(d2Focus(app), "F3", "focus left the picked note after a refused tap");
+    assert.strictEqual(d2Seats(app), null);
+    d2Tap(app, "G3");
+    assert.strictEqual(app.els["scale-drawer-status"].classList.contains("warn"), false, "warn outlived the refusal");
+
+    const two = boot();
+    d2Open(two, D2_AMARA, edit);
+    two.els["scale-layout-toggle"].click();
+    two.type("(D3) A3 | C4");
+    two.els["scale-layout-toggle"].click();
+    assert.strictEqual(d2Status(two), "This pan has no ring with two notes, so there is nothing to rearrange.");
+    for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"])
+      assert.strictEqual(two.els[id].disabled, true, id);
+  });
+
+  test(`DR2a rule P (103): two identical refusals each rewrite the status node, ${where}`, () => {
+    const app = boot();
+    d2Open(app, "(D3) E3 F3 G3 | A3", edit);
+    d2Tap(app, "F3");
+    d2Tap(app, "A3");
+    const first = d2Status(app);
+    assert.strictEqual(first, "Not moved. F3 moves only within the rim.");
+    d2Tap(app, "A3");
+    assert.strictEqual(d2Status(app), "", "the second identical refusal was not cleared before it was written");
+    app.flushTimers();
+    assert.strictEqual(d2Status(app), first);
+  });
+
+  test(`DR2a rule P (90, 20, 97): NEXT NOTE and PREVIOUS NOTE move the pick across rings, skip one-note rings, wrap, leave focus, ${where}`, () => {
+    const app = boot();
+    d2Open(app, "[C3] [D3] (E3) F3 G3 | A3 B3 C4", edit);
+    app.els["scale-note-next"].focus();
+    const next = () => { app.els["scale-note-next"].click(); return d2Pick(app); };
+    assert.deepStrictEqual(next(), { ring: "rim", i: 0 });
+    assert.strictEqual(d2Status(app), "Picked up F3, rim seat 1 of 2, bottom. PREVIOUS SEAT and NEXT SEAT move it.");
+    assert.deepStrictEqual(next(), { ring: "rim", i: 1 });
+    assert.deepStrictEqual(next(), { ring: "inner", i: 0 });
+    assert.deepStrictEqual(next(), { ring: "inner", i: 1 });
+    assert.deepStrictEqual(next(), { ring: "inner", i: 2 });
+    assert.deepStrictEqual(next(), { ring: "bottom", i: 0 });
+    assert.deepStrictEqual(next(), { ring: "bottom", i: 1 });
+    assert.deepStrictEqual(next(), { ring: "rim", i: 0 });
+    assert.strictEqual(d2Seats(app), null);
+    assert.strictEqual(app.activeId(), "scale-note-next", "focus left the button");
+    const back = boot();
+    d2Open(back, "[C3] [D3] (E3) F3 G3 | A3 B3 C4", edit);
+    back.els["scale-note-prev"].click();
+    assert.deepStrictEqual(d2Pick(back), { ring: "bottom", i: 1 }, "PREVIOUS NOTE from nothing picked is not the last pickable note");
+  });
+}
+
+test("DR2a (59, 76, 99, 116, 12): SEAT buttons follow the pick, RESET SEATS follows the seats and returns to the default", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next", "scale-layout-reset"].map((id) => app.els[id].disabled), [true, true, true]);
+  d2Tap(app, "A3");
+  assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next"].map((id) => app.els[id].disabled), [false, false]);
+  assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+  app.els["scale-mirror"].click();
+  app.els["scale-anchor-between"].click();
+  assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 0 }, "a mirror or anchor change dropped the pick (105)");
+  app.els["scale-seat-next"].click();
+  assert.strictEqual(app.els["scale-layout-reset"].disabled, false);
+  app.els["scale-layout-reset"].click();
+  assert.strictEqual(d2Seats(app), null);
+  assert.strictEqual(d2Status(app), "Seats reset to the default.");
+  assert.strictEqual(app.els["scale-layout-reset"].disabled, true);
+  assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.deepStrictEqual(["scale-seat-prev", "scale-seat-next"].map((id) => app.els[id].disabled), [true, true]);
+});
+
+test("DR2a (68, 122, 99, 18): closing the drawer, or a scale that stops parsing, ends the pick and keeps the swaps", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4"); d2Tap(app, "D4");
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(d2Pick(app), null);
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  app.els["scale-layout-toggle"].click();
+  d2Tap(app, "A3");
+  d2Hit(app, "A3").focus();
+  app.type("(D3) A3 C4 D4 E4 F4 G4 A4 C5 zzz");
+  assert.strictEqual(d2Pick(app), null);
+  assert.strictEqual(app.hits().length, 0, "the plate keeps a hit layer for a scale that does not parse");
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  for (const id of ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-layout-reset"])
+    assert.strictEqual(app.els[id].disabled, true, id);
+  app.type(D2_AMARA);
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, "75: the swap did not come back");
+  assert.strictEqual(app.hits().length, 8);
+});
+
+test("DR2a item 7 (121): closing the drawer over a scale that does not parse leaves the toggle focused, aria-disabled, then disabled on blur", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  app.type("(D3) zzz");
+  app.els["scale-note-next"].focus();
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, false);
+  assert.strictEqual(app.els["scale-layout-toggle"].getAttribute("aria-disabled"), "true");
+  assert.strictEqual(app.activeId(), "scale-layout-toggle");
+  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Type a scale to adjust its layout.");
+  app.els["scale-layout-toggle"].click();
+  assert.strictEqual(app.els["scale-drawer"].hidden, true, "a press on the aria-disabled toggle opened the drawer");
+  app.els["scale-box"].focus();
+  app.els["scale-layout-toggle"].dispatchEvent({ type: "blur" });
+  assert.strictEqual(app.els["scale-layout-toggle"].disabled, true);
+  assert.strictEqual(app.els["scale-layout-toggle"].hasAttribute("aria-disabled"), false);
+});
+
+test("DR2a (83, 132, 130): the DOM carries the new controls in the order of section 9, the old group is gone, the closed hint is LAYOUT_HINT", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  const order = ["scale-layout-toggle", "scale-layout-state", "scale-note-prev", "scale-note-next", "scale-seat-prev",
+    "scale-seat-next", "scale-mirror", "scale-mirror-bottom", "scale-layout-reset", "scale-anchor-one", "scale-anchor-between",
+    "scale-drawer-hint"];
+  const at = order.map((id) => html.indexOf(`id="${id}"`));
+  assert.ok(at.every((x) => x >= 0), `missing: ${order.filter((_, i) => at[i] < 0)}`);
+  assert.deepStrictEqual(at.slice().sort((a, b) => a - b), at, "the controls are not in the order of section 9");
+  assert.strictEqual(dr1Markup("scale-note-prev").text, "PREVIOUS NOTE");
+  assert.strictEqual(dr1Markup("scale-note-next").text, "NEXT NOTE");
+  assert.strictEqual(dr1Markup("scale-seat-prev").text, "PREVIOUS SEAT");
+  assert.strictEqual(dr1Markup("scale-seat-next").text, "NEXT SEAT");
+  assert.strictEqual(dr1Markup("scale-layout-reset").text, "RESET SEATS");
+  assert.doesNotMatch(html, /scale-rot-|scale-move-|scale-legacy/);
+  assert.ok(html.includes("On centre puts seat 1 at the bottom centre. Beside centre puts the bottom centre between seats 1 and 2."));
+  const app = boot();
+  openSheet(app);
+  app.type(D2_AMARA);
+  assert.strictEqual(app.els["scale-layout-hint"].textContent, "Layout is a guess. Open ADJUST LAYOUT to move a note, change where note 1 sits, or mirror the pan.");
+  const drawer = boot();
+  d2Open(drawer, D2_AMARA, false);
+  assert.strictEqual(drawer.els["scale-drawer-hint"].hidden, false);
+  assert.strictEqual(drawer.els["scale-drawer-hint"].textContent,
+    "Tap a note, then tap another note in the same ring to swap them. Or hold a note and drag it.");
+  assert.strictEqual(drawer.els["scale-layout-hint"].hidden, true);
+});
+
+test("DR2a rule P (120): the Tab order of the sheet on Add and Edit, plate as one stop", () => {
+  for (const edit of [false, true]) {
+    const app = boot();
+    d2Open(app, DR1_PYGMY_MAKER, edit);
+    d2Tap(app, "G3");
+    app.els["scale-seat-next"].click();
+    app.els["scale-box"].focus();
+    app.els["scale-back"].focus();
+    const seen = [];
+    for (let i = 0; i < 40; i += 1) {
+      app.press(app.els["scale-sheet"], "Tab");
+      const here = app.activeHit() !== null ? "plate" : app.activeId();
+      if (here === "scale-back") break;
+      seen.push(here);
+    }
+    const want = ["scale-box", "plate", "scale-layout-toggle", "scale-note-prev", "scale-note-next", "scale-seat-prev",
+      "scale-seat-next", "scale-mirror", "scale-mirror-bottom", "scale-layout-reset", "scale-anchor-one", "scale-anchor-between"];
+    if (edit) want.unshift("scale-name");
+    const named = seen.filter((x) => x !== "" && x !== null);
+    assert.deepStrictEqual(named.slice(0, want.length + (edit ? 1 : 0)).filter((x) => want.includes(x)), want, `edit=${edit}`);
+    assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
+  }
+});
+
+/* Rule C: the model of spec section 14. Each ring holds an arrangement and a
+ * memory of the arrangement at every count it has left. */
+const D2_ORDINAL = { rim: "rim", inner: "inner", bottom: "bottom" };
+const d2Row = (ring, k, restored) => (restored
+  ? `The ${ring} is back to ${k} notes, so its earlier seats were restored.`
+  : `The ${ring} now has ${k === 1 ? "1 note" : k + " notes"}, so its seats were reset.`);
+function d2Model(counts) {
+  const m = { counts: { ...counts }, cur: {}, mem: {} };
+  for (const r of D2_RINGS) { m.cur[r] = null; m.mem[r] = {}; }
+  m.step = (next) => {
+    const said = [];
+    for (const r of D2_RINGS) {
+      if (next[r] === m.counts[r]) continue;
+      m.mem[r][m.counts[r]] = m.cur[r];
+      const had = Object.prototype.hasOwnProperty.call(m.mem[r], next[r]);
+      m.cur[r] = had ? m.mem[r][next[r]] : null;
+      said.push(d2Row(r, next[r], had));
+      m.counts[r] = next[r];
+    }
+    return said;
+  };
+  m.arrangement = () => d2Norm(Object.fromEntries(D2_RINGS.map((r) => [r, m.cur[r]])));
+  return m;
+}
+const d2Parses = (app, text) => app.get(`HPE.core.parseSeed(${JSON.stringify(text)}, {}).ok`);
+
+for (const edit of [false, true]) {
+  const where = edit ? "Edit" : "Add";
+  for (const ring of D2_RINGS) {
+    test(`DR2a rule C (72, 73, 75, 76, 104, 126): count walks of the ${ring} over {0,1,2,3,5}, a swap at every count, ${where}`, () => {
+      const set = ring === "rim" ? [1, 2, 3, 5] : [0, 1, 2, 3, 5];
+      let walks = 0;
+      for (const c1 of set) for (const c2 of set) for (const c3 of set) {
+        if (c1 === c2 || c2 === c3) continue;
+        walks += 1;
+        const app = boot();
+        const start = d2Sizes(ring, c1);
+        d2Open(app, d2Build(start).text, edit);
+        const model = d2Model(start);
+        const swapHere = (counts) => {
+          const names = d2Build(counts).names[ring];
+          if (names.length < 2) return;
+          d2Tap(app, names[0]); d2Tap(app, names[1]);
+          model.cur[ring] = d2Exchange(model.cur[ring] || d2Id(names.length), 0, 1);
+        };
+        swapHere(start);
+        for (const next of [d2Sizes(ring, c2), d2Sizes(ring, c3), d2Sizes(ring, c1)]) {
+          app.type(d2Build(next).text);
+          const said = model.step(next);
+          const ctx = `${ring} ${c1}>${c2}>${c3} -> ${next[ring]}`;
+          assert.deepStrictEqual(d2Norm(d2Seats(app)), model.arrangement(), ctx);
+          assert.strictEqual(d2Status(app), said.join(" "), ctx);
+          swapHere(next);
+        }
+      }
+      assert.ok(walks >= (ring === "rim" ? 36 : 48));
+    });
+  }
+
+  test(`DR2a rule C (104, 74, 17): one edit changing two rings writes one message; a pick in a changed ring is put down, ${where}`, () => {
+    const app = boot();
+    d2Open(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).text, edit);
+    d2Tap(app, "E3"); d2Tap(app, "F3");
+    d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[0]); d2Tap(app, d2Build({ rim: 3, inner: 3, bottom: 3 }).names.inner[1]);
+    d2Tap(app, "G3");
+    const to = { rim: 5, inner: 2, bottom: 3 };
+    app.type(d2Build(to).text);
+    assert.strictEqual(d2Status(app), `${d2Row("rim", 5)} ${d2Row("inner", 2)} The picked note was put down.`);
+    assert.strictEqual(d2Pick(app), null);
+    assert.deepStrictEqual(d2Seats(app), null);
+    d2Tap(app, d2Build(to).names.inner[0]);
+    app.type(d2Build({ rim: 5, inner: 3, bottom: 3 }).text);
+    assert.strictEqual(d2Status(app), `${d2Row("inner", 3, true)} The picked note was put down.`);
+    assert.deepStrictEqual(d2Norm(d2Seats(app)), { inner: [1, 0, 2] }, "the inner arrangement was not restored");
+    d2Tap(app, "E3");
+    app.type(d2Build({ rim: 5, inner: 3, bottom: 2 }).text);
+    assert.deepStrictEqual(d2Pick(app), { ring: "rim", i: 0 }, "a count change in another ring put the pick down");
+  });
+
+  test(`DR2a rule C (126, 75): with the drawer closed the rules hold and nothing is written; an invalid parse changes nothing, ${where}`, () => {
+    const app = boot();
+    const a = { rim: 3, inner: 3, bottom: 3 };
+    d2Open(app, d2Build(a).text, edit);
+    d2Tap(app, "E3"); d2Tap(app, "F3");
+    app.els["scale-layout-toggle"].click();
+    app.type(d2Build({ ...a, rim: 5 }).text);
+    assert.deepStrictEqual(d2Seats(app), null);
+    app.type(d2Build(a).text);
+    assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2] });
+    app.type("(D3) zzz");
+    app.type(d2Build(a).text);
+    assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2] });
+    app.els["scale-layout-toggle"].click();
+    assert.strictEqual(d2Status(app), "");
+    const none = boot();
+    d2Open(none, d2Build(a).text, edit);
+    none.els["scale-layout-toggle"].click();
+    none.type("(D3) A3 | C4");
+    none.els["scale-layout-toggle"].click();
+    assert.strictEqual(d2Status(none), "This pan has no ring with two notes, so there is nothing to rearrange.");
+  });
+}
+
+test("DR2a item 6 (91): on Edit a changed count resets that ring only and the notice says so until the count returns; Add and Edit notices by value", () => {
+  const app = boot();
+  const a = { rim: 3, inner: 3, bottom: 3 };
+  const d = makeCustom(app, d2Build(a).text);
+  app.run(`CUSTOM[${JSON.stringify(d.id)}].options.seats = {"rim":[1,0,2],"inner":[2,1,0]}`);
+  openEdit(app, app.registry()[d.id]);
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  app.type(d2Build({ ...a, rim: 4 }).text);
+  assert.strictEqual(dr1Notice(app), "Layout not saved yet. SAVE CHANGES keeps it. The rim seats were reset.");
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { inner: [2, 1, 0] });
+  app.type(d2Build(a).text);
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2], inner: [2, 1, 0] });
+  assert.strictEqual(dr1Notice(app), "Layout changed from the default.");
+  const add = boot();
+  d2Open(add, D2_AMARA, false);
+  d2Tap(add, "A3"); d2Tap(add, "C4");
+  assert.strictEqual(dr1Notice(add), "Layout not saved yet. GENERATE CARDS keeps it.");
+  d2Tap(add, "A3"); d2Tap(add, "C4");
+  assert.strictEqual(dr1Notice(add), "", "a swap undone still reads as unsaved");
+});
+
+/* Rule R (item 8, F1). Pygmy's rim, inner and bottom angles: the first table is
+ * CLAUDE.md's anchor-between listing (rim and bottom as verified, inner 128/52),
+ * the second is the engine's anchor-one output for the same maker string. */
+const D2_PYGMY_BETWEEN = { G3: 290, Ab3: 250, C4: 330, Eb4: 210, F4: 10, G4: 170, Ab4: 50, C5: 130, Eb5: 90,
+  F5: 128, G5: 52, C3: 300, Db3: 240, Eb3: 0, Bb3: 180, Db4: 60, Ab5: 120 };
+const D2_PYGMY_ONE = { G3: 270, Ab3: 230, C4: 310, Eb4: 190, F4: 350, G4: 150, Ab4: 30, C5: 110, Eb5: 70,
+  F5: 128, G5: 52, C3: 300, Db3: 240, Eb3: 0, Bb3: 180, Db4: 60, Ab5: 120 };
+const D2_BOTTOM = ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab5"];
+const d2Mirror = (table, top, bottom) => Object.fromEntries(Object.entries(table).map(([n, a]) =>
+  [n, ((D2_BOTTOM.includes(n) ? bottom : top) ? 180 - a : a) + 720].map((v) => (typeof v === "number" ? v % 360 : v))));
+const d2Drawn = (app) => Object.fromEntries(app.hits().map((h) => {
+  const name = h.getAttribute("aria-label").split(",")[0];
+  const deg = (Math.atan2(-Number(h.getAttribute("cy")), Number(h.getAttribute("cx"))) * 180) / Math.PI;
+  return [name, Math.round((deg + 360) % 360)];
+}));
+test("DR2a rule R (item 8, F1): under a standing refusal every layout control and committed swap redraws the plate", () => {
+  const app = boot();
+  makeCustom(app, DR1_PYGMY_MAKER);
+  const d = makeCustom(app, D2_AMARA);
+  openEdit(app, d);
+  app.type(DR1_PYGMY_MAKER);
+  app.els["scale-generate"].click();
+  const refusal = app.els["scale-refusal"].textContent;
+  assert.ok(refusal, "no refusal stands");
+  app.els["scale-layout-toggle"].click();
+  const same = () => {
+    assert.strictEqual(app.els["scale-refusal"].textContent, refusal, "the refusal text changed");
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "the primary button was enabled");
+  };
+  same();
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "anchor one baseline");
+  app.els["scale-anchor-between"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "BESIDE CENTRE did not redraw");
+  app.els["scale-anchor-between"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_BETWEEN, "the pressed anchor changed the pan");
+  app.els["scale-anchor-one"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE);
+  app.els["scale-mirror"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), d2Mirror(D2_PYGMY_ONE, true, false));
+  app.els["scale-mirror-bottom"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), d2Mirror(D2_PYGMY_ONE, true, true));
+  app.els["scale-mirror"].click(); app.els["scale-mirror-bottom"].click(); same();
+  d2Tap(app, "G3"); d2Tap(app, "Ab3"); same();
+  let want = { ...D2_PYGMY_ONE, G3: D2_PYGMY_ONE.Ab3, Ab3: D2_PYGMY_ONE.G3 };
+  assert.deepStrictEqual(d2Drawn(app), want, "a committed swap did not redraw");
+  d2Key(app, "C4", " "); d2Key(app, "Eb4", "Enter"); same();
+  want = { ...want, C4: D2_PYGMY_ONE.Eb4, Eb4: D2_PYGMY_ONE.C4 };
+  assert.deepStrictEqual(d2Drawn(app), want, "a keyboard swap did not redraw");
+  d2Tap(app, "F4"); app.els["scale-seat-next"].click(); same();
+  want = { ...want, F4: D2_PYGMY_ONE.G4, G4: D2_PYGMY_ONE.F4 };
+  assert.deepStrictEqual(d2Drawn(app), want, "a SEAT step did not redraw");
+  const before = d2Drawn(app);
+  app.els["scale-note-next"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), before, "a NOTE step moved a field");
+  assert.strictEqual(d2Pressed(app).length, 1);
+  app.els["scale-layout-reset"].click(); same();
+  assert.deepStrictEqual(d2Drawn(app), D2_PYGMY_ONE, "RESET SEATS did not redraw");
+});
+
+/* Rule C, typed one keystroke at a time with the drawer open (review 1, F-2):
+ * the keystroke that ends a pause and also changes a ring's count gives ONE
+ * message, row 18b first, then the count sentence. */
+const D2_READY = "Layout is ready again.";
+const d2Keystrokes = (app, steps) => steps.map((t) => { app.type(t); return d2Status(app); });
+
+test("DR2a rule C (F-2): a bottom note typed into a pan with swapped bottom seats, keystroke by keystroke", () => {
+  const app = boot();
+  d2Open(app, "[C3] [D3] (F3) G3 A3 B3 C4", false);
+  d2Tap(app, "C3"); d2Tap(app, "D3");
+  const head = "[C3] [D3] ", tail = "(F3) G3 A3 B3 C4", ins = "[E3] ";
+  const said = d2Keystrokes(app, Array.from({ length: ins.length }, (_, i) => head + ins.slice(0, i + 1) + tail));
+  const paused = "Layout is paused until the scale parses.";
+  assert.deepStrictEqual(said, [paused, paused, paused, paused,
+    `${D2_READY} The bottom now has 3 notes, so its seats were reset.`]);
+});
+
+test("DR2a rule C (F-2): the zzz case, rim 8 to 3, ends its pause with one message", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const said = d2Keystrokes(app, ["(D3) A3 C4 D4 z", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 zzz", "(D3) A3 C4 D4 zz", "(D3) A3 C4 D4 z", "(D3) A3 C4 D4"]);
+  const paused = "Layout is paused until the scale parses.";
+  assert.deepStrictEqual(said, [paused, paused, paused, paused, paused,
+    `${D2_READY} The rim now has 3 notes, so its seats were reset.`]);
+});
+
+test("DR2a rule C (F-2): a restore that ends a pause is row 18b then row 16", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const said = d2Keystrokes(app, ["(D3) A3 C4 D4 E4 F4 G4 A4", "(D3) A3 C4 D4 E4 F4 G4 A4 z", "(D3) A3 C4 D4 E4 F4 G4 A4 C5"]);
+  assert.deepStrictEqual(said, ["The rim now has 7 notes, so its seats were reset.", "Layout is paused until the scale parses.",
+    `${D2_READY} The rim is back to 8 notes, so its earlier seats were restored.`]);
+});
+
+/** The marks of a picked note, split by class: each tag's attributes. */
+const d2Mark = (html, cls) => {
+  const m = new RegExp(`<circle class="${cls}"[^>]*>`).exec(html);
+  assert.ok(m, `no .${cls} in the plate markup`);
+  const num = (a) => Number(new RegExp(`\\b${a}="([\\d.]+)"`).exec(m[0])[1]);
+  return { r: num("r"), sw: num("stroke-width"), stroke: /stroke="([^"]+)"/.exec(m[0])[1] };
+};
+test("DR2a (95, F-3): .panseat is at least 2 px, and the ink hairline sits outside the orange ring", () => {
+  const app = boot();
+  d2Open(app, DR1_PYGMY_MAKER, false);
+  d2Tap(app, "G3");
+  const html = app.els["scale-preview"].innerHTML;
+  const seat = d2Mark(html, "panseat"), sel = d2Mark(html, "pansel"), ink = d2Mark(html, "pansel-ink");
+  assert.ok(seat.sw >= 2, `.panseat stroke ${seat.sw}`);
+  assert.strictEqual(seat.stroke, "#E27005");
+  assert.strictEqual(sel.stroke, "#E27005");
+  assert.ok(sel.sw >= 2, `.pansel stroke ${sel.sw}`);
+  assert.strictEqual(ink.stroke, "#272219");
+  assert.ok(ink.r > sel.r, `the hairline r ${ink.r} is not outside the orange ring r ${sel.r}`);
+});
+
+test("DR2a (58, 95, 94, 51): the marks of a picked note, in the plate markup", () => {
+  const app = boot();
+  d2Open(app, DR1_PYGMY_MAKER, false);
+  d2Tap(app, "G3");
+  const html = app.els["scale-preview"].innerHTML;
+  const count = (cls) => (html.match(new RegExp(`class="${cls}[ "]`, "g")) || []).length;
+  assert.strictEqual(count("pansel"), 1);
+  assert.strictEqual(count("panseat"), 8, "rim size minus one");
+  assert.strictEqual(count("panveil"), 8, "inner 2 + bottom 6");
+  assert.strictEqual(count("panarm"), 0);
+  assert.strictEqual(count("panflash"), 0, "a pick alone drew a flash");
+  d2Tap(app, "Ab3");
+  const swapped = app.els["scale-preview"].innerHTML;
+  assert.strictEqual((swapped.match(/class="panflash/g) || []).length, 2);
+  app.flushTimers();
+  assert.strictEqual((app.els["scale-preview"].innerHTML.match(/class="panflash/g) || []).length, 0, "the flash outlived its 600 ms");
+  for (const m of (html + swapped).matchAll(/<circle class="pan(?:sel|seat|flash)[^>]*stroke="#E27005"[^>]*>/g))
+    assert.match(m[0], /vector-effect="non-scaling-stroke"/);
+  assert.match(html, /<circle class="pansel"[^>]*stroke="#272219"|stroke="#272219"/, "no ink hairline around .pansel");
+  assert.strictEqual(app.hits().filter((h) => h.getAttribute("data-field") === "0").length, 0, "the ding has a hit target");
+  assert.strictEqual(app.hits().length, 17);
+});
+
+test("DR2a (94): a new flash replaces the old; never more than two panflash seats", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  d2Tap(app, "D4"); d2Tap(app, "E4");
+  assert.strictEqual((app.els["scale-preview"].innerHTML.match(/class="panflash/g) || []).length, 2);
+});
+
+test("DR2a (70): the arrangement reaches the generated deck, the stored record and the share link", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  app.els["scale-generate"].click();
+  const d = app.registry()[app.deckId()];
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(d.options.seats)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+  openEdit(app, d);
+  assert.deepStrictEqual(d2Norm(d2Seats(app)), { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+});
+
+for (const edit of [false, true]) {
+  test(`DR2a (18): opening the drawer focuses the first pickable note and no other control, ${edit ? "Edit" : "Add"}`, () => {
+    const app = boot();
+    d2Open(app, D2_AMARA, edit);
+    assert.strictEqual(d2Focus(app), "A3", "focus did not move to the first pickable note on open");
+    assert.deepStrictEqual(d2Rover(app), ["A3"]);
+  });
+}
+
+test("DR2a (18): a pan whose only ring of two is the bottom focuses the first note of that ring", () => {
+  const app = boot();
+  d2Open(app, "[C3] [D3] (A3) E4", false);
+  const name = d2Focus(app);
+  assert.ok(app.activeHit() !== null, "focus is not on a note: " + name);
+  assert.match(name, /^[CD]3$/, "the first pickable note is in the bottom ring");
+});
+
+test("DR2a (71): MIRROR TOP then BESIDE CENTRE leave every permutation as it was", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  d2Tap(app, "A3"); d2Tap(app, "C4");
+  const before = JSON.stringify(d2Seats(app));
+  app.els["scale-mirror"].click();
+  assert.strictEqual(JSON.stringify(d2Seats(app)), before, "mirror changed the permutation");
+  app.els["scale-anchor-between"].click();
+  assert.strictEqual(JSON.stringify(d2Seats(app)), before, "the anchor changed the permutation");
+});
+
+test("DR2a (19, 24): the plate carries no tabindex of its own and the old layout label is gone", () => {
+  const app = boot();
+  d2Open(app, D2_AMARA, false);
+  assert.strictEqual(app.els["scale-preview"].getAttribute("tabindex"), null);
+  assert.doesNotMatch(app.html || fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8"), /id="scale-layout-label"/);
 });

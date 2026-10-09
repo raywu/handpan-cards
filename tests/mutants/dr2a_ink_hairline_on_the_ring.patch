@@ -1,0 +1,15 @@
+# kills: DR2a browser (95): on every field of amara9 at the 380x667 open plate the orange ring shows 2px and the 1px ink hairline lies wholly outside it
+# suite: node --test --test-name-pattern ^DR2a.browser..95...on.every.field.of.amara9.at.the.380x667.open.plate.the.orange.ring.shows.2px.and.the.1px.ink.hairline.lies.wholly.outside.it$ tests/drawer_seats.test.js
+The hairline is placed on the orange ring's radius in CSS px, covering the orange.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8281,7 +8281,7 @@ function sizePanHits(svg, minPx, pickedRing) {
+   svg.querySelectorAll(".pansel-ink").forEach((ink) => {
+     const sel = ink.previousElementSibling;
+     if (sel && sel.classList.contains("pansel"))
+-      ink.setAttribute("r", String(Number(sel.getAttribute("r")) + (PANSEL_PX + PANSEL_INK_PX) / 2 / k));
++      ink.setAttribute("r", String(Number(sel.getAttribute("r")) + 0 / k));
+   });
+ }
+ const PANSEL_PX = 2.2;

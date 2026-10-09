@@ -3,18 +3,23 @@
 # A held or example pan keeps the live name and the live treatment, so the
 # mock claims to show a layout the box no longer describes - the exact way a
 # preview lies, now that the plate never leaves the flow.
+# Refreshed 2026-10-08 (DR2a): re-anchored on the DR2a source
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -4464,9 +4464,9 @@ let panState = "example";
- const PAN_EDIT_HINT = " Tap a note to choose it, or use the arrow keys.";
- function markPan(state) {
+@@ -9403,13 +9403,13 @@ function clearPanPreview() {
+ let panState = "example";
+ function markPan(state, interactive) {
    panState = state;
 -  previewBox.classList.toggle("stale", state !== "current");
 +  previewBox.classList.remove("stale");
-   previewBox.setAttribute("aria-label",
--    PAN_NAMES[state] + (editingId ? "." + PAN_EDIT_HINT : ""));
-+    PAN_NAMES.current + (editingId ? "." + PAN_EDIT_HINT : ""));
+   if (interactive) {
+     previewBox.setAttribute("role", "group");
+     previewBox.setAttribute("aria-label", countsLabel(ringSizes(lastSolved.fields)));
+   } else {
+     previewBox.setAttribute("role", "img");
+-    previewBox.setAttribute("aria-label", PAN_NAMES[state]);
++    previewBox.setAttribute("aria-label", PAN_NAMES.current);
+   }
  }
  
- /** Paint the pan mock for a parsed seed, unhighlighted. Returns false if the

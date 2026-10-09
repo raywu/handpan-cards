@@ -1,0 +1,15 @@
+# kills: DR2a (94): a new flash replaces the old; never more than two panflash seats
+# suite: node --test --test-name-pattern ^DR2a..94...a.new.flash.replaces.the.old..never.more.than.two.panflash.seats$ tests/app.test.js
+# A new flash adds to the old, so more than two seats are ringed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -9225,7 +9225,7 @@ function swapSeats(ring, i, j) {
+     next[i] = b.seat;
+     next[j] = a.seat;
+     setRingSeats(ring, next);
+-    panFlash = [a.id, b.id];
++    panFlash = (panFlash || []).concat([a.id, b.id]);
+     clearTimeout(flashTimer);
+     flashTimer = setTimeout(() => { panFlash = null; repaintPlate(); }, 600);
+   }

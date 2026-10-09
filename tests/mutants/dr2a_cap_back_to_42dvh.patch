@@ -1,0 +1,15 @@
+# kills: DR2a browser (84): on Add at 380x667 with the band stuck the toggle and both step rows of amara are inside the scrollport, with and without the notice
+# suite: node --test --test-name-pattern ^DR2a.browser..84...on.Add.at.380x667.with.the.band.stuck.the.toggle.and.both.step.rows.of.amara.are.inside.the.scrollport..with.and.without.the.notice$ tests/drawer_seats.test.js
+# The open plate cap goes back to 42dvh, so the seat row sits below the scrollport after a swap on Add.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -988,7 +988,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-layout-state{color:#e3b25c}
+ #scale-layout-zone.open #scale-plate-band{position:sticky; top:0; z-index:2; background:#1f1b15;
+   padding-bottom:var(--sp-1)}
+-#scale-layout-zone.open #scale-preview{max-width:min(300px, 39dvh)}
++#scale-layout-zone.open #scale-preview{max-width:min(300px, 42dvh)}
+ .sheetbody:has(input:focus, textarea:focus, select:focus, #scale-swatches button:focus)
+   #scale-layout-zone.open #scale-plate-band{position:static}
+ #scale-layout-zone.open.nostick #scale-plate-band{position:static}

@@ -1,0 +1,15 @@
+# kills: DR2a browser (57): with a note picked the picked ring's targets are at least their all-points radius and pairwise disjoint
+# suite: node --test --test-name-pattern ^DR2a.browser..57...with.a.note.picked.the.picked.ring.s.targets.are.at.least.their.all.points.radius.and.pairwise.disjoint$ tests/drawer_seats.test.js
+# The picked ring's hit targets are drawn 1.6 times too large and overlap.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -8273,7 +8273,7 @@ function sizePanHits(svg, minPx, pickedRing) {
+     const pts = group.map((n) => [Number(n.getAttribute("cx")), Number(n.getAttribute("cy")),
+                                   Number(n.getAttribute("data-r")) || 0]);
+     const r = panHitRadii(ext, size, minPx, pts);
+-    group.forEach((n, i) => n.setAttribute("r", String(r[i])));
++    group.forEach((n, i) => n.setAttribute("r", String(r[i] * 1.6)));
+   }
+   // The hairline lies wholly outside the orange ring in CSS px, whatever the
+   // field's size: a fraction of the radius is under 2px of room on a small field.

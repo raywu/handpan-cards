@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9859,7 +9859,7 @@
+@@ -10044,7 +10044,7 @@ const pickAnchor = (to) => () => {
  };
  anchorOne.onclick = pickAnchor("one");
  anchorBetween.onclick = pickAnchor("between");
 -drawerBtn.onclick = () => { if (drawerOpen) closeDrawer(true); else openDrawer(); };
 +drawerBtn.onclick = () => {};
- rotL.onclick = () => rotateLayout(-1);
- rotR.onclick = () => rotateLayout(1);
- moveL.onclick = () => moveNote(-1);
+ notePrev.onclick = () => stepNote(-1);
+ noteNext.onclick = () => stepNote(1);
+ seatPrev.onclick = () => stepSeat(-1);

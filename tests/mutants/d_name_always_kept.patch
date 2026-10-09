@@ -3,12 +3,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -8959,7 +8959,7 @@ function sheetOptions() {
+@@ -9345,7 +9345,7 @@ function sheetOptions() {
      // that already carries an EXPLICIT name keeps it either way.
      const d = editedDeck();
      const kept = !!(d && d.options && d.options.name);
 -    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
 +    if (n) o.name = n;  // validated by core.parseSeed, never here
-     if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
    }
+   if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
    return o;
